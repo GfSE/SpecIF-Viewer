@@ -21,5 +21,8 @@ The app has been installed for demonstration
 - View a [BPMN example](https://specif.de/apps/view.html#import=%22../examples/Beispiel-BPMN.specifz%22)
 - Start the [viewer](https://specif.de/apps/view.html) to load your own files
 
+## Installation
+For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view.html' with a web-browser.
+
 ## Acknowledgements
 This work has been sponsored by [enso-managers gmbh](http://enso-managers.de), Berlin
