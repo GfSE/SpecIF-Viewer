@@ -2,7 +2,7 @@
 A viewer for SpecIF files.
 
 ## Features
-- Import 'specif' and 'specifz' file
+- Import 'specif' and 'specifz' file with schema and consistency check
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
 - Import from an URL or the local file system
