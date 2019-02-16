@@ -3,6 +3,7 @@ A viewer for SpecIF files.
 
 ## Features
 - Import 'specif' and 'specifz' file with schema and consistency check
+- Import 'reqif' file (planned)
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
 - Import from an URL or the local file system
@@ -10,6 +11,7 @@ A viewer for SpecIF files.
 - Inspect the semantic net ('statements')
 - Report some model-based statistics, such as used resource types or used property enumerated values
 - Export 'specifz' file
+- Export 'reqif' file (planned)
 - Export 'ePub' file
 - Export MS-Word OOXML file (experimental)
 
