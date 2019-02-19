@@ -1,0 +1,167 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>SpecIF View</title>
+	<link rel="icon" type="image/png" href="./favicon.ico">
+	<meta charset="utf-8" />
+	<!--<meta http-equiv="cache-control" content="no-Cache" />-->
+	<meta http-equiv="expires" content="0" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<script type="text/javascript" src="./v0.95.1/3rd/jquery-3.3.1.min.js"></script>
+	<script type="text/javascript" src="./v0.95.1/modules.js"></script>
+</head>
+<body>
+
+<div id="app" class="noOverflow " >
+	<div id="pageHeader" >
+		<div id="logo" ></div>
+		<div id="pageSelector" class="btn-group btn-group-md pageActions" ></div>
+		<div id="spinner" ></div>
+		<!--<div id="pageActions" class="btn-group btn-group-md pageActions"></div>-->
+		<div id="pageTitle" class="pageTitle" ></div>
+	</div>
+</div>
+
+<script type="text/javascript">
+app = {
+	init: function() {
+		// create the options after loading required libraries such as 'i18n':
+		this.options = {
+			label: i18n.LblReader,
+			title: i18n.AppReader
+		//	callback: function() { app.show() }
+		};
+		let define = {
+			// Define 
+			// - the modules to load, specified by 'name'
+			// - their role for execution (addressable javascript objects) 
+			// - the hierarchy of views using implicit actions hide/show or refresh
+			// - the explicit actions independent of any view
+			
+			// Let's start:
+			// no name, thus no additional script file will be loaded at top level
+			view: '#app',
+			// To control the views of the children:
+			selector: '#pageSelector',		// DOM element to choose the view of a child (top level)
+			selectorType: 'btns',
+			children: [{
+				name: 'profileAnonymous',
+				role: 'me'						// the name of the controller object to construct
+			},{
+				name: 'cache',
+				role: 'myProject'				// the name of the controller object to construct
+			},{
+				name: 'importAny',
+				// no role, so name will be used for the controller object
+				// This is a view of the parent:
+				view: '#import',				// uses implicit actions show/hide
+				viewClass: 'contentWide',
+				label: i18n.BtnImport,
+				selectedBy: '#selectImport',	// DOM element in parent's selector to choose this view
+				// no selector: this module is itself responsible for managing it's children
+				children: [{
+					name: 'ioSpecif'
+					// no view
+				},{
+					name: 'ioBpmn'
+					// no view
+				},{
+					name: 'ioXls'
+					// no view
+				}]
+			}, {
+				name: 'specifications',
+				role: 'specs',					// the name of the controller object to construct
+				// This is a view of the parent:
+				view: '#specifications',		// uses implicit actions show/hide
+				label: i18n.BtnRead,
+				selectedBy: '#selectSpecs',		// DOM element in parent's selector to choose this view
+				// To control the views of the children:
+				selector: '#specsSelector',		// DOM element to choose the view of a child (bext level)
+				selectorType: 'tabs',
+				children: [{
+					// nothing to load
+					// Definitions as a view of the parent:
+					view: '#'+CONFIG.objectList,	// uses implicit action refresh at parent level
+					viewClass: 'content',
+					label: i18n.TabDocument,
+					selectedBy: '#selectDocument'	// DOM element in parent's selector to choose this view
+				},{
+					name: 'statementsGraph',
+					// no role, so name will be used for the controller object
+					// Definitions as a view of the parent:
+					view: '#'+CONFIG.relations,		// uses implicit action refresh at parent level
+					viewClass: 'content',
+					label: i18n.TabRelations,
+					selectedBy: '#selectStatements'	// DOM element in parent's selector to choose this view
+				},{
+					name: CONFIG.reports,
+					// no role, so name will be used for the controller object
+					// Definitions as a view of the parent:
+					view: '#'+CONFIG.reports,		// uses implicit action refresh at parent level
+					viewClass: 'contentWide',
+					label: i18n.TabReports,
+					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
+				}]
+			}, {
+				action: 'myProject.export()',
+				label: i18n.BtnExport,
+				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
+				// no selector: this module is itself responsible for managing it's children
+				children: [{
+					name: 'toEpub'
+					// no view
+				},{
+					name: 'toOxml'
+					// no view
+				}]
+			}]
+		};
+
+		console.debug( this.options.label+" will be initialized!" );
+		document.title = this.options.label;
+		busy.reset();  // !working
+	//	$('#pageTitle').html(this.options.title);
+
+//		window.addEventListener("hashchange", this.options.callback );
+		bindResizer();
+		
+		modules.load( define, {done:function() { app.show() }} )
+	},
+	show: function() {
+		console.info( this.options.label+" started!" );
+		me.read()
+			.done(function() {
+				modules.show('#import')
+			})
+			.fail(function() {
+				this.hide()
+			})
+	},
+	hide: function() {
+		// hide the shown module:
+		// ToDo
+	},
+/*	updateMe: function() {
+		message.hide();
+		this.hide();
+//		me.beginUpdate()
+	},
+	logout: function() {
+//		me.logout();
+		this.hide();
+	} */
+};
+
+//$( document ).ready(function() {
+$( function() {
+	// the DOM is ready,
+	// submit all modules to load and the function to start the app thereafter:
+//	modules.init( {done:app.init} )		//... does not work correctly, but why?  
+	modules.init( {done:function() {app.init()}} )
+
+});	
+	
+</script>  
+</body>
+</html>

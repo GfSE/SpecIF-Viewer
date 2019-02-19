@@ -1,0 +1,401 @@
+/* 	CSS for SpecIF Web-Apps.
+	Defines own CSS classes and overrides certain classes of Bootstrap and other libs.
+	Intended to be replaced with a custom file; 
+	it is recommended to use a different name and to change path and name in config-XX.js.
+	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	
+	Notes:
+	- #4A8C00 SpecIF dark green
+*/
+
+body {
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+	padding: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 10.5pt;
+}
+#pageHeader {
+	padding: 8px 0 0 0;
+}
+#logo {
+	width: 121px;
+	height: 36px;
+	float: right;
+	margin-right: 16px;
+	background-image: url("../logo-navbar.png");
+	background-repeat: no-repeat;
+	background-size: 121px;
+}
+#spinner {
+	width: 32px;
+	height: 32px;
+	background-image: url("../spinner-32.gif");
+	background-repeat: no-repeat;
+	float: right;
+	margin: 2px 16px 0 0;
+}
+#message {
+ position:fixed; 
+ top:8px;	
+ z-index:990;
+}
+.pageTitle {
+	font-size: 180%;
+	padding: 0.8em 0 0.4em;
+}
+.title1,
+.chapterTitle {
+	font-size: 160%;
+	padding: 0.6em 0 0.4em;
+}
+.title2,
+.objectTitle {
+	font-size: 130%;
+	padding: 0.4em 0 0.4em;
+}
+.title3,
+.attributeTitle {
+	font-size: 115%;
+	padding: 0.2em 0 0.4em;
+}
+.notice-default {
+	font-style:italic;
+}
+.notice-primary {
+	font-style:italic;
+	color: #337ab7;
+}
+.notice-success {
+	font-style:italic;
+	color: #3c763d;
+}
+.notice-danger {
+	font-style:italic;
+	color: #a94442;
+}
+div.noOverflow {
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+div.pageActions {
+    float: right;
+	margin-right: 16px;
+}
+div.contentCtrl {
+	position: fixed;
+	top: 120px;
+	display: inline-block;
+    box-sizing: border-box;
+	padding: 8px 30px 0 4px;  
+	width: 100%;
+	z-index: 900;
+}
+div.contentNotice {
+	display: inline-block;
+    box-sizing: border-box;
+	padding-left: 8px;
+}
+div.contentActions {
+	display: inline-block;
+	float: right;
+}
+div.doneBtns {
+	float: right;
+	padding: 0 15px 0 0;  /* 15px like Bootstrap form */
+}
+/* for views without selector on the left: */
+div.contentWide {
+    /*height is set by script*/
+    box-sizing: border-box;
+    width: 100%;
+    overflow: auto;
+    padding: 8px 0 0 0;
+}
+/* for views with selector on the left: */
+div.content {   /* width is 75% with wide screen, 100% otherwise */
+	clear: both;
+    /*height is set by script*/
+    box-sizing: border-box;
+    width: 100%;
+    overflow: auto;
+    padding: 44px 0 0 4px;
+}
+/* main column for title and description: */
+div.content-main { 
+	clear: both;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+}
+/* selector on the left: */
+div.selection, 
+/* column on the right for additional properties: */
+div.content-other {
+	display: none;
+}
+@media (min-width: 768px) {
+  div.selection {
+	font-size: 90%;
+	display: inline-block;
+	margin-right: -4px;  
+	vertical-align: top;
+    width: 25%;
+    /*height is set by script*/
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0 8px 0 0;
+  }
+  div.contentCtrl {
+	margin-right: -4px;  
+	width: 75%;
+  }
+  div.content {
+	display: inline-block;
+	margin-right: -4px;
+	vertical-align: top;
+    width: 75%;
+  }
+  div.content-main {
+	display: inline-block;
+	margin-right: -4px;  
+	vertical-align: top;
+	width: 67%;
+	padding-right: 8px;
+    overflow-x: hidden;
+  }
+  div.content-other {
+	display: inline-block;
+	vertical-align: top;
+	width: 33%;
+    overflow-x: hidden;
+  }
+}
+div.primaryFilters {
+    box-sizing: border-box;
+    overflow: auto;
+}
+div.panel-filter {
+	background-color:#f5f5f5; 
+    box-sizing: border-box;
+	margin: 0 0 0.4em 0;
+	padding: 0.2em;
+}
+#secondaryFilters {
+	font-size: 90%;
+}
+#secondaryFilters div.panel-filter {
+	display: inline-block;
+	vertical-align: top;
+}
+div.panel-tree {
+	background-color:#f5f5f5;
+    box-sizing: border-box;
+    overflow: auto;
+	padding: 8px 2px 2px 2px;
+}
+div.panel-details {
+	display: none;
+	background-color:#ffffe0;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 8px 2px 2px 2px;
+}
+.listEntry {
+	border-bottom:1px solid #ddd;
+}
+div.attribute {
+	padding: 0 0 0.6em;
+}
+div.attribute-condensed {
+	font-size:90%;
+	padding: 0 0 0.4em;
+}
+div.attribute-content {
+	width: 100%;
+}
+div.attribute-label {
+	display: inline-block;
+	margin-right: -4px;  
+	padding-right: 8px;
+	vertical-align: middle;
+    text-align: right;
+	width: 25%;
+	/*max-width: 12em;*/
+	/*text-align: right;*/
+	font-style:italic;
+	font-size: 90%;
+	color: #23527c; /* bootstrap brand-primary */
+	word-wrap:break-word;
+}
+div.attribute-value {
+	display: inline-block;
+	margin-right: -4px;  
+	padding-left: 8px;
+	vertical-align: middle;
+	width: 75%;
+	word-wrap:break-word;
+}
+div.attribute table {
+/*	width:100%;  */
+	border-collapse:collapse;
+	vertical-align:top;
+	margin: 0;
+}
+div.attribute th {
+	border: 1px solid #DDDDDD;
+	margin: 0em;
+	padding: 0.2em;
+}
+div.attribute td {
+	border: 1px solid #DDDDDD;
+	margin: 0em;
+	padding: 0.2em;
+}
+div.forImage { max-width: 960px; margin: 0.4em 0; }
+div.forImagePreview { max-width: 160px; margin: 0.2em 0; }
+div.forImage object, 
+div.forImage img, 
+div.forImage svg, 
+div.forImagePreview object, 
+div.forImagePreview img,
+div.forImagePreview svg { 
+	max-width: 100%; 
+/*	width: auto; */
+	height: auto;
+}
+div.forDeletion a {
+	color: #ff3366;
+}
+div.forDeletion a:hover,
+div.forDeletion a:focus {
+	color: #ff0066;
+}
+div.form-active {
+	background-color: #ffffe0;
+}
+
+/* for content generated by ARCWAY ReqIF export and for DOORS tables rendered by the ReqIF Server: */
+.inline-label {
+	font-style:italic;
+	font-size: 90%;
+	color: #23527c; /* bootstrap brand-primary */
+}
+table.stdInlineWithBorder, 
+table.doors-table {
+	width:100%;
+    border: 1px solid #DDDDDD;
+    border-collapse:collapse;
+	vertical-align:top;
+	margin: 0;
+}
+table.stdInlineWithBorder th, 
+table.stdInlineWithBorder td, 
+table.doors-table th,
+table.doors-table td {
+    border: 1px solid #DDDDDD;
+    margin: 0;
+    padding: 2pt;
+	font-size: 90%;
+}
+/*
+th.stdInlineWithBorder,
+td.stdInlineWithBorder, 
+td.doors-table-cell {
+    border: 1px solid #DDDDDD;
+    margin: 0;
+    padding: 2pt;
+	font-size: 90%;
+}
+*/
+
+/* override bootstrap.css */
+/*object[disabled] {
+	cursor: not-allowed;
+	pointer-events: none;
+}*/
+.font-sm { font-size: 90%; }
+.force_word_break{ word-wrap:break-word;word-break:break-all; }
+
+.row {
+	margin: 0;
+}
+ul.nav-tabs {
+	font-size: 90%;
+}
+.nav-tabs > li > a { 
+	line-height: 1; 
+}
+.nav > li.disabled,
+.nav > li.disabled > a {
+  color: #ccc;
+}
+.form-group,
+.form-horizontal .form-group {
+	margin: 0 0 0.6em;
+}
+.form-control[disabled],
+.form-control[readonly],
+fieldset[disabled] .form-control {
+	background-color: #fff;
+}
+mark{
+	background: #ffffaa;
+}
+.table > thead > tr > td.selected,
+.table > tbody > tr > td.selected,
+.table > tfoot > tr > td.selected,
+.table > thead > tr > th.selected,
+.table > tbody > tr > th.selected,
+.table > tfoot > tr > th.selected,
+.table > thead > tr.selected > td,
+.table > tbody > tr.selected > td,
+.table > tfoot > tr.selected > td,
+.table > thead > tr.selected > th,
+.table > tbody > tr.selected > th,
+.table > tfoot > tr.selected > th {
+	color: #fff;
+	background-image: none;
+	background-color: #1690D8;
+}
+/*.panel-title {
+  font-size: 100%;
+}*/
+
+/* override jqtree.css */
+.jqtree-tree .jqtree-title {
+	display: block;
+}
+.jqtree-tree .jqtree-title.jqtree-title-folder {
+	display: inline;
+}
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler, 
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-title {
+	color: #ffffff;
+}
+ul.jqtree-tree li.jqtree-selected > .jqtree-element, 
+ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
+	background: none; 
+	background-color: #1690D8;
+	text-shadow: none;
+}
+.btn-fileinput {
+  position: relative;
+  overflow: hidden;
+}
+.btn-fileinput input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  opacity: 0;
+  -ms-filter: 'alpha(opacity=0)';
+  font-size: 100%;
+  cursor: pointer;
+}
+
+
