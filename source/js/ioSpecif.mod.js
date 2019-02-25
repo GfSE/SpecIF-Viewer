@@ -113,7 +113,7 @@ modules.construct({
 									// no break
 								case 'replace':
 									jDO.notify('Creating project',20); 
-									myProject.create( specif.set(data) )
+									myProject.create( data )
 										.progress( jDO.notify )
 										.done( jDO.resolve )
 										.fail( jDO.reject );
@@ -125,7 +125,7 @@ modules.construct({
 										.done( function(refD) {
 //											console.debug('specif.update',refD,data)
 											// ... then start to save the new or updated elements:
-											myProject.update( specif.set(data), 'extend' )
+											myProject.update( data, 'extend' )
 												.progress( jDO.notify )
 												.done( jDO.resolve )
 												.fail( jDO.reject )
@@ -142,7 +142,7 @@ modules.construct({
 //			mode = modeCre;
 //			console.debug('Creating project',data);
 			jDO.notify('Creating project',20); 
-			myProject.create( specif.set(data) )
+			myProject.create( data )
 				.progress( jDO.notify )
 				.done( jDO.resolve )
 				.fail( jDO.reject )
@@ -173,7 +173,7 @@ modules.construct({
 						// - the file may have a UTF-8 BOM
 						// - all property values are encoded as string, even if boolean, integer or double.
 						dta = JSON.parse( dta.trimJSON() );
-						specif.check( dta )
+						myProject.check( dta )
 						.progress( zDO.notify )
 						.done( function(dta) {
 							data = dta;
@@ -231,7 +231,7 @@ modules.construct({
 				return zDO
 			};
 				
-			specif.check( dta )
+			myProject.check( dta )
 				.progress( zDO.notify )
 				.done( function() {
 					// SpecIF data is valid.

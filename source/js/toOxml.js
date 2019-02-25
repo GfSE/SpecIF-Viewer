@@ -165,13 +165,13 @@ function toOxml( data, opts ) {
 				// designed for use also by statements and hierarchies.
 				// starting SpecIF 10.4, rC is r['class'] for resources, statements and hierarchies.
 				if( r.properties ) {
-					let pr=null;
+					let prp=null;
 					for( var a=0,A=r.properties.length; a<A; a++ ) {
-						pr = r.properties[a];
-						rC.isHeading = rC.isHeading || opts.headingProperties.indexOf(pr.title)>-1;
-						if( opts.headingProperties.indexOf(pr.title)>-1
-							|| opts.titleProperties.indexOf(pr.title)>-1 ) {
-								return escapeXML(pr.value)
+						prp = r.properties[a];
+						rC.isHeading = rC.isHeading || opts.headingProperties.indexOf(prp.title)>-1;
+						if( opts.headingProperties.indexOf(prp.title)>-1
+							|| opts.titleProperties.indexOf(prp.title)>-1 ) {
+								return escapeXML(prp.value)
 						}
 					}
 				};
@@ -299,25 +299,28 @@ function toOxml( data, opts ) {
 					return null
 				}
 			}
+			function propertyClassOf( rC, pCid ) {
+				return itemById(data.propertyClasses,pCid) 	// starting with v0.10.6
+					|| itemById(rC[pClasses],pCid);			// ending with v0.10.5
+			}
 			function propertiesOf( r, rC, opts ) {
 				// return the values of all resource's properties as oxml:
 				// designed for use also by statements and hierarchies.
 				// starting SpecIF 10.4, rC is r['class'] for resources, statements and hierarchies.
 				if( !r.properties || r.properties.length<1 ) return '';
 				// return the content of all properties, sorted by description and other properties:
-				let c1='', rows='', c3, hPi=null, rt=null;
-				r.properties.forEach( function(pr) {
+				let c1='', rows='', c3, rt, hPi;
+				r.properties.forEach( function(prp) {
 					// the property title or it's class's title:
-					rt = pr.title || itemById(rC[pClasses],pr[pClass]).title;
+					rt = prp.title || propertyClassOf( rC, prp[pClass] ).title;
 						
 					// The content of the title property is already used as chapter title; so skip it here:
 					if( opts.headingProperties.indexOf(rt)>-1
 						|| opts.titleProperties.indexOf(rt)>-1 ) return;
 					// First the resource's description properties in full width:
-					if( pr.value
-						&& opts.descriptionProperties.indexOf(rt)>-1 ) {
-//							console.debug('description propertiesOf',valOf( pr ));
-							valOf( pr ).forEach(function(e){ c1 += generateOxml(e) })
+					if( prp.value && opts.descriptionProperties.indexOf(rt)>-1 ) {
+//							console.debug('description propertiesOf',valOf( prp ));
+							valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 					}
 				});
 //				console.debug('propertiesOf',r,c1)
@@ -329,22 +332,22 @@ function toOxml( data, opts ) {
 //					r.properties.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 
 				// Finally, list the remaining properties with title (name) and value:
-				r.properties.forEach( function(pr) {
+				r.properties.forEach( function(prp) {
 					// the property title or it's class's title:
-					rt = pr.title || itemById(rC[pClasses],pr[pClass]).title;
+					rt = prp.title || propertyClassOf( rC, prp[pClass] ).title;
 					hPi = indexBy(opts.hiddenProperties,'title',rt);
 		
 					// skip hidden properties and those which have been included before,
 					// namely properties classified as heading, title and description:
-					if( opts.hideEmptyProperties && isEmpty(pr.value)
-						|| hPi>-1 && ( opts.hiddenProperties[hPi].value==undefined || opts.hiddenProperties[hPi].value==pr.value )
+					if( opts.hideEmptyProperties && isEmpty(prp.value)
+						|| hPi>-1 && ( opts.hiddenProperties[hPi].value==undefined || opts.hiddenProperties[hPi].value==prp.value )
 						|| opts.headingProperties.indexOf(rt)>-1
 						|| opts.titleProperties.indexOf(rt)>-1 
 						|| opts.descriptionProperties.indexOf(rt)>-1 ) return;
 
 					c3 = '';
-//					console.debug('other propertiesOf',valOf( pr ));
-					valOf( pr ).forEach(function(e){ c3 += generateOxml(e) });
+//					console.debug('other propertiesOf',valOf( prp ));
+					valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
 					rows += wTableRow( wTableCell( wParagraph({content:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
 				});
 				// Add a property 'SpecIF:Type':
@@ -802,17 +805,17 @@ function toOxml( data, opts ) {
 						};
 					return null  // should never arrive here
 				}
-				function valOf( pr ) {
+				function valOf( prp ) {
 					// return the value of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
-					let dT = dataTypeOf(data.dataTypes, rC, pr[pClass] );
+					let dT = itemById( data.dataTypes, propertyClassOf(rC,prp[pClass]).dataType );
 					switch( dT.type ) {
 						case 'xs:enumeration':
 							let ct = '',
 								val = null,
-								st = opts.stereotypeProperties.indexOf(pr.title)>-1,
-								vL = pr.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
+								st = opts.stereotypeProperties.indexOf(prp.title)>-1,
+								vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
 							for( var v=0,V=vL.length;v<V;v++ ) {
 								val = itemById(dT.values,vL[v].trim());
 								// If 'val' is an id, replace it by title, otherwise don't change:
@@ -822,13 +825,13 @@ function toOxml( data, opts ) {
 							};
 							return [{p:{content:escapeXML(ct)}}];
 						case 'xhtml':
-//							console.debug('valOf - xhtml',pr.value);
-							return parseXhtml( pr.value, opts );
+//							console.debug('valOf - xhtml',prp.value);
+							return parseXhtml( prp.value, opts );
 						case 'xs:string':
-							return parseText( pr.value, opts );
-//							return titleLinks( pr.value, opts );
+							return parseText( prp.value, opts );
+//							return titleLinks( prp.value, opts );
 						default:
-							return [{p:{content:escapeXML(pr.value)}}]
+							return [{p:{content:escapeXML(prp.value)}}]
 					}
 				}
 				function isEmpty( str ) {
@@ -1093,13 +1096,6 @@ function toOxml( data, opts ) {
 							+		'<w:right w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>'
 							+	'</w:tcBorders>'
 					}
-			}
-			
-			function dataTypeOf( dTs, sT, pCid ) {
-				// given an attributeType ID, return it's dataType:
-				return itemById( dTs, itemById( sT[pClasses], pCid ).dataType )
-				//                    get propertyClass
-				//	   get dataType
 			}
 		}  // end of 'createText'
 
@@ -2361,11 +2357,12 @@ function toOxml( data, opts ) {
 		return n
 	}
 	function itemById(L,id) {
+		if(!L||!id) return undefined;
 		// given the ID of an element in a list, return the element itself:
 //		id = id.trim();
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id === id ) return L[i];   // return list item
-		return null
+		return undefined
 	}
 	function indexBy( L, p, s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
@@ -2390,10 +2387,10 @@ function toOxml( data, opts ) {
 			// 1. Replace <, >, " and ':
 			return "&" + {"<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
 		});
-		return s.replace( /&(.{0,7})/g, function($0,$1) {
+		return s.replace( /&(.{0,8})/g, function($0,$1) {
 			// 2. Replace &, unless it belongs to an XML entity;
 			// so far we only recognize the numeric entities and ignore the literal entities:
-			if( /&([0-9]{1,4}|x[0-9a-fA-F]{1,4});/.test($0) ) {
+			if( /&#([0-9]{1,5}|x[0-9a-fA-F]{1,4});/.test($0) ) {
 				// no replacement:
 				return $0
 			} else {

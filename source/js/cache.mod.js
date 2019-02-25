@@ -1,7 +1,7 @@
 ///////////////////////////////
 /*	Cache Library for SpecIF data.
 	Dependencies: jQuery
-	(C)copyright 2010-2017 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright 2010-2019 enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
@@ -52,6 +52,7 @@ modules.construct({
 
 		self.dataTypes = [];
 		self.allClasses = []; 	// common list of all resourceClasses, statementClasses and hierarchyClasses
+		self.propertyClasses = [];
 		self.resourceClasses = [];
 		self.statementClasses = [];
 		self.hierarchyClasses = [];		// list of specification (hierarchy root) types
@@ -91,6 +92,8 @@ modules.construct({
 		// ToDo: schema and consistency check
 		// Create the specified project:
 		self.clear();
+		prj = self.set(prj);	// transform to internal data structure
+		
 		self.id = prj.id;
 		self.title = prj.title;
 		self.description = prj.description;
@@ -105,6 +108,7 @@ modules.construct({
 		// (The roles/permissions and the role assignment to users are preserved, when import via ReqIF-file is made)
 		sDO.notify(i18n.MsgLoadingTypes,30);
 		cache( 'dataType', prj.dataTypes );
+		cache( 'propertyClass', prj.propertyClasses );
 		cache( 'resourceClass', prj.resourceClasses );
 		cache( 'statementClass', prj.statementClasses );
 		cache( 'hierarchyClass', prj.hierarchyClasses );
@@ -116,6 +120,7 @@ modules.construct({
 		cache( 'statement', prj.statements );
 		sDO.notify(i18n.MsgLoadingHierarchies,90);
 		cache( 'hierarchy', prj.hierarchies );
+		sDO.notify(i18n.MsgProjectCreated,100);
 
 		self.locked = app.options.label==i18n.LblReader;	
 		self.createdAt = prj.createdAt;
@@ -150,7 +155,7 @@ modules.construct({
 		// else
 		return null	
 	};
-	self.updateMeta = function( prj ) {
+/*	self.updateMeta = function( prj ) {
 		if( !prj ) return null;
 		for( var p in prj ) self[p] = prj[p];			// update only the provided properties
 		// Update the meta-data (header):
@@ -507,8 +512,8 @@ modules.construct({
 						if( !nA ) continue;	
 						// in all other cases compare the value:
 						let oT = itemById( myProject.resourceClasses, n['class'] ),  // applies to both r and n
-							rDT = dataTypeOf( myProject.dataTypes, oT, rA['class'] ),
-							nDT = dataTypeOf( newD.dataTypes, oT, nA['class'] );
+							rDT = dataTypeOf( myProject, rA['class'] ),
+							nDT = dataTypeOf( newD, nA['class'] );
 						if( rDT.type!=nDT.type ) return null;  // fatal error, they must be equal!
 						switch( nDT.type ) {
 							case 'xs:enumeration':
@@ -684,7 +689,7 @@ modules.construct({
 		var sDO = $.Deferred();
 		sDO.resolve({status:0});
 		return sDO
-	};
+	}; */
 	self.readContent = function( ctg, item, opts ) {  
 		// ctg is a member of [dataType, objectType, relationType, hierarchyType, object, relation, hierarchy]
 		//  for compatibility with older callers:
@@ -701,7 +706,7 @@ modules.construct({
 	//	};
 		return null
 	};
-	self.updateContent = function( ctg, item ) {  
+/*	self.updateContent = function( ctg, item ) {  
 		// ctg is a member of [object, relation, hierarchy], 'null' is returned in all other cases.
 		// (server does not allow type updates, so far.)
 
@@ -874,7 +879,7 @@ modules.construct({
 			})
 			.fail( fDO.reject );
 		return fDO
-	};
+	};*/
 	self.readStatementsOf = function( res, showComments ) {  
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
@@ -1122,22 +1127,22 @@ modules.construct({
 			var data = specif.get( opts );
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
-					// If the property titles are translated, then the lists declaring the semantics must, as well:
-					headingProperties: opts.translateTitles? forAll( CONFIG.headingAttributes, i18n.lookup ) : CONFIG.headingAttributes,
-					titleProperties: opts.translateTitles? forAll( CONFIG.titleAttributes, i18n.lookup ) : CONFIG.titleAttributes,
-					descriptionProperties: opts.translateTitles? forAll( CONFIG.descriptionAttributes, i18n.lookup ) : CONFIG.descriptionAttributes,
-					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-					stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeAttributes, i18n.lookup ) : CONFIG.stereotypeAttributes,
-					// If a hidden property is defined with value, it is suppressed only if it has this value;
-					// if the value is undefined, the property is suppressed in all cases.
-					// so far (iLaH v0.92.44), property titles are translated:
-					hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'},{title:i18n.lookup('SpecIF:Type'),value:'Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],
-					hideEmptyProperties: true,
-					propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
-					statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
-					done: function() { myProject.exporting=false; eDO.resolve() },
-					fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
-				};
+				// If the property titles are translated, then the lists declaring the semantics must, as well:
+				headingProperties: opts.translateTitles? forAll( CONFIG.headingAttributes, i18n.lookup ) : CONFIG.headingAttributes,
+				titleProperties: opts.translateTitles? forAll( CONFIG.titleAttributes, i18n.lookup ) : CONFIG.titleAttributes,
+				descriptionProperties: opts.translateTitles? forAll( CONFIG.descriptionAttributes, i18n.lookup ) : CONFIG.descriptionAttributes,
+				// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
+				stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeAttributes, i18n.lookup ) : CONFIG.stereotypeAttributes,
+				// If a hidden property is defined with value, it is suppressed only if it has this value;
+				// if the value is undefined, the property is suppressed in all cases.
+				// so far (iLaH v0.92.44), property titles are translated:
+				hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'},{title:i18n.lookup('SpecIF:Type'),value:'Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],
+				hideEmptyProperties: true,
+				propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
+				statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
+				done: function() { myProject.exporting=false; eDO.resolve() },
+				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
+			};
 			console.debug('storeEpub',data,options);
 			toEpub( data, options )
 		}
@@ -1196,17 +1201,547 @@ modules.construct({
 				})
 				.then(
 					function(blob) {
-						console.debug("storing ",data.title+".specifz");
+//						console.debug("storing ",data.title+".specifz");
 						saveAs(blob, data.title+".specifz");
 						self.exporting = false;
 						eDO.resolve()
 				}, 
 					function(xhr) {
-						console.debug("cannot store ",data.title+".specifz");
+						console.error("Cannot store ",data.title+".specifz");
 						self.exporting = false;
 						eDO.reject()
 				})
 		}
+	};
+	self.set = function( spD ) {
+		// transform SpecIF to internal data;
+		// no data of myProject is modified.
+		// It is assumed that spD has passed the schema and consistency check.
+//		console.debug('set',spD);
+		let names = {};
+		switch( spD.specifVersion ) {
+			case '0.10.2':
+			case '0.10.3':
+				names.rClasses = 'resourceTypes';
+				names.sClasses = 'statementTypes';
+				names.hClasses = 'hierarchyTypes';
+				names.pClasses = 'propertyTypes';
+				names.subClasses = 'subjectTypes';
+				names.objClasses = 'objectTypes';
+				names.rClass = 'resourceType';				
+				names.sClass = 'statementType';
+				names.hClass = 'hierarchyType';
+				names.pClass = 'propertyType';
+				break;
+			default:
+				names.rClasses = 'resourceClasses';
+				names.sClasses = 'statementClasses';
+				names.hClasses = 'hierarchyClasses';
+				names.pClasses = 'propertyClasses';
+				names.subClasses = 'subjectClasses';
+				names.objClasses = 'objectClasses';
+				names.rClass = 'class';
+				names.sClass = 'class';
+				names.hClass = 'class';
+				names.pClass = 'class'
+		};
+		
+		try {
+			var iD = {
+				dataTypes: 			forAll( spD.dataTypes, dT2int )
+			};
+			iD.propertyClasses = 	forAll( spD.propertyClasses, pC2int );	// starting v0.10.6
+			iD.resourceClasses = 	forAll( spD[names.rClasses], rC2int );
+			iD.statementClasses =	forAll( spD[names.sClasses], sC2int );
+			iD.hierarchyClasses =	forAll( spD[names.hClasses], hC2int );
+			iD.resources = 			forAll( spD.resources, r2int );
+			iD.statements =			forAll( spD.statements, s2int );
+			iD.hierarchies =		forAll( spD.hierarchies, h2int );
+			iD.files =				forAll( spD.files, f2int )
+		} catch (e) {
+			console.error( "Error when importing the project '"+spD.title+"'" );
+			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
+			return null
+		};
+		
+		// header information provided only in case of project creation, but not in case of project update:
+		if( spD.id ) iD.id = spD.id;
+		if( spD.title ) iD.title = spD.title;
+		if( spD.description ) iD.description = spD.description;
+		if( spD.generator ) iD.generator = spD.generator;
+		if( spD.generatorVersion ) iD.generatorVersion = spD.generatorVersion;
+		
+//		console.debug('specif.set',iD);
+		return iD
+
+			function dT2int( iE ) {
+				iE.category = 'dataType';
+				switch( iE.type ) {
+					case "xhtml": 
+					case "xs:string":		
+						if( typeof(iE.minLength)!='number' ) iE.minLength = 0;
+						if( typeof(iE.maxLength)!='number' ) iE.maxLength = CONFIG.maxStringLength;
+				//		break;
+				//	case "xs:enumeration": 	
+				//		if( !iE.values ) iE.values = [];
+				};
+//				console.debug('dataType 2int',iE);
+				return iE
+			}
+			function pC2int( iE ) {
+				var oE = {
+					id: iE.id,
+					title: vocabulary.property.specif(noCode(iE.title))	// an input file may have titles which are not from the SpecIF vocabulary.
+				};
+				if( iE.description ) oE.description = noCode(iE.description);
+				oE.dataType = iE.dataType;
+				let dT = itemById( iD.dataTypes, iE.dataType );
+				switch( dT.type ) {
+					case 'xs:enumeration': 
+						// include the property only, if is different from the dataType's:
+						if( iE.multiple && !dT.multiple ) oE.multiple = true
+						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
+				};
+				if( iE.revision ) oE.revision = iE.revision;
+				oE.changedAt = iE.changedAt;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+		//		if( iE.createdAt ) oE.createdAt = iE.createdAt;
+		//		if( iE.createdBy ) oE.createdBy = iE.createdBy;
+//				console.debug('propClass 2int',iE,oE);
+				return oE
+			}
+			// common for all classes:
+			function aC2int( iE ) {
+				var oE = {
+					id: iE.id,
+					title: vocabulary.resource.specif(noCode(iE.title))
+				};
+				if( iE.description ) oE.description = noCode(iE.description);
+				if( iE.icon ) oE.icon = iE.icon;
+				if( iE.creation ) oE.instantiation = iE.creation;	// deprecated, for compatibility
+				if( iE.instantiation ) oE.instantiation = iE.instantiation;
+				if( oE.instantiation ) 	{
+					let idx = oE.instantiation.indexOf('manual');	// deprecated
+					if( idx>-1 ) oE.instantiation.splice(idx,1,'user')
+				};	
+				// Up until v0.10.5, the pClasses themself are listed, starting v0.10.6 their ids are listed as a string.
+				if( Array.isArray(iE[names.pClasses]) && iE[names.pClasses].length>0 )
+					if( typeof(iE[names.pClasses][0])=='string' )
+						// copy the list of pClasses' ids:
+						oE.propertyClasses = iE.propertyClasses
+					else {
+						// internally, the pClasses are stored like in v0.10.6.
+						oE.propertyClasses = [];
+						iE[names.pClasses].forEach( function(e) {
+							// Store the pClasses at the top level:
+							iD.propertyClasses.push(pC2int(e));
+							// Add to a list with pClass' ids, here:
+							oE.propertyClasses.push(e.id)
+						})
+					}
+				else
+					oE.propertyClasses = [];
+				
+				if( iE.revision ) oE.revision = iE.revision;
+				oE.changedAt = iE.changedAt;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+		//		if( iE.createdAt ) oE.createdAt = iE.createdAt;
+		//		if( iE.createdBy ) oE.createdBy = iE.createdBy;
+//				console.debug('anyClass 2int',iE,oE);
+				return oE
+			}
+			function rC2int( iE ) {
+				var oE = aC2int( iE );
+				oE.category = 'resourceClass';
+
+				// If "iE.isHeading" is defined, use it:
+				if( typeof(iE.isHeading)=='boolean' ) {
+					oE.isHeading = iE.isHeading;
+					return oE
+				};
+				// else: take care of older data without "isHeading":
+				if( iE.title=='SpecIF:Heading' ) {
+					oE.isHeading = true;
+					return oE
+				};
+				// else: look for a property class being configured in CONFIG.headingAttributes
+				oE.isHeading = false;
+				let pC;
+				for( var a=oE.propertyClasses.length-1;a>-1;a-- ) {
+					pC = oE.propertyClasses[a];
+					// look up propertyClass starting v0.101.6:
+					if( typeof(pC)=='string' ) pC = itemById(iD.propertyClasses, pC);
+					if( CONFIG.headingAttributes.indexOf( pC.title )>-1 ) {
+						oE.isHeading = true;
+						break
+					}
+				};
+//				console.debug('resourceClass 2int',iE,oE);
+				return oE
+			}
+			function sC2int( iE ) {
+				var oE = aC2int( iE );
+				oE.category = 'statementClass';
+				if( iE[names.subClasses] ) oE.subjectClasses = iE[names.subClasses];
+				if( iE[names.objClasses] ) oE.objectClasses = iE[names.objClasses];
+//				console.debug('statementClass 2int',iE,oE);
+				return oE
+			}
+			function hC2int( iE ) {
+				var oE = aC2int( iE );
+				oE.category = 'hierarchyClass';
+//				console.debug('hierarchyClass 2int',iE,oE);
+				return oE
+			}
+			function p2int( iE ) {
+				let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
+					dT = itemById( iD.dataTypes, pT.dataType );
+				var oE = {
+					// no id
+					title: vocabulary.property.specif(noCode(iE.title || pT.title))	// an input file may have titles which are not from the SpecIF vocabulary.
+				};
+				oE['class'] = iE[names.pClass];
+				if( iE.description ) oE.description = noCode(iE.description);
+				switch( dT.type ) {
+					case 'xs.boolean':
+						oE.value = iE.value=='true';
+						break;
+					case 'xs.integer':
+						oE.value = parseInt(iE.value,10);
+						break;
+					case 'xs.double':
+						oE.value = parseFloat(iE.value);
+						break;
+					default:
+						oE.value = noCode(iE.value)
+				};
+				// sub-elements do not have their own revision and change info
+//				console.debug('propValue 2int',iE,pT,oE);
+				return oE
+			}
+			function a2int( iE ) {
+				// attributes of hierarchy roots are not yet supported, so use longName and description
+				var oE = {
+					id: iE.id,
+					title: noCode(iE.title)
+				};
+				if( iE.description ) oE.description = noCode(iE.description);
+				oE.properties = forAll( iE.properties, p2int );
+
+				if( iE.revision ) oE.revision = iE.revision;
+				oE.changedAt = iE.changedAt;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
+	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
+//				console.debug('element 2int',oE);
+				return oE
+			}
+			function r2int( eR ) {
+				var iR = a2int( eR );
+				iR['class'] = eR[names.rClass];
+//				console.debug('resource 2int',eR,iR);
+				return iR
+			}
+			function s2int( eS ) {
+				var iS = a2int( eS );
+				iS.title = itemById( iD.statementClasses, eS[names.sClass] ).title;
+				iS['class'] = eS[names.sClass];
+				// SpecIF allows subjects and objects with id (v0.10.2) or with id+revision (v0.11.1),
+				// so normalize internally to id+revision:
+				switch( typeof(eS.subject) ) {
+					case "object": iS.subject = eS.subject; break;				// eS is SpecIF 0.11.1
+					case "string": iS.subject = {id: eS.subject, revision: 0}	// eS is SpecIF 0.10.2
+				};
+				switch( typeof(eS.object) ) {
+					case "object": iS.object = eS.object; break;			
+					case "string": iS.object = {id: eS.object, revision: 0} 
+				};
+//				console.debug('statement 2int',eS,iS);
+				return iS
+			}
+			function h2int( eH ) {
+				var iH = a2int( eH );
+				iH['class'] = eH[names.hClass];
+				// list all resource ids in a flat list:
+				iH.flatL = [];
+				iH.nodes = forAll( eH.nodes, n2int );
+//				console.debug('hierarchy 2int',eH,iH);
+				return iH
+
+				function n2int( eN ) {
+				/*	var iN = {};
+					iN.id = eN.id;
+					iN.resource = eN.resource;
+					if( eN.revision ) iN.revision = eN.revision;
+					iN.changedAt = eN.changedAt;
+					if( eN.changedBy ) iN.changedBy = eN.changedBy;
+		//			if( eN.createdAt ) iN.createdAt = eN.createdAt;
+		//			if( eN.createdBy ) iN.createdBy = eN.createdBy;
+					iN.nodes = forAll( eN.nodes, n2int );
+					return iN */
+					iH.flatL.push(eN.resource);
+					forAll( eN.nodes, n2int );
+					return eN
+				}
+			}
+			function f2int( eF ) {
+				var iF = eF;
+				if( eF.blob ) iF.type = eF.blob.type || eF.type || attachment2mediaType( eF.id );
+				if( eF.revision ) iF.revision = eF.revision;
+				iF.changedAt = eF.changedAt;
+				if( eF.changedBy ) iF.changedBy = eF.changedBy;
+		//		if( eF.createdAt ) iF.createdAt = eF.createdAt;
+		//		if( eF.createdBy ) iF.createdBy = eF.createdBy;
+//				console.debug('file 2int',eF,iF);
+				return iF
+			}
+	};
+	self.get = function( opts ) {
+		// transform the current content of prj (in internal data format) to SpecIF
+		if( opts ) {
+			if( typeof(opts.translateTitles)!='boolean' ) 
+				opts.translateTitles = false
+		} else {
+			opts = {
+				translateTitles: false
+			}
+		};
+		
+		// transform internal data to SpecIF:
+		var spD = {
+				id: myProject.id,
+				title: myProject.title
+			};
+		if( myProject.description ) spD.description = myProject.description;
+		spD.specifVersion = CONFIG.specifVersion;
+		spD.generator = CONFIG.productTitle;
+		spD.generatorVersion = CONFIG.productVersion;
+		spD.rights = {
+			title: "Creative Commons 4.0 CC BY-SA",
+			type: "dcterms:rights",
+			url: "https://creativecommons.org/licenses/by-sa/4.0/"
+		};
+		spD.createdAt = new Date().toISOString();
+		spD.createdBy = {
+			familyName: me.lastName, 
+			givenName: me.firstName, 
+			org: {organizationName: me.organization}, 
+			email: {type:"text/html",value:me.email}
+		};
+		spD.dataTypes = forAll( myProject.dataTypes, dT2ext );
+		spD.propertyClasses = forAll( myProject.propertyClasses, pC2ext );
+		spD.resourceClasses = forAll( myProject.resourceClasses, rC2ext );
+		spD.statementClasses = forAll( myProject.statementClasses, sC2ext );
+		spD.hierarchyClasses = forAll( myProject.hierarchyClasses, hC2ext );
+		spD.resources = forAll( myProject.resources, r2ext );
+		spD.statements = forAll( myProject.statements, s2ext );
+		spD.hierarchies = forAll( myProject.hierarchies, h2ext );
+		spD.files = forAll( myProject.files, f2ext );
+		// ToDo: schema and consistency check (if we want to detect any programming errors)
+//		console.debug('specif.get done',spD);
+		return spD
+
+			function dT2ext( iE ) {
+				return iE
+			}
+			function pC2ext( iE ) {
+				var oE = {
+					id: iE.id,
+					title: opts.translateTitles? titleOf(iE) : iE.title		
+				};
+				if( iE.description ) oE.description = iE.description;
+				oE.dataType = iE.dataType;
+				let dT = itemById( myProject.dataTypes, iE.dataType );
+				switch( dT.type ) {
+					case 'xs:enumeration': 
+						// With SpecIF, he 'multiple' property should be defined at dataType level and can be overridden at propertyType level.
+						// 	dT.multiple 	aTs.multiple 	aTs.multiple	effect
+						// ---------------------------------------------------------
+						//	undefined		undefined 		undefined		false
+						//	false			undefined		undefined		false
+						//	true			undefined		undefined		true
+						//	undefined		false			undefined		false
+						//	false			false			undefined		false
+						//	true 			false			false			false
+						//	undefined		true 			true			true
+						//	false			true 			true			true
+						//	true 			true 			undefined		true
+						// Include the property only, if is different from the dataType's:
+						if( iE.multiple && !dT.multiple ) oE.multiple = true
+						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
+				};
+				if( iE.revision ) oE.revision = iE.revision;
+				oE.changedAt = iE.changedAt;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
+	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
+				return oE
+			}
+			// common for all classes:
+			function aC2ext( iE ) {
+				var oE = {
+					id: iE.id,
+					title: opts.translateTitles? titleOf(iE) : iE.title	
+				};
+				if( iE.description ) oE.description = iE.description;
+				if( iE.icon ) oE.icon = iE.icon;
+				if( iE.instantiation ) oE.instantiation = iE.instantiation;
+				if( iE.propertyClasses.length>0 ) oE.propertyClasses = iE.propertyClasses;
+				if( iE.revision ) oE.revision = iE.revision;
+				oE.changedAt = iE.changedAt;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
+	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
+				return oE
+			}
+			function rC2ext( iE ) {
+				var oE = aC2ext( iE );
+				// Include "isHeading" in SpecIF only if true:
+				if( iE.isHeading ) oE.isHeading = true;
+				return oE
+			}
+			function sC2ext( iE ) {
+				var oE = aC2ext( iE );
+				if( iE.subjectClasses && iE.subjectClasses.length>0 ) oE.subjectClasses = iE.subjectClasses;
+				if( iE.objectClasses && iE.objectClasses.length>0 ) oE.objectClasses = iE.objectClasses;
+				return oE
+			}
+			function hC2ext( iE ) {
+				var oE = aC2ext( iE );
+				return oE
+			}
+			function p2ext( iE ) {
+				if( !iE.value ) return null;	// skip empty properties
+				var oE = {
+					// no id
+					// internally only valid SpecIF terms are used (hope so ;-)
+					title: opts.translateTitles? titleOf(iE) : iE.title		
+				};
+				oE['class'] = iE['class'];
+				if( iE.description ) oE.description = iE.description;
+				
+				// according to the schema, all property values are represented by a string:
+				switch( typeof(iE.value) ) {
+					case 'boolean':
+						oE.value = bool.toString(iE.value);
+						break;
+					case 'number':
+						oE.value = num.toString(iE.value);
+						break;
+					default:
+						oE.value = iE.value
+				};
+				// properties do not have their own revision and change info; the parent's apply.
+				return oE
+			}
+			function a2ext( iE ) {
+				var eE = {
+					id: iE.id,
+					// resources and hierarchies usually have individual titles, and so we will not translate:
+					title: resTitleOf( iE )
+				};
+				if( iE.description ) eE.description = iE.description;
+				eE['class'] = iE['class'];
+				let aL = forAll( iE.properties, p2ext );
+				if( aL.length>0 ) eE.properties = aL;
+				if( iE.revision ) eE.revision = iE.revision;
+				eE.changedAt = iE.changedAt;
+				if( iE.changedBy ) eE.changedBy = iE.changedBy;
+	//			if( iE.createdAt ) eE.createdAt = iE.createdAt;
+	//			if( iE.createdBy ) eE.createdBy = iE.createdBy;
+				return eE
+			}
+			function r2ext( iR ) {
+				var eR = a2ext( iR );
+	//			console.debug('resource 2int',iR,eR);
+				return eR
+			}
+			function s2ext( iS ) {
+	//			console.debug('statement 2ext',iS.title);
+				if( CONFIG.hiddenRelations.indexOf( iS.title )>-1 ) return null;  // do not export invisible statements
+				var eS = a2ext( iS );
+				// The statements usually do use a vocabulary item (and not have an individual title), 
+				// so we translate, if so desired, e.g. when exporting to ePub:
+				// ToDo: Take the title from statement properties, if provided (similarly to resources).
+				// Take the statementClass's title, if the statement does not have it:
+				iS.title = iS.title || itemById( myProject.statementClasses, iS['class'] ).title;
+				eS.title = opts.translateTitles? titleOf(iS) : iS.title;
+				eS.subject = iS.subject.id;
+				eS.object = iS.object.id;
+				return eS
+			}
+			function n2ext( iN ) {
+				return iN
+			}
+			function h2ext( iH ) {
+				var eH = a2ext( iH );
+				eH.nodes = forAll( iH.nodes, n2ext );
+	//			console.debug('hierarchy 2ext',iH,eH);
+				return eH
+			}
+			function f2ext( iF ) {
+				var eF = {
+					id: iF.id,  // is the distinguishing/relative part of the URL
+	//				title: ,
+					type: iF.type
+				};
+				if( iF.blob ) eF.blob = iF.blob;
+				if( iF.revision ) oE.revision = iF.revision;
+				eF.changedAt = iF.changedAt;
+				if( iF.changedBy ) eF.changedBy = iF.changedBy;
+	//			if( iF.createdAt ) eF.createdAt = iF.createdAt;
+	//			if( iF.createdBy ) eF.createdBy = iF.createdBy;
+				return eF
+			}
+	};
+	self.check = function( data ) {
+		// Check the SpecIF data for schema compliance and consistency;
+		// no data of myProject is modified:
+		var cDO = $.Deferred();
+		// 1. Validate the data using the SpecIF schema:
+		cDO.notify('Checking schema',10);
+
+		// Get the specified schema file from the server:
+		httpGet({
+			url: "https://specif.de/v"+data.specifVersion+"/schema", 
+			responseType: 'arraybuffer',
+			withCredentials: false,	
+			done: function(xhr) { 
+//				console.debug('schema', xhr);
+						// 1. check data against schema:
+						let rc = checkSchema( JSON.parse( buf2str(xhr.response) ), data );
+						if( rc.status!=0 ) {
+							// older versions of the checking routine don't set the responseType:
+							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
+								rc.responseType = 'text';
+							cDO.reject( rc ); 
+							return 
+						};
+
+						// 2. Check further constraints:
+						cDO.notify('Checking constraints',20);
+						rc = checkConstraints( data );
+						if( rc.status==0 ) {
+							cDO.resolve( data, rc )
+						} else {
+							// older versions of the checking routine don't set the responseType:
+							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
+								rc.responseType = 'text';
+							console.error('SpecIF Consistency Check:', rc);
+							cDO.reject( rc )
+						}
+			},	
+			fail: function(xhr) { 
+				switch( xhr.status ) {
+					case 404:
+						xhr = { status: 903, statusText: 'SpecIF version '+data.specifVersion+' is not supported by the program!' };
+					default:
+						cDO.reject(xhr)
+				}
+			} 
+		//	then: 
+		});
+		return cDO
 	};
 	self.abort = function() {
 		console.info('abort specif');
@@ -1407,8 +1942,9 @@ modules.construct({
 		// If item is a list, all elements must have the same category.
 		let fn = Array.isArray(item)?cacheL:cacheE;
 		switch(ctg) {
-			case 'hierarchy':			
-			case 'dataType': 			return fn( cacheOf(ctg), item );
+			case 'hierarchy':
+			case 'dataType':
+			case 'propertyClass':		return fn( cacheOf(ctg), item );
 			case 'resourceClass': 
 			case 'statementClass': 
 			case 'hierarchyClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
@@ -1441,7 +1977,9 @@ modules.construct({
 		if( !item ) return;
 		let fn = Array.isArray(item)?uncacheL:uncacheE;
 		switch(ctg) {
-			case 'dataType': 			return fn( cacheOf(ctg), item );
+			case 'hierarchy':		
+			case 'dataType': 
+			case 'propertyClass':		return fn( cacheOf(ctg), item );
 			case 'resourceClass': 	
 			case 'statementClass': 
 			case 'hierarchyClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
@@ -1452,7 +1990,6 @@ modules.construct({
 			case 'statement': 			
 			case 'file':				if(self.cacheInstances) return fn( cacheOf(ctg), item );
 										else return;
-			case 'hierarchy':			return fn( self.hierarchies, item );
 			case 'node':				if( Array.isArray(item) ) return null;
 										removeFromArray( self.selectedHierarchy.flatL, item.ref );
 										return delNode( self.hierarchies, item.id );
@@ -1463,6 +2000,7 @@ modules.construct({
 		// Return the cache for a given category:
 		switch(ctg) {
 			case 'dataType':		return self.dataTypes;
+			case 'propertyClass':	return self.propertyClasses;
 			case 'resourceClass':	return self.resourceClasses;
 			case 'statementClass':	return self.statementClasses;
 			case 'hierarchyClass':	return self.hierarchyClasses;
@@ -1518,7 +2056,7 @@ modules.construct({
 		};
 		return null
 	}
-	function cacheNode( e ) {  // ( hierarchy entry )
+/*	function cacheNode( e ) {  // ( hierarchy entry )
 		// add or replace a node in a hierarchy;
 		// e must specify the parent node and optionally a predecessor.
 			function findNode( L, eId ) {
@@ -1532,8 +2070,8 @@ modules.construct({
 				return null
 			}
 		if( !(e && e.parent) ) return null;
-/*		// cycle through all hierarchies and nodes to find the parent:
-		let pa = findNode( self.hierarchies, e.parent ); */
+		// cycle through all hierarchies and nodes to find the parent:
+	//	let pa = findNode( self.hierarchies, e.parent ); 
 		// assuming that nodes are only inserted deleted in the selected hierarchy:
 		let pa = findNode( self.selectedHierarchy.nodes, e.parent );
 //		console.debug('cacheNode',e,pa);
@@ -1562,9 +2100,8 @@ modules.construct({
 		// update the existing otherwise:
 		L[n] = e; 
 		return n 
-	}
-});
-
+	}  */
+});  
 
 //    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
 //    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
@@ -1589,583 +2126,12 @@ RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s\\S]*?<object([^>]+)(\/>|>
 RE.tagSingleObject = new RegExp( '<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)', 'g' );
 RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)<\/a>', 'g' );
 
-// Transform SpecIF data to internal data structures ... and vice-versa:
-function Specif( prj ) {
-	"use strict";
-	var self = this;
-//	self.init = function() {
-//	};
-
-	self.get = function( opts ) {
-		// transform the current content of prj (in internal data format) to SpecIF
-		if( opts ) {
-			if( typeof(opts.translateTitles)!='boolean' ) 
-				opts.translateTitles = false
-		} else {
-			opts = {
-				translateTitles: false
-			}
-		};
-		
-		// transform internal data to SpecIF:
-		var spD = {
-				id: prj.id,
-				title: prj.title
-			};
-		if( prj.description ) spD.description = prj.description;
-		spD.specifVersion = CONFIG.specifVersion;
-		spD.generator = CONFIG.productTitle;
-		spD.generatorVersion = CONFIG.productVersion;
-		spD.rights = {
-			title: "Creative Commons 4.0 CC BY-SA",
-			type: "dcterms:rights",
-			url: "https://creativecommons.org/licenses/by-sa/4.0/"
-		};
-		spD.createdAt = new Date().toISOString();
-		spD.createdBy = {
-			familyName: me.lastName, 
-			givenName: me.firstName, 
-			org: {organizationName: me.organization}, 
-			email: {type:"text/html",value:me.email}
-		};
-		spD.dataTypes = forAll( prj.dataTypes, dT2ext );
-		spD.resourceClasses = forAll( prj.resourceClasses, rC2ext );
-		spD.statementClasses = forAll( prj.statementClasses, sC2ext );
-		spD.hierarchyClasses = forAll( prj.hierarchyClasses, hC2ext );
-		spD.resources = forAll( prj.resources, r2ext );
-		spD.statements = forAll( prj.statements, s2ext );
-		spD.hierarchies = forAll( prj.hierarchies, h2ext );
-		spD.files = forAll( prj.files, f2ext );
-		// ToDo: schema and consistency check (if we want to detect any programming errors)
-//		console.debug('specif.get done',spD);
-		return spD
-
-			function dT2ext( iE ) {
-				return iE
-			}
-			function pC2ext( iE ) {
-				var oE = {
-					id: iE.id,
-					title: opts.translateTitles? titleOf(iE) : iE.title		
-				};
-				if( iE.description ) oE.description = iE.description;
-				oE.dataType = iE.dataType;
-				let dT = itemById( prj.dataTypes, iE.dataType );
-				switch( dT.type ) {
-					case 'xs:enumeration': 
-						// With SpecIF, he 'multiple' property should be defined at dataType level and can be overridden at propertyType level.
-						// 	dT.multiple 	aTs.multiple 	aTs.multiple	effect
-						// ---------------------------------------------------------
-						//	undefined		undefined 		undefined		false
-						//	false			undefined		undefined		false
-						//	true			undefined		undefined		true
-						//	undefined		false			undefined		false
-						//	false			false			undefined		false
-						//	true 			false			false			false
-						//	undefined		true 			true			true
-						//	false			true 			true			true
-						//	true 			true 			undefined		true
-						// Include the property only, if is different from the dataType's:
-						if( iE.multiple && !dT.multiple ) oE.multiple = true
-						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
-				};
-				if( iE.revision ) oE.revision = iE.revision;
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-				return oE
-			}
-			// common for all classes:
-			function aC2ext( iE ) {
-				var oE = {
-					id: iE.id,
-					title: opts.translateTitles? titleOf(iE) : iE.title	
-				};
-				if( iE.description ) oE.description = iE.description;
-				if( iE.icon ) oE.icon = iE.icon;
-				if( iE.instantiation ) oE.instantiation = iE.instantiation;
-				let aTs = forAll( iE.propertyClasses, pC2ext );
-				if( aTs.length>0 ) oE.propertyClasses = aTs;
-				if( iE.revision ) oE.revision = iE.revision;
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-				return oE
-			}
-			function rC2ext( iE ) {
-				var oE = aC2ext( iE );
-				// Include "isHeading" in SpecIF only if true:
-				if( iE.isHeading ) oE.isHeading = true;
-				return oE
-			}
-			function sC2ext( iE ) {
-				var oE = aC2ext( iE );
-				if( iE.subjectClasses && iE.subjectClasses.length>0 ) oE.subjectClasses = iE.subjectClasses;
-				if( iE.objectClasses && iE.objectClasses.length>0 ) oE.objectClasses = iE.objectClasses;
-				return oE
-			}
-			function hC2ext( iE ) {
-				var oE = aC2ext( iE );
-				return oE
-			}
-			function p2ext( iE ) {
-				if( !iE.value ) return null;	// skip empty properties
-				var oE = {
-					// no id
-					// internally only valid SpecIF terms are used (hope so ;-)
-					title: opts.translateTitles? titleOf(iE) : iE.title		
-				};
-				oE['class'] = iE['class'];
-				if( iE.description ) oE.description = iE.description;
-				
-	/*			// List all referenced files.
-				// This is however not sufficient, because SVG-files may reference pixel-based images
-				// stored in separate files.
-					function getType( str ) {
-						var t = /type="([^"]+)"/.exec( str );
-						if( t==null ) return '';
-						return t[1]
-					}
-					function getName( str ) {
-						var n = /name="([^"]+)"/.exec( str );
-						if( n==null ) return '';
-						return n[1]
-					}
-					function getUrl( str ) {
-						// get the URL:
-						var l = /data="([^"]+)"/.exec( str );  // url in l[1]
-						// return null, because an URL is expected in any case:
-						if( l==null ) return null;    
-						return l[1]
-					}
-				if( CONFIG.descriptionAttributes.indexOf(iE.title)>-1 ) {
-					// identify referenced files and list them:
-					let o = RE.tagSingleObject.exec( iE.value ); 
-	//				let o = /<object([^>]+)(\/>|>([^<]*?)<\/object>)/g.exec( iE.value );
-					if( o && o.length>2 ) {
-						cacheE( self.files, {
-							id: getUrl( o[1] ).replace('\\','/'),  // is the distinguishing/relative part of the URL
-							title: (o[3] || getName( o[1] )).replace('\\','/'),
-							type: getType( o[1] )
-						})
-					}
-				};
-	*/			
-				// according to the schema, all property values are represented by a string:
-				switch( typeof(iE.value) ) {
-					case 'boolean':
-						oE.value = bool.toString(iE.value);
-						break;
-					case 'number':
-						oE.value = num.toString(iE.value);
-						break;
-					default:
-						oE.value = iE.value
-				};
-				// properties do not have their own revision and change info; the parent's apply.
-				return oE
-			}
-			function a2ext( iE ) {
-				var eE = {
-					id: iE.id,
-					// resources and hierarchies usually have individual titles, and so we will not translate:
-					title: resTitleOf( iE )
-				};
-				if( iE.description ) eE.description = iE.description;
-				eE['class'] = iE['class'];
-				let aL = forAll( iE.properties, p2ext );
-				if( aL.length>0 ) eE.properties = aL;
-				if( iE.revision ) eE.revision = iE.revision;
-				eE.changedAt = iE.changedAt;
-				if( iE.changedBy ) eE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) eE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) eE.createdBy = iE.createdBy;
-				return eE
-			}
-			function r2ext( iR ) {
-				var eR = a2ext( iR );
-	//			console.debug('resource 2int',iR,eR);
-				return eR
-			}
-			function s2ext( iS ) {
-	//			console.debug('statement 2ext',iS.title);
-				if( CONFIG.hiddenRelations.indexOf( iS.title )>-1 ) return null;  // do not export invisible statements
-				var eS = a2ext( iS );
-				// The statements usually do use a vocabulary item (and not have an individual title), 
-				// so we translate, if so desired, e.g. when exporting to ePub:
-				// ToDo: Take the title from statement properties, if provided (similarly to resources).
-				// Take the statementClass's title, if the statement does not have it:
-				iS.title = iS.title || itemById( prj.statementClasses, iS['class'] ).title;
-				eS.title = opts.translateTitles? titleOf(iS) : iS.title;
-				eS.subject = iS.subject.id;
-				eS.object = iS.object.id;
-				return eS
-			}
-			function n2ext( iN ) {
-				return iN
-			}
-			function h2ext( iH ) {
-				var eH = a2ext( iH );
-				eH.nodes = forAll( iH.nodes, n2ext );
-	//			console.debug('hierarchy 2ext',iH,eH);
-				return eH
-			}
-			function f2ext( iF ) {
-				var eF = {
-					id: iF.id,  // is the distinguishing/relative part of the URL
-	//				title: ,
-					type: iF.type
-				};
-				if( iF.blob ) eF.blob = iF.blob;
-				if( iF.revision ) oE.revision = iF.revision;
-				eF.changedAt = iF.changedAt;
-				if( iF.changedBy ) eF.changedBy = iF.changedBy;
-	//			if( iF.createdAt ) eF.createdAt = iF.createdAt;
-	//			if( iF.createdBy ) eF.createdBy = iF.createdBy;
-				return eF
-			}
-	};
-	
-	var names = {};
-	self.set = function( spD ) {
-		// transform SpecIF to internal data:
-		// ToDo: schema and consistency check
-
-		switch( spD.specifVersion ) {
-			case '0.10.2':
-			case '0.10.3':
-				names.rClasses = 'resourceTypes';
-				names.sClasses = 'statementTypes';
-				names.hClasses = 'hierarchyTypes';
-				names.pClasses = 'propertyTypes';
-				names.subClasses = 'subjectTypes';
-				names.objClasses = 'objectTypes';
-				names.rClass = 'resourceType';				
-				names.sClass = 'statementType';
-				names.hClass = 'hierarchyType';
-				names.pClass = 'propertyType';
-				break;
-			default:
-				names.rClasses = 'resourceClasses';
-				names.sClasses = 'statementClasses';
-				names.hClasses = 'hierarchyClasses';
-				names.pClasses = 'propertyClasses';
-				names.subClasses = 'subjectClasses';
-				names.objClasses = 'objectClasses';
-				names.rClass = 'class';
-				names.sClass = 'class';
-				names.hClass = 'class';
-				names.pClass = 'class'
-		};
-		
-		try {
-			var iD = {
-				dataTypes: 			forAll( spD.dataTypes, dT2int )
-			};
-			iD.resourceClasses = 	forAll( spD[names.rClasses], rC2int );
-			iD.statementClasses =	forAll( spD[names.sClasses], sC2int );
-			iD.hierarchyClasses =	forAll( spD[names.hClasses], hC2int );
-			iD.resources = 			forAll( spD.resources, r2int );
-			iD.statements =			forAll( spD.statements, s2int );
-			iD.hierarchies =		forAll( spD.hierarchies, h2int );
-			iD.files =				forAll( spD.files, f2int )
-		} catch (e) {
-			console.error( "Error when importing the project '"+spD.title+"'" );
-			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
-			return null
-		};
-		
-		// header information provided only in case of project creation, but not in case of project update:
-		if( spD.id ) iD.id = spD.id;
-		if( spD.title ) iD.title = spD.title;
-		if( spD.description ) iD.description = spD.description;
-		if( spD.generator ) iD.generator = spD.generator;
-		if( spD.generatorVersion ) iD.generatorVersion = spD.generatorVersion;
-		
-//		console.debug('specif.set',iD);
-		return iD
-
-			function dT2int( iE ) {
-				iE.category = 'dataType';
-				switch( iE.type ) {
-					case "xhtml": 
-					case "xs:string":		
-						if( typeof(iE.minLength)!='number' ) iE.minLength = 0;
-						if( typeof(iE.maxLength)!='number' ) iE.maxLength = CONFIG.maxStringLength;
-				//		break;
-				//	case "xs:enumeration": 	
-				//		if( !iE.values ) iE.values = [];
-				};
-//				console.debug('dataType 2int',iE);
-				return iE
-			}
-			function pC2int( iE ) {
-				var oE = {
-					id: iE.id,
-					title: vocabulary.property.specif(noCode(iE.title))	// an input file may have titles which are not from the SpecIF vocabulary.
-				};
-				if( iE.description ) oE.description = noCode(iE.description);
-				oE.dataType = iE.dataType;
-				let dT = itemById( iD.dataTypes, iE.dataType );
-				switch( dT.type ) {
-					case 'xs:enumeration': 
-						// include the property only, if is different from the dataType's:
-						if( iE.multiple && !dT.multiple ) oE.multiple = true
-						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
-				};
-				if( iE.revision ) oE.revision = iE.revision;
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-//				console.debug('propClass 2int',iE,oE);
-				return oE
-			}
-			// common for all classes:
-			function aC2int( iE ) {
-				var oE = {
-					id: iE.id,
-					title: vocabulary.resource.specif(noCode(iE.title))
-				};
-				if( iE.description ) oE.description = noCode(iE.description);
-				if( iE.icon ) oE.icon = iE.icon;
-				if( iE.creation ) oE.instantiation = iE.creation;	// deprecated, for compatibility
-				if( iE.instantiation ) oE.instantiation = iE.instantiation;
-				if( oE.instantiation ) 	{
-					let idx = oE.instantiation.indexOf('manual');	// deprecated
-					if( idx>-1 ) oE.instantiation.splice(idx,1,'user')
-				};				
-				oE.propertyClasses = forAll( iE[names.pClasses], pC2int );
-				if( iE.revision ) oE.revision = iE.revision;
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-//				console.debug('anyClass 2int',iE,oE);
-				return oE
-			}
-			function rC2int( iE ) {
-				var oE = aC2int( iE );
-				oE.category = 'resourceClass';
-
-				// If "iE.isHeading" is defined, use it:
-				if( iE.isHeading != undefined ) {
-					oE.isHeading = iE.isHeading;
-					return oE
-				};
-				// else: take care of older data without "isHeading":
-				if( iE.title=='SpecIF:Heading' ) {
-					oE.isHeading = true;
-					return oE
-				};
-				// else: look for a property class being configured in CONFIG.headingAttributes
-				oE.isHeading = false;
-				for( var a=oE.propertyClasses.length-1;a>-1;a--) {
-					if( CONFIG.headingAttributes.indexOf( oE.propertyClasses[a].title )>-1 ) {
-						oE.isHeading = true;
-						break
-					}
-				};
-//				console.debug('resourceClass 2int',iE,oE);
-				return oE
-			}
-			function sC2int( iE ) {
-				var oE = aC2int( iE );
-				oE.category = 'statementClass';
-				if( iE[names.subClasses] ) oE.subjectClasses = iE[names.subClasses];
-				if( iE[names.objClasses] ) oE.objectClasses = iE[names.objClasses];
-//				console.debug('statementClass 2int',iE,oE);
-				return oE
-			}
-			function hC2int( iE ) {
-				var oE = aC2int( iE );
-				oE.category = 'hierarchyClass';
-//				console.debug('hierarchyClass 2int',iE,oE);
-				return oE
-			}
-			function p2int( iE ) {
-				let pT = anyPropTypeById( iD, iE[names.pClass] ),
-					dT = itemById( iD.dataTypes, pT.dataType );
-				var oE = {
-					// no id
-					title: vocabulary.property.specif(noCode(iE.title || pT.title))	// an input file may have titles which are not from the SpecIF vocabulary.
-				};
-				oE['class'] = iE[names.pClass];
-				if( iE.description ) oE.description = noCode(iE.description);
-				switch( dT.type ) {
-					case 'xs.boolean':
-						oE.value = iE.value=='true';
-						break;
-					case 'xs.integer':
-						oE.value = parseInt(iE.value,10);
-						break;
-					case 'xs.double':
-						oE.value = parseFloat(iE.value);
-						break;
-					default:
-						oE.value = noCode(iE.value)
-				};
-				// sub-elements do not have their own revision and change info
-//				console.debug('propValue 2int',iE,pT,oE);
-				return oE
-				
-				// ToDo: This is inefficient, because further up we know which class it is ...
-				function anyPropTypeById( data, id ) {
-					// find the type having the propertyType with the given property id.
-					// Can be a propertyType of any of the three types:
-					return pTypeById( data.resourceClasses, id )
-						|| pTypeById( data.hierarchyClasses, id )
-						|| pTypeById( data.statementClasses, id )
-						
-					function pTypeById(eTs,id) {
-						// given an ID, return the property type:
-						for( var t=eTs.length-1;t>-1;t-- ) {
-							if( !eTs[t].propertyClasses ) continue;
-							for( var a=eTs[t].propertyClasses.length-1;a>-1;a-- ) {
-								if( id==eTs[t].propertyClasses[a].id ) return eTs[t].propertyClasses[a]
-							}
-						};
-						return null
-					}
-				}
-			}
-			function a2int( iE ) {
-				// attributes of hierarchy roots are not yet supported, so use longName and description
-				var oE = {
-					id: iE.id,
-					title: noCode(iE.title)
-				};
-				if( iE.description ) oE.description = noCode(iE.description);
-				oE.properties = forAll( iE.properties, p2int );
-
-				if( iE.revision ) oE.revision = iE.revision;
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-//				console.debug('element 2int',oE);
-				return oE
-			}
-			function r2int( eR ) {
-				var iR = a2int( eR );
-				iR['class'] = eR[names.rClass];
-//				console.debug('resource 2int',eR,iR);
-				return iR
-			}
-			function s2int( eS ) {
-				var iS = a2int( eS );
-				iS.title = itemById( iD.statementClasses, eS[names.sClass] ).title;
-				iS['class'] = eS[names.sClass];
-				// SpecIF allows subjects and objects with id (v0.10.2) or with id+revision (v0.11.1),
-				// so normalize internally to id+revision:
-				switch( typeof(eS.subject) ) {
-					case "object": iS.subject = eS.subject; break;				// eS is SpecIF 0.11.1
-					case "string": iS.subject = {id: eS.subject, revision: 0}	// eS is SpecIF 0.10.2
-				};
-				switch( typeof(eS.object) ) {
-					case "object": iS.object = eS.object; break;			
-					case "string": iS.object = {id: eS.object, revision: 0} 
-				};
-//				console.debug('statement 2int',eS,iS);
-				return iS
-			}
-			function h2int( eH ) {
-				var iH = a2int( eH );
-				iH['class'] = eH[names.hClass];
-				// list all resource ids in a flat list:
-				iH.flatL = [];
-				iH.nodes = forAll( eH.nodes, n2int );
-//				console.debug('hierarchy 2int',eH,iH);
-				return iH
-
-				function n2int( eN ) {
-				/*	var iN = {};
-					iN.id = eN.id;
-					iN.resource = eN.resource;
-					if( eN.revision ) iN.revision = eN.revision;
-					iN.changedAt = eN.changedAt;
-					if( eN.changedBy ) iN.changedBy = eN.changedBy;
-		//			if( eN.createdAt ) iN.createdAt = eN.createdAt;
-		//			if( eN.createdBy ) iN.createdBy = eN.createdBy;
-					iN.nodes = forAll( eN.nodes, n2int );
-					return iN */
-					iH.flatL.push(eN.resource);
-					forAll( eN.nodes, n2int );
-					return eN
-				}
-			}
-			function f2int( eF ) {
-				var iF = eF;
-				if( eF.blob ) iF.type = eF.blob.type || eF.type || attachment2mediaType( eF.id );
-				if( eF.revision ) iF.revision = eF.revision;
-				iF.changedAt = eF.changedAt;
-				if( eF.changedBy ) iF.changedBy = eF.changedBy;
-		//		if( eF.createdAt ) iF.createdAt = eF.createdAt;
-		//		if( eF.createdBy ) iF.createdBy = eF.createdBy;
-//				console.debug('file 2int',eF,iF);
-				return iF
-			}
-	};
-	self.check = function( data ) {
-		// check the SpecIF data:
-		var cDO = $.Deferred();
-		// 1. Validate the data using the SpecIF schema:
-		cDO.notify('Checking schema',10);
-
-		// Get the specified schema file from the server:
-		httpGet({
-			url: "https://specif.de/v"+data.specifVersion+"/schema", 
-			responseType: 'arraybuffer',
-			withCredentials: false,	
-			done: function(xhr) { 
-//				console.debug('schema', xhr);
-						// 1. check data against schema:
-						let rc = checkSchema( JSON.parse( buf2str(xhr.response) ), data );
-						if( rc.status!=0 ) {
-							// older versions of the checking routine don't set the responseType:
-							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-								rc.responseType = 'text';
-							cDO.reject( rc ); 
-							return 
-						};
-
-						// 2. Check further constraints:
-						cDO.notify('Checking constraints',20);
-						rc = checkConstraints( data );
-						if( rc.status==0 ) {
-							cDO.resolve( data, rc )
-						} else {
-							// older versions of the checking routine don't set the responseType:
-							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-								rc.responseType = 'text';
-							console.error('SpecIF Consistency Check:', rc);
-							cDO.reject( rc )
-						}
-			},	
-			fail: function(xhr) { 
-				switch( xhr.status ) {
-					case 404:
-						xhr = { status: 903, statusText: 'SpecIF version '+data.specifVersion+' is not supported by the program!' };
-					default:
-						cDO.reject(xhr)
-				}
-			} 
-		//	then: 
-		});
-		return cDO
-	};
-
-	return self
-};
-specif = new Specif(myProject);
 
 //////////////////////////
 // global helper functions:
-function dataTypeOf( dTs, sT, aTid ) {
+function dataTypeOf( pr, aTid ) {
 	// given a property class ID, return it's dataType:
-	return itemById( dTs, itemById( sT.propertyClasses, aTid ).dataType )
+	return itemById( pr.dataTypes, itemById( pr.propertyClasses, aTid ).dataType )
 	//                    get class
 	//	   get dataType
 }
@@ -2188,12 +2154,12 @@ function enumValStr( dT, prp ) {
 	};
 	return ct
 }
-function multipleChoice( attrT, prj ) {
+function multipleChoice( pC, prj ) {
 	prj = prj || myProject;
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
-//	return (attrT.multiple || (attrT.multiple==undefined && itemById(prj.dataTypes,attrT.dataType).multiple))?true:false
-	return attrT.multiple || (typeof(attrT.multiple)!='boolean' && itemById(prj.dataTypes,attrT.dataType).multiple)
+//	return (pC.multiple || (pC.multiple==undefined && itemById(prj.dataTypes,pC.dataType).multiple))?true:false
+	return pC.multiple || (typeof(pC.multiple)!='boolean' && itemById(prj.dataTypes,pC.dataType).multiple)
 	// Note: specif-check applies the same logic in function 'checkpropValues(..)'
 }
 function titleIdx( aL ) {
@@ -2290,7 +2256,7 @@ function initPropC( pT ) {
 function classifyProps( el ) {
 	"use strict";
 	// add missing (empty) properties and
-	// classify properties into title, descriptions and otherAttributes;
+	// classify properties into title, descriptions and other;
 	// for resources, statements and hierarchies/specifications.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
 	var cP = {
@@ -2300,20 +2266,20 @@ function classifyProps( el ) {
 		descriptions: []
 	};
 	// create a new list by copying the elements (do not copy the list ;-):
-	cP.otherAttributes = normalizeProps( cP['class'].propertyClasses, el.properties );
+	cP.other = normalizeProps( myProject.propertyClasses, el.properties );
 
-	// Now, all properties are listed in otherAttributes;
+	// Now, all properties are listed in other;
 	// in the following, the properties used as title or description will be identified
-	// and removed from otherAttributes.
+	// and removed from other.
 
 	// a) Find and set the configured title:
-	let a = titleIdx( cP.otherAttributes );
+	let a = titleIdx( cP.other );
 	if( a>-1 ) {  // found!
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// Before, remove all marked deletions (as prepared be diffmatchpatch).
-		cP.title = deformat( cP.otherAttributes[a].value );
-		// remove title from otherAttributes:
-		cP.otherAttributes.splice(a,1) 
+		cP.title = deformat( cP.other[a].value );
+		// remove title from other:
+		cP.other.splice(a,1) 
 //	} else {
 		// In certain cases (ReqIF export or comment), there is no title property. 
 		// Then some other value will be taken to set the title when posting the object/resource to the server, 
@@ -2324,16 +2290,16 @@ function classifyProps( el ) {
 	};
 		
 	// b) Check the configured descriptions:
-	// We must iterate backwards, because we alter the list of otherAttributes.
-	for( a=cP.otherAttributes.length-1;a>-1;a--) {
-		if( CONFIG.descriptionAttributes.indexOf( cP.otherAttributes[a].title )>-1 ) {
+	// We must iterate backwards, because we alter the list of other.
+	for( a=cP.other.length-1;a>-1;a-- ) {
+		if( CONFIG.descriptionAttributes.indexOf( cP.other[a].title )>-1 ) {
 			// To keep the original order of the properties, the unshift() method is used.
-//			cP.descriptions.unshift( cP.otherAttributes.splice(a,1)[0] )
-			cP.descriptions.unshift( cP.otherAttributes[a] );
-			cP.otherAttributes.splice(a,1) 
+//			cP.descriptions.unshift( cP.other.splice(a,1)[0] )
+			cP.descriptions.unshift( cP.other[a] );
+			cP.other.splice(a,1) 
 		}
 	};
-//	console.debug( 'classifyProps', cP.title, cP.descriptions, cP.otherAttributes );
+//	console.debug( 'classifyProps', cP.title, cP.descriptions, cP.other );
 	return cP
 
 	function deformat( txt ) {

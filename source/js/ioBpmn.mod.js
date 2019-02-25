@@ -84,10 +84,9 @@ modules.construct({
 //		bDO.notify('Transforming BPMN to SpecIF',10); 
 		data = BPMN2Specif( buf2str(buf), {xmlName:fName, xmlDate:fDate} );
 //		console.debug('input.prjName', self.parent.projectName, data );
-		specif.check( data )
+		myProject.check( data )
 			.progress( bDO.notify )
 			.done( function() {
-
 				// First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.parent.projectL.length-1; p>-1; p-- ) {
@@ -123,7 +122,7 @@ modules.construct({
 											// no break
 										case 'replace':
 											bDO.notify('Creating project',20); 
-											myProject.create( specif.set(data) )
+											myProject.create( data )
 												.progress( bDO.notify )
 												.done( bDO.resolve )
 												.fail( bDO.reject );
@@ -135,7 +134,7 @@ modules.construct({
 												.done( function(refD) {
 		//											console.debug('specif.update',refD,data)
 													// ... then start to save the new or updated elements:
-													myProject.update( specif.set(data), 'extend' )
+													myProject.update( data, 'extend' )
 														.progress( bDO.notify )
 														.done( bDO.resolve )
 														.fail( bDO.reject )
@@ -152,7 +151,7 @@ modules.construct({
 		//			mode = modeCre;
 		//			console.debug('Creating project',data);
 					bDO.notify('Creating project',20); 
-					myProject.create( specif.set(data) )
+					myProject.create( data )
 						.progress( bDO.notify )
 						.done( bDO.resolve )
 						.fail( bDO.reject )

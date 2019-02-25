@@ -399,7 +399,8 @@ function bindResizer() {
 	}
 	function containsById( cL, L ) {
 		if(!L) return null;
-		// return true, if all elements in L are contained in cL (cachedList):
+		// return true, if all elements in L are contained in cL (cachedList),
+		// where L may be an array or a single item:
 		return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1
 		
 		function containsL( cL, L ) {

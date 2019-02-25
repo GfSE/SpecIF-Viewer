@@ -2,7 +2,7 @@
 /*	A very simple module loader and object (singleton) factory.
 	When all registered modules are ready, a callback function is executed to start or continue the application.
 	Dependencies: jQuery 3.1 and later.
-	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright 2010-2019 enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
@@ -24,7 +24,7 @@ function ModuleManager() {
 	
 	var self = this;
 	let callWhenReady = null;
-	const vPath = '/v0.95.1';
+	const vPath = '/v0.95.2';
 	self.init = function( opts ) {
 		self.registered = [];
 		self.ready = [];
@@ -311,11 +311,11 @@ function ModuleManager() {
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@3.0.4/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "graphViz":	 		// $('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/vis-network.min.css" />');
 											getScript( '.'+vPath+'/3rd/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( '.'+vPath+'/src/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( '.'+vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'zip' );
 											loadM( 'toXhtml' );
-											getScript( '.'+vPath+'/src/toEpub.js' ).done( function() {setReady(mod)} ); return true;
-				case "toOxml": 				getScript( '.'+vPath+'/src/toOxml.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( '.'+vPath+'/js/toEpub.js' ).done( function() {setReady(mod)} ); return true;
+				case "toOxml": 				getScript( '.'+vPath+'/js/toOxml.js' ).done( function() {setReady(mod)} ); return true;
 
 				// libraries:
 				case "config": 				$.getScript( '.'+vPath+'/config.js', function() {setReady(mod)} ); return true;   // don't cache
@@ -326,44 +326,44 @@ function ModuleManager() {
 												default:	langFile = '.'+vPath+'/i18n/iLaH-en.i18n.js'
 											};
 											getScript( langFile ).done( function() {setReady(mod)} ); return true;
-				case "helper": 				getScript( '.'+vPath+'/src/helper.js' ).done( function() {setReady(mod)} ); return true;
-				case "helperTree": 			getScript( '.'+vPath+'/src/helperTree.js' ).done( function() {setReady(mod)} ); return true;
+				case "helper": 				getScript( '.'+vPath+'/js/helper.js' ).done( function() {setReady(mod)} ); return true;
+				case "helperTree": 			getScript( '.'+vPath+'/js/helperTree.js' ).done( function() {setReady(mod)} ); return true;
 /*				case "pouchDB":		 		getScript( '.'+vPath+'/3rd/pouchdb-7.0.0.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript( '.'+vPath+'/src/serverPouch-0.93.1.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( '.'+vPath+'/js/serverPouch-0.93.1.js' ).done( function() {setReady(mod)} ); return true;
 */				case "cache": 				loadM( 'fileSaver' );
-											getScript( '.'+vPath+'/src/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case "stdTypes":			getScript( '.'+vPath+'/src/stdTypes.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( '.'+vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "stdTypes":			getScript( '.'+vPath+'/js/stdTypes.js' ).done( function() {setReady(mod)} ); return true;
 				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
-				case "profileAnonymous":	getScript( '.'+vPath+'/src/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "profileAnonymous":	getScript( '.'+vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 /*				case "profileMe":			$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod).load( "./src/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod ).load( "./src/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 				case "projects":			loadM( 'tree' );
 											loadM( 'helperTree' );
 											loadM( 'toEpub' );
 											$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod).load( "./src/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 */
 				// main modules:
 /*				case CONFIG.users:		//	loadM( 'mainCSS' );
 											$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod).load( "./src/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
 */				case 'importAny':			loadM( 'zip' ); 
-											getScript( '.'+vPath+'/src/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( '.'+vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioSpecif':			loadM( 'schemaJson' );
 											loadM( 'checkSpecif' );
-											getScript( '.'+vPath+'/src/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( '.'+vPath+'/js/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioXls': 				loadM( 'stdTypes' );
 											loadM( 'excel' );
-											getScript( '.'+vPath+'/src/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( '.'+vPath+'/src/BPMN2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( '.'+vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case 'bpmn2specif':			getScript( '.'+vPath+'/js/BPMN2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript( '.'+vPath+'/src/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-/*				case 'ioReqif': 			getScript( "./src/ioReqif.js").done( function() {setReady(mod)} ); return true;
-*/				case 'checkSpecif':			getScript( "https://specif.de/v0.11.2/check.js").done( function() {setReady(mod)} ); return true;
+											getScript( '.'+vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
+/*				case 'ioReqif': 			getScript( "./js/ioReqif.js").done( function() {setReady(mod)} ); return true;
+*/				case 'checkSpecif':			getScript( "https://specif.de/v0.10.6/check.js").done( function() {setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
@@ -371,7 +371,7 @@ function ModuleManager() {
 										//	loadM( 'cache' );
 											loadM( 'stdTypes' );
 											$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod).load( "./src/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 		*/
 				case 'specifications': 		// if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 											if( browser.isIE ) {
@@ -383,26 +383,26 @@ function ModuleManager() {
 											loadM( 'helperTree' );
 											loadM( 'stdTypes' );
 											loadM( 'diff' );
-											getScript( '.'+vPath+'/src/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( '.'+vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript( '.'+vPath+'/src/reports.js' ).done( function() {setReady(mod)} ); return true;
+				case CONFIG.reports: 		getScript( '.'+vPath+'/js/reports.js' ).done( function() {setReady(mod)} ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript( '.'+vPath+'/src/graph.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( '.'+vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
 											$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
-											getScript( "./src/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true;
+											getScript( "./js/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true;
 				case CONFIG.objectFilter:  	$('#specsBody').append( '<div id="'+mod+'" class="noOverflow" ></div>' );
-											$('#'+mod).load( "./src/filter.mod.js", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/filter.mod.js", function() {setReady(mod)} ); return true;
 				case CONFIG.files: 			$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
-											getScript( "./src/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
+											getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
 				case 'object': 		 		loadM( 'xhtmlEditor' );
 											$('#specsBody').append( '<div id="'+mod+'" class="content" ></div>' );
-											$('#'+mod).load( "./src/objectEdit-0.93.1.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/objectEdit-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case 'linker':  			$('#specsBody').append( '<div id="'+mod+'" class="content" ></div>' );
-											$('#'+mod).load( "./src/linker-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+											$('#'+mod).load( "./js/linker-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 		*/
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false

@@ -80,7 +80,7 @@ modules.construct({
 //		xDO.notify('Transforming Excel to SpecIF',10); 
 //		console.debug('input.prjName', self.parent.projectName );
 		data = xslx2specif( buf, self.parent.projectName , fDate );
-		specif.check( data )
+		myProject.check( data )
 			.progress( xDO.notify )
 			.done( function() {
 				// Next, check if there a project with the same name:
@@ -123,7 +123,7 @@ modules.construct({
 										case 'replace':
 											xDO.notify('Saving project',20); 
 //											console.debug('after selection',data);
-											myProject.create( specif.set(data) )
+											myProject.create( data )
 												.progress( xDO.notify )
 												.done( xDO.resolve )
 												.fail( xDO.reject );
@@ -135,7 +135,7 @@ modules.construct({
 												.done( function(refD) {
 //													console.debug('specif.update',refD,data)
 													// ... then start to save the new or updated elements:
-													myProject.update( specif.set(data), 'extend' )
+													myProject.update( data, 'extend' )
 														.progress( xDO.notify )
 														.done( xDO.resolve )
 														.fail( xDO.reject )
@@ -153,7 +153,7 @@ modules.construct({
 					xDO.notify('Creating project',20); 
 					data.id = genID('P-');
 //					console.debug('without selection',data);
-					myProject.create( specif.set(data) )
+					myProject.create( data )
 						.progress( xDO.notify )
 						.done( xDO.resolve )
 						.fail( xDO.reject )

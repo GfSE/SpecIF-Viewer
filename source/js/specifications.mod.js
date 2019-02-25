@@ -913,7 +913,7 @@ modules.construct({
 
 					sT = itemById( myProject.resourceClasses, sO['class'] );
 					sO.properties.forEach( function(ay) {
-						switch( dataTypeOf( myProject.dataTypes, sT, ay['class'] ).type ) {
+						switch( dataTypeOf( myProject, ay['class'] ).type ) {
 							case 'xs:string':
 							case 'xhtml':	
 								// add, if the iterated resource's title appears in the selected resource's property ..
@@ -933,7 +933,7 @@ modules.construct({
 					//    result in a 'other mentions this' statement (selected resource is object):
 					sT = itemById( myProject.resourceClasses, rO['class'] );
 					rO.properties.forEach( function(ay) {
-						switch( dataTypeOf( myProject.dataTypes, sT, ay['class'] ).type ) {
+						switch( dataTypeOf( myProject, ay['class'] ).type ) {
 							case 'xs:string':
 							case 'xhtml':	
 								// add, if the selected resource's title appears in the iterated resource's property ..
@@ -1058,7 +1058,7 @@ modules.construct({
 							rev.properties.forEach( function(aV) { 
 								// for a property value of type ENUMERATION, replace value-IDs with titles,
 								// for all others, let the value unchanged:
-								dT = dataTypeOf( myProject.dataTypes, sT, aV['class'] );
+								dT = dataTypeOf( myProject, aV['class'] );
 								aV.value = enumValStr( dT, aV )
 							});
 							// arrange properties in a sequence corresponding to the objectType's propertyClasses:
@@ -1095,7 +1095,7 @@ modules.construct({
 									sT = itemById( myProject.resourceClasses, chgO['class'] );
 									for( a=chgO.properties.length-1; a>-1; a--) {
 										chgA=chgO.properties[a];
-										dT = dataTypeOf( myProject.dataTypes, sT, chgA['class'] ); // ToDo: knowing the objectType of 'obj', this can be made more efficient
+										dT = dataTypeOf( myProject, chgA['class'] ); // ToDo: knowing the objectType of 'obj', this can be made more efficient
 										// compare the properties and mark the differences:
 										switch( dT.type ) {
 											case 'xhtml':
@@ -1507,8 +1507,8 @@ RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLink
 function contentOf( ob, pV, opts ) {
 	"use strict";
 	if( opts ) {
-		if( typeof(opts.dynLinks)!='boolean' ) opts.dynLinks = false;
-		if( opts.clickableElements==undefined ) opts.clickableElements = false
+		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
+		if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false
 	} else {
 		var opts = {
 			dynLinks: false,
@@ -1516,7 +1516,7 @@ function contentOf( ob, pV, opts ) {
 		}
 	};
 //	console.debug('contentOf',ob,pV,pV.value,opts);
-	let dT = dataTypeOf( myProject.dataTypes, ob['class'], pV['class'] ); 
+	let dT = dataTypeOf( myProject, pV['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
 			ct = noCode(pV.value).ctrl2HTML().linkifyURLs();
@@ -1609,7 +1609,7 @@ function Resource( obj ) {
 	// for the list view, where title and text are shown in the main column and the others to the right.
 	var self = this;
 	self.value = null;
-	self.resToShow = {title:null,class:null,descriptions:[],otherAttributes:[]};
+	self.resToShow = {title:null,class:null,descriptions:[],other:[]};
 	self.staGroups = [];
 
 	self.set = function( res ) { 
@@ -1626,7 +1626,7 @@ function Resource( obj ) {
 		} else {
 			if( self.value==null ) return false;	// no change
 			self.value = null;
-			self.resToShow = {title:null,class:null,descriptions:[],otherAttributes:[]};
+			self.resToShow = {title:null,class:null,descriptions:[],other:[]};
 //			console.debug('set new',self.value);
 			return true			// has changed
 		}
@@ -1684,7 +1684,7 @@ function Resource( obj ) {
 		};
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining atts:
-		self.resToShow.otherAttributes.forEach( function( ai ) {
+		self.resToShow.other.forEach( function( ai ) {
 			if( showAtt( ai ) ) {
 				rO += attrV( titleOf(ai), contentOf(self.resToShow,ai), 'attribute-condensed' )
 			}
@@ -1717,7 +1717,7 @@ function Resource( obj ) {
 			}
 		});
 		// 3 The remaining properties:
-		self.resToShow.otherAttributes.forEach( function( ai ) {
+		self.resToShow.other.forEach( function( ai ) {
 //			console.debug('details.other',ai.value);
 			rO += attrV( titleOf(ai), contentOf(self.resToShow,ai) )
 		});

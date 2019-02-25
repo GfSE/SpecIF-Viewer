@@ -308,7 +308,7 @@ modules.construct({
 				// change view to browse the content:
 				modules.show('#specifications')
 			}, 
-			CONFIG.messageDisplayTimeShort 
+			400 
 		)
 	}
 	function handleError(xhr) {

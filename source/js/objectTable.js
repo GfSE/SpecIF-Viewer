@@ -163,8 +163,8 @@ function ObjectTable() {
 						};
 						
 						var col= null;
-						for( var a=0,A=clAtts.otherAttributes.length; a<A; a++ ) {
-							att = clAtts.otherAttributes[a];
+						for( var a=0,A=clAtts.other.length; a<A; a++ ) {
+							att = clAtts.other[a];
 							// take the attribute title to relate the data to the column:
 							col = att.longName.toJsId();  
 							obj[col] = contentOf( clAtts, att );

@@ -9,8 +9,8 @@
 */
 const CONFIG = {};
 	CONFIG.productTitle = 'Interactive-Spec';
-	CONFIG.productVersion = '0.95.1';	// major and minor must correspond to the server version installed.
-	CONFIG.specifVersion = '0.10.5';
+	CONFIG.productVersion = '0.95.2';	// major and minor must correspond to the server version installed.
+	CONFIG.specifVersion = '0.10.6';
 	CONFIG.imgURL = './images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
