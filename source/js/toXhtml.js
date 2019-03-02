@@ -8,7 +8,7 @@ function toXhtml( data, opts ) {
 	// - Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
 
 	// Check for missing options:
-	if( !opts ) opts = {};
+	if( typeof(opts)!='object' ) opts = {};
 	if( !opts.headingProperties ) opts.headingProperties = ['SpecIF:Heading','ReqIF.ChapterName','Heading','Überschrift'];
 	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title','DC.title','ReqIF.Name','Title','Titel'];
 	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','DC.description','SpecIF:Diagram','ReqIF.Text','Description','Beschreibung'];
@@ -23,8 +23,9 @@ function toXhtml( data, opts ) {
 	if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegEx
 	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
 	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
+	if( typeof(opts.RE)!='object' ) opts.RE = {};
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
-		opts.RETitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
+		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 
 	// set certain SpecIF element names according to the SpecIF version:
 	switch( data.specifVersion ) {
@@ -350,10 +351,10 @@ function toXhtml( data, opts ) {
 					};
 					
 					// if the type is svg, png is preferred and available, replace it:
-					let png = itemById( data.files, fileName(u2)+'.png' );
-					if( t2.indexOf('svg')>-1 && opts.preferPng && png ) {
-						u2 = png.id;
-						t2 = png.mimeType
+					let pngF = itemById( data.files, fileName(u2)+'.png' );
+					if( t2.indexOf('svg')>-1 && opts.preferPng && pngF ) {
+						u2 = pngF.id;
+						t2 = pngF.type
 					}; 
 					
 					// ToDo: Check whether the referenced file is available.
@@ -389,24 +390,24 @@ function toXhtml( data, opts ) {
 					e = e.toLowerCase();
 	//				console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
 						
-					let png = itemById( data.files, fileName(u1)+'.png' );
+					let pngF = itemById( data.files, fileName(u1)+'.png' );
 					if( opts.imgExtensions.indexOf( e )>-1 ) {  
 						// it is an image, show it:
 
 						// if the type is svg, png is preferred and available, replace it:
-						if( t1.indexOf('svg')>-1 && opts.preferPng && png ) {
-							u1 = png.id;
-							t1 = png.mimeType
+						if( t1.indexOf('svg')>-1 && opts.preferPng && pngF ) {
+							u1 = pngF.id;
+							t1 = pngF.type
 						};
 						let i1 = hashCode(u1)+'.'+extOf(u1);
 						pushReferencedFile( i1, u1, t1 );
 						d = '<img src="'+addEpubPath(i1)+'" style="max-width:100%" alt="'+d+'" />'
 //						d = '<object data="'+addEpubPath(u1)+'"'+t1+s1+' >'+d+'</object>
 					} else {
-						if( e=='ole' && png ) {  
+						if( e=='ole' && pngF ) {  
 							// It is an ole-file, so add a preview image;
-							u1 = png.id;
-							t1 = png.mimeType;
+							u1 = pngF.id;
+							t1 = pngF.type;
 							let i1 = hashCode(u1)+'.'+extOf(u1);
 							pushReferencedFile( i1, u1, t1 );
 							d = '<img src="'+addEpubPath(i1)+'" style="max-width:100%" alt="'+d+'" />'
@@ -437,10 +438,10 @@ function toXhtml( data, opts ) {
 
 			// in certain situations, remove the dynamic linking pattern from the text:
 			if( !opts.addTitleLinks )
-				return str.replace( opts.RETitleLink, function( $0, $1 ) { return $1 } )
+				return str.replace( opts.RE.TitleLink, function( $0, $1 ) { return $1 } )
 				
 			// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
-			str = str.replace( opts.RETitleLink, 
+			str = str.replace( opts.RE.TitleLink, 
 				function( $0, $1 ) { 
 //					if( $1.length<opts.titleLinkMinLength ) return $1;
 					let m=$1.toLowerCase(), cR, ti;
@@ -488,7 +489,7 @@ function toXhtml( data, opts ) {
 					};
 					return escapeHTML( ct );
 				case 'xhtml':
-					return titleLinks( fileRef( prp.value, opts ), hi, opts )
+					return titleLinks( fileRef( replaceLt(prp.value), opts ), hi, opts )
 				case 'xs:string':
 					return titleLinks( escapeHTML( prp.value ), hi, opts )
 				default:
@@ -548,6 +549,11 @@ function toXhtml( data, opts ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if (L[i][p] === s) return i;
 		return -1
+	}
+	function replaceLt( txt ) {
+		// remove '<' where it is neither an opening or closing tag.
+		// Beware that the MS-Edge ePub-Reader is not up to the standards !
+		return txt.replace( /<([^a-z//]{1})/g, function($0,$1) {return '&lt;'+$1} )
 	}
 	function escapeHTML( str ) {
 		return str.replace(/["'&<>]/g, function($0) {

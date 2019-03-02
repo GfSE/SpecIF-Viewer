@@ -7,13 +7,17 @@ function toOxml( data, opts ) {
 	// License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
 
 	// Check for missing options:
-	if ( !opts ) return null;
+	if( typeof(opts)!='object' ) opts = {};
 //	if( !opts.metaFontSize ) opts.metaFontSize = '70%';	
 //	if( !opts.metaFontColor ) opts.metaFontColor = '#0071B9';	// adesso blue
 //	if( !opts.linkFontColor ) opts.linkFontColor = '#0071B9';
 //	if( !opts.linkFontColor ) opts.linkFontColor = '#005A92';	// darker
 //	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
+	if( typeof(opts.RE)!='object' ) opts.RE = {};
+	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = /&(.{0,8})/g;
+	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = /&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/;
+	
 	const startRID = 7,		// first relationship index for images
 		maxHeading = 4;  	// Headings from 1 to maxHeading are defined
 	
@@ -32,7 +36,7 @@ function toOxml( data, opts ) {
 //			console.debug("File '"+f.id+"' transformed to Base64");
 			return
 		};
-		console.warn("File '"+f.id+"' cannot be used for the output.")
+		console.warn("Format of file '"+f.id+"' is not supported by MS Word.")
 	});
 	if( pend==0 ) 
 		// start right away when there are no images to convert:
@@ -77,30 +81,40 @@ function toOxml( data, opts ) {
 			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
 			if( opts.addTitleLinks )
 				var reTitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, '' );
-			// The Regexp to isolate text blocks for paragraphs:
+			
+			// see: http://webreference.com/xml/reference/xhtml.html
+			// The Regex to isolate text blocks for paragraphs:
 			var reB = '([\\s\\S]*?)'
-				+	'(<p *\/>|<p[^>]*>[\\s\\S]*?<\/p>'
-				+	'|<ul[^>]*>[\\s\\S]*?<\/ul>'
-				+	'|<ol[^>]*>[\\s\\S]*?<\/ol>'
-				+	'|<table[^>]*>[\\s\\S]*?<\/table>'
-				+	')',
+				+	'(<p */>|<p[^>]*>[\\s\\S]*?</p>'
+				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
+				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
+				+	'|<table[^>]*>[\\s\\S]*?</table>)',
 				reBlocks = new RegExp(reB,'g');
-		//	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s\\S]*?<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)[\\s\\S]*?<\/object>', 'g' );
-		//	RE.tagSingleObject = new RegExp( '<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)', 'g' );
-		//	RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)<\/a>', 'g' );
-			// The Regexp to isolate text runs constituting a paragraph:
-			var reR = '([\\s\\S]*?)'
-				+	'(<b>|<\/b>|<i>|<\/i>|<em>|<\/em>|<span[^>]*>|<\/span>'
-					// two nested objects, where the inner can have a tag pair <object ...>..</object> or be comprehensive <object .../>,
-					// the nested object pattern must be checked before the single objects tags:
-				+	'|<object[^>]+>[\\s\\S]*?<object[^>]+(\/>|>[\\s\\S]*?<\/object>)[\\s\\S]*?<\/object>'
-					// a comprehensive <object .../> or a tag pair <object ...>..</object>:
-				+	'|<object[^>]+\/>|<object[^>]+>[\\s\\S]*?<\/object>'
-				+	(opts.addTitleLinks?'|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd:'')
+				
+			var reA = '<a([^>]+)>([\\s\\S]*?)</a>',
+				reLink = new RegExp( reA, '' );
+			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
+			// Limitation: the innerHTML may not have any tags.
+			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
+			var reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+				reSingleObject = new RegExp( reSO, '' );
+			// Two nested objects, where the inner is a a comprehensive <object .../> or a tag pair <object ...>..</object>:
+			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
+		//	var reNO = '<object([^>]+)>[\\s]*'+reSO+'[\\s]*</object>',
+		//		reNestedObjects = new RegExp( reNO, '' );
+		
+			// The Regex to isolate text runs constituting a paragraph:
+			var reR = '([\\s\\S]*?)('
+				+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
+				+	'|'+reA
+				// The nested object pattern must be checked before the single object pattern:
+		//		+	'|'+reNO
+				+	'|'+reSO
+				+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
 				+	')',
 				reRuns = new RegExp(reR,'g');
-			// The Regexp to isolate text fragments within a run:
-			var reT = '(.*?)(<br ?\/>)',
+			// The Regex to isolate text fragments within a run:
+			var reT = '(.*?)(<br ?/>)',
 				reText = new RegExp(reT,'g');
 			
 			// set certain SpecIF element names according to the SpecIF version:
@@ -135,13 +149,12 @@ function toOxml( data, opts ) {
 					sections: [],		// a xhtml file per SpecIF hierarchy
 					relations: []
 				};
-			let imgIdx = 0;
 			
 			// For each SpecIF hierarchy a xhtml-file is created and returned as subsequent sections:
 			data.hierarchies.forEach( function(h) {
 				oxml.sections.push(
 					// The heading of the hierarchy=section:
-					wParagraph( {content:h.title,heading:1} )
+					wParagraph( {text:h.title,heading:1} )
 					// ... and the content:
 					+ renderChildrenOf( h, 1 )
 				)
@@ -150,15 +163,6 @@ function toOxml( data, opts ) {
 //			console.debug('oxml',oxml);
 			return oxml
 			
-	/*		function pushHeading( t, pars ) {
-				oxml.headings.push({
-						id: pars.nodeId,
-						title: t,
-						section: oxml.sections.length,  // the index of the section in preparation (before it is pushed)
-						level: pars.level
-				})
-			}	
-	*/		
 			// ---------------
 			function titleValOf( r, rC, opts ) {
 				// get the title value defined by one of the properties:
@@ -191,7 +195,8 @@ function toOxml( data, opts ) {
 				// SpecIF headings are chapter level 2, all others level 3:
 				let h = rC.isHeading?2:3;
 
-				return wParagraph( {content: (ti?ic+ti:''), heading:h, bookmark:pars.nodeId } )
+				// all titles receive a bookmark, so that any titleLink has a target:
+				return wParagraph( {text: (ti?ic+ti:''), heading:h, bookmark:pars.nodeId } )
 			}	
 			
 			function statementsOf( r, opts ) {
@@ -216,7 +221,7 @@ function toOxml( data, opts ) {
 				if( noSts ) return '';	// no statements ...
 
 				// the heading:
-				let ct = wParagraph( {content: opts.statementsLabel, heading: 4} ),
+				let ct = wParagraph( {text: opts.statementsLabel, heading: 4} ),
 					sTi, row, cell;
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
@@ -229,17 +234,17 @@ function toOxml( data, opts ) {
 						// collect all related resources (here sources):
 						sts[cid].subjects.forEach( function(r2) {
 							cell += wParagraph({
-										content: titleOf( r2, itemById( data[rClasses], r2[rClass]), null, opts ), 
+										text: titleOf( r2, itemById( data[rClasses], r2[rClass]), null, opts ), 
 										hyperlink: {internal:anchorOf( r2 )}, 
 										noSpacing: true,
 										align: 'end'
 							})
 						});
 						row = wTableCell( {content:cell,border:{type:'single'}} );
-						row += wTableCell( {content:wParagraph( {content:sTi,align:'center',noSpacing:true} ),border:{type:'single'}} );
+						row += wTableCell( {content:wParagraph( {text:sTi,align:'center',noSpacing:true} ),border:{type:'single'}} );
 						row += wTableCell({
 								content:wParagraph({ 
-										content: titleOf( r, itemById(data[rClasses],r[rClass]), null, opts ), 
+										text: titleOf( r, itemById(data[rClasses],r[rClass]), null, opts ), 
 										noSpacing: true
 								}),
 								border: {type:'single'}
@@ -250,18 +255,18 @@ function toOxml( data, opts ) {
 					if( sts[cid].objects.length>0 ) {
 						row = wTableCell({
 								content:wParagraph({
-										content:titleOf( r, itemById(data[rClasses],r[rClass]), null, opts ),
+										text:titleOf( r, itemById(data[rClasses],r[rClass]), null, opts ),
 										noSpacing: true,
 										align:'end'
 								}), 
 								border:{type:'single'}
 							});
-						row += wTableCell( {content:wParagraph( {content:sTi,align:'center',noSpacing:true} ),border:{type:'single'}});
+						row += wTableCell( {content:wParagraph( {text:sTi,align:'center',noSpacing:true} ),border:{type:'single'}});
 						cell = '';
 						// collect all related resources (here objects):
 						sts[cid].objects.forEach( function(r2) {
 							cell += wParagraph({
-										content:titleOf( r2, itemById( data[rClasses], r2[rClass]), null, opts ), 
+										text:titleOf( r2, itemById( data[rClasses], r2[rClass]), null, opts ), 
 										hyperlink:{internal:anchorOf( r2 )},
 										noSpacing: true
 							})
@@ -348,29 +353,29 @@ function toOxml( data, opts ) {
 					c3 = '';
 //					console.debug('other propertiesOf',valOf( prp ));
 					valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
-					rows += wTableRow( wTableCell( wParagraph({content:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
+					rows += wTableRow( wTableCell( wParagraph({text:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
 				});
-				// Add a property 'SpecIF:Type':
-//				if( rC.title )
-//					rows += wTableRow( wTableCell( wParagraph('SpecIF:Type')) + wTableCell( wParagraph(rC.title) ));
 				
 				if( !rows ) return c1;  // no other properties
 				return c1 
-						+ wParagraph( {content: opts.propertiesLabel, heading: 4} )
+						+ wParagraph( {text: opts.propertiesLabel, heading: 4} )
 						+ wTable( rows )
 
 				// ---------------
 				function parseText( txt, opts ) {
-					// replace \r, \f, \t:
-					txt = txt.replace( /\r|\f/g, '' ).replace( /\t/g, '   ' );
+					// Parse plain text.
+					// Replace \r, \f, \t:
+					// (Note that in HTML multiple nbsp do not collapse)
+					txt = txt.replace( /\r|\f/g, '' ).replace( /\t/g, nbsp+nbsp+nbsp );
 					txt = escapeXML(txt);
 					// then, split into 2 paragraphs when \n is encountered:
 					let arr = txt.split(/\n/);
 //					console.debug('parseText',txt,arr);
 					// return a list with a paragraph for each of the arr elements:
-					return forAll(arr,function(s) {return {p:{content:s}}} )
+					return forAll(arr,function(s) {return {p:{text:s}}} )
 				}
 				function parseXhtml( txt, opts ) {
+					// Parse formatted text.
 			//		if( !opts ) return txt;
 			//		if( opts.rev==undefined ) opts.rev = 0;
 					if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
@@ -378,19 +383,19 @@ function toOxml( data, opts ) {
 
 					// Transform an XHTML text to an internal data structure which allows easy generation of OpenXML.
 					// While XHTML is block structured, OpenXML expects a series of paragraphs with a series of 'runs' within.
+					// In a nested procedure, the XHTML is separated into 'paragraphs', then 'runs' and finally 'text'.
 					// Formatting information may be applied both at paragraph and run level.
-					// So the original XHTML text is split into pieces ("text runs") with a certain formatting each.
 					
 					// Prepare:
 					// Remove empty <div> tags:
 					txt = txt.replace(/<div[^>]*>\s*<\/div>|<div *\/>/g,'');
 
 					// Identify and separate the blocks:
-					var blocks = splitBlocks(txt);
+					var blocks = splitParagraphs(txt);
 //					console.debug('parseXhtml',txt,blocks);
 					return blocks;
 					
-					function splitBlocks(txt) {
+					function splitParagraphs(txt) {
 						// Identify paragraphs and store them in the block list:
 						// Note that <ul>, <ol> and <table> are block-level elements like <p> and
 						// that none of them may be inside <p>..</p>
@@ -405,28 +410,28 @@ function toOxml( data, opts ) {
 							// a) <div> enclosed text in the preceding part,
 							//    there could be several ones:
 							$1 = $1.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, function($0,$1) {
-								bL.push( {p:{content:$1}} );
+								bL.push( {p:{text:$1}} );
 								return ''
 							});
 							// a) any text preceding the block:
 							//    In fact, if the XHTML is properly built, there shouldn't be any content outside the blocks,
 							//    but we do not want to ignore any content in case there is ...
 							if( !isEmpty($1) ) 
-								bL.push( {p:{content:$1}} );
+								bL.push( {p:{text:$1}} );
 							// b) an empty paragraph:
 							if( /<p *\/>/.test($2) ) {
-								bL.push( {p:{content:''}} );
+								bL.push( {p:{text:''}} );
 								return ''
 							};
 							// c) a paragraph:
 							$2 = $2.replace(/<p[^>]*>([\s\S]*?)<\/p>/, function($0,$1) {
-								bL.push( {p:{content:$1}} );
+								bL.push( {p:{text:$1}} );
 								return ''
 							});
 							// d) an unordered list:
 							$2 = $2.replace(/<ul>([\s\S]*?)<\/ul>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{content:$1,style:'bulleted'}} );
+									bL.push( {p:{text:$1,style:'bulleted'}} );
 									return ''
 								});
 								return ''
@@ -434,7 +439,7 @@ function toOxml( data, opts ) {
 							// e) an ordered list:
 							$2 = $2.replace(/<ol>([\s\S]*?)<\/ol>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{content:$1,style:'numbered'}} );
+									bL.push( {p:{text:$1,style:'numbered'}} );
 									return ''
 								});
 								return ''
@@ -473,8 +478,8 @@ function toOxml( data, opts ) {
 											// where the content is in $1, if provided:
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
-											cs.push( {p:{content:$1||nbsp, font:{weight:'bold'}}, border:{style:'single'}} )
-											// ToDo: Somehow the text is not printed, boldly ...
+											cs.push( {p:{text:$1||nbsp, font:{weight:'bold'}}, border:{style:'single'}} )
+											// ToDo: Somehow the text is not printed boldly ...
 											return ''
 											});
 									$1 = $1.replace(/<td[^\/>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g, function($0,$1) {
@@ -482,7 +487,7 @@ function toOxml( data, opts ) {
 											// where the content is in $1, if provided:
 //											console.debug('td',$0,'|',$1);
 											// the 'td' cell with it's content
-											cs.push( {p:{content:$1||nbsp}, border:{style:'single'}} )
+											cs.push( {p:{text:$1||nbsp}, border:{style:'single'}} )
 											return ''
 											});
 									// the row with it's content:
@@ -497,11 +502,11 @@ function toOxml( data, opts ) {
 						// but we do not want to ignore any content in case there is ...
 						// A <div> enclosed text:
 						txt = txt.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, function($0,$1) {
-							bL.push( {p:{content:$1}} );
+							bL.push( {p:{text:$1}} );
 							return ''
 						});
 						if( !isEmpty(txt) ) 
-							bL.push( {p:{content:txt}} );
+							bL.push( {p:{text:txt}} );
 
 						// Finally identify and separate the runs per block:
 						bL.forEach( splitRuns );
@@ -514,29 +519,22 @@ function toOxml( data, opts ) {
 							// every table cell may contain XHTML-formatted text:
 							bl.table.rows.forEach( function(tr) { 
 								tr.cells.forEach( function(c) {
-									split( c.p )
+									splitR( c.p )
 								})
 							});
 							return
 						};
-						split( bl.p );
+						splitR( bl.p );
 						return
 						
-						function split(p) {
-							let txt = p.content,
+						function splitR(p) {
+							let txt = p.text,
 								fmt = p.font?{font:{weight:p.font.weight,style:p.font.style,color:p.font.color}}:{font:{}};
 							p.runs = [];
-//							console.debug('split',txt,fmt.font);
+//							console.debug('splitR',txt,fmt.font);
 
 							// ToDo: folgende Tags ersetzen, nicht löschen!
-							txt = txt.replace(/<a[^>]*>/g,'');
-							txt = txt.replace(/<\/a>/g,'');
-							txt = txt.replace(/<small[^>]*>/g,'');
-							txt = txt.replace(/<\/small>/g,'');
-
-							// replace '<' and '>', when used in front of numeric values:
-							txt = txt.replace(/<( ?)([.,]?[0-9]+)/g, function ($0,$1,$2){ return '&lt;' + $1 + $2 });
-							txt = txt.replace(/>( ?)([.,]?[0-9]+)/g, function ($0,$1,$2){ return '&gt;' + $1 + $2 });
+							txt = txt.replace(/<small[^>]*>/g,'').replace(/<\/small>/g,'');
 
 							// Find the next tag:
 							// - for all those which can be nested (such as <b> or <em>), the opening and closing tags are specified individually
@@ -544,10 +542,12 @@ function toOxml( data, opts ) {
 							// - for all others which cannot be nested and which cannot contain others (such as <object>), the pair is specified.
 							//   In that case, the total construct is stored as a run.
 							txt = txt.replace( reRuns, function($0,$1,$2) {
+								// $1 is the string before ... and
+								// $2 is the first identified tag.
 //								console.debug('lets run 0:"',$0,'" 1:"',$1,'" 2:"',$2,'"');
 								// store the preceding text as run with a clone of the current formatting:
 								if( !isEmpty($1) )
-									p.runs.push({content:$1,font:clone(fmt.font)});
+									p.runs.push({text:$1,font:clone(fmt.font)});
 
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
@@ -582,23 +582,48 @@ function toOxml( data, opts ) {
 									p.runs.push(titleLink($2,opts));
 									return ''
 								};
-								if( /<object[^>]+\/>|<object[^>]+>[\s\S]*?<\/object>/.test($2) ) {
-									p.runs.push(parseObject( $2 ));
+								// A web link:
+								sp = reLink.exec($2);   
+//								console.debug('#L',sp);
+								if( sp && sp.length>2 ) {
+									p.runs.push(parseA( {properties:sp[1],innerHTML:sp[2]} ));
 									return ''
 								};
+						/*		// Two nested objects, where the inner can have a comprehensive tag or a tag pair;
+								// this could be a link to a contained PDF file in the outer and a link to an icon in the inner object ..
+								// .. or an ole-file in the outer and a preview image in the inner file.
+								// In both cases, nothing useful can be done in a WORD file.
+								// Those files referenced in the outer object must be made available online and can then be referenced.
+								sp = reNestedObjects.exec($2);   
+//								console.debug('#2O',sp);
+								if( sp && sp.length>2 ) {
+									let u = getPrp('data',sp[1]), // content of 'data' of the outer object"
+										r = parseObject( {objectProperties:sp[2],innerHTML:sp[4]} );
+									r.hyperlink = {external: u};  // this is a file in the local specif-container... and does not work, here
+									p.runs.push(r);
+									return ''
+								};   */
+								// Single object with a comprehensive tag or a tag pair:
+								sp = reSingleObject.exec($2);   
+//								console.debug('#1O',sp);
+								if( sp && sp.length>2 ) {
+									p.runs.push(parseObject( {properties:sp[1],innerHTML:sp[3]} ));
+									return ''
+								};
+								console.warn("'",$2,"' has not been transformed because none of the pattern has matched." );
 								return ''  // be sure to consume the matched text
 							});
 							// finally store the remainder:
 							if( !isEmpty(txt) ) {
-//								console.debug('split #',txt,fmt);
-								p.runs.push({content:txt,font:clone(fmt.font)})
+//								console.debug('splitR #',txt,fmt);
+								p.runs.push({text:txt,font:clone(fmt.font)})
 							};
-							delete p.content;
+							delete p.text;
 							delete p.font;
 							
 							// split text fragments, if appropriate:
 							p.runs.forEach( function(r) {
-								if( r.content ) r.content = splitText( r.content )
+								if( r.text ) r.text = splitText( r.text )
 								// skip pictures
 							})
 						}
@@ -625,142 +650,102 @@ function toOxml( data, opts ) {
 //								console.debug('splitText',txt,typeof(txt));
 								arr.push({str:escapeXML(txt)})
 							};
-							return arr;
+							return arr
 					}
 
-					function parseObject(txt) {
-						// Parse <object> tag, usually with an image or file reference
+					function parseA( lnk ) {  // details of a link
+						// Parse a link within an <a..> tag and return a 'run' element:
+//						console.debug('parseA', lnk);
+						
+							function getUrl( str ) {
+								// get the URL:
+								var l = /href="([^"]+)"/.exec( str );  // url in l[1]
+								if( l == null ) { return null };    // should never occur
+								return l[1].replace('\\','/')
+							}
+
+						let run,
+						// single object with a comprehensive tag or a tag pair:
+							sp = reSingleObject.exec( lnk.innerHTML );   
+						if( sp && sp.length>2 )
+							run = parseObject( {properties:sp[1],innerHTML:sp[3]} )
+							// Limitation: Any text will be ignored, if an object is found ...
+						else	
+							run = {text: lnk.innerHTML};
+							
+						run.hyperlink = {external: getUrl( lnk.properties )};
+
+//						console.debug('parseA',run);
+						return run
+					}
+					function parseObject( obj ) {  // details of an XHTML  object
+						// Parse content of an <object> tag, usually with an image or a file reference
 						// and return a 'run' element:
+						// Todo: Load a linked resource in an <object..> tag and include it in the document?
+						// Or only if it is an image?
+						let run = {}; 
+//						console.debug('parseObject', obj);
 
 							function getType( str ) {
-								var t = /type="([^"]+)"/.exec( str );
+								let t = /type="([^"]+)"/.exec( str );
 								if( t==null ) return '';
 								return (' '+t[1])
 							}
 							function getUrl( str ) {
 								// get the URL:
-								var l = /(href|data)="([^"]+)"/.exec( str );  // url in l[2]
-								// return null, because an URL is expected in any case:
-								if( l == null ) { return null };    
-								// ToDo: Replace any backslashes by slashes ??
-								return l[2]
+								let l = /data="([^"]+)"/.exec( str );  // url in l[1]
+								if( l == null ) { return null };    // should never occur
+								return l[1].replace('\\','/')
 							}
 							function withoutPath( str ) {
-								str = str.replace('\\','/');
 								return str.substring(str.lastIndexOf('/')+1)
 							}
 							function nameOf( str ) {
 								return str.substring( 0, str.lastIndexOf('.') )
 							}
 
-						// Prepare a file reference for viewing and editing:
-			//			console.debug('fromServer 0: ', txt);
+						let u1 = getUrl( obj.properties ), 
+							t1 = getType( obj.properties ),
+							d = obj.innerHTML || getPrp( 'name', obj.properties ) || withoutPath( u1 ),	// the description
+							e = extOf(u1).toLowerCase();		// the file extension
+	//					let hasImg = true;
+	//					console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
 							
-						// 1. transform two nested objects to link+object resp. link+image:
-						//    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
-						//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
-						//		Sample data from french branch of a japanese car OEM:
-						//			<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.ole\" type=\"text/rtf\">
-						//				<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.png\" type=\"image/png\">OLE Object</object>
-						//			</object>
-						//		Sample data from ReX:
-						//			<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.ole\" type=\"application/oleobject\">\n   
-						//				<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.png\" type=\"image/png\">OLE Object</object>\n 
-						//			</object>
-						//		Sample from ProSTEP ReqIF Implementation Guide:
-						//			<xhtml:object data="files/powerpoint.rtf" height="96" type="application/rtf" width="96">
-						//				<xhtml:object data="files/powerpoint.png" height="96" type="image/png" 	width="96">
-						//					This text is shown if alternative image can't be shown
-						//				</xhtml:object>
-						//			</xhtml:object>
-						let atts = /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[\s\S]*?<\/object>/.exec(txt),
-							run = {};
-						if( atts && atts.length>4 ) {
-//							function( $0, $1, $2, $3, $4 ){ 
-							var u1 = getUrl( atts[1] ).replace('\\','/'),  	// the primary information
-		//						t1 = getType( atts[1] ), 
-								u2 = getUrl( atts[2] ).replace('\\','/'), 	// the preview image
-								t2 = getType( atts[2] ),
-								// If there is no description, use the name of the link target:
-								d = withoutPath( atts[4] || u1 ),			// the description
-								e = extOf(u2);								// the file extension
+						let pngF = itemById( data.files, nameOf(u1)+'.png' );
+						
+						if( opts.imgExtensions.indexOf( e )>-1 ) {  
+							// it is an image, show it:
 							
 							// if the type is svg, png is preferred and available, replace it:
-							let png = itemById( data.files, nameOf(u2)+'.png' );
-							if( t2.indexOf('svg')>-1 && opts.preferPng && png ) {
-								u2 = png.id.replace('\\','/');
-								t2 = "application/png"
-						//		t2 = png.type
-							} 
+							if( t1.indexOf('svg')>-1 && opts.preferPng && pngF ) {
+								u1 = pngF.id.replace('\\','/');
+								t1 = pngF.type
+							};
+	//						console.debug('u1',u1.replace('\\','/'));
 							
-							// find the image to get width and height
-		//					img = itemById(data.files,u2);
-		//					...
-		// to get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
-		
 							// At the lowest level, the image is included only if present:
-							run = {picture:{id:u2,title:d,width:'200pt',height:'100pt'}};
-//							console.debug('parseObject',run);
-							return run
-						};
+							run = {picture:{id:u1,title:d,type:t1,width:'200pt',height:'100pt'}}
 							
-						// 2. transform a single object to link+object resp. link+image:
-						//      For example, the ARCWAY Cockpit export uses this pattern:
-						//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
-						atts = /<object([^>]+)(\/>|>([\s\S]*?)<\/object>)/.exec(txt);   //  comprehensive tag or tag pair
-						if( atts && atts.length>3 ) {
-//							function( $0, $1, $2, $3 ){ 
-							let u1 = getUrl( atts[1] ).replace('\\','/'), 
-								t1 = getType( atts[1] ),
-								d = withoutPath( atts[3] || u1 ),	// the description
-								e = extOf(u1).toLowerCase();		// the file extension
-		//					if( !e ) return $0
-
-		//					// $3 is the description between the tags <object></object>:
-		//					let d = />([^<]*)<\/object>$/i.exec($2);    	// the description is in d[1]
-		//					if( d && d[1].length ) d = withoutPath( d[1] )	// if there is a description, use it
-		//					else d = withoutPath( u1 );						// use the target name, otherwise
-		//					let d = withoutPath( $3 || u1 );
-								
-		//					let hasImg = true;
-		//					console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
-								
-							let png = itemById( data.files, nameOf(u1)+'.png' );
+						} else {
 							
-							if( opts.imgExtensions.indexOf( e )>-1 ) {  
-								// it is an image, show it:
-								
-								// if the type is svg, png is preferred and available, replace it:
-								if( t1.indexOf('svg')>-1 && opts.preferPng && png ) {
-									u1 = png.id.replace('\\','/');
-									t1 = png.type
-								};
-		//						console.debug('u1',u1.replace('\\','/'));
+							if( e=='ole' && pngF ) {  
+								// It is an ole-file, so add a preview image:
+								let u2 = pngF.id.replace('\\','/'),
+									t2 = pngF.type || 'image/png';
 								
 								// At the lowest level, the image is included only if present:
-								run = {picture:{id:u1,title:d,width:'200pt',height:'100pt'}}
-								
-							} else {
-								
-								if( e=='ole' && png ) {  
-									// It is an ole-file, so add a preview image;
-									u1 = png.id.replace('\\','/');
-									t1 = png.mimeType;
-		//							console.debug('u2', u1);
-									
-									// At the lowest level, the image is included only if present:
-									run = {picture:{id:u1,title:d,width:'200pt',height:'100pt'}}
+								run = {picture:{id:u2,title:d,type:t2,width:'200pt',height:'100pt'}}
+							//	run = {picture:{id:u2,title:d,type:t2,width:'200pt',height:'100pt'}, hyperlink:{external: u1}}
+								// ToDo: the hyperlink can't be working, as the file is contained in the specifz ...
 
-								} else {
-									// in absence of an image, just show the description:
-		//							hasImg = false; 
-									run = {content:d}
-								}
-							};
-//							console.debug('parseObject',r);
-							return run
+							} else {
+								// in absence of an image, just show the description:
+	//							hasImg = false; 
+								run = {text:d}
+							}
 						};
-						return null 	// should never arrive here
+//						console.debug('parseObject',r);
+						return run
 					}
 				}
 				
@@ -778,7 +763,7 @@ function toOxml( data, opts ) {
 					if( lk && lk.length>1 ) {
 							// in certain situations, just remove the dynamic linking pattern from the text:
 							if( !opts.addTitleLinks || lk[1].length<opts.titleLinkMinLength ) 
-								return {content:lk[1]};
+								return {text:lk[1]};
 							
 							let m=lk[1].toLowerCase(), cO=null, ti=null;
 							// is ti a title of any resource?
@@ -798,10 +783,10 @@ function toOxml( data, opts ) {
 
 								// if the titleLink content equals a resource's title, return a text run with hyperlink:
 								if(m==ti.toLowerCase())
-									return {content:lk[1],hyperlink:{internal:anchorOf(cO)}};
+									return {text:lk[1],hyperlink:{internal:anchorOf(cO)}};
 							};
 							// The dynamic link has NOT been matched/replaced, so mark it:
-							return {content:lk[1],color:"82020"}
+							return {text:lk[1],color:"82020"}
 						};
 					return null  // should never arrive here
 				}
@@ -823,15 +808,14 @@ function toOxml( data, opts ) {
 								if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.title+'&#x00bb;'):val.title)
 								else ct += (v==0?'':', ')+vL[v]
 							};
-							return [{p:{content:escapeXML(ct)}}];
+							return [{p:{text:escapeXML(ct)}}];
 						case 'xhtml':
 //							console.debug('valOf - xhtml',prp.value);
 							return parseXhtml( prp.value, opts );
 						case 'xs:string':
 							return parseText( prp.value, opts );
-//							return titleLinks( prp.value, opts );
 						default:
-							return [{p:{content:escapeXML(prp.value)}}]
+							return [{p:{text:escapeXML(prp.value)}}]
 					}
 				}
 				function isEmpty( str ) {
@@ -913,37 +897,30 @@ function toOxml( data, opts ) {
 				// - align == 'both'|'center'|'end' (default:'start')
 				// - hyperlink to an internal 'bookmark'
 				// - bookmark
-				if( ct.content ) {
-					// ct is an object with property 'content' and individual formatting option,
-					// insert it in a list which will thus end up with a single item:
-					ct.runs = [clone(ct)];
-//					console.debug('*',ct.runs);
-					delete ct.content
+				let p = '';
+				if( ct.text || ct.picture ) {
+					// ct is an object with property 'text' and individual formatting options ... or a picture.
+					p = wRun( ct )
 				};
 				if( Array.isArray(ct.runs) ) {
-					// multiple text items with individual formatting options:
-					let p = '';
+					// multiple text items with individual formatting options and pictures:
 					ct.runs.forEach( function(r) {
 						p += wRun(r)
-					});
-					if( ct.style=='bulleted' ) {
-//						console.debug('bulleted',p);
-						return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
-								+ p
-								+ '</w:p>'
-					};
-					if( ct.style=='numbered' ) {
-//						console.debug('numbered',p);
-						// ToDo: use style for ordered lists:
-						return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
-								+ p
-								+ '</w:p>'
-					};
-					// default:
-					return '<w:p>'+pPr(ct)+p+'</w:p>'
+					})
 				};
-				// ct.content is an empty string:
-				return ''; 
+//				console.debug('*',p);
+				if( ct.style=='bulleted' ) {
+					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
+							+ p
+							+ '</w:p>'
+				};
+				if( ct.style=='numbered' ) {
+					// ToDo: use style for ordered lists:
+					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
+							+ p
+							+ '</w:p>'
+				};
+				return '<w:p>'+pPr(ct)+p+'</w:p>'
 				
 				function pPr(ct) {
 //					console.debug('pPr',ct);
@@ -955,28 +932,27 @@ function toOxml( data, opts ) {
 						pr += '<w:pStyle w:val="OhneAbstnde"/>';
 					if( ct.align )
 						pr += '<w:jc w:val="'+ct.align+'"/>';
-					// default:
 					return pr?'<w:pPr>'+pr+'</w:pPr>':''
 				}
 			}
 			function wRun( ct ) {
-//				console.debug('wRun',ct);
 				// Generate a WordML text run as part of a paragraph,
 				// a run can be either a picture or a fragment of text, which can take several forms,
 				// empty runs are suppressed.
-				// a) a picture:
-				if( ct.picture )
-					return '<w:r>'+wPict(ct)+'</w:r>';
-				// b) a fragment of text:
-				let r = wText(ct);	// ct can be string or object 'ct.content' with string or array
+				// ct can be a picture, a string or an object 'ct.text' with string or array:
+				let r = wText(ct) || wPict(ct);	
 				if( !r )
 					return '';
 //				console.debug('wRun',ct);
 				// assuming that hyperlink or bookmark or none of them are present, but never both:
 				if( ct.hyperlink ) {
 //					console.debug('hyperlink',ct.hyperlink);
-					let tg = ct.hyperlink.external? 'r:id="'+ct.hyperlink.external+'"' : 'w:anchor="_'+ct.hyperlink.internal+'"'
+					if( ct.hyperlink.external )
+						var tg = 'r:id="rId'+pushReferencedUrl( ct.hyperlink.external )+'"'
+					else
+						var tg = 'w:anchor="_'+ct.hyperlink.internal+'"';
 					return '<w:hyperlink '+tg+' w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
 				r = '<w:r>'+rPr(ct)+r+'</w:r>';
 				if( ct.bookmark ) {
@@ -996,56 +972,74 @@ function toOxml( data, opts ) {
 					// default:
 					return ''
 				}
+				function pushReferencedUrl( u ) {
+					// Add the URL to the relationships and return it's index:
+					// avoid duplicate entries:
+					let n = indexBy( oxml.relations, 'id', u );
+					if( n<0 ) {
+						n = oxml.relations.length;
+						oxml.relations.push({
+							category: 'url',
+							ref: startRID + n,
+							id: u  // is the distinguishing/relative part of the URL
+						})
+					};
+					// in any case return the reference no (index):
+					return startRID + n
+				}
 			}
 			function wText( ct ) {
-				// return with empty string when there is no content: 
-				if( !ct || !ct.content || ct.content.length<1  ) return '';  // applies to string, object and array
-				// else, there is content, 
+				// return when there is no content: 
+				if( !ct || !ct.text || ct.text.length<1  ) return undefined;  // applies to string, object and array
+				// ct can be a string, an object or an array;
 				// in case of an array:
-				if( Array.isArray(ct.content) ) {
+				if( Array.isArray(ct.text) ) {
 					let str = '';
 					// the array may hold fragments of text or line-breaks:
-					ct.content.forEach( function(c) {
+					ct.text.forEach( function(c) {
 						if( c.str ) str += '<w:t xml:space="preserve">'+c.str+'</w:t>';
 						if( c['break']=='line' ) str += '<w:cr />'
 					});
 					return str
 				};
-				// else, in case of string or 'ct.content' with string:
-				return '<w:t xml:space="preserve">'+(ct.content || ct)+'</w:t>'
+				// else, in case of string or 'ct.text' with string:
+				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>'
 			}
-			function wPict( pic ) {
+			function wPict( ct ) {
+				if( !ct || !ct.picture ) return undefined;
 				// inserts an image at 'run' level:
 				// width, height: a string with number and unit, e.g. '100pt' is expected
-//				console.debug('wPict',pic);
-				imgIdx = pushReferencedFile( pic.picture.id, pic.picture.title );
+//				console.debug('wPict',ct);
+				let imgIdx = pushReferencedFile( ct.picture );
 				if( imgIdx<0 ) {
-					let et = "Image '"+pic.picture.id+"' is missing";
+					let et = "Image '"+ct.picture.id+"' is missing";
 					console.error( et );
 					return wText( "### "+et+" ###" )
 				};
 				// else, all is fine:
 				return	'<w:pict>'
-					+		'<v:shape id="_x0000_i1026" type="#_x0000_t75" style="width:'+pic.picture.width+';height:'+pic.picture.height+'">'
-					+			'<v:imagedata r:id="rId'+imgIdx+'" o:title="'+pic.picture.title+'"/>'
+					+		'<v:shape style="width:'+ct.picture.width+';height:'+ct.picture.height+'">'
+					+			'<v:imagedata r:id="rId'+imgIdx+'" o:title="'+ct.picture.title+'"/>'
 					+		'</v:shape>'
 					+	'</w:pict>'
 
-				function pushReferencedFile( u, t ) {
+				function pushReferencedFile( p ) {
+					// Add the image to the relationships and return it's index:
 					// check, if available:
-					let n = indexBy( images, 'id', u );
+					let n = indexBy( images, 'id', p.id );
 					if( n<0 )
 						return -1;
 					// avoid duplicate entries:
-					n = indexBy( oxml.relations, 'id', u );
+					n = indexBy( oxml.relations, 'id', p.id );
 					if( n<0 ) {
 						n = oxml.relations.length;
 						oxml.relations.push({
 							category: 'image',
 							ref: startRID + n,
-							id: u,  // is the distinguishing/relative part of the URL
-							title: t,
-							type: extOf(u)
+							id: p.id,  // is the distinguishing/relative part of the URL
+				//			type: p.type		// is mime-type
+							type: extOf(p.id)	// is just extension
+							// ToDo: derive type from mime-type, if available, and use ext only if necessary
 						})
 					};
 					// in any case return the reference no (index):
@@ -1078,10 +1072,10 @@ function toOxml( data, opts ) {
 					+	'<w:tcPr>'
 					+		'<w:tcW w:w="0" w:type="auto"/>'
 					+		tcBorders(c)
-//					+		'<w:tcMar>'
-//					+			'<w:left w:w="20" w:type="dxa"/>'
-//					+			'<w:right w:w="20" w:type="dxa"/>'
-//					+		'</w:tcMar>'
+		//			+		'<w:tcMar>'
+		//			+			'<w:left w:w="20" w:type="dxa"/>'
+		//			+			'<w:right w:w="20" w:type="dxa"/>'
+		//			+		'</w:tcMar>'
 					+		'<w:vAlign w:val="center"/>'
 					+	'</w:tcPr>'
 					+ (c.content || c)
@@ -1152,15 +1146,15 @@ function toOxml( data, opts ) {
 
 		// a line for each image to link the text to the image
 //		console.debug('file.relations',relL);			
-		for(var a=0,A=relL.length;a<A;a++) {
-			switch( relL[a].category ) {
+		relL.forEach( function(r,i) {
+			switch( r.category ) {
 				case 'image': 
-					ct += '<Relationship Id="rId'+(relL[a].ref)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image'+(a+1)+'.'+relL[a].type+'"/>';
+					ct += '<Relationship Id="rId'+(r.ref)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image'+(i+1)+'.'+r.type+'"/>';
 					break;
-				case 'weblink':
-					ct += '<Relationship Id="rId'+(relL[a].ref)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="'+relL[a].id+'" TargetMode="External" />';
+				case 'url':
+					ct += '<Relationship Id="rId'+(r.ref)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="'+r.id+'" TargetMode="External" />';
 			}
-		};
+		});
 		
 		ct +=		'</Relationships>'
 		+		'</pkg:xmlData>'
@@ -2382,22 +2376,28 @@ function toOxml( data, opts ) {
 		// get the file extension without the '.':
 		return s.substring( s.lastIndexOf('.')+1 )
 	}
+	function getPrp( pnm, str ) {
+		// get a XHTML property:
+		let re = new RegExp( pnm+'="([^"]+)"', '' ),
+			l = re.exec(str);
+		if( l == null ) { return undefined }; 
+		return l[1]
+	}
 	function escapeXML( s ) {
-		s = s.replace(/[<>"']/g, function($0) {
-			// 1. Replace <, >, " and ':
-			return "&" + {"<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
-		});
-		return s.replace( /&(.{0,8})/g, function($0,$1) {
-			// 2. Replace &, unless it belongs to an XML entity;
-			// so far we only recognize the numeric entities and ignore the literal entities:
-			if( /&#([0-9]{1,5}|x[0-9a-fA-F]{1,4});/.test($0) ) {
-				// no replacement:
-				return $0
-			} else {
-				// encode the '&' and add the remainder of the pattern:
-				return '&#38;'+$1
-			}
-		})
+		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {
+				// 1. Replace &, unless it belongs to an XML entity:
+				if( opts.RE.XMLEntity.test($0) ) {
+					// no replacement:
+					return $0
+				} else {
+					// encode the '&' and add the remainder of the pattern:
+					return '&#38;'+$1
+				}
+			})
+			.replace(/[<>"']/g, function($0) {
+				// 2. Replace <, >, " and ':
+				return "&" + {"<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
+			})
 	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/

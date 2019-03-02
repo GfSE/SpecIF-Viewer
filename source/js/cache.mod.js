@@ -77,7 +77,6 @@ modules.construct({
 		if( !prj ) return null;
 		var pend=0,
 			sDO = $.Deferred();
-	//	prj = specif.set( prj );    // transform to internal data structure
 		if( !prj ) {
 			sDO.reject({
 				status: 995,
@@ -175,7 +174,7 @@ modules.construct({
 //		console.debug('cache.update',newD,mode);
 		var rc = {},
 			uDO = $.Deferred();
-	//	newD = specif.set( newD );  // transform to internal data structure
+	//	newD = self.set( newD );  // transform to internal data structure
 		if( !newD ) {
 			uDO.reject({
 				status: 995,
@@ -1009,7 +1008,7 @@ modules.construct({
 							{title: 'SpecIF', description:''},
 							{title: 'ReqIF', description:''},
 							{title: 'ePub', description:''},
-							{title: 'MS WORD (Open XML) ** experimental **', description:''}
+							{title: 'MS WORD (Open XML)', description:''}
 						]) 
 					) 
 				);
@@ -1124,7 +1123,7 @@ modules.construct({
 
 		function storeEpub( opts ) {
 			if( !opts || typeof(opts.translateTitles)!='boolean' ) opts = {translateTitles: true};
-			var data = specif.get( opts );
+			var data = self.get( opts );
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
 				// If the property titles are translated, then the lists declaring the semantics must, as well:
@@ -1148,7 +1147,7 @@ modules.construct({
 		}
 		function storeOxml( opts ) {
 			if( !opts || typeof(opts.translateTitles)!='boolean' ) opts = {translateTitles: true};
-			var data = specif.get( opts );
+			var data = self.get( opts );
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
 				/*	// If a hidden property is defined with value, it is suppressed only if it has this value;
@@ -1182,7 +1181,7 @@ modules.construct({
 		}
 		function storeSpecifz() {
 			let zip = new JSZip(),
-				data = specif.get( {translateTitles: false} );
+				data = self.get( {translateTitles: false} );
 //			console.debug( "exportAs 'SpecIF'", data );
 			let blob = new Blob([JSON.stringify( data )], {type: "text/plain; charset=utf-8"});
 			// Add the project:
