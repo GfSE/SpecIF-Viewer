@@ -504,7 +504,7 @@ function BPMN2Specif( xmlString, opts ) {
 						}, {
 							title: "dcterms:description",
 							class: "PT-Nte-Description",
-							value: txt.innerHTML
+							value: '<p>'+ctrl2HTML(txt.innerHTML)+'</p>'
 						}],
 						changedAt: opts.xmlDate
 					});
@@ -1019,4 +1019,8 @@ function BPMN2Specif( xmlString, opts ) {
 			if( L[i].id === id ) return L[i];   // return list item
 		return null
 	}
+	function ctrl2HTML(str) {
+	// Convert js/json control characters (new line) to HTML-tags and remove the others:
+		return str.replace( /\r|\f/g, '' ).replace( /\t/g, ' ' ).replace( /\n/g, '<br />' )
+	};
 }

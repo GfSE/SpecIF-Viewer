@@ -1269,6 +1269,8 @@ modules.construct({
 		if( spD.description ) iD.description = spD.description;
 		if( spD.generator ) iD.generator = spD.generator;
 		if( spD.generatorVersion ) iD.generatorVersion = spD.generatorVersion;
+		if( spD.createdBy ) iD.createdBy = spD.createdBy;
+		if( spD.createdAt ) iD.createdAt = spD.createdAt;
 		
 //		console.debug('specif.set',iD);
 		return iD
