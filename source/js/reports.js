@@ -147,15 +147,17 @@ function Reports() {
 				}
 
 				// Add a report with a counter per enumerated property of all resource types:
+				let pC;
 				prj.resourceClasses.forEach( function(rC) {
-					rC.propertyClasses.forEach( function(pC) {
+					rC.propertyClasses.forEach( function(id) {
+						pC = itemById( prj.propertyClasses, id );
 						if( itemById( prj.dataTypes, pC.dataType ).type=='xs:enumeration' ) {
 							var aVR = {
 									title: titleOf(rC)+': '+titleOf(pC),
 									subject: 'enumValue',
 									pid: prj.id,	// pid: project-id
 									tid: rC.id, 	// tid: type-id
-									aid: pC.id, 	// aid: property-id
+									aid: id, 		// aid: property-id
 									scaleMin: 0,
 									scaleMax: 0,
 									datasets: []
@@ -199,17 +201,18 @@ function Reports() {
 				// b) The histograms of all enumerated properties:
 				let sT = itemById( prj.resourceClasses, obj['class'] );
 				// there is a report for every enumerated resourceClass:
-				let dT=null,oa=null,i=null,ct=null;
-				sT.propertyClasses.forEach( function(pC) {
+				let dT=null,oa=null,i=null,ct=null,pC;
+				sT.propertyClasses.forEach( function(id) {
+					pC = itemById( prj.propertyClasses, id );
 					dT = itemById( prj.dataTypes, pC.dataType );
 					if( dT.type!='xs:enumeration' ) return;
 					// find the report panel:
-					i = indexBy( self.list, 'aid', pC.id );
+					i = indexBy( self.list, 'aid', id );
 //					console.log( 'evalResource i', pC, i );
 					if( i>-1 ) { 
 						// report panel found; it is assumed it is of type 'xs:enumeration'.
 						// check whether obj has an property of this type:
-						oa = itemBy( obj.properties, 'class', pC.id );
+						oa = itemBy( obj.properties, 'class', id );
 						if( oa && oa.value.trim().length ) {  
 							// has a value:
 //							console.log( 'evalResource a', oa );
@@ -247,15 +250,13 @@ function Reports() {
 
 		function renderReports(list) {
 			var rs =	'<div class="row" >';
-			let li,ds,s,S,lb;
-			for( var i=0,I=list.length;i<I;i++) {
-				li=list[i];
+			let lb;
+			list.forEach( function(li,i) {
 				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-bottom: 4px solid #ffffff; height: '+panelHeight(list)+'">'
 					+			'<h4>'+li.title+'</h4>'
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
-				for( s=0,S=li.datasets.length;s<S;s++) {
-					ds = li.datasets[s];
+				li.datasets.forEach( function(ds,s) {
 					lb = ds.count>0? '<a onclick="reports.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
 						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
@@ -264,11 +265,11 @@ function Reports() {
 						+						'<div style="background-color:#1a48aa; height: 0.5em; border-radius: 0.2em; width: '+barLength(li,ds)+'" />'
 						+					'</td>'
 						+				'</tr>'
-				};
+				});
 				rs +=				'</tbody>'
 					+			'</table>'
 					+		'</div>'
-			};
+			});
 			rs += 		'</div>';
 			return rs
 		}
