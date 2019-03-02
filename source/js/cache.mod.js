@@ -888,11 +888,11 @@ modules.construct({
 		//   the object is found in the cache, but the comment is not.
 		//   --> set 'showComments' to true
 		
-					function isReferenced( rId ) {
-						for( var s=self.hierarchies.length-1; s>-1; s-- )
-							if( self.hierarchies[s].flatL.indexOf( rId )>-1 ) return true;
-						return false
-					}
+			function isReferenced( rId ) {
+				for( var s=self.hierarchies.length-1; s>-1; s-- )
+					if( self.hierarchies[s].flatL.indexOf( rId )>-1 ) return true;
+				return false
+			}
 		var sDO = $.Deferred();
 
 		var rsp = myProject.statements.filter( function(s){ 
@@ -1095,8 +1095,8 @@ modules.construct({
 							loadAll( 'resource' )
 								.done( function() { 
 									loadAll( 'statement' )
-										.done( function() { 	
-		*/									// export the project to file:
+										.done( function() { */
+											// export the project to file:
 											switch( opts.format ) {
 												case 'SpecIF':
 													storeSpecifz();
@@ -1114,8 +1114,7 @@ modules.construct({
 						})
 						.fail( handleError )
 				})
-				.fail( handleError )
-		*/
+				.fail( handleError )  */
 		} else {
 			eDO.reject({status: 999, statusText: "No permission to export"})
 		};
@@ -1135,7 +1134,7 @@ modules.construct({
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
 				// if the value is undefined, the property is suppressed in all cases.
 				// so far (iLaH v0.92.44), property titles are translated:
-				hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'},{title:i18n.lookup('SpecIF:Type'),value:'Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],
+				hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 				hideEmptyProperties: true,
 				propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
 				statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
@@ -1150,32 +1149,22 @@ modules.construct({
 			var data = self.get( opts );
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
-				/*	// If a hidden property is defined with value, it is suppressed only if it has this value;
-					// if the value is undefined, the property is suppressed in all cases:
-					hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],  // type is hidden in case of folder
-					// if no label is provided, the respective content is suppressed:
-					hideEmptyProperties: true,
-					propertiesLabel: 'Properties',
-					statementsLabel: 'Statements',
-					done: function() { alert("File is saved according to your browser's configuration.") },
-					fail: function(err) { alert(err.statusText) }
-				*/
-					// If the property titles are translated, then the lists declaring the semantics must, as well:
-					headingProperties: opts.translateTitles? forAll( CONFIG.headingAttributes, i18n.lookup ) : CONFIG.headingAttributes,
-					titleProperties: opts.translateTitles? forAll( CONFIG.titleAttributes, i18n.lookup ) : CONFIG.titleAttributes,
-					descriptionProperties: opts.translateTitles? forAll( CONFIG.descriptionAttributes, i18n.lookup ) : CONFIG.descriptionAttributes,
-					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-					stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeAttributes, i18n.lookup ) : CONFIG.stereotypeAttributes,
-					// If a hidden property is defined with value, it is suppressed only if it has this value;
-					// if the value is undefined, the property is suppressed in all cases.
-					// so far (iLaH v0.92.44), property titles are translated:
-					hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'},{title:i18n.lookup('SpecIF:Type'),value:'Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],
-					hideEmptyProperties: true,
-					propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
-					statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
-					done: function() { myProject.exporting=false; eDO.resolve() },
-					fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
-				};
+				// If the property titles are translated, then the lists declaring the semantics must, as well:
+				headingProperties: opts.translateTitles? forAll( CONFIG.headingAttributes, i18n.lookup ) : CONFIG.headingAttributes,
+				titleProperties: opts.translateTitles? forAll( CONFIG.titleAttributes, i18n.lookup ) : CONFIG.titleAttributes,
+				descriptionProperties: opts.translateTitles? forAll( CONFIG.descriptionAttributes, i18n.lookup ) : CONFIG.descriptionAttributes,
+				// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
+				stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeAttributes, i18n.lookup ) : CONFIG.stereotypeAttributes,
+				// If a hidden property is defined with value, it is suppressed only if it has this value;
+				// if the value is undefined, the property is suppressed in all cases.
+				// so far (iLaH v0.92.44), property titles are translated:
+				hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+				hideEmptyProperties: true,
+				propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
+				statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
+				done: function() { myProject.exporting=false; eDO.resolve() },
+				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
+			};
 			console.debug('storeOxml',data,options);
 			toOxml( data, options )
 		}
@@ -1421,7 +1410,6 @@ modules.construct({
 				return oE
 			}
 			function a2int( iE ) {
-				// attributes of hierarchy roots are not yet supported, so use longName and description
 				var oE = {
 					id: iE.id,
 					title: noCode(iE.title)
@@ -1470,16 +1458,6 @@ modules.construct({
 				return iH
 
 				function n2int( eN ) {
-				/*	var iN = {};
-					iN.id = eN.id;
-					iN.resource = eN.resource;
-					if( eN.revision ) iN.revision = eN.revision;
-					iN.changedAt = eN.changedAt;
-					if( eN.changedBy ) iN.changedBy = eN.changedBy;
-		//			if( eN.createdAt ) iN.createdAt = eN.createdAt;
-		//			if( eN.createdBy ) iN.createdBy = eN.createdBy;
-					iN.nodes = forAll( eN.nodes, n2int );
-					return iN */
 					iH.flatL.push(eN.resource);
 					forAll( eN.nodes, n2int );
 					return eN
