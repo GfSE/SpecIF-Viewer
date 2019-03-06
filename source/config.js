@@ -458,3 +458,30 @@ var RE = {};
 //	RE.CSV = /^[\s\-,_#&$§0-9a-zA-Z]+$/;   // works!
 //	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z]+$', '');  // works: escape the \ in js strings!
 	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values	
+
+//	Regexes to identify XHTML tags for objects and links:
+//    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
+//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
+//		Sample data from french branch of a japanese car OEM:
+//			<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.ole\" type=\"text/rtf\">
+//				<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.png\" type=\"image/png\">OLE Object</object>
+//			</object>
+//		Sample data from ReX:
+//			<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.ole\" type=\"application/oleobject\">\n   
+//				<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.png\" type=\"image/png\">OLE Object</object>\n 
+//			</object>
+//		Sample from ProSTEP ReqIF Implementation Guide:
+//			<xhtml:object data="files/powerpoint.rtf" height="96" type="application/rtf" width="96">
+//				<xhtml:object data="files/powerpoint.png" height="96" type="image/png" 	width="96">
+//					This text is shown if alternative image can't be shown
+//				</xhtml:object>
+//			</xhtml:object>
+//      For example, the ARCWAY Cockpit export uses this pattern:
+//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
+//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\">27420ffc0000c3a8013ab527ca1b71f5.svg</object>
+let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
+RE.tagSingleObject = new RegExp( reSO, 'g' );
+RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'[\\s]*</object>', 'g' );
+RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
+
+	

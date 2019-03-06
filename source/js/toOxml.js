@@ -84,27 +84,27 @@ function toOxml( data, opts ) {
 			
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
-			var reB = '([\\s\\S]*?)'
+			let reB = '([\\s\\S]*?)'
 				+	'(<p */>|<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
 				+	'|<table[^>]*>[\\s\\S]*?</table>)',
 				reBlocks = new RegExp(reB,'g');
 				
-			var reA = '<a([^>]+)>([\\s\\S]*?)</a>',
+			let reA = '<a([^>]+)>([\\s\\S]*?)</a>',
 				reLink = new RegExp( reA, '' );
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 			// Limitation: the innerHTML may not have any tags.
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-			var reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+			let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
 			// Two nested objects, where the inner is a a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-		//	var reNO = '<object([^>]+)>[\\s]*'+reSO+'[\\s]*</object>',
+		//	let reNO = '<object([^>]+)>[\\s]*'+reSO+'[\\s]*</object>',
 		//		reNestedObjects = new RegExp( reNO, '' );
 		
 			// The Regex to isolate text runs constituting a paragraph:
-			var reR = '([\\s\\S]*?)('
+			let reR = '([\\s\\S]*?)('
 				+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
 				+	'|'+reA
 				// The nested object pattern must be checked before the single object pattern:
@@ -114,7 +114,7 @@ function toOxml( data, opts ) {
 				+	')',
 				reRuns = new RegExp(reR,'g');
 			// The Regex to isolate text fragments within a run:
-			var reT = '(.*?)(<br ?/>)',
+			let reT = '(.*?)(<br ?/>)',
 				reText = new RegExp(reT,'g');
 			
 			// set certain SpecIF element names according to the SpecIF version:
@@ -384,7 +384,16 @@ function toOxml( data, opts ) {
 					// Transform an XHTML text to an internal data structure which allows easy generation of OpenXML.
 					// While XHTML is block structured, OpenXML expects a series of paragraphs with a series of 'runs' within.
 					// In a nested procedure, the XHTML is separated into 'paragraphs', then 'runs' and finally 'text'.
-					// Formatting information may be applied both at paragraph and run level.
+					// Depending on it's type, formatting information may be applied either at paragraph or at run level.
+					
+					// In principle, the procedure works as follows at every level:
+					// - The outer Regex captures *all* of the respective XHTML-tags one-by-one (global Regex)
+					// - The outer Regex has two main capture groups, the section *before* the pattern and the pattern itself
+					// - The replace-routine then distinguishes the XHTML-tags and adds the 'before'-section and the 
+					//   innerHTML of the current pattern to the result list.
+					// - The section after the pattern will be covered as the 'before'-section of the next pattern found
+					// - ... up until the whole XHTML-input is consumed.
+					// - The same principle is applied to the next lower level ...
 					
 					// Prepare:
 					// Remove empty <div> tags:
@@ -568,6 +577,8 @@ function toOxml( data, opts ) {
 									delete fmt.font.style;	// simply, since there is only one value so far.
 									return ''
 								};
+								// Set the color of the next text span;
+								// Limitation: Only numeric color codes are recognized, so far:
 								let sp = /<span[^>]+color: ?#([0-9a-fA-F]{6})[^>]*>/.exec($2);
 								if( sp && sp.length>1 ) {
 									fmt.font.color = sp[1].toUpperCase();
@@ -597,7 +608,7 @@ function toOxml( data, opts ) {
 								sp = reNestedObjects.exec($2);   
 //								console.debug('#2O',sp);
 								if( sp && sp.length>2 ) {
-									let u = getPrp('data',sp[1]), // content of 'data' of the outer object"
+									let u = getPrp('data',sp[1]).replace('\\','/'), // content of 'data' of the outer object"
 										r = parseObject( {objectProperties:sp[2],innerHTML:sp[4]} );
 									r.hyperlink = {external: u};  // this is a file in the local specif-container... and does not work, here
 									p.runs.push(r);
@@ -605,7 +616,7 @@ function toOxml( data, opts ) {
 								};   */
 								// Single object with a comprehensive tag or a tag pair:
 								sp = reSingleObject.exec($2);   
-//								console.debug('#1O',sp);
+								console.debug('#1O',sp);
 								if( sp && sp.length>2 ) {
 									p.runs.push(parseObject( {properties:sp[1],innerHTML:sp[3]} ));
 									return ''
@@ -657,14 +668,7 @@ function toOxml( data, opts ) {
 						// Parse a link within an <a..> tag and return a 'run' element:
 //						console.debug('parseA', lnk);
 						
-							function getUrl( str ) {
-								// get the URL:
-								var l = /href="([^"]+)"/.exec( str );  // url in l[1]
-								if( l == null ) { return null };    // should never occur
-								return l[1].replace('\\','/')
-							}
-
-						let run,
+						var run,
 						// single object with a comprehensive tag or a tag pair:
 							sp = reSingleObject.exec( lnk.innerHTML );   
 						if( sp && sp.length>2 )
@@ -673,7 +677,7 @@ function toOxml( data, opts ) {
 						else	
 							run = {text: lnk.innerHTML};
 							
-						run.hyperlink = {external: getUrl( lnk.properties )};
+						run.hyperlink = { external: getPrp( 'href', lnk.properties ).replace('\\','/') };
 
 //						console.debug('parseA',run);
 						return run
@@ -683,20 +687,9 @@ function toOxml( data, opts ) {
 						// and return a 'run' element:
 						// Todo: Load a linked resource in an <object..> tag and include it in the document?
 						// Or only if it is an image?
-						let run = {}; 
+						var run; 
 //						console.debug('parseObject', obj);
 
-							function getType( str ) {
-								let t = /type="([^"]+)"/.exec( str );
-								if( t==null ) return '';
-								return (' '+t[1])
-							}
-							function getUrl( str ) {
-								// get the URL:
-								let l = /data="([^"]+)"/.exec( str );  // url in l[1]
-								if( l == null ) { return null };    // should never occur
-								return l[1].replace('\\','/')
-							}
 							function withoutPath( str ) {
 								return str.substring(str.lastIndexOf('/')+1)
 							}
@@ -704,45 +697,24 @@ function toOxml( data, opts ) {
 								return str.substring( 0, str.lastIndexOf('.') )
 							}
 
-						let u1 = getUrl( obj.properties ), 
-							t1 = getType( obj.properties ),
+						let u1 = getPrp( 'data', obj.properties ).replace('\\','/'), 
+							t1 = getPrp( 'type', obj.properties ),
 							d = obj.innerHTML || getPrp( 'name', obj.properties ) || withoutPath( u1 ),	// the description
-							e = extOf(u1).toLowerCase();		// the file extension
-	//					let hasImg = true;
-	//					console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
-							
-						let pngF = itemById( data.files, nameOf(u1)+'.png' );
+							e = extOf(u1).toLowerCase();	// the file extension
 						
 						if( opts.imgExtensions.indexOf( e )>-1 ) {  
 							// it is an image, show it:
-							
 							// if the type is svg, png is preferred and available, replace it:
+							let pngF = itemById( data.files, nameOf(u1)+'.png' );
 							if( t1.indexOf('svg')>-1 && opts.preferPng && pngF ) {
 								u1 = pngF.id.replace('\\','/');
 								t1 = pngF.type
 							};
-	//						console.debug('u1',u1.replace('\\','/'));
-							
 							// At the lowest level, the image is included only if present:
 							run = {picture:{id:u1,title:d,type:t1,width:'200pt',height:'100pt'}}
-							
 						} else {
-							
-							if( e=='ole' && pngF ) {  
-								// It is an ole-file, so add a preview image:
-								let u2 = pngF.id.replace('\\','/'),
-									t2 = pngF.type || 'image/png';
-								
-								// At the lowest level, the image is included only if present:
-								run = {picture:{id:u2,title:d,type:t2,width:'200pt',height:'100pt'}}
-							//	run = {picture:{id:u2,title:d,type:t2,width:'200pt',height:'100pt'}, hyperlink:{external: u1}}
-								// ToDo: the hyperlink can't be working, as the file is contained in the specifz ...
-
-							} else {
-								// in absence of an image, just show the description:
-	//							hasImg = false; 
-								run = {text:d}
-							}
+							// in absence of an image, just show the description:
+							run = {text:d}
 						};
 //						console.debug('parseObject',r);
 						return run
@@ -847,24 +819,14 @@ function toOxml( data, opts ) {
 				return ch
 			}
 
-			function chain( ct, fn ) {
-				if( Array.isArray(ct) ) {
-					var bs = '';
-					ct.forEach( function(b) {
-						bs += fn(b) 
-					});
-					return bs
-				};
-				return fn(ct)
-			}
 			function generateOxml( ct ) {
 //				console.debug('generateOxml',ct);
 				return chain( ct,
 					function(ct) {
-						var rs = '';
 						if( ct.p )
 							return wParagraph( ct.p )
 						if( ct.table ) {
+							var rs = '';
 							ct.table.rows.forEach( function(r) {
 								var cs = '';
 								r.cells.forEach( function(c) {
@@ -877,6 +839,17 @@ function toOxml( data, opts ) {
 						return null // should never get here
 					}
 				)
+				
+				function chain( ct, fn ) {
+					if( Array.isArray(ct) ) {
+						var bs = '';
+						ct.forEach( function(b) {
+							bs += fn(b) 
+						});
+						return bs
+					};
+					return fn(ct)
+				}
 			}
 			function wParagraph( ct ) {
 //				console.debug('wParagraph',ct)
@@ -1056,7 +1029,7 @@ function toOxml( data, opts ) {
 					+		'<w:tblPr>'
 					+			'<w:tblStyle w:val="Tabellenraster"/>'
 					+		(rs.width&&rs.width=='full'?'<w:tblW w:w="5000" w:type="pct"/>':'<w:tblW w:w="0" w:type="auto"/>')
-//					+			'<w:tblW w:w="0" w:type="auto"/>'
+		//			+			'<w:tblW w:w="0" w:type="auto"/>'
 					+			'<w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>'
 					+		'</w:tblPr>'
 					+ 		(rs.content || rs)
@@ -2377,7 +2350,7 @@ function toOxml( data, opts ) {
 		return s.substring( s.lastIndexOf('.')+1 )
 	}
 	function getPrp( pnm, str ) {
-		// get a XHTML property:
+		// get the value of XHTML property 'pnm':
 		let re = new RegExp( pnm+'="([^"]+)"', '' ),
 			l = re.exec(str);
 		if( l == null ) { return undefined }; 

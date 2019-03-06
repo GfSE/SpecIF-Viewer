@@ -2082,30 +2082,6 @@ modules.construct({
 	}  */
 });  
 
-//    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
-//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
-//		Sample data from french branch of a japanese car OEM:
-//			<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.ole\" type=\"text/rtf\">
-//				<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.png\" type=\"image/png\">OLE Object</object>
-//			</object>
-//		Sample data from ReX:
-//			<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.ole\" type=\"application/oleobject\">\n   
-//				<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.png\" type=\"image/png\">OLE Object</object>\n 
-//			</object>
-//		Sample from ProSTEP ReqIF Implementation Guide:
-//			<xhtml:object data="files/powerpoint.rtf" height="96" type="application/rtf" width="96">
-//				<xhtml:object data="files/powerpoint.png" height="96" type="image/png" 	width="96">
-//					This text is shown if alternative image can't be shown
-//				</xhtml:object>
-//			</xhtml:object>
-RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s\\S]*?<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)[\\s\\S]*?<\/object>', 'g' );
-//      For example, the ARCWAY Cockpit export uses this pattern:
-//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
-//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\">27420ffc0000c3a8013ab527ca1b71f5.svg</object>
-RE.tagSingleObject = new RegExp( '<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)', 'g' );
-RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)<\/a>', 'g' );
-
-
 //////////////////////////
 // global helper functions:
 function dataTypeOf( pr, aTid ) {
@@ -2119,18 +2095,18 @@ function enumValStr( dT, prp ) {
 	// for all others, return the value as is:
 	if( dT.type!='xs:enumeration' ) return prp.value;
 	let ct = '',
-		val = null,
+		val,
 		st = prp.title==CONFIG.stereotype,
 		vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
-	for( var v=0,V=vL.length;v<V;v++ ) {
-		val = itemById(dT.values,vL[v].trim());
+	vL.forEach( function(vLi,i) {
+		val = itemById(dT.values,vLi.trim());
 		// If 'val' is an id, replace it by title, otherwise don't change:
 		// For example, when an object is from a search hitlist or from a revision list, 
 		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
 		// Add 'double-angle quotation' in case of stereotype values.
-		if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.title+'&#x00bb;'):val.title)
-		else ct += (v==0?'':', ')+vL[v]
-	};
+		if( val ) ct += (i==0?'':', ')+(st?('&#x00ab;'+val.title+'&#x00bb;'):val.title)
+		else ct += (i==0?'':', ')+vLi
+	});
 	return ct
 }
 function multipleChoice( pC, prj ) {

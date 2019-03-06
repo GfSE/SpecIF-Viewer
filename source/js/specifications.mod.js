@@ -2033,10 +2033,17 @@ var fileRef = {
 			}
 			function getUrl( str ) {
 				// get the URL:
-				var l = /(href|data)="([^"]+)"/.exec( str );  // url in l[2]
+				var l = /data="([^"]+)"/.exec( str );  // url in l[1]
 				// return null, because an URL is expected in any case:
 				if( l == null ) { return null };    
-				return l[2].replace('\\','/')
+				return l[1].replace('\\','/')
+			}
+			function getPrp( pnm, str ) {
+				// get the value of XHTML property 'pnm':
+				let re = new RegExp( pnm+'="([^"]+)"', '' ),
+					l = re.exec(str);
+				if( l == null ) { return undefined }; 
+				return l[1]
 			}
 
 		// Prepare a file reference for viewing and editing:
@@ -2044,7 +2051,6 @@ var fileRef = {
 		var repSts = [];   // a temporary store for replacement strings
 			
 		// 1. transform two nested objects to link+object resp. link+image:
-//		txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^>]*<\/object>/g,   
 		txt = txt.replace( RE.tagNestedObjects,   
 			function( $0, $1, $2, $3, $4 ) {        // description is $4
 				var u1 = getUrl( $1 ),  			// the primary file
@@ -2089,7 +2095,6 @@ var fileRef = {
 //		console.debug('fileRef.toGUI 1: ', txt);
 			
 		// 2. transform a single object to link+object resp. link+image:
-//		txt = txt.replace( /<object([^>]+)(\/>|>[^<]*<\/object>)/g,   //  comprehensive tag or tag pair
 		txt = txt.replace( RE.tagSingleObject,   //  comprehensive tag or tag pair
 			function( $0, $1, $2, $3 ){ 
 //				var pairedImgExists = function( url ) {
@@ -2180,7 +2185,7 @@ var fileRef = {
 		// add an icon to known office files.
 		txt = txt.replace( RE.tagA,  
 			function( $0, $1, $2 ){ 
-				var u1 = getUrl( $1 ),
+				var u1 = getPrp( 'href', $1 ),
 					e = u1.fileExt();
 //				console.debug( $1, $2, u1, e );
 				if( e==null ) return $0     // no change, if no extension found
@@ -2461,7 +2466,7 @@ var fileRef = {
 						function transformBpmn(f) {
 						//	document.getElementById(containerId(f.id)).innerHTML = '<p>Here comes a BPMN diagram '+f.id+'</p>'
 							// viewer instance:
-							var cvs = containerId(f.id);
+							let cvs = containerId(f.id);
 								bpmnViewer = new BpmnJS({container: '#'+cvs});
 							bpmnViewer.importXML(f.blob, function(err) {
 								if (err) {
