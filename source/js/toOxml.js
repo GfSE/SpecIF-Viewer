@@ -100,7 +100,7 @@ function toOxml( data, opts ) {
 				reSingleObject = new RegExp( reSO, '' );
 			// Two nested objects, where the inner is a a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-		//	let reNO = '<object([^>]+)>[\\s]*'+reSO+'[\\s]*</object>',
+		//	let reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
 		//		reNestedObjects = new RegExp( reNO, '' );
 		
 			// The Regex to isolate text runs constituting a paragraph:
@@ -616,7 +616,7 @@ function toOxml( data, opts ) {
 								};   */
 								// Single object with a comprehensive tag or a tag pair:
 								sp = reSingleObject.exec($2);   
-								console.debug('#1O',sp);
+//								console.debug('#1O',sp);
 								if( sp && sp.length>2 ) {
 									p.runs.push(parseObject( {properties:sp[1],innerHTML:sp[3]} ));
 									return ''
@@ -963,7 +963,9 @@ function toOxml( data, opts ) {
 			}
 			function wText( ct ) {
 				// return when there is no content: 
-				if( !ct || !ct.text || ct.text.length<1  ) return undefined;  // applies to string, object and array
+				if( !ct || ct.picture || typeof(ct)=='object' && !ct.text ) return undefined;  
+				// ct is a string with length>0, an array ct.text or an object ct.text with length>0:
+//				console.debug('wText',ct);
 				// ct can be a string, an object or an array;
 				// in case of an array:
 				if( Array.isArray(ct.text) ) {
@@ -986,7 +988,7 @@ function toOxml( data, opts ) {
 				let imgIdx = pushReferencedFile( ct.picture );
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
-					console.error( et );
+//					console.error( et );
 					return wText( "### "+et+" ###" )
 				};
 				// else, all is fine:

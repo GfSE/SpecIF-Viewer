@@ -170,18 +170,20 @@ modules.construct({
 			children: forAll(spc.nodes,toChild),
 			upd: spc.upd
 		};
-//		console.debug('tree',self.tree.get());
+		let loadedTr = self.tree.get();
+//		console.debug('tree',myProject.selectedHierarchy,loadedTr,tr);
 		// construct jqTree:
-		if( !self.tree.get() ) {
+		if( !loadedTr ) {
 			// on first entry, initialize:
-//			console.debug( 'initTree', spc, tr );
+			// (Do not initialize twice!)
+//			console.debug( 'initTree', loadedTr, tr );
 			return initTree( tr )
 		} else {
-			// on subsequent entries without hierarchy changes, just load the tree:
+			// on subsequent entries, just load the tree:
 			self.tree.saveState();
 			self.tree.set(tr);
 			self.tree.numberize();
-//			console.debug('load',tr.children,myProject.selectedHierarchy.children);
+//			console.debug( 'loadTree', loadedTr, tr );
 			self.tree.restoreState();
 			return self.tree.selectedNode
 		};
@@ -207,12 +209,15 @@ modules.construct({
 			//	saveState: true,
 				dragAndDrop: t.upd
 			});
+			self.tree.id = t.id;
+			// ToDo: rather a hack ... integrate all this properly in helperTree ...
 			
 			// bind handlers to tree events:
 			h.on(
 				'tree.select',  // when a node is clicked or traversed by up/down keys
 				function(event) {  // The clicked node is 'event.node'
 					// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree ;-):
+//					console.debug('tree.select',event);
 					self.tree.selectedNode = event.node;
 					document.getElementById(CONFIG.objectList).scrollTop = 0;
 					self.refresh()
@@ -304,7 +309,7 @@ modules.construct({
 				)
 			};	*/
 			self.tree.numberize();
-			return self.tree.selectFirstNode()
+		//	return self.tree.selectFirstNode()
 		}
 	};
 	self.selectNodeByRef = function( ob, sim ) {
@@ -457,8 +462,8 @@ modules.construct({
 		return pT
 	}
 			
-	self.loadHierarchy = function( idx, obj ) {
-		// load the hierarchy with the index specified and select obj:
+	self.loadHierarchy = function( idx, res ) {
+		// load the hierarchy with the index specified and select a resource:
 		
 		if( idx<0 || idx>myProject.hierarchies.length-1 ) {
 			$('#contentNotice').html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
@@ -472,7 +477,6 @@ modules.construct({
 //				console.debug('load',rsp);
 
 				myProject.selectedHierarchy = itemById( myProject.hierarchies, rsp.id );
-				self.buildTree( myProject.selectedHierarchy );  
 
 				$('#contentNotice').empty();
 				if( $('#specTitle').length>0 )
@@ -481,10 +485,12 @@ modules.construct({
 					$('#pageTitle').html( renderSpecTitle(resTitleOf( myProject.selectedHierarchy )) );
 
 				if( self.showLeft.get() ) {
-//					console.debug('tree shown:')
+					let nd = self.buildTree( myProject.selectedHierarchy );  
+//					console.debug('tree shown:',myProject.selectedHierarchy,nd)
 					if( !self.tree.firstNode() ) {
+//						console.debug('#empty',myProject.selectedHierarchy);
 						// tree has no entries, reset:
-						self.resources.updateSelected();
+					//	self.resources.init();
 						self.refresh();
 						// Warn, if tree is empty and there are no resource classes for user instantiation:
 						if( !self.resCre )
@@ -492,19 +498,20 @@ modules.construct({
 						return
 					};
 					// else:
-					if( obj && obj.id ) {
+					if( res && res.id ) {
 						// tree has entries and a known resource is specified: select the first node referencing the resource
-						self.tree.selectNodeByRef( obj )
+//						console.debug('#filled and resource specified',myProject.selectedHierarchy,res);
+						self.tree.selectNodeByRef( res )
 					} else {
 						// tree has entries, no or unknown resource specified: select first node
+//						console.debug('#filled and no resource specified',myProject.selectedHierarchy);
 						self.tree.selectFirstNode()
 						// changing the tree node triggers an event, by which 'self.refresh' will be called.
 					};
 					self.tree.openNode( self.tree.selectedNode )
 					// opening a tree node triggers an event, by which 'self.refresh' will be called.
-				} else {
-					self.refresh()
-				}
+				};
+				self.refresh()
 			})
 			.fail( handleError )
 	};
@@ -522,11 +529,10 @@ modules.construct({
 
 		getPermissions();
 		
-	//	let uP = getUrlParms() );
-		let uP = null;
+		let uP = null; 		//	let uP = getUrlParms() );
 		self.selectTab( getDlg( uP ) );   
 		
-		// assuming that all initializing calls have been completed (project and types are loaded), 
+		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the spec:
 		if( myProject.hierarchies && myProject.hierarchies.length>0 ) {
 			self.loadHierarchy( getSpecIdx( uP ), {id: getOId( uP )} );
@@ -559,7 +565,7 @@ modules.construct({
 			// select first node of those specified as query parameter:
 			if( p && p.oids && p.oids.length )
 				return p.oids[0];
-			return null
+			return undefined
 		}
 	};
 
@@ -2084,6 +2090,7 @@ var fileRef = {
 				let f = itemById(myProject.files,u2);
 //				console.debug('fileRef.toGUI 1a found: ', f );
 				if( f ) {
+//					console.debug('containerId',containerId(u2));
 					repSts.push( '<div id="'+containerId(u2)+'" class="forImage"></div>' );
 					showImg( f, opts );
 					return 'aBra§kadabra'+(repSts.length-1)+'§'

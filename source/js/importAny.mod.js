@@ -15,6 +15,22 @@ modules.construct({
 	self.projectL = [];  	// list of the projects already available
 	self.projectName = '';  // user input for project name
 	var showFileSelect = null;
+
+	function terminateWithSuccess() {
+		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
+		setTimeout( function() {
+				self.clear();
+				// change view to browse the content:
+				modules.show('#specifications')
+			}, 
+			400 
+		)
+	}
+	function handleError(xhr) {
+		self.clear();
+		stdError(xhr);
+		self.show()
+	}
  
 	self.init = function() {
 		// initialize the module:
@@ -300,21 +316,6 @@ modules.construct({
 	};
 	function setProgress(msg,perc) {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
-	}
-	function terminateWithSuccess() {
-		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
-		setTimeout( function() {
-				self.clear();
-				// change view to browse the content:
-				modules.show('#specifications')
-			}, 
-			400 
-		)
-	}
-	function handleError(xhr) {
-		self.clear();
-		stdError(xhr);
-		self.show()
 	}
 	self.abort = function() {
 		console.info('abort pressed');

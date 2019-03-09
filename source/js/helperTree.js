@@ -9,6 +9,7 @@
 // a constructor for the tree object:
 function Tree( tId ) {
 	"use strict";
+	// tId is the id of a DOM element to which the tree is attached.
 	let self = this;
 	self.init = function() {
 		self.id = null;
@@ -21,11 +22,12 @@ function Tree( tId ) {
 	};
 	self.get = function() {
 		// return the root node with it's children:
-		return $(tId).tree('getTree')
+		let tr = $(tId).tree('getTree');
+		return tr? {id:self.id,children:tr.children} : undefined
 	};
 	self.firstNode = function() {
-		let rt = $(tId).tree('getTree');	// first get the root
-		return rt? rt.children[0] : null	// avoid an exception when there is none ...
+		let tr = $(tId).tree('getTree');	// first get the root
+		return tr? tr.children[0] : undefined	// avoid an exception when there is none ...
 	};
 	self.nodesByRef = function( obj, similar ) {
 		// Find all the nodes referencing the object and return them in a list.
@@ -78,7 +80,7 @@ function Tree( tId ) {
 		return nd
 	};
 	self.selectFirstNode = function() {
-		// Anm: Das klappt nur, wenn der Baum sichtbar ist:
+		// Note: This works, only if the tree is visible:
 		let fN = self.firstNode();
 		if( fN ) self.selectNode( fN );
 		return fN

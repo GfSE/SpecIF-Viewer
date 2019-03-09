@@ -1141,7 +1141,7 @@ modules.construct({
 				done: function() { myProject.exporting=false; eDO.resolve() },
 				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
 			};
-			console.debug('storeEpub',data,options);
+//			console.debug('storeEpub',data,options);
 			toEpub( data, options )
 		}
 		function storeOxml( opts ) {
@@ -1165,7 +1165,7 @@ modules.construct({
 				done: function() { myProject.exporting=false; eDO.resolve() },
 				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
 			};
-			console.debug('storeOxml',data,options);
+//			console.debug('storeOxml',data,options);
 			toOxml( data, options )
 		}
 		function storeSpecifz() {
@@ -2143,22 +2143,22 @@ function titleOf( item ) {
 	// look for a translation, first:
 	return i18n.lookup( item.title ) || item.id
 }
-function titleFromProperties( aL ) {
+function titleFromProperties( pL ) {
 	// get the title from the properties:
-	if( aL && aL.length>0 ) {
+	if( pL && pL.length>0 ) {
 		// 1. look for a property serving as title:
-		let ti = titleIdx( aL );
+		let ti = titleIdx( pL );
 		if( ti>-1 ) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
 			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-			return aL[ti].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
+			return pL[ti].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
 		};
 		// 2. otherwise, find a description and take the beginning:
 		// find a description and take the beginning:
-		for( var a=0,A=aL.length;a<A;a++ ) {
-			if( CONFIG.descriptionAttributes.indexOf( aL[a].title )>-1 ) 
-				return aL[a].value.stripHTML().truncate( CONFIG.maxTitleLength )
+		for( var a=0,A=pL.length;a<A;a++ ) {
+			if( CONFIG.descriptionAttributes.indexOf( pL[a].title )>-1 ) 
+				return pL[a].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().truncate( CONFIG.maxTitleLength )
 		}
 	};
 	return ''

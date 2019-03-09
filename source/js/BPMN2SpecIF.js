@@ -43,8 +43,9 @@ function BPMN2Specif( xmlString, opts ) {
 	model.id = x[0].getAttribute("id");
 	model.title = opts.title || x[0].nodeName;
 	model.description = opts.description;
-	model.specifVersion = "0.10.4";
+	model.specifVersion = "0.10.6";
 	model.dataTypes = DataTypes();
+	model.propertyClasses = PropertyClasses();
 	model.resourceClasses = ResourceClasses();
 	model.statementClasses = StatementClasses();
 	model.hierarchyClasses = HierarchyClasses();
@@ -73,18 +74,18 @@ function BPMN2Specif( xmlString, opts ) {
 	model.resources.push({
 		id: diagramId,
 		title: model.title,
-		class: 'RT-Pln',
+		class: 'RC-Diagram',
 		properties: [{
 			title: "dcterms:title",
-			class: "PT-Pln-Name",
+			class: "PC-Name",
 			value: model.title
 		}, {
 			title: "SpecIF:Diagram",
-			class: "PT-Pln-Diagram",
+			class: "PC-Diagram",
 			value: "<div><p class=\"inline-label\">Model View:</p><p>"+dg+"</p></div>"
 		}, {
 			title: "SpecIF:Notation",
-			class: "PT-Pln-Notation",
+			class: "PC-Notation",
 			value: "BPMN 2.0 Process Diagram"
 		}],
 		changedAt: opts.xmlDate
@@ -103,14 +104,14 @@ function BPMN2Specif( xmlString, opts ) {
 				id: el.getAttribute("id"),
 				process: el.getAttribute("processRef"),
 				title: el.getAttribute("name"),
-				class: 'RT-Act',
+				class: 'RC-Actor',
 				properties: [{
 					title: "dcterms:title",
-					class: "PT-Act-Name",
+					class: "PC-Name",
 					value: el.getAttribute("name")
 				}, {
 					title: "SpecIF:Stereotype",
-					class: "PT-Act-Stereotype",
+					class: "PC-Stereotype",
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
@@ -122,14 +123,14 @@ function BPMN2Specif( xmlString, opts ) {
 			model.resources.push({
 				id: el.getAttribute("id"),
 				title: el.getAttribute("name"),
-				class: 'RT-Sta',
+				class: 'RC-State',
 				properties: [{
 					title: "dcterms:title",
-					class: "PT-Sta-Name",
+					class: "PC-Name",
 					value: el.getAttribute("name")
 				}, {
 					title: "SpecIF:Stereotype",
-					class: "PT-Sta-Stereotype",
+					class: "PC-Stereotype",
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
@@ -139,7 +140,7 @@ function BPMN2Specif( xmlString, opts ) {
 			model.statements.push({
 				id: el.getAttribute("sourceRef")+'-S',
 				title: 'SpecIF:writes',
-				class: 'ST-writes',
+				class: 'SC-writes',
 				subject: el.getAttribute("sourceRef"),
 				object: el.getAttribute("id"),
 				changedAt: opts.xmlDate
@@ -149,7 +150,7 @@ function BPMN2Specif( xmlString, opts ) {
 			model.statements.push({
 				id: el.getAttribute("targetRef")+'-O',
 				title: 'SpecIF:reads',
-				class: 'ST-reads',
+				class: 'SC-reads',
 				subject: el.getAttribute("targetRef"),
 				object: el.getAttribute("id"),
 				changedAt: opts.xmlDate
@@ -189,15 +190,16 @@ function BPMN2Specif( xmlString, opts ) {
 								model.resources.push({
 									id: el2Id,
 									title: elName,
-									class: 'RT-Act',
+									class: 'RC-Actor',
 									properties: [{
 										title: "dcterms:title",
-										class: "PT-Act-Name",
+										class: "PC-Name",
 										value: elName
 									}, {
 										title: "SpecIF:Stereotype",
-										class: "PT-Act-Stereotype",
-										value: "BPMN:"+'lane'
+										class: "PC-Stereotype",
+								//		value: "BPMN:"+'lane'
+										value: "SpecIF:Role"
 									}],
 									changedAt: opts.xmlDate
 								});
@@ -205,7 +207,7 @@ function BPMN2Specif( xmlString, opts ) {
 								model.statements.push({
 									id: pa.id + '-contains-' + el2Id,
 									title: 'SpecIF:contains',
-									class: 'ST-contains',
+									class: 'SC-contains',
 									subject: pa.id,	// the process
 									object: el2Id,		// the lane
 									changedAt: opts.xmlDate
@@ -214,7 +216,7 @@ function BPMN2Specif( xmlString, opts ) {
 								el2.childNodes.forEach( function(el3) {
 									if( el3.nodeName.includes('flowNodeRef') ) {
 										ctL.push({
-											class: 'ST-contains',
+											class: 'SC-contains',
 											subject: el2Id, 		// the lane
 											object: el3.innerHTML	// the contained model-element
 										})
@@ -255,14 +257,14 @@ function BPMN2Specif( xmlString, opts ) {
 					model.resources.push({
 						id: id,
 						title: title,
-						class: "RT-Act",
+						class: "RC-Actor",
 						properties: [{
 							title: "dcterms:title",
-							class: "PT-Act-Name",
+							class: "PC-Name",
 							value: title
 						}, {
 							title: "SpecIF:Stereotype",
-							class: "PT-Act-Stereotype",
+							class: "PC-Stereotype",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -281,7 +283,7 @@ function BPMN2Specif( xmlString, opts ) {
 									model.statements.push({
 										id: id+'-reads-'+dS,
 										title: 'SpecIF:reads',
-										class: 'ST-reads',
+										class: 'SC-reads',
 										subject: id,
 										object: dS,
 										changedAt: opts.xmlDate
@@ -301,7 +303,7 @@ function BPMN2Specif( xmlString, opts ) {
 									model.statements.push({
 										id: id+'-writes-'+dS,
 										title: 'SpecIF:writes',
-										class: 'ST-writes',
+										class: 'SC-writes',
 										subject: id,
 										object: dS,
 										changedAt: opts.xmlDate
@@ -322,14 +324,14 @@ function BPMN2Specif( xmlString, opts ) {
 					model.resources.push({
 						id: id,
 						title: title,
-						class: "RT-Sta",
+						class: "RC-State",
 						properties: [{
 							title: "dcterms:title",
-							class: "PT-Sta-Name",
+							class: "PC-Name",
 							value: title
 						}, {
 							title: "SpecIF:Stereotype",
-							class: "PT-Sta-Stereotype",
+							class: "PC-Stereotype",
 							value: 'BPMN:'+( tag=='dataStoreReference'? 'dataStore' : 'dataObject' )
 						}],
 						changedAt: opts.xmlDate
@@ -348,14 +350,14 @@ function BPMN2Specif( xmlString, opts ) {
 					model.resources.push({
 						id: id,
 						title: title,
-						class: "RT-Evt",
+						class: "RC-Event",
 						properties: [{
 							title: "dcterms:title",
-							class: "PT-Evt-Name",
+							class: "PC-Name",
 							value: title
 						}, {
 							title: "SpecIF:Stereotype",
-							class: "PT-Evt-Stereotype",
+							class: "PC-Stereotype",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -395,18 +397,18 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push({
 							id: id,
 							title: title,
-							class: "RT-Act",
+							class: "RC-Actor",
 							properties: [{
 								title: "dcterms:title",
-								class: "PT-Act-Name",
+								class: "PC-Name",
 								value: title
 							}, {
 								title: "dcterms:description",
-								class: "PT-Act-Description",
+								class: "PC-Description",
 								value: desc
 							}, {
 								title: "SpecIF:Stereotype",
-								class: "PT-Act-Stereotype",
+								class: "PC-Stereotype",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.xmlDate
@@ -419,18 +421,18 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push({
 							id: id,
 							title: title,
-							class: "RT-Act",
+							class: "RC-Actor",
 							properties: [{
 								title: "dcterms:title",
-								class: "PT-Act-Name",
+								class: "PC-Name",
 								value: title
 							}, {
 								title: "dcterms:description",
-								class: "PT-Act-Description",
+								class: "PC-Description",
 								value: opts.strForkParGatewayDesc
 							}, {
 								title: "SpecIF:Stereotype",
-								class: "PT-Act-Stereotype",
+								class: "PC-Stereotype",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.xmlDate
@@ -444,18 +446,18 @@ function BPMN2Specif( xmlString, opts ) {
 					model.resources.push({
 						id: id,
 						title: title,
-						class: "RT-Act",
+						class: "RC-Actor",
 						properties: [{
 							title: "dcterms:title",
-							class: "PT-Act-Name",
+							class: "PC-Name",
 							value: title
 						}, {
 							title: "dcterms:description",
-							class: "PT-Act-Description",
+							class: "PC-Description",
 							value: opts.strForkExcGatewayDesc
 						}, {
 							title: "SpecIF:Stereotype",
-							class: "PT-Act-Stereotype",
+							class: "PC-Stereotype",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -476,7 +478,7 @@ function BPMN2Specif( xmlString, opts ) {
 				model.statements.push({
 					id: cId+'-contains-'+id,
 					title: 'SpecIF:contains',
-					class: 'ST-contains',
+					class: 'SC-contains',
 					subject: cId,
 					object: id,
 					changedAt: opts.xmlDate
@@ -496,14 +498,14 @@ function BPMN2Specif( xmlString, opts ) {
 					model.resources.push({
 						id: id,
 						title: title,
-						class: "RT-Nte",
+						class: "RC-Note",
 						properties: [{
 							title: "dcterms:title",
-							class: "PT-Nte-Name",
+							class: "PC-Name",
 							value: title
 						}, {
 							title: "dcterms:description",
-							class: "PT-Nte-Description",
+							class: "PC-Description",
 							value: '<p>'+ctrl2HTML(txt.innerHTML)+'</p>'
 						}],
 						changedAt: opts.xmlDate
@@ -542,14 +544,14 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push({
 							id: id,
 							title: title,
-							class: "RT-Evt",
+							class: "RC-Event",
 							properties: [{
 								title: "dcterms:title",
-								class: "PT-Evt-Name",
+								class: "PC-Name",
 								value: title
 							}, {
 								title: "SpecIF:Stereotype",
-								class: "PT-Evt-Stereotype",
+								class: "PC-Stereotype",
 								value: 'SpecIF:'+'Condition'
 							}],
 							changedAt: opts.xmlDate
@@ -558,7 +560,7 @@ function BPMN2Specif( xmlString, opts ) {
 						model.statements.push({
 							id: id+'-s',
 							title: "SpecIF:signals",
-							class: "ST-signals",
+							class: "SC-signals",
 							subject: seqF.subject.id,
 							object: id,
 							changedAt: opts.xmlDate
@@ -567,7 +569,7 @@ function BPMN2Specif( xmlString, opts ) {
 						model.statements.push({
 							id: id+'-t',
 							title: "SpecIF:triggers",
-							class: "ST-triggers",
+							class: "SC-triggers",
 							subject: id,
 							object: seqF.object.id,
 							changedAt: opts.xmlDate
@@ -580,33 +582,33 @@ function BPMN2Specif( xmlString, opts ) {
 						object:  itemById(model.resources,el.getAttribute('targetRef'))
 					};
 					// none or one of the following conditions is true, so we can return right away:
-					if( seqF.subject.class=='RT-Act' && seqF.object.class=='RT-Act' ) {
+					if( seqF.subject.class=='RC-Actor' && seqF.object.class=='RC-Actor' ) {
 						model.statements.push({
 							id: id,
 							title: "SpecIF:precedes",
-							class: "ST-precedes",
+							class: "SC-precedes",
 							subject: seqF.subject.id,
 							object: seqF.object.id,
 							changedAt: opts.xmlDate
 						});
 						return
 					};
-					if ((["RT-Act","RT-Evt"].indexOf(seqF.subject.class)>-1) && seqF.object.class=="RT-Evt") {
+					if ((["RC-Actor","RC-Event"].indexOf(seqF.subject.class)>-1) && seqF.object.class=="RC-Event") {
 						model.statements.push({
 							id: id,
 							title: "SpecIF:signals",
-							class: "ST-signals",
+							class: "SC-signals",
 							subject: seqF.subject.id,
 							object: seqF.object.id,
 							changedAt: opts.xmlDate
 						});
 						return
 					};
-					// else: seqF.subject.class=="RT-Evt" && seqF.object.class=="RT-Act"
+					// else: seqF.subject.class=="RC-Event" && seqF.object.class=="RC-Actor"
 					model.statements.push({
 						id: id,
 						title: "SpecIF:triggers",
-						class: "ST-triggers",
+						class: "SC-triggers",
 						subject: seqF.subject.id,
 						object: seqF.object.id,
 						changedAt: opts.xmlDate
@@ -616,7 +618,7 @@ function BPMN2Specif( xmlString, opts ) {
 					model.statements.push({
 						id: id,
 						title: "SpecIF:refersTo",
-						class: "ST-refersTo",
+						class: "SC-refersTo",
 						subject: el.getAttribute('targetRef'),
 						object: el.getAttribute('sourceRef'),
 						changedAt: opts.xmlDate
@@ -629,11 +631,11 @@ function BPMN2Specif( xmlString, opts ) {
 	// 5. Add the 'diagram shows model-element' statements:
 	model.resources.forEach( function(r) {
 		// only certain resources are model-elements:
-		if( ['RT-Act','RT-Sta','RT-Evt'].indexOf(r.class)>-1 ) {
+		if( ['RC-Actor','RC-State','RC-Event'].indexOf(r.class)>-1 ) {
 			model.statements.push({
 				id: model.id+'-shows-'+r.id,
 				title: 'SpecIF:shows',
-				class: 'ST-shows',
+				class: 'SC-shows',
 				subject: diagramId,
 				object: r.id,
 				changedAt: opts.xmlDate
@@ -682,7 +684,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.xmlDate
 			};
 			// sort resources according to their type:
-			let idx = ["RT-Act","RT-Sta","RT-Evt"].indexOf( r.class );
+			let idx = ["RC-Actor","RC-State","RC-Event"].indexOf( r.class );
 			if( idx>-1 )
 				nL[1].nodes[idx].nodes.push(nd)
 		});
@@ -751,206 +753,151 @@ function BPMN2Specif( xmlString, opts ) {
 		}]
 	}
 	
-	// The resource classes:
-	function ResourceClasses() {
+	// The property classes:
+	function PropertyClasses() {
 		return [{
-			id: "RT-Pln",
-			title: "SpecIF:Diagram",
-			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
-			propertyClasses: [{
-				id: "PT-Pln-Name",
+				id: "PC-Name",
 				title: "dcterms:title",
 				dataType: "DT-ShortString",
 				changedAt: opts.xmlDate
 			},{
-				id: "PT-Pln-Diagram",
+				id: "PC-Description",
+				title: "dcterms:description",
+				dataType: "DT-formattedText",
+				changedAt: opts.xmlDate
+			},{
+				id: "PC-Diagram",
 				title: "SpecIF:Diagram",
 				dataType: "DT-formattedText",
 				changedAt: opts.xmlDate
 			},{
-				id: "PT-Pln-Notation",
+				id: "PC-Notation",
 				title: "SpecIF:Notation",
 				dataType: "DT-ShortString",
 				changedAt: opts.xmlDate
-			}],
+			},{
+				id: "PC-Stereotype",
+				title: "SpecIF:Stereotype",
+				dataType: "DT-ShortString",
+				changedAt: opts.xmlDate
+			}]
+	}
+	
+	// The resource classes:
+	function ResourceClasses() {
+		return [{
+			id: "RC-Diagram",
+			title: "SpecIF:Diagram",
+			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
+			propertyClasses: ["PC-Name","PC-Diagram","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.xmlDate
 		},{
-			id: "RT-Act",
+			id: "RC-Actor",
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
-			propertyClasses: [{
-				id: "PT-Act-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Act-Description",
-				title: "dcterms:description",
-				dataType: "DT-formattedText",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Act-Stereotype",
-				title: "SpecIF:Stereotype",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			}],
+			propertyClasses: ["PC-Name","PC-Description","PC-Stereotype"],
 			icon: "&#9632;",
 			changedAt: opts.xmlDate
 		},{
-			id: "RT-Sta",
+			id: "RC-State",
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
-			propertyClasses: [{
-				id: "PT-Sta-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Sta-Description",
-				title: "dcterms:description",
-				dataType: "DT-formattedText",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Sta-Stereotype",
-				title: "SpecIF:Stereotype",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			}],
+			propertyClasses: ["PC-Name","PC-Description","PC-Stereotype"],
 			icon: "&#9679;",
 			changedAt: opts.xmlDate
 		},{
-			id: "RT-Evt",
+			id: "RC-Event",
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
-			propertyClasses: [{
-				id: "PT-Evt-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Evt-Description",
-				title: "dcterms:description",
-				dataType: "DT-formattedText",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Evt-Stereotype",
-				title: "SpecIF:Stereotype",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			}],
+			propertyClasses: ["PC-Name","PC-Description","PC-Stereotype"],
 			icon: "&#9830;",
 			changedAt: opts.xmlDate
 		},{
-			id: "RT-Nte",
+			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: [{
-				id: "PT-Nte-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Nte-Description",
-				title: "dcterms:description",
-				dataType: "DT-formattedText",
-				changedAt: opts.xmlDate
-			}],
+			propertyClasses: ["PC-Name","PC-Description"],
 			changedAt: opts.xmlDate
 		},{
-			id: "RT-Col",
+			id: "RC-Collection",
 			title: "SpecIF:Collection",
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: [{
-				id: "PT-Col-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			}],
+			propertyClasses: ["PC-Name"],
 			changedAt: opts.xmlDate
 		},{
-			id: "RT-Fld",
+			id: "RC-Folder",
 			title: "SpecIF:Heading",
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
-			propertyClasses: [{
-				id: "PT-Fld-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.xmlDate
-			},{
-				id: "PT-Fld-Description",
-				title: "dcterms:description",
-				dataType: "DT-formattedText",
-				changedAt: opts.xmlDate
-			}],
+			propertyClasses: ["PC-Name","PC-Description"],
 			changedAt: opts.xmlDate
 		}]
 	}
 	// The statement classes:
 	function StatementClasses() {
 		return [{
-			id: "ST-shows",
+			id: "SC-shows",
 			title: "SpecIF:shows",
 			description: "Statement: Plan shows Model-Element",
-			subjectTypes: ["RT-Pln"],
-			objectTypes: ["RT-Act", "RT-Sta", "RT-Evt"],
+			subjectTypes: ["RC-Diagram"],
+			objectTypes: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-contains",
+			id: "SC-contains",
 			title: "SpecIF:contains",
 			description: "Statement: Model-Element contains Model-Element",
-			subjectTypes: ["RT-Act", "RT-Sta", "RT-Evt"],
-			objectTypes: ["RT-Act", "RT-Sta", "RT-Evt"],
+			subjectTypes: ["RC-Actor", "RC-State", "RC-Event"],
+			objectTypes: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-stores",
+			id: "SC-stores",
 			title: "SpecIF:stores",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
-			subjectTypes: ["RT-Act"],
-			objectTypes: ["RT-Sta"],
+			subjectTypes: ["RC-Actor"],
+			objectTypes: ["RC-State"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-writes",
+			id: "SC-writes",
 			title: "SpecIF:writes",
 			description: "Statement: Actor (Role, Function) writes State (Information)",
-			subjectTypes: ["RT-Act"],
-			objectTypes: ["RT-Sta"],
+			subjectTypes: ["RC-Actor"],
+			objectTypes: ["RC-State"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-reads",
+			id: "SC-reads",
 			title: "SpecIF:reads",
 			description: "Statement: Actor (Role, Function) reads State (Information)",
-			subjectTypes: ["RT-Act"],
-			objectTypes: ["RT-Sta"],
+			subjectTypes: ["RC-Actor"],
+			objectTypes: ["RC-State"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-precedes",
+			id: "SC-precedes",
 			title: "SpecIF:precedes",
 			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
-			subjectTypes: ["RT-Act"],
-			objectTypes: ["RT-Act"],
+			subjectTypes: ["RC-Actor"],
+			objectTypes: ["RC-Actor"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-signals",
+			id: "SC-signals",
 			title: "SpecIF:signals",
 			description: "A FMC:Actor 'signals' a FMC:Event.",
-			subjectTypes: ["RT-Act", "RT-Evt"],
-			objectTypes: ["RT-Evt"],
+			subjectTypes: ["RC-Actor", "RC-Event"],
+			objectTypes: ["RC-Event"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-triggers",
+			id: "SC-triggers",
 			title: "SpecIF:triggers",
 			description: "A FMC:Event 'triggers' a FMC:Actor.",
-			subjectTypes: ["RT-Evt"],
-			objectTypes: ["RT-Act"],
+			subjectTypes: ["RC-Event"],
+			objectTypes: ["RC-Actor"],
 			changedAt: opts.xmlDate
 		},{
-			id: "ST-refersTo",
+			id: "SC-refersTo",
 			title: "SpecIF:refersTo",
 			description: "A SpecIF:Comment, SpecIF:Note or SpecIF:Issue 'refers to' any other resource.",
-			subjectTypes: ["RT-Nte"],
-			objectTypes: ["RT-Pln", "RT-Act", "RT-Sta", "RT-Evt", "RT-Col"],
+			subjectTypes: ["RC-Note"],
+			objectTypes: ["RC-Diagram", "RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
 			changedAt: opts.xmlDate
 		}]
 	}
@@ -967,46 +914,46 @@ function BPMN2Specif( xmlString, opts ) {
 	function Folders() {
 		return [{
 			id: "FolderGlossary",
-			class: "RT-Fld",
+			class: "RC-Folder",
 			title: opts.strGlossaryFolder,
 			properties: [{
-				class: "PT-Fld-Name",
+				class: "PC-Name",
 				value: opts.strGlossaryFolder
 			}],
 			changedAt: opts.xmlDate
 		}, {
 			id: "FolderAct",
-			class: "RT-Fld",
+			class: "RC-Folder",
 			title: opts.strActorFolder,
 			properties: [{
-				class: "PT-Fld-Name",
+				class: "PC-Name",
 				value: opts.strActorFolder
 			}],
 			changedAt: opts.xmlDate
 		}, {
 			id: "FolderSta",
-			class: "RT-Fld",
+			class: "RC-Folder",
 			title: opts.strStateFolder,
 			properties: [{
-				class: "PT-Fld-Name",
+				class: "PC-Name",
 				value: opts.strStateFolder
 			}],
 			changedAt: opts.xmlDate
 		}, {
 			id: "FolderEvt",
-			class: "RT-Fld",
+			class: "RC-Folder",
 			title: opts.strEventFolder,
 			properties: [{
-				class: "PT-Fld-Name",
+				class: "PC-Name",
 				value: opts.strEventFolder
 			}],
 			changedAt: opts.xmlDate
 		}, {
 			id: "FolderNte",
-			class: "RT-Fld",
+			class: "RC-Folder",
 			title: opts.strAnnotationFolder,
 			properties: [{
-				class: "PT-Fld-Name",
+				class: "PC-Name",
 				value: opts.strAnnotationFolder
 			}],
 			changedAt: opts.xmlDate
