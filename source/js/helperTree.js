@@ -36,7 +36,7 @@ function Tree( tId ) {
 		// Try to find the objects in the currently loaded tree (selectedSpec):
 		if( similar ) {
 			// iterate through all nodes of all levels and list the nodes, where obj.id is a substring:
-			self.get().iterate( function(nd) {
+			$(tId).tree('getTree').iterate( function(nd) {
 				if( nd.ref.indexOf(obj.id)>-1 ) nodes.push( nd );
 				return true		// continue iteration
 			})

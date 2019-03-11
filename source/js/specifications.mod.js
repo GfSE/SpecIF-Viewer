@@ -401,29 +401,21 @@ modules.construct({
 		self.staCreTypes = [];
 		self.staDelTypes = [];
 
-		myProject.allClasses.forEach( function(sT) {
-			switch( sT.category ) {
-				case 'resourceClass': 		
-					// list all resource types, for which the current user has permission to create new instances
-					// ... and which allow manual instantiation:
-					// store the type's id as it is invariant, when myProject.allClasses is updated
-					if( sT.cre && (!sT.instantiation || sT.instantiation.indexOf('user')>-1) && sT.propertyClasses && sT.propertyClasses.length>0 )
-						self.resCreTypes.push( sT.id );
-					break;
-				case 'statementClass': 	
-					// list all statement types, for which the current user has permission to create new instances:
-					// ... and which allow user instantiation:
-					// store the type's id as it is invariant, when myProject.allClasses is updated
-					if( sT.cre && (!sT.instantiation || sT.instantiation.indexOf('user')>-1) ) 
-						self.staCreTypes.push( sT.id );
-					if( sT.del ) 
-						self.staDelTypes.push( sT.id );
-//					break;
-//				hierarchies cannot be created here (currently) ... only in the project overview.
-//				case 'hierarchyClass':	
-//					break;
-//				default:				
-			}
+		myProject.resourceClasses.forEach( function(rC) {
+			// list all resource types, for which the current user has permission to create new instances
+			// ... and which allow manual instantiation:
+			// store the type's id as it is invariant, when myProject.allClasses is updated
+			if( rC.cre && (!rC.instantiation || rC.instantiation.indexOf('user')>-1) && rC.propertyClasses && rC.propertyClasses.length>0 )
+				self.resCreTypes.push( rC.id )
+		});
+		myProject.statementClasses.forEach( function(sC) {
+			// list all statement types, for which the current user has permission to create new instances:
+			// ... and which allow user instantiation:
+			// store the type's id as it is invariant, when myProject.allClasses is updated
+			if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
+				self.staCreTypes.push( sC.id );
+			if( sC.del ) 
+				self.staDelTypes.push( sC.id );
 		});
 							
 		// b) set the permissions for the edit buttons:

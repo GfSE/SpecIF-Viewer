@@ -1265,11 +1265,10 @@ modules.construct({
 		return iD
 
 			function dT2int( iE ) {
-				iE.category = 'dataType';
+		//		iE.category = 'dataType';
 				switch( iE.type ) {
 					case "xhtml": 
 					case "xs:string":		
-						if( typeof(iE.minLength)!='number' ) iE.minLength = 0;
 						if( typeof(iE.maxLength)!='number' ) iE.maxLength = CONFIG.maxStringLength;
 				//		break;
 				//	case "xs:enumeration": 	
@@ -1342,7 +1341,7 @@ modules.construct({
 			}
 			function rC2int( iE ) {
 				var oE = aC2int( iE );
-				oE.category = 'resourceClass';
+		//		oE.category = 'resourceClass';
 
 				// If "iE.isHeading" is defined, use it:
 				if( typeof(iE.isHeading)=='boolean' ) {
@@ -1371,7 +1370,7 @@ modules.construct({
 			}
 			function sC2int( iE ) {
 				var oE = aC2int( iE );
-				oE.category = 'statementClass';
+		//		oE.category = 'statementClass';
 				if( iE[names.subClasses] ) oE.subjectClasses = iE[names.subClasses];
 				if( iE[names.objClasses] ) oE.objectClasses = iE[names.objClasses];
 //				console.debug('statementClass 2int',iE,oE);
@@ -1379,7 +1378,7 @@ modules.construct({
 			}
 			function hC2int( iE ) {
 				var oE = aC2int( iE );
-				oE.category = 'hierarchyClass';
+		//		oE.category = 'hierarchyClass';
 //				console.debug('hierarchyClass 2int',iE,oE);
 				return oE
 			}
@@ -1501,11 +1500,26 @@ modules.construct({
 			url: "https://creativecommons.org/licenses/by-sa/4.0/"
 		};
 		spD.createdAt = new Date().toISOString();
-		spD.createdBy = {
-			familyName: me.lastName, 
-			givenName: me.firstName, 
-			org: {organizationName: me.organization}, 
-			email: {type:"text/html",value:me.email}
+		// createdBy.email is required by the schema:
+		if( me && me.email ) {
+			spD.createdBy = {
+				familyName: me.lastName, 
+				givenName: me.firstName, 
+				email: {type:"text/html",value:me.email}
+			};
+			if( me.organization )
+				spD.createdBy.org = {organizationName: me.organization}
+		} else {
+			if( myProject.createdBy && myProject.createdBy.email && myProject.createdBy.email.value )  {
+				spD.createdBy = { 
+					familyName: myProject.createdBy.familyName, 
+					givenName: myProject.createdBy.givenName, 
+					email: {type:"text/html",value:myProject.createdBy.email.value}
+				};
+				if( myProject.createdBy.org && myProject.createdBy.org.organizationName )
+					spD.createdBy.org = myProject.createdBy.org
+			}
+			// else: no createdBy, if there is no data 
 		};
 		spD.dataTypes = forAll( myProject.dataTypes, dT2ext );
 		spD.propertyClasses = forAll( myProject.propertyClasses, pC2ext );
@@ -1521,7 +1535,9 @@ modules.construct({
 		return spD
 
 			function dT2ext( iE ) {
-				return iE
+				var oE = simpleClone(iE);
+		//		delete oE.category;
+				return oE
 			}
 			function pC2ext( iE ) {
 				var oE = {
