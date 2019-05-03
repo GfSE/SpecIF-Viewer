@@ -1,6 +1,6 @@
-/*	ReqIF Server: Reports.
+/*	SpecIF Class-based Reports.
 	Dependencies: jQuery, bootstrap
-	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
@@ -66,12 +66,13 @@ function Reports() {
 
 	// standard module entry:
 	self.show = function( prj ) {
-		if( typeof(prj)!='object' || !prj.selectedHierarchy ) return false;
+		if( typeof(prj)!='object' ) return false;
 
 //		console.debug('reports.show');
 		self.list = [];
 
-		if( prj.selectedHierarchy.flatL.length<1 ) {
+		let tr = specs.tree.get();
+		if( !tr || tr.length<1 ) {
 			showNotice(i18n.MsgNoReports);
 			busy.reset();
 			return true  // nothing to do ....
@@ -173,8 +174,8 @@ function Reports() {
 /*			var addBooleaenValueReports = function( prj ) {
 			// ToDo
 			};
-		addBooleanValueReports( prj );  */
-
+		addBooleanValueReports( prj );  
+*/
 			function incVal( i,j ) {
 				self.list[i].datasets[j].count++;
 				self.list[i].scaleMax = Math.max( self.list[i].scaleMax, self.list[i].datasets[j].count )
@@ -231,9 +232,10 @@ function Reports() {
 				})
 			}
 
-		var pend=prj.selectedHierarchy.flatL.length;
-		prj.selectedHierarchy.flatL.forEach( function(rid) {
-			prj.readContent( 'resource', {id: rid})
+		var pend=0;
+		specs.tree.iterate( function(nd) {
+			pend++;
+			prj.readContent( 'resource', {id: nd.ref})
 				.done(function(rsp) {
 					evalResource( rsp );
 					if( --pend<1 ) {  // all done:
@@ -245,6 +247,7 @@ function Reports() {
 					}
 				})
 				.fail( handleError )
+			return true // continue iterating
 		});
 		return
 

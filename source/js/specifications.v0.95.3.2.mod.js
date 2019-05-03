@@ -42,7 +42,7 @@ modules.construct({
 		return null
 	};
 	self.selectTab = function( newV ) {
-//		console.debug('selectTab',self.selectedTab(),newV,isTabWithTree(newV));
+//		console.debug('selectTab',self.selectedTab(),newV);
 		// skip, if no change:
 		if( self.selectedTab()==newV ) return false;	// no change
 		// else set new dialog:
@@ -56,7 +56,7 @@ modules.construct({
 	self.showTab = function( newV ) {
 		// select the specified tab and refresh the view:
 		self.selectTab( newV );
-	//	$('#contentNotice').empty();
+		$('#contentNotice').empty();
 	//	self.refresh()
 	};
 	function emptyTab( div ) {
@@ -338,43 +338,44 @@ modules.construct({
 //		console.debug('permissions',self.resCreTypes,self.staCreTypes,self.staDelTypes)
 	}
 
-	self.updateTree = function( spc ) {
+//	self.buildTree = function( spc, mode ) {
+	self.buildTree = function( spc ) {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 		// There are two modes:
 		// - 'insert': insert spc at its position by id in the loaded tree, if it is found,
-		//   or add it at the end of the hierarchy list, otherwise.
+		//   or add it to the list of hierarchies, otherwise.
 		// - 'replace': replace the current tree with spc
 		// - use this function to auto-update the tree in the background.
-
-		// replace or append spc:
-	//	let tr = self.tree.get(), // don't ask me why this does not work ..
-		let tr = [].concat(self.tree.get()),
-			idx = indexById( tr, spc.id );
-	//	console.debug('updateTree',tr,idx,Array.isArray(tr));
-		if( idx<0 )
-			tr.push(toChild(spc))
-		else
-			tr = tr.splice(idx,1,toChild(spc)); 
-	//	tr = [toChild(spc)]; // this works
-		
+//		if( !mode ) mode = 'replace';
+		if( !spc ) spc = myProject.selectedHierarchy;
+		// transform SpecIF hierarchy to jqTree:
+		let tr = {
+			id: spc.id,
+			children: forAll(spc.nodes,toChild),
+			upd: spc.upd
+		};
+	//	let tr = toChild(spc);
+		let loadedTr = self.tree.get();
+		console.debug('tree',myProject.selectedHierarchy,loadedTr,tr);
 		// load the tree:
+		// ToDo: support mode 'insert'.
 		self.tree.saveState();
 		self.tree.set(tr);
 		self.tree.numberize();
+//		console.debug( 'loadTree', loadedTr, tr );
 		self.tree.restoreState();
 		return self.tree.selectedNode;
 
 		// -----------------
 		function toChild( iE ) {
-			// transform SpecIF hierarchy to jqTree:
 			let r = itemById( myProject.resources, iE.resource );
 			var oE = {
 				id: iE.id,
 				// take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// ToDo!!
 				// String.fromCodePoint()
-				name: resTitleOf(r), 
+				name: r.title || r.id, // 'name' is used by jqTree.
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -401,7 +402,7 @@ modules.construct({
 		return myProject.readContent( 'hierarchy', myProject.hierarchies[idx], {reload:true} )
 			.done(function(rsp) {
 //				console.debug('load',rsp);
-				self.updateTree( itemById( myProject.hierarchies, rsp.id ) );
+				self.buildTree( itemById( myProject.hierarchies, rsp.id ) );
 				if( !self.tree.firstNode() ) {
 					// tree has no entries, reset:
 				//	self.resources.init();
@@ -426,14 +427,14 @@ modules.construct({
 		$('#contentNotice').empty();
 		
 		// assure that the page is properly built in all cases:
-		self.tree.init();
+		self.tree.selectedNode = null;	
 
 		getPermissions();
 		
  	//	let uP = getUrlParms() );
 		let uP = null;
 		// show the specified dialog, or the default:
-		self.showTab( getDlg( uP ) );   
+		self.selectTab( getDlg( uP ) );   
 		
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
@@ -446,14 +447,15 @@ modules.construct({
 				// "busy" is reset in showX as called by doRefresh
 			};
 			// select the specified hierarchy and resource:
+			myProject.selectedHierarchy = myProject.hierarchies[getSpecIdx( uP )];
 	/*		let res = getRId( uP );
 			if( res && res.id ) {
 				// tree has entries and a known resource is specified: select the first node referencing the resource
-//				console.debug('#filled and resource specified',res);
+//				console.debug('#filled and resource specified',myProject.selectedHierarchy,res);
 				self.tree.selectNodeByRef( res )
 			} else {
 				// tree has entries, no or unknown resource specified: select first node
-//				console.debug('#filled and no resource specified');
+//				console.debug('#filled and no resource specified',myProject.selectedHierarchy);
 				self.tree.selectFirstNode()
 				// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			};
@@ -513,21 +515,20 @@ modules.construct({
 		// - user clicks on a tab -> show the content in view mode 
 		// - cache update is signalled -> again, refresh only any content in view mode.
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
-//		console.debug('doRefresh',options,self.selectedTab());
-
 		setContentHeight();
+
 		$('#contentNotice').empty();
-		self.showLeft.set( isTabWithTree( self.selectedTab() ) );
+
 		self.showTree.set();
-		
+//		console.debug('doRefresh',options,self.selectedTab());
 	//	switch( options && options.view.substring(1) || self.selectedTab() ) {
 		switch( self.selectedTab() ) {
 			case CONFIG.objectList:			
-		//		self.showLeft.set();
+				self.showLeft.set();
 				self.showDocument( options ); // just get some resources beginning with the selected node
 				break;
 			case CONFIG.relations:			
-		//		self.showLeft.set();
+				self.showLeft.set();
 				self.showStatements( options );
 				break;
 /*			case CONFIG.objectDetails:		
@@ -557,7 +558,7 @@ modules.construct({
 				self.showFilter();
 				break; */
 			case CONFIG.reports:			
-		//		self.showLeft.reset();
+				self.showLeft.reset();
 				$( '#contentActions' ).empty();
 				self.showReports();
 				break;
@@ -580,7 +581,7 @@ modules.construct({
 		myProject.selectedHierarchy = itemById( myProject.hierarchies, myProject.selectedHierarchy.id )
 	//							|| myProject.hierarchies[0];
 		// it is assumed that the cache and the hierarchy have been updated, before:
-		self.updateTree( myProject.selectedHierarchy );  // populate the tree view with new data from the cache.
+		self.buildTree( myProject.selectedHierarchy );  // populate the tree view with new data from the cache.
 		self.refresh()		
 	}
 	self.reload = function() {
@@ -830,8 +831,8 @@ modules.construct({
 				myProject.resources.forEach( function(rO) {
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check it, here:
-					// disregard resources which are not referenced in the current tree:
-					if( specs.tree.nodesByRef(rO).length<1 ) return;
+					// disregard resources which are not referenced in the current tree (selected spec):
+					if( myProject.selectedHierarchy.flatL.indexOf(rO.id)<0 ) return;
 					rO.ti = resTitleOf( rO );
 					if( !rO.ti || rO.ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
 					
@@ -1080,7 +1081,7 @@ modules.construct({
 /*	self.showTable = function() {
 
 		// load the table module, if not yet available:
-		busy.set();
+		busy.set()
 		if( modules.load( CONFIG.objectTable, function() {self.showTable()} ) ) return;  // try again as soon as both modules are loaded.
 
 		objectTable.init( function(){ self.showTab(CONFIG.specDialogDefault) } ); 
@@ -1090,34 +1091,32 @@ modules.construct({
 		// List all files of the current project:
 	
 		// load the files module, if not yet available:
-		busy.set();
+		busy.set()
 		if( modules.load( CONFIG.files, function() {self.showFiles()} ) ) return;  // try again as soon as module is loaded.
 		
 		myFiles.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
 		myFiles.show()		// for myProject, of course
-	}; */
+	}; 
 	self.showFilter = function( filterList ) {
 		// All resources as referenced by the tree are batchwise requested from the server. 
 		// Objects meeting the filter criteria are displayed.
 		// New batches of resources are requested until at least 'CONFIG.objToShowCount' hits are shown or the end of the tree has been reached.
 		// The next set of hits is obtained by pressing the 'next' button.
 
-		busy.set();
+		busy.set()
 		
-		filters.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
-		filters.show( filterList )
-	};	
+		filterView.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
+		filterView.show( filterList )
+	};	*/
 	self.showReports = function() {
 		// Show statistics of the current spec:
-	//	console.debug('showReports!');
 	
-		busy.set();
+		busy.set()
 
-	//	reports.init( function(){ self.showTab(CONFIG.specDialogDefault) } );
-		reports.init();
+		reports.init( function(){ self.showTab(CONFIG.specDialogDefault) } );
 		reports.show( myProject )
 	};  
-
+		
 /* +++++++++++++++++++++++++++++++                    
 	Functions called by GUI events */
 /*	self.addLinkClicked = function() {
@@ -1165,7 +1164,7 @@ modules.construct({
 			specs.tree.selectNode( nd.getNextSibling() );  // select the inserted node, where the current node may have children
 			myProject.deleteContent( 'node', {id: nd.id} )
 				.done( function() {
-					specs.updateTree();
+					specs.buildTree();
 				doRefresh({forced:true})
 				})
 				.fail( handleError );
@@ -1356,9 +1355,9 @@ modules.construct({
 	*/	
 		// Add the create button depending on the current user's permissions:
 		// In order to create an resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
-	//	if( self.resCre && myProject.selectedHierarchy.upd )
-	//		rB += '<button class="btn btn-success" onclick="specs.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
-	//	else
+		if( self.resCre && myProject.selectedHierarchy.upd )
+			rB += '<button class="btn btn-success" onclick="specs.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
+		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 			
 		if( !selO ) { return( rB )};
@@ -1372,9 +1371,9 @@ modules.construct({
 			}
 
 		// Add the clone, update and delete buttons depending on the current user's permissions:
-	//	if( self.resCln && myProject.selectedHierarchy.upd )
-	//		rB += '<button class="btn btn-success" onclick="specs.editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
-	//	else
+		if( self.resCln && myProject.selectedHierarchy.upd )
+			rB += '<button class="btn btn-success" onclick="specs.editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
+		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
 		if( attrUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
@@ -1390,9 +1389,9 @@ modules.construct({
 
 		// The delete button is shown, if a hierarchy entry can be deleted.
 		// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-	//	if( myProject.selectedHierarchy.del )
-	//		rB += '<button class="btn btn-danger" onclick="specs.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
-	//	else
+		if( myProject.selectedHierarchy.del )
+			rB += '<button class="btn btn-danger" onclick="specs.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
+		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
 
 		return rB	// return rendered buttons for display
@@ -1446,7 +1445,7 @@ function contentOf( ob, pV, opts ) {
 			clickableElements: false
 		}
 	};
-//	console.debug('contentOf',ob,pV,opts);
+//	console.debug('contentOf',ob,pV,pV.value,opts);
 	let dT = dataTypeOf( myProject, pV['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
@@ -1487,6 +1486,7 @@ function contentOf( ob, pV, opts ) {
 		// - see: https://www.mediawiki.org/wiki/Help:Links
 
 			function lnk(o,t){ 
+			//	return '<a href="#pid/'+myProject.id+'/sid/'+myProject.selectedHierarchy.id+'/'+CONFIG.objectDetails+'/'+o.id+'">'+t+'</a>' 
 //				console.debug('lnk',o,t,'specs.relatedItemClicked(\''+o.id+'\')');
 				return '<a onclick="specs.relatedItemClicked(\''+o.id+'\')">'+t+'</a>'
 			}				
@@ -1505,41 +1505,22 @@ function contentOf( ob, pV, opts ) {
 			str = str.replace( RE.titleLink, 
 				function( $0, $1 ) { 
 					replaced = true;
-					// disregard links being too short:
 					if( $1.length<CONFIG.dynLinkMinLength ) return $1;
-					let m=$1.toLowerCase(), cO=null, ti=null, target=null, notFound=true;
-					// is ti a title of any resource?
-					specs.tree.iterate( function(nd) {
-						cO = itemById( myProject.resources, nd.ref );
-						// avoid self-reflection:
-					//	if(ob.id==cO.id) return true;
-					//	ti = resTitleOf( cO ).stripHTML();
-						ti = resTitleOf( cO );
-						// if the dynLink content equals a resource's title, remember the first occurrence:
-						if( notFound && ti && m==ti.toLowerCase() ) {
-							notFound = false;
-							target = cO;
-						};
-						return notFound // go into depth (return true) only if not yet found
-					});
-					// replace it with a link in case of a match:
-					if( target )
-						return lnk(target,$1); 
-				/*	previous implementation up until v0.95.2:
 					let m=$1.toLowerCase(), cO=null, ti=null;
+					// is ti a title of any resource?
 					for( var x=myProject.resources.length-1;x>-1;x-- ) {
 						cO = myProject.resources[x];
 						// avoid self-reflection:
 					//	if(ob.id==cO.id) continue;
+						// disregard resources which are not referenced in the current tree (selected spec):
+						if( myProject.selectedHierarchy.flatL.indexOf(cO.id)<0 ) continue;
 					//	ti = resTitleOf( cO ).stripHTML();
 						ti = resTitleOf( cO );
-						// continue searching, if not equal:
-						if(m!=ti.toLowerCase()) continue;
-						// disregard resources which are not referenced in the current tree (selected spec):
-						if( specs.tree.nodesByRef(cO).length<1 ) continue;
-						// the dynLink content equals a resource's title, replace it with a link:
-						return lnk(cO,$1)
-					}; */
+						// disregard resources whose title is too short:
+						if( !ti || ti.length<CONFIG.dynLinkMinLength ) continue;
+						// if the dynLink content equals a resource's title, replace it with a link:
+						if(m==ti.toLowerCase()) return lnk(cO,$1)
+					};
 					// The dynamic link has NOT been matched/replaced, so mark it:
 					return '<span style="color:#D82020">'+$1+'</span>'
 				}
@@ -1583,7 +1564,6 @@ function Resource( obj ) {
 
 	self.listEntry = function() {
 			function showAtt( att ) {
-//				console.debug('#att#',att);
 				if( CONFIG.overviewHiddenAttributes.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
 				return (CONFIG.overviewShowEmptyAttributes || hasContent(att.value))
 			} 

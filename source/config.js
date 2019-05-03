@@ -9,8 +9,8 @@
 */
 const CONFIG = {};
 	CONFIG.productTitle = 'Interactive-Spec';
-	CONFIG.productVersion = '0.95.2';	// major and minor must correspond to the server version installed.
-	CONFIG.specifVersion = '0.10.6';
+	CONFIG.productVersion = '0.95.3';	// major and minor must correspond to the server version installed.
+	CONFIG.specifVersion = '0.10.8';
 	CONFIG.imgURL = './images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
@@ -54,6 +54,8 @@ const CONFIG = {};
 	// mime image/x-png does not exist by standard, but it has been seen in real data ...
 	CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
 	CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
+	CONFIG.modelExtensions = [ 'bpmn' ];
+	CONFIG.modelTypes = [ 'application/bpmn+xml'];
 
 	// Keys for the query parameters - if changed, existing links will end up in default view:
 	CONFIG.keyUId = 'uid';	// userId
@@ -483,5 +485,3 @@ let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
 RE.tagSingleObject = new RegExp( reSO, 'g' );
 RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
 RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
-
-	

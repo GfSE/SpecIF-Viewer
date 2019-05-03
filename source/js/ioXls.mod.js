@@ -1,7 +1,7 @@
 ﻿/*	iLaH: Excel (XLS) import 
-	Dependencies: jQuery 3.0+, sheetjs, module 'importAny'
+	Dependencies: jQuery 3.0+, sheetjs
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
-	Author: se@enso-managers.com, Berlin
+	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
@@ -71,95 +71,17 @@ modules.construct({
 		fDate = fDate.toISOString();
 //		console.debug( 'date', fDate );
 		return f
-	},
-	self.asBuf = function( buf ) {
+	};
+	self.toSpecif = function( buf ) {
 		// import an Excel file from a buffer:
 		self.abortFlag = false;
 		xDO = $.Deferred();
 		
-//		xDO.notify('Transforming Excel to SpecIF',10); 
+		xDO.notify('Transforming Excel to SpecIF',10); 
 //		console.debug('input.prjName', self.parent.projectName );
 		data = xslx2specif( buf, self.parent.projectName , fDate );
-		myProject.check( data )
-			.progress( xDO.notify )
-			.done( function() {
-				// Next, check if there a project with the same name:
-					function sameName() {
-						for( var p=self.parent.projectL.length-1; p>-1; p-- ) {
-							console.debug(data.id,self.parent.projectL[p]);
-		//					if( data.id==self.parent.projectL[p].id ) return true
-							if( self.parent.projectName==self.parent.projectL[p].title ) return self.parent.projectL[p]
-						};
-						return null 	// no project with the same name
-					}
-				let pr = sameName();
-				// the logic further down will take care of the project id
-				if( pr ) {
-					data.id = pr.id;
-					let dlg = new BootstrapDialog({
-						title: 'Please choose the import mode:',
-						type: 'type-default',
-						message: function (thisDlg) {
-							// ToDo: error message, if no specification type is found.
-							var form = $('<form id="attrInput" role="form" class="form-horizontal" ></form>');
-							form.append( radioInput( 'Import Mode', modes ) );
-							return form },
-						buttons: [{
-								label: i18n.BtnCancel,
-								action: function(thisDlg){ 
-									xDO.reject({status: 1, statusText:'Cancelled'});
-									thisDlg.close() 
-								}
-							},{ 	
-								label: i18n.BtnSave,
-								cssClass: 'btn-success', 
-								action: function (thisDlg) {
-									mode = modes[ radioValue( 'Import Mode' ) ];
-									// save according to the selected mode:
-									switch( mode.id ) {
-										case 'clone': 	
-											data.id = genID('P-');
-											// no break
-										case 'replace':
-											xDO.notify('Saving project',20); 
-//											console.debug('after selection',data);
-											myProject.create( data )
-												.progress( xDO.notify )
-												.done( xDO.resolve )
-												.fail( xDO.reject );
-											break;
-										case 'update':
-											// First, load the project with the types for comparison:
-											xDO.notify('Updating project',20); 
-											myProject.read({id:data.id}, {reload:true})	// reload from server
-												.done( function(refD) {
-//													console.debug('specif.update',refD,data)
-													// ... then start to save the new or updated elements:
-													myProject.update( data, 'extend' )
-														.progress( xDO.notify )
-														.done( xDO.resolve )
-														.fail( xDO.reject )
-												})
-												.fail( xDO.reject )
-									};
-									thisDlg.close()
-								}
-							}]
-					})
-					.open()
-				} else {
-					// Create a new project:
-				//	mode = modeCre;
-					xDO.notify('Creating project',20); 
-					data.id = genID('P-');
-//					console.debug('without selection',data);
-					myProject.create( data )
-						.progress( xDO.notify )
-						.done( xDO.resolve )
-						.fail( xDO.reject )
-				}
-			})
-			.fail( xDO.reject );
+		xDO.resolve( data );
+
 		return xDO
 	};
 	self.abort = function() {
@@ -257,58 +179,57 @@ function xslx2specif( buf, pN, chgAt ) {
 			this.dataType = 'DT-'+dT;		// like baseTypes[i].id
 			this.changedAt = chgAt
 		}
-		function colIdx( colN ) {
-			// transform column name to column index, e.g. 'C'->3 or 'AB'->28
-			let idx=0,f=1;
-			for( var i=colN.length-1; i>-1; i-- ) {
-				idx += f*(colN.charCodeAt(i)-64);
-				f *= 26
-			};
-			return idx
-		}
-		function colName( colI ) {
-			// get the column name from an index: 4 becomes 'D', 27 becomes 'AA'
-			function cName( idx, res) {
-				if( idx<1 ) return res;
-				let r = idx % 26,
-					f = (idx-r)/26;
-				res = String.fromCharCode(r+64) + res;
-				return cName( f, res )
-			}
-			return cName(colI,'')
-		}
-		function coord( addr ) {
-			// create a coordinate from a cell name: 'C4' becomes {col:3,row:4}
-			let res = addr.match(/([A-Z]+)([0-9]+)/);  // res[1] is column name, res[2] is line index
-			return {col:colIdx(res[1]),row:parseInt(res[2])}
-		}
-/*		function cellName( coord ) {
-			return colName(coord.col)+coord.row
-		}
-*/		function isDateTime( cell ) {
-//			console.debug('cell:',cell);
-			return cell && cell.t=='d' 
-		}
-		function isNumber( cell ) {
-			return cell && cell.t=='n'
-		}
-		function isInt( cell ) {
-			return isNumber( cell ) && Number.isInteger( parseFloat(cell.v) )
-		}
-		function isReal( cell ) {
-			return isNumber( cell ) && !Number.isInteger( parseFloat(cell.v) )
-		}
-		function isBool( cell ) {
-			return cell && (cell.v.isTrue() || cell.v.isFalse() || cell.t=='b')
-		}
-/*		function isStr( cell ) {
-			return cell && cell.t=='s'
-		}
-		function isXHTML( cell ) {
-			return cell && cell.t=='s' && ....
-		}
-*/			
 	function transformSheet(idx) {
+			function colIdx( colN ) {
+				// transform column name to column index, e.g. 'C'->3 or 'AB'->28
+				let idx=0,f=1;
+				for( var i=colN.length-1; i>-1; i-- ) {
+					idx += f*(colN.charCodeAt(i)-64);
+					f *= 26
+				};
+				return idx
+			}
+			function colName( colI ) {
+				// get the column name from an index: 4 becomes 'D', 27 becomes 'AA'
+				function cName( idx, res) {
+					if( idx<1 ) return res;
+					let r = idx % 26,
+						f = (idx-r)/26;
+					res = String.fromCharCode(r+64) + res;
+					return cName( f, res )
+				}
+				return cName(colI,'')
+			}
+			function coord( addr ) {
+				// create a coordinate from a cell name: 'C4' becomes {col:3,row:4}
+				let res = addr.match(/([A-Z]+)([0-9]+)/);  // res[1] is column name, res[2] is line index
+				return {col:colIdx(res[1]),row:parseInt(res[2])}
+			}
+	/*		function cellName( coord ) {
+				return colName(coord.col)+coord.row
+			}  */
+			function isDateTime( cell ) {
+	//			console.debug('cell:',cell);
+				return cell && cell.t=='d' 
+			}
+			function isNumber( cell ) {
+				return cell && cell.t=='n'
+			}
+			function isInt( cell ) {
+				return isNumber( cell ) && Number.isInteger( parseFloat(cell.v) )
+			}
+			function isReal( cell ) {
+				return isNumber( cell ) && !Number.isInteger( parseFloat(cell.v) )
+			}
+			function isBool( cell ) {
+				return cell && (cell.v.isTrue() || cell.v.isFalse() || cell.t=='b')
+			}
+	/*		function isStr( cell ) {
+				return cell && cell.t=='s'
+			}
+			function isXHTML( cell ) {
+				return cell && cell.t=='s' && ....
+			}  */			
 			function titleFromProps( obj ) {
 					function tIdx( obj ) {
 						// Find the index of the property to be used as title.

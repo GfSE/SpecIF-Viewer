@@ -1,7 +1,7 @@
 ///////////////////////////////
 /*	Cache Library for SpecIF data.
 	Dependencies: jQuery
-	(C)copyright 2010-2019 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
@@ -51,15 +51,15 @@ modules.construct({
 		self.locked = null;		// the server has locked the project ( readOnly )
 
 		self.dataTypes = [];
-		self.allClasses = []; 	// common list of all resourceClasses, statementClasses and hierarchyClasses
+		self.allClasses = []; 	// common list of all resourceClasses and statementClasses
 		self.propertyClasses = [];
 		self.resourceClasses = [];
 		self.statementClasses = [];
-		self.hierarchyClasses = [];		// list of specification (hierarchy root) types
+	//	self.hierarchyClasses = [];		// list of specification (hierarchy root) types
 		self.resources = [];   	// list of resources as referenced by the hierarchies
 		self.statements = [];
 		self.hierarchies = [];    	// listed specifications (aka hierarchies, outlines) of the project.   
-		self.selectedHierarchy = null;  // the currently worked-on hierarchy
+	//	self.selectedHierarchy = null;  // the currently worked-on hierarchy
 		self.files = [];
 
 		autoLoadId = null;  // stop any autoLoad chain
@@ -110,7 +110,7 @@ modules.construct({
 		cache( 'propertyClass', prj.propertyClasses );
 		cache( 'resourceClass', prj.resourceClasses );
 		cache( 'statementClass', prj.statementClasses );
-		cache( 'hierarchyClass', prj.hierarchyClasses );
+	//	cache( 'hierarchyClass', prj.hierarchyClasses );
 		sDO.notify(i18n.MsgLoadingFiles,40);
 		cache( 'file', prj.files );
 		sDO.notify(i18n.MsgLoadingObjects,50);
@@ -199,11 +199,11 @@ modules.construct({
 			uDO.reject( rc );
 			return uDO
 		};
-		rc = typesAreCompatible('hierarchyClass',mode);
-		if( rc.status>0 ) {
-			uDO.reject( rc );
-			return uDO
-		};
+	//	rc = typesAreCompatible('hierarchyClass',mode);
+	//	if( rc.status>0 ) {
+	//		uDO.reject( rc );
+	//		return uDO
+	//	}; 
 		console.info("All existing types are compatible with '"+newD.title+"'");
 
 		// In a second pass, start with creating any type which does not yet exist.
@@ -220,8 +220,9 @@ modules.construct({
 			switch( ctg ) {
 				case 'dataType': addNewTypes( 'resourceClass' ); break;
 				case 'resourceClass': addNewTypes( 'statementClass' ); break;
-				case 'statementClass': addNewTypes( 'hierarchyClass' ); break;
-				case 'hierarchyClass': updateIfChanged( 'file' ); break;
+			//	case 'statementClass': addNewTypes( 'hierarchyClass' ); break;
+			//	case 'hierarchyClass': updateIfChanged( 'file' ); break;
+				case 'statementClass': updateIfChanged( 'file' ); break;
 				case 'file': updateIfChanged( 'resource' ); break;
 				case 'resource': updateIfChanged( 'statement' ); break;
 				case 'statement': updateIfChanged( 'hierarchy' ); break;
@@ -239,7 +240,7 @@ modules.construct({
 				case 'dataType': aL = self.dataTypes; nL = newD.dataTypes; break;
 				case 'resourceClass': aL = self.resourceClasses; nL = newD.resourceClasses; break;
 				case 'statementClass': aL = self.statementClasses; nL = newD.statementClasses; break;
-				case 'hierarchyClass': aL = self.hierarchyClasses; nL = newD.hierarchyClasses; break;
+			//	case 'hierarchyClass': aL = self.hierarchyClasses; nL = newD.hierarchyClasses; break;
 				default: return null //should never arrive here
 			};
 			// true, if every element in nL is compatibly present in aL or if it can be added;
@@ -319,9 +320,9 @@ modules.construct({
 					};
 					// else: so far everything is OK, but go on checking ... (no break!)
 				case 'resourceClass':
-				case 'hierarchyClass':
-					// An objectType, relationType or hierarchyType is incompatible, if it has an equally-named property class with a different dataType
-					// An objectType, relationType or hierarchyType is compatible, if all equally-named propertyClasses have the same dataType
+			//	case 'hierarchyClass':
+					// An objectType or relationType is incompatible, if it has an equally-named property class with a different dataType
+					// An objectType or relationType is compatible, if all equally-named propertyClasses have the same dataType
 					if( !newT.propertyClasses || !newT.propertyClasses.length ) 
 								return {status:0};
 					// else: The new type has at least one property.
@@ -366,7 +367,7 @@ modules.construct({
 				case 'dataType': rL = self.dataTypes; nL = newD.dataTypes; break;
 				case 'resourceClass': rL = self.resourceClasses; nL = newD.resourceClasses; break;
 				case 'statementClass': rL = self.statementClasses; nL = newD.statementClasses; break;
-				case 'hierarchyClass': rL = self.hierarchyClasses; nL = newD.hierarchyClasses; break;
+			//	case 'hierarchyClass': rL = self.hierarchyClasses; nL = newD.hierarchyClasses; break;
 				default: return null //should never arrive here
 			};
 			nL.forEach( function(nT) {
@@ -485,7 +486,7 @@ modules.construct({
 				
 				// As long as the hierarchy roots do not use properties, the title carries the title,
 				// so check whether the class of the new element is listed in the hierarchy types:
-				if( ctg == 'hierarchy' ) return newD.hierarchyClasses.indexOf( n['class'] )<0 || r.title!=n.title;
+			//	if( ctg == 'hierarchy' ) return newD.hierarchyClasses.indexOf( n['class'] )<0 || r.title!=n.title;
 				
 				// Continue in case of resources and statements:
 				let i=null, rA=null, nA=null, rV=null, nV=null;
@@ -767,9 +768,9 @@ modules.construct({
 //				console.debug('isInUse',ctg,item);
 				switch( ctg ) {
 					case 'dataType':		return dTIsInUse(self.allClasses,itm);
+				//	case 'hierarchyClass':
 					case 'resourceClass':
-					case 'statementClass':
-					case 'hierarchyClass':	return sTIsInUse(ctg,itm);
+					case 'statementClass':	return sTIsInUse(ctg,itm);
 					case 'class':	return aTIsInUse(self.resources,itm)
 												|| aTIsInUse(self.hierarchies,itm)
 												|| aTIsInUse(self.statements,itm) 
@@ -786,9 +787,9 @@ modules.construct({
 				return null;  // not supported
 			case 'class':	
 			case 'dataType':
+		//	case 'hierarchyClass':
 			case 'resourceClass':
-			case 'statementClass':
-			case 'hierarchyClass':	if( Array.isArray(item) ) return null;	// not yet supported
+			case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
 									if( isInUse(ctg,item) ) {
 										dDO.reject({status:972, statusText:i18n.Err400TypeIsInUse});
 										return dDO
@@ -1221,7 +1222,9 @@ modules.construct({
 				names.hClass = 'hierarchyType';
 				names.pClass = 'propertyType';
 				break;
-			default:
+			case '0.10.4':
+			case '0.10.5':
+			case '0.10.6':
 				names.rClasses = 'resourceClasses';
 				names.sClasses = 'statementClasses';
 				names.hClasses = 'hierarchyClasses';
@@ -1232,25 +1235,36 @@ modules.construct({
 				names.sClass = 'class';
 				names.hClass = 'class';
 				names.pClass = 'class'
+			case '0.10.7':
+				break;
+			default:
+				names.rClasses = 'resourceClasses';
+				names.sClasses = 'statementClasses';
+				names.pClasses = 'propertyClasses';
+				names.subClasses = 'subjectClasses';
+				names.objClasses = 'objectClasses';
+				names.rClass = 'class';
+				names.sClass = 'class';
+				names.pClass = 'class'
 		};
-		
-		try {
-			var iD = {
-				dataTypes: 			forAll( spD.dataTypes, dT2int )
-			};
+
+		let iD = {};
+	//	try {
+			iD.dataTypes = 			forAll( spD.dataTypes, dT2int )
 			iD.propertyClasses = 	forAll( spD.propertyClasses, pC2int );	// starting v0.10.6
 			iD.resourceClasses = 	forAll( spD[names.rClasses], rC2int );
 			iD.statementClasses =	forAll( spD[names.sClasses], sC2int );
-			iD.hierarchyClasses =	forAll( spD[names.hClasses], hC2int );
+			if( names.hClasses )
+				iD.resourceClasses = iD.resourceClasses.concat(forAll( spD[names.hClasses], hC2int ));
 			iD.resources = 			forAll( spD.resources, r2int );
 			iD.statements =			forAll( spD.statements, s2int );
 			iD.hierarchies =		forAll( spD.hierarchies, h2int );
 			iD.files =				forAll( spD.files, f2int )
-		} catch (e) {
-			console.error( "Error when importing the project '"+spD.title+"'" );
-			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
-			return null
-		};
+	//	} catch (e) {
+	//		console.error( "Error when importing the project '"+spD.title+"'" );
+	//		message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
+	//		return null
+	//	};
 		
 		// header information provided only in case of project creation, but not in case of project update:
 		if( spD.id ) iD.id = spD.id;
@@ -1377,8 +1391,11 @@ modules.construct({
 				return oE
 			}
 			function hC2int( iE ) {
+				// hierarchyClasses (used up until v0.10.6) are stored as resourceClasses,
+				// later on, the hierarchy-roots will be stored as resources referenced by a node:
 				var oE = aC2int( iE );
-		//		oE.category = 'hierarchyClass';
+				oE.isHeading = true;
+		//		oE.category = 'resourceClass';
 //				console.debug('hierarchyClass 2int',iE,oE);
 				return oE
 			}
@@ -1448,10 +1465,29 @@ modules.construct({
 				return iS
 			}
 			function h2int( eH ) {
-				var iH = a2int( eH );
-				iH['class'] = eH[names.hClass];
-				// list all resource ids in a flat list:
-				iH.flatL = [];
+			//	var iH = a2int( eH );
+			//	iH['class'] = eH[names.hClass];
+				// the properties are stored with a resource, while the hierarchy is stored as a node with reference to that resource:
+				if( names.hClasses ) {
+					// up until v0.10.6;
+					var iR = a2int( eH ),
+						iH = {
+							id: 'N-'+iR.id,
+							resource: iR.id,
+							changedAt: eH.changedAt
+						};
+					iR['class'] = eH[names.hClass];
+					iD.resources.push(iR);
+					
+					// list all resource ids in a flat list:
+					if(iR.title) iH.title = iR.title
+				} else {
+					// starting v0.10.8:
+					var iH = a2int( eH );
+					iH.resource = eH.resource
+				};
+				if(eH.revision) iH.revision = eH.revision;
+				iH.flatL = [eH.id];
 				iH.nodes = forAll( eH.nodes, n2int );
 //				console.debug('hierarchy 2int',eH,iH);
 				return iH
@@ -1525,7 +1561,7 @@ modules.construct({
 		spD.propertyClasses = forAll( myProject.propertyClasses, pC2ext );
 		spD.resourceClasses = forAll( myProject.resourceClasses, rC2ext );
 		spD.statementClasses = forAll( myProject.statementClasses, sC2ext );
-		spD.hierarchyClasses = forAll( myProject.hierarchyClasses, hC2ext );
+	//	spD.hierarchyClasses = forAll( myProject.hierarchyClasses, hC2ext );
 		spD.resources = forAll( myProject.resources, r2ext );
 		spD.statements = forAll( myProject.statements, s2ext );
 		spD.hierarchies = forAll( myProject.hierarchies, h2ext );
@@ -1601,10 +1637,10 @@ modules.construct({
 				if( iE.objectClasses && iE.objectClasses.length>0 ) oE.objectClasses = iE.objectClasses;
 				return oE
 			}
-			function hC2ext( iE ) {
+		/*	function hC2ext( iE ) {
 				var oE = aC2ext( iE );
 				return oE
-			}
+			} */
 			function p2ext( iE ) {
 				if( !iE.value ) return null;	// skip empty properties
 				var oE = {
@@ -1637,8 +1673,8 @@ modules.construct({
 				};
 				if( iE.description ) eE.description = iE.description;
 				eE['class'] = iE['class'];
-				let aL = forAll( iE.properties, p2ext );
-				if( aL.length>0 ) eE.properties = aL;
+				if( iE.properties.length>0 )
+					eE.properties = forAll( iE.properties, p2ext );
 				if( iE.revision ) eE.revision = iE.revision;
 				eE.changedAt = iE.changedAt;
 				if( iE.changedBy ) eE.changedBy = iE.changedBy;
@@ -1648,11 +1684,11 @@ modules.construct({
 			}
 			function r2ext( iR ) {
 				var eR = a2ext( iR );
-	//			console.debug('resource 2int',iR,eR);
+//				console.debug('resource 2int',iR,eR);
 				return eR
 			}
 			function s2ext( iS ) {
-	//			console.debug('statement 2ext',iS.title);
+//				console.debug('statement 2ext',iS.title);
 				if( CONFIG.hiddenRelations.indexOf( iS.title )>-1 ) return null;  // do not export invisible statements
 				var eS = a2ext( iS );
 				// The statements usually do use a vocabulary item (and not have an individual title), 
@@ -1666,13 +1702,19 @@ modules.construct({
 				return eS
 			}
 			function n2ext( iN ) {
-				return iN
+				// just take the non-redundant properties:
+				let eN = {
+					id: iN.id,
+					resource: iN.resource,
+					revision: iN.revision,
+					changedAt: iN.changedAt
+				};
+				if( iN.nodes && iN.nodes.length>0 )
+					eN.nodes = forAll(iN.nodes,n2ext);
+				return eN
 			}
 			function h2ext( iH ) {
-				var eH = a2ext( iH );
-				eH.nodes = forAll( iH.nodes, n2ext );
-	//			console.debug('hierarchy 2ext',iH,eH);
-				return eH
+				return n2ext(iH)
 			}
 			function f2ext( iF ) {
 				var eF = {
@@ -1698,7 +1740,8 @@ modules.construct({
 
 		// Get the specified schema file from the server:
 		httpGet({
-			url: "https://specif.de/v"+data.specifVersion+"/schema", 
+		//	url: "https://specif.de/v"+data.specifVersion+"/schema", 
+			url: "./specif.de/v"+data.specifVersion+"/schema", 
 			responseType: 'arraybuffer',
 			withCredentials: false,	
 			done: function(xhr) { 
@@ -1748,7 +1791,7 @@ modules.construct({
 //////////
 // some local helper routines:
 
-	function queryObjects( qu, reload ) {   
+/*	function queryObjects( qu, reload ) {   
 		// get all the resources of the specified type: qu is {type: class}
 	//	if( !reload ) {
 			// collect all resources with the queried type:
@@ -1758,7 +1801,7 @@ modules.construct({
 			return dO
 	//	};
 	}
-/*	function loadFiles() {
+	function loadFiles() {
 		// in case of ReqIF Server, only a list of file meta data is delivered,
 		// whereas in case of PouchDB, the files themselves are delivered.
 		return self.readContent( 'file', 'all', {reload:true} )
@@ -1940,9 +1983,9 @@ modules.construct({
 			case 'hierarchy':
 			case 'dataType':
 			case 'propertyClass':		return fn( cacheOf(ctg), item );
+		//	case 'hierarchyClass': 		
 			case 'resourceClass': 
-			case 'statementClass': 
-			case 'hierarchyClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
+			case 'statementClass':		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
 			case 'class':				if(Array.isArray(item)||!item['class']) return null;  // cannot process arrays in this case, yet.
 //										console.debug('cache class',item,itemById(self.allClasses,item['class'])); 
 										return cacheAtPosition( itemById(self.allClasses,item['class']).propertyClasses, item ); ;
@@ -1951,7 +1994,6 @@ modules.construct({
 			case 'file': 				if(self.cacheInstances) return fn( cacheOf(ctg), item );
 										else return;
 			case 'node':				if(Array.isArray(item)||!item.parent) return null;
-										self.selectedHierarchy.flatL.push( item.ref );
 //										console.debug('cache',ctg,item);
 										return cacheNode( item ); 
 			default: return null
@@ -1975,9 +2017,9 @@ modules.construct({
 			case 'hierarchy':		
 			case 'dataType': 
 			case 'propertyClass':		return fn( cacheOf(ctg), item );
+		//	case 'hierarchyClass': 		
 			case 'resourceClass': 	
-			case 'statementClass': 
-			case 'hierarchyClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
+			case 'statementClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
 			case 'class':				let sT = itemById(self.allClasses,item['class']);
 //										console.debug('uncache class',item,sT); 
 										return fn( sT.propertyClasses, item );
@@ -1986,7 +2028,6 @@ modules.construct({
 			case 'file':				if(self.cacheInstances) return fn( cacheOf(ctg), item );
 										else return;
 			case 'node':				if( Array.isArray(item) ) return null;
-										removeFromArray( self.selectedHierarchy.flatL, item.ref );
 										return delNode( self.hierarchies, item.id );
 			default: return null
 		}
@@ -1998,7 +2039,7 @@ modules.construct({
 			case 'propertyClass':	return self.propertyClasses;
 			case 'resourceClass':	return self.resourceClasses;
 			case 'statementClass':	return self.statementClasses;
-			case 'hierarchyClass':	return self.hierarchyClasses;
+		//	case 'hierarchyClass':	return self.hierarchyClasses;
 			case 'resource':		return self.resources;
 			case 'statement':		return self.statements;
 			case 'hierarchy':		return self.hierarchies;
@@ -2100,11 +2141,15 @@ modules.construct({
 
 //////////////////////////
 // global helper functions:
-function dataTypeOf( pr, aTid ) {
+function dataTypeOf( pr, cId ) {
 	// given a property class ID, return it's dataType:
-	return itemById( pr.dataTypes, itemById( pr.propertyClasses, aTid ).dataType )
-	//                    get class
-	//	   get dataType
+	if( typeof(cId)=='string' && cId.length>0 )
+		return itemById( pr.dataTypes, itemById( pr.propertyClasses, cId ).dataType )
+		//                             get class
+		//	   get dataType
+	// else:
+	// may happen, if a resource does not have any properties and it's title or description is being used:
+	return 'string' // by default
 }
 function enumValStr( dT, prp ) {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
@@ -2181,7 +2226,12 @@ function titleFromProperties( pL ) {
 }
 function resTitleOf( res ) {
 	// get the title from the properties or a replacement value in case of default:
+	if( typeof(res)!='object' ) return undefined;
 	return res.title || titleFromProperties( res.properties ) || titleOf( res )
+}
+function hTitleOf( h ) {
+	// get the title of the hierarchy:
+	return h.title || resTitleOf( itemById( h.resource ) )
 }
 function elementTitleWithIcon( el ) {
 	// add an icon to an element's title;
@@ -2251,13 +2301,10 @@ function classifyProps( el ) {
 		cP.title = deformat( cP.other[a].value );
 		// remove title from other:
 		cP.other.splice(a,1) 
-//	} else {
-		// In certain cases (ReqIF export or comment), there is no title property. 
-		// Then some other value will be taken to set the title when posting the object/resource to the server, 
-		// so that the hierarchy gets a title: see resTitleOf().
-		// But here we want only 'real' titles and none, if there is none.
-		// So we do NOT say, for example:
-//		cP.title = titleOf( el )
+	} else {
+		// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
+		// Here we want only 'real' titles and none, if there is none.
+		cP.title = el.title
 	};
 		
 	// b) Check the configured descriptions:
@@ -2270,6 +2317,7 @@ function classifyProps( el ) {
 			cP.other.splice(a,1) 
 		}
 	};
+	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: "dcterms:description", value: el.description} );
 //	console.debug( 'classifyProps', cP.title, cP.descriptions, cP.other );
 	return cP
 

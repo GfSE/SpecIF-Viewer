@@ -2,7 +2,7 @@
 /*	A very simple module loader and object (singleton) factory.
 	When all registered modules are ready, a callback function is executed to start or continue the application.
 	Dependencies: jQuery 3.1 and later.
-	(C)copyright 2010-2019 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
@@ -24,7 +24,7 @@ function ModuleManager() {
 	
 	var self = this;
 	let callWhenReady = null;
-	const vPath = '/v0.95.2';
+	const vPath = './v0.95.3';
 	self.init = function( opts ) {
 		self.registered = [];
 		self.ready = [];
@@ -103,8 +103,8 @@ function ModuleManager() {
 
 		// construct the controller using the provided function:
 		constructorFn(mo);
-		// make the module directly addressable by its role:
-		window[ mo.role ] = mo;
+		// make the module directly addressable by loadAs:
+		window[ mo.loadAs ] = mo;
 		// initialize:
 		mo.init(); 
 		
@@ -177,16 +177,16 @@ function ModuleManager() {
 				// load a module in case of elements with a name:
 				if( e.name ) {
 //					console.debug('l.load',e);
-					// A role may be specified when different modules (with diffent names) may create a component
-					// with  similar interface, but different function.
+					// An execution name ('loadAs') may be specified when different modules (with diffent names) 
+					// may create a component with  similar interface, but different function.
 					// For example, 'me' can be implemented by 'profileAnonymous' with minimal function or
 					// by 'profileMe' with full-fledged user management including user-roles and permissions;
 					// in this case the module carries the name 'profileAnonymous' resp. 'profileMe', while both
-					// specify a role 'me'.
+					// specify loadAs: 'me'.
 					// A program uses both similarly, e.g. me.attribute or me.function().
-					// Of course a role must be unique in an app at any time.
-					// By default, use name as role (applies only at the top level):
-					if( !e.role ) e.role = e.name;
+					// Of course loadAs must be unique in an app at any time.
+					// By default of 'loadAs', use 'name' (applies only at the top level):
+					if( !e.loadAs ) e.loadAs = e.name;
 					// load the module:
 					if( !e.lazy ) loadM( e.name )   
 				};
@@ -290,52 +290,52 @@ function ModuleManager() {
 			// For a module with HTML forms there must be a corresponding HTML div tag with id="mod".
 			switch( mod ) {	
 				// 3rd party:
-				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/bootstrap-3.3.7.min.css" />');
-											$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/bootstrap-theme-3.3.7.min.css" />');
-											getScript( '.'+vPath+'/3rd/bootstrap-3.3.7.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/bootstrap-dialog-1.35.4.min.css" />');
-											getScript( '.'+vPath+'/3rd/bootstrap-dialog-1.35.4.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/jqtree-1.4.8.css" />');
-											getScript( '.'+vPath+'/3rd/tree-1.4.8.jquery.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "diff": 				getScript( '.'+vPath+'/3rd/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
-				case "fileSaver": 			getScript( '.'+vPath+'/3rd/FileSaver-1.3.3.min.js' ).done( function() {setReady(mod)} ); return true;
-		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
-		//									getScript( '.'+vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "zip": 				getScript( '.'+vPath+'/3rd/jszip-3.1.5.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/bootstrap-3.4.1.min.css" />');
+											$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/bootstrap-theme-3.4.1.min.css" />');
+											getScript( vPath+'/3rd/bootstrap-3.4.1.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/bootstrap-dialog-1.35.4.min.css" />');
+											getScript( vPath+'/3rd/bootstrap-dialog-1.35.4.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jqtree-1.4.10.css" />');
+											getScript( vPath+'/3rd/tree-1.4.10.jquery.js' ).done( function() {setReady(mod)} ); return true;
+				case "diff": 				getScript( vPath+'/3rd/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
+				case "fileSaver": 			getScript( vPath+'/3rd/FileSaver-1.3.4.min.js' ).done( function() {setReady(mod)} ); return true;
+		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
+		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "zip": 				getScript( vPath+'/3rd/jszip-3.1.5.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "excel": 				loadM( 'zip' );	
-											getScript( '.'+vPath+'/3rd/xlsx-0.12.13.full.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/3rd/xlsx-0.12.13.full.min.js' ).done( function() {setReady(mod)} ); return true;
 
-				case "schemaJson": 			getScript( '.'+vPath+'/3rd/ajv-4.11.8.min.js' ).done( function() {setReady(mod)} ); return true;
-		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
-		//									getScript( '.'+vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "schemaJson": 			getScript( vPath+'/3rd/ajv-4.11.8.min.js' ).done( function() {setReady(mod)} ); return true;
+		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
+		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@3.0.4/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "graphViz":	 		// $('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/vis-network.min.css" />');
-											getScript( '.'+vPath+'/3rd/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( '.'+vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
+				case "graphViz":	 		// $('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/vis-network.min.css" />');
+											getScript( vPath+'/3rd/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'zip' );
 											loadM( 'toXhtml' );
-											getScript( '.'+vPath+'/js/toEpub.js' ).done( function() {setReady(mod)} ); return true;
-				case "toOxml": 				getScript( '.'+vPath+'/js/toOxml.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/toEpub.js' ).done( function() {setReady(mod)} ); return true;
+				case "toOxml": 				getScript( vPath+'/js/toOxml.js' ).done( function() {setReady(mod)} ); return true;
 
 				// libraries:
-				case "config": 				$.getScript( '.'+vPath+'/config.js', function() {setReady(mod)} ); return true;   // don't cache
+				case "config": 				$.getScript( vPath+'/config.js', function() {setReady(mod)} ); return true;   // don't cache
 				case "i18n": 				let langFile = null;
 											switch( browser.language ) {
-												case 'de':  langFile = '.'+vPath+'/i18n/iLaH-de.i18n.js'; break;
-												case 'fr':  langFile = '.'+vPath+'/i18n/iLaH-fr.i18n.js'; break;
-												default:	langFile = '.'+vPath+'/i18n/iLaH-en.i18n.js'
+												case 'de':  langFile = vPath+'/i18n/iLaH-de.i18n.js'; break;
+												case 'fr':  langFile = vPath+'/i18n/iLaH-fr.i18n.js'; break;
+												default:	langFile = vPath+'/i18n/iLaH-en.i18n.js'
 											};
 											getScript( langFile ).done( function() {setReady(mod)} ); return true;
-				case "helper": 				getScript( '.'+vPath+'/js/helper.js' ).done( function() {setReady(mod)} ); return true;
-				case "helperTree": 			getScript( '.'+vPath+'/js/helperTree.js' ).done( function() {setReady(mod)} ); return true;
-/*				case "pouchDB":		 		getScript( '.'+vPath+'/3rd/pouchdb-7.0.0.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "helper": 				getScript( vPath+'/js/helper.js' ).done( function() {setReady(mod)} ); return true;
+				case "helperTree": 			getScript( vPath+'/js/helperTree.js' ).done( function() {setReady(mod)} ); return true;
+/*				case "pouchDB":		 		getScript( vPath+'/3rd/pouchdb-7.0.0.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript( '.'+vPath+'/js/serverPouch-0.93.1.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/serverPouch-0.93.1.js' ).done( function() {setReady(mod)} ); return true;
 */				case "cache": 				loadM( 'fileSaver' );
-											getScript( '.'+vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case "stdTypes":			getScript( '.'+vPath+'/js/stdTypes.js' ).done( function() {setReady(mod)} ); return true;
-				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href=".'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
-				case "profileAnonymous":	getScript( '.'+vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( function() {setReady(mod)} ); return true;
+				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
+				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 /*				case "profileMe":			$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#app').append( '<div id="'+mod+'"></div>' );
@@ -351,19 +351,19 @@ function ModuleManager() {
 											$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
 */				case 'importAny':			loadM( 'zip' ); 
-											getScript( '.'+vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioSpecif':			loadM( 'schemaJson' );
 											loadM( 'checkSpecif' );
-											getScript( '.'+vPath+'/js/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( vPath+'/js/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioXls': 				loadM( 'stdTypes' );
 											loadM( 'excel' );
-											getScript( '.'+vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( '.'+vPath+'/js/BPMN2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case 'bpmn2specif':			getScript( vPath+'/js/BPMN2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript( '.'+vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-/*				case 'ioReqif': 			getScript( "./js/ioReqif.js").done( function() {setReady(mod)} ); return true;
-*/				case 'checkSpecif':			getScript( "https://specif.de/v0.10.6/check.js").done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
+		//		case 'ioReqif': 			getScript( "./js/ioReqif.js").done( function() {setReady(mod)} ); return true;
+				case 'checkSpecif':			getScript( './specif.de/v0.10.8/check.js').done( function() {setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
@@ -381,14 +381,15 @@ function ModuleManager() {
 											};
 											loadM( 'tree' );
 											loadM( 'helperTree' );
-											loadM( 'stdTypes' );
-											loadM( 'diff' );
-											getScript( '.'+vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
+									//		loadM( 'stdTypes' );
+									//		loadM( 'diff' );
+											getScript( vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript( '.'+vPath+'/js/reports.js' ).done( function() {setReady(mod)} ); return true;
+				case CONFIG.reports: 		getScript( vPath+'/js/reports.js' ).done( function() {setReady(mod)} ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript( '.'+vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
+				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.js' ).done( function() {setReady(mod)} ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
@@ -495,8 +496,8 @@ function ModuleManager() {
 					if( typeof(le.hide)=='function' ) le.hide()
 				}
 			});
-			// alternatively to show/hide, refresh at the parent's level may be used to initiate an action,
-			// the current view is included as a parameter:
+			// Alternatively to le.show()/hide(), refresh() at the parent's level may be used 
+			// to initiate an action, where the current view is included as a parameter:
 			if( self.selected && typeof(self.selected.parent.refresh)=='function' ) 
 				self.selected.parent.refresh( self.selected.view )
 		};

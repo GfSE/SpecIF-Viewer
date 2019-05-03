@@ -7,58 +7,31 @@
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
 // a constructor for the tree object:
-function Tree( options ) {
+function Tree( tId ) {
 	"use strict";
-	// options.loc is the id of a DOM element to which the tree is attached.
-	let self = this,
-		domE = $(options.loc);
-	domE.tree({
-		data: [],
-	//	saveState: true,
-		dragAndDrop: options.dragAndDrop
-	});
-	for( var e in options.events ) {
-		domE.on(
-			'tree.'+e,
-			options.events[e]
-		)
-	};
-
+	// tId is the id of a DOM element to which the tree is attached.
+	let self = this;
 	self.init = function() {
-		self.set([]);
+		self.id = null;
 		self.savedState = null;
 		self.selectedNode = null
 	};
-	self.set = function( tr, nId ) {
-		let nd=undefined;
-		if( typeof(nId)=='string' && nId.length>0 ) nd = self.nodeById(nId);
-		// insert tr as a subtree:
-	//	if( nd ) return domE.tree('loadData', tr, nd);
-	//	// else: insert tr as a tree:
-	//	return domE.tree( 'loadData', tr )
-		// insert tr as a subtree, if nd is defined, or as a tree, otherwise:
-		return domE.tree( 'loadData', tr, nd )
+	self.set = function( tr ) {
+		self.id = tr.id;
+	//	return $(tId).tree('loadData', tr)
+		return $(tId).tree('loadData', tr.children)
 	};
 	self.get = function() {
 		// return the root node with it's children:
-		let tr = domE.tree('getTree');
-//		console.debug('get',tr);
-		return tr? tr.children : undefined
-	};
-	self.iterate = function(fn) {
-		// apply the function fn to every node of the tree,
-		// the node is handed in as a call parameter function(node) {},
-		// if the return parameter is 'true', the iteration descends to the children:
-		domE.tree('getTree').iterate( fn )
+		let tr = $(tId).tree('getTree');
+		console.debug('get',tr);
+		return tr? {id:self.id,children:tr.children} : undefined
 	};
 	self.firstNode = function() {
-		let tr = domE.tree('getTree');	// first get the root
-//		console.debug('firstNode',tr);
+		let tr = $(tId).tree('getTree');	// first get the root
+		console.debug('firstNode',tr);
 		return tr? tr.children[0] : undefined	// avoid an exception when there is none ...
 	};
-/*	self.nodesByName = function( ti ) {
-		return domE.tree('getNodesByProperty', 'name', ti)
-	}; */
 	self.nodesByRef = function( obj, similar ) {
 		// Find all the nodes referencing the object and return them in a list.
 		// Use case: Update all tree entries after an object (title) has been changed.
@@ -66,12 +39,12 @@ function Tree( options ) {
 		// Try to find the objects in the currently loaded tree (selectedSpec):
 		if( similar ) {
 			// iterate through all nodes of all levels and list the nodes, where obj.id is a substring:
-			domE.tree('getTree').iterate( function(nd) {
+			$(tId).tree('getTree').iterate( function(nd) {
 				if( nd.ref.indexOf(obj.id)>-1 ) nodes.push( nd );
-				return true	// continue iteration
+				return true		// continue iteration
 			})
 		} else {
-			nodes = domE.tree('getNodesByProperty', 'ref', obj.id)
+			nodes = $(tId).tree('getNodesByProperty', 'ref', obj.id)
 		};
 		return nodes
 	};
@@ -92,7 +65,7 @@ function Tree( options ) {
 	self.nodeById = function( nId ) {
 		// Find the node with the specified ID:
 		
-		let nd = domE.tree('getNodeById', nId);
+		let nd = $(tId).tree('getNodeById', nId);
 		if( nd )
 			return nd;   // return the node with the specified ID
 		// else:
@@ -104,7 +77,7 @@ function Tree( options ) {
 		// selectNode( null ) is a valid use case:
 		if( nd&&nd.id ) {
 			nd = self.nodeById(nd.id);
-			domE.tree('selectNode', nd )
+			$(tId).tree('selectNode', nd )
 		};
 		self.selectedNode = nd;		// update the node handle; can be null
 		return nd
@@ -126,39 +99,39 @@ function Tree( options ) {
 	self.openNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;
 		if( !nd ) return;			
-		domE.tree('openNode', nd)
+		$(tId).tree('openNode', nd)
 	};
 	self.toggleNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;
 		if( !nd ) return;			
-		domE.tree('toggleNode', nd)
+		$(tId).tree('toggleNode', nd)
 	};
 	self.closeNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;
 		if( !nd ) return;			
-		domE.tree('closeNode', nd)
+		$(tId).tree('closeNode', nd)
 	};
 	self.appendNode = function( nd, val ) {
 		if( !nd ) return;			
-		domE.tree( 'appendNode', val, nd )
+		$(tId).tree( 'appendNode', val, nd )
 	};
 	self.addNodeBefore = function( nd, val ) {
 		if( !nd ) return;			
-		domE.tree( 'addNodeBefore', val, nd )
+		$(tId).tree( 'addNodeBefore', val, nd )
 	};
 	self.addNodeAfter = function( nd, val ) {
 		if( !nd ) return;			
-		domE.tree( 'addNodeAfter', val, nd )
+		$(tId).tree( 'addNodeAfter', val, nd )
 	};
 	self.updateNode = function( nd, val ) {
 		if( !nd ) return;			
 		// update node nd with the properties specified in {val}:
-		domE.tree('updateNode', nd, val )
+		$(tId).tree('updateNode', nd, val )
 	};
 	self.removeNode = function( nd ) {
 		if( !nd ) nd = self.tree.selectedNode;
 		if( !nd ) return;			
-		domE.tree('removeNode', nd)
+		$(tId).tree('removeNode', nd)
 	};
 	self.moveUp = function() {
 		let cur=self.selectedNode;  // save the current position
@@ -166,26 +139,26 @@ function Tree( options ) {
 		
 		// close open nodes behind (in this case we are coming from the next node)
 		if( cur.getNextNode() && cur.getLevel()<cur.getNextNode().getLevel() ) {  
-			domE.tree('closeNode', cur )
+			$(tId).tree('closeNode', cur )
 		};
 		
 		// if the previous node (as visible) is closed, open it, potentially over several levels:
 		// (is_open is undefined, if the node does not have children, and is null, if there is no previous )
 		// (is_open is also undefined, if the node hasn't been actively opened or closed, before)
 		while( self.selectedNode.getPreviousNode() && self.selectedNode.getPreviousNode().children.length && !self.selectedNode.getPreviousNode().is_open) {
-			domE.tree('openNode', self.selectedNode.getPreviousNode())
+			$(tId).tree('openNode', self.selectedNode.getPreviousNode())
 			if( !self.selectedNode.getPreviousNode().children.length ) return
 		};
 
 		if( cur.getPreviousNode() ) {
-			domE.tree('moveUp');
+			$(tId).tree('moveUp');
 		
 			self.selectNode( cur.getPreviousNode() );  // the event handler does it also, but it is asynchronous
 			if( self.selectedNode.getLevel()<cur.getLevel() ) {  
-				domE.tree('closeNode', self.selectedNode );
+				$(tId).tree('closeNode', self.selectedNode );
 			};
 			while( self.selectedNode.getPreviousNode() && self.selectedNode.getPreviousNode().children.length && !self.selectedNode.getPreviousNode().is_open) {
-				domE.tree('openNode', self.selectedNode.getPreviousNode());
+				$(tId).tree('openNode', self.selectedNode.getPreviousNode());
 				if( !self.selectedNode.getPreviousNode().children.length ) return
 			}
 		}
@@ -196,26 +169,26 @@ function Tree( options ) {
 
 		// close nodes behind, if open:
 		while( cur.getPreviousNode() && cur.getPreviousNode().getLevel()>cur.getLevel() ) {   // 'getPreviousNode' refers to the previous visible node
-			domE.tree('closeNode', cur.getPreviousNode().parent)
+			$(tId).tree('closeNode', cur.getPreviousNode().parent)
 		};
 
 		// if selected node has children and is closed, open it:
 		if( self.selectedNode.children.length && !self.selectedNode.is_open ) {
-			domE.tree('openNode', self.selectedNode);
+			$(tId).tree('openNode', self.selectedNode);
 			return
 		};
 		
 		if( cur.getNextNode() ) {
 			// if selected node has no children, step down:
 			// selected node is opened, step into:
-			domE.tree('moveDown');
+			$(tId).tree('moveDown');
 
 			// if it was the last child, close the folder behind:
 			self.selectNode( cur.getNextNode() );  // the event handler does it also, but it is asynchronous
 			while( self.selectedNode.getPreviousNode().getLevel()>self.selectedNode.getLevel() )
-				domE.tree('closeNode', self.selectedNode.getPreviousNode().parent);
+				$(tId).tree('closeNode', self.selectedNode.getPreviousNode().parent);
 			if( self.selectedNode.children.length && !self.selectedNode.is_open )
-				domE.tree('openNode', self.selectedNode)
+				$(tId).tree('openNode', self.selectedNode)
 		}
 	};
 	self.numberize = function() {
@@ -229,7 +202,7 @@ function Tree( options ) {
 					setONo( nd.children[k], oNo )
 				}
 			};
-		setONo( domE.tree('getTree'), '' )	// start numberizing with the root
+		setONo( $(tId).tree('getTree'), '' )	// start numberizing with the root
 	};
 	self.newIds = function( nd ) {
 		// assert new ids to nd and it's sub-tree, as the server doesn't allow to reuse any ID:
@@ -247,17 +220,12 @@ function Tree( options ) {
 		return rt
 	};
 	self.saveState = function() {
-		self.savedState = domE.tree('getState')
+		self.savedState = $(tId).tree('getState')
 	};
 	self.restoreState = function() {
-		domE.tree('setState', self.savedState);
-		self.selectedNode = domE.tree('getSelectedNode')
+		$(tId).tree('setState', self.savedState);
+		self.selectedNode = $(tId).tree('getSelectedNode')
 	};
-	self.destroy = function() {
-		// Destroy the tree. This removes the dom elements and event bindings:
-		domE.tree('destroy')
-	};
-	
 	self.init();
-	return self;
+	return self
 }

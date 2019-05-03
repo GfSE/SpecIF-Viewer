@@ -710,9 +710,6 @@ if (!Number.isInteger) {
 		if( ti>-1 ) return CONFIG.imgTypes[ ti ]
 		return null
 	}
-	function permissibleFileExtensions() { 
-		return CONFIG.imgExtensions.concat( CONFIG.officeExtensions )
-	}
 	
 	function float2int(val) { return parseInt(val) };
 	function localDateTime(iso) {

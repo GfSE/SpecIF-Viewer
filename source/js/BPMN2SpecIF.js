@@ -181,6 +181,24 @@ function BPMN2Specif( xmlString, opts ) {
 				case 'laneSet':
 					// 3.1 Get the laneSets/lanes with their model elements;
 					//    	note that a 'laneSet' is not mandatory, e.g. BPMNio does not necessarily provide any.
+					/* Nested lanes are possible, as well, but not yet supported (ToDo):
+						  <lane id="dienststelle" name="Dienststelle">
+							<flowNodeRef>approveInvoice</flowNodeRef>
+							<flowNodeRef>Task_1ymb2ic</flowNodeRef>
+							<flowNodeRef>ExclusiveGateway_0loe7o7</flowNodeRef>
+							<flowNodeRef>StartEvent_1tkg7k8</flowNodeRef>
+							<childLaneSet id="LaneSet_1w3soel">
+							  <lane id="Lane_15kot5t" name="Leiter">
+								<flowNodeRef>approveInvoice</flowNodeRef>
+							  </lane>
+							  <lane id="Lane_0jy9eq0" name="Mitarbeiter">
+								<flowNodeRef>Task_1ymb2ic</flowNodeRef>
+								<flowNodeRef>ExclusiveGateway_0loe7o7</flowNodeRef>
+								<flowNodeRef>StartEvent_1tkg7k8</flowNodeRef>
+							  </lane>
+							</childLaneSet>
+						  </lane>
+					*/
 					el.childNodes.forEach( function(el2) {
 						if( el2.nodeName.includes('lane') ) {
 							let elName = el2.getAttribute("name"),
@@ -251,17 +269,20 @@ function BPMN2Specif( xmlString, opts ) {
 				case 'task':
 				case 'userTask':
 				case 'scriptTask':
+				case 'serviceTask':
+				case 'sendTask':
+				case 'receiveTask':
 				case 'callActivity':
 				case 'subProcess':
 					// store the model-element as FMC:Actor:
 					model.resources.push({
 						id: id,
-						title: title,
+						title: title || tag,
 						class: "RC-Actor",
 						properties: [{
 							title: "dcterms:title",
 							class: "PC-Name",
-							value: title
+							value: title || tag
 						}, {
 							title: "SpecIF:Stereotype",
 							class: "PC-Stereotype",
@@ -323,12 +344,12 @@ function BPMN2Specif( xmlString, opts ) {
 					// - Even though we use 'dataObject' or 'dataStore' as stereotype.
 					model.resources.push({
 						id: id,
-						title: title,
+						title: title || tag,
 						class: "RC-State",
 						properties: [{
 							title: "dcterms:title",
 							class: "PC-Name",
-							value: title
+							value: title || tag
 						}, {
 							title: "SpecIF:Stereotype",
 							class: "PC-Stereotype",
@@ -349,12 +370,12 @@ function BPMN2Specif( xmlString, opts ) {
 					// store the model-element as FMC:State:
 					model.resources.push({
 						id: id,
-						title: title,
+						title: title || tag,
 						class: "RC-Event",
 						properties: [{
 							title: "dcterms:title",
 							class: "PC-Name",
-							value: title
+							value: title || tag
 						}, {
 							title: "SpecIF:Stereotype",
 							class: "PC-Stereotype",
@@ -440,7 +461,7 @@ function BPMN2Specif( xmlString, opts ) {
 						return
 					};
 					// else: 'exclusiveGateway' && gw.outgoing.length>1
-					gw.title = title;
+					gw.title = title || tag;
 					// Add the title (condition), if specified:
 					title = opts.strForkExcGateway+(title? ': '+title : '');
 					model.resources.push({
@@ -540,7 +561,7 @@ function BPMN2Specif( xmlString, opts ) {
 							object:  itemById(model.resources,el.getAttribute('targetRef'))
 						};
 						// a. store an event representing the case:
-						title = (seqF.subject.title? seqF.subject.title+' → ' : '')+title; // &larr; = &#8594;
+						title = (seqF.subject.title? seqF.subject.title+' &#8594; ' : '')+title; // → = &rarr; = &#8594;
 						model.resources.push({
 							id: id,
 							title: title,
