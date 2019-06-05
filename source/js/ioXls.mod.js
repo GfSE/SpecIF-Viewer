@@ -235,11 +235,11 @@ function xslx2specif( buf, pN, chgAt ) {
 						// Find the index of the property to be used as title.
 						// First, check the configured headings:
 						for( var a=0,A=obj.properties.length;a<A;a++ ) {
-							if( CONFIG.headingAttributes.indexOf( obj.properties[a].title )>-1 ) return a
+							if( CONFIG.headingProperties.indexOf( obj.properties[a].title )>-1 ) return a
 						};
 						// If nothing has been found, check the configured titles:
 						for( a=0,A=obj.properties.length;a<A;a++ ) {
-							if( CONFIG.titleAttributes.indexOf( obj.properties[a].title )>-1 ) return a
+							if( CONFIG.titleProperties.indexOf( obj.properties[a].title )>-1 ) return a
 						};
 						return -1
 					}
@@ -256,7 +256,7 @@ function xslx2specif( buf, pN, chgAt ) {
 					// 2. otherwise, find a description and take the beginning:
 					// find a description and take the beginning:
 					for( var a=0,A=obj.properties.length;a<A;a++ ) {
-						if( CONFIG.descriptionAttributes.indexOf( obj.properties[a].title )>-1 ) 
+						if( CONFIG.descProperties.indexOf( obj.properties[a].title )>-1 ) 
 							return obj.properties[a].value.stripHTML().truncate( CONFIG.maxTitleLength )
 					}
 				};
@@ -301,10 +301,10 @@ function xslx2specif( buf, pN, chgAt ) {
 								dT = itemById(specif.dataTypes,aT.dataType);
 
 								// Find the value to be taken as resource identifier:
-								// id is the first identifier found as declared in CONFIG.idAttributes:
-//								id = id || CONFIG.idAttributes.indexOf(aT.title)<0?null:getVal( dT.type, cell );  // does not work for some reason.
-								if( !id ) id = CONFIG.idAttributes.indexOf(aT.title)<0?null:getVal( dT.type, cell );
-								// ToDo: Consider whether it is better to select the id attribute beforehand and not over and over again for every resource.
+								// id is the first identifier found as declared in CONFIG.idProperties:
+//								id = id || CONFIG.idProperties.indexOf(aT.title)<0?null:getVal( dT.type, cell );  // does not work for some reason.
+								if( !id ) id = CONFIG.idProperties.indexOf(aT.title)<0?null:getVal( dT.type, cell );
+								// ToDo: Consider whether it is better to select the id property beforehand and not over and over again for every resource.
 
 //								console.debug( 'createRes-cell', ws.resTypeName, aT, dT, cell, getVal( dT.type, cell) );
 								res.properties.push({

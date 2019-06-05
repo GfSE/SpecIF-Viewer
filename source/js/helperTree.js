@@ -32,10 +32,6 @@ function Tree( options ) {
 	self.set = function( tr, nId ) {
 		let nd=undefined;
 		if( typeof(nId)=='string' && nId.length>0 ) nd = self.nodeById(nId);
-		// insert tr as a subtree:
-	//	if( nd ) return domE.tree('loadData', tr, nd);
-	//	// else: insert tr as a tree:
-	//	return domE.tree( 'loadData', tr )
 		// insert tr as a subtree, if nd is defined, or as a tree, otherwise:
 		return domE.tree( 'loadData', tr, nd )
 	};

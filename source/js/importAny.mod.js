@@ -18,10 +18,17 @@ modules.construct({
 	let showFileSelect = null,
 		importMode = {id:'replace'},
 		// 'importAny' should not be hard-coded here:
-		myRole = self.role || self.name;
+		myRole = self.loadAs || self.name;
+	const formats = [
+			{ id:'mm',		mod:'ioMm',		desc:'Freemind Mindmap',					label:'MM'		},
+			{ id:'xls',		mod:'ioXls',	desc:'MS Excel® Spreadsheet',				label:'Excel®'	},
+			{ id:'bpmn',	mod:'ioBpmn',	desc:'Business Process',					label:'BPMN'	},
+			{ id:'reqif',	mod:'ioReqif',	desc:'Requirement Interchange Format',		label:'ReqIF'	},
+			{ id:'specif',	mod:'ioSpecif',	desc:'Specification Integration Facility',	label:'SpecIF',	opts: {mediaTypeOf: attachment2mediaType}}
+		];
 
 /*	// The modes for selection when an import is encountered which is already loaded:
-	let	importModes = [{
+	const importModes = [{
 			id: 'create',
 			title: 'Create a new project with the given id',
 			description: 'All types, objects, relations and hierarchies will be created as specified.'
@@ -122,6 +129,10 @@ modules.construct({
 			me.logout();
 			return
 		};  */
+		let m=itemById(formats,'specif');
+		if( modules.isReady(m.mod) )
+			window[m.mod].init(m.opts);
+		
 			function getFormat(p) {
 				// filename without extension must have at least a length of 1:
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
@@ -187,14 +198,8 @@ modules.construct({
 		// At first, add the format selector;
 		// only at this point of time it is known which modules are loaded and initialized:
 		let str = '';
-		[
-			{ fmt: 'mm',		mod: 'ioMm',	desc: 'Freemind Mindmap',					label: 'MM'		},
-			{ fmt: 'bpmn',		mod: 'ioBpmn',	desc: 'Business Process',					label: 'BPMN'	},
-			{ fmt: 'specif',	mod: 'ioSpecif',desc: 'Specification Integration Facility',	label: 'SpecIF'	},
-			{ fmt: 'reqif',		mod: 'ioReqif',	desc: 'Requirement Interchange Format',		label: 'ReqIF'	},
-			{ fmt: 'xls',		mod: 'ioXls',	desc: 'MS Excel® Spreadsheet',				label: 'Excel®' }
-		].forEach( function(s) {
-			str += '<button '+(modules.isReady(s.mod)?'id="FormatSelector-'+s.fmt+'" onclick="'+myRole+'.setFormat(\''+s.fmt+'\')"':'disabled')+' class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+		formats.forEach( function(s) {
+			str += '<button '+(modules.isReady(s.mod)?'id="FormatSelector-'+s.id+'" onclick="'+myRole+'.setFormat(\''+s.id+'\')"':'disabled')+' class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
 		});
 		$('#FormatSelector').html( str );
 		showFileSelect.set();
@@ -447,7 +452,8 @@ modules.construct({
 			case 'specif':	ioSpecif.abort(); break;
 			case 'bpmn':	ioBpmn.abort(); break;
 			case 'xls':		ioXls.abort()
-		}
+		};
+		myProject.abort()
 	};
 	return self
 });

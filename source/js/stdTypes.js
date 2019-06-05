@@ -55,10 +55,9 @@
 		self.available = function() {  
 			// Return true if all types are available.
 			// Must compare by unique name, because the id may vary.
-			return containsByName( prj.dataTypes, types.dataTypes )
-				&& containsByName( prj.resourceClasses, types.resourceClasses )
-				&& containsByName( prj.statementClasses, types.statementClasses )
-				&& containsByName( prj.hierarchyClasses, types.hierarchyClasses )
+			return containsByTitle( prj.dataTypes, types.dataTypes )
+				&& containsByTitle( prj.resourceClasses, types.resourceClasses )
+				&& containsByTitle( prj.statementClasses, types.statementClasses )
 		};
 
 		self.update = function() {

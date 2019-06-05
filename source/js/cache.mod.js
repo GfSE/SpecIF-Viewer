@@ -338,7 +338,7 @@ modules.construct({
 							// If there is no id, the type is new and there are no referencing elements, yet. 
 							// So it does not matter.
 							// But there must be a property class with the same name:
-							idx = indexByName( refT.propertyClasses, npc.title )
+							idx = indexByTitle( refT.propertyClasses, npc.title )
 						};
 						if( idx<0 ) {
 							// The property class in the new data is not found in the existing (reference) data:
@@ -883,10 +883,10 @@ modules.construct({
 	self.readStatementsOf = function( res, showComments ) {  
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
-		//   it is possible that an object is deleted (from all hierarchies), but not it's statements.
+		//   it is possible that an resource is deleted (from all hierarchies), but not it's statements.
 		//   --> set 'showComments' to false
-		// - All comments referring to the selected object shall be shown;
-		//   the object is found in the cache, but the comment is not.
+		// - All comments referring to the selected resource shall be shown;
+		//   the resource is found in the cache, but the comment is not.
 		//   --> set 'showComments' to true
 		
 			function isReferenced( rId ) {
@@ -907,8 +907,8 @@ modules.construct({
 												&&	isReferenced( s.subject.id )
 												&&	isReferenced( s.object.id )
 												&&	s.title!=CONFIG.relTypeCommentRefersTo
-												&& 	CONFIG.hiddenRelations.indexOf( s.title )<0
-											// In case of a comment, the comment itself is not referenced, but the object:
+												&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
+											// In case of a comment, the comment itself is not referenced, but the resource:
 										||	showComments
 												&&	isReferenced( s.object.id )
 												&&	s.title==CONFIG.relTypeCommentRefersTo
@@ -1007,8 +1007,8 @@ modules.construct({
 					$(	"<p>"+i18n.MsgExport+"</p>" +
 						radioInput( i18n.LblFormat, [
 							{title: 'SpecIF', description:''},
-							{title: 'ReqIF', description:''},
-							{title: 'ePub', description:''},
+				//			{title: 'ReqIF', description:''},
+				//			{title: 'ePub', description:''},
 							{title: 'MS WORD (Open XML)', description:''}
 						]) 
 					) 
@@ -1037,7 +1037,7 @@ modules.construct({
 									.fail( handleError );
 								break;
 							case '1':
-								// export as ReqIF:
+					/*			// export as ReqIF:
 								console.info('Export as ReqIF not yet implemented');
 								message.show( 'Export as ReqIF not yet implemented', {duration:CONFIG.messageDisplayTimeShort} );
 								busy.reset();
@@ -1052,7 +1052,7 @@ modules.construct({
 									.fail( handleError );
 								break;
 							case '3':
-								// export as OXML:
+					*/			// export as OXML:
 								self.exportAs( {format:'OXML'} )
 									.done( function() { 
 										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
@@ -1127,15 +1127,16 @@ modules.construct({
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
 				// If the property titles are translated, then the lists declaring the semantics must, as well:
-				headingProperties: opts.translateTitles? forAll( CONFIG.headingAttributes, i18n.lookup ) : CONFIG.headingAttributes,
-				titleProperties: opts.translateTitles? forAll( CONFIG.titleAttributes, i18n.lookup ) : CONFIG.titleAttributes,
-				descriptionProperties: opts.translateTitles? forAll( CONFIG.descriptionAttributes, i18n.lookup ) : CONFIG.descriptionAttributes,
+				headingProperties: opts.translateTitles? forAll( CONFIG.headingProperties, i18n.lookup ) : CONFIG.headingProperties,
+				titleProperties: opts.translateTitles? forAll( CONFIG.titleProperties, i18n.lookup ) : CONFIG.titleProperties,
+				descriptionProperties: opts.translateTitles? forAll( CONFIG.descProperties, i18n.lookup ) : CONFIG.descProperties,
 				// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-				stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeAttributes, i18n.lookup ) : CONFIG.stereotypeAttributes,
+				stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeProperties, i18n.lookup ) : CONFIG.stereotypeProperties,
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
 				// if the value is undefined, the property is suppressed in all cases.
 				// so far (iLaH v0.92.44), property titles are translated:
-				hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+			//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+				hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 				hideEmptyProperties: true,
 				propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
 				statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
@@ -1147,22 +1148,22 @@ modules.construct({
 		}
 		function storeOxml( opts ) {
 			if( !opts || typeof(opts.translateTitles)!='boolean' ) opts = {translateTitles: true};
-			var data = self.get( opts );
+			// don't translate now, but within toOxml() to ascertain that classifyProps() works properly:
+			var data = self.get( {translateTitles: false} ); 
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
-				// If the property titles are translated, then the lists declaring the semantics must, as well:
-				headingProperties: opts.translateTitles? forAll( CONFIG.headingAttributes, i18n.lookup ) : CONFIG.headingAttributes,
-				titleProperties: opts.translateTitles? forAll( CONFIG.titleAttributes, i18n.lookup ) : CONFIG.titleAttributes,
-				descriptionProperties: opts.translateTitles? forAll( CONFIG.descriptionAttributes, i18n.lookup ) : CONFIG.descriptionAttributes,
+				classifyProperties: classifyProps,
+				translateTitles: opts.translateTitles,
+				translate: i18n.lookup,
 				// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-				stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeAttributes, i18n.lookup ) : CONFIG.stereotypeAttributes,
+				stereotypeProperties: CONFIG.stereotypeProperties,
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
 				// if the value is undefined, the property is suppressed in all cases.
 				// so far (iLaH v0.92.44), property titles are translated:
-				hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+				hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 				hideEmptyProperties: true,
-				propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
-				statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
+				propertiesLabel: 'SpecIF:Properties',
+				statementsLabel: 'SpecIF:Statements',
 				done: function() { myProject.exporting=false; eDO.resolve() },
 				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
 			};
@@ -1173,16 +1174,18 @@ modules.construct({
 			let zip = new JSZip(),
 				data = self.get( {translateTitles: false} );
 //			console.debug( "exportAs 'SpecIF'", data );
+
+			// Add the files:
+			data.files.forEach( function(f) {
+//				console.debug('zip a file',f);
+				zip.file( f.title, f.blob );
+				delete f.blob // the SpecIF data below shall not contain it ...
+			});
+			
 			let blob = new Blob([JSON.stringify( data )], {type: "text/plain; charset=utf-8"});
 			// Add the project:
 			zip.file( data.title+".specif", blob );
 			blob = null; // free heap space
-			
-			// Add the files and save all, when done:
-//			console.debug('files',data.files);
-			data.files.forEach( function(f) {
-				zip.file( f.id, f.blob )
-			});
 			
 			// done, store the specifz:
 			zip.generateAsync({
@@ -1249,7 +1252,7 @@ modules.construct({
 		};
 
 		let iD = {};
-	//	try {
+		try {
 			iD.dataTypes = 			forAll( spD.dataTypes, dT2int )
 			iD.propertyClasses = 	forAll( spD.propertyClasses, pC2int );	// starting v0.10.6
 			iD.resourceClasses = 	forAll( spD[names.rClasses], rC2int );
@@ -1260,11 +1263,11 @@ modules.construct({
 			iD.statements =			forAll( spD.statements, s2int );
 			iD.hierarchies =		forAll( spD.hierarchies, h2int );
 			iD.files =				forAll( spD.files, f2int )
-	//	} catch (e) {
-	//		console.error( "Error when importing the project '"+spD.title+"'" );
-	//		message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
-	//		return null
-	//	};
+		} catch (e) {
+			console.error( "Error when importing the project '"+spD.title+"'" );
+			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
+			return null
+		};
 		
 		// header information provided only in case of project creation, but not in case of project update:
 		if( spD.id ) iD.id = spD.id;
@@ -1284,10 +1287,19 @@ modules.construct({
 					case "xhtml": 
 					case "xs:string":		
 						if( typeof(iE.maxLength)!='number' ) iE.maxLength = CONFIG.maxStringLength;
-				//		break;
-				//	case "xs:enumeration": 	
-				//		if( !iE.values ) iE.values = [];
+						break;
+					case "xs:enumeration": 	
+						if( iE.values ) 
+							iE.values = forAll( iE.values, function(v) {
+								// 'title' jusque v0.10.6, 'value' thereafter:
+								return {
+									id: v.id,
+									value: v.value || v.title
+								}
+							})
 				};
+				// revision is a number up until v0.10.6 and a string thereafter:
+				if( typeof(iE.revision)=='number' ) iE.revision = iE.revision.toString();
 //				console.debug('dataType 2int',iE);
 				return iE
 			}
@@ -1305,7 +1317,15 @@ modules.construct({
 						if( iE.multiple && !dT.multiple ) oE.multiple = true
 						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
 				};
-				if( iE.revision ) oE.revision = iE.revision;
+				switch( typeof(iE.revision) ) {
+					case 'undefined':
+						break;
+					case 'number':
+						oE.revision = iE.revision.toString();
+						break;
+					case 'string':
+						oE.revision = iE.revision
+				};
 				oE.changedAt = iE.changedAt;
 				if( iE.changedBy ) oE.changedBy = iE.changedBy;
 		//		if( iE.createdAt ) oE.createdAt = iE.createdAt;
@@ -1345,7 +1365,15 @@ modules.construct({
 				else
 					oE.propertyClasses = [];
 				
-				if( iE.revision ) oE.revision = iE.revision;
+				switch( typeof(iE.revision) ) {
+					case 'undefined':
+						break;
+					case 'number':
+						oE.revision = iE.revision.toString();
+						break;
+					case 'string':
+						oE.revision = iE.revision
+				};
 				oE.changedAt = iE.changedAt;
 				if( iE.changedBy ) oE.changedBy = iE.changedBy;
 		//		if( iE.createdAt ) oE.createdAt = iE.createdAt;
@@ -1367,14 +1395,14 @@ modules.construct({
 					oE.isHeading = true;
 					return oE
 				};
-				// else: look for a property class being configured in CONFIG.headingAttributes
+				// else: look for a property class being configured in CONFIG.headingProperties
 				oE.isHeading = false;
 				let pC;
 				for( var a=oE.propertyClasses.length-1;a>-1;a-- ) {
 					pC = oE.propertyClasses[a];
 					// look up propertyClass starting v0.101.6:
 					if( typeof(pC)=='string' ) pC = itemById(iD.propertyClasses, pC);
-					if( CONFIG.headingAttributes.indexOf( pC.title )>-1 ) {
+					if( CONFIG.headingProperties.indexOf( pC.title )>-1 ) {
 						oE.isHeading = true;
 						break
 					}
@@ -1433,7 +1461,15 @@ modules.construct({
 				if( iE.description ) oE.description = noCode(iE.description);
 				oE.properties = forAll( iE.properties, p2int );
 
-				if( iE.revision ) oE.revision = iE.revision;
+				switch( typeof(iE.revision) ) {
+					case 'undefined':
+						break;
+					case 'number':
+						oE.revision = iE.revision.toString();
+						break;
+					case 'string':
+						oE.revision = iE.revision
+				};
 				oE.changedAt = iE.changedAt;
 				if( iE.changedBy ) oE.changedBy = iE.changedBy;
 	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
@@ -1479,14 +1515,14 @@ modules.construct({
 					iR['class'] = eH[names.hClass];
 					iD.resources.push(iR);
 					
-					// list all resource ids in a flat list:
-					if(iR.title) iH.title = iR.title
+					if(iR.title) iH.title = iR.title;
+					if(eH.revision) iH.revision = eH.revision.toString()
 				} else {
 					// starting v0.10.8:
 					var iH = a2int( eH );
 					iH.resource = eH.resource
 				};
-				if(eH.revision) iH.revision = eH.revision;
+				// list all resource ids in a flat list:
 				iH.flatL = [eH.id];
 				iH.nodes = forAll( eH.nodes, n2int );
 //				console.debug('hierarchy 2int',eH,iH);
@@ -1494,20 +1530,39 @@ modules.construct({
 
 				function n2int( eN ) {
 					iH.flatL.push(eN.resource);
+					switch( typeof(eN.revision) ) {
+						case 'undefined':
+							break;
+						case 'number':
+							eN.revision = eN.revision.toString();
+							break;
+						case 'string':
+							eN.revision = eN.revision
+					};
 					forAll( eN.nodes, n2int );
 					return eN
 				}
 			}
-			function f2int( eF ) {
-				var iF = eF;
-				if( eF.blob ) iF.type = eF.blob.type || eF.type || attachment2mediaType( eF.id );
-				if( eF.revision ) iF.revision = eF.revision;
-				iF.changedAt = eF.changedAt;
-				if( eF.changedBy ) iF.changedBy = eF.changedBy;
-		//		if( eF.createdAt ) iF.createdAt = eF.createdAt;
-		//		if( eF.createdBy ) iF.createdBy = eF.createdBy;
-//				console.debug('file 2int',eF,iF);
-				return iF
+			function f2int( iF ) {
+				var oF = iF;
+//				console.debug('f2int',iF)
+				if( iF.blob ) oF.type = iF.blob.type || iF.type || attachment2mediaType( iF.title );
+
+				switch( typeof(iF.revision) ) {
+					case 'undefined':
+						break;
+					case 'number':
+						oF.revision = iF.revision.toString();
+						break;
+					case 'string':
+						oF.revision = iF.revision
+				};
+				oF.changedAt = iF.changedAt;
+				if( iF.changedBy ) oF.changedBy = iF.changedBy;
+		//		if( iF.createdAt ) oF.createdAt = iF.createdAt;
+		//		if( iF.createdBy ) oF.createdBy = iF.createdBy;
+//				console.debug('file 2int',iF,oF);
+				return oF
 			}
 	};
 	self.get = function( opts ) {
@@ -1689,7 +1744,7 @@ modules.construct({
 			}
 			function s2ext( iS ) {
 //				console.debug('statement 2ext',iS.title);
-				if( CONFIG.hiddenRelations.indexOf( iS.title )>-1 ) return null;  // do not export invisible statements
+				if( CONFIG.hiddenStatements.indexOf( iS.title )>-1 ) return null;  // do not export invisible statements
 				var eS = a2ext( iS );
 				// The statements usually do use a vocabulary item (and not have an individual title), 
 				// so we translate, if so desired, e.g. when exporting to ePub:
@@ -1719,7 +1774,7 @@ modules.construct({
 			function f2ext( iF ) {
 				var eF = {
 					id: iF.id,  // is the distinguishing/relative part of the URL
-	//				title: ,
+					title: iF.title,
 					type: iF.type
 				};
 				if( iF.blob ) eF.blob = iF.blob;
@@ -2156,17 +2211,17 @@ function enumValStr( dT, prp ) {
 	// for all others, return the value as is:
 	if( dT.type!='xs:enumeration' ) return prp.value;
 	let ct = '',
-		val,
+		eV,
 		st = prp.title==CONFIG.stereotype,
 		vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
-	vL.forEach( function(vLi,i) {
-		val = itemById(dT.values,vLi.trim());
-		// If 'val' is an id, replace it by title, otherwise don't change:
+	vL.forEach( function(v,i) {
+		eV = itemById(dT.values,v);
+		// If 'eV' is an id, replace it by title, otherwise don't change:
 		// For example, when an object is from a search hitlist or from a revision list, 
 		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
 		// Add 'double-angle quotation' in case of stereotype values.
-		if( val ) ct += (i==0?'':', ')+(st?('&#x00ab;'+val.title+'&#x00bb;'):val.title)
-		else ct += (i==0?'':', ')+vLi
+		if( eV ) ct += (i==0?'':', ')+(st?('&#x00ab;'+eV.value+'&#x00bb;'):eV.value)
+		else ct += (i==0?'':', ')+v
 	});
 	return ct
 }
@@ -2185,8 +2240,8 @@ function titleIdx( aL ) {
 /*	// Note that the logic has been simplified.
 	// Up until revision 0.92.34, the title property which was listed first in CONFIG.XXAttributes was chosen.
 		var idx = -1;
-		for( var c=0, C=CONFIG.headingAttributes.length; c<C; c++) {  // iterate configuration list; leading entry has priority
-			idx = indexByName( aL, CONFIG.headingAttributes[c] );
+		for( var c=0, C=CONFIG.headingProperties.length; c<C; c++) {  // iterate configuration list; leading entry has priority
+			idx = indexByTitle( aL, CONFIG.headingProperties[c] );
 			if( idx>-1 ) return idx
 		};
 	// Now, the first property which is found in the respective list is chosen.
@@ -2194,9 +2249,9 @@ function titleIdx( aL ) {
 */	
 	for( var a=0,A=aL.length;a<A;a++ ) {
 		// First, check the configured headings:
-		if( CONFIG.headingAttributes.indexOf( aL[a].title )>-1 ) return a;
+		if( CONFIG.headingProperties.indexOf( aL[a].title )>-1 ) return a;
 		// If nothing has been found, check the configured titles:
-		if( CONFIG.titleAttributes.indexOf( aL[a].title )>-1 ) return a
+		if( CONFIG.titleProperties.indexOf( aL[a].title )>-1 ) return a
 	};
 	return -1
 }
@@ -2218,7 +2273,7 @@ function titleFromProperties( pL ) {
 		// 2. otherwise, find a description and take the beginning:
 		// find a description and take the beginning:
 		for( var a=0,A=pL.length;a<A;a++ ) {
-			if( CONFIG.descriptionAttributes.indexOf( pL[a].title )>-1 ) 
+			if( CONFIG.descProperties.indexOf( pL[a].title )>-1 ) 
 				return pL[a].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().truncate( CONFIG.maxTitleLength )
 		}
 	};
@@ -2274,24 +2329,27 @@ function initPropR( pT ) {
 function initPropC( pT ) {
 	return pT.cre?initProp( pT ):null
 }
-function classifyProps( el ) {
+function classifyProps( el, data ) {
 	"use strict";
 	// add missing (empty) properties and
 	// classify properties into title, descriptions and other;
 	// for resources, statements and hierarchies/specifications.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
-	var cP = {
+	var rC = itemById( data.resourceClasses, el['class']),
+		cP = {
+		id: el.id,
 		title: null,
-		class: itemById( myProject.allClasses, el['class']),
+		class: rC,
 		revision: el.revision,
-		descriptions: []
+		descriptions: [],
+		// create a new list by copying the elements (do not copy the list ;-):
+		other: normalizeProps( data.propertyClasses, el.properties )
 	};
-	// create a new list by copying the elements (do not copy the list ;-):
-	cP.other = normalizeProps( myProject.propertyClasses, el.properties );
 
-	// Now, all properties are listed in other;
-	// in the following, the properties used as title or description will be identified
-	// and removed from other.
+	// Now, all properties are listed in cP.other;
+	// in the following, the properties used as title and description will be identified
+	// and removed from cP.other.
+	// ToDo: Hide hidden properties: CONFIG.hiddenProperties
 
 	// a) Find and set the configured title:
 	let a = titleIdx( cP.other );
@@ -2306,11 +2364,13 @@ function classifyProps( el ) {
 		// Here we want only 'real' titles and none, if there is none.
 		cP.title = el.title
 	};
+	cP.isHeading = rC.isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 		
 	// b) Check the configured descriptions:
 	// We must iterate backwards, because we alter the list of other.
+	// ToDo: use cP.other.filter()
 	for( a=cP.other.length-1;a>-1;a-- ) {
-		if( CONFIG.descriptionAttributes.indexOf( cP.other[a].title )>-1 ) {
+		if( CONFIG.descProperties.indexOf( cP.other[a].title )>-1 ) {
 			// To keep the original order of the properties, the unshift() method is used.
 //			cP.descriptions.unshift( cP.other.splice(a,1)[0] )
 			cP.descriptions.unshift( cP.other[a] );
@@ -2318,7 +2378,7 @@ function classifyProps( el ) {
 		}
 	};
 	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: "dcterms:description", value: el.description} );
-//	console.debug( 'classifyProps', cP.title, cP.descriptions, cP.other );
+//	console.debug( 'classifyProps', cP );
 	return cP
 
 	function deformat( txt ) {
@@ -2354,11 +2414,11 @@ function normalizeProps( cL, oL ) { // class list, original property list
 	// Use those provided by the original list (oL) and fill in missing ones with default (no) values.
 
 	let p,nL=[];  
-	cL.forEach( function(c) {
-		p = itemBy( oL, 'class', c.id )
-			|| initPropR(c);
-		if( p ) nL.push( p )
-	});
+	if( Array.isArray(cL) )
+		cL.forEach( function(c) {
+			p = itemBy( oL, 'class', c.id )
+				|| initPropR(c);
+			if( p ) nL.push( p )
+		});
 	return nL // normalized property list
 }
-

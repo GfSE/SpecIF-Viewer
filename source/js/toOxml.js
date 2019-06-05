@@ -3,7 +3,7 @@ function toOxml( data, opts ) {
 	// Create and save a MS WORD OpenXML document using SpecIF data.
 	// OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
 	// http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
-	// Accepts data-sets according to SpecIF v0.10.2 and later.
+	// Accepts data-sets according to SpecIF v0.10.8 and later.
 	// License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
 
 	// Check for missing options:
@@ -17,28 +17,33 @@ function toOxml( data, opts ) {
 	if( typeof(opts.RE)!='object' ) opts.RE = {};
 	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = /&(.{0,8})/g;
 	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = /&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/;
+
+	// ToDo: Reject versions < 0.10.8
 	
 	const startRID = 7,		// first relationship index for images
 		maxHeading = 4;  	// Headings from 1 to maxHeading are defined
 	
+	console.debug('toOxml',data,opts);
 	// Create a local list of images, which can be used in OXML:
 	// ToDo: Transform SVG to PNG, if not present.
 	// ToDo: Determine image size, if not specified,
 	// to get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
 	var images = [],
 		pend = 0;		// the number of pending operations
-	
-	data.files.forEach( function(f) {
-		if ( f.blob && ['image/png','image/jpg','image/jpeg'].indexOf(f.type)>-1) {
-			pend++;
-			// transform the file and continue processing, as soon as all are done:
-			image2base64(f,createOxml);
-//			console.debug("File '"+f.id+"' transformed to Base64");
-			return
-		};
-		console.warn("Format of file '"+f.id+"' is not supported by MS Word.")
-	});
-	if( pend==0 ) 
+
+//	console.debug('files',data.files);
+	if( data.files && data.files.length>0 )
+		data.files.forEach( function(f) {
+			if ( f.blob && ['image/png','image/jpg','image/jpeg'].indexOf(f.type)>-1) {
+				pend++;
+				// transform the file and continue processing, as soon as all are done:
+				image2base64(f,createOxml);
+				console.info("File '"+f.id+"' transformed to Base64");
+				return
+			};
+			console.warn("Format of file '"+f.id+"' is not supported by MS Word.")
+		});
+	if( pend<1 ) 
 		// start right away when there are no images to convert:
 		createOxml();
 	return;
@@ -47,7 +52,8 @@ function toOxml( data, opts ) {
 	function image2base64(f,fn) {			
 		const reader = new FileReader();
 		reader.addEventListener('loadend', function(e) {
-			images.push( {id:f.id,type:f.type,b64:e.target.result} );
+			// please note the different use of 'id' and 'title' in file and images!
+			images.push( {id:f.title,type:f.type,b64:e.target.result} );
 			if( --pend<1 )
 				// all images have been converted, continue processing:
 				if( typeof(fn)=='function' ) fn()
@@ -61,20 +67,29 @@ function toOxml( data, opts ) {
 
 		function createText( data, opts ) {
 			"use strict";
-			// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
+			// Accepts data-sets according to SpecIF v0.10.8 and later.
 
 			// Check for missing options:
 			if( !opts ) opts = {};
-			if( !opts.headingProperties ) opts.headingProperties = ['SpecIF:Heading','ReqIF.ChapterName','Heading','Überschrift'];
+			if( typeof(opts.classifyProperties)!='function' && typeof(opts.fail)=='function' ) {
+				opts.fail({status:904,statusText:'function opts.classifyProperties is undefined.'});
+				return
+			};
+			if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = false;
+			if( !opts.translateTitles || typeof(opts.translate)!='function' ) {
+				opts.translate = function(str) { return str }
+			};
+			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['SpecIF:Stereotype'];	
+		/*	if( !opts.headingProperties ) opts.headingProperties = ['SpecIF:Heading','ReqIF.ChapterName','Heading','Überschrift'];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title','DC.title','ReqIF.Name','Title','Titel'];
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','DC.description','SpecIF:Diagram','ReqIF.Text','Description','Beschreibung'];
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
-			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['SpecIF:Stereotype'];	
-			// If no lable is provided, the respective properties are skipped:
-			if( !opts.propertiesLabel ) opts.propertiesLabel = 'Properties';	
-			if( !opts.statementsLabel ) opts.statementsLabel = 'Statements';	
+		*/
+			// If no label is provided, the respective properties are skipped:
+			if( opts.propertiesLabel && opts.translateTitles ) opts.propertiesLabel = opts.translate( opts.propertiesLabel );	
+			if( opts.statementsLabel && opts.translateTitles ) opts.statementsLabel = opts.translate( opts.statementsLabel );	
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegExp
 			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegExp
 			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
@@ -117,31 +132,6 @@ function toOxml( data, opts ) {
 			let reT = '(.*?)(<br ?/>)',
 				reText = new RegExp(reT,'g');
 			
-			// set certain SpecIF element names according to the SpecIF version:
-			switch( data.specifVersion ) {
-				case '0.10.0':
-				case '0.10.1':
-		//			return { result: null, status: 903, statusText: 'SpecIF version '+data.specifVersion+' is not any more supported!' };
-					console.error('SpecIF version '+data.specifVersion+' is not any more supported!');
-					return null;
-				case '0.10.2':
-				case '0.10.3':
-					var rClasses = 'resourceTypes',
-						sClasses = 'statementTypes',
-						pClasses = 'propertyTypes',
-						rClass = 'resourceType',				
-						sClass = 'statementType',
-						pClass = 'propertyType';
-					break;
-				default:
-					var rClasses = 'resourceClasses',
-						sClasses = 'statementClasses',
-						pClasses = 'propertyClasses',
-						rClass = 'class',
-						sClass = 'class',
-						pClass = 'class'
-			};
-			
 			// All required parameters are available, so we can begin.
 			const nbsp = '&#160;'; // non-breakable space
 			var oxml = {
@@ -153,10 +143,7 @@ function toOxml( data, opts ) {
 			// For each SpecIF hierarchy a xhtml-file is created and returned as subsequent sections:
 			data.hierarchies.forEach( function(h) {
 				oxml.sections.push(
-					// The heading of the hierarchy=section:
-					wParagraph( {text:h.title,heading:1} )
-					// ... and the content:
-					+ renderChildrenOf( h, 1 )
+					renderHierarchy( h, 1 )
 				)
 			});
 
@@ -164,38 +151,23 @@ function toOxml( data, opts ) {
 			return oxml
 			
 			// ---------------
-			function titleValOf( r, rC, opts ) {
-				// get the title value defined by one of the properties:
-				// designed for use also by statements and hierarchies.
-				// starting SpecIF 10.4, rC is r['class'] for resources, statements and hierarchies.
-				if( r.properties ) {
-					let prp=null;
-					for( var a=0,A=r.properties.length; a<A; a++ ) {
-						prp = r.properties[a];
-						rC.isHeading = rC.isHeading || opts.headingProperties.indexOf(prp.title)>-1;
-						if( opts.headingProperties.indexOf(prp.title)>-1
-							|| opts.titleProperties.indexOf(prp.title)>-1 ) {
-								return escapeXML(prp.value)
-						}
-					}
-				};
-				// ... or take the resource's title, if there is no title property:
-				return escapeXML(r.title)
-			}
-			function titleOf( r, rC, pars, opts ) { // resource, resourceClass, parameters, options
+			function titleOf( r, pars, opts ) { // resource, resourceClass, parameters, options
 				// get the title of the resource
 				// designed for use also by statements and hierarchies.
-				// starting SpecIF 10.4, rC is r['class'] for resources, statements and hierarchies.
-				let ic = rC.icon;
-				if( typeof(ic)!= 'string' ) ic = '';
+				
+				// depending on the context, r['class'] is an class object or a class id:
+				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] );
+				
+				let ti = escapeXML( r.title ),
+					ic = rC.icon;
+				if( typeof(ic)!='string' ) ic = '';
 				if( ic ) ic += nbsp;
-				let ti = titleValOf( r, rC, opts );
 				if( !pars || pars.level<1 ) return  (ti?ic+ti:'');  // return raw text
-
 				// SpecIF headings are chapter level 2, all others level 3:
 				let h = rC.isHeading?2:3;
 
-				// all titles receive a bookmark, so that any titleLink has a target:
+				// all titles get a bookmark, so that any titleLink has a target:
+				console.debug('titleOf',r,ti);
 				return wParagraph( {text: (ti?ic+ti:''), heading:h, bookmark:pars.nodeId } )
 			}	
 			
@@ -205,11 +177,11 @@ function toOxml( data, opts ) {
 				let sts={}, cid, oid, sid, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// alle Relationen = Statements
-					cid = st[sClass];			// id der Klasse von st
+					cid = st['class'];			// id der Klasse von st
 					// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
-//					console.debug(st,cid);
+//					console.debug(st,cid,sid,oid);
 					if( sid==r.id || oid==r.id ) {    // nur Relationen mit der betreffenden Ressource st
 						noSts = false;
 						if( !sts[cid] ) sts[cid] = {subjects:[],objects:[]};
@@ -217,34 +189,37 @@ function toOxml( data, opts ) {
 						else sts[cid].subjects.push( itemById(data.resources,sid) )
 					}
 				});
-//				console.debug( 'statements', r.title, sts );
+//				console.debug( 'statements', r, sts );
 				if( noSts ) return '';	// no statements ...
 
-				// the heading:
+				// The heading:
 				let ct = wParagraph( {text: opts.statementsLabel, heading: 4} ),
 					sTi, row, cell;
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
 					// we don't have the individual statement's title; so we determine the class to get it's title, instead:
-					sTi = itemById(data[sClasses],cid).title;
+					sTi = opts.translate( itemById(data.statementClasses,cid).title );
 
 					// 3 columns:
 					if( sts[cid].subjects.length>0 ) {
 						cell = '';
 						// collect all related resources (here sources):
-						sts[cid].subjects.forEach( function(r2) {
+						sts[cid].subjects.forEach( function(s) {
 							cell += wParagraph({
-										text: titleOf( r2, itemById( data[rClasses], r2[rClass]), null, opts ), 
-										hyperlink: {internal:anchorOf( r2 )}, 
+										text: titleOf( s, null, opts ), 
+										hyperlink: {internal:anchorOf( s )}, 
 										noSpacing: true,
 										align: 'end'
 							})
 						});
+						// The subjects:
 						row = wTableCell( {content:cell,border:{type:'single'}} );
+						// The predicate:
 						row += wTableCell( {content:wParagraph( {text:sTi,align:'center',noSpacing:true} ),border:{type:'single'}} );
+						// The object:
 						row += wTableCell({
 								content:wParagraph({ 
-										text: titleOf( r, itemById(data[rClasses],r[rClass]), null, opts ), 
+										text: titleOf( r, null, opts ), 
 										noSpacing: true
 								}),
 								border: {type:'single'}
@@ -255,7 +230,7 @@ function toOxml( data, opts ) {
 					if( sts[cid].objects.length>0 ) {
 						row = wTableCell({
 								content:wParagraph({
-										text:titleOf( r, itemById(data[rClasses],r[rClass]), null, opts ),
+										text:titleOf( r, null, opts ),
 										noSpacing: true,
 										align:'end'
 								}), 
@@ -264,10 +239,10 @@ function toOxml( data, opts ) {
 						row += wTableCell( {content:wParagraph( {text:sTi,align:'center',noSpacing:true} ),border:{type:'single'}});
 						cell = '';
 						// collect all related resources (here objects):
-						sts[cid].objects.forEach( function(r2) {
+						sts[cid].objects.forEach( function(o) {
 							cell += wParagraph({
-										text:titleOf( r2, itemById( data[rClasses], r2[rClass]), null, opts ), 
-										hyperlink:{internal:anchorOf( r2 )},
+										text:titleOf( o, null, opts ), 
+										hyperlink:{internal:anchorOf( o )},
 										noSpacing: true
 							})
 						});
@@ -304,20 +279,23 @@ function toOxml( data, opts ) {
 					return null
 				}
 			}
-			function propertyClassOf( rC, pCid ) {
-				return itemById(data.propertyClasses,pCid) 	// starting with v0.10.6
-					|| itemById(rC[pClasses],pCid);			// ending with v0.10.5
+			function propertyClassOf( pCid ) {
+				return itemById(data.propertyClasses,pCid)
 			}
-			function propertiesOf( r, rC, opts ) {
+			function propertiesOf( r, opts ) {
 				// return the values of all resource's properties as oxml:
 				// designed for use also by statements and hierarchies.
-				// starting SpecIF 10.4, rC is r['class'] for resources, statements and hierarchies.
-				if( !r.properties || r.properties.length<1 ) return '';
+			//	if( !r.properties || r.properties.length<1 ) return '';
+
+				// depending on the context, r['class'] is an class object or a class id:
+			//	let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] );
+				
 				// return the content of all properties, sorted by description and other properties:
-				let c1='', rows='', c3, rt, hPi;
-				r.properties.forEach( function(prp) {
+				let c1='', rows='', c3, rt;
+				console.debug('propertiesOf',r);
+			/*	r.properties.forEach( function(prp) {
 					// the property title or it's class's title:
-					rt = prp.title || propertyClassOf( rC, prp[pClass] ).title;
+					rt = prp.title || propertyClassOf( prp['class'] ).title;
 						
 					// The content of the title property is already used as chapter title; so skip it here:
 					if( opts.headingProperties.indexOf(rt)>-1
@@ -327,29 +305,24 @@ function toOxml( data, opts ) {
 //							console.debug('description propertiesOf',valOf( prp ));
 							valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 					}
+				}); */
+				r.descriptions.forEach( function(prp) {
+					valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 				});
-//				console.debug('propertiesOf',r,c1)
 				// Skip the remaining properties, if no label is provided:
+//				console.debug('propertiesOf',c1);
 				if( !opts.propertiesLabel ) return c1;
 				
-				// Add a property 'SpecIF:Type':
-//				if( rC.title )
-//					r.properties.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
-
+			/*	// Add a property 'SpecIF:Type':
+				if( rC.title )
+					r.properties.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
+			*/
 				// Finally, list the remaining properties with title (name) and value:
-				r.properties.forEach( function(prp) {
+				r.other.forEach( function(prp) {
 					// the property title or it's class's title:
-					rt = prp.title || propertyClassOf( rC, prp[pClass] ).title;
-					hPi = indexBy(opts.hiddenProperties,'title',rt);
+//					console.debug('#',prp);
+					rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
 		
-					// skip hidden properties and those which have been included before,
-					// namely properties classified as heading, title and description:
-					if( opts.hideEmptyProperties && isEmpty(prp.value)
-						|| hPi>-1 && ( opts.hiddenProperties[hPi].value==undefined || opts.hiddenProperties[hPi].value==prp.value )
-						|| opts.headingProperties.indexOf(rt)>-1
-						|| opts.titleProperties.indexOf(rt)>-1 
-						|| opts.descriptionProperties.indexOf(rt)>-1 ) return;
-
 					c3 = '';
 //					console.debug('other propertiesOf',valOf( prp ));
 					valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
@@ -359,7 +332,7 @@ function toOxml( data, opts ) {
 				if( !rows ) return c1;  // no other properties
 				return c1 
 						+ wParagraph( {text: opts.propertiesLabel, heading: 4} )
-						+ wTable( rows )
+						+ wTable( rows );
 
 				// ---------------
 				function parseText( txt, opts ) {
@@ -621,7 +594,7 @@ function toOxml( data, opts ) {
 									p.runs.push(parseObject( {properties:sp[1],innerHTML:sp[3]} ));
 									return ''
 								};
-								console.warn("'",$2,"' has not been transformed because none of the pattern has matched." );
+								console.warn("'",$2,"' has not been transformed because none of the patterns has matched." );
 								return ''  // be sure to consume the matched text
 							});
 							// finally store the remainder:
@@ -640,28 +613,29 @@ function toOxml( data, opts ) {
 						}
 					}
 					function splitText(txt) {
-							var tf, arr=[], br={};
-							txt = txt.replace( reText, function($0,$1,$2) {
-								br={};
-								// store the preceding fragment:
-								if( !isEmpty($1) )
-									arr.push({str:escapeXML($1)});
+						var tf, arr=[], br={};
+						txt = txt.replace( reText, function($0,$1,$2) {
+							br={};
+							// store the preceding fragment:
+							if( !isEmpty($1) )
+								arr.push({str:escapeXML($1)});
 
-								// remove the next tag,
-								// $2 can only be one of the following:
-								if( /<br ?\/>/.test($2) ) {
-									br['break'] = 'line';
-									arr.push(br);
-									return ''
-								};
-								return ''  // be sure to consume the matched text
-							});
-							// finally store the remainder:
-							if( !isEmpty(txt) ) {
-//								console.debug('splitText',txt,typeof(txt));
-								arr.push({str:escapeXML(txt)})
+							// remove the next tag,
+							// $2 can only be one of the following:
+							if( /<br ?\/>/.test($2) ) {
+								br['break'] = 'line';
+								arr.push(br);
+								return ''
 							};
-							return arr
+							return ''  // be sure to consume the matched text
+						});
+						// finally store the remainder:
+						if( !isEmpty(txt) ) {
+//							console.debug('splitText',txt,typeof(txt));
+							arr.push({str:escapeXML(txt)})
+						};
+//						console.debug('splitText',txt,arr);
+						return arr
 					}
 
 					function parseA( lnk ) {  // details of a link
@@ -682,7 +656,7 @@ function toOxml( data, opts ) {
 //						console.debug('parseA',run);
 						return run
 					}
-					function parseObject( obj ) {  // details of an XHTML  object
+					function parseObject( obj ) {  // details of an XHTML object
 						// Parse content of an <object> tag, usually with an image or a file reference
 						// and return a 'run' element:
 						// Todo: Load a linked resource in an <object..> tag and include it in the document?
@@ -705,9 +679,10 @@ function toOxml( data, opts ) {
 						if( opts.imgExtensions.indexOf( e )>-1 ) {  
 							// it is an image, show it:
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( data.files, nameOf(u1)+'.png' );
+							let pngF = itemByTitle( data.files, nameOf(u1)+'.png' );
+//							console.debug('parseObject',e,pngF);
 							if( t1.indexOf('svg')>-1 && opts.preferPng && pngF ) {
-								u1 = pngF.id.replace('\\','/');
+								u1 = pngF.title.replace('\\','/');
 								t1 = pngF.type
 							};
 							// At the lowest level, the image is included only if present:
@@ -744,11 +719,8 @@ function toOxml( data, opts ) {
 								// avoid self-reflection:
 						//		if(ob.id==cO.id) continue;
 
-								// disregard resources which are not referenced in the current tree (selected spec):
-						//	??	if( myProject.selectedSpec.objectRefs.indexOf(cO.id)<0 ) continue;
-
 								// get the pure title text:
-								ti = titleValOf( cO, itemById( data[rClasses], cO[rClass] ), opts );
+								ti = escapeXML( cO.title )
 								
 								// disregard objects whose title is too short:
 								if( !ti || ti.length<opts.titleLinkMinLength ) continue;
@@ -766,29 +738,32 @@ function toOxml( data, opts ) {
 					// return the value of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
-					let dT = itemById( data.dataTypes, propertyClassOf(rC,prp[pClass]).dataType );
-					switch( dT.type ) {
-						case 'xs:enumeration':
-							let ct = '',
-								val = null,
-								st = opts.stereotypeProperties.indexOf(prp.title)>-1,
-								vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
-							for( var v=0,V=vL.length;v<V;v++ ) {
-								val = itemById(dT.values,vL[v].trim());
-								// If 'val' is an id, replace it by title, otherwise don't change:
-								// Add 'double-angle quotation' in case of stereotype values.
-								if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.title+'&#x00bb;'):val.title)
-								else ct += (v==0?'':', ')+vL[v]
-							};
-							return [{p:{text:escapeXML(ct)}}];
-						case 'xhtml':
-//							console.debug('valOf - xhtml',prp.value);
-							return parseXhtml( prp.value, opts );
-						case 'xs:string':
-							return parseText( prp.value, opts );
-						default:
-							return [{p:{text:escapeXML(prp.value)}}]
-					}
+//					console.debug('valOf',prp,'"',prp.value,'"');
+					if(prp['class']) {
+						let dT = itemById( data.dataTypes, propertyClassOf( prp['class']).dataType );
+						switch( dT.type ) {
+							case 'xs:enumeration':
+								let ct = '',
+									val = null,
+									st = opts.stereotypeProperties.indexOf(prp.title)>-1,
+									vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
+								for( var v=0,V=vL.length;v<V;v++ ) {
+									val = itemById(dT.values,vL[v].trim());
+									// If 'val' is an id, replace it by title, otherwise don't change:
+									// Add 'double-angle quotation' in case of stereotype values.
+									if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.value+'&#x00bb;'):val.value)
+									else ct += (v==0?'':', ')+vL[v]
+								};
+								return [{p:{text:escapeXML(ct)}}];
+							case 'xhtml':
+//								console.debug('valOf - xhtml',prp.value);
+								return parseXhtml( prp.value, opts );
+							case 'xs:string':
+								return parseText( prp.value, opts )
+						}
+					};
+					// for all other dataTypes or when there no dataType:
+					return [{p:{text:escapeXML(prp.value)}}]					
 				}
 				function isEmpty( str ) {
 					// check whether str has content or a file reference:
@@ -797,25 +772,26 @@ function toOxml( data, opts ) {
 						&& !/<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
 				}
 			}
-			function renderChildrenOf( nd, lvl ) {
-				// For each of the children of specified hierarchy node 'nd', 
+			function renderHierarchy( nd, lvl ) {
+				// Render the specified hierarchy node 'nd' and recursively it's children,
 				// write a paragraph for the referenced resource:
-				if( !nd.nodes || nd.nodes.length<1 ) return '';
+			//	if( !nd.nodes || nd.nodes.length<1 ) return '';
 
-				let r=null, rC=null,
+				let r = itemById( data.resources, nd.resource ), // the referenced resource
 					params={
-						level: lvl
+						level: lvl,
+						nodeId: nd.id
 					};
-				var ch = '';
-				nd.nodes.forEach( function(n) {
-					r = itemById( data.resources,n.resource );  // suche Objekt zur Referenz im Baum - resource
-					rC = itemById( data[rClasses], r[rClass] );			// suche Klasse des referenzierten Objekts - resourceClass
-					params.nodeId = n.id;
-					ch += 	titleOf( r, rC, params, opts )
-						+	propertiesOf( r, rC, opts )
-						+	statementsOf( r, opts )
-						+	renderChildrenOf( n, lvl+1 )					// rekursiv für den Unterbaum - Chapter
-				});
+					
+				r = opts.classifyProperties( r, data );	
+				var ch = 	titleOf( r, params, opts )
+						+	propertiesOf( r, opts )
+						+	statementsOf( r, opts );
+
+				if( nd.nodes )
+					nd.nodes.forEach( function(n) {
+						ch += renderHierarchy( n, lvl+1 )		// next level
+					});
 				return ch
 			}
 
@@ -964,9 +940,8 @@ function toOxml( data, opts ) {
 			function wText( ct ) {
 				// return when there is no content: 
 				if( !ct || ct.picture || typeof(ct)=='object' && !ct.text ) return undefined;  
-				// ct is a string with length>0, an array ct.text or an object ct.text with length>0:
 //				console.debug('wText',ct);
-				// ct can be a string, an object or an array;
+				// ct is a string with length>0, an array ct.text or an object ct.text with length>0:
 				// in case of an array:
 				if( Array.isArray(ct.text) ) {
 					let str = '';
@@ -2332,6 +2307,13 @@ function toOxml( data, opts ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id === id ) return L[i];   // return list item
 		return undefined
+	}
+	function itemByTitle(L,ln) {
+		if(!L||!ln) return null;
+		// given a title of an element in a list, return the element itself:
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i].title==ln ) return L[i];   // return list item
+		return null
 	}
 	function indexBy( L, p, s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':

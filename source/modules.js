@@ -1,5 +1,5 @@
 ///////////////////////////////
-/*	A very simple module loader and object (singleton) factory.
+/*	A simple module loader and object (singleton) factory.
 	When all registered modules are ready, a callback function is executed to start or continue the application.
 	Dependencies: jQuery 3.1 and later.
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
@@ -61,7 +61,7 @@ function ModuleManager() {
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2() {
 //			console.debug('init2',opts);
-			loadH( ['helper', 'bootstrapDialog', 'mainCSS'], opts )
+			loadH( ['helper', 'helperTree', 'tree', 'bootstrapDialog', 'mainCSS'], opts )
 		}
 	};
 	function register( mod ) {
@@ -92,8 +92,9 @@ function ModuleManager() {
 		return loadH( tr, opts )
 	};
 	self.construct = function( defs, constructorFn ) {
-		// construct controller and view of a module,
-		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used:
+		// Construct controller and view of a module.
+		// This routine is called by the code in the file, once loaded with 'loadH'/'loadM',
+		// Make sure that 'setReady' is not called in 'loadM', if 'construct' is used:
 		let mo = findM(self.tree,defs.name);
 		if(!mo) {
 			console.error("'"+defs.name+"' is not a registered module");
@@ -166,6 +167,7 @@ function ModuleManager() {
 					loadM( e );
 					return
 				};
+				// else, the module is described by an object with a property 'name':
 				// append the view to the parent view, where
 				// - the visibility of the view is controlled by the parent's viewCtl
 				if( e.view && e.parent ) {
@@ -290,27 +292,28 @@ function ModuleManager() {
 			// For a module with HTML forms there must be a corresponding HTML div tag with id="mod".
 			switch( mod ) {	
 				// 3rd party:
-				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/bootstrap-3.4.1.min.css" />');
-											$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/bootstrap-theme-3.4.1.min.css" />');
-											getScript( vPath+'/3rd/bootstrap-3.4.1.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/bootstrap-dialog-1.35.4.min.css" />');
-											getScript( vPath+'/3rd/bootstrap-dialog-1.35.4.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jqtree-1.4.10.css" />');
-											getScript( vPath+'/3rd/tree-1.4.10.jquery.js' ).done( function() {setReady(mod)} ); return true;
-				case "diff": 				getScript( vPath+'/3rd/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
-				case "fileSaver": 			getScript( vPath+'/3rd/FileSaver-1.3.4.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />');
+											$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" />');
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" />');
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.10/jqtree.css" />');
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.10/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
+				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
+				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "zip": 				getScript( vPath+'/3rd/jszip-3.1.5.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "excel": 				loadM( 'zip' );	
-											getScript( vPath+'/3rd/xlsx-0.12.13.full.min.js' ).done( function() {setReady(mod)} ); return true;
+										//	getScript( vPath+'/3rd/xlsx-0.12.13.full.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.3/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
 
-				case "schemaJson": 			getScript( vPath+'/3rd/ajv-4.11.8.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "schemaJson": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@3.0.4/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "graphViz":	 		// $('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/vis-network.min.css" />');
-											getScript( vPath+'/3rd/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'zip' );
 											loadM( 'toXhtml' );
@@ -379,8 +382,8 @@ function ModuleManager() {
 											//	$('head').append( '<link rel="stylesheet" type="text/css" href="./css/ReqIF-Server.ie.css" />');
 												$('head').append( '<style type="text/css" >div.forImage img[type="image/svg+xml"],div.forImagePreview img[type="image/svg+xml"],div.forImage object[type="image/svg+xml"],div.forImagePreview object[type="image/svg+xml"] { width: 100%; height: auto; }</style>');
 											};
-											loadM( 'tree' );
-											loadM( 'helperTree' );
+									//		loadM( 'tree' );
+									//		loadM( 'helperTree' );
 									//		loadM( 'stdTypes' );
 									//		loadM( 'diff' );
 											getScript( vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -405,7 +408,6 @@ function ModuleManager() {
 				case 'linker':  			$('#specsBody').append( '<div id="'+mod+'" class="content" ></div>' );
 											$('#'+mod).load( "./js/linker-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 		*/
-
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false
 			};
 		};

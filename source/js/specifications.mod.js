@@ -363,6 +363,8 @@ modules.construct({
 		self.tree.set(tr);
 		self.tree.numberize();
 		self.tree.restoreState();
+		if( !self.tree.selectedNode ) self.tree.selectFirstNode();
+		self.tree.openNode();
 		return self.tree.selectedNode;
 
 		// -----------------
@@ -685,7 +687,7 @@ modules.construct({
 			let options = {
 				index: 0,
 				canvas:'statementGraph',
-				titleProperties: CONFIG.titleAttributes,
+				titleProperties: CONFIG.titleProperties,
 				onDoubleClick: function( evt ) {
 //					console.log('Double Click on:',evt);
 					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
@@ -720,7 +722,7 @@ modules.construct({
 				// Store all related resources while avoiding duplicate entries:
 				sL.forEach( function(s) {
 					// skip hidden statements:
-					if( CONFIG.hiddenRelations.indexOf( s.title )>-1 ) return;
+					if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
 						
 					if( s.subject.id == self.tree.selectedNode.ref ) { 
 						// the selected node is a subject, so the related resource is a object:
@@ -753,7 +755,7 @@ modules.construct({
 							var rG = { rGs: [], rGt: [] };		// construct a statement group per type
 							sL.forEach( function(s) {    // iterate statements
 								// skip hidden statements:
-								if( CONFIG.hiddenRelations.indexOf( s.title )>-1 ) return;
+								if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
 								// for sorting continue only if the class matches;
 								// it assumed that every class appears only once:
 								if( s['class'] != sC.id ) return;
@@ -1435,7 +1437,7 @@ modules.construct({
 });
 
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function contentOf( ob, pV, opts ) {
+function valOf( ob, pV, opts ) {
 	"use strict";
 	if( opts ) {
 		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
@@ -1446,7 +1448,7 @@ function contentOf( ob, pV, opts ) {
 			clickableElements: false
 		}
 	};
-//	console.debug('contentOf',ob,pV,opts);
+//	console.debug('valOf',ob,pV,opts);
 	let dT = dataTypeOf( myProject, pV['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
@@ -1462,7 +1464,7 @@ function contentOf( ob, pV, opts ) {
 					clickableElements: opts.clickableElements
 				},
 				ct = fileRef.toGUI( noCode(pV.value), os ).linkifyURLs();
-//			console.debug('contentOf XHTML',ct);
+//			console.debug('valOf XHTML',ct);
 			ct = titleLinks( ct, opts.dynLinks );
 			break;
 		case 'xs:date':
@@ -1525,21 +1527,6 @@ function contentOf( ob, pV, opts ) {
 					// replace it with a link in case of a match:
 					if( target )
 						return lnk(target,$1); 
-				/*	previous implementation up until v0.95.2:
-					let m=$1.toLowerCase(), cO=null, ti=null;
-					for( var x=myProject.resources.length-1;x>-1;x-- ) {
-						cO = myProject.resources[x];
-						// avoid self-reflection:
-					//	if(ob.id==cO.id) continue;
-					//	ti = resTitleOf( cO ).stripHTML();
-						ti = resTitleOf( cO );
-						// continue searching, if not equal:
-						if(m!=ti.toLowerCase()) continue;
-						// disregard resources which are not referenced in the current tree (selected spec):
-						if( specs.tree.nodesByRef(cO).length<1 ) continue;
-						// the dynLink content equals a resource's title, replace it with a link:
-						return lnk(cO,$1)
-					}; */
 					// The dynamic link has NOT been matched/replaced, so mark it:
 					return '<span style="color:#D82020">'+$1+'</span>'
 				}
@@ -1569,7 +1556,7 @@ function Resource( obj ) {
 				return false   // no change
 			};
 			self.value = res;
-			self.resToShow = classifyProps( res );
+			self.resToShow = classifyProps( res, myProject );
 //			console.debug( 'Resource.set', res, self.value, self.resToShow );
 			return true			// has changed
 		} else {
@@ -1584,8 +1571,8 @@ function Resource( obj ) {
 	self.listEntry = function() {
 			function showAtt( att ) {
 //				console.debug('#att#',att);
-				if( CONFIG.overviewHiddenAttributes.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.overviewShowEmptyAttributes || hasContent(att.value))
+				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
+				return (CONFIG.overviewShowEmptyProperties || hasContent(att.value))
 			} 
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
@@ -1614,7 +1601,7 @@ function Resource( obj ) {
 						dynLinks: v,
 						clickableElements: v
 					};
-				rO += '<div class="attribute attribute-content">'+contentOf(self.resToShow,ai,os)+'</div>'
+				rO += '<div class="attribute attribute-content">'+valOf(self.resToShow,ai,os)+'</div>'
 			}
 		});
 		rO += 	'</div>' +  // end of content-main
@@ -1636,7 +1623,7 @@ function Resource( obj ) {
 		// 3.1 The remaining atts:
 		self.resToShow.other.forEach( function( ai ) {
 			if( showAtt( ai ) ) {
-				rO += attrV( titleOf(ai), contentOf(self.resToShow,ai), 'attribute-condensed' )
+				rO += attrV( titleOf(ai), valOf(self.resToShow,ai), 'attribute-condensed' )
 			}
 		});
 		// 3.2 The type info:
@@ -1648,7 +1635,7 @@ function Resource( obj ) {
 		
 		return rO  // return rendered resource for display
 	};
-	self.details = function() {
+/*	self.details = function() {
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 
 		// Create HTML for a detail view:
@@ -1663,13 +1650,13 @@ function Resource( obj ) {
 						dynLinks: true,
 						clickableElements: true
 					};
-				rO += 	'<div class="attribute attribute-content">'+contentOf(self.resToShow,ai,os)+'</div>'
+				rO += 	'<div class="attribute attribute-content">'+valOf(self.resToShow,ai,os)+'</div>'
 			}
 		});
 		// 3 The remaining properties:
 		self.resToShow.other.forEach( function( ai ) {
 //			console.debug('details.other',ai.value);
-			rO += attrV( titleOf(ai), contentOf(self.resToShow,ai) )
+			rO += attrV( titleOf(ai), valOf(self.resToShow,ai) )
 		});
 		// 4 The type info:
 		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.resToShow['class'] ) );
@@ -1678,7 +1665,7 @@ function Resource( obj ) {
 //		console.debug( 'Resource.details', self.value, rO );
 		return rO  // return rendered resource for display
 	};
-
+*/
 	//  Create a reduced SpecIF data set for rendering a graph:
 	self.statements = function() {
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
@@ -1707,6 +1694,7 @@ function Resource( obj ) {
 				sG.rGs.forEach( function(s) {
 					rR = s.subject;
 					// add each statement:
+//					console.debug('s',s,titleOf(s));
 					net.statements.push({
 						title:		titleOf(s),	// translated
 						id:			s.id,
@@ -1732,6 +1720,7 @@ function Resource( obj ) {
 				sG.rGt.forEach( function(s) {
 					rR = s.object;
 					// add each statement:
+//					console.debug('s',s,titleOf(s));
 					net.statements.push({
 						title:		titleOf(s),	// translated
 						id:			s.id,
@@ -1845,7 +1834,6 @@ function Resource( obj ) {
 	};
 	function renderTitle( clAtts, ord ) {
 		if( !clAtts.title ) return '';
-		// use myProject.allClasses, because there are no resourceClasses in case of RIF-data:
 		if( self.resToShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(ord?ord+'&#xa0;':'')+clAtts.title+'</div>';
@@ -2031,7 +2019,7 @@ var fileRef = {
 
 				repSts.push( '<div class="forImage"><a href="'+u1+'"'+t1+' ><img src="'+u2+'"'+t2+s2+' alt="'+$4+'" /></a></div>' );  // works.
 */ 
-				let f = itemById(myProject.files,u2);
+				let f = itemByTitle(myProject.files,u2);
 //				console.debug('fileRef.toGUI 1a found: ', f );
 				if( f ) {
 //					console.debug('containerId',containerId(u2));
@@ -2082,7 +2070,7 @@ var fileRef = {
 						d = '<img src="'+u1+'"'+t1+s1+' alt="'+d+'" />'
 					}
 */				
-					let f = itemById(myProject.files,u1);
+					let f = itemByTitle(myProject.files,u1);
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
 					if( f ) {
 						d = '<div id="'+containerId(u1)+'" class="forImage"></div>';
@@ -2167,21 +2155,20 @@ var fileRef = {
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 
-		function showImg(img, opts) {
+		function showImg(f, opts) {
 			if( typeof(opts)!='object' ) 
 				opts = {};
 
-//			console.debug('showImg',img,opts);
-			let f = itemById( myProject.files, img.id );
-			if( !f ) 
-				return;
+//			console.debug('showImg',f,opts);
+		//	if( !f ) 
+		//		return;
 			if( !f.blob ) {
-				document.getElementById(containerId(f.id)).innerHTML = '<div class="notice-danger" >Image missing: '+(f.title||f.id)+'</div>';
+				document.getElementById(containerId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
 				return
 			};
 			// ToDo: in case of a server, the blob itself must be fetched first (the SpecIF file list just has meta-data)
 			
-			switch( img.type ) {
+			switch( f.type ) {
 				case 'image/png':
 				case 'image/x-png':
 				case 'image/jpeg':
@@ -2204,10 +2191,10 @@ var fileRef = {
 					// increase the timelag between building the DOM and rendering the images, if necessary.
 					const reader = new FileReader();
 					reader.addEventListener('loadend', function(e) {
-		//				console.debug('showImg',e.target.result);
+//						console.debug('showImg',e.target.result);
 						// add image to DOM using an image-tag with data-URI.
 						// set a grey background color for images with transparency:
-						document.getElementById(containerId(f.id)).innerHTML = '<img src="'+e.target.result+'" type="'+f.type+'" '+(f.title?'alt="'+f.title+'" ':'')+' style="background-color:#DDD;"/>'
+						document.getElementById(containerId(f.title)).innerHTML = '<img src="'+e.target.result+'" type="'+f.type+'" alt="'+f.title+'" style="background-color:#DDD;"/>'
 					});
 					// load the raster image:
 					if( opts && typeof(opts.timelag)=='number' && opts.timelag>0 )
@@ -2228,40 +2215,41 @@ var fileRef = {
 						rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
 						pend = 0;		// the count of embedded images waiting for transformation
 						
-						function toDataURL(fi,fn) {
+						function toDataURL(file,fn) {
 							const reader = new FileReader();
-							reader.addEventListener('loadend', function(e) { fn(fi.id,e.target.result) });
-							reader.readAsDataURL(fi.blob)
+							reader.addEventListener('loadend', function(e) { fn(file.title,e.target.result) });
+							reader.readAsDataURL(file.blob)
 						} 
 					
 					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 					// increase the timelag between building the DOM and rendering the images, if necessary.
+//					console.debug('showSvg',f,opts);
 					const reader = new FileReader();
 					reader.addEventListener('loadend', function(ev) {
 						let ef = null,
 							mL = null;
 						svg = {
-							loc: document.getElementById(containerId(f.id)),
+							loc: document.getElementById(containerId(f.title)),
 							// known limitation: if there are two references of the same image on a page, only the first is shown.
 							val: ev.target.result
 						};
 						// process all image references one by one:
 						// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
 						while((mL=rE.exec(ev.target.result)) != null ) {
-		//					console.debug('SVG embedded file',mL[2],ef,pend);
 							// skip all images already provided as data-URLs:
 							if( mL[2].startsWith('data:') ) continue;
 							// avoid transformation of redundant images:
 							if( indexById(dataURLs,mL[2])>-1 ) continue;
 							pend++;
-							ef = itemBySimilarId( myProject.files, mL[2] );
+							ef = itemBySimilarTitle( myProject.files, mL[2] );
+//							console.debug('SVG embedded file',mL[2],ef,pend);
 							// transform file to data-URL and display, when done:
-							toDataURL(ef, function(fId,res) {
+							toDataURL(ef, function(ft,res) {
 								dataURLs.push({
-									id: fId,
+									id: ft,
 									val: res
 								});
-		//						console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
+//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
 								if( --pend<1 ) {
 									// all embedded images have been transformed,
 									// replace references by dataURLs and add complete image to DOM:
@@ -2290,7 +2278,7 @@ var fileRef = {
 					// see http://tutorials.jenkov.com/svg/scripting.html
 					function registerClickEls(svg) {
 						if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
-			//			console.debug('registerClickEls',svg);
+//						console.debug('registerClickEls',svg);
 						addViewBoxIfMissing(svg);
 						
 						// now collect all clickable elements:
@@ -2302,7 +2290,7 @@ var fileRef = {
 						CONFIG.clickElementClasses.forEach( function(cl) {
 							svg.clEls = svg.clEls.concat(Array.prototype.slice.call( svg.getElementsByClassName( cl )));
 						});
-			//			console.debug(svg.clEls, typeof(svg.clEls))
+//						console.debug(svg.clEls, typeof(svg.clEls))
 						let clEl = null;
 						svg.clEls.forEach( function(clEl) {
 							// set cursor for clickable elements:
@@ -2310,7 +2298,7 @@ var fileRef = {
 
 							// see https://www.quirksmode.org/js/events_mouse.html
 							// see https://www.quirksmode.org/dom/events/
-							clEl.addEventListener("click", 
+							clEl.addEventListener("dblclick", 
 								function(evt){ 
 									// ToDo: So far, this only works with ARCWAY generated SVGs.
 									let eId = this.className.baseVal.split(' ')[1];		// second class is element id
@@ -2329,14 +2317,14 @@ var fileRef = {
 							// Show the description of the element under the cursor to the left:
 							clEl.addEventListener("mouseover", 
 								function(evt){ 
-			//						console.debug(evt,this,$(this));
+//									console.debug(evt,this,$(this));
 									// ToDo: So far, this only works with ARCWAY generated SVGs.
 								//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 									let id = this.className.baseVal.split(' ')[1],		// id is second class
-										clAtts = classifyProps( itemBySimilarId(myProject.resources,id) ),
+										clAtts = classifyProps( itemBySimilarId(myProject.resources,id), myProject ),
 										dsc = '';
 									clAtts.descriptions.forEach( function(d) {
-										dsc = contentOf(clAtts,d) + dsc
+										dsc = valOf(clAtts,d) + dsc
 									});
 									if( dsc.stripCtrl().stripHTML().trim() ) {
 										// Remove the dynamic linking pattern from the text:
@@ -2384,7 +2372,7 @@ var fileRef = {
 						function addViewBoxIfMissing(svg) {
 							let el=null;
 							svg.childNodes.forEach( function(el) {
-			//					console.debug('svg',svg,el,el.outerHTML);
+//								console.debug('svg',svg,el,el.outerHTML);
 								// look for '<svg .. >' tag with its properties, often but not always the first child node:
 								if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {
 									if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
@@ -2415,9 +2403,9 @@ var fileRef = {
 					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 					// increase the timelag between building the DOM and rendering the images, if necessary.
 						function transformBpmn(f) {
-						//	document.getElementById(containerId(f.id)).innerHTML = '<p>Here comes a BPMN diagram '+f.id+'</p>'
+						//	document.getElementById(containerId(f.title)).innerHTML = '<p>Here comes a BPMN diagram '+f.id+'</p>'
 							// viewer instance:
-							let cvs = containerId(f.id);
+							let cvs = containerId(f.title);
 								bpmnViewer = new BpmnJS({container: '#'+cvs});
 							bpmnViewer.importXML(f.blob, function(err) {
 								if (err) {
@@ -2452,6 +2440,14 @@ var fileRef = {
 					for( var i=L.length-1;i>-1;i-- )
 						// is id a substring of L[i].id?
 						if( L[i].id.indexOf(id)>-1 ) return L[i];   // return list item
+					return null
+				}
+				function itemBySimilarTitle(L,ti) {
+					// return the list element having an id similar to the specified one:
+					ti = ti.trim();
+					for( var i=L.length-1;i>-1;i-- )
+						// is ti a substring of L[i].title?
+						if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
 					return null
 				}
 		}	// end of showImg()

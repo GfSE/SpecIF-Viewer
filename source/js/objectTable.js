@@ -30,8 +30,8 @@ function ObjectTable() {
 				// only for attributes which are not a title or a description (already contained in column "titleAndDescr")
 				// .. and only if it is a new column (there isn't any with the same name, yet):
 				// ToDo: Exclude only the first title attribute, the active one.
-				if( CONFIG.titleAttributes.indexOf( ln )<0   
-					&& CONFIG.descriptionAttributes.indexOf( ln )<0 
+				if( CONFIG.titleProperties.indexOf( ln )<0   
+					&& CONFIG.descProperties.indexOf( ln )<0 
 					&& indexBy(cols, 'data', ln.toJsId() )<0 ) {
 //						console.debug( s, a, ti );
 						cols.push({ 

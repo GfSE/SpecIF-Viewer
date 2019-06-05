@@ -89,37 +89,52 @@ function Reports() {
 
 			function addResourceClassReport( pr ) {
 				// Add a report with a counter per resourceClass:
-				var oTR = {
-						title: i18n.LblSpecTypes,
+				var rCR = {
+						title: i18n.LblResourceClasses,
 						subject: 'resource',
 						pid: pr.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-
 				pr.resourceClasses.forEach( function( rC ) {
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
-								oTR.datasets.push({
+								rCR.datasets.push({
 									label: titleOf(rC),
 									id: rC.id,
 									count: 0,
 									color: '#1690d8' 
 								})
 				});
-				self.list.push(oTR)
+				self.list.push(rCR)
 			}
-
 		addResourceClassReport( prj );  // must be on the first position
 
-/*			var addStatementClassReport = function( prj ) {
+		/*	function addStatementClassReport( prj ) {
 				// Add a report with a counter per statementClass:
-				// ToDo: cannot build a report based on statementClass, because there is no easy way to get all statements (yet)
-			};
-
-		addStatementClassReport( prj );
-*/					
+				var sCR = {
+						title: i18n.LblStatementClasses,
+						subject: 'statement',
+						pid: pr.id,
+						scaleMin: 0,
+						scaleMax: 0,
+						datasets: []
+					};
+				pr.statementClasses.forEach( function( sC ) {
+							// Add a counter for each resourceClass
+							if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
+								sCR.datasets.push({
+									label: titleOf(sC),
+									id: sC.id,
+									count: 0,
+									color: '#1690d8' 
+								})
+				});
+				self.list.push(sCR)
+			}
+		addStatementClassReport( prj );  */
+					
 			function addEnumeratedValueReports( prj ) {
 				function addPossibleValues(pC,r) {
 					// Look up the dataType and create a counter for all possible enumerated values:
@@ -128,7 +143,7 @@ function Reports() {
 							prj.dataTypes[d].values.forEach( function(val) {
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
 								r.datasets.push({  
-									label: val.title, 
+									label: val.value, 
 									id: val.id,
 									count: 0,    // resource count with a certain property value
 									color: '#1a48aa'
@@ -157,8 +172,8 @@ function Reports() {
 									title: titleOf(rC)+': '+titleOf(pC),
 									subject: 'enumValue',
 									pid: prj.id,	// pid: project-id
-									tid: rC.id, 	// tid: type-id
-									aid: id, 		// aid: property-id
+									tid: rC.id, 	// tid: resourceClass-id
+									aid: id, 		// aid: propertyClass-id
 									scaleMin: 0,
 									scaleMax: 0,
 									datasets: []
@@ -171,9 +186,9 @@ function Reports() {
 			}
 		addEnumeratedValueReports( prj );
 
-/*			var addBooleaenValueReports = function( prj ) {
+/*			function addBooleaenValueReports( prj ) {
 			// ToDo
-			};
+			}
 		addBooleanValueReports( prj );  
 */
 			function incVal( i,j ) {
@@ -193,34 +208,41 @@ function Reports() {
 			}
 			function evalResource( obj ) {
 //				console.log( 'evalResource', self.list, obj );
+					function findPanel(pL,r,p) {
+						for( var i=pL.length-1;i>-1;i--  ) {
+							if( pL[i].tid==r && pL[i].aid==p ) return i
+						};
+						return -1
+					}
 										
-				// a) The histogram of resource types; it is the first report panel:
-				let j = indexById( self.list[0].datasets, obj['class'] );
+				// a) The histogram of resource classes; it is the first report panel:
+				let rId = obj['class'],
+					j = indexById( self.list[0].datasets, rId );
 //				console.log( 'evalResource j', obj, j );
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
-				let sT = itemById( prj.resourceClasses, obj['class'] );
+				let rC = itemById( prj.resourceClasses, rId );
 				// there is a report for every enumerated resourceClass:
 				let dT=null,oa=null,i=null,ct=null,pC;
-				sT.propertyClasses.forEach( function(id) {
-					pC = itemById( prj.propertyClasses, id );
+				rC.propertyClasses.forEach( function(pId) {
+					pC = itemById( prj.propertyClasses, pId );
 					dT = itemById( prj.dataTypes, pC.dataType );
 					if( dT.type!='xs:enumeration' ) return;
 					// find the report panel:
-					i = indexBy( self.list, 'aid', id );
+					i = findPanel(self.list,rId,pId);
 //					console.log( 'evalResource i', pC, i );
 					if( i>-1 ) { 
 						// report panel found; it is assumed it is of type 'xs:enumeration'.
 						// check whether obj has an property of this type:
-						oa = itemBy( obj.properties, 'class', id );
+						oa = itemBy( obj.properties, 'class', pId );
 						if( oa && oa.value.trim().length ) {  
 							// has a value:
 //							console.log( 'evalResource a', oa );
 							ct = oa.value.split(',');
 							ct.forEach( function(val) { 
 								// find the bar which corresponds to the property values
-								j = indexBy( self.list[i].datasets, 'id', val.trim() );
+								j = indexById( self.list[i].datasets, val.trim() );
 //								console.log( 'evalResource z', ct, j );
 								if( j>-1 ) { incVal( i,j ) } // property value found
 							})
@@ -232,9 +254,15 @@ function Reports() {
 				})
 			}
 
-		var pend=0;
+//		console.debug('report panels', self.list);
+		// we must go through the tree because not all resources may be cached,
+		// but we must avoid to evaluate every resource more than once:
+		var pend=0, visitedR=[];
 		specs.tree.iterate( function(nd) {
+			if( visitedR.indexOf(nd.ref)>-1 ) return; 
+			// not yet evaluated:
 			pend++;
+			visitedR.push(nd.ref); // memorize all resources already evaluated
 			prj.readContent( 'resource', {id: nd.ref})
 				.done(function(rsp) {
 					evalResource( rsp );
@@ -246,7 +274,11 @@ function Reports() {
 						busy.reset()
 					}
 				})
-				.fail( handleError )
+				.fail( handleError );
+		//	prj.readStatementsOf( {id: nd.ref}, false )
+		//		.done(function(rsp) {
+		//		})
+		//		.fail( handleError ); 
 			return true // continue iterating
 		});
 		return
@@ -312,6 +344,8 @@ function Reports() {
 			case 'resource':
 				fL.push({subject: 'resource', pid: itm.pid, values: [itm.datasets[cX].id]});
 				break;
+		//	case 'statement':
+			// cannot filter by 'statement', yet
 			case 'enumValue':
 				fL.push({subject: 'resource', pid: itm.pid, values: [itm.tid]});  // pid: project-id
 				fL.push({subject: 'enumValue', tid: itm.tid, aid: itm.aid, values: [itm.datasets[cX].id]})  // tid: type-id

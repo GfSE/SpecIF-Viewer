@@ -1,7 +1,7 @@
 ///////////////////////////////
 /*	helper functions for Javascript.
 	Dependencies: jQuery 3.0, bootstrap 3.
-	(C)copyright 2010-2017 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
@@ -17,7 +17,7 @@ function attrV( lbl, val, cssCl ) {
 			val = noCode( val.ctrl2HTML() )
 	else	val = '';
 	
-	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-content" >')+val+'</div>'
+	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-content" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>'
 }
 function textInput( lbl, val, typ, fn ) {  
@@ -351,144 +351,145 @@ function bindResizer() {
 	})
 }
 
-	function indexById(L,id) {
-		if(!L||!id) return -1;
-		// given an ID of an element in a list, return it's index:
-		id = id.trim();
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].id === id ) return i;   // return list index 
-		return -1
-	}
-	function itemById(L,id) {
-		if(!L||!id) return null;
-		// given the ID of an element in a list, return the element itself:
-		id = id.trim();
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].id === id ) return L[i];   // return list item
-		return null
-	}
-	function indexByName(L,ln) {
-		if(!L||!ln) return -1;
-		// given a longName of an element in a list, return it's index:
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].longName === ln ) return i;   // return list index
-		return -1
-	}
-	function itemByName(L,ln) {
-		if(!L||!ln) return null;
-		// given a longName of an element in a list, return the element itself:
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].longName === ln ) return L[i];   // return list item
-		return null
-	}
-	function indexBy( L, p, s ) {
-		if(!L||!p||!s) return -1;
-		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
-		// hand in property and searchTerm as string !
-		for( var i=L.length-1;i>-1;i-- )
-			if (L[i][p] === s) return i;
-		return -1
-	}
-	function itemBy( L, p, s ) {
-		if(!L||!p||!s) return -1;
-		// Return an element in list 'L' whose property 'p' equals searchterm 's':
-		// hand in property and searchTerm as string !
-		for( var i=L.length-1;i>-1;i-- )
-			if (L[i][p] === s) return L[i];
-		return null
-	}
-	function containsById( cL, L ) {
-		if(!L) return null;
-		// return true, if all elements in L are contained in cL (cachedList),
-		// where L may be an array or a single item:
-		return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1
-		
-		function containsL( cL, L ) {
-			for( var i=L.length-1;i>-1;i-- )
-				if ( indexById( cL, L[i].id )<0 ) return false;
-			return true
-		}
-	}
-	function containsByName( cL, L ) {
-		if(!L) return null;
-		// return true, if all elements in L are contained in cL (cachedList):
-		return Array.isArray(L)?containsL( cL, L ):( indexByName( cL, L.longName )>-1 )
-		
-		function containsL( cL, L ) {
-			for( var i=L.length-1;i>-1;i-- )
-				if ( indexByName( cL, L[i].longName )<0 ) return false;
-			return true
-		}
-	}
-	function forAll( L, fn ) {
-		// return a new list with the results from applying the specified function to all elements of input list L:
-		if(!L) return [];
-		var nL = [];
-		L.forEach( function(e){ var r=fn(e); if(r) nL.push(r) } );
-		return nL
-	}
+function indexById(L,id) {
+	if(!L||!id) return -1;
+	// given an ID of an element in a list, return it's index:
+	id = id.trim();
+	for( var i=L.length-1;i>-1;i-- )
+		if( L[i].id==id ) return i;   // return list index 
+	return -1
+}
+function itemById(L,id) {
+	if(!L||!id) return null;
+	// given the ID of an element in a list, return the element itself:
+	id = id.trim();
+	for( var i=L.length-1;i>-1;i-- )
+		if( L[i].id==id ) return L[i];   // return list item
+	return null
+}
+function indexByTitle(L,ln) {
+	if(!L||!ln) return -1;
+	// given a title of an element in a list, return it's index:
+	for( var i=L.length-1;i>-1;i-- )
+		if( L[i].title==ln ) return i;   // return list index
+	return -1
+}
+function itemByTitle(L,ln) {
+	if(!L||!ln) return null;
+	// given a title of an element in a list, return the element itself:
+	for( var i=L.length-1;i>-1;i-- )
+		if( L[i].title==ln ) return L[i];   // return list item
+	return null
+}
+function indexBy( L, p, s ) {
+	if(!L||!p||!s) return -1;
+	// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
+	// hand in property and searchTerm as string !
+	for( var i=L.length-1;i>-1;i-- )
+		if( L[i][p]==s ) return i;
+	return -1
+}
+function itemBy( L, p, s ) {
+	if(!L||!p||!s) return null;
+	// Return an element in list 'L' whose property 'p' equals searchterm 's':
+	// hand in property and searchTerm as string !
+	for( var i=L.length-1;i>-1;i-- )
+		if( L[i][p]==s ) return L[i];
+	return null
+}
+function containsById( cL, L ) {
+	if(!L) return null;
+	// return true, if all elements in L are contained in cL (cachedList),
+	// where L may be an array or a single item:
+	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1
 	
-	function cacheE( L, e ) {  // ( list, entry )
-		// add or update the element e in a list L:
-		let n = indexById( L, e.id );
-		if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
-		L[n] = e; return n // update otherwise
+	function containsL( cL, L ) {
+		for( var i=L.length-1;i>-1;i-- )
+			if ( indexById( cL, L[i].id )<0 ) return false;
+		return true
 	}
-	function cacheL( L, es ) {  // ( list, entries )
-		// add or update the elements es in a list L:
-		es.forEach( function(e) { cacheE( L, e ) } )
-	}
-	function uncacheE( L, e ) {  // ( list, entry )
-		// remove the element e from a list L:
-		let n = indexById( L, e.id );
-		if( n>-1 ) L.splice(n,1)  // remove, if found
-	}
-	function uncacheL( L, es ) {  // ( list, entries )
-		// remove the elements es from a list L:
-		es.forEach( function(e) { uncacheE( L, e ) } )
-	}
-	function removeFromArray( A, e ) {
-		let i=A.indexOf(e);
-		if( i>-1 ) A.splice(i,1)
-	};
+}
+function containsByTitle( cL, L ) {
+	if(!L) return null;
+	// return true, if all elements in L are contained in cL (cachedList):
+	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 )
 	
-	// http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
-	function genID(pfx) {
-		if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
-		let re = /^[A-Za-z_]/;
-		if( !re.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
-		
-		let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-		var result = '';
-		for( var i=CONFIG.genIdLength; i>0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
-		return pfx+result
+	function containsL( cL, L ) {
+		for( var i=L.length-1;i>-1;i-- )
+			if ( indexByTitle( cL, L[i].title )<0 ) return false;
+		return true
 	}
-/*	// http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript:
-	function genID() { var s=Math.random().toString(36).slice(2); return s.length===16 ? s : genID(); }
-	// http://stackoverflow.com/questions/1349404/generate-a-string-of-5-random-characters-in-javascript
-	function genID() {
-		var text = "";
-		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-		for( var i=0; i<16; i++ )
-			text += possible.charAt(Math.floor(Math.random() * possible.length));
-		return text;
-	}
+}
+function forAll( L, fn ) {
+	// return a new list with the results from applying the specified function to all elements of input list L:
+	if(!L) return [];
+	var nL = [];
+	L.forEach( function(e){ var r=fn(e); if(r) nL.push(r) } );
+	return nL
+}
+
+function cacheE( L, e ) {  // ( list, entry )
+	// add or update the element e in a list L:
+	let n = indexById( L, e.id );
+	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
+	L[n] = e; return n // update otherwise
+}
+function cacheL( L, es ) {  // ( list, entries )
+	// add or update the elements es in a list L:
+	es.forEach( function(e) { cacheE( L, e ) } )
+}
+function uncacheE( L, e ) {  // ( list, entry )
+	// remove the element e from a list L:
+	let n = indexById( L, e.id );
+	if( n>-1 ) L.splice(n,1)  // remove, if found
+}
+function uncacheL( L, es ) {  // ( list, entries )
+	// remove the elements es from a list L:
+	es.forEach( function(e) { uncacheE( L, e ) } )
+}
+function removeFromArray( A, e ) {
+	let i=A.indexOf(e);
+	if( i>-1 ) A.splice(i,1)
+};
+	
+// http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
+function genID(pfx) {
+	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
+	let re = /^[A-Za-z_]/;
+	if( !re.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
+	
+	let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+	var result = '';
+	for( var i=CONFIG.genIdLength; i>0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+	return pfx+result
+}
+/*	
+// http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript:
+function genID() { var s=Math.random().toString(36).slice(2); return s.length===16 ? s : genID(); }
+// http://stackoverflow.com/questions/1349404/generate-a-string-of-5-random-characters-in-javascript
+function genID() {
+	var text = "";
+	var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	for( var i=0; i<16; i++ )
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	return text;
+}
 */
 
-	// Make a valid js variable/property name; replace disallowed characters by '_':
-	String.prototype.toJsId = function() { 
-		if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#°%]/g, '_' ); 
-		return null
-	};
-	// Make an id conforming with ReqIF and SpecIF:
-	String.prototype.toSpecifId = function() { 
-		if( this ) return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
-		return null
-	};
+// Make a valid js variable/property name; replace disallowed characters by '_':
+String.prototype.toJsId = function() { 
+	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#°%]/g, '_' ); 
+	return null
+};
+// Make an id conforming with ReqIF and SpecIF:
+String.prototype.toSpecifId = function() { 
+	if( this ) return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
+	return null
+};
 
-	// Make a very simple hash code from a string:
-	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-	String.prototype.simpleHash = function(){for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
+// Make a very simple hash code from a string:
+// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+String.prototype.simpleHash = function(){for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
 	
 /* from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith */	
 if (!String.prototype.startsWith) {
@@ -509,38 +510,38 @@ if (!String.prototype.endsWith) {
       return lastIndex !== -1 && lastIndex === position
 	}
 };
-	String.prototype.truncate = function(l) {
-		var t = this.substring(0,l-1);
-//		if( t.length < this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
-		if( t.length < this.length ) t += '...';  // must work also in non-html fields
-		return t
-	};
-	String.prototype.reduceWhiteSpace = function() {
-	// Reduce white space to a single blank:
-		return this.replace( /[\s]{2,}/g, ' ' )
-	};
-	String.prototype.stripCtrl = function() {
-	// Remove js/json control characters from HTML-Text or other:
-		return this.replace( /\r|\n|\f/g, '' ).replace( /\t/g, ' ' )
-	};
-	String.prototype.ctrl2HTML = function() {
-	// Convert js/json control characters (new line) to HTML-tags and remove the others:
-		return this.replace( /\r|\f/g, '' ).replace( /\t/g, ' ' ).replace( /\n/g, '<br />' )
-	};
-	String.prototype.toHTML = function() {
-	// Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
-		return this.escapeHTML().ctrl2HTML()
-	};
-	String.prototype.utf8ToXmlChar = function() {
-		let i = this.length,
-			aRet = [];
-		while (i--) {
-			let iC = this[i].charCodeAt(0);
-			if (iC < 65 || iC > 127 || (iC > 90 && iC < 97)) aRet[i] = '&#' + iC + ';';
-			else aRet[i] = this[i];
-		}
-		return aRet.join('');
+String.prototype.truncate = function(l) {
+	var t = this.substring(0,l-1);
+//	if( t.length < this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
+	if( t.length < this.length ) t += '...';  // must work also in non-html fields
+	return t
+};
+String.prototype.reduceWhiteSpace = function() {
+// Reduce white space to a single blank:
+	return this.replace( /[\s]{2,}/g, ' ' )
+};
+String.prototype.stripCtrl = function() {
+// Remove js/json control characters from HTML-Text or other:
+	return this.replace( /\r|\n|\f/g, '' ).replace( /\t/g, ' ' )
+};
+String.prototype.ctrl2HTML = function() {
+// Convert js/json control characters (new line) to HTML-tags and remove the others:
+	return this.replace( /\r|\f/g, '' ).replace( /\t/g, ' ' ).replace( /\n/g, '<br />' )
+};
+String.prototype.toHTML = function() {
+// Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
+	return this.escapeHTML().ctrl2HTML()
+};
+String.prototype.utf8ToXmlChar = function() {
+	let i = this.length,
+		aRet = [];
+	while (i--) {
+		let iC = this[i].charCodeAt(0);
+		if (iC < 65 || iC > 127 || (iC > 90 && iC < 97)) aRet[i] = '&#' + iC + ';';
+		else aRet[i] = this[i];
 	}
+	return aRet.join('');
+}
 /*	String.prototype.xmlChar2utf8 = function() {
 		this = this.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 16))
@@ -551,44 +552,45 @@ if (!String.prototype.endsWith) {
 	} */
 if (!String.prototype.stripHTML) {
 	String.prototype.stripHTML = function() {
-		// don't use a regex to strip html to impede cross-site-scripting (XSS) attacks
+		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
 		return $("<dummy/>").html( this ).text()
 	}
 };
 
-	// Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
-	String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
+// Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
+String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 //	String.prototype.escapeRE = function() { return this.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&") };
-	// Escape characters for JSON string: 
-	String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
-	// escape HTML characters:
-	String.prototype.escapeXML = function() {
-		return this.replace(/["'&<>]/g, function($0) {
-			return "&" + {"&":"#38", "<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
-		})
-	};
-	String.prototype.escapeHTML = function() {
-		return this.replace(/[&<>"'`=\/]/g, function($0) {
-			return "&" + {"&":"#38", "<":"#60", ">":"#62", '"':"#34", "'":"#39", "`":"#x60", "=":"#x3D", "/":"#x2F"}[$0] + ";";
-		})
-	};
 
-	// Add a leading icon to a title:
-	// use only for display, don't add to stored variables.
-	String.prototype.addIcon = function( ic ) {
-		if( ic ) return ic+'&#xa0;'+this;
-		return this
-	};
+// Escape characters for JSON string: 
+String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
+// escape HTML characters:
+String.prototype.escapeXML = function() {
+	return this.replace(/["'&<>]/g, function($0) {
+		return "&" + {"&":"#38", "<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
+	})
+};
+String.prototype.escapeHTML = function() {
+	return this.replace(/[&<>"'`=\/]/g, function($0) {
+		return "&" + {"&":"#38", "<":"#60", ">":"#62", '"':"#34", "'":"#39", "`":"#x60", "=":"#x3D", "/":"#x2F"}[$0] + ";";
+	})
+};
 
-	// Add a link to an isolated URL:
-	String.prototype.linkifyURLs = function() {
-		return this.replace( RE.URL,  
-			function( $0, $1, $2, $3, $4, $5, $6, $7, $8 ){ 
-				// all links which do not start with "http" are considered local by most browsers:
-				if( !$2.startsWith('http') ) $2 = 'http://'+$2;  // starts with "www." then according to RE.URL
-				return $1+'<a href="'+$2+'" >'+$2+'</a>'+$8
-			})
-	};	
+// Add a leading icon to a title:
+// use only for display, don't add to stored variables.
+String.prototype.addIcon = function( ic ) {
+	if( ic ) return ic+'&#xa0;'+this;
+	return this
+};
+
+// Add a link to an isolated URL:
+String.prototype.linkifyURLs = function() {
+	return this.replace( RE.URL,  
+		function( $0, $1, $2, $3, $4, $5, $6, $7, $8 ){ 
+			// all links which do not start with "http" are considered local by most browsers:
+			if( !$2.startsWith('http') ) $2 = 'http://'+$2;  // starts with "www." then according to RE.URL
+			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$8
+		})
+};	
 
 	String.prototype.fileExt = function() {
 		// return the file extension without the '.':
@@ -597,89 +599,90 @@ if (!String.prototype.stripHTML) {
 //		if( e==null ) return null;
 //		return e[1]
 	};
-	String.prototype.fileName = function() {
-		let e = RE.FileName.exec(this);  // name excluding '.'
-		if( e==null ) return null;
-		return e[1]
+String.prototype.fileName = function() {
+	let e = RE.FileName.exec(this);  // name excluding '.'
+	if( e==null ) return null;
+	return e[1]
+};
+String.prototype.isTrue = function() {
+	return CONFIG.valuesTrue.indexOf( this.toLowerCase().trim() )>-1
+};
+String.prototype.isFalse = function() {
+	return CONFIG.valuesFalse.indexOf( this.toLowerCase().trim() )>-1
+};
+String.prototype.trimJSON = function() {
+	// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
+	let si = this.indexOf('{'),
+		li = this.lastIndexOf('}');
+	return this.substring(si,li+1)
+};
+/*	
+String.prototype.removeBOM = function() {
+	// remove the byte order mask from a UTF-8 coded string
+	// ToDo: Any whitespace between BOM and JSON is not taken care of.
+	// ToDo: The BOM may be "FE FF" in certain representations.
+	return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, function($0,$1,$2) {return $2} )
+};
+function toHex(str) {
+	var hex='', nV='';
+	for( var i=0;i<str.length;i++) {
+		nV = str.charCodeAt(i).toString(16);
+		hex += nV.length>1?''+nV:'0'+nV
 	};
-	String.prototype.isTrue = function() {
-		return CONFIG.valuesTrue.indexOf( this.toLowerCase().trim() )>-1
-	};
-	String.prototype.isFalse = function() {
-		return CONFIG.valuesFalse.indexOf( this.toLowerCase().trim() )>-1
-	};
-	String.prototype.trimJSON = function() {
-		// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
-		let si = this.indexOf('{'),
-			li = this.lastIndexOf('}');
-		return this.substring(si,li+1)
-	};
-/*	String.prototype.removeBOM = function() {
-		// remove the byte order mask from a UTF-8 coded string
-		// ToDo: Any whitespace between BOM and JSON is not taken care of.
-		// ToDo: The BOM may be "FE FF" in certain representations.
-		return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, function($0,$1,$2) {return $2} )
-	};
-	function toHex(str) {
-		var hex='', nV='';
-		for( var i=0;i<str.length;i++) {
-			nV = str.charCodeAt(i).toString(16);
-			hex += nV.length>1?''+nV:'0'+nV
-		};
-		return hex
-	}				
+	return hex
+}				
 */
-	// Convert arrayBuffer from and to string:
-	function buf2str(buf) {
-		// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
-		// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
-		try {
-			// see https://developers.google.com/web/updates/2014/08/Easier-ArrayBuffer-String-conversion-with-the-Encoding-API
-			// DataView is a wrapper on top of the ArrayBuffer.
-			var dataView = new DataView(buf);
-			// The TextDecoder interface is documented at http://encoding.spec.whatwg.org/#interface-textdecoder
-			var decoder = new TextDecoder('utf-8');
-			return decoder.decode(dataView)
-		} catch (e) {
-			// see https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
-			// for vintage browsers such as IE
-			// Known problem: Special chars like umlaut are not properly converted.
-			return String.fromCharCode.apply(null, new Uint8Array(buf))
-		}
+// Convert arrayBuffer from and to string:
+function buf2str(buf) {
+	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
+	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
+	try {
+		// see https://developers.google.com/web/updates/2014/08/Easier-ArrayBuffer-String-conversion-with-the-Encoding-API
+		// DataView is a wrapper on top of the ArrayBuffer.
+		var dataView = new DataView(buf);
+		// The TextDecoder interface is documented at http://encoding.spec.whatwg.org/#interface-textdecoder
+		var decoder = new TextDecoder('utf-8');
+		return decoder.decode(dataView)
+	} catch (e) {
+		// see https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
+		// for vintage browsers such as IE
+		// Known problem: Special chars like umlaut are not properly converted.
+		return String.fromCharCode.apply(null, new Uint8Array(buf))
 	}
-	function str2buf(str) {
-		try {
-			let encoder = new TextEncoder();
-			return encoder.encode(str)		
-		} catch (e) {
-			var buf = new ArrayBuffer(str.length);
-			var bufView = new Uint8Array(buf);
-			for (var i=0, I=str.length; i<I; i++) {
-				bufView[i] = str.charCodeAt(i)
-			};
-			return buf
-		}
-	}
-			
-	// not good enough, but better than nothing:
-	// see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
-	// do not implement as chainable function, because a string object is created. 
-	function noCode( s ) {
-		if( s ) {
-			// just suppress the whole content, if there are inacceptable/evil tags or properties, do NOT try to repair it.
-			// <img src="bogus" onerror=alert('4711') />
-			if( /<[^>]+\son[a-z]+=[^>]+>/i.test( s ) ) { log(911); return null };   // all event callbacks within HTML tags
-			if( /<script[^>]*>[\s\S]*<\/script[^>]*>/i.test( s ) ) { log(912); return null };
-			if( /<style[^>]*>[\s\S]*<\/style[^>]*>/i.test( s ) ) { log(913); return null };
-			if( /<embed[^>]*>[\s\S]*<\/embed[^>]*>/i.test( s ) ) { log(914); return null };
-			if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null }
+}
+function str2buf(str) {
+	try {
+		let encoder = new TextEncoder();
+		return encoder.encode(str)		
+	} catch (e) {
+		var buf = new ArrayBuffer(str.length);
+		var bufView = new Uint8Array(buf);
+		for (var i=0, I=str.length; i<I; i++) {
+			bufView[i] = str.charCodeAt(i)
 		};
-		return s
-		
-		function log(c) {
-			console.error('Considered harmful ('+c+'):',s)
-		}
+		return buf
 	}
+}
+		
+// not good enough, but better than nothing:
+// see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
+// do not implement as chainable function, because a string object is created. 
+function noCode( s ) {
+	if( s ) {
+		// just suppress the whole content, if there are inacceptable/evil tags or properties, do NOT try to repair it.
+		// <img src="bogus" onerror=alert('4711') />
+		if( /<[^>]+\son[a-z]+=[^>]+>/i.test( s ) ) { log(911); return null };   // all event callbacks within HTML tags
+		if( /<script[^>]*>[\s\S]*<\/script[^>]*>/i.test( s ) ) { log(912); return null };
+		if( /<style[^>]*>[\s\S]*<\/style[^>]*>/i.test( s ) ) { log(913); return null };
+		if( /<embed[^>]*>[\s\S]*<\/embed[^>]*>/i.test( s ) ) { log(914); return null };
+		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null }
+	};
+	return s
+	
+	function log(c) {
+		console.error('Considered harmful ('+c+'):',s)
+	}
+}
 
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (! Array.isArray) {
@@ -694,31 +697,32 @@ if (!Number.isInteger) {
 	}
 };
 
-	function attachment2mediaType( fname ) {
-		let t = fname.fileExt();  // get the extension excluding '.'
-		if( !t ) return null;
-		let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-		if( ti>-1 ) return CONFIG.imgTypes[ ti ]
-		ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
-		if( ti>-1 ) return CONFIG.officeTypes[ ti ]
-		return null
-	}
-	function image2mediaType( fname ) {
-		let t = fname.fileExt();  // get the extension excluding '.'
-		if( !t ) return null;
-		let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-		if( ti>-1 ) return CONFIG.imgTypes[ ti ]
-		return null
-	}
-	
-	function float2int(val) { return parseInt(val) };
-	function localDateTime(iso) {
-		if( !iso ) return '';
-		// ToDo: calculate offset of time-zone ... or use one of the libraries ..
-		if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
-		if( iso.length>9 ) return (iso.substr(0,10));
-		return ''
-	}
+function attachment2mediaType( fname ) {
+	let t = fname.fileExt();  // get the extension excluding '.'
+	if( !t ) return null;
+	// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
+	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
+	if( ti>-1 ) return CONFIG.imgTypes[ ti ]
+	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
+	if( ti>-1 ) return CONFIG.officeTypes[ ti ]
+	return null
+}
+function image2mediaType( fname ) {
+	let t = fname.fileExt();  // get the extension excluding '.'
+	if( !t ) return null;
+	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
+	if( ti>-1 ) return CONFIG.imgTypes[ ti ]
+	return null
+}
+
+function float2int(val) { return parseInt(val) };
+function localDateTime(iso) {
+	if( !iso ) return '';
+	// ToDo: calculate offset of time-zone ... or use one of the libraries ..
+	if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
+	if( iso.length>9 ) return (iso.substr(0,10));
+	return ''
+}
 
 function simpleClone( o ) { 
 	// "deep" clone;
@@ -743,8 +747,8 @@ function simpleClone( o ) {
 function hasUrlParams() {
 	let p = document.URL.split('#');
 	if( p[1] && p[1].length>0 ) return true;
-	p = document.URL.split('?');
-	if( p[1] && p[1].length>0 ) return true;
+//	p = document.URL.split('?');   no queries, yet
+//	if( p[1] && p[1].length>0 ) return true;
 	return false
 }
 // ToDo: try prms = location.hash

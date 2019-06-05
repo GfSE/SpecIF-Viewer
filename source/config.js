@@ -1,10 +1,10 @@
 /////////////////////////////////////////////////
-/*	ReqIF Server Configuration Parameters.
+/*	Configuration Parameters for Interactive-Spec (Interaktives Lastenheft)
 	Dependencies: none
 	According to the concept of 'semantic versioning' (http://semver.org/),
 		all minor versions j.n.p of this library work with all ReqIF Server minor versions j.n.q
-	(C)copyright 2010-2017 enso managers gmbh (http://www.enso-managers.com)
-	Author: se@enso-managers.com, Berlin
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
 const CONFIG = {};
@@ -39,13 +39,13 @@ const CONFIG = {};
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
 	CONFIG.findMentionedObjects = true;	// looks for object titles mentiones in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
-	CONFIG.dynLinking = true;  // add internal links to all substrings in description attributes which match object titles
+	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not include ", <, >
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not include ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
 	
 
-	// The indices of ..Extentions and ..Types must correspond!
+	// The indices of ..Extensions and ..Types must correspond!
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png 
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
@@ -57,15 +57,15 @@ const CONFIG = {};
 	CONFIG.modelExtensions = [ 'bpmn' ];
 	CONFIG.modelTypes = [ 'application/bpmn+xml'];
 
-	// Keys for the query parameters - if changed, existing links will end up in default view:
+/*	// Keys for the query parameters - if changed, existing links will end up in default view:
 	CONFIG.keyUId = 'uid';	// userId
 	CONFIG.keyPId = 'pid';	// projectId
 	CONFIG.keySId = 'sid';	// specificationId 
 //	CONFIG.keyONm = 'onm';	// objectName
 	CONFIG.keyOId = 'oid';	// objectId
-//	CONFIG.keyAtt = 'att';	// attribute
-//	CONFIG.keyDlg = 'dlg';	// dialog
-	
+//	CONFIG.keyAtt = 'att';	// attribute = property
+//	CONFIG.keyDlg = 'dlg';	// dialog 
+*/	
 	// Dialog names used as query parameters - if changed, existing links will end up in default view:
 	// Base:
 	CONFIG.user = 'user';
@@ -162,10 +162,10 @@ const CONFIG = {};
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement in various tabs
 
-	// All attribute titles=longNames which denote an attribute as identifier in another context.
+	// All property titles which denote a property as identifier in another context.
 	// Is necessary in certain use-cases such as updating content via Excel-sheet.
-	// The value of the first idAttribute found will be used to form the internal id.
-	CONFIG.idAttributes = [
+	// The value of the first element found in idProperties will be used to form the internal id.
+	CONFIG.idProperties = [
 		'dcterms:identifier',
 		'DC.identifier',
 		'ReqIF.ForeignID',
@@ -177,10 +177,10 @@ const CONFIG = {};
 		'Identifier'
 	];
 
-	// If an objectType or an object has an attribute carrying a longName equal to one of the values in the following list, 
+	// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list, 
 	// it is considered a heading (chapter title) and will be included in the outline numbering.
-	// Also, this attribute will be used for the title when displaying the object.
-	CONFIG.headingAttributes = [
+	// Also, this property will be used for the title when displaying the resource.
+	CONFIG.headingProperties = [
 		CONFIG.objTypeFolder,	// do not remove
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.ChapterName',	// do not remove
@@ -195,10 +195,11 @@ const CONFIG = {};
 		'Überschrift'
 	];
 
-	// The content of the attribute with a longName in this list will be used for the title when displaying the object:
-	// The sequence defines a priority, in case an object has multiple attributes with a longName appearing in this list.
-	// For example, if an object has an attribute with longName 'Title' and another with longName 'ReqiF.Name', the value of the latter will be the title of the object.
-	CONFIG.titleAttributes = [
+	// The content of the property with a title in this list will be used for the title when displaying the resource:
+	// The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
+	// For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name', 
+	// the value of the latter will be the title of the resource.
+	CONFIG.titleProperties = [
 		// Dublin core:
 		'dcterms:title',
 		'DC.title',
@@ -230,8 +231,8 @@ const CONFIG = {};
 		'Titel'
 	];
 
-	// The content of all attributes with a longName in this list will be concatenated to form the description in the 'document' view (object list):
-	CONFIG.descriptionAttributes = [
+	// The content of all properties with a title in this list will be concatenated to form the description in the 'document' view:
+	CONFIG.descProperties = [
 		// Dublin core:
 		'dcterms:description',
 		'DC.description',
@@ -266,15 +267,15 @@ const CONFIG = {};
 		'RichText'
 	];
 
-	CONFIG.stereotypeAttributes = [
+	CONFIG.stereotypeProperties = [
 		CONFIG.stereotype
 	];
 
-	// A list of attributes to suppress generally, specified by longName.  
-	// Applies to attributeDefinitions and attribute values (types and instances).
-	// Attributes with longNames corresponding to the list entries are hidden:
-	// You must enter the longNames used by SpecIF.
-	CONFIG.hiddenAttributes = [
+	// A list of properties to suppress generally, specified by title.  
+	// Applies to propertyClasses and property values (types and instances).
+	// Properties with a title corresponding to the list entries are hidden,
+	// You must enter the title used by SpecIF (after translation):
+	CONFIG.hiddenProperties = [
 		'VALUE_Table',   // RIF exports with Extessy/Atego Exerpt
 		'VALUE_TableType',
 		'Table',    // 'Table*' as used in DOORS ReqIF Exports
@@ -286,16 +287,16 @@ const CONFIG = {};
 
 	// A list of attributes not to show in the object list (document view), specified by longName:
 	// You must enter the longNames used by SpecIF.
-	CONFIG.overviewHiddenAttributes = [
+	CONFIG.overviewHiddenProperties = [
 		'SpecIF:Id',
 		CONFIG.resType
 	];
 
-	// Show or suppress empty attributes in the object list (document view):
-	CONFIG.overviewShowEmptyAttributes = false;
+	// Show or suppress empty properties in the object list (document view):
+	CONFIG.overviewShowEmptyProperties = false;
 
 	// A list of relations not to show in tab named CONFIG.relations, specified by longName:
-	CONFIG.hiddenRelations = [
+	CONFIG.hiddenStatements = [
 		CONFIG.relTypeCommentRefersTo
 	];
 	
@@ -341,7 +342,7 @@ const vocabulary = {
 				case "title":
 				case "titel":
 				case "dc.title":
-				case "specif:heading":				//  'SpecIF:Heading' may be used falsely as attribute longName
+				case "specif:heading":				//  'SpecIF:Heading' may be used falsely as property longName
 				case "reqif.chaptername": 	
 				case "reqif.name": 					oT = "dcterms:title"; break;
 				case "description":
