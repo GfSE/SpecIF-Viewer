@@ -200,7 +200,7 @@ modules.construct({
 			}
 	};
 	self.abort = function() {
-//		myProject.abort();
+//		app.cache.abort();
 		server.project().cancelImport()
 	};
 	return self

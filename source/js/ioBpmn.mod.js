@@ -68,7 +68,7 @@ modules.construct({
 		return bDO
 	};
 	self.abort = function() {
-		myProject.abort();
+		app.cache.abort();
 		self.abortFlag = true
 	};
 	return self

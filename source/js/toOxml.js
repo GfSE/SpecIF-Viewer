@@ -23,7 +23,7 @@ function toOxml( data, opts ) {
 	const startRID = 7,		// first relationship index for images
 		maxHeading = 4;  	// Headings from 1 to maxHeading are defined
 	
-	console.debug('toOxml',data,opts);
+//	console.debug('toOxml',data,opts);
 	// Create a local list of images, which can be used in OXML:
 	// ToDo: Transform SVG to PNG, if not present.
 	// ToDo: Determine image size, if not specified,
@@ -70,7 +70,7 @@ function toOxml( data, opts ) {
 			// Accepts data-sets according to SpecIF v0.10.8 and later.
 
 			// Check for missing options:
-			if( !opts ) opts = {};
+			if( typeof(opts)!='object' ) opts = {};
 			if( typeof(opts.classifyProperties)!='function' && typeof(opts.fail)=='function' ) {
 				opts.fail({status:904,statusText:'function opts.classifyProperties is undefined.'});
 				return
@@ -79,14 +79,11 @@ function toOxml( data, opts ) {
 			if( !opts.translateTitles || typeof(opts.translate)!='function' ) {
 				opts.translate = function(str) { return str }
 			};
-			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['SpecIF:Stereotype'];	
-		/*	if( !opts.headingProperties ) opts.headingProperties = ['SpecIF:Heading','ReqIF.ChapterName','Heading','Überschrift'];
-			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title','DC.title','ReqIF.Name','Title','Titel'];
-			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','DC.description','SpecIF:Diagram','ReqIF.Text','Description','Beschreibung'];
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
-		*/
+			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['SpecIF:Stereotype'];	
+		
 			// If no label is provided, the respective properties are skipped:
 			if( opts.propertiesLabel && opts.translateTitles ) opts.propertiesLabel = opts.translate( opts.propertiesLabel );	
 			if( opts.statementsLabel && opts.translateTitles ) opts.statementsLabel = opts.translate( opts.statementsLabel );	
@@ -135,7 +132,7 @@ function toOxml( data, opts ) {
 			// All required parameters are available, so we can begin.
 			const nbsp = '&#160;'; // non-breakable space
 			var oxml = {
-	//				headings: [],
+		//			headings: [],
 					sections: [],		// a xhtml file per SpecIF hierarchy
 					relations: []
 				};
@@ -146,14 +143,13 @@ function toOxml( data, opts ) {
 					renderHierarchy( h, 1 )
 				)
 			});
-
 //			console.debug('oxml',oxml);
 			return oxml
 			
 			// ---------------
 			function titleOf( r, pars, opts ) { // resource, resourceClass, parameters, options
-				// get the title of the resource
-				// designed for use also by statements and hierarchies.
+				// render the resource title
+				// designed for use also by statements.
 				
 				// depending on the context, r['class'] is an class object or a class id:
 				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] );
@@ -167,7 +163,7 @@ function toOxml( data, opts ) {
 				let h = rC.isHeading?2:3;
 
 				// all titles get a bookmark, so that any titleLink has a target:
-				console.debug('titleOf',r,ti);
+//				console.debug('titleOf',r,ti);
 				return wParagraph( {text: (ti?ic+ti:''), heading:h, bookmark:pars.nodeId } )
 			}	
 			
@@ -292,7 +288,7 @@ function toOxml( data, opts ) {
 				
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', rows='', c3, rt;
-				console.debug('propertiesOf',r);
+//				console.debug('propertiesOf',r);
 			/*	r.properties.forEach( function(prp) {
 					// the property title or it's class's title:
 					rt = prp.title || propertyClassOf( prp['class'] ).title;
@@ -682,7 +678,7 @@ function toOxml( data, opts ) {
 							let pngF = itemByTitle( data.files, nameOf(u1)+'.png' );
 //							console.debug('parseObject',e,pngF);
 							if( t1.indexOf('svg')>-1 && opts.preferPng && pngF ) {
-								u1 = pngF.title.replace('\\','/');
+								u1 = pngF.title;
 								t1 = pngF.type
 							};
 							// At the lowest level, the image is included only if present:
@@ -720,7 +716,8 @@ function toOxml( data, opts ) {
 						//		if(ob.id==cO.id) continue;
 
 								// get the pure title text:
-								ti = escapeXML( cO.title )
+								ti = cO.title;
+						//		ti = escapeXML( cO.title );
 								
 								// disregard objects whose title is too short:
 								if( !ti || ti.length<opts.titleLinkMinLength ) continue;

@@ -61,8 +61,8 @@ function toEpub( data, opts ) {
 		+		'<metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">'
 		+			'<dc:identifier id="BookID" opf:scheme="UUID">SpecIF-'+data.id+'</dc:identifier>'	
 		+			'<dc:title>'+data.title+'</dc:title>'
-		+			'<dc:creator opf:role="aut">'+data.createdBy.familyName+', '+data.createdBy.givenName+'</dc:creator>'
-		+			'<dc:publisher>'+data.createdBy.org.organizationName+'</dc:publisher>'
+		+			'<dc:creator opf:role="aut">'+(typeof(data.createdBy.familyName)=='string'&&data.createdBy.familyName.length>0?data.createdBy.familyName+', ':'')+(typeof(data.createdBy.givenName)=='string'?data.createdBy.givenName:'')+'</dc:creator>'
+		+			'<dc:publisher>'+(typeof(data.createdBy.org)=='object'?data.createdBy.org.organizationName:'')+'</dc:publisher>'
 		+			'<dc:language>en-US</dc:language>'
 		+			'<dc:rights>'+data.rights.title+'</dc:rights>'
 		+		'</metadata>'
@@ -139,20 +139,21 @@ function toEpub( data, opts ) {
 		if( ePub.styles ) 
 			zip.file( "OEBPS/Styles/styles.css", ePub.styles );
 		
-//		zip.file( "OEBPS/Text/title.xhtml", ePub.title );
-		// Add the hierarchies:
+		// Add a title page:
+	//	zip.file( "OEBPS/Text/title.xhtml", ePub.title );
+		// Add a XHTML-file per hierarchy:
 		ePub.sections.forEach( function(s,i) {
 			zip.file( "OEBPS/Text/sect"+i+".xhtml", s )
 		});
 
-//		console.debug('files',ePub.images,data.files);
+		console.debug('files',ePub.images,data.files);
 		// Add the images:
 		ePub.images.forEach( function(f) {
-			let img = itemById(data.files, f.title);
-			if( img && img.id && img.blob )
-				zip.file( "OEBPS/"+opts.epubImgPath+f.id, img.blob )
-			else
-				console.warn('No image file found for ',f.id)
+		//	let img = itemById(data.files, f.id);
+		//	if( img && img.id && img.blob )
+				zip.file( "OEBPS/"+opts.epubImgPath+f.id, f.blob )
+		//	else
+		//		console.warn('No image file found for ',f.id)
 		});
 		// finally store the ePub file in a zip container:
 		zip.generateAsync({
@@ -171,7 +172,7 @@ function toEpub( data, opts ) {
 			);
 		return
 
-		// ---------------
+		// ---------- helper -----------
 		function itemById(L,id) {
 			if(!L||!id) return null;
 			// given the ID of an element in a list, return the element itself:

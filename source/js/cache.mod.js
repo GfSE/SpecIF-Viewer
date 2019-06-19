@@ -70,6 +70,10 @@ modules.construct({
 		self.createdBy = null
 	};
 
+	self.loaded = function() {
+		return self.id && self.id.length>0
+	};
+
 	self.create = function( prj ) {
 		// create a project, if there is no project with the given id, or replace a project with the same id.
 		// (The roles/permissions and the role assignment to users are preserved, when import via ReqIF-file is made)
@@ -84,7 +88,7 @@ modules.construct({
 			});
 			return sDO
 		};
-//		console.debug('myProject.create',prj);
+//		console.debug('app.cache.create',prj);
 
 		self.abortFlag = false;
 
@@ -100,7 +104,7 @@ modules.construct({
 		self.generatorVersion = prj.generatorVersion;
 		self.myRole = i18n.LblRoleProjectAdmin;
 	//	self.cre = self.upd = self.del = self.exp = self.parent.options.label!=i18n.LblReader;
-		self.cre = self.upd = self.del = app.options.label!=i18n.LblReader;
+		self.cre = self.upd = self.del = app.label!=i18n.LblReader;
 		self.exp = true;
 
 		// 1. Create the project with all types:
@@ -121,7 +125,7 @@ modules.construct({
 		cache( 'hierarchy', prj.hierarchies );
 		sDO.notify(i18n.MsgProjectCreated,100);
 
-		self.locked = app.options.label==i18n.LblReader;	
+		self.locked = app.label==i18n.LblReader;	
 		self.createdAt = prj.createdAt;
 		self.createdBy = prj.createdBy;
 		
@@ -511,8 +515,8 @@ modules.construct({
 						// no update, if there is no corresponding property in the new data:
 						if( !nA ) continue;	
 						// in all other cases compare the value:
-						let oT = itemById( myProject.resourceClasses, n['class'] ),  // applies to both r and n
-							rDT = dataTypeOf( myProject, rA['class'] ),
+						let oT = itemById( app.cache.resourceClasses, n['class'] ),  // applies to both r and n
+							rDT = dataTypeOf( app.cache, rA['class'] ),
 							nDT = dataTypeOf( newD, nA['class'] );
 						if( rDT.type!=nDT.type ) return null;  // fatal error, they must be equal!
 						switch( nDT.type ) {
@@ -596,7 +600,7 @@ modules.construct({
 								// whereas it delivers 404, if it is an admin.
 								// Thus: If 403 is delivered and the user has read access according to the objectType,
 								// do as if 404 had been delivered.
-								var pT = itemById(myProject.allClasses,nI['class']);
+								var pT = itemById(app.cache.allClasses,nI['class']);
 //								console.debug('403 instead of 404',nI,pT);
 								if( !pT.rea || !pT.cre ) { uDO.reject(xhr); return };
 								// else the server should have delivered 404, so go on ...
@@ -651,7 +655,7 @@ modules.construct({
 					message.show( i18n.MsgOutlineAdded, {severity:'info', duration:CONFIG.messageDisplayTimeShort} );
 //					self.deleteContent('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
 					newIds(nI);
-					server.project(myProject).specification(nI).createChildren()
+					server.project(app.cache).specification(nI).createChildren()
 						.done( function() {
 							if( --pend<1 ) updateNext( ctg )
 						})
@@ -722,7 +726,7 @@ modules.construct({
 			default:
 //				console.debug('updateContent - cache', ctg );
 				item.changedAt = new Date().toISOString();
-				item.changedBy = me.userName;
+				item.changedBy = app.me.userName;
 				cache( ctg, item )
 		};
 		var uDO = $.Deferred();
@@ -838,7 +842,7 @@ modules.construct({
 	//		.done( function( nH ) {
 //				console.debug('deleteNode current hierarchy',nH,el);
 	//			cache( 'hierarchy', nH );
-	//			myProject.selectedHierarchy = itemById( self.hierarchies, sId ) // update address
+	//			app.cache.selectedHierarchy = itemById( self.hierarchies, sId ) // update address
 //				console.debug('deleteNode selected hierarchy',sId,self.selectedHierarchy);
 				// 2. delete the node:
 				nI = uncache( 'node', el );
@@ -896,7 +900,7 @@ modules.construct({
 			}
 		var sDO = $.Deferred();
 
-		var rsp = myProject.statements.filter( function(s){ 
+		var rsp = app.cache.statements.filter( function(s){ 
 								// filter all statements involving res as subject or object:
 								return ( res.id==s.subject.id || res.id==s.object.id )
 								// AND fulfilling certain conditions:
@@ -1007,8 +1011,8 @@ modules.construct({
 					$(	"<p>"+i18n.MsgExport+"</p>" +
 						radioInput( i18n.LblFormat, [
 							{title: 'SpecIF', description:''},
-				//			{title: 'ReqIF', description:''},
-				//			{title: 'ePub', description:''},
+							{title: 'ReqIF', description:''},
+							{title: 'ePub', description:''},
 							{title: 'MS WORD (Open XML)', description:''}
 						]) 
 					) 
@@ -1025,42 +1029,42 @@ modules.construct({
 					action: function (thisDlg) {
 						// Get index of option:
 						let idx = radioValue( i18n.LblFormat );
-						busy.set( true );
+						app.busy.set( true );
 						switch(idx) {
 							case '0':
 								// export as SpecIF:
 								self.exportAs( {format:'SpecIF'} )
 									.done( function() { 
 										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-										busy.reset();
+										app.busy.reset();
 									})
 									.fail( handleError );
 								break;
 							case '1':
-					/*			// export as ReqIF:
-								console.info('Export as ReqIF not yet implemented');
-								message.show( 'Export as ReqIF not yet implemented', {duration:CONFIG.messageDisplayTimeShort} );
-								busy.reset();
+								// export as ReqIF:
+								console.info('Export as ReqIF is not yet implemented');
+								message.show( 'Export as ReqIF is not yet implemented', {duration:CONFIG.messageDisplayTimeShort} );
+								app.busy.reset();
 								break;
 							case '2':
 								// export as ePub:
 								self.exportAs( {format:'ePub'} )
 									.done( function() { 
 										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-										busy.reset();
+										app.busy.reset();
 									})
 									.fail( handleError );
 								break;
 							case '3':
-					*/			// export as OXML:
+								// export as OXML:
 								self.exportAs( {format:'OXML'} )
 									.done( function() { 
 										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-										busy.reset();
+										app.busy.reset();
 									})
 									.fail( handleError )
 						};
-//						busy.reset();
+//						app.busy.reset();
 						thisDlg.close()
 					}
 				}
@@ -1087,7 +1091,7 @@ modules.construct({
 		
 		if( self.exp ) {
 			self.exporting = true;
-			// reload the project from the server; the value is collected in myProject:
+			// reload the project from the server; the value is collected in app.cache:
 		/*	self.readContent( 'hierarchy', self.hierarchies, true )	// reload the hierarchies
 				.done( function() { 	
 					loadFiles()	// reload the files
@@ -1123,13 +1127,18 @@ modules.construct({
 
 		function storeEpub( opts ) {
 			if( !opts || typeof(opts.translateTitles)!='boolean' ) opts = {translateTitles: true};
-			var data = self.get( opts );
+			// don't translate now, but within toOxml() to ascertain that classifyProps() works properly:
+			var data = self.get( {translateTitles: false} ); 
 //			console.debug( "exportAs 'ePub'", data );
 			let options = { 
-				// If the property titles are translated, then the lists declaring the semantics must, as well:
+/*				// If the property titles are translated, then the lists declaring the semantics must, as well:
 				headingProperties: opts.translateTitles? forAll( CONFIG.headingProperties, i18n.lookup ) : CONFIG.headingProperties,
 				titleProperties: opts.translateTitles? forAll( CONFIG.titleProperties, i18n.lookup ) : CONFIG.titleProperties,
 				descriptionProperties: opts.translateTitles? forAll( CONFIG.descProperties, i18n.lookup ) : CONFIG.descProperties,
+*/
+				classifyProperties: classifyProps,
+				translateTitles: opts.translateTitles,
+				translate: i18n.lookup,
 				// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 				stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeProperties, i18n.lookup ) : CONFIG.stereotypeProperties,
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
@@ -1138,10 +1147,10 @@ modules.construct({
 			//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 				hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 				hideEmptyProperties: true,
-				propertiesLabel: opts.translateTitles? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
-				statementsLabel: opts.translateTitles? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',
-				done: function() { myProject.exporting=false; eDO.resolve() },
-				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
+				propertiesLabel: 'SpecIF:Properties',
+				statementsLabel: 'SpecIF:Statements',
+				done: function() { app.cache.exporting=false; eDO.resolve() },
+				fail: function(xhr) { app.cache.exporting=false; eDO.reject(xhr) }
 			};
 //			console.debug('storeEpub',data,options);
 			toEpub( data, options )
@@ -1164,8 +1173,8 @@ modules.construct({
 				hideEmptyProperties: true,
 				propertiesLabel: 'SpecIF:Properties',
 				statementsLabel: 'SpecIF:Statements',
-				done: function() { myProject.exporting=false; eDO.resolve() },
-				fail: function(xhr) { myProject.exporting=false; eDO.reject(xhr) }
+				done: function() { app.cache.exporting=false; eDO.resolve() },
+				fail: function(xhr) { app.cache.exporting=false; eDO.reject(xhr) }
 			};
 //			console.debug('storeOxml',data,options);
 			toOxml( data, options )
@@ -1207,7 +1216,7 @@ modules.construct({
 	};
 	self.set = function( spD ) {
 		// transform SpecIF to internal data;
-		// no data of myProject is modified.
+		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.
 //		console.debug('set',spD);
 		let names = {};
@@ -1545,7 +1554,8 @@ modules.construct({
 			}
 			function f2int( iF ) {
 				var oF = iF;
-//				console.debug('f2int',iF)
+//				console.debug('f2int',iF);
+				oF.title = iF.title.replace('\\','/');
 				if( iF.blob ) oF.type = iF.blob.type || iF.type || attachment2mediaType( iF.title );
 
 				switch( typeof(iF.revision) ) {
@@ -1578,10 +1588,10 @@ modules.construct({
 		
 		// transform internal data to SpecIF:
 		var spD = {
-				id: myProject.id,
-				title: myProject.title
+				id: app.cache.id,
+				title: app.cache.title
 			};
-		if( myProject.description ) spD.description = myProject.description;
+		if( app.cache.description ) spD.description = app.cache.description;
 		spD.specifVersion = CONFIG.specifVersion;
 		spD.generator = CONFIG.productTitle;
 		spD.generatorVersion = CONFIG.productVersion;
@@ -1592,35 +1602,35 @@ modules.construct({
 		};
 		spD.createdAt = new Date().toISOString();
 		// createdBy.email is required by the schema:
-		if( me && me.email ) {
+		if( app.me && app.me.email ) {
 			spD.createdBy = {
-				familyName: me.lastName, 
-				givenName: me.firstName, 
-				email: {type:"text/html",value:me.email}
+				familyName: app.me.lastName, 
+				givenName: app.me.firstName, 
+				email: {type:"text/html",value:app.me.email}
 			};
-			if( me.organization )
-				spD.createdBy.org = {organizationName: me.organization}
+			if( app.me.organization )
+				spD.createdBy.org = {organizationName: app.me.organization}
 		} else {
-			if( myProject.createdBy && myProject.createdBy.email && myProject.createdBy.email.value )  {
+			if( app.cache.createdBy && app.cache.createdBy.email && app.cache.createdBy.email.value )  {
 				spD.createdBy = { 
-					familyName: myProject.createdBy.familyName, 
-					givenName: myProject.createdBy.givenName, 
-					email: {type:"text/html",value:myProject.createdBy.email.value}
+					familyName: app.cache.createdBy.familyName, 
+					givenName: app.cache.createdBy.givenName, 
+					email: {type:"text/html",value:app.cache.createdBy.email.value}
 				};
-				if( myProject.createdBy.org && myProject.createdBy.org.organizationName )
-					spD.createdBy.org = myProject.createdBy.org
+				if( app.cache.createdBy.org && app.cache.createdBy.org.organizationName )
+					spD.createdBy.org = app.cache.createdBy.org
 			}
 			// else: no createdBy, if there is no data 
 		};
-		spD.dataTypes = forAll( myProject.dataTypes, dT2ext );
-		spD.propertyClasses = forAll( myProject.propertyClasses, pC2ext );
-		spD.resourceClasses = forAll( myProject.resourceClasses, rC2ext );
-		spD.statementClasses = forAll( myProject.statementClasses, sC2ext );
-	//	spD.hierarchyClasses = forAll( myProject.hierarchyClasses, hC2ext );
-		spD.resources = forAll( myProject.resources, r2ext );
-		spD.statements = forAll( myProject.statements, s2ext );
-		spD.hierarchies = forAll( myProject.hierarchies, h2ext );
-		spD.files = forAll( myProject.files, f2ext );
+		spD.dataTypes = forAll( app.cache.dataTypes, dT2ext );
+		spD.propertyClasses = forAll( app.cache.propertyClasses, pC2ext );
+		spD.resourceClasses = forAll( app.cache.resourceClasses, rC2ext );
+		spD.statementClasses = forAll( app.cache.statementClasses, sC2ext );
+	//	spD.hierarchyClasses = forAll( app.cache.hierarchyClasses, hC2ext );
+		spD.resources = forAll( app.cache.resources, r2ext );
+		spD.statements = forAll( app.cache.statements, s2ext );
+		spD.hierarchies = forAll( app.cache.hierarchies, h2ext );
+		spD.files = forAll( app.cache.files, f2ext );
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
 //		console.debug('specif.get done',spD);
 		return spD
@@ -1637,7 +1647,7 @@ modules.construct({
 				};
 				if( iE.description ) oE.description = iE.description;
 				oE.dataType = iE.dataType;
-				let dT = itemById( myProject.dataTypes, iE.dataType );
+				let dT = itemById( app.cache.dataTypes, iE.dataType );
 				switch( dT.type ) {
 					case 'xs:enumeration': 
 						// With SpecIF, he 'multiple' property should be defined at dataType level and can be overridden at propertyType level.
@@ -1750,7 +1760,7 @@ modules.construct({
 				// so we translate, if so desired, e.g. when exporting to ePub:
 				// ToDo: Take the title from statement properties, if provided (similarly to resources).
 				// Take the statementClass's title, if the statement does not have it:
-				iS.title = iS.title || itemById( myProject.statementClasses, iS['class'] ).title;
+				iS.title = iS.title || itemById( app.cache.statementClasses, iS['class'] ).title;
 				eS.title = opts.translateTitles? titleOf(iS) : iS.title;
 				eS.subject = iS.subject.id;
 				eS.object = iS.object.id;
@@ -1788,7 +1798,7 @@ modules.construct({
 	};
 	self.check = function( data ) {
 		// Check the SpecIF data for schema compliance and consistency;
-		// no data of myProject is modified:
+		// no data of app.cache is modified:
 		var cDO = $.Deferred();
 		// 1. Validate the data using the SpecIF schema:
 		cDO.notify('Checking schema',10);
@@ -2226,7 +2236,7 @@ function enumValStr( dT, prp ) {
 	return ct
 }
 function multipleChoice( pC, prj ) {
-	prj = prj || myProject;
+	prj = prj || app.cache;
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
 //	return (pC.multiple || (pC.multiple==undefined && itemById(prj.dataTypes,pC.dataType).multiple))?true:false
@@ -2292,7 +2302,7 @@ function elementTitleWithIcon( el ) {
 	// add an icon to an element's title;
 	// works for all types of elements, i.e. resources, statements and hierarchies.
 	// The icon is defined in the elements's type:
-	return CONFIG.addIconToInstance?resTitleOf(el).addIcon( itemById( myProject.allClasses, el['class'] ).icon ):resTitleOf(el)
+	return CONFIG.addIconToInstance?resTitleOf(el).addIcon( itemById( app.cache.allClasses, el['class'] ).icon ):resTitleOf(el)
 }
 /*	function classTitleWithIcon( t ) {
 	// add the icon to a type's title, if defined:
@@ -2312,7 +2322,7 @@ function initProp( pT ) {
 		upd: pT.upd,
 		del: pT.del
 	};
-	switch( itemById( myProject.dataTypes, pT.dataType ).type ) {
+	switch( itemById( app.cache.dataTypes, pT.dataType ).type ) {
 /*		case 'xhtml':
 			p.value = '<div>\n</div>';
 			break;

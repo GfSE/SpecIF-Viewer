@@ -22,10 +22,11 @@ function ModuleManager() {
 	//		- 'setReady' is executed, if 'construct' finishes successfully.
 	//		- the specified callback function is executed as soon as all modules are ready.
 	
-	var self = this;
-	let callWhenReady = null;
-	const vPath = './v0.95.3';
+	var self = this,
+		callWhenReady = null,
+		vPath;
 	self.init = function( opts ) {
+		vPath = './v'+opts.appVersion;
 		self.registered = [];
 		self.ready = [];
 
@@ -105,7 +106,7 @@ function ModuleManager() {
 		// construct the controller using the provided function:
 		constructorFn(mo);
 		// make the module directly addressable by loadAs:
-		window[ mo.loadAs ] = mo;
+		app[ mo.loadAs ] = mo;
 		// initialize:
 		mo.init(); 
 		
@@ -275,7 +276,7 @@ function ModuleManager() {
 										})
 				};
 			}
-//		console.debug('loadH',h);
+//		console.debug('loadH',h,opts);
 
 		if( opts&&typeof(opts.done)=="function" )
 			callWhenReady = opts.done;
@@ -473,10 +474,11 @@ function ModuleManager() {
 			// else: show newV and hide all others:
 			let v=null, s=null;
 			self.list.forEach( function(le) {
+//				console.debug('Views.show le',le);
 				v = $(le.view);
 				s = $(le.selectedBy);
 				if( newV==le.view ) {
-//					console.debug('Views.show =',le.view,le.selectedBy,v,s);
+//					console.debug('Views.show: ',le.view,le.selectedBy,v,s);
 					self.selected = le;
 					// set status of the parent's view selector:
 					s.addClass('active');
@@ -488,7 +490,7 @@ function ModuleManager() {
 					// b) initiate the corresponding (implicit) action:
 					if( typeof(le.show)=='function' ) le.show();
 				} else {
-//					console.debug('Views.hide =',le.view,le.selectedBy,v,s);
+//					console.debug('Views.hide: ',le.view,le.selectedBy,v,s);
 					// set status of the parent's view selector:
 					s.removeClass('active');
 					// control visibility:
@@ -575,8 +577,4 @@ function State(opt) {
 	return self
 }
 var browser = null,
-	modules = new ModuleManager(),
-	busy = new State({
-		showWhenSet: ['#spinner'],
-		hideWhenSet: ['#pageActions','#contentActions']
-	});
+	modules = new ModuleManager();

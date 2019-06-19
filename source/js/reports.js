@@ -46,7 +46,7 @@ function Reports() {
 	};
 	self.hide = function() {
 		$('#'+CONFIG.reports).empty();
-		busy.reset()
+		app.busy.reset()
 	};
 /*	// here, the only way to get out is by selecting another tab.
 	function returnOnSuccess() {
@@ -58,7 +58,7 @@ function Reports() {
 	function handleError(xhr) {
 		self.hide();
 		self.clear();
-		stdError(xhr,specs.returnToCaller)
+		stdError(xhr,app.specs.returnToCaller)
 	}
 	function showNotice(txt) {
 		$('#'+CONFIG.reports).html('<div class="notice-default" >'+txt+'</div>');
@@ -71,10 +71,10 @@ function Reports() {
 //		console.debug('reports.show');
 		self.list = [];
 
-		let tr = specs.tree.get();
+		let tr = app.specs.tree.get();
 		if( !tr || tr.length<1 ) {
 			showNotice(i18n.MsgNoReports);
-			busy.reset();
+			app.busy.reset();
 			return true  // nothing to do ....
 		};
 		
@@ -84,7 +84,7 @@ function Reports() {
 		// - ToDo: number of items changed in the last day, week, month, year 
 		// For now, all items are statistically analyzed at client side.
 
-		busy.set();
+		app.busy.set();
 		showNotice(i18n.MsgAnalyzing);
 
 			function addResourceClassReport( pr ) {
@@ -258,7 +258,7 @@ function Reports() {
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
 		var pend=0, visitedR=[];
-		specs.tree.iterate( function(nd) {
+		app.specs.tree.iterate( function(nd) {
 			if( visitedR.indexOf(nd.ref)>-1 ) return; 
 			// not yet evaluated:
 			pend++;
@@ -271,7 +271,7 @@ function Reports() {
 							$('#'+CONFIG.reports).html( renderReports( removeEmptyReports( self.list )) )
 						else
 							showNotice(i18n.MsgNoReports);
-						busy.reset()
+						app.busy.reset()
 					}
 				})
 				.fail( handleError );
@@ -292,7 +292,7 @@ function Reports() {
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
 				li.datasets.forEach( function(ds,s) {
-					lb = ds.count>0? '<a onclick="reports.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
+					lb = ds.count>0? '<a onclick="app.reports.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
 						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
 						+					'<td style="width:15%; padding:0.2em" class="text-right">'+ds.count+'</td>'
@@ -352,7 +352,7 @@ function Reports() {
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
-		specs.showFilter( fL )
+		app.specs.showFilter( fL )
 	};
 
 	return self
