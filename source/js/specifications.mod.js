@@ -85,8 +85,8 @@ modules.construct({
 			+		'</div>'
 			+		'<div class="contentCtrl" >'
 			+			'<div id="navBtns" class="btn-group btn-group-sm" >'
-			+				'<button class="btn btn-default" onclick="'+myFullName+'tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
-			+				'<button class="btn btn-default" onclick="'+myFullName+'tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
+			+				'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
+			+				'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
 			+			'</div>'
 			+			'<div id="contentNotice" class="contentNotice" />'
 			+			'<div id="contentActions" class="btn-group btn-group-sm contentActions" />'
@@ -1362,7 +1362,7 @@ modules.construct({
 		// Add the create button depending on the current user's permissions:
 		// In order to create an resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
 	//	if( self.resCre && app.cache.selectedHierarchy.upd )
-	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
+	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 			
@@ -1378,25 +1378,25 @@ modules.construct({
 
 		// Add the clone, update and delete buttons depending on the current user's permissions:
 	//	if( self.resCln && app.cache.selectedHierarchy.upd )
-	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
+	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
 		if( attrUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-			rB += '<button class="btn btn-default" onclick="'+myFullName+'editObjClicked(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
+			rB += '<button class="btn btn-default" onclick="'+myFullName+'.editObjClicked(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
 
 		// Add the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
-			rB += '<button class="btn btn-default" onclick="'+myFullName+'addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+			rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
 		// The delete button is shown, if a hierarchy entry can be deleted.
 		// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
 	//	if( app.cache.selectedHierarchy.del )
-	//		rB += '<button class="btn btn-danger" onclick="'+myFullName+'deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
+	//		rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
 
@@ -1406,30 +1406,30 @@ modules.construct({
 		if( !self.selectedTab()==CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
-			return '<button class="btn btn-default" onclick="'+myFullName+'addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		else
 			return '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>'
 	};
 	self.linkBtns = function() {
 		if( !self.selectedTab()==CONFIG.relations || !self.resources.selected().value ) return '';
-		if( self.modeStaDel ) return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'toggleModeRelDel()" >'+i18n.BtnCancel+'</button></div>';
+		if( self.modeStaDel ) return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeRelDel()" >'+i18n.BtnCancel+'</button></div>';
 
 		var rB = '<div class="btn-group btn-group-sm" >';
 //		console.debug( 'linkBtns', self.staCre );
 
 		if( self.staCre )
-			rB += '<button class="btn btn-success" onclick="'+myFullName+'addLinkClicked()" data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
+			rB += '<button class="btn btn-success" onclick="'+myFullName+'.addLinkClicked()" data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 
 		// Add the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
-			rB += '<button class="btn btn-default" onclick="'+myFullName+'addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+			rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
 		if( self.staDel && self.resources.selected().staGroups.length ) {
-			rB += '<button class="btn btn-danger '+(self.modeRelDel?'active':'')+'" onclick="'+myFullName+'toggleModeRelDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
+			rB += '<button class="btn btn-danger '+(self.modeRelDel?'active':'')+'" onclick="'+myFullName+'.toggleModeRelDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
 		} else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
 

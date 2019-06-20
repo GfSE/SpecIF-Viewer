@@ -152,12 +152,11 @@ app = {
 
 $( function() {
 	// the DOM is ready,
-	// submit all modules to load and the function to start the app thereafter:
-//	modules.init( {done:app.init} )		//... does not work correctly, but why?  
 	app.busy = new State({
 		showWhenSet: ['#spinner'],
 		hideWhenSet: ['#pageActions','#contentActions']
 	});
+	// ) submit all modules to load and the function to start the app thereafter:
 	modules.init({
 		appVersion: '0.95.4',
 		done: app.init
