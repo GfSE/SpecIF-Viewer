@@ -51,7 +51,7 @@ modules.construct({
 		setTimeout( function() {
 				self.clear();
 				// change view to browse the content:
-				modules.show('#specifications')
+				modules.show( '#specifications' )
 			}, 
 			400 
 		)
@@ -418,7 +418,7 @@ modules.construct({
 				switch( importMode.id ) {
 					case 'create':
 					case 'replace':
-//						console.debug('Creating project',dta);
+						console.debug('Creating project',dta);
 						setProgress('Creating project',20); 
 						app.cache.create( dta )
 							.progress( setProgress )

@@ -219,13 +219,13 @@ function stdError( xhr, cb ) {
 				case 200:
 				case 201:
 				case 401:
-					console.log( fS+"/"+ (xhr.statusText||i18n.Error) + " (" + xhr.status + ")" );
+					console.debug( fS+"/"+ (xhr.statusText||i18n.Error) + " (" + xhr.status + ")" );
 					break;
 				default:
-					console.log( fS+"/"+ (xhr.statusText||i18n.Error) + " (" + xhr.status + (xhr.responseText?"): "+xhr.responseText:")") )
+					console.debug( fS+"/"+ (xhr.statusText||i18n.Error) + " (" + xhr.status + (xhr.responseText?"): "+xhr.responseText:")") )
 			};
 		} else {
-					console.log( fS );			
+					console.debug( fS );			
 		};
 	};
 */
@@ -346,7 +346,7 @@ function setContentHeight( opt ) {
 function bindResizer() {
 	// correct display in case the window has been resized:
 	$(window).resize(function() {
-//		console.log('resize'); 
+//		console.debug('resize'); 
 		setContentHeight();
 	})
 }

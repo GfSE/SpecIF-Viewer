@@ -53,7 +53,7 @@ app = {
 				// no loadAs, so name will be used for the controller object
 				// This is a view of the parent:
 				view: '#import',				// uses implicit actions show/hide
-				viewClass: 'contentWide',
+				viewClass: 'contentWide',		// whole width under control of the view
 				label: i18n.BtnImport,
 				selectedBy: '#selectImport',	// DOM element in parent's selector to choose this view
 				// no selector: this module is itself responsible for managing it's children
@@ -97,9 +97,17 @@ app = {
 					// no loadAs, so name will be used for the controller object
 					// Definitions as a view of the parent:
 					view: '#'+CONFIG.reports,		// uses implicit action refresh at parent level
-					viewClass: 'contentWide',
+					viewClass: 'contentWide',		// whole width under control of the view
 					label: i18n.TabReports,
 					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
+				},{
+					name: CONFIG.objectFilter,
+					// no loadAs, so name will be used for the controller object
+					// Definitions as a view of the parent:
+					view: '#'+CONFIG.objectFilter,	// uses implicit action refresh at parent level
+					viewClass: 'contentWide',		// whole width under control of the view
+					label: i18n.TabFilter,
+					selectedBy: '#selectFilters'	// DOM element in parent's selector to choose this view
 				}]
 			}, {
 				action: 'app.cache.export()',

@@ -55,7 +55,6 @@ modules.construct({
 		self.propertyClasses = [];
 		self.resourceClasses = [];
 		self.statementClasses = [];
-	//	self.hierarchyClasses = [];		// list of specification (hierarchy root) types
 		self.resources = [];   	// list of resources as referenced by the hierarchies
 		self.statements = [];
 		self.hierarchies = [];    	// listed specifications (aka hierarchies, outlines) of the project.   
@@ -88,7 +87,7 @@ modules.construct({
 			});
 			return sDO
 		};
-//		console.debug('app.cache.create',prj);
+		console.debug('app.cache.create',prj);
 
 		self.abortFlag = false;
 
@@ -114,7 +113,6 @@ modules.construct({
 		cache( 'propertyClass', prj.propertyClasses );
 		cache( 'resourceClass', prj.resourceClasses );
 		cache( 'statementClass', prj.statementClasses );
-	//	cache( 'hierarchyClass', prj.hierarchyClasses );
 		sDO.notify(i18n.MsgLoadingFiles,40);
 		cache( 'file', prj.files );
 		sDO.notify(i18n.MsgLoadingObjects,50);
@@ -203,11 +201,6 @@ modules.construct({
 			uDO.reject( rc );
 			return uDO
 		};
-	//	rc = typesAreCompatible('hierarchyClass',mode);
-	//	if( rc.status>0 ) {
-	//		uDO.reject( rc );
-	//		return uDO
-	//	}; 
 		console.info("All existing types are compatible with '"+newD.title+"'");
 
 		// In a second pass, start with creating any type which does not yet exist.
@@ -224,8 +217,6 @@ modules.construct({
 			switch( ctg ) {
 				case 'dataType': addNewTypes( 'resourceClass' ); break;
 				case 'resourceClass': addNewTypes( 'statementClass' ); break;
-			//	case 'statementClass': addNewTypes( 'hierarchyClass' ); break;
-			//	case 'hierarchyClass': updateIfChanged( 'file' ); break;
 				case 'statementClass': updateIfChanged( 'file' ); break;
 				case 'file': updateIfChanged( 'resource' ); break;
 				case 'resource': updateIfChanged( 'statement' ); break;
@@ -244,7 +235,6 @@ modules.construct({
 				case 'dataType': aL = self.dataTypes; nL = newD.dataTypes; break;
 				case 'resourceClass': aL = self.resourceClasses; nL = newD.resourceClasses; break;
 				case 'statementClass': aL = self.statementClasses; nL = newD.statementClasses; break;
-			//	case 'hierarchyClass': aL = self.hierarchyClasses; nL = newD.hierarchyClasses; break;
 				default: return null //should never arrive here
 			};
 			// true, if every element in nL is compatibly present in aL or if it can be added;
@@ -324,7 +314,6 @@ modules.construct({
 					};
 					// else: so far everything is OK, but go on checking ... (no break!)
 				case 'resourceClass':
-			//	case 'hierarchyClass':
 					// An objectType or relationType is incompatible, if it has an equally-named property class with a different dataType
 					// An objectType or relationType is compatible, if all equally-named propertyClasses have the same dataType
 					if( !newT.propertyClasses || !newT.propertyClasses.length ) 
@@ -371,7 +360,6 @@ modules.construct({
 				case 'dataType': rL = self.dataTypes; nL = newD.dataTypes; break;
 				case 'resourceClass': rL = self.resourceClasses; nL = newD.resourceClasses; break;
 				case 'statementClass': rL = self.statementClasses; nL = newD.statementClasses; break;
-			//	case 'hierarchyClass': rL = self.hierarchyClasses; nL = newD.hierarchyClasses; break;
 				default: return null //should never arrive here
 			};
 			nL.forEach( function(nT) {
@@ -487,10 +475,6 @@ modules.construct({
 //				console.debug('contentChanged',ctg, r, n);
 				// Is commonly used for object, relation and hierarchy instances.
 				if( r['class']!=n['class'] ) return null;  // fatal error, they must be equal!
-				
-				// As long as the hierarchy roots do not use properties, the title carries the title,
-				// so check whether the class of the new element is listed in the hierarchy types:
-			//	if( ctg == 'hierarchy' ) return newD.hierarchyClasses.indexOf( n['class'] )<0 || r.title!=n.title;
 				
 				// Continue in case of resources and statements:
 				let i=null, rA=null, nA=null, rV=null, nV=null;
@@ -705,7 +689,10 @@ modules.construct({
 		
 	//	if( !opts.reload ) {
 			// Try to read from cache:
-			var dO = readCache( ctg, item, false );
+			if( typeof(opts)=='undefined') opts = {reload:false,timelag:10};
+			// override 'reload' as long as there is no server and we know that the resource is found in the cache:
+			opts.reload = false;
+			var dO = readCache( ctg, item, opts );
 			if( dO ) return dO;
 	//	};
 		return null
@@ -772,7 +759,6 @@ modules.construct({
 //				console.debug('isInUse',ctg,item);
 				switch( ctg ) {
 					case 'dataType':		return dTIsInUse(self.allClasses,itm);
-				//	case 'hierarchyClass':
 					case 'resourceClass':
 					case 'statementClass':	return sTIsInUse(ctg,itm);
 					case 'class':	return aTIsInUse(self.resources,itm)
@@ -791,7 +777,6 @@ modules.construct({
 				return null;  // not supported
 			case 'class':	
 			case 'dataType':
-		//	case 'hierarchyClass':
 			case 'resourceClass':
 			case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
 									if( isInUse(ctg,item) ) {
@@ -1239,6 +1224,7 @@ modules.construct({
 			case '0.10.4':
 			case '0.10.5':
 			case '0.10.6':
+			case '0.11.2':
 				names.rClasses = 'resourceClasses';
 				names.sClasses = 'statementClasses';
 				names.hClasses = 'hierarchyClasses';
@@ -1557,7 +1543,7 @@ modules.construct({
 			function f2int( iF ) {
 				var oF = iF;
 //				console.debug('f2int',iF);
-				oF.title = iF.title.replace('\\','/');
+				oF.title = iF.title? iF.title.replace('\\','/') : iF.id;
 				if( iF.blob ) oF.type = iF.blob.type || iF.type || attachment2mediaType( iF.title );
 
 				switch( typeof(iF.revision) ) {
@@ -1628,13 +1614,12 @@ modules.construct({
 		spD.propertyClasses = forAll( app.cache.propertyClasses, pC2ext );
 		spD.resourceClasses = forAll( app.cache.resourceClasses, rC2ext );
 		spD.statementClasses = forAll( app.cache.statementClasses, sC2ext );
-	//	spD.hierarchyClasses = forAll( app.cache.hierarchyClasses, hC2ext );
 		spD.resources = forAll( app.cache.resources, r2ext );
 		spD.statements = forAll( app.cache.statements, s2ext );
 		spD.hierarchies = forAll( app.cache.hierarchies, h2ext );
 		spD.files = forAll( app.cache.files, f2ext );
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
-//		console.debug('specif.get done',spD);
+//		console.debug('specif.get exit',spD);
 		return spD
 
 			function dT2ext( iE ) {
@@ -2050,7 +2035,6 @@ modules.construct({
 			case 'hierarchy':
 			case 'dataType':
 			case 'propertyClass':		return fn( cacheOf(ctg), item );
-		//	case 'hierarchyClass': 		
 			case 'resourceClass': 
 			case 'statementClass':		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
 			case 'class':				if(Array.isArray(item)||!item['class']) return null;  // cannot process arrays in this case, yet.
@@ -2084,7 +2068,6 @@ modules.construct({
 			case 'hierarchy':		
 			case 'dataType': 
 			case 'propertyClass':		return fn( cacheOf(ctg), item );
-		//	case 'hierarchyClass': 		
 			case 'resourceClass': 	
 			case 'statementClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
 			case 'class':				let sT = itemById(self.allClasses,item['class']);
@@ -2106,7 +2089,6 @@ modules.construct({
 			case 'propertyClass':	return self.propertyClasses;
 			case 'resourceClass':	return self.resourceClasses;
 			case 'statementClass':	return self.statementClasses;
-		//	case 'hierarchyClass':	return self.hierarchyClasses;
 			case 'resource':		return self.resources;
 			case 'statement':		return self.statements;
 			case 'hierarchy':		return self.hierarchies;
@@ -2114,9 +2096,9 @@ modules.construct({
 			default: return null
 		}
 	}
-	function readCache( ctg, itm, reload ) {
+	function readCache( ctg, itm, opts ) {
 		// Read an item from cache, unless 'reload' is specified:
-		if( !reload ) {
+		if( !opts.reload ) {
 			let arr = cacheOf(ctg),
 				idx=null;
 //			console.debug( 'readCache', arr );
@@ -2141,7 +2123,10 @@ modules.construct({
 					// return the cached resources asynchronously:
 					var dO = $.Deferred();  
 //					console.debug( 'readCache array - allFound', arr, itm );
-					dO.resolve( itm );
+					// delay the answer a little, so that the caller can properly process a batch:
+					setTimeout(function() {
+						dO.resolve( itm )
+					}, opts.timelag );
 					return dO
 				}
 			} else {
@@ -2150,7 +2135,10 @@ modules.construct({
 				if( idx>-1 ) {
 					// return the cached object asynchronously:
 					var dO = $.Deferred();  
-					dO.resolve( arr[idx] );
+					// delay the answer a little, so that the caller can properly process a batch:
+					setTimeout(function() {
+						dO.resolve( arr[idx] )
+					}, opts.timelag );
 //					console.debug('readCache single item - found', ctg, 'from cache:',arr[idx]);
 					return dO
 				}
@@ -2208,10 +2196,10 @@ modules.construct({
 
 //////////////////////////
 // global helper functions:
-function dataTypeOf( pr, cId ) {
+function dataTypeOf( pr, pCid ) {
 	// given a property class ID, return it's dataType:
-	if( typeof(cId)=='string' && cId.length>0 )
-		return itemById( pr.dataTypes, itemById( pr.propertyClasses, cId ).dataType )
+	if( typeof(pCid)=='string' && pCid.length>0 )
+		return itemById( pr.dataTypes, itemById( pr.propertyClasses, pCid ).dataType )
 		//                             get class
 		//	   get dataType
 	// else:

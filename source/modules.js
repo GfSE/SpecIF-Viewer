@@ -113,19 +113,20 @@ function ModuleManager() {
 //		console.debug('construct',defs,mo);
 		setReady( defs.name )
 	};
-	self.show = function( view ) {
+	self.show = function( params ) {
 		// Show the specified view, which may be located somewhere in the hierarchy;
 		// Assuming that it's parent has a viewCtl: 
-		let mo = findM(self.tree,view);
+//		console.debug('modules.show',params);
+		let mo = findM( self.tree, params.newView||params );
 		if( !mo || !mo.parent.viewCtl ) {
-			console.error("'"+view+"' is unknown");
+			console.error("'"+(params.newView||params)+"' is unknown");
 			return null
 		};
-		// ToDo: set the view controllers up the hierarchy so that the specified view is in fact visible.
+		// ToDo: set all view controllers up the hierarchy so that the specified view is visible in any case.
 		// For the time being there is no jumping to subviews in another branch and so this feature is
 		// not yet needed, but it may be needed at some time in the future.
-//		console.debug('modules.show',view,mo);
-		return mo.parent.viewCtl.show(view)
+//		console.debug('modules.show',params,mo);
+		return mo.parent.viewCtl.show(params)
 	};
 	self.hide = function() {
 		// hide all views of the top level:
@@ -463,21 +464,28 @@ function ModuleManager() {
 			$(v.view).hide()
 			// we could add the visual selector, here ... it is now part of loadH.
 		};
-		self.show = function( newV, content ) {
-//			console.debug('Views.show',self.list,self.selected,newV);
+		self.show = function( params ) {
 			// Select a new view 
 			// and start implicit actions 'show'/'hide' or 'refresh', in case they are implemented in the respective modules.
-			if( self.selected && newV==self.selected.view ) {
-				if( typeof(content)=='string' ) $(self.selected.view).html(content); 	// update
+			// - simple case: params is a string with the name of the new view.
+			// - more powerful: params is an object with the new (target) view plus optionally content or other parameters 
+			switch( typeof(params) ) {
+				case 'undefined': return null;
+				case 'string': params = {newView: params}
+			};
+//			console.debug('Views.show',self.list,self.selected,params);
+
+			if( self.selected && params.newView==self.selected.view ) {
+				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content); 	// update
 				return
 			};
-			// else: show newV and hide all others:
+			// else: show params.newView and hide all others:
 			let v=null, s=null;
 			self.list.forEach( function(le) {
 //				console.debug('Views.show le',le);
 				v = $(le.view);
 				s = $(le.selectedBy);
-				if( newV==le.view ) {
+				if( params.newView==le.view ) {
 //					console.debug('Views.show: ',le.view,le.selectedBy,v,s);
 					self.selected = le;
 					// set status of the parent's view selector:
@@ -486,9 +494,13 @@ function ModuleManager() {
 					v.show();
 					// usually none or one of the following options are used:
 					// a) update the content
-					if( typeof(content)=='string' ) v.html(content)
+					if( typeof(params.content)=='string' ) {
+						v.html(params.content);
+						return
+					};
 					// b) initiate the corresponding (implicit) action:
-					if( typeof(le.show)=='function' ) le.show();
+					if( typeof(le.show)=='function' )
+						le.show( params )
 				} else {
 //					console.debug('Views.hide: ',le.view,le.selectedBy,v,s);
 					// set status of the parent's view selector:
@@ -497,13 +509,16 @@ function ModuleManager() {
 					v.hide();
 				//	v.empty();
 					// initiate the corresponding (implicit) action:
-					if( typeof(le.hide)=='function' ) le.hide()
+					if( typeof(le.hide)=='function' ) 
+						le.hide()
 				}
 			});
-			// Alternatively to le.show()/hide(), refresh() at the parent's level may be used 
-			// to initiate an action, where the current view is included as a parameter:
+			// Alternatively to le.show()/hide(), 
+			// refresh() at the parent's level may be used to initiate an action.
+			// In general libraries which have not used modules.construct, 
+			// use this option, for example filter and reports.
 			if( self.selected && typeof(self.selected.parent.refresh)=='function' ) 
-				self.selected.parent.refresh( self.selected.view )
+				self.selected.parent.refresh( params )
 		};
 		self.hide = function(v) {
 			if( typeof(v)=='string' && self.exists(v) ) {

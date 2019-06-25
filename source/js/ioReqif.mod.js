@@ -16,7 +16,7 @@ modules.construct({
 		mime = null
 	};
 	self.verify = function( f ) {
-		console.log(f.name);
+//		console.debug(f.name);
 	
 			function reqifFile2mediaType( fname ) {
 				if( fname.endsWith('.reqifz') || fname.endsWith('.zip') ) return 'application/zip';

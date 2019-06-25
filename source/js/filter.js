@@ -6,8 +6,8 @@
 */
 // Resource filtering
 	// Primary or top-level filters apply to resources of all classes (scope: project), whereas
-	//    secondary filters are 'applicable', only if the corresponding resource class (scope: specType) is selected.
-	// The filter lets an resource pass, if all primary filters plus all applicable secondary filters discover a match (conjunction of filter criteria).
+	//    secondary filters are 'applicable', only if the corresponding resource class (scope: resourceClass) is selected.
+	// The filter lets a resource pass, if all primary filters plus all applicable secondary filters discover a match (conjunction of filter criteria).
 	// The filter architecture and algorithms (filterList, filterMatch and isClogged) support any combination of filters and selections. 
 	//    However, the GUI restricts the possible configurations towards more ease-of-use.
 	// The filters are built dynamically based on the project's classes. 
@@ -17,7 +17,7 @@
 	For example: If OT-Req is included in the filtering, all it's secondary filters (scope: OT-Req) must match, otherwise the examined resource is discarded:
 		[{ 
 			label: 'String Match',
-			subject: 'resourceClass',
+			category: 'resourceClass',
 			primary: true,
 			scope: 'projectId',  
 			baseType: 'xs:string',
@@ -27,8 +27,8 @@
 			caseSensitive: false,
 			includeEnums: true 
 		},{ 
-			label: 'Resource Type',
-			subject: 'resourceClass',
+			label: 'Resource Class',
+			category: 'resourceClass',
 			primary: true,
 			scope: 'projectId',  
 			baseType: 'xs:enumeration',
@@ -41,10 +41,10 @@
 			] 
 		},{ 
 			label: 'Priority',
-			subject: 'propertyValue',
+			category: 'propertyValue',
 			primary: false,
 			scope: 'OT-Req',   // this is a sub-filter for a property of a resource of type OT-Req
-			attrType: 'AT-Req-Priority,
+			propClass: 'AT-Req-Priority,
 			dataType: 'DT-Priority',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
@@ -55,10 +55,10 @@
 			]
 		},{ 
 			label: 'Status',
-			subject: 'propertyValue',
+			category: 'propertyValue',
 			primary: false,
 			scope: 'OT-Req',   // this is a sub-filter for a property of a resource of type OT-Req
-			attrType: 'AT-Req-Status,
+			propClass: 'AT-Req-Status,
 			dataType: 'DT-Status',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
@@ -81,21 +81,22 @@ function Filters() {
 	var self = this;
 //	var returnView = null;
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
-	self.showSecondaryFilters = null;  // default: show resources (hit-list)
+	self.secondaryFilters = null;  // default: show resources (hit-list)
 
 	// Standard module interface methods:
 	self.init = function( cb ) {
+//		console.debug( 'filters.init' );
 //		if( $.isFunction(cb) ) returnView = cb;   // callback
-		self.showSecondaryFilters( null )
+		self.secondaryFilters = undefined
 	};
 	self.clear = function() {
-		self.showSecondaryFilters( null );
+		self.secondaryFilters = undefined;
 	//	$('#hitCount').empty();
 		self.filterList.length = 0;
-		specs.resources.init()
+		app.specs.resources.init()
 	};
 	self.hide = function() {
-		busy.reset()
+		app.busy.reset()
 	};
 /*	// here, the only way to get out is by selecting another tab.
 	function returnOnSuccess() {
@@ -107,18 +108,18 @@ function Filters() {
 	function handleError(xhr) {
 		self.hide();
 		self.clear();
-		stdError(xhr,specs.returnToCaller)
+		stdError(xhr,app.specs.returnToCaller)
 	};
 
 	// standard module entry:
 	self.show = function( settings ) {   // optional filter settings
-//		console.debug( 'filterView.show', settings );
+//		console.debug( 'filters.show', settings );
 
 		setContentHeight();
 	//	$('#hitCount').empty();
 
 		// build filterList from the specTypes when executed for the first time:
-		if( settings || self.filterList.length<1 ) 
+		if( settings&&settings.defs || self.filterList.length<1 ) 
 			build( settings );  
 
 		// Now start the evaluation based on the current filter settings:
@@ -126,69 +127,61 @@ function Filters() {
 			message.show(i18n.phrase('MsgFilterClogged') ); 
 			return
 		};
+//		console.debug('filters.show',settings,self.filterList);
 
-//		specs.updateHistory();
+//		app.specs.updateHistory();
 
-		// It is assumed that the cache is full upon entry.
-/*		if( !myProject.selectedHierarchy.objectsLoaded || myProject.loading() ) { 
-			setTimeout(function() {self.show(settings)}, 200);  // retry later
-			console.info( CONFIG.objectFilter, {status: 10, statusText: 'Still loading, retry in 100 ms.'});
-			return // skip operation for now
-		};
-*/
 		// Get every resource referenced in the hierarchy tree and try whether it is a match.
-		// If so, the resource is added to specs.resources:
-		specs.resources.init();
-	/*	var pend=myProject.selectedHierarchy.flatL.length;
-		if( pend<1 ) {
-			busy.reset();
-			return
-		};  */
-		let tr = specs.tree.get();
+		// If so, the resource is added to app.specs.resources:
+		let tr = app.specs.tree.get();
 		if( !tr || tr.length<1 ) {
 		//	showNotice(i18n.MsgNoReports);
-			busy.reset();
+			app.busy.reset();
 			return true  // nothing to do ....
 		};
 
 		// else update the hitlist:
-		busy.set();
+		app.specs.resources.init();
+		app.busy.set();
 		$('#hitList').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
-
-//		console.debug('filter.show',myProject.selectedHierarchy.flatL);
 		let pend = 0;
-		specs.tree.iterate( function(nd) {
+		app.specs.tree.iterate( function(nd) {
+			// Read asynchronously, so that the cache has the chance to reload from the server.
 			pend++;
-			myProject.readContent( 'resource', {id: nd.ref} )
+//			console.debug('tree.iterate',pend,nd.ref);
+			app.cache.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
-					// match() builds the hitlist in the background:
-					if( match( rsp ) && specs.resources.values.length<CONFIG.objToShowCount+1 ) {	
+					// match() builds the hitlist (app.specs.resources) in the background:
+					if( match( rsp ) && app.specs.resources.values.length<CONFIG.objToShowCount ) {	
 						// show the first hits immediately, but avoid updating the view too often:
-						$('#hitList').html( specs.resources.render() )  	
+						$('#'+CONFIG.objectFilter).html( app.specs.resources.render() )  	
 					};
 					if( --pend<1 ) {  // all done
-						if( specs.resources.values.length>CONFIG.objToShowCount )  
+						if( app.specs.resources.values.length>CONFIG.objToShowCount )  
 							// show the final list, unless it has been rendered already:
-							$('#hitList').html( specs.resources.render() );	
-						if( specs.resources.values.length<1 )  
-							$('#hitList').html( '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>' );	
-					//	$('#hitCount').html(i18n.phrase('MsgObjectsFound',specs.resources.values.length));
-						busy.reset()
+							$('#'+CONFIG.objectFilter).html( app.specs.resources.render() );	
+						if( app.specs.resources.values.length<1 )  
+							$('#'+CONFIG.objectFilter).html( '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>' );	
+					//	$('#hitCount').html(i18n.phrase('MsgObjectsFound',app.specs.resources.values.length));
+						app.busy.reset()
 					}
 				})
-				.fail( handleError )
+				.fail( handleError );
+			return true // descend into deeper levels
 		})
 	};
 	
-	function match(obj) {
-		// Return true, if 'obj' matches all applicable filter criteria ... or if no filter is active.
-		// If an enumerated property is missing, the obj does NOT match.
-		// Matches are appended to specs.resource.
+	function match(res) {
+		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
+		// If an enumerated property is missing, the resource does NOT match.
+		// Matches are appended to app.specs.resource.
 		// all resources pass, if there is no filter.
 
-			function matchSpecType(f) {   // primary filter applying to all resources:
+			function matchResClass(f) {   
+				// primary filter applying to all resources:
 				for( var j=f.options.length-1; j>-1; j--){ 
-					if( f.options[j].selected && f.options[j].id === obj.specType ) return true
+//					console.debug('matchResClass',f,f.options[j]);
+					if( f.options[j].selected && f.options[j].id==res['class'] ) return true
 				};
 				return false
 			}
@@ -213,52 +206,52 @@ function Filters() {
 				let dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, f.caseSensitive?'':'i' ), 
 					oa=null, dT=null;
-				for( var a=obj.properties.length-1; a>-1; a-- ){
-					oa = obj.properties[a];
-					// for each obj property test whether it contains 'str':
-					dT = dataTypeOf( myProject.dataTypes, sT, oa.propertyClass );
+				for( var a=res.properties.length-1; a>-1; a-- ){
+					oa = res.properties[a];
+					// for each property test whether it contains 'str':
+					dT = dataTypeOf( app.cache, oa.propertyClass );
 					// in case of oa we have a property 'dataType':
-//					dT = itemById( myProject.dataTypes, oa.dataType );
-//					console.debug('matchSearchString',f,oa,obj.properties[a],dT);
+//					dT = itemById( app.cache.dataTypes, oa.dataType );
+//					console.debug('matchSearchString',f,oa,res.properties[a],dT);
 					switch( dT.type ) {
 						case 'xhtml':
-							if( patt.test( oa.content.stripHTML() )) return true; // if found return, continue searching, otherwise
+							if( patt.test( oa.value.stripHTML() )) return true; // if found return, continue searching, otherwise
 							break;
 						case 'xs:enumeration':
 							// only if the filter option 'include enumerated values' is checked:
 							if( f.includeEnums ) {
-								oa.content = enumValStr(dT,oa);
-								if( patt.test( oa.content ) ) return true  // if found return, continue searching, otherwise
+								oa.value = enumValStr(dT,oa);
+								if( patt.test( oa.value ) ) return true  // if found return, continue searching, otherwise
 							};
 							break;
 						default:
-							if( patt.test( oa.content ) ) return true; // if found return, continue searching, otherwise
+							if( patt.test( oa.value ) ) return true; // if found return, continue searching, otherwise
 							break
 					}
 				};
 				return false  // not found
 			}
-			function matchAttrValue(f) {   // secondary filter applying to resources of a certain specType
+			function matchPropValue(f) {   
+				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
-				// - if the examined 'obj' has a specType unequal to the scope of the specified filter 'f'
-				if( f.scope && f.scope!=obj.specType ) return true;
+				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
+				if( f.scope && f.scope!=res['class'] ) return true;
 				
-//				console.debug( 'matchAttrValue', f, obj );
+//				console.debug( 'matchPropValue', f, res );
 
 				// The filter is 'applicable': 
-				// a match must be found, otherwise the filter returns 'false' (the obj will be excluded):
+				// a match must be found, otherwise the filter returns 'false' (res will be excluded):
 				switch ( f.baseType ) {
 					case 'xs:enumeration':
-						let oa = itemBy( obj.properties, 'propertyClass', f.attrType ), // the concerned property
+						let oa = itemBy( res.properties, 'class', f.propClass ), // the concerned property
 							no = f.options[f.options.length-1].selected && f.options[f.options.length-1].id=='notAssigned';
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies 'notAssigned':
-						console.debug('matchAttrValue',f,oa);
+//						console.debug('matchPropValue',f,oa,no);
 						if( !oa ) return no;
 						
 						// return 'true' only if there is a match between any resource property value and the specified filter option 'opt':
-//						console.debug('matchAttrValue',f,oa);
-						let ct = oa.content.trim(),
+						let ct = oa.value.trim(),
 							cL=null, z=null, j=null;
 						// works with single-valued and multiple-valued ENUMERATIONs:
 						for( j=f.options.length-1; j>-1; j--) { 
@@ -285,14 +278,14 @@ function Filters() {
 			}
 			function matchAndMark( f ) {
 //				console.debug( 'matchAndMark', f );
-				switch( f.subject ) {
+				switch( f.category ) {
 					case 'resourceClass': 
-						if( matchSpecType(f) ) return obj; // don't mark in this case
-						return null;
+						if( matchResClass(f) ) return res; // don't mark in this case
+						return undefined;
 					case 'propertyValue': 
-						if( matchAttrValue(f) ) return obj; // don't mark in this case, either
-						return null;
-/*						if( matchAttrValue(f) ) {
+						if( matchPropValue(f) ) return res; // don't mark in this case, either
+						return undefined;
+/*						if( matchPropValue(f) ) {
 							console.debug( 'attValueMatched' );
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
@@ -301,15 +294,15 @@ function Filters() {
 							//     --> Don't mark within (X)HTML tags and property titles, mark only property values.
 							//     --> Only mark property values which are EQUAL to the filter label.
 							//     Preliminary solution: label must be longer than 4 characters, otherwise the property will not be marked.
-							if( f.scope == obj.specType ) { 
+							if( f.scope == res['class'] ) { 
 								var rgxA;
 								for( var o=0, O=f.options.length; o<O; o++ ) {
 									if( f.options[o].selected && f.options[o].label.length>4 ) {
 										rgxA = RegExp( '('+f.options[o].label+')', 'g' );
 
-										for( var a=0, A=obj.properties.length; a<A; a++ ){
-											if( f.dataType == obj.properties[a].dataType )
-												mO.properties[a].content = obj.properties[a].content.replace( rgxA, function( $0, $1 ){ return '<mark>'+$1+'</mark>' } )
+										for( var a=0, A=res.properties.length; a<A; a++ ){
+											if( f.dataType == res.properties[a].dataType )
+												mO.properties[a].value = res.properties[a].value.replace( rgxA, function( $0, $1 ){ return '<mark>'+$1+'</mark>' } )
 										}
 									}
 								}
@@ -319,7 +312,7 @@ function Filters() {
 						return false;
 */					case 'textSearch': 
 						if( matchSearchString(f) ) {
-//							console.debug('matchSearchString',obj);
+//							console.debug('matchSearchString',res);
 							// mark matching strings:
 							// ToDo: correct error: with option 'whole word', all findings are marked no matter it is a whole word or not. 
 							//   (The hitlist is correct, but also matches within a word are marked).
@@ -329,179 +322,161 @@ function Filters() {
 								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' ), oa=null;
 								// Clone the resource for marking the matches in the text:
 								var mO = {  // marked resource
-									id: obj.id,
-									title: obj.title,
-									specType: obj.specType,
+									id: res.id,
+									title: res.title,
+									class: res['class'],
 									properties: []
 									};
-								for( var a=0, A=obj.properties.length; a<A; a++ ) {
-									oa = obj.properties[a];
+								for( var a=0, A=res.properties.length; a<A; a++ ) {
+									oa = res.properties[a];
 									mO.properties.push({
 										title: oa.title,  // needed for sorting the property into the columns
-										propertyClass: oa.propertyClass,
-										content: oa.content.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+										class: oa.propertyClass,
+										value: oa.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									})
 								}; 
 								return mO
 							};
-							return obj
+							return res
 						}; 
-						return null
+						return undefined
 				}
 			}
 		
-//		console.debug('match',obj);
-		let sT = itemById( myProject.resourceClasses, obj.specType );
+//		console.debug('match',res);
 
-		// top-level: for the given resource, apply all filters (cycle through all elements of the filter list):
+		// top-level: for the given resource, apply all filters (cycle through all elements of the filter list),
+		// work the filterList from the beginning backwards, so that the primary filters are evaluated first:
 		var hit = true;
-		for( var i=self.filterList.length-1; hit && i>-1; i--) { 
+		for( var i=0,I=self.filterList.length; typeof(hit)!='undefined' && i<I; i++) { 
 			// every applicable filter in the list must finish true for a match (otherwise the resource will be discarded):
 			hit = matchAndMark( self.filterList[i] )
+//			console.debug( 'hit 1', i, hit );
 		};
 		if( hit ) {
-//			console.debug( 'mO', JSON.stringify( mO ));
-			specs.resources.push( hit )
+//			console.debug( 'hit', JSON.stringify( hit ));
+			// avoid duplicate entries:
+			if( !app.specs.resources.exists(hit.id) )
+				app.specs.resources.push( hit )
 		};
 		return !!hit
 	}
 	function isClogged() {
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):
-		// All top level filters must allow results plus all secondary filters per selected specType
+		// All top level filters must allow results plus all secondary filters per selected resourceClass
 		if( !self.filterList.length ) return false;   // all resources pass, if there is no filter.
-		let spcTypes = [];  // all specTypes included in the search
-		function checkSpecType(f) {   // project scope applies to all resources:
-			// top-level filter, at least one option must be checked:
-			// This filter must be in front of depending secondary filters (to avoid a two-pass check):
-			for( var j=0, J=f.options.length; j<J; j++){ 
-				if( f.options[j].selected ) spcTypes.push(f.options[j].id)
-			}; 
-			return !spcTypes.length   // returns true, if no box is checked, i.e. the filter is clogged.
-		};
-		function checkPropertyValue(f) {   // 
-			// 'f' is 'not applicable', if the scope of the specified filter 'f' is not contained in spcTypes:
-//			console.debug( f.scope, spcTypes.indexOf(f.scope) );
-			if( f.scope && spcTypes.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
+		let rCL = [];  // all resource classes included in the search
 
-			switch( f.baseType ) {
-				case 'xs:enumeration':
-					for( var j=f.options.length-1; j>-1; j--){ 
-						if( f.options[j].selected ) return false  // at least one checked -> not clogged
-					};
-					break
+			function checkResourceClass(f) {   // project scope applies to all resources:
+				// top-level filter, at least one option must be checked:
+				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
+				for( var j=0, J=f.options.length; j<J; j++){ 
+					if( f.options[j].selected ) rCL.push(f.options[j].id)
+				}; 
+				return !rCL.length   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
-			return true // returns true, if the filter is clogged.
-		};
+			function checkPropertyValue(f) {   // 
+				// 'f' is 'not applicable', if the scope of the specified filter 'f' is not contained in rCL:
+//				console.debug( f.scope, rCL.indexOf(f.scope) );
+				if( f.scope && rCL.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
+
+				switch( f.baseType ) {
+					case 'xs:enumeration':
+						for( var j=f.options.length-1; j>-1; j--){ 
+							if( f.options[j].selected ) return false  // at least one checked -> not clogged
+						};
+						break
+				};
+				return true // returns true, if the filter is clogged.
+			};
 		
 		// top-level:
 		var clogged = false;  // initialize
 		for( var i=self.filterList.length-1; !clogged && i>-1; i--) {   // stop iterating right away if known it is clogged.
 			// 
-			switch( self.filterList[i].subject ) {
-				case 'resourceClass': clogged = clogged || checkSpecType(self.filterList[i]); break;
-				case 'propertyValue': clogged = clogged || checkPropertyValue(self.filterList[i]); break;
-				case 'textSearch': break   // cannot be clogged
+			switch( self.filterList[i].category ) {
+				case 'resourceClass': clogged = clogged || checkResourceClass(self.filterList[i]); break;
+			//	case 'statementClass': ....
+				case 'propertyValue': clogged = clogged || checkPropertyValue(self.filterList[i]); 
+			//	'textSearch' cannot contribute to clogging
 			}
 		};
 		return clogged  // returns false, if hits are possible.
 	}
 	
-	function addEnumValueFilters( settings ) { 
-		// filter settings are like {subject: 'enumValue', tnm: 'type.title', anm: 'attr.title', values: ['title1','title2']}
-//		console.debug( 'addEnumValueFilters', settings );
+	function addEnumValueFilters( def ) { 
+		// def is like {category: 'enumValue', rCid: 'resourceClass.title', pCid: 'propertyClass.title', values: ['title1','title2']}
+//		console.debug( 'addEnumValueFilters', def );
 		
-			function addEnumFilters( pre ) { 
-				// This is called per resource type. 
-				// Each ENUMERATION property gets a filter module:
-				
-				function possibleValues(attrT, vL) {
-					var opts = [], v=null, V=null;
-					// Look up the baseType and include all possible enumerated values:
-					for( var d=0, D=myProject.dataTypes.length; d<D; d++ ) {
-						if( myProject.dataTypes[d].id === attrT.dataType ) {
-							for( v=0, V=myProject.dataTypes[d].values.length; v<V; v++ ) {
-								var opt = {
-										label:myProject.dataTypes[d].values[v].title, 
-										id:myProject.dataTypes[d].values[v].id, 
-										selected:true
-									};
-								if( vL ) { opt.selected = vL.indexOf( myProject.dataTypes[d].values[v].id )>-1 };
-//								console.debug( 'opt', opt );
-								opts.push( opt )
-							};
-							// add one more option for the case 'value not assigned':
-							opts.push({ 
-									label: i18n.LblNotAssigned, 
-									id: 'notAssigned', 			// matches resource properties without a value (empty value list).
-									selected: (!vL || vL.indexOf('notAssigned')>-1)
-								}); 
-							return opts  // no need to iterate the remaining dataTypes
-						}
-					};
-					return null  // this should never happen ...
-				}
-				function addEnumFilter( aT, vals ) {
-//					console.debug( 'addEnumFilter', aT, vals );
-					
-					var eVF = {};
-						
-					// skip, if the filter is already in the list:
-					for( var i=self.filterList.length-1; i>-1; i--) {
-						if ((self.filterList[i].dataType === aT.dataType) &&
-							( self.filterList[i].scope === sT.id )) 
-							return null;										
-					};
-					
-					// Construct the filter descriptor and add it to the list of filters:
-					eVF = { 
-						label: titleOf(aT),
-						subject: 'propertyValue',
-						primary: false,
-						scope: sT.id, 
-						attrType: aT.id,
-						dataType: aT.dataType,
-						baseType: 'xs:enumeration'
-					};
-					eVF.options = possibleValues( aT, vals );
-//					console.debug( 'eVF', eVF );
-					self.filterList.push(eVF)
-				}
-
-				var sT = itemById( myProject.resourceClasses, pre.tid );
-//				console.debug( 'sT', pre, sT );
-				for( var a=0, A=sT.propertyClasses.length; a<A; a++ ) {
-//					if( sT.propertyClasses[a].id == pre.aid && itemById( myProject.dataTypes, sT.propertyClasses[a].dataType ).type == 'xs:enumeration' ) {
-					if( (pre.aid && sT.propertyClasses[a].id == pre.aid )   // we can assume that baseType == 'xs:enumeration'
-						|| (!pre.aid && itemById( myProject.dataTypes, sT.propertyClasses[a].dataType ).type == 'xs:enumeration')) {
-						addEnumFilter( sT.propertyClasses[a], pre.values )
+			function possibleValues(pC, vL) {
+				var opts = [], v=null, V=null;
+				// Look up the baseType and include all possible enumerated values:
+				for( var d=0, D=app.cache.dataTypes.length; d<D; d++ ) {
+					if( app.cache.dataTypes[d].id === pC.dataType ) {
+						app.cache.dataTypes[d].values.forEach( function(v) {
+							var opt = {
+									label: v.value, 
+									id: v.id, 
+									selected: true
+								};
+							if( vL ) { opt.selected = vL.indexOf( v.id )>-1 };
+//							console.debug( 'opt', opt );
+							opts.push( opt )
+						});
+						// add one more option for the case 'value not assigned':
+						opts.push({ 
+								label: i18n.LblNotAssigned, 
+								id: 'notAssigned', 			// matches resource properties without a value (empty value list).
+								selected: (!vL || vL.indexOf('notAssigned')>-1)
+							}); 
+						return opts  // no need to iterate the remaining dataTypes
 					}
-				}
+				};
+				return null  // this should never happen ...
+			}
+			function addEnumFilter( pC, vals ) {
+//				console.debug( 'addEnumFilter', aT, vals );
+				
+				// skip, if the filter is already in the list:
+				for( var i=self.filterList.length-1; i>-1; i--) {
+					if (( self.filterList[i].dataType==pC.dataType )
+						&& ( self.filterList[i].scope==rC.id )) 
+						return undefined									
+				};
+				
+				// Construct the filter descriptor and add it to the list of filters:
+				var eVF = { 
+					label: titleOf(pC),
+					category: 'propertyValue',
+					primary: false,
+					scope: rC.id, 
+					propClass: pC.id,
+					dataType: pC.dataType,
+					baseType: 'xs:enumeration',
+					options: possibleValues( pC, vals )
+				};
+//				console.debug( 'eVF', eVF );
+				self.filterList.push(eVF)
 			}
 				
 		// start working, now:
-		if( settings ) {
-			// for the specTypes listed in settings:
-			if( settings.subject == 'enumValue' ) {
-					// Add the filters for the specified specType:
-					addEnumFilters( settings );
-			}
-/*		} else {
-			// if no specType is specified, add the filters for all specTypes:
-			for( var t=0, T=myProject.specTypes.length; t<T; t++ ) {
-					// The switch isn't necessary, if the program is correct ... but let's make it defensive:
-					switch( myProject.specTypes[t].category ) {
-						case 'resourceClass':
-							// add a filter for each ENUMERATION property of a 'resourceClass'
-							addEnumFilters( myProject.specTypes[t] );
-							break;
-//						case 'statementClass': 	
-//						case 'hierarchyClass':	
-//							break;
-//						default:				
-//							// RIF types without category - no distinction between types for resources, relations and hierarchies.
-					}
-			}
-*/		}
+		if( def && def.category=='enumValue' ) {
+			// Add the filters for the specified resourceClass:
+//			console.debug('addEnumValueFilters',def);
+			// This is called per resourceClass. 
+			// Each ENUMERATION property gets a filter module:
+			var rC = itemById( app.cache.resourceClasses, def.rCid ),
+				pC;
+//			console.debug( 'rC', def, rC );
+			rC.propertyClasses.forEach( function(pcid) {
+				pC = itemById( app.cache.propertyClasses, pcid );
+//				if( pcid==def.pCid && itemById( app.cache.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
+				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
+					|| (!def.pCid && itemById( app.cache.dataTypes, pC.dataType ).type=='xs:enumeration')) {
+					addEnumFilter( pC, def.values )
+				}
+			})
+		}
 	};
 	// Build the filter list based on the project's data model:
 	function build( settings ) {
@@ -511,14 +486,14 @@ function Filters() {
 		self.filterList.length = 0;
 
 			function addTextSearchFilter( pre ) {
-				// pre is a resource with filter settings like {subject: 'textSearch', searchString: 'string'}
+				// pre is a resource with filter settings like {category: 'textSearch', searchString: 'string'}
 				var flt =
 					{ label: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
-					subject: 'textSearch',
+					category: 'textSearch',
 					primary: true,
-					scope: myProject.id,
+					scope: app.cache.id,
 					baseType: 'xs:string',
-//						baseType: ['xs:string','xhtml'],
+			//		baseType: ['xs:string','xhtml'],
 					searchString: '',
 					wordBeginnings: false,
 					wholeWords: false,
@@ -528,70 +503,61 @@ function Filters() {
 					if( pre.searchString ) flt.searchString = pre.searchString
 				};
 				self.filterList.push( flt )
-			};
-		if( settings && Array.isArray(settings) ) {
-			var idx = indexBy( settings, 'subject', 'textSearch');
+			}
+		if( settings && settings.defs && Array.isArray(settings.defs) ) {
+			var idx = indexBy( settings.defs, 'category', 'textSearch');
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
-				addTextSearchFilter( settings[idx] )
-			// do not include a text search filter if there are settings without a respective entry
+				addTextSearchFilter( settings.defs[idx] )
+			// do not include a text search filter if there are settings.defs without a respective entry
 		} else {
-			// b) include a default text search if there are no settings
+			// b) include a default text search if there is no settings.defs
 			addTextSearchFilter()
 		};
 
-			function addSpecTypeFilter( pre ) {
-				// add a filter with a selector for each 'resourceClass':
-				// pre is a resource with filter settings like {subject: 'resourceClass', pid: 'id', values: ['title1','title2']}
-//				console.debug( 'addSpecTypeFilter', pre );
+			function addResourceClassFilter( pre ) {
+				// Add a filter with a selector for each 'resourceClass',
+				// pre is a resource with filter settings like {category: 'resourceClass', values: ['title1','title2']}
+//				console.debug( 'addResourceClassFilter', pre );
 				var oTF = {   // the primary filter criterion 'resource type'
 						label: i18n.TabSpecTypes,
-						subject: 'resourceClass',
+						category: 'resourceClass',
 						primary: true,
-						scope: myProject.id,
+						scope: app.cache.id,
 						baseType: 'xs:enumeration',
 						options: [] 
 					};
-				for( var t=0, T=myProject.specTypes.length; t<T; t++ ) {
-					if( CONFIG.excludedFromTypeFiltering.indexOf( myProject.specTypes[t].title )>-1 ) { continue };  // skip
+				app.cache.resourceClasses.forEach( function( rC ) {
+					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
-//					console.debug( myProject.specTypes[t].title );
-					switch( myProject.specTypes[t].category ) {
-						case 'statementClass': 	
-						case 'hierarchyClass':	
-							break;
-						case 'resourceClass': 		
-							// Add an option for each 'resourceClass'
-						default:				
-							// RIF types without category - no distinction between types for resources, relations and hierarchies.
-							// Add an option for each RIF SPEC-TYPE:
-							// ToDo: Check which types are used for resources and include only those as options (don't show irrelevant options)
-							var opt =  
-								{ label: titleOf(myProject.specTypes[t]),
-								id: myProject.specTypes[t].id,
-								selected: true};   // set initial selection
-							// if there are preset values, set the select flag accordingly:
-							if( pre && pre.values ) { opt.selected = pre.values.indexOf( myProject.specTypes[t].id )>-1 };
-							oTF.options.push( opt )
-					}
-				};
+//					console.debug( rC.title );
+					var opt =  
+						{ label: titleOf(rC),
+						id: rC.id,
+						selected: true};   // set selection by default
+					// if there are preset values, set the select flag accordingly:
+					if( pre && pre.values ) { 
+						opt.selected = pre.values.indexOf( rC.id )>-1
+					};
+					oTF.options.push( opt )
+				});
 
 				// a filter with a single option will never exclude a resource from the hit-list (or all of them), 
 				// therefore it is omitted, unless it has secondary filters:
 				if( oTF.options.length>1 || self.mayHaveSecondaryFilters( oTF.options[0].id )) {
 					self.filterList.push(oTF)
 				}
-			};
-		// The specTypeFilter must be in front of all depending secondary filters:
-		if( settings && Array.isArray(settings) ) {
-			var idx = indexBy( settings, 'subject', 'resourceClass');
-			// a) include the filter modules, if there are settings:
+			}
+		// The resourceClassFilter must be in front of all depending secondary filters:
+		if( settings && settings.defs && Array.isArray(settings.defs) ) {
+			var idx = indexBy( settings.defs, 'category', 'resourceClass');
+			// a) include the filter modules, if there is a settings.defs:
 			if( idx>-1 ) 
-				addSpecTypeFilter( settings[idx] )
-			// do not include a text search filter if there are settings without a respective entry
+				addResourceClassFilter( settings.defs[idx] )
+			// do not include a text search filter if there is a settings.defs without a respective entry
 		} else {
-			// b) include a default text search if there are no settings
-			addSpecTypeFilter()  
+			// b) include a default text search if there is no settings.defs
+			addResourceClassFilter()  
 		};
 
 /*			function addDateTimeFilter() {
@@ -599,10 +565,10 @@ function Filters() {
 			};
 		addDateTimeFilter();  			
 */
-		// Add the secondary filters contained in the settings to the list:
-		if( settings && Array.isArray(settings) ) {
-			settings.forEach( function(s) {
-				if( s.subject == 'enumValue' )
+		// Add the secondary filters contained in the settings.defs to the list:
+		if( settings && settings.defs && Array.isArray(settings.defs) ) {
+			settings.defs.forEach( function(s) {
+				if( s.category == 'enumValue' )
 					addEnumValueFilters( s )
 			})
 		}
@@ -628,46 +594,48 @@ function Filters() {
 		return sF
 	}
 */		
-	self.mayHaveSecondaryFilters = function( tId ) {  // tId is resource class id
-		var spT = itemById( myProject.specTypes, tId );  
-		for( var i=spT.propertyClasses.length-1; i>-1; i-- ) {
+	self.mayHaveSecondaryFilters = function( rCid ) {  // rCid is resource class id
+		var rC = itemById( app.cache.allClasses, rCid ),
+			pC;  
+		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
 			// if the class has at least one property with enums
 			// ToDo: same with boolean
-			if( itemById( myProject.dataTypes, spT.propertyClasses[i].dataType ).type=='xs:enumeration' ) return true
+			pC = itemById( app.cache.propertyClasses, rC.propertyClasses[i] );
+			if( itemById( app.cache.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
 		};
 		return false
 	};
-	self.secondaryFiltersClicked = function( oT ) {
+/*	self.secondaryFiltersClicked = function( oT ) {
 		// toggle between the hitlist and the secondary filter settings:
 //		console.debug( 'secondaryFiltersClicked', oT );
-		if( self.showSecondaryFilters()==oT ) {
+		if( self.secondaryFilters==oT ) {
 			self.goClicked()
 		} else {
-			addEnumValueFilters({subject: 'enumValue', tid: oT.id});  // tid: type-id
-			self.showSecondaryFilters( oT )
+			addEnumValueFilters({category: 'enumValue', rCid: oT.id});  // rCid: type-id
+			self.secondaryFilters = oT
 		}
 	};
 	self.goClicked = function() {  // go!
-		self.showSecondaryFilters( null );
-		specs.resources.init();
+		self.secondaryFilters = undefined;
+		app.specs.resources.init();
 		return self.show()
 	};
-	self.resetClicked = function() {  // reset filters!
+	self.resetClicked = function() {  
+		// reset filters:
 		self.clear();
 		self.show()
 	};
 	self.itemClicked =  function( itm ) {
 //		console.debug( 'item clicked', itm );
 		// Jump to the page view of the clicked resource:
-		specs.showTab( CONFIG.objectDetails );  
-		specs.selectNodeByRef( itm.value() )
+		app.specs.showTab( CONFIG.objectDetails );  
+		app.specs.selectNodeByRef( itm.value() )
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
-	};
-	
+	}; 
+*/	
 	return self;
 };
-var filters = new Filters();
-//	ko.applyBindings( filterView, $('#objectFilterT')[0] );
+app.filters = new Filters();
 	
 /*
 <div id="objectFilterT" >

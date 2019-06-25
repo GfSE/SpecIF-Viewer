@@ -146,7 +146,7 @@ function toEpub( data, opts ) {
 			zip.file( "OEBPS/Text/sect"+i+".xhtml", s )
 		});
 
-		console.debug('files',ePub.images,data.files);
+//		console.debug('files',ePub.images,data.files);
 		// Add the images:
 		ePub.images.forEach( function(f) {
 		//	let img = itemById(data.files, f.id);

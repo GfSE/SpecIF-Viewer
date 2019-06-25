@@ -33,10 +33,10 @@ modules.construct({
 
 	let myName = self.loadAs || self.name,
 		myFullName = 'app.'+myName,
-		tabsWithTree = [ CONFIG.objectList, CONFIG.objectDetails, 'object', CONFIG.comments, CONFIG.objectRevisions, CONFIG.relations, 'linker' ],
+		tabsWithLeftPanel = [ CONFIG.objectList, CONFIG.objectDetails, 'object', CONFIG.comments, CONFIG.objectRevisions, CONFIG.relations, 'linker' ],
 		tabsWithEditActions = [ CONFIG.objectList, CONFIG.objectDetails ];
 	// Return 'true', if the tab/view includes the hierarchy tree:
-	function isTabWithTree(tab) { return ( tabsWithTree.indexOf( tab || self.selectedTab() )>-1 ) }
+	function isTabWithLeftPanel(tab) { return ( tabsWithLeftPanel.indexOf( tab || self.selectedTab() )>-1 ) }
 
 	self.selectedTab = function() {
 //		console.debug('selectedTab',self.viewCtl.selected);
@@ -45,13 +45,13 @@ modules.construct({
 		return null
 	};
 	self.selectTab = function( newV ) {
-//		console.debug('selectTab',self.selectedTab(),newV,isTabWithTree(newV));
+//		console.debug('selectTab',self.selectedTab(),newV,isTabWithLeftPanel(newV));
 		// skip, if no change:
 		if( self.selectedTab()==newV ) return false;	// no change
 		// else set new dialog:
 		self.resources.init();
 		$('#contentActions').empty();
-		self.showLeft.set(isTabWithTree(newV));
+		self.showLeft.set(isTabWithLeftPanel(newV));
 		self.showTree.set();
 		self.viewCtl.show('#'+newV);
 		return true		// changed
@@ -192,12 +192,12 @@ modules.construct({
 			*/		}
 			}
 		});
-		// controls whether the left box with the tree or details is shown or not:
+		// controls whether the left panel with the tree or details is shown or not:
 		self.showLeft = new State({
 			showWhenSet: ['.selection','.contentCtrl'],
 			hideWhenSet: []
 		});
-		// controls whether the left box shows tree or details (when showLeft is true):
+		// controls whether the left panel shows tree or details (when showLeft is true):
 		self.showTree = new State({
 			showWhenSet: ['#hierarchy'],
 			hideWhenSet: ['#details']
@@ -502,67 +502,58 @@ modules.construct({
 	// for example if the user quickly traverses the tree. 
 	// Do finally refresh, if there has been no further request in a certain time period.
 	var refreshReqCnt = 0;
-	self.refresh = function(vw) {
+	self.refresh = function( params ) {
 		// refresh the content, only;
 		// primarily provided for showing changes made by this client:
 			function tryRefresh() {
-				if( --refreshReqCnt<1 ) doRefresh({view:vw})
+				if( --refreshReqCnt<1 ) doRefresh( params )
 			}
 		refreshReqCnt++;
 		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
 	};
-	function doRefresh( options ) {
+	function doRefresh( parms ) {
 		// Route execution depending on the current state (selected tab):
 		// This routine is called in the following situations:
 		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in an editing mode
 		// - user clicks on a tab -> show the content in view mode 
 		// - cache update is signalled -> again, refresh only any content in view mode.
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
-//		console.debug('doRefresh',options,self.selectedTab());
+//		console.debug('doRefresh',parms,self.selectedTab());
 
 		setContentHeight();
 		$('#contentNotice').empty();
-		self.showLeft.set( isTabWithTree( self.selectedTab() ) );
+		self.showLeft.set( isTabWithLeftPanel( self.selectedTab() ) );
 		self.showTree.set();
 		
-	//	switch( options && options.view.substring(1) || self.selectedTab() ) {
+	//	switch( parms && parms.view.substring(1) || self.selectedTab() ) {
 		switch( self.selectedTab() ) {
 			case CONFIG.objectList:			
-		//		self.showLeft.set();
-				self.showDocument( options ); // just get some resources beginning with the selected node
+				self.showDocument( parms ); // just get some resources beginning with the selected node
 				break;
 			case CONFIG.relations:			
-		//		self.showLeft.set();
-				self.showStatements( options );
+				self.showStatements( parms );
 				break;
 /*			case CONFIG.objectDetails:		
-				self.showLeft.set();
-				self.showResource( options );
+				self.showResource( parms );
 				break;
 			case CONFIG.objectRevisions:	
-				self.showLeft.set();
 				self.showRevisions();
 				break;
 			case CONFIG.comments:			
-				self.showLeft.set();
 				self.showComments();
 				break;
 			case CONFIG.objectTable:		
-				self.showLeft.reset();
 				$('#contentActions').empty();
 				self.showTable();
 				break;
 			case CONFIG.files:				
-				self.showLeft.reset();
 				$('#contentActions').empty();
 				self.showFiles();
-				break;
+				break;*/
 			case CONFIG.objectFilter: 
-				self.showLeft.set();
-				self.showFilter();
-				break; */
+				self.showFilter( parms );
+				break;
 			case CONFIG.reports:			
-		//		self.showLeft.reset();
 				$( '#contentActions' ).empty();
 				self.showReports();
 				break;
@@ -571,7 +562,6 @@ modules.construct({
 				$('#contentActions').empty();
 				self.views.show('object');
 			case 'linker':
-				self.showLeft.set();
 				linker.show( self.staCreTypes, self.tree.selectedNode );
 //				break;  */
 		}
@@ -692,7 +682,7 @@ modules.construct({
 				canvas:'statementGraph',
 				titleProperties: CONFIG.titleProperties,
 				onDoubleClick: function( evt ) {
-//					console.log('Double Click on:',evt);
+//					console.debug('Double Click on:',evt);
 					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
 						self.relatedItemClicked(evt.target.resource,evt.target.statement);
 						// changing the tree node triggers an event, by which 'self.refresh' will be called.
@@ -1109,8 +1099,8 @@ modules.construct({
 
 		app.busy.set();
 		
-		filters.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
-		filters.show( filterList )
+		app.filters.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
+		app.filters.show( filterList )
 	};	
 	self.showReports = function() {
 		// Show statistics of the current spec:
@@ -1119,8 +1109,8 @@ modules.construct({
 		app.busy.set();
 
 	//	reports.init( function(){ self.showTab(CONFIG.specDialogDefault) } );
-		reports.init();
-		reports.show( app.cache )
+		app.reports.init();
+		app.reports.show( app.cache )
 	};  
 
 /* +++++++++++++++++++++++++++++++                    
@@ -1908,6 +1898,11 @@ function Resources() {
 		// return the selected resource; it is the first in the list by design:
 		return self.values[0]
 	};
+	self.exists = function( rId ) {
+		for( var i=self.values.length-1; i>-1; i-- )
+			if( self.values[i].value.id==rId ) return true;
+		return false
+	};
 	self.render = function() {
 		// generate HTML representing the resource list:
 		if( !self.values.length )
@@ -2024,7 +2019,7 @@ var fileRef = {
 */ 
 				let f = itemByTitle(app.cache.files,u2);
 //				console.debug('fileRef.toGUI 1a found: ', f );
-				if( f ) {
+				if( f.blob ) {
 //					console.debug('containerId',containerId(u2));
 					repSts.push( '<div id="'+containerId(u2)+'" class="forImage"></div>' );
 					showImg( f, opts );
@@ -2053,7 +2048,7 @@ var fileRef = {
 
 				// $3 is the description between the tags <object></object>:
 				let d = $3 || u1,
-					hasImg = true;
+					hasImg = false;
 				e = e.toLowerCase();
 //				console.debug('fileRef.toGUI 2 found: ', $0, u1, t1, s1, d, e );
 //				u1 = addFilePath(u1);
@@ -2075,16 +2070,17 @@ var fileRef = {
 */				
 					let f = itemByTitle(app.cache.files,u1);
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
-					if( f ) {
+					if( f.blob ) {
+						hasImg = true;
 						d = '<div id="'+containerId(u1)+'" class="forImage"></div>';
 						showImg( f, opts );
 					} else {
-						hasImg = false;
 						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
 					}
 				} else {
 					if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
 						// it is an office file, show an icon plus filename:
+						hasImg = true;
 						d = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="'+d+'" />'
 					} else {
 						switch( e ) { 
@@ -2094,6 +2090,7 @@ var fileRef = {
 								// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
 								// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
 								// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
+								hasImg = true;
 							//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
 								d = '<img src="'+u1.fileName()+'.png" type="image/png" alt="'+d+'" />';
 								break;
@@ -2101,7 +2098,6 @@ var fileRef = {
 						//		break;
 							default:
 								// last resort is to take the filename:
-								hasImg = false;
 								d = '<span>'+d+'</span>'  
 						}
 					}

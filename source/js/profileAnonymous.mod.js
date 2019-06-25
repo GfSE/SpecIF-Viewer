@@ -64,7 +64,7 @@ modules.construct({
 			self.loggedin = true;
 		})
 		.fail(function(xhr) {
-//			console.log( 'readMe failed: '+xhr.status );
+//			console.debug( 'readMe failed: '+xhr.status );
 			switch( xhr.status ) {
 				case 401:  // Unauthorized
 //					message.show( xhr );

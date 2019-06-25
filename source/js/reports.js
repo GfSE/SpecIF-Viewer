@@ -11,7 +11,7 @@ function Reports() {
 
 /*	The report descriptors for display, two examples:
 		{	title: 'Anforderung: Priorit&auml;t',
-			subject: 'resource',
+			category: 'resourceClass',
 			scaleMin: 0,
 			scaleMax: 120,
 			datasets: [
@@ -21,7 +21,7 @@ function Reports() {
 			]
 		},
 		{	title: 'Anforderung: Status',
-			subject: 'enumValue',
+			category: 'enumValue',
 			scaleMin: 0,
 			scaleMax: 1000,
 			datasets: [
@@ -91,7 +91,7 @@ function Reports() {
 				// Add a report with a counter per resourceClass:
 				var rCR = {
 						title: i18n.LblResourceClasses,
-						subject: 'resource',
+						category: 'resourceClass',
 						pid: pr.id,
 						scaleMin: 0,
 						scaleMax: 0,
@@ -115,7 +115,7 @@ function Reports() {
 				// Add a report with a counter per statementClass:
 				var sCR = {
 						title: i18n.LblStatementClasses,
-						subject: 'statement',
+						category: 'statementClass',
 						pid: pr.id,
 						scaleMin: 0,
 						scaleMax: 0,
@@ -170,10 +170,10 @@ function Reports() {
 						if( itemById( prj.dataTypes, pC.dataType ).type=='xs:enumeration' ) {
 							var aVR = {
 									title: titleOf(rC)+': '+titleOf(pC),
-									subject: 'enumValue',
+									category: 'enumValue',
 									pid: prj.id,	// pid: project-id
-									tid: rC.id, 	// tid: resourceClass-id
-									aid: id, 		// aid: propertyClass-id
+									rCid: rC.id, 	// rCid: resourceClass-id
+									pCid: id, 		// pCid: propertyClass-id
 									scaleMin: 0,
 									scaleMax: 0,
 									datasets: []
@@ -206,19 +206,19 @@ function Reports() {
 					return hasCounts(rp)
 				})
 			}
-			function evalResource( obj ) {
-//				console.log( 'evalResource', self.list, obj );
+			function evalResource( res ) {
+//				console.debug( 'evalResource', self.list, res );
 					function findPanel(pL,r,p) {
 						for( var i=pL.length-1;i>-1;i--  ) {
-							if( pL[i].tid==r && pL[i].aid==p ) return i
+							if( pL[i].rCid==r && pL[i].pCid==p ) return i
 						};
 						return -1
 					}
 										
 				// a) The histogram of resource classes; it is the first report panel:
-				let rId = obj['class'],
+				let rId = res['class'],
 					j = indexById( self.list[0].datasets, rId );
-//				console.log( 'evalResource j', obj, j );
+//				console.debug( 'evalResource j', res, j );
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
@@ -231,19 +231,19 @@ function Reports() {
 					if( dT.type!='xs:enumeration' ) return;
 					// find the report panel:
 					i = findPanel(self.list,rId,pId);
-//					console.log( 'evalResource i', pC, i );
+//					console.debug( 'evalResource i', pC, i );
 					if( i>-1 ) { 
 						// report panel found; it is assumed it is of type 'xs:enumeration'.
-						// check whether obj has an property of this type:
-						oa = itemBy( obj.properties, 'class', pId );
+						// check whether the resource has a property of this type:
+						oa = itemBy( res.properties, 'class', pId );
 						if( oa && oa.value.trim().length ) {  
 							// has a value:
-//							console.log( 'evalResource a', oa );
+//							console.debug( 'evalResource a', oa );
 							ct = oa.value.split(',');
 							ct.forEach( function(val) { 
 								// find the bar which corresponds to the property values
 								j = indexById( self.list[i].datasets, val.trim() );
-//								console.log( 'evalResource z', ct, j );
+//								console.debug( 'evalResource z', ct, j );
 								if( j>-1 ) { incVal( i,j ) } // property value found
 							})
 						} else {
@@ -257,18 +257,21 @@ function Reports() {
 //		console.debug('report panels', self.list);
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
-		var pend=0, visitedR=[];
+		let pend=0, visitedR=[];
 		app.specs.tree.iterate( function(nd) {
 			if( visitedR.indexOf(nd.ref)>-1 ) return; 
 			// not yet evaluated:
 			pend++;
 			visitedR.push(nd.ref); // memorize all resources already evaluated
-			prj.readContent( 'resource', {id: nd.ref})
+			// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
+			prj.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
 				.done(function(rsp) {
 					evalResource( rsp );
 					if( --pend<1 ) {  // all done:
+						self.list = removeEmptyReports( self.list );
+//						console.debug('self-list',self.list);
 						if( self.list.length>0 )
-							$('#'+CONFIG.reports).html( renderReports( removeEmptyReports( self.list )) )
+							$('#'+CONFIG.reports).html( renderReports( self.list ) )
 						else
 							showNotice(i18n.MsgNoReports);
 						app.busy.reset()
@@ -287,7 +290,7 @@ function Reports() {
 			var rs =	'<div class="row" >';
 			let lb;
 			list.forEach( function(li,i) {
-				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-bottom: 4px solid #ffffff; height: '+panelHeight(list)+'">'
+				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-bottom: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'
 					+			'<h4>'+li.title+'</h4>'
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
@@ -336,25 +339,27 @@ function Reports() {
 	};
 
 	self.countClicked = function( rX, cX ) {
-		// an entry in a report panel has been clicked, 
-		// so assemble a corresponding filter list to show them in the filter module:
-		var fL = [{subject: 'textSearch', pid: prj.id}];   // fL: filter list
-		let itm = self.list[rX];
-		switch( itm.subject ) {
-			case 'resource':
-				fL.push({subject: 'resource', pid: itm.pid, values: [itm.datasets[cX].id]});
+		// An entry in a report panel has been clicked, 
+		// so assemble a corresponding filter list to show them in the filter module.
+		// Add the primary filters in any case, even if they don't get a constraint.
+		var itm = self.list[rX],
+			fL = [{category: 'textSearch'}];   // fL: filter list
+		console.debug( 'countClicked', rX, cX, self.list, itm );
+		switch( itm.category ) {
+			case 'resourceClass':
+				fL.push({category: 'resourceClass', values: [itm.datasets[cX].id]});
 				break;
-		//	case 'statement':
+		//	case 'statementClass':
 			// cannot filter by 'statement', yet
 			case 'enumValue':
-				fL.push({subject: 'resource', pid: itm.pid, values: [itm.tid]});  // pid: project-id
-				fL.push({subject: 'enumValue', tid: itm.tid, aid: itm.aid, values: [itm.datasets[cX].id]})  // tid: type-id
+				fL.push({category: 'resourceClass', values: [itm.rCid]});  // pid: project-id
+				fL.push({category: 'enumValue', rCid: itm.rCid, pCid: itm.pCid, values: [itm.datasets[cX].id]})  // rCid: type-id
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
-		app.specs.showFilter( fL )
+		modules.show( { newView:'#'+CONFIG.objectFilter, defs:fL } )
 	};
 
 	return self
 };
-var reports = new Reports();
+app.reports = new Reports();

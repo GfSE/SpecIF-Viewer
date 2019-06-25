@@ -262,7 +262,8 @@ i18n.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"/>&nbsp;'+i18
 i18n.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&nbsp;'+i18n.LblRifTypes;
 i18n.TabTable = '<span class="glyphicon glyphicon-th"/>&nbsp;Table';
 i18n.TabDocument = '<span class="glyphicon glyphicon-book"/>&nbsp;Document';
-i18n.TabFind = '<span class="glyphicon glyphicon-search"/>&nbsp;Find';
+i18n.TabFind = '<span class="glyphicon glyphicon-search"/>&nbsp;Search';
+i18n.TabFilter = i18n.IcoFilter+'&nbsp;Filter';
 i18n.TabPage = '<span class="glyphicon glyphicon-file"/>&nbsp;Page';
 i18n.TabRevisions = '<span class="glyphicon glyphicon-grain"/>&nbsp;Revisions';
 i18n.TabTimeline = '<span class="glyphicon glyphicon-film"/>&nbsp;Timeline';

@@ -163,11 +163,11 @@ function toXhtml( data, opts ) {
 		for( m=0, M=data.hierarchies.length; m<M; m++ ) {
 			// for all hierarchies starting with the current one 'hi', the index of the top-level loop:
 			y = (m+hi) % M;  
-	//		console.debug( 'nodes', m, y, data.hierarchies );
+//			console.debug( 'nodes', m, y, data.hierarchies );
 			if( data.hierarchies[y].nodes )
 				for( n=0, N=data.hierarchies[y].nodes.length; n<N; n++ ) {
 					ndId = nodeByRef( data.hierarchies[y].nodes[n] );
-	//				console.debug('ndId',n,ndId);
+//					console.debug('ndId',n,ndId);
 					if( ndId ) return ndId		// return node id
 				}
 		};
@@ -179,7 +179,7 @@ function toXhtml( data, opts ) {
 			if( nd.nodes )
 				for( var t=0, T=nd.nodes.length; t<T; t++ ) {
 					ndId = nodeByRef( nd.nodes[t] );
-	//				console.debug('ndId2',n,ndId);
+//					console.debug('ndId2',n,ndId);
 					if( ndId ) return ndId
 				};
 			return null
@@ -195,7 +195,7 @@ function toXhtml( data, opts ) {
 		// depending on the context, r['class'] is an class object or a class id:
 		let rC = r['class'].id? r['class'] : itemBy( data.resourceClasses, 'id', r['class'] );
 		
-		console.debug('propertiesOf',r, rC, hi, opts);
+//		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
 		let c1='', rows='', rt, hPi;
 		r.descriptions.forEach( function(prp) {
@@ -278,7 +278,7 @@ function toXhtml( data, opts ) {
 				}
 
 			// Prepare a file reference for viewing and editing:
-	//		console.debug('fromServer 0: ', txt);
+//			console.debug('fromServer 0: ', txt);
 				
 			// 1. transform two nested objects to link+object resp. link+image:
 			//    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
@@ -316,14 +316,14 @@ function toXhtml( data, opts ) {
 						fi = itemBy( data.files, 'title', fileName(u2)+'.png' )
 					};
 
-//					console.log('*1',u2,fi);
+//					console.debug('*1',u2,fi);
 					pushReferencedFile( fi );
 //					console.debug( 'r1', $0, $4, u1, i2, u2, t2 );
 					return'<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+$4+'" />'
 //					return'<div class="forImage"><object data="'+addEpubPath(u2)+'"'+t2+s2+' >'+$4+'</object></div>'
 				}
 			);
-	//		console.debug('fromServer 1: ', txt);
+//			console.debug('fromServer 1: ', txt);
 				
 			// 2. transform a single object to link+object resp. link+image:
 			//      For example, the ARCWAY Cockpit export uses this pattern:
@@ -344,12 +344,12 @@ function toXhtml( data, opts ) {
 					let d = withoutPath( $3 || u1 );
 						
 					e = e.toLowerCase();
-	//				console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
+//					console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
 
 					fi = itemBy( data.files, 'title', u1 ); // we assume that the referenced file exists
 					// ToDo: Check whether the referenced file exists
 					
-					console.log('*0',data.files,u1,fi);
+//					console.debug('*0',data.files,u1,fi);
 					if( opts.imgExtensions.indexOf( e )>-1 ) {  
 						// it is an image, show it:
 
@@ -358,7 +358,7 @@ function toXhtml( data, opts ) {
 							fi = itemBy( data.files, 'title', fileName(u1)+'.png' ) || fi
 						};
 						
-//						console.log('*2',u1,fi);
+//						console.debug('*2',u1,fi);
 						pushReferencedFile( fi );
 						d = '<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+d+'" />'
 //						d = '<object data="'+addEpubPath(u1)+'"'+t1+s1+' >'+d+'</object>
@@ -369,7 +369,7 @@ function toXhtml( data, opts ) {
 						};
 						if( fi ) {  
 							// It is an ole-file, so add a preview image;
-//							console.log('*3',u2,fi);
+//							console.debug('*3',u2,fi);
 							pushReferencedFile( fi );
 							d = '<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+d+'" />'
 //							d = '<object data="'+addEpubPath( fileName(u1) )+'.png" type="image/png" >'+d+'</object>'
@@ -465,7 +465,7 @@ function toXhtml( data, opts ) {
 			};
 
 		r = opts.classifyProperties( r, data );
-		console.debug('renderHierarchy',r);
+//		console.debug('renderHierarchy',r);
 		var ch = 	titleOf( r, params, opts )
 				+	propertiesOf( r, hi, opts )
 				+	statementsOf( r, hi, opts );
