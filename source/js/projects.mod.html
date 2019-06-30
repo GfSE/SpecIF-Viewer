@@ -1,8 +1,8 @@
 <script type="text/javascript">
 /*	ReqIF Server: Project Selection
 	Dependencies: jQuery 2.1+, knockout, bootstrap
-	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.com)
-	Author: se@enso-managers.com, Berlin
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
 
@@ -701,7 +701,7 @@ function ProjectsVM() {
 
 				// the description is sometimes used, but is rather irrelevant:
 				if( p.specs[i].description ) 
-					rP += 	'<div class="attribute attribute-content" >'+noCode(p.specs[i].description)+'</div>';
+					rP += 	'<div class="attribute attribute-wide" >'+noCode(p.specs[i].description)+'</div>';
 				
 /*				// so far, the server does not supply these in projects.read():						
 				for( var j=0,J=p.specs[i].attributes.length;j<J;j++ ) {

@@ -290,7 +290,7 @@ function Reports() {
 			var rs =	'<div class="row" >';
 			let lb;
 			list.forEach( function(li,i) {
-				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-bottom: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'
+				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-top: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'
 					+			'<h4>'+li.title+'</h4>'
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
@@ -343,8 +343,9 @@ function Reports() {
 		// so assemble a corresponding filter list to show them in the filter module.
 		// Add the primary filters in any case, even if they don't get a constraint.
 		var itm = self.list[rX],
-			fL = [{category: 'textSearch'}];   // fL: filter list
-		console.debug( 'countClicked', rX, cX, self.list, itm );
+	//		fL = [{category: 'textSearch'}];   // fL: filter list
+			fL = [];
+//		console.debug( 'countClicked', rX, cX, self.list, itm );
 		switch( itm.category ) {
 			case 'resourceClass':
 				fL.push({category: 'resourceClass', values: [itm.datasets[cX].id]});

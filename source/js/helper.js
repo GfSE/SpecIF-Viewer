@@ -17,12 +17,13 @@ function attrV( lbl, val, cssCl ) {
 			val = noCode( val.ctrl2HTML() )
 	else	val = '';
 	
-	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-content" >')+val+'</div>';
+	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>'
 }
 function textInput( lbl, val, typ, fn ) {  
 	// assemble a form for text input:
 //	console.debug('textInput 1',lbl,val,typ,fn);
+	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
 			val = noCode( val )
 	else 	val = '';
@@ -31,27 +32,37 @@ function textInput( lbl, val, typ, fn ) {
 			fn = ' oninput="'+fn+'"'
 	else 	fn = '';
 
-	let sH = lbl.simpleHash();
+	let sH = lbl.label.simpleHash(), fG, aC;
 	if( typeof(typ)=='string' && ['line','area'].indexOf(typ)>-1 ) 	
-			var fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
-	else	var fG = '<div class="attribute" >';				// for display field
+			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
+	else	fG = '<div class="attribute" >';				// for display field
 
-//	console.debug('textInput 2',lbl,val,typ,fn,fG);
-	fG += '<div class="attribute-label" >'+lbl+'</div>';
+//	console.debug('textInput 2',lbl.label,val,typ,fn,fG);
+	switch( lbl.display ) {
+		case 'none':
+			aC = 'attribute-wide';
+			break;
+		case 'left':
+			fG += '<div class="attribute-label" >'+lbl.label+'</div>';
+			aC = 'attribute-value'
+			break;
+		default:
+			return null
+	};
 	switch( typ ) {
 		case 'line':
-			fG += 	'<div class="attribute-value">' +
+			fG += 	'<div class="'+aC+'">' +
 						'<input type="text" id="field'+sH+'" class="form-control input-sm"'+fn+' value="'+val+'" />' +
 					'</div>'; 
 			break;
 		case 'area':
-			fG += 	'<div class="attribute-value">' +
+			fG += 	'<div class="'+aC+'">' +
 						'<textarea id="field'+sH+'" class="form-control" rows="7"'+fn+'>'+val+'</textarea>' +
 					'</div>'; 
 			break;
 		default:
 			// display the value:
-			fG += 	'<div id="field'+sH+'" class="attribute-value" style="font-size: 90%" >'+val.ctrl2HTML()+'</div>';
+			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val.ctrl2HTML()+'</div>';
 	};
 	fG += 	'</div>';
 	return fG
@@ -106,22 +117,36 @@ function getTextLength( lbl ) {
 				
 function radioInput( lbl, opts ) {
 	// assemble the form for a set of radio buttons:
-	var rB = 	'<div class="row form-group form-active">' +
-					'<label class="col-sm-3 control-label input-sm" >'+lbl+'</label>' +
-					'<div class="col-sm-9 radio" >';
-	let tp, chd;
-	for( var i=0,I=opts.length;i<I;i++ ) {
-		chd = (i==0)?'checked ':'';  // initialize with first option
-		tp = ( opts[i].type )?'&#160;('+opts[i].type+')':'';   // add type in brackets, if available
-		rB +=			'<div>' +
-							'<label>' +
-								'<input type="radio" name="radio'+lbl.simpleHash()+'" value="'+i+'" '+chd+'/>' +
-								'<span data-toggle="popover" title="'+opts[i].description+'" >'+(opts[i].title||titleOf(opts[i]))+tp+'</span>' +
-							'</label><br />' +
-						'</div>'
+	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
+	var rB;
+	switch( lbl.display ) {
+		case 'none': 
+			rB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+				+		'<div class="radio" >';
+			break;
+		case 'left': 
+			rB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+		//		+		'<label class="col-sm-3 control-label input-sm" >'+lbl.label+'</label>'  works!
+		//		+		'<div class="col-sm-9 radio" >';  works!
+				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
+				+		'<div class="attribute-value radio" >';
+			break;
+		default:
+			return null
 	};
-	rB +=			'</div>' +
-				'</div>';
+	let tp, chd, nm=lbl.label.simpleHash();
+	opts.forEach( function(o,i) {
+		chd = (i==0)?'checked ':'';  // initialize with first option
+		tp = ( o.type )?'&#160;('+o.type+')':'';   // add type in brackets, if available
+		rB +=			'<div>'
+			+				'<label>'
+			+					'<input type="radio" name="radio'+nm+'" value="'+i+'" '+chd+'/>'
+			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+(o.title||titleOf(o))+tp+'</span>'
+			+				'</label><br />'
+			+			'</div>'
+	});
+	rB +=			'</div>'
+		+		'</div>';
 	return rB
 }
 function radioValue( lbl ) {
@@ -132,30 +157,45 @@ function radioValue( lbl ) {
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked')[0].value
 }
 function checkboxInput( lbl, opts ) {
-	var cB = 	'<div class="row form-group form-active">' +
-					'<label class="col-sm-3 control-label input-sm" >'+lbl+'</label>' +
-					'<div class="col-sm-9 checkbox" >';
-	let tp;
-	for( var i=0,I=opts.length;i<I;i++ ) {
-		tp = ( opts[i].type )?'&#160;('+opts[i].type+')':'';   // add type in brackets, if available
-		cB +=			'<div>' +
-							'<label>' +
-								'<input type="checkbox" name="checkbox'+lbl.simpleHash()+'" value="'+i+'" />' +
-								'<span data-toggle="popover" title="'+opts[i].description+'" >'+(opts[i].title||titleOf(opts[i]))+tp+'</span>' +
-							'</label><br />' +
-						'</div>'
+	// assemble the form for a set of checkboxes;
+	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
+	var cB;
+	switch( lbl.display ) {
+		case 'none': 
+			cB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+				+		'<div class="checkbox" >';
+			break;
+		case 'left': 
+			cB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+		//		+		'<label class="col-sm-3 control-label input-sm" >'+lbl.label+'</label>'  works!
+		//		+		'<div class="col-sm-9 checkbox" >';  works!
+				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
+				+		'<div class="attribute-value checkbox" >';
+			break;
+		default:
+			return null
 	};
-	cB +=			'</div>' +
-				'</div>';
+	let tp, nm=lbl.label.simpleHash();;
+	opts.forEach( function(o,i) {
+		tp = o.type?'&#160;('+o.type+')':'';   // add type in brackets, if available
+		cB +=			'<div>'
+			+				'<label>'
+			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+i+'" '+(o.checked?'checked ':'')+'/>'
+			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+(o.title||titleOf(o))+tp+'</span>'
+			+				'</label><br />'
+			+			'</div>'
+	});
+	cB +=			'</div>'
+			+	'</div>';
 	return cB
 }
 function checkboxValues( lbl ) {
 	// get the selected check boxes as array with indices:
-	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked'),
-		i,I=chd.length;
+	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked');
 	var resL = [];
-	for( i=0;i<I;i++ )
-		resL.push( chd[i].value );
+	chd.forEach( function(i) {
+		resL.push( i.value )
+	});
 	return resL
 }
 function setStyle( sty ) {
@@ -317,7 +357,7 @@ function setContentHeight( opt ) {
 	//	pH = $('#app').height()-hH, // the remaining space below the header and tabs
 	//	pC = getCssVal($('.content').css("padding-top"))	// the padding of the container for content
 	//		|| getCssVal($('.contentWide').css("padding-top")),	// yields same result in case there is no .content
-	//	pS = getCssVal($('.selection').css("padding-top")),
+	//	pS = getCssVal($('.colLeft').css("padding-top")),
 
 	//	hC = pH+'px',  		// the available height for the content container
 	//	hT = pH-pS-8+'px',	// the available height for the tree
@@ -327,9 +367,9 @@ function setContentHeight( opt ) {
 
 	$('.content').outerHeight( pH );
 	$('.contentWide').outerHeight( pH );
-	$('.panel-tree').outerHeight( pH );
-	$('.panel-details').outerHeight( pH );
-//	$('.primaryFilters').height( hF );
+	$('.pane-tree').outerHeight( pH );
+	$('.pane-details').outerHeight( pH );
+	$('.pane-filter').outerHeight( pH );
 
 	// adjust the vertical position of the contentActions:
 	$('.contentCtrl').css( "top", hH );

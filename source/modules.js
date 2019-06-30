@@ -394,7 +394,7 @@ function ModuleManager() {
 				case CONFIG.reports: 		getScript( vPath+'/js/reports.js' ).done( function() {setReady(mod)} ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
-				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.js' ).done( function() {setReady(mod)} ); return true;
+				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export

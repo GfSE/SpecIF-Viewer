@@ -114,7 +114,6 @@ div.contentWide {
     box-sizing: border-box;
     width: 100%;
     overflow: auto;
-    padding: 8px 0 0 0;
 }
 /* for views with selector on the left: */
 div.content {   /* width is 75% with wide screen, 100% otherwise */
@@ -133,13 +132,13 @@ div.content-main {
     padding: 0;
 }
 /* selector on the left: */
-div.selection, 
+div.paneLeft, 
 /* column on the right for additional properties: */
 div.content-other {
 	display: none;
 }
 @media (min-width: 768px) {
-  div.selection {
+  div.paneLeft {
 	font-size: 90%;
 	display: inline-block;
 	margin-right: -4px;  
@@ -175,35 +174,36 @@ div.content-other {
     overflow-x: hidden;
   }
 }
-div.primaryFilters {
+/* div.primaryFilters {
     box-sizing: border-box;
     overflow: auto;
-}
-div.panel-filter {
-	background-color:#f5f5f5; 
-    box-sizing: border-box;
-	margin: 0 0 0.4em 0;
-	padding: 0.2em;
-}
+} 
 #secondaryFilters {
 	font-size: 90%;
 }
 #secondaryFilters div.panel-filter {
 	display: inline-block;
 	vertical-align: top;
-}
-div.panel-tree {
+} */
+div.pane-tree ,
+div.pane-filter {
 	background-color:#f5f5f5;
     box-sizing: border-box;
     overflow: auto;
 	padding: 8px 2px 2px 2px;
 }
-div.panel-details {
+div.pane-details {
 	display: none;
 	background-color:#ffffe0;
 	box-sizing: border-box;
 	overflow: auto;
 	padding: 8px 2px 2px 2px;
+}
+div.panel-filter {
+	background-color:#f5f5f5; 
+    box-sizing: border-box;
+	margin: 0 0 0.4em 0;
+	padding: 0.2em;
 }
 .listEntry {
 	border-bottom:1px solid #ddd;
@@ -215,9 +215,11 @@ div.attribute-condensed {
 	font-size:90%;
 	padding: 0 0 0.4em;
 }
-div.attribute-content {
+/* use total width to display the content: */
+div.attribute-wide {
 	width: 100%;
 }
+/* or use two blocks for label and value: */
 div.attribute-label {
 	display: inline-block;
 	margin-right: -4px;  
@@ -333,6 +335,10 @@ ul.nav-tabs {
 .nav > li.disabled,
 .nav > li.disabled > a {
   color: #ccc;
+}
+.checkbox {
+	margin-top: 0;
+	margin-bottom: 0;
 }
 .form-group,
 .form-horizontal .form-group {

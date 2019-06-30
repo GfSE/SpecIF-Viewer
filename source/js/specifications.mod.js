@@ -33,10 +33,10 @@ modules.construct({
 
 	let myName = self.loadAs || self.name,
 		myFullName = 'app.'+myName,
-		tabsWithLeftPanel = [ CONFIG.objectList, CONFIG.objectDetails, 'object', CONFIG.comments, CONFIG.objectRevisions, CONFIG.relations, 'linker' ],
+		tabsWithLeftPane = [ CONFIG.objectList, CONFIG.objectDetails, 'object', CONFIG.comments, CONFIG.objectRevisions, CONFIG.relations, 'linker' ],
 		tabsWithEditActions = [ CONFIG.objectList, CONFIG.objectDetails ];
 	// Return 'true', if the tab/view includes the hierarchy tree:
-	function isTabWithLeftPanel(tab) { return ( tabsWithLeftPanel.indexOf( tab || self.selectedTab() )>-1 ) }
+	function isTabWithLeftPanel(tab) { return ( tabsWithLeftPane.indexOf( tab || self.selectedTab() )>-1 ) }
 
 	self.selectedTab = function() {
 //		console.debug('selectedTab',self.viewCtl.selected);
@@ -77,27 +77,25 @@ modules.construct({
 		// initialize the module:
 //		console.debug( 'specs.init', self );
 		
-		let h = 
-		//		'<div id="specsBody">'
-					'<div class="selection">'
-			+			'<div id="hierarchy" class="panel-tree" />'
-			+			'<div id="details" class="panel-details" />'
+		//  Add the left panel for tree or details and the up/down buttons to the DOM:
+		let h = '<div class="paneLeft">'
+			+		'<div id="hierarchy" class="pane-tree" />'
+			+		'<div id="details" class="pane-details" />'
+			+	'</div>'
+			+	'<div class="contentCtrl" >'
+			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
+			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
+			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
 			+		'</div>'
-			+		'<div class="contentCtrl" >'
-			+			'<div id="navBtns" class="btn-group btn-group-sm" >'
-			+				'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
-			+				'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
-			+			'</div>'
-			+			'<div id="contentNotice" class="contentNotice" />'
-			+			'<div id="contentActions" class="btn-group btn-group-sm contentActions" />'
-			+		'</div>';
-		//	+	'</div>'
+			+		'<div id="contentNotice" class="contentNotice" />'
+			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" />'
+			+	'</div>';
 		if(self.selector)
 			$(self.selector).after( h )
 		else
 			$(self.view).prepend( h );
 
-		// construct jqTree,
+		// Construct jqTree,
 		// holds the hierarchy tree (or outline):
 		self.tree = new Tree({
 			loc: '#hierarchy',
@@ -194,7 +192,7 @@ modules.construct({
 		});
 		// controls whether the left panel with the tree or details is shown or not:
 		self.showLeft = new State({
-			showWhenSet: ['.selection','.contentCtrl'],
+			showWhenSet: ['.paneLeft','.contentCtrl'],
 			hideWhenSet: []
 		});
 		// controls whether the left panel shows tree or details (when showLeft is true):
@@ -282,14 +280,14 @@ modules.construct({
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
-				function mayHaveRelations( selO ) {
+				function mayHaveStatements( selO ) {
 //					if( selO ) console.debug( 'selO', selO );
 //					console.debug( 'relCreTypes', self.staCreTypes );
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
 					self.staCreTypes.forEach( function(sT) {   
 						creR = itemById( app.cache.statementClasses, sT );
-//						console.debug( 'mayHaveRelations', self.staCreTypes[s], creR, selO['class'] );
+//						console.debug( 'mayHaveStatements', self.staCreTypes[s], creR, selO['class'] );
 						if( 
 							// if creation mode is not specified or 'user' is listed, the statement may be applied to this resource:
 							( !creR.instantiation || creR.instantiation.indexOf( 'user' )>-1 )
@@ -300,7 +298,7 @@ modules.construct({
 					});
 					return false  // no statement is available for this resource for which the user has creation rights
 				};
-			self.staCre = mayHaveRelations( r )
+			self.staCre = mayHaveStatements( r )
 		} else {
 			noPerms()
 		}
@@ -390,7 +388,6 @@ modules.construct({
 			return oE
 		}
 	};
-//	self.loadHierarchy = function( idx, res ) {
 	self.loadHierarchy = function( idx ) {
 		// load the hierarchy with the index specified
 		// and add it to the list of hierarchies:
@@ -408,8 +405,6 @@ modules.construct({
 //				console.debug('load',rsp);
 				self.updateTree( itemById( app.cache.hierarchies, rsp.id ) );
 				if( !self.tree.firstNode() ) {
-					// tree has no entries, reset:
-				//	self.resources.init();
 					// Warn, if tree is empty and there are no resource classes for user instantiation:
 					if( !self.resCre )
 						message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
@@ -514,7 +509,7 @@ modules.construct({
 	function doRefresh( parms ) {
 		// Route execution depending on the current state (selected tab):
 		// This routine is called in the following situations:
-		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in an editing mode
+		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in editing mode
 		// - user clicks on a tab -> show the content in view mode 
 		// - cache update is signalled -> again, refresh only any content in view mode.
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
@@ -607,7 +602,7 @@ modules.construct({
 		// lazy loading: only a few resources are loaded from the server starting with the selected node
 		// only visible tree nodes are collected in oL (excluding those in closed folders ..), so the main column corresponds with the tree.
 		for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
-			oL.push({ id: nd.ref });  // nd.ref is the id of an resource to show
+			oL.push({ id: nd.ref });  // nd.ref is the id of a resource to show
 			nL.push( nd );
 			nd = nd.getNextNode()   // get next visible tree node
 		};
@@ -809,7 +804,7 @@ modules.construct({
 				// First the currently selected resource:
 				let sO=itemById( app.cache.resources, self.tree.selectedNode.ref );
 				if( !sO ) return;
-				// There is no need to have a relationType .... at least currently:
+				// There is no need to have a statementClass .... at least currently:
 //				var rT = itemByName( app.cache.statementClasses, 'SpecIF:mentions' );
 //				if( !rT ) return;
 				
@@ -953,7 +948,7 @@ modules.construct({
 	};
 
 	self.showRevisions = function( opts ) {
-		// Show all revisions of an resource and compare them:
+		// Show all revisions of a resource and compare them:
 		if( !self.tree.selectedNode ) self.tree.selectFirstNode();
 		if( !self.tree.selectedNode ) { emptyTab('revisions'); return };  // quit, because the tree is empty
 
@@ -985,7 +980,7 @@ modules.construct({
 								dT = dataTypeOf( app.cache, aV['class'] );
 								aV.value = enumValStr( dT, aV )
 							});
-							// arrange properties in a sequence corresponding to the objectType's propertyClasses:
+							// arrange properties in a sequence corresponding to the resourceClass's propertyClasses:
 							rev.properties = normalizeProps( sT.propertyClasses, rev.properties );
 							revL.push( rev );	// add response=revision to the list of revisions.
 							
@@ -1019,7 +1014,7 @@ modules.construct({
 									sT = itemById( app.cache.resourceClasses, chgO['class'] );
 									for( a=chgO.properties.length-1; a>-1; a--) {
 										chgA=chgO.properties[a];
-										dT = dataTypeOf( app.cache, chgA['class'] ); // ToDo: knowing the objectType of 'obj', this can be made more efficient
+										dT = dataTypeOf( app.cache, chgA['class'] ); // ToDo: knowing the resourceClass of 'obj', this can be made more efficient
 										// compare the properties and mark the differences:
 										switch( dT.type ) {
 											case 'xhtml':
@@ -1099,8 +1094,8 @@ modules.construct({
 
 		app.busy.set();
 		
-		app.filters.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
-		app.filters.show( filterList )
+		app.filter.init( function(){ self.showTab(CONFIG.specDialogDefault) } );  
+		app.filter.show( filterList )
 	};	
 	self.showReports = function() {
 		// Show statistics of the current spec:
@@ -1207,8 +1202,8 @@ modules.construct({
 	self.itemClicked = function( rId ) {
 		if( self.selectedTab() == CONFIG.objectRevisions || self.selectedTab() == CONFIG.comments ) return;
 
-		// When an resource is clicked in the resources (main row), select it and move it to the top.
-		// If it is an resource with children (folder with content), assure it is open.
+		// When a resource is clicked in the list (main row), select it and move it to the top.
+		// If it is a resource with children (folder with content), assure it is open.
 		// If it is already selected, at the top and open, then close it.
 		// So, after first selecting a node, it ends always up open at the top,
 		//     with further clicks it toggles between opened and closed.
@@ -1350,7 +1345,7 @@ modules.construct({
 			rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+app.cache.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
 	*/	
 		// Add the create button depending on the current user's permissions:
-		// In order to create an resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
+		// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
 	//	if( self.resCre && app.cache.selectedHierarchy.upd )
 	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 	//	else
@@ -1594,7 +1589,7 @@ function Resource( obj ) {
 						dynLinks: v,
 						clickableElements: v
 					};
-				rO += '<div class="attribute attribute-content">'+valOf(self.resToShow,ai,os)+'</div>'
+				rO += '<div class="attribute attribute-wide">'+valOf(self.resToShow,ai,os)+'</div>'
 			}
 		});
 		rO += 	'</div>' +  // end of content-main
@@ -1643,7 +1638,7 @@ function Resource( obj ) {
 						dynLinks: true,
 						clickableElements: true
 					};
-				rO += 	'<div class="attribute attribute-content">'+valOf(self.resToShow,ai,os)+'</div>'
+				rO += 	'<div class="attribute attribute-wide">'+valOf(self.resToShow,ai,os)+'</div>'
 			}
 		});
 		// 3 The remaining properties:
@@ -1860,7 +1855,7 @@ function Resources() {
 		self.values = [] 
 	};
 	self.push = function( el ) {
-		// append an resource to the list:
+		// append a resource to the list:
 		self.values.push( new Resource( el ) );
 		return true  // a change has been effected
 	};
@@ -2367,7 +2362,7 @@ var fileRef = {
 							};
 							return id	// no corresponding diagram found
 						}
-						// Add a viewBox in an SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+						// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
 						function addViewBoxIfMissing(svg) {
 							let el=null;
 							svg.childNodes.forEach( function(el) {

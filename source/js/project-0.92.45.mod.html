@@ -1,0 +1,1891 @@
+<script type="text/javascript">
+/*	ReqIF Server: Project Administration
+	Dependencies: jQuery, knockout, bootstrap,
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+*/
+	
+function ProjectVM() {
+	"use strict";
+	var self = this;
+	self.working = ko.observable(false);  // if true, the spinner is shown
+
+	self.availableRoles = ko.observableArray([]);
+	self.userRoles = ko.observableArray([]);
+	self.permissionsIdx = [];   // helps to sort the permission vectors in a sequence as defined by the specTypes
+	self.permissions = ko.observableArray([]);
+	self.permissionsAreEditable =  ko.observable(false);  // permission field is editable? (It depends also on the individual permission's 'upd'/'del' flags ..
+
+	// global actions are offered as buttons at the top right corner:
+	self.pageActions = [{
+/*		id: CONFIG.exportReqif,
+		label: i18n.BtnExportReqif,
+		fn: function() { specs.exportReqif() },
+		permission: function() { return myProject.exp },
+		classes: function() { return 'btn-default' }
+	},{ 
+		id: CONFIG.exportSpecif,
+		label: i18n.BtnExportSpecif,
+		fn: function() { specs.exportSpecif() },
+		permission: function() { return myProject.exp },
+		classes: function() { return 'btn-default' }
+	},{
+*/		id: 'export',
+		label: i18n.BtnExport,
+		fn: function() { projects.export() },
+		permission: function() { return myProject.exp },
+		classes: function() { return 'btn-default' }
+	}];
+
+	// The tab descriptors to build the HTML:
+	self.tabs = [{
+		id: 'projects',
+		label: i18n.TabAll,
+		classes: ko.pureComputed(function() { return (self.selectedTab()=='projects')?'active':'' }),
+		fn: function() { self.returnToCaller() }
+	},{ 
+		id: 'types',
+		label: i18n.TabTypes,
+		classes: ko.pureComputed(function() { return (self.selectedTab()=='types')?'active':'' }),
+		fn: function() { showTab('types') }
+	},{ 
+		id: CONFIG.permissions,
+		label: i18n.TabPermissions,
+		classes: ko.pureComputed(function() { return (userProfile.iAmAdmin( myProject )?'':'disabled')+((self.selectedTab()==CONFIG.permissions)?' active':'') }),
+		fn: function() { if(userProfile.iAmAdmin( myProject )) showTab(CONFIG.permissions) }
+	},{ 
+		id: CONFIG.projectUsers,
+		label: i18n.TabProjectUsers,
+		classes: ko.pureComputed(function() { return (userProfile.iAmAdmin( myProject )?'':'disabled')+((self.selectedTab()==CONFIG.projectUsers)?' active':'')}),
+		fn: function() { if(userProfile.iAmAdmin( myProject )) showTab(CONFIG.projectUsers) }	
+	}];
+	self.selectedTab = ko.observable(null);  // selected Tab/HTML template
+	function selectTab( dlg ) {
+		// skip, if no change:
+		if( self.selectedTab()==dlg ) return;
+		// else: set new dlg:
+		self.selectedTab(dlg)
+	}
+	function showTab( dlg ) {
+		// select the specified tab and refresh the view:
+		selectTab( dlg );
+		self.mode = 'read';
+		self.refresh()
+	}
+		
+	self.open = function( opt ) {
+//		console.debug( 'project.open',opt );
+		if( !opt || !opt.callback ) return false;
+		// init:
+		self.options = opt;
+		self.tree = new Tree( '#typeTree' );
+		self.views = new Views( [ 'dataTypesV', 'dataTypeV', 'specTypesV', 'specTypeV', 'projectUsersV', 'permissionsV', 'dataTypeE', 'specTypeE' ] );
+		self.typesComment = new StdTypes( myProject, new CommentTypes() );  // types needed for commenting, defined in stdTypes-*.js
+
+		return true
+	};
+	self.clear = function() {
+		self.availableRoles.removeAll();
+		self.permissionsIdx = [];
+		self.permissions.removeAll();
+		self.tree.init();
+		self.views.init();
+		myProject.clear();
+		// ToDo: clear all local variables.
+		// don't set self.working(false);
+	};
+	// module entry self.show() see further down
+	// module exit:
+	self.hide = function() {
+		self.working(false);
+		projects.busy.reset();
+		self.views.hide();
+		selectTab(null)
+	};
+	self.returnToCaller = function() {
+		self.hide();
+		self.clear();
+		self.updateHistory();	// otherwise the module is re-entered immediately
+		self.options.callback()
+	};
+	self.close = function() {
+		myProject.close();
+		self.hide();
+		self.clear()
+	};
+
+	self.updateHistory = function() {
+		if( !browser.supportsHtml5History ) return;
+//		console.debug( 'updateHistory0', myProject.id );
+
+		var path = window.location.pathname.split('/');  // get the path in pieces
+		var newState = path[path.length-1];   // last element is 'appname.html' (without query or hash string)
+
+		if( !myProject || !myProject.id ) {
+			history.pushState(null,null,newState);    
+			return
+		};
+
+		newState += '#'+CONFIG.keyPId+'/'+myProject.id+'/'+self.selectedTab();
+
+		// Get the current history status:
+		var quO = projectsUrlParams();
+		// Only in case of the types tab, the tree state (= selected node) is of importance:
+		if( self.selectedTab()=='types' && self.tree.selectedNode && self.tree.selectedNode.ref) {
+			// If equal, don't update the history to avoid double entries.
+			// This happens, for example, if the browser 'back' button is pressed:
+			if( quO.dlg==self.selectedTab() && quO.tid==self.tree.selectedNode.ref ) return;  
+			// else:
+			newState += '/'+self.tree.selectedNode.ref
+		} else {
+			// If equal, don't update the history to avoid double entries.
+			if( quO.dlg==self.selectedTab() && !quO.tid ) return;  
+		};
+
+		// update the browser history:
+//		console.debug( 'updateHistory', newState );
+		history.pushState(null,null,newState)    
+	};
+
+	// The module entry:
+	self.show = function( urlP ) {
+		if( urlP && urlP.pid ) {
+			var selP = {id: urlP.pid}
+		} else if( myProject && myProject.id ) { 
+			var selP = myProject
+		};
+//		console.debug( 'project.show', urlP, myProject, selP );
+		if( !selP ) return false;
+
+		self.mode = 'read';
+		self.working( true );
+		projects.busy.set();
+		$('#pageNotice').html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
+		myProject.read( selP )
+			.done( function(rsp) {
+				var urlP = projectsUrlParams();
+				if( urlP && urlP.dlg )
+					selectTab( urlP.dlg )
+				else
+					selectTab( CONFIG.projectDialogDefault );
+				
+				self.views.init();  			// suppress short appearance of edit forms
+				self.tree.selectedNode = null;	// assure that the page is properly built in all cases
+
+				$('#pageNotice').empty();
+				$('#pageTitle').html( i18n.IcoSpecification+'&#160;'+myProject.title );
+				buildTree();
+					
+				// in both cases refresh() will be called by the tree event handling:
+				if( urlP && urlP.tid && urlP.tid.length>0 )
+					self.tree.selectNodeByRef( {id: urlP.tid} )
+				else
+					self.tree.selectFirstNode();
+				self.working(false);
+				projects.busy.reset()
+			})
+			.fail( handleError )
+	};
+
+	// Multiple refresh requests in a short time are consolidated to a single refresh at the end.
+	// This reduces the server traffic considerably, for example if the user quickly traverses the tree. 
+	// Do finally refresh, if there has been no further request in a certain time period.
+	self.refresh = function() {
+		refreshReqCnt++;
+		setTimeout(function() { tryRefresh() }, CONFIG.noMultipleRefreshWithin )
+	};
+	var refreshReqCnt = 0;
+	function tryRefresh() {
+		refreshReqCnt--;
+		if( refreshReqCnt<1 ) doRefresh()
+	}
+	function doRefresh() {
+		// show any view only in self.mode == 'read'
+		// show respective table or detail view depending on the selectedNode
+		// in some cases the HTML content is added here, in others knockout is taking care.
+		let btns='';
+		self.updateHistory();
+		$( '#pageActions' ).html( self.pageActionBtns() );
+		switch( self.selectedTab() ) {
+			case CONFIG.permissions:	
+				$( '#typeSelection' ).hide();
+	//			$( '#navBtns' ).empty();
+	//			$( '#contentActions' ).empty();
+				$( '.contentCtrl' ).hide();
+				self.views.show( 'permissionsV' ); 
+				self.showPermissions();
+				break;
+			case CONFIG.projectUsers:	
+				$( '#typeSelection' ).hide();
+	//			$( '#navBtns' ).empty();
+	//			$( '#contentActions' ).empty();
+				$( '.contentCtrl' ).hide();
+				self.views.show( 'projectUsersV' ); 
+				self.showProjectUsers();
+				break;
+			case 'types': 
+				$( '#typeSelection' ).show();
+				$( '.contentCtrl' ).show();
+				$( '#navBtns' ).html( self.navBtns() );   // is '', unless self.mode=='read'
+				$( '#contentActions' ).html( self.actionBtns() );  // is '', unless self.mode=='read'
+				if( !self.tree.selectedNode ) return null;
+				switch( self.mode ) {
+					case 'read':		
+						self.showTypes();
+						break;
+					case 'create':
+						self.selectedType( self.tree.selectedNode.category );
+						switch( self.tree.selectedNode.category ) {
+							case 'dataType':			
+								self.views.show( 'dataTypeE' ); 
+								btns = self.dataTypeView.doneBtns();
+								$( '#contentActions' ).html( btns );   
+				//				$( '#doneBtns' ).html( btns );   
+								break;
+							case 'objectType':
+							case 'relationType':
+//							case 'relationGroupType':
+							case 'hierarchyType': 
+								self.views.show( 'specTypeE' ); 
+								btns = self.specTypeView.doneBtns();
+								$( '#contentActions' ).html( btns );   
+				//				$( '#doneBtns' ).html( btns );   
+//								break;
+						}
+				}
+		};
+		setContentHeight()
+	}
+
+	self.selectedType = ko.observable( null );
+	self.mode = 'read';
+	
+	self.showTypes = function() {
+		// mode = 'read', the project and the tree node are selected.
+
+		if( self.tree.selectedNode.ref ) {
+			// one of the individual data or spec types is selected, thus read from the server and show.
+			self.working(true);
+			projects.busy.set();
+			myProject.readContent( self.tree.selectedNode.category, {id: self.tree.selectedNode.ref} )
+				.done(function(rsp) {
+//					console.debug('showTypes',rsp.category,rsp);
+					if( rsp.category=='dataType') {
+						self.dataTypeView.set( itemById( myProject.dataTypes, self.tree.selectedNode.ref ) );
+						self.views.show( 'dataTypeV', self.dataTypeView.details() )
+					} else {
+						self.specTypeView.set( itemById( myProject.specTypes, self.tree.selectedNode.ref ) ); 
+						self.views.show( 'specTypeV', self.specTypeView.details() )
+					};
+					self.working(false);
+					projects.busy.reset()
+				})
+				.fail( handleError )
+		} else {
+			// folder is selected:
+			if( self.tree.selectedNode.category == 'dataType' ) {
+				// the datatypes folder is selected, thus show the table of datatypes:
+				self.views.show( 'dataTypesV', self.dataTypesView() )
+			} else {
+				// the spectypes folder is selected, thus show the table of spectypes:
+				self.views.show( 'specTypesV', self.specTypesView() )
+			}
+		}
+	}; 
+	self.tabTypes = function() {
+		return (self.selectedTab()=='types')
+	}; 
+
+	self.showPermissions = function() {
+
+		self.availableRoles.removeAll();
+		self.permissionsIdx = [];
+		self.permissions.removeAll();
+		self.working( true );
+		projects.busy.set();
+
+		var pend=0; // pending calls to find out when all responses have been received.
+		function handleRsp(rsp) { 
+			// Each permission set corresponds to a role.
+			rsp.idx = self.permissionsIdx.indexOf( rsp.itemRef );  // add index for sorting
+			var rs = rsp.sets;
+			// Don't show permissions for built-in roles which cannot be changed (General-Admin, Project-Admin and READER).				
+			// 'REQIF' is shown however, as it depends on the imported data (not yet implemented), it's permissions cannot be edited by the user.
+			for( var p=rs.length-1; p>-1; p-- ) {
+				if( server.isReservedRoleName(rs[p].roleRef) && rs[p].roleRef != i18n.LblRoleReqif ) { rs.splice( p,1 ) };
+			};
+			// indent title depending on the scope:
+			switch( rsp.scope ) {
+				case 'attributeType': 
+						rsp.title = '<div style="margin-left:8%; font-size:90%; color:#23527c; "><i>'+titleOf(rsp)+'</i></div>'; break;
+				case 'specType': 
+						rsp.title = '<div style="margin-left: 4%;">'+titleWithIcon(itemById(myProject.specTypes,rsp.itemRef))+'</div>'; break;
+				case 'project': 
+						rsp.title = i18n.LblProject
+			};
+			// sort the roles alphabetically:
+			rs.sort(function(laurel, hardy) { return laurel.roleRef==hardy.roleRef ? 0 : (laurel.roleRef<hardy.roleRef ? -1 : 1) });
+			self.permissions.push( rsp );
+
+			if( rsp.idx == 0 ) {  // just do it once ... 
+				for( var i= 0, I=rs.length; i<I; i++ ) { self.availableRoles.push( { role: rs[i].roleRef } ) }  // get role names for table header
+			};
+
+			if( --pend<1 ) {  // if all responses have been received:
+				// sort the permissions according to the specTypes:
+				self.permissions.sort(function(laurel, hardy) { return laurel.idx == hardy.idx ? 0 : (laurel.idx < hardy.idx ? -1 : 1) });
+				self.working( false );
+				projects.busy.reset()
+			}
+		};
+		
+		// 1. get project permissions:
+				// create an index of permission vectors in a sequence corresponding to the specTypes:
+				self.permissionsIdx.push(myProject.id);
+				// get the permissions at project level:
+				pend++;
+				server.project( myProject ).permissions().read()
+					.done( handleRsp )
+					.fail( handleError );
+		// 2. get permissions of specTypes:
+		let a=null, A=null;
+		for( var t=0,T=myProject.specTypes.length;t<T;t++ ) {
+				self.permissionsIdx.push(myProject.specTypes[t].id);
+				pend++;
+				server.project( myProject ).specType( myProject.specTypes[t] ).permissions().read()
+					.done( handleRsp )
+					.fail( handleError );
+		// 3. per specType, get permissions of attributeTypes:
+			A=myProject.specTypes[t].attributeTypes.length;
+			for( a=0;a<A;a++ ) {
+				self.permissionsIdx.push(myProject.specTypes[t].attributeTypes[a].id);
+				pend++;
+				server.project( myProject ).specType().attributeType( myProject.specTypes[t].attributeTypes[a] ).permissions().read()
+					.done( handleRsp )
+					.fail( handleError );
+			}
+		}
+	};
+/*	self.tabPermissions = ko.pureComputed(function() {
+		return (self.selectedTab() === CONFIG.permissions);
+	}); 
+*/
+	self.showProjectUsers = function() {
+		self.availableRoles.removeAll();
+		self.userRoles.removeAll();
+		self.readUserRoles();
+		self.readAvailableRoles()
+	};
+
+	function loadTree( jqTr ) {
+			function initTree( tr ) { 
+			// similar to specifications-0.x.y.mod.html
+				// initialize the tree
+				$('#typeTree').tree(
+					{ data: tr,
+//					dragAndDrop: self.movPermitted() }
+					dragAndDrop: false }
+				);
+
+				// bind the handlers to tree events:
+				$('#typeTree').on(
+					'tree.select',  // when a node is clicked or traversed by up/down keys
+					function(event) {  // The clicked node is 'event.node'
+//						console.debug( 'selected node: ',event.node );
+						// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree element ;-):
+						self.mode = 'read';
+						self.tree.selectedNode = event.node;
+						self.refresh()
+					}
+				)
+			};
+		if( !self.tree.get() ) {
+			// on first entry, initialize:
+//			console.debug( 'initTree', jqTr );
+			return initTree( jqTr )
+		} else {
+			// on subsequent entries, just load the tree:
+//			console.debug( 'loadTree', jqTr );
+			return self.tree.load( jqTr )
+		}
+	}
+	function buildTree() {
+		// Build a tree from all types listed in their respective cache
+//		console.debug( 'buildTree' );
+
+		var jqTreeData = [];   
+			// Add a list of dataTypes or specTypes to the tree:
+			function pushTr( t, lb, cg ) { // type, name, category
+//				console.debug('pushTr',t,lb,cg);
+				var trE =
+					{ name: lb.stripHTML(),
+					category: cg,
+					ref: null,
+					children: [] };
+				for( var i=0, I=t.length; i<I; i++ ) {
+					trE.children.push({
+						name: titleOf(t[i]).stripHTML(), 
+						category: cg,
+						ref: t[i].id   
+					})
+				};
+				jqTreeData.push( trE )
+			};
+							
+		// 1. Create the tree entries for all dataTypes:
+		pushTr( myProject.dataTypes, i18n.LblDataTypes, 'dataType' );
+				
+		// 2. Determine whether it is a RIF file.
+		// In case of RIF, all specTypes have a common category ("rifType").
+		// We will not modify the types, in this case.
+		self.isRIF = myProject.specTypes.length>myProject.objTypes.length+myProject.relTypes.length+myProject.spcTypes.length;
+
+		// 3. Build the tree for all specTypes, sorted by category.
+		if( self.isRIF ) {
+			// it is a RIF file:
+			// Actually, the hierarchy type has been qualified when reading the hierarchy (which is part of the project response), but we ignore it here:
+			pushTr( myProject.specTypes, i18n.LblRifTypes, 'rifType' )
+		} else {
+			// it is a ReqIF or SpecIF file:
+			// show each category, even without members:
+			pushTr( myProject.objTypes, i18n.LblObjectTypes, 'objectType' );
+			pushTr( myProject.relTypes, i18n.LblRelationTypes, 'relationType' );
+//			pushTr( myProject.grpTypes, i18n.LblRelGroupTypes, 'relationGroupType' );
+			pushTr( myProject.spcTypes, i18n.LblSpecificationTypes, 'hierarchyType' )
+		};
+
+		loadTree( jqTreeData )
+	}
+
+	self.dataTypesView = function() {
+//		if( !self.dataTypesSelected() ) return '';
+		// Show a table of all dataTypes:
+		message.show();
+		var lst = myProject.dataTypes;					// types to render in the table
+		var rT = '<div class="chapterTitle" >'+i18n.TabDataTypes+'</div>'; 
+		rT += 	'<div class="panel panel-default">' +
+					'<table class="table table-striped table-condensed">' +
+						'<thead><tr><th>'+i18n.LblName+'</th><th>'+i18n.LblType+'</th><th>'+i18n.LblDescription+'</th></tr></thead>' +
+						'<tbody>';
+		// list all types:
+		for( var i=0,I=lst.length;i<I;i++ ) {
+			rT +=			'<tr>' +
+//								'<td style="vertical-align: middle"><div class="objectTitle" >'+lst[i].title+'</div></td>' +
+								'<td style="vertical-align: middle"><span>'+titleOf(lst[i])+'</span></td>' +
+								'<td class="force_word_break" style="vertical-align: middle"><span>'+fullDataType(lst[i])+'</span></td>' +
+								'<td style="vertical-align: middle"><span>'+lst[i].description+'</span></td>' +
+							'</tr>'
+		};
+		rT += 			'</tbody>' +
+					'</table>' +
+				'</div>';
+		return rT.reduceWhiteSpace() 	// return rendered table of types for display
+	}; 
+	self.specTypesView = function() {
+		// Show a table of all specTypes of a certain category (object, relation, specification or other types, depending on the selected tree element):
+		message.show();
+		switch( self.tree.selectedNode.category ) {  
+			case 'objectType':
+				var lst = myProject.objTypes;					// types to render in the table
+				var rT = '<div class="chapterTitle" >'+i18n.TabObjectTypes+'</div>';  	// rT: rendered table
+				break;
+			case 'relationType':
+				var lst = myProject.relTypes;		
+				var rT = '<div class="chapterTitle" >'+i18n.TabRelationTypes+'</div>'; 
+				break;
+/*			case 'relationGroupType':
+				var lst = myProject.grpTypes;		
+				var rT = '<div class="chapterTitle" >'+i18n.TabRelGroupTypes+'</div>'; 
+				break;
+*/			case 'hierarchyType':
+				var lst = myProject.spcTypes;	
+				var rT = '<div class="chapterTitle" >'+i18n.TabSpecificationTypes+'</div>'; 
+				break;
+			case 'rifType':
+				var lst = myProject.specTypes;
+				var rT = '<div class="chapterTitle" >'+i18n.TabRifTypes+'</div>'; 
+				break;
+			default: return '';  // this should never happen.
+		};
+
+		rT += 	'<div class="panel panel-default">' +
+					'<table class="table table-striped table-condensed">' +
+						'<thead><tr><th>'+i18n.LblTitle+' / '+i18n.LblDescription+'</th><th><table style="width:100%"><tr><th style="width:40%">'+i18n.LblAttributeTitle+'</th><th style="width:30%">'+i18n.LblDataTypeTitle+'</th><th>'+i18n.LblDataType+'</th></tr></table></th></tr></thead>' +
+						'<tbody>';
+		// list all types:
+		let t=null,aT=null,dT=null,j=null,J=null;
+		for( var i=0,I=lst.length; i<I; i++ ) {
+			t = lst[i];
+			if( !t.description ) { t.description = '' };
+			rT +=			'<tr>' +
+								'<td style="vertical-align: middle; width:40%"><div class="objectTitle" >'+titleWithIcon(t)+'</div><span>'+t.description+'</span></td>' +
+								'<td style="vertical-align: middle">';
+			if( t.attributeTypes ) {
+				rT +=					'<table style="width:100%">';
+				// list all attributes of the type:
+				for( j=0,J=t.attributeTypes.length; j<J; j++ ) {
+					aT = t.attributeTypes[j];
+					dT = itemById( myProject.dataTypes, aT.dataType );
+					rT += 					'<tr><td style="width:40%"><i><small>'+titleOf(aT)+'</small></i></td>' +
+											// get more properties from the original dataType:
+											'<td style="width:30%">'+titleOf(dT)+'</td>'+
+											'<td>'+fullDataType(dT,aT.multiple)+'</td></tr>'	// aT.multiple overrides dataType.multiple
+				};
+				rT +=					'</table>';
+			};
+			rT +=					'</td>' +
+							'</tr>'
+		};
+		rT += 			'</tbody>' +
+					'</table>' +
+				'</div>';
+		return rT.reduceWhiteSpace() 	// return rendered table of types for display
+	}; 
+
+	function DataTypeVM() {
+		// View and edit all variables of the datatype dialog.
+		var self = this;
+		// The dataType 'TEXT' is equal to 'STRING' in terms of ReqIF; it is introduced for this app. 
+		// The server does not know it, therefore it is not included in allDataTypes, here.
+		// Here, a textarea is offered for editing the 'TEXT' and an input field for editing a 'STRING'.
+		// 'TEXT' is assumed, if the string length is >CONFIG.textThreshold.
+		self.allDataTypes = ['STRING', 'XHTML', 'ENUMERATION', 'BOOLEAN', 'INTEGER', 'REAL', 'DATETIME'];
+		self.value = ko.observable(null);  // value of the currently selected datatype
+		// edit fields for the properties:
+		self.longNameE = ko.observable('');
+		self.descE = ko.observable('');
+		self.typeE = ko.observable(null);
+		self.maxLengthE = ko.observable(null);
+		self.minValueE = ko.observable(null);
+		self.maxValueE = ko.observable(null);
+		self.accuracyE = ko.observable(null);
+		self.enumsE = ko.observable(null);
+		self.multipleE = ko.observable(null);
+
+			function enumValues2Str( eVs ) {
+				// return the enum values in a CSV string:
+				return forAll( eVs, function(el) {return el.title} ).toString().replace(/,/g,', ')
+			}
+		self.set = function( c ) {
+			if( !c || !c.longName ) { 
+				// create a new type:
+				c = { 
+					id: null,
+//					title: '',
+					longName: '',
+					description: '', 
+					category: 'dataType',
+					type: 'STRING',
+					maxLength: CONFIG.textThreshold
+				};
+				project.mode = 'create'
+			} else {
+				project.mode = 'read'
+			};
+//			console.debug( 'dataTypeView.set', project.mode, c );
+			self.value(c);
+			// preset the edit fields with the current values:
+			self.longNameE(c.longName);
+			self.descE(c.description);
+			self.typeE(c.type);
+			self.maxLengthE(null);
+			self.accuracyE(null);
+			self.minValueE(null);
+			self.maxValueE(null);
+			self.enumsE(null);
+			self.multipleE(null);
+			switch( c.type ) {
+				case 'XHTML':
+				case 'STRING':  	self.maxLengthE( c.maxLength||CONFIG.maxStringLength ); break;
+				case 'REAL':		self.accuracyE( c.accuracy );  // no break
+				case 'INTEGER': 	self.minValueE( c.min );
+									self.maxValueE( c.max ); break;
+				case 'ENUMERATION':	self.enumsE( enumValues2Str(c.values) ); 
+									self.multipleE( c.multiple||false ); break
+			}
+		};
+		self.longNameValidClass = ko.pureComputed(function() {
+			return ( self.longNameE().length ) ? "has-success" : "has-error"
+		});
+/*		self.descriptionValidClass = ko.pureComputed(function() {
+			return "has-success";
+		});
+*/		self.enumsValid = ko.pureComputed(function() {
+			if( !self.enumsE() ) return false;
+			let ok = RE.CSV.test( self.enumsE() ),
+				vals = self.enumsE().split(',');
+			for( var i=0, I=vals.length; ok && i<I; i++ ) {
+				ok = ok && vals[i].trim().length>0
+			};
+			return ok
+		});
+		self.enumsValidClass = ko.pureComputed(function() {
+			return ( self.enumsValid() ) ? "has-success" : "has-error"
+		});
+		self.maxLengthValid = ko.pureComputed(function() {
+			return ( self.maxLengthE()>0 && self.maxLengthE()<=CONFIG.maxStringLength )
+		});
+		self.maxLengthValidClass = ko.pureComputed(function() {
+			return ( self.maxLengthValid() ) ? "has-success" : "has-error"
+		});
+		self.minIntegerValid = ko.pureComputed(function() {
+			return ( RE.Integer.test( self.minValueE() ) && self.minValueE()>=CONFIG.minInteger && self.minValueE()<=CONFIG.maxInteger)
+		});
+		self.minIntegerValidClass = ko.pureComputed(function() {
+			return ( self.minIntegerValid() ) ? "has-success" : "has-error"
+		});
+		self.maxIntegerValid = ko.pureComputed(function() {
+			return ( RE.Integer.test( self.maxValueE() ) && self.maxValueE()-self.minValueE()>=0 && self.maxValueE()<=CONFIG.maxInteger )
+		});
+		self.maxIntegerValidClass = ko.pureComputed(function() {
+			return ( self.maxIntegerValid() ) ? "has-success" : "has-error"
+		});
+		self.minRealValid = ko.pureComputed(function() {
+			return ( RE.Real( CONFIG.maxAccuracy ).test( self.minValueE() ) && self.minValueE()>=CONFIG.minReal && self.minValueE()<=CONFIG.maxReal);
+		});
+		self.minRealValidClass = ko.pureComputed(function() {
+			return ( self.minRealValid() ) ? "has-success" : "has-error";
+		});
+		self.maxRealValid = ko.pureComputed(function() {
+			return ( RE.Real( CONFIG.maxAccuracy ).test( self.maxValueE() ) && self.maxValueE()-self.minValueE()>=0 && self.maxValueE()<=CONFIG.maxReal )
+		});
+		self.maxRealValidClass = ko.pureComputed(function() {
+			return ( self.maxRealValid() ) ? "has-success" : "has-error"
+		});
+		self.accuracyValid = ko.pureComputed(function() {
+			return ( self.accuracyE()>0 && self.accuracyE()<=CONFIG.maxAccuracy )
+		});
+		self.accuracyValidClass = ko.pureComputed(function() {
+			return ( self.accuracyValid() ) ? "has-success" : "has-error"
+		});
+		self.allValid = ko.pureComputed(function() {
+			if( !self.value() ) return false;
+			var ok = self.longNameE().length>0;
+			switch( self.typeE() ) {
+				case 'XHTML':
+				case 'STRING':	ok = ok && self.maxLengthValid(); break;
+				case 'REAL':	ok = ok && self.accuracyValid()
+										&& self.minRealValid()
+										&& self.maxRealValid(); break;
+				case 'INTEGER':	ok = ok && self.minIntegerValid()
+										&& self.maxIntegerValid(); break;
+				case 'ENUMERATION':	ok = ok && self.enumsValid(); break;
+			};
+			return ok
+		});
+		self.details = function() {
+			if( project.mode!='read' || !self.value() ) return '';
+			var t = self.value();
+//			console.debug( 'dataType details', t );
+
+			var rT = '<div class="title1">'+titleOf(t)+'</div>';
+			rT += attrV( i18n.LblDescription, t.description )
+			rT += attrV( i18n.LblCategory, i18n.lookup(t.category) );
+			rT += attrV( i18n.LblType, fullDataType(t) );
+			switch( t.type ) {
+				case 'XHTML':
+				case 'STRING':		rT += attrV( i18n.LblMaxLength, t.maxLength ); 
+									break;
+				case 'REAL':		rT += attrV( i18n.LblAccuracy, t.accuracy );  
+									// no break
+				case 'INTEGER':		rT += attrV( i18n.LblMinValue, t.min ) +
+										  attrV( i18n.LblMaxValue, t.max ); 
+									break;
+				case 'ENUMERATION':	rT += attrV( i18n.LblEnumValues, enumValues2Str(t.values) );
+									break
+			};
+			rT += attrV( i18n.LblIdentifier, t.id );
+			rT += attrV( i18n.LblModifiedAt, localDateTime(t.changedAt) );
+			if( t.changedBy ) rT += attrV( i18n.LblModifiedBy, t.changedBy );
+			return rT
+		};
+		self.save = function() {
+			// ToDo: Check whether title/longName is unique among dataTypes
+			// ToDo: rework for update; server does not allow it yet, though.
+			function valID(j) {
+				return 'V-'+self.longNameE().toJsId()+'-'+j
+			};
+
+			let dT = {
+				id: null,
+				longName: self.longNameE(),
+				description: self.descE(),
+				category: 'dataType',
+				type: self.typeE()
+			};
+			switch( dT.type ) {
+				case 'XHTML':
+				case 'STRING':  	dT.maxLength = self.maxLengthE(); 
+									break;
+				case 'REAL':		dT.accuracy = self.accuracyE();  // no break
+				case 'INTEGER': 	dT.min = self.minValueE();
+									dT.max = self.maxValueE(); 
+									break;
+				// a simple solution, as long as there is no update:
+				case 'ENUMERATION':	dT.values = [];
+									let vals = self.enumsE().split(',');
+									for( var i=0,I=vals.length;i<I;i++ ) {
+										dT.values.push({title: vals[i].trim(), id: valID(i)})
+									};
+									dT.multiple = self.multipleE()
+			};
+			
+			if( !dT.id ) { dT.id = genID('DT-') };
+//			console.debug( 'dataTypeView.save', dT );
+			self.value( dT );
+
+			// Save to the server:
+			switch( project.mode ) {
+				case 'create': myProject.createContent( 'dataType', dT )
+									.done( function() { 
+												buildTree();
+												project.tree.selectNodeByRef( project.dataTypeView.value() );
+												project.refresh()
+									})
+									.fail( handleError );
+									break;
+//				case 'update': myProject.updateContent( 'dataType', dT )
+//									.done( handleRsp )
+//									.fail( handleError );
+//									break;
+			};
+//			console.debug( 'dataTypeV.save', self.value(), self.longNameE(), self.descE(), self.typeE() );
+		};
+		self.cancel = function() {
+			// Reset to original values:
+			self.set( itemById( myProject.dataTypes, project.tree.selectedNode.ref ) )
+			project.mode = 'read';
+			project.refresh()
+		};
+		self.doneBtns = function() {
+			return '<button class="btn btn-default" onclick="project.dataTypeView.cancel()" >'+i18n.BtnCancel+'</button>'
+//					+ '<button class="btn btn-primary" onclick="project.dataTypeView.save()" '+(project.dataTypeView.allValid()?'':'disabled')+' >'+i18n.BtnSave+'</button>'
+		};
+		return self
+	};
+	self.dataTypeView = new DataTypeVM();
+	
+	function SpecTypeVM() {
+		// View and edit all variables of the specType dialog.
+		var self = this;
+		self.value = ko.observable(null);  // value of the currently selected specType
+		// edit fields for the properties:
+		self.longNameE = ko.observable('');
+		self.descE = ko.observable('');
+		self.iconE = ko.observable('');
+		self.instantiationE = [{	
+			title: 'auto',  	// ToDo: put a translated label, here
+			description: 'Objects of this type are created under program control',
+			value: 'auto',
+			selected: ko.observable(false)
+		},{	
+			title: 'user',	// ToDo: put a translated label, here
+			description: 'Objects of this type can be created manually',
+			value: 'user',
+			selected: ko.observable(false)
+		}];
+		self.sourcesE = ko.observableArray([]);
+		self.targetsE = ko.observableArray([]);
+		function initE( c ) {
+			self.longNameE('');
+			self.descE('');
+			self.iconE('');
+			for( var i=self.instantiationE.length-1;i>-1;i-- ) 
+				self.instantiationE[i].selected(false);
+			self.sourcesE.removeAll();
+			self.targetsE.removeAll();
+			for( var j=0,J=myProject.objTypes.length;j<J;j++ ) {
+				// data for sources and targets must be distinct:
+				self.sourcesE.push( {
+						title: titleOf(myProject.objTypes[j]),  	
+						description: myProject.objTypes[j].description,
+//						value: myProject.objTypes[j].longName,
+						// now, the reference is made by id:
+						// The reference will break, when server function "Create project from template" is used.
+						value: myProject.objTypes[j].id,
+						selected: ko.observable(false)
+				} );
+				self.targetsE.push( {
+						title: titleOf(myProject.objTypes[j]),  	
+						description: myProject.objTypes[j].description,
+//						value: myProject.objTypes[j].longName,
+						// now, the reference is made by id:
+						// The reference will break, when server function "Create project from template" is used.
+						value: myProject.objTypes[j].id,
+						selected: ko.observable(false)
+				} )
+			}
+		};
+		self.set = function( c ) {
+			initE();
+			if( !c || !c.longName ) { 
+				// create a new type:
+				c = { 
+					id: null,
+//					title: '',
+					longName: '',
+					description: '', 
+					category: project.tree.selectedNode.category,
+					instantiation: [],
+					attributeTypes: []
+				};
+				switch( c.category ) {
+//					case 'specType':			break;
+					case 'objectType':			c.icon = '';
+												break;
+					case 'relationType':		c.sources = [];
+												c.targets = [];
+												break;
+//					case 'relationGroupType':	break;
+//					case 'hierarchyType':		
+				};
+				project.mode = 'create'
+			} else {
+				project.mode = 'read'
+			};
+			self.value(c);
+//			console.debug( 'specTypeView.set', c, self.value() );
+			// preset the edit fields with the current values:
+			self.longNameE(c.longName);
+			self.descE(c.description);
+			self.iconE(c.icon);
+			for( var i=self.instantiationE.length-1;i>-1;i-- ) { 
+				if( c.instantiation && c.instantiation.indexOf( self.instantiationE[i].value )>-1 ) { self.instantiationE[i].selected(true) }
+				else { self.instantiationE[i].selected(false) }
+			};
+			for( i=self.sourcesE().length-1;i>-1;i-- ) { 
+				if( c.sources && c.sources.indexOf( self.sourcesE()[i].value )>-1 ) { self.sourcesE()[i].selected(true) }
+				else { self.sourcesE()[i].selected(false) }
+			};
+			for( i=self.targetsE().length-1;i>-1;i-- ) { 
+				if( c.targets && c.targets.indexOf( self.targetsE()[i].value )>-1 ) { self.targetsE()[i].selected(true) }
+				else { self.targetsE()[i].selected(false) }
+			}
+		};
+		self.iconValid = ko.pureComputed(function() {
+			return !self.iconE() || RE.Icon.test( self.iconE() )
+		});
+		self.iconValidClass = ko.pureComputed(function() {
+			return self.iconValid() ? "has-success" : "has-error"
+		});
+		self.longNameValidClass = ko.pureComputed(function() {
+			return self.longNameE().length>0 ? "has-success" : "has-error"
+		});
+//		self.descriptionValidClass = ko.pureComputed(function() {
+//			return "has-success"
+//		});
+		self.allValid = ko.pureComputed(function() {
+			return self.longNameE() && self.iconValid()
+		});
+
+		self.details = function() {
+			if( project.mode!='read' || !self.value() ) return '';
+//			console.debug('details',self.value());
+			var t = self.value();
+			if( t.category=='objectType' && !t.attributeTypes.length ) {
+				message.show( i18n.MsgTypeNoAttribute, 'warning', CONFIG.messageDisplayTimeNormal )
+			} else
+				message.show();
+
+			var rT = 	'<div class="title1" >'+titleWithIcon(t)+'</div>';
+			rT += 		'<div class="listEntry" role="form">';
+			rT += attrV( i18n.LblDescription, t.description );
+			rT += attrV( i18n.LblLongName, t.longName );
+			rT += attrV( i18n.LblCategory, i18n.lookup(t.category) );
+			if( t.icon )
+				rT += attrV( i18n.LblIcon, t.icon );
+			if( t.instantiation && t.instantiation.length>0 )
+				rT += attrV( i18n.LblCreation, t.instantiation.toString().replace(/,/,', ') );
+			// sourceValues and targetValues may appear only for relationTypes. Ingnore for all other categories.
+			if( t.category=='relationType' ) {
+				let nS='';
+				if( t.sources && t.sources.length>0 ) {
+					// make a string of the list item titles, add commata between titles:
+					t.sources.forEach(function(el) {nS+=(nS.length?', ':'')+titleWithIcon(itemById(myProject.objTypes,el))});
+					rT += attrV( i18n.LblEligibleSources, nS )
+				} else { 
+					rT += attrV( i18n.LblEligibleSources, '<i>'+i18n.LblAllObjects+'</i>' )
+				};
+				if( t.targets && t.targets.length>0 ) {
+					nS='';
+					t.targets.forEach(function(el) {nS+=(nS.length?', ':'')+titleWithIcon(itemById(myProject.objTypes,el))});
+					rT += attrV( i18n.LblEligibleTargets, nS )
+				} else {
+					rT += attrV( i18n.LblEligibleTargets, '<i>'+i18n.LblAllObjects+'</i>' )
+				}
+			};
+			rT += attrV( i18n.LblIdentifier, t.id );
+			rT += attrV( i18n.LblModifiedAt, localDateTime(t.changedAt) );
+			if( t.changedBy )
+				rT += attrV( i18n.LblModifiedBy, t.changedBy );
+			rT += 		'</div>';
+			if( t.category!='relationType' ) {
+				// for the time being, attributes for relations are not supported
+				if( userProfile.iAmAdmin(myProject) )
+					rT += 	'<button onclick="project.specTypeView.createAttribute( null )" class="btn btn-default btn-xs pull-right" style="margin-top:10px" >'+i18n.BtnAddAttribute+'</button>';
+				// show the heading, if either there are attributes to show or the user is admin, so that he can create the first attribute:
+				if( t.attributeTypes ) {
+					if( t.attributeTypes.length>0 || userProfile.iAmAdmin(myProject) )
+						rT += 	'<div class="title2" >'+i18n.LblAttributes+'</div>';
+					let atT=null, dT=null;
+					for( var i=0,I=t.attributeTypes.length; i<I; i++ ) {
+						atT = t.attributeTypes[i];
+						rT += 	'<div class="listEntry" style="margin-left: 5%">';
+						if( userProfile.iAmAdmin(myProject) ) {
+							rT += 	'<div class="btn-group btn-group-xs pull-right" style="margin-top:5px" >' +
+										'<button onclick="project.specTypeView.createAttribute(\''+atT.id+'\')" class="btn btn-default btn-xs" >'+i18n.BtnAddAttribute+'</button>' +
+										'<button onclick="project.specTypeView.deleteAttribute(\''+atT.id+'\')" class="btn btn-danger btn-xs" >'+i18n.IcoDelete+'</button>' +
+									'</div>'
+						};
+						dT = itemById( myProject.dataTypes, atT.dataType );
+						rT += 	'<div class="attributeTitle" >'+titleOf(atT)+'</div>' +
+									attrV( i18n.LblDescription, atT.description ) +
+									attrV( i18n.LblLongName, atT.longName ) +
+									// show some more properties and get them from the original dataType:
+									attrV( i18n.LblDataTypeTitle, titleOf(dT) ) +
+									attrV( i18n.LblDataType, fullDataType(dT,atT.multiple) ) +
+								'</div>'
+					}
+				}
+			};
+//			console.debug( 'specTypeView.details', rT );
+			return rT  // return rendered object for display
+		};
+		self.createAttribute = function( itmID ) {
+			// using bootstrap dialogs with jQuery:
+			var dlg2 = new BootstrapDialog({
+				title: i18n.LblAddAttribute,
+				type: 'type-success',
+				message: function (thisDlg) {
+					var form = $('<form id="attrInput" role="form" class="form-horizontal" ></form>');
+					form.append( textInput( i18n.LblLongName, '', 'line' ) );
+					form.append( textInput( i18n.LblDescription, '', 'line' ) );
+					form.append( radioInput( i18n.LblDataType, myProject.dataTypes ) );
+					return form },
+				buttons: [{
+					label: i18n.BtnCancel,
+					action: function(thisDlg){ thisDlg.close() }
+				},{
+					label: i18n.BtnSaveAttr,
+					cssClass: 'btn-success', 
+					action: function (thisDlg) {
+							// ToDo: Check whether title/longName is unique
+							var aD = {
+								longName: textValue(i18n.LblLongName),
+								description: textValue(i18n.LblDescription),
+								specType: project.tree.selectedNode.ref,
+								dataType: myProject.dataTypes[ radioValue( i18n.LblDataType ) ].id
+							};
+							if( itmID ) aD.predecessor = itmID;
+							// ToDo: Replace server call by call to myProject.updateContent
+							myProject.createContent('attributeType',aD)
+								.done( self.read )  // get the updated specType from the server and update the view
+								.fail( handleError );
+						
+							thisDlg.close();
+					}
+				}]
+			})
+			.open()
+		};
+		self.deleteAttribute = function( itmID ) {
+//			console.debug( 'deleteAttr', itmID );
+			// ToDo: Replace server call by call to myProject.updateContent
+//			server.project( myProject ).specType().attributeType( {id: itmID} ).remove()
+			myProject.deleteContent('attributeType',{id: itmID, specType: project.tree.selectedNode.ref})
+				.done( self.read )  // get the updated specType from the server and update the view
+				.fail( function(xhr) {
+						switch(xhr.status) {
+							case 972: 
+								message.show( i18n.Err400TypeIsInUse, 'warning', CONFIG.messageDisplayTimeNormal );
+								return;
+							default:
+								handleError(xhr) 
+						}
+				})
+		};
+		self.read = function() {
+			myProject.readContent( self.value().category, self.value(), true )	// true: reload to obtain new attributes
+				.done( function(rsp) {
+					self.set( rsp );
+					project.refresh()
+				})
+				.fail( handleError );
+		};
+		self.save = function() {
+			// ToDo: Check whether title/longName is unique among specTypes
+			// ToDo: rework for update; server does not allow it yet, though.
+/*			function handleRsp() {
+			};
+*/
+			var sT = {
+				id: null,
+				longName: self.longNameE(),
+				description: self.descE(),
+				category: self.value().category,
+				instantiation: [],
+				attributeTypes: []
+			};
+			let i=null, I=null;
+//			console.debug( 'specTypeView.save 0', sT );
+			for( i=0,I=self.instantiationE.length;i<I;i++ ) {
+				if( self.instantiationE[i].selected() )  { sT.instantiation.push( self.instantiationE[i].value )  }
+			};
+			
+			switch( sT.category ) {
+//				case 'specType:			
+				case 'objectType':			
+					var pfx = 'RT-'; 
+					sT.icon = self.iconE().trim(); 
+					if( CONFIG.headingAttributes.indexOf(sT.longName)>-1 ) sT.isHeading = true;
+					break;
+				case 'relationType':		
+					var pfx = 'ST-',
+						scs = [],
+						tgs = [];
+					// create lists with permissible source resp. target types, only if they have at least one value:
+					// 'no list' means that all types are permissible.
+					I=self.sourcesE().length;
+					for( i=0;i<I;i++ ) {
+						if( self.sourcesE()[i].selected() )  { scs.push( self.sourcesE()[i].value )  }
+					};
+					if( scs.length>0 ) sT.sources = scs;
+					I=self.targetsE().length;
+					for( i=0;i<I;i++ ) {
+						if( self.targetsE()[i].selected() )  { tgs.push( self.targetsE()[i].value )  }
+					};
+					if( tgs.length>0 ) sT.targets = tgs;
+					break;
+//				case 'relationGroupType':		
+//					var pfx = 'GT-'; break;
+				case 'hierarchyType':		
+					var pfx = 'HT-'
+			};
+			if( !sT.id ) { sT.id = genID(pfx) };
+//			console.debug( 'specTypeView.save', sT );
+			self.value( sT );
+
+			// Save to the server:
+			switch( project.mode ) {
+				case 'create': myProject.createContent( sT.category, sT )
+					.done( function() {
+								if( sT.category=='objectType' )
+									message.show( i18n.MsgTypeNoAttribute, 'info', CONFIG.messageDisplayTimeNormal );
+								buildTree();
+								project.tree.selectNodeByRef( project.specTypeView.value() );
+								project.refresh()
+					})
+					.fail( handleError );
+					break;
+//				case 'update': myProject.updateContent( sT.category, sT )
+//					.done( handleRsp )
+//					.fail( handleError );
+//					break;
+			}
+		};
+		self.cancel = function() {
+			// Reset to original values:
+			self.set( itemById( myProject.specTypes, project.tree.selectedNode.ref ) );
+			project.mode = 'read';
+			project.refresh()
+		};
+		self.doneBtns = function() {
+			return '<button class="btn btn-default" onclick="project.specTypeView.cancel()" >'+i18n.BtnCancel+'</button>'
+//					+ '<button class="btn btn-primary" onclick="project.specTypeView.save()" '+(project.specTypeView.allValid()?'':'disabled')+' >'+i18n.BtnSave+'</button>'
+		};
+		return self
+	};
+	self.specTypeView = new SpecTypeVM();
+		
+	self.readAvailableRoles = function() {
+		server.project( myProject ).roles().read()
+			.done(function(rsp) {
+//				console.debug( 'readAvailableRoles', JSON.stringify( rsp));
+				// rsp is {roles: [{role: ADMIN}, {role: READER}, ..]}
+				self.availableRoles( rsp.roles )
+			})
+			.fail( handleError )
+	};
+	self.readUserRoles = function() {
+		self.userRoles.removeAll();
+		return server.usersWithRoles().read()
+			.done( function(rsp) {
+//				console.debug( 'readUserRoles', JSON.stringify( rsp));
+				// rsp is { users: [{userName: un, .., projectRoles: [{id: id, role: rl}, ..]}, ..]}
+				let ur=null,j=null;
+				for( var i=0, I=rsp.users.length; i<I; i++ ) {  // iterate users
+					ur =  { userName: rsp.users[i].userName,
+							firstName: rsp.users[i].firstName,
+							lastName: rsp.users[i].lastName,
+							// the role may be changed by user-input, therefore it is made observable:
+							role: ko.observable('') };
+					for( j=rsp.users[i].projectRoles.length-1; j>-1; j-- ) {   // iterate projects
+						// check if the selected project is listed for the given user:
+						if( rsp.users[i].projectRoles[j].id === myProject.id ) {
+							ur.role( rsp.users[i].projectRoles[j].role )
+						}
+					};
+					self.userRoles.push( ur )
+				}
+			})
+			.fail( handleError )
+	};
+	self.createUserRole = function( ur, rl ) {
+		console.info( "Creating role '"+rl+"' for "+ur.userName );
+		ur.role( rl );
+		return server.project( myProject ).userRole( {userName: ur.userName, role: ur.role()} ).create()
+			.fail( handleError )
+	};
+	self.removeUserRole = function( ur ) {
+		// ToDo: confirm deletion, if it is the last ProjectAdmin role of the current user, as he is going to get locked out.
+		var rl = ur.role();
+		ur.role( '' );
+		console.info( "Deleting role '"+rl+"' of "+ur.userName );
+		return server.project( myProject ).userRole( {userName: ur.userName, role: rl} ).remove()
+			.fail( handleError )
+	};
+		function handleRoleRsp(xhr,rN) {
+//			console.debug( 'handleRoleRsp', xhr, rN );
+			switch( xhr.status ) {
+				case 200:
+				case 201:
+					self.showPermissions();
+					return 
+				case 409: 			// name conflict
+					message.show( xhr.statusText + " (" + xhr.status + "): " + i18n.phrase('MsgRoleNameConflict', rN ), 'warning', CONFIG.messageDisplayTimeNormal )
+					return;   
+			};
+			handleError( xhr )
+		}
+	self.createRole = function() {
+		// ToDo: Check if role name is valid upon input
+		var $form=null, $rName=null;
+		var dlg1 = new BootstrapDialog({
+			title: i18n.MsgChooseRoleName,
+			type: 'type-success',
+			message: function (thisDlg) {
+				$form = $('<form id="inputRoleName"></form>');
+				$rName = $('<input type="text" class="form-control input-sm"/>');
+				thisDlg.setData('roleName', $rName);   // Put it in dialog's data container then you can get it easier by using dialog.getData() later.
+				$form.append($rName);
+				return $form },
+			buttons: [{
+				label: i18n.BtnCancel,
+				action: function(thisDlg){ thisDlg.close() }
+			},{
+				label: i18n.BtnSaveRole,
+				cssClass: 'btn-success', 
+				action: function (thisDlg) {
+					var rN = thisDlg.getData('roleName').val();
+					if( rN.length && server.validateRoleName( rN ) ) {
+						console.info( "Creating role '"+rN+"'" );
+						server.project( myProject ).role( rN ).create()
+							.fail( function(xhr) {handleRoleRsp(xhr,rN)} );  // also called when OK!
+						thisDlg.close();
+					} else {
+						$form.append('<div class="notice-danger">'+i18n.phrase('ErrInvalidRoleName',rN)+'</div>')
+					}
+				}
+			}]
+		})
+		.open();			
+//		$('#myModal').on('shown.bs.modal', function () { $('#myInput').focus(); })  // set focus to input field
+	};
+	self.removeRole = function( rl ) {
+		var dlg = new BootstrapDialog({
+			title: i18n.MsgConfirm,
+			type: 'type-danger',
+			message: i18n.phrase( 'MsgConfirmRoleDeletion', rl.role ),
+			buttons: [{
+				label: i18n.BtnCancel,
+				action: function(thisDlg){ thisDlg.close() }
+			},{
+				label: i18n.BtnDelete,
+				cssClass: 'btn-danger', 
+				action: function (thisDlg) {
+					console.info( "Deleting role '"+rl.role+"'." );
+					server.project( myProject ).role( rl.role ).remove()
+						.fail( function(xhr) {handleRoleRsp(xhr,rl.role)} );  // also called when OK!
+					thisDlg.close()
+				}
+			}]
+		})
+		.open()		
+	};
+	
+	self.permissionClicked = function( itmIdx, setIdx, prm ) {  // react on click-event
+		// first, create a temporary data array:
+		var tmp = [];   // temporary storage for the updates 
+		for( var i=0, I=self.permissions().length; i<I; i++) { tmp.push( self.permissions()[i] ) };  
+	
+		function copyPermission(s,t) { // 's'ource, 't'arget with permission
+			// Copy the permission from (s.p) to (t.p):
+			t.create = s.create;
+			t.read = s.read;
+			t.update = s.update;
+			t._delete = s._delete
+		}
+		function inheritingFromIdx(tIdx) { // type index of the clicked permission set (line index).
+			// find out from which element the clicked one will inherit
+			if( !tIdx || tIdx == 0 ) return null;
+			switch( self.permissions()[tIdx].scope ) {   // scope of the clicked item
+//					case 'project': break; // project level is never inheriting from anybody else.
+					case 'specType': 
+						// Inherit from the project, which is always in the first position:
+						return 0;
+					case 'attributeType':
+						// Get the index of the preceding specType. 
+						// The permission vector can be used no matter whether the specType is inheriting it itself.
+						if( tIdx<2 ) return null;  // this should never happen. First comes the project and then a specType.
+						for( var i=tIdx-1; i>0; i-- ) {
+							// Return the index of the parent:
+							if( self.permissions()[i].scope == 'specType' ) return i
+						};
+			};
+			return null   // this should never happen. There is a specType in front of an attributeType.
+		}
+		function updateInheritingPermissionSetVMs(tIdx,rIdx,pm) { // s*: source line, t*: target line, r*: role, pm: permission
+			// Update the view corresponding to how the server behaves 
+			// ... rather than getting all permissions anew from the server (which would yield the same result).
+			// - only update the permission set of the respective role specified by rIdx.
+			// - only update, if the permission set is inheriting from the initiating instance.
+			// - update only the CRUD permission flags, don't touch the other properties.
+			var scpClk = tmp[tIdx].scope;  // Scope of the clicked permission set
+
+			// Update inheriting specTypes and attributeDefs ( all lines starting after the clicked item)
+			// - When the caller's scope is 'project', go to the end of the list. 
+			// - If it is 'specType' just continue until the next specType is encountered, to update only dependent attributeDefs:
+			var sI = true;  // when going down the list, memorize inheritance of last specType for use with dependent attributeDefs.
+			for( var i=tIdx+1, I=tmp.length; i<I && ( scpClk == 'project' || (scpClk == 'specType' && tmp[i].scope == 'attributeType') ); i++) { 
+				switch( tmp[i].scope ) {
+//					case 'project': break; // project level is never inheriting
+					case 'specType': 
+						sI = tmp[i].sets[rIdx].inherited;
+//						if( sI ) { copyPermission( tmp[tIdx].sets[rIdx], tmp[i].sets[rIdx], 'CRUD') };
+						if( sI ) { copyPermission( tmp[tIdx].sets[rIdx], tmp[i].sets[rIdx] ) };
+						break;
+					case 'attributeType': 
+//						if( sI && tmp[i].sets[rIdx].inherited ) { copyPermission( tmp[tIdx].sets[rIdx], tmp[i].sets[rIdx], 'CRUD') };
+						if( sI && tmp[i].sets[rIdx].inherited ) { copyPermission( tmp[tIdx].sets[rIdx], tmp[i].sets[rIdx] ) };
+						break
+				}
+			}
+		}
+		function forceVisualUpdate() {
+//			self.permissions.valueHasMutated(); // .. doesn't work
+//			self.permissions(tmp); // .. doesn't work either
+			self.permissions.removeAll();
+			for( var i=0, I=tmp.length; i<I; i++) { self.permissions.push( tmp[i] ) }   // the hard way works ...
+		}
+	
+		// Here the main click handling of the permission table starts, finally:
+		var rl = tmp[itmIdx].sets[setIdx].roleRef;
+		var pS = tmp[itmIdx].sets[setIdx];
+		// If the caller's inherit flag has been set (we are seeing the value after the click), 
+		// - delete it's permission set in the server (so it is inheriting its permissions) and
+		// - search the parent's permission set to update the views of the caller and it's inheriting items.
+		if( prm=='I' && self.permissions()[itmIdx].sets[setIdx].inherited ) {
+			// The inherit flag has just been set.
+			switch( self.permissions()[itmIdx].scope ) {
+				//case 'project': break; // project level is never inheriting
+				case 'specType': 
+					server.project( myProject ).specType( {id: pS.itemRef} ).role( rl ).permissions().remove()
+						.fail( handleError );
+
+					// Now update the views to reflect the behavior of the server:
+					// A specType can only inherit from the project which is at the top of the list:
+					// - First, the item must get the permission set from its parent, the project:
+//					copyPermission( tmp[0].sets[setIdx], tmp[itmIdx].sets[setIdx], 'CRUD');
+					copyPermission( tmp[0].sets[setIdx], tmp[itmIdx].sets[setIdx] );
+					// - Then update the depending items:
+					updateInheritingPermissionSetVMs( itmIdx, setIdx, prm );
+					break;
+				case 'attributeType': 
+					server.project( myProject ).specType().attributeType( {id: pS.itemRef} ).role( rl ).permissions().remove()
+						.fail( handleError );
+					
+					// Now update the views to reflect the behavior of the server:
+					var srcIdx = inheritingFromIdx( itmIdx );
+//					copyPermission( tmp[srcIdx].sets[setIdx], tmp[itmIdx].sets[setIdx], 'CRUD' );  // update the clicked item with parent permissions
+					copyPermission( tmp[srcIdx].sets[setIdx], tmp[itmIdx].sets[setIdx] );  // update the clicked item with parent permissions
+					// An attribute is last in the hierarchy; no need to look for inheriting items.
+					break
+			};
+			forceVisualUpdate();
+			return true  // return 'true' so that the browser will update the clicked checkbox visually.
+		};
+		// If the caller's inherit flag has been reset (we are seeing the value after the click), 
+		// - Set the permissions explicitly which had been in effect by inheritance, before:
+		if( prm=='I' /*&& !self.permissions()[itmIdx].sets[setIdx].inherited*/ ) {
+			// The inherit flag has just been reset.
+			switch( self.permissions()[itmIdx].scope ) {
+				//case 'project': break; // project level has no inherit flag
+				case 'specType': 
+					// store the permission set which had been in effect by inheritance, before:
+					server.project( myProject ).specType( {id: pS.itemRef} ).role( rl ).permissions( pS ).update()
+						.fail( handleError );
+					break;
+				case 'attributeType': 
+					server.project( myProject ).specType().attributeType( {id: pS.itemRef} ).role( rl ).permissions( pS ).update()
+						.fail( handleError );
+					break;
+			};
+			forceVisualUpdate();
+			return true  // return 'true' so that the browser will update the clicked checkbox visually.
+		};
+		// If the caller is not inheriting (we are seeing the value after the click), 
+		// - update the server with the stored permission set and
+		// - clear it's inherit flag, because now the permissions are defined at this level
+		// - update the views of the caller's inheriting items.
+		tmp[itmIdx].sets[setIdx].inherited = false;
+//		console.debug( JSON.stringify( pS ) );
+		switch( tmp[itmIdx].scope ) {
+			case 'project': 
+				server.project( myProject ).role( rl ).permissions( pS ).update()
+					.fail( handleError );
+				// Now update the views to reflect the behavior of the server:
+				updateInheritingPermissionSetVMs( itmIdx, setIdx, prm );   // parent, clicked, permission
+				break;
+			case 'specType': 
+				server.project( myProject ).specType( {id: pS.itemRef} ).role( rl ).permissions( pS ).update()
+					.fail( handleError );
+				// Now update the views to reflect the behavior of the server:
+				updateInheritingPermissionSetVMs( itmIdx, setIdx, prm );   // parent, clicked, permission
+				break;
+			case 'attributeType': 
+				server.project( myProject ).specType().attributeType( {id: pS.itemRef} ).role( rl ).permissions( pS ).update()
+					.fail( handleError );
+				break
+		};
+		forceVisualUpdate();
+		return true  // return 'true' so that the browser will update the clicked checkbox visually.
+	};
+
+	self.pageActionBtns = function() {
+		if( userProfile.userName == CONFIG.userNameAnonymous ) return '';
+		var rB = '';
+		for( var a=0,A=self.pageActions.length;a<A;a++ ) {
+			if( self.pageActions[a].permission() )
+				rB += '<a class="btn '+self.pageActions[a].classes()+'" onclick="project.pageActions['+a+'].fn()">'+self.pageActions[a].label+'</a>'
+		};
+		return rB
+	};
+	self.cloneClicked = function() {
+		switch( self.selectedTab() ) {
+			case 'types':
+				console.info( 'Cloning '+titleOf(self.tree.selectedNode) );
+				switch( self.tree.selectedNode.category ) {
+					case 'dataType':  		
+											self.dataTypeView.set(self.tree.selectedNode);   // clone the selected dataType
+											break;
+					case 'objectType':
+					case 'relationType':
+//					case 'relationGroupType':
+					case 'hierarchyType':
+											self.specTypeView.set(self.tree.selectedNode)   // clone the selected specType
+				}
+		};
+		self.refresh()
+	};
+	self.createClicked = function() {
+		switch( self.selectedTab() ) {
+			case 'types':
+				console.info( 'Creating '+self.tree.selectedNode.category );
+				switch( self.tree.selectedNode.category ) {
+					case 'dataType':  		
+											self.dataTypeView.set();   // no argument: create a new dataType
+											break;
+					case 'objectType':
+					case 'relationType':
+//					case 'relationGroupType':
+					case 'hierarchyType':
+											self.specTypeView.set()   // no argument: create a new specType of the same category
+				}
+		};
+		self.refresh()
+	};
+	self.createCmtClicked = function() {
+//		console.debug( 'self.createCmtClicked' );
+		self.typesComment.update()		// add or update the comment types to the project
+			.done( function() {
+				// post-processing
+				buildTree();
+				// look for the object type used for comments and select/show it:
+				let n = indexByName( myProject.objTypes, CONFIG.objTypeComment )
+				if( n>-1 ) self.tree.selectNodeByRef( {id: myProject.objTypes[n].id} );
+				message.show( i18n.MsgTypesCommentAvailable, 'success', CONFIG.messageDisplayTimeNormal )
+			})
+			.fail( handleError )
+	};
+	self.deleteClicked = function() {
+		function handleDelRsp() {
+			var pNd = self.tree.selectedNode.getPreviousNode();  // is null, if nd is first node
+			self.tree.removeNode( self.tree.selectedNode );  
+			if( pNd ) {
+				var nNd = pNd.getNextNode();
+				if( !nNd ) { nNd = pNd }    // in case the last node has been deleted
+			} else {
+				var nNd = self.tree.firstNode()
+			};
+			self.tree.selectNode( nNd )
+		}
+
+		switch( self.selectedTab() ) {
+			case 'types':
+				if( !self.tree.selectedNode || !self.tree.selectedNode.ref ) return;
+//				console.info( 'Deleting '+ self.tree.selectedNode.ref );
+		
+				myProject.deleteContent( self.tree.selectedNode.category, {id: self.tree.selectedNode.ref} )
+					.done( handleDelRsp )
+					.fail( handleError )
+		}
+	};
+	self.navBtns = function() {
+		if( self.mode!='read' || !self.tabTypes() ) return '';
+		var rB = '<button class="btn btn-default" onclick="project.previousClicked()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>' + // rendered buttons
+				'<button class="btn btn-default" onclick="project.nextClicked()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>';
+
+		return rB	// return rendered buttons for display
+	};
+	self.actionBtns = function() {
+		if( self.mode!='read' || !self.tabTypes() || self.isRIF ) return '';
+
+		var rB = '';  // rendered buttons
+		// Add the create button depending on the current user's permissions:
+		if( userProfile.iAmAdmin(myProject) && !self.typesComment.available() )
+			rB = '<button class="btn btn-success" data-toggle="popover" onclick="project.createCmtClicked()" title="'+i18n.LblAddTypeComment+'" >'+i18n.BtnAddTypeComment+'</button>';
+		// Add the active button if permission is given and a folder or type is selected:
+		if( userProfile.iAmAdmin(myProject) && self.tree.selectedNode ) {
+			rB += '<button class="btn btn-success" data-toggle="popover" onclick="project.createClicked()" title="'+i18n.LblAddType+'" >'+i18n.IcoAdd+'</button>';
+		} else {
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
+		};
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>'
+
+		// Add the active button if permission is given and a type is selected (not a folder);
+		// also, do not allow deletion of types for comments:
+		if( userProfile.iAmAdmin(myProject) && self.tree.selectedNode && self.tree.selectedNode.ref ) {
+//			rB += '<button class="btn btn-success" data-toggle="popover" onclick="project.cloneClicked()" title="'+i18n.LblClone+'" >'+i18n.IcoClone+'</button>'
+//			rB += '<button class="btn btn-default" data-toggle="popover" onclick="project.updateClicked()" title="'+i18n.LblUpdate+'" >'+i18n.IcoUpdate+'</button>';
+			rB += '<button class="btn btn-danger" data-toggle="popover" onclick="project.deleteClicked()" title="'+i18n.LblDeleteType+'" >'+i18n.IcoDelete+'</button>';
+		} else {
+//			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>'
+//			rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>'
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>'
+		};
+		return rB	// return rendered buttons for display
+	};
+	self.previousClicked = function() {
+		self.tree.moveUp()
+	};
+	self.nextClicked = function() {
+		self.tree.moveDown()
+	};
+	return self
+
+	function titleWithIcon(t) { 
+		return (CONFIG.addIconToType&&t.icon?titleOf(t).addIcon( t.icon ):titleOf(t))
+	}
+	function fullDataType(dT,aTmult) {
+//		console.debug('fullDataType',dT,aTmult);
+		if( aTmult==undefined)
+			return dT.type+(dT.type=="ENUMERATION"?'&#160;('+(dT.multiple?i18n.LblMultipleChoice:i18n.LblSingleChoice)+')':'');
+		return dT.type+(dT.type=="ENUMERATION"?'&#160;('+(aTmult?i18n.LblMultipleChoice:i18n.LblSingleChoice)+')':'')
+	}
+	function handleError(xhr) {
+//		console.debug( 'project: handle error ',xhr.status );
+		self.working( false );
+		projects.busy.reset();
+		switch( xhr.status ) {
+			case 200:
+			case 201:
+				return;	// no returnToCaller
+			case 400:  	
+				message.show( xhr.statusText + " (" + xhr.status + "): "+i18n.Err400TypeIsInUse, 'warning', CONFIG.messageDisplayTimeNormal ); 
+				return;	// no returnToCaller
+			case 500:
+				// this occurs in rare cases with HSQLDB and is just ignored, so don't hide the view and continue ....
+//				message.show( "(" + xhr.status + "): " + i18n.ErrInvalidData, 'danger', CONFIG.messageDisplayTimeNormal );
+				console.error( xhr.statusText + " (" + xhr.status + "): " + xhr.responseText );
+				return;	// no returnToCaller
+			case 403:	// Forbidden, if the user is not an admin
+				message.show( xhr.statusText + " (" + xhr.status + "): "+i18n.MsgProjectMgmtNeedsAdminRole, 'warning', CONFIG.messageDisplayTimeNormal );
+				break;
+			case 404:	// not found
+				projects.clearHistory();
+				// no break, show standard message
+			default:
+				stdError(xhr)
+		};
+		self.returnToCaller()
+	}
+};
+var project = new ProjectVM();
+ko.applyBindings( project, $('#project')[0] );   
+
+</script>
+
+<!-- ko if: selectedTab -->
+<div id="projectHeader" class="pageHeader" >
+	<div id="pageActions" class="btn-group btn-group-sm pageActions"/>
+	<div id="pageTitle" class="pageTitle"/>
+	<ul id="projectTabs" role="tablist" class="nav nav-tabs" data-bind="foreach: tabs" >
+		<li data-bind="css: classes, click: fn"><a href="#" data-bind="html: label"></a></li>
+	</ul>
+</div>
+
+<div id="projectBody">
+	<div id="typeSelection" class="selection" >
+		<div id="typeTree" class="panel panel-default panel-tree" />
+	</div>
+
+	<div class="contentCtrl" >
+		<div id="navBtns" class="btn-group btn-group-sm"/>
+		<div id="contentActions" class="btn-group btn-group-sm contentActions"/>
+	</div>
+
+	<div id="dataTypesV" class="content" /><!-- The table of data-types rendered by dataTypesView() -->
+	<div id="dataTypeV" class="content" /><!-- The selected of data-type rendered by dataTypeView.details() -->
+	<div id="specTypesV" class="content" /><!-- The table of spec-types rendered by specTypesView() -->
+	<div id="specTypeV" class="content" /><!-- The selected of spec-type rendered by specTypeView.details() -->
+
+	<!-- create a new data-type by dataTypeView: -->
+	<div id="dataTypeE" class="content">
+		<div class="title3 notice-primary" data-bind="html: i18n.LblAddDataType" ></div>
+		<form class="form-horizontal" role="form">
+				<div class="row form-group form-active" data-bind="css: dataTypeView.longNameValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblTitle"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.longNameE" />
+					</div>
+				</div>
+				<div class="row form-group form-active has-success" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblDescription"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.descE" />
+					</div>
+				</div>
+				<div class="row form-group">
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblCategory"></label>
+					<div class="col-sm-9" style="margin-top: 0.4em" data-bind="html: i18n.LblDataType" ></div>
+				</div>
+				<div class="row form-group form-active" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblType"></label>
+					<div class="col-sm-9 radio">
+						<!-- ko foreach: dataTypeView.allDataTypes -->
+							<label><input type="radio" name= "dataTypeR" data-bind="checked: $root.dataTypeView.typeE, checkedValue: $data" /><span data-bind="html: $data"></span></label><br />
+						<!-- /ko -->
+					</div>
+				</div>
+			<!-- ko if: dataTypeView.typeE()=='STRING' || dataTypeView.typeE()=='XHTML' -->
+				<div class="row form-group form-active" data-bind="css: dataTypeView.maxLengthValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblMaxLength"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.maxLengthE" />
+					</div>
+				</div>
+			<!-- /ko -->
+			<!-- ko if: dataTypeView.typeE()=='INTEGER' -->
+				<div class="row form-group form-active" data-bind="css: dataTypeView.minIntegerValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblMinValue"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.minValueE" />
+					</div>
+				</div>
+				<div class="row form-group form-active" data-bind="css: dataTypeView.maxIntegerValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblMaxValue"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.maxValueE" />
+					</div>
+				</div>
+			<!-- /ko -->
+			<!-- ko if: dataTypeView.typeE()=='REAL' -->
+				<div class="row form-group form-active" data-bind="css: dataTypeView.minRealValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblMinValue"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.minValueE" />
+					</div>
+				</div>
+				<div class="row form-group form-active" data-bind="css: dataTypeView.maxRealValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblMaxValue"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.maxValueE" />
+					</div>
+				</div>
+				<div class="row form-group form-active" data-bind="css: dataTypeView.accuracyValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblAccuracy"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.accuracyE" />
+					</div>
+				</div>
+			<!-- /ko -->
+			<!-- ko if: dataTypeView.typeE()=='ENUMERATION' -->
+				<div class="row form-group form-active" data-bind="css: dataTypeView.enumsValidClass" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblEnumValues"></label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control input-sm" data-bind="textInput: dataTypeView.enumsE" />
+					</div>
+				</div>
+				<div class="row form-group form-active" >
+					<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblMultipleChoice"></label>
+					<div class="col-sm-9 checkbox">
+						<label><input type="checkbox" data-bind="checked: dataTypeView.multipleE" ></input></label>
+					</div>
+				</div>
+			<!-- /ko -->
+		</form>
+		<!--<div id="doneBtns" class="btn-group btn-group-sm doneBtns" ></div>-->
+		<div class="doneBtns" >
+			<button data-bind="click: dataTypeView.cancel, html: i18n.BtnCancel" class="btn btn-default btn-sm" />
+			<button data-bind="click: dataTypeView.save, html: i18n.BtnSave, enable: dataTypeView.allValid" class="btn btn-primary btn-sm" />
+		</div>
+	</div>  <!-- id="dataTypeE" -->
+
+	<!-- create a new spec-type by specTypeView: -->
+	<div id="specTypeE" class="content">
+		<!-- ko if: selectedType()=='objectType' -->			
+		<div class="title3 notice-primary" data-bind="html: i18n.LblAddObjType" ></div>
+		<!-- /ko -->
+		<!-- ko if: selectedType()=='relationType' -->			
+		<div class="title3 notice-primary" data-bind="html: i18n.LblAddRelType" ></div>
+		<!-- /ko -->
+		<!-- ko if: selectedType()=='hierarchyType' -->			
+		<div class="title3 notice-primary" data-bind="html: i18n.LblAddSpcType" ></div>
+		<!-- /ko -->
+		<form class="form-horizontal" role="form">
+			<!--<div class="form-group">
+				<label class="col-sm-2 control-label input-sm" data-bind="html: i18n.LblObjectType"></label>
+				<div class="col-sm-10 btn-group" data-bind="html: i18n.LblObjectType">
+					<button data-bind="html: title, css: { active: $parent.selectedObjType().id == id }, click: function() {$parent.switchObjType( $data )}" class="btn btn-default btn-sm"></button>
+				</div>
+			</div>-->
+			<div class="form-group form-active" data-bind="css: specTypeView.longNameValidClass" >
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblLongName"></label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control input-sm" data-bind="textInput: specTypeView.longNameE" />
+				</div>
+			</div>
+			<div class="form-group form-active has-success" >
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblDescription"></label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control input-sm" data-bind="textInput: specTypeView.descE" />
+				</div>
+			</div>
+		<!-- ko if: selectedType()=='objectType' -->			
+			<div class="form-group">
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblCategory"></label>
+				<div class="col-sm-9" style="margin-top: 0.4em" data-bind="html: i18n.LblObjectType" ></div>
+			</div>
+			<div class="form-group form-active" data-bind="css: specTypeView.iconValidClass" >
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblIcon"></label>
+				<div class="col-sm-9">
+					<input type="text" class="form-control input-sm" data-bind="textInput: specTypeView.iconE" />
+				</div>
+			</div>
+		<!-- /ko -->
+		<!-- ko if: selectedType()=='relationType' -->			
+			<div class="form-group">
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblCategory"></label>
+				<div class="col-sm-9" style="margin-top: 0.4em" data-bind="html: i18n.LblRelationType" ></div>
+			</div>
+			<div class="row form-group form-active" >
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblEligibleSources"></label>
+				<div class="col-sm-9 checkbox">
+					<!-- ko foreach: specTypeView.sourcesE -->
+						<label>
+							<input type="checkbox" data-bind="checked: selected" />
+							<span data-toggle="popover" data-bind="html: title, attr: {title: description}" />
+						</label><br />
+					<!-- /ko -->
+				</div>
+			</div>
+			<div class="row form-group form-active" >
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblEligibleTargets"></label>
+				<div class="col-sm-9 checkbox">
+					<!-- ko foreach: specTypeView.targetsE -->
+						<label>
+							<input type="checkbox" data-bind="checked: selected" />
+							<span data-toggle="popover" data-bind="html: title, attr: {title: description}" />
+						</label><br />
+					<!-- /ko -->
+				</div>
+			</div>
+		<!-- /ko -->
+		<!-- ko if: selectedType()=='hierarchyType' -->			
+			<div class="form-group">
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblCategory"></label>
+				<div class="col-sm-9" style="margin-top: 0.4em" data-bind="html: i18n.LblSpecificationType" ></div>
+			</div>
+		<!-- /ko -->
+			<div class="form-group form-active" >
+				<label class="col-sm-3 control-label input-sm" data-bind="html: i18n.LblCreation"></label>
+				<div class="col-sm-9 checkbox">
+					<!-- ko foreach: specTypeView.instantiationE -->
+						<label>
+							<input type="checkbox" data-bind="checked: selected" />
+							<span data-toggle="popover" data-bind="html: title, attr: {title: description}" />
+						</label><br />
+					<!-- /ko -->
+				</div>
+			</div>
+		</form>
+		<div class="doneBtns" >
+			<button data-bind="click: specTypeView.cancel, html: i18n.BtnCancel" class="btn btn-default btn-sm" />
+			<button data-bind="click: specTypeView.save, html: i18n.BtnSave, enable: specTypeView.allValid" class="btn btn-primary btn-sm" />
+		</div>
+	</div>  <!-- id="specTypeE" -->
+
+	<div id="projectUsersV" class="contentWide">
+		<div class="title2" data-bind="html: i18n.LblProjectUsers" ></div>
+		<div class="panel panel-default">
+		<!--<div class="panel-heading">
+			<h3 class="panel-title" data-bind="html: i18n.LblProjectUsers" />
+		</div>-->
+		<table class="table table-bordered table-condensed">
+			<!--<thead><tr><th>Name</th><th class="text-right">Role</th></tr></thead>-->
+			<tbody data-bind="foreach: userRoles">
+			<tr data-bind="if: role">
+				<td style="vertical-align: middle">
+					<span data-bind="text: firstName"></span>&#160;<span data-bind="text: lastName"></span>&#160;(<span data-bind="text: userName"></span>)
+				</td>
+				<td class="text-right" style="vertical-align: middle">
+				<!-- ko if: role() == i18n.LblRoleGeneralAdmin -->
+					<span data-bind="html: i18n.LblRoleGeneralAdmin"></span>
+				<!-- /ko -->
+				<!-- ko ifnot: role() == i18n.LblRoleGeneralAdmin -->
+					<button class="btn btn-danger btn-sm pull-right" data-toggle="popover" data-bind="click: function() {$parent.removeUserRole( $data )}, attr: {title: i18n.LblDeleteRole}" ><span class="glyphicon glyphicon-remove"></span></button>
+					<div data-bind="foreach: $parent.availableRoles" class="btn-group pull-right" style="margin-right:5px">
+					<!-- the anonymous function wrapper for the click event avoids the firing on page load ... -->
+						<button data-bind="text: role, css: { active: role === $parents[0].role() }, click: function() {$parents[1].createUserRole( $parents[0], role )}" class="btn btn-default btn-sm"></button>
+					</div>
+				<!-- /ko -->
+				</td>
+			</tr>
+			</tbody>
+		</table>
+		</div>
+		<div class="title2" data-bind="html: i18n.LblOtherUsers" ></div>
+		<div class="panel panel-default">
+		<!--<div class="panel-heading">
+			<h3 class="panel-title" data-bind="html: i18n.LblOtherUsers" />
+		</div>-->
+		<table class="table table-bordered table-condensed">
+			<!--<thead><tr><th>Name</th><th class="text-right">Role</th></tr></thead>-->
+			<tbody data-bind="foreach: userRoles">
+			<tr data-bind="ifnot: role">
+				<td style="vertical-align: middle">
+					<span data-bind="text: firstName"></span>&#160;<span data-bind="text: lastName"></span>&#160;(<span data-bind="text: userName"></span>)
+				</td>
+				<td class="text-right" style="vertical-align: middle">
+					<button class="btn btn-danger btn-sm disabled pull-right"><span class="glyphicon glyphicon-remove"></span></button>
+					<div data-bind="foreach: $parent.availableRoles" class="btn-group pull-right" style="margin-right:5px">
+						<!-- the anonymous function wrapper for the click event avoids the firing on page load ... -->
+						<button data-bind="text: role, click: function() {$parents[1].createUserRole( $parents[0], role )}" class="btn btn-default btn-sm"></button>
+					</div>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+		</div>
+	</div>  <!-- id="projectUsersV" -->
+
+	<div id="permissionsV" class="contentWide">
+	<!-- ko if: !project.working() -->
+		<button data-bind="click: createRole, html: i18n.BtnAddRole" class="btn btn-success btn-sm pull-right"></button>
+	<!-- /ko -->
+		<table>
+	<!-- ko if: availableRoles -->
+		<thead>
+			<tr>
+				<th class="text-right" style="vertical-align:bottom" data-bind="html: i18n.LblRoles"></th>
+			<!-- ko foreach: availableRoles -->
+				<th style="width:1.6em"></th>
+				<th colspan="5" style="text-align:center; vertical-align:bottom">
+				<!-- ko if: !project.working() && (role != i18n.LblRoleReqif) -->
+					<!-- the anonymous function wrapper for the click event avoids the firing on page load ... -->
+					<button data-bind="click: function() {$parent.removeRole( $data )}" class="btn btn-xs btn-danger" style="margin-left: 0.4em;"><span class="glyphicon glyphicon-remove" /></button>
+					<br />
+				<!-- /ko -->
+					<span data-bind="html: role"></span>
+				</th>
+			<!-- /ko -->
+			</tr>
+			<tr style="border-bottom:1px solid #ddd; cursor:help">
+				<td class="text-right" data-bind="html: i18n.LblPermissions"></td>
+			<!-- ko foreach: availableRoles -->
+				<td></td>
+				<td style="width:1.6em; text-align:center;" data-toggle="popover" data-bind="attr: {title: i18n.LblInherited}" >I</td>
+				<td style="width:1.6em; text-align:center;" data-toggle="popover" data-bind="attr: {title: i18n.LblCreate}" >C</td>
+				<td style="width:1.6em; text-align:center;" data-toggle="popover" data-bind="attr: {title: i18n.LblRead}" >R</td>
+				<td style="width:1.6em; text-align:center;" data-toggle="popover" data-bind="attr: {title: i18n.LblUpdate}" >U</td>
+				<td style="width:1.6em; text-align:center;" data-toggle="popover" data-bind="attr: {title: i18n.LblDelete}" >D</td>
+			<!-- /ko -->
+			</tr>
+		</thead>		
+	<!-- /ko --><!-- the if clause ends here so that the user can see the permissions, while they are arriving -->
+	<!-- the 'return true' in the anonymous 'click' functions is essential, otherwise the browser will not update the checkbox visually -->
+		<tbody>
+		<!-- ko foreach: permissions -->
+				<tr>
+					<td data-bind="html: title"></td>
+			<!-- ko foreach: sets -->
+					<td></td>
+				
+				<!-- ko if: !$parent.upd || roleRef == i18n.LblRoleReqif -->		
+					<!-- ko if: $parent.scope == 'project' -->		
+						<td></td>
+					<!-- /ko -->
+					<!-- ko ifnot: $parent.scope == 'project' -->		
+						<td style="text-align:center" >
+							<input type="checkbox" disabled data-bind="checked: inherited" />
+						</td>
+					<!-- /ko -->
+						<td style="text-align:center" >
+							<input type="checkbox" disabled data-bind="checked: create" />
+						</td>
+						<td style="text-align:center" >
+							<input type="checkbox" disabled data-bind="checked: read" />
+						</td>
+						<td style="text-align:center" >
+							<input type="checkbox" disabled data-bind="checked: update" />
+						</td>
+						<td style="text-align:center" >
+							<input type="checkbox" disabled data-bind="checked: _delete" />
+						</td>
+				<!-- /ko -->
+				<!-- ko if: $parent.upd && roleRef != i18n.LblRoleReqif -->		
+					<!-- ko if: $parent.scope == 'project' -->		
+						<td></td>
+					<!-- /ko -->
+					<!-- ko ifnot: $parent.scope == 'project' -->		
+						<td style="text-align:center" data-bind="click: function(){return $parents[1].permissionClicked($parentContext.$index(),$index(),'I')}">
+							<input type="checkbox" data-bind="checked: inherited" />
+						</td>
+					<!-- /ko -->
+						<td style="text-align:center" data-bind="click: function(){return $parents[1].permissionClicked($parentContext.$index(),$index(),'C')}">
+							<input type="checkbox" data-bind="checked: create" />
+						</td>
+						<td style="text-align:center" data-bind="click: function(){return $parents[1].permissionClicked($parentContext.$index(),$index(),'R')}">
+							<input type="checkbox" data-bind="checked: read" />
+						</td>
+						<td style="text-align:center" data-bind="click: function(){return $parents[1].permissionClicked($parentContext.$index(),$index(),'U')}">
+							<input type="checkbox" data-bind="checked: update" />
+						</td>
+						<td style="text-align:center" data-bind="click: function(){return $parents[1].permissionClicked($parentContext.$index(),$index(),'D')}">
+							<input type="checkbox" data-bind="checked: _delete" />
+						</td>
+				<!-- /ko -->
+			<!-- /ko -->
+				</tr>
+		<!-- /ko -->
+		</tbody>
+		</table>
+	<!-- ko if: working  -->
+		<div class="notice-default" data-bind="html: i18n.MsgWaitPermissions"></div>
+	<!-- /ko -->
+	</div>  <!-- id="permissionsV" -->
+
+</div>  <!-- id="projectBody" -->
+<!-- /ko -->

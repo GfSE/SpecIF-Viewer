@@ -16,7 +16,7 @@
 /*	Have a look at some example filter descriptors similar to those built dynamically when entering the module with show():
 	For example: If OT-Req is included in the filtering, all it's secondary filters (scope: OT-Req) must match, otherwise the examined resource is discarded:
 		[{ 
-			label: 'String Match',
+			title: 'String Match',
 			category: 'resourceClass',
 			primary: true,
 			scope: 'projectId',  
@@ -27,20 +27,20 @@
 			caseSensitive: false,
 			includeEnums: true 
 		},{ 
-			label: 'Resource Class',
+			title: 'Resource Class',
 			category: 'resourceClass',
 			primary: true,
 			scope: 'projectId',  
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
-				{label:'Plan', id:'OT-Pln', selected:false},
-				{label:'Model Element', id:'OT-MEl', selected:false},
-				{label:'Requirement', id:'OT-Req', selected:false},
-				{label:'Folder', id:'OT-Fld', selected:false},
-				{label:'Comment', id:'OT-Cmt', selected:false}
+				{title:'Plan', id:'OT-Pln', checked:false},
+				{title:'Model Element', id:'OT-MEl', checked:false},
+				{title:'Requirement', id:'OT-Req', checked:false},
+				{title:'Folder', id:'OT-Fld', checked:false},
+				{title:'Comment', id:'OT-Cmt', checked:false}
 			] 
 		},{ 
-			label: 'Priority',
+			title: 'Priority',
 			category: 'propertyValue',
 			primary: false,
 			scope: 'OT-Req',   // this is a sub-filter for a property of a resource of type OT-Req
@@ -48,13 +48,13 @@
 			dataType: 'DT-Priority',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
-				{label:'1_high', id:'V-Req-Prio-0', selected:true},
-				{label:'2_medium', id:'V-Req-Prio-1', selected:true},
-				{label:'3_low', id:'V-Req-Prio-2', selected:true},
-				{label:'(not assigned)', id:'', selected:true}   // catches resource properties without a value (empty value list).
+				{title:'1_high', id:'V-Req-Prio-0', checked:true},
+				{title:'2_medium', id:'V-Req-Prio-1', checked:true},
+				{title:'3_low', id:'V-Req-Prio-2', checked:true},
+				{title:'(not assigned)', id:'', checked:true}   // catches resource properties without a value (empty value list).
 			]
 		},{ 
-			label: 'Status',
+			title: 'Status',
 			category: 'propertyValue',
 			primary: false,
 			scope: 'OT-Req',   // this is a sub-filter for a property of a resource of type OT-Req
@@ -62,23 +62,25 @@
 			dataType: 'DT-Status',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
-				{label:'00_na', id:'V-Req-Status-0', selected:true},
-				{label:'00_redundant', id:'V-Req-Status-1', selected:true},
-				{label:'00_rejected', id:'V-Req-Status-2', selected:true},
-				{label:'10_initial', id:'V-Req-Status-3', selected:true},
-				{label:'20_drafted', id:'V-Req-Status-4', selected:true},
-				{label:'30_submitted', id:'V-Req-Status-5', selected:true},
-				{label:'40_approved', id:'V-Req-Status-7', selected:true},
-				{label:'60_completed', id:'V-Req-Status-8', selected:true},
-				{label:'70_tested', id:'V-Req-Status-9', selected:true},
-				{label:'80_released', id:'V-Req-Status-10', selected:true},
-				{label:'90_withdrawn', id:'V-Req-Status-11', selected:true},
-				{label:'(not assigned)', id:'', selected:true}  // catches resource properties without a value (empty value list).
+				{title:'00_na', id:'V-Req-Status-0', checked:true},
+				{title:'00_redundant', id:'V-Req-Status-1', checked:true},
+				{title:'00_rejected', id:'V-Req-Status-2', checked:true},
+				{title:'10_initial', id:'V-Req-Status-3', checked:true},
+				{title:'20_drafted', id:'V-Req-Status-4', checked:true},
+				{title:'30_submitted', id:'V-Req-Status-5', checked:true},
+				{title:'40_approved', id:'V-Req-Status-7', checked:true},
+				{title:'60_completed', id:'V-Req-Status-8', checked:true},
+				{title:'70_tested', id:'V-Req-Status-9', checked:true},
+				{title:'80_released', id:'V-Req-Status-10', checked:true},
+				{title:'90_withdrawn', id:'V-Req-Status-11', checked:true},
+				{title:'(not assigned)', id:'', checked:true}  // catches resource properties without a value (empty value list).
 			]
 		}];
 */		
-function Filters() {
-	var self = this;
+modules.construct({
+	name: CONFIG.objectFilter
+}, function(self) {
+	"use strict";
 //	var returnView = null;
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters = null;  // default: show resources (hit-list)
@@ -87,7 +89,22 @@ function Filters() {
 	self.init = function( cb ) {
 //		console.debug( 'filters.init' );
 //		if( $.isFunction(cb) ) returnView = cb;   // callback
-		self.secondaryFilters = undefined
+		self.secondaryFilters = undefined;
+		
+		// the left panel on this page (only for this view):
+		let h = '<div class="paneLeft">'
+	//		+		'<div id="clicklist" class="pane-tree" />'
+			+		'<div id="primaryFilters" class="pane-filter" />'
+			+	'</div>'
+			+	'<div id="hitlist" class="content" />';
+		console.debug('#',self.view);
+		$(self.view).html( h );
+
+	/*	// controls whether the left panel shows the hitlist or the filters:
+		self.showTree = new State({
+			showWhenSet: ['#filters'],
+			hideWhenSet: ['#clicklist']
+		});  */
 	};
 	self.clear = function() {
 		self.secondaryFilters = undefined;
@@ -127,7 +144,23 @@ function Filters() {
 			message.show(i18n.phrase('MsgFilterClogged') ); 
 			return
 		};
-//		console.debug('filters.show',settings,self.filterList);
+		console.debug('filters.show',settings,self.filterList);
+
+		// Show the panels with filter settings to the left:
+		let fps = '';
+		self.filterList.forEach( function(f) {
+			fps += '<div class="panel panel-default panel-filter" >'
+				+	'<h4>'+f.title+'</h4>';
+			switch( f.baseType ) {
+				case 'xs:string': 
+						fps += 	renderTextFilterSettings( f );
+						break;
+				case 'xs:enumeration': 
+						fps += 	renderEnumFilterSettings( f )
+			};
+			fps += '</div>'
+		});
+		$('#primaryFilters').html( fps );
 
 //		app.specs.updateHistory();
 
@@ -154,14 +187,14 @@ function Filters() {
 					// match() builds the hitlist (app.specs.resources) in the background:
 					if( match( rsp ) && app.specs.resources.values.length<CONFIG.objToShowCount ) {	
 						// show the first hits immediately, but avoid updating the view too often:
-						$('#'+CONFIG.objectFilter).html( app.specs.resources.render() )  	
+						$('#hitlist').html( app.specs.resources.render() )  	
 					};
 					if( --pend<1 ) {  // all done
 						if( app.specs.resources.values.length>CONFIG.objToShowCount )  
 							// show the final list, unless it has been rendered already:
-							$('#'+CONFIG.objectFilter).html( app.specs.resources.render() );	
+							$('#hitlist').html( app.specs.resources.render() );	
 						if( app.specs.resources.values.length<1 )  
-							$('#'+CONFIG.objectFilter).html( '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>' );	
+							$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>' );	
 					//	$('#hitCount').html(i18n.phrase('MsgObjectsFound',app.specs.resources.values.length));
 						app.busy.reset()
 					}
@@ -181,7 +214,7 @@ function Filters() {
 				// primary filter applying to all resources:
 				for( var j=f.options.length-1; j>-1; j--){ 
 //					console.debug('matchResClass',f,f.options[j]);
-					if( f.options[j].selected && f.options[j].id==res['class'] ) return true
+					if( f.options[j].checked && f.options[j].id==res['class'] ) return true
 				};
 				return false
 			}
@@ -244,7 +277,7 @@ function Filters() {
 				switch ( f.baseType ) {
 					case 'xs:enumeration':
 						let oa = itemBy( res.properties, 'class', f.propClass ), // the concerned property
-							no = f.options[f.options.length-1].selected && f.options[f.options.length-1].id=='notAssigned';
+							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies 'notAssigned':
 //						console.debug('matchPropValue',f,oa,no);
@@ -255,13 +288,13 @@ function Filters() {
 							cL=null, z=null, j=null;
 						// works with single-valued and multiple-valued ENUMERATIONs:
 						for( j=f.options.length-1; j>-1; j--) { 
-							if( !f.options[j].selected ) continue;
-							// try to match for every selected option (logical OR):
+							if( !f.options[j].checked ) continue;
+							// try to match for every checked option (logical OR):
 							if( ct.length>0 ) {
 								cL = ct.split(',');	// this is a list of value ids
 								// - if any selected id in the options list is contained in the property values list:
 								for( z=cL.length-1; z>-1; z-- ) { 
-//									console.debug( 'match', f.options[j].label, oa.valueIDs[z] );
+//									console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
 									if( f.options[j].id==cL[z].trim() ) return true
 								}
 							} else {
@@ -290,15 +323,15 @@ function Filters() {
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
 							//    (very short property titles cause a marking within formatting tags, which destroys them.)
-							//     Another problem exists, when a property label contains literally a filter label (=property value). Then, the property label is falsely marked.
+							//     Another problem exists, when a property title contains literally a filter title (=property value). Then, the property title is falsely marked.
 							//     --> Don't mark within (X)HTML tags and property titles, mark only property values.
-							//     --> Only mark property values which are EQUAL to the filter label.
-							//     Preliminary solution: label must be longer than 4 characters, otherwise the property will not be marked.
+							//     --> Only mark property values which are EQUAL to the filter title.
+							//     Preliminary solution: title must be longer than 4 characters, otherwise the property will not be marked.
 							if( f.scope == res['class'] ) { 
 								var rgxA;
 								for( var o=0, O=f.options.length; o<O; o++ ) {
-									if( f.options[o].selected && f.options[o].label.length>4 ) {
-										rgxA = RegExp( '('+f.options[o].label+')', 'g' );
+									if( f.options[o].checked && f.options[o].title.length>4 ) {
+										rgxA = RegExp( '('+f.options[o].title+')', 'g' );
 
 										for( var a=0, A=res.properties.length; a<A; a++ ){
 											if( f.dataType == res.properties[a].dataType )
@@ -371,7 +404,7 @@ function Filters() {
 				// top-level filter, at least one option must be checked:
 				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
 				for( var j=0, J=f.options.length; j<J; j++){ 
-					if( f.options[j].selected ) rCL.push(f.options[j].id)
+					if( f.options[j].checked ) rCL.push(f.options[j].id)
 				}; 
 				return !rCL.length   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
@@ -383,7 +416,7 @@ function Filters() {
 				switch( f.baseType ) {
 					case 'xs:enumeration':
 						for( var j=f.options.length-1; j>-1; j--){ 
-							if( f.options[j].selected ) return false  // at least one checked -> not clogged
+							if( f.options[j].checked ) return false  // at least one checked -> not clogged
 						};
 						break
 				};
@@ -415,19 +448,19 @@ function Filters() {
 					if( app.cache.dataTypes[d].id === pC.dataType ) {
 						app.cache.dataTypes[d].values.forEach( function(v) {
 							var opt = {
-									label: v.value, 
+									title: v.value, 
 									id: v.id, 
-									selected: true
+									checked: true
 								};
-							if( vL ) { opt.selected = vL.indexOf( v.id )>-1 };
+							if( vL ) { opt.checked = vL.indexOf( v.id )>-1 };
 //							console.debug( 'opt', opt );
 							opts.push( opt )
 						});
 						// add one more option for the case 'value not assigned':
 						opts.push({ 
-								label: i18n.LblNotAssigned, 
+								title: i18n.LblNotAssigned, 
 								id: 'notAssigned', 			// matches resource properties without a value (empty value list).
-								selected: (!vL || vL.indexOf('notAssigned')>-1)
+								checked: (!vL || vL.indexOf('notAssigned')>-1)
 							}); 
 						return opts  // no need to iterate the remaining dataTypes
 					}
@@ -446,7 +479,7 @@ function Filters() {
 				
 				// Construct the filter descriptor and add it to the list of filters:
 				var eVF = { 
-					label: titleOf(pC),
+					title: titleOf(pC),
 					category: 'propertyValue',
 					primary: false,
 					scope: rC.id, 
@@ -487,8 +520,8 @@ function Filters() {
 
 			function addTextSearchFilter( pre ) {
 				// pre is a resource with filter settings like {category: 'textSearch', searchString: 'string'}
-				var flt =
-					{ label: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
+				var flt = {
+					title: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
 					category: 'textSearch',
 					primary: true,
 					scope: app.cache.id,
@@ -498,7 +531,8 @@ function Filters() {
 					wordBeginnings: false,
 					wholeWords: false,
 					caseSensitive: false,
-					includeEnums: true };
+					includeEnums: true 
+				};
 				if( pre ) {
 					if( pre.searchString ) flt.searchString = pre.searchString
 				};
@@ -520,7 +554,7 @@ function Filters() {
 				// pre is a resource with filter settings like {category: 'resourceClass', values: ['title1','title2']}
 //				console.debug( 'addResourceClassFilter', pre );
 				var oTF = {   // the primary filter criterion 'resource type'
-						label: i18n.TabSpecTypes,
+						title: i18n.TabSpecTypes,
 						category: 'resourceClass',
 						primary: true,
 						scope: app.cache.id,
@@ -532,12 +566,12 @@ function Filters() {
 					
 //					console.debug( rC.title );
 					var opt =  
-						{ label: titleOf(rC),
+						{ title: titleOf(rC),
 						id: rC.id,
-						selected: true};   // set selection by default
+						checked: true};   // set selection by default
 					// if there are preset values, set the select flag accordingly:
 					if( pre && pre.values ) { 
-						opt.selected = pre.values.indexOf( rC.id )>-1
+						opt.checked = pre.values.indexOf( rC.id )>-1
 					};
 					oTF.options.push( opt )
 				});
@@ -574,17 +608,35 @@ function Filters() {
 		}
 		// Secondary filters are also added to the list on request via addEnumValueFilters().
 	}
-/*	function renderSecondaryFilters() {
-		var sF = '<h3>'+i18n.phrase( 'LblSecondaryFiltersForObjects', showSecondaryFilters().label )+'</h3>';
+	function renderTextFilterSettings( flt ) {
+		// render a single panel for text search settings:
+	//	var pn = '<div style="margin-bottom: 8px">'
+	//		+		'<input type="text" id="inputSearchString" data-bind="textInput: searchString" class="form-control input-sm" />'
+	//		+	'</div>';
+		return textInput( {label:flt.title,display:'none'}, '', 'line' )
+			+	checkboxInput( {label:flt.title,display:'none',classes:''},
+				[
+					{ title: i18n.LblWordBeginnings, checked: flt.wordBeginnings },
+					{ title: i18n.LblWholeWords, checked: flt.wholeWords },
+					{ title: i18n.LblCaseSensitive, checked: flt.caseSensitive },
+					{ title: i18n.LblIncludeEnums, checked: flt.includeEnums } 
+				])
+	}
+	function renderEnumFilterSettings( flt ) {
+		// render a single panel for enum filter settings:
+		return checkboxInput( {label:flt.title,display:'none',classes:''}, flt.options )
+	}
+/*	function renderSecondaryFilterSettings() {
+		var sF = '<h3>'+i18n.phrase( 'LblSecondaryFiltersForObjects', showSecondaryFilters().title )+'</h3>';
 		for( var f=0,F=filterList.length; f<F; f++ ) {
 			if(!filterList[f].primary && filterList[f].baseType=='xs:enumeration' && filterList[f].scope==self.showSecondaryFilters().id ) {
 				sF += 	'<div class="panel panel-default panel-filter" >' +
-							'<h4>'+filterList[f].label+'</h4>' +
+							'<h4>'+filterList[f].title+'</h4>' +
 							'<div class="form-group" >';
 				for( var o=0;O=filterList[f].options.length; o<O; o++) {
 					sF +=		'<div style="margin-bottom: 2px" >' +
-									'<input type="checkbox" data-bind="enable: $parent.options.length>1, checked: selected" />' +
-									'<span>'+filterList[f].options[o].label+'</span>' +
+									'<input type="checkbox" data-bind="enable: $parent.options.length>1, checked: checked" />' +
+									'<span>'+filterList[f].options[o].title+'</span>' +
 								'</div>'
 				}
 				sF += 		'</div>' +
@@ -605,17 +657,7 @@ function Filters() {
 		};
 		return false
 	};
-/*	self.secondaryFiltersClicked = function( oT ) {
-		// toggle between the hitlist and the secondary filter settings:
-//		console.debug( 'secondaryFiltersClicked', oT );
-		if( self.secondaryFilters==oT ) {
-			self.goClicked()
-		} else {
-			addEnumValueFilters({category: 'enumValue', rCid: oT.id});  // rCid: type-id
-			self.secondaryFilters = oT
-		}
-	};
-	self.goClicked = function() {  // go!
+/*	self.goClicked = function() {  // go!
 		self.secondaryFilters = undefined;
 		app.specs.resources.init();
 		return self.show()
@@ -625,6 +667,16 @@ function Filters() {
 		self.clear();
 		self.show()
 	};
+	self.secondaryFiltersClicked = function( oT ) {
+		// toggle between the hitlist and the secondary filter settings:
+//		console.debug( 'secondaryFiltersClicked', oT );
+		if( self.secondaryFilters==oT ) {
+			self.goClicked()
+		} else {
+			addEnumValueFilters({category: 'enumValue', rCid: oT.id});  // rCid: type-id
+			self.secondaryFilters = oT
+		}
+	};
 	self.itemClicked =  function( itm ) {
 //		console.debug( 'item clicked', itm );
 		// Jump to the page view of the clicked resource:
@@ -633,9 +685,8 @@ function Filters() {
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 	}; 
 */	
-	return self;
-};
-app.filters = new Filters();
+	return self
+});
 	
 /*
 <div id="objectFilterT" >
@@ -694,30 +745,6 @@ app.filters = new Filters();
 			<button data-bind="click: goClicked, html: i18n.BtnGo" class="btn btn-default btn-sm" ></button>
 			<span id="hitCount" class="btn notice-default contentNotice" /> 
 		</div>
-
-	<!-- ko if: showSecondaryFilters -->
-		<div id="secondaryFilters" class="content" >
-				<h3 data-bind="html: i18n.phrase( 'LblSecondaryFiltersForObjects', showSecondaryFilters().label )"></h3>
-		<!-- ko foreach: filterList -->
-			<!-- ko if: (!primary && baseType=='xs:enumeration' && scope==$parent.showSecondaryFilters().id ) -->
-				<div class="panel panel-default panel-filter" >
-					<h4 data-bind="html: label"></h4>
-					<div class="form-group" >
-					<!-- ko foreach: options -->
-						<div style="margin-bottom: 2px" >
-							<input type="checkbox" data-bind="enable: $parent.options.length>1, checked: selected" />
-							<span data-bind="html: label" />
-						</div>
-					<!-- /ko -->
-					</div>
-				</div>
-			<!-- /ko -->
-		<!-- /ko -->
-		</div>  <!-- id="secondaryFilters" -->
-	<!-- /ko -->
-	<!-- ko ifnot: showSecondaryFilters -->
-		<div id="hitList" class="content" ></div>
-	<!-- /ko -->
 
 </div>   <!-- id="objectFilterT" -->
 */

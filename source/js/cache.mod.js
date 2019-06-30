@@ -87,7 +87,7 @@ modules.construct({
 			});
 			return sDO
 		};
-		console.debug('app.cache.create',prj);
+//		console.debug('app.cache.create',prj);
 
 		self.abortFlag = false;
 
@@ -302,7 +302,7 @@ modules.construct({
 					return null;	// should never arrive here ... as every branch in every case above has a return.
 				case 'statementClass':
 					// To be compatible, all sourceTypes of newT must be contained in the sourceTypes of refT;
-					// no sourceTypes means that all objectTypes are permissible as subject.
+					// no sourceTypes means that all resourceClasses are permissible as subject.
 					// ... and similarly for the targetTypes:
 					if( refT.sourceTypes && !newT.sourceTypes
 						|| refT.sourceTypes && newT.sourceTypes && !containsById( refT.sourceTypes, newT.sourceTypes ) ) {
@@ -314,8 +314,8 @@ modules.construct({
 					};
 					// else: so far everything is OK, but go on checking ... (no break!)
 				case 'resourceClass':
-					// An objectType or relationType is incompatible, if it has an equally-named property class with a different dataType
-					// An objectType or relationType is compatible, if all equally-named propertyClasses have the same dataType
+					// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
+					// A resourceClass or statementClass is compatible, if all equally-named propertyClasses have the same dataType
 					if( !newT.propertyClasses || !newT.propertyClasses.length ) 
 								return {status:0};
 					// else: The new type has at least one property.
@@ -354,7 +354,7 @@ modules.construct({
 			return null		// should never arrive here ...
 		}
 		function addNewTypes( ctg ) {
-			// Is commonly used for object, relation and hierarchy types with their property types.
+			// Is commonly used for resource and statement classes with their propertyClasses.
 			let rL= null, nL= null, rT=null, nT=null; 
 			switch( ctg ) {
 				case 'dataType': rL = self.dataTypes; nL = newD.dataTypes; break;
@@ -437,7 +437,7 @@ modules.construct({
 		}
 		function updateIfChanged(ctg) {
 			// Update a list of the specified category element by element, if changed.
-			// Is commonly used for file, object, relation and hierarchy instances.
+			// Is commonly used for file, resource, statement and hierarchy instances.
 			// ToDo: Delete statements of all types provided by the import, which are missing 
 			// ... not so easy to decide.
 			// So perhaps restrict the deletion to those types with creation "auto" only.
@@ -473,20 +473,20 @@ modules.construct({
 
 			function contentChanged(ctg, r, n) { // ref and new resources
 //				console.debug('contentChanged',ctg, r, n);
-				// Is commonly used for object, relation and hierarchy instances.
+				// Is commonly used for resource, statement and hierarchy instances.
 				if( r['class']!=n['class'] ) return null;  // fatal error, they must be equal!
 				
 				// Continue in case of resources and statements:
 				let i=null, rA=null, nA=null, rV=null, nV=null;
 				// 1) Are the property values equal?
 				// Skipped, if the new instance does not have any property (list is empty or not present).
-				// Relations and hierarchies often have no properties.
-				// Objects without properties are useless, as they do not carry any user payload (information).
+				// Statements and hierarchies often have no properties.
+				// Resources without properties are useless, as they do not carry any user payload (information).
 				// Note that the actual property list delivered by the server depends on the read privilege of the user.
 				// Only the properties, for which the current user has update privilege, will be compared.
 				// Use case: Update diagrams with model elements only:
-				//		Create a user with update privileges for objectType 'diagram' 
-				//		and property class 'title' of objectType 'model-element'.
+				//		Create a user with update privileges for resourceClass 'diagram' 
+				//		and property class 'title' of resourceClass 'model-element'.
 				//		Then, only the diagrams and the title of the model-elements will be updated.
 				if( n.properties && n.properties.length>0 ) {
 					for( i=(r.properties?r.properties.length:0)-1;i>-1;i--) {
@@ -522,7 +522,7 @@ modules.construct({
 								nV = nA.value;
 						//		console.debug('contentChanged','xhtml',rA,nA,rV!=nV);
 								if( rV!=nV ) return true;
-								// If a file is referenced, pretend that the object has changed.
+								// If a file is referenced, pretend that the resource has changed.
 								// Note that a resource always references a file having the next lower revision number than istself.
 								// It is possible that a file has been updated, so a referencing resource must be updated, as well.
 								// ToDo: Analyse whether a referenced file has really been updated.
@@ -580,9 +580,9 @@ modules.construct({
 						switch( xhr.status ) {
 							case 403:
 								// This is a hack to circumvent a server limitation.
-								// In case the user is not admin, the server delivers 403, if an object does not exist,
+								// In case the user is not admin, the server delivers 403, if a resource does not exist,
 								// whereas it delivers 404, if it is an admin.
-								// Thus: If 403 is delivered and the user has read access according to the objectType,
+								// Thus: If 403 is delivered and the user has read access according to the resourceClass,
 								// do as if 404 had been delivered.
 								var pT = itemById(app.cache.allClasses,nI['class']);
 //								console.debug('403 instead of 404',nI,pT);
@@ -634,7 +634,7 @@ modules.construct({
 					}
 					
 				// Note: 'updateTreeIfChanged' is called for instance of ALL types, even though only a hierarchy has children.
-				// In case of an object or relation, the tree operations are skipped:
+				// In case of a resource or statement, the tree operations are skipped:
 				if( ctg == 'hierarchy' && treeChanged(aI,nI) ) {
 					message.show( i18n.MsgOutlineAdded, {severity:'info', duration:CONFIG.messageDisplayTimeShort} );
 //					self.deleteContent('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
@@ -654,7 +654,7 @@ modules.construct({
 
 	self.createContent = function( ctg, item ) {  
 		// item can be a js-object or a list of js-objects
-		// ctg is a member of [dataType, objectType, relationType, hierarchyType, property class, object, relation, hierarchy]
+		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 		// ...  not all of them may be implemented, so far.
 		// cache the value before sending it to the server, as the result is not received after sending (except for 'resource' and 'statement')
 
@@ -679,7 +679,7 @@ modules.construct({
 		return sDO
 	}; */
 	self.readContent = function( ctg, item, opts ) {  
-		// ctg is a member of [dataType, objectType, relationType, hierarchyType, object, relation, hierarchy]
+		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		//  for compatibility with older callers:
 	/*	if( typeof(opts)=='boolean' )
 			opts = {reload: opts};
@@ -698,12 +698,12 @@ modules.construct({
 		return null
 	};
 /*	self.updateContent = function( ctg, item ) {  
-		// ctg is a member of [object, relation, hierarchy], 'null' is returned in all other cases.
-		// (server does not allow type updates, so far.)
+		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
 
 		switch( ctg ) {
-			case 'node':	// nodes can only be created or deleted
-				return null;  // not supported
+			case 'node':	
+				// nodes can only be created or deleted
+				return null; 
 		//	case 'resource':
 		//	case 'statement':
 		//	case 'hierarchy':
@@ -721,7 +721,7 @@ modules.construct({
 		return uDO
 	};
 	self.deleteContent = function( ctg, item ) {  
-		// ctg is a member of [dataType, objectType, relationType, hierarchyType, property class, object, relation, hierarchy]
+		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 			function isInUse( ctg, itm ) {
 					function dTIsInUse( L, dT ) {
 						let i=null;
@@ -737,15 +737,15 @@ modules.construct({
 							L = cacheOf(c),	// xyzType --> xyz
 							i = indexBy(L,ctg,sT.id);
 //						console.debug('sTIsInUse',sT,c,L,i); 
-						// Problem: In project.html, the object cache is empty, but the objectType may be in use, anyways.
+						// Problem: In project.html, the resource cache is empty, but the resourceClass may be in use, anyways.
 						// Similarly with statements and hierarchies.
 						return ( i>-1 )
 					}
 					function aTIsInUse( L, pT ) {
 						if( L==undefined ) return false; // can't be in use, if the list is not (yet) defined/present.
 						let i=null;
-						// Problem: In project.html, the object cache is empty, but the property class may be in use, anyways.
-						// Also a deleted object may have used the property class.
+						// Problem: In project.html, the resource cache is empty, but the property class may be in use, anyways.
+						// Also a deleted resource may have used the property class.
 						// As it stores only the newest types, the ReqIF Server will refuse to delete the type.
 						// In case of PouchDB, all revisions of classes/types are stored, so it is sufficient to check whether there are currently some elements using the type.
 						// Similarly with statements and hierarchies.
@@ -872,7 +872,7 @@ modules.construct({
 	self.readStatementsOf = function( res, showComments ) {  
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
-		//   it is possible that an resource is deleted (from all hierarchies), but not it's statements.
+		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
 		//   --> set 'showComments' to false
 		// - All comments referring to the selected resource shall be shown;
 		//   the resource is found in the cache, but the comment is not.
@@ -989,14 +989,13 @@ modules.construct({
 			message: function (thisDlg) {
 				var form = $('<form id="exportFmt" role="form" class="form-horizontal" ></form>');
 				form.append( 
-					$(	"<p>"+i18n.MsgExport+"</p>" +
-						radioInput( i18n.LblFormat, [
-							{title: 'SpecIF', description:''},
-							{title: 'ReqIF', description:''},
-							{title: 'ePub', description:''},
-							{title: 'MS WORD (Open XML)', description:''}
-						]) 
-					) 
+					"<p>"+i18n.MsgExport+"</p>"
+				+	radioInput( i18n.LblFormat, [
+						{title: 'SpecIF', description:''},
+						{title: 'ReqIF', description:''},
+						{title: 'ePub', description:''},
+						{title: 'MS WORD (Open XML)', description:''}
+					]) 
 				);
 				return form },
 			buttons: [
@@ -1117,11 +1116,6 @@ modules.construct({
 				var data = self.get( {translateTitles: false} ); 
 	//			console.debug( "exportAs 'ePub'", data );
 				let options = { 
-	/*				// If the property titles are translated, then the lists declaring the semantics must, as well:
-					headingProperties: opts.translateTitles? forAll( CONFIG.headingProperties, i18n.lookup ) : CONFIG.headingProperties,
-					titleProperties: opts.translateTitles? forAll( CONFIG.titleProperties, i18n.lookup ) : CONFIG.titleProperties,
-					descriptionProperties: opts.translateTitles? forAll( CONFIG.descProperties, i18n.lookup ) : CONFIG.descProperties,
-	*/
 					classifyProperties: classifyProps,
 					translateTitles: opts.translateTitles,
 					translate: i18n.lookup,
@@ -1844,7 +1838,7 @@ modules.construct({
 // some local helper routines:
 
 /*	function queryObjects( qu, reload ) {   
-		// get all the resources of the specified type: qu is {type: class}
+		// get all resources of the specified type: qu is {type: class}
 	//	if( !reload ) {
 			// collect all resources with the queried type:
 			var oL = forAll( self.resources, function(o) { return o['class']==qu.type?o:null } ),

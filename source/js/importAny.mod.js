@@ -418,7 +418,8 @@ modules.construct({
 				switch( importMode.id ) {
 					case 'create':
 					case 'replace':
-						console.debug('Creating project',dta);
+//						console.debug('Creating project',dta);
+						console.info('Creating project',dta.title||dta.id);
 						setProgress('Creating project',20); 
 						app.cache.create( dta )
 							.progress( setProgress )
@@ -426,6 +427,7 @@ modules.construct({
 							.fail( handleError );
 						break;
 					case 'update':
+						console.info('Updating project',dta.title||dta.id);
 						setProgress('Updating project',20); 
 						app.cache.update( dta, 'extend' )
 							.progress( setProgress )
