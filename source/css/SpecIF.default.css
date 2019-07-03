@@ -227,8 +227,6 @@ div.attribute-label {
 	vertical-align: middle;
     text-align: right;
 	width: 25%;
-	/*max-width: 12em;*/
-	/*text-align: right;*/
 	font-style:italic;
 	font-size: 90%;
 	color: #23527c; /* bootstrap brand-primary */

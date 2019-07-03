@@ -11,21 +11,21 @@ modules.construct({
 }, function(self) {
 	"use strict";
 
+	const formats = [
+			{ id:'specif',	name:'ioSpecif',desc:'Specification Integration Facility',	label:'SpecIF',	help: i18n.MsgImportSpecif,	opts: {mediaTypeOf: attachment2mediaType}},
+			{ id:'reqif',	name:'ioReqif',	desc:'Requirement Interchange Format',		label:'ReqIF',	help: i18n.MsgImportReqif, opts: {mediaTypeOf: attachment2mediaType}},
+			{ id:'bpmn',	name:'ioBpmn',	desc:'Business Process',					label:'BPMN',	help: i18n.MsgImportBpmn },
+			{ id:'xls',		name:'ioXls',	desc:'MS Excel® Spreadsheet',				label:'Excel®',	help: i18n.MsgImportXls },
+			{ id:'mm',		name:'ioMm',	desc:'Freemind Mindmap',					label:'MM',		help: i18n.MsgImportMm }
+		];
 	// list of projects to check whether the project is already existent in the server.
 	// keep the list variable at all times, do not overwrite it:
-	self.projectL = [];  	// list of the projects already available
+//	self.projectL = [];  	// list of the projects already available
 	self.projectName = '';  // user input for project name
-	let showFileSelect = null,
+	self.format = undefined;
+	let showFileSelect = undefined,
 		importMode = {id:'replace'},
-		// 'importAny' should not be hard-coded here:
 		myFullName = 'app.'+(self.loadAs || self.name);
-	const formats = [
-			{ id:'mm',		name:'ioMm',		desc:'Freemind Mindmap',					label:'MM',		help: i18n.MsgImportMm },
-			{ id:'xls',		name:'ioXls',	desc:'MS Excel® Spreadsheet',				label:'Excel®',	help: i18n.MsgImportXls },
-			{ id:'bpmn',	name:'ioBpmn',	desc:'Business Process',					label:'BPMN',	help: i18n.MsgImportBpmn },
-			{ id:'reqif',	name:'ioReqif',	desc:'Requirement Interchange Format',		label:'ReqIF',	help: i18n.MsgImportReqif, opts: {mediaTypeOf: attachment2mediaType}},
-			{ id:'specif',	name:'ioSpecif',	desc:'Specification Integration Facility',	label:'SpecIF',	help: i18n.MsgImportSpecif,	opts: {mediaTypeOf: attachment2mediaType}}
-		];
 
 /*	// The modes for selection when an import is encountered which is already loaded:
 	const importModes = [{
@@ -71,6 +71,7 @@ modules.construct({
 //		console.debug('import.init',self);
 
 		self.clear();
+		self.setFormat('specif');
 		// certain GUI elements will only be shown if the user must select a file:
 		showFileSelect = new State({
 			showWhenSet: ['.fileSelect'],
@@ -129,46 +130,35 @@ modules.construct({
 			me.logout();
 			return
 		};  */
-		let m=itemById(formats,'specif');
-		if( modules.isReady(m.name) )
-			app[m.name].init(m.opts);
+	/*	let fm=itemById(formats,'specif');
+		if( modules.isReady(fm.name) )
+			app[fm.name].init(fm.opts); */
 		
 			function getFormat(p) {
 				// filename without extension must have at least a length of 1:
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
-				if( p.indexOf('.specif')>0 ) 	// includes '.specifz'
-					return 'specif';
-				if( p.indexOf('.xls')>0 )		// includes '.xlsx'
-					return 'xls';
-				if( p.indexOf('.bpmn')>0 )
-					return 'bpmn';
+				for( var i=0, I=formats.length; i<I; i++) {
+					if( p.indexOf('.'+formats[i].id)>0 && modules.isReady(formats[i].name) ) 
+						return formats[i].id
+				};
 				return undefined
 			}
-		let hashP = getHashParams(), 
-			mod=null;
+		let hashP = getHashParams();
 		clearUrlParams();
 		if( hashP && hashP['import'] ) {
 			// Case 1: A file name for import has been specified in the URL:
-//			console.debug('import 1');
+//			console.debug('import 1',hashP);
 			self.file.name = hashP['import'];
 			// check the format:
-			self.format = getFormat( hashP['import'] );
+			self.setFormat( getFormat( hashP['import'] ));
+			app[self.format.name].init( self.format.opts );
 //			console.debug('filename:',self.file.name,self.format);
-			// Depending on the file extension, select a module for importing:
-			switch( self.format ) {
-				case 'reqif':	mod = app.ioReqif; break;
-				case 'specif':	mod = app.ioSpecif; break;
-				case 'bpmn':	mod = app.ioBpmn; break;
-				case 'xls':		mod = app.ioXls
-			};
-//			console.debug('mod',mod);
-			if( !mod || !mod.verify( {name:hashP['import']} )) {
+			if( !app[self.format.name] || !app[self.format.name].verify( {name:hashP['import']} )) {
 				self.clear();
 				message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
 				self.show();
 				return
-			};
-
+			}; 
 			// Show the name of the specified import file:
 			let rF = textInput(i18n.LblFileName,self.file.name,null,null);
 			$("#formNames").html( rF );
@@ -183,7 +173,7 @@ modules.construct({
 				withCredentials: false,
 				done: function(res) {
 //					console.debug('httpGet done',res.response);
-					mod.toSpecif(res.response)
+					app[self.format.name].toSpecif(res.response)
 						.progress( setProgress )
 						.done( handleResult )
 						.fail( handleError )
@@ -196,17 +186,23 @@ modules.construct({
 		};
 		// Case 2: let the user pick an import file.
 //		console.debug('import 2');
+		self.setFormat( 'specif' );
 		
 		// At first, add the format selector;
 		// only at this point of time it is known which modules are loaded and initialized:
 		let str = '';
 		formats.forEach( function(s) {
-			str += '<button '+(modules.isReady(s.name)?'id="FormatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')"':'disabled')+' class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+			if( modules.isReady(s.name) ) {
+//				console.debug('isReady',s.id,self.format);
+				app[self.format.name].init( self.format.opts );
+				str += '<button id="FormatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+			} else {
+				str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+			}
 		});
 		$('#FormatSelector').html( str );
 		showFileSelect.set();
 
-		self.setFormat( 'specif' );
 		setImporting( false )
 	};
 	// module exit;
@@ -219,8 +215,7 @@ modules.construct({
 		$('input[type=file]').val( null );  // otherwise choosing the same file twice does not create a change event in Chrome
 		setTextValue(i18n.LblFileName,'');
 		setTextValue(i18n.LblProjectName,'');
-//		self.format = 'specif';
-		self.projectL.length = 0;  // list of projects
+	//	self.projectL.length = 0;  // list of projects
 		self.file = {name: ''};
 		self.projectName = '';
 		setProgress('',0);     // reset progress bar
@@ -228,26 +223,24 @@ modules.construct({
 		self.valid()
 	};
 	
-	self.format = 'specif';
-	self.setFormat = function( fmt ) {
-		if( importing ) return;
-		if( !fmt ) fmt = self.format;
-//		console.debug('setFormat',self.format,fmt);
+	self.setFormat = function( fId ) {
+		if( importing || !fId ) return;
+//		console.debug('setFormat',self.format,fId);
 
-		if( fmt!=self.format ) {
-			$('#FormatSelector-'+self.format).removeClass('active');
-			self.format = fmt
+		if( typeof(self.format)=='object' && fId!=self.format.id )
+			$('#FormatSelector-'+self.format.id).removeClass('active');
+		if( typeof(self.format)!='object' || fId!=self.format.id ) {
+			$('#FormatSelector-'+fId).addClass('active');
+			self.format = itemById(formats,fId)
 		};
-		$('#FormatSelector-'+fmt).addClass('active');
 
 		// show the file name:
-		let m=itemById(formats,fmt),
-			rF = textInput(i18n.LblFileName,'&nbsp;',null,null);
-		if( fmt=='xls' )
+		let rF = textInput(i18n.LblFileName,'&nbsp;',null,null);
+		if( fId=='xls' )
 			// create input form for the project name:
 			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.valid("'+i18n.LblProjectName+'")');
 
-		$('#HelpImport').html( m.help ); 
+		$('#HelpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
 		self.valid()
 	};
@@ -260,7 +253,7 @@ modules.construct({
 		let pnl = getTextLength(i18n.LblProjectName)>0,
 			// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
 			loaded = typeof(app.cache)=='object' && app.cache.loaded();	
-		allValid = self.file && self.file.name.length>0 && (self.format!='xls' || pnl);
+		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
 		
 		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
 		try {
@@ -275,7 +268,7 @@ modules.construct({
 		app.busy.set( st );
 		try {
 			document.getElementById("selectBtn").disabled = st;
-	//		if( self.format=='xls' ) document.getElementById("inputProjectName").disabled = st;
+	//		if( self.format.id=='xls' ) document.getElementById("inputProjectName").disabled = st;
 			document.getElementById("createBtn").disabled = st || loaded || !allValid;
 			document.getElementById("replaceBtn").disabled = st || !loaded || !allValid;
 			document.getElementById("cancelBtn").disabled = !st
@@ -285,19 +278,15 @@ modules.construct({
         let f = document.getElementById("importFile").files[0];
 		// check if file-type is eligible:
 //		console.debug('select',f.name,self.format);
-		switch( self.format ) {
-			case 'reqif':		f = app.ioReqif.verify( f ); break;
-			case 'specif':		f = app.ioSpecif.verify( f ); break;
-			case 'bpmn':		f = app.ioBpmn.verify( f ); break;
-			case 'xls':			f = app.ioXls.verify( f )
-		};
+
+		f = app[self.format.name].verify( f );
 		if( f ) {
 			self.file = f;
-			self.projectL.length = 0;  // https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+		//	self.projectL.length = 0;  // https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 
 			setTextValue(i18n.LblFileName, f.name);
 
-			if( self.format=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
+			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
 				setTextValue( i18n.LblProjectName, self.projectName );
 				setTextFocus( i18n.LblProjectName )
@@ -320,14 +309,10 @@ modules.construct({
 		importMode = {id:mode};
 		setProgress(i18n.MsgReading,10); 
 
-		self.projectName = getTextValue(i18n.LblProjectName);
+		self.projectName = textValue(i18n.LblProjectName);
 //		console.debug( 'doImport', self.projectName, self.file );
-		switch( self.format ) {
-			case 'reqif':	readFile( self.file, app.ioReqif.toSpecif ); break;
-			case 'specif':	readFile( self.file, app.ioSpecif.toSpecif ); break;
-			case 'bpmn':	readFile( self.file, app.ioBpmn.toSpecif ); break;
-			case 'xls':		readFile( self.file, app.ioXls.toSpecif )
-		};
+
+		readFile( self.file, app[self.format.name].toSpecif );
 		return
 		
 		function readFile( f, fn ) {
@@ -441,12 +426,7 @@ modules.construct({
 	}
 	self.abort = function() {
 		console.info('abort pressed');
-		switch( self.format ) {
-			case 'reqif':	app.ioReqif.abort(); break;
-			case 'specif':	app.ioSpecif.abort(); break;
-			case 'bpmn':	app.ioBpmn.abort(); break;
-			case 'xls':		app.ioXls.abort()
-		};
+		app[self.format.name].abort();
 		app.cache.abort()
 	};
 	return self

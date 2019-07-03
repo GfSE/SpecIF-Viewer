@@ -162,8 +162,8 @@ function toOxml( data, opts ) {
 				// SpecIF headings are chapter level 2, all others level 3:
 				let h = rC.isHeading?2:3;
 
-				// all titles get a bookmark, so that any titleLink has a target:
 //				console.debug('titleOf',r,ti);
+				// all titles get a bookmark, so that any titleLink has a target:
 				return wParagraph( {text: (ti?ic+ti:''), heading:h, bookmark:pars.nodeId } )
 			}	
 			

@@ -93,14 +93,6 @@ app = {
 					label: i18n.TabRelations,
 					selectedBy: '#selectStatements'	// DOM element in parent's selector to choose this view
 				},{
-					name: CONFIG.reports,
-					// no loadAs, so name will be used for the controller object
-					// Definitions as a view of the parent:
-					view: '#'+CONFIG.reports,		// uses implicit action refresh at parent level
-					viewClass: 'contentWide',		// whole width under control of the view
-					label: i18n.TabReports,
-					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
-				},{
 					name: CONFIG.objectFilter,
 					// no loadAs, so name will be used for the controller object
 					// Definitions as a view of the parent:
@@ -108,6 +100,14 @@ app = {
 					viewClass: 'contentWide',		// whole width under control of the view
 					label: i18n.TabFilter,
 					selectedBy: '#selectFilters'	// DOM element in parent's selector to choose this view
+				},{
+					name: CONFIG.reports,
+					// no loadAs, so name will be used for the controller object
+					// Definitions as a view of the parent:
+					view: '#'+CONFIG.reports,		// uses implicit action refresh at parent level
+					viewClass: 'contentWide',		// whole width under control of the view
+					label: i18n.TabReports,
+					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 				}]
 			}, {
 				action: 'app.cache.export()',

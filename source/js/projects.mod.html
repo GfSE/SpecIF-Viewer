@@ -470,7 +470,7 @@ function ProjectsVM() {
 					cssClass: 'btn-success', 
 					action: function (thisDlg) {
 							// Get folder title
-							let p1 = getTextValue(i18n.LblTitle);
+							let p1 = textValue(i18n.LblTitle);
 
 							// Cases of selected tree nodes:
 							// - is a project: Add the new folder name directly in front of the project name: newFolder/projectName or otherFolders/newFolder/projectName
@@ -739,13 +739,13 @@ function ProjectsVM() {
 			// is  called on input to field named 'item'.
 			// set color feedback on the input field:
 			switch( item ) {
-				case i18n.LblProjectName: 	setTextState( item, getTextValue(item).length>0?'has-success':'has-error' ); break;
+				case i18n.LblProjectName: 	setTextState( item, textValue(item).length>0?'has-success':'has-error' ); break;
 				case i18n.LblDescription:
 				case i18n.LblTool:			setTextState( item, 'has-success' ); 
 			};
 			// enable/disable the save button depending on the input state of all fields;
 			// in this case only a non-zero length of the project name is required:
-			let aV = getTextValue(i18n.LblProjectName).length>0;
+			let aV = textValue(i18n.LblProjectName).length>0;
 			if( self.allValid != aV ) {
 				self.allValid = aV;
 				$( '#contentActions' ).html( self.doneBtns() );
@@ -793,8 +793,8 @@ function ProjectsVM() {
 								action: function (thisDlg) {
 									let spc = {
 											id: genID('H-'),
-											longName: getTextValue(i18n.LblTitle),
-											description: getTextValue(i18n.LblDescription),
+											longName: textValue(i18n.LblTitle),
+											description: textValue(i18n.LblDescription),
 											specType: sp.specType || myProject.spcTypes[ radioValue( i18n.LblType ) ].id
 									};
 									if( sp.children && sp.children.length>0 )
@@ -848,8 +848,8 @@ function ProjectsVM() {
 						label: i18n.BtnSave,
 						cssClass: 'btn-primary', 
 						action: function (thisDlg) {
-							sp.longName = getTextValue(i18n.LblTitle);
-							sp.description = getTextValue(i18n.LblDescription);
+							sp.longName = textValue(i18n.LblTitle);
+							sp.description = textValue(i18n.LblDescription);
 							myProject.updateContent( 'hierarchy', sp )
 								.done( projects.refresh )
 								.fail( handleError );
@@ -946,9 +946,9 @@ function ProjectsVM() {
 			// extract user-input directly from the form:
 			projects.saveProject({
 				id: self.value.id,
-				title: getTextValue(i18n.LblProjectName),
-				description: getTextValue(i18n.LblDescription),
-				tool: getTextValue(i18n.LblTool)
+				title: textValue(i18n.LblProjectName),
+				description: textValue(i18n.LblDescription),
+				tool: textValue(i18n.LblTool)
 			});
 			// remove the form completely ( view() only hides it ), to avoid duplication of ids:
 			$( '#projectAboutForm' ).empty()

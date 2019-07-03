@@ -98,7 +98,7 @@ function setTextState( lbl, state ) {
 	el.addClass(state);
 	return true
 }
-function getTextValue( lbl ) {
+function textValue( lbl ) {
 	// get the input value:
 	try {
 		return noCode(document.getElementById('field'+lbl.simpleHash()).value)
@@ -109,7 +109,7 @@ function getTextValue( lbl ) {
 function getTextLength( lbl ) {
 	// get length the input value:
 	try {
-		return getTextValue( lbl ).length
+		return textValue( lbl ).length
 	} catch(e) {
 		return null
 	}
@@ -121,13 +121,14 @@ function radioInput( lbl, opts ) {
 	var rB;
 	switch( lbl.display ) {
 		case 'none': 
-			rB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+			rB = 	'<div class="form-group '+(lbl.classes||'')+'">'
 				+		'<div class="radio" >';
 			break;
 		case 'left': 
-			rB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+		//	rB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
 		//		+		'<label class="col-sm-3 control-label input-sm" >'+lbl.label+'</label>'  works!
 		//		+		'<div class="col-sm-9 radio" >';  works!
+			rB = 	'<div class="form-group '+(lbl.classes||'')+'">'
 				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
 				+		'<div class="attribute-value radio" >';
 			break;
@@ -140,7 +141,7 @@ function radioInput( lbl, opts ) {
 		tp = ( o.type )?'&#160;('+o.type+')':'';   // add type in brackets, if available
 		rB +=			'<div>'
 			+				'<label>'
-			+					'<input type="radio" name="radio'+nm+'" value="'+i+'" '+chd+'/>'
+			+					'<input type="radio" name="radio'+nm+'" value="'+(o.id||i)+'" '+chd+'/>'
 			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+(o.title||titleOf(o))+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
@@ -162,13 +163,14 @@ function checkboxInput( lbl, opts ) {
 	var cB;
 	switch( lbl.display ) {
 		case 'none': 
-			cB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+			cB = 	'<div class="form-group '+(lbl.classes||'')+'">'
 				+		'<div class="checkbox" >';
 			break;
 		case 'left': 
-			cB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
+		//	cB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
 		//		+		'<label class="col-sm-3 control-label input-sm" >'+lbl.label+'</label>'  works!
 		//		+		'<div class="col-sm-9 checkbox" >';  works!
+			cB = 	'<div class="form-group '+(lbl.classes||'')+'">'
 				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
 				+		'<div class="attribute-value checkbox" >';
 			break;
@@ -180,7 +182,7 @@ function checkboxInput( lbl, opts ) {
 		tp = o.type?'&#160;('+o.type+')':'';   // add type in brackets, if available
 		cB +=			'<div>'
 			+				'<label>'
-			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+i+'" '+(o.checked?'checked ':'')+'/>'
+			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(o.id||i)+'" '+(o.checked?'checked ':'')+'/>'
 			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+(o.title||titleOf(o))+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
@@ -193,9 +195,9 @@ function checkboxValues( lbl ) {
 	// get the selected check boxes as array with indices:
 	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked');
 	var resL = [];
-	chd.forEach( function(i) {
-		resL.push( i.value )
-	});
+	for( var i=0, I=chd.length; i<I; i++ ) {	// chd is an object, not an array
+		resL.push( chd[i].value )
+	};
 	return resL
 }
 function setStyle( sty ) {

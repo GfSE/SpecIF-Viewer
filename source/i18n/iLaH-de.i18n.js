@@ -169,7 +169,7 @@ i18n.LblStringMatch = '<span class="glyphicon glyphicon-text-background" />&nbsp
 i18n.LblWordBeginnings = 'Nur Wortanf&auml;nge ber&uuml;cksichtigen';
 i18n.LblWholeWords = 'Nur ganze Worte ber&uuml;cksichtigen';
 i18n.LblCaseSensitive = 'Gro&szlig;/Kleinschreibung beachten';
-i18n.LblIncludeEnums = 'Auswahlwerte einbeziehen';
+i18n.LblExcludeEnums = 'Auswahlwerte &uuml;bergehen';
 i18n.LblNotAssigned = '(ohne zugewiesenen Wert)';
 i18n.LblPrevious = 'Voriges';
 i18n.LblNext = 'N&auml;chstes';

@@ -991,10 +991,10 @@ modules.construct({
 				form.append( 
 					"<p>"+i18n.MsgExport+"</p>"
 				+	radioInput( i18n.LblFormat, [
-						{title: 'SpecIF', description:''},
-						{title: 'ReqIF', description:''},
-						{title: 'ePub', description:''},
-						{title: 'MS WORD (Open XML)', description:''}
+						{ title: 'SpecIF', id: 'SpecIF' },
+			//			{ title: 'ReqIF', id: 'ReqIF' },
+						{ title: 'ePub', id: 'ePub' },
+						{ title: 'MS WORD (Open XML)', id: 'OXML' }
 					]) 
 				);
 				return form },
@@ -1008,42 +1008,13 @@ modules.construct({
 					cssClass: 'btn-success', 
 					action: function (thisDlg) {
 						// Get index of option:
-						let idx = radioValue( i18n.LblFormat );
-						app.busy.set( true );
-						switch(idx) {
-							case '0':
-								// export as SpecIF:
-								exportAs( {format:'SpecIF'} )
-									.done( function() { 
-										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-										app.busy.reset();
-									})
-									.fail( handleError );
-								break;
-							case '1':
-								// export as ReqIF:
-								console.info('Export as ReqIF is not yet implemented');
-								message.show( 'Export as ReqIF is not yet implemented', {duration:CONFIG.messageDisplayTimeShort} );
+						app.busy.set();
+						exportAs( {format: radioValue( i18n.LblFormat )} )
+							.done( function() { 
+								message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
 								app.busy.reset();
-								break;
-							case '2':
-								// export as ePub:
-								exportAs( {format:'ePub'} )
-									.done( function() { 
-										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-										app.busy.reset();
-									})
-									.fail( handleError );
-								break;
-							case '3':
-								// export as OXML:
-								exportAs( {format:'OXML'} )
-									.done( function() { 
-										message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-										app.busy.reset();
-									})
-									.fail( handleError )
-						};
+							})
+							.fail( handleError );
 //						app.busy.reset();
 						thisDlg.close()
 					}
@@ -2198,7 +2169,7 @@ function dataTypeOf( pr, pCid ) {
 		//	   get dataType
 	// else:
 	// may happen, if a resource does not have any properties and it's title or description is being used:
-	return 'string' // by default
+	return {type: 'xs:string'} // by default
 }
 function enumValStr( dT, prp ) {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;

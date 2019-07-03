@@ -348,13 +348,13 @@ function Reports() {
 //		console.debug( 'countClicked', rX, cX, self.list, itm );
 		switch( itm.category ) {
 			case 'resourceClass':
-				fL.push({category: 'resourceClass', values: [itm.datasets[cX].id]});
+				fL.push({category: 'resourceClass', options: [itm.datasets[cX].id]});
 				break;
 		//	case 'statementClass':
 			// cannot filter by 'statement', yet
 			case 'enumValue':
-				fL.push({category: 'resourceClass', values: [itm.rCid]});  // pid: project-id
-				fL.push({category: 'enumValue', rCid: itm.rCid, pCid: itm.pCid, values: [itm.datasets[cX].id]})  // rCid: type-id
+				fL.push({category: 'resourceClass', options: [itm.rCid]});  // pid: project-id
+				fL.push({category: 'enumValue', rCid: itm.rCid, pCid: itm.pCid, options: [itm.datasets[cX].id]})  // rCid: type-id
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:

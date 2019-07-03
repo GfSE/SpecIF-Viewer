@@ -17,7 +17,7 @@
 	For example: If OT-Req is included in the filtering, all it's secondary filters (scope: OT-Req) must match, otherwise the examined resource is discarded:
 		[{ 
 			title: 'String Match',
-			category: 'resourceClass',
+			category: 'textSearch',
 			primary: true,
 			scope: 'projectId',  
 			baseType: 'xs:string',
@@ -25,7 +25,7 @@
 			wordBeginnings: false,
 			wholeWords: false,
 			caseSensitive: false,
-			includeEnums: true 
+			excludeEnums: false 
 		},{ 
 			title: 'Resource Class',
 			category: 'resourceClass',
@@ -90,14 +90,27 @@ modules.construct({
 //		console.debug( 'filters.init' );
 //		if( $.isFunction(cb) ) returnView = cb;   // callback
 		self.secondaryFilters = undefined;
+
+/*		<div class="btn-group btn-group-sm contentCtrl">
+			<button data-bind="click: resetClicked, html: i18n.BtnFilterReset" class="btn btn-default btn-sm" ></button>
+			<button data-bind="click: goClicked, html: i18n.BtnGo" class="btn btn-default btn-sm" ></button>
+			<span id="hitCount" class="btn notice-default contentNotice" /> 
+		</div>*/
 		
 		// the left panel on this page (only for this view):
 		let h = '<div class="paneLeft">'
 	//		+		'<div id="clicklist" class="pane-tree" />'
 			+		'<div id="primaryFilters" class="pane-filter" />'
 			+	'</div>'
+			+	'<div class="contentCtrl" >'
+			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
+			+			'<button class="btn btn-default" onclick="app.filter.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
+			+			'<button class="btn btn-default" onclick="app.filter.goClicked()" >'+i18n.BtnGo+'</button>'
+			+		'</div>'
+			+		'<div id="contentNotice" class="notice-default sscontentNotice" />'
+			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" />'
+			+	'</div>'
 			+	'<div id="hitlist" class="content" />';
-		console.debug('#',self.view);
 		$(self.view).html( h );
 
 	/*	// controls whether the left panel shows the hitlist or the filters:
@@ -144,7 +157,7 @@ modules.construct({
 			message.show(i18n.phrase('MsgFilterClogged') ); 
 			return
 		};
-		console.debug('filters.show',settings,self.filterList);
+//		console.debug('filters.show',settings,self.filterList);
 
 		// Show the panels with filter settings to the left:
 		let fps = '';
@@ -242,19 +255,18 @@ modules.construct({
 				for( var a=res.properties.length-1; a>-1; a-- ){
 					oa = res.properties[a];
 					// for each property test whether it contains 'str':
-					dT = dataTypeOf( app.cache, oa.propertyClass );
+					dT = dataTypeOf( app.cache, oa['class'] );
 					// in case of oa we have a property 'dataType':
 //					dT = itemById( app.cache.dataTypes, oa.dataType );
-//					console.debug('matchSearchString',f,oa,res.properties[a],dT);
+//					console.debug('matchSearchString',f,oa,dT);
 					switch( dT.type ) {
 						case 'xhtml':
 							if( patt.test( oa.value.stripHTML() )) return true; // if found return, continue searching, otherwise
 							break;
 						case 'xs:enumeration':
-							// only if the filter option 'include enumerated values' is checked:
-							if( f.includeEnums ) {
-								oa.value = enumValStr(dT,oa);
-								if( patt.test( oa.value ) ) return true  // if found return, continue searching, otherwise
+							// only if enumerated values are included in the search:
+							if( !f.excludeEnums ) {
+								if( patt.test( enumValStr(dT,oa) ) ) return true  // if found return, continue searching, otherwise
 							};
 							break;
 						default:
@@ -313,10 +325,10 @@ modules.construct({
 //				console.debug( 'matchAndMark', f );
 				switch( f.category ) {
 					case 'resourceClass': 
-						if( matchResClass(f) ) return res; // don't mark in this case
+						if( matchResClass(f) ) return hit; // don't mark in this case
 						return undefined;
 					case 'propertyValue': 
-						if( matchPropValue(f) ) return res; // don't mark in this case, either
+						if( matchPropValue(f) ) return hit; // don't mark in this case, either
 						return undefined;
 /*						if( matchPropValue(f) ) {
 							console.debug( 'attValueMatched' );
@@ -345,32 +357,32 @@ modules.construct({
 						return false;
 */					case 'textSearch': 
 						if( matchSearchString(f) ) {
-//							console.debug('matchSearchString',res);
+//							console.debug('matchSearchString',f,res);
 							// mark matching strings:
 							// ToDo: correct error: with option 'whole word', all findings are marked no matter it is a whole word or not. 
 							//   (The hitlist is correct, but also matches within a word are marked).
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
 							// ToDo: XHTML - Don't mark within a link ... it is destroyed.
 							if( f.searchString.length>0 ) {
-								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' ), oa=null;
+								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' );
 								// Clone the resource for marking the matches in the text:
 								var mO = {  // marked resource
-									id: res.id,
-									title: res.title,
-									class: res['class'],
+									id: hit.id,
+									title: hit.title,
+									class: hit['class'],
 									properties: []
 									};
-								for( var a=0, A=res.properties.length; a<A; a++ ) {
-									oa = res.properties[a];
+								hit.properties.forEach( function( hP ) {
 									mO.properties.push({
-										title: oa.title,  // needed for sorting the property into the columns
-										class: oa.propertyClass,
-										value: oa.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+										title: hP.title,  // for sorting the property into the columns
+										class: hP['class'],
+										value: hP.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									})
-								}; 
+								}); 
+//								console.debug(mO)
 								return mO
 							};
-							return res
+							return hit
 						}; 
 						return undefined
 				}
@@ -378,17 +390,18 @@ modules.construct({
 		
 //		console.debug('match',res);
 
-		// top-level: for the given resource, apply all filters (cycle through all elements of the filter list),
-		// work the filterList from the beginning backwards, so that the primary filters are evaluated first:
-		var hit = true;
+		// Top-level: for the given resource, apply all filters (cycle through all elements of the filter list),
+		// work the filterList from the beginning backwards, so that the primary filters are evaluated first.
+		// 'hit' accumulates all markings without changing the original resource 'res'.
+		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
+		var hit = res;
 		for( var i=0,I=self.filterList.length; typeof(hit)!='undefined' && i<I; i++) { 
-			// every applicable filter in the list must finish true for a match (otherwise the resource will be discarded):
 			hit = matchAndMark( self.filterList[i] )
-//			console.debug( 'hit 1', i, hit );
+//			console.debug( 'hit', i, hit );
 		};
 		if( hit ) {
-//			console.debug( 'hit', JSON.stringify( hit ));
-			// avoid duplicate entries:
+			// Add the marked resource to the result list for display,
+			// but avoid duplicate entries:
 			if( !app.specs.resources.exists(hit.id) )
 				app.specs.resources.push( hit )
 		};
@@ -403,9 +416,9 @@ modules.construct({
 			function checkResourceClass(f) {   // project scope applies to all resources:
 				// top-level filter, at least one option must be checked:
 				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
-				for( var j=0, J=f.options.length; j<J; j++){ 
-					if( f.options[j].checked ) rCL.push(f.options[j].id)
-				}; 
+				f.options.forEach( function(o) { 
+					if( o.checked ) rCL.push(o.id)
+				}); 
 				return !rCL.length   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
 			function checkPropertyValue(f) {   // 
@@ -426,7 +439,6 @@ modules.construct({
 		// top-level:
 		var clogged = false;  // initialize
 		for( var i=self.filterList.length-1; !clogged && i>-1; i--) {   // stop iterating right away if known it is clogged.
-			// 
 			switch( self.filterList[i].category ) {
 				case 'resourceClass': clogged = clogged || checkResourceClass(self.filterList[i]); break;
 			//	case 'statementClass': ....
@@ -467,7 +479,7 @@ modules.construct({
 				};
 				return null  // this should never happen ...
 			}
-			function addEnumFilter( pC, vals ) {
+			function addEnumFilter( rC, pC, vals ) {
 //				console.debug( 'addEnumFilter', aT, vals );
 				
 				// skip, if the filter is already in the list:
@@ -479,7 +491,7 @@ modules.construct({
 				
 				// Construct the filter descriptor and add it to the list of filters:
 				var eVF = { 
-					title: titleOf(pC),
+					title: titleOf(rC)+': '+titleOf(pC),
 					category: 'propertyValue',
 					primary: false,
 					scope: rC.id, 
@@ -495,6 +507,7 @@ modules.construct({
 		// start working, now:
 		if( def && def.category=='enumValue' ) {
 			// Add the filters for the specified resourceClass:
+			// def.category: 'enumValue' translates to filterList.category: 'propertyValue' && filterlist.baseType: 'xs.enumeration'
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
@@ -506,14 +519,14 @@ modules.construct({
 //				if( pcid==def.pCid && itemById( app.cache.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
 					|| (!def.pCid && itemById( app.cache.dataTypes, pC.dataType ).type=='xs:enumeration')) {
-					addEnumFilter( pC, def.values )
+					addEnumFilter( rC, pC, def.options )
 				}
 			})
 		}
 	};
 	// Build the filter list based on the project's data model:
 	function build( settings ) {
-		// settings is a list with filter types and values to build a specific filter list.
+		// settings is a list with filter types and options to build a specific filter list.
 //		console.debug( 'build', settings );
 
 		self.filterList.length = 0;
@@ -527,15 +540,13 @@ modules.construct({
 					scope: app.cache.id,
 					baseType: 'xs:string',
 			//		baseType: ['xs:string','xhtml'],
-					searchString: '',
-					wordBeginnings: false,
-					wholeWords: false,
-					caseSensitive: false,
-					includeEnums: true 
+					searchString: pre&&pre.searchString? pre.searchString : '',
+					wordBeginnings: pre&&pre.options.indexOf('wordBeginnings')>-1,
+					wholeWords: pre&&pre.options.indexOf('wholeWords')>-1,
+					caseSensitive: pre&&pre.options.indexOf('caseSensitive')>-1,
+					excludeEnums: pre&&pre.options.indexOf('excludeEnums')>-1 
 				};
-				if( pre ) {
-					if( pre.searchString ) flt.searchString = pre.searchString
-				};
+//				console.debug('addTextSearchFilter',flt);
 				self.filterList.push( flt )
 			}
 		if( settings && settings.defs && Array.isArray(settings.defs) ) {
@@ -551,7 +562,7 @@ modules.construct({
 
 			function addResourceClassFilter( pre ) {
 				// Add a filter with a selector for each 'resourceClass',
-				// pre is a resource with filter settings like {category: 'resourceClass', values: ['title1','title2']}
+				// pre is a resource with filter settings like {category: 'resourceClass', options: ['title1','title2']}
 //				console.debug( 'addResourceClassFilter', pre );
 				var oTF = {   // the primary filter criterion 'resource type'
 						title: i18n.TabSpecTypes,
@@ -569,16 +580,16 @@ modules.construct({
 						{ title: titleOf(rC),
 						id: rC.id,
 						checked: true};   // set selection by default
-					// if there are preset values, set the select flag accordingly:
-					if( pre && pre.values ) { 
-						opt.checked = pre.values.indexOf( rC.id )>-1
+					// if there are preset options, set the select flag accordingly:
+					if( pre && pre.options ) { 
+						opt.checked = pre.options.indexOf( rC.id )>-1
 					};
 					oTF.options.push( opt )
 				});
 
 				// a filter with a single option will never exclude a resource from the hit-list (or all of them), 
 				// therefore it is omitted, unless it has secondary filters:
-				if( oTF.options.length>1 || self.mayHaveSecondaryFilters( oTF.options[0].id )) {
+				if( oTF.options.length>1 || mayHaveSecondaryFilters( oTF.options[0].id )) {
 					self.filterList.push(oTF)
 				}
 			}
@@ -608,45 +619,7 @@ modules.construct({
 		}
 		// Secondary filters are also added to the list on request via addEnumValueFilters().
 	}
-	function renderTextFilterSettings( flt ) {
-		// render a single panel for text search settings:
-	//	var pn = '<div style="margin-bottom: 8px">'
-	//		+		'<input type="text" id="inputSearchString" data-bind="textInput: searchString" class="form-control input-sm" />'
-	//		+	'</div>';
-		return textInput( {label:flt.title,display:'none'}, '', 'line' )
-			+	checkboxInput( {label:flt.title,display:'none',classes:''},
-				[
-					{ title: i18n.LblWordBeginnings, checked: flt.wordBeginnings },
-					{ title: i18n.LblWholeWords, checked: flt.wholeWords },
-					{ title: i18n.LblCaseSensitive, checked: flt.caseSensitive },
-					{ title: i18n.LblIncludeEnums, checked: flt.includeEnums } 
-				])
-	}
-	function renderEnumFilterSettings( flt ) {
-		// render a single panel for enum filter settings:
-		return checkboxInput( {label:flt.title,display:'none',classes:''}, flt.options )
-	}
-/*	function renderSecondaryFilterSettings() {
-		var sF = '<h3>'+i18n.phrase( 'LblSecondaryFiltersForObjects', showSecondaryFilters().title )+'</h3>';
-		for( var f=0,F=filterList.length; f<F; f++ ) {
-			if(!filterList[f].primary && filterList[f].baseType=='xs:enumeration' && filterList[f].scope==self.showSecondaryFilters().id ) {
-				sF += 	'<div class="panel panel-default panel-filter" >' +
-							'<h4>'+filterList[f].title+'</h4>' +
-							'<div class="form-group" >';
-				for( var o=0;O=filterList[f].options.length; o<O; o++) {
-					sF +=		'<div style="margin-bottom: 2px" >' +
-									'<input type="checkbox" data-bind="enable: $parent.options.length>1, checked: checked" />' +
-									'<span>'+filterList[f].options[o].title+'</span>' +
-								'</div>'
-				}
-				sF += 		'</div>' +
-						'</div>'
-			}
-		}
-		return sF
-	}
-*/		
-	self.mayHaveSecondaryFilters = function( rCid ) {  // rCid is resource class id
+	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
 		var rC = itemById( app.cache.allClasses, rCid ),
 			pC;  
 		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
@@ -657,17 +630,60 @@ modules.construct({
 		};
 		return false
 	};
-/*	self.goClicked = function() {  // go!
+	function renderTextFilterSettings( flt ) {
+		// render a single panel for text search settings:
+		return textInput( {label:flt.title,display:'none'}, flt.searchString, 'line' )
+			+	checkboxInput( {label:flt.title,display:'none',classes:''}, [
+					{ title: i18n.LblWordBeginnings, id: 'wordBeginnings', checked: flt.wordBeginnings },
+					{ title: i18n.LblWholeWords, id: 'wholeWords', checked: flt.wholeWords },
+					{ title: i18n.LblCaseSensitive, id: 'caseSensitive', checked: flt.caseSensitive },
+					{ title: i18n.LblExcludeEnums, id: 'excludeEnums', checked: flt.excludeEnums } 
+				])
+	}
+	function renderEnumFilterSettings( flt ) {
+		// render a single panel for enum filter settings:
+		return checkboxInput( {label:flt.title,display:'none',classes:''}, flt.options )
+	}
+	function getTextFilterSettings( flt ) {
+		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) }
+	}
+	function getEnumFilterSettings( flt ) {
+	/*	let resL = checkboxValues(flt.title);
+		flt.options.forEach( function (o) {
+			o.checked = resL.indexOf( o.id )>-1
+		}) */
+//		console.debug( resL, flt );
+		return checkboxValues(flt.title)
+	}
+	self.goClicked = function() {  // go!
 		self.secondaryFilters = undefined;
 		app.specs.resources.init();
-		return self.show()
+
+		// read filter settings:
+		var fL = [];
+		self.filterList.forEach( function(f) {
+			switch( f.category ) {
+				case 'textSearch': 
+					fL.push( getTextFilterSettings( f ) );
+					break;
+				case 'resourceClass':
+					fL.push({category: f.category, options: getEnumFilterSettings( f )}) 
+					break;
+				case 'propertyValue':
+					// def.category: 'enumValue' translates to filterList.category: 'propertyValue' && filterlist.baseType: 'xs:enumeration'
+					fL.push({category: 'enumValue', rCid: f.scope, pCid: f.propClass, options: getEnumFilterSettings( f )})  // rCid: type-id
+			}	
+		});
+//		console.debug( 'goClicked', self.filterList, fL );
+		// don't need newView, as it is already shown:
+		return self.show( { defs:fL } )
 	};
 	self.resetClicked = function() {  
 		// reset filters:
 		self.clear();
 		self.show()
 	};
-	self.secondaryFiltersClicked = function( oT ) {
+/*	self.secondaryFiltersClicked = function( oT ) {
 		// toggle between the hitlist and the secondary filter settings:
 //		console.debug( 'secondaryFiltersClicked', oT );
 		if( self.secondaryFilters==oT ) {
@@ -687,64 +703,3 @@ modules.construct({
 */	
 	return self
 });
-	
-/*
-<div id="objectFilterT" >
-	<div id="primaryFilters" class="selection" >
-		<div class="primaryFilters">
-
-	<!-- ko foreach: filterList -->
-		<!-- ko if: (primary && baseType=='xs:string') -->
-			<div class="panel panel-default panel-filter" >
-				<h4 data-bind="html: label"></h4>
-				<div class="form-group">
-					<div style="margin-bottom: 8px">
-						<input type="text" id="inputSearchString" data-bind="textInput: searchString" class="form-control input-sm" />
-					</div>
-					<div>
-						<input type="checkbox" data-bind="checked: wordBeginnings"></input>
-						<span data-bind="html: i18n.LblWordBeginnings"></span>
-					</div>
-					<div>
-						<input type="checkbox" data-bind="checked: wholeWords"></input>
-						<span data-bind="html: i18n.LblWholeWords"></span>
-					</div>
-					<div>
-						<input type="checkbox" data-bind="checked: caseSensitive"></input>
-						<span data-bind="html: i18n.LblCaseSensitive"></span>
-					</div>
-					<div>
-						<input type="checkbox" data-bind="checked: includeEnums"></input>
-						<span data-bind="html: i18n.LblIncludeEnums"></span>
-					</div>
-				</div>
-			</div>
-		<!-- /ko -->
-		<!-- ko if: (primary && baseType=='xs:enumeration') -->
-			<div class="panel panel-default panel-filter" >
-				<h4 data-bind="html: label"></h4>
-				<div class="form-group" >
-				<!-- ko foreach: options -->
-					<div style="margin-bottom: 4px" >
-						<!-- ko if: $parents[1].mayHaveSecondaryFilters( id ) -->
-							<button data-bind="click: function(){$parents[1].secondaryFiltersClicked( $data )}, html: i18n.IcoFilter" class="btn btn-default btn-xs pull-right" />
-						<!-- /ko -->
-							<input type="checkbox" data-bind="enable: $parent.options.length>1, checked: selected" />
-							<span data-bind="html: label" />
-					</div>
-				<!-- /ko -->
-				</div>
-			</div>
-		<!-- /ko -->
-	<!-- /ko -->
-		</div>
-	</div>   <!--  id="primaryFilters"   -->
-
-		<div class="btn-group btn-group-sm contentCtrl">
-			<button data-bind="click: resetClicked, html: i18n.BtnFilterReset" class="btn btn-default btn-sm" ></button>
-			<button data-bind="click: goClicked, html: i18n.BtnGo" class="btn btn-default btn-sm" ></button>
-			<span id="hitCount" class="btn notice-default contentNotice" /> 
-		</div>
-
-</div>   <!-- id="objectFilterT" -->
-*/
