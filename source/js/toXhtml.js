@@ -30,6 +30,8 @@ function toXhtml( data, opts ) {
 	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
 	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
 	if( typeof(opts.RE)!='object' ) opts.RE = {};
+	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = /&(.{0,8})/g;
+	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = /&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/;
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 
