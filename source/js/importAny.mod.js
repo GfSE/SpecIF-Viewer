@@ -130,9 +130,6 @@ modules.construct({
 			me.logout();
 			return
 		};  */
-	/*	let fm=itemById(formats,'specif');
-		if( modules.isReady(fm.name) )
-			app[fm.name].init(fm.opts); */
 		
 			function getFormat(p) {
 				// filename without extension must have at least a length of 1:
