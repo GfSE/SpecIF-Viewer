@@ -30,8 +30,8 @@ function toXhtml( data, opts ) {
 	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
 	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
 	if( typeof(opts.RE)!='object' ) opts.RE = {};
-	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = /&(.{0,8})/g;
-	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = /&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/;
+	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
+	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 
@@ -512,8 +512,10 @@ function toXhtml( data, opts ) {
 		return -1
 	}
 	function replaceLt( txt ) {
-		// remove '<' where it is neither an opening or closing tag.
-		// Beware that the MS-Edge ePub-Reader is not up to the standards !
+		// remove '<' where it does not belong to a tag;
+		// Beware that (as of today) the MS-Edge ePub-Reader is not up to the standards !
+		// Also 'Sigil' issues a wrong error message on opening a document with other special chars
+		// which are permitted according to the specs.
 		return txt.replace( /<([^a-z//]{1})/g, function($0,$1) {return '&lt;'+$1} )
 	}
 	function escapeXML( s ) {
@@ -529,7 +531,7 @@ function toXhtml( data, opts ) {
 			})
 			.replace(/[<>"']/g, function($0) {
 				// 2. Replace <, >, " and ':
-				return "&" + {"<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
+				return "&#" + {"<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 			})
 	}
 	function extOf( str ) {

@@ -608,12 +608,12 @@ String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }
 // escape HTML characters:
 String.prototype.escapeXML = function() {
 	return this.replace(/["'&<>]/g, function($0) {
-		return "&" + {"&":"#38", "<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
+		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 	})
 };
 String.prototype.escapeHTML = function() {
 	return this.replace(/[&<>"'`=\/]/g, function($0) {
-		return "&" + {"&":"#38", "<":"#60", ">":"#62", '"':"#34", "'":"#39", "`":"#x60", "=":"#x3D", "/":"#x2F"}[$0] + ";";
+		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	})
 };
 

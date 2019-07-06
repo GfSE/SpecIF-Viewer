@@ -15,8 +15,8 @@ function toOxml( data, opts ) {
 //	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
 	if( typeof(opts.RE)!='object' ) opts.RE = {};
-	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = /&(.{0,8})/g;
-	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = /&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/;
+	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
+	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 
 	// ToDo: Reject versions < 0.10.8
 	
