@@ -1243,6 +1243,7 @@ modules.construct({
 //		console.debug('specif.set',iD);
 		return iD
 
+			// a data type:
 			function dT2int( iE ) {
 		//		iE.category = 'dataType';
 				switch( iE.type ) {
@@ -1265,12 +1266,14 @@ modules.construct({
 //				console.debug('dataType 2int',iE);
 				return iE
 			}
+			// a property class:
 			function pC2int( iE ) {
 				var oE = {
 					id: iE.id,
 					title: vocabulary.property.specif(noCode(iE.title))	// an input file may have titles which are not from the SpecIF vocabulary.
 				};
 				if( iE.description ) oE.description = noCode(iE.description);
+				if( iE.value ) oE.value = noCode(iE.value);
 				oE.dataType = iE.dataType;
 				let dT = itemById( iD.dataTypes, iE.dataType );
 				switch( dT.type ) {
@@ -1295,7 +1298,7 @@ modules.construct({
 //				console.debug('propClass 2int',iE,oE);
 				return oE
 			}
-			// common for all classes:
+			// common for all instance classes:
 			function aC2int( iE ) {
 				var oE = {
 					id: iE.id,
@@ -1304,6 +1307,7 @@ modules.construct({
 				if( iE.description ) oE.description = noCode(iE.description);
 				if( iE.icon ) oE.icon = iE.icon;
 				if( iE.creation ) oE.instantiation = iE.creation;	// deprecated, for compatibility
+				if( iE['extends'] ) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5 
 				if( iE.instantiation ) oE.instantiation = iE.instantiation;
 				if( oE.instantiation ) 	{
 					let idx = oE.instantiation.indexOf('manual');	// deprecated
@@ -1343,6 +1347,7 @@ modules.construct({
 //				console.debug('anyClass 2int',iE,oE);
 				return oE
 			}
+			// a resource class:
 			function rC2int( iE ) {
 				var oE = aC2int( iE );
 		//		oE.category = 'resourceClass';
@@ -1372,6 +1377,7 @@ modules.construct({
 //				console.debug('resourceClass 2int',iE,oE);
 				return oE
 			}
+			// a statementClass:
 			function sC2int( iE ) {
 				var oE = aC2int( iE );
 		//		oE.category = 'statementClass';
@@ -1380,6 +1386,7 @@ modules.construct({
 //				console.debug('statementClass 2int',iE,oE);
 				return oE
 			}
+			// a hierarchyClass:
 			function hC2int( iE ) {
 				// hierarchyClasses (used up until v0.10.6) are stored as resourceClasses,
 				// later on, the hierarchy-roots will be stored as resources referenced by a node:
@@ -1389,6 +1396,7 @@ modules.construct({
 //				console.debug('hierarchyClass 2int',iE,oE);
 				return oE
 			}
+			// a property:
 			function p2int( iE ) {
 				let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
 					dT = itemById( iD.dataTypes, pT.dataType );
@@ -1415,6 +1423,7 @@ modules.construct({
 //				console.debug('propValue 2int',iE,pT,oE);
 				return oE
 			}
+			// common for all instances:
 			function a2int( iE ) {
 				var oE = {
 					id: iE.id,
@@ -1439,12 +1448,14 @@ modules.construct({
 //				console.debug('element 2int',oE);
 				return oE
 			}
+			// a resource:
 			function r2int( eR ) {
 				var iR = a2int( eR );
 				iR['class'] = eR[names.rClass];
 //				console.debug('resource 2int',eR,iR);
 				return iR
 			}
+			// a statement:
 			function s2int( eS ) {
 				var iS = a2int( eS );
 				iS.title = itemById( iD.statementClasses, eS[names.sClass] ).title;
@@ -1462,6 +1473,7 @@ modules.construct({
 //				console.debug('statement 2int',eS,iS);
 				return iS
 			}
+			// a hierarchy:
 			function h2int( eH ) {
 			//	var iH = a2int( eH );
 			//	iH['class'] = eH[names.hClass];
@@ -1490,6 +1502,7 @@ modules.construct({
 //				console.debug('hierarchy 2int',eH,iH);
 				return iH
 
+				// a hierarchy node:
 				function n2int( eN ) {
 					iH.flatL.push(eN.resource);
 					switch( typeof(eN.revision) ) {
@@ -1505,6 +1518,7 @@ modules.construct({
 					return eN
 				}
 			}
+			// a file:
 			function f2int( iF ) {
 				var oF = iF;
 //				console.debug('f2int',iF);
@@ -1587,17 +1601,20 @@ modules.construct({
 //		console.debug('specif.get exit',spD);
 		return spD
 
+			// a data type:
 			function dT2ext( iE ) {
 				var oE = simpleClone(iE);
 		//		delete oE.category;
 				return oE
 			}
+			// a property class:
 			function pC2ext( iE ) {
 				var oE = {
 					id: iE.id,
 					title: opts.translateTitles? titleOf(iE) : iE.title		
 				};
 				if( iE.description ) oE.description = iE.description;
+				if( iE.value ) oE.value = iE.value;
 				oE.dataType = iE.dataType;
 				let dT = itemById( app.cache.dataTypes, iE.dataType );
 				switch( dT.type ) {
@@ -1625,7 +1642,7 @@ modules.construct({
 	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
 				return oE
 			}
-			// common for all classes:
+			// common for all instance classes:
 			function aC2ext( iE ) {
 				var oE = {
 					id: iE.id,
@@ -1634,6 +1651,7 @@ modules.construct({
 				if( iE.description ) oE.description = iE.description;
 				if( iE.icon ) oE.icon = iE.icon;
 				if( iE.instantiation ) oE.instantiation = iE.instantiation;
+				if( iE._extends ) oE['extends'] = iE._extends;
 				if( iE.propertyClasses.length>0 ) oE.propertyClasses = iE.propertyClasses;
 				if( iE.revision ) oE.revision = iE.revision;
 				oE.changedAt = iE.changedAt;
@@ -1642,12 +1660,14 @@ modules.construct({
 	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
 				return oE
 			}
+			// a resource class:
 			function rC2ext( iE ) {
 				var oE = aC2ext( iE );
 				// Include "isHeading" in SpecIF only if true:
 				if( iE.isHeading ) oE.isHeading = true;
 				return oE
 			}
+			// a statement class:
 			function sC2ext( iE ) {
 				var oE = aC2ext( iE );
 				if( iE.subjectClasses && iE.subjectClasses.length>0 ) oE.subjectClasses = iE.subjectClasses;
@@ -1658,6 +1678,7 @@ modules.construct({
 				var oE = aC2ext( iE );
 				return oE
 			} */
+			// a property:
 			function p2ext( iE ) {
 				if( !iE.value ) return null;	// skip empty properties
 				var oE = {
@@ -1682,6 +1703,7 @@ modules.construct({
 				// properties do not have their own revision and change info; the parent's apply.
 				return oE
 			}
+			// common for all instances:
 			function a2ext( iE ) {
 				var eE = {
 					id: iE.id,
@@ -1699,11 +1721,13 @@ modules.construct({
 	//			if( iE.createdBy ) eE.createdBy = iE.createdBy;
 				return eE
 			}
+			// a resource:
 			function r2ext( iR ) {
 				var eR = a2ext( iR );
 //				console.debug('resource 2int',iR,eR);
 				return eR
 			}
+			// a statement:
 			function s2ext( iS ) {
 //				console.debug('statement 2ext',iS.title);
 				if( CONFIG.hiddenStatements.indexOf( iS.title )>-1 ) return null;  // do not export invisible statements
@@ -1718,6 +1742,7 @@ modules.construct({
 				eS.object = iS.object.id;
 				return eS
 			}
+			// a hierarchy node:
 			function n2ext( iN ) {
 				// just take the non-redundant properties:
 				let eN = {
@@ -1730,9 +1755,11 @@ modules.construct({
 					eN.nodes = forAll(iN.nodes,n2ext);
 				return eN
 			}
+			// a hierarchy:
 			function h2ext( iH ) {
 				return n2ext(iH)
 			}
+			// a file:
 			function f2ext( iF ) {
 				var eF = {
 					id: iF.id,  // is the distinguishing/relative part of the URL
@@ -1782,7 +1809,7 @@ modules.construct({
 							// older versions of the checking routine don't set the responseType:
 							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
 								rc.responseType = 'text';
-							console.error('SpecIF Consistency Check:', rc);
+//							console.debug('SpecIF Consistency Check:', rc);
 							cDO.reject( rc )
 						}
 			},	
@@ -2268,31 +2295,41 @@ function hasContent( pV ) {
 		|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(pV)
 		|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(pV)
 }
-function initProp( pT ) {
+function initProp( pCs, pCid ) {
 	// create an empty property from the supplied class:
-	var p = {
-		title: pT.title,
-		class: pT.id,
-//		dataType: pT.dataType, 
-		upd: pT.upd,
-		del: pT.del
+//	console.debug('initProp',pCs,pCid);
+	var pC = itemById( pCs, pCid ),
+		p = {
+		title: pC.title,
+		class: pC.id,
+//		dataType: pC.dataType, 
+		// supply default value if available,
+		// ToDo: look up the default value at dataType, if pC (the propertyClass) hasn't any.
+		value: pC.value||'',	
+		upd: pC.upd,
+		del: pC.del
 	};
-	switch( itemById( app.cache.dataTypes, pT.dataType ).type ) {
-/*		case 'xhtml':
+/*	switch( itemById( app.cache.dataTypes, pC.dataType ).type ) {
+		case 'xhtml':
 			p.value = '<div>\n</div>';
 			break;
-*/		case 'xs:enumeration':
-			p.valueIDs = [];	// needed for editing
+		case 'xs:enumeration':
+		//	p.valueIDs = [];	// needed for editing
 		default:
 			p.value = ''
-	};
+	}; */
+//	console.debug('initProp',p);
 	return p
 }
-function initPropR( pT ) {
-	return pT.rea?initProp( pT ):null
+function initPropR( pCs, pCid ) {
+	// return an initialized property, if read permission is given:
+//	return pC.rea?initProp( pCs, pCid ):undefined
+	// we assume that the current user has read permission for all data in cache:
+	return initProp( pCs, pCid )
 }
-function initPropC( pT ) {
-	return pT.cre?initProp( pT ):null
+function initPropC( pCs, pCid ) {
+	// return an initialized property, if create permission is given:
+	return pC.cre?initProp( pCs, pCid ):undefined
 }
 function classifyProps( el, data ) {
 	"use strict";
@@ -2303,12 +2340,12 @@ function classifyProps( el, data ) {
 	var rC = itemById( data.resourceClasses, el['class']),
 		cP = {
 		id: el.id,
-		title: null,
+		title: undefined,
 		class: rC,
 		revision: el.revision,
 		descriptions: [],
 		// create a new list by copying the elements (do not copy the list ;-):
-		other: normalizeProps( data.propertyClasses, el.properties )
+		other: normalizeProps( data, data.resourceClasses, el )
 	};
 
 	// Now, all properties are listed in cP.other;
@@ -2373,17 +2410,25 @@ function classifyProps( el, data ) {
 		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
 		return txt
 	}
-}
-function normalizeProps( cL, oL ) { // class list, original property list
-	// Create a list of properties in the sequence of propertyClasses of the respective class.
-	// Use those provided by the original list (oL) and fill in missing ones with default (no) values.
-
-	let p,nL=[];  
-	if( Array.isArray(cL) )
-		cL.forEach( function(c) {
-			p = itemBy( oL, 'class', c.id )
-				|| initPropR(c);
+	function normalizeProps( dta, iCs, i ) { 
+		// iCs: instance class list (resourceClasses or statementClasses)
+		// i: instance (resource or statement)
+		// Create a list of properties in the sequence of propertyClasses of the respective class.
+		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+		let p,pCs,nL=[],
+			iC = itemById(iCs,i['class']);
+		// build a list of propertyClass identifiers including the extended class':
+		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
+//		console.debug('normalizeProps',i,iC,pCs.toString());
+		pCs = pCs.concat( itemById( iCs, i['class'] ).propertyClasses||[] );
+//		console.debug('normalizeProps',pCs);
+		// add the properties in sequence of the propertyClass identifiers:
+		pCs.forEach( function(pCid) {
+			p = itemBy( i.properties, 'class', pCid )
+				|| initPropR(dta.propertyClasses,pCid);
 			if( p ) nL.push( p )
 		});
-	return nL // normalized property list
+//		console.debug('normalizeProps result',nL);
+		return nL // normalized property list
+	}
 }

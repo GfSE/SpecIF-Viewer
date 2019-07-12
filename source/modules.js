@@ -57,7 +57,8 @@ function ModuleManager() {
 			return self
 		};
 		// init phase 1: Load the javascript routines common to all apps:
-		loadH( ['config', 'bootstrap', 'i18n'], {done:init2} )
+		loadH( ['config', 'bootstrap', 'i18n'], {done:init2} );
+		return
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2() {
@@ -313,7 +314,7 @@ function ModuleManager() {
 				case "schemaJson": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@3.0.4/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@3.4.3/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;

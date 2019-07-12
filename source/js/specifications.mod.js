@@ -981,7 +981,7 @@ modules.construct({
 								aV.value = enumValStr( dT, aV )
 							});
 							// arrange properties in a sequence corresponding to the resourceClass's propertyClasses:
-							rev.properties = normalizeProps( sT.propertyClasses, rev.properties );
+							rev.properties = normalizeProps( sT.propertyClasses, rev );
 							revL.push( rev );	// add response=revision to the list of revisions.
 							
 							// when the last response has been received, do the postprocessing:
@@ -1834,7 +1834,7 @@ function Resource( obj ) {
 		var rChI = '';
 		switch( app.specs.selectedTab() ) {
 			case CONFIG.objectRevisions: 
-				rChI = 	attrV( i18n.LblRevision, ob.revision.toString(), 'attribute-condensed' );
+				rChI = 	attrV( i18n.LblRevision, ob.revision, 'attribute-condensed' );
 				// no break
 			case CONFIG.comments: 
 				rChI += attrV( i18n.LblModifiedAt, localDateTime(ob.changedAt), 'attribute-condensed' ) +
