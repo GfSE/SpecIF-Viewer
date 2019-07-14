@@ -2303,8 +2303,7 @@ function initProp( pCs, pCid ) {
 		title: pC.title,
 		class: pC.id,
 //		dataType: pC.dataType, 
-		// supply default value if available,
-		// ToDo: look up the default value at dataType, if pC (the propertyClass) hasn't any.
+		// supply default value if available:
 		value: pC.value||'',	
 		upd: pC.upd,
 		del: pC.del

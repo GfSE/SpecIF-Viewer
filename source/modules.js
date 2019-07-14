@@ -306,7 +306,7 @@ function ModuleManager() {
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "excel": 				loadM( 'zip' );	
 										//	getScript( vPath+'/3rd/xlsx-0.12.13.full.min.js' ).done( function() {setReady(mod)} ); return true;
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.3/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
