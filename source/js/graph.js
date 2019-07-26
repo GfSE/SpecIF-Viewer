@@ -536,4 +536,4 @@ function Graph() {
 	self.init();
 	return self
 };
-var statementsGraph = new Graph();
+app.statementsGraph = new Graph();

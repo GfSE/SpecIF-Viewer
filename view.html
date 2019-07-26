@@ -17,7 +17,6 @@
 		<div id="logo" ></div>
 		<div id="pageSelector" class="btn-group btn-group-md pageActions" ></div>
 		<div id="spinner" ></div>
-		<!--<div id="pageActions" class="btn-group btn-group-md pageActions"></div>-->
 		<div id="pageTitle" class="pageTitle" ></div>
 	</div>
 </div>
@@ -70,10 +69,10 @@ app = {
 					// no view
 				}]
 			}, {
-				name: 'specifications',
+				name: CONFIG.specifications,
 				loadAs: 'specs',					// the name of the controller object to construct
 				// This is a view of the parent:
-				view: '#specifications',			// uses implicit actions show/hide
+				view: '#'+CONFIG.specifications,	// uses implicit actions show/hide
 				label: i18n.BtnRead,
 				selectedBy: '#selectSpecs',			// DOM element in parent's selector to choose this view
 				// To control the views of the children:
@@ -87,13 +86,15 @@ app = {
 					label: i18n.TabDocument,
 					selectedBy: '#selectDocument'	// DOM element in parent's selector to choose this view
 				},{
-					name: 'statementsGraph',
-					// no loadAs, so name will be used for the controller object
+					// nothing to load
 					// Definitions as a view of the parent:
 					view: '#'+CONFIG.relations,		// uses implicit action refresh at parent level
 					viewClass: 'content',
 					label: i18n.TabRelations,
-					selectedBy: '#selectStatements'	// DOM element in parent's selector to choose this view
+					selectedBy: '#selectStatements',	// DOM element in parent's selector to choose this view
+					children: [{
+						name: 'statementsGraph'
+					}]
 				},{
 					name: CONFIG.objectFilter,
 					// no loadAs, so name will be used for the controller object
@@ -161,12 +162,12 @@ app = {
 };
 
 $( function() {
-	// the DOM is ready,
+	// The DOM is ready.
 	app.busy = new State({
 		showWhenSet: ['#spinner'],
-		hideWhenSet: ['#pageActions','#contentActions']
+		hideWhenSet: ['.pageActions','#contentActions']
 	});
-	// ) submit all modules to load and the function to start the app thereafter:
+	// Submit all modules to load and the function to start the app thereafter:
 	modules.init({
 		appVersion: '0.95.5',
 		done: app.init

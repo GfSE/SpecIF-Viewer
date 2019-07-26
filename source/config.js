@@ -77,7 +77,7 @@ const CONFIG = {};
 	CONFIG.folders = 'folders';
 	// Specifications:
 	CONFIG.objectTable = 'table';
-	CONFIG.objectList = 'document';  
+	CONFIG.objectList = 'doc';  
 	CONFIG.objectFilter = 'filter';
 	CONFIG.objectDetails = 'resources';
 	CONFIG.objectRevisions = 'revisions';
@@ -153,7 +153,6 @@ const CONFIG = {};
 //	CONFIG.relTypeRefersTo = 'SpecIF:refersTo';	
 	CONFIG.relTypeCommentRefersTo = 'SpecIF:commentRefersTo';	
 //	CONFIG.relTypeIssueRefersTo = 'SpecIF:issueRefersTo';	
-	CONFIG.stereotype = 'SpecIF:Stereotype';
 	CONFIG.resType = 'SpecIF:Type';
 	
 /////////////////////////////////////////////////
@@ -265,7 +264,7 @@ const CONFIG = {};
 	];
 
 	CONFIG.stereotypeProperties = [
-		CONFIG.stereotype
+		'UML:Stereotype'
 	];
 
 	// A list of properties to suppress generally, specified by title.  

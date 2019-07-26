@@ -1091,7 +1091,7 @@ modules.construct({
 					translateTitles: opts.translateTitles,
 					translate: i18n.lookup,
 					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-					stereotypeProperties: opts.translateTitles? forAll(CONFIG.stereotypeProperties, i18n.lookup ) : CONFIG.stereotypeProperties,
+					stereotypeProperties: CONFIG.stereotypeProperties,
 					// If a hidden property is defined with value, it is suppressed only if it has this value;
 					// if the value is undefined, the property is suppressed in all cases.
 					// so far (iLaH v0.92.44), property titles are translated:
@@ -2204,7 +2204,7 @@ function enumValStr( dT, prp ) {
 	if( dT.type!='xs:enumeration' ) return prp.value;
 	let ct = '',
 		eV,
-		st = prp.title==CONFIG.stereotype,
+		st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
 		vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 	vL.forEach( function(v,i) {
 		eV = itemById(dT.values,v);

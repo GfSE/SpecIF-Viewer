@@ -82,7 +82,7 @@ function toOxml( data, opts ) {
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
-			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['SpecIF:Stereotype'];	
+			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
 			// If no label is provided, the respective properties are skipped:
 			if( opts.propertiesLabel && opts.translateTitles ) opts.propertiesLabel = opts.translate( opts.propertiesLabel );	
@@ -747,7 +747,7 @@ function toOxml( data, opts ) {
 								for( var v=0,V=vL.length;v<V;v++ ) {
 									val = itemById(dT.values,vL[v].trim());
 									// If 'val' is an id, replace it by title, otherwise don't change:
-									// Add 'double-angle quotation' in case of stereotype values.
+									// Add 'double-angle quotation' in case of SubClass values.
 									if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.value+'&#x00bb;'):val.value)
 									else ct += (v==0?'':', ')+vL[v]
 								};
@@ -2350,7 +2350,7 @@ function toOxml( data, opts ) {
 			})
 			.replace(/[<>"']/g, function($0) {
 				// 2. Replace <, >, " and ':
-				return "&" + {"<":"#60", ">":"#62", '"':"#34", "'":"#39"}[$0] + ";";
+				return "&#" + {"<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 			})
 	}
 	// Make a very simple hash code from a string:

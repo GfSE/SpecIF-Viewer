@@ -78,15 +78,12 @@ function BPMN2Specif( xmlString, opts ) {
 		title: model.title,
 		class: 'RC-Diagram',
 		properties: [{
-			title: "dcterms:title",
 			class: "PC-Name",
 			value: model.title
 		}, {
-			title: "SpecIF:Diagram",
 			class: "PC-Diagram",
 			value: "<div><p class=\"inline-label\">Model View:</p><p>"+dg+"</p></div>"
 		}, {
-			title: "SpecIF:Notation",
 			class: "PC-Notation",
 			value: "BPMN 2.0 Process Diagram"
 		}],
@@ -108,12 +105,10 @@ function BPMN2Specif( xmlString, opts ) {
 				title: el.getAttribute("name"),
 				class: 'RC-Actor',
 				properties: [{
-					title: "dcterms:title",
 					class: "PC-Name",
 					value: el.getAttribute("name")
 				}, {
-					title: "SpecIF:Stereotype",
-					class: "PC-Stereotype",
+					class: "PC-SubClass",
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
@@ -127,12 +122,10 @@ function BPMN2Specif( xmlString, opts ) {
 				title: el.getAttribute("name"),
 				class: 'RC-State',
 				properties: [{
-					title: "dcterms:title",
 					class: "PC-Name",
 					value: el.getAttribute("name")
 				}, {
-					title: "SpecIF:Stereotype",
-					class: "PC-Stereotype",
+					class: "PC-SubClass",
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
@@ -212,12 +205,10 @@ function BPMN2Specif( xmlString, opts ) {
 									title: elName,
 									class: 'RC-Actor',
 									properties: [{
-										title: "dcterms:title",
 										class: "PC-Name",
 										value: elName
 									}, {
-										title: "SpecIF:Stereotype",
-										class: "PC-Stereotype",
+										class: "PC-SubClass",
 								//		value: "BPMN:"+'lane'
 										value: "SpecIF:Role"
 									}],
@@ -282,12 +273,10 @@ function BPMN2Specif( xmlString, opts ) {
 						title: title || tag,
 						class: "RC-Actor",
 						properties: [{
-							title: "dcterms:title",
 							class: "PC-Name",
 							value: title || tag
 						}, {
-							title: "SpecIF:Stereotype",
-							class: "PC-Stereotype",
+							class: "PC-SubClass",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -343,18 +332,16 @@ function BPMN2Specif( xmlString, opts ) {
 					// Interestingly enough, the name and other information are properties of xxxReference.
 					// - Which id to use, the dataObjectReference's or the dataObject's ?
 					// - We decide to use the former, as the associations use it.
-					// - Even though we use 'dataObject' or 'dataStore' as stereotype.
+					// - Even though we use 'dataObject' or 'dataStore' as SubClass.
 					model.resources.push({
 						id: id,
 						title: title || tag,
 						class: "RC-State",
 						properties: [{
-							title: "dcterms:title",
 							class: "PC-Name",
 							value: title || tag
 						}, {
-							title: "SpecIF:Stereotype",
-							class: "PC-Stereotype",
+							class: "PC-SubClass",
 							value: 'BPMN:'+( tag=='dataStoreReference'? 'dataStore' : 'dataObject' )
 						}],
 						changedAt: opts.xmlDate
@@ -375,12 +362,10 @@ function BPMN2Specif( xmlString, opts ) {
 						title: title || tag,
 						class: "RC-Event",
 						properties: [{
-							title: "dcterms:title",
 							class: "PC-Name",
 							value: title || tag
 						}, {
-							title: "SpecIF:Stereotype",
-							class: "PC-Stereotype",
+							class: "PC-SubClass",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -422,16 +407,13 @@ function BPMN2Specif( xmlString, opts ) {
 							title: title,
 							class: "RC-Actor",
 							properties: [{
-								title: "dcterms:title",
 								class: "PC-Name",
 								value: title
 							}, {
-								title: "dcterms:description",
 								class: "PC-Description",
 								value: desc
 							}, {
-								title: "SpecIF:Stereotype",
-								class: "PC-Stereotype",
+								class: "PC-SubClass",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.xmlDate
@@ -446,16 +428,13 @@ function BPMN2Specif( xmlString, opts ) {
 							title: title,
 							class: "RC-Actor",
 							properties: [{
-								title: "dcterms:title",
 								class: "PC-Name",
 								value: title
 							}, {
-								title: "dcterms:description",
 								class: "PC-Description",
 								value: opts.strForkParGatewayDesc
 							}, {
-								title: "SpecIF:Stereotype",
-								class: "PC-Stereotype",
+								class: "PC-SubClass",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.xmlDate
@@ -471,16 +450,13 @@ function BPMN2Specif( xmlString, opts ) {
 						title: title,
 						class: "RC-Actor",
 						properties: [{
-							title: "dcterms:title",
 							class: "PC-Name",
 							value: title
 						}, {
-							title: "dcterms:description",
 							class: "PC-Description",
 							value: opts.strForkExcGatewayDesc
 						}, {
-							title: "SpecIF:Stereotype",
-							class: "PC-Stereotype",
+							class: "PC-SubClass",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -523,11 +499,9 @@ function BPMN2Specif( xmlString, opts ) {
 						title: title,
 						class: "RC-Note",
 						properties: [{
-							title: "dcterms:title",
 							class: "PC-Name",
 							value: title
 						}, {
-							title: "dcterms:description",
 							class: "PC-Description",
 							value: '<p>'+ctrl2HTML(txt.innerHTML)+'</p>'
 						}],
@@ -563,18 +537,16 @@ function BPMN2Specif( xmlString, opts ) {
 							object:  itemById(model.resources,el.getAttribute('targetRef'))
 						};
 						// a. store an event representing the case:
-						title = (seqF.subject.title? seqF.subject.title+' &#8594; ' : '')+title; // → = &rarr; = &#8594;
+						title = (seqF.subject.title? seqF.subject.title+' → ' : '')+title; // → = &rarr; = &#8594;
 						model.resources.push({
 							id: id,
 							title: title,
 							class: "RC-Event",
 							properties: [{
-								title: "dcterms:title",
 								class: "PC-Name",
 								value: title
 							}, {
-								title: "SpecIF:Stereotype",
-								class: "PC-Stereotype",
+								class: "PC-SubClass",
 								value: 'SpecIF:'+'Condition'
 							}],
 							changedAt: opts.xmlDate
@@ -806,8 +778,8 @@ function BPMN2Specif( xmlString, opts ) {
 				dataType: "DT-ShortString",
 				changedAt: opts.xmlDate
 			},{
-				id: "PC-Stereotype",
-				title: "SpecIF:Stereotype",
+				id: "PC-SubClass",
+				title: "SpecIF:SubClass",
 				dataType: "DT-ShortString",
 				changedAt: opts.xmlDate
 			}]
@@ -826,21 +798,21 @@ function BPMN2Specif( xmlString, opts ) {
 			id: "RC-Actor",
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
-			propertyClasses: ["PC-Name","PC-Description","PC-Stereotype"],
+			propertyClasses: ["PC-Name","PC-Description","PC-SubClass"],
 			icon: "&#9632;",
 			changedAt: opts.xmlDate
 		},{
 			id: "RC-State",
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
-			propertyClasses: ["PC-Name","PC-Description","PC-Stereotype"],
+			propertyClasses: ["PC-Name","PC-Description","PC-SubClass"],
 			icon: "&#9679;",
 			changedAt: opts.xmlDate
 		},{
 			id: "RC-Event",
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
-			propertyClasses: ["PC-Name","PC-Description","PC-Stereotype"],
+			propertyClasses: ["PC-Name","PC-Description","PC-SubClass"],
 			icon: "&#9830;",
 			changedAt: opts.xmlDate
 		},{

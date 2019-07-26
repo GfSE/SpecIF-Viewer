@@ -29,8 +29,6 @@ modules.construct({
 		self.generalAdmin = false;
 		self.projectRoles = []
 	};
-	self.hide = function() {
-	};
 	self.login = function() {
 		var pDO = $.Deferred();
 		self.loggedin = true;

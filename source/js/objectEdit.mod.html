@@ -382,7 +382,7 @@ function ObjectEditVM() {
 					else
 						att.baseType = bT;  	// display a single-line input field
 					
-					if( !oa.upd && oa.longName==CONFIG.stereotype )
+					if( !oa.upd && CONFIG.stereotypeProperties.indexOf(oa.longName)>-1 )
 						att.content = '&#x00ab;'+oa.content+'&#x00bb;'
 					else
 						att.content( oa.content );

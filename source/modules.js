@@ -96,35 +96,55 @@ function ModuleManager() {
 	self.construct = function( defs, constructorFn ) {
 		// Construct controller and view of a module.
 		// This routine is called by the code in the file, once loaded with 'loadH'/'loadM',
-		// Make sure that 'setReady' is not called in 'loadM', if 'construct' is used:
-		let mo = findM(self.tree,defs.name);
+		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
+		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
+		
+		console.debug('construct 0',defs);
+		// find module by name or by view somewhere in the complete tree:
+		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
-			console.error("'"+defs.name+"' is not a registered module");
+			console.error(defs.name? "'"+defs.name+"' is not a defined module" : "'"+defs.view+"' is not a defined view");
 			return null
 		};
-		$.extend( mo, defs );
+		$.extend( mo, defs ); 
 
 		// construct the controller using the provided function:
 		constructorFn(mo);
+
+		// An execution name ('loadAs') may be specified when different modules (with diffent names) 
+		// create a component with  similar interface, but different function.
+		// For example, 'me' can be implemented by 'profileAnonymous' with minimal function or
+		// by 'profileMe' with full-fledged user management including user-roles and permissions;
+		// in this case the module carries the name 'profileAnonymous' resp. 'profileMe', while both
+		// specify loadAs: 'me'.
+		// A program uses both similarly, e.g. me.attribute or me.function().
+		// Of course loadAs must be unique in an app at any time.
+		// By default of 'loadAs', use 'name' or 'view' without the leading '#':
+		if( !mo.loadAs ) mo.loadAs = mo.name || mo.view.substring(1);
 		// make the module directly addressable by loadAs:
 		app[ mo.loadAs ] = mo;
 		// initialize:
-		mo.init(); 
+		if( typeof(mo.init)=='function' )
+			mo.init(); 
 		
-//		console.debug('construct',defs,mo);
-		setReady( defs.name )
+		console.debug('construct',defs,mo);
+		// if a module is constructed explicitly and not as a result of file loading, it is not registered. 
+		// In that case it does not have a name, so the condition is in fact redundant:
+		if( defs.name && self.registered.indexOf(defs.name)>-1 )
+			setReady( defs.name )
 	};
 	self.show = function( params ) {
 		// Show the specified view, which may be located somewhere in the hierarchy;
 		// Assuming that it's parent has a viewCtl: 
 //		console.debug('modules.show',params);
-		let mo = findM( self.tree, params.newView||params );
+		if( typeof(params)=='string' ) params = {newView: params};
+		let mo = findM( self.tree, params.newView );
 		if( !mo || !mo.parent.viewCtl ) {
-			console.error("'"+(params.newView||params)+"' is unknown");
+			console.error("'"+params.newView+"' is not a defined view");
 			return null
 		};
 		// ToDo: set all view controllers up the hierarchy so that the specified view is visible in any case.
-		// For the time being there is no jumping to subviews in another branch and so this feature is
+		// For the time being there is no direct jumping to subviews in another branch and so this feature is
 		// not yet needed, but it may be needed at some time in the future.
 //		console.debug('modules.show',params,mo);
 		return mo.parent.viewCtl.show(params)
@@ -138,9 +158,10 @@ function ModuleManager() {
 	};
 	return self
 
-	function findM( h, key ) {
-		// find the element with the given key in the module hierarchy 'h':
-			function f(e) {
+	function findM( tr, key ) {
+		// find the module with the given key in the module hierarchy 'tr':
+			function find(e) {
+				// by design: name without '#' and view with '#'
 				if( e.name==key || e.view==key ) return e;
 				if( e.children ) {
 					let m = findM(e.children,key);
@@ -148,15 +169,15 @@ function ModuleManager() {
 				};
 				return null
 			}
-		let mo=null;
-		if( Array.isArray(h) ) {
-			for( var i=0,I=h.length;i<I;i++ ) {
-				mo = f(h[i]);
-				if( mo ) return mo
+		let m=null;
+		if( Array.isArray(tr) ) {
+			for( var i=0,I=tr.length;i<I;i++ ) {
+				m = find(tr[i]);
+				if( m ) return m
 			}
 		} else {
-			mo = f(h);
-			if( mo ) return mo
+			m = find(tr);
+			if( m ) return m
 		};
 		return null
 	}
@@ -180,27 +201,14 @@ function ModuleManager() {
 					$(e.parent.view).append(d)
 				};
 				// load a module in case of elements with a name:
-				if( e.name ) {
-//					console.debug('l.load',e);
-					// An execution name ('loadAs') may be specified when different modules (with diffent names) 
-					// may create a component with  similar interface, but different function.
-					// For example, 'me' can be implemented by 'profileAnonymous' with minimal function or
-					// by 'profileMe' with full-fledged user management including user-roles and permissions;
-					// in this case the module carries the name 'profileAnonymous' resp. 'profileMe', while both
-					// specify loadAs: 'me'.
-					// A program uses both similarly, e.g. me.attribute or me.function().
-					// Of course loadAs must be unique in an app at any time.
-					// By default of 'loadAs', use 'name' (applies only at the top level):
-					if( !e.loadAs ) e.loadAs = e.name;
-					// load the module:
-					if( !e.lazy ) loadM( e.name )   
-				};
+				if( e.name && !e.lazy ) 
+					loadM( e.name );   
 				if( e.children ) {
 					// in certain cases prepare for controlling the children's views:
 					if( e.selector ) {
 //						console.debug('l.selector',e);
 						// The element has children and a selector, so add the view controller:
-						e.viewCtl = new Views();
+						e.viewCtl = new ViewCtl();
 
 						// ... and create a corresponding visual selector for the children's views,
 						// if it has not been defined manually:
@@ -379,7 +387,7 @@ function ModuleManager() {
 											$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 		*/
-				case 'specifications': 		// if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
+				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 											if( browser.isIE ) {
 												// In case of Internet Explorer, override CSS classes for image display:
 											//	$('head').append( '<link rel="stylesheet" type="text/css" href="./css/ReqIF-Server.ie.css" />');
@@ -392,7 +400,7 @@ function ModuleManager() {
 											getScript( vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript( vPath+'/js/reports.js' ).done( function() {setReady(mod)} ); return true;
+				case CONFIG.reports: 		getScript( vPath+'/js/reports.mod.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
@@ -401,8 +409,6 @@ function ModuleManager() {
 									//		loadM( 'zip' );  // needed for Excel export
 											$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
 											getScript( "./js/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true;
-				case CONFIG.objectFilter:  	$('#specsBody').append( '<div id="'+mod+'" class="noOverflow" ></div>' );
-											$('#'+mod).load( "./js/filter.mod.js", function() {setReady(mod)} ); return true;
 				case CONFIG.files: 			$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
 											getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
 				case 'object': 		 		loadM( 'xhtmlEditor' );
@@ -446,13 +452,16 @@ function ModuleManager() {
 		// Return the jqXHR object so we can chain callbacks
 		return $.ajax( options )
 	}
-	function Views( viewL ) {
+	function ViewCtl( viewL ) {
 		// Constructor for an object to control the visibility of the DOM-tree elements listed in 'list';
 		// the selected view is shown, all others are hidden.
-		// Views can be pages or tabs, depending on the navigation level:
+		// ViewCtl can be pages or tabs, depending on the navigation level:
 		var self = this;
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
+		function exists(v) {
+			return indexBy(self.list, 'view', v)>-1
+		}
 		self.init = function(vL) {
 			self.list = vL || [];
 			self.list.forEach(function(e){$(e).hide()}); 
@@ -460,7 +469,6 @@ function ModuleManager() {
 		};
 		self.add = function(v) {
 			// add the module to the view list of this level:
-//			console.debug('Views.add',self.list,v);
 			self.list.push(v);
 			$(v.view).hide()
 			// we could add the visual selector, here ... it is now part of loadH.
@@ -474,20 +482,21 @@ function ModuleManager() {
 				case 'undefined': return null;
 				case 'string': params = {newView: params}
 			};
-//			console.debug('Views.show',self.list,self.selected,params);
+//			console.debug('ViewCtl.show',self.list,self.selected,params);
 
 			if( self.selected && params.newView==self.selected.view ) {
-				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content); 	// update
+				// just update the current view:
+				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content); 	
 				return
 			};
 			// else: show params.newView and hide all others:
-			let v=null, s=null;
+			let v, s;
 			self.list.forEach( function(le) {
-//				console.debug('Views.show le',le);
-				v = $(le.view);
-				s = $(le.selectedBy);
+//				console.debug('ViewCtl.show le',le);
+				v = $(le.view);			// the view
+				s = $(le.selectedBy); 	// the visual selector
 				if( params.newView==le.view ) {
-//					console.debug('Views.show: ',le.view,le.selectedBy,v,s);
+//					console.debug('ViewCtl.show: ',le.view,le.selectedBy,v,s);
 					self.selected = le;
 					// set status of the parent's view selector:
 					s.addClass('active');
@@ -500,29 +509,32 @@ function ModuleManager() {
 						return
 					};
 					// b) initiate the corresponding (implicit) action:
-					if( typeof(le.show)=='function' )
-						le.show( params )
+					if( typeof(le.show)=='function' ) {
+						le.show( params );
+						return
+					}
 				} else {
-//					console.debug('Views.hide: ',le.view,le.selectedBy,v,s);
+//					console.debug('ViewCtl.hide: ',le.view,le.selectedBy,v,s);
 					// set status of the parent's view selector:
 					s.removeClass('active');
 					// control visibility:
 					v.hide();
 				//	v.empty();
 					// initiate the corresponding (implicit) action:
-					if( typeof(le.hide)=='function' ) 
-						le.hide()
+					if( typeof(le.hide)=='function' ) {
+						le.hide();
+						return
+					}
 				}
-			});
-			// Alternatively to le.show()/hide(), 
+			})
+		/*	// Alternatively to le.show()/hide(), 
 			// refresh() at the parent's level may be used to initiate an action.
-			// In general libraries which have not used modules.construct, 
-			// use this option, for example filter and reports.
+			// In general libraries which have not used modules.construct, use this option.
 			if( self.selected && typeof(self.selected.parent.refresh)=='function' ) 
-				self.selected.parent.refresh( params )
+				self.selected.parent.refresh( params ) */
 		};
 		self.hide = function(v) {
-			if( typeof(v)=='string' && self.exists(v) ) {
+			if( typeof(v)=='string' && exists(v) ) {
 				// hide a specific view:
 				$(v).hide();
 				return
@@ -536,9 +548,6 @@ function ModuleManager() {
 				$(self.selected.selectedBy).removeClass('active');
 				self.selected = null
 			}
-		};
-		self.exists = function(v) {
-			return indexBy(self.list, 'view', v)>-1
 		};
 		self.init(viewL);
 		return self

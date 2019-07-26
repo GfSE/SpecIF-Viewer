@@ -81,14 +81,12 @@ modules.construct({
 	name: CONFIG.objectFilter
 }, function(self) {
 	"use strict";
-//	var returnView = null;
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters = null;  // default: show resources (hit-list)
 
 	// Standard module interface methods:
-	self.init = function( cb ) {
+	self.init = function() {
 //		console.debug( 'filters.init' );
-//		if( $.isFunction(cb) ) returnView = cb;   // callback
 		self.secondaryFilters = undefined;
 
 /*		<div class="btn-group btn-group-sm contentCtrl">
@@ -98,52 +96,48 @@ modules.construct({
 		</div>*/
 		
 		// the left panel on this page (only for this view):
-		let h = '<div class="paneLeft">'
+		let h = '<div id="filterLeft" class="paneLeft">'
 	//		+		'<div id="clicklist" class="pane-tree" />'
 			+		'<div id="primaryFilters" class="pane-filter" />'
 			+	'</div>'
-			+	'<div class="contentCtrl" >'
+			+	'<div id="filterCtrl" class="contentCtrl" >'
 			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
 			+			'<button class="btn btn-default" onclick="app.filter.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
 			+			'<button class="btn btn-default" onclick="app.filter.goClicked()" >'+i18n.BtnGo+'</button>'
 			+		'</div>'
-			+		'<div id="contentNotice" class="notice-default sscontentNotice" />'
-			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" />'
+			+		'<div id="filterNotice" class="notice-default contentNotice" />'
+			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" />'
 			+	'</div>'
 			+	'<div id="hitlist" class="content" />';
 		$(self.view).html( h );
 
 	/*	// controls whether the left panel shows the hitlist or the filters:
 		self.showTree = new State({
-			showWhenSet: ['#filters'],
+			showWhenSet: ['#primaryFilters'],
 			hideWhenSet: ['#clicklist']
 		});  */
 	};
 	self.clear = function() {
 		self.secondaryFilters = undefined;
 	//	$('#hitCount').empty();
-		self.filterList.length = 0;
-		app.specs.resources.init()
+		self.filterList.length = 0
 	};
 	self.hide = function() {
+//		console.debug( 'filter.hide' );
+		$( '#hitlist' ).empty();
 		app.busy.reset()
 	};
-/*	// here, the only way to get out is by selecting another tab.
-	function returnOnSuccess() {
-		self.hide();
-		self.clear();
-		returnView()
-	};
-*/	// This is a sub-module to specs, so use its return method
 	function handleError(xhr) {
 		self.hide();
 		self.clear();
+		// This is a sub-module to specs, so use its return method:
 		stdError(xhr,app.specs.returnToCaller)
 	};
 
 	// standard module entry:
 	self.show = function( settings ) {   // optional filter settings
-//		console.debug( 'filters.show', settings );
+//		console.debug( 'filter.show', settings );
+		app.specs.showLeft.reset();
 
 		setContentHeight();
 	//	$('#hitCount').empty();
@@ -157,7 +151,7 @@ modules.construct({
 			message.show(i18n.phrase('MsgFilterClogged') ); 
 			return
 		};
-//		console.debug('filters.show',settings,self.filterList);
+//		console.debug('filter.show',settings,self.filterList);
 
 		// Show the panels with filter settings to the left:
 		let fps = '';
@@ -189,26 +183,22 @@ modules.construct({
 		// else update the hitlist:
 		app.specs.resources.init();
 		app.busy.set();
-		$('#hitList').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
+	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
+		$('#hitlist').empty();
 		let pend = 0;
 		app.specs.tree.iterate( function(nd) {
-			// Read asynchronously, so that the cache has the chance to reload from the server.
 			pend++;
 //			console.debug('tree.iterate',pend,nd.ref);
+			// Read asynchronously, so that the cache has the chance to reload from the server,
+			// Note that the sequence may differ from the hierarchy one's due to varying response times:
 			app.cache.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
-					// match() builds the hitlist (app.specs.resources) in the background:
-					if( match( rsp ) && app.specs.resources.values.length<CONFIG.objToShowCount ) {	
-						// show the first hits immediately, but avoid updating the view too often:
-						$('#hitlist').html( app.specs.resources.render() )  	
+					let h = match(rsp);
+					if( h )	{
+						let hR = new Resource( h );
+						$('#hitlist').append( hR.listEntry() )
 					};
 					if( --pend<1 ) {  // all done
-						if( app.specs.resources.values.length>CONFIG.objToShowCount )  
-							// show the final list, unless it has been rendered already:
-							$('#hitlist').html( app.specs.resources.render() );	
-						if( app.specs.resources.values.length<1 )  
-							$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>' );	
-					//	$('#hitCount').html(i18n.phrase('MsgObjectsFound',app.specs.resources.values.length));
 						app.busy.reset()
 					}
 				})
@@ -395,17 +385,18 @@ modules.construct({
 		// 'hit' accumulates all markings without changing the original resource 'res'.
 		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
 		var hit = res;
-		for( var i=0,I=self.filterList.length; typeof(hit)!='undefined' && i<I; i++) { 
+		for( var i=0,I=self.filterList.length; hit!='undefined' && i<I; i++) { 
 			hit = matchAndMark( self.filterList[i] )
 //			console.debug( 'hit', i, hit );
 		};
-		if( hit ) {
+	/*	if( hit ) {
 			// Add the marked resource to the result list for display,
 			// but avoid duplicate entries:
 			if( !app.specs.resources.exists(hit.id) )
 				app.specs.resources.push( hit )
 		};
-		return !!hit
+		return !!hit */
+		return hit
 	}
 	function isClogged() {
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):

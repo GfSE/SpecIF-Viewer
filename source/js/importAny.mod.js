@@ -51,7 +51,7 @@ modules.construct({
 		setTimeout( function() {
 				self.clear();
 				// change view to browse the content:
-				modules.show( '#specifications' )
+				modules.show( '#'+CONFIG.specifications )
 			}, 
 			400 
 		)
