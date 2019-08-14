@@ -99,7 +99,6 @@ function ModuleManager() {
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
 		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
 		
-		console.debug('construct 0',defs);
 		// find module by name or by view somewhere in the complete tree:
 		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
@@ -127,7 +126,7 @@ function ModuleManager() {
 		if( typeof(mo.init)=='function' )
 			mo.init(); 
 		
-		console.debug('construct',defs,mo);
+//		console.debug('construct',defs,mo);
 		// if a module is constructed explicitly and not as a result of file loading, it is not registered. 
 		// In that case it does not have a name, so the condition is in fact redundant:
 		if( defs.name && self.registered.indexOf(defs.name)>-1 )

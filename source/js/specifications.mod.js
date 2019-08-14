@@ -49,7 +49,6 @@ modules.construct({
 		// else set new dialog:
 		self.resources.init();
 		$('#contentActions').empty();
-		doRefresh( {newView:newV} );
 	//	self.showLeft.set(hasLeftPane(newV));
 	//	self.showTree.set();
 	//	self.viewCtl.show('#'+newV);
@@ -503,7 +502,6 @@ modules.construct({
 	function doRefresh( parms ) {
 		// Route execution depending on the current state (selected tab):
 		// This routine is called in the following situations:
-		// - user clicks on a tab -> respective viewCtl callsrefresh(), if there it does not see view().
 		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in editing mode.
 		// - cache update is signalled -> again, refresh only any content in view mode.
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
@@ -513,6 +511,8 @@ modules.construct({
 		$('#contentNotice').empty();
 	//	self.showLeft.set( hasLeftPane( parms.newView ) );
 	//	self.showTree.set();
+	
+		// update the current view:
 		self.viewCtl.selected.show( parms )
 	}
 
@@ -683,11 +683,11 @@ modules.construct({
 					.done( self.statements.show )
 					.fail( handleError )
 		} else { 
-			// Jump to resource rId:
 		//	self.selectTab( CONFIG.objectList );  
+			// Jump to resource rId:
 			self.tree.selectNodeByRef( {id: rId} );
-			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
+			document.getElementById(CONFIG.objectList).scrollTop = 0
 		}
 	};
 /*	self.togglemodeStaDel = function() {
