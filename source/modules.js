@@ -127,7 +127,8 @@ function ModuleManager() {
 			mo.init(); 
 		
 //		console.debug('construct',defs,mo);
-		// if a module is constructed explicitly and not as a result of file loading, it is not registered. 
+		// Set all registered modules to 'ready', ignore the others.
+		// If a module is constructed explicitly and not as a result of file loading, it is not registered. 
 		// In that case it does not have a name, so the condition is in fact redundant:
 		if( defs.name && self.registered.indexOf(defs.name)>-1 )
 			setReady( defs.name )

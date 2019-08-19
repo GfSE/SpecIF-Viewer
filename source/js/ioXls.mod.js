@@ -13,27 +13,7 @@ modules.construct({
 }, function(self) {
 	"use strict";
 	// the mode for creating a new project:
-/*	modeCre = {
-		id: 'create',
-		title: 'Create a new project with the given id',
-		description: "The entities ('resources') will be created as specified in a folder per worksheet."
-	};
-*/	// the modes for selection when an import is encountered which is already loaded:
-	var	modes = [{
-			id: 'update',
-			title: "Update changed entities of a project with the same name. All entities (worksheet lines) must have an 'id' property with a unique value; otherwise a new instance of the entity will be created.",
-			description: "New entities ('resources') will be created, modified ones will be superseded and the hierarchy will be replaced."
-		},{
-			id: 'replace',
-			title: 'Replace the project with the same name',
-			description: 'Existing content will be lost.'
-		},{
-			id: 'clone',
-			title: 'Create a new instance of the project with a new id',
-			description: 'There will be two projects with the existing and the new content.'
-		}],
-		mode = null,		// selected mode (how to import)
-		fDate = null,		// the file modification date
+	var	fDate = null,		// the file modification date
 		data = null,		// the SpecIF data structure for xls content
 		xDO = null;
 		
@@ -140,12 +120,12 @@ function xslx2specif( buf, pN, chgAt ) {
 				changedAt: chgAt
 			}];	
 			this.resourceClasses = [{	
-				id: resTypeId( CONFIG.objTypeFolder ),
+				id: resClassId( CONFIG.objTypeFolder ),
 				title: CONFIG.objTypeFolder,			// specType for folders (e.g. representing sheets) 
 				description: 'Resource type for folders',
 				instantiation: ["auto","user"],
 				propertyClasses: [{
-					id: 'PT-'+(CONFIG.objTypeFolder).toSpecifId()+'-title',
+					id: 'PC-'+(CONFIG.objTypeFolder).toSpecifId()+'-title',
 					title: CONFIG.attrTypeTitle,
 					description: 'Folder title',
 					dataType: 'DT-Title-string',
@@ -155,26 +135,26 @@ function xslx2specif( buf, pN, chgAt ) {
 			}];
 			this.statementClasses = [];
 			this.hierarchyClasses = [{	
-				id: 'HT-'+CONFIG.spcTypeOutline.toSpecifId(),
-				title: CONFIG.spcTypeOutline,			// specType for folders (e.g. representing sheets) 
+				id: 'RC-'+CONFIG.spcTypeOutline.toSpecifId(),
+				title: CONFIG.spcTypeOutline,			// specType for hierarchies
 				description: 'Hierarchy type for outlines',
 				instantiation: ["auto","user"],
 				changedAt: chgAt
 			}]
 		}
-		function ResType( lN ) { 
-			this.id = resTypeId( lN );
+		function ResClass( lN ) { 
+			this.id = resClassId( lN );
 			this.title = lN;
 			this.description = 'For resources specified per line of an excel sheet';
 			this.instantiation = ["auto","user"];
 			this.propertyClasses = [];
 			this.changedAt = chgAt
 		}
-		function resTypeId( lN ) { 
-			return 'RT-'+lN.toSpecifId()
+		function resClassId( lN ) { 
+			return 'RC-'+lN.toSpecifId()
 		}
-		function PropType( ws, lN, dT ) { 
-			this.id = 'PT-'+(ws+lN+dT).simpleHash();
+		function PropClass( ws, lN, dT ) { 
+			this.id = 'PC-'+(ws+lN+dT).simpleHash();
 			this.title = lN;
 			this.dataType = 'DT-'+dT;		// like baseTypes[i].id
 			this.changedAt = chgAt
@@ -289,7 +269,7 @@ function xslx2specif( buf, pN, chgAt ) {
 					function createRes( ws, l ) {
 						var res = {
 //								title: 'XLS Line',   // ... title will be set according to the properties, later on.
-								class: resTypeId( ws.resTypeName ),
+								class: resClassId( ws.resClassName ),
 								properties: [],
 								changedAt: chgAt
 							};
@@ -297,7 +277,7 @@ function xslx2specif( buf, pN, chgAt ) {
 						for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++) {		// an attribute per column ...
 							cell = ws.data[colName(c)+l];
 							if( cell ) {												// ... if it has content
-								aT = itemById(specif.resourceClasses,resTypeId( ws.resTypeName )).propertyClasses[c-1];		// types begin with index 0
+								aT = itemById(specif.resourceClasses,resClassId( ws.resClassName )).propertyClasses[c-1];		// classes begin with index 0
 								dT = itemById(specif.dataTypes,aT.dataType);
 
 								// Find the value to be taken as resource identifier:
@@ -306,7 +286,7 @@ function xslx2specif( buf, pN, chgAt ) {
 								if( !id ) id = CONFIG.idProperties.indexOf(aT.title)<0?null:getVal( dT.type, cell );
 								// ToDo: Consider whether it is better to select the id property beforehand and not over and over again for every resource.
 
-//								console.debug( 'createRes-cell', ws.resTypeName, aT, dT, cell, getVal( dT.type, cell) );
+//								console.debug( 'createRes-cell', ws.resClassName, aT, dT, cell, getVal( dT.type, cell) );
 								res.properties.push({
 									title: aT.title,
 									class: aT.id,
@@ -341,10 +321,10 @@ function xslx2specif( buf, pN, chgAt ) {
 				var fld = {
 						id: 'F-'+(sh.name+CONFIG.objTypeFolder).simpleHash(),
 						title: sh.name,
-						class: resTypeId( CONFIG.objTypeFolder ),
+						class: resClassId( CONFIG.objTypeFolder ),
 						properties: [{
 							title: CONFIG.attrTypeTitle,
-							class: 'PT-'+(CONFIG.objTypeFolder).toSpecifId()+'-title',
+							class: 'PC-'+(CONFIG.objTypeFolder).toSpecifId()+'-title',
 							value: sh.name
 						}],
 						changedAt: chgAt
@@ -369,43 +349,43 @@ function xslx2specif( buf, pN, chgAt ) {
 				specif.hierarchies[0].nodes.push( hTree )
 			}
 
-			function getPropType( col ) {	
+			function getPropClass( col ) {	
 				// Determine the data type of all values of the column starting with the second row (= second list entry).
 				// If all are equal, the data type is assumed; by default it is 'TEXT'.
 				// Some values may be null, i.e. no value.
 					
-					function compatibleTypes( a, b ) {
+					function compatibleClasses( a, b ) {
 						var e =	isDateTime(a) && isDateTime(b)
 								|| isNumber(a) && isNumber(b)
 								|| isBool(a) && isBool(b);
 								// no need to compare strings, as this is the default
-//						console.debug('compatibleTypes',a,b,e)
+//						console.debug('compatibleClasses',a,b,e)
 						return e
 					}
 				
 				let ti = col[0]?(col[0].w || col[0].v):i18n.MsgNoneSpecified,		// the cell value in the first line is the property title
 					aT=null;
-//				console.debug( 'getPropType 1', ti );
+//				console.debug( 'getPropClass 1', ti );
 				// cycle through the list as long as one of the values is undefined/null OR both are equal:
-				for( var i=1, I=col.length; i<I && ( !aT || !col[i] || compatibleTypes( aT, col[i] )); i++ ) {
+				for( var i=1, I=col.length; i<I && ( !aT || !col[i] || compatibleClasses( aT, col[i] )); i++ ) {
 					if( !aT && col[i] 								// catch the first valid cell
 						 || isInt(aT) && isReal(col[i]) ) { 
 							aT = col[i] 							// take least restrictive number format
 					};
-//					console.debug('getPropType 2',i,I,aT,col[i])
+//					console.debug('getPropClass 2',i,I,aT,col[i])
 				};
 				// the loop has ended early, i.e. the types are not compatible for all lines>0:
-				if( i<I || !aT )		return new PropType( ws.name, ti, 'Text-8192' );
+				if( i<I || !aT )		return new PropClass( ws.name, ti, 'Text-8192' );
 				// else, the types are equal for all lines>0:
-//				if( isXHTML(aT) ) 		return new PropType( ws.name, ti, 'XLS Formatted Text' );				
-				if( isDateTime(aT) ) 	return new PropType( ws.name, ti, 'Date-time' );				
-				if( isReal(aT) ) 		return new PropType( ws.name, ti, 'Real' );				
-				if( isInt(aT) ) 		return new PropType( ws.name, ti, 'Integer' );				
-				if( isBool(aT) ) 		return new PropType( ws.name, ti, 'Boolean' );	
-				// per default:
-				return new PropType( ws.name, ti, 'Text-8192' )
+//				if( isXHTML(aT) ) 		return new PropClass( ws.name, ti, 'XLS Formatted Text' );				
+				if( isDateTime(aT) ) 	return new PropClass( ws.name, ti, 'Date-time' );				
+				if( isReal(aT) ) 		return new PropClass( ws.name, ti, 'Real' );				
+				if( isInt(aT) ) 		return new PropClass( ws.name, ti, 'Integer' );				
+				if( isBool(aT) ) 		return new PropClass( ws.name, ti, 'Boolean' );	
+				// by default:
+				return new PropClass( ws.name, ti, 'Text-8192' )
 			}
-			function getPropTypes( ws ) { 
+			function getPropClasses( ws ) { 
 				// build a list of types; default is "TEXT"
 				var types=[],col=null,aT=null;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
@@ -415,7 +395,7 @@ function xslx2specif( buf, pN, chgAt ) {
 						col.push( ws.data[ colName(c)+r ])							
 					};
 //					console.debug( 'col', col );
-					types.push( getPropType( col ) )
+					types.push( getPropClass( col ) )
 				};
 //				console.debug( 'types', types );
 				return types
@@ -436,14 +416,14 @@ function xslx2specif( buf, pN, chgAt ) {
 		
 		if( ws.range ) {							
 			// only if the sheet has content:
-			ws.resTypeName = CONFIG.objTypeXlsRow+' ('+ws.name+')';
+			ws.resClassName = CONFIG.objTypeXlsRow+' ('+ws.name+')';
 			ws.firstCell = coord(ws.range.split(":")[0]);
 			ws.lastCell = coord(ws.range.split(":")[1]);
 
-			// 3.1 Create a resourceType per XLS-sheet so that a resource can be created per XLS-row:
-			var ot = new ResType( ws.resTypeName );
+			// 3.1 Create a resourceClass per XLS-sheet so that a resource can be created per XLS-row:
+			var ot = new ResClass( ws.resClassName );
 			// Create a property class for each column using the names specified in line 1:
-			ot.propertyClasses = getPropTypes( ws );
+			ot.propertyClasses = getPropClasses( ws );
 //			console.debug('ot',ot);
 			specif.resourceClasses.push(ot);
 			
@@ -475,7 +455,7 @@ function xslx2specif( buf, pN, chgAt ) {
 	specif.hierarchies = [{
 		id: 'H-'+pN.toSpecifId(),
 		title: pN,
-		class: 'HT-'+CONFIG.spcTypeOutline.toSpecifId(),
+		class: 'RC-'+CONFIG.spcTypeOutline.toSpecifId(),
 		nodes: [],
 		changedAt: chgAt
 	}];

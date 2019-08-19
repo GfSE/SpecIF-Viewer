@@ -89,13 +89,7 @@ modules.construct({
 //		console.debug( 'filters.init' );
 		self.secondaryFilters = undefined;
 
-/*		<div class="btn-group btn-group-sm contentCtrl">
-			<button data-bind="click: resetClicked, html: i18n.BtnFilterReset" class="btn btn-default btn-sm" ></button>
-			<button data-bind="click: goClicked, html: i18n.BtnGo" class="btn btn-default btn-sm" ></button>
-			<span id="hitCount" class="btn notice-default contentNotice" /> 
-		</div>*/
-		
-		// the left panel on this page (only for this view):
+		// The left panel on this page (only for this view):
 		let h = '<div id="filterLeft" class="paneLeft">'
 	//		+		'<div id="clicklist" class="pane-tree" />'
 			+		'<div id="primaryFilters" class="pane-filter" />'
@@ -109,13 +103,7 @@ modules.construct({
 			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" />'
 			+	'</div>'
 			+	'<div id="hitlist" class="content" />';
-		$(self.view).html( h );
-
-	/*	// controls whether the left panel shows the hitlist or the filters:
-		self.showTree = new State({
-			showWhenSet: ['#primaryFilters'],
-			hideWhenSet: ['#clicklist']
-		});  */
+		$(self.view).html( h )
 	};
 	self.clear = function() {
 		self.secondaryFilters = undefined;
@@ -389,13 +377,6 @@ modules.construct({
 			hit = matchAndMark( self.filterList[i] )
 //			console.debug( 'hit', i, hit );
 		};
-	/*	if( hit ) {
-			// Add the marked resource to the result list for display,
-			// but avoid duplicate entries:
-			if( !app.specs.resources.exists(hit.id) )
-				app.specs.resources.push( hit )
-		};
-		return !!hit */
 		return hit
 	}
 	function isClogged() {
@@ -638,14 +619,6 @@ modules.construct({
 	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) }
 	}
-	function getEnumFilterSettings( flt ) {
-	/*	let resL = checkboxValues(flt.title);
-		flt.options.forEach( function (o) {
-			o.checked = resL.indexOf( o.id )>-1
-		}) */
-//		console.debug( resL, flt );
-		return checkboxValues(flt.title)
-	}
 	self.goClicked = function() {  // go!
 		self.secondaryFilters = undefined;
 		app.specs.resources.init();
@@ -658,11 +631,11 @@ modules.construct({
 					fL.push( getTextFilterSettings( f ) );
 					break;
 				case 'resourceClass':
-					fL.push({category: f.category, options: getEnumFilterSettings( f )}) 
+					fL.push({category: f.category, options: checkboxValues(f.title)}) 
 					break;
 				case 'propertyValue':
 					// def.category: 'enumValue' translates to filterList.category: 'propertyValue' && filterlist.baseType: 'xs:enumeration'
-					fL.push({category: 'enumValue', rCid: f.scope, pCid: f.propClass, options: getEnumFilterSettings( f )})  // rCid: type-id
+					fL.push({category: 'enumValue', rCid: f.scope, pCid: f.propClass, options: checkboxValues(f.title)})  // rCid: type-id
 			}	
 		});
 //		console.debug( 'goClicked', self.filterList, fL );
