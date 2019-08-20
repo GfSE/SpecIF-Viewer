@@ -309,7 +309,7 @@ function ModuleManager() {
 				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.10/jqtree.css" />');
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.10/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.11/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
@@ -317,7 +317,7 @@ function ModuleManager() {
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "excel": 				loadM( 'zip' );	
 										//	getScript( vPath+'/3rd/xlsx-0.12.13.full.min.js' ).done( function() {setReady(mod)} ); return true;
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.3/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.5/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
 
 				case "schemaJson": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');

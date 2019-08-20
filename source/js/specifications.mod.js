@@ -1433,7 +1433,7 @@ function Resource( obj ) {
 
 		function renderStatementsTable() {
 			// Render a table with all statements grouped by type:
-			if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		//	if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 
 //			console.debug( 'Resource.statements', self.value );
 			let sGL = self.staGroups;
@@ -1457,8 +1457,8 @@ function Resource( obj ) {
 						sG.rGs.forEach( function(r) {
 							relG.push({
 								id: r.id,
-								tId: r.object.id,
-								tT: elementTitleWithIcon(r.object),
+								sId: r.subject.id,
+								sT: elementTitleWithIcon(r.subject),
 								computed: !r['class']
 							});
 						});
