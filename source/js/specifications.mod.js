@@ -1478,7 +1478,7 @@ function Resource( obj ) {
 								rT += '<a onclick="app.specs.relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
 						});
 						// Title and object are the same for all statements in this list:
-						rT += '</td><td style="vertical-align: middle"><i>'+resTitleOf(sG.rGs[0])+'</i></td>';
+						rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0])+'</i></td>';
 						rT += '<td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGs[0].object)+'</span></td></tr>'
 					};
 					if( sG.rGt.length ) {
@@ -1501,7 +1501,7 @@ function Resource( obj ) {
 						});
 						// Title and subject are the same for all statements in this list:
 						rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject)+'</span></td>';
-						rT += '<td style="vertical-align: middle"><i>'+resTitleOf(sG.rGt[0])+'</i></td><td>';
+						rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0])+'</i></td><td>';
 						// The list of resources:
 						relG.forEach( function(tg) {
 							if( app.specs.modeRelDel && tg.computed )
