@@ -991,10 +991,10 @@ modules.construct({
 				form.append( 
 					"<p>"+i18n.MsgExport+"</p>"
 				+	radioInput( i18n.LblFormat, [
-						{ title: 'SpecIF', id: 'SpecIF' },
-			//			{ title: 'ReqIF', id: 'ReqIF' },
-						{ title: 'ePub', id: 'ePub' },
-						{ title: 'MS WORD (Open XML)', id: 'OXML' }
+						{ title: 'SpecIF', id: 'specif' },
+			//			{ title: 'ReqIF', id: 'reqif' },
+						{ title: 'ePub', id: 'epub' },
+						{ title: 'MS WORD (Open XML)', id: 'oxml' }
 					]) 
 				);
 				return form },
@@ -1032,7 +1032,7 @@ modules.construct({
 			if( self.exporting ) return null;
 			
 			if( !opts ) opts = {};
-			if( !opts.format ) opts.format = 'SpecIF';
+			if( !opts.format ) opts.format = 'specif';
 			// in certain cases, try to export files with the same name in PNG format, as well.
 			// - ole: often, preview images are supplied in PNG format;
 			// - svg: for generation of DOC or ePub, equivalent images in PNG-format are needed.
@@ -1059,14 +1059,13 @@ modules.construct({
 											.done( function() { */
 												// export the project to file:
 												switch( opts.format ) {
-													case 'SpecIF':
-														storeSpecifz();
+													case 'specif':
+													case 'reqif':
+														storeAs( opts );
 														break;
-													case 'ePub':
-														storeEpub()  
-														break;
-													case 'OXML':
-														storeOxml()  
+													case 'epub':
+													case 'oxml':
+														generate( opts )  
 												}
 			/*								})
 											.fail( handleError )
@@ -1081,59 +1080,41 @@ modules.construct({
 			};
 			return eDO
 
-			function storeEpub( opts ) {
-				if( !opts || typeof(opts.translateTitles)!='boolean' ) opts = {translateTitles: true};
+			function generate( opts ) {
+//				console.debug( "generate", opts );
+				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null;
+				if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = true;
 				// don't translate now, but within toOxml() to ascertain that classifyProps() works properly:
-				var data = self.get( {translateTitles: false} ); 
-	//			console.debug( "exportAs 'ePub'", data );
-				let options = { 
-					classifyProperties: classifyProps,
-					translateTitles: opts.translateTitles,
-					translate: i18n.lookup,
-					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-					stereotypeProperties: CONFIG.stereotypeProperties,
-					// If a hidden property is defined with value, it is suppressed only if it has this value;
-					// if the value is undefined, the property is suppressed in all cases.
-					// so far (iLaH v0.92.44), property titles are translated:
-				//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-					hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-					hideEmptyProperties: true,
-					propertiesLabel: 'SpecIF:Properties',
-					statementsLabel: 'SpecIF:Statements',
-					done: function() { app.cache.exporting=false; eDO.resolve() },
-					fail: function(xhr) { app.cache.exporting=false; eDO.reject(xhr) }
-				};
-	//			console.debug('storeEpub',data,options);
-				toEpub( data, options )
+				let data = self.get( {translateTitles: false} ), 
+					options = { 
+						classifyProperties: classifyProps,
+						translateTitles: opts.translateTitles,
+						translate: i18n.lookup,
+						// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
+						stereotypeProperties: CONFIG.stereotypeProperties,
+						// If a hidden property is defined with value, it is suppressed only if it has this value;
+						// if the value is undefined, the property is suppressed in all cases.
+						// so far (iLaH v0.92.44), property titles are translated:
+					//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+						hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+						hideEmptyProperties: true,
+						propertiesLabel: 'SpecIF:Properties',
+						statementsLabel: 'SpecIF:Statements',
+						done: function() { app.cache.exporting=false; eDO.resolve() },
+						fail: function(xhr) { app.cache.exporting=false; eDO.reject(xhr) }
+					};
+				switch( opts.format ) {
+					case 'epub':
+						toEpub( data, options );
+						break;
+					case 'oxml':
+						toOxml( data, options )
+				}
 			}
-			function storeOxml( opts ) {
-				if( !opts || typeof(opts.translateTitles)!='boolean' ) opts = {translateTitles: true};
-				// don't translate now, but within toOxml() to ascertain that classifyProps() works properly:
-				var data = self.get( {translateTitles: false} ); 
-	//			console.debug( "exportAs 'ePub'", data );
-				let options = { 
-					classifyProperties: classifyProps,
-					translateTitles: opts.translateTitles,
-					translate: i18n.lookup,
-					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-					stereotypeProperties: CONFIG.stereotypeProperties,
-					// If a hidden property is defined with value, it is suppressed only if it has this value;
-					// if the value is undefined, the property is suppressed in all cases.
-					// so far (iLaH v0.92.44), property titles are translated:
-					hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-					hideEmptyProperties: true,
-					propertiesLabel: 'SpecIF:Properties',
-					statementsLabel: 'SpecIF:Statements',
-					done: function() { app.cache.exporting=false; eDO.resolve() },
-					fail: function(xhr) { app.cache.exporting=false; eDO.reject(xhr) }
-				};
-	//			console.debug('storeOxml',data,options);
-				toOxml( data, options )
-			}
-			function storeSpecifz() {
+			function storeAs( opts ) {
+				if( !opts || ['specif','reqif'].indexOf(opts.format)<0 ) return null;
 				let zip = new JSZip(),
 					data = self.get( {translateTitles: false} );
-	//			console.debug( "exportAs 'SpecIF'", data );
 
 				// Add the files:
 				data.files.forEach( function(f) {
@@ -1141,10 +1122,19 @@ modules.construct({
 					zip.file( f.title, f.blob );
 					delete f.blob // the SpecIF data below shall not contain it ...
 				});
-				
-				let blob = new Blob([JSON.stringify( data )], {type: "text/plain; charset=utf-8"});
+
+				// Prepare the output data:
+				let fName = data.title+"."+opts.format;
+				switch( opts.format ) {
+					case 'specif':
+						data = JSON.stringify( data );
+						break;
+					case 'reqif':
+						data = ioReqIF.toReqIF( data )
+				};
+				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
 				// Add the project:
-				zip.file( data.title+".specif", blob );
+				zip.file( fName, blob );
 				blob = null; // free heap space
 				
 				// done, store the specifz:
@@ -1154,12 +1144,12 @@ modules.construct({
 					.then(
 						function(blob) {
 	//						console.debug("storing ",data.title+".specifz");
-							saveAs(blob, data.title+".specifz");
+							saveAs(blob, fName+"z");
 							self.exporting = false;
 							eDO.resolve()
 					}, 
 						function(xhr) {
-							console.error("Cannot store ",data.title+".specifz");
+							console.error("Cannot store ",fName+"z");
 							self.exporting = false;
 							eDO.reject()
 					})
@@ -1257,7 +1247,7 @@ modules.construct({
 								// 'title' jusque v0.10.6, 'value' thereafter:
 								return {
 									id: v.id,
-									value: v.value || v.title
+									value: typeof(v.value)=='string'?v.value : v.title	// must also work for v.value==''
 								}
 							})
 				};
