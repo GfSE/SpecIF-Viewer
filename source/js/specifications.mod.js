@@ -88,13 +88,9 @@ modules.construct({
 			$(self.view).prepend( h );
 
 		// Construct the resource listing:
-	//	app[CONFIG.objectList] = new Doc();
 		modules.construct( {view:'#'+CONFIG.objectList}, Doc );
 		// Construct the resource listing;
-	//	app[CONFIG.relations] = new Statements();
 		modules.construct( {view:'#'+CONFIG.relations}, Statements );
-		// Both have show() and hide() methods, which cannot be seen by viewCtl, however.
-		// Thus, view control is via self.refresh().
 
 		// Construct jqTree,
 		// holds the hierarchy tree (or outline):
@@ -531,29 +527,23 @@ modules.construct({
 				break;
 			case 'object':
 				// statements as a SpecIF data-set for graph rendering:
-				showStaGraph( net )
-		};
-		return
-		
-		function showStaGraph(net) {
-			// Show the graph of the statements:
-			$( '#'+CONFIG.relations ).html( '<div id="statementGraph" style="width:100%; height: 600px;" />' );
-			let options = {
-				index: 0,
-				canvas:'statementGraph',
-				titleProperties: CONFIG.titleProperties,
-				onDoubleClick: function( evt ) {
-//					console.debug('Double Click on:',evt);
-					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
-						self.relatedItemClicked(evt.target.resource,evt.target.statement);
-						// changing the tree node triggers an event, by which 'self.refresh' will be called.
-				}
-			};
-			if( self.modeStaDel )
-				options.nodeColor = '#ef9a9a';
-//			console.debug('showStaGraph',net,options);
-			app.busy.reset();
-			app.statementsGraph.show(net,options)
+				$( '#'+CONFIG.relations ).html( '<div id="statementGraph" style="width:100%; height: 600px;" />' );
+				let options = {
+					index: 0,
+					canvas:'statementGraph',
+					titleProperties: CONFIG.titleProperties,
+					onDoubleClick: function( evt ) {
+//						console.debug('Double Click on:',evt);
+						if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
+							self.relatedItemClicked(evt.target.resource,evt.target.statement);
+							// changing the tree node triggers an event, by which 'self.refresh' will be called.
+					}
+				};
+				if( self.modeStaDel )
+					options.nodeColor = '#ef9a9a';
+//				console.debug('showStaGraph',net,options);
+				app.busy.reset();
+				app.statementsGraph.show(net,options)
 		}
 	}
 
@@ -862,7 +852,7 @@ modules.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
-		if( self.staDel && self.resources.selected().staGroups.length ) {
+		if( self.staDel && self.resources.selected().staGroups.length>0 ) {
 			rB += '<button class="btn btn-danger '+(self.modeRelDel?'active':'')+'" onclick="'+myFullName+'.toggleModeRelDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
 		} else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
@@ -924,6 +914,7 @@ modules.construct({
 		return self
 	}
 	function Statements(self) {
+		// Construct an object for displaying the statements of a selected resource:
 		self.init = function() {
 		};
 		self.show = function( opts ) {
@@ -968,7 +959,7 @@ modules.construct({
 //				console.debug( 'relatedObjs', relatedObjs );
 
 				// Obtain the titles (labels) of all resources in the list.
-				// The titles in the tree don't have the icon, therefore obtain the title from the resources, themselves.
+				// The titles in the tree don't have the icon, therefore obtain the title from the referenced resources.
 				// Since the resources are cached, this is not too expensive.
 				app.cache.readContent( 'resource', relatedObjs )
 					.done( function(roL) {   
@@ -986,10 +977,6 @@ modules.construct({
 								// for sorting continue only if the class matches;
 								// it assumed that every class appears only once:
 								if( s['class'] != sC.id ) return;
-							
-								// ToDo:
-								// this grouping of statements is only needed to show the statementsTable in IE,
-								// so move it to renderStatementsTable.
 							
 								// for every statement type found, make an entry with a subgroup per direction:
 								// - rGs contains statements of a given type, where the related resource is a subject
@@ -1157,7 +1144,7 @@ function valOf( ob, pV, opts ) {
 //			console.debug('valOf XHTML',ct);
 			ct = titleLinks( ct, opts.dynLinks );
 			break;
-		case 'xs:date':
+		case 'xs:dateTime':
 			var ct = localDateTime( pV.value );
 			break;
 		case 'xs:enumeration':
@@ -1359,7 +1346,7 @@ function Resource( obj ) {
 	//  Create a reduced SpecIF data set for rendering a graph:
 	self.statements = function() {
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-		if( browser.isIE ) return renderStatementsTable();
+		if( browser.isIE ) return renderStatementsTable( self.staGroups );
 		
 		// build data set with the selected resource in focus: 
 		var net = {
@@ -1371,13 +1358,13 @@ function Resource( obj ) {
 			resources: [{
 				id: 	self.value.id,
 				title: 	self.resToShow.title,
-				class: self.value['class']
+				class:  self.value['class']
 			}],
 			statements: []
 		};
 		
 		// add all statements:
-		let sGL = self.staGroups, rel= null, rR=null;
+		let sGL = self.staGroups, rR=null;
 		if( sGL.length>0 ) {
 			sGL.forEach( function(sG) {
 				// each statement group, where the selected resource is the object:
@@ -1431,12 +1418,10 @@ function Resource( obj ) {
 			return '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
 		}
 
-		function renderStatementsTable() {
+		function renderStatementsTable( sGL ) {
 			// Render a table with all statements grouped by type:
-		//	if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+			//	if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 
-//			console.debug( 'Resource.statements', self.value );
-			let sGL = self.staGroups;
 			// ToDo: The 'mentions' statements shall not be for deletion, and not appear to be for deletion (in red)
 			if( app.specs.modeRelDel ) 
 				var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
@@ -1981,8 +1966,10 @@ var fileRef = {
 						// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
 						// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
 						//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
+						// 	Array.from() converts the HTMLCollection to a regular array, 
+						//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
 						CONFIG.clickElementClasses.forEach( function(cl) {
-							svg.clEls = svg.clEls.concat(Array.prototype.slice.call( svg.getElementsByClassName( cl )));
+							svg.clEls = svg.clEls.concat(Array.from( svg.getElementsByClassName( cl )));
 						});
 //						console.debug(svg.clEls, typeof(svg.clEls))
 						let clEl = null;

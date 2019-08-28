@@ -192,9 +192,11 @@ modules.construct({
 			if( modules.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
 				app[self.format.name].init( self.format.opts );
-				str += '<button id="FormatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
-			} else {
-				str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+				if( typeof(app[self.format.name].toSpecif)=='function' ) {
+					str += '<button id="FormatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+				} else {
+					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+				}
 			}
 		});
 		$('#FormatSelector').html( str );

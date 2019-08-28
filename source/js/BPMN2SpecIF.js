@@ -33,7 +33,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// BPMN Collaborations list participants (with referenced processes) and messageFlows.
 	// Participants are source and/or target for message-flows (not the referenced processes),
 	// so we decide to transform the participants to SpecIF, but not the processes.
-	let x = xmlDoc.querySelectorAll("collaboration");
+	let x = Array.from(xmlDoc.querySelectorAll("collaboration"));
 	// There should be only one collaboration per BPMN file:
 	if( x.length>1 )
 		console.warn("Diagram with id ',model.id,' has more than one collaboration.");
@@ -91,7 +91,10 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 	
 	// 2. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
-	x[0].childNodes.forEach( function(el) {
+//	console.debug('#',x[0].childNodes);
+//	x[0].childNodes.forEach( function(el) {
+	// forEach does not work for NodeLists in IE:
+	Array.from(x[0].childNodes).forEach( function(el) {
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
 		if( !el.tagName ) return;
@@ -112,7 +115,7 @@ function BPMN2Specif( xmlString, opts ) {
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
-			});
+			})
 		};
 		// The messages between the processes:
 		if (el.nodeName.includes("messageFlow")) {
@@ -156,7 +159,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// For SpecIF, the participant is declared the container for the processes' model-elements ... 
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
-	x = xmlDoc.querySelectorAll("process");
+	x = Array.from(xmlDoc.querySelectorAll("process"));
 	let taL = [];	// temporary list of text annotations
 	x.forEach( function(pr) {
 		// here, we look at a process:
@@ -169,7 +172,7 @@ function BPMN2Specif( xmlString, opts ) {
 			gwL = [],	// temporary list for gateways needing some special attention later
 			tag, id, title, desc, cId, seqF;
 		// 4.1 First pass to get the lanes, which do not necessarily come first:
-		pr.childNodes.forEach( function(el) {
+		Array.from(pr.childNodes).forEach( function(el) {
 			tag = el.nodeName.split(':').pop();	// tag without namespace
 //			console.debug('#1',tag);
 			switch(tag) {
@@ -194,7 +197,7 @@ function BPMN2Specif( xmlString, opts ) {
 							</childLaneSet>
 						  </lane>
 					*/
-					el.childNodes.forEach( function(el2) {
+					Array.from(el.childNodes).forEach( function(el2) {
 						if( el2.nodeName.includes('lane') ) {
 							let elName = el2.getAttribute("name"),
 								el2Id = el2.getAttribute("id");
@@ -224,7 +227,7 @@ function BPMN2Specif( xmlString, opts ) {
 									changedAt: opts.xmlDate
 								});
 								// temporarily store relations for the contained model-elements:
-								el2.childNodes.forEach( function(el3) {
+								Array.from(el2.childNodes).forEach( function(el3) {
 									if( el3.nodeName.includes('flowNodeRef') ) {
 										ctL.push({
 											class: 'SC-contains',
@@ -240,7 +243,7 @@ function BPMN2Specif( xmlString, opts ) {
 			}
 		});
 		// 4.2 Second pass to collect the model-elements:
-		pr.childNodes.forEach( function(el) {
+		Array.from(pr.childNodes).forEach( function(el) {
 			// quit, if the child node does not have a tag, e.g. if it is '#text':
 			if( !el.tagName ) return;
 			// else:
@@ -282,11 +285,11 @@ function BPMN2Specif( xmlString, opts ) {
 						changedAt: opts.xmlDate
 					});
 					// store the read/write associations:
-					el.childNodes.forEach( function(ch) {
+					Array.from(el.childNodes).forEach( function(ch) {
 						if( !ch.tagName ) return;
 						if( ch.tagName.includes('dataInputAssociation') ) {
 							// find sourceRef:
-							ch.childNodes.forEach( function(ref) {
+							Array.from(ch.childNodes).forEach( function(ref) {
 //								console.debug('dataInputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
 								if( ref.tagName.includes('sourceRef') ) {
@@ -306,7 +309,7 @@ function BPMN2Specif( xmlString, opts ) {
 						};
 						if( ch.tagName.includes('dataOutputAssociation') ) {
 							// find targetRef:
-							ch.childNodes.forEach( function(ref) {
+							Array.from(ch.childNodes).forEach( function(ref) {
 //								console.debug('dataOutputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
 								if( ref.tagName.includes('targetRef') ) {
@@ -375,7 +378,7 @@ function BPMN2Specif( xmlString, opts ) {
 				case 'exclusiveGateway':
 				case 'parallelGateway':
 					gw = {id:id,class:tag,incoming:[],outgoing:[]};
-					el.childNodes.forEach( function(ch) {
+					Array.from(el.childNodes).forEach( function(ch) {
 						if( !ch.tagName ) return;
 						if( ch.tagName.includes('incoming') )
 							gw.incoming.push( ch.innerHTML );
@@ -485,12 +488,12 @@ function BPMN2Specif( xmlString, opts ) {
 			}
 		});
 		// 4.3 Third pass to collect the text annotations:
-		let tL = xmlDoc.querySelectorAll("textAnnotation");
+		let tL = Array.from(xmlDoc.querySelectorAll("textAnnotation"));
 		tL.forEach( function(ta,idx) {
 			id = ta.getAttribute("id");
 			title = opts.strTextAnnotation + (++idx>9? ' '+idx : ' 0'+idx);
 			// even though there should be only one sub-element:
-			ta.childNodes.forEach( function(txt) {
+			Array.from(ta.childNodes).forEach( function(txt) {
 //				console.debug('textAnnotation.childNode',txt);
 				if( !txt.tagName ) return;
 				if( txt.tagName.includes('text') ) {
@@ -513,7 +516,7 @@ function BPMN2Specif( xmlString, opts ) {
 			});
 		})
 		// 4.4 Fourth pass to collect the relations between model-elements:
-		pr.childNodes.forEach( function(el) {
+		Array.from(pr.childNodes).forEach( function(el) {
 			// quit, if the child node does not have a tag, e.g. it is '#text':
 			if( !el.tagName ) return;
 			// else:
@@ -966,7 +969,8 @@ function BPMN2Specif( xmlString, opts ) {
 		return null
 	}
 	function ctrl2HTML(str) {
-	// Convert js/json control characters (new line) to HTML-tags and remove the others:
+		// Convert js/json control characters (new line) to HTML-tags and remove the others:
+		if( typeof( str )!='string' ) str = '';
 		return str.replace( /\r|\f/g, '' ).replace( /\t/g, ' ' ).replace( /\n/g, '<br />' )
 	}
 	// Make a very simple hash code from a string:

@@ -992,7 +992,7 @@ modules.construct({
 					"<p>"+i18n.MsgExport+"</p>"
 				+	radioInput( i18n.LblFormat, [
 						{ title: 'SpecIF', id: 'specif' },
-			//			{ title: 'ReqIF', id: 'reqif' },
+						{ title: 'ReqIF', id: 'reqif' },
 						{ title: 'ePub', id: 'epub' },
 						{ title: 'MS WORD (Open XML)', id: 'oxml' }
 					]) 
@@ -1130,7 +1130,7 @@ modules.construct({
 						data = JSON.stringify( data );
 						break;
 					case 'reqif':
-						data = ioReqIF.toReqIF( data )
+						data = app.ioReqif.toReqif( data )
 				};
 				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
 				// Add the project:
@@ -1397,13 +1397,13 @@ modules.construct({
 				oE['class'] = iE[names.pClass];
 				if( iE.description ) oE.description = noCode(iE.description);
 				switch( dT.type ) {
-					case 'xs.boolean':
+					case 'xs:boolean':
 						oE.value = iE.value=='true';
 						break;
-					case 'xs.integer':
+					case 'xs:integer':
 						oE.value = parseInt(iE.value,10);
 						break;
-					case 'xs.double':
+					case 'xs:double':
 						oE.value = parseFloat(iE.value);
 						break;
 					default:
@@ -2211,8 +2211,7 @@ function multipleChoice( pC, prj ) {
 	prj = prj || app.cache;
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
-//	return (pC.multiple || (pC.multiple==undefined && itemById(prj.dataTypes,pC.dataType).multiple))?true:false
-	return pC.multiple || (typeof(pC.multiple)!='boolean' && itemById(prj.dataTypes,pC.dataType).multiple)
+	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
 	// Note: specif-check applies the same logic in function 'checkpropValues(..)'
 }
 function titleIdx( aL ) {

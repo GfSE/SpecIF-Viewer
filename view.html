@@ -8,7 +8,7 @@
 	<meta http-equiv="expires" content="0" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-	<script type="text/javascript" src="./v0.95.5/modules.js"></script>
+	<script type="text/javascript" src="./v0.95.6/modules.js"></script>
 </head>
 <body>
 
@@ -60,6 +60,9 @@ app = {
 				// no selector: this module is itself responsible for managing it's children
 				children: [{
 					name: 'ioSpecif'
+					// no view
+				},{
+					name: 'ioReqif'
 					// no view
 				},{
 					name: 'ioBpmn'
@@ -169,7 +172,7 @@ $( function() {
 	});
 	// Submit all modules to load and the function to start the app thereafter:
 	modules.init({
-		appVersion: '0.95.5',
+		appVersion: '0.95.6',
 		done: app.init
 	})
 });	

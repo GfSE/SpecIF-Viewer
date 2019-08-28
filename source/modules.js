@@ -98,11 +98,12 @@ function ModuleManager() {
 		// This routine is called by the code in the file, once loaded with 'loadH'/'loadM',
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
 		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
+//		console.debug('construct', defs, constructorFn);
 		
 		// find module by name or by view somewhere in the complete tree:
 		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
-			console.error(defs.name? "'"+defs.name+"' is not a defined module" : "'"+defs.view+"' is not a defined view");
+//			console.error(defs.name? "'"+defs.name+"' is not a defined module" : "'"+defs.view+"' is not a defined view");
 			return null
 		};
 		$.extend( mo, defs ); 
@@ -297,10 +298,10 @@ function ModuleManager() {
 			l(h)
 	}
 	function loadM( mod ) {
-//		console.debug('loadM',mod);
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before)
 			// For a module with HTML forms there must be a corresponding HTML div tag with id="mod".
+			console.debug('loadM',mod);
 			switch( mod ) {	
 				// 3rd party:
 				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />');
@@ -369,6 +370,7 @@ function ModuleManager() {
 				case 'ioSpecif':			loadM( 'schemaJson' );
 											loadM( 'checkSpecif' );
 											getScript( vPath+'/js/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'stdTypes' );
 											loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -376,7 +378,6 @@ function ModuleManager() {
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-		//		case 'ioReqif': 			getScript( "./js/ioReqif.js").done( function() {setReady(mod)} ); return true;
 				case 'checkSpecif':			getScript( './specif.de/v0.10.8/check.js').done( function() {setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
