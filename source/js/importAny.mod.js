@@ -191,7 +191,7 @@ modules.construct({
 		formats.forEach( function(s) {
 			if( modules.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
-				app[self.format.name].init( self.format.opts );
+				app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' ) {
 					str += '<button id="FormatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
 				} else {
