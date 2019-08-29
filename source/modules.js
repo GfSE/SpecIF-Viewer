@@ -103,7 +103,7 @@ function ModuleManager() {
 		// find module by name or by view somewhere in the complete tree:
 		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
-//			console.error(defs.name? "'"+defs.name+"' is not a defined module" : "'"+defs.view+"' is not a defined view");
+			console.error(defs.name? "'"+defs.name+"' is not a defined module" : "'"+defs.view+"' is not a defined view");
 			return null
 		};
 		$.extend( mo, defs ); 

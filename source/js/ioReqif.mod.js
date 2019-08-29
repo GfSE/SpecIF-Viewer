@@ -15,6 +15,9 @@ modules.construct({
 	self.init = function() {
 		mime = null
 	};
+	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
+		RE_tag = /(<\/?)([a-z]{1,10}( [^<>]+)?\/?>)/g;
+		
 /*	self.verify = function( f ) {
 //		console.debug(f.name);
 	
@@ -35,20 +38,26 @@ modules.construct({
 		return server.project().upload( buf, mime )
 	};   */
 	self.toReqif = function(pr) {
-		// transform pr as SpecIF to ReqIF:
+		// pr is a SpecIF data in JSON format (not the internal cache),
+		// transform pr to ReqIF:
 		// ToDo:
-		// - default values
-		let date = new Date().toISOString();
+		// - transform any default values
+		// - suppress or replace xhtml-tags not supported by ReqIF, e.g. <img>
+		// - detect a xhtml namespace used and set ns_xhtml accordingly
+		// - sort properties according to the propertyClasses
+		
+		const date = new Date().toISOString(),
+			ns_xhtml = 'xhtml';
 
 		var xml = 
 				'<?xml version="1.0" encoding="UTF-8"?>'
-			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:xhtml="http://www.w3.org/1999/xhtml">'
+			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns_xhtml+'="http://www.w3.org/1999/xhtml">'
 			+	'<THE-HEADER>'
 			+	  '<REQ-IF-HEADER IDENTIFIER="'+pr.id+'">'
 			+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
 			+		'<CREATION-TIME>'+date+'</CREATION-TIME>'
 			+		'<REQ-IF-TOOL-ID></REQ-IF-TOOL-ID>'
-			+		'<REQ-IF-VERSION>1.1</REQ-IF-VERSION>'
+			+		'<REQ-IF-VERSION>1.0</REQ-IF-VERSION>'
 			+		'<SOURCE-TOOL-ID>'+(pr.tool || '')+'</SOURCE-TOOL-ID>'
 			+		'<TITLE>'+pr.title+'</TITLE>'
 			+	  '</REQ-IF-HEADER>'
@@ -56,6 +65,8 @@ modules.construct({
 			+	'<CORE-CONTENT>'
 			+	  '<REQ-IF-CONTENT>'
 			+		'<DATATYPES>';
+		
+		// 1. Transform dataTypes:
 		if(pr.dataTypes)	
 			pr.dataTypes.forEach( function(el) {
 				switch( el.type ) {
@@ -89,13 +100,13 @@ modules.construct({
 						xml += '<DATATYPE-DEFINITION-DATE '+commonAtts( el )+'/>';
 						break;
 					default: 
-						console.error('unknown dataType: ',el.type)
+						console.error('Error: unknown dataType: ',el.type)
 				}
 			});
 		xml +=  '</DATATYPES>'
 			+	'<SPEC-TYPES>';
 			
-		// Sort SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs:
+		// 2. Sort SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs, collect OBJECTS:
 		let req = {
 			objTypes: [],
 			spcTypes: [],
@@ -105,62 +116,82 @@ modules.construct({
 			function prepObj( n ) {
 				let r = itemById(pr.resources,n.resource),
 					rC = itemById(pr.resourceClasses,r['class']);
-				// ReqIF does not support inheritance, so include any properties of the ancestor:
-				if( rC._extends ) {
-					let anc = itemById(pr.resourceClasses,r._extends);
-					if( anc.propertyClasses && rC.propertyClasses ) 
-						rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses)
+				// a) Collect resourceClass without duplication:
+				if( indexById(req.objTypes,rC.id)<0 ) {
+					// ReqIF does not support inheritance, so include any properties of an ancestor:
+					if( rC['extends'] ) {
+						let anc = itemById(pr.resourceClasses,rC['extends']);
+						if( anc.propertyClasses && rC.propertyClasses ) 
+							rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses)
+					};
+					req.objTypes.push( rC )
 				};
-				// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
-				// it must have a different id:
-				if( indexById( req.spcTypes, rC.id )>-1 ) {
-					// clone before changing certain properties:
-					rC = simpleClone(rC);  
-					rC.id = 'RC-'+rC.id;
-					r['class'] = rC.id
-					// ToDo: update all other references of rC.id, e.g. 'extends'.
-				};
-				// store without duplication:
-				cacheE( req.objTypes, rC );
-				cacheE( req.objects, r )
+				// b) Collect resource without duplication:
+				if( indexById(req.objects,r.id)<0 ) 
+					// ToDo: Sort properties according to the propertyClasses
+					req.objects.push( r )
 			}
+		// First, collect all resources referenced by the hierarchies,
+		// ignore the hierarchy roots here, they are handled further down:
 		pr.hierarchies.forEach( function(h) {
-			// The resources referenced at the lowest level of hierarchies 
-			// are SPECIFICATIONS in terms of ReqIF:
-			let r = itemById(pr.resources,h.resource);
-			cacheE( req.spcTypes, itemById(pr.resourceClasses,r['class']) );
-			if( r.title ) h.title = r.title;
-			if( r.description ) h.description = r.description
-			if( r.properties ) h.properties = r.properties;
 			if( h.nodes )
 				h.nodes.forEach( function(n) {
 					iterate( n, prepObj )
-				})
+				});
+		});
+		// Then, have a look at the hierarchy roots:
+		pr.hierarchies.forEach( function(h) {
+			// The resources referenced at the lowest level of hierarchies 
+			// are SPECIFICATIONS in terms of ReqIF.
+			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
+			// it must have a different id:
+			let hR = itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
+				hC = itemById( pr.resourceClasses, hR['class'] );	// its class
+			
+			if( indexBy( req.objects, 'class', hC.id )>-1 ) {
+				// The hierarchy root's class is shared by a resource:
+				hC = simpleClone(hC);  
+				hC.id = 'HC-'+hC.id
+				// ToDo: If somebody uses interitance with 'extends' in case of a hierarchy root classes, 
+				// we need to update all affected 'extend' properties. There is a minor chance, though.
+			};
+			// Collect hierarchy root's class without duplication:
+			if( indexById(req.spcTypes,hC.id)<0 )
+				req.spcTypes.push( hC );
+			
+			// prepare the hierarchy root, itself:
+			h.title = hR.title || '';
+			h.description = hR.description || '';
+			h['class'] = hC.id;
+			if( hR.properties ) h.properties = hR.properties
 		});
 //		console.debug( 'reqSort', req );
 		
-		// Write OBJECT-TYPEs from resourceClasses:
+		// 3. Transform resourceClasses to OBJECT-TYPEs:
 		req.objTypes.forEach( function(el) {
 			xml += '<SPEC-OBJECT-TYPE '+commonAtts( el )+'>'
 				+		attrTypes( el )
 				+ '</SPEC-OBJECT-TYPE>'
 		});
-		// Write RELATION-TYPES from statementClasses:
+		
+		// 4. Transform statementClasses to RELATION-TYPES:
 		if(pr.statementClasses)	
 			pr.statementClasses.forEach( function(el) {
 				xml += '<SPEC-RELATION-TYPE '+commonAtts( el )+'>'
 					+		attrTypes( el )
 				    +  '</SPEC-RELATION-TYPE>'
 			});
-		// Write SPECIFICATION-TYPEs:
+		
+		// 5. Write SPECIFICATION-TYPEs:
 		req.spcTypes.forEach( function(el) {
 			xml += '<SPECIFICATION-TYPE '+commonAtts( el )+'>'
 				+		attrTypes( el )
 				+  '</SPECIFICATION-TYPE>';
 		}); 
 		xml +=  '</SPEC-TYPES>'
-		// Write OBJECTS from resources:
 			+	'<SPEC-OBJECTS>';
+		
+		// 6. Transform resources to OBJECTS:
 		req.objects.forEach( function(el) {
 			xml += '<SPEC-OBJECT '+commonAtts( el )+'>'
 				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+el['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
@@ -168,21 +199,24 @@ modules.construct({
 				+ '</SPEC-OBJECT>'
 		});
 		xml +=  '</SPEC-OBJECTS>'
-		// Write RELATIONs from statements:
 			+	'<SPEC-RELATIONS>';
+		
+		// 7. Transform statements to RELATIONs:
 		pr.statements.forEach( function(el) {
 			xml += '<SPEC-RELATION '+commonAtts( el )+'>'
-				+		attsOf( el )
 				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+el['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
+				+		attsOf( el )
 				+		'<SOURCE><SPEC-OBJECT-REF>'+el.subject+'</SPEC-OBJECT-REF></SOURCE>'
 				+		'<TARGET><SPEC-OBJECT-REF>'+el.object+'</SPEC-OBJECT-REF></TARGET>'
 				+ '</SPEC-RELATION>'
 		});
 		xml +=  '</SPEC-RELATIONS>'
-		// Write SPECIFICATIONs from hierarchies:
 			+	'<SPECIFICATIONS>';
+		
+		// 8. Transform hierarchies to SPECIFICATIONs:
 		pr.hierarchies.forEach( function(el) {
 			xml += '<SPECIFICATION '+commonAtts( el )+'>'
+				+		'<TYPE><SPECIFICATION-TYPE-REF>'+el['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
 				+		attsOf( el )
 				+   	childrenOf( el );
 			xml + '</SPECIFICATION>'
@@ -284,7 +318,7 @@ modules.construct({
 							break;
 						case 'xhtml':
 							// ToDo: Replace or remove XHTML tags not supported by ReqIF
-							// - <IMG>
+							// - <img ..>
 	/*	// Transform a single image to an object, because <img..> is not allowed in ReqIF:
 		txt = txt.replace( /<img([^>]+)[\/]{0,1}>/g,
 			function( $0, $1 ){
@@ -305,10 +339,14 @@ modules.construct({
 				return ('<object data="'+u+'"'+t+s+' >'+u+'</object>');  
 			} 
 		); */
-							let hasDiv = el.value.startsWith('<div>') && el.value.endsWith('</div>');
+							// add a xtml namespace and an enclosing <div> bracket, if needed:
+							let	hasDiv = RE_hasDiv.test(el.value),
+								txt = el.value.replace( RE_tag, function($0,$1,$2) { 
+									return $1+ns_xhtml+':'+$2
+								});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
-								+     '<THE-VALUE>'+(hasDiv?'':'<div>')+el.value+(hasDiv?'':'</div>')+'</THE-VALUE>'
+								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns_xhtml+':div>')+txt+(hasDiv?'':'</'+ns_xhtml+':div>')+'</THE-VALUE>'
 								+  '</ATTRIBUTE-VALUE-XHTML>'
 							break;
 						case 'xs:enumeration':
@@ -333,7 +371,7 @@ modules.construct({
 				if( !el.nodes || el.nodes.length<1 ) return ''
 				var xml = '<CHILDREN>'
 					el.nodes.forEach( function(ch) {
-						xml += '<SPEC-HIERARCHY IDENTIFIER="'+(ch.id||'N-'+ch.resource)+'" LONG-NAME="'+(ch.title||'')+'" LAST-CHANGE="'+ch.changedAt+'">'
+						xml += '<SPEC-HIERARCHY IDENTIFIER="'+(ch.id||'N-'+ch.resource)+'" LONG-NAME="'+(ch.title||'')+'" LAST-CHANGE="'+(ch.changedAt||el.changedAt)+'">'
 							+		'<OBJECT><SPEC-OBJECT-REF>'+ch.resource+'</SPEC-OBJECT-REF></OBJECT>'
 							+		childrenOf( ch )
 							+ '</SPEC-HIERARCHY>'
