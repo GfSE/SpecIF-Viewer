@@ -89,7 +89,7 @@ modules.construct({
 
 		// Construct the resource listing:
 		modules.construct( {view:'#'+CONFIG.objectList}, Doc );
-		// Construct the resource listing;
+		// Construct the statements graph:
 		modules.construct( {view:'#'+CONFIG.relations}, Statements );
 
 		// Construct jqTree,
