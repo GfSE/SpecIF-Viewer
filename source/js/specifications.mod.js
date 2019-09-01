@@ -1281,8 +1281,8 @@ function Resource( obj ) {
 				rO += '<div class="attribute attribute-wide">'+valOf(self.resToShow,ai,os)+'</div>'
 			}
 		});
-		rO += 	'</div>' +  // end of content-main
-				'<div class="content-other">';
+		rO += 	'</div>'  // end of content-main
+			+	'<div class="content-other">';
 		// 2 Add elementActions:
 		switch( app.specs.selectedTab() ) {
 			case '#'+CONFIG.comments:
@@ -1524,8 +1524,8 @@ function Resource( obj ) {
 				rChI = 	attrV( i18n.LblRevision, ob.revision, 'attribute-condensed' );
 				// no break
 			case '#'+CONFIG.comments: 
-				rChI += attrV( i18n.LblModifiedAt, localDateTime(ob.changedAt), 'attribute-condensed' ) +
-						attrV( i18n.LblModifiedBy, ob.changedBy, 'attribute-condensed' )
+				rChI += attrV( i18n.LblModifiedAt, localDateTime(ob.changedAt), 'attribute-condensed' ) 
+					+	attrV( i18n.LblModifiedBy, ob.changedBy, 'attribute-condensed' )
 		};
 		return rChI
 	}
