@@ -2362,9 +2362,9 @@ function classifyProps( el, data ) {
 	for( a=cP.other.length-1;a>-1;a-- ) {
 		if( CONFIG.descProperties.indexOf( cP.other[a].title )>-1 ) {
 			// To keep the original order of the properties, the unshift() method is used.
-//			cP.descriptions.unshift( cP.other.splice(a,1)[0] )
-			cP.descriptions.unshift( cP.other[a] );
-			cP.other.splice(a,1) 
+			cP.descriptions.unshift( cP.other.splice(a,1)[0] )
+//			cP.descriptions.unshift( cP.other[a] );
+//			cP.other.splice(a,1) 
 		}
 	};
 	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: "dcterms:description", value: el.description} );
@@ -2407,9 +2407,7 @@ function classifyProps( el, data ) {
 			iC = itemById(iCs,i['class']);
 		// build a list of propertyClass identifiers including the extended class':
 		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
-//		console.debug('normalizeProps',i,iC,pCs.toString());
 		pCs = pCs.concat( itemById( iCs, i['class'] ).propertyClasses||[] );
-//		console.debug('normalizeProps',pCs);
 		// add the properties in sequence of the propertyClass identifiers:
 		pCs.forEach( function(pCid) {
 			p = itemBy( i.properties, 'class', pCid )

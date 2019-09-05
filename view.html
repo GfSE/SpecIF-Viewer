@@ -82,14 +82,14 @@ app = {
 				selector: '#specsSelector',			// DOM element to choose the view of a child (next level)
 				selectorType: 'tabs',
 				children: [{
-					// nothing to load
+					// nothing to load, code is contained in parent's file
 					// Definitions as a view of the parent:
 					view: '#'+CONFIG.objectList,	// uses implicit action refresh at parent level
 					viewClass: 'content',
 					label: i18n.TabDocument,
 					selectedBy: '#selectDocument'	// DOM element in parent's selector to choose this view
 				},{
-					// nothing to load
+					// nothing to load, code is contained in parent's file
 					// Definitions as a view of the parent:
 					view: '#'+CONFIG.relations,		// uses implicit action refresh at parent level
 					viewClass: 'content',
@@ -97,6 +97,7 @@ app = {
 					selectedBy: '#selectStatements',	// DOM element in parent's selector to choose this view
 					children: [{
 						name: 'statementsGraph'
+						// no view
 					}]
 				},{
 					name: CONFIG.objectFilter,

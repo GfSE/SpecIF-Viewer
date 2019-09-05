@@ -31,7 +31,7 @@ function ObjectEditVM() {
 
 	// Standard module interface methods:
 	self.open = function( cb, md ) {
-		if( typeof cb=="function" ) returnView = cb;   // callback
+		if( typeof(cb)=="function" ) returnView = cb;   // callback
 		self.mode( md || 'update' );
 		setStyle(
 			'div.image-tile { display: inline-block; margin: 4px; width: 120px; }'

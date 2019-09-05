@@ -117,7 +117,7 @@ function ModuleManager() {
 		// by 'profileMe' with full-fledged user management including user-roles and permissions;
 		// in this case the module carries the name 'profileAnonymous' resp. 'profileMe', while both
 		// specify loadAs: 'me'.
-		// A program uses both similarly, e.g. me.attribute or me.function().
+		// An app uses both similarly, e.g. me.attribute or me.function().
 		// Of course loadAs must be unique in an app at any time.
 		// By default of 'loadAs', use 'name' or 'view' without the leading '#':
 		if( !mo.loadAs ) mo.loadAs = mo.name || mo.view.substring(1);
@@ -128,7 +128,7 @@ function ModuleManager() {
 			mo.init(); 
 		
 //		console.debug('construct',defs,mo);
-		// Set all registered modules to 'ready', ignore the others.
+		// Set the module to 'ready', if registered, ignore otherwise.
 		// If a module is constructed explicitly and not as a result of file loading, it is not registered. 
 		// In that case it does not have a name, so the condition is in fact redundant:
 		if( defs.name && self.registered.indexOf(defs.name)>-1 )
@@ -511,6 +511,7 @@ function ModuleManager() {
 					};
 					// b) initiate the corresponding (implicit) action:
 					if( typeof(le.show)=='function' ) {
+						params.forced = true;	// update the view even if the resource hasn't changed
 						le.show( params );
 						return
 					}

@@ -252,7 +252,7 @@ function stdError( xhr, cb ) {
 	};
 	// log original values:
 	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
-	if( $.isFunction(cb) ) cb()
+	if( typeof(cb)=='function' ) cb()
 };
 /*	// standard logger:
 	function stdLog( fS, xhr ) {
