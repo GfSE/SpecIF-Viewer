@@ -1119,113 +1119,6 @@ modules.construct({
 	return self
 });
 
-RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function valOf( ob, pV, opts ) {
-	"use strict";
-	if( typeof(opts)=='object' ) {
-		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
-		if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-		if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false
-	} else {
-		opts = {
-			dynLinks: false,
-			clickableElements: false,
-			linkifiedURLs: false
-		}
-	};
-//	console.debug('valOf',ob,pV,opts);
-	let dT = dataTypeOf( app.cache, pV['class'] ); 
-	switch( dT.type ) {
-		case 'xs:string':
-			var ct = noCode(pV.value).ctrl2HTML();
-			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
-			ct = titleLinks( ct, opts.dynLinks );
-			if( CONFIG.stereotypeProperties.indexOf(pV.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'
-			break;
-		case 'xhtml':
-			var os = {
-					rev: ob.revision,
-					clickableElements: opts.clickableElements
-				},
-				ct = fileRef.toGUI( noCode(pV.value), os );
-			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
-//			console.debug('valOf XHTML',ct);
-			ct = titleLinks( ct, opts.dynLinks );
-			break;
-		case 'xs:dateTime':
-			var ct = localDateTime( pV.value );
-			break;
-		case 'xs:enumeration':
-			// usually value has a comma-separated list of value-IDs,
-			// but the filter module delivers potentially marked titles in content.
-			var ct = enumValStr( dT, pV );		// translate IDs to values, if appropriate
-			break;
-		default:
-			var ct = pV.value
-	};
-	return ct
-
-	function titleLinks( str, add ) {
-		// Transform sub-strings with dynamic linking pattern to internal links.
-		// Syntax:
-		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
-		// - Icons in front of titles are ignored
-		// - Titles shorter than 4 characters are ignored
-		// - see: https://www.mediawiki.org/wiki/Help:Links
-
-			function lnk(o,t){ 
-//				console.debug('lnk',o,t,'app.specs.relatedItemClicked(\''+o.id+'\')');
-				return '<a onclick="app.specs.relatedItemClicked(\''+o.id+'\')">'+t+'</a>'
-			}				
-		
-		// in certain situations, just remove the dynamic linking pattern from the text:
-		if( !CONFIG.dynLinking || !add )
-			return str.replace( RE.titleLink, function( $0, $1 ) { return $1 } );
-			
-	/*	let date1 = new Date();
-		let n1 = date1.getTime(); 
-	*/
-		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
-		let replaced = false;
-		do {
-			replaced = false;
-			str = str.replace( RE.titleLink, 
-				function( $0, $1 ) { 
-					replaced = true;
-					// disregard links being too short:
-					if( $1.length<CONFIG.dynLinkMinLength ) return $1;
-					let m=$1.toLowerCase(), cO=null, ti=null, target=null, notFound=true;
-					// is ti a title of any resource?
-					app.specs.tree.iterate( function(nd) {
-						cO = itemById( app.cache.resources, nd.ref );
-						// avoid self-reflection:
-					//	if(ob.id==cO.id) return true;
-					//	ti = resTitleOf( cO ).stripHTML();
-						ti = resTitleOf( cO );
-						// if the dynLink content equals a resource's title, remember the first occurrence:
-						if( notFound && ti && m==ti.toLowerCase() ) {
-							notFound = false;
-							target = cO;
-						};
-						return notFound // go into depth (return true) only if not yet found
-					});
-					// replace it with a link in case of a match:
-					if( target )
-						return lnk(target,$1); 
-					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">'+$1+'</span>'
-				}
-			)
-		} while( replaced );
-		return str
-
-	/*	let date2 = new Date();
-		let n2 = date2.getTime(); 
-		console.info( 'dynamic linking in ', n2-n1,'ms' )
-	*/
-	}
-}
 function Resource( obj ) {
 	"use strict";
 	// for the list view, where title and text are shown in the main column and the others to the right.
@@ -1615,6 +1508,113 @@ function Resources() {
 	return self
 }
 
+RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
+function valOf( ob, pV, opts ) {
+	"use strict";
+	if( typeof(opts)=='object' ) {
+		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
+		if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
+		if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false
+	} else {
+		opts = {
+			dynLinks: false,
+			clickableElements: false,
+			linkifiedURLs: false
+		}
+	};
+//	console.debug('valOf',ob,pV,opts);
+	let dT = dataTypeOf( app.cache, pV['class'] ); 
+	switch( dT.type ) {
+		case 'xs:string':
+			var ct = noCode(pV.value).ctrl2HTML();
+			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
+			ct = titleLinks( ct, opts.dynLinks );
+			if( CONFIG.stereotypeProperties.indexOf(pV.title)>-1 )
+				ct = '&#x00ab;'+ct+'&#x00bb;'
+			break;
+		case 'xhtml':
+			var os = {
+					rev: ob.revision,
+					clickableElements: opts.clickableElements
+				},
+				ct = fileRef.toGUI( noCode(pV.value), os );
+			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
+//			console.debug('valOf XHTML',ct);
+			ct = titleLinks( ct, opts.dynLinks );
+			break;
+		case 'xs:dateTime':
+			var ct = localDateTime( pV.value );
+			break;
+		case 'xs:enumeration':
+			// usually value has a comma-separated list of value-IDs,
+			// but the filter module delivers potentially marked titles in content.
+			var ct = enumValStr( dT, pV );		// translate IDs to values, if appropriate
+			break;
+		default:
+			var ct = pV.value
+	};
+	return ct
+
+	function titleLinks( str, add ) {
+		// Transform sub-strings with dynamic linking pattern to internal links.
+		// Syntax:
+		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
+		// - Icons in front of titles are ignored
+		// - Titles shorter than 4 characters are ignored
+		// - see: https://www.mediawiki.org/wiki/Help:Links
+
+			function lnk(o,t){ 
+//				console.debug('lnk',o,t,'app.specs.relatedItemClicked(\''+o.id+'\')');
+				return '<a onclick="app.specs.relatedItemClicked(\''+o.id+'\')">'+t+'</a>'
+			}				
+		
+		// in certain situations, just remove the dynamic linking pattern from the text:
+		if( !CONFIG.dynLinking || !add )
+			return str.replace( RE.titleLink, function( $0, $1 ) { return $1 } );
+			
+	/*	let date1 = new Date();
+		let n1 = date1.getTime(); 
+	*/
+		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
+		let replaced = false;
+		do {
+			replaced = false;
+			str = str.replace( RE.titleLink, 
+				function( $0, $1 ) { 
+					replaced = true;
+					// disregard links being too short:
+					if( $1.length<CONFIG.dynLinkMinLength ) return $1;
+					let m=$1.toLowerCase(), cO=null, ti=null, target=null, notFound=true;
+					// is ti a title of any resource?
+					app.specs.tree.iterate( function(nd) {
+						cO = itemById( app.cache.resources, nd.ref );
+						// avoid self-reflection:
+					//	if(ob.id==cO.id) return true;
+					//	ti = resTitleOf( cO ).stripHTML();
+						ti = resTitleOf( cO );
+						// if the dynLink content equals a resource's title, remember the first occurrence:
+						if( notFound && ti && m==ti.toLowerCase() ) {
+							notFound = false;
+							target = cO;
+						};
+						return notFound // go into depth (return true) only if not yet found
+					});
+					// replace it with a link in case of a match:
+					if( target )
+						return lnk(target,$1); 
+					// The dynamic link has NOT been matched/replaced, so mark it:
+					return '<span style="color:#D82020">'+$1+'</span>'
+				}
+			)
+		} while( replaced );
+		return str
+
+	/*	let date2 = new Date();
+		let n2 = date2.getTime(); 
+		console.info( 'dynamic linking in ', n2-n1,'ms' )
+	*/
+	}
+}
 var fileRef = {
 /*	All sample data (except ProSTEP) taken from a JSON response of the ReqIF Server.
 
@@ -2026,7 +2026,7 @@ var fileRef = {
 										dsc = '';
 									clAtts.descriptions.forEach( function(d) {
 										// to avoid an endless recursive call, valOf shall add neither dynLinks nor clickableElements
-										dsc = valOf(clAtts,d) + dsc
+										dsc += valOf(clAtts,d)
 									});
 									if( dsc.stripCtrl().stripHTML().trim() ) {
 										// Remove the dynamic linking pattern from the text:
