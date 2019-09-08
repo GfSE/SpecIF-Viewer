@@ -977,32 +977,38 @@ function simpleClone( o ) {
 }
 function hasUrlParams() {
 	let p = document.URL.split('#');
-	if( p[1] && p[1].length>0 ) return true;
+	if( p[1] && p[1].length>0 ) return '#';
 //	p = document.URL.split('?');   no queries, yet
-//	if( p[1] && p[1].length>0 ) return true;
+//	if( p[1] && p[1].length>0 ) return '?';
 	return false
 }
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
-function getHashParams() {
-	// Get the hash string:
-	let p = document.URL.split('#');
+function getUrlParams(opts) {
+	// Get the url parameters:
+	if( typeof(opts)!='object' ) opts = {};
+	if( typeof(opts.start)!='string' ) opts.start = '#';
+	if( typeof(opts.separator)!='string' ) opts.separator = ';'
+
+	let p = document.URL.split(opts.start);
 	if( !p[1] ) return {};
 	p = decodeURI(p[1]);
-	if( p[0]=='/' ) {p = p.substr(1)};	// remove leading slash
+	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
 	return parse( p )
 
 	function parse( h ) {
 		if( !h ) return {};
 		var pO = {};
-		h = h.split(';');
+		h = h.split(opts.separator);
 		h.forEach( function(p) {
 			p = p.split('=');
 			// remove enclosures from the value part:
 			if( p[1][0]=='"' || p[1][0]=="'" ) { p[1] = p[1].substr(1,p[1].length-2) };
 			// could say pO[p[0]] = p[1], but it is preferred to look for specific tokens:
 			switch( p[0] ) {
-				case 'import': pO.import = p[1]
+				case 'import': 	pO['import'] = p[1]; break;
+				case 'show': 	pO['show'] = p[1]; break;
+				default: 		console.warn("Unknown URL-Parameter '",p[0],"' found.")
 			}
 		});
 		return pO

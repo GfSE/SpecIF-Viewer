@@ -140,7 +140,7 @@ modules.construct({
 				};
 				return undefined
 			}
-		let hashP = getHashParams();
+		let hashP = getUrlParams();
 		clearUrlParams();
 		if( hashP && hashP['import'] ) {
 			// Case 1: A file name for import has been specified in the URL:
@@ -168,9 +168,9 @@ modules.construct({
 				url: hashP['import'],
 				responseType: 'arraybuffer',
 				withCredentials: false,
-				done: function(res) {
-//					console.debug('httpGet done',res.response);
-					app[self.format.name].toSpecif(res.response)
+				done: function(result) {
+//					console.debug('httpGet done',result.response);
+					app[self.format.name].toSpecif(result.response)
 						.progress( setProgress )
 						.done( handleResult )
 						.fail( handleError )
@@ -178,7 +178,6 @@ modules.construct({
 				fail: handleError
 			//	then:
 			});
-			
 			return
 		};
 		// Case 2: let the user pick an import file.
@@ -332,8 +331,8 @@ modules.construct({
 		return app.cache.check( data )
 			.fail( handleError )
 			.done( function(dta) {
-				// First check if there is a project with the same id:
-			/*		function sameId() {
+			/*	// First check if there is a project with the same id:
+					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
 //							console.debug(dta.id,self.projectL[p].id);
 							if( dta.id==self.projectL[p].id ) return true
@@ -402,7 +401,6 @@ modules.construct({
 				switch( importMode.id ) {
 					case 'create':
 					case 'replace':
-//						console.debug('Creating project',dta);
 						console.info('Creating project',dta.title||dta.id);
 						setProgress('Creating project',20); 
 						app.cache.create( dta )

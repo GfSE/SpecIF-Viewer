@@ -26,7 +26,7 @@ function ModuleManager() {
 		callWhenReady = null,
 		vPath;
 	self.init = function( opts ) {
-		vPath = './v'+opts.appVersion;
+		vPath = './v'+app.productVersion;
 		self.registered = [];
 		self.ready = [];
 
@@ -443,7 +443,7 @@ function ModuleManager() {
 	}
 	function getScript( url, options ) {
 		// see http://api.jquery.com/jQuery.getScript/
-		// Allow user to set any option except for dataType and cache
+		// Any option may be set from external except for dataType and cache:
 		options = $.extend( options || {}, {
 			dataType: "script",
 			cache: true,
@@ -572,30 +572,30 @@ function State(opt) {
 			case undefined:
 			case true:
 				state = true;
-				try {
-					options.hideWhenSet.forEach( function(e) { 
+				options.hideWhenSet.forEach( function(e) { 
+					try {
 						$(e).hide()
-					})
-				} catch(e) {};
-				try {
-					options.showWhenSet.forEach( function(e) { 
+					} catch(e) {}
+				});
+				options.showWhenSet.forEach( function(e) { 
+					try {
 						$(e).show()
-					})
-				} catch(e) {}
+					} catch(e) {}
+				})
 		}
 	},
 	self.reset = function() {
 				state = false;
-				try {
-					options.showWhenSet.forEach( function(e) { 
+				options.showWhenSet.forEach( function(e) { 
+					try {
 						$(e).hide()
-					})
-				} catch(e) {};
-				try {
-					options.hideWhenSet.forEach( function(e) { 
+					} catch(e) {}
+				})
+				options.hideWhenSet.forEach( function(e) { 
+					try {
 						$(e).show()
-					})
-				} catch(e) {}
+					} catch(e) {}
+				})
 	},
 	self.get = function() {
 		return state

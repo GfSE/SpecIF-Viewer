@@ -219,7 +219,7 @@ modules.construct({
 	};
 	// module entry 'self.show()' see further down
 	// module exit;
-	// called by the modules view management:
+	// called by the view management:
 	self.hide = function() {
 //		console.debug( 'specs.hide' );
 	//	self.emptyTab();
@@ -267,16 +267,16 @@ modules.construct({
 		
 		var r = itemById( app.cache.resources, nd.ref );
 		if( r ) {
-			// self.resCre is set when objCreTypes are filled ...
+			// self.resCre is set when resCreTypes are filled ...
 			self.resCln = self.resCreTypes.indexOf( r['class'] )>-1;
-			// In case of RIF, there is not yet a list of types for instantiation, but give permission to an admin, anyway:
-//			self.resCln = ( r && indexById( self.resCreTypes, r['class'] )>-1 || me.iAmAdmin(app.cache) )
+			// give permission to an admin, anyway:
+//			self.resCln = ( indexById( self.resCreTypes, r['class'] )>-1 || me.iAmAdmin(app.cache) )
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
 				function mayHaveStatements( selO ) {
 //					if( selO ) console.debug( 'selO', selO );
-//					console.debug( 'relCreTypes', self.staCreTypes );
+//					console.debug( 'staCreTypes', self.staCreTypes );
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
 					self.staCreTypes.forEach( function(sT) {   

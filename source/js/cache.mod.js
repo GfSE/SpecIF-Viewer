@@ -70,7 +70,7 @@ modules.construct({
 	};
 
 	self.loaded = function() {
-		return self.id && self.id.length>0
+		return typeof(self.id)=='string' && self.id.length>0
 	};
 
 	self.create = function( prj ) {
@@ -1549,9 +1549,9 @@ modules.construct({
 				title: app.cache.title
 			};
 		if( app.cache.description ) spD.description = app.cache.description;
-		spD.specifVersion = CONFIG.specifVersion;
-		spD.generator = CONFIG.productTitle;
-		spD.generatorVersion = CONFIG.productVersion;
+		spD.specifVersion = app.specifVersion;
+		spD.generator = app.productTitle;
+		spD.generatorVersion = app.productVersion;
 		spD.rights = {
 			title: "Creative Commons 4.0 CC BY-SA",
 			type: "dcterms:rights",
