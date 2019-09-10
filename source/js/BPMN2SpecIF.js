@@ -54,7 +54,7 @@ function BPMN2Specif( xmlString, opts ) {
 	model.files = [{
 		id: 'F-'+simpleHash(opts.xmlName),
 		title: opts.xmlName,
-		blob: xmlString,
+		blob: new Blob([xmlString], {type: "application/bpmn+xml"}),
 		type: "application/bpmn+xml",
 		changedAt: opts.xmlDate
 	}];
@@ -111,7 +111,7 @@ function BPMN2Specif( xmlString, opts ) {
 					class: "PC-Name",
 					value: el.getAttribute("name")
 				}, {
-					class: "PC-SubClass",
+					class: "PC-Type",
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
@@ -128,7 +128,7 @@ function BPMN2Specif( xmlString, opts ) {
 					class: "PC-Name",
 					value: el.getAttribute("name")
 				}, {
-					class: "PC-SubClass",
+					class: "PC-Type",
 					value: "BPMN:"+tag
 				}],
 				changedAt: opts.xmlDate
@@ -211,7 +211,7 @@ function BPMN2Specif( xmlString, opts ) {
 										class: "PC-Name",
 										value: elName
 									}, {
-										class: "PC-SubClass",
+										class: "PC-Type",
 								//		value: "BPMN:"+'lane'
 										value: "SpecIF:Role"
 									}],
@@ -279,7 +279,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "PC-Name",
 							value: title || tag
 						}, {
-							class: "PC-SubClass",
+							class: "PC-Type",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -344,7 +344,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "PC-Name",
 							value: title || tag
 						}, {
-							class: "PC-SubClass",
+							class: "PC-Type",
 							value: 'BPMN:'+( tag=='dataStoreReference'? 'dataStore' : 'dataObject' )
 						}],
 						changedAt: opts.xmlDate
@@ -368,7 +368,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "PC-Name",
 							value: title || tag
 						}, {
-							class: "PC-SubClass",
+							class: "PC-Type",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -416,7 +416,7 @@ function BPMN2Specif( xmlString, opts ) {
 								class: "PC-Description",
 								value: desc
 							}, {
-								class: "PC-SubClass",
+								class: "PC-Type",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.xmlDate
@@ -437,7 +437,7 @@ function BPMN2Specif( xmlString, opts ) {
 								class: "PC-Description",
 								value: opts.strForkParGatewayDesc
 							}, {
-								class: "PC-SubClass",
+								class: "PC-Type",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.xmlDate
@@ -459,7 +459,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "PC-Description",
 							value: opts.strForkExcGatewayDesc
 						}, {
-							class: "PC-SubClass",
+							class: "PC-Type",
 							value: 'BPMN:'+tag
 						}],
 						changedAt: opts.xmlDate
@@ -549,7 +549,7 @@ function BPMN2Specif( xmlString, opts ) {
 								class: "PC-Name",
 								value: title
 							}, {
-								class: "PC-SubClass",
+								class: "PC-Type",
 								value: 'SpecIF:'+'Condition'
 							}],
 							changedAt: opts.xmlDate
@@ -781,8 +781,8 @@ function BPMN2Specif( xmlString, opts ) {
 				dataType: "DT-ShortString",
 				changedAt: opts.xmlDate
 			},{
-				id: "PC-SubClass",
-				title: "SpecIF:SubClass",
+				id: "PC-Type",
+				title: "dcterms:type",
 				dataType: "DT-ShortString",
 				changedAt: opts.xmlDate
 			}]
@@ -801,21 +801,21 @@ function BPMN2Specif( xmlString, opts ) {
 			id: "RC-Actor",
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
-			propertyClasses: ["PC-Name","PC-Description","PC-SubClass"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.xmlDate
 		},{
 			id: "RC-State",
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
-			propertyClasses: ["PC-Name","PC-Description","PC-SubClass"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.xmlDate
 		},{
 			id: "RC-Event",
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
-			propertyClasses: ["PC-Name","PC-Description","PC-SubClass"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9830;",
 			changedAt: opts.xmlDate
 		},{

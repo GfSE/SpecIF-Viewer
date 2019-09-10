@@ -933,9 +933,11 @@ function attachment2mediaType( fname ) {
 	if( !t ) return null;
 	// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
 	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.imgTypes[ ti ]
+	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
 	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.officeTypes[ ti ]
+	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
+	ti = CONFIG.modelExtensions.indexOf( t.toLowerCase() );
+	if( ti>-1 ) return CONFIG.modelTypes[ ti ]
 	return null
 }
 function image2mediaType( fname ) {
@@ -1004,10 +1006,11 @@ function getUrlParams(opts) {
 			p = p.split('=');
 			// remove enclosures from the value part:
 			if( p[1][0]=='"' || p[1][0]=="'" ) { p[1] = p[1].substr(1,p[1].length-2) };
-			// could say pO[p[0]] = p[1], but it is preferred to look for specific tokens:
+			// could say pO[p[0]] = p[1] without switch, but it is preferred to look for specific tokens:
 			switch( p[0] ) {
-				case 'import': 	pO['import'] = p[1]; break;
-				case 'show': 	pO['show'] = p[1]; break;
+				case 'import': 	
+				case 'project': 	
+				case 'element': pO[p[0]] = p[1]; break;
 				default: 		console.warn("Unknown URL-Parameter '",p[0],"' found.")
 			}
 		});

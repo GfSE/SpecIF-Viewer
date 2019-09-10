@@ -332,36 +332,39 @@ const vocabulary = {
 		specif: function( iT ) {
 			// Target language: SpecIF
 			var oT = '';
-			switch( iT.toLowerCase() ) {
-	//			case "reqif.chapternumber":			oT = ""; break;
-				case "überschrift":
+			switch( iT.toSpecifId().toLowerCase() ) {
+	//			case "reqif_chapternumber":			oT = ""; break;
+				case "_berschrift":
 				case "title":
 				case "titel":
-				case "dc.title":
-				case "specif:heading":				//  'SpecIF:Heading' may be used falsely as property longName
-				case "reqif.chaptername": 	
-				case "reqif.name": 					oT = "dcterms:title"; break;
+				case "dc_title":
+				case "specif_heading":			//  'SpecIF:Heading' may be used falsely as property title
+				case "reqif_chaptername": 	
+				case "reqif_name": 					oT = "dcterms:title"; break;
 				case "description":
 				case "beschreibung":
 				case "text":
-				case "dc.description":
-				case "reqif.description":
-				case "reqif.text":					oT = "dcterms:description"; break;
-				case "reqif.category":				oT = "SpecIF:Category"; break;
+				case "dc_description":
+				case "reqif_description":
+				case "reqif_text":					oT = "dcterms:description"; break;
+				case "reqif_category":				oT = "SpecIF:Category"; break;
 				case "reqif.revision":				oT = "SpecIF:Revision"; break;
-				case 'specif:id':					// deprecated, for compatibility
-				case "reqif.foreignid":				oT = "dcterms:identifier"; break;
-				case "reqif.foreignstate":			oT = "SpecIF:Status"; break;
-				case "dcterms:author":				// deprecated, for compatibility		
-				case "reqif.foreigncreatedby":		oT = "dcterms:creator"; break;
-	//			case "reqif.foreignmodifiedby":		oT = ""; break;
-	//			case "reqif.foreigncreatedon":		oT = ""; break;
-	//			case "reqif.foreigncreatedthru":	oT = ""; break;
-	//			case "reqif.changedescription":		oT = "dcterms:description"; break;
-	//			case "reqif.fitcriteria":			oT = ""; break;
-	//			case "reqif.prefix":				oT = ""; break;
-	//			case "reqif.associatedfiles":		oT = ""; break;
-	//			case "reqif.project":				oT = ""; break;
+				case 'specif_stereotype':		// deprecated, for compatibility
+				case "specif_subclass":				oT = "dcterms:type"; break;
+				case 'specif_id':				// deprecated, for compatibility
+				case "reqif_foreignid":				oT = "dcterms:identifier"; break;
+				case "specif_state":			// deprecated, for compatibility			
+				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
+				case "dcterms_author":			// deprecated, for compatibility		
+				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
+	//			case "reqif_foreignmodifiedby":		oT = ""; break;
+	//			case "reqif_foreigncreatedon":		oT = ""; break;
+	//			case "reqif_foreigncreatedthru":	oT = ""; break;
+	//			case "reqif_changedescription":		oT = "dcterms:description"; break;
+	//			case "reqif_fitcriteria":			oT = ""; break;
+	//			case "reqif_prefix":				oT = ""; break;
+	//			case "reqif_associatedfiles":		oT = ""; break;
+	//			case "reqif_project":				oT = ""; break;
 				default:							oT = iT
 			};
 			return oT
@@ -370,12 +373,12 @@ const vocabulary = {
 			// Target language: ReqIF
 			var oT = '';
 			switch( iT.toLowerCase() ) {
-				case "specif:heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
 				case "dcterms:title": 				oT = "ReqIF.Name"; break;
 				case "dcterms:description": 		oT = "ReqIF.Text"; break;
+				case "dcterms:identifier":			oT = "ReqIF.ForeignId"; break;
+				case "specif:heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
 				case "specif:category":				oT = "ReqIF.Category"; break;
 				case "specif:revision":				oT = "ReqIF.Revision"; break;
-				case "dcterms:identifier":			oT = "ReqIF.ForeignId"; break;
 				case "specif:state":			// deprecated, for compatibility			
 				case "specif:status":				oT = "ReqIF.ForeignState"; break;
 				case "dcterms:author":			// deprecated, for compatibility

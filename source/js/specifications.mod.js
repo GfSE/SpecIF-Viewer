@@ -34,27 +34,12 @@ modules.construct({
 
 	let myName = self.loadAs || self.name,
 		myFullName = 'app.'+myName,
-//		tabsWithLeftPane = [ '#'+CONFIG.objectList, '#'+CONFIG.objectDetails, '#object', '#'+CONFIG.comments, '#'+CONFIG.objectRevisions, '#'+CONFIG.relations, '#linker' ],
 		tabsWithEditing = [ '#'+CONFIG.objectList, '#'+CONFIG.objectDetails ];
-	// Return 'true', if the tab/view includes the hierarchy tree:
-//	function hasLeftPane(tab) { return ( tabsWithLeftPane.indexOf( tab || self.selectedTab() )>-1 ) }
 
 	self.selectedTab = function() {
 //		console.debug('selectedTab',self.viewCtl.selected.view)
 		return self.viewCtl.selected.view
 	};
-/*	self.selectTab = function( newV ) {
-//		console.debug('selectTab',self.selectedTab(),newV,hasLeftPane(newV));
-		// skip, if no change:
-		if( self.selectedTab()==newV ) return false;	// no change
-		// else set new dialog:
-		self.resources.init();
-		$('#contentActions').empty();
-	//	self.showLeft.set(hasLeftPane(newV));
-	//	self.showTree.set();
-	//	self.viewCtl.show('#'+newV);
-		return true		// changed
-	};*/
 	self.emptyTab = function( div ) {
 		selectResource( null );
 		app.busy.reset();
@@ -346,7 +331,7 @@ modules.construct({
 	//	let tr = self.tree.get(), // don't ask me why this does not work ..
 		let tr = [].concat(self.tree.get()),
 			idx = indexById( tr, spc.id );
-	//	console.debug('updateTree',tr,idx,Array.isArray(tr));
+//		console.debug('updateTree',tr,idx,Array.isArray(tr));
 		if( idx<0 )
 			tr.push(toChild(spc))
 		else
@@ -378,7 +363,7 @@ modules.construct({
 		//	if( typeof(iE.upd)=='boolean' ) oE.upd = iE.upd;
 			if( iE.revision ) oE.revision = iE.revision;
 			oE.changedAt = iE.changedAt;
-		//	console.debug( 'toChild', iE,r,oE )
+//			console.debug( 'toChild', iE,r,oE )
 			return oE
 		}
 	};
@@ -1882,6 +1867,9 @@ var fileRef = {
 					break;
 				case 'application/bpmn+xml':
 					showBpmn( f, {timelag:CONFIG.imageRenderingTimelag} );
+					break;
+				default:
+					console.warn('Cannot show unknown diagram type: ',f.type)
 			};
 			return
 
@@ -2108,9 +2096,8 @@ var fileRef = {
 						//	document.getElementById(containerId(f.title)).innerHTML = '<p>Here comes a BPMN diagram '+f.id+'</p>'
 //							console.debug('transformBpmn',f);
 							// viewer instance:
-							let cvs = containerId(f.title);
-								bpmnViewer = new BpmnJS({container: '#'+cvs});
-							bpmnViewer.importXML(f.blob, function(err) {
+							let bpmnViewer = new BpmnJS({container: '#'+cvs});
+							bpmnViewer.importXML( f, function(err) {
 								if (err) {
 									console.error('BPMN-Viewer could not import BPMN 2.0 diagram', err);
 									return 
@@ -2129,13 +2116,18 @@ var fileRef = {
 								canvas.zoom('fit-viewport')  */
 							})  
 						}
+					let reader = new FileReader(),
+						cvs = containerId(f.title);
+					reader.addEventListener('loadend', function(ev) {
+						transformBpmn(ev.target.result)
+					});
 					// transform the BPMN-XML and render the diagram:
 					if( opts && typeof(opts.timelag)=='number' && opts.timelag>0 )
 						setTimeout(function() {
-							transformBpmn(f)
+							reader.readAsText(f.blob)
 						}, opts.timelag )
 					else
-						transformBpmn(f)
+						reader.readAsText(f.blob)
 				}
 				function itemBySimilarId(L,id) {
 					// return the list element having an id similar to the specified one:

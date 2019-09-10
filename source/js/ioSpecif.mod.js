@@ -111,7 +111,8 @@ modules.construct({
 															// now all files are extracted from the ZIP, so we can return the data:
 															zDO.resolve( data )		// data is in SpecIF format
 													}) 
-												})
+												});
+								if( pend==0 ) zDO.resolve( data )	// no suitable file found, continue anyways
 							} else {
 								// no files with permissible types are supplied:
 								zDO.resolve( data )		// data is in SpecIF format
