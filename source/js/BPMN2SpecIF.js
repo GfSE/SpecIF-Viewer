@@ -9,6 +9,7 @@ function BPMN2Specif( xmlString, opts ) {
 	"use strict";
 	if( typeof(opts)!='object' ) return null;
 	if( !opts.title ) 					opts.title = opts.xmlName.split(".")[0];
+	if( !opts.mimeType ) 				opts.mimeType = "application/bpmn+xml";
 
 	if( !opts.strJoinExcGateway ) 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
 	if( !opts.strJoinExcGatewayDesc ) 	opts.strJoinExcGatewayDesc = "<p>Wait for any <em>one</em> incoming connection to continue.</p>";
@@ -54,7 +55,7 @@ function BPMN2Specif( xmlString, opts ) {
 	model.files = [{
 		id: 'F-'+simpleHash(opts.xmlName),
 		title: opts.xmlName,
-		blob: new Blob([xmlString], {type: "application/bpmn+xml"}),
+		blob: new Blob([xmlString], {type: opts.mimeType}),
 		type: "application/bpmn+xml",
 		changedAt: opts.xmlDate
 	}];
@@ -359,7 +360,7 @@ function BPMN2Specif( xmlString, opts ) {
 				case 'intermediateThrowEvent':
 				case 'intermediateCatchEvent':
 				case 'endEvent':
-					// store the model-element as FMC:State:
+					// store the model-element as FMC:Event:
 					model.resources.push({
 						id: id,
 						title: title || tag,

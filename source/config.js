@@ -348,9 +348,10 @@ const vocabulary = {
 				case "reqif_description":
 				case "reqif_text":					oT = "dcterms:description"; break;
 				case "reqif_category":				oT = "SpecIF:Category"; break;
-				case "reqif.revision":				oT = "SpecIF:Revision"; break;
+				case "reqif_revision":				oT = "SpecIF:Revision"; break;
 				case 'specif_stereotype':		// deprecated, for compatibility
-				case "specif_subclass":				oT = "dcterms:type"; break;
+				case "specif_subclass":			// deprecated, for compatibility
+													oT = "dcterms:type"; break;
 				case 'specif_id':				// deprecated, for compatibility
 				case "reqif_foreignid":				oT = "dcterms:identifier"; break;
 				case "specif_state":			// deprecated, for compatibility			
