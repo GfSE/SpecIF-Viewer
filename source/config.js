@@ -52,17 +52,17 @@ const CONFIG = {};
 	CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
 	CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
 	CONFIG.modelExtensions = [ 'bpmn' ];
-	CONFIG.modelTypes = [ 'application/bpmn+xml'];
+	CONFIG.modelTypes = [ 'application/bpmn+xml' ];
 
-/*	// Keys for the query parameters - if changed, existing links will end up in default view:
-	CONFIG.keyUId = 'uid';	// userId
-	CONFIG.keyPId = 'pid';	// projectId
-	CONFIG.keySId = 'sid';	// specificationId 
-//	CONFIG.keyONm = 'onm';	// objectName
-	CONFIG.keyOId = 'oid';	// objectId
-//	CONFIG.keyAtt = 'att';	// attribute = property
-//	CONFIG.keyDlg = 'dlg';	// dialog 
-*/	
+	// Keys for the query parameters - if changed, existing links will end up in default view:
+//	CONFIG.keyUId = 'uid';	// userId
+	CONFIG.keyImport = 'import';
+	CONFIG.keyProject = 'project';	// projectId
+	CONFIG.keyItem = 'item';	
+	CONFIG.keyNode = 'node';	
+	CONFIG.keyView = 'view';	// dialog
+	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
+
 	// Dialog names used as query parameters - if changed, existing links will end up in default view:
 	// Base:
 	CONFIG.user = 'user';
@@ -87,7 +87,7 @@ const CONFIG = {};
 	CONFIG.comments = 'comments';
 	CONFIG.timeline = 'timeline';
 	CONFIG.reports = 'reports';
-	CONFIG.specDialogDefault = CONFIG.objectList;
+//	CONFIG.specDialogDefault = CONFIG.objectList;
 	// Projects:
 //	CONFIG.projectList = CONFIG.projects;
 	CONFIG.projectAbout = 'about';
@@ -119,17 +119,17 @@ const CONFIG = {};
 //	CONFIG.spcTypes = 'specTypes';
 //	CONFIG.rifType = 'rifType';
 //	CONFIG.rifTypes = 'rifTypes';
-	CONFIG.projectDialogDefault = 'types';
-	// Users:
+//	CONFIG.projectDialogDefault = 'types';
+/*	// Users:
 	CONFIG.userList = CONFIG.users;
 	CONFIG.userAbout = 'about';
 	CONFIG.userProjects = CONFIG.projects;
 	CONFIG.userAdminister = 'administer';
 	CONFIG.userDelete = 'delete';
-	CONFIG.userDialogDefault = CONFIG.userAbout;
+//	CONFIG.userDialogDefault = CONFIG.userAbout;
 	// these are not externally visible:
 //	CONFIG.object = 'object';
-//	CONFIG.linker = 'linker';
+//	CONFIG.linker = 'linker';  */
 
 	// The following can have an i18n label in the translation files:
 //	CONFIG.dataTypeString = 'String';

@@ -112,7 +112,7 @@ function ModuleManager() {
 		constructorFn(mo);
 
 		// An execution name ('loadAs') may be specified when different modules (with diffent names) 
-		// create a component with  similar interface, but different function.
+		// create a component with similar interface, but different function.
 		// For example, 'me' can be implemented by 'profileAnonymous' with minimal function or
 		// by 'profileMe' with full-fledged user management including user-roles and permissions;
 		// in this case the module carries the name 'profileAnonymous' resp. 'profileMe', while both
@@ -137,18 +137,56 @@ function ModuleManager() {
 	self.show = function( params ) {
 		// Show the specified view, which may be located somewhere in the hierarchy;
 		// Assuming that it's parent has a viewCtl: 
+		switch( typeof(params) ) {
+			case 'undefined': return null;
+			case 'string': params = {newView: params}
+		};
 //		console.debug('modules.show',params);
-		if( typeof(params)=='string' ) params = {newView: params};
 		let mo = findM( self.tree, params.newView );
 		if( !mo || !mo.parent.viewCtl ) {
 			console.error("'"+params.newView+"' is not a defined view");
-			return null
+			return undefined
 		};
-		// ToDo: set all view controllers up the hierarchy so that the specified view is visible in any case.
-		// For the time being there is no direct jumping to subviews in another branch and so this feature is
-		// not yet needed, but it may be needed at some time in the future.
-//		console.debug('modules.show',params,mo);
-		return mo.parent.viewCtl.show(params)
+		// Set the view beginning at the top-level, so that it is possible to jump
+		// from any branch to another at any level:
+		setViewFromRoot( mo, params );
+		// Now we have selected the specified view;
+		// select a subview, if there is any:
+		setViewToLeaf( mo, params );
+		return;
+		
+		function setViewFromRoot( le, pars ) {
+			// step up, if there is a parent view:
+			if( le.parent.selectedBy ) {
+				// all levels get access to the parameters besides newView, if needed:
+				let nPars = simpleClone( pars );
+				nPars.newView = le.parent.view;
+			// 	let nPars = $.extend( {}, pars, {newView:le.parent.view} );
+				setViewFromRoot( le.parent, nPars )
+			};
+			// set this level's view controller to choose the view:
+			le.parent.viewCtl.show( pars )
+		}
+		function setViewToLeaf( le, pars ) {
+			// step down, if there is a child view:
+			if( le.viewCtl && le.viewCtl.list.length>0 ) {
+				let ch = findDefault( le.viewCtl.list ),
+					nPars = simpleClone( pars );
+				nPars.newView = ch.view;
+//				console.debug( 'setViewToLeaf',le,ch,nPars );
+				le.viewCtl.show( nPars );
+				setViewToLeaf( ch, pars )
+			};
+			return;
+			
+			function findDefault( vL ) {
+				for( var i=vL.length-1; i>-1; i-- ) {
+					if( vL[i].isDefault ) return vL[i]
+				};
+				// in absence of a default view, take the first in the list:
+				return vL[0]
+			}
+		}
 	};
 	self.hide = function() {
 		// hide all views of the top level:
@@ -161,26 +199,25 @@ function ModuleManager() {
 
 	function findM( tr, key ) {
 		// find the module with the given key in the module hierarchy 'tr':
-			function find(e) {
-				// by design: name without '#' and view with '#'
-				if( e.name==key || e.view==key ) return e;
-				if( e.children ) {
-					let m = findM(e.children,key);
-					if( m ) return m
-				};
-				return null
-			}
 		let m=null;
 		if( Array.isArray(tr) ) {
-			for( var i=0,I=tr.length;i<I;i++ ) {
-				m = find(tr[i]);
-				if( m ) return m
+			for( var i=tr.length-1; !m&&i>-1; i-- ) {
+				m = find(tr[i])
 			}
 		} else {
-			m = find(tr);
-			if( m ) return m
+			m = find(tr)
 		};
-		return null
+		return m
+
+		function find(e) {
+			// by design: name without '#' and view with '#'
+			if( e.name==key || e.view==key ) return e;
+			if( e.children ) {
+				let m = findM(e.children,key);
+				if( m ) return m
+			};
+			return undefined
+		}
 	}
 	function loadH(h,opts) {
 		// loads the specified modules;
@@ -255,7 +292,7 @@ function ModuleManager() {
 								//	case 'tabs':
 									default:
 										$(e.selector).append(
-											'<li id="'+id+'" onclick="modules.show(\''+ch.view+'\')"><a href="#">'+lbl+'</a></li>'
+											'<li id="'+id+'" onclick="modules.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
 										)
 								}
 							};
@@ -301,7 +338,7 @@ function ModuleManager() {
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before)
 			// For a module with HTML forms there must be a corresponding HTML div tag with id="mod".
-			console.debug('loadM',mod);
+//			console.debug('loadM',mod);
 			switch( mod ) {	
 				// 3rd party:
 				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />');
@@ -460,7 +497,7 @@ function ModuleManager() {
 		var self = this;
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
-		function exists(v) {
+		self.exists = function(v) {
 			return indexBy(self.list, 'view', v)>-1
 		}
 		self.init = function(vL) {
@@ -485,11 +522,11 @@ function ModuleManager() {
 			};
 //			console.debug('ViewCtl.show',self.list,self.selected,params);
 
-			if( self.selected && params.newView==self.selected.view ) {
+		/*	if( self.selected && params.newView==self.selected.view ) {
 				// just update the current view:
 				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content); 	
 				return
-			};
+			};  */
 			// else: show params.newView and hide all others:
 			let v, s;
 			self.list.forEach( function(le) {
@@ -509,7 +546,7 @@ function ModuleManager() {
 						v.html(params.content);
 						return
 					};
-					// b) initiate the corresponding (implicit) action:
+					// b) initiate the corresponding action implicitly:
 					if( typeof(le.show)=='function' ) {
 						params.forced = true;	// update the view even if the resource hasn't changed
 						le.show( params );
@@ -522,21 +559,16 @@ function ModuleManager() {
 					// control visibility:
 					v.hide();
 				//	v.empty();
-					// initiate the corresponding (implicit) action:
+					// initiate the corresponding action implicitly:
 					if( typeof(le.hide)=='function' ) {
 						le.hide();
 						return
 					}
 				}
 			})
-		/*	// Alternatively to le.show()/hide(), 
-			// refresh() at the parent's level may be used to initiate an action.
-			// In general libraries which have not used modules.construct, use this option.
-			if( self.selected && typeof(self.selected.parent.refresh)=='function' ) 
-				self.selected.parent.refresh( params ) */
 		};
 		self.hide = function(v) {
-			if( typeof(v)=='string' && exists(v) ) {
+			if( typeof(v)=='string' && self.exists(v) ) {
 				// hide a specific view:
 				$(v).hide();
 				return

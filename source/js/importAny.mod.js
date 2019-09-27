@@ -141,7 +141,7 @@ modules.construct({
 				return undefined
 			}
 		let hashP = getUrlParams();
-		clearUrlParams();
+	//	clearUrlParams();
 		if( hashP && hashP['import'] ) {
 			// Case 1: A file name for import has been specified in the URL:
 //			console.debug('import 1',hashP);

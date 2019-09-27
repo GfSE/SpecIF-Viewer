@@ -123,23 +123,31 @@ modules.construct({
 	};
 
 	// standard module entry:
-	self.show = function( settings ) {   // optional filter settings
-//		console.debug( 'filter.show', settings );
+	self.show = function( opts ) {   // optional urlParams or filter settings
+//		console.debug( 'filter.show', opts );
 		app.specs.showLeft.reset();
 
 		setContentHeight();
 	//	$('#hitCount').empty();
 
 		// build filterList from the specTypes when executed for the first time:
-		if( settings&&settings.defs || self.filterList.length<1 ) 
-			build( settings );  
+		if( opts&&opts.filters || self.filterList.length<1 ) 
+			build( opts );  
 
 		// Now start the evaluation based on the current filter settings:
 		if( isClogged() ) { 
 			message.show(i18n.phrase('MsgFilterClogged') ); 
 			return
 		};
-//		console.debug('filter.show',settings,self.filterList);
+//		console.debug('filter.show',opts,self.filterList);
+
+		// Update browser history, if it is a view change, 
+		// but not navigation in the browser history:
+		if( !opts || !opts.urlParams ) 
+			setUrlParams({
+				project: app.cache.id,
+				view: self.view.substr(1)	// remove leading hash
+			}); 
 
 		// Show the panels with filter settings to the left:
 		let fps = '';
@@ -521,14 +529,14 @@ modules.construct({
 //				console.debug('addTextSearchFilter',flt);
 				self.filterList.push( flt )
 			}
-		if( settings && settings.defs && Array.isArray(settings.defs) ) {
-			var idx = indexBy( settings.defs, 'category', 'textSearch');
+		if( settings && settings.filters && Array.isArray(settings.filters) ) {
+			var idx = indexBy( settings.filters, 'category', 'textSearch');
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
-				addTextSearchFilter( settings.defs[idx] )
-			// do not include a text search filter if there are settings.defs without a respective entry
+				addTextSearchFilter( settings.filters[idx] )
+			// do not include a text search filter if there are settings.filters without a respective entry
 		} else {
-			// b) include a default text search if there is no settings.defs
+			// b) include a default text search if there is no settings.filters
 			addTextSearchFilter()
 		};
 
@@ -566,14 +574,14 @@ modules.construct({
 				}
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
-		if( settings && settings.defs && Array.isArray(settings.defs) ) {
-			var idx = indexBy( settings.defs, 'category', 'resourceClass');
-			// a) include the filter modules, if there is a settings.defs:
+		if( settings && settings.filters && Array.isArray(settings.filters) ) {
+			var idx = indexBy( settings.filters, 'category', 'resourceClass');
+			// a) include the filter modules, if there is a settings.filters:
 			if( idx>-1 ) 
-				addResourceClassFilter( settings.defs[idx] )
-			// do not include a text search filter if there is a settings.defs without a respective entry
+				addResourceClassFilter( settings.filters[idx] )
+			// do not include a text search filter if there is a settings.filters without a respective entry
 		} else {
-			// b) include a default text search if there is no settings.defs
+			// b) include a default text search if there is no settings.filters
 			addResourceClassFilter()  
 		};
 
@@ -582,9 +590,9 @@ modules.construct({
 			};
 		addDateTimeFilter();  			
 */
-		// Add the secondary filters contained in the settings.defs to the list:
-		if( settings && settings.defs && Array.isArray(settings.defs) ) {
-			settings.defs.forEach( function(s) {
+		// Add the secondary filters contained in the settings.filters to the list:
+		if( settings && settings.filters && Array.isArray(settings.filters) ) {
+			settings.filters.forEach( function(s) {
 				if( s.category == 'enumValue' )
 					addEnumValueFilters( s )
 			})
@@ -640,7 +648,7 @@ modules.construct({
 		});
 //		console.debug( 'goClicked', self.filterList, fL );
 		// don't need newView, as it is already shown:
-		return self.show( { defs:fL } )
+		return self.show( { filters:fL } )
 	};
 	self.resetClicked = function() {  
 		// reset filters:

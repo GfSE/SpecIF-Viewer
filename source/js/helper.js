@@ -8,7 +8,7 @@
 
  	Attention: 
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
-*/
+*/ 
 
 function attrV( lbl, val, cssCl ) {
 	// assemble a label:value pair resp. a wide value field for display:
@@ -395,7 +395,7 @@ function bindResizer() {
 
 function indexById(L,id) {
 	if(!L||!id) return -1;
-	// given an ID of an element in a list, return it's index:
+	// given an ID of an item in a list, return it's index:
 	id = id.trim();
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i].id==id ) return i;   // return list index 
@@ -403,7 +403,7 @@ function indexById(L,id) {
 }
 function itemById(L,id) {
 	if(!L||!id) return null;
-	// given the ID of an element in a list, return the element itself:
+	// given the ID of an item in a list, return the item itself:
 	id = id.trim();
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i].id==id ) return L[i];   // return list item
@@ -411,21 +411,21 @@ function itemById(L,id) {
 }
 function indexByTitle(L,ln) {
 	if(!L||!ln) return -1;
-	// given a title of an element in a list, return it's index:
+	// given a title of an item in a list, return it's index:
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i].title==ln ) return i;   // return list index
 	return -1
 }
 function itemByTitle(L,ln) {
 	if(!L||!ln) return null;
-	// given a title of an element in a list, return the element itself:
+	// given a title of an item in a list, return the item itself:
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i].title==ln ) return L[i];   // return list item
 	return null
 }
 function indexBy( L, p, s ) {
 	if(!L||!p||!s) return -1;
-	// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
+	// Return the index of an item in list 'L' whose property 'p' equals searchterm 's':
 	// hand in property and searchTerm as string !
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i][p]==s ) return i;
@@ -433,7 +433,7 @@ function indexBy( L, p, s ) {
 }
 function itemBy( L, p, s ) {
 	if(!L||!p||!s) return null;
-	// Return an element in list 'L' whose property 'p' equals searchterm 's':
+	// Return an item in list 'L' whose property 'p' equals searchterm 's':
 	// hand in property and searchTerm as string !
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i][p]==s ) return L[i];
@@ -441,7 +441,7 @@ function itemBy( L, p, s ) {
 }
 function containsById( cL, L ) {
 	if(!L) return null;
-	// return true, if all elements in L are contained in cL (cachedList),
+	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
 	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1
 	
@@ -453,7 +453,7 @@ function containsById( cL, L ) {
 }
 function containsByTitle( cL, L ) {
 	if(!L) return null;
-	// return true, if all elements in L are contained in cL (cachedList):
+	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 )
 	
 	function containsL( cL, L ) {
@@ -463,7 +463,7 @@ function containsByTitle( cL, L ) {
 	}
 }
 function forAll( L, fn ) {
-	// return a new list with the results from applying the specified function to all elements of input list L:
+	// return a new list with the results from applying the specified function to all items of input list L:
 	if(!L) return [];
 	var nL = [];
 	L.forEach( function(e){ var r=fn(e); if(r) nL.push(r) } );
@@ -471,22 +471,22 @@ function forAll( L, fn ) {
 }
 
 function cacheE( L, e ) {  // ( list, entry )
-	// add or update the element e in a list L:
+	// add or update the item e in a list L:
 	let n = indexById( L, e.id );
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
 	L[n] = e; return n // update otherwise
 }
 function cacheL( L, es ) {  // ( list, entries )
-	// add or update the elements es in a list L:
+	// add or update the items es in a list L:
 	es.forEach( function(e) { cacheE( L, e ) } )
 }
 function uncacheE( L, e ) {  // ( list, entry )
-	// remove the element e from a list L:
+	// remove the item e from a list L:
 	let n = indexById( L, e.id );
 	if( n>-1 ) L.splice(n,1)  // remove, if found
 }
 function uncacheL( L, es ) {  // ( list, entries )
-	// remove the elements es from a list L:
+	// remove the items es from a list L:
 	es.forEach( function(e) { uncacheE( L, e ) } )
 }
 function removeFromArray( A, e ) {
@@ -987,7 +987,7 @@ function hasUrlParams() {
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
 function getUrlParams(opts) {
-	// Get the url parameters:
+	// Get the url parameters contained in the 'fragment' according to RFC2396:
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.start)!='string' ) opts.start = '#';
 	if( typeof(opts.separator)!='string' ) opts.separator = ';'
@@ -1005,23 +1005,49 @@ function getUrlParams(opts) {
 		h.forEach( function(p) {
 			p = p.split('=');
 			// remove enclosures from the value part:
-			if( p[1][0]=='"' || p[1][0]=="'" ) { p[1] = p[1].substr(1,p[1].length-2) };
-			// could say pO[p[0]] = p[1] without switch, but it is preferred to look for specific tokens:
-			switch( p[0] ) {
-				case 'import': 	
-				case 'project': 	
-				case 'element': pO[p[0]] = p[1]; break;
-				default: 		console.warn("Unknown URL-Parameter '",p[0],"' found.")
-			}
+			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
+			// look for specific tokens, only:
+			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
+				pO[p[0]] = p[1]
+			else
+				console.warn("Unknown URL-Parameter '",p[0],"' found.")
 		});
 		return pO
 	}
 }
+function setUrlParams(actSt) {
+	// update browser history, if changed:
+	if( !browser.supportsHtml5History || !actSt ) return;
+
+	let quO = getUrlParams();
+//	console.debug( 'setUrlParams', quO, actSt );
+	// don't update, if unchanged or no project selected:
+	if( quO.project == actSt.project
+		&& quO[CONFIG.keyView] == actSt.view
+		&&	(quO[CONFIG.keyNode] == actSt.node
+			|| !actSt.item 
+			|| quO[CONFIG.keyItem] == actSt.item ) ) {
+//		console.debug('setUrlParams - quit');
+		return
+	};
+	
+	let path = window.location.pathname.split('/'),  // get the path in pieces
+		newParams = path[path.length-1],   	// last element is 'appname.html' (without URL params)
+		is='=',sep=';';
+
+	newParams += '#'+CONFIG.keyProject+is+actSt.project
+				+ sep+CONFIG.keyView+is+actSt.view
+				+ (actSt.node? sep+CONFIG.keyNode+is+actSt.node : (actSt.item? sep+CONFIG.keyItem+is+actSt.item : ''));
+
+	// update the browser history:
+	history.pushState('','',newParams)
+};
 function clearUrlParams() {
 	if( !browser.supportsHtml5History || !hasUrlParams() ) return;
 	
-	var path = window.location.pathname.split('/');  // get the path in pieces
-	history.pushState(null,null,path[path.length-1])    // last element is 'appname.html' without url parameters;
+	let path = window.location.pathname.split('/');  // get the path in pieces
+	console.debug( 'clearUrlParams', path );
+	history.pushState('','',path[path.length-1])    // last element is 'appname.html' without url parameters;
 };
 function httpGet(parms) {
 	// https://blog.garstasio.com/you-dont-need-jquery/

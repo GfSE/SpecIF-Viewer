@@ -60,7 +60,7 @@ modules.construct({
 	}
 
 	// standard module entry:
-	self.show = function() {
+	self.show = function(opts) {
 //		console.debug('reports.show');
 		app.specs.showLeft.reset();
 
@@ -78,6 +78,14 @@ modules.construct({
 		// - per enumerated property: number of resources with any of the enumerated values
 		// - ToDo: number of items changed in the last day, week, month, year 
 		// For now, all items are statistically analyzed at client side.
+
+		// Update browser history, if it is a view change, 
+		// but not navigation in the browser history:
+		if( !opts || !opts.urlParams ) 
+			setUrlParams({
+				project: app.cache.id,
+				view: self.view.substr(1)	// remove leading hash
+			}); 
 
 		app.busy.set();
 		showNotice(i18n.MsgAnalyzing);
@@ -353,7 +361,7 @@ modules.construct({
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
-		modules.show( { newView:'#'+CONFIG.objectFilter, defs:fL } )
+		modules.show( { newView:'#'+CONFIG.objectFilter, filters:fL } )
 	};
 
 	return self

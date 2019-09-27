@@ -98,6 +98,7 @@ function App() {
 					// nothing to load, code is contained in parent's file
 					// Definitions as a view of the parent:
 					view: '#'+CONFIG.objectList,	// uses implicit action refresh at parent level
+					byDefault: true,				// select this view at the current level, if unspecified
 					viewClass: 'content',
 					label: i18n.TabDocument,
 					selectedBy: '#selectDocument'	// DOM element in parent's selector to choose this view
@@ -147,24 +148,26 @@ function App() {
 //		console.debug( self.label+" will be initialized!" );
 		document.title = self.label;
 
-//		window.addEventListener("hashchange", self.options.callback );
+		window.addEventListener("hashchange", self.show );
 		bindResizer();
 		
-		modules.load( define, {done:function() { app.show() }} )
+		modules.load( define, {done:function() { app.show() }} );
+		console.info( self.label+" started!" )
 	};
 	self.show = function() {
-		console.info( self.label+" started!" );
 		self.me.read()
 			.done(function() {
 				var uP = getUrlParams(), v;
 				if( !app.cache.loaded() 
-					|| uP['import'] && uP['import'].length>0 )
+					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.id 
+					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
 					// - no project is loaded 
 					// - a project id is found in the URL parameters and it differs from the one of the loaded project
 					// - an URL parameter 'import' has been found:
 					v = '#import'
 				else
-					v = '#'+CONFIG.specifications;
+					v = '#'+ (uP[CONFIG.keyView] || CONFIG.specifications);
+//				console.debug( 'app.view', uP, v );
 				modules.show({newView:v,urlParams:uP});
 			})
 			.fail(function() {

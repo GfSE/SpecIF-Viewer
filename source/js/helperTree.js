@@ -17,17 +17,17 @@ function Tree( options ) {
 	//	saveState: true,
 		dragAndDrop: options.dragAndDrop
 	});
-	for( var e in options.events ) {
+	for( var e in options.eventHandlers ) {
 		domE.on(
 			'tree.'+e,
-			options.events[e]
+			options.eventHandlers[e]
 		)
 	};
 
 	self.init = function() {
 		self.set([]);
-		self.savedState = null;
-		self.selectedNode = null
+		self.savedState = undefined;
+		self.selectedNode = undefined
 	};
 	self.set = function( tr, nId ) {
 		let nd=undefined;
@@ -55,30 +55,31 @@ function Tree( options ) {
 /*	self.nodesByName = function( ti ) {
 		return domE.tree('getNodesByProperty', 'name', ti)
 	}; */
-	self.nodesByRef = function( obj, similar ) {
+	self.nodesByRef = function( oId, similar ) {
 		// Find all the nodes referencing the object and return them in a list.
 		// Use case: Update all tree entries after an object (title) has been changed.
 		let nodes = [];
 		// Try to find the objects in the currently loaded tree (selectedSpec):
 		if( similar ) {
-			// iterate through all nodes of all levels and list the nodes, where obj.id is a substring:
+			// iterate through all nodes of all levels and list the nodes, where oId is a substring:
 			domE.tree('getTree').iterate( function(nd) {
-				if( nd.ref.indexOf(obj.id)>-1 ) nodes.push( nd );
+				if( nd.ref.indexOf(oId)>-1 ) nodes.push( nd );
 				return true	// continue iteration
 			})
 		} else {
-			nodes = domE.tree('getNodesByProperty', 'ref', obj.id)
+			// get the nodes refencing the object id:
+			nodes = domE.tree('getNodesByProperty', 'ref', oId)
 		};
 		return nodes
 	};
-	self.nodeByRef = function( obj, similar ) {
+	self.nodeByRef = function( oId, similar ) {
 		// Find the tree node for the specified tree obj.
 		// Use case: jump to a clicked object.
-		// similar: the obj.id may be just a substring of the reference
-		// !similar: the obj.id must be identical with the reference
+		// similar: the object id may be just a substring of the reference
+		// !similar: the object id must be identical with the reference
 
-		// a) Try to find the obj:
-		let nodes = self.nodesByRef(obj,similar);
+		// a) Try to find the object:
+		let nodes = self.nodesByRef(oId,similar);
 		if( nodes && nodes.length>0 ) { 
 			return nodes[0]   // select the first occurrence in the tree
 		}; 
@@ -88,11 +89,12 @@ function Tree( options ) {
 	self.nodeById = function( nId ) {
 		// Find the node with the specified ID:
 		
+		// a) Try to find the node:
 		let nd = domE.tree('getNodeById', nId);
 		if( nd )
 			return nd;   // return the node with the specified ID
-		// else:
-		return null
+		// b) If a node cannot be found (has been deleted), return first node, instead:
+		return self.firstNode()   // default: first node
 	};
 	self.selectNode = function( nd ) {
 		if( self.selectedNode && self.selectedNode.id==nd.id ) 
@@ -106,18 +108,26 @@ function Tree( options ) {
 		return nd
 	};
 	self.selectFirstNode = function() {
-		// Note: This works, only if the tree is visible:
+		// Note: This works, only if the tree is visible.
 		let fN = self.firstNode();
 		if( fN ) self.selectNode( fN );
 		return fN
 	};
-	self.selectNodeByRef = function( obj, similar ) {
-		// If an arbitrary obj is specified (when clicking a link somewhere), select it's first occurrence in the tree:
-		// This works only if the tree is visible.
-		if( self.selectedNode && self.selectedNode.ref==obj.id ) return self.selectedNode;
+	self.selectNodeById = function( nId ) {
+		// Select an arbitrary node:
+		// Note: This works, only if the tree is visible.
+		if( self.selectedNode && self.selectedNode.id==nId ) 
+			return self.selectedNode;
 		// else:
-		self.selectNode( self.nodeByRef( obj, similar ) )
-		return self.selectedNode
+		return self.selectNode( self.nodeById( nId ) )
+	};
+	self.selectNodeByRef = function( oId, similar ) {
+		// If an arbitrary object is specified (when clicking a link somewhere), select it's first occurrence in the tree:
+		// Note: This works, only if the tree is visible.
+		if( self.selectedNode && self.selectedNode.ref==oId ) 
+			return self.selectedNode;
+		// else:
+		return self.selectNode( self.nodeByRef( oId, similar ) )
 	};
 	self.openNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;

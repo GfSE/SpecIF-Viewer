@@ -520,7 +520,7 @@ modules.construct({
 						//		nV = fileRef.toServer(nA.value).stripCtrl().reduceWhiteSpace();
 						//		nV = fileRef.toServer(nA.value);
 								nV = nA.value;
-						//		console.debug('contentChanged','xhtml',rA,nA,rV!=nV);
+//								console.debug('contentChanged','xhtml',rA,nA,rV!=nV);
 								if( rV!=nV ) return true;
 								// If a file is referenced, pretend that the resource has changed.
 								// Note that a resource always references a file having the next lower revision number than istself.
@@ -1029,7 +1029,7 @@ modules.construct({
 			message.show( xhr )
 		}  
 		function exportAs(opts) {
-			if( self.exporting ) return null;
+			if( self.exporting ) return;
 			
 			if( !opts ) opts = {};
 			if( !opts.format ) opts.format = 'specif';
@@ -1118,7 +1118,7 @@ modules.construct({
 
 				// Add the files:
 				data.files.forEach( function(f) {
-	//				console.debug('zip a file',f);
+//					console.debug('zip a file',f);
 					zip.file( f.title, f.blob );
 					delete f.blob // the SpecIF data below shall not contain it ...
 				});
@@ -1143,7 +1143,7 @@ modules.construct({
 					})
 					.then(
 						function(blob) {
-	//						console.debug("storing ",data.title+".specifz");
+//							console.debug("storing ",data.title+".specifz");
 							saveAs(blob, fName+"z");
 							self.exporting = false;
 							eDO.resolve()
@@ -1682,10 +1682,8 @@ modules.construct({
 				// according to the schema, all property values are represented by a string:
 				switch( typeof(iE.value) ) {
 					case 'boolean':
-						oE.value = bool.toString(iE.value);
-						break;
 					case 'number':
-						oE.value = num.toString(iE.value);
+						oE.value = iE.value.toString();
 						break;
 					default:
 						oE.value = iE.value
@@ -2325,6 +2323,7 @@ function classifyProps( el, data ) {
 	// classify properties into title, descriptions and other;
 	// for resources, statements and hierarchies/specifications.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
+	if( !data ) data = app.cache;
 	var rC = itemById( data.resourceClasses, el['class']),
 		cP = {
 		id: el.id,
@@ -2346,12 +2345,11 @@ function classifyProps( el, data ) {
 	if( a>-1 ) {  // found!
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// Before, remove all marked deletions (as prepared be diffmatchpatch).
-		cP.title = deformat( cP.other[a].value );
+		if( cP.other[a].value ) cP.title = deformat( cP.other[a].value );
 		// remove title from other:
 		cP.other.splice(a,1) 
 	} else {
-		// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
-		// Here we want only 'real' titles and none, if there is none.
+		// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property: 
 		cP.title = el.title
 	};
 	cP.isHeading = rC.isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
@@ -2362,11 +2360,12 @@ function classifyProps( el, data ) {
 	for( a=cP.other.length-1;a>-1;a-- ) {
 		if( CONFIG.descProperties.indexOf( cP.other[a].title )>-1 ) {
 			// To keep the original order of the properties, the unshift() method is used.
-			cP.descriptions.unshift( cP.other.splice(a,1)[0] )
-//			cP.descriptions.unshift( cP.other[a] );
-//			cP.other.splice(a,1) 
+			if( cP.other[a].value ) cP.descriptions.unshift( cP.other[a] );
+			cP.other.splice(a,1) 
 		}
 	};
+	// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
+	if( !cP.title && el.title ) cP.title = el.title;
 	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: "dcterms:description", value: el.description} );
 //	console.debug( 'classifyProps', cP );
 	return cP

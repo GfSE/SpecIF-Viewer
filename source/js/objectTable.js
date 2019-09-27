@@ -286,7 +286,7 @@ function ObjectTable() {
 //			console.debug( 'cl', data );
 			// a row has been clicked: show the detail view of the object.
 			specs.showTab( CONFIG.objectDetails );  
-			specs.selectNodeByRef( {id: data.id} )	
+			specs.selectNodeByRef( data.id )	
 			// changing the tree node triggers an event, by which the display is refreshed
 		});
 		return table

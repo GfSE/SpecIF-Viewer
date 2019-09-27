@@ -12,7 +12,6 @@ modules.construct({
 }, function(self) {
 	"use strict";
 	self.modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
-//	const circle = '<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>';
 	
 	// Permissions for resources and statements:
 	self.resCreTypes = [];  // all resource types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -78,13 +77,23 @@ modules.construct({
 		self.tree = new Tree({
 			loc: '#hierarchy',
 			dragAndDrop: false,
-			events: {
+			eventHandlers: {
 				'select':  
 					// when a node is clicked or traversed by up/down keys
 					function(event) {  // The clicked node is 'event.node'
 						// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree ;-):
 //						console.debug('tree.select',event);
 						self.tree.selectedNode = event.node;
+
+					/*	// Update browser history:
+						setUrlParams({
+							project: app.cache.id,
+							view: self.viewCtl.selected.view.substr(1),	// remove leading hash
+							node: event.node.id,
+							item: event.node.ref
+						});
+						// .. this is done in the leaf view */
+
 						document.getElementById(CONFIG.objectList).scrollTop = 0;
 						self.refresh()
 					},
@@ -92,6 +101,7 @@ modules.construct({
 					// when a node is opened, but not when an opened node receives an open command
 					function(event) {  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
+//						console.debug('tree.open',event);
 						if( self.selectedTab()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'close':
@@ -164,8 +174,8 @@ modules.construct({
 									moveNodeInside( event.move_info.moved_node, event.move_info.target_node.parent )
 								}
 							})
-							.fail( handleError );
-			*/		}
+							.fail( handleError ); */
+					}
 			}
 		});
 		// controls whether the left panel with the tree or details is shown or not:
@@ -204,22 +214,14 @@ modules.construct({
 	};
 	// module entry 'self.show()' see further down
 	// module exit;
-	// called by the view management:
+	// called by the parent's view controller:
 	self.hide = function() {
 //		console.debug( 'specs.hide' );
 	//	self.emptyTab();
 		$( '#'+CONFIG.specifications ).hide();
 		app.busy.reset()
 	}; 
-/*	self.returnToCaller = function() {
-		// is also called by sub-modules, so it must be globally accessible
-//		console.debug( 'returnToCaller' );
-	//	app.cache.stopAutoLoad();
-	//	self.hide();
-		self.clear()
-		// Todo: jump!
-	};
-	function handleError(xhr) {
+/*	function handleError(xhr) {
 //		console.debug( 'handleError', xhr );
 		self.clear();
 		switch( xhr.status ) {
@@ -228,7 +230,7 @@ modules.construct({
 			case 201:
 				return; // some calls end up in the fail trail, even though all went well.
 			default:
-				stdError(xhr,self.returnToCaller)
+				stdError(xhr)
 		}
 	} */
 
@@ -343,9 +345,9 @@ modules.construct({
 		self.tree.set(tr);
 		self.tree.numberize();
 		self.tree.restoreState();
-		if( !self.tree.selectedNode ) self.tree.selectFirstNode();
-		self.tree.openNode();
-		return self.tree.selectedNode;
+	//	if( !self.tree.selectedNode ) self.tree.selectFirstNode();
+	//	self.tree.openNode();
+	//	return self.tree.selectedNode;
 
 		// -----------------
 		function toChild( iE ) {
@@ -369,34 +371,21 @@ modules.construct({
 	};
 	self.loadHierarchy = function( h ) {
 		// load the hierarchy and add it to the tree:
+//		console.debug( 'loadHierarchy', h );
 		
-	/*	if( !self.showLeft.get() ) return null;
-		if( idx<0 || idx>app.cache.hierarchies.length-1 ) {
-			$('#contentNotice').html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
-			app.busy.reset();
-			return null
-		};
-	*/
 		// Get the spec's tree data:
 		return app.cache.readContent( 'hierarchy', h, {reload:true} )
 			.done(function(rsp) {
 //				console.debug('load',rsp);
-				self.updateTree( itemById( app.cache.hierarchies, rsp.id ) );
-				if( !self.tree.firstNode() ) {
-					// Warn, if tree is empty and there are no resource classes for user instantiation:
-					if( !self.resCre )
-						message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
-			//		return
-				};
-			//	self.refresh()
+				self.updateTree( itemById( app.cache.hierarchies, rsp.id ) )
 			})
 			.fail( stdError )
 	};
 
 	// The module entry;
 	// called by the parent's view controller:
-	self.show = function() {
-//		console.debug( 'specifications.show', app.cache );
+	self.show = function( opts ) {
+//		console.debug( 'specifications.show', opts );
 
 		$('#pageTitle').html( app.cache.title );
 		app.busy.set();
@@ -405,27 +394,73 @@ modules.construct({
 
 		getPermissions();
 		
-		// assure that the page is properly built in all cases:
-		self.tree.init();
+ 		let uP = opts.urlParams,
+			pend=0,
+			fNd = self.tree.firstNode(),
+			nd = undefined;
 		
- 	//	let uP = getUrlParms() );
-		let uP = undefined;
+		// Initialize the tree, unless
+		// - URL parameters are specified where the project is equal to the loaded one
+		// - just a newView is specifed without URL parameters (coming from another page)
+	//	if( !uP || !uP[CONFIG.keyProject] || uP[CONFIG.keyProject]!=app.cache.id )
+		if( !fNd
+			|| indexById( app.cache.resources, fNd.ref )<0
+			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.id )
+			self.tree.init();
 		
+//		console.debug('## 0',uP,self.tree.selectedNode);
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
 		if( app.cache.hierarchies && app.cache.hierarchies.length>0 ) {
-			// get the hierarchies one by one, so that the first can be shown as quickly as possible;
+			// get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
 			app.cache.hierarchies.forEach( function (h) {
+				pend++;
 				self.loadHierarchy( h )
-				// "busy" is reset in showX as called by doRefresh
+				.done(function(){
+					if( --pend<1 ) {
+						// all hierarchies have been loaded;
+						// try to select the requested node:
+						if( uP && uP.node ) {
+							nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
+						};
+						if( uP && uP.item ) {
+							nd = self.tree.selectNodeByRef( uP[CONFIG.keyItem] )
+						};
+						// if none is specified, take the node which is already selected:
+						if( !nd ) nd = self.tree.selectedNode;
+						// no or unknown resource specified; select first node:
+						if( !nd ) nd = self.tree.selectFirstNode();
+						if( nd ) {
+						/*	// Update browser history only if the view is switched
+							// ... and not if the browser's backward/forward button has been pressed:
+							if( !uP && opts.newView ) 
+								setUrlParams({
+									project: app.cache.id,
+									view: opts.newView,   // .. here, it is an intermediate view and thus useless
+									node: nd.id,
+									item: nd.ref
+								}); 
+							// this will be done one level deeper .. */
+							self.tree.openNode( nd )
+						} else {
+							if( !self.resCre ) {
+								// Warn, if tree is empty and there are no resource classes for user instantiation:
+								message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
+								return
+							}
+						}
+					}
+				})
 			});
-			// select the specified hierarchy and resource:
-	/*		let res = getRId( uP );
+
+
+	/*		// select the specified hierarchy and resource:
+			let res = getRId( uP );
 			if( res && res.id ) {
 				// tree has entries and a known resource is specified: select the first node referencing the resource
 //				console.debug('#filled and resource specified',res);
-				self.tree.selectNodeByRef( res )
+				self.tree.selectNodeByRef( res.id )
 			} else {
 				// tree has entries, no or unknown resource specified: select first node
 //				console.debug('#filled and no resource specified');
@@ -435,31 +470,14 @@ modules.construct({
 			self.tree.openNode( self.tree.selectedNode )
 			// opening a tree node triggers an event, by which 'self.refresh' will be called.
 	*/	
-			// show the specified dialog, or the default:
-			modules.show( getDlg( uP ) )  
+			// The module manager's view control will select the next level view ...
+			// "app.busy" is reset in showX at the next level 
 
 		} else {
 			// the project has no spec:
 			$('#contentNotice').html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
 			app.busy.reset()
-		};
-		return
-
-		// -----------------
-		// get data from urlP:
-		function getDlg( p ) {
-			// select the dialog/view, if specified in the query string:
-			if( p && p.dlg && self.viewCtl.exists('#'+p.dlg) )
-				return '#'+p.dlg;
-			// return default dialog, otherwise:
-			return '#'+CONFIG.specDialogDefault 
 		}
-	/*	function getRId( p ) {
-			// select first node of those specified as query parameter:
-			if( p && p.oids && p.oids.length )
-				return p.oids[0];
-			return undefined
-		} */
 	};
 
 	// Multiple refresh requests in a short time are consolidated to a single refresh at the end.
@@ -594,7 +612,7 @@ modules.construct({
 	//	self.selectTab(CONFIG.objectList);  // itemClicked can be called from the hitlist ..
 		if( self.tree.selectedNode.ref != rId ) {
 			// different node: select it and open it:
-			self.tree.selectNodeByRef( {id:rId} );
+			self.tree.selectNodeByRef( rId );
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			self.tree.openNode( self.tree.selectedNode )
@@ -620,7 +638,7 @@ modules.construct({
 		} else { 
 		//	self.selectTab( CONFIG.objectList );  
 			// Jump to resource rId:
-			self.tree.selectNodeByRef( {id: rId} );
+			self.tree.selectNodeByRef( rId );
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			document.getElementById(CONFIG.objectList).scrollTop = 0
 		}
@@ -831,6 +849,17 @@ modules.construct({
 		var nd = app.specs.tree.selectedNode,
 			oL = [],  // id list of the resources to view
 			nL = [];  // list of nodes of the hierarchy.
+				
+		// Update browser history, if it is a view change or item selection, 
+		// but not navigation in the browser history:
+		if( !opts || !opts.urlParams ) 
+			setUrlParams({
+				project: app.cache.id,
+				view: self.view.substr(1),	// remove leading hash
+				node: nd.id,
+				item: nd.ref
+			}); 
+
 		// lazy loading: only a few resources are loaded from the server starting with the selected node
 		// only visible tree nodes are collected in oL (excluding those in closed folders ..), so the main column corresponds with the tree.
 		for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
@@ -883,9 +912,20 @@ modules.construct({
 	//	if( app.specs.resources.values.length<1 )
 	//		$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
-		var rId = app.specs.tree.selectedNode.ref,
+		var nd = app.specs.tree.selectedNode,
 			selRes, mG;
-		app.cache.readStatementsOf( {id: rId} )
+						
+		// Update browser history, if it is a view change or item selection, 
+		// but not navigation in the browser history:
+		if( !opts || !opts.urlParams ) 
+			setUrlParams({
+				project: app.cache.id,
+				view: self.view.substr(1),	// remove leading hash
+				node: nd.id,
+				item: nd.ref
+			}); 
+
+		app.cache.readStatementsOf( {id: nd.ref} )
 			.done(function(sL) {
 				// sL is the list of statements involving the selected resource.
 				var relatedObjs = [];
@@ -895,7 +935,7 @@ modules.construct({
 					// skip hidden statements:
 					if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
 						
-					if( s.subject.id == rId ) { 
+					if( s.subject.id == nd.ref ) { 
 						// the selected node is a subject, so the related resource is a object:
 						if( indexById( relatedObjs, s.object.id )<0 ) 
 							//  list the related resource, but only once:
@@ -907,8 +947,8 @@ modules.construct({
 							relatedObjs.unshift( {id: s.subject.id} )
 					}
 				});
-				// Finally, add the selected resource itself to the list as first element:
-				relatedObjs.unshift({id: rId});
+				// Finally, add the selected resource itself to the list as first item:
+				relatedObjs.unshift({id: nd.ref});
 //				console.debug( 'relatedObjs', relatedObjs );
 
 				// Obtain the titles (labels) of all resources in the list.
@@ -919,7 +959,7 @@ modules.construct({
 						app.specs.resources.init();
 						// First get the selected resource, 
 						// assuming that the sequence is arbitrary:
-						app.specs.resources.push( itemById(roL,rId) );
+						app.specs.resources.push( itemById(roL,nd.ref) );
 						selRes = app.specs.resources.selected();
 						// roL is a list of the selected plus it's related resources
 					//	selectResource( app.specs.tree.selectedNode );
@@ -939,7 +979,7 @@ modules.construct({
 								// for every statement type found, make an entry with a subgroup per direction:
 								// - rGs contains statements of a given type, where the related resource is a subject
 								// - rGt contains statements of a given type, where the related resource is a object
-								if((s.subject.id == rId) ) { 
+								if((s.subject.id == nd.ref) ) { 
 									// selected resource, replace cripple by full resource:
 									s.subject = roL[0];
 									// the related partner, replace cripple by full resource:
@@ -975,7 +1015,7 @@ modules.construct({
 						}
 					})
 			})
-			.fail( stdError )
+			.fail( stdError );
 		return
 
 		function renderStatements() {
@@ -1026,13 +1066,13 @@ modules.construct({
 //				var rT = itemByName( app.cache.statementClasses, 'SpecIF:mentions' );
 //				if( !rT ) return;
 			
-			sO.ti = resTitleOf( sO );
-			var rG = { rGs: [], rGt: [] };		// construct a statement group for the new statement type
+			var ti = resTitleOf( sO ),
+				rG = { rGs: [], rGt: [] };		// construct a statement group for the new statement type
 			// In contrast to the statements collected before, these are not stored in the server.
 
 			let rPatt=null, rStr=null, sT=null,
 				// assumption: the dynamic link tokens don't need to be HTML-escaped:
-				sPatt = new RegExp( (CONFIG.dynLinkBegin+sO.ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
+				sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
 			// ToDo: Find text references also in other hierarchies.
 			app.cache.resources.forEach( function(rO) {
@@ -1040,12 +1080,12 @@ modules.construct({
 				// so there is no need to check it, here:
 				// disregard resources which are not referenced in the current tree:
 				if( app.specs.tree.nodesByRef(rO).length<1 ) return;
-				rO.ti = resTitleOf( rO );
-				if( !rO.ti || rO.ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
+				let ti = resTitleOf( rO );
+				if( !ti || ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
 				
 				// 1. The titles of other resource's found in the selected resource's texts 
 				//    result in a 'this mentions other' statement (selected resource is subject):
-				rStr = (CONFIG.dynLinkBegin+rO.ti+CONFIG.dynLinkEnd).escapeRE();
+				rStr = (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE();
 				rPatt = new RegExp( rStr, "i" );
 
 				sT = itemById( app.cache.resourceClasses, sO['class'] );
@@ -1458,7 +1498,7 @@ function Resources() {
 		}
 	};
 	self.updateSelected = function( o ) {
-		// update the first element (= selected resource), if it exists, or create it;
+		// update the first item (= selected resource), if it exists, or create it;
 		// return 'true' if a change has been effected:
 		if( self.values.length>0 )
 			return self.values[0].set( o )
@@ -1997,7 +2037,7 @@ var fileRef = {
 									// otherwise there will be more than one image container with the same id:
 									$("#details").empty();
 									// jump to the click target:
-									app.specs.tree.selectNodeByRef( {id:eId}, true );  // true: 'similar'; id must be a substring of nd.ref
+									app.specs.tree.selectNodeByRef( eId, true );  // true: 'similar'; id must be a substring of nd.ref
 									// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
 									document.getElementById(CONFIG.objectList).scrollTop = 0
 								}
