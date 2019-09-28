@@ -757,9 +757,10 @@ modules.construct({
 
 			function attrUpd() {
 				// check whether at least one property is editable:
-				for( var a=selO.properties.length-1;a>-1;a-- ) {
-					if( selO.properties[a].upd ) return true   // true, if at least one property is editable
-				};
+				if( selO.properties )
+					for( var a=selO.properties.length-1;a>-1;a-- ) {
+						if( selO.properties[a].upd ) return true   // true, if at least one property is editable
+					};
 				return false
 			}
 
@@ -861,7 +862,8 @@ modules.construct({
 			}); 
 
 		// lazy loading: only a few resources are loaded from the server starting with the selected node
-		// only visible tree nodes are collected in oL (excluding those in closed folders ..), so the main column corresponds with the tree.
+		// only visible tree nodes are collected in oL (excluding those in closed folders ..), 
+		// so the main column corresponds with the tree.
 		for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
 			oL.push({ id: nd.ref });  // nd.ref is the id of a resource to show
 			nL.push( nd );
@@ -870,11 +872,13 @@ modules.construct({
 
 		app.cache.readContent( 'resource', oL )
 			.done(function(rL) {
-				for( var i=0, I=rL.length; i<I; i++) { 
-					// Format the titles with numbering:
-					rL[i].order = nL[i].order
-				};	
-				// update the view list, if changed:
+				// Format the titles with numbering:
+				for( var i=rL.length-1; i>-1; i-- )
+					rL[i].order = nL[i].order;
+	
+				// Update the view list, if changed:
+				// Note that the list is always changed, when execution gets here,
+				// unless in a multi-user configuration with server and auto-update enabled.
 				if( app.specs.resources.update( rL ) || opts && opts.forced ) {
 					// list value has changed in some way:
 				//	setPermissions( app.specs.tree.selectedNode );  // use the newest revision to get the permissions ...
@@ -1174,7 +1178,7 @@ function Resource( obj ) {
 
 	self.listEntry = function() {
 			function showAtt( att ) {
-//				console.debug('#att#',att);
+//				console.debug('#att',att);
 				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
 				return (CONFIG.overviewShowEmptyProperties || hasContent(att.value))
 			} 

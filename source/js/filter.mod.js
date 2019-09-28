@@ -165,8 +165,6 @@ modules.construct({
 		});
 		$('#primaryFilters').html( fps );
 
-//		app.specs.updateHistory();
-
 		// Get every resource referenced in the hierarchy tree and try whether it is a match.
 		// If so, the resource is added to app.specs.resources:
 		let tr = app.specs.tree.get();
@@ -181,7 +179,7 @@ modules.construct({
 		app.busy.set();
 	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
-		let pend = 0;
+		let pend = 0, h, hR;
 		app.specs.tree.iterate( function(nd) {
 			pend++;
 //			console.debug('tree.iterate',pend,nd.ref);
@@ -189,9 +187,9 @@ modules.construct({
 			// Note that the sequence may differ from the hierarchy one's due to varying response times:
 			app.cache.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
-					let h = match(rsp);
+					h = match(rsp);
 					if( h )	{
-						let hR = new Resource( h );
+						hR = new Resource( h );
 						$('#hitlist').append( hR.listEntry() )
 					};
 					if( --pend<1 ) {  // all done

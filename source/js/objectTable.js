@@ -189,7 +189,7 @@ function ObjectTable() {
 
 		// Get every object referenced in the tree:
 		let oRefs=[];
-		specs.tree.get().iterate(
+		specs.tree.iterate(
 			function(nd) {
 				oRefs.push( nd );
 				return true  // continue iterating

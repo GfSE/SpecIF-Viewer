@@ -72,6 +72,10 @@ function Tree( options ) {
 		};
 		return nodes
 	};
+	self.references = function( oId, similar ) {
+		// Does the tree reference a resource with the given id?
+		return self.nodesByRef(oId,similar).length>0
+	};
 	self.nodeByRef = function( oId, similar ) {
 		// Find the tree node for the specified tree obj.
 		// Use case: jump to a clicked object.

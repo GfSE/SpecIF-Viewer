@@ -880,7 +880,8 @@ modules.construct({
 		
 			function isReferenced( rId ) {
 				for( var s=self.hierarchies.length-1; s>-1; s-- )
-					if( self.hierarchies[s].flatL.indexOf( rId )>-1 ) return true;
+				//	if( self.hierarchies[s].flatL.indexOf( rId )>-1 ) return true;
+					if( iterate( self.hierarchies[s], function(nd) { return nd.ref!=rId } ) ) return true;
 				return false
 			}
 		var sDO = $.Deferred();
@@ -1397,7 +1398,7 @@ modules.construct({
 				oE['class'] = iE[names.pClass];
 				if( iE.description ) oE.description = noCode(iE.description);
 				switch( dT.type ) {
-					case 'xs:boolean':
+				/*	case 'xs:boolean':
 						oE.value = iE.value=='true';
 						break;
 					case 'xs:integer':
@@ -1405,6 +1406,13 @@ modules.construct({
 						break;
 					case 'xs:double':
 						oE.value = parseFloat(iE.value);
+						break;  */
+					case 'xs:boolean':
+					case 'xs:integer':
+					case 'xs:double':
+					case 'xs:enumeration':
+					case 'xs:dateTime':
+						oE.value = iE.value;
 						break;
 					default:
 						oE.value = noCode(iE.value)
@@ -1416,11 +1424,12 @@ modules.construct({
 			// common for all instances:
 			function a2int( iE ) {
 				var oE = {
-					id: iE.id,
-					title: noCode(iE.title)
+					id: iE.id
 				};
+				if( iE.title ) oE.title = noCode(iE.title);
 				if( iE.description ) oE.description = noCode(iE.description);
-				oE.properties = forAll( iE.properties, p2int );
+				if( iE.properties && iE.properties.length>0 )
+					oE.properties = forAll( iE.properties, p2int );
 
 				switch( typeof(iE.revision) ) {
 					case 'undefined':
@@ -1479,7 +1488,7 @@ modules.construct({
 					iR['class'] = eH[names.hClass];
 					iD.resources.push(iR);
 					
-					if(iR.title) iH.title = iR.title;
+			//		if(iR.title) iH.title = iR.title;
 					if(eH.revision) iH.revision = eH.revision.toString()
 				} else {
 					// starting v0.10.8:
@@ -1487,14 +1496,14 @@ modules.construct({
 					iH.resource = eH.resource
 				};
 				// list all resource ids in a flat list:
-				iH.flatL = [eH.id];
+			//	iH.flatL = [eH.id];
 				iH.nodes = forAll( eH.nodes, n2int );
 //				console.debug('hierarchy 2int',eH,iH);
 				return iH
 
 				// a hierarchy node:
 				function n2int( eN ) {
-					iH.flatL.push(eN.resource);
+			//		iH.flatL.push(eN.resource);
 					switch( typeof(eN.revision) ) {
 						case 'undefined':
 							break;
@@ -1680,27 +1689,28 @@ modules.construct({
 				if( iE.description ) oE.description = iE.description;
 				
 				// according to the schema, all property values are represented by a string:
-				switch( typeof(iE.value) ) {
+				oE.value = iE.value;
+			/*	switch( typeof(iE.value) ) {
 					case 'boolean':
 					case 'number':
 						oE.value = iE.value.toString();
 						break;
 					default:
 						oE.value = iE.value
-				};
+				}; */
 				// properties do not have their own revision and change info; the parent's apply.
 				return oE
 			}
 			// common for all instances:
 			function a2ext( iE ) {
 				var eE = {
-					id: iE.id,
+					id: iE.id
 					// resources and hierarchies usually have individual titles, and so we will not translate:
-					title: resTitleOf( iE )
 				};
+				if( iE.title ) eE.title = resTitleOf( iE );
 				if( iE.description ) eE.description = iE.description;
 				eE['class'] = iE['class'];
-				if( iE.properties.length>0 )
+				if( iE.properties && iE.properties.length>0 )
 					eE.properties = forAll( iE.properties, p2ext );
 				if( iE.revision ) eE.revision = iE.revision;
 				eE.changedAt = iE.changedAt;
@@ -2281,6 +2291,18 @@ function hasContent( pV ) {
 	return pV.stripHTML().trim().length>0
 		|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(pV)
 		|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(pV)
+}
+function iterate( tree, fn ) {
+	// execute fn for every node of the tree as long as fn returns true;
+	// return true as a whole, if iterating is finished early.
+	// For example, if fn tests for a certain attribute value of a tree node,
+	// the iterate function ends with true, as soon as the test is positive.
+	let cont = fn( tree );
+	if( cont && tree.nodes ) {
+		for( var i=tree.nodes.length-1;i>-1&&cont;i--) 
+			cont = iterate( tree.nodes[i], fn )
+	};
+	return !cont
 }
 function initProp( pCs, pCid ) {
 	// create an empty property from the supplied class:
