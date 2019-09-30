@@ -169,7 +169,7 @@ function ObjectTable() {
 							col = att.longName.toJsId();  
 							obj[col] = contentOf( clAtts, att );
 							// add column, if it is new and has a value:
-							if( hasContent(att.content) && visCols.indexOf( col )<0 ) 
+							if( hasContent(att) && visCols.indexOf( col )<0 ) 
 								visCols.push( col )
 						};
 						

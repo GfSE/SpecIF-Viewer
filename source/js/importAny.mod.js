@@ -236,7 +236,7 @@ modules.construct({
 		let rF = textInput(i18n.LblFileName,'&nbsp;',null,null);
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.valid("'+i18n.LblProjectName+'")');
+			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.valid()');
 
 		$('#HelpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
@@ -245,7 +245,7 @@ modules.construct({
 
 	let importing = false,
 		allValid = false;
-	self.valid = function( item ) {
+	self.valid = function() {
 		// enable/disable the import button depending on the input state of all fields;
 		// in this case only a non-zero length of the project name is required:
 		let pnl = getTextLength(i18n.LblProjectName)>0,
@@ -259,7 +259,7 @@ modules.construct({
 			document.getElementById("replaceBtn").disabled = !loaded || !allValid;
 			document.getElementById("updateBtn").disabled = true
 		} catch(e) {}
-//		console.debug('valid',allValid)
+//		console.debug('valid',pnl,allValid)
 	};
 	function setImporting( st ) {
 		importing = st;

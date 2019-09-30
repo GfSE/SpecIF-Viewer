@@ -1180,7 +1180,7 @@ function Resource( obj ) {
 			function showAtt( att ) {
 //				console.debug('#att',att);
 				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.overviewShowEmptyProperties || hasContent(att.value))
+				return (CONFIG.overviewShowEmptyProperties || hasContent(att))
 			} 
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
@@ -1253,7 +1253,7 @@ function Resource( obj ) {
 		// 2 The description properties:
 		self.resToShow.descriptions.forEach( function(ai) {
 //			console.debug('details.descr',ai.value);
-			if( hasContent(ai.value) ) {
+			if( hasContent(ai) ) {
 				var os = {
 //						dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedTab())>-1,
 						dynLinks: true,

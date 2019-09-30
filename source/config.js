@@ -482,7 +482,8 @@ var RE = {};
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\">27420ffc0000c3a8013ab527ca1b71f5.svg</object>
+RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
+RE.tagImg = new RegExp( '<img([^>]+)(/>|>([^<]*?)</img>)', 'g' );
 let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
 RE.tagSingleObject = new RegExp( reSO, 'g' );
 RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
-RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );

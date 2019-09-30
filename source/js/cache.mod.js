@@ -1397,16 +1397,11 @@ modules.construct({
 				};
 				oE['class'] = iE[names.pClass];
 				if( iE.description ) oE.description = noCode(iE.description);
+
+				// According to the schema, all property values are represented by a string
+				// and internally they are stored as string as well to avoid inaccuracies 
+				// by multiple transformations:
 				switch( dT.type ) {
-				/*	case 'xs:boolean':
-						oE.value = iE.value=='true';
-						break;
-					case 'xs:integer':
-						oE.value = parseInt(iE.value,10);
-						break;
-					case 'xs:double':
-						oE.value = parseFloat(iE.value);
-						break;  */
 					case 'xs:boolean':
 					case 'xs:integer':
 					case 'xs:double':
@@ -1688,16 +1683,9 @@ modules.construct({
 				oE['class'] = iE['class'];
 				if( iE.description ) oE.description = iE.description;
 				
-				// according to the schema, all property values are represented by a string:
+				// According to the schema, all property values are represented by a string
+				// and we want to store them as string to avoid inaccuracies by multiple transformations:
 				oE.value = iE.value;
-			/*	switch( typeof(iE.value) ) {
-					case 'boolean':
-					case 'number':
-						oE.value = iE.value.toString();
-						break;
-					default:
-						oE.value = iE.value
-				}; */
 				// properties do not have their own revision and change info; the parent's apply.
 				return oE
 			}
@@ -2273,10 +2261,6 @@ function resTitleOf( res ) {
 	if( typeof(res)!='object' ) return undefined;
 	return res.title || titleFromProperties( res.properties ) || titleOf( res )
 }
-function hTitleOf( h ) {
-	// get the title of the hierarchy:
-	return h.title || resTitleOf( itemById( h.resource ) )
-}
 function elementTitleWithIcon( el ) {
 	// add an icon to an element's title;
 	// works for all types of elements, i.e. resources, statements and hierarchies.
@@ -2287,10 +2271,13 @@ function elementTitleWithIcon( el ) {
 	// add the icon to a type's title, if defined:
 	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
 }*/
-function hasContent( pV ) {
+function hasContent( prp ) {
+	let pV = prp.value;
+	if( !pV ) return false;
 	return pV.stripHTML().trim().length>0
-		|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(pV)
-		|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(pV)
+		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
+		|| RE.tagImg.test(pV)
+		|| RE.tagA.test(pV)
 }
 function iterate( tree, fn ) {
 	// execute fn for every node of the tree as long as fn returns true;
@@ -2299,7 +2286,7 @@ function iterate( tree, fn ) {
 	// the iterate function ends with true, as soon as the test is positive.
 	let cont = fn( tree );
 	if( cont && tree.nodes ) {
-		for( var i=tree.nodes.length-1;i>-1&&cont;i--) 
+		for( var i=tree.nodes.length-1;cont&&(i>-1);i--) 
 			cont = iterate( tree.nodes[i], fn )
 	};
 	return !cont

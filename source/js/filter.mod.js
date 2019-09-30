@@ -21,6 +21,7 @@
 			primary: true,
 			scope: 'projectId',  
 			baseType: 'xs:string',
+			// All resources will pass, if no searchString is specified:
 			searchString: '',
 			wordBeginnings: false,
 			wholeWords: false,
@@ -33,9 +34,10 @@
 			scope: 'projectId',  
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
+				// Only resources with type 'Requirement' will pass:
 				{title:'Plan', id:'OT-Pln', checked:false},
 				{title:'Model Element', id:'OT-MEl', checked:false},
-				{title:'Requirement', id:'OT-Req', checked:false},
+				{title:'Requirement', id:'OT-Req', checked:true},
 				{title:'Folder', id:'OT-Fld', checked:false},
 				{title:'Comment', id:'OT-Cmt', checked:false}
 			] 
@@ -48,10 +50,11 @@
 			dataType: 'DT-Priority',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
+				// Only resources with priority 'high' will pass:
 				{title:'1_high', id:'V-Req-Prio-0', checked:true},
-				{title:'2_medium', id:'V-Req-Prio-1', checked:true},
-				{title:'3_low', id:'V-Req-Prio-2', checked:true},
-				{title:'(not assigned)', id:'', checked:true}   // catches resource properties without a value (empty value list).
+				{title:'2_medium', id:'V-Req-Prio-1', checked:false},
+				{title:'3_low', id:'V-Req-Prio-2', checked:false},
+				{title:'(not assigned)', id:'', checked:false}   // catches resource properties without a value (empty value list).
 			]
 		},{ 
 			title: 'Status',
@@ -62,6 +65,7 @@
 			dataType: 'DT-Status',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
+				// All resources will pass, so this filter is without effect:
 				{title:'00_na', id:'V-Req-Status-0', checked:true},
 				{title:'00_redundant', id:'V-Req-Status-1', checked:true},
 				{title:'00_rejected', id:'V-Req-Status-2', checked:true},
@@ -124,14 +128,14 @@ modules.construct({
 
 	// standard module entry:
 	self.show = function( opts ) {   // optional urlParams or filter settings
-//		console.debug( 'filter.show', opts );
+//		console.debug( 'filter.show', opts, self.filterList );
 		app.specs.showLeft.reset();
 
 		setContentHeight();
 	//	$('#hitCount').empty();
 
 		// build filterList from the specTypes when executed for the first time:
-		if( opts&&opts.filters || self.filterList.length<1 ) 
+		if( self.filterList.length<1 || opts&&opts.filters || opts&&opts.forced ) 
 			build( opts );  
 
 		// Now start the evaluation based on the current filter settings:
@@ -170,16 +174,18 @@ modules.construct({
 		let tr = app.specs.tree.get();
 		if( !tr || tr.length<1 ) {
 		//	showNotice(i18n.MsgNoReports);
+//			console.debug('filter nothing to do',tr);
 			app.busy.reset();
 			return true  // nothing to do ....
 		};
+//		console.debug('filter something to do',tr);
 
 		// else update the hitlist:
 		app.specs.resources.init();
 		app.busy.set();
 	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
-		let pend = 0, h, hR;
+		let pend=0, h, hR;
 		app.specs.tree.iterate( function(nd) {
 			pend++;
 //			console.debug('tree.iterate',pend,nd.ref);
@@ -188,6 +194,7 @@ modules.construct({
 			app.cache.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
 					h = match(rsp);
+//					console.debug('tree.iterate',self.filterList,pend,rsp,h);
 					if( h )	{
 						hR = new Resource( h );
 						$('#hitlist').append( hR.listEntry() )
@@ -210,7 +217,7 @@ modules.construct({
 			function matchResClass(f) {   
 				// primary filter applying to all resources:
 				for( var j=f.options.length-1; j>-1; j--){ 
-//					console.debug('matchResClass',f,f.options[j]);
+//					console.debug('matchResClass',f.options[j],res);
 					if( f.options[j].checked && f.options[j].id==res['class'] ) return true
 				};
 				return false
@@ -236,28 +243,30 @@ modules.construct({
 				let dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, f.caseSensitive?'':'i' ), 
 					oa=null, dT=null;
-				for( var a=res.properties.length-1; a>-1; a-- ){
-					oa = res.properties[a];
-					// for each property test whether it contains 'str':
-					dT = dataTypeOf( app.cache, oa['class'] );
-					// in case of oa we have a property 'dataType':
-//					dT = itemById( app.cache.dataTypes, oa.dataType );
-//					console.debug('matchSearchString',f,oa,dT);
-					switch( dT.type ) {
-						case 'xhtml':
-							if( patt.test( oa.value.stripHTML() )) return true; // if found return, continue searching, otherwise
-							break;
-						case 'xs:enumeration':
-							// only if enumerated values are included in the search:
-							if( !f.excludeEnums ) {
-								if( patt.test( enumValStr(dT,oa) ) ) return true  // if found return, continue searching, otherwise
-							};
-							break;
-						default:
-							if( patt.test( oa.value ) ) return true; // if found return, continue searching, otherwise
-							break
-					}
-				};
+				if( res.properties )
+					for( var a=res.properties.length-1; a>-1; a-- ){
+						oa = res.properties[a];
+						// for each property test whether it contains 'str':
+						dT = dataTypeOf( app.cache, oa['class'] );
+						// in case of oa we have a property 'dataType':
+	//					dT = itemById( app.cache.dataTypes, oa.dataType );
+	//					console.debug('matchSearchString',f,oa,dT);
+						switch( dT.type ) {
+							case 'xhtml':
+								if( patt.test( oa.value.stripHTML() )) return true; // if found return, continue searching, otherwise
+								break;
+							case 'xs:enumeration':
+								// only if enumerated values are included in the search:
+								if( !f.excludeEnums ) {
+									if( patt.test( enumValStr(dT,oa) ) ) return true  // if found return, continue searching, otherwise
+								};
+								break;
+							default:
+								if( patt.test( oa.value ) ) return true; // if found return, continue searching, otherwise
+								break
+						}
+					};
+				//  ToDo: search resource title and description, if there are no corresponding properties.	
 				return false  // not found
 			}
 			function matchPropValue(f) {   
@@ -270,38 +279,39 @@ modules.construct({
 
 				// The filter is 'applicable': 
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded):
-				switch ( f.baseType ) {
-					case 'xs:enumeration':
-						let oa = itemBy( res.properties, 'class', f.propClass ), // the concerned property
-							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
-						// If the resource does not have a property of the specified class,
-						// it is a match only if the filter specifies 'notAssigned':
-//						console.debug('matchPropValue',f,oa,no);
-						if( !oa ) return no;
-						
-						// return 'true' only if there is a match between any resource property value and the specified filter option 'opt':
-						let ct = oa.value.trim(),
-							cL=null, z=null, j=null;
-						// works with single-valued and multiple-valued ENUMERATIONs:
-						for( j=f.options.length-1; j>-1; j--) { 
-							if( !f.options[j].checked ) continue;
-							// try to match for every checked option (logical OR):
-							if( ct.length>0 ) {
-								cL = ct.split(',');	// this is a list of value ids
-								// - if any selected id in the options list is contained in the property values list:
-								for( z=cL.length-1; z>-1; z-- ) { 
-//									console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
-									if( f.options[j].id==cL[z].trim() ) return true
+				if( res.properties )
+					switch ( f.baseType ) {
+						case 'xs:enumeration':
+							let oa = itemBy( res.properties, 'class', f.propClass ), // the concerned property
+								no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
+							// If the resource does not have a property of the specified class,
+							// it is a match only if the filter specifies 'notAssigned':
+//							console.debug('matchPropValue',f,oa,no);
+							if( !oa ) return no;
+							
+							// return 'true' only if there is a match between any resource property value and the specified filter option 'opt':
+							let ct = oa.value.trim(),
+								cL=null, z=null, j=null;
+							// works with single-valued and multiple-valued ENUMERATIONs:
+							for( j=f.options.length-1; j>-1; j--) { 
+								if( !f.options[j].checked ) continue;
+								// try to match for every checked option (logical OR):
+								if( ct.length>0 ) {
+									cL = ct.split(',');	// this is a list of value ids
+									// - if any selected id in the options list is contained in the property values list:
+									for( z=cL.length-1; z>-1; z-- ) { 
+//										console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
+										if( f.options[j].id==cL[z].trim() ) return true
+									}
+								} else {
+									// the resource property has no value:
+									if( f.options[j].id=='notAssigned' ) return true;
+									if( f.options[j].id.length<1 ) return true
 								}
-							} else {
-								// the resource property has no value:
-								if( f.options[j].id=='notAssigned' ) return true;
-								if( f.options[j].id.length<1 ) return true
-							}
-						};
-//						break;
-//					default:
-				};
+							};
+					//		break;
+					//	default:
+					};
 				// no match has been found:
 				return false
 			}
@@ -379,9 +389,8 @@ modules.construct({
 		// 'hit' accumulates all markings without changing the original resource 'res'.
 		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
 		var hit = res;
-		for( var i=0,I=self.filterList.length; hit!='undefined' && i<I; i++) { 
+		for( var i=self.filterList.length-1; hit!='undefined' && i>-1; i--) { 
 			hit = matchAndMark( self.filterList[i] )
-//			console.debug( 'hit', i, hit );
 		};
 		return hit
 	}
