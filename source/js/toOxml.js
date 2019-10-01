@@ -71,8 +71,9 @@ function toOxml( data, opts ) {
 
 			// Check for missing options:
 			if( typeof(opts)!='object' ) opts = {};
-			if( typeof(opts.classifyProperties)!='function' && typeof(opts.fail)=='function' ) {
-				opts.fail({status:904,statusText:'function opts.classifyProperties is undefined.'});
+			if( typeof(opts.classifyProperties)!='function' ) {
+				if( typeof(opts.fail)=='function' )
+					opts.fail({status:904,statusText:'function opts.classifyProperties is undefined.'});
 				return
 			};
 			if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = false;
@@ -288,7 +289,7 @@ function toOxml( data, opts ) {
 				
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', rows='', c3, rt;
-//				console.debug('propertiesOf',r);
+//				console.debug('properties',r);
 			/*	r.properties.forEach( function(prp) {
 					// the property title or it's class's title:
 					rt = prp.title || propertyClassOf( prp['class'] ).title;
@@ -306,7 +307,7 @@ function toOxml( data, opts ) {
 					valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 				});
 				// Skip the remaining properties, if no label is provided:
-//				console.debug('propertiesOf',c1);
+//				console.debug('properties',c1);
 				if( !opts.propertiesLabel ) return c1;
 				
 			/*	// Add a property 'SpecIF:Type':
@@ -320,8 +321,8 @@ function toOxml( data, opts ) {
 					rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
 		
 					c3 = '';
-//					console.debug('other propertiesOf',valOf( prp ));
 					valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
+//					console.debug('other properties',prp,c3);
 					rows += wTableRow( wTableCell( wParagraph({text:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
 				});
 				
@@ -345,6 +346,7 @@ function toOxml( data, opts ) {
 				}
 				function parseXhtml( txt, opts ) {
 					// Parse formatted text.
+					
 			//		if( !opts ) return txt;
 			//		if( opts.rev==undefined ) opts.rev = 0;
 					if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
@@ -367,6 +369,8 @@ function toOxml( data, opts ) {
 					// Prepare:
 					// Remove empty <div> tags:
 					txt = txt.replace(/<div[^>]*>\s*<\/div>|<div *\/>/g,'');
+					// Must at least return an empty paragraph:
+					if( !txt ) return [{p:{text:''}}];
 
 					// Identify and separate the blocks:
 					var blocks = splitParagraphs(txt);
@@ -789,6 +793,7 @@ function toOxml( data, opts ) {
 					nd.nodes.forEach( function(n) {
 						ch += renderHierarchy( n, lvl+1 )		// next level
 					});
+
 				return ch
 			}
 
@@ -1137,7 +1142,7 @@ function toOxml( data, opts ) {
 
 		sects.forEach(function(s) { ct+=s });
 		
-		ct += 					'<w:sectPr w:rsidR="00AE0319">'
+		ct += 					'<w:sectPr>'
 		+							'<w:pgSz w:w="11906" w:h="16838"/>'
 		+							'<w:pgMar w:top="1417" w:right="1417" w:bottom="1134" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/>'
 		+							'<w:cols w:space="708"/>'
@@ -1436,12 +1441,12 @@ function toOxml( data, opts ) {
 		+						'</w:compat>'
 		+						'<w:rsids>'
 		+							'<w:rsidRoot w:val="00932176"/>'
-		+							'<w:rsid w:val="002D0214"/>'
-		+							'<w:rsid w:val="00932176"/>'
-		+							'<w:rsid w:val="00AE0319"/>'
-		+							'<w:rsid w:val="00B15970"/>'
-		+							'<w:rsid w:val="00CC7C02"/>'
-		+							'<w:rsid w:val="00DA07AE"/>'
+//		+							'<w:rsid w:val="002D0214"/>'
+//		+							'<w:rsid w:val="00932176"/>'
+//		+							'<w:rsid w:val="00AE0319"/>'
+//		+							'<w:rsid w:val="00B15970"/>'
+//		+							'<w:rsid w:val="00CC7C02"/>'
+//		+							'<w:rsid w:val="00DA07AE"/>'
 		+						'</w:rsids>'
 		+						'<m:mathPr>'
 		+							'<m:mathFont m:val="Cambria Math"/>'
@@ -1889,7 +1894,7 @@ function toOxml( data, opts ) {
 		+							'<w:link w:val="heading1Zchn"/>'
 		+							'<w:uiPriority w:val="9"/>'
 		+							'<w:qFormat/>'
-		+							'<w:rsid w:val="002D0214"/>'
+//		+							'<w:rsid w:val="002D0214"/>'
 		+							'<w:pPr>'
 		+								'<w:keepNext/>'
 		+								'<w:keepLines/>'
@@ -1911,7 +1916,7 @@ function toOxml( data, opts ) {
 		+							'<w:uiPriority w:val="9"/>'
 		+							'<w:unhideWhenUsed/>'
 		+							'<w:qFormat/>'
-		+							'<w:rsid w:val="002D0214"/>'
+//		+							'<w:rsid w:val="002D0214"/>'
 		+							'<w:pPr>'
 		+								'<w:keepNext/>'
 		+								'<w:keepLines/>'
@@ -1932,7 +1937,7 @@ function toOxml( data, opts ) {
 		+							'<w:uiPriority w:val="9"/>'
 		+							'<w:unhideWhenUsed/>'
 		+							'<w:qFormat/>'
-		+							'<w:rsid w:val="00ED3CEC"/>							'
+//		+							'<w:rsid w:val="00ED3CEC"/>							'
 		+							'<w:pPr>							'
 		+								'<w:keepNext/>						'
 		+								'<w:keepLines/>						'
@@ -1953,7 +1958,7 @@ function toOxml( data, opts ) {
 		+							'<w:uiPriority w:val="9"/>'
 		+							'<w:unhideWhenUsed/>'
 		+							'<w:qFormat/>'
-		+							'<w:rsid w:val="00ED3CEC"/>'
+//		+							'<w:rsid w:val="00ED3CEC"/>'
 		+							'<w:pPr>'
 		+								'<w:keepNext/>'
 		+								'<w:keepLines/>'
@@ -1999,7 +2004,7 @@ function toOxml( data, opts ) {
 		+							'<w:basedOn w:val="Absatz-Standardschriftart"/>							'
 		+							'<w:link w:val="heading1"/>							'
 		+							'<w:uiPriority w:val="9"/>							'
-		+							'<w:rsid w:val="002D0214"/>'
+//		+							'<w:rsid w:val="002D0214"/>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
 		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
@@ -2012,7 +2017,7 @@ function toOxml( data, opts ) {
 		+							'<w:basedOn w:val="Absatz-Standardschriftart"/>'
 		+							'<w:link w:val="heading2"/>'
 		+							'<w:uiPriority w:val="9"/>'
-		+							'<w:rsid w:val="002D0214"/>'
+//		+							'<w:rsid w:val="002D0214"/>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
 		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
@@ -2025,7 +2030,7 @@ function toOxml( data, opts ) {
 		+							'<w:basedOn w:val="Absatz-Standardschriftart"/>'
 		+							'<w:uiPriority w:val="99"/>							'
 		+							'<w:unhideWhenUsed/>							'
-		+							'<w:rsid w:val="004B20E8"/>							'
+//		+							'<w:rsid w:val="004B20E8"/>							'
 		+							'<w:rPr>							'
 		+								'<w:color w:val="0563C1" w:themeColor="hyperlink"/>'
 		+								'<w:u w:val="single"/>'
@@ -2037,7 +2042,7 @@ function toOxml( data, opts ) {
 		+							'<w:uiPriority w:val="99"/>							'
 		+							'<w:semiHidden/>							'
 		+							'<w:unhideWhenUsed/>							'
-		+							'<w:rsid w:val="003667EB"/>							'
+//		+							'<w:rsid w:val="003667EB"/>							'
 		+							'<w:rPr>							'
 		+								'<w:color w:val="954F72" w:themeColor="followedHyperlink"/>'
 		+								'<w:u w:val="single"/>						'
@@ -2048,7 +2053,7 @@ function toOxml( data, opts ) {
 		+							'<w:basedOn w:val="Standard"/>							'
 		+							'<w:uiPriority w:val="34"/>							'
 		+							'<w:qFormat/>							'
-		+							'<w:rsid w:val="00592862"/>							'
+//		+							'<w:rsid w:val="00592862"/>							'
 		+							'<w:pPr>							'
 		+								'<w:ind w:left="720"/>						'
 		+								'<w:contextualSpacing/>						'

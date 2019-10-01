@@ -281,22 +281,22 @@ const CONFIG = {};
 		'ListNumberText'
 	];
 
-	// A list of attributes not to show in the object list (document view), specified by longName:
-	// You must enter the longNames used by SpecIF.
+	// A list of attributes not to show in the object list (document view), specified by title:
+	// You must enter the titles used by SpecIF.
 	CONFIG.overviewHiddenProperties = [
 		'SpecIF:Id',
 		CONFIG.resType
 	];
 
 	// Show or suppress empty properties in the object list (document view):
-	CONFIG.overviewShowEmptyProperties = false;
+	CONFIG.showEmptyProperties = false;
 
-	// A list of relations not to show in tab named CONFIG.relations, specified by longName:
+	// A list of relations not to show in tab named CONFIG.relations, specified by title:
 	CONFIG.hiddenStatements = [
 		CONFIG.relTypeCommentRefersTo
 	];
 	
-	// A list of types which are excluded from the type filtering, specified by longName:
+	// A list of types which are excluded from the type filtering, specified by title:
 	// All types for objects which are not referenced in the tree should be listed, here.
 	// Note that only objects which are referenced in a hierarchy (tree) are included in the filter process.
 	CONFIG.excludedFromTypeFiltering = [
@@ -305,7 +305,7 @@ const CONFIG = {};
 	
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
 	CONFIG.selectCorrespondingPlanFirst = true;	// when clicking on a diagram element, select a diagram having the same title as the clicked model element
-	// A list of resources representing Model Diagrams, specified by title resp. longName:
+	// A list of resources representing Model Diagrams, specified by title resp. title:
 	CONFIG.plans = [
 		'SpecIF:Diagram',
 		'FMC:Plan'

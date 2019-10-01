@@ -1180,7 +1180,7 @@ function Resource( obj ) {
 			function showAtt( att ) {
 //				console.debug('#att',att);
 				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.overviewShowEmptyProperties || hasContent(att))
+				return (CONFIG.showEmptyProperties || hasContent(att))
 			} 
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:

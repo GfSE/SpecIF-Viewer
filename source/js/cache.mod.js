@@ -1098,7 +1098,7 @@ modules.construct({
 						// so far (iLaH v0.92.44), property titles are translated:
 					//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 						hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-						hideEmptyProperties: true,
+						showEmptyProperties: CONFIG.showEmptyProperties,
 						propertiesLabel: 'SpecIF:Properties',
 						statementsLabel: 'SpecIF:Statements',
 						done: function() { app.cache.exporting=false; eDO.resolve() },
@@ -2328,10 +2328,10 @@ function initPropC( pCs, pCid ) {
 }
 function classifyProps( el, data ) {
 	"use strict";
-	// add missing (empty) properties and
-	// classify properties into title, descriptions and other;
-	// for resources, statements and hierarchies/specifications.
+	// add missing (empty) properties and classify properties into title, descriptions and other;
+	// for resources and statements.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
+	// ToDo: Implementation is limited to resources, so far. See normalizeProps().
 	if( !data ) data = app.cache;
 	var rC = itemById( data.resourceClasses, el['class']),
 		cP = {
@@ -2341,7 +2341,7 @@ function classifyProps( el, data ) {
 		revision: el.revision,
 		descriptions: [],
 		// create a new list by copying the elements (do not copy the list ;-):
-		other: normalizeProps( data, data.resourceClasses, el )
+		other: normalizeProps( el, data )
 	};
 
 	// Now, all properties are listed in cP.other;
@@ -2406,12 +2406,14 @@ function classifyProps( el, data ) {
 		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
 		return txt
 	}
-	function normalizeProps( dta, iCs, i ) { 
-		// iCs: instance class list (resourceClasses or statementClasses)
+	function normalizeProps( i, dta ) { 
 		// i: instance (resource or statement)
 		// Create a list of properties in the sequence of propertyClasses of the respective class.
 		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
 		let p,pCs,nL=[],
+			// iCs: instance class list (resourceClasses or statementClasses)
+			// ToDo: check whether instance is resource or statement, take resp. class list.
+			iCs = dta.resourceClasses,
 			iC = itemById(iCs,i['class']);
 		// build a list of propertyClass identifiers including the extended class':
 		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
