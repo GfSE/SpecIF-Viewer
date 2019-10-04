@@ -404,7 +404,7 @@ modules.construct({
 		// - just a newView is specifed without URL parameters (coming from another page)
 	//	if( !uP || !uP[CONFIG.keyProject] || uP[CONFIG.keyProject]!=app.cache.id )
 		if( !fNd
-			|| indexById( app.cache.resources, fNd.ref )<0
+			|| indexById( app.cache.resources, fNd.ref )<0  // condition is probably too weak
 			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.id )
 			self.tree.init();
 		
