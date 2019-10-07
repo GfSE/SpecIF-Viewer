@@ -11,14 +11,15 @@ An app for your web-browser to view and transform specifications.
 - Inspect the semantic net ('statements')
 - Report some model-based statistics, such as used resource types or used property enumerated values
 - Export 'specifz' file
-- Export 'reqif' file (planned)
+- Export 'reqif' file
 - Export 'ePub' file
 - Export MS-Word OOXML file (experimental)
 
 ## Demonstration
 The app has been installed for demonstration
-- View the [dimmer example](https://specif.de/apps/view.html#import=%22../examples/Dimmer.specifz%22)
-- View a [BPMN example](https://specif.de/apps/view.html#import=%22../examples/Beispiel-BPMN.specifz%22)
+- View the [dimmer example](https://specif.de/apps/view.html#import=../examples/Dimmer.specifz)
+- View a [BPMN example](https://specif.de/apps/view.html#import=../examples/Fahrtbeginn.bpmn)
+- View a [XLSX example](https://specif.de/apps/view.html#import=../examples/Requirements.xlsx)
 - Start the [viewer](https://specif.de/apps/view.html) to load your own files
 
 ## Installation
