@@ -3,13 +3,8 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
-*/
-modules.construct({
-	name: CONFIG.reports
-}, function(self) {
-	"use strict";
 
-/*	The report descriptors for display, two examples:
+	The report descriptors for display, two examples:
 		{	title: 'Anforderung: Priorit&auml;t',
 			category: 'resourceClass',
 			scaleMin: 0,
@@ -34,6 +29,11 @@ modules.construct({
 
 	The server or the server interface lib is responsible for analysing the project and for collecting the data.
 */		
+modules.construct({
+	name: CONFIG.reports
+}, function(self) {
+	"use strict";
+	var pData = app[ self.parent.loadAs || self.parent.name ];
 	self.list = [];  // the list of report panels
 
 	// Standard module interface methods:
@@ -53,7 +53,7 @@ modules.construct({
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		stdError(xhr,app.specs.returnToCaller)
+		stdError(xhr,pData.returnToCaller)
 	}
 	function showNotice(txt) {
 		$('#'+CONFIG.reports).html('<div class="notice-default" >'+txt+'</div>');
@@ -62,11 +62,11 @@ modules.construct({
 	// standard module entry:
 	self.show = function(opts) {
 //		console.debug('reports.show');
-		app.specs.showLeft.reset();
+		pData.showLeft.reset();
 
 		self.list = [];
 
-		let tr = app.specs.tree.get();
+		let tr = pData.tree.get();
 		if( !tr || tr.length<1 ) {
 			showNotice(i18n.MsgNoReports);
 			app.busy.reset();
@@ -261,7 +261,7 @@ modules.construct({
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
 		let pend=0, visitedR=[];
-		app.specs.tree.iterate( function(nd) {
+		pData.tree.iterate( function(nd) {
 			if( visitedR.indexOf(nd.ref)>-1 ) return; 
 			// not yet evaluated:
 			pend++;

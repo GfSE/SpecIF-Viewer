@@ -17,6 +17,8 @@ modules.construct({
 	self.resCreTypes = [];  // all resource types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
 	self.staCreTypes = [];  // all statement types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
 	self.staDelTypes = [];  // all statement types, of which the user can delete any instance. Identifiers are stored, as they are invariant when the cache is updated.
+
+	// ToDo: sub-views communicate solely via tree and its status, other shared variables shall diappear, if possible.
 	self.resCre = false; 	// controls whether resp. button is enabled; true if the user has permission to create resources of at least one type.
 	self.resCln = false;	//  " , true if the user has permission to create a resource like the selected one.
 	self.staCre = false;
@@ -28,8 +30,6 @@ modules.construct({
 	self.resources = new Resources(); 	// flat-listed resources for display, is a small subset of app.cache.resources
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
-
-	// ToDo: There are lots of calls to self.showLeft in refresh() --> redundant ?
 
 	let myName = self.loadAs || self.name,
 		myFullName = 'app.'+myName,
@@ -355,8 +355,7 @@ modules.construct({
 			let r = itemById( app.cache.resources, iE.resource );
 			var oE = {
 				id: iE.id,
-				// take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				// ToDo!!
+				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// String.fromCodePoint()
 				name: resTitleOf(r), 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
@@ -402,7 +401,6 @@ modules.construct({
 		// Initialize the tree, unless
 		// - URL parameters are specified where the project is equal to the loaded one
 		// - just a newView is specifed without URL parameters (coming from another page)
-	//	if( !uP || !uP[CONFIG.keyProject] || uP[CONFIG.keyProject]!=app.cache.id )
 		if( !fNd
 			|| indexById( app.cache.resources, fNd.ref )<0  // condition is probably too weak
 			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.id )
@@ -831,23 +829,24 @@ modules.construct({
 	view:'#'+CONFIG.objectList
 }, function(self) {
 	// Construct an object for displaying a hierarchy of resources:
+	var pData = app[ self.parent.loadAs || self.parent.name ];
 	self.init = function() {
 	};
 	self.show = function( opts ) {
 		// Show the next resources starting with the selected one:
 //		console.debug(CONFIG.objectList, 'show');
-		app.specs.showLeft.set();
-		app.specs.showTree.set();
+		pData.showLeft.set();
+		pData.showTree.set();
 		
-		if( !app.specs.tree.selectedNode ) app.specs.tree.selectFirstNode();
-		if( !app.specs.tree.selectedNode ) { app.specs.emptyTab('#'+CONFIG.objectList); return };  // quit, because the tree is empty
-//		console.debug(CONFIG.objectList, 'show', app.specs.tree.selectedNode);
+		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
+		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.objectList); return };  // quit, because the tree is empty
+//		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
 
 		app.busy.set();
-		if( app.specs.resources.values.length<1 )
+		if( pData.resources.values.length<1 )
 			$( '#'+CONFIG.objectList ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
-		var nd = app.specs.tree.selectedNode,
+		var nd = pData.tree.selectedNode,
 			oL = [],  // id list of the resources to view
 			nL = [];  // list of nodes of the hierarchy.
 				
@@ -879,13 +878,13 @@ modules.construct({
 				// Update the view list, if changed:
 				// Note that the list is always changed, when execution gets here,
 				// unless in a multi-user configuration with server and auto-update enabled.
-				if( app.specs.resources.update( rL ) || opts && opts.forced ) {
+				if( pData.resources.update( rL ) || opts && opts.forced ) {
 					// list value has changed in some way:
-				//	setPermissions( app.specs.tree.selectedNode );  // use the newest revision to get the permissions ...
-					$( '#'+CONFIG.objectList ).html( app.specs.resources.render() )
+				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
+					$( '#'+CONFIG.objectList ).html( pData.resources.render() )
 				};
 				app.busy.reset();
-				$( '#contentActions' ).html( app.specs.actionBtns() )
+				$( '#contentActions' ).html( pData.actionBtns() )
 			})
 			.fail( stdError )
 	};
@@ -900,23 +899,24 @@ modules.construct({
 	view:'#'+CONFIG.relations
 }, function(self) {
 	// Construct an object for displaying the statements of a selected resource:
+	var pData = app[ self.parent.loadAs || self.parent.name ];
 	self.init = function() {
 	};
 	self.show = function( opts ) {
 	// Show all statements of the selected resource:
 //		console.debug(CONFIG.relations, 'show');
-		app.specs.showLeft.set();
-		app.specs.showTree.set();
+		pData.showLeft.set();
+		pData.showTree.set();
 
-		if( !app.specs.tree.selectedNode ) app.specs.tree.selectFirstNode();
-		if( !app.specs.tree.selectedNode ) { app.specs.emptyTab('#'+CONFIG.relations); return };  // quit, because the tree is empty
+		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
+		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.relations); return };  // quit, because the tree is empty
 
 		// else: the tree has entries:
 		app.busy.set();
-	//	if( app.specs.resources.values.length<1 )
-	//		$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+		if( pData.resources.values.length<1 )
+			$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
-		var nd = app.specs.tree.selectedNode,
+		var nd = pData.tree.selectedNode,
 			selRes, mG;
 						
 		// Update browser history, if it is a view change or item selection, 
@@ -960,14 +960,14 @@ modules.construct({
 				// Since the resources are cached, this is not too expensive.
 				app.cache.readContent( 'resource', relatedObjs )
 					.done( function(roL) {   
-						app.specs.resources.init();
+						// roL is a list of the selected plus it's related resources
+
 						// First get the selected resource, 
 						// assuming that the sequence is arbitrary:
-						app.specs.resources.push( itemById(roL,nd.ref) );
-						selRes = app.specs.resources.selected();
-						// roL is a list of the selected plus it's related resources
-					//	selectResource( app.specs.tree.selectedNode );
+						pData.resources.updateSelected( itemById(roL,nd.ref) );
+						selRes = pData.resources.selected();
 						selRes.staGroups = [];
+					//	selectResource( pData.tree.selectedNode );
 					
 						// For display, sort all statements in groups (=table rows) according to their type and direction;
 						// the groups shall be ordered according to the statementClasses, therefore we cycle through the types:
@@ -1005,7 +1005,7 @@ modules.construct({
 						mG = addMentionsRels();
 						if( mG && (mG.rGs.length || mG.rGt.length)) selRes.staGroups.push( mG )
 						app.busy.reset();	
-						$( '#contentActions' ).html( app.specs.linkBtns() );
+						$( '#contentActions' ).html( pData.linkBtns() );
 //						console.debug('statement groups',selRes.staGroups);
 						renderStatements()
 					})
@@ -1023,7 +1023,7 @@ modules.construct({
 		return
 
 		function renderStatements() {
-			if( app.specs.modeStaDel ) 
+			if( pData.modeStaDel ) 
 				$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' )
 			else
 				$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
@@ -1045,11 +1045,11 @@ modules.construct({
 						onDoubleClick: function( evt ) {
 //							console.debug('Double Click on:',evt);
 							if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
-								app.specs.relatedItemClicked(evt.target.resource,evt.target.statement);
+								pData.relatedItemClicked(evt.target.resource,evt.target.statement);
 								// changing the tree node triggers an event, by which 'self.refresh' will be called.
 						}
 					};
-					if( app.specs.modeStaDel )
+					if( pData.modeStaDel )
 						options.nodeColor = '#ef9a9a';
 //					console.debug('showStaGraph',net,options);
 					app.busy.reset();
@@ -1061,10 +1061,10 @@ modules.construct({
 			// Only findings with marks for dynamic linking are taken.
 			// Add a statement for each finding for display; do not save any of these statements in the server.
 			if( !CONFIG.findMentionedObjects ) return;
-			if( !app.specs.tree.selectedNode ) return;
+			if( !pData.tree.selectedNode ) return;
 			// take the original (unchanged) resources from cache:
 			// First the currently selected resource:
-			let sO=itemById( app.cache.resources, app.specs.tree.selectedNode.ref );
+			let sO=itemById( app.cache.resources, pData.tree.selectedNode.ref );
 			if( !sO ) return;
 			// There is no need to have a statementClass .... at least currently:
 //				var rT = itemByName( app.cache.statementClasses, 'SpecIF:mentions' );
@@ -1078,12 +1078,11 @@ modules.construct({
 				// assumption: the dynamic link tokens don't need to be HTML-escaped:
 				sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
-			// ToDo: Find text references also in other hierarchies.
 			app.cache.resources.forEach( function(rO) {
 				// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 				// so there is no need to check it, here:
 				// disregard resources which are not referenced in the current tree:
-				if( app.specs.tree.nodesByRef(rO).length<1 ) return;
+				if( pData.tree.nodesByRef(rO).length<1 ) return;
 				let ti = resTitleOf( rO );
 				if( !ti || ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
 				
@@ -1835,12 +1834,12 @@ var fileRef = {
 				};
 					
 				// finally add the link and an enclosing div for the formatting:
-//				return ('<div class="forImage"><a href="'+u1+'"'+t1+' >'+d+'</a></div>')
+			//	return ('<div class="forImage"><a href="'+u1+'"'+t1+' >'+d+'</a></div>')
 
 				// avoid that a pattern is processed twice.
 				// insert a placeholder and replace it with the prepared string at the end ...
 				if( hasImg )
-//					repSts.push( '<div class="forImage"><a href="'+u1+'"'+t1+' >'+d+'</a></div>' )
+			//		repSts.push( '<div class="forImage"><a href="'+u1+'"'+t1+' >'+d+'</a></div>' )
 					repSts.push( d )
 				else
 					repSts.push( '<a href="'+u1+'"'+t1+' >'+d+'</a>' );
@@ -1858,7 +1857,7 @@ var fileRef = {
 					e = u1.fileExt();
 //				console.debug( $1, $2, u1, e );
 				if( e==null ) return $0     // no change, if no extension found
-//				if( /(<object|<img)/g.test( $2 ) ) return $0;		// no change, if an embedded object or image
+			//	if( /(<object|<img)/g.test( $2 ) ) return $0;		// no change, if an embedded object or image
 				if( CONFIG.officeExtensions.indexOf( e.toLowerCase() )<0 ) return $0;	// no change, if not an office file
 
 				var t1 = getType( $1 ); 
@@ -1961,8 +1960,8 @@ var fileRef = {
 							mL = null;
 						svg = {
 							loc: document.getElementById(containerId(f.title)),
-							// known limitation: if there are two references of the same image on a page, only the first is shown.
-							val: ev.target.result
+							// ToDo: If there are two references of the same image on a page, only the first is shown.
+							img: ev.target.result
 						};
 						// process all image references one by one:
 						// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
@@ -1984,7 +1983,7 @@ var fileRef = {
 								if( --pend<1 ) {
 									// all embedded images have been transformed,
 									// replace references by dataURLs and add complete image to DOM:
-									svg.loc.innerHTML = svg.val.replace( rE, function($0,$1,$2,$3) {
+									svg.loc.innerHTML = svg.img.replace( rE, function($0,$1,$2,$3) {
 																return $1+itemBySimilarId(dataURLs,$2).val+$3
 															});
 									if( opts && opts.clickableElements ) registerClickEls(svg.loc)
@@ -1993,7 +1992,7 @@ var fileRef = {
 						};
 						if( pend==0 ) {
 							// there are no embedded images, so display right away:
-							svg.loc.innerHTML = svg.val;
+							svg.loc.innerHTML = svg.img;
 							if( opts && opts.clickableElements ) registerClickEls(svg.loc)
 						}
 					});

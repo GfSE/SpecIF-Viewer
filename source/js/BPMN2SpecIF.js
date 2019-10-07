@@ -49,6 +49,7 @@ function BPMN2Specif( xmlString, opts ) {
 	model.propertyClasses = PropertyClasses();
 	model.resourceClasses = ResourceClasses();
 	model.statementClasses = StatementClasses();
+	model.statements = [];
 
 	// Reference used files,
 	// - the BPMN file:
@@ -67,13 +68,15 @@ function BPMN2Specif( xmlString, opts ) {
 		//	blob: ,
 			type: "image/svg+xml"
 		}); */
-	model.resources = Folders();
-	model.statements = [];
 
-	// 1. Represent the diagram itself:
-	const diagramId = 'D-' + model.id,
+	const apx = simpleHash(model.id),
+		diagramId = 'D-' + apx,
+		hId = 'BPMN-outline-' + apx,
 		dg = opts.svgName?"<object data=\""+opts.svgName+"\" type=\"image/svg+xml\" >"+opts.svgName+"</object>"
 						:"<object data=\""+opts.xmlName+"\" type=\"application/bpmn+xml\" >"+opts.xmlName+"</object>";
+	// 1. Add the folders:
+	model.resources = Folders();
+	// 2. Represent the diagram itself:
 	model.resources.push({
 		id: diagramId,
 		title: model.title,
@@ -645,28 +648,28 @@ function BPMN2Specif( xmlString, opts ) {
 	function NodeList(res) {
 		// 6.1 first add the folders:
 		let nL =  [{
-			id: "H-BPMN-outline",
-			resource: "BPMN-outline",
+			id: "H-"+hId,
+			resource: hId,
 			nodes: [{
-				id: "N-Diagram",
+				id: "N-"+diagramId,
 				resource: diagramId,
 				changedAt: opts.xmlDate
 			},{
-				id: "N-FolderGlossary",
-				resource: "FolderGlossary",
+				id: "N-FolderGlossary-" + apx,
+				resource: "FolderGlossary-" + apx,
 				nodes: [{
-					id: "N-FolderAct",
-					resource: "FolderAct",
+					id: "N-FolderAct-" + apx,
+					resource: "FolderAct-" + apx,
 					nodes: [],
 					changedAt: opts.xmlDate
 				},{
-					id: "N-FolderSta",
-					resource: "FolderSta",
+					id: "N-FolderSta-" + apx,
+					resource: "FolderSta-" + apx,
 					nodes: [],
 					changedAt: opts.xmlDate
 				},{
-					id: "N-FolderEvt",
-					resource: "FolderEvt",
+					id: "N-FolderEvt-" + apx,
+					resource: "FolderEvt-" + apx,
 					nodes: [],
 					changedAt: opts.xmlDate
 				}],
@@ -696,8 +699,8 @@ function BPMN2Specif( xmlString, opts ) {
 		// else:
 		// 6.3 Add text annotations:
 		nL[0].nodes.push({
-			id: "N-FolderNte",
-			resource: "FolderNte",
+			id: "N-FolderNte-" + apx,
+			resource: "FolderNte-" + apx,
 			nodes: [],
 			changedAt: opts.xmlDate
 		});
@@ -712,7 +715,7 @@ function BPMN2Specif( xmlString, opts ) {
 	};
 	// Add the resource for the hierarchy root:
 	model.resources.push({
-		id: "BPMN-outline",
+		id: hId,
 		title: model.title,
 		class: "RC-Processmodel",
 		changedAt: opts.xmlDate
@@ -916,7 +919,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// The folder resources within a hierarchy:
 	function Folders() {
 		return [{
-			id: "FolderGlossary",
+			id: "FolderGlossary-" + apx,
 			class: "RC-Folder",
 			title: opts.strGlossaryFolder,
 			properties: [{
@@ -925,7 +928,7 @@ function BPMN2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.xmlDate
 		}, {
-			id: "FolderAct",
+			id: "FolderAct-" + apx,
 			class: "RC-Folder",
 			title: opts.strActorFolder,
 			properties: [{
@@ -934,7 +937,7 @@ function BPMN2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.xmlDate
 		}, {
-			id: "FolderSta",
+			id: "FolderSta-" + apx,
 			class: "RC-Folder",
 			title: opts.strStateFolder,
 			properties: [{
@@ -943,7 +946,7 @@ function BPMN2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.xmlDate
 		}, {
-			id: "FolderEvt",
+			id: "FolderEvt-" + apx,
 			class: "RC-Folder",
 			title: opts.strEventFolder,
 			properties: [{
@@ -952,7 +955,7 @@ function BPMN2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.xmlDate
 		}, {
-			id: "FolderNte",
+			id: "FolderNte-" + apx,
 			class: "RC-Folder",
 			title: opts.strAnnotationFolder,
 			properties: [{

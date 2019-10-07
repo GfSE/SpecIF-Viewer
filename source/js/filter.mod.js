@@ -3,8 +3,8 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
-*/
-// Resource filtering
+
+	Resource filtering
 	// Primary or top-level filters apply to resources of all classes (scope: project), whereas
 	//    secondary filters are 'applicable', only if the corresponding resource class (scope: resourceClass) is selected.
 	// The filter lets a resource pass, if all primary filters plus all applicable secondary filters discover a match (conjunction of filter criteria).
@@ -13,7 +13,7 @@
 	// The filters are built dynamically based on the project's classes. 
 	// If a filter for an ENUMERATION has only one option, it is omitted, as it is not useful.
 
-/*	Have a look at some example filter descriptors similar to those built dynamically when entering the module with show():
+	Have a look at some example filter descriptors similar to those built dynamically when entering the module with show():
 	For example: If OT-Req is included in the filtering, all it's secondary filters (scope: OT-Req) must match, otherwise the examined resource is discarded:
 		[{ 
 			title: 'String Match',
@@ -85,6 +85,7 @@ modules.construct({
 	name: CONFIG.objectFilter
 }, function(self) {
 	"use strict";
+	var pData = app[ self.parent.loadAs || self.parent.name ];
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters = null;  // default: show resources (hit-list)
 
@@ -123,13 +124,13 @@ modules.construct({
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		stdError(xhr,app.specs.returnToCaller)
+		stdError(xhr,pData.returnToCaller)
 	};
 
 	// standard module entry:
 	self.show = function( opts ) {   // optional urlParams or filter settings
 //		console.debug( 'filter.show', opts, self.filterList );
-		app.specs.showLeft.reset();
+		pData.showLeft.reset();
 
 		setContentHeight();
 	//	$('#hitCount').empty();
@@ -169,9 +170,7 @@ modules.construct({
 		});
 		$('#primaryFilters').html( fps );
 
-		// Get every resource referenced in the hierarchy tree and try whether it is a match.
-		// If so, the resource is added to app.specs.resources:
-		let tr = app.specs.tree.get();
+		let tr = pData.tree.get();
 		if( !tr || tr.length<1 ) {
 		//	showNotice(i18n.MsgNoReports);
 //			console.debug('filter nothing to do',tr);
@@ -180,13 +179,12 @@ modules.construct({
 		};
 //		console.debug('filter something to do',tr);
 
-		// else update the hitlist:
-		app.specs.resources.init();
+		// Get every resource referenced in the hierarchy tree and try whether it is a match.
 		app.busy.set();
 	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
 		let pend=0, h, hR;
-		app.specs.tree.iterate( function(nd) {
+		pData.tree.iterate( function(nd) {
 			pend++;
 //			console.debug('tree.iterate',pend,nd.ref);
 			// Read asynchronously, so that the cache has the chance to reload from the server,
@@ -211,7 +209,7 @@ modules.construct({
 	function match(res) {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
 		// If an enumerated property is missing, the resource does NOT match.
-		// Matches are appended to app.specs.resource.
+		// In case all filers match, the resource is returned as 'hit'. 
 		// all resources pass, if there is no filter.
 
 			function matchResClass(f) {   
@@ -636,7 +634,6 @@ modules.construct({
 	}
 	self.goClicked = function() {  // go!
 		self.secondaryFilters = undefined;
-		app.specs.resources.init();
 
 		// read filter settings:
 		var fL = [];
@@ -675,8 +672,8 @@ modules.construct({
 	self.itemClicked =  function( itm ) {
 //		console.debug( 'item clicked', itm );
 		// Jump to the page view of the clicked resource:
-		app.specs.showTab( CONFIG.objectDetails );  
-		app.specs.selectNodeByRef( itm.value() )
+		pData.showTab( CONFIG.objectDetails );  
+		pData.selectNodeByRef( itm.value() )
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 	}; 
 */	

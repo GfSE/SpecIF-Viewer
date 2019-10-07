@@ -157,8 +157,10 @@ modules.construct({
 				return
 			}; 
 			// Show the name of the specified import file:
-			let rF = textInput(i18n.LblFileName,self.file.name,null,null);
+			let rF = textInput(i18n.LblFileName,self.file.name);
 			$("#formNames").html( rF );
+			// Take fileName as project name:
+			self.projectName = self.file.name.fileName();	
 			setImporting( true );
 
 			// Assume it is an absolute or relative URL;
@@ -233,7 +235,7 @@ modules.construct({
 		};
 
 		// show the file name:
-		let rF = textInput(i18n.LblFileName,'&nbsp;',null,null);
+		let rF = textInput(i18n.LblFileName,'&nbsp;');
 		if( fId=='xls' )
 			// create input form for the project name:
 			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.valid()');
@@ -266,7 +268,6 @@ modules.construct({
 		app.busy.set( st );
 		try {
 			document.getElementById("selectBtn").disabled = st;
-	//		if( self.format.id=='xls' ) document.getElementById("inputProjectName").disabled = st;
 			document.getElementById("createBtn").disabled = st || loaded || !allValid;
 			document.getElementById("replaceBtn").disabled = st || !loaded || !allValid;
 			document.getElementById("cancelBtn").disabled = !st
