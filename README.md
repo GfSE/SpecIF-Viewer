@@ -9,6 +9,7 @@ An app for your web-browser to view and transform specifications.
 - Import from an URL or the local file system
 - Browse the content ('resources') along the hierarchy
 - Inspect the semantic net ('statements')
+- Filter using text fragments ('full text search'), resource types or enumerated property values
 - Report some model-based statistics, such as used resource types or used property enumerated values
 - Export 'specifz' file
 - Export 'reqif' file
