@@ -18,10 +18,11 @@ An app for your web-browser to view and transform specifications.
 
 ## Demonstration
 The app has been installed for demonstration
-- View the [dimmer example](https://specif.de/apps/view.html#import=../examples/Dimmer.specifz)
-- View a [BPMN example](https://specif.de/apps/view.html#import=../examples/Fahrtbeginn.bpmn)
-- View a [XLSX example](https://specif.de/apps/view.html#import=../examples/Requirements.xlsx)
-- Start the [viewer](https://specif.de/apps/view.html) to load your own files
+- View the [dimmer example](https://specif.de/apps/view.html#import=../examples/Dimmer.specifz) in SpecIF format,
+- View a [BPMN example](https://specif.de/apps/view.html#import=../examples/Fahrtbeginn.bpmn) in BPMN 2.0 XML format,
+- View a [XLSX example](https://specif.de/apps/view.html#import=../examples/Requirements.xlsx) in XSLX format,
+- View the [SpecIF Vocabulary](https://specif.de/apps/view.html#import=../examples/Vocabulary.specifz) in SpecIF format,
+- Start the [viewer](https://specif.de/apps/view.html) to load your own files.
 
 ## Installation
 For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view.html' with a web-browser.
