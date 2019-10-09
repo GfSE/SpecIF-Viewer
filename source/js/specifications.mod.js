@@ -31,7 +31,7 @@ modules.construct({
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 
-	let myName = self.loadAs || self.name,
+	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		tabsWithEditing = [ '#'+CONFIG.objectList, '#'+CONFIG.objectDetails ];
 
@@ -829,7 +829,7 @@ modules.construct({
 	view:'#'+CONFIG.objectList
 }, function(self) {
 	// Construct an object for displaying a hierarchy of resources:
-	var pData = app[ self.parent.loadAs || self.parent.name ];
+	var pData = app[ self.parent.loadAs ];
 	self.init = function() {
 	};
 	self.show = function( opts ) {
@@ -899,7 +899,7 @@ modules.construct({
 	view:'#'+CONFIG.relations
 }, function(self) {
 	// Construct an object for displaying the statements of a selected resource:
-	var pData = app[ self.parent.loadAs || self.parent.name ];
+	var pData = app[ self.parent.loadAs ];
 	self.init = function() {
 	};
 	self.show = function( opts ) {
