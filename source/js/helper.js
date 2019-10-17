@@ -44,7 +44,7 @@ function textInput( lbl, val, typ, fn ) {
 			break;
 		case 'left':
 			fG += '<div class="attribute-label" >'+lbl.label+'</div>';
-			aC = 'attribute-value'
+			aC = 'attribute-value';
 			break;
 		default:
 			return null
@@ -125,9 +125,6 @@ function radioInput( lbl, opts ) {
 				+		'<div class="radio" >';
 			break;
 		case 'left': 
-		//	rB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
-		//		+		'<label class="col-sm-3 control-label input-sm" >'+lbl.label+'</label>'  works!
-		//		+		'<div class="col-sm-9 radio" >';  works!
 			rB = 	'<div class="form-group '+(lbl.classes||'')+'">'
 				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
 				+		'<div class="attribute-value radio" >';
@@ -167,9 +164,6 @@ function checkboxInput( lbl, opts ) {
 				+		'<div class="checkbox" >';
 			break;
 		case 'left': 
-		//	cB = 	'<div class="row form-group '+(lbl.classes||'')+'">'
-		//		+		'<label class="col-sm-3 control-label input-sm" >'+lbl.label+'</label>'  works!
-		//		+		'<div class="col-sm-9 checkbox" >';  works!
 			cB = 	'<div class="form-group '+(lbl.classes||'')+'">'
 				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
 				+		'<div class="attribute-value checkbox" >';
@@ -677,7 +671,7 @@ function toHex(str) {
 if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) {
     'use strict';
-    if (typeof start !== 'number') {
+    if (typeof(start) !== 'number') {
       start = 0;
     }
     
@@ -720,7 +714,7 @@ if (!Array.prototype.includes) {
       var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
 
       function sameValueZero(x, y) {
-        return x === y || (typeof x === 'number' && typeof y === 'number' && isNaN(x) && isNaN(y));
+        return x === y || (typeof(x) === 'number' && typeof(y) === 'number' && isNaN(x) && isNaN(y));
       }
 
       // 7. Repeat, while k < len
@@ -754,7 +748,7 @@ if (!Array.prototype.find) {
       var len = o.length >>> 0;
 
       // 3. If IsCallable(predicate) is false, throw a TypeError exception.
-      if (typeof predicate !== 'function') {
+      if (typeof(predicate) !== 'function') {
         throw new TypeError('predicate must be a function');
       }
 
@@ -790,7 +784,7 @@ if (!Array.from) {
   Array.from = (function () {
     var toStr = Object.prototype.toString;
     var isCallable = function (fn) {
-      return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
+      return typeof(fn) === 'function' || toStr.call(fn) === '[object Function]';
     };
     var toInteger = function (value) {
       var number = Number(value);
@@ -820,7 +814,7 @@ if (!Array.from) {
       // 4. If mapfn is undefined, then let mapping be false.
       var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
       var T;
-      if (typeof mapFn !== 'undefined') {
+      if (typeof(mapFn) !== 'undefined') {
         // 5. else
         // 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
         if (!isCallable(mapFn)) {
@@ -850,7 +844,7 @@ if (!Array.from) {
       while (k < len) {
         kValue = items[k];
         if (mapFn) {
-          A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
+          A[k] = typeof(T) === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
         } else {
           A[k] = kValue;
         }
@@ -894,6 +888,26 @@ function str2buf(str) {
 		return buf
 	}
 }
+function blob2dataURL(file,fn,timelag) {
+	const reader = new FileReader();
+	reader.addEventListener('loadend', function(e) { fn(e.target.result,file.title,file.type) });
+	if( typeof(timelag)=='number' && timelag>0 )
+		setTimeout(function() {
+			reader.readAsDataURL(file.blob)
+		}, timelag )
+	else
+		reader.readAsDataURL(file.blob)
+} 
+function blob2text(file,fn,timelag) {
+	const reader = new FileReader();
+	reader.addEventListener('loadend', function(e) { fn(e.target.result,file.title,file.type) });
+	if( typeof(timelag)=='number' && timelag>0 )
+		setTimeout(function() {
+			reader.readAsText(file.blob)
+		}, timelag )
+	else
+		reader.readAsText(file.blob)
+} 
 		
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet

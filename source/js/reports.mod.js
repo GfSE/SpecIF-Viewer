@@ -33,7 +33,7 @@ modules.construct({
 	name: CONFIG.reports
 }, function(self) {
 	"use strict";
-	var pData = app[ self.parent.loadAs || self.parent.name ];
+	var pData;
 	self.list = [];  // the list of report panels
 
 	// Standard module interface methods:
@@ -62,6 +62,7 @@ modules.construct({
 	// standard module entry:
 	self.show = function(opts) {
 //		console.debug('reports.show');
+		pData = self.parent;
 		pData.showLeft.reset();
 
 		self.list = [];
@@ -298,7 +299,7 @@ modules.construct({
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
 				li.datasets.forEach( function(ds,s) {
-					lb = ds.count>0? '<a onclick="app.reports.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
+					lb = ds.count>0? '<a onclick="app.'+CONFIG.reports+'.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
 						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
 						+					'<td style="width:15%; padding:0.2em" class="text-right">'+ds.count+'</td>'

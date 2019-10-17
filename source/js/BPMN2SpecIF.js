@@ -8,24 +8,42 @@
 function BPMN2Specif( xmlString, opts ) {
 	"use strict";
 	if( typeof(opts)!='object' ) return null;
-	if( !opts.title ) 					opts.title = opts.xmlName.split(".")[0];
-	if( !opts.mimeType ) 				opts.mimeType = "application/bpmn+xml";
+	if( !opts.title ) 
+		opts.title = opts.xmlName.split(".")[0];
+	if( !opts.mimeType ) 
+		opts.mimeType = "application/bpmn+xml";
+	if( typeof(opts.isIE)!='boolean' )
+		opts.isIE = /MSIE |rv:11.0/i.test(navigator.userAgent);
 
-	if( !opts.strJoinExcGateway ) 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
-	if( !opts.strJoinExcGatewayDesc ) 	opts.strJoinExcGatewayDesc = "<p>Wait for any <em>one</em> incoming connection to continue.</p>";
-	if( !opts.strJoinParGateway ) 		opts.strJoinParGateway = "Joining Parallel Gateway";
-	if( !opts.strJoinParGatewayDesc ) 	opts.strJoinParGatewayDesc = "<p>Wait for <em>all</em> incoming connections to continue.</p>";
-	if( !opts.strForkExcGateway ) 		opts.strForkExcGateway = "Forking Exclusive Gateway";
-	if( !opts.strForkExcGatewayDesc ) 	opts.strForkExcGatewayDesc = "<p>Evaluate the condidition and signal the respective event.</p>"
-	if( !opts.strForkParGateway ) 		opts.strForkParGateway = "Forking Parallel Gateway";
-	if( !opts.strForkParGatewayDesc ) 	opts.strForkParGatewayDesc = "<p>Forward control to <em>all</em> outgoing connections.</p>"
-	if( !opts.strTextAnnotation ) 		opts.strTextAnnotation = "Text Annotation"
+	if( !opts.strJoinExcGateway ) 
+		opts.strJoinExcGateway = "Joining Exclusive Gateway";
+	if( !opts.strJoinExcGatewayDesc ) 
+		opts.strJoinExcGatewayDesc = "<p>Wait for any <em>one</em> incoming connection to continue.</p>";
+	if( !opts.strJoinParGateway ) 
+		opts.strJoinParGateway = "Joining Parallel Gateway";
+	if( !opts.strJoinParGatewayDesc ) 
+		opts.strJoinParGatewayDesc = "<p>Wait for <em>all</em> incoming connections to continue.</p>";
+	if( !opts.strForkExcGateway ) 
+		opts.strForkExcGateway = "Forking Exclusive Gateway";
+	if( !opts.strForkExcGatewayDesc ) 
+		opts.strForkExcGatewayDesc = "<p>Evaluate the condidition and signal the respective event.</p>";
+	if( !opts.strForkParGateway ) 
+		opts.strForkParGateway = "Forking Parallel Gateway";
+	if( !opts.strForkParGatewayDesc ) 
+		opts.strForkParGatewayDesc = "<p>Forward control to <em>all</em> outgoing connections.</p>";
+	if( !opts.strTextAnnotation ) 
+		opts.strTextAnnotation = "Text Annotation";
 	
-	if( !opts.strGlossaryFolder ) 		opts.strGlossaryFolder = "Model Elements (Glossary)"
-	if( !opts.strActorFolder ) 			opts.strActorFolder = "Actors"
-	if( !opts.strStateFolder ) 			opts.strStateFolder = "States"
-	if( !opts.strEventFolder ) 			opts.strEventFolder = "Events"
-	if( !opts.strAnnotationFolder ) 	opts.strAnnotationFolder = "Text Annotations"
+	if( !opts.strGlossaryFolder ) 
+		opts.strGlossaryFolder = "Model Elements (Glossary)";
+	if( !opts.strActorFolder ) 
+		opts.strActorFolder = "Actors";
+	if( !opts.strStateFolder ) 
+		opts.strStateFolder = "States";
+	if( !opts.strEventFolder ) 
+		opts.strEventFolder = "Events";
+	if( !opts.strAnnotationFolder ) 
+		opts.strAnnotationFolder = "Text Annotations";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -296,8 +314,14 @@ function BPMN2Specif( xmlString, opts ) {
 							Array.from(ch.childNodes).forEach( function(ref) {
 //								console.debug('dataInputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
+								if( opts.isIE ) {
+									console.warn('Omitting Read-statement with subject '+id+', because IE cannot read the object reference.')
+									return
+								};
+								// ToDo: Get it going with IE
 								if( ref.tagName.includes('sourceRef') ) {
-									let dS = ref.innerHTML
+									let dS = ref.innerHTML;	 // does not work in IE, not even IE11
+//									console.debug('#',ref,ref.tagName,dS);
 									// store reading association:
 									model.statements.push({
 										id: id+'-reads-'+dS,
@@ -316,8 +340,13 @@ function BPMN2Specif( xmlString, opts ) {
 							Array.from(ch.childNodes).forEach( function(ref) {
 //								console.debug('dataOutputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
+								if( opts.isIE ) {
+									console.warn('Omitting Write-statement with subject '+id+', because IE cannot read the object reference.')
+									return
+								};
+								// ToDo: Get it going with IE
 								if( ref.tagName.includes('targetRef') ) {
-									let dS = ref.innerHTML
+									let dS = ref.innerHTML;  // does not work in IE, not even IE11
 									// store writing association:
 									model.statements.push({
 										id: id+'-writes-'+dS,

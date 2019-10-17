@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
 const CONFIG = {};
-	CONFIG.imgURL = './images';
+	CONFIG.imgURL = './'+prodV+'/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.loginTimeout = 3000;

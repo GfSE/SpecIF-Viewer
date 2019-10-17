@@ -174,6 +174,7 @@ i18n.LblPrevious = 'Dernier';
 i18n.LblNext = 'Prochain';
 i18n.LblGo = 'D&eacute;marrer';
 i18n.LblAll = 'Tous';
+i18n.LblHitCount = 'Score';
 i18n.LblRelateAs = "Relier comme";
 i18n.LblSource = "Sujet";
 i18n.LblTarget = "Objet";

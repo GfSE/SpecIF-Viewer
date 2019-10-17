@@ -23,9 +23,10 @@ modules.construct({
 //	self.projectL = [];  	// list of the projects already available
 	self.projectName = '';  // user input for project name
 	self.format = undefined;
-	let showFileSelect = undefined,
+	var showFileSelect = undefined,
 		importMode = {id:'replace'},
-		myFullName = 'app.'+(self.loadAs || self.name);
+		myFullName = 'app.'+self.loadAs,
+		urlP;				// the latest URL parameters
 
 /*	// The modes for selection when an import is encountered which is already loaded:
 	const importModes = [{
@@ -50,8 +51,9 @@ modules.construct({
 		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
 		setTimeout( function() {
 				self.clear();
+				if( urlP ) delete urlP[CONFIG.keyImport];
 				// change view to browse the content:
-				modules.show( '#'+CONFIG.specifications )
+				modules.show({ newView: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
 			}, 
 			400 
 		)
@@ -122,14 +124,16 @@ modules.construct({
 	};
 	// The module entry;
 	// called by the modules view management:
-	self.show = function() {
-//		console.debug( 'import.show' );
+	self.show = function( opts ) {
+//		console.debug( 'import.show', opts );
 	/*	if( me.userName == CONFIG.userNameAnonymous ) {
 			handleError({status:403});
 			self.hide();
 			me.logout();
 			return
 		};  */
+		
+		$('#pageTitle').html( i18n.LblImport );
 		
 			function getFormat(p) {
 				// filename without extension must have at least a length of 1:
@@ -140,17 +144,16 @@ modules.construct({
 				};
 				return undefined
 			}
-		let hashP = getUrlParams();
-	//	clearUrlParams();
-		if( hashP && hashP['import'] ) {
+		urlP = opts.urlParams;
+		if( urlP && urlP[CONFIG.keyImport] ) {
 			// Case 1: A file name for import has been specified in the URL:
-//			console.debug('import 1',hashP);
-			self.file.name = hashP['import'];
+//			console.debug('import 1',urlP);
+			self.file.name = urlP[CONFIG.keyImport];
 			// check the format:
-			self.setFormat( getFormat( hashP['import'] ));
+			self.setFormat( getFormat( urlP[CONFIG.keyImport] ));
 			app[self.format.name].init( self.format.opts );
 //			console.debug('filename:',self.file.name,self.format);
-			if( !app[self.format.name] || !app[self.format.name].verify( {name:hashP['import']} )) {
+			if( !app[self.format.name] || !app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} )) {
 				self.clear();
 				message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
 				self.show();
@@ -167,7 +170,7 @@ modules.construct({
 			// must be either from the same URL or CORS-enabled.
 			// Import the file:
 			httpGet({
-				url: hashP['import'],
+				url: urlP[CONFIG.keyImport],
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: function(result) {
@@ -294,11 +297,7 @@ modules.construct({
 			self.valid()
 //			console.debug('select',self.fileName(), self.projectName)
 		} else {
-			self.file = {name: ''};
-			self.projectName = '';	
-			setTextValue( i18n.LblFileName, '&nbsp;' );
-			setTextValue( i18n.LblProjectName, '&nbsp;' );
-			self.valid()
+			self.clear()
 		}
 	};
 	self.doImport = function(mode) {

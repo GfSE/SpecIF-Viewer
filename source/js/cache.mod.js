@@ -171,7 +171,7 @@ modules.construct({
 		// There are tree modes with respect to the types:
 		//	- "match": if a type in newD is already present and it differs, quit with error-code
 		//	- "extend": new propertyClasses are added
-		//	- "ignore": new propertyClasses and all depending properties are ignored
+		//	- "ignore": new propertyClasses and all their instances are ignored
 		mode = mode || 'ignore';
 //		console.debug('cache.update',newD,mode);
 		var rc = {},
@@ -185,7 +185,7 @@ modules.construct({
 			return uDO
 		};
 
-		// In first pass check, if there is any incompatible type making an update impossible:
+		// In a first pass check, if there is any incompatible type making an update impossible:
 		rc = typesAreCompatible('dataType',mode);
 		if( rc.status>0 ) {
 			uDO.reject( rc );

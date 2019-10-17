@@ -26,7 +26,7 @@ function ModuleManager() {
 		callWhenReady = null,
 		vPath;
 	self.init = function( opts ) {
-		vPath = './v'+app.productVersion;
+		vPath = './'+app.productVersion;
 		self.registered = [];
 		self.ready = [];
 
@@ -48,7 +48,7 @@ function ModuleManager() {
 			self.displaysObjects = self.supportsHtml5Storage; // Firefox, Chrome and IE10+; note that IE displays the object tag only in case of SVG and PNG
 
 			// check the browser type, the first test is true for IE <= 10, the second for IE 11.
-			self.isIE = ( /MSIE /i.test(navigator.userAgent) || /rv:11.0/i.test(navigator.userAgent) );
+			self.isIE = /MSIE |rv:11.0/i.test(navigator.userAgent);
 			self.language = navigator.language || navigator.userLanguage;
 			console.info( "Browser Language is '"+self.language+"'." );
 //			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" );
@@ -98,18 +98,15 @@ function ModuleManager() {
 		// This routine is called by the code in the file, once loaded with 'loadH'/'loadM',
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
 		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
-//		console.debug('construct', defs, constructorFn);
 		
 		// find module by name or by view somewhere in the complete tree:
 		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
-			console.error(defs.name? "'"+defs.name+"' is not a defined module" : "'"+defs.view+"' is not a defined view");
+			console.error(defs.name? "'"+defs.name+"' is not a defined module name" : "'"+defs.view+"' is not a defined view");
 			return null
 		};
 		$.extend( mo, defs ); 
-
-		// construct the controller using the provided function:
-		constructorFn(mo);
+//		console.debug('construct', defs, mo);
 
 		// An execution name ('loadAs') may be specified when different modules (with diffent names) 
 		// create a component with similar interface, but different function.
@@ -121,9 +118,13 @@ function ModuleManager() {
 		// Of course loadAs must be unique in an app at any time.
 		// By default of 'loadAs', use 'name' or 'view' without the leading '#':
 		if( !mo.loadAs ) mo.loadAs = mo.name || mo.view.substring(1);
+
+		// construct the controller using the provided function:
+		constructorFn(mo);
 		// make the module directly addressable by loadAs:
 		app[ mo.loadAs ] = mo;
 		// initialize:
+		// ToDo: Consider to run all init-Functions, *after* loading all modules. 
 		if( typeof(mo.init)=='function' )
 			mo.init(); 
 		
@@ -231,7 +232,7 @@ function ModuleManager() {
 				};
 				// else, the module is described by an object with a property 'name':
 				// append the view to the parent view, where
-				// - the visibility of the view is controlled by the parent's viewCtl
+				// - the visibility of the view shall be controlled by the parent's viewCtl
 				if( e.view && e.parent ) {
 					let c = e.viewClass?'class="'+e.viewClass+'" ':'',
 						d = '<div id="'+e.view.substring(1)+'" '+c+' style="display:none;"></div>';
@@ -322,7 +323,7 @@ function ModuleManager() {
 											c.parent = e;
 											loadH(c)
 										})
-				};
+				}
 			}
 //		console.debug('loadH',h,opts);
 
@@ -492,7 +493,7 @@ function ModuleManager() {
 	function ViewCtl( viewL ) {
 		// Constructor for an object to control the visibility of the DOM-tree elements listed in 'list';
 		// the selected view is shown, all others are hidden.
-		// ViewCtl can be pages or tabs, depending on the navigation level:
+		// ViewCtl can switch pages or tabs, depending on the navigation level:
 		var self = this;
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
@@ -512,7 +513,7 @@ function ModuleManager() {
 		};
 		self.show = function( params ) {
 			// Select a new view 
-			// and start implicit actions 'show'/'hide' or 'refresh', in case they are implemented in the respective modules.
+			// and start implicit actions 'show'/'hide' in case they are implemented in the respective modules.
 			// - simple case: params is a string with the name of the new view.
 			// - more powerful: params is an object with the new (target) view plus optionally content or other parameters 
 			switch( typeof(params) ) {

@@ -85,13 +85,14 @@ modules.construct({
 	name: CONFIG.objectFilter
 }, function(self) {
 	"use strict";
-	var pData = app[ self.parent.loadAs || self.parent.name ];
+	var pData;
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
-	self.secondaryFilters = null;  // default: show resources (hit-list)
+	self.secondaryFilters;  // default: show resources (hit-list)
 
 	// Standard module interface methods:
 	self.init = function() {
 //		console.debug( 'filters.init' );
+		self.filterList = []
 		self.secondaryFilters = undefined;
 
 		// The left panel on this page (only for this view):
@@ -101,8 +102,8 @@ modules.construct({
 			+	'</div>'
 			+	'<div id="filterCtrl" class="contentCtrl" >'
 			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
-			+			'<button class="btn btn-default" onclick="app.filter.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
-			+			'<button class="btn btn-default" onclick="app.filter.goClicked()" >'+i18n.BtnGo+'</button>'
+			+			'<button class="btn btn-default" onclick="app.'+CONFIG.objectFilter+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
+			+			'<button class="btn btn-default" onclick="app.'+CONFIG.objectFilter+'.goClicked()" >'+i18n.BtnGo+'</button>'
 			+		'</div>'
 			+		'<div id="filterNotice" class="notice-default contentNotice" />'
 			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" />'
@@ -112,7 +113,7 @@ modules.construct({
 	};
 	self.clear = function() {
 		self.secondaryFilters = undefined;
-	//	$('#hitCount').empty();
+		$('#filterNotice').empty();
 		self.filterList.length = 0
 	};
 	self.hide = function() {
@@ -130,10 +131,10 @@ modules.construct({
 	// standard module entry:
 	self.show = function( opts ) {   // optional urlParams or filter settings
 //		console.debug( 'filter.show', opts, self.filterList );
+		pData = self.parent;
 		pData.showLeft.reset();
-
 		setContentHeight();
-	//	$('#hitCount').empty();
+		$('#filterNotice').empty();
 
 		// build filterList from the specTypes when executed for the first time:
 		if( self.filterList.length<1 || opts&&opts.filters || opts&&opts.forced ) 
@@ -183,7 +184,7 @@ modules.construct({
 		app.busy.set();
 	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
-		let pend=0, h, hR;
+		let pend=0, h, hR, hCnt=0;;
 		pData.tree.iterate( function(nd) {
 			pend++;
 //			console.debug('tree.iterate',pend,nd.ref);
@@ -194,10 +195,12 @@ modules.construct({
 					h = match(rsp);
 //					console.debug('tree.iterate',self.filterList,pend,rsp,h);
 					if( h )	{
+						hCnt++;
 						hR = new Resource( h );
 						$('#hitlist').append( hR.listEntry() )
 					};
 					if( --pend<1 ) {  // all done
+						$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hCnt+'</div>' );
 						app.busy.reset()
 					}
 				})

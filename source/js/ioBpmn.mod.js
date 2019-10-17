@@ -61,7 +61,7 @@ modules.construct({
 		bDO = $.Deferred();
 
 		bDO.notify('Transforming BPMN to SpecIF',10); 
-		data = BPMN2Specif( buf2str(buf), {xmlName:fName, xmlDate:fDate} );
+		data = BPMN2Specif( buf2str(buf), { xmlName:fName, xmlDate:fDate, isIE:browser.isIE });
 //		console.debug('input.prjName', self.parent.projectName, data );
 		bDO.resolve( data );
 

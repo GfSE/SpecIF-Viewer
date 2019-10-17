@@ -174,6 +174,7 @@ i18n.LblPrevious = 'Voriges';
 i18n.LblNext = 'N&auml;chstes';
 i18n.LblGo = 'Los!';
 i18n.LblAll = 'Alle';
+i18n.LblHitCount = 'Trefferzahl';
 i18n.LblRelateAs = 'Verkn&uuml;pfen als';
 i18n.LblSource = 'Subjekt';
 i18n.LblTarget = 'Objekt';

@@ -11,7 +11,6 @@ modules.construct({
 	name: CONFIG.specifications
 }, function(self) {
 	"use strict";
-	self.modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 	
 	// Permissions for resources and statements:
 	self.resCreTypes = [];  // all resource types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -200,7 +199,6 @@ modules.construct({
 		selectResource(null);
 		self.resources.init();
 	//	self.comments.init();
-		self.modeStaDel = false;
 		self.modeCmtDel = false;
 		self.resCreTypes = [];
 		self.staCreTypes = [];
@@ -261,20 +259,20 @@ modules.construct({
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
-				function mayHaveStatements( selO ) {
-//					if( selO ) console.debug( 'selO', selO );
+				function mayHaveStatements( selR ) {
+//					if( selR ) console.debug( 'selR', selR );
 //					console.debug( 'staCreTypes', self.staCreTypes );
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
 					self.staCreTypes.forEach( function(sT) {   
 						creR = itemById( app.cache.statementClasses, sT );
-//						console.debug( 'mayHaveStatements', self.staCreTypes[s], creR, selO['class'] );
+//						console.debug( 'mayHaveStatements', self.staCreTypes[s], creR, selR['class'] );
 						if( 
 							// if creation mode is not specified or 'user' is listed, the statement may be applied to this resource:
 							( !creR.instantiation || creR.instantiation.indexOf( 'user' )>-1 )
 							// if subjectClasses or objectClasses are not specified or the type of the selected resource is listed, the statement may be applied to this resource:
-							&& ((!creR.subjectClasses || creR.subjectClasses.indexOf( selO['class'] )>-1 
-								|| !creR.objectClasses || creR.objectClasses.indexOf( selO['class'] )>-1 ))
+							&& ((!creR.subjectClasses || creR.subjectClasses.indexOf( selR['class'] )>-1 
+								|| !creR.objectClasses || creR.objectClasses.indexOf( selR['class'] )>-1 ))
 						) return true   // at least one statement is available for this resource for which the user has creation rights
 					});
 					return false  // no statement is available for this resource for which the user has creation rights
@@ -384,7 +382,7 @@ modules.construct({
 	// The module entry;
 	// called by the parent's view controller:
 	self.show = function( opts ) {
-//		console.debug( 'specifications.show', opts );
+//		console.debug( CONFIG.specifications, 'show', opts );
 
 		$('#pageTitle').html( app.cache.title );
 		app.busy.set();
@@ -517,7 +515,7 @@ modules.construct({
 		// load the linker module, if not yet available:
 		if( modules.load( 'linker', function() {self.addLinkClicked()} ) ) return;  // try again as soon as module is loaded, a WARNING will be logged.
 
-		self.modeStaDel = false;  // when returning, the statement table shan't be in delete mode.
+		modeStaDel = false;  // when returning, the statement table shan't be in delete mode.
 		
 	//	$( '#contentActions' ).empty();
 		self.selectTab( 'linker' );
@@ -541,14 +539,14 @@ modules.construct({
 		objectEdit.init( function(){self.selectTab(returnTab)}, mode );  // callback to continue when finished with editing.
 		objectEdit.show( self.resCreTypes )
 	};
-	self.deleteObject = function() {
+	self.deleteResource = function() {
 		// Delete the selected resource, all tree nodes and their children.
 		// very dangerous ....
 	}); 
 		
 	self.deleteNode = function() {
 		// Delete the selected node and its children.
-		// The resource is just dereferenced, but not deleted, itself.
+		// The resources are just dereferenced, but not deleted, themselves.
 		function delNd( nd ) {
 //			console.info( 'deleting', nd.name );
 			// 1. Delete the hierarchy entry with all its children in the cache and server:
@@ -625,30 +623,23 @@ modules.construct({
 	};
 	self.relatedItemClicked = function( rId, sId ) {
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
-//		console.debug( 'relatedItemClicked', rId, sId, self.modeStaDel, itemById( app.cache.statements, sId ) );
-		if( self.selectedTab()=='#'+CONFIG.relations && self.modeStaDel ) {
+//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, itemById( app.cache.statements, sId ) );
+	/*	if( self.selectedTab()=='#'+CONFIG.relations && modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
 			if( itemById( app.cache.statements, sId ) )
 				app.cache.deleteContent( 'statement', {id: sId} )
 					.done( self.statements.show )
 					.fail( stdError )
-		} else { 
+		} else { */
 		//	self.selectTab( CONFIG.objectList );  
 			// Jump to resource rId:
 			self.tree.selectNodeByRef( rId );
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			document.getElementById(CONFIG.objectList).scrollTop = 0
-		}
+	//	}
 	};
-/*	self.togglemodeStaDel = function() {
-		// self.modeStaDel controls what the resource links in the statement view will do: jump or delete statement
-		self.modeStaDel = !self.modeStaDel;  // toggle delete mode for statements
-//		console.debug( 'toggle delete statement mode:', self.modeStaDel);
-		$( '#contentActions' ).html( self.linkBtns() );
-		renderStatements()
-	};
-	self.addComment = function() {
+/*	self.addComment = function() {
 //		console.debug( 'addComment', self.tree.selectedNode );
 		var cT = itemByName( app.cache.resourceClasses, CONFIG.objTypeComment ),
 			rT = itemByName( app.cache.statementClasses, CONFIG.relTypeCommentRefersTo );
@@ -737,10 +728,10 @@ modules.construct({
 		if( tabsWithEditing.indexOf( self.selectedTab() )<0 ) return '';
 
 		// rendered buttons:
-		var selO = null,
+		var selR = null,
 			rB = '';
-		if( self.resources.selected() ) selO = self.resources.selected().value;
-	/*	if( selO )
+		if( self.resources.selected() ) selR = self.resources.selected().value;
+	/*	if( selR )
 			// Create a 'direct link' to the resource (the server renders the resource without client app):
 			rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+app.cache.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
 	*/	
@@ -751,13 +742,13 @@ modules.construct({
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 			
-		if( !selO ) { return( rB )};
+		if( !selR ) { return( rB )};
 
 			function attrUpd() {
 				// check whether at least one property is editable:
-				if( selO.properties )
-					for( var a=selO.properties.length-1;a>-1;a-- ) {
-						if( selO.properties[a].upd ) return true   // true, if at least one property is editable
+				if( selR.properties )
+					for( var a=selR.properties.length-1;a>-1;a-- ) {
+						if( selR.properties[a].upd ) return true   // true, if at least one property is editable
 					};
 				return false
 			}
@@ -788,39 +779,14 @@ modules.construct({
 
 		return rB	// return rendered buttons for display
 	};
-	self.cmtBtns = function() {
+/*	self.cmtBtns = function() {
 		if( !self.selectedTab()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
 			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		else
 			return '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>'
-	};
-	self.linkBtns = function() {
-		if( !self.selectedTab()=='#'+CONFIG.relations || !self.resources.selected().value ) return '';
-		if( self.modeStaDel ) return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeRelDel()" >'+i18n.BtnCancel+'</button></div>';
-
-		var rB = '<div class="btn-group btn-group-sm" >';
-//		console.debug( 'linkBtns', self.staCre );
-
-		if( self.staCre )
-			rB += '<button class="btn btn-success" onclick="'+myFullName+'.addLinkClicked()" data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
-		else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
-
-		// Add the commenting button, if all needed types are available and if permitted:
-		if( self.cmtCre )
-			rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
-		else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
-
-		if( self.staDel && self.resources.selected().staGroups.length>0 ) {
-			rB += '<button class="btn btn-danger '+(self.modeRelDel?'active':'')+'" onclick="'+myFullName+'.toggleModeRelDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
-		} else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
-
-		return rB+'</div>'	// return rendered buttons for display
-	};
+	}; */
 
 	return self
 });
@@ -829,12 +795,13 @@ modules.construct({
 	view:'#'+CONFIG.objectList
 }, function(self) {
 	// Construct an object for displaying a hierarchy of resources:
-	var pData = app[ self.parent.loadAs ];
+	var pData;
 	self.init = function() {
 	};
 	self.show = function( opts ) {
 		// Show the next resources starting with the selected one:
-//		console.debug(CONFIG.objectList, 'show');
+//		console.debug(CONFIG.objectList, 'show', opts);
+		pData = self.parent;
 		pData.showLeft.set();
 		pData.showTree.set();
 		
@@ -898,26 +865,30 @@ modules.construct({
 modules.construct({
 	view:'#'+CONFIG.relations
 }, function(self) {
-	// Construct an object for displaying the statements of a selected resource:
-	var pData = app[ self.parent.loadAs ];
+	// Render the statements of a selected resource:
+	var pData,
+		selRes,				// the currently selected resource
+		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
+
 	self.init = function() {
+		modeStaDel = false
 	};
 	self.show = function( opts ) {
-	// Show all statements of the selected resource:
 //		console.debug(CONFIG.relations, 'show');
+		pData = self.parent;
 		pData.showLeft.set();
 		pData.showTree.set();
 
+		// The tree knows the selected resource; if not take the first:
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
 		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.relations); return };  // quit, because the tree is empty
 
 		// else: the tree has entries:
 		app.busy.set();
-		if( pData.resources.values.length<1 )
-			$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+		$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
 		var nd = pData.tree.selectedNode,
-			selRes, mG;
+			mG;
 						
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
@@ -964,8 +935,7 @@ modules.construct({
 
 						// First get the selected resource, 
 						// assuming that the sequence is arbitrary:
-						pData.resources.updateSelected( itemById(roL,nd.ref) );
-						selRes = pData.resources.selected();
+						selRes = new Resource( itemById(roL,nd.ref) );
 						selRes.staGroups = [];
 					//	selectResource( pData.tree.selectedNode );
 					
@@ -1005,7 +975,7 @@ modules.construct({
 						mG = addMentionsRels();
 						if( mG && (mG.rGs.length || mG.rGt.length)) selRes.staGroups.push( mG )
 						app.busy.reset();	
-						$( '#contentActions' ).html( pData.linkBtns() );
+						$( '#contentActions' ).html( linkBtns() );
 //						console.debug('statement groups',selRes.staGroups);
 						renderStatements()
 					})
@@ -1023,12 +993,13 @@ modules.construct({
 		return
 
 		function renderStatements() {
-			if( pData.modeStaDel ) 
+			if( modeStaDel ) 
 				$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' )
 			else
 				$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
 
-			let net = selRes.statements();
+			// If in delete mode, provide the name of the delete function as string:
+			let net = selRes.statements({ fnDel: modeStaDel? 'app.'+self.parent.loadAs+'.deleteNode()':'' });
 //			console.debug('renderStatements',net);
 			switch( typeof(net) ) {
 				case 'string':
@@ -1049,7 +1020,7 @@ modules.construct({
 								// changing the tree node triggers an event, by which 'self.refresh' will be called.
 						}
 					};
-					if( pData.modeStaDel )
+					if( modeStaDel )
 						options.nodeColor = '#ef9a9a';
 //					console.debug('showStaGraph',net,options);
 					app.busy.reset();
@@ -1140,6 +1111,38 @@ modules.construct({
 			}
 		}
 	};
+	function linkBtns() {
+		if( !selRes ) return '';
+		if( modeStaDel ) return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+
+		var rB = '<div class="btn-group btn-group-sm" >';
+//		console.debug( 'linkBtns', self.staCre );
+
+		if( self.staCre )
+			rB += '<button class="btn btn-success" onclick="'+myFullName+'.addLinkClicked()" data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
+		else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
+
+		// Add the commenting button, if all needed types are available and if permitted:
+	/*	if( self.cmtCre )
+			rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+		else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';  */
+
+		if( self.staDel && selRes.staGroups.length>0 ) {
+			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
+		} else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
+
+		return rB+'</div>'	// return rendered buttons for display
+	};
+/*	self.toggleModeStaDel = function() {
+		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
+		modeStaDel = !modeStaDel;  // toggle delete mode for statements
+//		console.debug( 'toggle delete statement mode:', modeStaDel);
+		$( '#contentActions' ).html( linkBtns() );
+		renderStatements()
+	}; */
 	self.hide = function() {
 //		console.debug(CONFIG.relations, 'hide');
 		$( '#'+CONFIG.relations ).empty().hide()
@@ -1276,11 +1279,11 @@ function Resource( obj ) {
 	};
 */
 	//  Create a reduced SpecIF data set for rendering a graph:
-	self.statements = function() {
+	self.statements = function( opts ) {
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-		if( browser.isIE ) return renderStatementsTable( self.staGroups );
+		if( browser.isIE ) return renderStatementsTable( self.staGroups, opts );
 		
-		// build data set with the selected resource in focus: 
+		// Build a simplified SpecIF data set with the selected resource in focus: 
 		var net = {
 			// here, the icon is transferred in a resourceClass ... like SpecIF:
 			resourceClasses: [{
@@ -1350,19 +1353,21 @@ function Resource( obj ) {
 			return '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
 		}
 
-		function renderStatementsTable( sGL ) {
+		function renderStatementsTable( sGL, opts ) {
 			// Render a table with all statements grouped by type:
-			//	if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		//	if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+			if( typeof(opts)!='object' ) opts = {fnDel:false};
 
+			// opts.fnDel is a name of a delete function to call. If provided, it is assumed that we are in delete mode.
 			// ToDo: The 'mentions' statements shall not be for deletion, and not appear to be for deletion (in red)
-			if( app.specs.modeRelDel ) 
+			if( opts.fnDel ) 
 				var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
 			else
 				var rT = '<div>';  // render table with the resource's statements in display mode
 			rT += renderTitle( self.resToShow, self.value.order );	// rendered statements
 			if( sGL.length>0 ) {
 //				console.debug( sGL.length, sGL );
-				if( app.specs.modeRelDel ) 
+				if( opts.fnDel ) 
 					rT += '<div class="notice-danger" style="margin-bottom:0.4em" >'+i18n.MsgClickToDeleteRel+'</div>';
 				rT += '<table id="relationsTable" class="table table-condensed listEntry" ><tbody>';
 				let relG=null;
@@ -1389,7 +1394,7 @@ function Resource( obj ) {
 						// The list of subject resources:
 						relG.forEach( function(sc) {
 							// Do not linkify, if the statement cannot be deleted (since it is not stored in the server).
-							if( app.specs.modeRelDel && sc.computed )
+							if( opts.fnDel && sc.computed )
 								rT += sc.sT+'<br />'
 							else
 								rT += '<a onclick="app.specs.relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
@@ -1421,7 +1426,7 @@ function Resource( obj ) {
 						rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0])+'</i></td><td>';
 						// The list of resources:
 						relG.forEach( function(tg) {
-							if( app.specs.modeRelDel && tg.computed )
+							if( opts.fnDel && tg.computed )
 								rT += tg.tT+'<br />'
 							else
 								rT += '<a onclick="app.specs.relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
@@ -1430,8 +1435,8 @@ function Resource( obj ) {
 					}
 				});
 				rT += 	'</tbody></table>';
-				if( app.specs.modeRelDel ) 
-					rT += '<div class="doneBtns"><button class="btn btn-default btn-sm" onclick="app.specs.toggleModeRelDel()" >'+i18n.BtnCancel+'</button></div>'
+				if( opts.fnDel ) 
+					rT += '<div class="doneBtns"><button class="btn btn-default btn-sm" onclick="'+opts.fnDel+'" >'+i18n.BtnCancel+'</button></div>'
 			} else {
 				rT += '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
 			};
@@ -1731,12 +1736,12 @@ var fileRef = {
 //				u2 = addFilePath(u2);
 				if( !u2 ) console.info('no image found');
 
-				// all of the following work to a certain extent:
+/*				// all of the following work to a certain extent:
 				//   <a></a> for downloading the OLE, 
 				//   <object>text</object> allows to obtain the text as part of value after HTMLstrip (e.g. in search of a somewhat meaningful title)
 				//   Note that IE displays the object tag only in case of SVG and PNG; the latter is used with DOORS OLE-Objects.
 
-/*				if( opts.clickableElements )
+				if( opts.clickableElements )
 					repSts.push( '<div class="forImage"><a href="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' >'+$4+'</object></a></div>' )
 				else
 					repSts.push( '<div class="forImage"><a href="'+u1+'"'+t1+' ><img src="'+u2+'"'+t2+s2+' alt="'+$4+'" /></a></div>' );
@@ -1810,6 +1815,8 @@ var fileRef = {
 						hasImg = true;
 						d = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="'+d+'" />'
 						// ToDo: Offer a link for downloading the file
+						// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+						// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 					} else {
 						switch( e ) { 
 							case 'ole': 
@@ -1916,25 +1923,20 @@ var fileRef = {
 			};
 			return
 
+						
 				function showRaster(f,opts) {
 					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 					// increase the timelag between building the DOM and rendering the images, if necessary.
-					const reader = new FileReader();
-					reader.addEventListener('loadend', function(e) {
-//						console.debug('showImg',e.target.result);
+					blob2dataURL(f,function(r,fTi,fTy) {
 						// add image to DOM using an image-tag with data-URI.
 						// set a grey background color for images with transparency:
-						document.getElementById(containerId(f.title)).innerHTML = '<img src="'+e.target.result+'" type="'+f.type+'" alt="'+f.title+'" style="background-color:#DDD;"/>'
-					});
-					// load the raster image:
-					if( opts && typeof(opts.timelag)=='number' && opts.timelag>0 )
-						setTimeout(function() {
-							reader.readAsDataURL(f.blob)
-						}, opts.timelag )
-					else
-						reader.readAsDataURL(f.blob)
+						document.getElementById(containerId(fTi)).innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'
+					},opts.timelag)
 				}
 				function showSvg(f,opts) {
+					// Show a SVG image.
+					// ToDo: IE shows the image rather small.
+					
 					// Load pixel images embedded in SVG,
 					// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
 					// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
@@ -1944,28 +1946,22 @@ var fileRef = {
 						// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
 						rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
 						pend = 0;		// the count of embedded images waiting for transformation
-						
-						function toDataURL(file,fn) {
-							const reader = new FileReader();
-							reader.addEventListener('loadend', function(e) { fn(file.title,e.target.result) });
-							reader.readAsDataURL(file.blob)
-						} 
 					
 					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 					// increase the timelag between building the DOM and rendering the images, if necessary.
 //					console.debug('showSvg',f,opts);
-					const reader = new FileReader();
-					reader.addEventListener('loadend', function(ev) {
+					// Read and render SVG:
+					blob2text(f,function(r,fTi,fTy) {
 						let ef = null,
 							mL = null;
 						svg = {
 							loc: document.getElementById(containerId(f.title)),
 							// ToDo: If there are two references of the same image on a page, only the first is shown.
-							img: ev.target.result
+							img: r
 						};
 						// process all image references one by one:
 						// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-						while((mL=rE.exec(ev.target.result)) != null ) {
+						while((mL=rE.exec(r)) != null ) {
 							// skip all images already provided as data-URLs:
 							if( mL[2].startsWith('data:') ) continue;
 							// avoid transformation of redundant images:
@@ -1974,10 +1970,10 @@ var fileRef = {
 							ef = itemBySimilarTitle( app.cache.files, mL[2] );
 //							console.debug('SVG embedded file',mL[2],ef,pend);
 							// transform file to data-URL and display, when done:
-							toDataURL(ef, function(ft,res) {
+							blob2dataURL(ef, function(r,fTi) {
 								dataURLs.push({
-									id: ft,
-									val: res
+									id: fTi,
+									val: r
 								});
 //								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
 								if( --pend<1 ) {
@@ -1995,14 +1991,7 @@ var fileRef = {
 							svg.loc.innerHTML = svg.img;
 							if( opts && opts.clickableElements ) registerClickEls(svg.loc)
 						}
-					});
-					// load the vector image:
-					if( opts && typeof(opts.timelag)=='number' && opts.timelag>0 )
-						setTimeout(function() {
-							reader.readAsText(f.blob)
-						}, opts.timelag )
-					else
-						reader.readAsText(f.blob);
+					}, opts.timelag)  
 					return
 
 					// see http://tutorials.jenkov.com/svg/scripting.html
@@ -2104,7 +2093,9 @@ var fileRef = {
 						// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
 						function addViewBoxIfMissing(svg) {
 							let el=null;
-							svg.childNodes.forEach( function(el) {
+							// in Case of IE 'forEach' does not work with svg.childNodes
+							for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
+								let el = svg.childNodes[i];
 //								console.debug('svg',svg,el,el.outerHTML);
 								// look for '<svg .. >' tag with its properties, often but not always the first child node:
 								if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {
@@ -2120,7 +2111,7 @@ var fileRef = {
 									el.setAttribute("viewBox", '0 0 '+w+' '+h );
 									return
 								}
-							})
+							}
 						}
 					}
 				}
@@ -2135,9 +2126,9 @@ var fileRef = {
 				
 					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 					// increase the timelag between building the DOM and rendering the images, if necessary.
-						function transformBpmn(f) {
-						//	document.getElementById(containerId(f.title)).innerHTML = '<p>Here comes a BPMN diagram '+f.id+'</p>'
-//							console.debug('transformBpmn',f);
+						function transformBpmn(f,cvs) {
+						// transform the BPMN-XML and render the diagram:
+//							console.debug('transformBpmn',f,cvs);
 							// viewer instance:
 							let bpmnViewer = new BpmnJS({container: '#'+cvs});
 							bpmnViewer.importXML( f, function(err) {
@@ -2159,18 +2150,10 @@ var fileRef = {
 								canvas.zoom('fit-viewport')  */
 							})  
 						}
-					let reader = new FileReader(),
-						cvs = containerId(f.title);
-					reader.addEventListener('loadend', function(ev) {
-						transformBpmn(ev.target.result)
-					});
-					// transform the BPMN-XML and render the diagram:
-					if( opts && typeof(opts.timelag)=='number' && opts.timelag>0 )
-						setTimeout(function() {
-							reader.readAsText(f.blob)
-						}, opts.timelag )
-					else
-						reader.readAsText(f.blob)
+					// Read and render BPMN:
+					blob2text(f,function(r,fTi,fTy) {
+						transformBpmn(r,containerId(fTi))
+					}, opts.timelag)  
 				}
 				function itemBySimilarId(L,id) {
 					// return the list element having an id similar to the specified one:

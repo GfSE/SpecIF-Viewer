@@ -174,6 +174,7 @@ i18n.LblPrevious = 'Previous';
 i18n.LblNext = 'Next';
 i18n.LblGo = 'Go!';
 i18n.LblAll = 'All';
+i18n.LblHitCount = 'Hit Count';
 i18n.LblRelateAs = 'Relate as';
 i18n.LblSource = 'Subject';
 i18n.LblTarget = 'Object';
