@@ -112,7 +112,7 @@ function BPMN2Specif( xmlString, opts ) {
 		changedAt: opts.xmlDate
 	});
 	
-	// 2. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
+	// 3. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
 //	console.debug('#',x[0].childNodes);
 //	x[0].childNodes.forEach( function(el) {
 	// forEach does not work for NodeLists in IE:
@@ -121,7 +121,7 @@ function BPMN2Specif( xmlString, opts ) {
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
 		if( !el.tagName ) return;
 		let tag = el.tagName.split(':').pop();	// tag without namespace
-		// The participating processes;
+		// 3.1 The participating processes;
 		// we transform the participants with their id, but not the processes:
 		if (el.nodeName.includes("participant")) {
 			model.resources.push({
@@ -139,7 +139,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.xmlDate
 			})
 		};
-		// The messages between the processes:
+		// 3.2 The messages between the processes:
 		if (el.nodeName.includes("messageFlow")) {
 			// a. The message data (FMC:State):
 			model.resources.push({
@@ -177,7 +177,7 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		}
 	});
-	// 3. Parse the processes.
+	// 4. Parse the processes.
 	// For SpecIF, the participant is declared the container for the processes' model-elements ... 
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
@@ -742,7 +742,7 @@ function BPMN2Specif( xmlString, opts ) {
 		});
 		return nL
 	};
-	// Add the resource for the hierarchy root:
+	// 7. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
 		title: model.title,
@@ -874,6 +874,7 @@ function BPMN2Specif( xmlString, opts ) {
 			id: "RC-Processmodel",
 			title: "SpecIF:Hierarchy",
 			description: "Root node of a process model (outline).",
+			isHeading: true,
 			changedAt: opts.xmlDate
 		}]
 	}

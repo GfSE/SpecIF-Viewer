@@ -273,6 +273,7 @@ modules.construct({
 			document.getElementById("selectBtn").disabled = st;
 			document.getElementById("createBtn").disabled = st || loaded || !allValid;
 			document.getElementById("replaceBtn").disabled = st || !loaded || !allValid;
+		//	document.getElementById("updateBtn").disabled = st || !loaded || !allValid;
 			document.getElementById("cancelBtn").disabled = !st
 		} catch(e) {}
 	}
@@ -344,7 +345,7 @@ modules.construct({
 							console.debug(data.id,self.projectL[p]);
 							if( self.projectName==self.projectL[p].title ) return self.projectL[p]
 						};
-						return null 	// no project with the same name
+						return false 	// no project with the same name
 					}
 				if( sameId() ) {
 					let dlg = new BootstrapDialog({
@@ -411,7 +412,7 @@ modules.construct({
 					case 'update':
 						console.info('Updating project',dta.title||dta.id);
 						setProgress('Updating project',20); 
-						app.cache.update( dta, 'extend' )
+						app.cache.update( dta, 'collapse' )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
 							.fail( handleError );
