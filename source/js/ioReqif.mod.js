@@ -43,8 +43,9 @@ modules.construct({
 		// ToDo:
 		// - transform any default values
 		// - suppress or replace xhtml-tags not supported by ReqIF, e.g. <img>
-		// - detect a xhtml namespace used and set ns_xhtml accordingly
+		// - detect a xhtml namespace used and set nsxhtml accordingly
 		// - sort properties according to the propertyClasses
+		// - in ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 		
 		const date = new Date().toISOString(),
 			ns_xhtml = 'xhtml';

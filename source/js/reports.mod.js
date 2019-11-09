@@ -33,7 +33,7 @@ modules.construct({
 	name: CONFIG.reports
 }, function(self) {
 	"use strict";
-	var pData;
+	var pData,prj,dta;
 	self.list = [];  // the list of report panels
 
 	// Standard module interface methods:
@@ -62,6 +62,8 @@ modules.construct({
 	// standard module entry:
 	self.show = function(opts) {
 //		console.debug('reports.show');
+		prj = app.cache.selectedProject;
+		dta = prj.data;
 		pData = self.parent;
 		pData.showLeft.reset();
 
@@ -84,7 +86,7 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: app.cache.id,
+				project: dta.id,
 				view: self.view.substr(1)	// remove leading hash
 			}); 
 
@@ -113,7 +115,7 @@ modules.construct({
 				});
 				self.list.push(rCR)
 			}
-		addResourceClassReport( app.cache );  // must be on the first position
+		addResourceClassReport( dta );  // must be on the first position
 
 		/*	function addStatementClassReport( prj ) {
 				// Add a report with a counter per statementClass:
@@ -137,7 +139,7 @@ modules.construct({
 				});
 				self.list.push(sCR)
 			}
-		addStatementClassReport( app.cache );  */
+		addStatementClassReport( dta );  */
 					
 			function addEnumeratedValueReports( prj ) {
 				function addPossibleValues(pC,r) {
@@ -168,14 +170,14 @@ modules.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC;
-				app.cache.resourceClasses.forEach( function(rC) {
+				dta.resourceClasses.forEach( function(rC) {
 					rC.propertyClasses.forEach( function(id) {
-						pC = itemById( app.cache.propertyClasses, id );
-						if( itemById( app.cache.dataTypes, pC.dataType ).type=='xs:enumeration' ) {
+						pC = itemById( dta.propertyClasses, id );
+						if( itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration' ) {
 							var aVR = {
 									title: titleOf(rC)+': '+titleOf(pC),
 									category: 'enumValue',
-									pid: app.cache.id,	// pid: project-id
+									pid: dta.id,	// pid: project-id
 									rCid: rC.id, 	// rCid: resourceClass-id
 									pCid: id, 		// pCid: propertyClass-id
 									scaleMin: 0,
@@ -188,12 +190,12 @@ modules.construct({
 					})
 				})
 			}
-		addEnumeratedValueReports( app.cache );
+		addEnumeratedValueReports( dta );
 
 /*			function addBooleaenValueReports( prj ) {
 			// ToDo
 			}
-		addBooleanValueReports( app.cache );  
+		addBooleanValueReports( dta );  
 */
 			function incVal( i,j ) {
 				self.list[i].datasets[j].count++;
@@ -226,12 +228,12 @@ modules.construct({
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
-				let rC = itemById( app.cache.resourceClasses, rId );
+				let rC = itemById( dta.resourceClasses, rId );
 				// there is a report for every enumerated resourceClass:
 				let dT=null,oa=null,i=null,ct=null,pC;
 				rC.propertyClasses.forEach( function(pId) {
-					pC = itemById( app.cache.propertyClasses, pId );
-					dT = itemById( app.cache.dataTypes, pC.dataType );
+					pC = itemById( dta.propertyClasses, pId );
+					dT = itemById( dta.dataTypes, pC.dataType );
 					if( dT.type!='xs:enumeration' ) return;
 					// find the report panel:
 					i = findPanel(self.list,rId,pId);
@@ -268,7 +270,7 @@ modules.construct({
 			pend++;
 			visitedR.push(nd.ref); // memorize all resources already evaluated
 			// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
-			app.cache.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
+			prj.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
 				.done(function(rsp) {
 					evalResource( rsp );
 					if( --pend<1 ) {  // all done:
@@ -282,7 +284,7 @@ modules.construct({
 					}
 				})
 				.fail( handleError );
-		//	app.cache.readStatementsOf( {id: nd.ref}, false )
+		//	prj.readStatementsOf( {id: nd.ref}, false )
 		//		.done(function(rsp) {
 		//		})
 		//		.fail( handleError ); 

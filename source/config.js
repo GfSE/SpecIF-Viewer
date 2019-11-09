@@ -41,6 +41,9 @@ const CONFIG = {};
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not include ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
 	
+	// values for boolean 'true' and 'false':
+	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];
+	CONFIG.valuesFalse = ['false','no','falsch','nein','faux','non','0'];
 
 	// The indices of ..Extensions and ..Types must correspond!
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png 
@@ -87,6 +90,7 @@ const CONFIG = {};
 	CONFIG.comments = 'comments';
 	CONFIG.timeline = 'timeline';
 	CONFIG.reports = 'reports';
+	CONFIG.permissions = 'permissions';
 //	CONFIG.specDialogDefault = CONFIG.objectList;
 	// Projects:
 //	CONFIG.projectList = CONFIG.projects;
@@ -104,7 +108,6 @@ const CONFIG = {};
 //	CONFIG.importSpecif = 'importSpecif';  // import ReqIF project
 //	CONFIG.exportXls = 'exportXls';
 //	CONFIG.importXls = 'importXls';
-	CONFIG.permissions = 'permissions';
 //	CONFIG.type = 'type';
 //	CONFIG.types = 'types';
 //	CONFIG.dataType = 'dataType';
@@ -131,7 +134,7 @@ const CONFIG = {};
 //	CONFIG.object = 'object';
 //	CONFIG.linker = 'linker';  */
 
-	// The following can have an i18n label in the translation files:
+/*	// The following can have an i18n label in the translation files:
 //	CONFIG.dataTypeString = 'String';
 //	CONFIG.dataTypeText = 'Text';
 //	CONFIG.dataTypeFormattedText = 'XHTML';
@@ -140,20 +143,21 @@ const CONFIG = {};
 //	CONFIG.dataTypeEnumeration = 'ENUMERATION';
 //	CONFIG.dataTypeInteger = 'INTEGER';
 //	CONFIG.dataTypeReal = 'REAL';
-//	CONFIG.dataTypeXlsText = 'XLS:Text';
+//	CONFIG.dataTypeXlsText = 'XLS:Text';  */
 	CONFIG.dataTypeComment = 'Datatype for comment text';
 	CONFIG.attrTypeTitle = 'dcterms:title';
 	CONFIG.attrTypeText = 'dcterms:description';
 	CONFIG.objTypeXlsRow = 'XLS:Object';
 //	CONFIG.attrTypeXlsCol = 'XLS:Attribute';
 	CONFIG.spcTypeOutline = 'SpecIF:Outline';
+	CONFIG.spcTypeGlossary = 'SpecIF:Glossary';
 	CONFIG.objTypeFolder = 'SpecIF:Heading';   
 	CONFIG.objTypeComment = 'SpecIF:Comment';   
 //	CONFIG.objTypeIssue = 'SpecIF:Issue';   	
 //	CONFIG.relTypeRefersTo = 'SpecIF:refersTo';	
 	CONFIG.relTypeCommentRefersTo = 'SpecIF:commentRefersTo';	
 //	CONFIG.relTypeIssueRefersTo = 'SpecIF:issueRefersTo';	
-	CONFIG.resType = 'SpecIF:Type';
+//	CONFIG.resType = 'SpecIF:Type';
 	
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement in various tabs
@@ -320,10 +324,18 @@ const CONFIG = {};
 		'clickEl',
 		'com.arcway.cockpit.uniqueelement'
 	];
+	// A list with all model-element types by title:
+	CONFIG.modelElementTypes = [
+		'FMC:Actor',
+		'FMC:State',
+		'FMC:Event'
+	];
 	
-	// values for boolean 'true' and 'false':
-	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];
-	CONFIG.valuesFalse = ['false','no','falsch','nein','faux','non','0'];
+/*	// List of lists with equivalent resource types, e.g. in different notations or standards;
+	// The term appearing in the first position of an equivalence list is the preferred one:
+	// ToDo: Very similar purpose as the vocabulary translation below.
+	CONFIG.eqivalentTypes = [
+	];  */
 	
 const vocabulary = {
 // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
@@ -347,11 +359,11 @@ const vocabulary = {
 				case "dc_description":
 				case "reqif_description":
 				case "reqif_text":					oT = "dcterms:description"; break;
-				case "reqif_category":				oT = "SpecIF:Category"; break;
 				case "reqif_revision":				oT = "SpecIF:Revision"; break;
-				case 'specif_stereotype':		// deprecated, for compatibility
+				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
 				case "specif_subclass":			// deprecated, for compatibility
-													oT = "dcterms:type"; break;
+				case "reqif_category":
+				case "specif_notation":				oT = "dcterms:type"; break;
 				case 'specif_id':				// deprecated, for compatibility
 				case "reqif_foreignid":				oT = "dcterms:identifier"; break;
 				case "specif_state":			// deprecated, for compatibility			
@@ -378,7 +390,8 @@ const vocabulary = {
 				case "dcterms:description": 		oT = "ReqIF.Text"; break;
 				case "dcterms:identifier":			oT = "ReqIF.ForeignId"; break;
 				case "specif:heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
-				case "specif:category":				oT = "ReqIF.Category"; break;
+				case "specif:category":				
+				case "dcterms:type":				oT = "ReqIF.Category"; break;
 				case "specif:revision":				oT = "ReqIF.Revision"; break;
 				case "specif:state":			// deprecated, for compatibility			
 				case "specif:status":				oT = "ReqIF.ForeignState"; break;

@@ -26,7 +26,7 @@ modules.construct({
 	self.cmtCre = false;
 	self.cmtDel = false;
 		
-	self.resources = new Resources(); 	// flat-listed resources for display, is a small subset of app.cache.resources
+	self.resources = new Resources(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 
@@ -86,7 +86,7 @@ modules.construct({
 
 					/*	// Update browser history:
 						setUrlParams({
-							project: app.cache.id,
+							project: app.cache.selectedProject.data.id,
 							view: self.viewCtl.selected.view.substr(1),	// remove leading hash
 							node: event.node.id,
 							item: event.node.ref
@@ -124,7 +124,7 @@ modules.construct({
 							function moveNodeInside( movedNd, targetNd ) {
 								let rT = self.tree.newIds( movedNd );
 //								console.debug( 'insert inside: ', movedNd.name, targetNd.name, rT );
-								app.cache.createNode({
+								app.cache.selectedProject.createNode({
 									id: rT.id,
 									name: rT.name,
 									ref: rT.ref,
@@ -137,7 +137,7 @@ modules.construct({
 							function moveNodeAfter( movedNd, targetNd ) {
 								let rT = self.tree.newIds( movedNd );
 //								console.debug( 'insert after: ', movedNd.name, targetNd.name, rT );
-								app.cache.createNode({
+								app.cache.selectedProject.createNode({
 									id: rT.id,
 									name: rT.name,
 									ref: rT.ref,
@@ -150,8 +150,8 @@ modules.construct({
 							}
 						
 						// 1. Delete the moved node with all its children:
-						// ToDo: implement 'app.cache.moveNode()'
-						app.cache.deleteNode( {id: event.move_info.moved_node.id} )
+						// ToDo: implement 'app.cache.selectedProject.moveNode()'
+						app.cache.selectedProject.deleteNode( {id: event.move_info.moved_node.id} )
 							.done( function() {
 //								console.debug('delete node done',event)
 								// 2. Move the entry including any sub-tree to the new position
@@ -188,7 +188,7 @@ modules.construct({
 			hideWhenSet: ['#details']
 		});
 	//	self.typesComment = null;
-	//	self.typesComment = new StdTypes( app.cache, new CommentTypes() );  // types needed for commenting, defined in stdTypes-*.js
+	//	self.typesComment = new StdTypes( app.cache.selectedProject.data, new CommentTypes() );  // types needed for commenting, defined in stdTypes-*.js
 	//	self.dmp = new diff_match_patch();	// to compare the revisions and mark changes
 		refreshReqCnt = 0;
 		
@@ -236,7 +236,7 @@ modules.construct({
 		setPermissions( nd );   // nd may be null
 		if( !nd ) return self.resources.init();
 		// Assuming that the resource has been refreshed shortly before selectResource is called:
-		var r = itemById( app.cache.resources, nd.ref );
+		var r = itemById( app.cache.selectedProject.data.resources, nd.ref );
 		if( !r ) return self.resources.init();  // this shouldn't ever happen ...
 		
 		// Must update the selected resource, if it has a different id or if it has been updated:
@@ -250,12 +250,12 @@ modules.construct({
 			}
 		if( !nd ) { noPerms(); return };
 		
-		var r = itemById( app.cache.resources, nd.ref );
+		var r = itemById( app.cache.selectedProject.data.resources, nd.ref );
 		if( r ) {
 			// self.resCre is set when resCreTypes are filled ...
 			self.resCln = self.resCreTypes.indexOf( r['class'] )>-1;
 			// give permission to an admin, anyway:
-//			self.resCln = ( indexById( self.resCreTypes, r['class'] )>-1 || me.iAmAdmin(app.cache) )
+//			self.resCln = ( indexById( self.resCreTypes, r['class'] )>-1 || me.iAmAdmin(app.cache.selectedProject.data) )
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
@@ -265,7 +265,7 @@ modules.construct({
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
 					self.staCreTypes.forEach( function(sT) {   
-						creR = itemById( app.cache.statementClasses, sT );
+						creR = itemById( app.cache.selectedProject.data.statementClasses, sT );
 //						console.debug( 'mayHaveStatements', self.staCreTypes[s], creR, selR['class'] );
 						if( 
 							// if creation mode is not specified or 'user' is listed, the statement may be applied to this resource:
@@ -289,17 +289,17 @@ modules.construct({
 		self.staCreTypes = [];
 		self.staDelTypes = [];
 
-		app.cache.resourceClasses.forEach( function(rC) {
+		app.cache.selectedProject.data.resourceClasses.forEach( function(rC) {
 			// list all resource types, for which the current user has permission to create new instances
 			// ... and which allow manual instantiation:
-			// store the type's id as it is invariant, when app.cache.allClasses is updated
+			// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 			if( rC.cre && (!rC.instantiation || rC.instantiation.indexOf('user')>-1) && rC.propertyClasses && rC.propertyClasses.length>0 )
 				self.resCreTypes.push( rC.id )
 		});
-		app.cache.statementClasses.forEach( function(sC) {
+		app.cache.selectedProject.data.statementClasses.forEach( function(sC) {
 			// list all statement types, for which the current user has permission to create new instances:
 			// ... and which allow user instantiation:
-			// store the type's id as it is invariant, when app.cache.allClasses is updated
+			// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 			if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
 				self.staCreTypes.push( sC.id );
 			if( sC.del ) 
@@ -310,9 +310,9 @@ modules.construct({
 		self.resCre = self.resCreTypes.length>0;
 		self.staCre = self.staCreTypes.length>0;
 		self.staDel = self.staDelTypes.length>0;
-		self.filCre = app.cache.cre;
-	//	let cT = itemByName( app.cache.resourceClasses, CONFIG.objTypeComment ),
-	//		rT = itemByName( app.cache.statementClasses, CONFIG.relTypeCommentRefersTo );
+		self.filCre = app.cache.selectedProject.data.cre;
+	//	let cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.objTypeComment ),
+	//		rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.relTypeCommentRefersTo );
 	//	self.cmtCre = ( self.typesComment && self.typesComment.available() && cT.cre && rT.cre );
 	//	self.cmtDel = ( self.typesComment && self.typesComment.available() && cT.del && rT.del )
 //		console.debug('permissions',self.resCreTypes,self.staCreTypes,self.staDelTypes)
@@ -350,7 +350,7 @@ modules.construct({
 		// -----------------
 		function toChild( iE ) {
 			// transform SpecIF hierarchy to jqTree:
-			let r = itemById( app.cache.resources, iE.resource );
+			let r = itemById( app.cache.selectedProject.data.resources, iE.resource );
 			var oE = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
@@ -371,10 +371,10 @@ modules.construct({
 //		console.debug( 'loadHierarchy', h );
 		
 		// Get the spec's tree data:
-		return app.cache.readContent( 'hierarchy', h, {reload:true} )
+		return app.cache.selectedProject.readContent( 'hierarchy', h, {reload:true} )
 			.done(function(rsp) {
 //				console.debug('load',rsp);
-				self.updateTree( itemById( app.cache.hierarchies, rsp.id ) )
+				self.updateTree( itemById( app.cache.selectedProject.data.hierarchies, rsp.id ) )
 			})
 			.fail( stdError )
 	};
@@ -384,7 +384,7 @@ modules.construct({
 	self.show = function( opts ) {
 //		console.debug( CONFIG.specifications, 'show', opts );
 
-		$('#pageTitle').html( app.cache.title );
+		$('#pageTitle').html( app.cache.selectedProject.data.title );
 		app.busy.set();
 	//	$('#contentNotice').html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
 		$('#contentNotice').empty();
@@ -400,17 +400,17 @@ modules.construct({
 		// - URL parameters are specified where the project is equal to the loaded one
 		// - just a newView is specifed without URL parameters (coming from another page)
 		if( !fNd
-			|| indexById( app.cache.resources, fNd.ref )<0  // condition is probably too weak
-			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.id )
+			|| indexById( app.cache.selectedProject.data.resources, fNd.ref )<0  // condition is probably too weak
+			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.data.id )
 			self.tree.init();
 		
 //		console.debug('## 0',uP,self.tree.selectedNode);
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
-		if( app.cache.hierarchies && app.cache.hierarchies.length>0 ) {
+		if( app.cache.selectedProject.data.hierarchies && app.cache.selectedProject.data.hierarchies.length>0 ) {
 			// get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			app.cache.hierarchies.forEach( function (h) {
+			app.cache.selectedProject.data.hierarchies.forEach( function (h) {
 				pend++;
 				self.loadHierarchy( h )
 				.done(function(){
@@ -432,7 +432,7 @@ modules.construct({
 							// ... and not if the browser's backward/forward button has been pressed:
 							if( !uP && opts.newView ) 
 								setUrlParams({
-									project: app.cache.id,
+									project: app.cache.selectedProject.data.id,
 									view: opts.newView,   // .. here, it is an intermediate view and thus useless
 									node: nd.id,
 									item: nd.ref
@@ -449,7 +449,6 @@ modules.construct({
 					}
 				})
 			});
-
 
 	/*		// select the specified hierarchy and resource:
 			let res = getRId( uP );
@@ -551,7 +550,7 @@ modules.construct({
 //			console.info( 'deleting', nd.name );
 			// 1. Delete the hierarchy entry with all its children in the cache and server:
 			app[myName].tree.selectNode( nd.getNextSibling() );  // select the inserted node, where the current node may have children
-			app.cache.deleteContent( 'node', {id: nd.id} )
+			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
 				.done( function() {
 					app[myName].updateTree();
 				doRefresh({forced:true})
@@ -561,7 +560,7 @@ modules.construct({
 			// 2. Delete the resource from the cache, so that it is not any more used for dynamic linking
 			// - assuming that the resource is referenced only once, which is true in most cases.
 			// - However, on next autoload, all referenced resources are updated, so all is again fine, then.
-			uncacheE( app.cache.resources, {id:nd.ref} )
+			uncacheE( app.cache.selectedProject.data.resources, {id:nd.ref} )
 		};
 		var dlg = new BootstrapDialog({
 			title: i18n.MsgConfirm,
@@ -623,12 +622,12 @@ modules.construct({
 	};
 	self.relatedItemClicked = function( rId, sId ) {
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
-//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, itemById( app.cache.statements, sId ) );
+//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, itemById( app.cache.selectedProject.data.statements, sId ) );
 	/*	if( self.selectedTab()=='#'+CONFIG.relations && modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
-			if( itemById( app.cache.statements, sId ) )
-				app.cache.deleteContent( 'statement', {id: sId} )
+			if( itemById( app.cache.selectedProject.data.statements, sId ) )
+				app.cache.selectedProject.deleteContent( 'statement', {id: sId} )
 					.done( self.statements.show )
 					.fail( stdError )
 		} else { */
@@ -641,13 +640,13 @@ modules.construct({
 	};
 /*	self.addComment = function() {
 //		console.debug( 'addComment', self.tree.selectedNode );
-		var cT = itemByName( app.cache.resourceClasses, CONFIG.objTypeComment ),
-			rT = itemByName( app.cache.statementClasses, CONFIG.relTypeCommentRefersTo );
+		var cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.objTypeComment ),
+			rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.relTypeCommentRefersTo );
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
 			newId = genID('R-');
-		app.cache.initResource( cT )
+		app.cache.selectedProject.initResource( cT )
 			.done( function(rsp) {
 				// returns an initialized resource of the requested type:
 				newC = rsp;
@@ -658,7 +657,7 @@ modules.construct({
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
 		var txtLbl = i18n.lookup( CONFIG.attrTypeText ),
 			txtAtT = itemByName( cT.propertyClasses, CONFIG.attrTypeText );
-		var dT = itemById( app.cache.dataTypes, txtAtT.dataType );
+		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtAtT.dataType );
 
 		var addC = new BootstrapDialog({
 			title: i18n.phrase( 'LblAddCommentTo', self.tree.selectedNode.name ),
@@ -680,7 +679,7 @@ modules.construct({
 //					newC.title = ....	// an instance-specific name (or title)
 
 //					console.info( 'saving comment', newC );
-					app.cache.createContent( 'resource', newC )
+					app.cache.selectedProject.createContent( 'resource', newC )
 						.done( function(newO) {
 							var newR = {
 								subject: { id: newId, revision: 0 },
@@ -690,7 +689,7 @@ modules.construct({
 //								description: ''
 							};
 //							console.info( 'saving statement', newR );
-							app.cache.createContent( 'statement', newR )
+							app.cache.selectedProject.createContent( 'statement', newR )
 								.done( self.refresh )
 								.fail( handleError )
 						})
@@ -706,17 +705,17 @@ modules.construct({
 //		console.debug('delComment',id);
 		app.busy.set();
 		var pend=2;
-		app.cache.readStatementsOf({id:el})
+		app.cache.selectedProject.readStatementsOf({id:el})
 			.done( function(rL) {
 				// delete all statements of the comment - should just be one, currently:
 //				console.debug('deleteComment',rL.statements,el);
-				app.cache.deleteContent('statement',rL)
+				app.cache.selectedProject.deleteContent('statement',rL)
 					.done( function(dta, textStatus, xhr) { 
 						if( --pend<1 ) self.refresh()
 					})
 					.fail( handleError );
 				// and delete the resource, as well:
-				app.cache.deleteContent('resource',{id:el})
+				app.cache.selectedProject.deleteContent('resource',{id:el})
 					.done( function(dta, textStatus, xhr) { 
 						if( --pend<1 ) self.refresh()
 					})
@@ -733,11 +732,11 @@ modules.construct({
 		if( self.resources.selected() ) selR = self.resources.selected().value;
 	/*	if( selR )
 			// Create a 'direct link' to the resource (the server renders the resource without client app):
-			rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+app.cache.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
+			rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+app.cache.selectedProject.data.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
 	*/	
 		// Add the create button depending on the current user's permissions:
 		// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
-	//	if( self.resCre && app.cache.selectedHierarchy.upd )
+	//	if( self.resCre && app.cache.selectedProject.data.selectedHierarchy.upd )
 	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
@@ -754,7 +753,7 @@ modules.construct({
 			}
 
 		// Add the clone, update and delete buttons depending on the current user's permissions:
-	//	if( self.resCln && app.cache.selectedHierarchy.upd )
+	//	if( self.resCln && app.cache.selectedProject.data.selectedHierarchy.upd )
 	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
@@ -772,7 +771,7 @@ modules.construct({
 
 		// The delete button is shown, if a hierarchy entry can be deleted.
 		// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-	//	if( app.cache.selectedHierarchy.del )
+	//	if( app.cache.selectedProject.data.selectedHierarchy.del )
 	//		rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 	//	else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
@@ -821,7 +820,7 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: app.cache.id,
+				project: app.cache.selectedProject.data.id,
 				view: self.view.substr(1),	// remove leading hash
 				node: nd.id,
 				item: nd.ref
@@ -836,7 +835,7 @@ modules.construct({
 			nd = nd.getNextNode()   // get next visible tree node
 		};
 
-		app.cache.readContent( 'resource', oL )
+		app.cache.selectedProject.readContent( 'resource', oL )
 			.done(function(rL) {
 				// Format the titles with numbering:
 				for( var i=rL.length-1; i>-1; i-- )
@@ -885,7 +884,8 @@ modules.construct({
 
 		// else: the tree has entries:
 		app.busy.set();
-		$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+	//	$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+		// ToDo: Redraw only if the selected node has changed, to avoid a flicker.
 
 		var nd = pData.tree.selectedNode,
 			mG;
@@ -894,13 +894,13 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: app.cache.id,
+				project: app.cache.selectedProject.data.id,
 				view: self.view.substr(1),	// remove leading hash
 				node: nd.id,
 				item: nd.ref
 			}); 
 
-		app.cache.readStatementsOf( {id: nd.ref} )
+		app.cache.selectedProject.readStatementsOf( {id: nd.ref} )
 			.done(function(sL) {
 				// sL is the list of statements involving the selected resource.
 				var relatedObjs = [];
@@ -929,7 +929,7 @@ modules.construct({
 				// Obtain the titles (labels) of all resources in the list.
 				// The titles in the tree don't have the icon, therefore obtain the title from the referenced resources.
 				// Since the resources are cached, this is not too expensive.
-				app.cache.readContent( 'resource', relatedObjs )
+				app.cache.selectedProject.readContent( 'resource', relatedObjs )
 					.done( function(roL) {   
 						// roL is a list of the selected plus it's related resources
 
@@ -941,7 +941,7 @@ modules.construct({
 					
 						// For display, sort all statements in groups (=table rows) according to their type and direction;
 						// the groups shall be ordered according to the statementClasses, therefore we cycle through the types:
-						app.cache.statementClasses.forEach( function(sC) { 
+						app.cache.selectedProject.data.statementClasses.forEach( function(sC) { 
 							var rG = { rGs: [], rGt: [] };		// construct a statement group per type
 							sL.forEach( function(s) {    // iterate statements
 								// skip hidden statements:
@@ -1035,10 +1035,10 @@ modules.construct({
 			if( !pData.tree.selectedNode ) return;
 			// take the original (unchanged) resources from cache:
 			// First the currently selected resource:
-			let sO=itemById( app.cache.resources, pData.tree.selectedNode.ref );
+			let sO=itemById( app.cache.selectedProject.data.resources, pData.tree.selectedNode.ref );
 			if( !sO ) return;
 			// There is no need to have a statementClass .... at least currently:
-//				var rT = itemByName( app.cache.statementClasses, 'SpecIF:mentions' );
+//				var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
 //				if( !rT ) return;
 			
 			var ti = resTitleOf( sO ),
@@ -1049,7 +1049,7 @@ modules.construct({
 				// assumption: the dynamic link tokens don't need to be HTML-escaped:
 				sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
-			app.cache.resources.forEach( function(rO) {
+			app.cache.selectedProject.data.resources.forEach( function(rO) {
 				// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 				// so there is no need to check it, here:
 				// disregard resources which are not referenced in the current tree:
@@ -1062,9 +1062,9 @@ modules.construct({
 				rStr = (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE();
 				rPatt = new RegExp( rStr, "i" );
 
-				sT = itemById( app.cache.resourceClasses, sO['class'] );
+				sT = itemById( app.cache.selectedProject.data.resourceClasses, sO['class'] );
 				sO.properties.forEach( function(ay) {
-					switch( dataTypeOf( app.cache, ay['class'] ).type ) {
+					switch( dataTypeOf( app.cache.selectedProject.data, ay['class'] ).type ) {
 						case 'xs:string':
 						case 'xhtml':	
 							// add, if the iterated resource's title appears in the selected resource's property ..
@@ -1082,9 +1082,9 @@ modules.construct({
 				});
 				// 2. The selected resource's title found in other resource's texts 
 				//    result in a 'other mentions this' statement (selected resource is object):
-				sT = itemById( app.cache.resourceClasses, rO['class'] );
+				sT = itemById( app.cache.selectedProject.data.resourceClasses, rO['class'] );
 				rO.properties.forEach( function(ay) {
-					switch( dataTypeOf( app.cache, ay['class'] ).type ) {
+					switch( dataTypeOf( app.cache.selectedProject.data, ay['class'] ).type ) {
 						case 'xs:string':
 						case 'xhtml':	
 							// add, if the selected resource's title appears in the iterated resource's property ..
@@ -1166,7 +1166,7 @@ function Resource( obj ) {
 				return false   // no change
 			};
 			self.value = res;
-			self.resToShow = classifyProps( res, app.cache );
+			self.resToShow = classifyProps( res, app.cache.selectedProject.data );
 //			console.debug( 'Resource.set', res, self.value, self.resToShow );
 			return true			// has changed
 		} else {
@@ -1182,7 +1182,7 @@ function Resource( obj ) {
 			function showAtt( att ) {
 //				console.debug('#att',att);
 				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.showEmptyProperties || hasContent(att))
+				return (CONFIG.showEmptyProperties || hasContent(att.value))
 			} 
 		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
@@ -1255,7 +1255,7 @@ function Resource( obj ) {
 		// 2 The description properties:
 		self.resToShow.descriptions.forEach( function(ai) {
 //			console.debug('details.descr',ai.value);
-			if( hasContent(ai) ) {
+			if( hasContent(ai.value) ) {
 				var os = {
 //						dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedTab())>-1,
 						dynLinks: true,
@@ -1326,7 +1326,7 @@ function Resource( obj ) {
 					if( indexById( net.resourceClasses, rR['class'] )<0 )    // avoid duplication 
 						net.resourceClasses.push({
 							id: 	rR['class'],
-							icon: 	itemById( app.cache.resourceClasses, rR['class'] ).icon
+							icon: 	itemById( app.cache.selectedProject.data.resourceClasses, rR['class'] ).icon
 */						})
 				});
 				sG.rGt.forEach( function(s) {
@@ -1556,7 +1556,7 @@ function valOf( ob, pV, opts ) {
 		}
 	};
 //	console.debug('valOf',ob,pV,opts);
-	let dT = dataTypeOf( app.cache, pV['class'] ); 
+	let dT = dataTypeOf( app.cache.selectedProject.data, pV['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
 			var ct = noCode(pV.value).ctrl2HTML();
@@ -1620,7 +1620,7 @@ function valOf( ob, pV, opts ) {
 					let m=$1.toLowerCase(), cO=null, ti=null, target=null, notFound=true;
 					// is ti a title of any resource?
 					app.specs.tree.iterate( function(nd) {
-						cO = itemById( app.cache.resources, nd.ref );
+						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
 						// avoid self-reflection:
 					//	if(ob.id==cO.id) return true;
 					//	ti = resTitleOf( cO ).stripHTML();
@@ -1668,11 +1668,11 @@ var fileRef = {
 		- an external hyperlink is to be included
 */
 		if( opts ) {
-			if( opts.projId==undefined ) opts.projId = app.cache.id;
+			if( opts.projId==undefined ) opts.projId = app.cache.selectedProject.data.id;
 			if( opts.rev==undefined ) opts.rev = 0
 		} else {
 			var opts = {
-				projId: app.cache.id,
+				projId: app.cache.selectedProject.data.id,
 				rev: 0,
 				clickableElements: false
 			}
@@ -1686,8 +1686,8 @@ var fileRef = {
 				};
 				// else, add relative path:
 //				console.debug('addFilepath', u );
-//				console.debug('addFilepath',itemById( app.cache.files, u ));
-				return URL.createObjectURL( itemById( app.cache.files, u ).blob )
+//				console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
+				return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob )
 			}  */
 			function getType( str ) {
 				var t = /(type="[^"]+")/.exec( str );
@@ -1749,7 +1749,7 @@ var fileRef = {
 
 				repSts.push( '<div class="forImage"><a href="'+u1+'"'+t1+' ><img src="'+u2+'"'+t2+s2+' alt="'+$4+'" /></a></div>' );  // works.
 */ 
-				let f = itemByTitle(app.cache.files,u2);
+				let f = itemByTitle(app.cache.selectedProject.data.files,u2);
 //				console.debug('fileRef.toGUI 1a found: ', f );
 				if( f && f.blob ) {
 //					console.debug('containerId',containerId(u2));
@@ -1800,7 +1800,7 @@ var fileRef = {
 						d = '<img src="'+u1+'"'+t1+s1+' alt="'+d+'" />'
 					}  */
 				
-					let f = itemByTitle(app.cache.files,u1);
+					let f = itemByTitle(app.cache.selectedProject.data.files,u1);
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
 					if( f && f.blob ) {
 						hasImg = true;
@@ -1967,7 +1967,7 @@ var fileRef = {
 							// avoid transformation of redundant images:
 							if( indexById(dataURLs,mL[2])>-1 ) continue;
 							pend++;
-							ef = itemBySimilarTitle( app.cache.files, mL[2] );
+							ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
 //							console.debug('SVG embedded file',mL[2],ef,pend);
 							// transform file to data-URL and display, when done:
 							blob2dataURL(ef, function(r,fTi) {
@@ -2025,7 +2025,7 @@ var fileRef = {
 									let eId = this.className.baseVal.split(' ')[1];		// second class is element id
 									// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
 									eId = correspondingPlan(eId);
-									// delete the details to make sure that that images of the click target are shown,
+									// delete the details to make sure that images of the click target are shown,
 									// otherwise there will be more than one image container with the same id:
 									$("#details").empty();
 									// jump to the click target:
@@ -2041,8 +2041,8 @@ var fileRef = {
 //									console.debug(evt,this,$(this));
 									// ToDo: So far, this only works with ARCWAY generated SVGs.
 								//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
-									let id = this.className.baseVal.split(' ')[1],		// id is second class
-										clAtts = classifyProps( itemBySimilarId(app.cache.resources,id), app.cache ),
+									let eId = this.className.baseVal.split(' ')[1],		// id is second class
+										clAtts = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
 										dsc = '';
 									clAtts.descriptions.forEach( function(d) {
 										// to avoid an endless recursive call, valOf shall add neither dynLinks nor clickableElements
@@ -2073,19 +2073,19 @@ var fileRef = {
 							// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 							if( !CONFIG.selectCorrespondingPlanFirst ) return id;
 							// else, replace the id of a resource by the id of a diagram carrying the same title:
-							let ti = resTitleOf(itemBySimilarId(app.cache.resources,id)),
+							let ti = resTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id)),
 								rT = null;
-							for( var i=app.cache.resources.length-1;i>-1;i--) {
-								rT = itemById(app.cache.resourceClasses,app.cache.resources[i]['class']);
+							for( var i=app.cache.selectedProject.data.resources.length-1;i>-1;i--) {
+								rT = itemById(app.cache.selectedProject.data.resourceClasses,app.cache.selectedProject.data.resources[i]['class']);
 								if( CONFIG.plans.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( resTitleOf(app.cache.resources[i])==ti ) {
+								if( resTitleOf(app.cache.selectedProject.data.resources[i])==ti ) {
 									// found: the diagram carries the same title 
-									if( app.specs.resources.selected().value && app.specs.resources.selected().value.id==app.cache.resources[i].id )
+									if( app.specs.resources.selected().value && app.specs.resources.selected().value.id==app.cache.selectedProject.data.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 
 										return id
 									else
-										return app.cache.resources[i].id	// the corresponding diagram's id
+										return app.cache.selectedProject.data.resources[i].id	// the corresponding diagram's id
 								}
 							};
 							return id	// no corresponding diagram found

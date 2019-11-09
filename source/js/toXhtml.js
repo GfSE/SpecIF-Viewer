@@ -9,14 +9,18 @@ function toXhtml( data, opts ) {
 
 	// Check for missing options:
 	if( typeof(opts)!='object' ) opts = {};
-	if( typeof(opts.classifyProperties)!='function' && typeof(opts.fail)=='function' ) {
-		opts.fail({status:904,statusText:'function opts.classifyProperties is undefined.'});
+	if( typeof(opts.classifyProperties)!='function') {
+		if (typeof(opts.fail)=='function' )
+			opts.fail({status:904,statusText:"Programming error: function 'opts.classifyProperties' is undefined."})
+		else
+			console.error("Programming error: function 'opts.classifyProperties' is undefined.");
 		return
 	};
+	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
+	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 	if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = false;
-	if( !opts.translateTitles || typeof(opts.translate)!='function' ) {
-		opts.translate = function(str) { return str }
-	};
+	if( !opts.translateTitles || typeof(opts.translate)!='function' )
+		opts.translate = function(str) { return str };
 	// If a hidden property is defined with value, it is suppressed only if it has this value;
 	// if the value is undefined, the property is suppressed in all cases.
 	if( !opts.hiddenProperties ) opts.hiddenProperties = [];
@@ -46,19 +50,17 @@ function toXhtml( data, opts ) {
 	xhtml.sections.push(
 			xhtmlOf({ 
 				title: data.title,
-				sect: null,
 				body: '<div class="title">'+data.title+'</div>'
 			})
 	);
 	
 	// For each SpecIF hierarchy, create a xhtml-file and add it as subsequent section:
-	let firstHierarchySection = xhtml.sections.length;  // index of the next section number
+	const firstHierarchySection = xhtml.sections.length;  // index of the next section number
 	data.hierarchies.forEach( function(h,hi) {
 		pushHeading( h.title, {nodeId: h.id, level: 1} );
 		xhtml.sections.push(
 			xhtmlOf({ 
 				title: data.title,
-				sect: h,
 				body: renderHierarchy( h, hi, 1 )
 			})
 		)
@@ -89,7 +91,7 @@ function toXhtml( data, opts ) {
 		if( ic ) ic += '&#160;'; // non-breakable space
 		if( !pars || pars.level<1 ) return (ti?ic+ti:'');
 		if( rC.isHeading ) pushHeading( ti, pars );
-		let l = rC.isHeading?2:3;
+		let l = pars.level==1? 1:rC.isHeading? 2:3;
 		return '<h'+l+' id="'+pars.nodeId+'">'+(ti?ic+ti:'')+'</h'+l+'>'
 	}
 	function statementsOf( r, hi, opts ) { // resource, options
@@ -210,8 +212,10 @@ function toXhtml( data, opts ) {
 		// Finally, list the remaining properties with property title (name) and value:
 		r.other.forEach( function(prp) {
 			// the property title or it's class's title:
-			rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
-			rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+valOf( prp, hi )+'</td></tr>'
+			if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
+				rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
+				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+valOf( prp, hi )+'</td></tr>'
+			}
 		});
 		// Add a property 'SpecIF:Type':
 //		if( rC.title )
@@ -221,17 +225,11 @@ function toXhtml( data, opts ) {
 		return c1+'<p class="metaTitle">'+opts.propertiesLabel+'</p><table class="propertyTable"><tbody>'+rows+'</tbody></table>'
 
 		// ---------------
-		function isEmpty( str ) {
-			// checks whether str has content or a file reference:
-			return str.replace(/<[^>]+>/g, '').trim().length<1	// strip HTML and trim
-				&& !/<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
-				&& !/<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
-		}
 		function fileRef( txt, opts ) {
 			if( !opts ) return txt;
-	//		if( opts.rev==undefined ) opts.rev = 0;
+		//	if( opts.rev==undefined ) opts.rev = 0;
 			if( opts.imgExtensions==undefined ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
-	//		if( opts.clickableElements==undefined ) opts.clickableElements = false;
+		//	if( opts.clickableElements==undefined ) opts.clickableElements = false;
 			
 				function getType( str ) {
 					var t = /type="([^"]+)"/.exec( str );
@@ -480,6 +478,7 @@ function toXhtml( data, opts ) {
 	}
 	function xhtmlOf( doc ) {
 		// make a xhtml file content from the elements provided:
+		console.debug('xhtmlOf',doc);
 		return	'<?xml version="1.0" encoding="UTF-8"?>'
 		+		'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
 		+		'<html xmlns="http://www.w3.org/1999/xhtml">'
@@ -488,7 +487,6 @@ function toXhtml( data, opts ) {
 		+				'<title>'+doc.title+'</title>'
 		+			'</head>'
 		+			'<body>'
-		+	(doc.sect&&doc.sect.title?	'<h1'+(doc.sect.id?' id="'+doc.sect.id+'"':'')+'>'+doc.sect.title+'</h1>' : '')
 		+				doc.body
 		+			'</body>'
 		+		'</html>'
@@ -510,6 +508,13 @@ function toXhtml( data, opts ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i][p]==s ) return i;
 		return -1
+	}
+	function hasContent( str ) {
+		// check whether str has content or a reference:
+		return str.replace(/<[^>]+>/g, '').trim().length>0	// strip HTML and trim
+			|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
+			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
+			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str)
 	}
 	function replaceLt( txt ) {
 		// remove '<' where it does not belong to a tag;

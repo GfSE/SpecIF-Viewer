@@ -71,15 +71,18 @@ function toOxml( data, opts ) {
 
 			// Check for missing options:
 			if( typeof(opts)!='object' ) opts = {};
-			if( typeof(opts.classifyProperties)!='function' ) {
-				if( typeof(opts.fail)=='function' )
-					opts.fail({status:904,statusText:'function opts.classifyProperties is undefined.'});
+			if( typeof(opts.classifyProperties)!='function') {
+				if (typeof(opts.fail)=='function' )
+					opts.fail({status:904,statusText:"Programming error: function 'opts.classifyProperties' is undefined."})
+				else
+					console.error("Programming error: function 'opts.classifyProperties' is undefined.");
 				return
 			};
+			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
+			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 			if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = false;
-			if( !opts.translateTitles || typeof(opts.translate)!='function' ) {
-				opts.translate = function(str) { return str }
-			};
+			if( !opts.translateTitles || typeof(opts.translate)!='function' )
+				opts.translate = function(str) { return str };
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
@@ -161,11 +164,11 @@ function toOxml( data, opts ) {
 				if( ic ) ic += nbsp;
 				if( !pars || pars.level<1 ) return  (ti?ic+ti:'');  // return raw text
 				// SpecIF headings are chapter level 2, all others level 3:
-				let h = rC.isHeading?2:3;
+				let l = pars.level==1? 1:rC.isHeading? 2:3;
 
 //				console.debug('titleOf',r,ti);
 				// all titles get a bookmark, so that any titleLink has a target:
-				return wParagraph( {text: (ti?ic+ti:''), heading:h, bookmark:pars.nodeId } )
+				return wParagraph( {text: (ti?ic+ti:''), heading:l, bookmark:pars.nodeId } )
 			}	
 			
 			function statementsOf( r, opts ) {
@@ -281,7 +284,7 @@ function toOxml( data, opts ) {
 			}
 			function propertiesOf( r, opts ) {
 				// return the values of all resource's properties as oxml:
-				// designed for use also by statements and hierarchies.
+				// designed for use also by statements.
 			//	if( !r.properties || r.properties.length<1 ) return '';
 
 				// depending on the context, r['class'] is an class object or a class id:
@@ -290,19 +293,7 @@ function toOxml( data, opts ) {
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', rows='', c3, rt;
 //				console.debug('properties',r);
-			/*	r.properties.forEach( function(prp) {
-					// the property title or it's class's title:
-					rt = prp.title || propertyClassOf( prp['class'] ).title;
-						
-					// The content of the title property is already used as chapter title; so skip it here:
-					if( opts.headingProperties.indexOf(rt)>-1
-						|| opts.titleProperties.indexOf(rt)>-1 ) return;
-					// First the resource's description properties in full width:
-					if( prp.value && opts.descriptionProperties.indexOf(rt)>-1 ) {
-//							console.debug('description propertiesOf',valOf( prp ));
-							valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
-					}
-				}); */
+
 				r.descriptions.forEach( function(prp) {
 					valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 				});
@@ -318,12 +309,14 @@ function toOxml( data, opts ) {
 				r.other.forEach( function(prp) {
 					// the property title or it's class's title:
 //					console.debug('#',prp);
-					rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
-		
-					c3 = '';
-					valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
-//					console.debug('other properties',prp,c3);
-					rows += wTableRow( wTableCell( wParagraph({text:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
+					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
+					if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
+						rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
+						c3 = '';
+						valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
+//						console.debug('other properties',prp,c3);
+						rows += wTableRow( wTableCell( wParagraph({text:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
+					}
 				});
 				
 				if( !rows ) return c1;  // no other properties
@@ -398,7 +391,7 @@ function toOxml( data, opts ) {
 							// a) any text preceding the block:
 							//    In fact, if the XHTML is properly built, there shouldn't be any content outside the blocks,
 							//    but we do not want to ignore any content in case there is ...
-							if( !isEmpty($1) ) 
+							if( opts.hasContent($1) ) 
 								bL.push( {p:{text:$1}} );
 							// b) an empty paragraph:
 							if( /<p *\/>/.test($2) ) {
@@ -487,7 +480,7 @@ function toOxml( data, opts ) {
 							bL.push( {p:{text:$1}} );
 							return ''
 						});
-						if( !isEmpty(txt) ) 
+						if( opts.hasContent(txt) ) 
 							bL.push( {p:{text:txt}} );
 
 						// Finally identify and separate the runs per block:
@@ -528,7 +521,7 @@ function toOxml( data, opts ) {
 								// $2 is the first identified tag.
 //								console.debug('lets run 0:"',$0,'" 1:"',$1,'" 2:"',$2,'"');
 								// store the preceding text as run with a clone of the current formatting:
-								if( !isEmpty($1) )
+								if( opts.hasContent($1) )
 									p.runs.push({text:$1,font:clone(fmt.font)});
 
 								// remove the next tag and update the formatting,
@@ -598,7 +591,7 @@ function toOxml( data, opts ) {
 								return ''  // be sure to consume the matched text
 							});
 							// finally store the remainder:
-							if( !isEmpty(txt) ) {
+							if( opts.hasContent(txt) ) {
 //								console.debug('splitR #',txt,fmt);
 								p.runs.push({text:txt,font:clone(fmt.font)})
 							};
@@ -617,7 +610,7 @@ function toOxml( data, opts ) {
 						txt = txt.replace( reText, function($0,$1,$2) {
 							br={};
 							// store the preceding fragment:
-							if( !isEmpty($1) )
+							if( opts.hasContent($1) )
 								arr.push({str:escapeXML($1)});
 
 							// remove the next tag,
@@ -630,7 +623,7 @@ function toOxml( data, opts ) {
 							return ''  // be sure to consume the matched text
 						});
 						// finally store the remainder:
-						if( !isEmpty(txt) ) {
+						if( opts.hasContent(txt) ) {
 //							console.debug('splitText',txt,typeof(txt));
 							arr.push({str:escapeXML(txt)})
 						};
@@ -763,14 +756,8 @@ function toOxml( data, opts ) {
 								return parseText( prp.value, opts )
 						}
 					};
-					// for all other dataTypes or when there no dataType:
+					// for all other dataTypes or when there is no dataType:
 					return [{p:{text:escapeXML(prp.value)}}]					
-				}
-				function isEmpty( str ) {
-					// check whether str has content or a file reference:
-					return str.replace(/<[^>]+>/g, '').trim().length<1	// strip HTML and trim
-						&& !/<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
-						&& !/<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
 				}
 			}
 			function renderHierarchy( nd, lvl ) {
@@ -2341,6 +2328,13 @@ function toOxml( data, opts ) {
 			l = re.exec(str);
 		if( l == null ) { return undefined }; 
 		return l[1]
+	}
+	function hasContent( str ) {
+		// check whether str has content or a reference:
+		return str.replace(/<[^>]+>/g, '').trim().length>0	// strip HTML and trim
+			|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
+			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
+			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str)
 	}
 	function escapeXML( s ) {
 		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {

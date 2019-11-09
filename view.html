@@ -131,7 +131,7 @@ function App() {
 					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 				}]
 			}, {
-				action: 'app.cache.export()',
+				action: 'app.cache.selectedProject.export()',
 				label: i18n.BtnExport,
 				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
 				// no selector: this module is itself responsible for managing it's children
@@ -158,8 +158,9 @@ function App() {
 		self.me.read()
 			.done(function() {
 				var uP = getUrlParams(), v;
-				if( !app.cache.loaded() 
-					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.id 
+				if( !app.cache.selectedProject 
+					|| !app.cache.selectedProject.loaded() 
+					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.data.id 
 					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
 					// - no project is loaded 
 					// - a project id is found in the URL parameters and it differs from the one of the loaded project

@@ -11,13 +11,68 @@ modules.construct({
 }, function(self) {
 	"use strict";
 
-	const formats = [
-			{ id:'specif',	name:'ioSpecif',desc:'Specification Integration Facility',	label:'SpecIF',	help: i18n.MsgImportSpecif,	opts: {mediaTypeOf: attachment2mediaType}},
-			{ id:'reqif',	name:'ioReqif',	desc:'Requirement Interchange Format',		label:'ReqIF',	help: i18n.MsgImportReqif, opts: {mediaTypeOf: attachment2mediaType}},
-			{ id:'bpmn',	name:'ioBpmn',	desc:'Business Process',					label:'BPMN',	help: i18n.MsgImportBpmn },
-			{ id:'xls',		name:'ioXls',	desc:'MS Excel® Spreadsheet',				label:'Excel®',	help: i18n.MsgImportXls },
-			{ id:'mm',		name:'ioMm',	desc:'Freemind Mindmap',					label:'MM',		help: i18n.MsgImportMm }
-		];
+	// The modes for selection when an import is encountered which is already loaded:
+	const importModes = [{
+			id: 'create',
+			title: 'Create a new project with the given id',
+			desc: 'All types, objects, relations and hierarchies will be created as specified.',
+			label: i18n.BtnCreate
+	/*	},{
+			id: 'clone',
+			title: 'Create a new instance of the project with a new id',
+			desc: 'There will be two projects with the existing and the new content.',
+			label: i18n.BtnClone  */
+		},{
+			id: 'replace',
+			title: 'Replace the project having the same id',
+			desc: 'Existing content will be lost.',
+			label: i18n.BtnReplace
+		},{
+			id: 'adopt',
+			title: 'Add the new project without effect on the existing one',
+			desc: 'Add diagrams and adopt any existing resource having an identical name.',
+			label: i18n.BtnAdopt
+		},{
+			id: 'update',
+			title: 'Update the project with new or changed content',
+			desc: 'New objects will be created, modified ones will be superseded.',
+			label: i18n.BtnUpdate
+		}]; 
+
+	// The import formats
+	const formats = [{
+			id:'specif',
+			name:'ioSpecif',
+			desc:'Specification Integration Facility',	
+			label:'SpecIF',	
+			help: i18n.MsgImportSpecif,	
+			opts: {mediaTypeOf: attachment2mediaType}
+		},{
+			id:'reqif',	
+			name:'ioReqif',	
+			desc:'Requirement Interchange Format',
+			label:'ReqIF',
+			help: i18n.MsgImportReqif, 
+			opts: {mediaTypeOf: attachment2mediaType}
+		},{
+			id:'bpmn',
+			name:'ioBpmn',
+			desc:'Business Process',
+			label:'BPMN',
+			help: i18n.MsgImportBpmn
+		},{
+			id:'xls',
+			name:'ioXls',
+			desc:'MS Excel® Spreadsheet',
+			label:'Excel®',
+			help: i18n.MsgImportXls
+		},{
+			id:'mm',
+			name:'ioMm',
+			desc:'Freemind Mindmap',
+			label:'MM',	
+			help: i18n.MsgImportMm
+		}];
 	// list of projects to check whether the project is already existent in the server.
 	// keep the list variable at all times, do not overwrite it:
 //	self.projectL = [];  	// list of the projects already available
@@ -27,25 +82,6 @@ modules.construct({
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
 		urlP;				// the latest URL parameters
-
-/*	// The modes for selection when an import is encountered which is already loaded:
-	const importModes = [{
-			id: 'create',
-			title: 'Create a new project with the given id',
-			description: 'All types, objects, relations and hierarchies will be created as specified.'
-		},{
-			id: 'replace',
-			title: 'Replace the project having the same id',
-			description: 'Existing content will be lost.'
-		},{
-			id: 'update',
-			title: 'Update the project with new or changed content',
-			description: 'New objects will be created, modified ones will be superseded and the hierarchy will be replaced.'
-		},{
-			id: 'clone',
-			title: 'Create a new instance of the project with a new id',
-			description: 'There will be two projects with the existing and the new content.'
-		}];  */
 
 	function terminateWithSuccess() {
 		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
@@ -97,9 +133,13 @@ modules.construct({
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
 				+		'<div id="FormatSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" >'
-				+			'<button id="createBtn" onclick="'+myFullName+'.doImport(\'create\')" class="btn btn-primary">'+i18n.BtnCreate+'</button>'
-				+			'<button id="replaceBtn" onclick="'+myFullName+'.doImport(\'replace\')" class="btn btn-primary">'+i18n.BtnReplace+'</button>'
-				+			'<button id="updateBtn" onclick="'+myFullName+'.doImport(\'update\')" class="btn btn-primary">'+i18n.BtnUpdate+'</button>'
+				+	function() {
+						let btns = '';
+						importModes.forEach( function(b) { 
+							btns += '<button id="'+b.id+'Btn" onclick="'+myFullName+'.doImport(\''+b.id+'\')" data-toggle="popover" title="'+b.title+'" class="btn btn-primary">'+b.label+'</button>'
+						});
+						return btns
+					}()
 				+		'</div>'
 				+   '</div>'
 			+	'</div>'
@@ -255,14 +295,16 @@ modules.construct({
 		// in this case only a non-zero length of the project name is required:
 		let pnl = getTextLength(i18n.LblProjectName)>0,
 			// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
-			loaded = typeof(app.cache)=='object' && app.cache.loaded();	
+			loaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.loaded();	
 		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
 		
 		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
 		try {
-			document.getElementById("createBtn").disabled = loaded || !allValid;
-			document.getElementById("replaceBtn").disabled = !loaded || !allValid;
-			document.getElementById("updateBtn").disabled = true
+		//	document.getElementById("cloneBtn").disabled =
+			document.getElementById("createBtn").disabled = !allValid || loaded;
+			document.getElementById("updateBtn").disabled = true;
+			document.getElementById("adoptBtn").disabled =
+			document.getElementById("replaceBtn").disabled = !allValid || !loaded
 		} catch(e) {}
 //		console.debug('valid',pnl,allValid)
 	};
@@ -271,9 +313,11 @@ modules.construct({
 		app.busy.set( st );
 		try {
 			document.getElementById("selectBtn").disabled = st;
-			document.getElementById("createBtn").disabled = st || loaded || !allValid;
-			document.getElementById("replaceBtn").disabled = st || !loaded || !allValid;
-		//	document.getElementById("updateBtn").disabled = st || !loaded || !allValid;
+		//	document.getElementById("cloneBtn").disabled = 
+			document.getElementById("createBtn").disabled = st || !allValid || loaded;
+			document.getElementById("updateBtn").disabled = true;
+			document.getElementById("adoptBtn").disabled =
+			document.getElementById("replaceBtn").disabled = st || !allValid || !loaded;
 			document.getElementById("cancelBtn").disabled = !st
 		} catch(e) {}
 	}
@@ -329,7 +373,7 @@ modules.construct({
 		// import specif data as JSON:
 //		console.debug('handleResult',data);
 
-		return app.cache.check( data )
+		return specif.check( data )
 			.fail( handleError )
 			.done( function(dta) {
 			/*	// First check if there is a project with the same id:
@@ -374,7 +418,7 @@ modules.construct({
 											// no break
 										case 'replace':
 											setProgress('Creating project',20); 
-											app.cache.create( dta )
+											app.cache.selectedProject.create( dta )
 												.progress( setProgress )
 												.done( terminateWithSuccess )
 												.fail( handleError );
@@ -382,11 +426,11 @@ modules.construct({
 										case 'update':
 											// First, load the project for comparison:
 											setProgress('Updating project',20); 
-											app.cache.read({id:dta.id}, {reload:true})	// reload from server
+											app.cache.selectedProject.read({id:dta.id}, {reload:true})	// reload from server
 												.done( function(refD) {
 //													console.debug('specif.update',refD,dta)
 													// ... then start to save the new or updated elements:
-													app.cache.update( dta, 'extend' )
+													app.cache.selectedProject.update( dta, 'extend' )
 														.progress( setProgress )
 														.done( terminateWithSuccess )
 														.fail( handleError )
@@ -399,24 +443,26 @@ modules.construct({
 					})
 					.open()
 				} else {   */
+				setProgress(importMode.id+' project',20); 
 				switch( importMode.id ) {
+					case 'clone': 	
+						dta.id = genID('P-');
+						// no break
 					case 'create':
 					case 'replace':
-						console.info('Creating project',dta.title||dta.id);
-						setProgress('Creating project',20); 
 						app.cache.create( dta )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
 							.fail( handleError );
 						break;
+					case 'adopt':
 					case 'update':
-						console.info('Updating project',dta.title||dta.id);
-						setProgress('Updating project',20); 
-						app.cache.update( dta, 'collapse' )
+						app.cache.selectedProject.update( dta, importMode.id )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
 							.fail( handleError );
-				}
+				};
+				console.info(importMode.id+' project',dta.title||dta.id);
 			})
 	}; 
 	function setProgress(msg,perc) {
@@ -425,7 +471,7 @@ modules.construct({
 	self.abort = function() {
 		console.info('abort pressed');
 		app[self.format.name].abort();
-		app.cache.abort()
+		app.cache.selectedProject.abort()
 	};
 	return self
 });

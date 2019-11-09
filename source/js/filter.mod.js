@@ -85,7 +85,7 @@ modules.construct({
 	name: CONFIG.objectFilter
 }, function(self) {
 	"use strict";
-	var pData;
+	var pData,prj,dta;
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
 
@@ -131,6 +131,8 @@ modules.construct({
 	// standard module entry:
 	self.show = function( opts ) {   // optional urlParams or filter settings
 //		console.debug( 'filter.show', opts, self.filterList );
+		prj = app.cache.selectedProject;
+		dta = prj.data;
 		pData = self.parent;
 		pData.showLeft.reset();
 		setContentHeight();
@@ -151,7 +153,7 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: app.cache.id,
+				project: dta.id,
 				view: self.view.substr(1)	// remove leading hash
 			}); 
 
@@ -190,7 +192,7 @@ modules.construct({
 //			console.debug('tree.iterate',pend,nd.ref);
 			// Read asynchronously, so that the cache has the chance to reload from the server,
 			// Note that the sequence may differ from the hierarchy one's due to varying response times:
-			app.cache.readContent( 'resource', {id: nd.ref} )
+			prj.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
 					h = match(rsp);
 //					console.debug('tree.iterate',self.filterList,pend,rsp,h);
@@ -248,9 +250,9 @@ modules.construct({
 					for( var a=res.properties.length-1; a>-1; a-- ){
 						oa = res.properties[a];
 						// for each property test whether it contains 'str':
-						dT = dataTypeOf( app.cache, oa['class'] );
+						dT = dataTypeOf( dta, oa['class'] );
 						// in case of oa we have a property 'dataType':
-	//					dT = itemById( app.cache.dataTypes, oa.dataType );
+	//					dT = itemById( dta.dataTypes, oa.dataType );
 	//					console.debug('matchSearchString',f,oa,dT);
 						switch( dT.type ) {
 							case 'xhtml':
@@ -444,9 +446,9 @@ modules.construct({
 			function possibleValues(pC, vL) {
 				var opts = [], v=null, V=null;
 				// Look up the baseType and include all possible enumerated values:
-				for( var d=0, D=app.cache.dataTypes.length; d<D; d++ ) {
-					if( app.cache.dataTypes[d].id === pC.dataType ) {
-						app.cache.dataTypes[d].values.forEach( function(v) {
+				for( var d=0, D=dta.dataTypes.length; d<D; d++ ) {
+					if( dta.dataTypes[d].id === pC.dataType ) {
+						dta.dataTypes[d].values.forEach( function(v) {
 							var opt = {
 									title: v.value, 
 									id: v.id, 
@@ -499,14 +501,14 @@ modules.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC = itemById( app.cache.resourceClasses, def.rCid ),
+			var rC = itemById( dta.resourceClasses, def.rCid ),
 				pC;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( function(pcid) {
-				pC = itemById( app.cache.propertyClasses, pcid );
-//				if( pcid==def.pCid && itemById( app.cache.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
+				pC = itemById( dta.propertyClasses, pcid );
+//				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && itemById( app.cache.dataTypes, pC.dataType ).type=='xs:enumeration')) {
+					|| (!def.pCid && itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration')) {
 					addEnumFilter( rC, pC, def.options )
 				}
 			})
@@ -525,7 +527,7 @@ modules.construct({
 					title: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
 					category: 'textSearch',
 					primary: true,
-					scope: app.cache.id,
+					scope: dta.id,
 					baseType: 'xs:string',
 			//		baseType: ['xs:string','xhtml'],
 					searchString: pre&&pre.searchString? pre.searchString : '',
@@ -556,11 +558,11 @@ modules.construct({
 						title: i18n.TabSpecTypes,
 						category: 'resourceClass',
 						primary: true,
-						scope: app.cache.id,
+						scope: dta.id,
 						baseType: 'xs:enumeration',
 						options: [] 
 					};
-				app.cache.resourceClasses.forEach( function( rC ) {
+				dta.resourceClasses.forEach( function( rC ) {
 					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
 //					console.debug( rC.title );
@@ -608,13 +610,13 @@ modules.construct({
 		// Secondary filters are also added to the list on request via addEnumValueFilters().
 	}
 	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
-		var rC = itemById( app.cache.allClasses, rCid ),
+		var rC = itemById( dta.allClasses, rCid ),
 			pC;  
 		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
 			// if the class has at least one property with enums
 			// ToDo: same with boolean
-			pC = itemById( app.cache.propertyClasses, rC.propertyClasses[i] );
-			if( itemById( app.cache.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
+			pC = itemById( dta.propertyClasses, rC.propertyClasses[i] );
+			if( itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
 		};
 		return false
 	};

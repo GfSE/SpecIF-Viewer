@@ -23,54 +23,144 @@ modules.construct({
 	"use strict";
 	// Construct a representative of the selected project with cached data:
 	// ToDo: enforce CONFIG.maxObjToCacheCount
-	var autoLoadId = null,		// max 1 autoLoad chain
-		autoLoadCb = null,		// callback function when the cache has been updated
-		loading = false;		// true: data is being gathered from the server.
-	self.exporting = false;		// prevent concurrent exports
-//	self.cacheInstances = server && server.type=='ReqIF Server';  ... too much depends on self.resources, for now
+/*	var autoLoadId,				// max 1 autoLoad chain
+		autoLoadCb;				// callback function when the cache has been updated  */
 	self.cacheInstances = true;
 	
 	// initialization is at the end of this constructor.
 	self.init = function() {
-//		console.debug( 'cache.init' );
-		self.clear();
+		// initialize/clear all variables:
+		self.projects = [];
+		self.selectedProject = undefined;
+	//	autoLoadId = undefined;  // stop any autoLoad chain
+	//	autoLoadCb = undefined;
 		return true
 	};
-	self.clear = function() {
-		// initialize/clear all variables:
-		self.id = '';
-		self.title = '';
-		self.description = '';
-		self.generator = '';
-		self.generatorVersion = '';
-		self.myRole = null;
-		self.cre = null;
-		self.upd = null;
-		self.del = null;
-		self.exp = null;
-		self.locked = null;		// the server has locked the project ( readOnly )
-
-		self.dataTypes = [];
-		self.allClasses = []; 	// common list of all resourceClasses and statementClasses
-		self.propertyClasses = [];
-		self.resourceClasses = [];
-		self.statementClasses = [];
-		self.resources = [];   	// list of resources as referenced by the hierarchies
-		self.statements = [];
-		self.hierarchies = [];    	// listed specifications (aka hierarchies, outlines) of the project.   
-	//	self.selectedHierarchy = null;  // the currently worked-on hierarchy
-		self.files = [];
-
-		autoLoadId = null;  // stop any autoLoad chain
-		autoLoadCb = null;
-		loading = false;
-		self.exporting = false;
-		self.createdAt = null;
-		self.createdBy = null
+	self.create = function(p) {
+		// in this implementation, delete existing projects to save memory space:
+//		console.debug( 'cache.create', self );
+		self.projects.length = 0;
+		// append a project to the list:
+		self.projects.push( new Project() );
+		self.selectedProject = self.projects[self.projects.length-1];
+		return self.selectedProject.create( p )
 	};
+/*	// Periodically update the selected project with the current server state in a multi-ussr context:
+	self.startAutoLoad = function( cb ) {
+//		if( !self.cacheInstances ) return;
+//		console.info( 'startAutoLoad' );
+		if( typeof(cb)=="function" ) { autoLoadCb = cb };
+		autoLoadId = genID( 'aU-' );
+		// get all resources from the server to fill the cache:
+		setTimeout( function() { autoLoad(autoLoadId) }, 600 )  // start a little later ...			
+	};
+	self.stopAutoLoad = function() {
+//		console.info('stopAutoLoad');
+		autoLoadId = null;
+		loading = false
+	};  
+	self.loadInstances = function( cb ) {
+		// for the time being - until the synchronizing will be implemented:
+//		if( !self.cacheInstances ) return;
+		// load the instances of the selected hierarchy (spec) into the cache (but not the types):
+//		console.debug( 'self.loadInstances', self.selectedHierarchy, cb );
+		if( self.selectedHierarchy ) {
+			loading = true;  
+			// update all resources referenced by the selectedHierarchy:
+			loadObjsOf( self.selectedHierarchy )
+				.done( function() {			
+//					loadRelsOf( self.selectedHierarchy );
+					// update the hierarchy (outline).
+					// it is done after the resources to reflect any change in the hierarchy made during the loading.
+					self.readContent( 'hierarchy', self.selectedHierarchy, true )	// true: reload
+						// - call cb to refresh the app:
+						.done( function() { 
+							if( typeof(cb)=="function" ) cb();
+							loading = false
+						})
+						.fail( function(xhr) { 
+							loading = false
+						})
+				})
+				.fail( function(xhr) { 
+					loading = false
+				})
+		}
+	};
+	self.load = function(opts) {
+		var lDO = $.Deferred();
 
+		// load referenced resources and statements ... 
+		if( opts.loadObjects ) {
+			if( opts.loadAllSpecs ) 
+				loadAll( 'resource' )
+					.done( function() { 
+						if( opts.loadRelations )
+							return loadAll( 'statement' )
+								.done( lDO.resolve )
+								.fail( lDO.reject );
+						// else
+						lDO.resolve()
+					})
+					.fail( lDo.reject )
+			else					
+				loadObjsOf( self.selectedHierarchy )
+					.done( function() { 
+						if( opts.loadRelations )
+							return loadRelsOf( self.selectedHierarchy )
+								.done( lDO.resolve )
+								.fail( lDO.reject );
+						// else
+						lDO.resolve()
+					})
+					.fail( lDo.reject );
+			return
+		} else {
+			lDO.resolve()
+		};
+		return lDO
+	};
+*/
+	return self
+});  
+
+function Project( pr ) {
+	// Constructor for a project containing SpecIF data.
+	var self = this,
+		loading = false;		// true: data is being gathered from the server.
+	self.init = function() {
+		// initialize/clear all variables:
+		self.data = {
+			id: '',
+			title: '',
+			description: '',
+			generator: '',
+			generatorVersion: '',
+			myRole: undefined,
+			cre: undefined,
+			upd: undefined,
+			del: undefined,
+			exp: undefined,
+			locked: undefined,		// the server has locked the project ( readOnly )
+			createdAt: undefined,
+			createdBy: undefined,
+
+			dataTypes: [],
+			allClasses: [], 		// common list of all resourceClasses and statementClasses
+			propertyClasses: [],
+			resourceClasses: [],
+			statementClasses: [],
+			resources: [],   		// list of resources as referenced by the hierarchies
+			statements: [],
+			hierarchies: [],    	// listed specifications (aka hierarchies, outlines) of the project.   
+			files: []
+		};
+		loading = false;
+		self.exporting = false;		// prevent concurrent exports
+		self.abortFlag = false
+	};
 	self.loaded = function() {
-		return typeof(self.id)=='string' && self.id.length>0
+		return typeof(self.data.id)=='string' && self.data.id.length>0
 	};
 
 	self.create = function( newD, mode ) {
@@ -88,154 +178,55 @@ modules.construct({
 			});
 			return sDO
 		};
-//		console.debug('app.cache.create',newD);
+//		console.debug('app.cache.selectedProject.data.create',newD);
 
 		self.abortFlag = false;
 
-		// ToDo: schema and consistency check
 		// Create the specified project:
-		self.clear();
-		newD = self.set(newD);	// transform to internal data structure
+		newD = specif.toInt(newD);	// transform to internal data structure
 		
-		self.id = newD.id;
-		self.title = newD.title;
-		self.description = newD.description;
-		self.generator = newD.generator;
-		self.generatorVersion = newD.generatorVersion;
-		self.myRole = i18n.LblRoleProjectAdmin;
-	//	self.cre = self.upd = self.del = self.exp = self.parent.options.label!=i18n.LblReader;
-		self.cre = self.upd = self.del = app.label!=i18n.LblReader;
-		self.exp = true;
+		self.data.id = newD.id;
+		self.data.title = newD.title;
+		self.data.description = newD.description;
+		self.data.generator = newD.generator;
+		self.data.generatorVersion = newD.generatorVersion;
+		self.data.myRole = i18n.LblRoleProjectAdmin;
+	//	self.data.cre = self.data.upd = self.data.del = self.data.exp = app.label!=i18n.LblReader;
+		self.data.cre = self.data.upd = self.data.del = app.label!=i18n.LblReader;
+		self.data.exp = true;
+		// ToDo: should use 
 
-		// 1. Create the project with all types:
-		// (The roles/permissions and the role assignment to users are preserved, when import via ReqIF-file is made)
+		// Create the project 
+		// The project meta-data and each item are created as a separate document in a document database;
+		// at the same time the cache is updated.
 		sDO.notify(i18n.MsgLoadingTypes,30);
-		cache( 'dataType', newD.dataTypes );
-		cache( 'propertyClass', newD.propertyClasses );
-		cache( 'resourceClass', newD.resourceClasses );
-		cache( 'statementClass', newD.statementClasses );
+		self.createContent( 'dataType', newD.dataTypes );
+		self.createContent( 'propertyClass', newD.propertyClasses );
+		self.createContent( 'resourceClass', newD.resourceClasses );
+		self.createContent( 'statementClass', newD.statementClasses );
 		sDO.notify(i18n.MsgLoadingFiles,40);
-		cache( 'file', newD.files );
+		self.createContent( 'file', newD.files );
 		sDO.notify(i18n.MsgLoadingObjects,50);
-		cache( 'resource', newD.resources );
+		self.createContent( 'resource', newD.resources );
 		sDO.notify(i18n.MsgLoadingRelations,70);
-		cache( 'statement', newD.statements );
+		self.createContent( 'statement', newD.statements );
 		sDO.notify(i18n.MsgLoadingHierarchies,90);
-		cache( 'hierarchy', newD.hierarchies );
+		self.createContent( 'hierarchy', newD.hierarchies );
 		sDO.notify(i18n.MsgProjectCreated,100);
 
-		self.locked = app.label==i18n.LblReader;	
-		self.createdAt = newD.createdAt;
-		self.createdBy = newD.createdBy;
+		self.data.locked = app.label==i18n.LblReader;	
+		self.data.createdAt = newD.createdAt;
+		self.data.createdBy = newD.createdBy;
 		
 		if( mode == 'deduplicate')
-			self.deduplicate();	// deduplicate equal types
+			self.deduplicate();	// deduplicate equal items
 
-//		console.debug('*',self.propertyClasses,self.resourceClasses);
+//		console.debug('*',self.data.propertyClasses,self.data.resourceClasses);
 		sDO.resolve({status:0});
 		return sDO
 	};
-	self.deduplicate = function( dta ) {
-		// deduplicate equal types having different ids;
-		// the first of a pair in the list is considered the reference or original ... and stays,
-		// whereas the second in a pair is removed.
-		if( typeof(dta)!='object' || !dta.id ) dta = self;
-//		console.debug('deduplicate',dta);
-		if( dta.dataTypes && dta.dataTypes.length>1 ) dedupDT();
-		if( dta.propertyClasses && dta.propertyClasses.length>1 ) dedupPC();
-		return dta;
-		// ------------------------
-		function dedupPC() {
-			// starting from the end, check whether the propertyClass is a duplicate:
-			let cont,n,r;
-			for( n=dta.propertyClasses.length-1; n>0; n-- ) {
-				cont = true; 
-				for( r=0; cont&&r<n-1; r++ ) {
-					if( eq(dta.propertyClasses[r],dta.propertyClasses[n]) ) {
-						// Are equal, so substitute it's element by the original propertyClass:
-						substituteLe(dta.resourceClasses,'propertyClasses',dta.propertyClasses[r].id,dta.propertyClasses[n].id);
-						// Also substitue the resource properties' class:
-						dta.resources.forEach( function(res) {
-							substituteId(res.properties,'class',dta.propertyClasses[r].id,dta.propertyClasses[n].id)
-						});
-						// The same with the statements:
-						substituteLe(dta.statementClasses,'propertyClasses',dta.propertyClasses[r].id,dta.propertyClasses[n].id);
-						dta.statements.forEach( function(sta) {
-							substituteId(sta.properties,'class',dta.propertyClasses[r].id,dta.propertyClasses[n].id)
-						});
-						// ... and finally remove the duplicate propertyClass:
-						dta.propertyClasses.splice(n,1); 
-						// go on with the next one:
-						cont = false
-					}
-				}
-			};
-			return;
-			function eq(rDT,nDT) {
-				// return true, if reference and new item are equal:
-				return rDT.dataType==nDT.dataType && rDT.title==nDT.title
-			}
-			function substituteLe(typeL,att,rId,dId) {
-				// replace ids of the duplicate type with the id of the original one;
-				// this applies to every element in the list named 'att':
-				let idx;
-				if( Array.isArray(typeL) )
-					typeL.forEach( function(e) { 
-						if( !Array.isArray(e[att]) ) return; 
-						idx = e[att].indexOf(dId); 
-						if( idx>-1 ) e[att].splice( idx, 1, rId )
-					})
-			}
-		}
-		function dedupDT() {
-			// starting from the end, check whether the dataType is a duplicate:
-			let cont,n,r;
-			for( n=dta.dataTypes.length-1; n>0; n-- ) {
-				cont = true; 
-				for( r=0; cont&&r<n-1; r++ ) {
-					if( eq(dta.dataTypes[r],dta.dataTypes[n]) ) {
-						// Are equal, so substitute it's ids by the original dataType:
-						substituteId(dta.propertyClasses,'dataType',dta.dataTypes[r].id,dta.dataTypes[n].id);
-						// ... and remove the duplicate dataType:
-						dta.dataTypes.splice(n,1); 
-						// go on with the next one:
-						cont = false
-					}
-				}
-			};
-			return;
-			function eq(rDT,nDT) {
-				// return true, if reference and new item are equal:
-				if( rDT.type!=nDT.type ) return false;
-				switch( rDT.type ) {
-					case 'xs:double':
-						if( rDT.accuracy!=nDT.accuracy ) return false;
-						// no break
-					case 'xs:integer':
-						return rDT.min==nDT.min && rDT.max==nDT.max
-					case 'xs:string':
-					case 'xhtml':
-						return rDT.maxLength==nDT.maxLength;
-					case 'xs:enumeration':
-						if( rDT.values.length!=nDT.values.length ) return false
-						for( var i=nDT.values.length-1; i>-1; i-- )
-							// assuming that the titles/values don't matter:
-							if( indexById(rDT.values, nDT.values[i].id<0 ) ) return false;
-						// the list of enumerated values *is* equal:
-						// no break
-					default:
-						return true
-				}
-			}
-		}
-		function substituteId(typeL,att,rId,dId) {
-			// replace ids of the duplicate type with the id of the original one;
-			// this applies to the attribute 'att' of each element in the list (typeL):
-			if( Array.isArray(typeL) )
-				typeL.forEach( function(e) { if( e[att]==dId ) e[att] = rId })
-		}
-	};
 	self.read = function( prj, opts ) { 
+		// Assemble the data of the project from all documents in a document database:
 		switch( typeof(opts) ) {
 			case 'boolean':
 				// for backward compatibility:
@@ -249,14 +240,34 @@ modules.construct({
 				opts = {reload: false}
 		};
 
-//		console.debug( 'cache.read', opts, self.id, prj );
+//		console.debug( 'cache.read', opts, self.data.id, prj );
 		
 		var pDO = $.Deferred();
 		// Read from cache in certain cases:
-		if( self.loaded && !opts.reload && ( !prj || prj.id==self.id ) ) {
+		if( self.data.loaded && !opts.reload && ( !prj || prj.id==self.data.id ) ) {
 			// return the loaded project:
 			pDO.resolve( self );
 			return pDO
+		/*	// ToDo: not just return the cache, but do it stepwise using app.cache.selectedProject.readContent() !
+			self.readContent( 'hierarchy', self.data.hierarchies, true )	// reload the hierarchies
+				.done( function() { 	
+					loadFiles()	// reload the files
+						.done( function() { 	
+							// load referenced resources and statements ... 
+							loadAll( 'resource' )
+								.done( function() { 
+									loadAll( 'statement' )
+										.done( function() { */
+											// her we go:
+											
+		/*								})
+										.fail( handleError )
+								})
+								.fail( handleError )
+						})
+						.fail( handleError )
+				})
+				.fail( handleError )  */
 		};
 		// else
 		return null	
@@ -266,10 +277,277 @@ modules.construct({
 		for( var p in prj ) self[p] = prj[p];			// update only the provided properties
 		// Update the meta-data (header):
 	//	return server.project(self).update()
+	};*/
+	const types = [{
+					name: 'dataType',
+					list: 'dataTypes',
+					eqFn: eqDT,
+					sbFn: substituteDT
+				},{ 
+					name: 'propertyClass',
+					list: 'propertyClasses',
+					eqFn: eqPC,
+					sbFn: substitutePC
+				},{ 
+					name: 'resourceClass',
+					list: 'resourceClasses',
+					eqFn: eqRC,
+					sbFn: substituteRC
+				},{ 
+					name: 'statementClass',
+					list: 'statementClasses',
+					eqFn: eqSC,
+					sbFn: substituteSC
+				}],
+		instances = [{
+					name: 'resource',
+					list: 'resources',
+					typL: 'resourceClasses',
+					only: CONFIG.modelElementTypes,	// applied only to resources having a type title listed here
+					sbFn: substituteR
+				}];
+	function eqDT(r,n) {
+		// return true, if reference and new dataType are equal:
+		if( r.type!=n.type ) return false;
+		switch( r.type ) {
+			case 'xs:double':
+				if( r.accuracy!=n.accuracy ) return false;
+				// no break
+			case 'xs:integer':
+				return r.min==n.min && r.max==n.max
+			case 'xs:string':
+			case 'xhtml':
+				return r.maxLength==n.maxLength;
+			case 'xs:enumeration':
+				if( r.values.length!=n.values.length ) return false
+				for( var i=n.values.length-1; i>-1; i-- )
+					// assuming that the titles/values don't matter:
+					if( indexById(r.values, n.values[i].id<0 ) ) return false;
+				// the list of enumerated values *is* equal:
+				// no break
+			default:
+				return true
+		}
+	}
+	function eqPC(r,n) {
+		// return true, if reference and new propertyClass are equal:
+		return r.dataType==n.dataType && r.title==n.title
+	}
+	function eqRC(r,n) {
+		// return true, if reference and new resourceClass are equal:
+		if( !r.isHeading&&n.isHeading || r.isHeading&&!n.isHeading ) return false;
+		return eqL( r.instantiation, n.instantiation )
+			&& eqL( r.propertyClasses, n.propertyClasses )
+			&& r.title==n.title
+	}
+	function eqSC(r,n) {
+		// return true, if reference and new resourceClass are equal:
+		return eqL( r.instantiation, n.instantiation )
+			&& eqL( r.propertyClasses, n.propertyClasses )
+			&& eqL( r.subjectClasses, n.subjectClasses )
+			&& eqL( r.objectClasses, n.objectClasses )
+			&& r.title==n.title
+	}
+/*	function eqR(r,n) {
+		// return true, if reference and new resource are equal:
+		// ToDo: Model-elements are only equal, if they have the same type, 
+		// i.e. a property with title 'dcterms:type' has the same value
+		console.debug('eqR',r,n);
+		return r.title==n.title
+		// Note that the content of the new resource is lost;
+		// this is no problem, if the new data is a BPMN model, for example, 
+		// which usually have a title and do not carry any description.
+	} */
+	function eqS(r,n) {
+		// return true, if reference and new statement are equal:
+		// ToDo: Model-elements are only equal, if they have the same type,
+		// i.e. a property with title 'dcterms:type' has the same value
+		return r['class']==n['class']
+			&& r.subject.id==n.subject.id
+			&& r.subject.revision==n.subject.revision
+			&& r.object.id==n.object.id
+			&& r.object.revision==n.object.revision
+	}
+	function eqL(rL,nL) {
+		// return true, if both lists have equal members:
+		// no or empty lists are allowed and considerated equal:
+		let rArr = Array.isArray(rL) && rL.length>0,
+			nArr = Array.isArray(nL) && nL.length>0;
+		if( !rArr&&!nArr ) return true;
+		if( !rArr&&nArr 
+			|| rArr&&!nArr 
+			|| rL.length!=nL.length ) return false;
+		// the sequence may differ:
+		for( var i=rL.length-1; i>-1; i-- ) 
+			if( nL.indexOf( rL[i] )<0 ) return false;
+		return true
+	}
+	function substituteDT(dta,rId,nId) {
+		substituteId(dta.propertyClasses,'dataType',rId,nId);
+	}
+	function substitutePC(dta,rId,nId) {
+		// For all resourceClasses, substitute new by the original propertyClass:
+		substituteLe(dta.resourceClasses,'propertyClasses',rId,nId);
+		// Also substitute the resource properties' class:
+		dta.resources.forEach( function(res) {
+			substituteId(res.properties,'class',rId,nId)
+		});
+		// The same with the statementClasses:
+		substituteLe(dta.statementClasses,'propertyClasses',rId,nId);
+		dta.statements.forEach( function(sta) {
+			substituteId(sta.properties,'class',rId,nId)
+		})
+	}
+	function substituteRC(dta,rId,nId) {
+		substituteLe(dta.statementClasses,'subjectClasses',rId,nId);
+		substituteLe(dta.statementClasses,'objectClasses',rId,nId);
+		substituteId(dta.resources,'class',rId,nId)
+	}
+	function substituteSC(dta,rId,nId) {
+		substituteId(dta.statements,'class',rId,nId)
+	}
+	function substituteR(dta,rId,nId) {
+//		console.debug('substituteR',rId,nId);
+		dta.statements.forEach( function(st) {
+				if( st.object.id==nId ) st.object.id = rId;
+				if( st.subject.id==nId ) st.subject.id = rId
+		});
+	//	substituteRf(dta.hierarchies,rId,nId)  // here we end up with double entries
+		// assuming that there is an entry for the remaining (original) resource:
+		delNodes( dta.hierarchies, {resource:nId} )
+	}
+	function substituteId(L,att,rId,dId) {
+		// replace ids of the duplicate item by the id of the original one;
+		// this applies to the attribute 'att' of each element in the list L:
+		if( Array.isArray(L) )
+			L.forEach( function(e) { if(e[att]==dId) e[att] = rId } )
+	}
+	function substituteLe(L,att,rId,dId) {
+		// replace the duplicate id by the id of the original item;
+		// so replace dId by rId in the list named 'att'
+		// (for example: in L[i].att (which is a list as well), replace dId by rId):
+		let idx;
+		if( Array.isArray(L) )
+			L.forEach( function(e) { 
+				if( !Array.isArray(e[att]) ) return; 
+				idx = e[att].indexOf(dId); 
+				if( idx>-1 ) e[att].splice( idx, 1, rId )
+			})
+	}
+/*	function substituteRf(L,rId,dId) {
+		// for all hierarchies, replace any reference to dId by rId:
+//		console.debug('substituteRf',rId,dId);
+		for( var i=L.length-1;i>-1;i-- ) 
+			iterateNodes( L[i], function(nd) { if(nd.resource==dId) nd.resource=rId; return true } )
+	}  */
+	self.deduplicate = function( dta ) {
+		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+//		console.debug('deduplicate',dta);
+		let cont,n,r;
+
+		// 1. Deduplicate equal types having different ids;
+		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
+		// whereas the second in a pair is removed.
+		types.forEach( function(ty) {
+			if( !Array.isArray(dta[ty.list]) ) return;
+			for( n=dta[ty.list].length-1; n>0; n-- ) {
+				cont = true; 
+				for( r=0; cont&&r<n; r++ ) {
+//					console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.eqFn(dta[ty.list][r],dta[ty.list][n]) );
+					// Do it for all types: 
+					if( ty.eqFn(dta[ty.list][r],dta[ty.list][n]) ) {
+						// Are equal, so substitute it's ids by the original item:
+						ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
+						// ... and remove the duplicate item:
+						dta[ty.list].splice(n,1); 
+						// go on with the next one:
+						cont = false
+					}
+				}
+			}
+		});
+		// 2. Remove duplicate resorces:
+		// 3. Remove duplicate statements:
+			for( n=dta.statements.length-1; n>0; n-- ) {
+				cont = true; 
+				for( r=0; cont&&r<n; r++ ) {
+					// Do it for all statements: 
+					if( eqS(dta.statements[r],dta.statements[n]) ) {
+						// Are equal, so remove the duplicate statement:
+						dta.statements.splice(n,1); 
+						// go on with the next one:
+						cont = false
+					}
+				}
+			};
+		return dta
 	};
-	// var updateModes = ["match","deduplicate","extend","ignore"];
-	self.update = function( newD, mode ) {		
-		// newD is new data in 'internal' data structure
+	// var updateModes = ["adopt","match","extend","ignore"];
+	self.update = function( newD, mode ) {	
+		newD = specif.toInt(newD);	// transform to internal data structure
+		var uDO = $.Deferred();
+		switch( mode ) {
+			case 'adopt': adopt( newD );
+		};
+		uDO.resolve({status:0});
+		return uDO
+		
+		// --------------------------------
+		// The processing per mode:
+		function adopt( nD ) {
+			// 1. Integrate the types:
+			//    a) if different id, save new one and use it.
+			//    b) if same id and content, just use it (no action)
+			//    c) if same id and different content, save with new id and update all references
+			let i,I;
+			types.forEach( function(ty) {
+				for( i=0,I=nD[ty.list].length; i<I; i++ ) {
+					let itm = nD[ty.list][i],
+						// types are compared by id, instances by title:
+						idx = indexById( self.data[ty.list], itm.id );
+					if( idx<0 ) {
+						// a) there is no item with the same id:
+						self.createContent( ty.name, itm )
+					} else {
+						// there is an item with the same id:
+						if( !ty.eqFn( self.data[ty.list][idx], itm) ) {
+							// c) create a new id and update all references:
+							// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
+							itm.alterId = itm.id;
+							itm.id += '-' + new Date().toISOString().simpleHash();
+							ty.sbFn( nD, itm.id, itm.alterId );
+							self.createContent( ty.name, itm )
+						}
+					}
+				}
+			});
+			// 2. Integrate the instances:
+			//    a) if different title, save new one and use it.
+			//    b) if same title, just use it and update all references
+			instances.forEach( function(ic) {
+				for( i=0,I=nD[ic.list].length; i<I; i++ ) {
+					let itm = nD[ic.list][i],
+						typ = itemById( nD[ic.typL], itm['class'] ),
+						idx = indexByTitle( self.data[ic.list], itm.title );
+					if( idx<0 || ic.only.indexOf( typ.title )<0 ) {
+						// a) there is no instance with the same title ... or
+						// if it's type is not listed in 'only':
+						self.createContent( ic.name, itm )
+					} else {
+						// b) there is an item with the same title,
+						//    use it and update all references:
+						ic.sbFn( nD, self.data[ic.list][idx].id, itm.id )
+					}
+				}
+			});
+			self.createContent( 'file', nD.files );
+			self.createContent( 'statement', nD.statements );
+			self.createContent( 'hierarchy', nD.hierarchies );
+			
+			self.deduplicate()	// deduplicate equal items
+		};
+	
+/*		// newD is new data in 'internal' data structure
 		// add new elements
 		// update elements with the same id
 		// exception: since types cannot be updated, return with error in case newD contains incompatible types
@@ -341,9 +619,9 @@ modules.construct({
 		function typesAreCompatible( ctg, mode ) {
 			let aL= null, nL= null; 
 			switch( ctg ) {
-				case 'dataType': aL = self.dataTypes; nL = newD.dataTypes; break;
-				case 'resourceClass': aL = self.resourceClasses; nL = newD.resourceClasses; break;
-				case 'statementClass': aL = self.statementClasses; nL = newD.statementClasses; break;
+				case 'dataType': aL = self.data.dataTypes; nL = newD.dataTypes; break;
+				case 'resourceClass': aL = self.data.resourceClasses; nL = newD.resourceClasses; break;
+				case 'statementClass': aL = self.data.statementClasses; nL = newD.statementClasses; break;
 				default: return null //should never arrive here
 			};
 			// true, if every element in nL is compatibly present in aL or if it can be added;
@@ -467,9 +745,9 @@ modules.construct({
 			// Is commonly used for resource and statement classes with their propertyClasses.
 			let rL= null, nL= null, rT=null, nT=null; 
 			switch( ctg ) {
-				case 'dataType': rL = self.dataTypes; nL = newD.dataTypes; break;
-				case 'resourceClass': rL = self.resourceClasses; nL = newD.resourceClasses; break;
-				case 'statementClass': rL = self.statementClasses; nL = newD.statementClasses; break;
+				case 'dataType': rL = self.data.dataTypes; nL = newD.dataTypes; break;
+				case 'resourceClass': rL = self.data.resourceClasses; nL = newD.resourceClasses; break;
+				case 'statementClass': rL = self.data.statementClasses; nL = newD.statementClasses; break;
 				default: return null //should never arrive here
 			};
 			nL.forEach( function(nT) {
@@ -536,7 +814,7 @@ modules.construct({
 					// if p==-1, then it will be inserted at the first position:
 					r.propertyClasses.splice( p+1, 0, nATs[idx] );
 				//	nATs[idx].class = r.id;  // eine Verzweiflungstat ... siehe server...js
-					server.project({id:self.id}).allClasses({id:r.id}).class(nATs[idx]).create()
+					server.project({id:self.data.id}).allClasses({id:r.id}).class(nATs[idx]).create()
 						.done( function() {
 							// Type creation must be completed before starting to update the elements:
 							if( ++idx<nATs.length ) addNewAT( r, nATs, idx );
@@ -609,8 +887,8 @@ modules.construct({
 						// no update, if there is no corresponding property in the new data:
 						if( !nA ) continue;	
 						// in all other cases compare the value:
-						let oT = itemById( app.cache.resourceClasses, n['class'] ),  // applies to both r and n
-							rDT = dataTypeOf( app.cache, rA['class'] ),
+						let oT = itemById( app.cache.selectedProject.data.resourceClasses, n['class'] ),  // applies to both r and n
+							rDT = dataTypeOf( app.cache.selectedProject.data, rA['class'] ),
 							nDT = dataTypeOf( newD, nA['class'] );
 						if( rDT.type!=nDT.type ) return null;  // fatal error, they must be equal!
 						switch( nDT.type ) {
@@ -694,7 +972,7 @@ modules.construct({
 								// whereas it delivers 404, if it is an admin.
 								// Thus: If 403 is delivered and the user has read access according to the resourceClass,
 								// do as if 404 had been delivered.
-								var pT = itemById(app.cache.allClasses,nI['class']);
+								var pT = itemById(app.cache.selectedProject.data.allClasses,nI['class']);
 //								console.debug('403 instead of 404',nI,pT);
 								if( !pT.rea || !pT.cre ) { uDO.reject(xhr); return };
 								// else the server should have delivered 404, so go on ...
@@ -749,7 +1027,7 @@ modules.construct({
 					message.show( i18n.MsgOutlineAdded, {severity:'info', duration:CONFIG.messageDisplayTimeShort} );
 			//		self.deleteContent('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
 					newIds(nI);
-					server.project(app.cache).specification(nI).createChildren()
+					server.project(app.cache.selectedProject.data).specification(nI).createChildren()
 						.done( function() {
 							if( --pend<1 ) updateNext( ctg )
 						})
@@ -759,8 +1037,8 @@ modules.construct({
 					if( --pend<1 ) updateNext( ctg )
 				}
 			}
-		}
-	};
+		} */
+	}; 
 
 	self.createContent = function( ctg, item ) {  
 		// item can be a js-object or a list of js-objects
@@ -768,6 +1046,7 @@ modules.construct({
 		// ...  not all of them may be implemented, so far.
 		// cache the value before sending it to the server, as the result is not received after sending (except for 'resource' and 'statement')
 
+//		console.debug('createContent', ctg, item );
 		switch( ctg ) {
 			case 'node':
 				return null;  // not supported
@@ -775,11 +1054,11 @@ modules.construct({
 		//	case 'statement':
 		//	case 'hierarchy':
 				// add the baseType to property values to simplify the transformation for storing:
-			//	addBaseTypes( item );
+		//		addBaseTypes( item );
 				// no break
 			default:
 				// if current user can create an item, he has the other permissions, as well:
-			//	addPermissions( item );
+		//		addPermissions( item );
 				item.createdAt = new Date().toISOString();
 				item.createdBy = item.changedBy;
 				cache( ctg, item )
@@ -787,7 +1066,7 @@ modules.construct({
 		var sDO = $.Deferred();
 		sDO.resolve({status:0});
 		return sDO
-	}; */
+	};
 	self.readContent = function( ctg, item, opts ) {  
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		//  for compatibility with older callers:
@@ -807,8 +1086,12 @@ modules.construct({
 	//	};
 		return null
 	};
-/*	self.updateContent = function( ctg, item ) {  
+	self.updateContent = function( ctg, item ) {  
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
+			function updateCh( itm ) {
+				itm.changedAt = new Date().toISOString();
+				itm.changedBy = app.me.userName
+			}
 
 		switch( ctg ) {
 			case 'node':	
@@ -818,12 +1101,14 @@ modules.construct({
 		//	case 'statement':
 		//	case 'hierarchy':
 				// add the baseType to property values to simplify the transformation for storing:
-			//	addBaseTypes( item );
+		//		addBaseTypes( item );
 				// no break
 			default:
 //				console.debug('updateContent - cache', ctg );
-				item.changedAt = new Date().toISOString();
-				item.changedBy = app.me.userName;
+				if( Array.isArray(item) )
+					item.forEach( updateCh )
+				else
+					updateCh(item);
 				cache( ctg, item )
 		};
 		var uDO = $.Deferred();
@@ -832,7 +1117,7 @@ modules.construct({
 	};
 	self.deleteContent = function( ctg, item ) {  
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
-			function isInUse( ctg, itm ) {
+	/*		function isInUse( ctg, itm ) {
 					function dTIsInUse( L, dT ) {
 						let i=null;
 						for( var e=L.length-1;e>-1;e-- ) {
@@ -842,50 +1127,48 @@ modules.construct({
 						};
 						return false
 					}
-					function sTIsInUse( ctg, sT ) {
-						let c = ctg.substr(0,ctg.length-4),
-							L = cacheOf(c),	// xyzType --> xyz
+					function aCIsInUse( ctg, sT ) {
+						let c = ctg.substr(0,ctg.length-4),  // xyzType --> xyz, xyzClass ??
+							L = cacheOf(c),	
 							i = indexBy(L,ctg,sT.id);
-//						console.debug('sTIsInUse',sT,c,L,i); 
-						// Problem: In project.html, the resource cache is empty, but the resourceClass may be in use, anyways.
-						// Similarly with statements and hierarchies.
+//						console.debug('aCIsInUse',sT,c,L,i); 
+						// ToDo: In project.html, the resource cache is empty, but the resourceClass may be in use, anyways.
+						// Similarly with statements.
 						return ( i>-1 )
 					}
-					function aTIsInUse( L, pT ) {
+					function pCIsInUse( L, pT ) {
 						if( L==undefined ) return false; // can't be in use, if the list is not (yet) defined/present.
 						let i=null;
-						// Problem: In project.html, the resource cache is empty, but the property class may be in use, anyways.
-						// Also a deleted resource may have used the property class.
+						// ToDo: In project.html, the resource cache is empty, but the property class may be in use, anyways.
+						// Also a deleted resource may have used the propertyClass.
 						// As it stores only the newest types, the ReqIF Server will refuse to delete the type.
 						// In case of PouchDB, all revisions of classes/types are stored, so it is sufficient to check whether there are currently some elements using the type.
-						// Similarly with statements and hierarchies.
+						// Similarly with statements.
 						for( var e=L.length-1;e>-1;e-- ) {
 							i = L[e].properties?indexBy(L[e].properties,'class',pT.id):-1;
-//							console.debug('aTIsInUse property class',pT,L,e,i); 
+//							console.debug('pCIsInUse property class',pT,L,e,i); 
 							if( i>-1 ) return true
 						};
 						return false
 					}
 //				console.debug('isInUse',ctg,item);
 				switch( ctg ) {
-					case 'dataType':		return dTIsInUse(self.allClasses,itm);
+					case 'dataType':		return dTIsInUse(self.data.allClasses,itm);
 					case 'resourceClass':
-					case 'statementClass':	return sTIsInUse(ctg,itm);
-					case 'class':	return aTIsInUse(self.resources,itm)
-												|| aTIsInUse(self.hierarchies,itm)
-												|| aTIsInUse(self.statements,itm) 
+					case 'statementClass':	return aCIsInUse(ctg,itm);
+					case 'class':			return pCIsInUse(self.data.resources,itm)
+												|| pCIsInUse(self.data.hierarchies,itm)
+												|| pCIsInUse(self.data.statements,itm) 
 				};
 				return false
-			}
+			}  */
 		
 //		console.debug('deleteContent',ctg,item);
 		var dDO = $.Deferred();
 		// Do not try to delete types which are in use;
-		// the ReqIF Server checks it, but the caching mechanism doesn't:
+		// ToDo: Delete in the server, as well.
 		switch( ctg ) {
-			case 'node':
-				return null;  // not supported
-			case 'class':	
+		/*	case 'class':	
 			case 'dataType':
 			case 'resourceClass':
 			case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
@@ -893,31 +1176,34 @@ modules.construct({
 										dDO.reject({status:972, statusText:i18n.Err400TypeIsInUse});
 										return dDO
 									};
-									// no break;
-			default: 				uncache( ctg, item );
+									// no break;  */
+			case 'node':			
+				uncache( ctg, item );
+			default:				
+				return null
 		};
 		dDO.resolve({status:0});
 		return dDO
 	};
-	self.createNode = function( el ) {
+/*	self.createNode = function( el ) {
 		// creating a node is updating the hierarchy:
 		var cPr = $.Deferred();
-		let sId = self.selectedHierarchy.id, // memorize
+		let sId = self.data.selectedHierarchy.id, // memorize
 			nI; 
 		// 1. reload hierarchy to minimize update conflict,
 		//    just specify the id to obtain the last revision:
-	//	self.readContent( 'hierarchy', {id:self.selectedHierarchy.id}, {reload: true} )
+	//	self.readContent( 'hierarchy', {id:self.data.selectedHierarchy.id}, {reload: true} )
 	//		.done( function( nH ) {
 //				console.debug('createNode current hierarchy',nH,el);
 	//			cache( 'hierarchy', nH );
-	//			self.selectedHierarchy = itemById( self.hierarchies, sId ) // update address
-//				console.debug('createNode selected hierarchy',sId,self.selectedHierarchy);
+	//			self.data.selectedHierarchy = itemById( self.data.hierarchies, sId ) // update address
+//				console.debug('createNode selected hierarchy',sId,self.data.selectedHierarchy);
 				// 2. insert the node:
 				nI = cache( 'node', el );
-//				console.debug('createNode updated hierarchy',nI,self.selectedHierarchy);
+//				console.debug('createNode updated hierarchy',nI,self.data.selectedHierarchy);
 				if( typeof(nI)=='number' && nI>-1 ) 
 					// 3. update the hierarchy:
-					self.updateContent( 'hierarchy', self.selectedHierarchy )
+					self.updateContent( 'hierarchy', self.data.selectedHierarchy )
 						.done( cPr.resolve )
 						.fail( cPr.reject )
 	//		})
@@ -926,30 +1212,31 @@ modules.construct({
 	};
 	self.moveNode = function( el ) {
 	};
-	self.deleteNode = function( el ) {
+	self.deleteNodes = function( el ) {
 		// deleting a node is updating a hierarchy:
+		uncache( 'node', el );  // good enough, if there is no server
 		var dPr = $.Deferred();
-		let sId = self.selectedHierarchy.id; // memorize
 		let nI
 		// 1. reload hierarchy to minimize update conflict,
 		//    just specify the id to obtain the last revision:
-	//	self.readContent( 'hierarchy', {id:self.selectedHierarchy.id}, {reload: true} )
+		self.readContent( 'hierarchy', {id:self.data.selectedHierarchy.id}, {reload: true} )
 	//		.done( function( nH ) {
-//				console.debug('deleteNode current hierarchy',nH,el);
+//				console.debug('deleteNodes current hierarchy',nH,el);
 	//			cache( 'hierarchy', nH );
-	//			app.cache.selectedHierarchy = itemById( self.hierarchies, sId ) // update address
-//				console.debug('deleteNode selected hierarchy',sId,self.selectedHierarchy);
+	//			app.cache.selectedProject.data.selectedHierarchy = itemById( self.data.hierarchies, sId )
+//				console.debug('deleteNodes selected hierarchy',self.data.selectedHierarchy);  
 				// 2. delete the node:
 				nI = uncache( 'node', el );
-//				console.debug('deleteNode updated hierarchy',nI,self.selectedHierarchy);
+//				console.debug('deleteNodes updated hierarchy',nI,self.data.hierarchies);
+				No need without server:
 				if( nI ) 
 					// 3. update the hierarchy:
-					self.updateContent( 'hierarchy', self.selectedHierarchy )
+					self.updateContent( 'hierarchy', self.data.hierarchies )
 						.done( dPr.resolve )
-						.fail( dPr.reject )
+						.fail( dPr.reject )  
 	//		})
-	//		.fail( dPr.reject )
-		return dPr
+	//		.fail( dPr.reject )  
+		return dPr 
 	};
 
 	self.initResource = function( oT ) { 
@@ -989,14 +1276,13 @@ modules.construct({
 		//   --> set 'showComments' to true
 		
 			function isReferenced( rId ) {
-				for( var s=self.hierarchies.length-1; s>-1; s-- )
-				//	if( self.hierarchies[s].flatL.indexOf( rId )>-1 ) return true;
-					if( iterate( self.hierarchies[s], function(nd) { return nd.ref!=rId } ) ) return true;
+				for( var s=self.data.hierarchies.length-1; s>-1; s-- )
+					if( iterateNodes( self.data.hierarchies[s], function(nd) { return nd.resource!=rId } ) ) return true;
 				return false
 			}
 		var sDO = $.Deferred();
 
-		var rsp = app.cache.statements.filter( function(s){ 
+		var rsp = app.cache.selectedProject.data.statements.filter( function(s){ 
 								// filter all statements involving res as subject or object:
 								return ( res.id==s.subject.id || res.id==s.object.id )
 								// AND fulfilling certain conditions:
@@ -1017,85 +1303,10 @@ modules.construct({
 		sDO.resolve(rsp);
 		return sDO
 	};
-/*	self.startAutoLoad = function( cb ) {
-//		if( !self.cacheInstances ) return;
-//		console.info( 'startAutoLoad' );
-		if( typeof(cb)=="function" ) { autoLoadCb = cb };
-		autoLoadId = genID( 'aU-' );
-		// get all resources from the server to fill the cache:
-		setTimeout( function() { autoLoad(autoLoadId) }, 600 )  // start a little later ...			
-	};
-	self.stopAutoLoad = function() {
-//		console.info('stopAutoLoad');
-		autoLoadId = null;
-		loading = false
-	};  
-	self.loadInstances = function( cb ) {
-		// for the time being - until the synchronizing will be implemented:
-//		if( !self.cacheInstances ) return;
-		// load the instances of the selected hierarchy (spec) into the cache (but not the types):
-//		console.debug( 'self.loadInstances', self.selectedHierarchy, cb );
-		if( self.selectedHierarchy ) {
-			loading = true;  
-			// update all resources referenced by the selectedHierarchy:
-			loadObjsOf( self.selectedHierarchy )
-				.done( function() {			
-//					loadRelsOf( self.selectedHierarchy );
-					// update the hierarchy (outline).
-					// it is done after the resources to reflect any change in the hierarchy made during the loading.
-					self.readContent( 'hierarchy', self.selectedHierarchy, true )	// true: reload
-						// - call cb to refresh the app:
-						.done( function() { 
-							if( typeof(cb)=="function" ) cb();
-							loading = false
-						})
-						.fail( function(xhr) { 
-							loading = false
-						})
-				})
-				.fail( function(xhr) { 
-					loading = false
-				})
-		}
-	};
-	self.load = function(opts) {
-		var lDO = $.Deferred();
-
-		// load referenced resources and statements ... 
-		if( opts.loadObjects ) {
-			if( opts.loadAllSpecs ) 
-				loadAll( 'resource' )
-					.done( function() { 
-						if( opts.loadRelations )
-							return loadAll( 'statement' )
-								.done( lDO.resolve )
-								.fail( lDO.reject );
-						// else
-						lDO.resolve()
-					})
-					.fail( lDo.reject )
-			else					
-				loadObjsOf( self.selectedHierarchy )
-					.done( function() { 
-						if( opts.loadRelations )
-							return loadRelsOf( self.selectedHierarchy )
-								.done( lDO.resolve )
-								.fail( lDO.reject );
-						// else
-						lDO.resolve()
-					})
-					.fail( lDo.reject );
-			return
-		} else {
-			lDO.resolve()
-		};
-		return lDO
-	};
-*/
 	self.export = function() {
-		if( self.exporting ) return;
+		if( self.data.exporting ) return;
 		let dlg = new BootstrapDialog({
-			title: i18n.LblExport+": '"+self.title+"'",
+			title: i18n.LblExport+": '"+self.data.title+"'",
 			type: 'type-default',
 			message: function (thisDlg) {
 				var form = $('<form id="exportFmt" role="form" class="form-horizontal" ></form>');
@@ -1136,11 +1347,11 @@ modules.construct({
 
 		// --- 
 		function handleError(xhr) {
-			self.exporting = false;
+			self.data.exporting = false;
 			message.show( xhr )
 		}  
 		function exportAs(opts) {
-			if( self.exporting ) return;
+			if( self.data.exporting ) return;
 			
 			if( !opts ) opts = {};
 			if( !opts.format ) opts.format = 'specif';
@@ -1152,40 +1363,22 @@ modules.construct({
 			var eDO = $.Deferred();
 
 			/*	function handleError(xhr) {
-					self.exporting = false; 
+					self.data.exporting = false; 
 					eDO.reject(xhr)
 				}  */
 			
-			if( self.exp ) {
-				self.exporting = true;
-				// reload the project from the server; the value is collected in app.cache:
-			/*	self.readContent( 'hierarchy', self.hierarchies, true )	// reload the hierarchies
-					.done( function() { 	
-						loadFiles()	// reload the files
-							.done( function() { 	
-								// load referenced resources and statements ... 
-								loadAll( 'resource' )
-									.done( function() { 
-										loadAll( 'statement' )
-											.done( function() { */
-												// export the project to file:
-												switch( opts.format ) {
-													case 'specif':
-													case 'reqif':
-														storeAs( opts );
-														break;
-													case 'epub':
-													case 'oxml':
-														generate( opts )  
-												}
-			/*								})
-											.fail( handleError )
-									})
-									.fail( handleError )
-							})
-							.fail( handleError )
-					})
-					.fail( handleError )  */
+			if( self.data.exp ) {
+				self.data.exporting = true;
+
+				switch( opts.format ) {
+					case 'specif':
+					case 'reqif':
+						storeAs( opts );
+						break;
+					case 'epub':
+					case 'oxml':
+						generate( opts )  
+				}
 			} else {
 				eDO.reject({status: 999, statusText: "No permission to export"})
 			};
@@ -1196,7 +1389,8 @@ modules.construct({
 				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null;
 				if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = true;
 				// don't translate now, but within toOxml() to ascertain that classifyProps() works properly:
-				let data = self.get( {translateTitles: false} ), 
+					// ToDo; Use self.read() to get the newest data from the server.
+				let data = specif.toExt( self.data, {translateTitles: false} ), 
 					options = { 
 						classifyProperties: classifyProps,
 						translateTitles: opts.translateTitles,
@@ -1209,10 +1403,11 @@ modules.construct({
 					//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 						hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 						showEmptyProperties: CONFIG.showEmptyProperties,
+					//	hasContent: hasContent,
 						propertiesLabel: 'SpecIF:Properties',
 						statementsLabel: 'SpecIF:Statements',
-						done: function() { app.cache.exporting=false; eDO.resolve() },
-						fail: function(xhr) { app.cache.exporting=false; eDO.reject(xhr) }
+						done: function() { app.cache.selectedProject.data.exporting=false; eDO.resolve() },
+						fail: function(xhr) { app.cache.selectedProject.data.exporting=false; eDO.reject(xhr) }
 					};
 				switch( opts.format ) {
 					case 'epub':
@@ -1225,7 +1420,8 @@ modules.construct({
 			function storeAs( opts ) {
 				if( !opts || ['specif','reqif'].indexOf(opts.format)<0 ) return null;
 				let zip = new JSZip(),
-					data = self.get( {translateTitles: false} );
+					// ToDo; Use self.read() to get the newest data from the server.
+					data = specif.toExt( self.data, {translateTitles: false} );
 
 				// Add the files:
 				data.files.forEach( function(f) {
@@ -1246,7 +1442,7 @@ modules.construct({
 				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
 				// Add the project:
 				zip.file( fName, blob );
-				blob = null; // free heap space
+				blob = undefined; // free heap space
 				
 				// done, store the specifz:
 				zip.generateAsync({
@@ -1256,18 +1452,454 @@ modules.construct({
 						function(blob) {
 //							console.debug("storing ",data.title+".specifz");
 							saveAs(blob, fName+"z");
-							self.exporting = false;
+							self.data.exporting = false;
 							eDO.resolve()
 					}, 
 						function(xhr) {
 							console.error("Cannot store ",fName+"z");
-							self.exporting = false;
+							self.data.exporting = false;
 							eDO.reject()
 					})
 			}
 		}
 	};
-	self.set = function( spD ) {
+	self.abort = function() {
+		console.info('abort specif');
+	//	server.abort();
+		self.abortFlag = true
+	};
+	self.init();
+	return self;
+//////////
+// some local helper routines:
+
+/*	function queryObjects( qu, reload ) {   
+		// get all resources of the specified type: qu is {type: class}
+	//	if( !reload ) {
+			// collect all resources with the queried type:
+			var oL = forAll( self.data.resources, function(o) { return o['class']==qu.type?o:null } ),
+				dO = $.Deferred();  
+			dO.resolve( oL );
+			return dO
+	//	};
+	}
+	function loadFiles() {
+		// in case of ReqIF Server, only a list of file meta data is delivered,
+		// whereas in case of PouchDB, the files themselves are delivered.
+		return self.readContent( 'file', 'all', {reload:true} )
+	}
+	function loadObjsOf( sp ) {
+		// Cache all resources referenced in the given spec (hierarchy):
+		if( !sp ) { sp = self.data.selectedHierarchy };
+//		console.debug( 'loadObjsOf', sp );
+
+		var cDO = $.Deferred();
+
+			// is called recursively until the whole list has been processed:
+			function loadObjs( oL ) {
+				if( !loading && !self.data.exporting ) { return };  // in case the loading has been stopped (by stopAutoLoad) ...
+				// convert list of hierarchy entries to list of resources:
+				var rL=[];
+				for( var o=oL.length-1;o>-1;o-- ) rL[o] = {id: oL[o]};  
+
+				return server.readContent( 'resource', rL )
+					.done(function(rsp) {
+						// continue caching, if the project hasn't been left, meanwhile:
+						if( sp ) {  // sp is null, if the project has been left.
+							cacheL( self.data.resources, rsp );
+					
+							if( cI<sp.flatL.length ) {
+								rL = sp.flatL.slice(cI,cI+CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
+								cI += rL.length;  // current index
+								loadObjs( rL );
+								return
+							} else {
+								cDO.resolve( self.data.resources );
+								return
+							}
+						}
+					})
+					.fail( cDO.reject )
+			}
+		if( sp && sp.flatL.length>0 ) {
+			var rL = sp.flatL.slice(0,CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
+				cI=rL.length;  // current index pointing to start of next batch
+			loadObjs( rL )
+		} else {
+			cDO.resolve([])
+		};
+		return cDO
+	}
+	function loadRelsOf( sp ) {
+		// Check all referenced resources and get their statements.  Cache the results.  
+		// Not efficient, but effective and without alternative in light of the server API.
+		if( !sp ) { sp = self.data.selectedHierarchy };
+//		console.debug( 'loadRelsOf', sp );
+
+		var rDO = $.Deferred();
+
+			// is called recursively until the whole list has been processed:
+			function loadRels( ob ) {
+				if( !loading && !self.data.exporting ) { return };  // in case the loading has been stopped (by stopAutoLoad) ...
+//				console.debug( 'loadRels', ob );
+				self.readStatementsOf( ob )
+					.done(function(rsp) {
+						// continue caching, if the project hasn't been left, meanwhile (sp==null):
+						if( sp && ++cI<sp.flatL.length ) {
+							loadRels( {id:sp.flatL[cI]} )
+						} else {
+							rDO.resolve( self.data.statements )
+						}
+					})
+					.fail( rDO.reject )
+			}
+		if( sp && sp.flatL.length && self.data.statementClasses.length>0 ) {
+			var cI=0;  // current index
+			loadRels( {id:sp.flatL[cI]} )
+		} else {
+			rDO.resolve([])
+		};
+		return rDO
+	}
+	function loadAll( ctg ) {
+		// Cycle through all hierarchies and load the instances of the specified ctg:
+		// The loaded data is cached.
+		switch( ctg ) {
+			case 'resource': 	var fn=loadObjsOf; break;
+			case 'statement': 	var fn=loadRelsOf; break;
+			default: return null
+		};
+		var dO = $.Deferred(),
+			pend = self.data.hierarchies.length;
+		for( var i=self.data.hierarchies.length-1; i>-1; i-- ) {
+			fn( self.data.hierarchies[i] )
+				.done(function() {
+					if(--pend<1) dO.resolve()
+				})
+				.fail( dO.reject )
+		};
+		if( self.data.hierarchies.length<1 ) dO.resolve();
+		return dO
+	}
+	function autoLoad( aU ) {
+//		console.debug( 'cache.autoLoad', aU );
+		// only update the cache and continue the chain, if autoLoadId of the time of execution is equal to the time of calling (aU):
+		if( autoLoadId && aU==autoLoadId ) {
+			// Start timer for next update:
+			setTimeout( function() { autoLoad( aU ) }, CONFIG.cacheAutoLoadPeriod )
+			
+			// skip this turn, if autoLoad from last trigger is still being executed (avoid multiple updates in parallel):
+			if( loading ) { console.info( 'Skipping autoLoad cycle' ); return };
+			// else, start the update:
+			loading = true;
+			// 1) load the dataTypes:
+			self.readContent( 'dataType', [], true )	// true: reload
+				.done( function() {
+					if( autoLoadId && aU==autoLoadId ) {  // if the update hasn't been stopped, meanwhile
+						// 2) load allClasses:
+						self.readContent( 'anyClass', [], true )
+							.done( function() {
+								// new allClasses and the permissions have arrived.
+								// 3) update the current spec and the referenced resources:
+								if( autoLoadId && aU==autoLoadId )   // if the update hasn't been stopped, meanwhile
+									self.loadInstances( autoLoadCb )
+							})
+							.fail( function(xhr) { 
+								loading = false	// e.g. when importing, the calls will fail, but thereafter the autoLoad shall resume.
+							})
+					}
+				})
+				.fail( function(xhr) { 
+					loading = false	// e.g. when importing, the calls will fail, but thereafter the autoLoad shall resume.
+				})
+		}
+		// else: project has been left or another autoLoad chain has been started, so break this chain.
+	} 
+
+	function addBaseTypes( item ) {
+		if( !server || server.type=='PouchDB' ) return;
+		// only needed for ReqIF Server:
+		// add base types for easier (context-free) processing of properties when storing; 
+		// for use with createContent and updateContent functions. 
+		if( !item || Array.isArray(item)&&item.length<1 ) return;
+			function addBT(itm) {
+				if( !itm.properties || itm.properties.length<1 ) return;
+				let sT = itemById( self.data.allClasses, itm['class'] ),pT=null,dT=null;
+				for( var a=itm.properties.length-1; a>-1; a-- ) {
+					pT = itemById( sT.propertyClasses, itm.properties[a].class );
+					dT = itemById( self.data.dataTypes, pT.dataType );
+					itm.properties[a].baseType = dT.type
+				}
+			}
+		if( Array.isArray(item) )
+			item.forEach( function(itm) {addBT(itm)} )
+		else 
+			addBT(item)
+	}
+	function addPermissions( item ) { 
+		// add permissions; 
+		// for use with createContent and updateContent functions. 
+		// Take the correct permissions from the type:
+		if( !item || Array.isArray(item)&&item.length<1 ) return;
+			function addPerms( itm ) {
+				// if current user can create an type, he has the other permissions, as well:
+				itm.upd=true; 
+				itm.del=true;
+				if( itm.properties )
+					itm.properties.forEach( function(ip) {
+						ip.upd=true;
+						ip.del=true
+					})
+			}
+		if( Array.isArray(item) )
+			item.forEach( function(itm) {addPerms(itm)} )
+		else 
+			addPerms(item)
+	}  
+*/
+	function cache( ctg, item ) { 
+		if( !item || Array.isArray(item)&&item.length<1 ) return;
+		// If item is a list, all elements must have the same category.
+		let fn = Array.isArray(item)?cacheL:cacheE;
+		switch(ctg) {
+			case 'hierarchy':
+			case 'dataType':
+			case 'propertyClass':		return fn( cacheOf(ctg), item );
+			case 'resourceClass': 
+			case 'statementClass':		fn( self.data.allClasses, item); return fn( cacheOf(ctg), item );
+			case 'class':				if(Array.isArray(item)||!item['class']) return null;  // cannot process arrays in this case, yet.
+//										console.debug('cache class',item,itemById(self.data.allClasses,item['class'])); 
+										return cacheAtPosition( itemById(self.data.allClasses,item['class']).propertyClasses, item ); ;
+			case 'resource': 		
+			case 'statement': 	
+			case 'file': 				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
+										else return;
+			case 'node':				if(Array.isArray(item)||!item.parent) return null;
+//										console.debug('cache',ctg,item);
+										return cacheNode( item ); 
+			default: return null
+		}
+	}
+	function delNodes( L, el ) {
+		// Delete all nodes referencing the specified element;
+		// if el is the node, 'id' will be used,
+		// and if el is the referenced resource, 'resource' will be used to identify the node.
+//		console.debug('delNodes',L,el);
+		if( !Array.isArray( L ) ) return;
+		let cont, a;
+		for( var h=L.length-1; h>-1; h-- ) {
+			cont = true;
+			for( a in el ) {
+				// any specified attribute works:
+				if( L[h][a]==el[a] ) {
+//					console.debug( 'deleting node ',L[h] );
+					L.splice(h,1);
+					cont = false;
+					break	// can't delete more than once ;-)
+				}
+			};
+			// step down, if the node hasn't been deleted:
+			if( cont ) delNodes( L[h].nodes, el )
+		}
+	}
+	function uncache( ctg, item ) { 
+		/*	function delNode( L, eId ) {
+//				console.debug('delNode',L);
+				for( var h=L.length-1;h>-1;h-- ) {
+					if( L[h].id==eId ) {
+						L.splice(h,1);
+						return true
+					};
+					if( delNode( L[h].nodes, eId ) ) return true
+				};
+				return false
+			} */
+		if( !item ) return;
+		let fn = Array.isArray(item)?uncacheL:uncacheE;
+		switch(ctg) {
+			case 'hierarchy':		
+			case 'dataType': 
+			case 'propertyClass':		return fn( cacheOf(ctg), item );
+			case 'resourceClass': 	
+			case 'statementClass': 		fn( self.data.allClasses, item); return fn( cacheOf(ctg), item );
+			case 'class':				let sT = itemById(self.data.allClasses,item['class']);
+//										console.debug('uncache class',item,sT); 
+										return fn( sT.propertyClasses, item );
+			case 'resource': 	
+			case 'statement': 			
+			case 'file':				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
+										else return;
+			case 'node':				if( Array.isArray(item) ) return null;
+										return delNodes( self.data.hierarchies, item );
+			default: return null
+		}
+	}
+	function cacheOf( ctg ) {
+		// Return the cache for a given category:
+		switch(ctg) {
+			case 'dataType':		return self.data.dataTypes;
+			case 'propertyClass':	return self.data.propertyClasses;
+			case 'resourceClass':	return self.data.resourceClasses;
+			case 'statementClass':	return self.data.statementClasses;
+			case 'resource':		return self.data.resources;
+			case 'statement':		return self.data.statements;
+			case 'hierarchy':		return self.data.hierarchies;
+			case 'file':			return self.data.files;
+			default: return null
+		}
+	}
+	function readCache( ctg, itm, opts ) {
+		// Read an item from cache, unless 'reload' is specified:
+		if( !opts.reload ) {
+			let arr = cacheOf(ctg),
+				idx=null;
+//			console.debug( 'readCache', arr );
+			if( itm=='all' ) {
+					// return all cached resources asynchronously:
+					var dO = $.Deferred();  
+//					console.debug( 'readCache', arr, itm );
+					dO.resolve( [].concat(arr) );	// return a new list with the original elements
+					return dO
+			};
+			if( Array.isArray(itm) ) {
+				let allFound=true, i=0, I=itm.length;
+				while( allFound && i<I ) {
+					idx = indexById( arr, itm[i].id );
+					if( idx>-1 )
+						itm[i] = arr[idx]
+					else
+						allFound = false;
+					i++
+				};
+				if( allFound ) {
+					// return the cached resources asynchronously:
+					var dO = $.Deferred();  
+//					console.debug( 'readCache array - allFound', arr, itm );
+					// delay the answer a little, so that the caller can properly process a batch:
+					setTimeout(function() {
+						dO.resolve( itm )
+					}, opts.timelag );
+					return dO
+				}
+			} else {
+				// is a single item:
+				idx = indexById( arr, itm.id );
+				if( idx>-1 ) {
+					// return the cached object asynchronously:
+					var dO = $.Deferred();  
+					// delay the answer a little, so that the caller can properly process a batch:
+					setTimeout(function() {
+						dO.resolve( arr[idx] )
+					}, opts.timelag );
+//					console.debug('readCache single item - found', ctg, 'from cache:',arr[idx]);
+					return dO
+				}
+			}
+//			console.debug('readCache - not found', ctg, itm);
+		};
+		return null
+	}
+/*	function cacheNode( e ) {  // ( hierarchy entry )
+		// add or replace a node in a hierarchy;
+		// e must specify the parent node and optionally a predecessor.
+			function findNode( L, eId ) {
+//				console.debug('findNode',L);
+				let n=null;
+				for( var h=L.length-1;h>-1;h-- ) {
+					if( L[h].id==eId ) return L[h];
+					n = findNode( L[h].nodes, eId );
+					if( n ) return n
+				};
+				return null
+			}
+		if( !(e && e.parent) ) return null;
+		// cycle through all hierarchies and nodes to find the parent:
+	//	let pa = findNode( self.data.hierarchies, e.parent ); 
+		// assuming that nodes are only inserted deleted in the selected hierarchy:
+		let pa = findNode( self.data.selectedHierarchy.nodes, e.parent );
+//		console.debug('cacheNode',e,pa);
+		if( !pa ) return -1;
+		if(pa.nodes==undefined) pa.nodes = [];
+		return cacheAtPosition( pa.nodes, e )
+	}
+	function cacheAtPosition( L, e ) {  // ( list, entry )
+		// add or update the element e in a list L:
+		let n = indexById( L, e.id );
+		let p = indexById( L, e.predecessor );
+		if( n<0 ) 	{  
+			// add, if not yet listed:
+			L.splice(++p,0,e);   
+//			console.debug('cacheA',p,L);
+			return p
+		};
+		if( n!=p ) {
+			// remove existing and add the new element:
+			L.splice(n,1);  
+			p = indexById( L, e.predecessor );			
+			L.splice(++p,0,e);
+//			console.debug('cacheA',p,L);
+			return p
+		};
+		// update the existing otherwise:
+		L[n] = e; 
+		return n 
+	}  */
+}
+
+//////////////////////////
+// global helper functions:
+const specif = {
+	check: function( data ) {
+		// Check the SpecIF data for schema compliance and consistency;
+		// no data of app.cache is modified:
+		var cDO = $.Deferred();
+		// 1. Validate the data using the SpecIF schema:
+		cDO.notify('Checking schema',10);
+
+		// Get the specified schema file from the server:
+		httpGet({
+		//	url: "https://specif.de/v"+data.specifVersion+"/schema", 
+			url: "./specif.de/v"+data.specifVersion+"/schema", 
+			responseType: 'arraybuffer',
+			withCredentials: false,	
+			done: function(xhr) { 
+//				console.debug('schema', xhr);
+						// 1. check data against schema:
+						let rc = checkSchema( JSON.parse( buf2str(xhr.response) ), data );
+						if( rc.status!=0 ) {
+							// older versions of the checking routine don't set the responseType:
+							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
+								rc.responseType = 'text';
+							cDO.reject( rc ); 
+							return 
+						};
+
+						// 2. Check further constraints:
+						cDO.notify('Checking constraints',20);
+						rc = checkConstraints( data );
+						if( rc.status==0 ) {
+							cDO.resolve( data, rc )
+						} else {
+							// older versions of the checking routine don't set the responseType:
+							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
+								rc.responseType = 'text';
+//							console.debug('SpecIF Consistency Check:', rc);
+							cDO.reject( rc )
+						}
+			},	
+			fail: function(xhr) { 
+				switch( xhr.status ) {
+					case 404:
+						xhr = { status: 903, statusText: 'SpecIF version '+data.specifVersion+' is not supported by the program!' };
+					default:
+						cDO.reject(xhr)
+				}
+			} 
+		//	then: 
+		});
+		return cDO
+	},
+	toInt: function( spD ) {
 		// transform SpecIF to internal data;
 		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.
@@ -1645,9 +2277,9 @@ modules.construct({
 //				console.debug('file 2int',iF,oF);
 				return oF
 			}
-	};
-	self.get = function( opts ) {
-		// transform the current content of prj (in internal data format) to SpecIF
+	},
+	toExt: function( iD, opts ) {
+		// transform the data in internal data format to SpecIF:
 		if( opts ) {
 			if( typeof(opts.translateTitles)!='boolean' ) 
 				opts.translateTitles = false
@@ -1659,13 +2291,13 @@ modules.construct({
 		
 		// transform internal data to SpecIF:
 		var spD = {
-				id: app.cache.id,
-				title: app.cache.title
+				specifVersion: app.specifVersion,
+				generator: app.productTitle,
+				generatorVersion: app.productVersion,
+				id: iD.id,
+				title: iD.title
 			};
-		if( app.cache.description ) spD.description = app.cache.description;
-		spD.specifVersion = app.specifVersion;
-		spD.generator = app.productTitle;
-		spD.generatorVersion = app.productVersion;
+		if( app.cache.selectedProject.data.description ) spD.description = iD.description;
 		spD.rights = {
 			title: "Creative Commons 4.0 CC BY-SA",
 			type: "dcterms:rights",
@@ -1682,25 +2314,25 @@ modules.construct({
 			if( app.me.organization )
 				spD.createdBy.org = {organizationName: app.me.organization}
 		} else {
-			if( app.cache.createdBy && app.cache.createdBy.email && app.cache.createdBy.email.value )  {
+			if( iD.createdBy && iD.createdBy.email && iD.createdBy.email.value )  {
 				spD.createdBy = { 
-					familyName: app.cache.createdBy.familyName, 
-					givenName: app.cache.createdBy.givenName, 
-					email: {type:"text/html",value:app.cache.createdBy.email.value}
+					familyName: iD.createdBy.familyName, 
+					givenName: iD.createdBy.givenName, 
+					email: {type:"text/html",value:iD.createdBy.email.value}
 				};
-				if( app.cache.createdBy.org && app.cache.createdBy.org.organizationName )
-					spD.createdBy.org = app.cache.createdBy.org
+				if( iD.createdBy.org && iD.createdBy.org.organizationName )
+					spD.createdBy.org = iD.createdBy.org
 			}
 			// else: no createdBy, if there is no data 
 		};
-		spD.dataTypes = forAll( app.cache.dataTypes, dT2ext );
-		spD.propertyClasses = forAll( app.cache.propertyClasses, pC2ext );
-		spD.resourceClasses = forAll( app.cache.resourceClasses, rC2ext );
-		spD.statementClasses = forAll( app.cache.statementClasses, sC2ext );
-		spD.resources = forAll( app.cache.resources, r2ext );
-		spD.statements = forAll( app.cache.statements, s2ext );
-		spD.hierarchies = forAll( app.cache.hierarchies, h2ext );
-		spD.files = forAll( app.cache.files, f2ext );
+		spD.dataTypes = forAll( iD.dataTypes, dT2ext );
+		spD.propertyClasses = forAll( iD.propertyClasses, pC2ext );
+		spD.resourceClasses = forAll( iD.resourceClasses, rC2ext );
+		spD.statementClasses = forAll( iD.statementClasses, sC2ext );
+		spD.resources = forAll( iD.resources, r2ext );
+		spD.statements = forAll( iD.statements, s2ext );
+		spD.hierarchies = forAll( iD.hierarchies, h2ext );
+		spD.files = forAll( iD.files, f2ext );
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
 //		console.debug('specif.get exit',spD);
 		return spD
@@ -1720,7 +2352,7 @@ modules.construct({
 				if( iE.description ) oE.description = iE.description;
 				if( iE.value ) oE.value = iE.value;
 				oE.dataType = iE.dataType;
-				let dT = itemById( app.cache.dataTypes, iE.dataType );
+				let dT = itemById( iD.dataTypes, iE.dataType );
 				switch( dT.type ) {
 					case 'xs:enumeration': 
 						// With SpecIF, he 'multiple' property should be defined at dataType level and can be overridden at propertyType level.
@@ -1832,7 +2464,7 @@ modules.construct({
 				// so we translate, if so desired, e.g. when exporting to ePub:
 				// ToDo: Take the title from statement properties, if provided (similarly to resources).
 				// Take the statementClass's title, if the statement does not have it:
-				iS.title = iS.title || itemById( app.cache.statementClasses, iS['class'] ).title;
+				iS.title = iS.title || itemById( iD.statementClasses, iS['class'] ).title;
 				eS.title = opts.translateTitles? titleOf(iS) : iS.title;
 				eS.subject = iS.subject.id;
 				eS.object = iS.object.id;
@@ -1870,420 +2502,8 @@ modules.construct({
 	//			if( iF.createdBy ) eF.createdBy = iF.createdBy;
 				return eF
 			}
-	};
-	self.check = function( data ) {
-		// Check the SpecIF data for schema compliance and consistency;
-		// no data of app.cache is modified:
-		var cDO = $.Deferred();
-		// 1. Validate the data using the SpecIF schema:
-		cDO.notify('Checking schema',10);
-
-		// Get the specified schema file from the server:
-		httpGet({
-		//	url: "https://specif.de/v"+data.specifVersion+"/schema", 
-			url: "./specif.de/v"+data.specifVersion+"/schema", 
-			responseType: 'arraybuffer',
-			withCredentials: false,	
-			done: function(xhr) { 
-//				console.debug('schema', xhr);
-						// 1. check data against schema:
-						let rc = checkSchema( JSON.parse( buf2str(xhr.response) ), data );
-						if( rc.status!=0 ) {
-							// older versions of the checking routine don't set the responseType:
-							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-								rc.responseType = 'text';
-							cDO.reject( rc ); 
-							return 
-						};
-
-						// 2. Check further constraints:
-						cDO.notify('Checking constraints',20);
-						rc = checkConstraints( data );
-						if( rc.status==0 ) {
-							cDO.resolve( data, rc )
-						} else {
-							// older versions of the checking routine don't set the responseType:
-							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-								rc.responseType = 'text';
-//							console.debug('SpecIF Consistency Check:', rc);
-							cDO.reject( rc )
-						}
-			},	
-			fail: function(xhr) { 
-				switch( xhr.status ) {
-					case 404:
-						xhr = { status: 903, statusText: 'SpecIF version '+data.specifVersion+' is not supported by the program!' };
-					default:
-						cDO.reject(xhr)
-				}
-			} 
-		//	then: 
-		});
-		return cDO
-	};
-	self.abort = function() {
-		console.info('abort specif');
-	//	server.abort();
-		self.abortFlag = true
-	};
-	return self
-
-//////////
-// some local helper routines:
-
-/*	function queryObjects( qu, reload ) {   
-		// get all resources of the specified type: qu is {type: class}
-	//	if( !reload ) {
-			// collect all resources with the queried type:
-			var oL = forAll( self.resources, function(o) { return o['class']==qu.type?o:null } ),
-				dO = $.Deferred();  
-			dO.resolve( oL );
-			return dO
-	//	};
 	}
-	function loadFiles() {
-		// in case of ReqIF Server, only a list of file meta data is delivered,
-		// whereas in case of PouchDB, the files themselves are delivered.
-		return self.readContent( 'file', 'all', {reload:true} )
-	}
-	function loadObjsOf( sp ) {
-		// Cache all resources referenced in the given spec (hierarchy):
-		if( !sp ) { sp = self.selectedHierarchy };
-//		console.debug( 'loadObjsOf', sp );
-
-		var cDO = $.Deferred();
-
-			// is called recursively until the whole list has been processed:
-			function loadObjs( oL ) {
-				if( !loading && !self.exporting ) { return };  // in case the loading has been stopped (by stopAutoLoad) ...
-				// convert list of hierarchy entries to list of resources:
-				var rL=[];
-				for( var o=oL.length-1;o>-1;o-- ) rL[o] = {id: oL[o]};  
-
-				return server.readContent( 'resource', rL )
-					.done(function(rsp) {
-						// continue caching, if the project hasn't been left, meanwhile:
-						if( sp ) {  // sp is null, if the project has been left.
-							cacheL( self.resources, rsp );
-					
-							if( cI<sp.flatL.length ) {
-								rL = sp.flatL.slice(cI,cI+CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
-								cI += rL.length;  // current index
-								loadObjs( rL );
-								return
-							} else {
-								cDO.resolve( self.resources );
-								return
-							}
-						}
-					})
-					.fail( cDO.reject )
-			}
-		if( sp && sp.flatL.length>0 ) {
-			var rL = sp.flatL.slice(0,CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
-				cI=rL.length;  // current index pointing to start of next batch
-			loadObjs( rL )
-		} else {
-			cDO.resolve([])
-		};
-		return cDO
-	}
-	function loadRelsOf( sp ) {
-		// Check all referenced resources and get their statements.  Cache the results.  
-		// Not efficient, but effective and without alternative in light of the server API.
-		if( !sp ) { sp = self.selectedHierarchy };
-//		console.debug( 'loadRelsOf', sp );
-
-		var rDO = $.Deferred();
-
-			// is called recursively until the whole list has been processed:
-			function loadRels( ob ) {
-				if( !loading && !self.exporting ) { return };  // in case the loading has been stopped (by stopAutoLoad) ...
-//				console.debug( 'loadRels', ob );
-				self.readStatementsOf( ob )
-					.done(function(rsp) {
-						// continue caching, if the project hasn't been left, meanwhile (sp==null):
-						if( sp && ++cI<sp.flatL.length ) {
-							loadRels( {id:sp.flatL[cI]} )
-						} else {
-							rDO.resolve( self.statements )
-						}
-					})
-					.fail( rDO.reject )
-			}
-		if( sp && sp.flatL.length && self.statementClasses.length>0 ) {
-			var cI=0;  // current index
-			loadRels( {id:sp.flatL[cI]} )
-		} else {
-			rDO.resolve([])
-		};
-		return rDO
-	}
-	function loadAll( ctg ) {
-		// Cycle through all hierarchies and load the instances of the specified ctg:
-		// The loaded data is cached.
-		switch( ctg ) {
-			case 'resource': 		var fn=loadObjsOf; break;
-			case 'statement': 	var fn=loadRelsOf; break;
-			default: return null
-		};
-		var dO = $.Deferred(),
-			pend = self.hierarchies.length;
-		for( var i=self.hierarchies.length-1; i>-1; i-- ) {
-			fn( self.hierarchies[i] )
-				.done(function() {
-					if(--pend<1) dO.resolve()
-				})
-				.fail( dO.reject )
-		};
-		if( self.hierarchies.length<1 ) dO.resolve();
-		return dO
-	}
-	function autoLoad( aU ) {
-//		console.debug( 'cache.autoLoad', aU );
-		// only update the cache and continue the chain, if autoLoadId of the time of execution is equal to the time of calling (aU):
-		if( autoLoadId && aU==autoLoadId ) {
-			// Start timer for next update:
-			setTimeout( function() { autoLoad( aU ) }, CONFIG.cacheAutoLoadPeriod )
-			
-			// skip this turn, if autoLoad from last trigger is still being executed (avoid multiple updates in parallel):
-			if( loading ) { console.info( 'Skipping autoLoad cycle' ); return };
-			// else, start the update:
-			loading = true;
-			// 1) load the dataTypes:
-			self.readContent( 'dataType', [], true )	// true: reload
-				.done( function() {
-					if( autoLoadId && aU==autoLoadId ) {  // if the update hasn't been stopped, meanwhile
-						// 2) load allClasses:
-						self.readContent( 'anyClass', [], true )
-							.done( function() {
-								// new allClasses and the permissions have arrived.
-								// 3) update the current spec and the referenced resources:
-								if( autoLoadId && aU==autoLoadId )   // if the update hasn't been stopped, meanwhile
-									self.loadInstances( autoLoadCb )
-							})
-							.fail( function(xhr) { 
-								loading = false	// e.g. when importing, the calls will fail, but thereafter the autoLoad shall resume.
-							})
-					}
-				})
-				.fail( function(xhr) { 
-					loading = false	// e.g. when importing, the calls will fail, but thereafter the autoLoad shall resume.
-				})
-		}
-		// else: project has been left or another autoLoad chain has been started, so break this chain.
-	} 
-
-	function addBaseTypes( item ) {
-		if( !server || server.type=='PouchDB' ) return;
-		// only needed for ReqIF Server:
-		// add base types for easier (context-free) processing of properties when storing; 
-		// for use with createContent and updateContent functions. 
-		if( !item || Array.isArray(item)&&item.length<1 ) return;
-			function addBT(itm) {
-				if( !itm.properties || itm.properties.length<1 ) return;
-				let sT = itemById( self.allClasses, itm['class'] ),pT=null,dT=null;
-				for( var a=itm.properties.length-1; a>-1; a-- ) {
-					pT = itemById( sT.propertyClasses, itm.properties[a].class );
-					dT = itemById( self.dataTypes, pT.dataType );
-					itm.properties[a].baseType = dT.type
-				}
-			}
-		if( Array.isArray(item) )
-			item.forEach( function(itm) {addBT(itm)} )
-		else 
-			addBT(item)
-	}
-	function addPermissions( item ) { 
-		// add permissions; 
-		// for use with createContent and updateContent functions. 
-		// Take the correct permissions from the type:
-		if( !item || Array.isArray(item)&&item.length<1 ) return;
-			function addPerms( itm ) {
-				// if current user can create an type, he has the other permissions, as well:
-				itm.upd=true; 
-				itm.del=true;
-				if( itm.properties )
-					itm.properties.forEach( function(ip) {
-						ip.upd=true;
-						ip.del=true
-					})
-			}
-		if( Array.isArray(item) )
-			item.forEach( function(itm) {addPerms(itm)} )
-		else 
-			addPerms(item)
-	}  
-*/
-	function cache( ctg, item ) { 
-		if( !item || Array.isArray(item)&&item.length<1 ) return;
-		// If item is a list, all elements must have the same category.
-		let fn = Array.isArray(item)?cacheL:cacheE;
-		switch(ctg) {
-			case 'hierarchy':
-			case 'dataType':
-			case 'propertyClass':		return fn( cacheOf(ctg), item );
-			case 'resourceClass': 
-			case 'statementClass':		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
-			case 'class':				if(Array.isArray(item)||!item['class']) return null;  // cannot process arrays in this case, yet.
-//										console.debug('cache class',item,itemById(self.allClasses,item['class'])); 
-										return cacheAtPosition( itemById(self.allClasses,item['class']).propertyClasses, item ); ;
-			case 'resource': 		
-			case 'statement': 	
-			case 'file': 				if(self.cacheInstances) return fn( cacheOf(ctg), item );
-										else return;
-			case 'node':				if(Array.isArray(item)||!item.parent) return null;
-//										console.debug('cache',ctg,item);
-										return cacheNode( item ); 
-			default: return null
-		}
-	}
-	function uncache( ctg, item ) { 
-			function delNode( L, eId ) {
-//				console.debug('delNode',L);
-				for( var h=L.length-1;h>-1;h-- ) {
-					if( L[h].id==eId ) {
-						L.splice(h,1);
-						return true
-					};
-					if( delNode( L[h].nodes, eId ) ) return true
-				};
-				return false
-			}
-		if( !item ) return;
-		let fn = Array.isArray(item)?uncacheL:uncacheE;
-		switch(ctg) {
-			case 'hierarchy':		
-			case 'dataType': 
-			case 'propertyClass':		return fn( cacheOf(ctg), item );
-			case 'resourceClass': 	
-			case 'statementClass': 		fn( self.allClasses, item); return fn( cacheOf(ctg), item );
-			case 'class':				let sT = itemById(self.allClasses,item['class']);
-//										console.debug('uncache class',item,sT); 
-										return fn( sT.propertyClasses, item );
-			case 'resource': 	
-			case 'statement': 			
-			case 'file':				if(self.cacheInstances) return fn( cacheOf(ctg), item );
-										else return;
-			case 'node':				if( Array.isArray(item) ) return null;
-										return delNode( self.hierarchies, item.id );
-			default: return null
-		}
-	}
-	function cacheOf( ctg ) {
-		// Return the cache for a given category:
-		switch(ctg) {
-			case 'dataType':		return self.dataTypes;
-			case 'propertyClass':	return self.propertyClasses;
-			case 'resourceClass':	return self.resourceClasses;
-			case 'statementClass':	return self.statementClasses;
-			case 'resource':		return self.resources;
-			case 'statement':		return self.statements;
-			case 'hierarchy':		return self.hierarchies;
-			case 'file':			return self.files;
-			default: return null
-		}
-	}
-	function readCache( ctg, itm, opts ) {
-		// Read an item from cache, unless 'reload' is specified:
-		if( !opts.reload ) {
-			let arr = cacheOf(ctg),
-				idx=null;
-//			console.debug( 'readCache', arr );
-			if( itm=='all' ) {
-					// return all cached resources asynchronously:
-					var dO = $.Deferred();  
-//					console.debug( 'readCache', arr, itm );
-					dO.resolve( [].concat(arr) );	// return a new list with the original elements
-					return dO
-			};
-			if( Array.isArray(itm) ) {
-				let allFound=true, i=0, I=itm.length;
-				while( allFound && i<I ) {
-					idx = indexById( arr, itm[i].id );
-					if( idx>-1 )
-						itm[i] = arr[idx]
-					else
-						allFound = false;
-					i++
-				};
-				if( allFound ) {
-					// return the cached resources asynchronously:
-					var dO = $.Deferred();  
-//					console.debug( 'readCache array - allFound', arr, itm );
-					// delay the answer a little, so that the caller can properly process a batch:
-					setTimeout(function() {
-						dO.resolve( itm )
-					}, opts.timelag );
-					return dO
-				}
-			} else {
-				// is a single item:
-				idx = indexById( arr, itm.id );
-				if( idx>-1 ) {
-					// return the cached object asynchronously:
-					var dO = $.Deferred();  
-					// delay the answer a little, so that the caller can properly process a batch:
-					setTimeout(function() {
-						dO.resolve( arr[idx] )
-					}, opts.timelag );
-//					console.debug('readCache single item - found', ctg, 'from cache:',arr[idx]);
-					return dO
-				}
-			}
-//			console.debug('readCache - not found', ctg, itm);
-		};
-		return null
-	}
-/*	function cacheNode( e ) {  // ( hierarchy entry )
-		// add or replace a node in a hierarchy;
-		// e must specify the parent node and optionally a predecessor.
-			function findNode( L, eId ) {
-//				console.debug('findNode',L);
-				let n=null;
-				for( var h=L.length-1;h>-1;h-- ) {
-					if( L[h].id==eId ) return L[h];
-					n = findNode( L[h].nodes, eId );
-					if( n ) return n
-				};
-				return null
-			}
-		if( !(e && e.parent) ) return null;
-		// cycle through all hierarchies and nodes to find the parent:
-	//	let pa = findNode( self.hierarchies, e.parent ); 
-		// assuming that nodes are only inserted deleted in the selected hierarchy:
-		let pa = findNode( self.selectedHierarchy.nodes, e.parent );
-//		console.debug('cacheNode',e,pa);
-		if( !pa ) return -1;
-		if(pa.nodes==undefined) pa.nodes = [];
-		return cacheAtPosition( pa.nodes, e )
-	}
-	function cacheAtPosition( L, e ) {  // ( list, entry )
-		// add or update the element e in a list L:
-		let n = indexById( L, e.id );
-		let p = indexById( L, e.predecessor );
-		if( n<0 ) 	{  
-			// add, if not yet listed:
-			L.splice(++p,0,e);   
-//			console.debug('cacheA',p,L);
-			return p
-		};
-		if( n!=p ) {
-			// remove existing and add the new element:
-			L.splice(n,1);  
-			p = indexById( L, e.predecessor );			
-			L.splice(++p,0,e);
-//			console.debug('cacheA',p,L);
-			return p
-		};
-		// update the existing otherwise:
-		L[n] = e; 
-		return n 
-	}  */
-});  
-
-//////////////////////////
-// global helper functions:
+}
 function dataTypeOf( pr, pCid ) {
 	// given a property class ID, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
@@ -2314,7 +2534,7 @@ function enumValStr( dT, prp ) {
 	return ct
 }
 function multipleChoice( pC, prj ) {
-	prj = prj || app.cache;
+	prj = prj || app.cache.selectedProject.data;
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
 	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
@@ -2375,29 +2595,28 @@ function elementTitleWithIcon( el ) {
 	// add an icon to an element's title;
 	// works for all types of elements, i.e. resources, statements and hierarchies.
 	// The icon is defined in the elements's type:
-	return CONFIG.addIconToInstance?resTitleOf(el).addIcon( itemById( app.cache.allClasses, el['class'] ).icon ):resTitleOf(el)
+	return CONFIG.addIconToInstance?resTitleOf(el).addIcon( itemById( app.cache.selectedProject.data.allClasses, el['class'] ).icon ):resTitleOf(el)
 }
 /*	function classTitleWithIcon( t ) {
 	// add the icon to a type's title, if defined:
 	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
 }*/
-function hasContent( prp ) {
-	let pV = prp.value;
+function hasContent( pV ) {
 	if( !pV ) return false;
 	return pV.stripHTML().trim().length>0
 		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
 		|| RE.tagImg.test(pV)
 		|| RE.tagA.test(pV)
 }
-function iterate( tree, fn ) {
+function iterateNodes( tree, fn ) {
 	// execute fn for every node of the tree as long as fn returns true;
 	// return true as a whole, if iterating is finished early.
 	// For example, if fn tests for a certain attribute value of a tree node,
-	// the iterate function ends with true, as soon as the test is positive.
+	// the iterate function ends with true, as soon as the test is positive (cont is false).
 	let cont = fn( tree );
 	if( cont && tree.nodes ) {
-		for( var i=tree.nodes.length-1;cont&&(i>-1);i--) 
-			cont = iterate( tree.nodes[i], fn )
+		for( var i=tree.nodes.length-1; cont&&(i>-1); i-- ) 
+			cont = !iterateNodes( tree.nodes[i], fn )
 	};
 	return !cont
 }
@@ -2414,7 +2633,7 @@ function initProp( pCs, pCid ) {
 		upd: pC.upd,
 		del: pC.del
 	};
-/*	switch( itemById( app.cache.dataTypes, pC.dataType ).type ) {
+/*	switch( itemById( app.cache.selectedProject.data.dataTypes, pC.dataType ).type ) {
 		case 'xhtml':
 			p.value = '<div>\n</div>';
 			break;
@@ -2442,7 +2661,7 @@ function classifyProps( el, data ) {
 	// for resources and statements.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
 	// ToDo: Implementation is limited to resources, so far. See normalizeProps().
-	if( !data ) data = app.cache;
+	if( !data ) data = app.cache.selectedProject.data;
 	var rC = itemById( data.resourceClasses, el['class']),
 		cP = {
 		id: el.id,
@@ -2467,9 +2686,6 @@ function classifyProps( el, data ) {
 		if( cP.other[a].value ) cP.title = deformat( cP.other[a].value );
 		// remove title from other:
 		cP.other.splice(a,1) 
-	} else {
-		// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property: 
-		cP.title = el.title
 	};
 	cP.isHeading = rC.isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 		

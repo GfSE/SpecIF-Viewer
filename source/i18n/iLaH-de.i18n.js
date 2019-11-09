@@ -208,7 +208,8 @@ i18n.BtnDeleteObjectRef = '<span class="glyphicon glyphicon-remove"/>&nbsp;Diese
 i18n.BtnImport = '<span class="glyphicon glyphicon-import"/>&nbsp;Import';
 i18n.BtnCreate = '<span class="glyphicon glyphicon-import"/>&nbsp;Anlegen';
 i18n.BtnReplace = '<span class="glyphicon glyphicon-import"/>&nbsp;Ersetzen';
-i18n.BtnUpdate = '<span class="glyphicon glyphicon-import"/>&nbsp;Aktualisieren';
+i18n.BtnAdopt = '<span class="glyphicon glyphicon-import"/>&nbsp;Adoptieren'; //Aneignen
+i18n.BtnUpdate = '<span class="glyphicon glyphicon-import"/>&nbsp;'+i18n.LblUpdate;
 //i18n.BtnImportSpecif = '<span class="glyphicon glyphicon-import"/>&nbsp;SpecIF';
 //i18n.BtnImportReqif = '<span class="glyphicon glyphicon-import"/>&nbsp;ReqIF';
 //i18n.BtnImportXls = '<span class="glyphicon glyphicon-import"/>&nbsp;xlsx';
@@ -382,10 +383,12 @@ i18n.SpecIF_Comment = "Kommentar";
 i18n.SpecIF_Comments = "Kommentare";
 i18n.SpecIF_Issue = "Offener Punkt";
 i18n.SpecIF_Issues = "Offene Punkte";
+i18n.SpecIF_Outline =
 i18n.SpecIF_Hierarchy = "Gliederung";
+i18n.SpecIF_Outlines =
 i18n.SpecIF_Hierarchies = "Gliederungen";
-i18n.SpecIF_Outline = "Gliederung";
-i18n.SpecIF_Outlines = "Gliederungen";
+i18n.SpecIF_Glossary = "Modellelemente (Glossar)";
+i18n.SpecIF_Annotations = "Annotationen";
 i18n.SpecIF_Vote = "Wertung";
 i18n.SpecIF_Votes = "Wertungen";
 i18n.SpecIF_Effort = "Aufwand";
@@ -501,11 +504,11 @@ i18n.MsgNoUser = 'Keinen Nutzer gefunden.';
 i18n.MsgNoObject = 'Keine Ressource gew&auml;hlt.';
 i18n.MsgOtherProject = "Versp&auml;tete Antwort; inzwischen wurde ein anderes Projekt gew&auml;hlt.";
 i18n.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
-i18n.MsgImportReqif = 'Zul&auml;ssige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte m&uuml;ssen den Schemata f&uuml;r ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Minuten und im Falle sehr gro&szlig;er Dateien bis zu einer Stunde.';
+i18n.MsgImportReqif = 'Zul&auml;ssige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte m&uuml;ssen den Schemata f&uuml;r ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr gro&szlig;en Dateien mehrere Minuten.';
 i18n.MsgImportSpecif = 'Zul&auml;ssige Dateitypen sind *.specifz und *.specif. Inhalte m&uuml;ssen den Schemata f&uuml;r SpecIF 0.10.4+ entsprechen. Bei gro&szlig;en Dateien kann der Import einige Minuten dauern.';
 i18n.MsgImportBpmn = 'Zul&auml;ssiger Dateityp *.bpmn. Inhalte m&uuml;ssen den Schemata f&uuml;r BPMN 2.0 XML entsprechen. Der Import kann bis zu einigen Minuten dauern.';
-i18n.MsgImportXls = 'Zul&auml;ssige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import dauert meist einige Minuten und im Falle sehr gro&szlig;er Dateien bis zu einer Stunde.';
-i18n.MsgExport = 'Es wird eine zip-gepackte Datei im gew&auml;hlten Format erzeugt. Der Export dauert meist einige Minuten und im Falle sehr gro&szlig;er Dateien bis zu einer Stunde; Ihr Browser wird die Datei gem&auml;&szlig; Voreinstellungen speichern.';
+i18n.MsgImportXls = 'Zul&auml;ssige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import kann bei sehr gro&szlig;en Dateien mehrere Minuten dauern.';
+i18n.MsgExport = 'Es wird eine zip-gepackte Datei im gew&auml;hlten Format erzeugt. Der Export dauert meist einige Sekunden und im Falle sehr gro&szlig;er Dateien mehrere Minuten; Ihr Browser wird die Datei gem&auml;&szlig; Voreinstellungen speichern.';
 i18n.MsgLoading = 'Lade soeben ...';
 i18n.MsgSearching = 'Suche weiter ...';
 i18n.MsgObjectsProcessed = '~A Ressourcen analysiert.';

@@ -34,7 +34,6 @@ modules.construct({
 //		console.debug( 'file', f );
 		// remove directory path:
 		// see https://stackoverflow.com/questions/423376/how-to-get-the-file-name-from-a-full-path-using-javascript
-	//	fName = f.name.replace(/^.*[\\\/]/, '');
 		fName = f.name.split('\\').pop().split('/').pop();
 		if( f.lastModified ) {
 			fDate = new Date(f.lastModified);
@@ -61,7 +60,18 @@ modules.construct({
 		bDO = $.Deferred();
 
 		bDO.notify('Transforming BPMN to SpecIF',10); 
-		data = BPMN2Specif( buf2str(buf), { xmlName:fName, xmlDate:fDate, isIE:browser.isIE });
+		data = BPMN2Specif( buf2str(buf), 
+							{ 
+								xmlName: fName, 
+								xmlDate: fDate, 
+								strGlossaryType: "SpecIF:Glossary",
+								strGlossaryFolder: i18n.lookup("SpecIF:Glossary"),
+								strActorFolder: i18n.lookup("FMC:Actors"),
+								strStateFolder: i18n.lookup("FMC:States"),
+								strEventFolder: i18n.lookup("FMC:Events"),
+								strAnnotationFolder: i18n.lookup("SpecIF:Annotations"),
+								isIE: browser.isIE 
+							});
 //		console.debug('input.prjName', self.parent.projectName, data );
 		bDO.resolve( data );
 
