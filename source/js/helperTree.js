@@ -135,44 +135,36 @@ function Tree( options ) {
 	};
 	self.openNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;
-		if( !nd ) return;			
-		domE.tree('openNode', nd)
+		if( nd ) domE.tree('openNode', nd)
 	};
 	self.toggleNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;
-		if( !nd ) return;			
-		domE.tree('toggleNode', nd)
+		if( nd ) domE.tree('toggleNode', nd)
 	};
 	self.closeNode = function( nd ) {
 		if( !nd ) nd = self.selectedNode;
-		if( !nd ) return;			
-		domE.tree('closeNode', nd)
+		if( nd ) domE.tree('closeNode', nd)
 	};
 	self.appendNode = function( nd, val ) {
-		if( !nd ) return;			
-		domE.tree( 'appendNode', val, nd )
+		if( nd ) domE.tree( 'appendNode', val, nd )
 	};
 	self.addNodeBefore = function( nd, val ) {
-		if( !nd ) return;			
-		domE.tree( 'addNodeBefore', val, nd )
+		if( nd ) domE.tree( 'addNodeBefore', val, nd )
 	};
 	self.addNodeAfter = function( nd, val ) {
-		if( !nd ) return;			
-		domE.tree( 'addNodeAfter', val, nd )
+		if( nd ) domE.tree( 'addNodeAfter', val, nd )
 	};
 	self.updateNode = function( nd, val ) {
-		if( !nd ) return;			
 		// update node nd with the properties specified in {val}:
-		domE.tree('updateNode', nd, val )
+		if( nd ) domE.tree('updateNode', nd, val )
 	};
 	self.removeNode = function( nd ) {
 		if( !nd ) nd = self.tree.selectedNode;
-		if( !nd ) return;			
-		domE.tree('removeNode', nd)
+		if( nd ) domE.tree('removeNode', nd)
 	};
 	self.moveUp = function() {
 		let cur=self.selectedNode;  // save the current position
-		if( !cur ) { selectFirstNode(); return };
+		if( !cur ) return selectFirstNode();
 		
 		// close open nodes behind (in this case we are coming from the next node)
 		if( cur.getNextNode() && cur.getLevel()<cur.getNextNode().getLevel() ) {  

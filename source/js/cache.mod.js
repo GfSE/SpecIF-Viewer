@@ -441,6 +441,7 @@ function Project( pr ) {
 			iterateNodes( L[i], function(nd) { if(nd.resource==dId) nd.resource=rId; return true } )
 	}  */
 	self.deduplicate = function( dta ) {
+		// Uses the cache, but does not update the server.
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 //		console.debug('deduplicate',dta);
 		let cont,n,r;
@@ -482,6 +483,13 @@ function Project( pr ) {
 			};
 		return dta
 	};
+/*	self.createGlossary = function( dta ) {	
+		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+		// Assumes that the folder objects for the glossary are available
+		
+		// 1. delete any existing glossaries:
+		
+	};  */
 	// var updateModes = ["adopt","match","extend","ignore"];
 	self.update = function( newD, mode ) {	
 		newD = specif.toInt(newD);	// transform to internal data structure
@@ -512,10 +520,12 @@ function Project( pr ) {
 						// there is an item with the same id:
 						if( !ty.eqFn( self.data[ty.list][idx], itm) ) {
 							// c) create a new id and update all references:
+							// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 							// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-							itm.alterId = itm.id;
+						//	itm.alterId = itm.id;
+							let alterId = itm.id;
 							itm.id += '-' + new Date().toISOString().simpleHash();
-							ty.sbFn( nD, itm.id, itm.alterId );
+							ty.sbFn( nD, itm.id, alterId );
 							self.createContent( ty.name, itm )
 						}
 					}
@@ -1059,8 +1069,8 @@ function Project( pr ) {
 			default:
 				// if current user can create an item, he has the other permissions, as well:
 		//		addPermissions( item );
-				item.createdAt = new Date().toISOString();
-				item.createdBy = item.changedBy;
+		//		item.createdAt = new Date().toISOString();
+		//		item.createdBy = item.changedBy;
 				cache( ctg, item )
 		};
 		var sDO = $.Deferred();
@@ -1970,8 +1980,8 @@ const specif = {
 		if( spD.description ) iD.description = spD.description;
 		if( spD.generator ) iD.generator = spD.generator;
 		if( spD.generatorVersion ) iD.generatorVersion = spD.generatorVersion;
-		if( spD.createdBy ) iD.createdBy = spD.createdBy;
-		if( spD.createdAt ) iD.createdAt = spD.createdAt;
+	//	if( spD.createdBy ) iD.createdBy = spD.createdBy;
+	//	if( spD.createdAt ) iD.createdAt = spD.createdAt;
 		
 //		console.debug('specif.set',iD);
 		return iD
@@ -2161,9 +2171,9 @@ const specif = {
 			// common for all instances:
 			function a2int( iE ) {
 				var oE = {
-					id: iE.id
+					id: iE.id,
+					title: noCode(iE.title)
 				};
-				if( iE.title ) oE.title = noCode(iE.title);
 				if( iE.description ) oE.description = noCode(iE.description);
 				if( iE.properties && iE.properties.length>0 )
 					oE.properties = forAll( iE.properties, p2int );
@@ -2434,10 +2444,10 @@ const specif = {
 			// common for all instances:
 			function a2ext( iE ) {
 				var eE = {
-					id: iE.id
+					id: iE.id,
 					// resources and hierarchies usually have individual titles, and so we will not translate:
+					title: resTitleOf( iE )
 				};
-				if( iE.title ) eE.title = resTitleOf( iE );
 				if( iE.description ) eE.description = iE.description;
 				eE['class'] = iE['class'];
 				if( iE.properties && iE.properties.length>0 )

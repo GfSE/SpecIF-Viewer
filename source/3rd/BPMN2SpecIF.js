@@ -13,7 +13,20 @@ function BPMN2Specif( xmlString, opts ) {
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/bpmn+xml";
 	if( typeof(opts.isIE)!='boolean' )
-		opts.isIE = /MSIE |rv:11.0/i.test(navigator.userAgent);
+		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent );
+	
+	if( !opts.strGlossaryFolder ) 
+		opts.strGlossaryFolder = "Model-Elements (Glossary)";
+	if( !opts.strGlossaryType ) 
+		opts.strGlossaryType = "SpecIF:Glossary";
+	if( !opts.strActorFolder ) 
+		opts.strActorFolder = "Actors";
+	if( !opts.strStateFolder ) 
+		opts.strStateFolder = "States";
+	if( !opts.strEventFolder ) 
+		opts.strEventFolder = "Events";
+	if( !opts.strAnnotationFolder ) 
+		opts.strAnnotationFolder = "Text Annotations";
 
 	if( !opts.strJoinExcGateway ) 
 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
@@ -33,17 +46,6 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strForkParGatewayDesc = "<p>Forward control to <em>all</em> outgoing connections.</p>";
 	if( !opts.strTextAnnotation ) 
 		opts.strTextAnnotation = "Text Annotation";
-	
-	if( !opts.strGlossaryFolder ) 
-		opts.strGlossaryFolder = "Model Elements (Glossary)";
-	if( !opts.strActorFolder ) 
-		opts.strActorFolder = "Actors";
-	if( !opts.strStateFolder ) 
-		opts.strStateFolder = "States";
-	if( !opts.strEventFolder ) 
-		opts.strEventFolder = "Events";
-	if( !opts.strAnnotationFolder ) 
-		opts.strAnnotationFolder = "Text Annotations";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -127,7 +129,7 @@ function BPMN2Specif( xmlString, opts ) {
 			model.resources.push({
 				id: el.getAttribute("id"),
 				process: el.getAttribute("processRef"),
-				title: el.getAttribute("name"),
+				title: el.getAttribute("name") || '',
 				class: 'RC-Actor',
 				properties: [{
 					class: "PC-Name",
@@ -144,7 +146,7 @@ function BPMN2Specif( xmlString, opts ) {
 			// a. The message data (FMC:State):
 			model.resources.push({
 				id: el.getAttribute("id"),
-				title: el.getAttribute("name"),
+				title: el.getAttribute("name") || '',
 				class: 'RC-State',
 				properties: [{
 					class: "PC-Name",
@@ -227,7 +229,7 @@ function BPMN2Specif( xmlString, opts ) {
 								// store the lane as SpecIF:Role
 								model.resources.push({
 									id: el2Id,
-									title: elName,
+									title: elName || '',
 									class: 'RC-Actor',
 									properties: [{
 										class: "PC-Name",
@@ -752,7 +754,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-//	console.debug('model',model);
+	console.debug('model',model);
 	return model;
 	
 // =======================================
@@ -874,7 +876,7 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ['auto','user'],
-			propertyClasses: ["PC-Name","PC-Description"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: opts.xmlDate
 		},{
 			id: "RC-Processmodel",
@@ -971,6 +973,9 @@ function BPMN2Specif( xmlString, opts ) {
 			properties: [{
 				class: "PC-Name",
 				value: opts.strGlossaryFolder
+			},{
+				class: "PC-Type",
+				value: opts.strGlossaryType
 			}],
 			changedAt: opts.xmlDate
 		}, {

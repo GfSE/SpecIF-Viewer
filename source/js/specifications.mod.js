@@ -321,7 +321,8 @@ modules.construct({
 	self.updateTree = function( spc ) {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
-		// There are two modes:
+
+	/*	// There are two modes:
 		// - 'insert': insert spc at its position by id in the loaded tree, if it is found,
 		//   or add it at the end of the hierarchy list, otherwise.
 		// - 'replace': replace the current tree with spc
@@ -335,17 +336,21 @@ modules.construct({
 		if( idx<0 )
 			tr.push(toChild(spc))
 		else
-			tr = tr.splice(idx,1,toChild(spc)); 
-	//	tr = [toChild(spc)]; // this works
+			tr = tr.splice(idx,1,toChild(spc));   */
+	
+		let tr;
+		// Replace the tree:
+		if( Array.isArray( spc ) )
+			tr = forAll( spc, toChild )
+		else
+			tr = [toChild(spc)];
 		
 		// load the tree:
 		self.tree.saveState();
 		self.tree.set(tr);
 		self.tree.numberize();
 		self.tree.restoreState();
-	//	if( !self.tree.selectedNode ) self.tree.selectFirstNode();
-	//	self.tree.openNode();
-	//	return self.tree.selectedNode;
+		return;
 
 		// -----------------
 		function toChild( iE ) {
@@ -366,24 +371,16 @@ modules.construct({
 			return oE
 		}
 	};
-	self.loadHierarchy = function( h ) {
-		// load the hierarchy and add it to the tree:
-//		console.debug( 'loadHierarchy', h );
-		
-		// Get the spec's tree data:
-		return app.cache.selectedProject.readContent( 'hierarchy', h, {reload:true} )
-			.done(function(rsp) {
-//				console.debug('load',rsp);
-				self.updateTree( itemById( app.cache.selectedProject.data.hierarchies, rsp.id ) )
-			})
-			.fail( stdError )
-	};
 
 	// The module entry;
 	// called by the parent's view controller:
 	self.show = function( opts ) {
 //		console.debug( CONFIG.specifications, 'show', opts );
-
+		if( !(app.cache.selectedProject && app.cache.selectedProject.data && app.cache.selectedProject.data.id) ) {
+			console.error( 'No selected project on entry of spec.show' );
+			return null // shouldn't ever happen
+		};
+		
 		$('#pageTitle').html( app.cache.selectedProject.data.title );
 		app.busy.set();
 	//	$('#contentNotice').html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
@@ -392,7 +389,6 @@ modules.construct({
 		getPermissions();
 		
  		let uP = opts.urlParams,
-			pend=0,
 			fNd = self.tree.firstNode(),
 			nd = undefined;
 		
@@ -404,70 +400,42 @@ modules.construct({
 			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.data.id )
 			self.tree.init();
 		
-//		console.debug('## 0',uP,self.tree.selectedNode);
+//		console.debug('show 1',uP,self.tree.selectedNode);
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
 		if( app.cache.selectedProject.data.hierarchies && app.cache.selectedProject.data.hierarchies.length>0 ) {
-			// get the hierarchies one by one, so that the first is shown as quickly as possible;
+			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			app.cache.selectedProject.data.hierarchies.forEach( function (h) {
-				pend++;
-				self.loadHierarchy( h )
-				.done(function(){
-					if( --pend<1 ) {
-						// all hierarchies have been loaded;
-						// try to select the requested node:
-						if( uP && uP.node ) {
-							nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
-						};
-						if( uP && uP.item ) {
-							nd = self.tree.selectNodeByRef( uP[CONFIG.keyItem] )
-						};
-						// if none is specified, take the node which is already selected:
-						if( !nd ) nd = self.tree.selectedNode;
-						// no or unknown resource specified; select first node:
-						if( !nd ) nd = self.tree.selectFirstNode();
-						if( nd ) {
-						/*	// Update browser history only if the view is switched
-							// ... and not if the browser's backward/forward button has been pressed:
-							if( !uP && opts.newView ) 
-								setUrlParams({
-									project: app.cache.selectedProject.data.id,
-									view: opts.newView,   // .. here, it is an intermediate view and thus useless
-									node: nd.id,
-									item: nd.ref
-								}); 
-							// this will be done one level deeper .. */
-							self.tree.openNode( nd )
-						} else {
-							if( !self.resCre ) {
-								// Warn, if tree is empty and there are no resource classes for user instantiation:
-								message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
-								return
-							}
-						}
+			app.cache.selectedProject.readContent( 'hierarchy', app.cache.selectedProject.data.hierarchies, {reload:true} )
+			.done(function(rsp) {
+//				console.debug('load',rsp);
+		//		self.updateTree( itemById( app.cache.selectedProject.data.hierarchies, rsp.id ) )
+				self.updateTree( rsp )
+
+				// all hierarchies have been loaded;
+				// try to select the requested node:
+				if( uP && uP.node ) {
+					nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
+				};
+				// node has priority over item (usually only one of them is specified ;-):
+				if( !nd && uP && uP.item ) {
+					nd = self.tree.selectNodeByRef( uP[CONFIG.keyItem] )
+				};
+				// if none is specified, take the node which is already selected:
+				if( !nd ) nd = self.tree.selectedNode;
+				// no or unknown resource specified; select first node:
+				if( !nd ) nd = self.tree.selectFirstNode();
+				if( nd ) {
+					self.tree.openNode( nd )
+				} else {
+					if( !self.resCre ) {
+						// Warn, if tree is empty and there are no resource classes for user instantiation:
+						message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
+						return
 					}
-				})
-			});
-
-	/*		// select the specified hierarchy and resource:
-			let res = getRId( uP );
-			if( res && res.id ) {
-				// tree has entries and a known resource is specified: select the first node referencing the resource
-//				console.debug('#filled and resource specified',res);
-				self.tree.selectNodeByRef( res.id )
-			} else {
-				// tree has entries, no or unknown resource specified: select first node
-//				console.debug('#filled and no resource specified');
-				self.tree.selectFirstNode()
-				// changing the tree node triggers an event, by which 'self.refresh' will be called.
-			};
-			self.tree.openNode( self.tree.selectedNode )
-			// opening a tree node triggers an event, by which 'self.refresh' will be called.
-	*/	
-			// The module manager's view control will select the next level view ...
-			// "app.busy" is reset in showX at the next level 
-
+				}
+			})
+			.fail( stdError )
 		} else {
 			// the project has no spec:
 			$('#contentNotice').html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );

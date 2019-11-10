@@ -114,7 +114,7 @@ function toOxml( data, opts ) {
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
 			let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
-			// Two nested objects, where the inner is a a comprehensive <object .../> or a tag pair <object ...>..</object>:
+			// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
 		//	let reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
 		//		reNestedObjects = new RegExp( reNO, '' );
