@@ -444,6 +444,7 @@ modules.construct({
 					.open()
 				} else {   */
 				setProgress(importMode.id+' project',20); 
+				let opts = {mode:importMode.id};
 				switch( importMode.id ) {
 					case 'clone': 	
 						dta.id = genID('P-');
@@ -456,8 +457,9 @@ modules.construct({
 							.fail( handleError );
 						break;
 					case 'adopt':
+						opts.addGlossary = true;
 					case 'update':
-						app.cache.selectedProject.update( dta, importMode.id )
+						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
 							.fail( handleError );

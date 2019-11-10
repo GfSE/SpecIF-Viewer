@@ -351,7 +351,7 @@ function Project( pr ) {
 /*	function eqR(r,n) {
 		// return true, if reference and new resource are equal:
 		// ToDo: Model-elements are only equal, if they have the same type, 
-		// i.e. a property with title 'dcterms:type' has the same value
+		// i.e. a property with title CONFIG.attrTypeType has the same value
 		console.debug('eqR',r,n);
 		return r.title==n.title
 		// Note that the content of the new resource is lost;
@@ -361,7 +361,7 @@ function Project( pr ) {
 	function eqS(r,n) {
 		// return true, if reference and new statement are equal:
 		// ToDo: Model-elements are only equal, if they have the same type,
-		// i.e. a property with title 'dcterms:type' has the same value
+		// i.e. a property with title CONFIG.attrTypeType has the same value
 		return r['class']==n['class']
 			&& r.subject.id==n.subject.id
 			&& r.subject.revision==n.subject.revision
@@ -437,8 +437,7 @@ function Project( pr ) {
 /*	function substituteRf(L,rId,dId) {
 		// for all hierarchies, replace any reference to dId by rId:
 //		console.debug('substituteRf',rId,dId);
-		for( var i=L.length-1;i>-1;i-- ) 
-			iterateNodes( L[i], function(nd) { if(nd.resource==dId) nd.resource=rId; return true } )
+		iterateNodes( L, function(nd) { if(nd.resource==dId) nd.resource=rId; return true } )
 	}  */
 	self.deduplicate = function( dta ) {
 		// Uses the cache, but does not update the server.
@@ -483,26 +482,192 @@ function Project( pr ) {
 			};
 		return dta
 	};
-/*	self.createGlossary = function( dta ) {	
+	self.createGlossary = function( dta ) {	
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 		// Assumes that the folder objects for the glossary are available
 		
-		// 1. delete any existing glossaries:
+		// 1. Delete any existing glossaries
+		// 1.1 Find all Glossary folders:
+		let gF = [], res, idx,
+			apx = self.data.id.simpleHash(),
+			tim = new Date().toISOString();
+//		console.debug('createGlossary',dta.hierarchies);
+		iterateNodes( dta.hierarchies, function(nd) {
+											// get the referenced resource:
+											res = itemById( dta.resources, nd.resource );
+											// check, whether it is a glossary:
+											idx = indexBy( res.properties, 'title', CONFIG.attrTypeType );
+//											console.debug(nd,res,idx);
+											if( idx>-1 && res.properties[idx].value==CONFIG.spcTypeGlossary )
+												gF.push( nd );
+											return true  // continue always to the end
+										}
+		);
+		console.debug( 'gF', gF );
+		// 1.2 Delete now:
+		// ToDo: Combine all delete operations to reduce server calls
+		gF.forEach( function(nd) {
+						self.deleteContent( 'node', {id: nd.id} )
+					}
+		);
+
+		// 2. Create a new combined glossary:
+		let glossary = {
+			dataTypes: DataTypes(),
+			propertyClasses: PropertyClasses(),
+			resourceClasses: ResourceClasses(),
+			resources: Folders(),
+			hierarchies: NodeList(self.data.resources)
+		};
+		console.debug('glossary',glossary);
+		return glossary;
 		
-	};  */
+		function DataTypes() {
+			return [{
+				id: "DT-ShortString",
+				title: "String[96]",
+				description: "String with length 96",
+				type: "xs:string",
+				maxLength: 96,
+				changedAt: tim
+			},{
+				id: "DT-String",
+				title: "String [1024]",
+				description: "String with length 1024",
+				type: "xs:string",
+				maxLength: 1024,
+				changedAt: tim
+			},{
+				id: "DT-FormattedText",
+				title: "xhtml [8192]",
+				description: "Formatted String with length 8192",
+				type: "xhtml",
+				maxLength: 8192,
+				changedAt: tim 
+			}]
+		} 
+		function PropertyClasses() {
+			return [{
+					id: "PC-Name",
+					title: "dcterms:title",
+					dataType: "DT-ShortString",
+					changedAt: tim
+				},{
+					id: "PC-Description",
+					title: "dcterms:description",
+					dataType: "DT-FormattedText",
+					changedAt: tim
+				},{
+					id: "PC-Type",
+					title: "dcterms:type",
+					dataType: "DT-ShortString",
+					changedAt: tim
+				}]
+		}
+		function ResourceClasses() {
+			return [{
+				id: "RC-Folder",
+				title: "SpecIF:Heading",
+				description: "Folder with title and text for chapters or descriptive paragraphs.",
+				isHeading: true,
+				instantiation: ['auto','user'],
+				propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+				changedAt: tim
+			}]
+		}
+		function Folders() {
+			var fL = [{
+				id: "FolderGlossary-" + apx,
+				class: "RC-Folder",
+				title: i18n.lookup(CONFIG.spcTypeGlossary),
+				properties: [{
+					class: "PC-Name",
+					value: i18n.lookup(CONFIG.spcTypeGlossary)
+				},{
+					class: "PC-Type",
+					value: CONFIG.spcTypeGlossary
+				}],
+				changedAt: tim
+			}];
+			// Create a folder resource for every model-element type:
+			CONFIG.modelElementTypes.forEach( function (mEl) {
+				fL.push({
+					id: "Folder-" + mEl.toJsId() + "-" + apx,
+					class: "RC-Folder",
+					title: i18n.lookup(mEl),
+					properties: [{
+						class: "PC-Name",
+						value: i18n.lookup(mEl)
+					}],
+					changedAt: tim
+				})
+			});
+			return fL
+		}
+		function NodeList(res) {
+			// 6.1 first add the folders:
+			let gl = {
+					id: "H-FolderGlossary-" + apx,
+					resource: "FolderGlossary-" + apx,
+					nodes: [],
+					changedAt: tim
+			};
+			// Create a hierarchy node for each folder per model-element type
+			CONFIG.modelElementTypes.forEach( function (mEl) {
+				gl.nodes.push({
+					id: "N-Folder-" + mEl.toJsId() + "-" + apx,
+					resource: "Folder-" + mEl.toJsId() + "-" + apx,
+					nodes: [],
+					changedAt: tim
+				})
+			});
+			// 6.2 Add Actors, States and Events to the respective folders,
+			// in alphabetical order:
+			if( res.length>1 )
+				res.sort( function(bim, bam) {
+							bim = bim.title.toLowerCase();
+							bam = bam.title.toLowerCase();
+							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
+				});
+			// get the ids of the resourceClasses for model-elements:
+			let tL = forAll(self.data.resourceClasses, function(rC) {
+															if( CONFIG.modelElementTypes.indexOf(rC.title)>-1) return rC.id;
+															// else
+															return undefined
+														}
+				);
+			console.debug('gl tL',gl,tL);
+			res.forEach( function(r) { 
+				let nd = {
+					id: "N-" + r.id,
+					resource: r.id,
+					changedAt: tim
+				};
+				// sort resources according to their type:
+				let idx = tL.indexOf( r.class );
+				console.debug('idx',idx);
+				if( idx>-1 )
+					gl.nodes[idx].nodes.push(nd)
+			});
+			return [gl]
+		}; 
+
+	//	self.update( new GlossaryItems(), {mode:'adopt'} );
+	//	self.glossary = new StdTypes( self, new GlossaryItems() );
+	};
 	// var updateModes = ["adopt","match","extend","ignore"];
-	self.update = function( newD, mode ) {	
+	self.update = function( newD, opts ) {	
 		newD = specif.toInt(newD);	// transform to internal data structure
 		var uDO = $.Deferred();
-		switch( mode ) {
-			case 'adopt': adopt( newD );
+		switch( opts.mode ) {
+			case 'adopt': adopt( newD, opts );
 		};
 		uDO.resolve({status:0});
 		return uDO
 		
 		// --------------------------------
 		// The processing per mode:
-		function adopt( nD ) {
+		function adopt( nD, opts ) {
 			// 1. Integrate the types:
 			//    a) if different id, save new one and use it.
 			//    b) if same id and content, just use it (no action)
@@ -553,8 +718,10 @@ function Project( pr ) {
 			self.createContent( 'file', nD.files );
 			self.createContent( 'statement', nD.statements );
 			self.createContent( 'hierarchy', nD.hierarchies );
-			
-			self.deduplicate()	// deduplicate equal items
+			self.deduplicate();	// deduplicate equal items
+			if( opts.addGlossary )
+				self.update( self.createGlossary(), {mode:'adopt'} );		
+		//	self.deduplicate()	// deduplicate equal items
 		};
 	
 /*		// newD is new data in 'internal' data structure
@@ -1189,6 +1356,7 @@ function Project( pr ) {
 									// no break;  */
 			case 'node':			
 				uncache( ctg, item );
+				break;
 			default:				
 				return null
 		};
@@ -1286,9 +1454,10 @@ function Project( pr ) {
 		//   --> set 'showComments' to true
 		
 			function isReferenced( rId ) {
-				for( var s=self.data.hierarchies.length-1; s>-1; s-- )
+			/*	for( var s=self.data.hierarchies.length-1; s>-1; s-- )
 					if( iterateNodes( self.data.hierarchies[s], function(nd) { return nd.resource!=rId } ) ) return true;
-				return false
+				return false */
+				return iterateNodes( self.data.hierarchies, function(nd) { return nd.resource!=rId } )
 			}
 		var sDO = $.Deferred();
 
@@ -1694,8 +1863,8 @@ function Project( pr ) {
 		// Delete all nodes referencing the specified element;
 		// if el is the node, 'id' will be used,
 		// and if el is the referenced resource, 'resource' will be used to identify the node.
-//		console.debug('delNodes',L,el);
 		if( !Array.isArray( L ) ) return;
+//		console.debug('delNodes',L,el);
 		let cont, a;
 		for( var h=L.length-1; h>-1; h-- ) {
 			cont = true;
@@ -1725,6 +1894,7 @@ function Project( pr ) {
 				return false
 			} */
 		if( !item ) return;
+//		console.debug('uncache',ctg,item);
 		let fn = Array.isArray(item)?uncacheL:uncacheE;
 		switch(ctg) {
 			case 'hierarchy':		
@@ -1739,8 +1909,11 @@ function Project( pr ) {
 			case 'statement': 			
 			case 'file':				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
 										else return;
-			case 'node':				if( Array.isArray(item) ) return null;
-										return delNodes( self.data.hierarchies, item );
+			case 'node':				if( Array.isArray(item) )
+											item.forEach( function(it) { delNodes( self.data.hierarchies, it ) })
+										else
+											delNodes( self.data.hierarchies, item );
+										return;
 			default: return null
 		}
 	}
@@ -2623,11 +2796,27 @@ function iterateNodes( tree, fn ) {
 	// return true as a whole, if iterating is finished early.
 	// For example, if fn tests for a certain attribute value of a tree node,
 	// the iterate function ends with true, as soon as the test is positive (cont is false).
-	let cont = fn( tree );
+	let cont=true;
+	if( Array.isArray( tree ) ) {
+//		console.debug('isArray',tree);
+		for( var i=tree.length-1; cont&&(i>-1); i-- ) {
+			cont = !iterateNodes( tree[i], fn )
+//			console.debug( 'iterateNodes A',i,cont )
+		}
+	} else {
+		cont = fn( tree );
+//		console.debug('isItem',tree,cont);
+		if( cont && tree.nodes ) {
+			for( var i=tree.nodes.length-1; cont&&(i>-1); i-- ) 
+				cont = !iterateNodes( tree.nodes[i], fn )
+//				console.debug( 'iterateNodes I',i,cont )
+		}
+	};
+/*	let cont = fn( tree );
 	if( cont && tree.nodes ) {
 		for( var i=tree.nodes.length-1; cont&&(i>-1); i-- ) 
 			cont = !iterateNodes( tree.nodes[i], fn )
-	};
+	};*/
 	return !cont
 }
 function initProp( pCs, pCid ) {

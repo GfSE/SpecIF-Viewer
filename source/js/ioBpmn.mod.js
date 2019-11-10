@@ -64,8 +64,8 @@ modules.construct({
 							{ 
 								xmlName: fName, 
 								xmlDate: fDate, 
-								strGlossaryType: "SpecIF:Glossary",
-								strGlossaryFolder: i18n.lookup("SpecIF:Glossary"),
+								strGlossaryType: CONFIG.spcTypeGlossary,
+								strGlossaryFolder: i18n.lookup(CONFIG.spcTypeGlossary),
 								strActorFolder: i18n.lookup("FMC:Actors"),
 								strStateFolder: i18n.lookup("FMC:States"),
 								strEventFolder: i18n.lookup("FMC:Events"),

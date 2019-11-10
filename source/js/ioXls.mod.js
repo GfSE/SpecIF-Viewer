@@ -443,7 +443,7 @@ function xslx2specif( buf, pN, chgAt ) {
 
 	// Transform the worksheets to SpecIF:
 	// 1 Create the project:
-	var specif = new BaseTypes;
+	var specif = new BaseTypes();
 	specif.id = 'dummy';	// must be string to satisfy the schema
 	specif.title = pN;
 	specif.generator = "Excel";

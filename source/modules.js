@@ -392,9 +392,7 @@ function ModuleManager() {
 											$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
-				case "projects":			loadM( 'tree' );
-											loadM( 'helperTree' );
-											loadM( 'toEpub' );
+				case "projects":			loadM( 'toEpub' );
 											$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 */
@@ -408,8 +406,7 @@ function ModuleManager() {
 											loadM( 'checkSpecif' );
 											getScript( vPath+'/js/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
-				case 'ioXls': 				loadM( 'stdTypes' );
-											loadM( 'excel' );
+				case 'ioXls': 				loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'bpmn2specif':			getScript( vPath+'/js/BPMN2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
@@ -431,8 +428,6 @@ function ModuleManager() {
 											//	$('head').append( '<link rel="stylesheet" type="text/css" href="./css/ReqIF-Server.ie.css" />');
 												$('head').append( '<style type="text/css" >div.forImage img[type="image/svg+xml"],div.forImagePreview img[type="image/svg+xml"],div.forImage object[type="image/svg+xml"],div.forImagePreview object[type="image/svg+xml"] { width: 100%; height: auto; }</style>');
 											};
-									//		loadM( 'tree' );
-									//		loadM( 'helperTree' );
 									//		loadM( 'stdTypes' );
 									//		loadM( 'diff' );
 											getScript( vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
