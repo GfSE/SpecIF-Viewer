@@ -220,6 +220,7 @@ function Project( pr ) {
 		
 		if( mode == 'deduplicate')
 			self.deduplicate();	// deduplicate equal items
+			// ToDo: Update the server !
 
 //		console.debug('*',self.data.propertyClasses,self.data.resourceClasses);
 		sDO.resolve({status:0});
@@ -636,7 +637,9 @@ function Project( pr ) {
 															return undefined
 														}
 				);
-			console.debug('gl tL',gl,tL);
+			// ToDo: This algorithm is bound to fail, if consolidation/deduplication does not succeed,
+			// and there are more mEl-Types than declared in CONFIG.modelElementTypes.
+//			console.debug('gl tL',gl,tL);
 			res.forEach( function(r) { 
 				let nd = {
 					id: "N-" + r.id,
