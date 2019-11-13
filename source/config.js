@@ -325,13 +325,25 @@ const CONFIG = {};
 		'clickEl',
 		'com.arcway.cockpit.uniqueelement'
 	];
-	// A list with all model-element types by title:
-	CONFIG.modelElementTypes = [
+	// A list with all model-element types by title,
+	// is used for example to build a glossary:
+	CONFIG.modelElementClasses = [
 		'FMC:Actor',
 		'FMC:State',
 		'FMC:Event'
 	];
-	
+	// A list of statement types by title,
+	// is used for example to recognize a statement to create when importing an xls sheet:
+	CONFIG.statementClasses = [
+		'oslc_rm:satisfies',
+		'oslc_rm:satisfiedBy',
+		'oslc_rm:validates',
+		'oslc_rm:validatedBy',
+		'oslc_rm:decomposes',
+		'oslc_rm:decomposedBy',
+		'IREB:refines',
+		'IREB:refinedBy'
+	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
 	// The term appearing in the first position of an equivalence list is the preferred one:
 	// ToDo: Very similar purpose as the vocabulary translation below.
@@ -501,3 +513,4 @@ var RE = {};
 	let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
+	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;

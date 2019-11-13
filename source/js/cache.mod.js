@@ -218,6 +218,8 @@ function Project( pr ) {
 		self.data.createdAt = newD.createdAt;
 		self.data.createdBy = newD.createdBy;
 		
+		hookStatements();
+		
 		if( mode == 'deduplicate')
 			self.deduplicate();	// deduplicate equal items
 			// ToDo: Update the server !
@@ -304,7 +306,7 @@ function Project( pr ) {
 					name: 'resource',
 					list: 'resources',
 					typL: 'resourceClasses',
-					only: CONFIG.modelElementTypes,	// applied only to resources having a type title listed here
+					only: CONFIG.modelElementClasses,	// applied only to resources having a type title listed here
 					sbFn: substituteR
 				}];
 	function eqDT(r,n) {
@@ -337,17 +339,33 @@ function Project( pr ) {
 	function eqRC(r,n) {
 		// return true, if reference and new resourceClass are equal:
 		if( !r.isHeading&&n.isHeading || r.isHeading&&!n.isHeading ) return false;
-		return eqL( r.instantiation, n.instantiation )
+		return r.title==n.title
 			&& eqL( r.propertyClasses, n.propertyClasses )
-			&& r.title==n.title
+			&& eqL( r.instantiation, n.instantiation )
 	}
 	function eqSC(r,n) {
 		// return true, if reference and new resourceClass are equal:
-		return eqL( r.instantiation, n.instantiation )
-			&& eqL( r.propertyClasses, n.propertyClasses )
-			&& eqL( r.subjectClasses, n.subjectClasses )
-			&& eqL( r.objectClasses, n.objectClasses )
-			&& r.title==n.title
+		return r.title==n.title
+			&& eqSCL( r.propertyClasses, n.propertyClasses )
+			&& eqSCL( r.subjectClasses, n.subjectClasses )
+			&& eqSCL( r.objectClasses, n.objectClasses )
+			&& eqSCL( r.instantiation, n.instantiation );
+			
+		function eqSCL(rL,nL) {
+			// return true, if both lists have equal member,
+			// in this case we allow also less specified statementClasses
+			// (for example, when a statement is created from an Excel sheet):
+			if( typeof(nL)==undefined ) return true;
+			// no or empty lists are allowed and considerated equal:
+			let rArr = Array.isArray(rL) && rL.length>0,
+				nArr = Array.isArray(nL) && nL.length>0;
+			if( !rArr&&nArr 
+				|| rL.length!=nL.length ) return false;
+			// the sequence may differ:
+			for( var i=rL.length-1; i>-1; i-- ) 
+				if( nL.indexOf( rL[i] )<0 ) return false;
+			return true
+		}
 	}
 /*	function eqR(r,n) {
 		// return true, if reference and new resource are equal:
@@ -440,6 +458,22 @@ function Project( pr ) {
 //		console.debug('substituteRf',rId,dId);
 		iterateNodes( L, function(nd) { if(nd.resource==dId) nd.resource=rId; return true } )
 	}  */
+	function hookStatements( dta ) {
+		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+		dta.statements.forEach( function(st) {
+			if( st.subjectTitle ) {
+				let s = itemByTitle( dta.resources, st.subjectTitle );
+//				console.debug('hookStatements subject',s);
+				if( s ) st.subject = {id: s.id, revision: 0}
+			};
+			if( st.objectTitle ) {
+				let o = itemByTitle( dta.resources, st.objectTitle );
+//				console.debug('hookStatements object',o);
+				if( o ) st.object = {id: o.id, revision: 0}
+			}
+		});
+		return dta
+	}
 	self.deduplicate = function( dta ) {
 		// Uses the cache, but does not update the server.
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
@@ -504,7 +538,7 @@ function Project( pr ) {
 											return true  // continue always to the end
 										}
 		);
-		console.debug( 'gF', gF );
+//		console.debug( 'gF', gF );
 		// 1.2 Delete now:
 		// ToDo: Combine all delete operations to reduce server calls
 		gF.forEach( function(nd) {
@@ -520,7 +554,7 @@ function Project( pr ) {
 			resources: Folders(),
 			hierarchies: NodeList(self.data.resources)
 		};
-		console.debug('glossary',glossary);
+//		console.debug('glossary',glossary);
 		return glossary;
 		
 		function DataTypes() {
@@ -591,7 +625,7 @@ function Project( pr ) {
 				changedAt: tim
 			}];
 			// Create a folder resource for every model-element type:
-			CONFIG.modelElementTypes.forEach( function (mEl) {
+			CONFIG.modelElementClasses.forEach( function (mEl) {
 				fL.push({
 					id: "Folder-" + mEl.toJsId() + "-" + apx,
 					class: "RC-Folder",
@@ -606,7 +640,7 @@ function Project( pr ) {
 			return fL
 		}
 		function NodeList(res) {
-			// 6.1 first add the folders:
+			// a. Add the folders:
 			let gl = {
 					id: "H-FolderGlossary-" + apx,
 					resource: "FolderGlossary-" + apx,
@@ -614,7 +648,7 @@ function Project( pr ) {
 					changedAt: tim
 			};
 			// Create a hierarchy node for each folder per model-element type
-			CONFIG.modelElementTypes.forEach( function (mEl) {
+			CONFIG.modelElementClasses.forEach( function (mEl) {
 				gl.nodes.push({
 					id: "N-Folder-" + mEl.toJsId() + "-" + apx,
 					resource: "Folder-" + mEl.toJsId() + "-" + apx,
@@ -622,7 +656,7 @@ function Project( pr ) {
 					changedAt: tim
 				})
 			});
-			// 6.2 Add Actors, States and Events to the respective folders,
+			// b. Add Actors, States and Events to the respective folders,
 			// in alphabetical order:
 			if( res.length>1 )
 				res.sort( function(bim, bam) {
@@ -630,15 +664,17 @@ function Project( pr ) {
 							bam = bam.title.toLowerCase();
 							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
 				});
-			// get the ids of the resourceClasses for model-elements:
-			let tL = forAll(self.data.resourceClasses, function(rC) {
-															if( CONFIG.modelElementTypes.indexOf(rC.title)>-1) return rC.id;
-															// else
-															return undefined
-														}
-				);
-			// ToDo: This algorithm is bound to fail, if consolidation/deduplication does not succeed,
-			// and there are more mEl-Types than declared in CONFIG.modelElementTypes.
+			// Create a list tL of equivalence lists per model-element type;
+			// we must assume that type adoption/deduplication is not always successful
+			// and that there are multiple resourceClasses per model-element type:
+			let idx,
+				tL = forAll( CONFIG.modelElementClasses, function() { return [] } );
+			// Each equivalence list carries the ids of resourceClasses for the give model-element type:
+			self.data.resourceClasses.forEach( function(rC) {
+													idx = CONFIG.modelElementClasses.indexOf(rC.title);
+													if( idx>-1 ) tL[idx].push(rC.id)
+												}
+			);
 //			console.debug('gl tL',gl,tL);
 			res.forEach( function(r) { 
 				let nd = {
@@ -646,17 +682,16 @@ function Project( pr ) {
 					resource: r.id,
 					changedAt: tim
 				};
-				// sort resources according to their type:
-				let idx = tL.indexOf( r.class );
-				console.debug('idx',idx);
+				// Sort resources according to their type:
+				for( idx=tL.length-1;idx>-1;idx-- ) {
+					if( tL[idx].indexOf( r['class'] )>-1 ) break
+				};
+//				console.debug('idx',idx);
 				if( idx>-1 )
 					gl.nodes[idx].nodes.push(nd)
 			});
 			return [gl]
-		}; 
-
-	//	self.update( new GlossaryItems(), {mode:'adopt'} );
-	//	self.glossary = new StdTypes( self, new GlossaryItems() );
+		}
 	};
 	// var updateModes = ["adopt","match","extend","ignore"];
 	self.update = function( newD, opts ) {	
@@ -673,7 +708,7 @@ function Project( pr ) {
 		function adopt( nD, opts ) {
 			// 1. Integrate the types:
 			//    a) if different id, save new one and use it.
-			//    b) if same id and content, just use it (no action)
+			//    b) if same id and same content, just use it (no action)
 			//    c) if same id and different content, save with new id and update all references
 			let i,I;
 			types.forEach( function(ty) {
@@ -721,10 +756,12 @@ function Project( pr ) {
 			self.createContent( 'file', nD.files );
 			self.createContent( 'statement', nD.statements );
 			self.createContent( 'hierarchy', nD.hierarchies );
+			hookStatements();
 			self.deduplicate();	// deduplicate equal items
+			// ToDo: Save changes from deduplication to the server.
 			if( opts.addGlossary )
 				self.update( self.createGlossary(), {mode:'adopt'} );		
-		//	self.deduplicate()	// deduplicate equal items
+		//	self.deduplicate()	// deduplicate glossary types
 		};
 	
 /*		// newD is new data in 'internal' data structure
@@ -2035,7 +2072,7 @@ function Project( pr ) {
 //////////////////////////
 // global helper functions:
 const specif = {
-	check: function( data ) {
+	check: function( data, opts ) {
 		// Check the SpecIF data for schema compliance and consistency;
 		// no data of app.cache is modified:
 		var cDO = $.Deferred();
@@ -2062,7 +2099,7 @@ const specif = {
 
 						// 2. Check further constraints:
 						cDO.notify('Checking constraints',20);
-						rc = checkConstraints( data );
+						rc = checkConstraints( data, opts );
 						if( rc.status==0 ) {
 							cDO.resolve( data, rc )
 						} else {
@@ -2092,6 +2129,8 @@ const specif = {
 //		console.debug('set',spD);
 		let names = {};
 		switch( spD.specifVersion ) {
+			case '0.10.7':
+				return null;
 			case '0.10.2':
 			case '0.10.3':
 				names.rClasses = 'resourceTypes';
@@ -2109,18 +2148,9 @@ const specif = {
 			case '0.10.5':
 			case '0.10.6':
 			case '0.11.2':
-				names.rClasses = 'resourceClasses';
-				names.sClasses = 'statementClasses';
 				names.hClasses = 'hierarchyClasses';
-				names.pClasses = 'propertyClasses';
-				names.subClasses = 'subjectClasses';
-				names.objClasses = 'objectClasses';
-				names.rClass = 'class';
-				names.sClass = 'class';
 				names.hClass = 'class';
-				names.pClass = 'class'
-			case '0.10.7':
-				break;
+				// no break
 			default:
 				names.rClasses = 'resourceClasses';
 				names.sClasses = 'statementClasses';
@@ -2335,7 +2365,7 @@ const specif = {
 					case 'xs:double':
 					case 'xs:enumeration':
 					case 'xs:dateTime':
-						oE.value = iE.value;
+						oE.value = noCode(iE.value);
 						break;
 					default:
 						oE.value = noCode(iE.value)
@@ -2353,6 +2383,8 @@ const specif = {
 				if( iE.description ) oE.description = noCode(iE.description);
 				if( iE.properties && iE.properties.length>0 )
 					oE.properties = forAll( iE.properties, p2int );
+
+				oE.title = resTitleOf ( oE );
 
 				switch( typeof(iE.revision) ) {
 					case 'undefined':
@@ -2392,6 +2424,8 @@ const specif = {
 					case "object": iS.object = eS.object; break;			
 					case "string": iS.object = {id: eS.object, revision: 0} 
 				};
+				if( eS.subjectTitle ) iS.subjectTitle = eS.subjectTitle;
+				if( eS.objectTitle ) iS.objectTitle = eS.objectTitle;
 //				console.debug('statement 2int',eS,iS);
 				return iS
 			}

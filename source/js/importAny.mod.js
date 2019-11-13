@@ -65,7 +65,8 @@ modules.construct({
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
-			help: i18n.MsgImportXls
+			help: i18n.MsgImportXls,
+			opts: {dontCheck:['statement.object']}
 		},{
 			id:'mm',
 			name:'ioMm',
@@ -136,7 +137,7 @@ modules.construct({
 				+	function() {
 						let btns = '';
 						importModes.forEach( function(b) { 
-							btns += '<button id="'+b.id+'Btn" onclick="'+myFullName+'.doImport(\''+b.id+'\')" data-toggle="popover" title="'+b.title+'" class="btn btn-primary">'+b.label+'</button>'
+							btns += '<button id="'+b.id+'Btn" onclick="'+myFullName+'.importLocally(\''+b.id+'\')" data-toggle="popover" title="'+b.title+'" class="btn btn-primary">'+b.label+'</button>'
 						});
 						return btns
 					}()
@@ -345,7 +346,7 @@ modules.construct({
 			self.clear()
 		}
 	};
-	self.doImport = function(mode) {
+	self.importLocally = function(mode) {
 		if( importing || !mode ) return;   // ignore further clicks while working
 		
 		setImporting( true );
@@ -353,7 +354,7 @@ modules.construct({
 		setProgress(i18n.MsgReading,10); 
 
 		self.projectName = textValue(i18n.LblProjectName);
-//		console.debug( 'doImport', self.projectName, self.file );
+//		console.debug( 'importLocally', self.projectName, self.file );
 
 		readFile( self.file, app[self.format.name].toSpecif );
 		return
@@ -373,7 +374,7 @@ modules.construct({
 		// import specif data as JSON:
 //		console.debug('handleResult',data);
 
-		return specif.check( data )
+		return specif.check( data, self.format.opts )
 			.fail( handleError )
 			.done( function(dta) {
 			/*	// First check if there is a project with the same id:
