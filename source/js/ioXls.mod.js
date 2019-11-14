@@ -18,6 +18,7 @@ modules.construct({
 		xDO = null;
 		
 	self.init = function() {
+		self.resourceClass = '';
 		return true
 	};
 
@@ -47,8 +48,7 @@ modules.construct({
 			return f
 		};
 		// take the actual date as a final fall back
-		fDate = new Date();
-		fDate = fDate.toISOString();
+		fDate = new Date().toISOString();
 //		console.debug( 'date', fDate );
 		return f
 	};
@@ -58,8 +58,12 @@ modules.construct({
 		xDO = $.Deferred();
 		
 		xDO.notify('Transforming Excel to SpecIF',10); 
-//		console.debug('input.prjName', self.parent.projectName );
-		data = xslx2specif( buf, self.parent.projectName , fDate );
+		// Extract resourceClass in curly brackets and delete it from the projectName:
+		self.parent.projectName = self.parent.projectName.replace( /\s*\[([a-z0-9_].+?)\]/i,
+																function($0,$1) { self.resourceClass = $1; return '' } );
+//		console.debug('input.prjName', self.parent.projectName, self.resourceClass );
+		// Transform the XLSX-data to SpecIF:
+		data = xslx2specif( buf, self.parent.projectName, fDate );
 		xDO.resolve( data );
 
 		return xDO
@@ -152,9 +156,9 @@ function xslx2specif( buf, pN, chgAt ) {
 			// must be able to find it just knowing the ws-name and the column index:
 			return 'PC-'+(ws+cX).simpleHash()
 		}
-		function ResClass( ti ) { 
-			this.id = resClassId( ti );
-			this.title = ti;
+		function ResClass( nm, ti ) { 
+			this.id = resClassId( nm );
+			this.title = vocabulary.resource.specif(ti);
 			this.description = 'For resources specified per line of an excel sheet';
 			this.instantiation = ["auto","user"];
 			this.propertyClasses = [];
@@ -315,7 +319,7 @@ function xslx2specif( buf, pN, chgAt ) {
 									})
 								} else {
 									// it is a statement:
-									ti = ws.data[colName(c)+'1'].v;  // column title in the first line
+									ti = ws.data[colName(c)+ws.firstCell.row].v;  // column title in the first line of the same column
 									obL = cell.v.split(",");
 									obL.forEach( function(ob) {
 										oInner = RE.quote.exec( ob );
@@ -325,9 +329,9 @@ function xslx2specif( buf, pN, chgAt ) {
 												title: ti,
 												class: staClassId( ti ),	// make id from column title
 										//		subject: undefined,	// defined further down, when the resource's id has been determined
-										//		objectTitle: ob.replace( RE.quote, function($0,$1) { return $1 }),	// value is assumed to be text
-												objectTitle: oInner[1] || oInner[2],
-												object: 'to-be-replaced', 
+												objectTitle: oInner[1] || oInner[2],  // for content in double and single quotes
+												object: 'to-be-replaced', 	// just a placeholder passing the schema-check,
+																			// remember that the constraint-check on the object must be disabled
 												changedAt: chgAt
 											})
 										}
@@ -435,6 +439,8 @@ function xslx2specif( buf, pN, chgAt ) {
 					if( CONFIG.statementClasses.indexOf( ti )>-1 ) return;
 
 					// else, it is a property:
+					ti = vocabulary.property.specif( ti );  // translate the title to standard term
+					
 					// cycle through the list as long as one of the values is undefined/null OR both are equal,
 					// start with the second line:
 					for( var i=1, I=col.length; i<I && ( !pC || !col[i] || compatibleClasses( pC, col[i] )); i++ ) {
@@ -456,22 +462,20 @@ function xslx2specif( buf, pN, chgAt ) {
 					return new PropClass( ws.name, cX, ti, 'Text-8192' )
 				}
 			}
-			function getStaClasses( ws ) { 
+			function getStaClasses( ws, sCL ) { 
 				// build a list of statementClasses:
-				var sCL=[],v0,sC;
+				var ti,sC;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
-					v0 = ws.data[ colName(c)+ws.firstCell.row ];  					// value of first line
-					v0 = v0.w || v0.v;
-					if( CONFIG.statementClasses.indexOf( v0 )>-1 ) {
-						sC = new StaClass( v0 );
-//						console.debug( 'getStaClasses', v0, sC );
+					ti = ws.data[ colName(c)+ws.firstCell.row ];  					// value of first line
+					ti = ti.w || ti.v;
+					// Add statementClass, if it is declared as such and if it is not yet listed:
+					if( indexById(sCL,staClassId(ti))<0 && CONFIG.statementClasses.indexOf( ti )>-1 ) {
+						sC = new StaClass( ti );
+//						console.debug( 'getStaClasses', ti, sC );
 						sCL.push( sC )
 					}
 				};
-				return sCL;
-
-				function getStaClass( col ) { 
-				}
+				return sCL
 			}
 
 		// Processing of transformSheet(idx):
@@ -494,12 +498,12 @@ function xslx2specif( buf, pN, chgAt ) {
 			ws.lastCell = coord(ws.range.split(":")[1]);
 
 			// 3.1 Create a resourceClass per XLS-sheet so that a resource can be created per XLS-row:
-			var ot = new ResClass( ws.resClassName );
+			var ot = new ResClass( ws.resClassName, self.resourceClass );
 			// Create a property class for each column using the names specified in line 1:
 			ot.propertyClasses = getPropClasses( ws );
 //			console.debug('ot',ot);
 			specif.resourceClasses.push(ot);
-			specif.statementClasses = specif.statementClasses.concat(getStaClasses( ws ));
+			getStaClasses( ws, specif.statementClasses );
 			
 			// 3.2 Create a folder with the resources of this XLS-sheet:
 			createFld( ws )

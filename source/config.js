@@ -339,8 +339,8 @@ const CONFIG = {};
 		'oslc_rm:satisfiedBy',
 		'oslc_rm:validates',
 		'oslc_rm:validatedBy',
-		'oslc_rm:decomposes',
-		'oslc_rm:decomposedBy',
+	//	'oslc_rm:decomposes',
+	//	'oslc_rm:decomposedBy',
 		'IREB:refines',
 		'IREB:refinedBy'
 	];
@@ -422,9 +422,15 @@ const vocabulary = {
 			// Target language: SpecIF
 			var oT = '';
 			switch( iT.toLowerCase() ) {
+				case 'anforderungen':
 				case 'anforderung':
+				case 'requirements':
 				case 'requirement':
 				case 'specif:requirement':			oT = "IREB:Requirement"; break;
+				case 'merkmale':
+				case 'merkmal':
+				case 'features':
+				case 'feature':						oT = "SpecIF:Feature"; break;
 				case 'specif:folder':				oT = "SpecIF:Heading"; break;
 				case 'specif:outline':				oT = "SpecIF:Hierarchy"; break;
 				default:							oT = iT
