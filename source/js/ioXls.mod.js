@@ -58,7 +58,7 @@ modules.construct({
 		xDO = $.Deferred();
 		
 		xDO.notify('Transforming Excel to SpecIF',10); 
-		// Extract resourceClass in curly brackets and delete it from the projectName:
+		// Extract resourceClass in [square brackets] and delete it from the projectName:
 		self.parent.projectName = self.parent.projectName.replace( /\s*\[([a-z0-9_].+?)\]/i,
 																function($0,$1) { self.resourceClass = $1; return '' } );
 //		console.debug('input.prjName', self.parent.projectName, self.resourceClass );
@@ -498,14 +498,14 @@ function xslx2specif( buf, pN, chgAt ) {
 			ws.lastCell = coord(ws.range.split(":")[1]);
 
 			// 3.1 Create a resourceClass per XLS-sheet so that a resource can be created per XLS-row:
-			var ot = new ResClass( ws.resClassName, self.resourceClass );
+			var ot = new ResClass( ws.resClassName, self.resourceClass || CONFIG.objTypeXlsRow );
 			// Create a property class for each column using the names specified in line 1:
 			ot.propertyClasses = getPropClasses( ws );
 //			console.debug('ot',ot);
 			specif.resourceClasses.push(ot);
 			getStaClasses( ws, specif.statementClasses );
 			
-			// 3.2 Create a folder with the resources of this XLS-sheet:
+			// 3.2 Create a folder with the resources of this worksheet:
 			createFld( ws )
 		}
 	}
@@ -545,7 +545,7 @@ function xslx2specif( buf, pN, chgAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created');
-	console.debug('SpecIF',specif);
+//	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 
