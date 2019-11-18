@@ -1004,6 +1004,7 @@ modules.construct({
 			// take the original (unchanged) resources from cache:
 			// First the currently selected resource:
 			let sO=itemById( app.cache.selectedProject.data.resources, pData.tree.selectedNode.ref );
+//			console.debug('addMentionsRels',pData.tree.selectedNode,sO);
 			if( !sO ) return;
 			// There is no need to have a statementClass .... at least currently:
 //				var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
@@ -1021,7 +1022,7 @@ modules.construct({
 				// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 				// so there is no need to check it, here:
 				// disregard resources which are not referenced in the current tree:
-				if( pData.tree.nodesByRef(rO).length<1 ) return;
+				if( pData.tree.nodesByRef(rO.id).length<1 ) return;
 				let ti = resTitleOf( rO );
 				if( !ti || ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
 				
@@ -1031,43 +1032,45 @@ modules.construct({
 				rPatt = new RegExp( rStr, "i" );
 
 				sT = itemById( app.cache.selectedProject.data.resourceClasses, sO['class'] );
-				sO.properties.forEach( function(ay) {
-					switch( dataTypeOf( app.cache.selectedProject.data, ay['class'] ).type ) {
-						case 'xs:string':
-						case 'xhtml':	
-							// add, if the iterated resource's title appears in the selected resource's property ..
-							// and if it is not yet listed:
-							if( rPatt.test( ay.value ) && notListed( rG.rGt,sO,rO ) ) {
-								rG.rGt.push( {
-									title: 	'SpecIF:mentions',
-//										class:	// no class indicates that the statement cannot be deleted
-									subject:	sO,
-									object:		rO
-								} )
-								// - rGt contains statements of a given type, where the related resource is a object
-							}
-					}
-				});
+				if( sO.properties )
+					sO.properties.forEach( function(p) {
+						switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
+							case 'xs:string':
+							case 'xhtml':	
+								// add, if the iterated resource's title appears in the selected resource's property ..
+								// and if it is not yet listed:
+								if( rPatt.test( p.value ) && notListed( rG.rGt,sO,rO ) ) {
+									rG.rGt.push( {
+										title: 	'SpecIF:mentions',
+	//										class:	// no class indicates that the statement cannot be deleted
+										subject:	sO,
+										object:		rO
+									} )
+									// - rGt contains statements of a given type, where the related resource is a object
+								}
+						}
+					});
 				// 2. The selected resource's title found in other resource's texts 
 				//    result in a 'other mentions this' statement (selected resource is object):
 				sT = itemById( app.cache.selectedProject.data.resourceClasses, rO['class'] );
-				rO.properties.forEach( function(ay) {
-					switch( dataTypeOf( app.cache.selectedProject.data, ay['class'] ).type ) {
-						case 'xs:string':
-						case 'xhtml':	
-							// add, if the selected resource's title appears in the iterated resource's property ..
-							// and if it is not yet listed:
-							if( sPatt.test( ay.value ) && notListed( rG.rGs,rO,sO ) ) {
-								rG.rGs.push( {
-									title: 	'SpecIF:mentions',
-//										class:	// no class indicates that the statement cannot be deleted
-									subject:	rO,
-									object:		sO
-								} )
-								// - rGs contains statements of a given type, where the related resource is a subject
-							}
-					}
-				})
+				if( rO.properties )
+					rO.properties.forEach( function(p) {
+						switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
+							case 'xs:string':
+							case 'xhtml':	
+								// add, if the selected resource's title appears in the iterated resource's property ..
+								// and if it is not yet listed:
+								if( sPatt.test( p.value ) && notListed( rG.rGs,rO,sO ) ) {
+									rG.rGs.push( {
+										title: 	'SpecIF:mentions',
+	//										class:	// no class indicates that the statement cannot be deleted
+										subject:	rO,
+										object:		sO
+									} )
+									// - rGs contains statements of a given type, where the related resource is a subject
+								}
+						}
+				})  
 			});
 			return rG
 		
