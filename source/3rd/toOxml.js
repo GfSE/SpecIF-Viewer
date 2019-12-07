@@ -455,12 +455,7 @@ function toOxml( data, opts ) {
 					// Prepare:
 					// Remove empty <div> tags:
 					txt = txt.replace(/<div[^>]*>\s*<\/div>|<div *\/>/g,'');
-			/*		// Must at least return an empty paragraph:
-					if( !txt ) return [{p:{text:''}}]; */
 					if( !txt ) return [];
-
-			/*		// Replace any escaped characters:
-					txt = xmlChar2utf8(txt); */
 
 					// Identify and separate the blocks:
 					var blocks = splitParagraphs(txt);
@@ -550,7 +545,7 @@ function toOxml( data, opts ) {
 											// where the content is in $1, if provided:
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
-											cs.push( {p:{text:$1.trim()||nbsp, font:{weight:'bold'}}, border:{style:'single'}} )
+											cs.push( {p:{text:($1||nbsp).trim(), font:{weight:'bold'}}, border:{style:'single'}} )
 											// ToDo: Somehow the text is not printed boldly ...
 											return ''
 											});
@@ -559,7 +554,7 @@ function toOxml( data, opts ) {
 											// where the content is in $1, if provided:
 //											console.debug('td',$0,'|',$1);
 											// the 'td' cell with it's content
-											cs.push( {p:{text:$1.trim()||nbsp}, border:{style:'single'}} )
+											cs.push( {p:{text:($1||nbsp).trim()}, border:{style:'single'}} )
 											return ''
 											});
 									// the row with it's content:
@@ -2445,13 +2440,13 @@ function toOxml( data, opts ) {
 	// Thus transform all but the necessary ones '&' and '<' to UTF-8.
 	function minEscape( s ) {
 		return s.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
-//					console.debug('#x', match, numStr)
 					if( ['26','3C','3c','3E','3e'].indexOf(numStr)>-1 ) return match;
+					// supply all hex characters except '&', '<' and '>' as utf-8 chars:
 					return String.fromCharCode(parseInt(numStr, 16))
 				})
 				.replace(/&#([0-9]+);/g, function (match, numStr) {
-//					console.debug('#', match, numStr)
 					if( ['38','60','62'].indexOf(numStr)>-1 ) return match;
+					// supply all dec characters except '&', '<' and '>' as utf-8 chars:
 					return String.fromCharCode(parseInt(numStr, 10))
 				})
 				.replace(/&quot;/g, '"')
