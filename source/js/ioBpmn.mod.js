@@ -16,6 +16,9 @@ modules.construct({
 		fName = null,
 		data = null,		// the SpecIF data structure for xls content
 		bDO = null;
+
+	// Create a DOM element for the bpmnViewer outside of the visible area:
+	$('#app').after('<div id="bpmnView"></div>');
 		
 	self.init = function() {
 		return true
@@ -83,3 +86,30 @@ modules.construct({
 	};
 	return self
 });
+// For displaying BPMN, see:
+// https://github.com/bpmn-io/bpmn-js-examples/tree/master/pre-packaged
+// https://bpmn.io/blog/posts/2014-bpmn-js-viewer-is-here.html
+// https://forum.bpmn.io/t/how-to-get-svg-object-from-viewer/1948
+// https://forum.bpmn.io/t/saving-bpmn-and-svg-to-a-website-rather-than-download/210
+// https://www.pleus.net/blog/?p=2142
+function bpmn2svg(f,fn) {
+	// transform the BPMN-XML and render the diagram,
+	// where fn is the bpmnViewer callback function:
+	if( typeof(fn)!='function' ) return null;
+//	console.debug('bpmn2svg',f);
+	// viewer instance:
+	let bpmnViewer = new BpmnJS({container: '#bpmnView'});
+	bpmnViewer.importXML( f, function(err) {
+		if (err) {
+			console.error('BPMN-Viewer could not import BPMN 2.0 diagram', err);
+			return 
+		};
+		// The caller defines in fn what to do with the resulting SVG:
+		bpmnViewer.saveSVG( fn );
+/*		// access viewer components:
+		var canvas = bpmnViewer.get('canvas');
+		// set viewport: ToDo
+		// zoom to fit full viewport:
+		canvas.zoom('fit-viewport')  */
+	})  
+}

@@ -229,19 +229,20 @@ function toXhtml( data, opts ) {
 			if( !opts ) return txt;
 		//	if( opts.rev==undefined ) opts.rev = 0;
 			if( opts.imgExtensions==undefined ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
+			if( opts.applExtensions==undefined ) opts.applExtensions = [ 'bpmn' ];
 		//	if( opts.clickableElements==undefined ) opts.clickableElements = false;
 			
-				function getType( str ) {
+			/*	function getType( str ) {
 					var t = /type="([^"]+)"/.exec( str );
 					if( t==null ) return '';
 					return (' '+t[1])
 				}
-/*				function getStyle( str ) {
+				function getStyle( str ) {
 					var s = /(style="[^"]+")/.exec( str );
 					if( s==null ) return '';  
 					return (' '+s[1])
-				}
-*/				function getUrl( str ) {
+				}  */
+				function getUrl( str ) {
 					// get the URL:
 					var l = /(href|data)="([^"]+)"/.exec( str );  // url in l[2]
 					// return null, because an URL is expected in any case:
@@ -304,23 +305,15 @@ function toXhtml( data, opts ) {
 						u2 = getUrl( $2 ), 				// the preview image
 //						s2 = getStyle( $2 ), 
 //						t2 = getType( $2 ),
-						fi;
+						fi,
+						e = extOf(u1);	// get the file extension
+
+					if( !e ) return $0
+
 					// If there is no description, use the name of the link target:
-					$4 = $4 || u1; // $4 is now the description between object tags
+					let d = $4 || u1; // $4 is the description between object tags
 
-					fi = itemBy( data.files, 'title', u2 ); // we assume that the referenced file exists
-					// ToDo: Check whether the referenced file exists
-					
-					// if the type is svg, png is preferred and available, replace it:
-					if( u2.indexOf('svg')>-1 && opts.preferPng ) {
-						fi = itemBy( data.files, 'title', fileName(u2)+'.png' )
-					};
-
-//					console.debug('*1',u2,fi);
-					pushReferencedFile( fi );
-//					console.debug( 'r1', $0, $4, u1, i2, u2, t2 );
-					return'<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+$4+'" />'
-//					return'<div class="forImage"><object data="'+addEpubPath(u2)+'"'+t2+s2+' >'+$4+'</object></div>'
+					return findBestFile( u2, e, d )
 				}
 			);
 //			console.debug('fromServer 1: ', txt);
@@ -331,58 +324,63 @@ function toXhtml( data, opts ) {
 			txt = txt.replace( /<object([^>]+)(\/>|>([\s\S]*?)<\/object>)/g,   //  comprehensive tag or tag pair
 				function( $0, $1, $2, $3 ){ 
 					let u1 = getUrl( $1 ), 
-//						s1 = getStyle( $1 ), 
-						t1 = getType( $1 ),
-						i1,
-						fi;
+				//		s1 = getStyle( $1 ), 
+				//		t1 = getType( $1 ),
+						fi,
+						e = extOf(u1);	// get the file extension
 
-					// get the file extension:
-					let e = extOf(u1);
 					if( !e ) return $0
 
 					// $3 is the description between the tags <object></object>:
 					let d = withoutPath( $3 || u1 );
-						
 					e = e.toLowerCase();
-//					console.debug( $0, $1, 'url: ', u1, 'ext: ', e );
+//					console.debug( 'url: ', u1, 'ext: ', e, 'alt:', d );
 
-					fi = itemBy( data.files, 'title', u1 ); // we assume that the referenced file exists
-					// ToDo: Check whether the referenced file exists
-					
-//					console.debug('*0',data.files,u1,fi);
-					if( opts.imgExtensions.indexOf( e )>-1 ) {  
-						// it is an image, show it:
-
-						// if the type is svg, png is preferred and available, replace it:
-						if( u1.indexOf('svg')>-1 && opts.preferPng ) {
-							fi = itemBy( data.files, 'title', fileName(u1)+'.png' ) || fi
-						};
-						
-//						console.debug('*2',u1,fi);
-						pushReferencedFile( fi );
-						d = '<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+d+'" />'
-//						d = '<object data="'+addEpubPath(u1)+'"'+t1+s1+' >'+d+'</object>
-					} else {
-						// if the type is ole, png is available, replace it:
-						if( u1.indexOf('ole')>-1 ) {
-							fi = itemBy( data.files, 'title', fileName(u1)+'.png' )
-						};
-						if( fi ) {  
-							// It is an ole-file, so add a preview image;
-//							console.debug('*3',u2,fi);
-							pushReferencedFile( fi );
-							d = '<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+d+'" />'
-//							d = '<object data="'+addEpubPath( fileName(u1) )+'.png" type="image/png" >'+d+'</object>'
-						} else {
-							// in absence of an image, just show the description:
-							d = '<span>'+d+'</span>'  
-						}
+					// If it is an application file, look for a preview image:
+					if( opts.applExtensions.indexOf( e )>-1 ) {  
+							let preview = false;
+							// replace by preview image, if possible:
+							for( var i=data.files.length-1; i>-1; i-- ) {
+								if( data.files[i].title.indexOf( fileName(u1) )>-1 ) {
+									u1 = data.files[i].title;
+									e = extOf(u1).toLowerCase();
+									preview = true;
+//									console.debug('*0', u1, e);
+									break
+								};
+							if( !preview )
+								// in absence of an image, just show the description:
+								return '<span>'+d+'</span>' 
+							// else we have an image to show
+							}
 					};
-					return d
+					return findBestFile( u1, e, d )
 				}
 			);	
 //			console.debug('fileRef result: ', txt);
 			return txt
+
+				function findBestFile( ti, ext, alt ) {
+					// take raster image, if preferred and available:
+					let fi = itemBy( data.files, 'title', ti ); // we assume that the referenced file exists
+					// ToDo: Check whether the referenced file exists
+//					console.debug('*1',data.files,ti,fi);
+
+					if( opts.imgExtensions.indexOf( ext )>-1 ) {  
+						// it is an image, show it:
+
+						// if the type is svg and if png is preferred and available, replace it:
+						if( ( ti.indexOf('svg')>-1 ) && opts.preferPng ) {
+							fi = itemBy( data.files, 'title', fileName(ti)+'.png' ) || fi
+						};
+						
+//						console.debug('*2',ti,fi);
+						pushReferencedFile( fi );
+						return '<img src="'+addEpubPath(fi.title)+'" style="max-width:100%" alt="'+alt+'" />'
+					};
+					// as a last resort, just show the description:
+					return '<span>'+alt+'</span>'  
+				}
 		}
 		function titleLinks( str, hi, opts ) {
 			// Transform sub-strings with dynamic linking pattern to internal links.
@@ -478,7 +476,7 @@ function toXhtml( data, opts ) {
 	}
 	function xhtmlOf( doc ) {
 		// make a xhtml file content from the elements provided:
-		console.debug('xhtmlOf',doc);
+//		console.debug('xhtmlOf',doc);
 		return	'<?xml version="1.0" encoding="UTF-8"?>'
 		+		'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
 		+		'<html xmlns="http://www.w3.org/1999/xhtml">'

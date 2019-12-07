@@ -329,9 +329,10 @@ function xslx2specif( buf, pN, chgAt ) {
 												title: ti,
 												class: staClassId( ti ),	// make id from column title
 										//		subject: undefined,	// defined further down, when the resource's id has been determined
-												objectTitle: oInner[1] || oInner[2],  // for content in double and single quotes
-												object: 'to-be-replaced', 	// just a placeholder passing the schema-check,
-																			// remember that the constraint-check on the object must be disabled
+												objectToFind: oInner[1] || oInner[2],  // for content in double and single quotes
+												object: 'to-be-replaced', 	// just a placeholder for passing the schema-check,
+																			// it will be replaced with a resource.id when importing.
+													// Remember that the constraint-check on the statement.object must be disabled.
 												changedAt: chgAt
 											})
 										}
@@ -359,7 +360,7 @@ function xslx2specif( buf, pN, chgAt ) {
 							// store any statements only if the resource is stored, as well
 							// that's why it is here and not outside the 'if' block:
 							if( stL.length>0 ) {
-								stL.forEach( function(st) { st.id = 'S-'+(res.id+st.title+st.objectTitle).simpleHash(); st.subject = res.id } );
+								stL.forEach( function(st) { st.id = 'S-'+(res.id+st.title+st.objectToFind).simpleHash(); st.subject = res.id } );
 								specif.statements = specif.statements.concat(stL)
 							}
 						}
@@ -429,12 +430,13 @@ function xslx2specif( buf, pN, chgAt ) {
 	//						console.debug('compatibleClasses',a,b,e)
 							return e
 						}
-					
-					let ti = col[0]?(col[0].w || col[0].v):i18n.MsgNoneSpecified,		// the cell value in the first line is the property title
+
+					// the cell value in the first line is the title, either of a property or a statement:
+					let ti = col[0]?(col[0].w || col[0].v):i18n.MsgNoneSpecified,
 						pC=null;
 	//				console.debug( 'getPropClass 1', ti );
 
-					// Do not return a propertyClass, if it is a statement title
+					// Do not return a propertyClass, if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
 					if( CONFIG.statementClasses.indexOf( ti )>-1 ) return;
 

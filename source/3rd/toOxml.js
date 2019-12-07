@@ -6,6 +6,16 @@ function toOxml( data, opts ) {
 	// Accepts data-sets according to SpecIF v0.10.8 and later.
 	// License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
 
+	// Reject versions < 0.10.8:
+	let v = data.specifVersion.split('.');
+	if( v.length!=3 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2],10))<1008 ) {
+		if (typeof(opts.fail)=='function' )
+			opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
+		else
+			console.error("SpecIF Version < v0.10.8 is not supported.");
+		return
+	};
+	
 	// Check for missing options:
 	if( typeof(opts)!='object' ) opts = {};
 //	if( !opts.metaFontSize ) opts.metaFontSize = '70%';	
@@ -15,51 +25,113 @@ function toOxml( data, opts ) {
 //	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
 	if( typeof(opts.RE)!='object' ) opts.RE = {};
-	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
-	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 
-	// ToDo: Reject versions < 0.10.8
-	
+	if( typeof(opts.imageResolution)!='number' ) opts.imageResolution = 8; // 10 dots per mm = ~256 dpi
+	if( typeof(opts.marginLeft)!='number' ) opts.marginLeft = 25; // mm
+	if( typeof(opts.marginRight)!='number' ) opts.marginRight = 25; // mm
+
 	const startRID = 7,		// first relationship index for images
-		maxHeading = 4;  	// Headings from 1 to maxHeading are defined
+		maxHeading = 4,  	// Headings from 1 to maxHeading are defined
+		pageWidth = 210,	// mm for A4
+		columnWidth = pageWidth-opts.marginLeft-opts.marginRight,
+		twips = 56.692913385826,  // twips per mm
+		REAmpersandPlus = new RegExp( '&(.{0,8})', 'g' ),
+		REXMLmin = new RegExp( '&(amp|#x[0]*26|#[0]*38|lt|#x[0]*3C|#x[0]*3c|#[0]*60|gt|#x[0]*3E|#x[0]*3e|#[0]*62);', '');
+	//	REXMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 	
 //	console.debug('toOxml',data,opts);
 	// Create a local list of images, which can be used in OXML:
+	// - Take any raster image right away,
+	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
+	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
 	// ToDo: Transform SVG to PNG, if not present.
-	// ToDo: Determine image size, if not specified,
-	// to get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
-	var images = [],
+	var DOMURL = window.URL || window.webkitURL || window,
+		images = [],
 		pend = 0;		// the number of pending operations
 
 //	console.debug('files',data.files);
 	if( data.files && data.files.length>0 )
-		data.files.forEach( function(f) {
-			if ( f.blob && ['image/png','image/jpg','image/jpeg'].indexOf(f.type)>-1) {
-				pend++;
-				// transform the file and continue processing, as soon as all are done:
-				image2base64(f,createOxml);
-				console.info("File '"+f.id+"' transformed to Base64");
+		data.files.forEach( function(f,i,L) {
+			if( !f.blob ) {
+				console.warn("File '"+f.title+"' content is missing.");
 				return
 			};
-			console.warn("Format of file '"+f.id+"' is not supported by MS Word.")
+
+			// If it is a raster image:
+			if ( ['image/png','image/jpg','image/jpeg','image/gif'].indexOf(f.type)>-1 ) {
+				pend++;
+				// transform the file and continue processing, as soon as all are done:
+				// Convert a raster image to base64:
+					function storeImg(ev) {
+//						console.debug('#',pend,ev);
+						// please note the different use of 'id' and 'title' in file and images!
+						images.push( {id:f.title,type:f.type,h:ev.target.height,w:ev.target.width,b64:ev.target.src} );
+						if( --pend<1 ) {
+							// all images have been converted, continue processing:
+							createOxml()
+						}
+					}
+				const reader = new FileReader();
+				reader.addEventListener('loadend', function(e) {
+					// Obtain width and height
+					let img = new Image();   
+					img.addEventListener('loadend', storeImg, false); 
+					img.src = e.target.result
+				});
+				reader.readAsDataURL(f.blob);
+		
+				console.info("File '"+f.title+"' made available as Base64");
+				return
+			};
+			
+			// If it is a vector image:
+			if ( ['image/svg+xml'].indexOf(f.type)>-1 ) {
+				let pngN = nameOf(f.title)+'.png';
+				// check whether there is already a PNG version of this image:
+				if( itemByTitle( L, pngN ) ) {
+					console.info("File '"+f.title+"' has a sibling of type PNG");
+					// The PNG file has been added to images, before.
+					return
+				};
+				// else, transform SVG to PNG:
+				pend++;
+				let can = document.createElement('canvas'), // Not shown on page
+					ctx = can.getContext('2d'),
+					img = new Image();                      // Not shown on page
+
+				blob2text(f,function(svg,fTi,fTy) {
+//					console.debug("File ", fTi, fTy, svg );
+					img.addEventListener('loadend', function(){
+						can.width = img.width;
+						can.height = img.height;
+						console.debug('img',img);
+						ctx.drawImage( img, 0, 0 );
+						console.debug('img png',can.toDataURL());
+						// please note the different use of 'id' and 'title' in specif.files and images!
+						images.push( {id:pngN,type:'image/png',h:img.height,w:img.width,b64:can.toDataURL()} );
+						if( --pend<1 ) {
+							// all images have been converted, continue processing:
+							createOxml()
+						}
+					});
+					img.src = 'data:image/svg+xml,' + encodeURIComponent( svg );
+				});
+
+				console.info("File '"+f.title+"' transformed to PNG and made available as Base64");
+				return
+			};
+			console.warn("Format of file '"+f.title+"' is not supported by MS Word.")
 		});
 	if( pend<1 ) 
 		// start right away when there are no images to convert:
 		createOxml();
 	return;
 
-	// Convert an image to base64:
-	function image2base64(f,fn) {			
+	function blob2text(f,fn) {
 		const reader = new FileReader();
-		reader.addEventListener('loadend', function(e) {
-			// please note the different use of 'id' and 'title' in file and images!
-			images.push( {id:f.title,type:f.type,b64:e.target.result} );
-			if( --pend<1 )
-				// all images have been converted, continue processing:
-				if( typeof(fn)=='function' ) fn()
-		});
-		reader.readAsDataURL(f.blob)
-	}
+		reader.addEventListener('loadend', function(e) { fn(e.target.result,f.title,f.type) });
+		reader.readAsText(f.blob)
+	} 
 	
 // -----------------------
 	function createOxml() {
@@ -97,6 +169,11 @@ function toOxml( data, opts ) {
 			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
 			if( opts.addTitleLinks )
 				var reTitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, '' );
+			
+			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
+			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];
+			// if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
+
 			
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
@@ -158,7 +235,7 @@ function toOxml( data, opts ) {
 				// depending on the context, r['class'] is an class object or a class id:
 				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] );
 				
-				let ti = escapeXML( r.title ),
+				let ti = minEscape( r.title ),
 					ic = rC.icon;
 				if( typeof(ic)!='string' ) ic = '';
 				if( ic ) ic += nbsp;
@@ -213,9 +290,19 @@ function toOxml( data, opts ) {
 							})
 						});
 						// The subjects:
-						row = wTableCell( {content:cell,border:{type:'single'}} );
+						row = wTableCell({
+								content:cell,
+								border:{type:'single'}
+							});
 						// The predicate:
-						row += wTableCell( {content:wParagraph( {text:sTi,align:'center',noSpacing:true} ),border:{type:'single'}} );
+						row += wTableCell({
+								content:wParagraph({
+										text:sTi,
+										align:'center',
+										noSpacing:true
+								}),
+								border:{type:'single'}
+							});
 						// The object:
 						row += wTableCell({
 								content:wParagraph({ 
@@ -236,7 +323,14 @@ function toOxml( data, opts ) {
 								}), 
 								border:{type:'single'}
 							});
-						row += wTableCell( {content:wParagraph( {text:sTi,align:'center',noSpacing:true} ),border:{type:'single'}});
+						row += wTableCell({
+								content:wParagraph({
+										text:sTi,
+										align:'center',
+										noSpacing:true
+								}),
+								border:{type:'single'}
+							});
 						cell = '';
 						// collect all related resources (here objects):
 						sts[cid].objects.forEach( function(o) {
@@ -287,23 +381,22 @@ function toOxml( data, opts ) {
 				// designed for use also by statements.
 			//	if( !r.properties || r.properties.length<1 ) return '';
 
-				// depending on the context, r['class'] is an class object or a class id:
-			//	let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] );
-				
+			/*	// depending on the context, r['class'] is an class object or a class id:
+				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] ); 
+			*/
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', rows='', c3, rt;
-//				console.debug('properties',r);
 
 				r.descriptions.forEach( function(prp) {
 					valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 				});
+//				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
-//				console.debug('properties',c1);
 				if( !opts.propertiesLabel ) return c1;
 				
-			/*	// Add a property 'SpecIF:Type':
+			/*	// Add a property 'SpecIF:Class':
 				if( rC.title )
-					r.properties.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
+					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
 				r.other.forEach( function(prp) {
@@ -315,7 +408,12 @@ function toOxml( data, opts ) {
 						c3 = '';
 						valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
 //						console.debug('other properties',prp,c3);
-						rows += wTableRow( wTableCell( wParagraph({text:rt,align:'end',font:{style:'italic'}})) + wTableCell( c3 ))
+						rows += wTableRow( wTableCell( wParagraph({
+														text:rt,
+														align:'end',
+														font:{style:'italic'}
+													})) 
+											+ wTableCell( c3 ))
 					}
 				});
 				
@@ -330,7 +428,7 @@ function toOxml( data, opts ) {
 					// Replace \r, \f, \t:
 					// (Note that in HTML multiple nbsp do not collapse)
 					txt = txt.replace( /\r|\f/g, '' ).replace( /\t/g, nbsp+nbsp+nbsp );
-					txt = escapeXML(txt);
+					txt = minEscape(txt);
 					// then, split into 2 paragraphs when \n is encountered:
 					let arr = txt.split(/\n/);
 //					console.debug('parseText',txt,arr);
@@ -340,11 +438,6 @@ function toOxml( data, opts ) {
 				function parseXhtml( txt, opts ) {
 					// Parse formatted text.
 					
-			//		if( !opts ) return txt;
-			//		if( opts.rev==undefined ) opts.rev = 0;
-					if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
-			//		if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-
 					// Transform an XHTML text to an internal data structure which allows easy generation of OpenXML.
 					// While XHTML is block structured, OpenXML expects a series of paragraphs with a series of 'runs' within.
 					// In a nested procedure, the XHTML is separated into 'paragraphs', then 'runs' and finally 'text'.
@@ -362,8 +455,12 @@ function toOxml( data, opts ) {
 					// Prepare:
 					// Remove empty <div> tags:
 					txt = txt.replace(/<div[^>]*>\s*<\/div>|<div *\/>/g,'');
-					// Must at least return an empty paragraph:
-					if( !txt ) return [{p:{text:''}}];
+			/*		// Must at least return an empty paragraph:
+					if( !txt ) return [{p:{text:''}}]; */
+					if( !txt ) return [];
+
+			/*		// Replace any escaped characters:
+					txt = xmlChar2utf8(txt); */
 
 					// Identify and separate the blocks:
 					var blocks = splitParagraphs(txt);
@@ -400,13 +497,13 @@ function toOxml( data, opts ) {
 							};
 							// c) a paragraph:
 							$2 = $2.replace(/<p[^>]*>([\s\S]*?)<\/p>/, function($0,$1) {
-								bL.push( {p:{text:$1}} );
+								bL.push( {p:{text:$1.trim()}} );
 								return ''
 							});
 							// d) an unordered list:
 							$2 = $2.replace(/<ul>([\s\S]*?)<\/ul>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{text:$1,style:'bulleted'}} );
+									bL.push( {p:{text:$1.trim(),style:'bulleted'}} );
 									return ''
 								});
 								return ''
@@ -414,7 +511,7 @@ function toOxml( data, opts ) {
 							// e) an ordered list:
 							$2 = $2.replace(/<ol>([\s\S]*?)<\/ol>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{text:$1,style:'numbered'}} );
+									bL.push( {p:{text:$1.trim(),style:'numbered'}} );
 									return ''
 								});
 								return ''
@@ -453,7 +550,7 @@ function toOxml( data, opts ) {
 											// where the content is in $1, if provided:
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
-											cs.push( {p:{text:$1||nbsp, font:{weight:'bold'}}, border:{style:'single'}} )
+											cs.push( {p:{text:$1.trim()||nbsp, font:{weight:'bold'}}, border:{style:'single'}} )
 											// ToDo: Somehow the text is not printed boldly ...
 											return ''
 											});
@@ -462,7 +559,7 @@ function toOxml( data, opts ) {
 											// where the content is in $1, if provided:
 //											console.debug('td',$0,'|',$1);
 											// the 'td' cell with it's content
-											cs.push( {p:{text:$1||nbsp}, border:{style:'single'}} )
+											cs.push( {p:{text:$1.trim()||nbsp}, border:{style:'single'}} )
 											return ''
 											});
 									// the row with it's content:
@@ -477,7 +574,7 @@ function toOxml( data, opts ) {
 						// but we do not want to ignore any content in case there is ...
 						// A <div> enclosed text:
 						txt = txt.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, function($0,$1) {
-							bL.push( {p:{text:$1}} );
+							bL.push( {p:{text:$1.trim()}} );
 							return ''
 						});
 						if( opts.hasContent(txt) ) 
@@ -611,7 +708,7 @@ function toOxml( data, opts ) {
 							br={};
 							// store the preceding fragment:
 							if( opts.hasContent($1) )
-								arr.push({str:escapeXML($1)});
+								arr.push({str:minEscape($1)});
 
 							// remove the next tag,
 							// $2 can only be one of the following:
@@ -625,7 +722,7 @@ function toOxml( data, opts ) {
 						// finally store the remainder:
 						if( opts.hasContent(txt) ) {
 //							console.debug('splitText',txt,typeof(txt));
-							arr.push({str:escapeXML(txt)})
+							arr.push({str:minEscape(txt)})
 						};
 //						console.debug('splitText',txt,arr);
 						return arr
@@ -654,38 +751,31 @@ function toOxml( data, opts ) {
 						// and return a 'run' element:
 						// Todo: Load a linked resource in an <object..> tag and include it in the document?
 						// Or only if it is an image?
-						var run; 
-//						console.debug('parseObject', obj);
-
-							function withoutPath( str ) {
-								return str.substring(str.lastIndexOf('/')+1)
-							}
-							function nameOf( str ) {
-								return str.substring( 0, str.lastIndexOf('.') )
-							}
+//						console.debug('parseObject *1', obj);
 
 						let u1 = getPrp( 'data', obj.properties ).replace('\\','/'), 
 							t1 = getPrp( 'type', obj.properties ),
 							d = obj.innerHTML || getPrp( 'name', obj.properties ) || withoutPath( u1 ),	// the description
 							e = extOf(u1).toLowerCase();	// the file extension
 						
-						if( opts.imgExtensions.indexOf( e )>-1 ) {  
-							// it is an image, show it:
+						if( opts.imgExtensions.indexOf( e )>-1 
+							|| opts.applExtensions.indexOf( e )>-1 ) {  
+							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemByTitle( data.files, nameOf(u1)+'.png' );
-//							console.debug('parseObject',e,pngF);
-							if( t1.indexOf('svg')>-1 && opts.preferPng && pngF ) {
-								u1 = pngF.title;
+							let pngF = itemById( images, nameOf(u1)+'.png' );
+//							console.debug('parseObject *2',u1,e,pngF);
+							if( ( t1.indexOf('svg')>-1 || t1.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
+								u1 = pngF.id;
 								t1 = pngF.type
 							};
 							// At the lowest level, the image is included only if present:
-							run = {picture:{id:u1,title:d,type:t1,width:'200pt',height:'100pt'}}
+//							console.debug('parseObject *3',u1,d,t1);
+						//	return {picture:{id:u1,title:d,type:t1,width:'200pt',height:'100pt'}}
+							return {picture:{id:u1,title:d,type:t1}}
 						} else {
 							// in absence of an image, just show the description:
-							run = {text:d}
-						};
-//						console.debug('parseObject',r);
-						return run
+							return {text:d}
+						}
 					}
 				}
 				
@@ -714,7 +804,7 @@ function toOxml( data, opts ) {
 
 								// get the pure title text:
 								ti = cO.title;
-						//		ti = escapeXML( cO.title );
+						//		ti = minEscape( cO.title );
 								
 								// disregard objects whose title is too short:
 								if( !ti || ti.length<opts.titleLinkMinLength ) continue;
@@ -748,7 +838,7 @@ function toOxml( data, opts ) {
 									if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.value+'&#x00bb;'):val.value)
 									else ct += (v==0?'':', ')+vL[v]
 								};
-								return [{p:{text:escapeXML(ct)}}];
+								return [{p:{text:minEscape(ct)}}];
 							case 'xhtml':
 //								console.debug('valOf - xhtml',prp.value);
 								return parseXhtml( prp.value, opts );
@@ -757,7 +847,7 @@ function toOxml( data, opts ) {
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
-					return [{p:{text:escapeXML(prp.value)}}]					
+					return [{p:{text:minEscape(prp.value)}}]					
 				}
 			}
 			function renderHierarchy( nd, lvl ) {
@@ -915,6 +1005,7 @@ function toOxml( data, opts ) {
 					// avoid duplicate entries:
 					let n = indexBy( oxml.relations, 'id', u );
 					if( n<0 ) {
+						// Next to external URLs, oxml.relations are pointing to other resources:
 						n = oxml.relations.length;
 						oxml.relations.push({
 							category: 'url',
@@ -945,32 +1036,38 @@ function toOxml( data, opts ) {
 				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>'
 			}
 			function wPict( ct ) {
+//				console.debug('wPict',ct,images);
 				if( !ct || !ct.picture ) return undefined;
 				// inserts an image at 'run' level:
-				// width, height: a string with number and unit, e.g. '100pt' is expected
-//				console.debug('wPict',ct);
-				let imgIdx = pushReferencedFile( ct.picture );
+				// width, height: a string with number and unit, e.g. '100pt' or '160mm' is expected
+				let imgIdx = indexBy( images, 'id', ct.picture.id );
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
-//					console.error( et );
+					console.error( et );
 					return wText( "### "+et+" ###" )
 				};
+//				console.debug('pushReferencedFile',oxml.relations,n);
+				let rIdx = pushReferencedFile( ct.picture );
 				// else, all is fine:
+				let img = images[imgIdx],
+					w = Math.min( img.w / opts.imageResolution, columnWidth ),
+					h = w>0? (img.h / img.w * w) : 0;
+//				console.debug('wPict',ct,img,h,w);
 				return	'<w:pict>'
-					+		'<v:shape style="width:'+ct.picture.width+';height:'+ct.picture.height+'">'
-					+			'<v:imagedata r:id="rId'+imgIdx+'" o:title="'+ct.picture.title+'"/>'
+					// we need to specify both width and height; WORD is not assuming the native aspect ratio:
+					+		'<v:shape style="width:'+w+'mm;height:'+h+'mm">'
+					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+ct.picture.title+'"/>'
 					+		'</v:shape>'
 					+	'</w:pict>'
 
 				function pushReferencedFile( p ) {
 					// Add the image to the relationships and return it's index:
 					// check, if available:
-					let n = indexBy( images, 'id', p.id );
-					if( n<0 )
-						return -1;
-					// avoid duplicate entries:
-					n = indexBy( oxml.relations, 'id', p.id );
+					let n = indexBy( oxml.relations, 'id', p.id );
+					// skip when found to avoid duplicate entries:
 					if( n<0 ) {
+						// New entry:
+						// Next to images, oxml.relations are pointing to other resources:
 						n = oxml.relations.length;
 						oxml.relations.push({
 							category: 'image',
@@ -982,7 +1079,7 @@ function toOxml( data, opts ) {
 						})
 					};
 					// in any case return the reference no (index):
-					return startRID + n
+					return startRID+n
 				}
 			}
 			// some helpers to build a table with its rows and cells:
@@ -991,11 +1088,12 @@ function toOxml( data, opts ) {
 				// - a 'string' 
 				// - an object {content:'string'}
 				// - an object {content:'string',width:'full'}
+				if( !rs || typeof(rs)=='object'&&!rs.content ) return '';
 				return 	'<w:tbl>'
 					+		'<w:tblPr>'
 					+			'<w:tblStyle w:val="Tabellenraster"/>'
 					+		(rs.width&&rs.width=='full'?'<w:tblW w:w="5000" w:type="pct"/>':'<w:tblW w:w="0" w:type="auto"/>')
-		//			+			'<w:tblW w:w="0" w:type="auto"/>'
+			//		+			'<w:tblW w:w="0" w:type="auto"/>'
 					+			'<w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>'
 					+		'</w:tblPr>'
 					+ 		(rs.content || rs)
@@ -1131,7 +1229,7 @@ function toOxml( data, opts ) {
 		
 		ct += 					'<w:sectPr>'
 		+							'<w:pgSz w:w="11906" w:h="16838"/>'
-		+							'<w:pgMar w:top="1417" w:right="1417" w:bottom="1134" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/>'
+		+							'<w:pgMar w:top="1417" w:right="'+Math.round(opts.marginRight*twips)+'" w:bottom="1134" w:left="'+Math.round(opts.marginLeft*twips)+'" w:header="708" w:footer="708" w:gutter="0"/>'
 		+							'<w:cols w:space="708"/>'
 		+							'<w:docGrid w:linePitch="360"/>'
 		+						'</w:sectPr>'
@@ -2318,6 +2416,12 @@ function toOxml( data, opts ) {
 		L.forEach( function(e){ var r=fn(e); if(r) nL.push(r) } );
 		return nL
 	}
+	function withoutPath( str ) {
+		return str.substring(str.lastIndexOf('/')+1)
+	}
+	function nameOf( str ) {
+		return str.substring( 0, str.lastIndexOf('.') )
+	}
 	function extOf( s ) {
 		// get the file extension without the '.':
 		return s.substring( s.lastIndexOf('.')+1 )
@@ -2336,21 +2440,34 @@ function toOxml( data, opts ) {
 			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
 			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str)
 	}
-	function escapeXML( s ) {
-		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {
-				// 1. Replace &, unless it belongs to an XML entity:
-				if( opts.RE.XMLEntity.test($0) ) {
-					// no replacement:
-					return $0
-				} else {
-					// encode the '&' and add the remainder of the pattern:
-					return '&#38;'+$1
-				}
-			})
-			.replace(/[<>"']/g, function($0) {
-				// 2. Replace <, >, " and ':
-				return "&#" + {"<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
-			})
+	// The incoming XML may have (and often has) many more escaped characters,
+	// than MS WORD would correctly show.
+	// Thus transform all but the necessary ones '&' and '<' to UTF-8.
+	function minEscape( s ) {
+		return s.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
+//					console.debug('#x', match, numStr)
+					if( ['26','3C','3c','3E','3e'].indexOf(numStr)>-1 ) return match;
+					return String.fromCharCode(parseInt(numStr, 16))
+				})
+				.replace(/&#([0-9]+);/g, function (match, numStr) {
+//					console.debug('#', match, numStr)
+					if( ['38','60','62'].indexOf(numStr)>-1 ) return match;
+					return String.fromCharCode(parseInt(numStr, 10))
+				})
+				.replace(/&quot;/g, '"')
+				.replace(/&apos;/g, "'")
+				.replace( REAmpersandPlus, function($0,$1) {
+					// 1. Replace &, unless it belongs to an XML entity:
+					if( REXMLmin.test($0) ) {
+						// no replacement:
+						return $0
+					} else {
+						// encode the '&' and add the remainder of the pattern:
+						return '&#38;'+$1
+					}
+				})
+				.replace(/</g, '&#60;')
+				.replace(/>/g, '&#62;')
 	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/

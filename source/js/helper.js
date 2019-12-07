@@ -401,7 +401,7 @@ function itemById(L,id) {
 	id = id.trim();
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i].id==id ) return L[i];   // return list item
-	return null
+	return
 }
 function indexByTitle(L,ln) {
 	if(!L||!ln) return -1;
@@ -415,7 +415,7 @@ function itemByTitle(L,ln) {
 	// given a title of an item in a list, return the item itself:
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i].title==ln ) return L[i];   // return list item
-	return null
+	return
 }
 function indexBy( L, p, s ) {
 	if(!L||!p||!s) return -1;
@@ -431,7 +431,7 @@ function itemBy( L, p, s ) {
 	// hand in property and searchTerm as string !
 	for( var i=L.length-1;i>-1;i-- )
 		if( L[i][p]==s ) return L[i];
-	return null
+	return
 }
 function containsById( cL, L ) {
 	if(!L) return null;
@@ -515,12 +515,12 @@ function genID() {
 // Make a valid js variable/property name; replace disallowed characters by '_':
 String.prototype.toJsId = function() { 
 	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#°%]/g, '_' ); 
-	return null
+	return
 };
 // Make an id conforming with ReqIF and SpecIF:
 String.prototype.toSpecifId = function() { 
 	if( this ) return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
-	return null
+	return
 };
 
 // Make a very simple hash code from a string:
@@ -659,15 +659,15 @@ String.prototype.removeBOM = function() {
 	// ToDo: The BOM may be "FE FF" in certain representations.
 	return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, function($0,$1,$2) {return $2} )
 };
+*/
 function toHex(str) {
 	var hex='', nV='';
-	for( var i=0;i<str.length;i++) {
+	for(var i=0;i<str.length;i++) {
 		nV = str.charCodeAt(i).toString(16);
 		hex += nV.length>1?''+nV:'0'+nV
 	};
 	return hex
-}				
-*/
+}
 if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) {
     'use strict';
@@ -944,22 +944,22 @@ if (!Number.isInteger) {
 
 function attachment2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
-	if( !t ) return null;
+	if( !t ) return;
 	// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
 	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
 	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
-	ti = CONFIG.modelExtensions.indexOf( t.toLowerCase() );
+	ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.modelTypes[ ti ]
-	return null
+	return
 }
 function image2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
-	if( !t ) return null;
+	if( !t ) return;
 	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.imgTypes[ ti ]
-	return null
+	return
 }
 
 function float2int(val) { return parseInt(val) };

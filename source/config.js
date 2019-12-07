@@ -49,13 +49,14 @@ const CONFIG = {};
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png 
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
+//	CONFIG.rasterImgExtensions = [ 'png', 'jpg', 'gif', 'jpeg' ];
 	CONFIG.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg', 'png' ];
 	CONFIG.imgTypes = [ 'image/png', 'image/jpeg', 'image/svg+xml', 'image/gif', 'image/jpeg', 'image/x-png' ];
 	// mime image/x-png does not exist by standard, but it has been seen in real data ...
 	CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
 	CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
-	CONFIG.modelExtensions = [ 'bpmn' ];
-	CONFIG.modelTypes = [ 'application/bpmn+xml' ];
+	CONFIG.applExtensions = [ 'bpmn', 'ole' ];
+	CONFIG.applTypes = [ 'application/bpmn+xml', 'application/ole' ];
 
 	// Keys for the query parameters - if changed, existing links will end up in default view:
 //	CONFIG.keyUId = 'uid';	// userId
@@ -398,19 +399,19 @@ const vocabulary = {
 		reqif: function( iT ) {
 			// Target language: ReqIF
 			var oT = '';
-			switch( iT.toLowerCase() ) {
-				case "dcterms:title": 				oT = "ReqIF.Name"; break;
-				case "dcterms:description": 		oT = "ReqIF.Text"; break;
-				case "dcterms:identifier":			oT = "ReqIF.ForeignId"; break;
-				case "specif:heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
-				case "specif:category":				
-				case "dcterms:type":				oT = "ReqIF.Category"; break;
-				case "specif:revision":				oT = "ReqIF.Revision"; break;
-				case "specif:state":			// deprecated, for compatibility			
-				case "specif:status":				oT = "ReqIF.ForeignState"; break;
-				case "dcterms:author":			// deprecated, for compatibility
-				case "dcterms:creator":				oT = "ReqIF.ForeignCreatedBy"; break;
-	//			case "dcterms:modified":			oT = "";
+			switch( iT.toSpecifId().toLowerCase() ) {
+				case "dcterms_title": 				oT = "ReqIF.Name"; break;
+				case "dcterms_description": 		oT = "ReqIF.Text"; break;
+				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
+				case "specif_heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
+				case "specif_category":				
+				case "dcterms_type":				oT = "ReqIF.Category"; break;
+				case "specif_revision":				oT = "ReqIF.Revision"; break;
+				case "specif_state":			// deprecated, for compatibility			
+				case "specif_status":				oT = "ReqIF.ForeignState"; break;
+				case "dcterms_author":			// deprecated, for compatibility
+				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
+	//			case "dcterms_modified":			oT = "";
 				default:							oT = iT
 			};
 			return oT
@@ -421,18 +422,18 @@ const vocabulary = {
 		specif: function( iT ) {
 			// Target language: SpecIF
 			var oT = '';
-			switch( iT.toLowerCase() ) {
+			switch( iT.toSpecifId().toLowerCase() ) {
 				case 'anforderungen':
 				case 'anforderung':
 				case 'requirements':
 				case 'requirement':
-				case 'specif:requirement':			oT = "IREB:Requirement"; break;
+				case 'specif_requirement':			oT = "IREB:Requirement"; break;
 				case 'merkmale':
 				case 'merkmal':
 				case 'features':
 				case 'feature':						oT = "SpecIF:Feature"; break;
-				case 'specif:folder':				oT = "SpecIF:Heading"; break;
-				case 'specif:outline':				oT = "SpecIF:Hierarchy"; break;
+				case 'specif_folder':				oT = "SpecIF:Heading"; break;
+				case 'specif_outline':				oT = "SpecIF:Hierarchy"; break;
 				default:							oT = iT
 			};
 			return oT

@@ -460,16 +460,32 @@ function Project( pr ) {
 	}  */
 	function hookStatements( dta ) {
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+		// For all statements with a loose end, hook the resource 
+		// specified by title or by a property titled dcterms:identifier:
 		dta.statements.forEach( function(st) {
-			if( st.subjectTitle ) {
-				let s = itemByTitle( dta.resources, st.subjectTitle );
+			// Check every statement;
+			// it is assumed that only one end is loose:
+			if( st.subjectToFind ) {
+				// Find the resource with the given title:
+				let s = itemByTitle( dta.resources, st.subjectToFind );
 //				console.debug('hookStatements subject',s);
-				if( s ) st.subject = {id: s.id, revision: 0}
+				if( s ) {
+					st.subject = {id: s.id, revision: 0};
+					delete st.subjectToFind;
+					return
+				}
+				// ToDo: Find the resource with a value of property titled dcterms:identifier:
 			};
-			if( st.objectTitle ) {
-				let o = itemByTitle( dta.resources, st.objectTitle );
+			if( st.objectToFind ) {
+				// Find the resource with the given title:
+				let o = itemByTitle( dta.resources, st.objectToFind );
 //				console.debug('hookStatements object',o);
-				if( o ) st.object = {id: o.id, revision: 0}
+				if( o ) {
+					st.object = {id: o.id, revision: 0};
+					delete st.objectToFind;
+					return
+				}
+				// ToDo: Find the resource with a value of property titled dcterms:identifier:
 			}
 		});
 		return dta
@@ -1622,18 +1638,60 @@ function Project( pr ) {
 					//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 						hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 						showEmptyProperties: CONFIG.showEmptyProperties,
+						imgExtensions: CONFIG.imgExtensions,
+						applExtensions: CONFIG.applExtensions,
 					//	hasContent: hasContent,
 						propertiesLabel: 'SpecIF:Properties',
 						statementsLabel: 'SpecIF:Statements',
 						done: function() { app.cache.selectedProject.data.exporting=false; eDO.resolve() },
 						fail: function(xhr) { app.cache.selectedProject.data.exporting=false; eDO.reject(xhr) }
-					};
-				switch( opts.format ) {
-					case 'epub':
-						toEpub( data, options );
-						break;
-					case 'oxml':
-						toOxml( data, options )
+					},
+					pend=0;
+					
+				// Transform any special format:
+				data.files.forEach( function(f,i,L) {  
+					switch( f.type ) {
+						case 'application/bpmn+xml':
+							pend++;
+							// Read and render BPMN as SVG:
+							blob2text(f,function(r) {
+								bpmn2svg(r, function(err, svg) { 
+											// this is the bpmnViewer callback function:
+											if (err) {
+												console.error('BPMN-Viewer could not deliver SVG', err);
+												return 
+											};
+											// replace:
+											let blb = new Blob([svg],{type: "text/plain; charset=utf-8"});
+											L.splice(i,1,{
+												blob: blb,
+												id: 'F-'+f.title.simpleHash(),
+												title: f.title.fileName()+'.svg',
+												type: 'image/svg+xml',
+												changedAt: f.changedAt
+											});
+//											console.debug('SVG',svg,L);
+											if( --pend<1 ) 
+												// Now, generate in the desired format:
+												gen();
+										})
+							}, 0)
+					}
+				});  
+				// In case there is nothing to transform, we start right away:
+				if( pend<1 ) 
+					// Generate in the desired format:
+					gen();
+				return;
+				
+				function gen() {
+					switch( opts.format ) {
+						case 'epub':
+							toEpub( data, options );
+							break;
+						case 'oxml':
+							toOxml( data, options )
+					}
 				}
 			}
 			function storeAs( opts ) {
@@ -2424,8 +2482,8 @@ const specif = {
 					case "object": iS.object = eS.object; break;			
 					case "string": iS.object = {id: eS.object, revision: 0} 
 				};
-				if( eS.subjectTitle ) iS.subjectTitle = eS.subjectTitle;
-				if( eS.objectTitle ) iS.objectTitle = eS.objectTitle;
+				if( eS.subjectToFind ) iS.subjectToFind = eS.subjectToFind;
+				if( eS.objectToFind ) iS.objectToFind = eS.objectToFind;
 //				console.debug('statement 2int',eS,iS);
 				return iS
 			}

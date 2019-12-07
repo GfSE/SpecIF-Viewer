@@ -1922,7 +1922,7 @@ var fileRef = {
 					// increase the timelag between building the DOM and rendering the images, if necessary.
 //					console.debug('showSvg',f,opts);
 					// Read and render SVG:
-					blob2text(f,function(r,fTi,fTy) {
+					blob2text(f,function(r) {
 						let ef = null,
 							mL = null;
 						svg = {
@@ -2087,43 +2087,21 @@ var fileRef = {
 					}
 				}
 				function showBpmn(f,opts) {
-					// https://github.com/bpmn-io/bpmn-js-examples/tree/master/pre-packaged
-					// https://bpmn.io/blog/posts/2014-bpmn-js-viewer-is-here.html
-					// https://forum.bpmn.io/t/how-to-get-svg-object-from-viewer/1948
-					// https://forum.bpmn.io/t/saving-bpmn-and-svg-to-a-website-rather-than-download/210
-					// https://www.pleus.net/blog/?p=2142
-
 //					console.debug('showBpmn',f);
 				
 					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 					// increase the timelag between building the DOM and rendering the images, if necessary.
-						function transformBpmn(f,cvs) {
-						// transform the BPMN-XML and render the diagram:
-//							console.debug('transformBpmn',f,cvs);
-							// viewer instance:
-							let bpmnViewer = new BpmnJS({container: '#'+cvs});
-							bpmnViewer.importXML( f, function(err) {
-								if (err) {
-									console.error('BPMN-Viewer could not import BPMN 2.0 diagram', err);
-									return 
-								};
-								bpmnViewer.saveSVG( function(err, svg) { // do stuff with the SVG 
+					// Read and render BPMN:
+					blob2text(f,function(r,fTi) {
+						bpmn2svg(r, function(err, svg) { 
+									// this is the bpmnViewer callback function:
 									if (err) {
 										console.error('BPMN-Viewer could not deliver SVG', err);
 										return 
 									};
 //									console.debug('SVG',svg);
-									document.getElementById(cvs).innerHTML = svg
-								});
-						/*		// access viewer components:
-								var canvas = bpmnViewer.get('canvas');
-								// zoom to fit full viewport:
-								canvas.zoom('fit-viewport')  */
-							})  
-						}
-					// Read and render BPMN:
-					blob2text(f,function(r,fTi,fTy) {
-						transformBpmn(r,containerId(fTi))
+									document.getElementById( containerId(fTi) ).innerHTML = svg
+								})
 					}, opts.timelag)  
 				}
 				function itemBySimilarId(L,id) {
