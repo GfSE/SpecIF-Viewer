@@ -73,6 +73,7 @@ modules.construct({
 								strStateFolder: i18n.lookup("FMC:States"),
 								strEventFolder: i18n.lookup("FMC:Events"),
 								strAnnotationFolder: i18n.lookup("SpecIF:Annotations"),
+								strBusinessProcessFolder: i18n.lookup("SpecIF:BusinessProcesses"),
 								isIE: browser.isIE 
 							});
 //		console.debug('input.prjName', self.parent.projectName, data );
@@ -96,12 +97,11 @@ function bpmn2svg(f,fn) {
 	// transform the BPMN-XML and render the diagram,
 	// where fn is the bpmnViewer callback function:
 	if( typeof(fn)!='function' ) return null;
-//	console.debug('bpmn2svg',f);
 	// viewer instance:
 	let bpmnViewer = new BpmnJS({container: '#bpmnView'});
 	bpmnViewer.importXML( f, function(err) {
 		if (err) {
-			console.error('BPMN-Viewer could not import BPMN 2.0 diagram', err);
+			fn(err);
 			return 
 		};
 		// The caller defines in fn what to do with the resulting SVG:

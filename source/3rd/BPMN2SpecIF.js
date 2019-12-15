@@ -27,6 +27,8 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strEventFolder = "Events";
 	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "Text Annotations";
+	if( !opts.strBusinessProcessFolder ) 
+		opts.strBusinessProcessFolder = "Business Processes";
 
 	if( !opts.strJoinExcGateway ) 
 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
@@ -77,7 +79,7 @@ function BPMN2Specif( xmlString, opts ) {
 		id: 'F-'+simpleHash(opts.xmlName),
 		title: opts.xmlName,
 		blob: new Blob([xmlString], {type: opts.mimeType}),
-		type: "application/bpmn+xml",
+		type: opts.mimeType,
 		changedAt: opts.xmlDate
 	}];
 /*	// - an image of the process, if available:
@@ -109,15 +111,13 @@ function BPMN2Specif( xmlString, opts ) {
 			value: "<div><p class=\"inline-label\">Model View:</p><p>"+dg+"</p></div>"
 		}, {
 			class: "PC-Notation",
-			value: "BPMN 2.0 Process Diagram"
+			value: "SpecIF:BusinessProcess"
 		}],
 		changedAt: opts.xmlDate
 	});
 	
 	// 3. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
-//	console.debug('#',x[0].childNodes);
-//	x[0].childNodes.forEach( function(el) {
-	// forEach does not work for NodeLists in IE:
+	// x[0].childNodes.forEach does not work for NodeLists in IE:
 	Array.from(x[0].childNodes).forEach( function(el) {
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
@@ -183,8 +183,8 @@ function BPMN2Specif( xmlString, opts ) {
 	// For SpecIF, the participant is declared the container for the processes' model-elements ... 
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
+	let idx, title, id;
 	x = Array.from(xmlDoc.querySelectorAll("process"));
-	let taL = [];	// temporary list of text annotations
 	x.forEach( function(pr) {
 		// here, we look at a process:
 //		console.debug('process',pr);
@@ -194,7 +194,7 @@ function BPMN2Specif( xmlString, opts ) {
 		pa.title = pa.title || pr.getAttribute('name');
 		let ctL = [],	// temporary list for containment relations between lanes and model-elements
 			gwL = [],	// temporary list for gateways needing some special attention later
-			tag, idx, id, title, desc, cId, seqF;
+			tag, desc, cId, seqF;
 		// 4.1 First pass to get the lanes, which do not necessarily come first:
 		Array.from(pr.childNodes).forEach( function(el) {
 			tag = el.nodeName.split(':').pop();	// tag without namespace
@@ -501,30 +501,7 @@ function BPMN2Specif( xmlString, opts ) {
 					gwL.push(gw);
 					break;
 				case 'textAnnotation':
-					idx = taL.length+1;
-					title = opts.strTextAnnotation + (idx>9? ' '+idx : ' 0'+idx);  // assuming there won't be more than 99 annotations
-					// even though there should be only one sub-element:
-					Array.from(el.childNodes).forEach( function(txt) {
-//						console.debug('textAnnotation.childNode',txt);
-						if( !txt.tagName ) return;
-						if( txt.tagName.includes('text') ) {
-							model.resources.push({
-								id: id,
-								title: title,
-								class: "RC-Note",
-								properties: [{
-									class: "PC-Name",
-									value: title
-								}, {
-									class: "PC-Description",
-									value: '<p>'+ctrl2HTML(txt.innerHTML)+'</p>'
-								}],
-								changedAt: opts.xmlDate
-							});
-							// memorize all text annotations to include them in the hierarchy:
-							taL.push(id)
-						}
-					});
+					// will be analyzed in a later pass
 					break;
 				default:
 					console.warn('The BPMN element with tag ',tag,' and title ',title,' has not been transformed.')
@@ -644,20 +621,61 @@ function BPMN2Specif( xmlString, opts ) {
 					});
 					break;
 				case 'association':
-					model.statements.push({
-						id: id,
-						title: "SpecIF:refersTo",
-						class: "SC-refersTo",
-						subject: el.getAttribute('targetRef'),
-						object: el.getAttribute('sourceRef'),
-						changedAt: opts.xmlDate
-					});
+					// will be analyzed in a later pass
+					return;
 				// all other tags (should ;-) have been processed before
 			}
 		})
 	});
 
-	// 5. Add the 'diagram shows model-element' statements:
+	// 5. Select all textAnnotations:
+	let taL = []; 	// temporary list of text annotations
+	x = Array.from(xmlDoc.querySelectorAll("textAnnotation"));
+	x.forEach( function(ann) {
+//		console.debug('ann',ann);
+		idx = taL.length+1;
+		id = ann.getAttribute("id");
+		title = opts.strTextAnnotation + (idx>9? ' '+idx : ' 0'+idx);  // assuming there won't be more than 99 annotations
+		// even though there should be only one sub-element:
+		Array.from(ann.childNodes).forEach( function(txt) {
+//			console.debug('textAnnotation.childNode',txt);
+			if( !txt.tagName ) return;
+			if( txt.tagName.includes('text') ) {
+				model.resources.push({
+					id: id,
+					title: title,
+					class: "RC-Note",
+					properties: [{
+						class: "PC-Name",
+						value: title
+					}, {
+						class: "PC-Description",
+						value: '<p>'+ctrl2HTML(txt.innerHTML)+'</p>'
+					}],
+					changedAt: opts.xmlDate
+				});
+				// memorize all text annotations to include them in the hierarchy:
+				taL.push(id)
+			}
+		})
+	});
+	
+	// 6. Select all associations of textAnnotations:
+	x = Array.from(xmlDoc.querySelectorAll("association"));
+	x.forEach( function(asc) {
+//		console.debug('asc',asc);
+		id = asc.getAttribute("id");
+		model.statements.push({
+			id: id,
+			title: "SpecIF:refersTo",
+			class: "SC-refersTo",
+			subject: asc.getAttribute('targetRef'),
+			object: asc.getAttribute('sourceRef'),
+			changedAt: opts.xmlDate
+		});
+	});
+
+	// 7. Add the 'diagram shows model-element' statements:
 	model.resources.forEach( function(r) {
 		// only certain resources are model-elements:
 		if( ['RC-Actor','RC-State','RC-Event'].indexOf(r.class)>-1 ) {
@@ -671,15 +689,16 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		}
 	});
-	// 6. The hierarchy with pointers to all resources:
+	// 8. The hierarchy with pointers to all resources:
 	function NodeList(res) {
-		// 6.1 first add the folders:
+		// 8.1 first add the folders:
 		let nL =  [{
 			id: "H-"+hId,
 			resource: hId,
 			nodes: [{
 				id: "N-"+diagramId,
 				resource: diagramId,
+				nodes: [],
 				changedAt: opts.xmlDate
 			},{
 				id: "N-FolderGlossary-" + apx,
@@ -704,7 +723,7 @@ function BPMN2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.xmlDate
 		}];
-		// 6.2 Add Actors, States and Events to the respective folders,
+		// 8.2 Add Actors, States and Events to the respective folders,
 		// in alphabetical order:
 		res.forEach( function(r) { 
 			r.title = r.title || ''
@@ -728,15 +747,16 @@ function BPMN2Specif( xmlString, opts ) {
 		});
 		if( taL.length<1 ) return nL;
 		// else:
-		// 6.3 Add text annotations:
-		nL[0].nodes.push({
+		// 8.3 Add text annotations to the model diagram:
+	/*	nL[0].nodes[0].nodes.push({
 			id: "N-FolderNte-" + apx,
 			resource: "FolderNte-" + apx,
 			nodes: [],
 			changedAt: opts.xmlDate
-		});
+		}); */
 		taL.forEach( function(a) { 
-			nL[0].nodes[2].nodes.push({
+	//		nL[0].nodes[0].nodes[0].nodes.push({
+			nL[0].nodes[0].nodes.push({
 				id: "N-" + a,
 				resource: a,
 				changedAt: opts.xmlDate
@@ -744,17 +764,24 @@ function BPMN2Specif( xmlString, opts ) {
 		});
 		return nL
 	};
-	// 7. Add the resource for the hierarchy root:
+	// 9. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
-		title: model.title,
-		class: "RC-Processmodel",
+		title: opts.strBusinessProcessFolder,
+		class: "RC-ProcessModel",
+		properties: [{
+			class: "PC-Name",
+			value: opts.strBusinessProcessFolder
+		}, {
+			class: "PC-Type",
+			value: 'SpecIF:BusinessProcesses'
+		}],
 		changedAt: opts.xmlDate
 	});
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-	console.debug('model',model);
+//	console.debug('model',model);
 	return model;
 	
 // =======================================
@@ -784,7 +811,7 @@ function BPMN2Specif( xmlString, opts ) {
 			maxLength: 1024,
 			changedAt: opts.xmlDate
 		},{
-			id: "DT-formattedText",
+			id: "DT-FormattedText",
 			title: "xhtml [8192]",
 			description: "Formatted String with length 8192",
 			type: "xhtml",
@@ -803,12 +830,12 @@ function BPMN2Specif( xmlString, opts ) {
 			},{
 				id: "PC-Description",
 				title: "dcterms:description",
-				dataType: "DT-formattedText",
+				dataType: "DT-FormattedText",
 				changedAt: opts.xmlDate
 			},{
 				id: "PC-Diagram",
 				title: "SpecIF:Diagram",
-				dataType: "DT-formattedText",
+				dataType: "DT-FormattedText",
 				changedAt: opts.xmlDate
 			},{
 				id: "PC-Notation",
@@ -879,11 +906,12 @@ function BPMN2Specif( xmlString, opts ) {
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: opts.xmlDate
 		},{
-			id: "RC-Processmodel",
+			id: "RC-ProcessModel",
 			title: "SpecIF:Hierarchy",
-			instantiation: ['user'],
 			description: "Root node of a process model (outline).",
 			isHeading: true,
+			instantiation: ['auto'],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: opts.xmlDate
 		}]
 	}

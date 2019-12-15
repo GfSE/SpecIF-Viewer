@@ -153,6 +153,7 @@ const CONFIG = {};
 //	CONFIG.attrTypeXlsCol = 'XLS:Attribute';
 	CONFIG.spcTypeOutline = 'SpecIF:Outline';
 	CONFIG.spcTypeGlossary = 'SpecIF:Glossary';
+	CONFIG.spcTypeProcesses = 'SpecIF:BusinessProcesses';
 	CONFIG.objTypeFolder = 'SpecIF:Heading';   
 	CONFIG.objTypeComment = 'SpecIF:Comment';   
 //	CONFIG.objTypeIssue = 'SpecIF:Issue';   	
@@ -327,7 +328,8 @@ const CONFIG = {};
 		'com.arcway.cockpit.uniqueelement'
 	];
 	// A list with all model-element types by title,
-	// is used for example to build a glossary:
+	// is used for example to build a glossary; 
+	// it is expected that a plural of any list element exists ( element+'s' ):
 	CONFIG.modelElementClasses = [
 		'FMC:Actor',
 		'FMC:State',

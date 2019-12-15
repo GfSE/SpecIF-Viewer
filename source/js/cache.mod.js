@@ -301,13 +301,6 @@ function Project( pr ) {
 					list: 'statementClasses',
 					eqFn: eqSC,
 					sbFn: substituteSC
-				}],
-		instances = [{
-					name: 'resource',
-					list: 'resources',
-					typL: 'resourceClasses',
-					only: CONFIG.modelElementClasses,	// applied only to resources having a type title listed here
-					sbFn: substituteR
 				}];
 	function eqDT(r,n) {
 		// return true, if reference and new dataType are equal:
@@ -367,16 +360,16 @@ function Project( pr ) {
 			return true
 		}
 	}
-/*	function eqR(r,n) {
+	function eqR(dta,r,n) {
 		// return true, if reference and new resource are equal:
-		// ToDo: Model-elements are only equal, if they have the same type, 
-		// i.e. a property with title CONFIG.attrTypeType has the same value
-		console.debug('eqR',r,n);
+		// ToDo: Consider, if model-elements are only equal, if they have the same type, 
+		// i.e. a property with title CONFIG.attrTypeType has the same value 
 		return r.title==n.title
+				&& classTitleOf(dta,r)==classTitleOf(dta,n)
 		// Note that the content of the new resource is lost;
 		// this is no problem, if the new data is a BPMN model, for example, 
 		// which usually have a title and do not carry any description.
-	} */
+	}
 	function eqS(r,n) {
 		// return true, if reference and new statement are equal:
 		// ToDo: Model-elements are only equal, if they have the same type,
@@ -402,62 +395,62 @@ function Project( pr ) {
 		return true
 	}
 	function substituteDT(dta,rId,nId) {
-		substituteId(dta.propertyClasses,'dataType',rId,nId);
+		substituteAtt(dta.propertyClasses,'dataType',rId,nId)
 	}
 	function substitutePC(dta,rId,nId) {
 		// For all resourceClasses, substitute new by the original propertyClass:
 		substituteLe(dta.resourceClasses,'propertyClasses',rId,nId);
 		// Also substitute the resource properties' class:
 		dta.resources.forEach( function(res) {
-			substituteId(res.properties,'class',rId,nId)
+			substituteAtt(res.properties,'class',rId,nId)
 		});
 		// The same with the statementClasses:
 		substituteLe(dta.statementClasses,'propertyClasses',rId,nId);
 		dta.statements.forEach( function(sta) {
-			substituteId(sta.properties,'class',rId,nId)
+			substituteAtt(sta.properties,'class',rId,nId)
 		})
 	}
 	function substituteRC(dta,rId,nId) {
 		substituteLe(dta.statementClasses,'subjectClasses',rId,nId);
 		substituteLe(dta.statementClasses,'objectClasses',rId,nId);
-		substituteId(dta.resources,'class',rId,nId)
+		substituteAtt(dta.resources,'class',rId,nId)
 	}
 	function substituteSC(dta,rId,nId) {
-		substituteId(dta.statements,'class',rId,nId)
+		substituteAtt(dta.statements,'class',rId,nId)
 	}
 	function substituteR(dta,rId,nId) {
-//		console.debug('substituteR',rId,nId);
+		// replace the references in all statements:
 		dta.statements.forEach( function(st) {
 				if( st.object.id==nId ) st.object.id = rId;
 				if( st.subject.id==nId ) st.subject.id = rId
 		});
-	//	substituteRf(dta.hierarchies,rId,nId)  // here we end up with double entries
+		// replace the references in all hierarchies:
+		substituteRf(dta.hierarchies,rId,nId)  // here we end up with double entries
 		// assuming that there is an entry for the remaining (original) resource:
-		delNodes( dta.hierarchies, {resource:nId} )
+	//	delNodes( dta.hierarchies, {resource:nId} )
 	}
-	function substituteId(L,att,rId,dId) {
+	function substituteAtt(L,attN,rAV,dAV) {
 		// replace ids of the duplicate item by the id of the original one;
-		// this applies to the attribute 'att' of each element in the list L:
+		// this applies to the attribute 'attN' of each element in the list L:
 		if( Array.isArray(L) )
-			L.forEach( function(e) { if(e[att]==dId) e[att] = rId } )
+			L.forEach( function(e) { if(e[attN]==dAV) e[attN] = rAV } )
 	}
-	function substituteLe(L,att,rId,dId) {
+	function substituteLe(L,attN,rAV,dAV) {
 		// replace the duplicate id by the id of the original item;
-		// so replace dId by rId in the list named 'att'
-		// (for example: in L[i].att (which is a list as well), replace dId by rId):
+		// so replace dAV by rAV in the list named 'attN'
+		// (for example: in L[i].attN (which is a list as well), replace dAV by rAV):
 		let idx;
 		if( Array.isArray(L) )
 			L.forEach( function(e) { 
-				if( !Array.isArray(e[att]) ) return; 
-				idx = e[att].indexOf(dId); 
-				if( idx>-1 ) e[att].splice( idx, 1, rId )
+				if( !Array.isArray(e[attN]) ) return; 
+				idx = e[attN].indexOf(dAV); 
+				if( idx>-1 ) e[attN].splice( idx, 1, rAV )
 			})
 	}
-/*	function substituteRf(L,rId,dId) {
+	function substituteRf(L,rId,dId) {
 		// for all hierarchies, replace any reference to dId by rId:
-//		console.debug('substituteRf',rId,dId);
-		iterateNodes( L, function(nd) { if(nd.resource==dId) nd.resource=rId; return true } )
-	}  */
+		iterateNodes( L, function(nd) { if(nd.resource==dId) {nd.resource=rId}; return true } )
+	}  
 	function hookStatements( dta ) {
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 		// For all statements with a loose end, hook the resource 
@@ -501,6 +494,7 @@ function Project( pr ) {
 		// whereas the second in a pair is removed.
 		types.forEach( function(ty) {
 			if( !Array.isArray(dta[ty.list]) ) return;
+			// skip last loop, as no duplicates can be found:
 			for( n=dta[ty.list].length-1; n>0; n-- ) {
 				cont = true; 
 				for( r=0; cont&&r<n; r++ ) {
@@ -517,8 +511,24 @@ function Project( pr ) {
 				}
 			}
 		});
-		// 2. Remove duplicate resorces:
+		// 2. Remove duplicate resources:
+			// skip last loop, as no duplicates can be found:
+			for( n=dta.resources.length-1; n>0; n-- ) {
+				cont = true; 
+				for( r=0; cont&&r<n; r++ ) {
+					// Do it for all model elements: 
+					if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,dta.resources[r]) )>-1 
+						&& eqR(dta,dta.resources[r],dta.resources[n]) ) {
+						// Are equal, so remove the duplicate statement:
+						substituteR(dta,dta.resources[r].id,dta.resources[n].id);
+						dta.resources.splice(n,1); 
+						// go on with the next one:
+						cont = false
+					}
+				}
+			};
 		// 3. Remove duplicate statements:
+			// skip last loop, as no duplicates can be found:
 			for( n=dta.statements.length-1; n>0; n-- ) {
 				cont = true; 
 				for( r=0; cont&&r<n; r++ ) {
@@ -532,6 +542,129 @@ function Project( pr ) {
 				}
 			};
 		return dta
+	};
+	self.createProcessesFolder = function( dta ) {	
+		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+		// Assumes that the folder objects for the process folder are available
+		
+		// 1. Delete any existing process folders,
+		// 1.1 Find all process folders:
+		let dF = [], pL = [], res, idx,
+			apx = self.data.id.simpleHash(),
+			tim = new Date().toISOString();
+//		console.debug('createGlossary',dta.hierarchies);
+		iterateNodes( dta.hierarchies, function(nd) {
+											// get the referenced resource:
+											res = itemById( dta.resources, nd.resource );
+											// find the property defining the type:
+											idx = indexBy( res.properties, 'title', CONFIG.attrTypeType );
+											// collect all process folders to delete:
+											if( idx>-1 && res.properties[idx].value==CONFIG.spcTypeProcesses ) {
+												dF.push( nd );
+											};
+											// collect all process diagrams:
+											if( idx>-1 && res.properties[idx].value=="SpecIF:BusinessProcess" ) {
+												pL.push( nd );
+											};
+											return true  // continue always to the end
+										}
+		);
+//		console.debug('process diagrams',dF,pL);
+		// 1.2 Delete now:
+		self.deleteContent( 'node', dF );
+
+		// Sort the list of process diagrams alphabetically by title:
+		if( pL.length>1 )
+			pL.sort( function(bim, bam) {
+						bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
+						bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
+						return bim==bam ? 0 : (bim<bam ? -1 : 1) 
+			});
+
+		// 2. Create a new combined process folder:
+		let processF = {
+			dataTypes: DataTypes(),
+			propertyClasses: PropertyClasses(),
+			resourceClasses: ResourceClasses(),
+			resources: Folders(),
+			hierarchies: [{
+					id: "H-FolderProcesses-" + apx,
+					resource: "FolderProcesses-" + apx,
+					nodes: pL,
+					changedAt: tim
+			}]
+		};
+		return processF;
+		
+		function DataTypes() {
+			return [{
+				id: "DT-ShortString",
+				title: "String[96]",
+				description: "String with length 96",
+				type: "xs:string",
+				maxLength: 96,
+				changedAt: tim
+			},{
+				id: "DT-String",
+				title: "String [1024]",
+				description: "String with length 1024",
+				type: "xs:string",
+				maxLength: 1024,
+				changedAt: tim
+			},{
+				id: "DT-FormattedText",
+				title: "xhtml [8192]",
+				description: "Formatted String with length 8192",
+				type: "xhtml",
+				maxLength: 8192,
+				changedAt: tim 
+			}]
+		} 
+		function PropertyClasses() {
+			return [{
+					id: "PC-Name",
+					title: "dcterms:title",
+					dataType: "DT-ShortString",
+					changedAt: tim
+				},{
+					id: "PC-Description",
+					title: "dcterms:description",
+					dataType: "DT-FormattedText",
+					changedAt: tim
+				},{
+					id: "PC-Type",
+					title: "dcterms:type",
+					dataType: "DT-ShortString",
+					changedAt: tim
+				}]
+		}
+		function ResourceClasses() {
+			return [{
+				id: "RC-Folder",
+				title: "SpecIF:Heading",
+				description: "Folder with title and text for chapters or descriptive paragraphs.",
+				isHeading: true,
+				instantiation: ['auto','user'],
+				propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+				changedAt: tim
+			}]
+		}
+		function Folders() {
+			var fL = [{
+				id: "FolderProcesses-" + apx,
+				class: "RC-Folder",
+				title: i18n.lookup(CONFIG.spcTypeProcesses),
+				properties: [{
+					class: "PC-Name",
+					value: i18n.lookup(CONFIG.spcTypeProcesses)
+				},{
+					class: "PC-Type",
+					value: CONFIG.spcTypeProcesses
+				}],
+				changedAt: tim
+			}];
+			return fL
+		}
 	};
 	self.createGlossary = function( dta ) {	
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
@@ -556,11 +689,7 @@ function Project( pr ) {
 		);
 //		console.debug( 'gF', gF );
 		// 1.2 Delete now:
-		// ToDo: Combine all delete operations to reduce server calls
-		gF.forEach( function(nd) {
-						self.deleteContent( 'node', {id: nd.id} )
-					}
-		);
+		self.deleteContent( 'node', gF )
 
 		// 2. Create a new combined glossary:
 		let glossary = {
@@ -645,17 +774,17 @@ function Project( pr ) {
 				fL.push({
 					id: "Folder-" + mEl.toJsId() + "-" + apx,
 					class: "RC-Folder",
-					title: i18n.lookup(mEl),
+					title: i18n.lookup(mEl+'s'),  // just adding the 's' is an ugly quickfix ... that works for now.
 					properties: [{
 						class: "PC-Name",
-						value: i18n.lookup(mEl)
+						value: i18n.lookup(mEl+'s')
 					}],
 					changedAt: tim
 				})
 			});
 			return fL
 		}
-		function NodeList(res) {
+		function NodeList(resL) {
 			// a. Add the folders:
 			let gl = {
 					id: "H-FolderGlossary-" + apx,
@@ -672,10 +801,11 @@ function Project( pr ) {
 					changedAt: tim
 				})
 			});
-			// b. Add Actors, States and Events to the respective folders,
-			// in alphabetical order:
-			if( res.length>1 )
-				res.sort( function(bim, bam) {
+			// b. Add Actors, States and Events to the respective folders in alphabetical order.
+			// In case of model elements the resource class is distinctive;
+			// The title of the resource class indicates the model element type.
+			if( resL.length>1 )
+				resL.sort( function(bim, bam) {
 							bim = bim.title.toLowerCase();
 							bam = bam.title.toLowerCase();
 							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
@@ -692,19 +822,18 @@ function Project( pr ) {
 												}
 			);
 //			console.debug('gl tL',gl,tL);
-			res.forEach( function(r) { 
-				let nd = {
-					id: "N-" + r.id,
-					resource: r.id,
-					changedAt: tim
-				};
+			resL.forEach( function(r) { 
 				// Sort resources according to their type:
 				for( idx=tL.length-1;idx>-1;idx-- ) {
 					if( tL[idx].indexOf( r['class'] )>-1 ) break
 				};
 //				console.debug('idx',idx);
 				if( idx>-1 )
-					gl.nodes[idx].nodes.push(nd)
+					gl.nodes[idx].nodes.push({
+						id: "N-" + r.id,
+						resource: r.id,
+						changedAt: tim
+					})
 			});
 			return [gl]
 		}
@@ -751,33 +880,60 @@ function Project( pr ) {
 				}
 			});
 			// 2. Integrate the instances:
-			//    a) if different title, save new one and use it.
-			//    b) if same title, just use it and update all references
-			instances.forEach( function(ic) {
-				for( i=0,I=nD[ic.list].length; i<I; i++ ) {
-					let itm = nD[ic.list][i],
-						typ = itemById( nD[ic.typL], itm['class'] ),
-						idx = indexByTitle( self.data[ic.list], itm.title );
-					if( idx<0 || ic.only.indexOf( typ.title )<0 ) {
-						// a) there is no instance with the same title ... or
-						// if it's type is not listed in 'only':
-						self.createContent( ic.name, itm )
-					} else {
-						// b) there is an item with the same title,
-						//    use it and update all references:
-						ic.sbFn( nD, self.data[ic.list][idx].id, itm.id )
+			//    a) if different title or type, save new one and use it.
+			//    b) if same title and type, just use it and update all references
+		/*	function valOf(r,pN) {
+				if( r.properties ) {
+					for( var i=r.properties.length-1;i>-1;i-- ) {
+						if( (r.properties[i].title || itemById( self.data.propertyTypes, r.properties[i]['class'] ).title)==pN )
+							return r.properties[i].value
 					}
-				}
-			});
-			self.createContent( 'file', nD.files );
+				};
+				return
+			} */
+			for( i=0,I=nD.resources.length; i<I; i++ ) {
+				let itm = nD.resources[i],
+					typ = itemById( nD.resourceClasses, itm['class'] );
+				if( CONFIG.modelElementClasses.indexOf( typ.title )>-1 ) {
+					let exs = itemByTitle( self.data.resources, itm.title );
+					// if there is an instance with the same title ... and
+					// if the types match:
+//						console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
+
+					// The class title reflects the role of it's instances ...
+					// and is less restrictive than the class ID:
+					if( exs 
+						&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
+				//		&& valOf(itm,CONFIG.attrTypeType)==valOf(exs,CONFIG.attrTypeType) 
+					) {
+//								console.debug('~2',exs,itm);
+							// There is an item with the same title and type,
+							// use it and update all references:
+							substituteR( nD, exs.id, itm.id );
+							
+							// ToDo: If the adopting resources has property values,
+							// where the existing does not have, take it along:
+							continue
+					}
+				};
+				// Else, keep separate instances:
+//					console.debug('+ resource',itm);
+				self.createContent( 'resource', itm )
+			};
+
+			// 3. Create the remaining items:
 			self.createContent( 'statement', nD.statements );
 			self.createContent( 'hierarchy', nD.hierarchies );
+			self.createContent( 'file', nD.files );
+			
+			// 4. Finally some house-keeping:
 			hookStatements();
 			self.deduplicate();	// deduplicate equal items
 			// ToDo: Save changes from deduplication to the server.
+			if( opts.addProcessesFolder )
+				self.update( self.createProcessesFolder(), {mode:'adopt'} )
 			if( opts.addGlossary )
-				self.update( self.createGlossary(), {mode:'adopt'} );		
-		//	self.deduplicate()	// deduplicate glossary types
+				self.update( self.createGlossary(), {mode:'adopt'} )
 		};
 	
 /*		// newD is new data in 'internal' data structure
@@ -1658,18 +1814,18 @@ function Project( pr ) {
 								bpmn2svg(r, function(err, svg) { 
 											// this is the bpmnViewer callback function:
 											if (err) {
-												console.error('BPMN-Viewer could not deliver SVG', err);
-												return 
+												console.error('BPMN-Viewer could not deliver SVG', err)
+											} else {
+												// replace:
+												let blb = new Blob([svg],{type: "text/plain; charset=utf-8"});
+												L.splice(i,1,{
+													blob: blb,
+													id: 'F-'+f.title.simpleHash(),
+													title: f.title.fileName()+'.svg',
+													type: 'image/svg+xml',
+													changedAt: f.changedAt
+												})
 											};
-											// replace:
-											let blb = new Blob([svg],{type: "text/plain; charset=utf-8"});
-											L.splice(i,1,{
-												blob: blb,
-												id: 'F-'+f.title.simpleHash(),
-												title: f.title.fileName()+'.svg',
-												type: 'image/svg+xml',
-												changedAt: f.changedAt
-											});
 //											console.debug('SVG',svg,L);
 											if( --pend<1 ) 
 												// Now, generate in the desired format:
@@ -2879,6 +3035,15 @@ function elementTitleWithIcon( el ) {
 	// add the icon to a type's title, if defined:
 	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
 }*/
+function classTitleOf(dta,r) {
+	return itemById(dta.resourceClasses,r['class']).title
+	// ToDo: .. or the title of the title attribute (dcterms:title) if the resource title is undefined
+}
+function typeOf( res ) {
+	let tP = itemByTitle(res.properties,CONFIG.attrTypeType);
+	// ToDo: .. or the title of the property class (dcterms:title) if the property title is undefined
+	if( tP ) return tP.value
+}
 function hasContent( pV ) {
 	if( !pV ) return false;
 	return pV.stripHTML().trim().length>0

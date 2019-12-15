@@ -83,7 +83,7 @@ function xslx2specif( buf, pN, chgAt ) {
 				id: 'DT-Text-8192',
 				title: 'Text',  		// dataType for XLS columns with text content
 				description: "String with length 8192",
-				maxLength: 8192,
+				maxLength: 1048576,
 				type: "xs:string",
 				changedAt: chgAt
 			},{ 
@@ -547,7 +547,7 @@ function xslx2specif( buf, pN, chgAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created');
-//	console.debug('SpecIF',specif);
+	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 

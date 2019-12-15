@@ -459,6 +459,7 @@ modules.construct({
 						break;
 					case 'adopt':
 						opts.addGlossary = true;
+						opts.addProcessesFolder = true;
 					case 'update':
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )

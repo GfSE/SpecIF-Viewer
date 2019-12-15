@@ -1555,7 +1555,7 @@ function valOf( ob, pV, opts ) {
 			var ct = enumValStr( dT, pV );		// translate IDs to values, if appropriate
 			break;
 		default:
-			var ct = pV.value
+			var ct = noCode(pV.value)
 	};
 	return ct
 
