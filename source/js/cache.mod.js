@@ -418,14 +418,34 @@ function Project( pr ) {
 	function substituteSC(dta,rId,nId) {
 		substituteAtt(dta.statements,'class',rId,nId)
 	}
-	function substituteR(dta,rId,nId) {
-		// replace the references in all statements:
-		dta.statements.forEach( function(st) {
-				if( st.object.id==nId ) st.object.id = rId;
-				if( st.subject.id==nId ) st.subject.id = rId
+	function substituteR(dta,r,n) {
+	/*	// 1 Rescue property values, 
+		// if the corresponding property of adopted resource is undefined or empty.
+		// 1.1 Looking at the property types, which ones are in common:
+		let nPT;
+		n.properties.forEach( function(p) { 
+			// check whether existing resource has similar property;
+			// a property is similar, if it has the same title,
+			// where the title may be defined with the property class.
+			nPT = propTitleOf(dta,p);
+		//	nPC = itemById(dta.propertyClasses,p['class']);
 		});
-		// replace the references in all hierarchies:
-		substituteRf(dta.hierarchies,rId,nId)  // here we end up with double entries
+		// 1.2 Per property, take the value of the new model element, 
+		//     if the existing one's is missing or empty:
+		let rP;
+		if( n.properties )
+			n.properties.forEach( function(nP) {
+				rP = itemByTitle(r.properties,nP.title);
+				if( rP && rP.value )
+			})  */
+		
+		// 2. replace the references in all statements:
+		dta.statements.forEach( function(st) {
+				if( st.object.id==n.id ) st.object.id = r.id;
+				if( st.subject.id==n.id ) st.subject.id = r.id
+		});
+		// 3. replace the references in all hierarchies:
+		substituteRef(dta.hierarchies,r.id,n.id)  // here we end up with double entries
 		// assuming that there is an entry for the remaining (original) resource:
 	//	delNodes( dta.hierarchies, {resource:nId} )
 	}
@@ -447,7 +467,7 @@ function Project( pr ) {
 				if( idx>-1 ) e[attN].splice( idx, 1, rAV )
 			})
 	}
-	function substituteRf(L,rId,dId) {
+	function substituteRef(L,rId,dId) {
 		// for all hierarchies, replace any reference to dId by rId:
 		iterateNodes( L, function(nd) { if(nd.resource==dId) {nd.resource=rId}; return true } )
 	}  
@@ -520,7 +540,7 @@ function Project( pr ) {
 					if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,dta.resources[r]) )>-1 
 						&& eqR(dta,dta.resources[r],dta.resources[n]) ) {
 						// Are equal, so remove the duplicate statement:
-						substituteR(dta,dta.resources[r].id,dta.resources[n].id);
+						substituteR(dta,dta.resources[r],dta.resources[n]);
 						dta.resources.splice(n,1); 
 						// go on with the next one:
 						cont = false
@@ -870,7 +890,6 @@ function Project( pr ) {
 							// c) create a new id and update all references:
 							// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 							// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-						//	itm.alterId = itm.id;
 							let alterId = itm.id;
 							itm.id += '-' + new Date().toISOString().simpleHash();
 							ty.sbFn( nD, itm.id, alterId );
@@ -895,21 +914,23 @@ function Project( pr ) {
 				let itm = nD.resources[i],
 					typ = itemById( nD.resourceClasses, itm['class'] );
 				if( CONFIG.modelElementClasses.indexOf( typ.title )>-1 ) {
-					let exs = itemByTitle( self.data.resources, itm.title );
-					// if there is an instance with the same title ... and
-					// if the types match:
-//						console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
+					// First check, whether the existing model has an element with the same id,
+					// and if it has a different title, assign a new id to the new element:
+					
 
-					// The class title reflects the role of it's instances ...
+					// If there is an instance with the same title ... and if the types match;
+					// the class title reflects the role of it's instances ...
 					// and is less restrictive than the class ID:
+					let exs = itemByTitle( self.data.resources, itm.title );
+//					console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
 					if( exs 
 						&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
 				//		&& valOf(itm,CONFIG.attrTypeType)==valOf(exs,CONFIG.attrTypeType) 
 					) {
-//								console.debug('~2',exs,itm);
+//							console.debug('~2',exs,itm);
 							// There is an item with the same title and type,
 							// use it and update all references:
-							substituteR( nD, exs.id, itm.id );
+							substituteR( nD, exs, itm );
 							
 							// ToDo: If the adopting resources has property values,
 							// where the existing does not have, take it along:
@@ -917,7 +938,7 @@ function Project( pr ) {
 					}
 				};
 				// Else, keep separate instances:
-//					console.debug('+ resource',itm);
+//				console.debug('+ resource',itm);
 				self.createContent( 'resource', itm )
 			};
 
@@ -2997,7 +3018,7 @@ function titleIdx( aL ) {
 	return -1
 }
 function titleOf( item ) {
-	// look for a translation, first:
+	// look for a translation, take it as is or take the id by default:
 	return i18n.lookup( item.title ) || item.id
 }
 function titleFromProperties( pL ) {
@@ -3024,6 +3045,10 @@ function resTitleOf( res ) {
 	// get the title from the properties or a replacement value in case of default:
 	if( typeof(res)!='object' ) return undefined;
 	return res.title || titleFromProperties( res.properties ) || titleOf( res )
+}
+function propTitleOf( dta, prp ) {
+	// get the title of a property as defined by itself or it's class:
+	return prp.title || itemById(dta.propertyClasses,prp['class']).title
 }
 function elementTitleWithIcon( el ) {
 	// add an icon to an element's title;

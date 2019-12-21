@@ -951,7 +951,7 @@ function attachment2mediaType( fname ) {
 	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
 	ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.modelTypes[ ti ]
+	if( ti>-1 ) return CONFIG.applTypes[ ti ]
 	return
 }
 function image2mediaType( fname ) {
