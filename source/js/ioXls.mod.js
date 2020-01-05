@@ -124,13 +124,13 @@ function xslx2specif( buf, pN, chgAt ) {
 				changedAt: chgAt
 			}];	
 			this.resourceClasses = [{	
-				id: resClassId( CONFIG.objTypeFolder ),
-				title: CONFIG.objTypeFolder,			// specType for folders (e.g. representing sheets) 
+				id: resClassId( CONFIG.resClassFolder ),
+				title: CONFIG.resClassFolder,			// specType for folders (e.g. representing sheets) 
 				description: 'Resource type for folders',
 				instantiation: ["auto","user"],
 				propertyClasses: [{
-					id: 'PC-'+(CONFIG.objTypeFolder).toSpecifId()+'-title',
-					title: CONFIG.attrTypeTitle,
+					id: 'PC-'+(CONFIG.resClassFolder).toSpecifId()+'-title',
+					title: CONFIG.propClassTitle,
 					description: 'Folder title',
 					dataType: 'DT-Title-string',
 					changedAt: chgAt
@@ -139,8 +139,8 @@ function xslx2specif( buf, pN, chgAt ) {
 			}];
 			this.statementClasses = [];
 			this.hierarchyClasses = [{	
-				id: 'RC-'+CONFIG.spcTypeOutline.toSpecifId(),
-				title: CONFIG.spcTypeOutline,			// specType for hierarchies
+				id: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
+				title: CONFIG.resClassOutline,			// specType for hierarchies
 				description: 'Hierarchy type for outlines',
 				instantiation: ["auto","user"],
 				changedAt: chgAt
@@ -372,12 +372,12 @@ function xslx2specif( buf, pN, chgAt ) {
 				// Processing of createFld:
 				// Create folder resource:
 				var fld = {
-						id: 'F-'+(sh.name+CONFIG.objTypeFolder).simpleHash(),
+						id: 'F-'+(sh.name+CONFIG.resClassFolder).simpleHash(),
 						title: sh.name,
-						class: resClassId( CONFIG.objTypeFolder ),
+						class: resClassId( CONFIG.resClassFolder ),
 						properties: [{
-							title: CONFIG.attrTypeTitle,
-							class: 'PC-'+(CONFIG.objTypeFolder).toSpecifId()+'-title',
+							title: CONFIG.propClassTitle,
+							class: 'PC-'+(CONFIG.resClassFolder).toSpecifId()+'-title',
 							value: sh.name
 						}],
 						changedAt: chgAt
@@ -495,12 +495,12 @@ function xslx2specif( buf, pN, chgAt ) {
 		
 		if( ws.range ) {							
 			// only if the sheet has content:
-			ws.resClassName = CONFIG.objTypeXlsRow+' ('+ws.name+')';
+			ws.resClassName = CONFIG.resClassXlsRow+' ('+ws.name+')';
 			ws.firstCell = coord(ws.range.split(":")[0]);
 			ws.lastCell = coord(ws.range.split(":")[1]);
 
 			// 3.1 Create a resourceClass per XLS-sheet so that a resource can be created per XLS-row:
-			var ot = new ResClass( ws.resClassName, self.resourceClass || CONFIG.objTypeXlsRow );
+			var ot = new ResClass( ws.resClassName, self.resourceClass || CONFIG.resClassXlsRow );
 			// Create a property class for each column using the names specified in line 1:
 			ot.propertyClasses = getPropClasses( ws );
 //			console.debug('ot',ot);
@@ -536,7 +536,7 @@ function xslx2specif( buf, pN, chgAt ) {
 	specif.hierarchies = [{
 		id: 'H-'+pN.toSpecifId(),
 		title: pN,
-		class: 'RC-'+CONFIG.spcTypeOutline.toSpecifId(),
+		class: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
 		nodes: [],
 		changedAt: chgAt
 	}];
@@ -547,7 +547,7 @@ function xslx2specif( buf, pN, chgAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created');
-	console.debug('SpecIF',specif);
+//	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 

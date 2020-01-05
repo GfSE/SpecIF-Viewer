@@ -135,32 +135,22 @@ const CONFIG = {};
 //	CONFIG.object = 'object';
 //	CONFIG.linker = 'linker';  */
 
-/*	// The following can have an i18n label in the translation files:
-//	CONFIG.dataTypeString = 'String';
-//	CONFIG.dataTypeText = 'Text';
-//	CONFIG.dataTypeFormattedText = 'XHTML';
-//	CONFIG.dataTypeDateTime = 'Date-Time';
-//	CONFIG.dataTypeBoolean = 'BOOLEAN';
-//	CONFIG.dataTypeEnumeration = 'ENUMERATION';
-//	CONFIG.dataTypeInteger = 'INTEGER';
-//	CONFIG.dataTypeReal = 'REAL';
-//	CONFIG.dataTypeXlsText = 'XLS:Text';  */
+	// The following can have an i18n label in the translation files:
 	CONFIG.dataTypeComment = 'Datatype for comment text';
-	CONFIG.attrTypeTitle = 'dcterms:title';
-	CONFIG.attrTypeText = 'dcterms:description';
-	CONFIG.attrTypeType = 'dcterms:type';
-	CONFIG.objTypeXlsRow = 'XLS:Object';
-//	CONFIG.attrTypeXlsCol = 'XLS:Attribute';
-	CONFIG.spcTypeOutline = 'SpecIF:Outline';
-	CONFIG.spcTypeGlossary = 'SpecIF:Glossary';
-	CONFIG.spcTypeProcesses = 'SpecIF:BusinessProcesses';
-	CONFIG.objTypeFolder = 'SpecIF:Heading';   
-	CONFIG.objTypeComment = 'SpecIF:Comment';   
-//	CONFIG.objTypeIssue = 'SpecIF:Issue';   	
-//	CONFIG.relTypeRefersTo = 'SpecIF:refersTo';	
-	CONFIG.relTypeCommentRefersTo = 'SpecIF:commentRefersTo';	
-//	CONFIG.relTypeIssueRefersTo = 'SpecIF:issueRefersTo';	
-//	CONFIG.resType = 'SpecIF:Type';
+	CONFIG.propClassTitle = 'dcterms:title';
+	CONFIG.propClassText = 'dcterms:description';
+	CONFIG.propClassType = 'dcterms:type';
+//	CONFIG.propClassXlsCol = 'XLS:Property';
+	CONFIG.resClassXlsRow = 'XLS:Resource';
+	CONFIG.resClassOutline = 'SpecIF:Outline';
+	CONFIG.resClassGlossary = 'SpecIF:Glossary';
+	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
+	CONFIG.resClassFolder = 'SpecIF:Heading';   
+	CONFIG.resClassComment = 'SpecIF:Comment';   
+//	CONFIG.resClassIssue = 'SpecIF:Issue';   	
+//	CONFIG.staClassRefersTo = 'SpecIF:refersTo';	
+	CONFIG.staClassCommentRefersTo = 'SpecIF:commentRefersTo';	
+//	CONFIG.staClassIssueRefersTo = 'SpecIF:issueRefersTo';	
 	
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement in various tabs
@@ -184,7 +174,7 @@ const CONFIG = {};
 	// it is considered a heading (chapter title) and will be included in the outline numbering.
 	// Also, this property will be used for the title when displaying the resource.
 	CONFIG.headingProperties = [
-		CONFIG.objTypeFolder,	// do not remove
+		CONFIG.resClassFolder,	// do not remove
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.ChapterName',	// do not remove
 		// DocBridge Resource Director:
@@ -300,19 +290,29 @@ const CONFIG = {};
 
 	// A list of relations not to show in tab named CONFIG.relations, specified by title:
 	CONFIG.hiddenStatements = [
-		CONFIG.relTypeCommentRefersTo
+		CONFIG.staClassCommentRefersTo
 	];
 	
-	// A list of types which are excluded from the type filtering, specified by title:
+	// A list of classes which are excluded from the type filtering, specified by title:
 	// All types for objects which are not referenced in the tree should be listed, here.
 	// Note that only objects which are referenced in a hierarchy (tree) are included in the filter process.
 	CONFIG.excludedFromTypeFiltering = [
-		CONFIG.objTypeComment
+		CONFIG.resClassComment
+	];
+
+	// A list of model elements to be exluded from deduplication on model import or model integration,
+	// specified by value of a property titled CONFIG.propClassType.
+	// Note: For example, these are generated items when transforming BPMN models:
+	CONFIG.excludedFromDeduplication = [
+		'BPMN:parallelGateway',
+		'BPMN:exclusiveGateway',
+		'BPMN:inclusiveGateway',
+		'SpecIF:Condition'
 	];
 	
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
 	CONFIG.selectCorrespondingPlanFirst = true;	// when clicking on a diagram element, select a diagram having the same title as the clicked model element
-	// A list of resources representing Model Diagrams, specified by title resp. title:
+	// A list of resources representing Model Diagrams, specified by title resp. class title:
 	CONFIG.plans = [
 		'SpecIF:Diagram',
 		'FMC:Plan'
@@ -326,6 +326,12 @@ const CONFIG = {};
 	CONFIG.clickElementClasses = [
 		'clickEl',
 		'com.arcway.cockpit.uniqueelement'
+	];
+	// A list with all diagram types by title:
+	CONFIG.diagramClasses = [
+		'SpecIF:Diagram',
+		'FMC:Plan',
+		'SpecIF:View'		// deprecated
 	];
 	// A list with all model-element types by title,
 	// is used for example to build a glossary; 
@@ -425,6 +431,18 @@ const vocabulary = {
 			// Target language: SpecIF
 			var oT = '';
 			switch( iT.toSpecifId().toLowerCase() ) {
+				case 'actors':
+				case 'actor':
+				case 'akteure':	
+				case 'akteur':						oT = "FMC:Actor"; break;
+				case 'states':
+				case 'state':
+				case 'zustände':
+				case 'zustand':						oT = "FMC:State"; break;
+				case 'events':
+				case 'event':
+				case 'ereignisse':	
+				case 'ereignis':					oT = "FMC:Event"; break;
 				case 'anforderungen':
 				case 'anforderung':
 				case 'requirements':
@@ -434,6 +452,8 @@ const vocabulary = {
 				case 'merkmal':
 				case 'features':
 				case 'feature':						oT = "SpecIF:Feature"; break;
+				case 'specif_view':
+				case 'fmc_plan':					oT = 'SpecIF:Diagram'; break;
 				case 'specif_folder':				oT = "SpecIF:Heading"; break;
 				case 'specif_outline':				oT = "SpecIF:Hierarchy"; break;
 				default:							oT = iT

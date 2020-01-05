@@ -67,13 +67,14 @@ modules.construct({
 							{ 
 								xmlName: fName, 
 								xmlDate: fDate, 
-								strGlossaryType: CONFIG.spcTypeGlossary,
-								strGlossaryFolder: i18n.lookup(CONFIG.spcTypeGlossary),
+								strGlossaryClass: CONFIG.resClassGlossary,
+								strGlossaryFolder: i18n.lookup(CONFIG.resClassGlossary),
 								strActorFolder: i18n.lookup("FMC:Actors"),
 								strStateFolder: i18n.lookup("FMC:States"),
 								strEventFolder: i18n.lookup("FMC:Events"),
 								strAnnotationFolder: i18n.lookup("SpecIF:Annotations"),
-								strBusinessProcessFolder: i18n.lookup("SpecIF:BusinessProcesses"),
+								strBusinessProcessClass: CONFIG.resClassProcesses,
+								strBusinessProcessFolder: i18n.lookup(CONFIG.resClassProcesses),
 								isIE: browser.isIE 
 							});
 //		console.debug('input.prjName', self.parent.projectName, data );

@@ -362,8 +362,8 @@ function Project( pr ) {
 	}
 	function eqR(dta,r,n) {
 		// return true, if reference and new resource are equal:
-		// ToDo: Consider, if model-elements are only equal, if they have the same type, 
-		// i.e. a property with title CONFIG.attrTypeType has the same value 
+		// ToDo: Consider, if model-elements are only considered equal, if they have the same type, 
+		// i.e. if a property with title CONFIG.propClassType has the same value 
 		return r.title==n.title
 				&& classTitleOf(dta,r)==classTitleOf(dta,n)
 		// Note that the content of the new resource is lost;
@@ -373,7 +373,7 @@ function Project( pr ) {
 	function eqS(r,n) {
 		// return true, if reference and new statement are equal:
 		// ToDo: Model-elements are only equal, if they have the same type,
-		// i.e. a property with title CONFIG.attrTypeType has the same value
+		// i.e. a property with title CONFIG.propClassType has the same value
 		return r['class']==n['class']
 			&& r.subject.id==n.subject.id
 			&& r.subject.revision==n.subject.revision
@@ -504,63 +504,68 @@ function Project( pr ) {
 		return dta
 	}
 	self.deduplicate = function( dta ) {
-		// Uses the cache, but does not update the server.
+		// Uses the cache.
+		// ToDo: update the server.
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 //		console.debug('deduplicate',dta);
-		let cont,n,r;
+		let n,r,nD,rD;
 
 		// 1. Deduplicate equal types having different ids;
 		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
 		// whereas the second in a pair is removed.
 		types.forEach( function(ty) {
-			if( !Array.isArray(dta[ty.list]) ) return;
-			// skip last loop, as no duplicates can be found:
-			for( n=dta[ty.list].length-1; n>0; n-- ) {
-				cont = true; 
-				for( r=0; cont&&r<n; r++ ) {
-//					console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.eqFn(dta[ty.list][r],dta[ty.list][n]) );
-					// Do it for all types: 
-					if( ty.eqFn(dta[ty.list][r],dta[ty.list][n]) ) {
-						// Are equal, so substitute it's ids by the original item:
-						ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
-						// ... and remove the duplicate item:
-						dta[ty.list].splice(n,1); 
-						// go on with the next one:
-						cont = false
+			if( Array.isArray(dta[ty.list]) )
+				// skip last loop, as no duplicates can be found:
+				for( n=dta[ty.list].length-1; n>0; n-- ) {
+					for( r=0; r<n; r++ ) {
+//						console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.eqFn(dta[ty.list][r],dta[ty.list][n]) );
+						// Do it for all types: 
+						if( ty.eqFn(dta[ty.list][r],dta[ty.list][n]) ) {
+							// Are equal, so substitute it's ids by the original item:
+							ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
+							// ... and remove the duplicate item:
+							dta[ty.list].splice(n,1); 
+							// go on with the next one:
+							break
+						}
 					}
 				}
-			}
 		});
 		// 2. Remove duplicate resources:
-			// skip last loop, as no duplicates can be found:
-			for( n=dta.resources.length-1; n>0; n-- ) {
-				cont = true; 
-				for( r=0; cont&&r<n; r++ ) {
-					// Do it for all model elements: 
-					if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,dta.resources[r]) )>-1 
-						&& eqR(dta,dta.resources[r],dta.resources[n]) ) {
-						// Are equal, so remove the duplicate statement:
-						substituteR(dta,dta.resources[r],dta.resources[n]);
-						dta.resources.splice(n,1); 
-						// go on with the next one:
-						cont = false
-					}
+		// skip last loop, as no duplicates can be found:
+		for( n=dta.resources.length-1; n>0; n-- ) {
+			for( r=0; r<n; r++ ) {
+				// Do it for all model elements,
+				// but exclude process gateways and generated events for optional branches: 
+				nD = dta.resources[n];
+				rD = dta.resources[r];
+				if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,rD) )>-1 
+					&& eqR(dta,rD,nD) 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( nD, CONFIG.propClassType ))<0 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( rD, CONFIG.propClassType ))<0 
+				) {
+					// Are equal, so remove the duplicate resource:
+					console.debug( 'deduplicate resource', rD, nD, valByTitle( nD, CONFIG.propClassType ) );
+					substituteR(dta,rD,nD);
+					dta.resources.splice(n,1); 
+					// go on with the next one:
+					break
 				}
-			};
+			}
+		};
 		// 3. Remove duplicate statements:
-			// skip last loop, as no duplicates can be found:
-			for( n=dta.statements.length-1; n>0; n-- ) {
-				cont = true; 
-				for( r=0; cont&&r<n; r++ ) {
-					// Do it for all statements: 
-					if( eqS(dta.statements[r],dta.statements[n]) ) {
-						// Are equal, so remove the duplicate statement:
-						dta.statements.splice(n,1); 
-						// go on with the next one:
-						cont = false
-					}
+		// skip last loop, as no duplicates can be found:
+		for( n=dta.statements.length-1; n>0; n-- ) {
+			for( r=0; r<n; r++ ) {
+				// Do it for all statements: 
+				if( eqS(dta.statements[r],dta.statements[n]) ) {
+					// Are equal, so remove the duplicate statement:
+					dta.statements.splice(n,1); 
+					// go on with the next one:
+					break
 				}
-			};
+			}
+		};
 		return dta
 	};
 	self.createProcessesFolder = function( dta ) {	
@@ -577,9 +582,9 @@ function Project( pr ) {
 											// get the referenced resource:
 											res = itemById( dta.resources, nd.resource );
 											// find the property defining the type:
-											idx = indexBy( res.properties, 'title', CONFIG.attrTypeType );
+											idx = indexBy( res.properties, 'title', CONFIG.propClassType );
 											// collect all process folders to delete:
-											if( idx>-1 && res.properties[idx].value==CONFIG.spcTypeProcesses ) {
+											if( idx>-1 && res.properties[idx].value==CONFIG.resClassProcesses ) {
 												dF.push( nd );
 											};
 											// collect all process diagrams:
@@ -673,13 +678,13 @@ function Project( pr ) {
 			var fL = [{
 				id: "FolderProcesses-" + apx,
 				class: "RC-Folder",
-				title: i18n.lookup(CONFIG.spcTypeProcesses),
+				title: i18n.lookup(CONFIG.resClassProcesses),
 				properties: [{
 					class: "PC-Name",
-					value: i18n.lookup(CONFIG.spcTypeProcesses)
+					value: i18n.lookup(CONFIG.resClassProcesses)
 				},{
 					class: "PC-Type",
-					value: CONFIG.spcTypeProcesses
+					value: CONFIG.resClassProcesses
 				}],
 				changedAt: tim
 			}];
@@ -700,9 +705,9 @@ function Project( pr ) {
 											// get the referenced resource:
 											res = itemById( dta.resources, nd.resource );
 											// check, whether it is a glossary:
-											idx = indexBy( res.properties, 'title', CONFIG.attrTypeType );
+											idx = indexBy( res.properties, 'title', CONFIG.propClassType );
 //											console.debug(nd,res,idx);
-											if( idx>-1 && res.properties[idx].value==CONFIG.spcTypeGlossary )
+											if( idx>-1 && res.properties[idx].value==CONFIG.resClassGlossary )
 												gF.push( nd );
 											return true  // continue always to the end
 										}
@@ -779,13 +784,13 @@ function Project( pr ) {
 			var fL = [{
 				id: "FolderGlossary-" + apx,
 				class: "RC-Folder",
-				title: i18n.lookup(CONFIG.spcTypeGlossary),
+				title: i18n.lookup(CONFIG.resClassGlossary),
 				properties: [{
 					class: "PC-Name",
-					value: i18n.lookup(CONFIG.spcTypeGlossary)
+					value: i18n.lookup(CONFIG.resClassGlossary)
 				},{
 					class: "PC-Type",
-					value: CONFIG.spcTypeGlossary
+					value: CONFIG.resClassGlossary
 				}],
 				changedAt: tim
 			}];
@@ -858,6 +863,21 @@ function Project( pr ) {
 			return [gl]
 		}
 	};
+	function hasDuplicateId(dta,id) {
+		// check whether there is an item with the same id in dta.
+		// If so, return the item:
+		if( dta.id==id ) return dta;
+		let duplId;
+		for( var i in dta ) {
+			if( Array.isArray( dta[i] ) ) {
+				for( var j=dta[i].length-1;j>-1;j-- ) {
+					duplId = hasDuplicateId(dta[i][j],id);
+					if( duplId ) return duplId
+				}
+			}	
+		};
+		return
+	}
 	// var updateModes = ["adopt","match","extend","ignore"];
 	self.update = function( newD, opts ) {	
 		newD = specif.toInt(newD);	// transform to internal data structure
@@ -871,6 +891,10 @@ function Project( pr ) {
 		// --------------------------------
 		// The processing per mode:
 		function adopt( nD, opts ) {
+			// First check whether BPMN collaboration and process have unique ids:
+//			console.debug('uni',nD);
+			// The new collaboration id gets lost, so far!
+			
 			// 1. Integrate the types:
 			//    a) if different id, save new one and use it.
 			//    b) if same id and same content, just use it (no action)
@@ -901,43 +925,52 @@ function Project( pr ) {
 			// 2. Integrate the instances:
 			//    a) if different title or type, save new one and use it.
 			//    b) if same title and type, just use it and update all references
-		/*	function valOf(r,pN) {
-				if( r.properties ) {
-					for( var i=r.properties.length-1;i>-1;i-- ) {
-						if( (r.properties[i].title || itemById( self.data.propertyTypes, r.properties[i]['class'] ).title)==pN )
-							return r.properties[i].value
-					}
-				};
-				return
-			} */
 			for( i=0,I=nD.resources.length; i<I; i++ ) {
 				let itm = nD.resources[i],
 					typ = itemById( nD.resourceClasses, itm['class'] );
-				if( CONFIG.modelElementClasses.indexOf( typ.title )>-1 ) {
-					// First check, whether the existing model has an element with the same id,
-					// and if it has a different title, assign a new id to the new element:
-					
-
-					// If there is an instance with the same title ... and if the types match;
-					// the class title reflects the role of it's instances ...
-					// and is less restrictive than the class ID:
-					let exs = itemByTitle( self.data.resources, itm.title );
-//					console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
-					if( exs 
-						&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
-				//		&& valOf(itm,CONFIG.attrTypeType)==valOf(exs,CONFIG.attrTypeType) 
-					) {
+				if( CONFIG.modelElementClasses.indexOf( typ.title )>-1
+			//		|| CONFIG.diagramClasses.indexOf( typ.title )>-1 )
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( itm, CONFIG.propClassType ))<0 
+				) {
+						// Check for a resource with the same title:
+						let exs = itemByTitle( self.data.resources, itm.title );
+						// If there is an instance with the same title ... and if the types match;
+						// the class title reflects the role of it's instances ...
+						// and is less restrictive than the class ID:
+//						console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
+						if( exs 
+							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( exs, CONFIG.propClassType ))<0 
+							&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
+					//		&& valByTitle(itm,CONFIG.propClassType)==valByTitle(exs,CONFIG.propClassType) 
+						) {
 //							console.debug('~2',exs,itm);
 							// There is an item with the same title and type,
-							// use it and update all references:
-							substituteR( nD, exs, itm );
+							// adopt it and update all references, if ids are different:
+							if( exs.id!=itm.id )  // equal ids are quite improbable, but still
+								substituteR( nD, exs, itm );
 							
 							// ToDo: If the adopting resources has property values,
 							// where the existing does not have, take it along:
 							continue
-					}
+						}
 				};
 				// Else, keep separate instances:
+				
+				// Note that in theory, there shouldn't be any conflicting ids, but in reality there are;
+				// for example it has been observed with BPMN/influx which is based on bpmn.io like cawemo.
+				// ToDo: make it an option.
+				// Check, whether the existing model has an element with the same id,
+				// and if it has a different title, assign a new id to the new element:
+				let duplId = hasDuplicateId(self.data,itm.id);
+				if( duplId ) {
+					// ToDo: check whether titles are different .... otherwise adopt as well ??
+//					console.debug('duplicate ID',itm);
+					let newId = genID('R-');
+					// first assign new ID to all references:
+					substituteR( nD, {id:newId}, itm );
+					// and then to the resource itself:
+					itm.id = newId
+				};
 //				console.debug('+ resource',itm);
 				self.createContent( 'resource', itm )
 			};
@@ -1704,12 +1737,12 @@ function Project( pr ) {
 											!showComments
 												&&	isReferenced( s.subject.id )
 												&&	isReferenced( s.object.id )
-												&&	s.title!=CONFIG.relTypeCommentRefersTo
+												&&	s.title!=CONFIG.staClassCommentRefersTo
 												&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
 											// In case of a comment, the comment itself is not referenced, but the resource:
 										||	showComments
 												&&	isReferenced( s.object.id )
-												&&	s.title==CONFIG.relTypeCommentRefersTo
+												&&	s.title==CONFIG.staClassCommentRefersTo
 										)
 							});
 		sDO.resolve(rsp);
@@ -2625,7 +2658,7 @@ const specif = {
 					case 'undefined':
 						break;
 					case 'number':
-						oE.revision = iE.revision.toString();
+						oE.revision = iE.revision.toString();	// for <v0.10.8
 						break;
 					case 'string':
 						oE.revision = iE.revision
@@ -3065,7 +3098,7 @@ function classTitleOf(dta,r) {
 	// ToDo: .. or the title of the title attribute (dcterms:title) if the resource title is undefined
 }
 function typeOf( res ) {
-	let tP = itemByTitle(res.properties,CONFIG.attrTypeType);
+	let tP = itemByTitle(res.properties,CONFIG.propClassType);
 	// ToDo: .. or the title of the property class (dcterms:title) if the property title is undefined
 	if( tP ) return tP.value
 }
@@ -3139,6 +3172,16 @@ function initPropC( pCs, pCid ) {
 	// return an initialized property, if create permission is given:
 	return pC.cre?initProp( pCs, pCid ):undefined
 }
+function valByTitle(itm,pN) {
+	// return the value of a resource's (or statement's) property with title pN:
+	if( itm.properties ) {
+		for( var i=itm.properties.length-1;i>-1;i-- ) {
+			if( (itm.properties[i].title || itemById( self.data.propertyTypes, itm.properties[i]['class'] ).title)==pN )
+				return itm.properties[i].value
+		}
+	};
+	return
+} 
 function classifyProps( el, data ) {
 	"use strict";
 	// add missing (empty) properties and classify properties into title, descriptions and other;

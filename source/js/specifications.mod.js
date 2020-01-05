@@ -13,9 +13,9 @@ modules.construct({
 	"use strict";
 	
 	// Permissions for resources and statements:
-	self.resCreTypes = [];  // all resource types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
-	self.staCreTypes = [];  // all statement types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
-	self.staDelTypes = [];  // all statement types, of which the user can delete any instance. Identifiers are stored, as they are invariant when the cache is updated.
+	self.resCreClasses = [];  // all resource types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
+	self.staCreClasses = [];  // all statement types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
+	self.staDelClasses = [];  // all statement types, of which the user can delete any instance. Identifiers are stored, as they are invariant when the cache is updated.
 
 	// ToDo: sub-views communicate solely via tree and its status, other shared variables shall diappear, if possible.
 	self.resCre = false; 	// controls whether resp. button is enabled; true if the user has permission to create resources of at least one type.
@@ -200,9 +200,9 @@ modules.construct({
 		self.resources.init();
 	//	self.comments.init();
 		self.modeCmtDel = false;
-		self.resCreTypes = [];
-		self.staCreTypes = [];
-		self.staDelTypes = [];
+		self.resCreClasses = [];
+		self.staCreClasses = [];
+		self.staDelClasses = [];
 		self.tree.init();
 		refreshReqCnt = 0;
 		app.cache.clear();
@@ -252,21 +252,21 @@ modules.construct({
 		
 		var r = itemById( app.cache.selectedProject.data.resources, nd.ref );
 		if( r ) {
-			// self.resCre is set when resCreTypes are filled ...
-			self.resCln = self.resCreTypes.indexOf( r['class'] )>-1;
+			// self.resCre is set when resCreClasses are filled ...
+			self.resCln = self.resCreClasses.indexOf( r['class'] )>-1;
 			// give permission to an admin, anyway:
-//			self.resCln = ( indexById( self.resCreTypes, r['class'] )>-1 || me.iAmAdmin(app.cache.selectedProject.data) )
+//			self.resCln = ( indexById( self.resCreClasses, r['class'] )>-1 || me.iAmAdmin(app.cache.selectedProject.data) )
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
 				function mayHaveStatements( selR ) {
 //					if( selR ) console.debug( 'selR', selR );
-//					console.debug( 'staCreTypes', self.staCreTypes );
+//					console.debug( 'staCreClasses', self.staCreClasses );
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
-					self.staCreTypes.forEach( function(sT) {   
+					self.staCreClasses.forEach( function(sT) {   
 						creR = itemById( app.cache.selectedProject.data.statementClasses, sT );
-//						console.debug( 'mayHaveStatements', self.staCreTypes[s], creR, selR['class'] );
+//						console.debug( 'mayHaveStatements', self.staCreClasses[s], creR, selR['class'] );
 						if( 
 							// if creation mode is not specified or 'user' is listed, the statement may be applied to this resource:
 							( !creR.instantiation || creR.instantiation.indexOf( 'user' )>-1 )
@@ -285,37 +285,37 @@ modules.construct({
 	function getPermissions() {
 		// using the cached allClasses:
 		// a) identify the resource and statement types which can be created by the current user:
-		self.resCreTypes = [];
-		self.staCreTypes = [];
-		self.staDelTypes = [];
+		self.resCreClasses = [];
+		self.staCreClasses = [];
+		self.staDelClasses = [];
 
 		app.cache.selectedProject.data.resourceClasses.forEach( function(rC) {
 			// list all resource types, for which the current user has permission to create new instances
 			// ... and which allow manual instantiation:
 			// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 			if( rC.cre && (!rC.instantiation || rC.instantiation.indexOf('user')>-1) && rC.propertyClasses && rC.propertyClasses.length>0 )
-				self.resCreTypes.push( rC.id )
+				self.resCreClasses.push( rC.id )
 		});
 		app.cache.selectedProject.data.statementClasses.forEach( function(sC) {
 			// list all statement types, for which the current user has permission to create new instances:
 			// ... and which allow user instantiation:
 			// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 			if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
-				self.staCreTypes.push( sC.id );
+				self.staCreClasses.push( sC.id );
 			if( sC.del ) 
-				self.staDelTypes.push( sC.id );
+				self.staDelClasses.push( sC.id );
 		});
 							
 		// b) set the permissions for the edit buttons:
-		self.resCre = self.resCreTypes.length>0;
-		self.staCre = self.staCreTypes.length>0;
-		self.staDel = self.staDelTypes.length>0;
+		self.resCre = self.resCreClasses.length>0;
+		self.staCre = self.staCreClasses.length>0;
+		self.staDel = self.staDelClasses.length>0;
 		self.filCre = app.cache.selectedProject.data.cre;
-	//	let cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.objTypeComment ),
-	//		rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.relTypeCommentRefersTo );
+	//	let cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.resClassComment ),
+	//		rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassCommentRefersTo );
 	//	self.cmtCre = ( self.typesComment && self.typesComment.available() && cT.cre && rT.cre );
 	//	self.cmtDel = ( self.typesComment && self.typesComment.available() && cT.del && rT.del )
-//		console.debug('permissions',self.resCreTypes,self.staCreTypes,self.staDelTypes)
+//		console.debug('permissions',self.resCreClasses,self.staCreClasses,self.staDelClasses)
 	}
 
 	self.updateTree = function( spc ) {
@@ -489,7 +489,7 @@ modules.construct({
 	//	self.views.show('linker');
 
 		linker.init( function(){self.selectTab(CONFIG.relations)} );  // callback to continue when finished.
-		linker.show( self.staCreTypes, self.tree.selectedNode )
+		linker.show( self.staCreClasses, self.tree.selectedNode )
 	};
 	self.editObjClicked = function( mode ) {
 		// enter edit mode: load the edit template:
@@ -504,7 +504,7 @@ modules.construct({
 	//	self.views.show('object');
 
 		objectEdit.init( function(){self.selectTab(returnTab)}, mode );  // callback to continue when finished with editing.
-		objectEdit.show( self.resCreTypes )
+		objectEdit.show( self.resCreClasses )
 	};
 	self.deleteResource = function() {
 		// Delete the selected resource, all tree nodes and their children.
@@ -608,8 +608,8 @@ modules.construct({
 	};
 /*	self.addComment = function() {
 //		console.debug( 'addComment', self.tree.selectedNode );
-		var cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.objTypeComment ),
-			rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.relTypeCommentRefersTo );
+		var cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.resClassComment ),
+			rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassCommentRefersTo );
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
@@ -623,8 +623,8 @@ modules.construct({
 			.fail( handleError );
 		
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
-		var txtLbl = i18n.lookup( CONFIG.attrTypeText ),
-			txtAtT = itemByName( cT.propertyClasses, CONFIG.attrTypeText );
+		var txtLbl = i18n.lookup( CONFIG.propClassText ),
+			txtAtT = itemByName( cT.propertyClasses, CONFIG.propClassText );
 		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtAtT.dataType );
 
 		var addC = new BootstrapDialog({
@@ -653,7 +653,7 @@ modules.construct({
 								subject: { id: newId, revision: 0 },
 								object: { id: self.tree.selectedNode.ref, revision: 0 },
 								class: rT.id,
-								title: CONFIG.relTypeCommentRefersTo
+								title: CONFIG.staClassCommentRefersTo
 //								description: ''
 							};
 //							console.info( 'saving statement', newR );
@@ -1513,7 +1513,7 @@ function Resources() {
 }
 
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function valOf( ob, pV, opts ) {
+function valOf( ob, prp, opts ) {
 	"use strict";
 	if( typeof(opts)=='object' ) {
 		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
@@ -1526,14 +1526,14 @@ function valOf( ob, pV, opts ) {
 			linkifiedURLs: false
 		}
 	};
-//	console.debug('valOf',ob,pV,opts);
-	let dT = dataTypeOf( app.cache.selectedProject.data, pV['class'] ); 
+//	console.debug('valOf',ob,prp,opts);
+	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
-			var ct = noCode(pV.value).ctrl2HTML();
+			var ct = noCode(prp.value).ctrl2HTML();
 			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
 			ct = titleLinks( ct, opts.dynLinks );
-			if( CONFIG.stereotypeProperties.indexOf(pV.title)>-1 )
+			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
 				ct = '&#x00ab;'+ct+'&#x00bb;'
 			break;
 		case 'xhtml':
@@ -1541,21 +1541,21 @@ function valOf( ob, pV, opts ) {
 					rev: ob.revision,
 					clickableElements: opts.clickableElements
 				},
-				ct = fileRef.toGUI( noCode(pV.value), os );
+				ct = fileRef.toGUI( noCode(prp.value), os );
 			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
 //			console.debug('valOf XHTML',ct);
 			ct = titleLinks( ct, opts.dynLinks );
 			break;
 		case 'xs:dateTime':
-			var ct = localDateTime( pV.value );
+			var ct = localDateTime( prp.value );
 			break;
 		case 'xs:enumeration':
 			// usually value has a comma-separated list of value-IDs,
 			// but the filter module delivers potentially marked titles in content.
-			var ct = enumValStr( dT, pV );		// translate IDs to values, if appropriate
+			var ct = enumValStr( dT, prp );		// translate IDs to values, if appropriate
 			break;
 		default:
-			var ct = noCode(pV.value)
+			var ct = noCode(prp.value)
 	};
 	return ct
 
