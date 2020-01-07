@@ -80,10 +80,10 @@ function xslx2specif( buf, pN, chgAt ) {
 
 		function BaseTypes() {
 			this.dataTypes = [{
-				id: 'DT-Text-8192',
+				id: 'DT-Text',
 				title: 'Text',  		// dataType for XLS columns with text content
-				description: "String with length 8192",
-				maxLength: 1048576,
+				description: "String with length "+CONFIG.maxStringLength,
+				maxLength: CONFIG.maxStringLength,
 				type: "xs:string",
 				changedAt: chgAt
 			},{ 
@@ -453,7 +453,7 @@ function xslx2specif( buf, pN, chgAt ) {
 	//					console.debug('getPropClass 2',i,I,pC,col[i])
 					};
 					// the loop has ended early, i.e. the types are not compatible for all lines>0:
-					if( i<I || !pC )		return new PropClass( ws.name, cX, ti, 'Text-8192' );
+					if( i<I || !pC )		return new PropClass( ws.name, cX, ti, 'Text' );
 					// else, the types are equal for all lines>0:
 	//				if( isXHTML(pC) ) 		return new PropClass( ws.name, cX, ti, 'XLS Formatted Text' );				
 					if( isDateTime(pC) ) 	return new PropClass( ws.name, cX, ti, 'DateTime' );				
@@ -461,7 +461,7 @@ function xslx2specif( buf, pN, chgAt ) {
 					if( isInt(pC) ) 		return new PropClass( ws.name, cX, ti, 'Integer' );				
 					if( isBool(pC) ) 		return new PropClass( ws.name, cX, ti, 'Boolean' );	
 					// by default:
-					return new PropClass( ws.name, cX, ti, 'Text-8192' )
+					return new PropClass( ws.name, cX, ti, 'Text' )
 				}
 			}
 			function getStaClasses( ws, sCL ) { 

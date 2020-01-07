@@ -65,15 +65,18 @@ modules.construct({
 		bDO.notify('Transforming BPMN to SpecIF',10); 
 		data = BPMN2Specif( buf2str(buf), 
 							{ 
-								xmlName: fName, 
-								xmlDate: fDate, 
-								strGlossaryClass: CONFIG.resClassGlossary,
+								fileName: fName, 
+								fileDate: fDate, 
+								strGlossaryType: CONFIG.resClassGlossary,
 								strGlossaryFolder: i18n.lookup(CONFIG.resClassGlossary),
 								strActorFolder: i18n.lookup("FMC:Actors"),
 								strStateFolder: i18n.lookup("FMC:States"),
 								strEventFolder: i18n.lookup("FMC:Events"),
 								strAnnotationFolder: i18n.lookup("SpecIF:Annotations"),
-								strBusinessProcessClass: CONFIG.resClassProcesses,
+								strRoleType: "SpecIF:Role",
+								strConditionType: "SpecIF:Condition",
+								strBusinessProcessType: "SpecIF:BusinessProcess",
+								strBusinessProcessesType: CONFIG.resClassProcesses,
 								strBusinessProcessFolder: i18n.lookup(CONFIG.resClassProcesses),
 								isIE: browser.isIE 
 							});

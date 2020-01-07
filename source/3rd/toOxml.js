@@ -63,11 +63,10 @@ function toOxml( data, opts ) {
 
 			// If it is a raster image:
 			if ( ['image/png','image/jpg','image/jpeg','image/gif'].indexOf(f.type)>-1 ) {
-				pend++;
 				// transform the file and continue processing, as soon as all are done:
 				// Convert a raster image to base64:
-					function storeImg(ev) {
-//						console.debug('#',pend,ev);
+					function storeR(ev) {
+//						console.debug('raster',pend);
 						// please note the different use of 'id' and 'title' in file and images!
 						images.push( {id:f.title,type:f.type,h:ev.target.height,w:ev.target.width,b64:ev.target.src} );
 						if( --pend<1 ) {
@@ -75,11 +74,12 @@ function toOxml( data, opts ) {
 							createOxml()
 						}
 					}
+				pend++;
+				let img = new Image();   
+				$(img).on('load', storeR );
+			//	img.addEventListener('load', storeR, false ); // 'loadend' does not work in Chrome
 				const reader = new FileReader();
 				reader.addEventListener('loadend', function(e) {
-					// Obtain width and height
-					let img = new Image();   
-					img.addEventListener('loadend', storeImg, false); 
 					img.src = e.target.result
 				});
 				reader.readAsDataURL(f.blob);
@@ -98,26 +98,26 @@ function toOxml( data, opts ) {
 					return
 				};
 				// else, transform SVG to PNG:
-				pend++;
-				let can = document.createElement('canvas'), // Not shown on page
-					ctx = can.getContext('2d'),
-					img = new Image();                      // Not shown on page
-
-				blob2text(f,function(svg,fTi,fTy) {
-//					console.debug("File ", fTi, fTy, svg );
-					img.addEventListener('loadend', function(){
+					function storeV(){
+	//					console.debug('vector',pend);
 						can.width = img.width;
 						can.height = img.height;
-//						console.debug('img',img);
 						ctx.drawImage( img, 0, 0 );
-//						console.debug('img png',can.toDataURL());
 						// please note the different use of 'id' and 'title' in specif.files and images!
 						images.push( {id:pngN,type:'image/png',h:img.height,w:img.width,b64:can.toDataURL()} );
 						if( --pend<1 ) {
 							// all images have been converted, continue processing:
 							createOxml()
 						}
-					});
+					}				
+				pend++;
+				let can = document.createElement('canvas'), // Not shown on page
+					ctx = can.getContext('2d'),
+					img = new Image();                      // Not shown on page
+				$(img).on('load', storeV );
+			//	img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
+
+				blob2text(f,function(svg,fTi,fTy) {
 					img.src = 'data:image/svg+xml,' + encodeURIComponent( svg );
 				});
 
@@ -228,7 +228,7 @@ function toOxml( data, opts ) {
 					renderHierarchy( h, 1 )
 				)
 			});
-//			console.debug('oxml',oxml);
+//			console.debug('oxml result',oxml);
 			return oxml
 			
 			// ---------------
@@ -1144,12 +1144,12 @@ function toOxml( data, opts ) {
 		}  // end of 'createText'
 
 	// Start processing 'createOxml':	
+//	console.debug('createOxml',data);
 	let i=null, I=null, 
 		file = createText( data, opts );
 
 	file.name = data.title;
 	file.parts = [];
-//	console.debug( 'oxml',file );
 	
 	file.parts.push( packGlobalRels() );
 	file.parts.push( packRels(file.relations) );

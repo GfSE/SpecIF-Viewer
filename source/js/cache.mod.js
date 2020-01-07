@@ -418,36 +418,38 @@ function Project( pr ) {
 	function substituteSC(dta,rId,nId) {
 		substituteAtt(dta.statements,'class',rId,nId)
 	}
-	function substituteR(dta,r,n) {
-	/*	// 1 Rescue property values, 
-		// if the corresponding property of adopted resource is undefined or empty.
-		// 1.1 Looking at the property types, which ones are in common:
-		let nPT;
-		n.properties.forEach( function(p) { 
-			// check whether existing resource has similar property;
-			// a property is similar, if it has the same title,
-			// where the title may be defined with the property class.
-			nPT = propTitleOf(dta,p);
-		//	nPC = itemById(dta.propertyClasses,p['class']);
-		});
-		// 1.2 Per property, take the value of the new model element, 
-		//     if the existing one's is missing or empty:
-		let rP;
-		if( n.properties )
-			n.properties.forEach( function(nP) {
-				rP = itemByTitle(r.properties,nP.title);
-				if( rP && rP.value )
-			})  */
+	function substituteR(prj,r,n,opts) {
+		// Substitute resource n by r in all references of n,
+		// where r is always an element of self.data.
+		// But: Rescue any property of n, if undefined for r.
 		
-		// 2. replace the references in all statements:
-		dta.statements.forEach( function(st) {
+		if( opts && opts.rescueProperties ) {
+			// 1 Rescue property values, 
+			// if the corresponding property of the adopted resource is undefined or empty.
+			// 1.1 Looking at the property types, which ones are in common:
+			n.properties.forEach( function(nP) { 
+				if( nP.value ) {
+					// check whether existing resource has similar property;
+					// a property is similar, if it has the same title,
+					// where the title may be defined with the property class.
+					let pT = propTitleOf(prj,nP),
+						rP = propByTitle(self.data,r,pT);
+					if( !valByTitle( self.data, r, pT ) 
+						// dataTypes must be compatible:
+						&& classIsCompatible( dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ) ) {
+						rP.value = nP.value
+					}
+				}
+			})
+		};
+		
+		// 2 Replace the references in all statements:
+		prj.statements.forEach( function(st) {
 				if( st.object.id==n.id ) st.object.id = r.id;
 				if( st.subject.id==n.id ) st.subject.id = r.id
 		});
-		// 3. replace the references in all hierarchies:
-		substituteRef(dta.hierarchies,r.id,n.id)  // here we end up with double entries
-		// assuming that there is an entry for the remaining (original) resource:
-	//	delNodes( dta.hierarchies, {resource:nId} )
+		// 3 Replace the references in all hierarchies:
+		substituteRef(prj.hierarchies,r.id,n.id)  // here we end up with double entries
 	}
 	function substituteAtt(L,attN,rAV,dAV) {
 		// replace ids of the duplicate item by the id of the original one;
@@ -456,7 +458,7 @@ function Project( pr ) {
 			L.forEach( function(e) { if(e[attN]==dAV) e[attN] = rAV } )
 	}
 	function substituteLe(L,attN,rAV,dAV) {
-		// replace the duplicate id by the id of the original item;
+		// Replace the duplicate id by the id of the original item;
 		// so replace dAV by rAV in the list named 'attN'
 		// (for example: in L[i].attN (which is a list as well), replace dAV by rAV):
 		let idx;
@@ -508,7 +510,7 @@ function Project( pr ) {
 		// ToDo: update the server.
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 //		console.debug('deduplicate',dta);
-		let n,r,nD,rD;
+		let n,r,nR,rR;
 
 		// 1. Deduplicate equal types having different ids;
 		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
@@ -525,7 +527,7 @@ function Project( pr ) {
 							ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
 							// ... and remove the duplicate item:
 							dta[ty.list].splice(n,1); 
-							// go on with the next one:
+							// skip the remaining iterations of the inner loop:
 							break
 						}
 					}
@@ -537,18 +539,18 @@ function Project( pr ) {
 			for( r=0; r<n; r++ ) {
 				// Do it for all model elements,
 				// but exclude process gateways and generated events for optional branches: 
-				nD = dta.resources[n];
-				rD = dta.resources[r];
-				if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,rD) )>-1 
-					&& eqR(dta,rD,nD) 
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( nD, CONFIG.propClassType ))<0 
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( rD, CONFIG.propClassType ))<0 
+				nR = dta.resources[n];
+				rR = dta.resources[r];
+				if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,rR) )>-1 
+					&& eqR(dta,rR,nR) 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
 				) {
 					// Are equal, so remove the duplicate resource:
-					console.debug( 'deduplicate resource', rD, nD, valByTitle( nD, CONFIG.propClassType ) );
-					substituteR(dta,rD,nD);
+//					console.debug( 'deduplicate resource', rR, nR, valByTitle( dta, nR, CONFIG.propClassType ) );
+					substituteR(dta,rR,nR,{rescueProperties:true});
 					dta.resources.splice(n,1); 
-					// go on with the next one:
+					// skip the remaining iterations of the inner loop:
 					break
 				}
 			}
@@ -561,7 +563,7 @@ function Project( pr ) {
 				if( eqS(dta.statements[r],dta.statements[n]) ) {
 					// Are equal, so remove the duplicate statement:
 					dta.statements.splice(n,1); 
-					// go on with the next one:
+					// skip the remaining iterations of the inner loop:
 					break
 				}
 			}
@@ -574,23 +576,22 @@ function Project( pr ) {
 		
 		// 1. Delete any existing process folders,
 		// 1.1 Find all process folders:
-		let dF = [], pL = [], res, idx,
+		let dF = [], pL = [], res, pV,
 			apx = self.data.id.simpleHash(),
 			tim = new Date().toISOString();
-//		console.debug('createGlossary',dta.hierarchies);
+//		console.debug('createProcessesFolder',dta.hierarchies);
 		iterateNodes( dta.hierarchies, function(nd) {
 											// get the referenced resource:
 											res = itemById( dta.resources, nd.resource );
 											// find the property defining the type:
-											idx = indexBy( res.properties, 'title', CONFIG.propClassType );
-											// collect all process folders to delete:
-											if( idx>-1 && res.properties[idx].value==CONFIG.resClassProcesses ) {
+											pV = valByTitle(dta,res,CONFIG.propClassType);
+											if( pV==CONFIG.resClassProcesses ) {
 												dF.push( nd );
 											};
 											// collect all process diagrams:
-											if( idx>-1 && res.properties[idx].value=="SpecIF:BusinessProcess" ) {
+											if( pV=="SpecIF:BusinessProcess" ) {
 												pL.push( nd );
-											};
+											}; 
 											return true  // continue always to the end
 										}
 		);
@@ -697,7 +698,7 @@ function Project( pr ) {
 		
 		// 1. Delete any existing glossaries
 		// 1.1 Find all Glossary folders:
-		let gF = [], res, idx,
+		let gF = [], res, pV,
 			apx = self.data.id.simpleHash(),
 			tim = new Date().toISOString();
 //		console.debug('createGlossary',dta.hierarchies);
@@ -705,10 +706,10 @@ function Project( pr ) {
 											// get the referenced resource:
 											res = itemById( dta.resources, nd.resource );
 											// check, whether it is a glossary:
-											idx = indexBy( res.properties, 'title', CONFIG.propClassType );
-//											console.debug(nd,res,idx);
-											if( idx>-1 && res.properties[idx].value==CONFIG.resClassGlossary )
+											pV = valByTitle(dta,res,CONFIG.propClassType);
+											if( pV==CONFIG.resClassGlossary ) {
 												gF.push( nd );
+											};
 											return true  // continue always to the end
 										}
 		);
@@ -930,7 +931,7 @@ function Project( pr ) {
 					typ = itemById( nD.resourceClasses, itm['class'] );
 				if( CONFIG.modelElementClasses.indexOf( typ.title )>-1
 			//		|| CONFIG.diagramClasses.indexOf( typ.title )>-1 )
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( itm, CONFIG.propClassType ))<0 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( nD, itm, CONFIG.propClassType ))<0 
 				) {
 						// Check for a resource with the same title:
 						let exs = itemByTitle( self.data.resources, itm.title );
@@ -939,15 +940,15 @@ function Project( pr ) {
 						// and is less restrictive than the class ID:
 //						console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
 						if( exs 
-							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( exs, CONFIG.propClassType ))<0 
+							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, exs, CONFIG.propClassType ))<0 
 							&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
-					//		&& valByTitle(itm,CONFIG.propClassType)==valByTitle(exs,CONFIG.propClassType) 
+					//		&& valByTitle(nD,itm,CONFIG.propClassType)==valByTitle(self.data,exs,CONFIG.propClassType) 
 						) {
 //							console.debug('~2',exs,itm);
 							// There is an item with the same title and type,
 							// adopt it and update all references, if ids are different:
 							if( exs.id!=itm.id )  // equal ids are quite improbable, but still
-								substituteR( nD, exs, itm );
+								substituteR( nD, exs, itm, {rescueProperties:true} );
 							
 							// ToDo: If the adopting resources has property values,
 							// where the existing does not have, take it along:
@@ -1016,17 +1017,17 @@ function Project( pr ) {
 		};
 
 		// In a first pass check, if there is any incompatible type making an update impossible:
-		rc = typesAreCompatible('dataType',mode);
+		rc = classesAreCompatible('dataType',mode);
 		if( rc.status>0 ) {
 			uDO.reject( rc );
 			return uDO
 		};
-		rc = typesAreCompatible('resourceClass',mode);
+		rc = classesAreCompatible('resourceClass',mode);
 		if( rc.status>0 ) {
 			uDO.reject( rc );
 			return uDO
 		};
-		rc = typesAreCompatible('statementClass',mode);
+		rc = classesAreCompatible('statementClass',mode);
 		if( rc.status>0 ) {
 			uDO.reject( rc );
 			return uDO
@@ -1059,7 +1060,7 @@ function Project( pr ) {
 				default: uDO.reject() //should never arrive here
 			}
 		}
-		function typesAreCompatible( ctg, mode ) {
+		function classesAreCompatible( ctg, mode ) {
 			let aL= null, nL= null; 
 			switch( ctg ) {
 				case 'dataType': aL = self.data.dataTypes; nL = newD.dataTypes; break;
@@ -1072,117 +1073,14 @@ function Project( pr ) {
 			let j=null, rC=null;
 			for( var i=nL.length-1;i>-1;i-- ) {
 				for( j=aL.length-1;j>-1;j-- ) {
-//					console.debug('typesAreCompatible',aL[j],nL[i]);
+//					console.debug('classesAreCompatible',aL[j],nL[i]);
 					// if a single element is incompatible the lists are incompatible:
-					rC = typeIsCompatible(aL[j],nL[i],mode);
+					rC = classIsCompatible(ctg,aL[j],nL[i],mode);
 					// on first error occurring, quit with return code:
 					if( rC.status>0 ) return rC 
 				}
 			};
 			return {status:0}
-		}
-		function typeIsCompatible(refT,newT,mode) {
-			if(refT.id!=newT.id) return {status:0};
-			if(refT.category!=newT.category) return {status:950, statusText:"new "+newT.category+" '"+titleOf(newT)+"' is incompatible"};
-			// else: identifiers and categories are equal:
-//			console.debug( 'typeIsCompatible', refT, newT );
-			switch( newT.category ) {
-				case 'dataType':
-					// A dataType is incompatible, if an existing one has the same id and a smaller value range.
-					// A dataType is compatible, if an existing one has the same id and an equal or larger value range.
-					switch( refT.type ) {
-						case 'xs:boolean':	
-						case 'xs:double':	
-						case xs:dateTime:
-							return {status:0};
-						case 'xhtml':	
-						case 'xs:string':
-//							console.debug( refT.maxLength>newT.maxLength-1 );
-							if ( refT.maxLength==undefined )
-								return {status:0};
-							if ( newT.maxLength==undefined || refT.maxLength<newT.maxLength )
-								return {status:951, statusText:"new dataType '"+titleOf(newT)+"' of type '"+newT.type+"' is incompatible"};
-							return {status:0};
-						case 'xs:double':
-							// to be compatible, the new 'accuracy' must be lower or equal:
-							if( refT.accuracy<newT.accuracy )
-								return {status:952, statusText:"new dataType '"+titleOf(newT)+"' of type '"+newT.type+"' is incompatible"};
-							// else: go on ...
-						case 'xs:integer':
-							// to be compatible, the new 'max' must be lower or equal and the new 'min' must be higher or equal:
-//							console.debug( refT.max<newT.max || refT.min>newT.min );
-							if( refT.max<newT.max || refT.min>newT.min )
-								return {status:953, statusText:"new dataType '"+titleOf(newT)+"' of type '"+newT.type+"' is incompatible"}
-							else
-								return {status:0};
-						case 'xs:enumeration':
-							// to be compatible, every value of the new 'enumeration' must be present in the present one:
-							// ToDo: Add a new enum value to an existing enum dataType.
-							var idx=null;
-							for( var v=newT.values.length-1; v>-1; v-- ) {
-								idx = indexById( refT.values, newT.values[v].id );
-								// the id must be present:
-								if( idx<0 ) 
-									return {status:954, statusText:"new dataType '"+titleOf(newT)+"' of type '"+newT.type+"' is incompatible"};
-								//  ... and the titles must be equal:
-								if( refT.values[idx].title != newT.values[v].title )
-									return {status:955, statusText:"new dataType '"+titleOf(newT)+"' of type '"+newT.type+"' is incompatible"}
-							};
-							return {status:0}
-					};
-					return null;	// should never arrive here ... as every branch in every case above has a return.
-				case 'statementClass':
-					// To be compatible, all sourceTypes of newT must be contained in the sourceTypes of refT;
-					// no sourceTypes means that all resourceClasses are permissible as subject.
-					// ... and similarly for the targetTypes:
-					if( refT.sourceTypes && !newT.sourceTypes
-						|| refT.sourceTypes && newT.sourceTypes && !containsById( refT.sourceTypes, newT.sourceTypes ) ) {
-								return {status:961, statusText:"new "+newT.category+" '"+titleOf(newT)+"' is incompatible"}
-					};
-					if( refT.targetTypes && !newT.targetTypes
-						|| refT.targetTypes && newT.targetTypes && !containsById( refT.targetTypes, newT.targetTypes ) ) {
-								return {status:962, statusText:"new "+newT.category+" '"+titleOf(newT)+"' is incompatible"}
-					};
-					// else: so far everything is OK, but go on checking ... (no break!)
-				case 'resourceClass':
-					// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
-					// A resourceClass or statementClass is compatible, if all equally-named propertyClasses have the same dataType
-					if( !newT.propertyClasses || !newT.propertyClasses.length ) 
-								return {status:0};
-					// else: The new type has at least one property.
-					if( mode=='match' && (!refT.propertyClasses || !refT.propertyClasses.length) ) 
-								return {status:963, statusText:"new "+newT.category+" '"+titleOf(newT)+"' is incompatible"};
-					var idx=null, pc=null;
-					for( var a=newT.propertyClasses.length-1; a>-1; a-- ) {
-						npc = newT.propertyClasses[a];
-						if( npc.id ) {
-							// If an id exists, it must be equal to one of refT's propertyClasses:
-							idx = indexById( refT.propertyClasses, npc.id )
-						} else {
-							// If there is no id, the type is new and there are no referencing elements, yet. 
-							// So it does not matter.
-							// But there must be a property class with the same name:
-							idx = indexByTitle( refT.propertyClasses, npc.title )
-						};
-						if( idx<0 ) {
-							// The property class in the new data is not found in the existing (reference) data:
-							if( mode=='match' )
-								// the property class is expected and thus an error is signalled:
-								return {status:964, statusText:"new "+newT.category+" '"+titleOf(newT)+"' is incompatible"}
-							else
-								// cases 'extend' and 'ignore';
-								// either the property will be created later on, or it will be ignored;
-								// we are checking only in a first pass.
-								continue;
-						};
-						//  else: the property class is present; in this case and in all modes the dataTypes must be equal:
-						if( refT.propertyClasses[idx].dataType != npc.dataType ) {
-							return {status:965, statusText:"new "+newT.category+" '"+titleOf(newT)+"' is incompatible"}
-						}
-					};
-					return {status:0}
-			};
-			return null		// should never arrive here ...
 		}
 		function addNewTypes( ctg ) {
 			// Is commonly used for resource and statement classes with their propertyClasses.
@@ -1683,10 +1581,10 @@ function Project( pr ) {
 		return dPr 
 	};
 
-	self.initResource = function( oT ) { 
+	self.createResource = function( oT ) { 
 		// Create an empty form (resource instance) for the resource class oT:
 		var fDO = $.Deferred();
-//		console.debug( 'initResource', oT );
+//		console.debug( 'createResource', oT );
 
 		// Get the class's permissions. So far, it's property permissions are not loaded ...
 		self.readContent( 'resourceClass', oT, {reload:true} )
@@ -1699,7 +1597,7 @@ function Project( pr ) {
 					properties: [] };
 				dta.propertyClasses.forEach( function(pC) {
 					if( pC.cre )
-						res.properties.push( initPropC(pC) )
+						res.properties.push( createPropC(pC) )
 				});
 //				console.debug('fillObject',res);
 				if( res.properties.length ) 
@@ -2144,6 +2042,108 @@ function Project( pr ) {
 			addPerms(item)
 	}  
 */
+	function classIsCompatible(ctg,refC,newC,mode) {
+	//	if(refC.id!=newC.id) return {status:0};
+		// else: identifiers are equal:
+//		console.debug( 'classIsCompatible', refC, newC );
+		switch( ctg ) {
+			case 'dataType':
+				// A dataType is incompatible, if an existing one has the same id and a smaller value range.
+				// A dataType is compatible, if an existing one has the same id and an equal or larger value range.
+				switch( refC.type ) {
+					case 'xs:boolean':	
+					case 'xs:double':	
+					case 'xs:dateTime':
+						return {status:0};
+					case 'xhtml':	
+					case 'xs:string':
+//						console.debug( refC.maxLength>newC.maxLength-1 );
+						if ( refC.maxLength==undefined )
+							return {status:0};
+						if ( newC.maxLength==undefined || refC.maxLength<newC.maxLength )
+							return {status:951, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
+						return {status:0};
+					case 'xs:double':
+						// to be compatible, the new 'accuracy' must be lower or equal:
+						if( refC.accuracy<newC.accuracy )
+							return {status:952, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
+						// else: go on ...
+					case 'xs:integer':
+						// to be compatible, the new 'max' must be lower or equal and the new 'min' must be higher or equal:
+//						console.debug( refC.max<newC.max || refC.min>newC.min );
+						if( refC.max<newC.max || refC.min>newC.min )
+							return {status:953, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"}
+						else
+							return {status:0};
+					case 'xs:enumeration':
+						// to be compatible, every value of the new 'enumeration' must be present in the present one:
+						// ToDo: Add a new enum value to an existing enum dataType.
+						var idx=null;
+						for( var v=newC.values.length-1; v>-1; v-- ) {
+							idx = indexById( refC.values, newC.values[v].id );
+							// the id must be present:
+							if( idx<0 ) 
+								return {status:954, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
+							//  ... and the titles must be equal:
+							if( refC.values[idx].title != newC.values[v].title )
+								return {status:955, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"}
+						};
+						return {status:0}
+				};
+				return null;	// should never arrive here ... as every branch in every case above has a return.
+			case 'statementClass':
+				// To be compatible, all sourceTypes of newC must be contained in the sourceTypes of refC;
+				// no sourceTypes means that all resourceClasses are permissible as subject.
+				// ... and similarly for the targetTypes:
+				if( refC.sourceTypes && !newC.sourceTypes
+					|| refC.sourceTypes && newC.sourceTypes && !containsById( refC.sourceTypes, newC.sourceTypes ) ) {
+							return {status:961, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+				};
+				if( refC.targetTypes && !newC.targetTypes
+					|| refC.targetTypes && newC.targetTypes && !containsById( refC.targetTypes, newC.targetTypes ) ) {
+							return {status:962, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+				};
+				// else: so far everything is OK, but go on checking ... (no break!)
+			case 'resourceClass':
+				// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
+				// A resourceClass or statementClass is compatible, if all equally-named propertyClasses have the same dataType
+				if( !newC.propertyClasses || !newC.propertyClasses.length ) 
+							return {status:0};
+				// else: The new type has at least one property.
+				if( mode=='match' && (!refC.propertyClasses || !refC.propertyClasses.length) ) 
+							return {status:963, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"};
+				var idx=null, pc=null;
+				for( var a=newC.propertyClasses.length-1; a>-1; a-- ) {
+					npc = newC.propertyClasses[a];
+					if( npc.id ) {
+						// If an id exists, it must be equal to one of refC's propertyClasses:
+						idx = indexById( refC.propertyClasses, npc.id )
+					} else {
+						// If there is no id, the type is new and there are no referencing elements, yet. 
+						// So it does not matter.
+						// But there must be a property class with the same name:
+						idx = indexByTitle( refC.propertyClasses, npc.title )
+					};
+					if( idx<0 ) {
+						// The property class in the new data is not found in the existing (reference) data:
+						if( mode=='match' )
+							// the property class is expected and thus an error is signalled:
+							return {status:964, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+						else
+							// cases 'extend' and 'ignore';
+							// either the property will be created later on, or it will be ignored;
+							// we are checking only in a first pass.
+							continue;
+					};
+					//  else: the property class is present; in this case and in all modes the dataTypes must be equal:
+					if( refC.propertyClasses[idx].dataType != npc.dataType ) {
+						return {status:965, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+					}
+				};
+				return {status:0}
+		};
+		return null		// should never arrive here ...
+	}
 	function cache( ctg, item ) { 
 		if( !item || Array.isArray(item)&&item.length<1 ) return;
 		// If item is a list, all elements must have the same category.
@@ -2992,10 +2992,10 @@ const specif = {
 			}
 	}
 }
-function dataTypeOf( pr, pCid ) {
-	// given a property class ID, return it's dataType:
+function dataTypeOf( prj, pCid ) {
+	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
-		return itemById( pr.dataTypes, itemById( pr.propertyClasses, pCid ).dataType )
+		return itemById( prj.dataTypes, itemById( prj.propertyClasses, pCid ).dataType )
 		//                             get class
 		//	   get dataType
 	// else:
@@ -3137,14 +3137,16 @@ function iterateNodes( tree, fn ) {
 	};*/
 	return !cont
 }
-function initProp( pCs, pCid ) {
-	// create an empty property from the supplied class:
-//	console.debug('initProp',pCs,pCid);
-	var pC = itemById( pCs, pCid ),
-		p = {
+function createProp( pC, pCid ) {
+	// Create an empty property from the supplied class;
+	// the propertyClass may be supplied by the first parameter
+	// or will be selected from the propertyClasses list using the supplied propertyClass id pCid:
+//	console.debug('createProp',pCs,pCid);
+	if( Array.isArray(pC) )
+		pC = itemById( pC, pCid );
+	var	p = {
 		title: pC.title,
 		class: pC.id,
-//		dataType: pC.dataType, 
 		// supply default value if available:
 		value: pC.value||'',	
 		upd: pC.upd,
@@ -3159,24 +3161,65 @@ function initProp( pCs, pCid ) {
 		default:
 			p.value = ''
 	}; */
-//	console.debug('initProp',p);
+//	console.debug('createProp',p);
 	return p
 }
-function initPropR( pCs, pCid ) {
-	// return an initialized property, if read permission is given:
-//	return pC.rea?initProp( pCs, pCid ):undefined
+function createPropR( pCs, pCid ) {
+	// Return an initialized property, if read permission is given:
+//	Return pC.rea?createProp( pCs, pCid ):undefined
 	// we assume that the current user has read permission for all data in cache:
-	return initProp( pCs, pCid )
+	return createProp( pCs, pCid )
 }
-function initPropC( pCs, pCid ) {
+function createPropC( pCs, pCid ) {
 	// return an initialized property, if create permission is given:
-	return pC.cre?initProp( pCs, pCid ):undefined
+	return pC.cre?createProp( pCs, pCid ):undefined
 }
-function valByTitle(itm,pN) {
-	// return the value of a resource's (or statement's) property with title pN:
+/* function propClassByTitle(itm,pN) {
+	// Return the class of a resource's (or statement's) property with title pN:
+	if( itm.properties ) {
+		var pC, i;
+		for( i=itm.properties.length-1;i>-1;i-- ) {
+			pC = itemById( self.data.propertyClasses, itm.properties[i]['class'] );
+			if( pC.title==pN )
+				return pC
+		}
+	};
+	return
+} */
+function propByTitle(dta,itm,pN) {
+	// Return the property of itm with title pN.
+	// If it doesn't exist, create it,
+	// if there is no property with that title, return undefined.
+	
+	// Look for the propertyClasses pCs of the item's class iC:
+	// ToDo: Add statementClasses, as soon as needed.
+	var iC = itemById( dta.resourceClasses, itm['class'] ),
+	//	pCs = dta.propertyClasses.filter( function(pC) { return iC.propertyClasses.indexOf(pC.id)>-1 } ),
+		pC,prp;
+//	console.debug('propByTitle',dta,itm,pN,iC);
+	for( var i=dta.propertyClasses.length-1;i>-1;i-- ) {
+		pC = dta.propertyClasses[i];
+		if( iC.propertyClasses.indexOf(pC.id)>-1 	// pC is used by the item's class iC
+			&& pC.title==pN ) {						// pC has the specified title
+				// take the existing property, if it exists;
+				// the property's title is not necessarily present:
+				prp = itemBy(itm.properties,'class',pC.id);
+				if( prp ) return prp;
+				// else create a new one from the propertyClass:
+				prp = createProp(pC);
+				itm.properties.push(prp);
+				return prp
+		}
+	};
+	return
+}
+function valByTitle(dta,itm,pN) {
+	// Return the value of a resource's (or statement's) property with title pN:
+	// ToDo: return the class's default value, if available.
+//	console.debug('valByTitle',dta,itm,pN);
 	if( itm.properties ) {
 		for( var i=itm.properties.length-1;i>-1;i-- ) {
-			if( (itm.properties[i].title || itemById( self.data.propertyTypes, itm.properties[i]['class'] ).title)==pN )
+			if( (itm.properties[i].title || itemById( dta.propertyClasses, itm.properties[i]['class'] ).title)==pN )
 				return itm.properties[i].value
 		}
 	};
@@ -3274,7 +3317,7 @@ function classifyProps( el, data ) {
 		// add the properties in sequence of the propertyClass identifiers:
 		pCs.forEach( function(pCid) {
 			p = itemBy( i.properties, 'class', pCid )
-				|| initPropR(dta.propertyClasses,pCid);
+				|| createPropR(dta.propertyClasses,pCid);
 			if( p ) nL.push( p )
 		});
 //		console.debug('normalizeProps result',nL);
