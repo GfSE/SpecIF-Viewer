@@ -930,7 +930,7 @@ function noCode( s ) {
 }
 
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
-if (! Array.isArray) {
+if (!Array.isArray) {
     Array.isArray = function(obj) {
         return Object.prototype.toString.call(obj) === "[object Array]"
     }
@@ -941,6 +941,7 @@ if (!Number.isInteger) {
 		return typeof(val)==='number' && isFinite(val) && Math.floor(val) === val
 	}
 };
+// function float2int(val) { return parseInt(val) };
 
 function attachment2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
@@ -962,7 +963,6 @@ function image2mediaType( fname ) {
 	return
 }
 
-function float2int(val) { return parseInt(val) };
 function localDateTime(iso) {
 	if( !iso ) return '';
 	// ToDo: calculate offset of time-zone ... or use one of the libraries ..

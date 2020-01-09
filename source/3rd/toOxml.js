@@ -47,13 +47,12 @@ function toOxml( data, opts ) {
 	// Create a local list of images, which can be used in OXML:
 	// - Take any raster image right away,
 	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
+	// - Otherwise transform SVG to PNG, as MS Word does not (yet) support SVG.
 	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
-	// ToDo: Transform SVG to PNG, if not present.
-	var DOMURL = window.URL || window.webkitURL || window,
-		images = [],
+	var images = [],
 		pend = 0;		// the number of pending operations
 
-//	console.debug('files',data.files);
+	// Select and/or transform files according to the needs of MS Office:
 	if( data.files && data.files.length>0 )
 		data.files.forEach( function(f,i,L) {
 			if( !f.blob ) {
@@ -76,8 +75,8 @@ function toOxml( data, opts ) {
 					}
 				pend++;
 				let img = new Image();   
-				$(img).on('load', storeR );
-			//	img.addEventListener('load', storeR, false ); // 'loadend' does not work in Chrome
+			//	$(img).on('load', storeR );
+				img.addEventListener('load', storeR, false ); // 'loadend' does not work in Chrome
 				const reader = new FileReader();
 				reader.addEventListener('loadend', function(e) {
 					img.src = e.target.result
@@ -99,7 +98,7 @@ function toOxml( data, opts ) {
 				};
 				// else, transform SVG to PNG:
 					function storeV(){
-	//					console.debug('vector',pend);
+//						console.debug('vector',pend);
 						can.width = img.width;
 						can.height = img.height;
 						ctx.drawImage( img, 0, 0 );
@@ -114,12 +113,14 @@ function toOxml( data, opts ) {
 				let can = document.createElement('canvas'), // Not shown on page
 					ctx = can.getContext('2d'),
 					img = new Image();                      // Not shown on page
-				$(img).on('load', storeV );
-			//	img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
+			//	$(img).on('load', storeV );
+				img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
 
-				blob2text(f,function(svg,fTi,fTy) {
-					img.src = 'data:image/svg+xml,' + encodeURIComponent( svg );
+				const reader = new FileReader();
+				reader.addEventListener('loadend', function(e) {
+					img.src = 'data:image/svg+xml,' + encodeURIComponent( e.target.result );
 				});
+				reader.readAsText(f.blob);
 
 				console.info("File '"+f.title+"' transformed to PNG and made available as Base64");
 				return
@@ -131,12 +132,6 @@ function toOxml( data, opts ) {
 		createOxml();
 	return;
 
-	function blob2text(f,fn) {
-		const reader = new FileReader();
-		reader.addEventListener('loadend', function(e) { fn(e.target.result,f.title,f.type) });
-		reader.readAsText(f.blob)
-	} 
-	
 // -----------------------
 	function createOxml() {
 		// create the file content as OXML:
@@ -1067,7 +1062,7 @@ function toOxml( data, opts ) {
 
 //				console.debug('wPict',ct,img,h,w);
 				return	'<w:pict>'
-					// we need to specify both width and height; WORD is not assuming the native aspect ratio:
+					// specify both width and height; WORD is not assuming the native aspect ratio:
 					+		'<v:shape style="width:'+w+'mm;height:'+h+'mm">'
 					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+ct.picture.title+'"/>'
 					+		'</v:shape>'
@@ -1077,7 +1072,7 @@ function toOxml( data, opts ) {
 					// Add the image to the relationships and return it's index:
 					// check, if available:
 					let n = indexBy( oxml.relations, 'id', p.id );
-					// skip when found to avoid duplicate entries:
+					// avoid duplicate entries:
 					if( n<0 ) {
 						// New entry:
 						// Next to images, oxml.relations are pointing to other resources:
@@ -2435,9 +2430,9 @@ function toOxml( data, opts ) {
 	function nameOf( str ) {
 		return str.substring( 0, str.lastIndexOf('.') )
 	}
-	function extOf( s ) {
+	function extOf( str ) {
 		// get the file extension without the '.':
-		return s.substring( s.lastIndexOf('.')+1 )
+		return str.substring( str.lastIndexOf('.')+1 )
 	}
 	function getPrp( pnm, str ) {
 		// get the value of XHTML property 'pnm':
