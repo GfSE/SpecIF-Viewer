@@ -628,17 +628,18 @@ String.prototype.linkifyURLs = function() {
 		})
 };	
 
-	String.prototype.fileExt = function() {
-		// return the file extension without the '.':
-		return this.substring( this.lastIndexOf('.')+1 )
-//		let e = RE.FileExt.exec(this);    // extension excluding '.'
-//		if( e==null ) return null;
-//		return e[1]
-	};
+String.prototype.fileExt = function() {
+	// return the file extension without the '.':
+	return this.substring( this.lastIndexOf('.')+1 )
+//	let e = RE.FileExt.exec(this);    // extension excluding '.'
+//	if( e==null ) return null;
+//	return e[1]
+};
 String.prototype.fileName = function() {
-	let e = RE.FileName.exec(this);  // name excluding '.'
-	if( e==null ) return null;
-	return e[1]
+	return this.substring( 0, this.lastIndexOf('.') )
+//	let e = RE.FileName.exec(this);  // name excluding '.'
+//	if( e==null ) return null;
+//	return e[1]
 };
 String.prototype.isTrue = function() {
 	return CONFIG.valuesTrue.indexOf( this.toLowerCase().trim() )>-1

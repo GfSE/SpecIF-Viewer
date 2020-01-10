@@ -89,7 +89,7 @@ function toXhtml( data, opts ) {
 								// all images have been converted, continue processing:
 								opts.callback( createXHTML() )
 							}
-						}, 'image/png' );
+						}, 'image/png' )
 					}				
 				pend++;
 				let can = document.createElement('canvas'), // Not shown on page
@@ -339,7 +339,7 @@ function toXhtml( data, opts ) {
 				function addEpubPath( u ) {
 					// Unfortunately some (or even most) ePub-Readers do not support subfolders for images,
 					// so we need to generate a GUID and to store all files in a single folder.
-					return '../'+opts.epubImgPath+u
+					return '../'+opts.epubImgPath+'F-'+u.simpleHash()
 //					return '../'+opts.epubImgPath+withoutPath( u )
 				}
 				function pushReferencedFile( f ) {
@@ -347,7 +347,8 @@ function toXhtml( data, opts ) {
 					if( indexBy( xhtml.images, 'title', f.title )<0 ) {
 						if( f.blob ) {
 							xhtml.images.push({
-								id: f.id,					
+								id: 'F-'+f.title.simpleHash(),
+						//		id: f.id,
 						//		title: f.title,  // is the distinguishing/relative part of the URL
 								blob: f.blob,
 								type: f.type
@@ -445,12 +446,10 @@ function toXhtml( data, opts ) {
 
 						// if the type is svg and if png is preferred and available, replace it:
 						if( ( ti.indexOf('svg')>-1 ) && opts.preferPng )
-							var fi = itemBy( images, 'title', fileName(ti)+'.png' )
-						else
-							var fi = itemBy( images, 'title', ti );
+							ti = fileName(ti)+'.png';
 						
-						pushReferencedFile( fi );
-						return '<img src="'+addEpubPath(fi.id)+'" style="max-width:100%" alt="'+alt+'" />'
+						pushReferencedFile( itemBy( images, 'title', ti ) );
+						return '<img src="'+addEpubPath(ti)+'" style="max-width:100%" alt="'+alt+'" />'
 					};
 					// as a last resort, just show the description:
 					return '<span>'+alt+'</span>'  

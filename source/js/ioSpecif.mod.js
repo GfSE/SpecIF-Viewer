@@ -31,22 +31,22 @@ modules.construct({
 		// 'specif' is a plain text file with specif data.
 //		console.debug('iospecif.verify',f);
 
-		if( f.name.endsWith('.specif')) {
+		if( f.name.endsWith('.specif') ) {
 			zipped = false;
 //			template = false;
 			return f
 		};
-		if( f.name.endsWith('.specifz')) {
+		if( f.name.endsWith('.specifz') || f.name.endsWith('.zip') ) {
 			zipped = true;
 //			template = false;
 			return f
 		};
-/*		if( f.name.endsWith('.specift')) {
+/*		if( f.name.endsWith('.specift') ) {
 			zipped = false;
 			template = true;
 			return f
 		};
-		if( f.name.endsWith('.speciftz')) {
+		if( f.name.endsWith('.speciftz') ) {
 			zipped = true;
 			template = true;
 			return f

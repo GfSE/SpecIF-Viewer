@@ -499,9 +499,9 @@ var RE = {};
 
 	// allowed are extensions with 3 or 4 alpha characters 
 	//                        OR an extension with 2 alpha characters plus '~' (this is used for inactive Compart filter profiles):
-	RE.FileExt = /\.([a-z]{3,7}|[a-z]{2}\~)$/i;
+//	RE.FileExt = /\.([a-z]{3,7}|[a-z]{2}\~)$/i;
 //	RE.FileName = /^([\ a-z0-9_\.\-\(\)\/\\]+)\.[a-z]{2,4}$/i;  // name excluding '.'    
-	RE.FileName = /^([a-z0-9\u00e4\u00f6\u00fc\u00df\u00e0\u00e2\u00e7\u00e8\u00e9\u00ea\u00f4_\s\.\-\(\)\[\]\%\/\\]+)\.([a-z]{3,7}|[a-z]{2}\~)$/i;  // name excluding '.'
+//	RE.FileName = new RegExp( '^([a-z0-9'+chars_de+chars_fr+'_\s\.\,\-\(\)\[\]\%\/\\]+)\.([a-z]{3,7}|[a-z]{2}\~)$', 'i');  // name excluding '.'
 
 	// Various datatypes:
 	RE.IsoDate = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;	
