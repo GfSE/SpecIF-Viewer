@@ -103,7 +103,8 @@ function BPMN2Specif( xmlString, opts ) {
 		changedAt: opts.fileDate
 	}];
 
-	const apx = simpleHash(model.id),
+	const nbsp = '&#160;', // non-breakable space
+		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
 		hId = 'BPMN-outline-' + apx,
 		diagRef = "<object data=\""+opts.fileName+"\" type=\"application/bpmn+xml\" >"+opts.fileName+"</object>";
@@ -139,16 +140,20 @@ function BPMN2Specif( xmlString, opts ) {
 		let tag = el.tagName.split(':').pop();	// tag without namespace
 		// 3.1 The documentation of the collaboration (model):
 		if (el.nodeName.includes("documentation")) {
-			let diag = itemById(model.resources,diagramId);
-			if( diag 
-				&& el.innerHTML.length>0 && el.innerHTML.length<opts.descriptionLength ) 
+			let diag = itemBy(model.resources,'id',diagramId);
+			if( diag && el.innerHTML.length>0 && el.innerHTML.length<opts.descriptionLength ) 
 				diag.properties.push({
 					class: "PC-Description",
 					value: el.innerHTML
+			//		value: '<p>'+ctrl2HTML(el.innerHTML)+'</p>'
 				})
 		};		
 		// 3.2 The participating processes;
-		// we transform the participants with their id, but not the processes:
+		// We transform the participants with their id, but not the processes;
+		// looking at the specs, 
+		// - there is no process without a participant.
+		// - there can be participants without a process.
+		// see: https://www.omg.org/spec/BPMN/2.0/PDF/
 		if (el.nodeName.includes("participant")) {
 			model.resources.push({
 				id: el.getAttribute("id"),
@@ -192,7 +197,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.fileDate
 			});
 			// d. The reading relation (statement):
-			// Todo: Is the signalling characteristic well covered? It is not just reading!
+			// ToDo: Is the signalling characteristic well covered? It is not just reading!
 			model.statements.push({
 				id: el.getAttribute("targetRef")+'-O',
 				title: 'SpecIF:reads',
@@ -207,7 +212,8 @@ function BPMN2Specif( xmlString, opts ) {
 	// For SpecIF, the participant is declared the container for the processes' model-elements ... 
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
-	let idx, title, id;
+	let idx, title, id,
+		consolidatedElements = [];
 	x = Array.from(xmlDoc.querySelectorAll("process"));
 	x.forEach( function(pr) {
 		// here, we look at a process:
@@ -219,8 +225,22 @@ function BPMN2Specif( xmlString, opts ) {
 		let ctL = [],	// temporary list for containment relations between lanes and model-elements
 			gwL = [],	// temporary list for gateways needing some special attention later
 			tag, desc, cId, seqF;
-		// 4.1 First pass to get the lanes, which do not necessarily come first:
+
+		// 4.1 First pass to get the lanes, which do not necessarily come first,
+		//     and the dataStores/dataObjects, so that the input- and outputAssociations can be added in the next pass:
 		Array.from(pr.childNodes).forEach( function(el) {
+			// quit, if the child node does not have a tag, e.g. if it is '#text':
+			if( !el.tagName ) return;
+			// else:
+			id = el.getAttribute("id");
+			title = el.getAttribute("name");
+			desc = '';
+			Array.from(el.childNodes).forEach( function(el2) {
+				if( el2.tagName && el2.tagName.split(':').pop() == 'documentation' 
+					&& el2.innerHTML.length>0 && el2.innerHTML.length<opts.descriptionLength ) 
+						desc = el2.innerHTML
+				//		desc = '<p>'+ctrl2HTML(el2.innerHTML)+'</p>'
+			});
 			tag = el.nodeName.split(':').pop();	// tag without namespace
 //			console.debug('#1',tag);
 			switch(tag) {
@@ -286,11 +306,129 @@ function BPMN2Specif( xmlString, opts ) {
 								})
 							}
 						}
-					})
+					});
+					break;
+				case 'dataObjectReference':
+				case 'dataStoreReference':
+					// Store the model-element as FMC:State,
+					// Interestingly enough, the name and other information are properties of xxxReference.
+					// - Which id to use, the dataObjectReference's or the dataObject's ?
+					// - We decide to use the former, as the associations use it.
+					// - Even though we use 'dataObject' or 'dataStore' as SubClass.
+					// Since it is quite possible that there are multiple elememts with the same title,
+					// we consolidate them, here. 
+					// The first to provide a description will prevail.
+					let rI = indexBy( model.resources, 'title', title ),
+						res = {
+							id: id,
+							title: title || tag,
+							class: "RC-State",
+							properties: [{
+								class: "PC-Name",
+								value: title || tag
+							}, {
+								class: "PC-Type",
+								value: 'BPMN:'+( tag=='dataStoreReference'? 'dataStore' : 'dataObject' )
+							}],
+							changedAt: opts.fileDate
+						};
+					// add a property, if there is content:
+					if( desc ) 
+						res.properties.push({
+							class: "PC-Description",
+							value: desc
+						});
+					// Don't add a second element with the same name.
+					// But the first one with description prevails:
+					if( rI>-1 ) {
+						let dI = indexBy( model.resources[rI].properties, 'class', "PC-Description" );
+						if( dI<0 && desc ) 
+							// replace the previously stored element and add the replaced to consolidatedElements:
+							consolidatedElements.push( model.resources.splice( rI, 1, res )[0] )
+						else
+							// keep the already stored data element but remember the consolidated one:
+							consolidatedElements.push( res )
+					} else {
+						model.resources.push( res )
+					};
+					break;
+				case 'dataObject':
+				case 'dataStore':
+					// nothing
+					break;
 				// skip all other tags for now.
 			}
 		});
+//		console.debug( 'consolidatedElements', consolidatedElements );
 		// 4.2 Second pass to collect the model-elements:
+			function storeAccessAssociations(el) {
+				Array.from(el.childNodes).forEach( function(ch) {
+					if( !ch.tagName ) return;
+					if( ch.tagName.includes('dataInputAssociation') ) {
+						// find sourceRef:
+						Array.from(ch.childNodes).forEach( function(ref) {
+//							console.debug('dataInputAssociation.childNode',ref);
+							if( !ref.tagName ) return;
+							if( opts.isIE ) {
+								console.warn('Omitting Read-statement with subject '+id+', because IE cannot read the object reference.')
+								return
+							};
+							// ToDo: Get it going with IE
+							if( ref.tagName.includes('sourceRef') ) {
+								let dSId = ref.innerHTML,  // does not work in IE, not even IE11
+									dS = itemBy(model.resources,'id',dSId) || itemBy(consolidatedElements,'id',dSId);
+								if( dS && dS.title ) {
+									// find the stored data element by title:
+									let rDS = itemBy(model.resources,'title',dS.title);
+									// store reading association:
+									model.statements.push({
+										id: id+'-reads-'+rDS.id,
+										title: 'SpecIF:reads',
+										class: 'SC-reads',
+										subject: id,
+										object: rDS.id,
+										changedAt: opts.fileDate
+									})
+								} else {
+									console.error("Did not find a dataStore or dataObject with id '"+dSId+"' or it has no title.")
+								}
+							}
+						});
+						return
+					};
+					if( ch.tagName.includes('dataOutputAssociation') ) {
+						// find targetRef:
+						Array.from(ch.childNodes).forEach( function(ref) {
+//							console.debug('dataOutputAssociation.childNode',ref);
+							if( !ref.tagName ) return;
+							if( opts.isIE ) {
+								console.warn('Omitting Write-statement with subject '+id+', because IE cannot read the object reference.')
+								return
+							};
+							// ToDo: Get it going with IE
+							if( ref.tagName.includes('targetRef') ) {
+								let dSId = ref.innerHTML,  // does not work in IE, not even IE11
+									dS = itemBy(model.resources,'id',dSId) || itemBy(consolidatedElements,'id',dSId);
+								if( dS && dS.title ) {
+									// find the stored data element by title:
+									let rDS = itemBy(model.resources,'title',dS.title);
+									// store writing association:
+									model.statements.push({
+										id: id+'-writes-'+rDS.id,
+										title: 'SpecIF:writes',
+										class: 'SC-writes',
+										subject: id,
+										object: rDS.id,
+										changedAt: opts.fileDate
+									})
+								} else {
+									console.error("Did not find a dataStore or dataObject with id '"+dSId+"' or it has no title.")
+								}
+							}
+						})
+					}
+				})
+			};
 		Array.from(pr.childNodes).forEach( function(el) {
 			// quit, if the child node does not have a tag, e.g. if it is '#text':
 			if( !el.tagName ) return;
@@ -302,6 +440,7 @@ function BPMN2Specif( xmlString, opts ) {
 				if( el2.tagName && el2.tagName.split(':').pop() == 'documentation' 
 					&& el2.innerHTML.length>0 && el2.innerHTML.length<opts.descriptionLength ) 
 						desc = el2.innerHTML
+				//		desc = '<p>'+ctrl2HTML(el2.innerHTML)+'</p>'
 			});
 			tag = el.tagName.split(':').pop();	// tag without namespace
 //			console.debug('#2',el,tag,id,title,desc);
@@ -309,6 +448,10 @@ function BPMN2Specif( xmlString, opts ) {
 				gw;
 			switch(tag) {
 				case 'laneSet':
+				case 'dataObjectReference':
+				case 'dataStoreReference':
+				case 'dataObject':
+				case 'dataStore':
 					// has been analyzed, before
 				case 'sequenceFlow':
 				case 'association':
@@ -343,92 +486,8 @@ function BPMN2Specif( xmlString, opts ) {
 							value: desc
 						});
 					// store the read/write associations:
-					Array.from(el.childNodes).forEach( function(ch) {
-						if( !ch.tagName ) return;
-						if( ch.tagName.includes('dataInputAssociation') ) {
-							// find sourceRef:
-							Array.from(ch.childNodes).forEach( function(ref) {
-//								console.debug('dataInputAssociation.childNode',ref);
-								if( !ref.tagName ) return;
-								if( opts.isIE ) {
-									console.warn('Omitting Read-statement with subject '+id+', because IE cannot read the object reference.')
-									return
-								};
-								// ToDo: Get it going with IE
-								if( ref.tagName.includes('sourceRef') ) {
-									let dS = ref.innerHTML;	 // does not work in IE, not even IE11
-//									console.debug('#',ref,ref.tagName,dS);
-									// store reading association:
-									model.statements.push({
-										id: id+'-reads-'+dS,
-										title: 'SpecIF:reads',
-										class: 'SC-reads',
-										subject: id,
-										object: dS,
-										changedAt: opts.fileDate
-									})
-								}
-							});
-							return
-						};
-						if( ch.tagName.includes('dataOutputAssociation') ) {
-							// find targetRef:
-							Array.from(ch.childNodes).forEach( function(ref) {
-//								console.debug('dataOutputAssociation.childNode',ref);
-								if( !ref.tagName ) return;
-								if( opts.isIE ) {
-									console.warn('Omitting Write-statement with subject '+id+', because IE cannot read the object reference.')
-									return
-								};
-								// ToDo: Get it going with IE
-								if( ref.tagName.includes('targetRef') ) {
-									let dS = ref.innerHTML;  // does not work in IE, not even IE11
-									// store writing association:
-									model.statements.push({
-										id: id+'-writes-'+dS,
-										title: 'SpecIF:writes',
-										class: 'SC-writes',
-										subject: id,
-										object: dS,
-										changedAt: opts.fileDate
-									})
-								}
-							})
-						}
-					});
+					storeAccessAssociations(el);
 					addContainment = true;
-					break;
-				case 'dataObjectReference':
-				case 'dataStoreReference':
-					// Store the model-element as FMC:State,
-					// Interestingly enough, the name and other information are properties of xxxReference.
-					// - Which id to use, the dataObjectReference's or the dataObject's ?
-					// - We decide to use the former, as the associations use it.
-					// - Even though we use 'dataObject' or 'dataStore' as SubClass.
-					model.resources.push({
-						id: id,
-						title: title || tag,
-						class: "RC-State",
-						properties: [{
-							class: "PC-Name",
-							value: title || tag
-						}, {
-							class: "PC-Type",
-							value: 'BPMN:'+( tag=='dataStoreReference'? 'dataStore' : 'dataObject' )
-						}],
-						changedAt: opts.fileDate
-					});
-					// only add a property, if there is content:
-					if( desc ) 
-						model.resources[model.resources.length-1].properties.splice(1,0,{
-							class: "PC-Description",
-							value: desc
-						});
-				//	addContainment = true;
-					break;
-				case 'dataObject':
-				case 'dataStore':
-					// nothing
 					break;
 				case 'startEvent':
 				case 'intermediateThrowEvent':
@@ -455,6 +514,8 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "PC-Description",
 							value: desc
 						});
+					// store the read/write associations:
+					storeAccessAssociations(el);
 					addContainment = true;
 					break;
 				case 'parallelGateway':
@@ -583,11 +644,11 @@ function BPMN2Specif( xmlString, opts ) {
 					// In case of a forking exclusive or inclusive gateway, every outgoing connection is transformed
 					// to an event with a signal and trigger relation,
 					// but only, if the sequenceFlow's title is defined:
-					let feG = itemById(gwL,el.getAttribute('sourceRef'));
+					let feG = itemBy(gwL,'id',el.getAttribute('sourceRef'));
 					if( feG && title ) {
 						seqF = {
 							subject: feG,
-							object:  itemById(model.resources,el.getAttribute('targetRef'))
+							object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
 						};
 						// a. store an event representing the case:
 						let ev = {
@@ -632,8 +693,8 @@ function BPMN2Specif( xmlString, opts ) {
 					};
 					// else:
 					seqF = {
-						subject: itemById(model.resources,el.getAttribute('sourceRef')),
-						object:  itemById(model.resources,el.getAttribute('targetRef'))
+						subject: itemBy(model.resources,'id',el.getAttribute('sourceRef')),
+						object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
 					};
 //					console.debug('seqF',seqF);
 					// none or one of the following conditions is true, so we can return right away:
@@ -710,6 +771,15 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 	
 	// 6. Select all associations of textAnnotations:
+		function findStoredElementId( id ) {
+			let sEl = itemBy(model.resources,'id',id) || itemBy(consolidatedElements,'id',id);
+			if( sEl && sEl.title ) {
+				// find the stored data element by title and return it's id:
+				return itemBy(model.resources,'title',sEl.title).id;
+			} else {
+				console.error("Did not find an element with id '"+id+"' or it has no title.")
+			}
+		}
 	x = Array.from(xmlDoc.querySelectorAll("association"));
 	x.forEach( function(asc) {
 //		console.debug('asc',asc);
@@ -718,8 +788,8 @@ function BPMN2Specif( xmlString, opts ) {
 			id: id,
 			title: "SpecIF:refersTo",
 			class: "SC-refersTo",
-			subject: asc.getAttribute('targetRef'),
-			object: asc.getAttribute('sourceRef'),
+			subject: findStoredElementId( asc.getAttribute('targetRef') ),
+			object: findStoredElementId( asc.getAttribute('sourceRef') ),
 			changedAt: opts.fileDate
 		});
 	});
@@ -831,7 +901,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-	console.debug('model',model);
+//	console.debug('model',model);
 	return model;
 	
 // =======================================
@@ -1094,17 +1164,32 @@ function BPMN2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate
 		}]
 	}
-	function itemById(L,id) {
-		// given the ID of an element in a list, return the element itself:
-		id = id.trim();
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].id === id ) return L[i];   // return list item
-		return null
+	
+// =======================================
+// some helper functions:	
+
+	function itemBy( L, p, s ) {
+		if( L && p && s ) {
+			// given the ID of an element in a list, return the element itself:
+		//	s = s.trim();
+			for( var i=L.length-1;i>-1;i-- )
+				if( L[i][p]==s ) return L[i]   // return list item
+		};
+		return
+	}
+	function indexBy( L, p, s ) {
+		if( L && p && s ) {
+			// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
+			// hand in property and searchTerm as string !
+			for( var i=L.length-1;i>-1;i-- )
+				if( L[i][p]==s ) return i
+		};
+		return -1
 	}
 	function ctrl2HTML(str) {
 		// Convert js/json control characters (new line) to HTML-tags and remove the others:
 		if( typeof( str )!='string' ) str = '';
-		return str.replace( /\r|\f/g, '' ).replace( /\t/g, ' ' ).replace( /\n/g, '<br />' )
+		return str.replace( /\r|\f/g, '' ).replace( /\t/g, nbsp ).replace( /\n/g, '<br />' )
 	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/

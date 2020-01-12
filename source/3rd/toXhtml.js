@@ -72,7 +72,7 @@ function toXhtml( data, opts ) {
 				};
 				let pngN = nameOf(f.title)+'.png';
 				// check whether there is already a PNG version of this image:
-				if( itemByTitle( L, pngN ) ) {
+				if( itemBy( L, 'title', pngN ) ) {
 					console.info("File '"+f.title+"' has a sibling of type PNG");
 					// The PNG file has been added to images, before.
 					return

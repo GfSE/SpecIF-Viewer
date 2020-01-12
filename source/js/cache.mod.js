@@ -422,26 +422,31 @@ function Project( pr ) {
 		// Substitute resource n by r in all references of n,
 		// where r is always an element of self.data.
 		// But: Rescue any property of n, if undefined for r.
+//		console.debug('substituteR',r,n);
 		
 		if( opts && opts.rescueProperties ) {
 			// 1 Rescue property values, 
 			// if the corresponding property of the adopted resource is undefined or empty.
 			// 1.1 Looking at the property types, which ones are in common:
 			n.properties.forEach( function(nP) { 
-				if( nP.value ) {
+				if( hasContent(nP.value) ) {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
 					let pT = propTitleOf(prj,nP),
 						rP = propByTitle(self.data,r,pT);
-					if( !valByTitle( self.data, r, pT ) 
+//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( self.data, r, pT )));
+//					console.debug('substituteR 3b',dataTypeOf(self.data,rP['class']),dataTypeOf(prj,nP['class']),classIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ));
+					if( !hasContent(valByTitle( self.data, r, pT )) 
 						// dataTypes must be compatible:
-						&& classIsCompatible( dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ) ) {
-						rP.value = nP.value
+						&& classIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ) ) {
+							rP.value = nP.value
 					}
 				}
 			})
 		};
+		// In the rare case that the ids are identical, there is no need to update the references:
+		if( r.id==n.id ) return;
 		
 		// 2 Replace the references in all statements:
 		prj.statements.forEach( function(st) {
@@ -541,13 +546,14 @@ function Project( pr ) {
 				// but exclude process gateways and generated events for optional branches: 
 				nR = dta.resources[n];
 				rR = dta.resources[r];
+//				console.debug( 'duplicate resource ?', rR, nR );
 				if( CONFIG.modelElementClasses.indexOf( classTitleOf(dta,rR) )>-1 
 					&& eqR(dta,rR,nR) 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
 				) {
 					// Are equal, so remove the duplicate resource:
-//					console.debug( 'deduplicate resource', rR, nR, valByTitle( dta, nR, CONFIG.propClassType ) );
+//					console.debug( 'duplicate resource', rR, nR, valByTitle( dta, nR, CONFIG.propClassType ) );
 					substituteR(dta,rR,nR,{rescueProperties:true});
 					dta.resources.splice(n,1); 
 					// skip the remaining iterations of the inner loop:
@@ -938,7 +944,7 @@ function Project( pr ) {
 						// If there is an instance with the same title ... and if the types match;
 						// the class title reflects the role of it's instances ...
 						// and is less restrictive than the class ID:
-//						console.debug('~1',itm,exs,itm['class'],exs?exs['class']:'');
+//						console.debug('~1',itm,exs?exs:'');
 						if( exs 
 							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, exs, CONFIG.propClassType ))<0 
 							&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
@@ -946,9 +952,8 @@ function Project( pr ) {
 						) {
 //							console.debug('~2',exs,itm);
 							// There is an item with the same title and type,
-							// adopt it and update all references, if ids are different:
-							if( exs.id!=itm.id )  // equal ids are quite improbable, but still
-								substituteR( nD, exs, itm, {rescueProperties:true} );
+							// adopt it and update all references:
+							substituteR( nD, exs, itm, {rescueProperties:true} );
 							
 							// ToDo: If the adopting resources has property values,
 							// where the existing does not have, take it along:
