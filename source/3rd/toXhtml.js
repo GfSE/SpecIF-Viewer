@@ -119,6 +119,17 @@ function toXhtml( data, opts ) {
 // -----------------------
 	function createXHTML() {
 		// All required parameters are available, so we can begin.
+
+		// A single comprehensive <object .../> or tag pair <object ...>..</object>.
+		// Limitation: the innerHTML may not have any tags.
+		// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
+		let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+			reSingleObject = new RegExp( reSO, 'g' );
+		// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
+		// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
+		let reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+			reNestedObjects = new RegExp( reNO, 'g' );
+
 		var xhtml = {
 				headings: [],		// used to build the ePub table of contents
 				sections: [],		// the xhtml files for the title and each chapter=section
@@ -362,8 +373,8 @@ function toXhtml( data, opts ) {
 			// Prepare a file reference for viewing and editing:
 //			console.debug('fileRef 0: ', txt);
 				
-		/*	// 1. transform two nested objects to link+object resp. link+image:
-			//    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
+			// 1. Transform two nested objects to link+object resp. link+image:
+			// a) Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
 			//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
 			//		Sample data from french branch of a japanese car OEM:
 			//			<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.ole\" type=\"text/rtf\">
@@ -379,7 +390,11 @@ function toXhtml( data, opts ) {
 			//					This text is shown if alternative image can't be shown
 			//				</xhtml:object>
 			//			</xhtml:object>
-			txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[\s\S]*?<\/object>/g,   
+			// b) But there is also the case where the outer object is a link and the inner object is an image:
+			//          <object data=\"https://adesso.de\" ><object data=\"files_and_images/Logo-adesso.png\" type=\"image/png\" />Project Information</object>
+
+		//	txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[\s\S]*?<\/object>/g,   
+			txt = txt.replace( reNestedObjects,   
 				function( $0, $1, $2, $3, $4 ) {        // description is $4
 					let u1 = getUrl( $1 ),  			// the primary information
 //						t1 = getType( $1 ), 
@@ -396,12 +411,12 @@ function toXhtml( data, opts ) {
 					return findBestFile( u2, e, d )
 				}
 			);
-//			console.debug('fileRef 1: ', txt);  */
+//			console.debug('fileRef 1: ', txt);  
 				
-			// 2. transform a single object to link+object resp. link+image:
+			// 2. Transform a single object to link+object resp. link+image:
 			//      For example, the ARCWAY Cockpit export uses this pattern:
 			//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
-			txt = txt.replace( /<object([^>]+)(\/>|>([\s\S]*?)<\/object>)/g,   //  comprehensive tag or tag pair
+			txt = txt.replace( reSingleObject,   //  comprehensive tag or tag pair
 				function( $0, $1, $2, $3 ){ 
 					let u1 = getUrl( $1 ), 
 				//		s1 = getStyle( $1 ), 

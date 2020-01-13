@@ -517,8 +517,8 @@ var RE = {};
 //	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z]+$', '');  // works: escape the \ in js strings!
 	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values	
 
-//	Regexes to identify XHTML tags for objects and links:
-//    Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
+// Regexes to identify XHTML tags for objects and links:
+// a) Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
 //    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
 //		Sample data from french branch of a japanese car OEM:
 //			<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.ole\" type=\"text/rtf\">
@@ -537,6 +537,11 @@ var RE = {};
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\">27420ffc0000c3a8013ab527ca1b71f5.svg</object>
+// b) But there is also the case where the outer object is a link and the inner object is an image:
+//          <object data=\"https://adesso.de\" ><object data=\"files_and_images/Logo-adesso.png\" type=\"image/png\" />Project Information</object>
+// c) A single object to link+object resp. link+image:
+//      For example, the ARCWAY Cockpit export uses this pattern:
+//			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 	RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
 	RE.tagImg = new RegExp( '<img([^>]+)(/>|>([^<]*?)</img>)', 'g' );
 	let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
