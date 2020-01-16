@@ -370,7 +370,8 @@ function BPMN2Specif( xmlString, opts ) {
 //							console.debug('dataInputAssociation.childNode',ref);
 							if( !ref.tagName ) return;
 							if( opts.isIE ) {
-								console.warn('Omitting Read-statement with subject '+id+', because IE cannot read the object reference.')
+								console.warn('Omitting dataInputAssociation with id '+ch.getAttribute("id")
+											+', because IE cannot read the object reference.');
 								return
 							};
 							// ToDo: Get it going with IE
@@ -382,7 +383,7 @@ function BPMN2Specif( xmlString, opts ) {
 									let rDS = itemBy(model.resources,'title',dS.title);
 									// store reading association:
 									model.statements.push({
-										id: id+'-reads-'+rDS.id,
+										id: ch.getAttribute("id"),
 										title: 'SpecIF:reads',
 										class: 'SC-reads',
 										subject: id,
@@ -402,7 +403,8 @@ function BPMN2Specif( xmlString, opts ) {
 //							console.debug('dataOutputAssociation.childNode',ref);
 							if( !ref.tagName ) return;
 							if( opts.isIE ) {
-								console.warn('Omitting Write-statement with subject '+id+', because IE cannot read the object reference.')
+								console.warn('Omitting dataOutputAssociation with id '+ch.getAttribute("id")
+											+', because IE cannot read the object reference.');
 								return
 							};
 							// ToDo: Get it going with IE
@@ -414,7 +416,7 @@ function BPMN2Specif( xmlString, opts ) {
 									let rDS = itemBy(model.resources,'title',dS.title);
 									// store writing association:
 									model.statements.push({
-										id: id+'-writes-'+rDS.id,
+										id: ch.getAttribute("id"),
 										title: 'SpecIF:writes',
 										class: 'SC-writes',
 										subject: id,
@@ -901,7 +903,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-//	console.debug('model',model);
+	console.debug('model',model);
 	return model;
 	
 // =======================================
@@ -1153,7 +1155,7 @@ function BPMN2Specif( xmlString, opts ) {
 				value: opts.strEventFolder
 			}],
 			changedAt: opts.fileDate
-		}, {
+	/*	}, {
 			id: "FolderNte-" + apx,
 			class: "RC-Folder",
 			title: opts.strAnnotationFolder,
@@ -1161,7 +1163,7 @@ function BPMN2Specif( xmlString, opts ) {
 				class: "PC-Name",
 				value: opts.strAnnotationFolder
 			}],
-			changedAt: opts.fileDate
+			changedAt: opts.fileDate */
 		}]
 	}
 	
