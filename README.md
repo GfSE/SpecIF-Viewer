@@ -14,7 +14,7 @@ An app for your web-browser to view and transform specifications.
 - Export 'specifz' file
 - Export 'reqif' file
 - Export 'ePub' file
-- Export MS-Word OOXML file (experimental)
+- Export MS-Word OOXML file
 
 ## Demonstration
 The app has been installed for demonstration
