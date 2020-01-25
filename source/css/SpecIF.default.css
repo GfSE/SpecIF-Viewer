@@ -121,7 +121,7 @@ div.contentWide {
 /* for views with selector on the left: */
 div.content {   /* width is 75% with wide screen, 100% otherwise */
 	clear: both;
-    /*height is set by script*/
+    /* height is set by script */
     box-sizing: border-box;
     width: 100%;
     overflow: auto;
@@ -147,18 +147,16 @@ div.content-other {
 	margin-right: -4px;  
 	vertical-align: top;
     width: 25%;
-    /*height is set by script*/
+    /* height is set by script */
     overflow: hidden;
     box-sizing: border-box;
     padding: 0 8px 0 0;
   }
   div.contentCtrl {
-	margin-right: -4px;  
 	width: 75%;
   }
   div.content {
 	display: inline-block;
-	margin-right: -4px;
 	vertical-align: top;
     width: 75%;
   }

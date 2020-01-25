@@ -367,9 +367,11 @@ function ModuleManager() {
 				case "toEpub": 				loadM( 'zip' );
 											loadM( 'toXhtml' );
 											getScript( vPath+'/js/toEpub.js' ).done( function() {setReady(mod)} ); return true;
+//				case "toOxml": 				import( '/js/toOxml.js' ).then( function() {setReady(mod)} ); return true;
 				case "toOxml": 				getScript( vPath+'/js/toOxml.js' ).done( function() {setReady(mod)} ); return true;
 
 				// libraries:
+				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "config": 				$.getScript( vPath+'/config.js', function() {setReady(mod)} ); return true;   // don't cache
 				case "i18n": 				let langFile = null;
 											switch( browser.language ) {
@@ -560,7 +562,8 @@ function ModuleManager() {
 						return
 					}
 				}
-			})
+			});
+			doResize()
 		};
 		self.hide = function(v) {
 			if( typeof(v)=='string' && self.exists(v) ) {

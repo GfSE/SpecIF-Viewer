@@ -60,7 +60,14 @@ modules.construct({
 			desc:'Business Process',
 			label:'BPMN',
 			help: i18n.MsgImportBpmn
-		},{
+	/*	},{
+			id:'togaf',	
+			name:'ioTogaf',	
+			desc:'The Open Group Architecture Framework',
+			label:'TOGAF®',
+			help: i18n.MsgImportTogaf, 
+			opts: {mediaTypeOf: attachment2mediaType}  */
+		},{ 
 			id:'xls',
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',
@@ -111,6 +118,7 @@ modules.construct({
 
 		self.clear();
 		self.setFormat('specif');
+		importMode = {id:'replace'};
 		// certain GUI elements will only be shown if the user must select a file:
 		showFileSelect = new State({
 			showWhenSet: ['.fileSelect'],
@@ -189,6 +197,7 @@ modules.construct({
 		if( urlP && urlP[CONFIG.keyImport] ) {
 			// Case 1: A file name for import has been specified in the URL:
 //			console.debug('import 1',urlP);
+			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
 			// check the format:
 			self.setFormat( getFormat( urlP[CONFIG.keyImport] ));

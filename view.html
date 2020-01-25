@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>SpecIF View</title>
@@ -21,12 +21,11 @@
 
 <script type="text/javascript">
 
-var prodV = 'v0.95.9';
 function App() {
 	"use strict";
 	// construct main app:
 	var self = this;
-	self.productVersion = prodV;  // needed by modules.init()
+	self.productVersion = 'v0.96.0'; // the name of the subdirectory needs to be changed, accordingly.
 	self.specifVersion = '0.10.8';
 	self.init = function() {
 		// must set it here, because the language files must be read first:
@@ -42,7 +41,7 @@ function App() {
 			hideWhenSet: ['.pageActions','.contentActions']
 		//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
 		});
-		// create the options after loading required libraries such as 'i18n':
+		// Define the module hierarchy; it will be used to load the modules and to control the views later on:
 		let define = {
 			// Define 
 			// - name: the modules to load as specified in 'modules.js'
@@ -50,7 +49,7 @@ function App() {
 			// - the hierarchy of views using implicit actions hide/show or refresh
 			// - the explicit actions independent of any view
 			
-			// Let's start:
+			// Let's start at the top level:
 			// no name, thus no additional script file will be loaded at top level
 			view: '#app',
 			selector: '#pageSelector',		// DOM element to choose the view of a child (top level)
@@ -70,7 +69,7 @@ function App() {
 				viewClass: 'contentWide',		// whole width under control of the view
 				label: i18n.BtnImport,
 				selectedBy: '#selectImport',	// DOM element in parent's selector to choose this view
-				// no selector: this module is itself responsible for managing it's children
+				// no selector: the children don't have views
 				children: [{
 					name: 'ioSpecif'
 					// no view
@@ -134,7 +133,7 @@ function App() {
 				action: 'app.cache.selectedProject.export()',
 				label: i18n.BtnExport,
 				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
-				// no selector: this module is itself responsible for managing it's children
+				// no selector: the children don't have views
 				children: [{
 					name: 'toEpub'
 					// no view
@@ -142,6 +141,12 @@ function App() {
 					name: 'toOxml'
 					// no view
 				}]
+			},{
+				name: 'about',
+				view: '#about',
+				viewClass: 'contentWide',		// whole width under control of the view
+				label: i18n.IcoAbout,
+				selectedBy: '#selectAbout'		// DOM element in parent's selector to choose this view
 			}]
 		};
 
@@ -175,11 +180,11 @@ function App() {
 				self.hide()
 			})
 	};
-	self.hide = function() {
-		// hide the shown module:
-		// ToDo
+/*	self.hide = function() {
+		// hide the app:
+		// ToDo, but so far it is not called and it is not even clear what should happen ;-)
 	};
-/*	self.updateMe = function() {
+	self.updateMe = function() {
 		message.hide();
 		self.hide();
 //		me.beginUpdate()
@@ -192,7 +197,8 @@ function App() {
 };
 app = new App();
 
-// get two libraries in parallel and then start the app:
+// Get two fundamental libraries in parallel, then initialize the module loader using 'modules.init' ..
+// and finally start the app using 'app.init':
 	// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
 	function getScript(url, callback) {
 		var el = document.createElement('script');
@@ -205,7 +211,7 @@ app = new App();
 	}
 let pend=2;
 getScript('https://code.jquery.com/jquery-3.4.1.min.js', start );
-getScript('./'+prodV+'/modules.js', start )
+getScript('./'+app.productVersion+'/modules.js', start )
 
 </script>  
 </body>

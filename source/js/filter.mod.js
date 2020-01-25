@@ -135,7 +135,6 @@ modules.construct({
 		dta = prj.data;
 		pData = self.parent;
 		pData.showLeft.reset();
-		setContentHeight();
 		$('#filterNotice').empty();
 
 		// build filterList from the specTypes when executed for the first time:

@@ -45,7 +45,7 @@ modules.construct({
 		self.selectedProject = self.projects[self.projects.length-1];
 		return self.selectedProject.create( p )
 	};
-/*	// Periodically update the selected project with the current server state in a multi-ussr context:
+/*	// Periodically update the selected project with the current server state in a multi-user context:
 	self.startAutoLoad = function( cb ) {
 //		if( !self.cacheInstances ) return;
 //		console.info( 'startAutoLoad' );
@@ -1785,7 +1785,7 @@ function Project( pr ) {
 												changedAt: f.changedAt
 											})
 										};
-//											console.debug('SVG',svg,L);
+//										console.debug('SVG',svg,L);
 										if( --pend<1 ) 
 											// Now, generate in the desired format:
 											gen();
@@ -2058,7 +2058,6 @@ function Project( pr ) {
 				// A dataType is compatible, if an existing one has the same id and an equal or larger value range.
 				switch( refC.type ) {
 					case 'xs:boolean':	
-					case 'xs:double':	
 					case 'xs:dateTime':
 						return {status:0};
 					case 'xhtml':	
@@ -2350,6 +2349,10 @@ const specif = {
 		// Check the SpecIF data for schema compliance and consistency;
 		// no data of app.cache is modified:
 		var cDO = $.Deferred();
+		if( typeof(data)!='object' ) {
+			cDO.reject( {status:999,statusText:'No SpecIF data o check'} ); 
+			return cDO
+		};
 		// 1. Validate the data using the SpecIF schema:
 		cDO.notify('Checking schema',10);
 
@@ -2625,7 +2628,8 @@ const specif = {
 					dT = itemById( iD.dataTypes, pT.dataType );
 				var oE = {
 					// no id
-					title: vocabulary.property.specif(noCode(iE.title || pT.title))	// an input file may have titles which are not from the SpecIF vocabulary.
+					// an input file may have titles which are not from the SpecIF vocabulary:
+					title: vocabulary.property.specif(noCode(iE.title || pT.title))	
 				};
 				oE['class'] = iE[names.pClass];
 				if( iE.description ) oE.description = noCode(iE.description);
@@ -2640,6 +2644,10 @@ const specif = {
 					case 'xs:enumeration':
 					case 'xs:dateTime':
 						oE.value = noCode(iE.value);
+						break;
+					case 'xhtml':
+					//	oE.value = iE.value.unescapeHTML();  // includes noCode(), works
+						oE.value = iE.value.unescapeHTMLTags();  // includes noCode()
 						break;
 					default:
 						oE.value = noCode(iE.value)

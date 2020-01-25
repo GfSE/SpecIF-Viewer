@@ -77,9 +77,13 @@ function BPMN2Specif( xmlString, opts ) {
 	// Participants are source and/or target for message-flows (not the referenced processes),
 	// so we decide to transform the participants to SpecIF, but not the processes.
 	let x = Array.from(xmlDoc.querySelectorAll("collaboration"));
-	// There should be only one collaboration per BPMN file:
+	// There should be exactly one collaboration per BPMN file:
+	if( x.length<1 ) {
+		console.error("Diagram with id '",model.id,"' has no collaboration.");
+		return
+	};
 	if( x.length>1 )
-		console.warn("Diagram with id ',model.id,' has more than one collaboration.");
+		console.warn("Diagram with id '",model.id,"' has more than one collaboration.");
 //	console.debug('collaboration',x);
 
 	// The project's id and title:
@@ -903,7 +907,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-	console.debug('model',model);
+//	console.debug('model',model);
 	return model;
 	
 // =======================================

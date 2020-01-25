@@ -195,7 +195,6 @@ modules.construct({
 		return true
 	};
 	self.clear = function() {
-		$('#pageTitle').empty();
 		selectResource(null);
 		self.resources.init();
 	//	self.comments.init();
@@ -216,7 +215,6 @@ modules.construct({
 	self.hide = function() {
 //		console.debug( 'specs.hide' );
 	//	self.emptyTab();
-		$( '#'+CONFIG.specifications ).hide();
 		app.busy.reset()
 	}; 
 /*	function handleError(xhr) {
@@ -360,7 +358,7 @@ modules.construct({
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// String.fromCodePoint()
-				name: resTitleOf(r), 
+				name: resTitleOf(r).unescapeHTML(), 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -465,7 +463,6 @@ modules.construct({
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
 //		console.debug('doRefresh',parms);
 
-		setContentHeight();
 		$('#contentNotice').empty();
 	
 		// update the current view:
@@ -824,7 +821,7 @@ modules.construct({
 	};
 	self.hide = function() {
 //		console.debug(CONFIG.objectList, 'hide');
-		$( '#'+CONFIG.objectList ).empty().hide()
+		$( '#'+CONFIG.objectList ).empty()
 	};
 	return self
 });
@@ -1116,7 +1113,7 @@ modules.construct({
 	}; */
 	self.hide = function() {
 //		console.debug(CONFIG.relations, 'hide');
-		$( '#'+CONFIG.relations ).empty().hide()
+		$( '#'+CONFIG.relations ).empty()
 	};
 	return self
 });

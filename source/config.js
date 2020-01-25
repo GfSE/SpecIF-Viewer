@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
 const CONFIG = {};
-	CONFIG.imgURL = './'+prodV+'/images';
+	CONFIG.imgURL = './'+app.productVersion+'/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.loginTimeout = 3000;
@@ -61,11 +61,12 @@ const CONFIG = {};
 	// Keys for the query parameters - if changed, existing links will end up in default view:
 //	CONFIG.keyUId = 'uid';	// userId
 	CONFIG.keyImport = 'import';
+	CONFIG.keyMode = 'mode';
 	CONFIG.keyProject = 'project';	// projectId
 	CONFIG.keyItem = 'item';	
 	CONFIG.keyNode = 'node';	
 	CONFIG.keyView = 'view';	// dialog
-	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
+	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyMode,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
 
 	// Dialog names used as query parameters - if changed, existing links will end up in default view:
 	// Base:
@@ -367,10 +368,10 @@ const vocabulary = {
 			// Target language: SpecIF
 			var oT = '';
 			switch( iT.toSpecifId().toLowerCase() ) {
-	//			case "reqif_chapternumber":			oT = ""; break;
 				case "_berschrift":
 				case "title":
 				case "titel":
+				case "name":
 				case "dc_title":
 				case "specif_heading":			//  'SpecIF:Heading' may be used falsely as property title
 				case "reqif_chaptername": 	
@@ -379,6 +380,7 @@ const vocabulary = {
 				case "beschreibung":
 				case "text":
 				case "dc_description":
+	//			case "reqif_changedescription":
 				case "reqif_description":
 				case "reqif_text":					oT = "dcterms:description"; break;
 				case "reqif_revision":				oT = "SpecIF:Revision"; break;
@@ -390,16 +392,17 @@ const vocabulary = {
 				case "reqif_foreignid":				oT = "dcterms:identifier"; break;
 				case "specif_state":			// deprecated, for compatibility			
 				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
+				case "dc_author":
 				case "dcterms_author":			// deprecated, for compatibility		
 				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
 	//			case "reqif_foreignmodifiedby":		oT = ""; break;
 	//			case "reqif_foreigncreatedon":		oT = ""; break;
 	//			case "reqif_foreigncreatedthru":	oT = ""; break;
-	//			case "reqif_changedescription":		oT = "dcterms:description"; break;
 	//			case "reqif_fitcriteria":			oT = ""; break;
 	//			case "reqif_prefix":				oT = ""; break;
 	//			case "reqif_associatedfiles":		oT = ""; break;
 	//			case "reqif_project":				oT = ""; break;
+	//			case "reqif_chapternumber":			oT = ""; break;
 				default:							oT = iT
 			};
 			return oT
@@ -543,7 +546,7 @@ var RE = {};
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 	RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
-	RE.tagImg = new RegExp( '<img([^>]+)(/>|>([^<]*?)</img>)', 'g' );
+	RE.tagImg = new RegExp( '<img([^>]+)/>', 'g' );
 	let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );

@@ -44,6 +44,7 @@ i18n.IcoFilter = '<span class="glyphicon glyphicon-filter"/>';
 i18n.IcoComment = '<span class="glyphicon glyphicon-comment"/>';
 i18n.IcoURL = '<span class="glyphicon glyphicon-map-marker"/>';
 i18n.IcoLogout = '<span class="glyphicon glyphicon-log-out"/>';
+i18n.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 
 // Buttons:
 //i18n.LblImportReqif = 'ReqIF Import';

@@ -334,11 +334,11 @@ function Message() {
 };
 message = new Message();
 
-function setContentHeight( opt ) {
+function doResize( opt ) {
 	// Resizes DOM-tree elements to fit in the current browser window.
 	// In effect it is assured that correct vertical sliders are shown.
 
-//	console.debug( 'setContentHeight', $('#app').height(), getOuterHeight('#specsHeader') ); 
+//	console.debug( 'doResize', $('#app').height(), getOuterHeight('#specsHeader') ); 
 	
 	// reduce by the padding; it is assumed that only padding-top is set and that it is equal for content and contentWide:
 	// consider that there may be no element of type content or contentWide at a given instant.
@@ -350,16 +350,7 @@ function setContentHeight( opt ) {
 		hH = $('#pageHeader').outerHeight(true)
 			+ $('.nav-tabs').outerHeight(true),
 		pH = wH-hH;
-	//	pH = $('#app').height()-hH, // the remaining space below the header and tabs
-	//	pC = getCssVal($('.content').css("padding-top"))	// the padding of the container for content
-	//		|| getCssVal($('.contentWide').css("padding-top")),	// yields same result in case there is no .content
-	//	pS = getCssVal($('.colLeft').css("padding-top")),
-
-	//	hC = pH+'px',  		// the available height for the content container
-	//	hT = pH-pS-8+'px',	// the available height for the tree
-	//	hF = pH-pS+'px',	// the available height for the filters
-	//	vP = hH+8+'px';
-//	console.debug( 'setContentHeight', hH, pH, vP );
+//	console.debug( 'doResize', hH, pH, vP );
 
 	$('.content').outerHeight( pH );
 	$('.contentWide').outerHeight( pH );
@@ -378,60 +369,62 @@ function setContentHeight( opt ) {
 		return $('#navbar').css("height")
 	} */
 }
-
 function bindResizer() {
 	// correct display in case the window has been resized:
 	$(window).resize(function() {
 //		console.debug('resize'); 
-		setContentHeight();
+		doResize();
 	})
 }
 
 function indexById(L,id) {
-	if(!L||!id) return -1;
-	// given an ID of an item in a list, return it's index:
-	id = id.trim();
-	for( var i=L.length-1;i>-1;i-- )
-		if( L[i].id==id ) return i;   // return list index 
+	if( L && id ) {
+		// given an ID of an item in a list, return it's index:
+		id = id.trim();
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i].id==id ) return i   // return list index 
+	};
 	return -1
 }
 function itemById(L,id) {
-	if(!L||!id) return null;
-	// given the ID of an item in a list, return the item itself:
-	id = id.trim();
-	for( var i=L.length-1;i>-1;i-- )
-		if( L[i].id==id ) return L[i];   // return list item
-	return
+	if( L && id ) {
+		// given the ID of an item in a list, return the item itself:
+		id = id.trim();
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i].id==id ) return L[i]   // return list item
+	}
 }
-function indexByTitle(L,ln) {
-	if(!L||!ln) return -1;
-	// given a title of an item in a list, return it's index:
-	for( var i=L.length-1;i>-1;i-- )
-		if( L[i].title==ln ) return i;   // return list index
+function indexByTitle(L,ti) {
+	if( L && ti ) {
+		// given a title of an item in a list, return it's index:
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i].title==ti ) return i   // return list index
+	};
 	return -1
 }
-function itemByTitle(L,ln) {
-	if(!L||!ln) return null;
-	// given a title of an item in a list, return the item itself:
-	for( var i=L.length-1;i>-1;i-- )
-		if( L[i].title==ln ) return L[i];   // return list item
-	return
+function itemByTitle(L,ti) {
+	if( L && ti ) {
+		// given a title of an item in a list, return the item itself:
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i].title==ti ) return L[i]   // return list item
+	}
 }
 function indexBy( L, p, s ) {
-	if(!L||!p||!s) return -1;
-	// Return the index of an item in list 'L' whose property 'p' equals searchterm 's':
-	// hand in property and searchTerm as string !
-	for( var i=L.length-1;i>-1;i-- )
-		if( L[i][p]==s ) return i;
+	if( L && p && s ) {
+		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
+		// hand in property and searchTerm as string !
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i][p]==s ) return i
+	};
 	return -1
 }
 function itemBy( L, p, s ) {
-	if(!L||!p||!s) return null;
-	// Return an item in list 'L' whose property 'p' equals searchterm 's':
-	// hand in property and searchTerm as string !
-	for( var i=L.length-1;i>-1;i-- )
-		if( L[i][p]==s ) return L[i];
-	return
+	if( L && p && s ) {
+		// given the ID of an element in a list, return the element itself:
+	//	s = s.trim();
+		for( var i=L.length-1;i>-1;i-- )
+			if( L[i][p]==s ) return L[i]   // return list item
+	}
 }
 function containsById( cL, L ) {
 	if(!L) return null;
@@ -595,8 +588,6 @@ if (!String.prototype.stripHTML) {
 
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
-//	String.prototype.escapeRE = function() { return this.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&") };
-
 // Escape characters for JSON string: 
 String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
 // escape HTML characters:
@@ -610,7 +601,20 @@ String.prototype.escapeHTML = function() {
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	})
 };
-
+// see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
+String.prototype.unescapeHTML = function() {
+//  Unescape, but do not strip HTML-tags:
+	var el = document.createElement('div');
+	return noCode(this.replace(/\&#?[0-9a-z]+;/gi, function (enc) {
+        el.innerHTML = enc;
+        return el.innerText
+	}))
+};
+String.prototype.unescapeHTMLTags = function() {
+	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, function ($0,$1,$2,$3) {
+		return '<'+$1+$2+$3+'>'
+	}))
+};
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
 String.prototype.addIcon = function( ic ) {

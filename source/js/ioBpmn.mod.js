@@ -81,7 +81,10 @@ modules.construct({
 								isIE: browser.isIE 
 							});
 //		console.debug('input.prjName', self.parent.projectName, data );
-		bDO.resolve( data );
+		if( typeof(data)=='object' && data.id )
+			bDO.resolve( data )
+		else
+			bDO.reject({ status:999, statusText:'Input file could not be transformed to SpecIF'});
 
 		return bDO
 	};
