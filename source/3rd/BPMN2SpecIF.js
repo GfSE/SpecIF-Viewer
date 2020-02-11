@@ -931,13 +931,6 @@ function BPMN2Specif( xmlString, opts ) {
 			maxLength: opts.titleLength,
 			changedAt: opts.fileDate
 		},{
-			id: "DT-String",
-			title: "String [1024]",
-			description: "String with length 1024",
-			type: "xs:string",
-			maxLength: 1024,
-			changedAt: opts.fileDate
-		},{
 			id: "DT-FormattedText",
 			title: "XHTML ["+opts.descriptionLength+"]",
 			description: "Formatted String with length "+opts.descriptionLength,

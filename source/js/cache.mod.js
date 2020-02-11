@@ -436,7 +436,6 @@ function Project( pr ) {
 					let pT = propTitleOf(prj,nP),
 						rP = propByTitle(self.data,r,pT);
 //					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( self.data, r, pT )));
-//					console.debug('substituteR 3b',dataTypeOf(self.data,rP['class']),dataTypeOf(prj,nP['class']),classIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ));
 					if( !hasContent(valByTitle( self.data, r, pT )) 
 						// dataTypes must be compatible:
 						&& classIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ) ) {
@@ -447,6 +446,10 @@ function Project( pr ) {
 		};
 		// In the rare case that the ids are identical, there is no need to update the references:
 		if( r.id==n.id ) return;
+		
+		// memorize the replaced id, if not yet listed.
+		if( !Array.isArray(r.alternativeIds) ) r.alternativeIds = [];
+		cacheE( r.alternativeIds, n.id );
 		
 		// 2 Replace the references in all statements:
 		prj.statements.forEach( function(st) {
@@ -1709,16 +1712,15 @@ function Project( pr ) {
 					case 'application/bpmn+xml':
 						pend++;
 						// Read and render BPMN as SVG:
-						blob2text(f,function(r) {
-							bpmn2svg(r, function(err, svg) { 
+						blob2text(f,function(b) {
+							bpmn2svg(b, function(err, svg) { 
 										// this is the bpmnViewer callback function:
 										if (err) {
 											console.error('BPMN-Viewer could not deliver SVG', err)
 										} else {
 											// replace:
-											let blb = new Blob([svg],{type: "text/plain; charset=utf-8"});
 											L.splice(i,1,{
-												blob: blb,
+												blob: new Blob([svg],{type: "text/plain; charset=utf-8"}),
 												id: 'F-'+f.title.simpleHash(),
 												title: f.title.fileName()+'.svg',
 												type: 'image/svg+xml',
@@ -2836,6 +2838,25 @@ const specif = {
 	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
 				return oE
 			}
+			// common for all items:
+			function a2ext( iE ) {
+				var eE = {
+					id: iE.id,
+					// resources and hierarchies usually have individual titles, and so we will not translate:
+					title: resTitleOf( iE )
+				};
+				if( iE.description ) eE.description = iE.description;
+				eE['class'] = iE['class'];
+				if( iE.properties && iE.properties.length>0 )
+					eE.properties = forAll( iE.properties, p2ext );
+				if( iE.revision ) eE.revision = iE.revision;
+				if( iE.alternativeIds ) eE.alternativeIds = iE.alternativeIds;
+				eE.changedAt = iE.changedAt;
+				if( iE.changedBy ) eE.changedBy = iE.changedBy;
+	//			if( iE.createdAt ) eE.createdAt = iE.createdAt;
+	//			if( iE.createdBy ) eE.createdBy = iE.createdBy;
+				return eE
+			}
 			// common for all instance classes:
 			function aC2ext( iE ) {
 				var oE = {
@@ -2888,24 +2909,6 @@ const specif = {
 				oE.value = iE.value;
 				// properties do not have their own revision and change info; the parent's apply.
 				return oE
-			}
-			// common for all instances:
-			function a2ext( iE ) {
-				var eE = {
-					id: iE.id,
-					// resources and hierarchies usually have individual titles, and so we will not translate:
-					title: resTitleOf( iE )
-				};
-				if( iE.description ) eE.description = iE.description;
-				eE['class'] = iE['class'];
-				if( iE.properties && iE.properties.length>0 )
-					eE.properties = forAll( iE.properties, p2ext );
-				if( iE.revision ) eE.revision = iE.revision;
-				eE.changedAt = iE.changedAt;
-				if( iE.changedBy ) eE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) eE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) eE.createdBy = iE.createdBy;
-				return eE
 			}
 			// a resource:
 			function r2ext( iR ) {
