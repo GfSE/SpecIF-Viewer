@@ -555,7 +555,7 @@ String.prototype.stripCtrl = function() {
 };
 String.prototype.ctrl2HTML = function() {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
-	return this.replace( /\r|\f/g, '' ).replace( /\t/g, ' ' ).replace( /\n/g, '<br />' )
+	return this.replace( /\r|\f/g, '' ).replace( /\t/g, '&nbsp;&nbsp;&nbsp;' ).replace( /\n/g, '<br />' )
 };
 String.prototype.toHTML = function() {
 // Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
@@ -579,6 +579,11 @@ String.prototype.utf8ToXmlChar = function() {
 			return String.fromCharCode(parseInt(numStr, 10))
 		})
 	} */
+// https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
+function isHTML(str) {
+  var doc = new DOMParser().parseFromString(str, "text/html");
+  return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
+}
 if (!String.prototype.stripHTML) {
 	String.prototype.stripHTML = function() {
 		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
@@ -630,7 +635,7 @@ String.prototype.linkifyURLs = function() {
 			if( !$2.startsWith('http') ) $2 = 'http://'+$2;  // starts with "www." then according to RE.URL
 			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$8
 		})
-};	
+};
 
 String.prototype.fileExt = function() {
 	// return the file extension only:

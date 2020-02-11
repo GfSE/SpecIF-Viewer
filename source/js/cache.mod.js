@@ -260,10 +260,10 @@ function Project( pr ) {
 							loadAll( 'resource' )
 								.done( function() { 
 									loadAll( 'statement' )
-										.done( function() { */
-											// her we go:
+										.done( function() { 
+											// here we go:
 											
-		/*								})
+										})
 										.fail( handleError )
 								})
 								.fail( handleError )
@@ -576,6 +576,52 @@ function Project( pr ) {
 		};
 		return dta
 	};
+		function DataTypes(chAt) {
+			return [{
+				id: "DT-ShortString",
+				title: "String[96]",
+				description: "String with length 96",
+				type: "xs:string",
+				maxLength: 96,
+				changedAt: chAt
+			},{
+				id: "DT-FormattedText",
+				title: "XHTML [8192]",
+				description: "Formatted String with length 8192",
+				type: "xhtml",
+				maxLength: 8192,
+				changedAt: chAt 
+			}]
+		} 
+		function PropertyClasses(chAt) {
+			return [{
+					id: "PC-Name",
+					title: "dcterms:title",
+					dataType: "DT-ShortString",
+					changedAt: chAt
+				},{
+					id: "PC-Description",
+					title: "dcterms:description",
+					dataType: "DT-FormattedText",
+					changedAt: chAt
+				},{
+					id: "PC-Type",
+					title: "dcterms:type",
+					dataType: "DT-ShortString",
+					changedAt: chAt
+				}]
+		}
+		function ResourceClasses(chAt) {
+			return [{
+				id: "RC-Folder",
+				title: "SpecIF:Heading",
+				description: "Folder with title and text for chapters or descriptive paragraphs.",
+				isHeading: true,
+				instantiation: ['auto','user'],
+				propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+				changedAt: chAt
+			}]
+		}
 	self.createProcessesFolder = function( dta ) {	
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 		// Assumes that the folder objects for the process folder are available
@@ -615,72 +661,19 @@ function Project( pr ) {
 
 		// 2. Create a new combined process folder:
 		let processF = {
-			dataTypes: DataTypes(),
-			propertyClasses: PropertyClasses(),
-			resourceClasses: ResourceClasses(),
+			dataTypes: DataTypes(tim),
+			propertyClasses: PropertyClasses(tim),
+			resourceClasses: ResourceClasses(tim),
 			resources: Folders(),
 			hierarchies: [{
-					id: "H-FolderProcesses-" + apx,
-					resource: "FolderProcesses-" + apx,
-					nodes: pL,
-					changedAt: tim
+				id: "H-FolderProcesses-" + apx,
+				resource: "FolderProcesses-" + apx,
+				nodes: pL,
+				changedAt: tim
 			}]
 		};
 		return processF;
 		
-		function DataTypes() {
-			return [{
-				id: "DT-ShortString",
-				title: "String[96]",
-				description: "String with length 96",
-				type: "xs:string",
-				maxLength: 96,
-				changedAt: tim
-			},{
-				id: "DT-String",
-				title: "String [1024]",
-				description: "String with length 1024",
-				type: "xs:string",
-				maxLength: 1024,
-				changedAt: tim
-			},{
-				id: "DT-FormattedText",
-				title: "xhtml [8192]",
-				description: "Formatted String with length 8192",
-				type: "xhtml",
-				maxLength: 8192,
-				changedAt: tim 
-			}]
-		} 
-		function PropertyClasses() {
-			return [{
-					id: "PC-Name",
-					title: "dcterms:title",
-					dataType: "DT-ShortString",
-					changedAt: tim
-				},{
-					id: "PC-Description",
-					title: "dcterms:description",
-					dataType: "DT-FormattedText",
-					changedAt: tim
-				},{
-					id: "PC-Type",
-					title: "dcterms:type",
-					dataType: "DT-ShortString",
-					changedAt: tim
-				}]
-		}
-		function ResourceClasses() {
-			return [{
-				id: "RC-Folder",
-				title: "SpecIF:Heading",
-				description: "Folder with title and text for chapters or descriptive paragraphs.",
-				isHeading: true,
-				instantiation: ['auto','user'],
-				propertyClasses: ["PC-Name","PC-Description","PC-Type"],
-				changedAt: tim
-			}]
-		}
 		function Folders() {
 			var fL = [{
 				id: "FolderProcesses-" + apx,
@@ -725,68 +718,15 @@ function Project( pr ) {
 
 		// 2. Create a new combined glossary:
 		let glossary = {
-			dataTypes: DataTypes(),
-			propertyClasses: PropertyClasses(),
-			resourceClasses: ResourceClasses(),
+			dataTypes: DataTypes(tim),
+			propertyClasses: PropertyClasses(tim),
+			resourceClasses: ResourceClasses(tim),
 			resources: Folders(),
 			hierarchies: NodeList(self.data.resources)
 		};
 //		console.debug('glossary',glossary);
 		return glossary;
 		
-		function DataTypes() {
-			return [{
-				id: "DT-ShortString",
-				title: "String[96]",
-				description: "String with length 96",
-				type: "xs:string",
-				maxLength: 96,
-				changedAt: tim
-			},{
-				id: "DT-String",
-				title: "String [1024]",
-				description: "String with length 1024",
-				type: "xs:string",
-				maxLength: 1024,
-				changedAt: tim
-			},{
-				id: "DT-FormattedText",
-				title: "xhtml [8192]",
-				description: "Formatted String with length 8192",
-				type: "xhtml",
-				maxLength: 8192,
-				changedAt: tim 
-			}]
-		} 
-		function PropertyClasses() {
-			return [{
-					id: "PC-Name",
-					title: "dcterms:title",
-					dataType: "DT-ShortString",
-					changedAt: tim
-				},{
-					id: "PC-Description",
-					title: "dcterms:description",
-					dataType: "DT-FormattedText",
-					changedAt: tim
-				},{
-					id: "PC-Type",
-					title: "dcterms:type",
-					dataType: "DT-ShortString",
-					changedAt: tim
-				}]
-		}
-		function ResourceClasses() {
-			return [{
-				id: "RC-Folder",
-				title: "SpecIF:Heading",
-				description: "Folder with title and text for chapters or descriptive paragraphs.",
-				isHeading: true,
-				instantiation: ['auto','user'],
-				propertyClasses: ["PC-Name","PC-Description","PC-Type"],
-				changedAt: tim
-			}]
-		}
 		function Folders() {
 			var fL = [{
 				id: "FolderGlossary-" + apx,
@@ -2623,6 +2563,22 @@ const specif = {
 				return oE
 			}
 			// a property:
+			function makeHTML(str) {
+				// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
+				if( isHTML(str) ) 
+					return str;
+				if( CONFIG.convertMarkdown && app.markdown )
+					// don't interpret the '+' as list item, but do so with '•',
+					// transform arrows assembled by characters to special arrow characters:
+					return app.markdown.makeHtml( str
+													.replace(/-?-(?:&gt;|>)/g,'&rarr;') 
+													.replace(/(?:&lt;|<)--?/g,'&larr;') 
+													.replace(/\+ /g,'&#x2b; ')
+													.replace(/• /g,'* ') 
+												)
+				else
+					return '<div><p>'+str.ctrl2HTML()+'</p></div>'
+			} 
 			function p2int( iE ) {
 				let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
 					dT = itemById( iD.dataTypes, pT.dataType );
@@ -2647,7 +2603,7 @@ const specif = {
 						break;
 					case 'xhtml':
 					//	oE.value = iE.value.unescapeHTML();  // includes noCode(), works
-						oE.value = iE.value.unescapeHTMLTags();  // includes noCode()
+						oE.value = makeHTML(iE.value.unescapeHTMLTags());  // unescapeHTMLTags includes noCode()
 						break;
 					default:
 						oE.value = noCode(iE.value)
@@ -3238,7 +3194,7 @@ function valByTitle(dta,itm,pN) {
 		}
 	};
 	return
-} 
+}
 function classifyProps( el, data ) {
 	"use strict";
 	// add missing (empty) properties and classify properties into title, descriptions and other;

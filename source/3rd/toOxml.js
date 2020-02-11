@@ -17,6 +17,10 @@ function toOxml( data, opts ) {
 	};
 	
 	// Check for missing options:
+	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
+	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
+	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
+
 	if( typeof(opts)!='object' ) opts = {};
 //	if( !opts.metaFontSize ) opts.metaFontSize = '70%';	
 //	if( !opts.metaFontColor ) opts.metaFontColor = '#0071B9';	// adesso blue
@@ -24,8 +28,7 @@ function toOxml( data, opts ) {
 //	if( !opts.linkFontColor ) opts.linkFontColor = '#005A92';	// darker
 //	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
-	if( typeof(opts.RE)!='object' ) opts.RE = {};
-
+	
 	if( typeof(opts.imageResolution)!='number' ) opts.imageResolution = 8; // 10 dots per mm = ~256 dpi
 	if( typeof(opts.marginLeft)!='number' ) opts.marginLeft = 25; // mm
 	if( typeof(opts.marginRight)!='number' ) opts.marginRight = 25; // mm
@@ -856,7 +859,7 @@ function toOxml( data, opts ) {
 					if(prp['class']) {
 						let dT = itemById( data.dataTypes, propertyClassOf( prp['class']).dataType );
 						switch( dT.type ) {
-							case 'xs:enumeration':
+							case opts.dataTypeEnumeration:
 								let ct = '',
 									val = null,
 									st = opts.stereotypeProperties.indexOf(prp.title)>-1,
@@ -869,10 +872,10 @@ function toOxml( data, opts ) {
 									else ct += (v==0?'':', ')+vL[v]
 								};
 								return [{p:{text:minEscape(ct)}}];
-							case 'xhtml':
+							case opts.dataTypeXhtml:
 //								console.debug('valOf - xhtml',prp.value);
 								return parseXhtml( prp.value, opts );
-							case 'xs:string':
+							case opts.dataTypeString:
 								return parseText( prp.value, opts )
 						}
 					};

@@ -33,12 +33,13 @@ const CONFIG = {};
 	CONFIG.maxObjToCacheCount = 2000; // 0: object cache is disabled; null: object cache is enabled with no limit
 //	CONFIG.cacheAutoLoadPeriod = 90000; // in ms ... should be at least 60000ms
 //	CONFIG.cacheAutoLoadReader = false; // load the cache for the reader app
+//	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
 	CONFIG.findMentionedObjects = true;	// looks for object titles mentiones in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
 	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles
-	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not include ", <, >
-	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not include ", <, >
+	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
+	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
 	
 	// values for boolean 'true' and 'false':

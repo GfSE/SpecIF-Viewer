@@ -16,6 +16,10 @@ function toXhtml( data, opts ) {
 			console.error("Programming error: function 'opts.classifyProperties' is undefined.");
 		return
 	};
+	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
+	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
+	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
+
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 	if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = false;
@@ -516,7 +520,7 @@ function toXhtml( data, opts ) {
 			if(prp['class']) {
 				let dT = itemBy( data.dataTypes, 'id', propertyClassOf(prp['class']).dataType );
 				switch( dT.type ) {
-					case 'xs:enumeration':
+					case opts.dataTypeEnumeration:
 						let ct = '',
 							eV = null,
 							st = opts.stereotypeProperties.indexOf(prp.title)>-1,
@@ -529,9 +533,9 @@ function toXhtml( data, opts ) {
 							else ct += (v==0?'':', ')+vL[v]
 						};
 						return escapeXML( ct );
-					case 'xhtml':
+					case opts.dataTypeXhtml:
 						return titleLinks( fileRef( replaceLt(prp.value), opts ), hi, opts );
-					case 'xs:string':
+					case opts.dataTypeString:
 						return titleLinks( escapeXML( prp.value ), hi, opts )
 				}
 			};

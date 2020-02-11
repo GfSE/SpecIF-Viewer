@@ -20,7 +20,7 @@ modules.construct({
 		$('#pageTitle').html( app.productTitle );
 		$('#about').html(
 			'<div style="max-width:768px;">'
-		+   '<p>An app for your web-browser to view and transform specifications.</p>'
+		+   '<p>An app for your web-browser to view and transform system specifications.</p>'
 		+	'<p>SpecIF is the \'Specification Integration Facility\'. It\'s purpose is to combine partial specifications from different tools in a single model to allow</p>'
 		+	'<ul>'
 		+	'<li>to search, navigate and audit partial results in a common context,</li>'

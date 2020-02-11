@@ -273,7 +273,7 @@ modules.construct({
 		self.projectName = '';
 		setProgress('',0);     // reset progress bar
 		setImporting( false );
-		self.valid()
+		self.enableActions()
 	};
 	
 	self.setFormat = function( fId ) {
@@ -291,16 +291,16 @@ modules.construct({
 		let rF = textInput(i18n.LblFileName,'&nbsp;');
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.valid()');
+			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
 
 		$('#HelpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
-		self.valid()
+		self.enableActions()
 	};
 
 	let importing = false,
 		allValid = false;
-	self.valid = function() {
+	self.enableActions = function() {
 		// enable/disable the import button depending on the input state of all fields;
 		// in this case only a non-zero length of the project name is required:
 		let pnl = getTextLength(i18n.LblProjectName)>0,
@@ -316,7 +316,7 @@ modules.construct({
 			document.getElementById("adoptBtn").disabled =
 			document.getElementById("replaceBtn").disabled = !allValid || !loaded
 		} catch(e) {}
-//		console.debug('valid',pnl,allValid)
+//		console.debug('enableActions',pnl,allValid)
 	};
 	function setImporting( st ) {
 		importing = st;
@@ -349,7 +349,7 @@ modules.construct({
 				setTextFocus( i18n.LblProjectName )
 			};
 
-			self.valid()
+			self.enableActions()
 //			console.debug('select',self.fileName(), self.projectName)
 		} else {
 			self.clear()

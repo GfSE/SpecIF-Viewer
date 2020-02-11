@@ -63,7 +63,9 @@ function ModuleManager() {
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2() {
 //			console.debug('init2',opts);
-			loadH( ['helper', 'helperTree', 'tree', 'bootstrapDialog', 'mainCSS'], opts )
+			let loadL = ['helper', 'helperTree', 'tree', 'bootstrapDialog', 'mainCSS'];
+			if( CONFIG.convertMarkdown ) loadL.unshift('markdown');
+			loadH( loadL, opts )
 		}
 	};
 	function register( mod ) {
@@ -350,6 +352,7 @@ function ModuleManager() {
 				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.11/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
+				case "markdown": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
@@ -357,7 +360,7 @@ function ModuleManager() {
 				case "excel": 				loadM( 'zip' );	
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.4/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
 
-				case "schemaJson": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.1.2/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
@@ -367,7 +370,6 @@ function ModuleManager() {
 				case "toEpub": 				loadM( 'zip' );
 											loadM( 'toXhtml' );
 											getScript( vPath+'/js/toEpub.js' ).done( function() {setReady(mod)} ); return true;
-//				case "toOxml": 				import( '/js/toOxml.js' ).then( function() {setReady(mod)} ); return true;
 				case "toOxml": 				getScript( vPath+'/js/toOxml.js' ).done( function() {setReady(mod)} ); return true;
 
 				// libraries:
@@ -404,7 +406,7 @@ function ModuleManager() {
 											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
 */				case 'importAny':			loadM( 'zip' ); 
 											getScript( vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'ioSpecif':			loadM( 'schemaJson' );
+				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
 											getScript( vPath+'/js/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
