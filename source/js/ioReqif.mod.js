@@ -1,8 +1,10 @@
 ﻿/*	ReqIF Server: ReqIF import
-	Dependencies: jQuery
+	Dependencies: -
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de  
+
+	ToDo: escapeXML the content. See toXHTML.
 */
 
 // Constructor for ReqIF import:

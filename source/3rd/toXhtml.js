@@ -143,8 +143,8 @@ function toXhtml( data, opts ) {
 		// Create a title page as xhtml-file and add it as first section:
 		xhtml.sections.push(
 				xhtmlOf({ 
-					title: data.title,
-					body: '<div class="title">'+data.title+'</div>'
+					title: escapeXML(data.title),
+					body: '<div class="title">'+escapeXML(data.title)+'</div>'
 				})
 		);
 		
@@ -154,7 +154,7 @@ function toXhtml( data, opts ) {
 			pushHeading( h.title, {nodeId: h.id, level: 1} );
 			xhtml.sections.push(
 				xhtmlOf({ 
-					title: data.title,
+					title: escapeXML(data.title),
 					body: renderHierarchy( h, hi, 1 )
 				})
 			)
@@ -410,7 +410,7 @@ function toXhtml( data, opts ) {
 					if( !e ) return $0
 
 					// If there is no description, use the name of the link target:
-					let d = $4 || u1; // $4 is the description between object tags
+					let d = escapeXML(withoutPath( $4 || u1 )); // $4 is the description between object tags
 
 					return findBestFile( u2, e, d )
 				}
@@ -430,7 +430,7 @@ function toXhtml( data, opts ) {
 					if( !e ) return $0
 
 					// $3 is the description between the tags <object></object>:
-					let d = withoutPath( $3 || u1 );
+					let d = escapeXML(withoutPath( $3 || u1 ));
 					e = e.toLowerCase();
 //					console.debug( 'url:', u1, ', ext:', e, ', alt:', d );
 

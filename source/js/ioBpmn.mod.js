@@ -67,6 +67,8 @@ modules.construct({
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 
+								titleLength: CONFIG.textThreshold,
+								descriptionLength: CONFIG.maxStringLength,
 								strGlossaryType: CONFIG.resClassGlossary,
 								strGlossaryFolder: i18n.lookup(CONFIG.resClassGlossary),
 								strActorFolder: i18n.lookup("FMC:Actors"),

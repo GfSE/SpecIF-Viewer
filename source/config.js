@@ -18,8 +18,8 @@ const CONFIG = {};
 	CONFIG.messageDisplayTimeNormal = 8000;
 	CONFIG.messageDisplayTimeLong = 12000;
 	CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms). The faster the browser and processor, the shorter the time may be chosen.
-	CONFIG.textThreshold = 96;  // for longer strings a text area is offered for editing.
-	CONFIG.maxStringLength = 8192;  // max. length of formatted or unformatted strings
+	CONFIG.textThreshold = 192;  // for longer strings a text area is offered for editing.
+	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
 	CONFIG.minInteger = -32768;
 	CONFIG.maxInteger = 32767;
 	CONFIG.minReal = -10000000.0;
@@ -303,22 +303,21 @@ const CONFIG = {};
 	];
 
 	// A list of model elements to be exluded from deduplication on model import or model integration,
-	// specified by value of a property titled CONFIG.propClassType.
+	// specified by value of a property titled CONFIG.propClassType ...
+	// .. even if they have the same or no title/name.
 	// Note: For example, these are generated items when transforming BPMN models:
 	CONFIG.excludedFromDeduplication = [
+		'SpecIF:Condition',
 		'BPMN:parallelGateway',
 		'BPMN:exclusiveGateway',
 		'BPMN:inclusiveGateway',
-		'SpecIF:Condition'
+		'BPMN:boundaryEvent',
+		'BPMN:intermediateThrowEvent',
+		'BPMN:intermediateCatchEvent',
+		'BPMN:callActivity'
 	];
 	
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
-	CONFIG.selectCorrespondingPlanFirst = true;	// when clicking on a diagram element, select a diagram having the same title as the clicked model element
-	// A list of resources representing Model Diagrams, specified by title resp. class title:
-	CONFIG.plans = [
-		'SpecIF:Diagram',
-		'FMC:Plan'
-	];
 /*	// A list of SVG diagram class names. SVGs having a root element with this class will be subject to diagram level events:
 	CONFIG.clickDiagramClasses = [
 		'diagram'
@@ -329,11 +328,15 @@ const CONFIG = {};
 		'clickEl',
 		'com.arcway.cockpit.uniqueelement'
 	];
-	// A list with all diagram types by title:
+	CONFIG.selectCorrespondingDiagramFirst = true;	// when clicking on a diagram element, select a diagram having the same title as the clicked model element
+	// A list of resources representing Model Diagrams, specified by title resp. class title:
 	CONFIG.diagramClasses = [
 		'SpecIF:Diagram',
 		'FMC:Plan',
 		'SpecIF:View'		// deprecated
+	];
+	CONFIG.folderClasses = [
+		'SpecIF:Heading'
 	];
 	// A list with all model-element types by title,
 	// is used for example to build a glossary; 

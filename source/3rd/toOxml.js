@@ -1101,7 +1101,7 @@ function toOxml( data, opts ) {
 				return	'<w:pict>'
 					// specify both width and height; WORD is not assuming the native aspect ratio:
 					+		'<v:shape style="width:'+w+'mm;height:'+h+'mm">'
-					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+ct.picture.title+'"/>'
+					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+minEscape(ct.picture.title)+'"/>'
 					+		'</v:shape>'
 					+	'</w:pict>'
 

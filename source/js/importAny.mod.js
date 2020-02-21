@@ -174,6 +174,7 @@ modules.construct({
 	// The module entry;
 	// called by the modules view management:
 	self.show = function( opts ) {
+		if( !opts ) opts = {};
 //		console.debug( 'import.show', opts );
 	/*	if( me.userName == CONFIG.userNameAnonymous ) {
 			handleError({status:403});

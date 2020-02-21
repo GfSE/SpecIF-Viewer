@@ -2039,13 +2039,13 @@ var fileRef = {
 						function correspondingPlan(id) {
 							// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
 							// This routine checks whether there is a plan with the same name to show that plan instead of the element.
-							if( !CONFIG.selectCorrespondingPlanFirst ) return id;
+							if( !CONFIG.selectCorrespondingDiagramFirst ) return id;
 							// else, replace the id of a resource by the id of a diagram carrying the same title:
 							let ti = resTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id)),
 								rT = null;
 							for( var i=app.cache.selectedProject.data.resources.length-1;i>-1;i--) {
 								rT = itemById(app.cache.selectedProject.data.resourceClasses,app.cache.selectedProject.data.resources[i]['class']);
-								if( CONFIG.plans.indexOf(rT.title)<0 ) continue;
+								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
 								if( resTitleOf(app.cache.selectedProject.data.resources[i])==ti ) {
 									// found: the diagram carries the same title 

@@ -125,10 +125,6 @@ function ModuleManager() {
 		constructorFn(mo);
 		// make the module directly addressable by loadAs:
 		app[ mo.loadAs ] = mo;
-		// initialize:
-		// ToDo: Consider to run all init-Functions, *after* loading all modules. 
-		if( typeof(mo.init)=='function' )
-			mo.init(); 
 		
 //		console.debug('construct',defs,mo);
 		// Set the module to 'ready', if registered, ignore otherwise.
@@ -136,6 +132,8 @@ function ModuleManager() {
 		// In that case it does not have a name, so the condition is in fact redundant:
 		if( defs.name && self.registered.indexOf(defs.name)>-1 )
 			setReady( defs.name )
+		
+		// the module will be initialized within setReady() once all modules are loaded.
 	};
 	self.show = function( params ) {
 		// Show the specified view, which may be located somewhere in the hierarchy;
@@ -219,14 +217,14 @@ function ModuleManager() {
 				let m = findM(e.children,key);
 				if( m ) return m
 			};
-			return undefined
+			return false
 		}
 	}
 	function loadH(h,opts) {
 		// loads the specified modules;
 		// specified by a name string or an object with property 'name';
 		// h can be a single element, a list or a tree.
-			function l(e) {
+			function ld(e) {
 				// load a module named 'e':
 				if( typeof(e)=='string' ) {
 					loadM( e );
@@ -333,9 +331,9 @@ function ModuleManager() {
 			callWhenReady = opts.done;
 		
 		if( Array.isArray(h) )
-			h.forEach( function(e) {l(e)} )
+			h.forEach( function(e) {ld(e)} )
 		else
-			l(h)
+			ld(h)
 	}
 	function loadM( mod ) {
 		if( register( mod ) ) {
@@ -459,6 +457,24 @@ function ModuleManager() {
 		};
 		return false
 	}
+	function initH( h ) {
+		// initialize the hierarchy of modules;
+		// where h can be a module or an array of modules
+		// ... and a module can have children:
+			function it(e) {
+				if( typeof(e.init)=='function' )
+					e.init();
+				if( e.children )
+					// initialize all the children:
+					e.children.forEach(function(c) { initH(c) })
+			}
+		if( h ) {
+			if( Array.isArray(h) )
+				h.forEach( function(e) {it(e)} )
+			else
+				it(h)
+		}
+	}
 	function setReady( mod ) {
 		if( self.ready.indexOf(mod)<0 ) {
 			self.ready.push( mod );
@@ -469,6 +485,7 @@ function ModuleManager() {
 		};
 		
 		if( self.registered.length === self.ready.length ) {
+			initH( self.tree );
 			console.info( "All "+self.ready.length+" modules loaded --> ready!" );
 			try {
 				return callWhenReady()  // callback can be null

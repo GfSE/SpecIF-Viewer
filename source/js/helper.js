@@ -420,7 +420,7 @@ function indexBy( L, p, s ) {
 }
 function itemBy( L, p, s ) {
 	if( L && p && s ) {
-		// given the ID of an element in a list, return the element itself:
+		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i][p]==s ) return L[i]   // return list item
@@ -459,7 +459,7 @@ function forAll( L, fn ) {
 
 function cacheE( L, e ) {  // ( list, entry )
 	// add or update the item e in a list L:
-	let n = indexById( L, e.id );
+	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
 	L[n] = e; return n // update otherwise
 }
@@ -469,17 +469,13 @@ function cacheL( L, es ) {  // ( list, entries )
 }
 function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
-	let n = indexById( L, e.id );
+	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1)  // remove, if found
 }
 function uncacheL( L, es ) {  // ( list, entries )
 	// remove the items es from a list L:
 	es.forEach( function(e) { uncacheE( L, e ) } )
 }
-function removeFromArray( A, e ) {
-	let i=A.indexOf(e);
-	if( i>-1 ) A.splice(i,1)
-};
 	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
 function genID(pfx) {
