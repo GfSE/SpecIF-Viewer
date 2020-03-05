@@ -27,7 +27,7 @@ modules.construct({
 		+	'<li>to exchange model information between organizations and tools.</li>'
 		+	'</ul>'
 		+	'<p>Please have a look at the <a href="https://specif.de" target="_blank">SpecIF Homepage</a> for further information.</p>'
-		+	'<p>Version: '+app.productVersion+'</p>'
+		+	'<p>Version: '+app.productVersion+' supporting SpecIF up to version '+app.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
 	//	+	'<p>Please press \'<a href="http://reqif.de/index.php/contact/articles/reqif-message.html" target="_blank">Support</a>\' to file a request for assistance.</p>'
 		+	'<h4>Features:</h4>'
@@ -37,7 +37,7 @@ modules.construct({
 		+		"<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
 		+		"<li>Import 'BPMN-XML' file</li>"
 		+		"<li>Import from an URL or the local file system</li>"
-		+		"<li>Browse the content ('resources') along the hierarchy</li>"
+		+		"<li>Browse the content ('resources') along any supplied hierarchy</li>"
 		+		"<li>Inspect the semantic net ('statements')</li>"
 		+		"<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
 		+		"<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
@@ -68,12 +68,6 @@ modules.construct({
 		+			'<td><a href="https://github.com/epoberezkin/ajv/blob/master/LICENSE" target="_blank">MIT</a></td>'
 		+		'</tr>'
 		+		'<tr>'
-		+			'<td>FileSaver</td>'
-		+			'<td><a href="http://eligrey.com/" target="_blank">Eli Grey</a></td>'
-		+			'<td>Save files to the local file system ... <a href="https://github.com/eligrey/FileSaver.js/" target="_blank">more</a></td>'
-		+			'<td><a href="https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md" target="_blank">MIT</a></td>'
-		+		'</tr>'
-		+		'<tr>'
 		+			'<td>jqTree</td>'
 		+			'<td><a href="https://github.com/mbraak" target="_blank">Marco Braak</a></td>'
 		+			'<td>A tree with collapsible branches and drag\'n\'drop support '
@@ -85,6 +79,12 @@ modules.construct({
 		+			'<td><a href="https://github.com/Stuk" target="_blank">Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso</a></td>'
 		+			'<td>A library for creating, reading and editing .zip files ... <a href="https://github.com/Stuk/jszip" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/Stuk/jszip/blob/master/LICENSE.markdown" target="_blank">MIT</a></td>'
+		+		'</tr>'
+		+		'<tr>'
+		+			'<td>FileSaver</td>'
+		+			'<td><a href="http://eligrey.com/" target="_blank">Eli Grey</a></td>'
+		+			'<td>Save files to the local file system ... <a href="https://github.com/eligrey/FileSaver.js/" target="_blank">more</a></td>'
+		+			'<td><a href="https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md" target="_blank">MIT</a></td>'
 		+		'</tr>'
 		+		'<tr>'
 		+			'<td>BPMN-Viewer</td>'

@@ -307,10 +307,10 @@ function Project( pr ) {
 		if( r.type!=n.type ) return false;
 		switch( r.type ) {
 			case 'xs:double':
-				if( r.accuracy!=n.accuracy ) return false;
+				if( r.fragmentDigits!=n.fragmentDigits ) return false;
 				// no break
 			case 'xs:integer':
-				return r.min==n.min && r.max==n.max
+				return r.minInclusive==n.minInclusive && r.maxInclusive==n.maxInclusive
 			case 'xs:string':
 			case 'xhtml':
 				return r.maxLength==n.maxLength;
@@ -636,8 +636,7 @@ function Project( pr ) {
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 		// Assumes that the folder objects for the process folder are available
 		
-		// 1. Delete any existing process folders,
-		// 1.1 Find all process folders:
+		// 1 Find all process folders:
 		let dF = [], pL = [], res, pV,
 			apx = self.data.id.simpleHash(),
 			tim = new Date().toISOString();
@@ -658,31 +657,35 @@ function Project( pr ) {
 										}
 		);
 //		console.debug('process diagrams',dF,pL);
-		// 1.2 Delete now:
-		self.deleteContent( 'node', dF );
+		if( pL.length>0 ) {
+			// 2. Delete any existing process folders,
+			self.deleteContent( 'node', dF );
 
-		// Sort the list of process diagrams alphabetically by title:
-		if( pL.length>1 )
-			pL.sort( function(bim, bam) {
-						bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
-						bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
-						return bim==bam ? 0 : (bim<bam ? -1 : 1) 
-			});
+			// Sort the list of process diagrams alphabetically by title:
+			if( pL.length>1 )
+				pL.sort( function(bim, bam) {
+							bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
+							bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
+							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
+				});
 
-		// 2. Create a new combined process folder:
-		let processF = {
-			dataTypes: DataTypes(tim),
-			propertyClasses: PropertyClasses(tim),
-			resourceClasses: ResourceClasses(tim),
-			resources: Folders(),
-			hierarchies: [{
-				id: "H-FolderProcesses-" + apx,
-				resource: "FolderProcesses-" + apx,
-				nodes: pL,
-				changedAt: tim
-			}]
+			// 3. Create a new combined process folder:
+			let processF = {
+				specifVersion: 'v1.0',
+				dataTypes: DataTypes(tim),
+				propertyClasses: PropertyClasses(tim),
+				resourceClasses: ResourceClasses(tim),
+				resources: Folders(),
+				hierarchies: [{
+					id: "H-FolderProcesses-" + apx,
+					resource: "FolderProcesses-" + apx,
+					nodes: pL,
+					changedAt: tim
+				}]
+			};
+			self.update( processF, {mode:'adopt'} )
 		};
-		return processF;
+		return;
 		
 		function Folders() {
 			var fL = [{
@@ -722,12 +725,12 @@ function Project( pr ) {
 											return true  // continue always to the end
 										}
 		);
-//		console.debug( 'gF', gF );
 		// 1.2 Delete now:
 		self.deleteContent( 'node', gF )
 
 		// 2. Create a new combined glossary:
 		let glossary = {
+			specifVersion: 'v1.0',
 			dataTypes: DataTypes(tim),
 			propertyClasses: PropertyClasses(tim),
 			resourceClasses: ResourceClasses(tim),
@@ -735,7 +738,8 @@ function Project( pr ) {
 			hierarchies: NodeList(self.data.resources)
 		};
 //		console.debug('glossary',glossary);
-		return glossary;
+		self.update( glossary, {mode:'adopt'} )
+		return;
 		
 		function Folders() {
 			var fL = [{
@@ -842,9 +846,13 @@ function Project( pr ) {
 		newD = specif.toInt(newD);	// transform to internal data structure
 		var uDO = $.Deferred();
 		switch( opts.mode ) {
-			case 'adopt': adopt( newD, opts );
+			case 'adopt': 
+				adopt( newD, opts );
+				uDO.resolve({status:0});
+				break;
+			default:
+				uDO.reject({status:999,statusText:'No update mode specified'});
 		};
-		uDO.resolve({status:0});
 		return uDO
 		
 		// --------------------------------
@@ -859,6 +867,7 @@ function Project( pr ) {
 			//    b) if same id and same content, just use it (no action)
 			//    c) if same id and different content, save with new id and update all references
 			let i,I;
+//			console.debug('#1',simpleClone(self.data));
 			types.forEach( function(ty) {
 				for( i=0,I=nD[ty.list].length; i<I; i++ ) {
 					let itm = nD[ty.list][i],
@@ -881,6 +890,7 @@ function Project( pr ) {
 					}
 				}
 			});
+//			console.debug('#2',simpleClone(self.data));
 			// 2. Integrate the instances:
 			//    a) if different title or type, save new one and use it.
 			//    b) if same title and type, just use it and update all references
@@ -929,20 +939,25 @@ function Project( pr ) {
 //				console.debug('+ resource',itm);
 				self.createContent( 'resource', itm )
 			};
+//			console.debug('#3',simpleClone(self.data));
 
 			// 3. Create the remaining items:
 			self.createContent( 'statement', nD.statements );
 			self.createContent( 'hierarchy', nD.hierarchies );
 			self.createContent( 'file', nD.files );
+//			console.debug('#4',simpleClone(self.data));
 			
 			// 4. Finally some house-keeping:
 			hookStatements();
 			self.deduplicate();	// deduplicate equal items
 			// ToDo: Save changes from deduplication to the server.
+		//	console.debug('#5',simpleClone(self.data));
 			if( opts.addProcessesFolder )
-				self.update( self.createProcessesFolder(), {mode:'adopt'} )
+				self.createProcessesFolder();
+//			console.debug('#6',simpleClone(self.data));
 			if( opts.addGlossary )
-				self.update( self.createGlossary(), {mode:'adopt'} )
+				self.createGlossary();
+//			console.debug('#7',simpleClone(self.data));
 		};
 	
 /*		// newD is new data in 'internal' data structure
@@ -1711,36 +1726,37 @@ function Project( pr ) {
 					fail: function(xhr) { app.cache.selectedProject.data.exporting=false; eDO.reject(xhr) }
 				},
 				pend=0;
-				
-			// Transform any special format:
-			data.files.forEach( function(f,i,L) {  
-				switch( f.type ) {
-					case 'application/bpmn+xml':
-						pend++;
-						// Read and render BPMN as SVG:
-						blob2text(f,function(b) {
-							bpmn2svg(b, function(err, svg) { 
-										// this is the bpmnViewer callback function:
-										if (err) {
-											console.error('BPMN-Viewer could not deliver SVG', err)
-										} else {
-											// replace:
-											L.splice(i,1,{
-												blob: new Blob([svg],{type: "text/plain; charset=utf-8"}),
-												id: 'F-'+f.title.simpleHash(),
-												title: f.title.fileName()+'.svg',
-												type: 'image/svg+xml',
-												changedAt: f.changedAt
-											})
-										};
-//										console.debug('SVG',svg,L);
-										if( --pend<1 ) 
-											// Now, generate in the desired format:
-											gen();
-									})
-						}, 0)
-				}
-			});  
+
+			if( data.files )
+				// Transform any special format:
+				data.files.forEach( function(f,i,L) {  
+					switch( f.type ) {
+						case 'application/bpmn+xml':
+							pend++;
+							// Read and render BPMN as SVG:
+							blob2text(f,function(b) {
+								bpmn2svg(b, function(err, svg) { 
+											// this is the bpmnViewer callback function:
+											if (err) {
+												console.error('BPMN-Viewer could not deliver SVG', err)
+											} else {
+												// replace:
+												L.splice(i,1,{
+													blob: new Blob([svg],{type: "text/plain; charset=utf-8"}),
+													id: 'F-'+f.title.simpleHash(),
+													title: f.title.fileName()+'.svg',
+													type: 'image/svg+xml',
+													changedAt: f.changedAt
+												})
+											};
+	//										console.debug('SVG',svg,L);
+											if( --pend<1 ) 
+												// Now, generate in the desired format:
+												gen();
+										})
+							}, 0)
+					}
+				});  
 			// In case there is nothing to transform, we start right away:
 			if( pend<1 ) 
 				// Generate in the desired format:
@@ -1764,11 +1780,12 @@ function Project( pr ) {
 				data = specif.toExt( self.data, {translateTitles: false} );
 
 			// Add the files:
-			data.files.forEach( function(f) {
+			if( data.files )
+				data.files.forEach( function(f) {
 //					console.debug('zip a file',f);
-				zip.file( f.title, f.blob );
-				delete f.blob // the SpecIF data below shall not contain it ...
-			});
+					zip.file( f.title, f.blob );
+					delete f.blob // the SpecIF data below shall not contain it ...
+				});
 
 			// Prepare the output data:
 			let fName = data.title+"."+opts.format;
@@ -2017,14 +2034,14 @@ function Project( pr ) {
 							return {status:951, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
 						return {status:0};
 					case 'xs:double':
-						// to be compatible, the new 'accuracy' must be lower or equal:
-						if( refC.accuracy<newC.accuracy )
+						// to be compatible, the new 'fragmentDigits' must be lower or equal:
+						if( refC.fragmentDigits<newC.fragmentDigits )
 							return {status:952, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
 						// else: go on ...
 					case 'xs:integer':
-						// to be compatible, the new 'max' must be lower or equal and the new 'min' must be higher or equal:
-//						console.debug( refC.max<newC.max || refC.min>newC.min );
-						if( refC.max<newC.max || refC.min>newC.min )
+						// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
+//						console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
+						if( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive )
 							return {status:953, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"}
 						else
 							return {status:0};
@@ -2125,37 +2142,19 @@ function Project( pr ) {
 		// if el is the node, 'id' will be used,
 		// and if el is the referenced resource, 'resource' will be used to identify the node.
 		if( !Array.isArray( L ) ) return;
-//		console.debug('delNodes',L,el);
-		let cont, a;
+//		console.debug('delNodes',simpleClone(L),el);
 		for( var h=L.length-1; h>-1; h-- ) {
-			cont = true;
-			for( a in el ) {
-				// any specified attribute works:
-				if( L[h][a]==el[a] ) {
-//					console.debug( 'deleting node ',L[h] );
-					L.splice(h,1);
-					cont = false;
-					break	// can't delete more than once ;-)
-				}
+			if( L[h].id==el.id || L[h].resource==el.resource ) {
+//				console.debug( 'deleting node ',simpleClone(L[h]) );
+				L.splice(h,1);
+				break	// can't delete more than once ;-)
 			};
 			// step down, if the node hasn't been deleted:
-			if( cont ) delNodes( L[h].nodes, el )
+			delNodes( L[h].nodes, el )
 		}
 	}
 	function uncache( ctg, item ) { 
-		/*	function delNode( L, eId ) {
-//				console.debug('delNode',L);
-				for( var h=L.length-1;h>-1;h-- ) {
-					if( L[h].id==eId ) {
-						L.splice(h,1);
-						return true
-					};
-					if( delNode( L[h].nodes, eId ) ) return true
-				};
-				return false
-			} */
 		if( !item ) return;
-//		console.debug('uncache',ctg,item);
 		let fn = Array.isArray(item)?uncacheL:uncacheE;
 		switch(ctg) {
 			case 'hierarchy':		
@@ -2298,7 +2297,7 @@ const specif = {
 		// no data of app.cache is modified:
 		var cDO = $.Deferred();
 		if( typeof(data)!='object' ) {
-			cDO.reject( {status:999,statusText:'No SpecIF data o check'} ); 
+			cDO.reject( {status:999,statusText:'No SpecIF data to check'} ); 
 			return cDO
 		};
 		// 1. Validate the data using the SpecIF schema:
@@ -2313,7 +2312,7 @@ const specif = {
 			done: function(xhr) { 
 //				console.debug('schema', xhr);
 						// 1. check data against schema:
-						let rc = checkSchema( JSON.parse( buf2str(xhr.response) ), data );
+			let rc = checkSchema( data, {schema: JSON.parse( buf2str(xhr.response) )} );
 						if( rc.status!=0 ) {
 							// older versions of the checking routine don't set the responseType:
 							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
@@ -2386,6 +2385,14 @@ const specif = {
 				names.sClass = 'class';
 				names.pClass = 'class'
 		};
+		if( spD.specifVersion.startsWith('0.1') ) 
+			var frct = 'accuracy',
+				minI = 'min',
+				maxI = 'max';
+		else
+			var frct = 'fractionDigits',
+				minI = 'minInclusive',
+				maxI = 'maxInclusive';
 
 		let iD = {};
 		try {
@@ -2411,23 +2418,56 @@ const specif = {
 		if( spD.description ) iD.description = spD.description;
 		if( spD.generator ) iD.generator = spD.generator;
 		if( spD.generatorVersion ) iD.generatorVersion = spD.generatorVersion;
-	//	if( spD.createdBy ) iD.createdBy = spD.createdBy;
-	//	if( spD.createdAt ) iD.createdAt = spD.createdAt;
+		if( spD.createdBy ) iD.createdBy = spD.createdBy;
+		if( spD.createdAt ) iD.createdAt = spD.createdAt;
 		
 //		console.debug('specif.set',iD);
 		return iD
 
+			// common for all items:
+			function i2int( iE ) {
+				var oE = {
+					id: iE.id,
+					changedAt: iE.changedAt
+				};
+				if( iE.description ) oE.description = noCode(iE.description);
+				// revision is a number up until v0.10.6 and a string thereafter:
+				switch( typeof(iE.revision) ) {
+					case 'undefined':
+						break;
+					case 'number':
+						oE.revision = iE.revision.toString();	// for <v0.10.8
+						break;
+					case 'string':
+						oE.revision = iE.revision
+				};
+				if( iE.replaces ) oE.replaces = iE.replaces;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+				if( iE.createdAt ) oE.createdAt = iE.createdAt;
+				if( iE.createdBy ) oE.createdBy = iE.createdBy;
+//				console.debug('item 2int',iE,oE);
+				return oE
+			}
 			// a data type:
 			function dT2int( iE ) {
 		//		iE.category = 'dataType';
+				var oE = i2int( iE );
+				oE.title = noCode(iE.title);
+				oE.type = iE.type;
 				switch( iE.type ) {
+					case "double":
+					case "integer":
+						oE.fractionDigits = iE[frct];
+						oE.minInclusive = iE[minI];
+						oE.maxInclusive = iE[maxI];
+						break;
 					case "xhtml": 
 					case "xs:string":		
 						if( typeof(iE.maxLength)!='number' ) iE.maxLength = CONFIG.maxStringLength;
 						break;
 					case "xs:enumeration": 	
 						if( iE.values ) 
-							iE.values = forAll( iE.values, function(v) {
+							oE.values = forAll( iE.values, function(v) {
 								// 'title' jusque v0.10.6, 'value' thereafter:
 								return {
 									id: v.id,
@@ -2435,17 +2475,13 @@ const specif = {
 								}
 							})
 				};
-				// revision is a number up until v0.10.6 and a string thereafter:
-				if( typeof(iE.revision)=='number' ) iE.revision = iE.revision.toString();
 //				console.debug('dataType 2int',iE);
-				return iE
+				return oE
 			}
 			// a property class:
 			function pC2int( iE ) {
-				var oE = {
-					id: iE.id,
-					title: vocabulary.property.specif(noCode(iE.title))	// an input file may have titles which are not from the SpecIF vocabulary.
-				};
+				var oE = i2int( iE );
+				oE.title = vocabulary.property.specif(noCode(iE.title));	// an input file may have titles which are not from the SpecIF vocabulary.
 				if( iE.description ) oE.description = noCode(iE.description);
 				if( iE.value ) oE.value = noCode(iE.value);
 				oE.dataType = iE.dataType;
@@ -2456,42 +2492,7 @@ const specif = {
 						if( iE.multiple && !dT.multiple ) oE.multiple = true
 						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
 				};
-				switch( typeof(iE.revision) ) {
-					case 'undefined':
-						break;
-					case 'number':
-						oE.revision = iE.revision.toString();
-						break;
-					case 'string':
-						oE.revision = iE.revision
-				};
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-		//		if( iE.createdAt ) oE.createdAt = iE.createdAt;
-		//		if( iE.createdBy ) oE.createdBy = iE.createdBy;
 //				console.debug('propClass 2int',iE,oE);
-				return oE
-			}
-			// common for all items:
-			function i2int( iE ) {
-				var oE = {
-					id: iE.id,
-					changedAt: iE.changedAt
-				};
-				if( iE.description ) oE.description = noCode(iE.description);
-				switch( typeof(iE.revision) ) {
-					case 'undefined':
-						break;
-					case 'number':
-						oE.revision = iE.revision.toString();	// for <v0.10.8
-						break;
-					case 'string':
-						oE.revision = iE.revision
-				};
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-//				console.debug('element 2int',oE);
 				return oE
 			}
 			// common for all instance classes:
@@ -2636,10 +2637,10 @@ const specif = {
 			}
 			// a resource:
 			function r2int( eR ) {
-				var iR = a2int( eR );
-				iR['class'] = eR[names.rClass];
-//				console.debug('resource 2int',eR,iR);
-				return iR
+				var oE = a2int( eR );
+				oE['class'] = eR[names.rClass];
+//				console.debug('resource 2int',eR,oE);
+				return oE
 			}
 			// a statement:
 			function s2int( eS ) {
@@ -2684,8 +2685,8 @@ const specif = {
 					var iH = a2int( eH );
 					iH.resource = eH.resource
 				};
-				// list all resource ids in a flat list:
-			//	iH.flatL = [eH.id];
+			/*	// list all resource ids in a flat list:
+				iH.flatL = [eH.id];  */
 				iH.nodes = forAll( eH.nodes, n2int );
 //				console.debug('hierarchy 2int',eH,iH);
 				return iH
@@ -2708,25 +2709,13 @@ const specif = {
 			}
 			// a file:
 			function f2int( iF ) {
-				var oF = iF;
-//				console.debug('f2int',iF);
+				var oF = i2int( iF );
 				oF.title = iF.title? iF.title.replace('\\','/') : iF.id;
-				if( iF.blob ) oF.type = iF.blob.type || iF.type || attachment2mediaType( iF.title );
-
-				switch( typeof(iF.revision) ) {
-					case 'undefined':
-						break;
-					case 'number':
-						oF.revision = iF.revision.toString();
-						break;
-					case 'string':
-						oF.revision = iF.revision
+				// store the blob and it's type:
+				if( iF.blob ) {
+					oF.type = iF.blob.type || iF.type || attachment2mediaType( iF.title );
+					oF.blob = iF.blob
 				};
-				oF.changedAt = iF.changedAt;
-				if( iF.changedBy ) oF.changedBy = iF.changedBy;
-		//		if( iF.createdAt ) oF.createdAt = iF.createdAt;
-		//		if( iF.createdBy ) oF.createdBy = iF.createdBy;
-//				console.debug('file 2int',iF,oF);
 				return oF
 			}
 	},
@@ -2743,11 +2732,11 @@ const specif = {
 		
 		// transform internal data to SpecIF:
 		var spD = {
+				id: iD.id,
+				title: iD.title,
 				specifVersion: app.specifVersion,
 				generator: app.productTitle,
-				generatorVersion: app.productVersion,
-				id: iD.id,
-				title: iD.title
+				generatorVersion: app.productVersion
 			};
 		if( app.cache.selectedProject.data.description ) spD.description = iD.description;
 		spD.rights = {
@@ -2755,8 +2744,7 @@ const specif = {
 			type: "dcterms:rights",
 			url: "https://creativecommons.org/licenses/by-sa/4.0/"
 		};
-		spD.createdAt = new Date().toISOString();
-		// createdBy.email is required by the schema:
+		spD.changedAt = new Date().toISOString();
 		if( app.me && app.me.email ) {
 			spD.createdBy = {
 				familyName: app.me.lastName, 
@@ -2777,30 +2765,46 @@ const specif = {
 			}
 			// else: no createdBy, if there is no data 
 		};
-		spD.dataTypes = forAll( iD.dataTypes, dT2ext );
-		spD.propertyClasses = forAll( iD.propertyClasses, pC2ext );
+		if( iD.dataTypes && iD.dataTypes.length>0 ) 
+			spD.dataTypes = forAll( iD.dataTypes, dT2ext );
+		if( iD.propertyClasses && iD.propertyClasses.length>0 ) 
+			spD.propertyClasses = forAll( iD.propertyClasses, pC2ext );
 		spD.resourceClasses = forAll( iD.resourceClasses, rC2ext );
 		spD.statementClasses = forAll( iD.statementClasses, sC2ext );
 		spD.resources = forAll( iD.resources, r2ext );
 		spD.statements = forAll( iD.statements, s2ext );
 		spD.hierarchies = forAll( iD.hierarchies, h2ext );
-		spD.files = forAll( iD.files, f2ext );
+		if( iD.files && iD.files.length>0 ) 
+			spD.files = forAll( iD.files, f2ext );
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
 //		console.debug('specif.get exit',spD);
 		return spD
 
+			// common for all items:
+			function i2ext( iE ) {
+				var oE = {
+					id: iE.id,
+					changedAt: iE.changedAt
+				};
+				if( iE.description ) oE.description = iE.description;
+				if( iE.revision ) oE.revision = iE.revision;
+				if( iE.replaces ) oE.replaces = iE.replaces;
+				if( iE.changedBy ) oE.changedBy = iE.changedBy;
+				if( iE.createdAt ) oE.createdAt = iE.createdAt;
+				if( iE.createdBy ) oE.createdBy = iE.createdBy;
+				return oE
+			}
 			// a data type:
 			function dT2ext( iE ) {
-				var oE = simpleClone(iE);
+		/*		var oE = simpleClone(iE);
 		//		delete oE.category;
-				return oE
+				return oE  */
+				return iE 
 			}
 			// a property class:
 			function pC2ext( iE ) {
-				var oE = {
-					id: iE.id,
-					title: opts.translateTitles? titleOf(iE) : iE.title		
-				};
+				var oE = i2ext( iE );
+				oE.title = opts.translateTitles? titleOf(iE) : iE.title;
 				if( iE.description ) oE.description = iE.description;
 				if( iE.value ) oE.value = iE.value;
 				oE.dataType = iE.dataType;
@@ -2823,24 +2827,6 @@ const specif = {
 						if( iE.multiple && !dT.multiple ) oE.multiple = true
 						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
 				};
-				if( iE.revision ) oE.revision = iE.revision;
-				oE.changedAt = iE.changedAt;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-	//			if( iE.createdAt ) oE.createdAt = iE.createdAt;
-	//			if( iE.createdBy ) oE.createdBy = iE.createdBy;
-				return oE
-			}
-			// common for all items:
-			function i2ext( iE ) {
-				var oE = {
-					id: iE.id,
-					changedAt: iE.changedAt
-				};
-				if( iE.description ) oE.description = iE.description;
-				if( iE.revision ) oE.revision = iE.revision;
-				if( iE.changedBy ) oE.changedBy = iE.changedBy;
-		//		if( iE.createdAt ) oE.createdAt = iE.createdAt;
-		//		if( iE.createdBy ) oE.createdBy = iE.createdBy;
 				return oE
 			}
 			// common for all instance classes:
@@ -2895,9 +2881,9 @@ const specif = {
 				return oE
 			}
 			// a resource:
-			function r2ext( iR ) {
-				var eR = a2ext( iR );
-//				console.debug('resource 2int',iR,eR);
+			function r2ext( iE ) {
+				var eR = a2ext( iE );
+//				console.debug('resource 2int',iE,eR);
 				return eR
 			}
 			// a statement:
@@ -2917,15 +2903,15 @@ const specif = {
 			}
 			// a hierarchy node:
 			function n2ext( iN ) {
-				// just take the non-redundant properties:
+				// just take the non-redundant properties (omit 'title', for example):
 				let eN = {
 					id: iN.id,
 					resource: iN.resource,
-					revision: iN.revision,
 					changedAt: iN.changedAt
 				};
 				if( iN.nodes && iN.nodes.length>0 )
 					eN.nodes = forAll(iN.nodes,n2ext);
+				if( iN.revision ) eN.revision = iN.revision;
 				return eN
 			}
 			// a hierarchy:
@@ -2940,7 +2926,7 @@ const specif = {
 					type: iF.type
 				};
 				if( iF.blob ) eF.blob = iF.blob;
-				if( iF.revision ) oE.revision = iF.revision;
+				if( iF.revision ) eF.revision = iF.revision;
 				eF.changedAt = iF.changedAt;
 				if( iF.changedBy ) eF.changedBy = iF.changedBy;
 	//			if( iF.createdAt ) eF.createdAt = iF.createdAt;
@@ -3182,16 +3168,17 @@ function classifyProps( el, data ) {
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
 	// ToDo: Implementation is limited to resources, so far. See normalizeProps().
 	if( !data ) data = app.cache.selectedProject.data;
-	var rC = itemById( data.resourceClasses, el['class']),
-		cP = {
-		id: el.id,
-		title: undefined,
-		class: rC,
-		revision: el.revision,
-		descriptions: [],
-		// create a new list by copying the elements (do not copy the list ;-):
-		other: normalizeProps( el, data )
-	};
+	var cP = {
+			id: el.id,
+			title: undefined,
+			class: itemById( data.resourceClasses, el['class']),
+			revision: el.revision,
+			descriptions: [],
+			// create a new list by copying the elements (do not copy the list ;-):
+			other: normalizeProps( el, data )
+		};
+	cP.isHeading = cP['class'].isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
+	if( el.order ) cP.order = el.order;
 
 	// Now, all properties are listed in cP.other;
 	// in the following, the properties used as title and description will be identified
@@ -3207,7 +3194,6 @@ function classifyProps( el, data ) {
 		// remove title from other:
 		cP.other.splice(a,1) 
 	};
-	cP.isHeading = rC.isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 		
 	// b) Check the configured descriptions:
 	// We must iterate backwards, because we alter the list of other.
@@ -3221,7 +3207,7 @@ function classifyProps( el, data ) {
 	};
 	// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
 	if( !cP.title && el.title ) cP.title = el.title;
-	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: "dcterms:description", value: el.description} );
+	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description} );
 //	console.debug( 'classifyProps', cP );
 	return cP
 

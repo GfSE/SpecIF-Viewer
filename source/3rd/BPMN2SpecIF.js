@@ -242,8 +242,9 @@ function BPMN2Specif( xmlString, opts ) {
 			}
 		}
 		function analyzeProcess(pr) {
-			// analyze a process or subprocess and transform all contained model elements:
-			console.debug('process',pr.getAttribute('id'),pr);
+			// analyze a process or subprocess and transform all contained model elements;
+			// the container element with a temporary attribute 'project' must be found in model.resources:
+//			console.debug('process',pr.getAttribute('id'),pr);
 			// find the participant representing (or being responsible for) the process:
 			let pa = model.resources.find( function(e) { return e.process==pr.getAttribute('id') } );
 			// depending on the BPMN generator, the name is supplied in the participant or in the process definition ... or both.
@@ -498,7 +499,6 @@ function BPMN2Specif( xmlString, opts ) {
 					case 'callActivity':
 					case 'subProcess':
 						// store the model-element as FMC:Actor:
-						// ToDo: A subprocess can locally contain a subordinated process
 						// Note that a dataInputAssociation may specify a property in lieu of the subprocess.
 						let r = {
 							id: id,
@@ -529,9 +529,10 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push( r );
 						// only add a property, if there is content:
 
-						// Analyze the inner definition of a subProcess:
+						// Analyze the inner definition of a subProcess;
+						// must be called after storing the container element with temporary attribute 'project' as done above:
 						if( tag=='subProcess' ) {
-							console.debug( 'sPr', el, tag, id, title );
+//							console.debug( 'sPr', el, tag, id, title );
 							analyzeProcess( el )
 						};  
 

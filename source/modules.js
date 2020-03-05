@@ -348,7 +348,7 @@ function ModuleManager() {
 				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" />');
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.11/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
 				case "markdown": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
@@ -356,12 +356,12 @@ function ModuleManager() {
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "excel": 				loadM( 'zip' );	
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.4/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.1.2/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.3.1/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
@@ -414,7 +414,8 @@ function ModuleManager() {
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'checkSpecif':			getScript( './specif.de/v0.10.8/check.js').done( function() {setReady(mod)} ); return true;
+//				case 'checkSpecif':			getScript( 'https://specif.de/v1.0/check.js' ).done( function() {setReady(mod)} ); return true;
+				case 'checkSpecif':			getScript( './specif.de/v1.0/check.js' ).done( function() {setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }

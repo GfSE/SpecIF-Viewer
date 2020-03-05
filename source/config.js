@@ -140,7 +140,7 @@ const CONFIG = {};
 	// The following can have an i18n label in the translation files:
 	CONFIG.dataTypeComment = 'Datatype for comment text';
 	CONFIG.propClassTitle = 'dcterms:title';
-	CONFIG.propClassText = 'dcterms:description';
+	CONFIG.propClassDesc = 'dcterms:description';
 	CONFIG.propClassType = 'dcterms:type';
 //	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';

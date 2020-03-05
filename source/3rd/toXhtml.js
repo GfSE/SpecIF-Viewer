@@ -7,6 +7,16 @@ function toXhtml( data, opts ) {
 	// - HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
 	// - Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
 
+	// Reject versions < 0.10.8:
+	let v = data.specifVersion.split('.');
+	if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
+		if (typeof(opts.fail)=='function' )
+			opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
+		else
+			console.error("SpecIF Version < v0.10.8 is not supported.");
+		return
+	};
+	
 	// Check for missing options:
 	if( typeof(opts)!='object' || typeof(opts.callback)!='function' ) return null;;
 	if( typeof(opts.classifyProperties)!='function') {

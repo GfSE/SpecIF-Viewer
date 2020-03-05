@@ -8,7 +8,7 @@ function toOxml( data, opts ) {
 
 	// Reject versions < 0.10.8:
 	let v = data.specifVersion.split('.');
-	if( v.length!=3 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2],10))<1008 ) {
+	if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
 		if (typeof(opts.fail)=='function' )
 			opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
 		else
@@ -758,22 +758,22 @@ function toOxml( data, opts ) {
 						// Todo: Load a linked resource in the <img..> tag and include it in the document?
 //						console.debug('parseImg *1', img);
 
-						let u1 = getPrp( 'src', img.properties ).replace('\\','/'), 
-							d = getPrp( 'alt', img.properties ) || withoutPath( u1 ),	// the description
-							e = extOf(u1).toLowerCase();	// the file extension
+						let u = getPrp( 'src', img.properties ).replace('\\','/'), 
+							d = getPrp( 'alt', img.properties ) || withoutPath( u ),	// the description
+							e = extOf(u).toLowerCase();	// the file extension
 						
 						if( opts.imgExtensions.indexOf( e )>-1 ) {  
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( images, nameOf(u1)+'.png' );
-//							console.debug('parseImg *2',u1,e,pngF);
+							let pngF = itemById( images, nameOf(u)+'.png' );
+//							console.debug('parseImg *2',u,e,pngF);
 							if( e.indexOf('svg')>-1 && opts.preferPng && pngF ) {
 							//	t1 = pngF.type;
-								u1 = pngF.id
+								u = pngF.id
 							};
 							// At the lowest level, the image is included only if present:
-//							console.debug('parseImg *3',u1,d,t1);
-							return { text:d, hyperlink:{ external: u1 } }
+//							console.debug('parseImg *3',u,d,t1);
+							return { text:d, hyperlink:{ external: u } }
 						} else {
 							// in absence of an image, just show the description:
 							return { text:d }
@@ -786,25 +786,25 @@ function toOxml( data, opts ) {
 						// Or only if it is an image?
 //						console.debug('parseObject *1', obj);
 
-						let u1 = getPrp( 'data', obj.properties ).replace('\\','/'), 
-							t1 = getPrp( 'type', obj.properties ),
-							d = obj.innerHTML || getPrp( 'name', obj.properties ) || withoutPath( u1 ),	// the description
-							e = extOf(u1).toLowerCase();	// the file extension
+						let u = getPrp( 'data', obj.properties ).replace('\\','/'), 
+							t = getPrp( 'type', obj.properties ),
+							d = obj.innerHTML || getPrp( 'name', obj.properties ) || withoutPath( u ),	// the description
+							e = extOf(u).toLowerCase();	// the file extension
 						
 						if( opts.imgExtensions.indexOf( e )>-1 
 							|| opts.applExtensions.indexOf( e )>-1 ) {  
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( images, nameOf(u1)+'.png' );
-//							console.debug('parseObject *2',u1,e,pngF);
-							if( ( t1.indexOf('svg')>-1 || t1.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
-								t1 = pngF.type;
-								u1 = pngF.id
+							let pngF = itemById( images, nameOf(u)+'.png' );
+//							console.debug('parseObject *2',u,e,pngF);
+							if( ( t.indexOf('svg')>-1 || t.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
+								t = pngF.type;
+								u = pngF.id
 							};
 							// At the lowest level, the image is included only if present:
-//							console.debug('parseObject *3',u1,d,t1);
-						//	return {picture:{id:u1,title:d,type:t1,width:'200pt',height:'100pt'}}
-							return {picture:{id:u1,title:d,type:t1}}
+//							console.debug('parseObject *3',u,d,t);
+						//	return {picture:{id:u,title:d,type:t,width:'200pt',height:'100pt'}}
+							return {picture:{id:u,title:d,type:t}}
 						} else {
 							// in absence of an image, just show the description:
 							return {text:d}
@@ -908,7 +908,6 @@ function toOxml( data, opts ) {
 			}
 
 			function generateOxml( ct ) {
-//				console.debug('generateOxml',ct);
 				return chain( ct,
 					function(ct) {
 						if( ct.p )
@@ -940,7 +939,6 @@ function toOxml( data, opts ) {
 				}
 			}
 			function wParagraph( ct ) {
-//				console.debug('wParagraph',ct)
 				// Generate a WordML paragraph,
 				// empty paragraphs are allowed.
 				// a) ct is simple text without any option:
@@ -969,7 +967,6 @@ function toOxml( data, opts ) {
 						p += wRun(r)
 					})
 				};
-//				console.debug('*',p);
 				if( ct.style=='bulleted' ) {
 					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
 							+ p

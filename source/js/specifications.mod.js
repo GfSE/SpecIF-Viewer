@@ -34,8 +34,8 @@ modules.construct({
 		myFullName = 'app.'+myName,
 		tabsWithEditing = [ '#'+CONFIG.objectList, '#'+CONFIG.objectDetails ];
 
-	self.selectedTab = function() {
-//		console.debug('selectedTab',self.viewCtl.selected.view)
+	self.selectedView = function() {
+//		console.debug('selectedView',self.viewCtl.selected.view)
 		return self.viewCtl.selected.view
 	};
 	self.emptyTab = function( div ) {
@@ -101,13 +101,13 @@ modules.construct({
 					function(event) {  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 //						console.debug('tree.open',event);
-						if( self.selectedTab()=='#'+CONFIG.objectList ) self.refresh()
+						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'close':
 					// when a node is closed, but not when a closed node receives a close command
 					function(event) {  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
-						if( self.selectedTab()=='#'+CONFIG.objectList ) self.refresh()
+						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 			/*		},
 				'move':
 					function(event) {
@@ -496,7 +496,7 @@ modules.construct({
 		if( modules.load( 'object', function() {self.editObjClicked( mode )} ) ) return;  // try again as soon as module is loaded.
 
 	//	$( '#contentActions' ).empty();
-		var returnTab = self.selectedTab();		// after editing, return to the tab we are coming from
+		var returnTab = self.selectedView();		// after editing, return to the tab we are coming from
 		self.selectTab( 'object' );
 	//	self.views.show('object');
 
@@ -562,7 +562,7 @@ modules.construct({
 	};  */
 		
 	self.itemClicked = function( rId ) {
-		if( self.selectedTab() == '#'+CONFIG.objectRevisions || self.selectedTab() == '#'+CONFIG.comments ) return;
+		if( self.selectedView() == '#'+CONFIG.objectRevisions || self.selectedView() == '#'+CONFIG.comments ) return;
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
 		// If it is a resource with children (folder with content), assure it is open.
@@ -588,7 +588,7 @@ modules.construct({
 	self.relatedItemClicked = function( rId, sId ) {
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
 //		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, itemById( app.cache.selectedProject.data.statements, sId ) );
-	/*	if( self.selectedTab()=='#'+CONFIG.relations && modeStaDel ) {
+	/*	if( self.selectedView()=='#'+CONFIG.relations && modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
 			if( itemById( app.cache.selectedProject.data.statements, sId ) )
@@ -620,8 +620,8 @@ modules.construct({
 			.fail( handleError );
 		
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
-		var txtLbl = i18n.lookup( CONFIG.propClassText ),
-			txtAtT = itemByName( cT.propertyClasses, CONFIG.propClassText );
+		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
+			txtAtT = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
 		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtAtT.dataType );
 
 		var addC = new BootstrapDialog({
@@ -689,7 +689,7 @@ modules.construct({
 	};
 */
 	self.actionBtns = function() {
-		if( tabsWithEditing.indexOf( self.selectedTab() )<0 ) return '';
+		if( tabsWithEditing.indexOf( self.selectedView() )<0 ) return '';
 
 		// rendered buttons:
 		var selR = null,
@@ -744,7 +744,7 @@ modules.construct({
 		return rB	// return rendered buttons for display
 	};
 /*	self.cmtBtns = function() {
-		if( !self.selectedTab()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
+		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
 			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
@@ -1122,26 +1122,24 @@ function Resource( obj ) {
 	"use strict";
 	// for the list view, where title and text are shown in the main column and the others to the right.
 	var self = this;
-	self.value = null;
-	self.resToShow = {title:null,class:null,descriptions:[],other:[]};
+	const noRes = {descriptions:[],other:[]};
+	self.toShow = noRes;
 	self.staGroups = [];
 
 	self.set = function( res ) { 
 		if( res ) {
-			if( self.value && self.value.id==res.id && self.value.changedAt==res.changedAt ) {
+			if( self.toShow.id==res.id && self.toShow.changedAt==res.changedAt ) {
 				// assume that no change has happened:
 //				console.debug('object.set: no change');
 				return false   // no change
 			};
-			self.value = res;
-			self.resToShow = classifyProps( res, app.cache.selectedProject.data );
-//			console.debug( 'Resource.set', res, self.value, self.resToShow );
+			self.toShow = classifyProps( res, app.cache.selectedProject.data );
+//			console.debug( 'Resource.set', res, self.toShow );
 			return true			// has changed
 		} else {
-			if( self.value==null ) return false;	// no change
-			self.value = null;
-			self.resToShow = {title:null,class:null,descriptions:[],other:[]};
-//			console.debug('set new',self.value);
+			if( !self.toShow.id ) return false;	// no change
+			self.toShow = noRes;
+//			console.debug('set new',self.toShow);
 			return true			// has changed
 		}
 	};
@@ -1152,45 +1150,45 @@ function Resource( obj ) {
 				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
 				return (CONFIG.showEmptyProperties || hasContent(att.value))
 			} 
-		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
-//		console.debug( 'Resource.listEntry', self.value, self.resToShow );
+//		console.debug( 'Resource.listEntry', self.toShow );
 		var rO = '<div class="listEntry">'
 			+		'<div class="content-main">';
 		
 		// 1 Fill the main column:
 		// 1.1 The title:
-		switch( app.specs.selectedTab() ) {
+		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.objectList:
 				// move item to the top, if the title is clicked:
-				rO += '<div onclick="app.specs.itemClicked(\''+self.value.id+'\')">'
-					+	renderTitle( self.resToShow, self.value.order )
+				rO += '<div onclick="app.specs.itemClicked(\''+self.toShow.id+'\')">'
+					+	renderTitle( self.toShow )
 					+ '</div>';
 				break;
 			default:
-				rO += renderTitle( self.resToShow, self.value.order );
+				rO += renderTitle( self.toShow );
 		};
 		
 		// 1.2 The description properties:
-		self.resToShow.descriptions.forEach( function(ai) {
+		self.toShow.descriptions.forEach( function(ai) {
 			if( showAtt( ai ) ) {
-				var v = ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedTab())>-1,
+				var v = ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 					os = {
 						dynLinks: v,
 						clickableElements: v,
 						linkifiedURLs: v
 					};
-				rO += '<div class="attribute attribute-wide">'+valOf(self.resToShow,ai,os)+'</div>'
+				rO += '<div class="attribute attribute-wide">'+valOf(self.toShow,ai,os)+'</div>'
 			}
 		});
 		rO += 	'</div>'  // end of content-main
 			+	'<div class="content-other">';
 		// 2 Add elementActions:
-		switch( app.specs.selectedTab() ) {
+		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.comments:
 				rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
-				if( self.value.del )
-					rO +=	'<button onclick="app.specs.delComment(\''+self.value.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
+				if( self.toShow.del )
+					rO +=	'<button onclick="app.specs.delComment(\''+self.toShow.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
 			//	else
 			//		rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
 				rO +=	'</div>'
@@ -1200,68 +1198,68 @@ function Resource( obj ) {
 		};
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining atts:
-		self.resToShow.other.forEach( function( ai ) {
+		self.toShow.other.forEach( function( ai ) {
 			if( showAtt( ai ) ) {
-				rO += attrV( titleOf(ai), valOf(self.resToShow,ai), 'attribute-condensed' )
+				rO += attrV( titleOf(ai), valOf(self.toShow,ai), 'attribute-condensed' )
 			}
 		});
 		// 3.2 The type info:
-//		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.resToShow['class'] ), 'attribute-condensed' )
-		// 3.3 The change info depending on selectedTab:
-		rO += renderChangeInfo( self.value );		
+	//	rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'] ), 'attribute-condensed' )
+		// 3.3 The change info depending on selectedView:
+		rO += renderChangeInfo( self.toShow );		
 		rO +=   '</div>'	// end of content-other
 		+	'</div>';  // end of listEntry
 		
 		return rO  // return rendered resource for display
 	};
 /*	self.details = function() {
-		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 
 		// Create HTML for a detail view:
 		// 1 The title:
-		var rO = renderTitle( self.resToShow, self.value.order );	
+		var rO = renderTitle( self.toShow );	
 		// 2 The description properties:
-		self.resToShow.descriptions.forEach( function(ai) {
+		self.toShow.descriptions.forEach( function(ai) {
 //			console.debug('details.descr',ai.value);
 			if( hasContent(ai.value) ) {
 				var os = {
-//						dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedTab())>-1,
+				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 						dynLinks: true,
 						clickableElements: true,
 						linkifiedURLs: true
 					};
-				rO += 	'<div class="attribute attribute-wide">'+valOf(self.resToShow,ai,os)+'</div>'
+				rO += 	'<div class="attribute attribute-wide">'+valOf(self.toShow,ai,os)+'</div>'
 			}
 		});
 		// 3 The remaining properties:
-		self.resToShow.other.forEach( function( ai ) {
+		self.toShow.other.forEach( function( ai ) {
 //			console.debug('details.other',ai.value);
-			rO += attrV( titleOf(ai), valOf(self.resToShow,ai) )
+			rO += attrV( titleOf(ai), valOf(self.toShow,ai) )
 		});
 		// 4 The type info:
-		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.resToShow['class'] ) );
-		// 5 The change info depending on selectedTab:
-		rO += renderChangeInfo( self.value );
-//		console.debug( 'Resource.details', self.value, rO );
+		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'] ) );
+		// 5 The change info depending on selectedView:
+		rO += renderChangeInfo( self.toShow );
+//		console.debug( 'Resource.details', self.toShow, rO );
 		return rO  // return rendered resource for display
 	};
 */
 	//  Create a reduced SpecIF data set for rendering a graph:
 	self.statements = function( opts ) {
-		if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		if( browser.isIE ) return renderStatementsTable( self.staGroups, opts );
 		
 		// Build a simplified SpecIF data set with the selected resource in focus: 
 		var net = {
 			// here, the icon is transferred in a resourceClass ... like SpecIF:
 			resourceClasses: [{
-				id:		self.value['class'],
-				icon:	self.resToShow['class'].icon
+				id:		self.toShow['class'].id,
+				icon:	self.toShow['class'].icon
 			}],
 			resources: [{
-				id: 	self.value.id,
-				title: 	self.resToShow.title,
-				class:  self.value['class']
+				id: 	self.toShow.id,
+				title: 	self.toShow.title,
+				class:  self.toShow['class'].id
 			}],
 			statements: []
 		};
@@ -1279,7 +1277,7 @@ function Resource( obj ) {
 						title:		titleOf(s),	// translated
 						id:			s.id,
 						subject:	rR.id,
-						object:		self.value.id
+						object:		self.toShow.id
 					});
 					// add related resource:
 					if( indexById( net.resources, rR.id )<0 )    // avoid duplication 
@@ -1304,7 +1302,7 @@ function Resource( obj ) {
 					net.statements.push({
 						title:		titleOf(s),	// translated
 						id:			s.id,
-						subject:	self.value.id,
+						subject:	self.toShow.id,
 						object:		rR.id
 					});
 					// add related resource:
@@ -1323,7 +1321,7 @@ function Resource( obj ) {
 
 		function renderStatementsTable( sGL, opts ) {
 			// Render a table with all statements grouped by type:
-		//	if( !self.value ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		//	if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 			if( typeof(opts)!='object' ) opts = {fnDel:false};
 
 			// opts.fnDel is a name of a delete function to call. If provided, it is assumed that we are in delete mode.
@@ -1332,7 +1330,7 @@ function Resource( obj ) {
 				var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
 			else
 				var rT = '<div>';  // render table with the resource's statements in display mode
-			rT += renderTitle( self.resToShow, self.value.order );	// rendered statements
+			rT += renderTitle( self.toShow );	// rendered statements
 			if( sGL.length>0 ) {
 //				console.debug( sGL.length, sGL );
 				if( opts.fnDel ) 
@@ -1412,11 +1410,11 @@ function Resource( obj ) {
 			return rT  // return rendered statement table for display
 		}
 	};
-	function renderTitle( clAtts, ord ) {
+	function renderTitle( clAtts ) {
 		if( !clAtts.title ) return '';
-		if( self.resToShow['class'].isHeading ) 
+		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
-			return '<div class="chapterTitle" >'+(ord?ord+'&#xa0;':'')+clAtts.title+'</div>';
+			return '<div class="chapterTitle" >'+(clAtts.order?clAtts.order+'&#xa0;':'')+clAtts.title+'</div>';
 		// else: is not a heading:
 		// take title and add icon, if configured:
 		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance?clAtts.title.addIcon(clAtts['class'].icon):clAtts.title)+'</div>'
@@ -1424,13 +1422,14 @@ function Resource( obj ) {
 	function renderChangeInfo( ob ) {
 		if( !ob || !ob.revision ) return '';  // the view may be faster than the data, so avoid an error
 		var rChI = '';
-		switch( app.specs.selectedTab() ) {
+		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.objectRevisions: 
 				rChI = 	attrV( i18n.LblRevision, ob.revision, 'attribute-condensed' );
 				// no break
 			case '#'+CONFIG.comments: 
 				rChI += attrV( i18n.LblModifiedAt, localDateTime(ob.changedAt), 'attribute-condensed' ) 
 					+	attrV( i18n.LblModifiedBy, ob.changedBy, 'attribute-condensed' )
+		//	default: no change info!			
 		};
 		return rChI
 	}
@@ -1487,7 +1486,7 @@ function Resources() {
 	};
 	self.exists = function( rId ) {
 		for( var i=self.values.length-1; i>-1; i-- )
-			if( self.values[i].value.id==rId ) return true;
+			if( self.values[i].toShow.id==rId ) return true;
 		return false
 	};
 	self.render = function(resL) {

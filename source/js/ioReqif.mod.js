@@ -77,10 +77,10 @@ modules.construct({
 						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAtts( el )+'/>';
 						break;
 					case 'xs:integer':
-						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAtts( el )+' MAX="'+el.max+'" MIN="'+el.min+'" />';
+						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAtts( el )+' MAX="'+el.maxInclusive+'" MIN="'+el.minInclusive+'" />';
 						break;
 					case 'xs:double':
-						xml += '<DATATYPE-DEFINITION-REAL '+commonAtts( el )+' MAX="'+el.max+'" MIN="'+el.min+'" ACCURACY="'+el.accuracy+'" />';
+						xml += '<DATATYPE-DEFINITION-REAL '+commonAtts( el )+' MAX="'+el.maxInclusive+'" MIN="'+el.minInclusive+'" ACCURACY="'+el.fragmentDigits+'" />';
 						break;
 					case 'xs:string':
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAtts( el )+' MAX-LENGTH="'+el.maxLength+'" />';

@@ -35,18 +35,18 @@
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
 				// Only resources with type 'Requirement' will pass:
-				{title:'Plan', id:'OT-Pln', checked:false},
-				{title:'Model Element', id:'OT-MEl', checked:false},
-				{title:'Requirement', id:'OT-Req', checked:true},
-				{title:'Folder', id:'OT-Fld', checked:false},
-				{title:'Comment', id:'OT-Cmt', checked:false}
+				{title:'Plan', id:'RC-Pln', checked:false},
+				{title:'Model Element', id:'RC-MEl', checked:false},
+				{title:'Requirement', id:'RC-Req', checked:true},
+				{title:'Folder', id:'RC-Fld', checked:false},
+				{title:'Comment', id:'RC-Cmt', checked:false}
 			] 
 		},{ 
 			title: 'Priority',
 			category: 'propertyValue',
 			primary: false,
-			scope: 'OT-Req',   // this is a sub-filter for a property of a resource of type OT-Req
-			propClass: 'AT-Req-Priority,
+			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type OT-Req
+			propClass: 'PC-Req-Priority,
 			dataType: 'DT-Priority',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
@@ -60,8 +60,8 @@
 			title: 'Status',
 			category: 'propertyValue',
 			primary: false,
-			scope: 'OT-Req',   // this is a sub-filter for a property of a resource of type OT-Req
-			propClass: 'AT-Req-Status,
+			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type OT-Req
+			propClass: 'PC-Req-Status,
 			dataType: 'DT-Status',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
@@ -185,20 +185,22 @@ modules.construct({
 		app.busy.set();
 	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
-		let pend=0, h, hR, hCnt=0;;
+
+		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
+		let pend=0, h, hCnt=0;
 		pData.tree.iterate( function(nd) {
 			pend++;
 //			console.debug('tree.iterate',pend,nd.ref);
-			// Read asynchronously, so that the cache has the chance to reload from the server,
-			// Note that the sequence may differ from the hierarchy one's due to varying response times:
+			// Read asynchronously, so that the cache has the chance to reload from the server.
+			// Note that the sequence may differ from the hierarchy one's due to varying response times.
+			// Note also, that a resource may be listed several times, if it appears several times in the hierarchies.
 			prj.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
-					h = match(rsp);
+					h = match( new Resource(rsp) );
 //					console.debug('tree.iterate',self.filterList,pend,rsp,h);
 					if( h )	{
 						hCnt++;
-						hR = new Resource( h );
-						$('#hitlist').append( hR.listEntry() )
+						$('#hitlist').append( h.listEntry() )
 					};
 					if( --pend<1 ) {  // all done
 						$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hCnt+'</div>' );
@@ -212,15 +214,16 @@ modules.construct({
 	
 	function match(res) {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
+		// Note that res is not a SpecIF resource, but a Viewer Resource built using classifyProps()!
 		// If an enumerated property is missing, the resource does NOT match.
-		// In case all filers match, the resource is returned as 'hit'. 
+		// In case all filers match, the resource is returned with marked values (if appropriate). 
 		// all resources pass, if there is no filter.
 
 			function matchResClass(f) {   
 				// primary filter applying to all resources:
 				for( var j=f.options.length-1; j>-1; j--){ 
 //					console.debug('matchResClass',f.options[j],res);
-					if( f.options[j].checked && f.options[j].id==res['class'] ) return true
+					if( f.options[j].checked && f.options[j].id==res.toShow['class'].id ) return true
 				};
 				return false
 			}
@@ -244,114 +247,121 @@ modules.construct({
 
 				let dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, f.caseSensitive?'':'i' ), 
-					oa=null, dT=null;
-				if( res.properties )
-					for( var a=res.properties.length-1; a>-1; a-- ){
-						oa = res.properties[a];
-						// for each property test whether it contains 'str':
-						dT = dataTypeOf( dta, oa['class'] );
-						// in case of oa we have a property 'dataType':
-	//					dT = itemById( dta.dataTypes, oa.dataType );
-	//					console.debug('matchSearchString',f,oa,dT);
-						switch( dT.type ) {
+					dT;
+					
+					function matchStr( prp, type ) {
+//						console.debug('matchStr',prp,type);
+						switch( type ) {
 							case 'xhtml':
-								if( patt.test( oa.value.stripHTML() )) return true; // if found return, continue searching, otherwise
+								if( patt.test( prp.value.stripHTML() )) return true; // if found return, continue searching, otherwise
 								break;
 							case 'xs:enumeration':
 								// only if enumerated values are included in the search:
 								if( !f.excludeEnums ) {
-									if( patt.test( enumValStr(dT,oa) ) ) return true  // if found return, continue searching, otherwise
+									if( patt.test( enumValStr(dT,prp) ) ) return true  // if found return, continue searching, otherwise
 								};
 								break;
 							default:
-								if( patt.test( oa.value ) ) return true; // if found return, continue searching, otherwise
+								if( patt.test( prp.value ) ) return true; // if found return, continue searching, otherwise
 								break
 						}
-					};
-				//  ToDo: search resource title and description, if there are no corresponding properties.	
+					}
+				
+				var a;
+				if( matchStr( {value:res.toShow.title}, 'xhtml' ) ) return true;
+				for( a=res.toShow.descriptions.length-1; a>-1; a-- )
+					if( matchStr( res.toShow.descriptions[a], 'xhtml' ) ) return true;
+				for( a=res.toShow.other.length-1; a>-1; a-- ){
+					// for each property test whether it contains 'str':
+					dT = dataTypeOf( dta, res.toShow.other[a]['class'] );
+//					console.debug('matchSearchString',f,res.toShow.other[a],dT);
+					if( matchStr( res.toShow.other[a], dT.type ) ) return true
+				};
 				return false  // not found
 			}
 			function matchPropValue(f) {   
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
-				if( f.scope && f.scope!=res['class'] ) return true;
+				if( f.scope && f.scope!=res.toShow['class'].id ) return true;
 				
 //				console.debug( 'matchPropValue', f, res );
 
 				// The filter is 'applicable': 
-				// a match must be found, otherwise the filter returns 'false' (res will be excluded):
-				if( res.properties )
-					switch ( f.baseType ) {
-						case 'xs:enumeration':
-							let oa = itemBy( res.properties, 'class', f.propClass ), // the concerned property
-								no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
-							// If the resource does not have a property of the specified class,
-							// it is a match only if the filter specifies 'notAssigned':
-//							console.debug('matchPropValue',f,oa,no);
-							if( !oa ) return no;
-							
-							// return 'true' only if there is a match between any resource property value and the specified filter option 'opt':
-							let ct = oa.value.trim(),
-								cL=null, z=null, j=null;
-							// works with single-valued and multiple-valued ENUMERATIONs:
-							for( j=f.options.length-1; j>-1; j--) { 
-								if( !f.options[j].checked ) continue;
-								// try to match for every checked option (logical OR):
-								if( ct.length>0 ) {
-									cL = ct.split(',');	// this is a list of value ids
-									// - if any selected id in the options list is contained in the property values list:
-									for( z=cL.length-1; z>-1; z-- ) { 
+				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
+				// 
+				switch ( f.baseType ) {
+					case 'xs:enumeration':
+						// Assuming that there is max. one property per resource with the class specified by the filter:
+						let oa = itemBy( res.toShow.other, 'class', f.propClass ), // the concerned property
+							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
+						// If the resource does not have a property of the specified class,
+						// it is a match only if the filter specifies 'notAssigned':
+//						console.debug('matchPropValue',f,oa,no);
+						if( !oa.value ) return no;
+						
+						// return 'true' only if there is a match between any resource property value and the specified filter option 'opt':
+						let ct = oa.value.trim(),
+							cL, z, j;
+						// works with single-valued and multiple-valued ENUMERATIONs:
+						for( j=f.options.length-1; j>-1; j--) { 
+							if( !f.options[j].checked ) continue;
+							// try to match for every checked option (logical OR):
+							if( ct.length>0 ) {
+								cL = ct.split(',');	// this is a list of value ids
+								// - if any selected id in the options list is contained in the property values list:
+								for( z=cL.length-1; z>-1; z-- ) { 
 //										console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
-										if( f.options[j].id==cL[z].trim() ) return true
-									}
-								} else {
-									// the resource property has no value:
-									if( f.options[j].id=='notAssigned' ) return true;
-									if( f.options[j].id.length<1 ) return true
+									if( f.options[j].id==cL[z].trim() ) return true
 								}
-							};
-					//		break;
-					//	default:
-					};
+							} else {
+								// the resource property has no value:
+								if( f.options[j].id=='notAssigned' ) return true;
+								if( f.options[j].id.length<1 ) return true
+							}
+						};
+				//		break;
+				//	default:
+				};
 				// no match has been found:
 				return false
 			}
 			function matchAndMark( f ) {
-//				console.debug( 'matchAndMark', f );
+//				console.debug( 'matchAndMark', f, res.toShow.title );
 				switch( f.category ) {
 					case 'resourceClass': 
-						if( matchResClass(f) ) return hit; // don't mark in this case
-						return undefined;
+						if( matchResClass(f) ) return res; // don't mark in this case
+						return; // undefined
 					case 'propertyValue': 
-						if( matchPropValue(f) ) return hit; // don't mark in this case, either
-						return undefined;
-/*						if( matchPropValue(f) ) {
+//						console.debug( 'matchAndMark', f, res.toShow.title );
+						if( matchPropValue(f) ) return res; // don't mark in this case, either
+						return; // undefined
+				/*		if( matchPropValue(f) ) {
 							console.debug( 'attValueMatched' );
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
 							//    (very short property titles cause a marking within formatting tags, which destroys them.)
 							//     Another problem exists, when a property title contains literally a filter title (=property value). Then, the property title is falsely marked.
-							//     --> Don't mark within (X)HTML tags and property titles, mark only property values.
+							//     --> Don't mark within XHTML tags and property titles, mark only property values.
 							//     --> Only mark property values which are EQUAL to the filter title.
 							//     Preliminary solution: title must be longer than 4 characters, otherwise the property will not be marked.
-							if( f.scope == res['class'] ) { 
+							if( f.scope == res.toShow['class'] ) { 
 								var rgxA;
 								for( var o=0, O=f.options.length; o<O; o++ ) {
 									if( f.options[o].checked && f.options[o].title.length>4 ) {
 										rgxA = RegExp( '('+f.options[o].title+')', 'g' );
 
-										for( var a=0, A=res.properties.length; a<A; a++ ){
-											if( f.dataType == res.properties[a].dataType )
-												mO.properties[a].value = res.properties[a].value.replace( rgxA, function( $0, $1 ){ return '<mark>'+$1+'</mark>' } )
+										for( var a=0, A=res.toShow.other.length; a<A; a++ ){
+											if( f.dataType == res.toShow.other[a].dataType )
+												mO.properties[a].value = res.toShow.other[a].value.replace( rgxA, function( $0, $1 ){ return '<mark>'+$1+'</mark>' } )
 										}
 									}
 								}
 							};
 							return true
 						}; 
-						return false;
-*/					case 'textSearch': 
+						return false;  */
+					case 'textSearch': 
 						if( matchSearchString(f) ) {
 //							console.debug('matchSearchString',f,res);
 							// mark matching strings:
@@ -360,27 +370,32 @@ modules.construct({
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
 							// ToDo: XHTML - Don't mark within a link ... it is destroyed.
 							if( f.searchString.length>0 ) {
-								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' );
-								// Clone the resource for marking the matches in the text:
-								var mO = {  // marked resource
-									id: hit.id,
-									title: hit.title,
-									class: hit['class'],
-									properties: []
-									};
-								hit.properties.forEach( function( hP ) {
-									mO.properties.push({
-										title: hP.title,  // for sorting the property into the columns
-										class: hP['class'],
-										value: hP.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' ),
+								    lE, i;
+									
+								res.toShow.title = res.toShow.title.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
+								// Clone the marked list elements for not modifying the original resources:
+								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
+									lE = res.toShow.descriptions[i];
+									res.toShow.descriptions.splice( i, 1, {
+											title: lE.title,  // for sorting the property into the columns
+											class: lE['class'],
+											value: lE.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									})
-								}); 
-//								console.debug(mO)
-								return mO
+								}; 
+								for( i= res.toShow.other.length-1; i>-1; i-- ) {
+									lE = res.toShow.other[i];
+									res.toShow.other.splice( i, 1, {
+											title: lE.title,  // for sorting the property into the columns
+											class: lE['class'],
+											value: lE.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+									}); 
+	//								console.debug(res)
+								}
 							};
-							return hit
+							return res
 						}; 
-						return undefined
+							return // undefined
 				}
 			}
 		
@@ -388,13 +403,12 @@ modules.construct({
 
 		// Top-level: for the given resource, apply all filters (cycle through all elements of the filter list),
 		// work the filterList from the beginning backwards, so that the primary filters are evaluated first.
-		// 'hit' accumulates all markings without changing the original resource 'res'.
+		// 'res' accumulates all markings without changing the original resource value in the project data (cache).
 		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
-		var hit = res;
-		for( var i=self.filterList.length-1; hit!='undefined' && i>-1; i--) { 
-			hit = matchAndMark( self.filterList[i] )
+		for( var i=0, I=self.filterList.length; res && i<I; i++) { 
+			res = matchAndMark( self.filterList[i] )
 		};
-		return hit
+		return res
 	}
 	function isClogged() {
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):
@@ -575,12 +589,7 @@ modules.construct({
 					};
 					oTF.options.push( opt )
 				});
-
-				// a filter with a single option will never exclude a resource from the hit-list (or all of them), 
-				// therefore it is omitted, unless it has secondary filters:
-				if( oTF.options.length>1 || mayHaveSecondaryFilters( oTF.options[0].id )) {
-					self.filterList.push(oTF)
-				}
+				self.filterList.push(oTF)
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
