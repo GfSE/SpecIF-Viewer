@@ -325,16 +325,7 @@ modules.construct({
 		//   or add it at the end of the hierarchy list, otherwise.
 		// - 'replace': replace the current tree with spc
 		// - use this function to auto-update the tree in the background.
-
-		// replace or append spc:
-	//	let tr = self.tree.get(), // don't ask me why this does not work ..
-		let tr = [].concat(self.tree.get()),
-			idx = indexById( tr, spc.id );
-//		console.debug('updateTree',tr,idx,Array.isArray(tr));
-		if( idx<0 )
-			tr.push(toChild(spc))
-		else
-			tr = tr.splice(idx,1,toChild(spc));   */
+	*/
 	
 		let tr;
 		// Replace the tree:
@@ -358,7 +349,7 @@ modules.construct({
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// String.fromCodePoint()
-				name: resTitleOf(r).unescapeHTML(), 
+				name: elementTitleOf(r).unescapeHTML(), 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -1007,7 +998,7 @@ modules.construct({
 //				var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
 //				if( !rT ) return;
 			
-			var ti = resTitleOf( sO ),
+			var ti = elementTitleOf( sO ),
 				rG = { rGs: [], rGt: [] };		// construct a statement group for the new statement type
 			// In contrast to the statements collected before, these are not stored in the server.
 
@@ -1020,7 +1011,7 @@ modules.construct({
 				// so there is no need to check it, here:
 				// disregard resources which are not referenced in the current tree:
 				if( pData.tree.nodesByRef(rO.id).length<1 ) return;
-				let ti = resTitleOf( rO );
+				let ti = elementTitleOf( rO );
 				if( !ti || ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
 				
 				// 1. The titles of other resource's found in the selected resource's texts 
@@ -1134,7 +1125,7 @@ function Resource( obj ) {
 				return false   // no change
 			};
 			self.toShow = classifyProps( res, app.cache.selectedProject.data );
-//			console.debug( 'Resource.set', res, self.toShow );
+//			console.debug( 'Resource.set', res, simpleClone(self.toShow) );
 			return true			// has changed
 		} else {
 			if( !self.toShow.id ) return false;	// no change
@@ -1145,10 +1136,10 @@ function Resource( obj ) {
 	};
 
 	self.listEntry = function() {
-			function showAtt( att ) {
-//				console.debug('#att',att);
-				if( CONFIG.overviewHiddenProperties.indexOf( att.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.showEmptyProperties || hasContent(att.value))
+			function showPrp( prp ) {
+//				console.debug('showPrp',prp);
+				if( CONFIG.overviewHiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
+				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value) ))
 			} 
 		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
@@ -1170,37 +1161,39 @@ function Resource( obj ) {
 		};
 		
 		// 1.2 The description properties:
-		self.toShow.descriptions.forEach( function(ai) {
-			if( showAtt( ai ) ) {
+		self.toShow.descriptions.forEach( function(prp) {
+			if( showPrp( prp ) ) {
 				var v = ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 					os = {
 						dynLinks: v,
 						clickableElements: v,
 						linkifiedURLs: v
 					};
-				rO += '<div class="attribute attribute-wide">'+valOf(self.toShow,ai,os)+'</div>'
+				rO += '<div class="attribute attribute-wide">'+valOf(self.toShow,prp,os)+'</div>'
 			}
 		});
 		rO += 	'</div>'  // end of content-main
 			+	'<div class="content-other">';
-		// 2 Add elementActions:
+			
+	/*	// 2 Add elementActions:
 		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.comments:
 				rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
 				if( self.toShow.del )
 					rO +=	'<button onclick="app.specs.delComment(\''+self.toShow.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
-			//	else
-			//		rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
+				else
+					rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
 				rO +=	'</div>'
 		//		break;
 		//	default:
 				// nothing, so far
-		};
+		}; */
+		
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining atts:
-		self.toShow.other.forEach( function( ai ) {
-			if( showAtt( ai ) ) {
-				rO += attrV( titleOf(ai), valOf(self.toShow,ai), 'attribute-condensed' )
+		self.toShow.other.forEach( function( prp ) {
+			if( showPrp( prp ) ) {
+				rO += attrV( titleOf(prp), valOf(self.toShow,prp), 'attribute-condensed' )
 			}
 		});
 		// 3.2 The type info:
@@ -1219,22 +1212,22 @@ function Resource( obj ) {
 		// 1 The title:
 		var rO = renderTitle( self.toShow );	
 		// 2 The description properties:
-		self.toShow.descriptions.forEach( function(ai) {
-//			console.debug('details.descr',ai.value);
-			if( hasContent(ai.value) ) {
+		self.toShow.descriptions.forEach( function(prp) {
+//			console.debug('details.descr',prp.value);
+			if( hasContent(prp.value) ) {
 				var os = {
 				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 						dynLinks: true,
 						clickableElements: true,
 						linkifiedURLs: true
 					};
-				rO += 	'<div class="attribute attribute-wide">'+valOf(self.toShow,ai,os)+'</div>'
+				rO += 	'<div class="attribute attribute-wide">'+valOf(self.toShow,prp,os)+'</div>'
 			}
 		});
 		// 3 The remaining properties:
-		self.toShow.other.forEach( function( ai ) {
-//			console.debug('details.other',ai.value);
-			rO += attrV( titleOf(ai), valOf(self.toShow,ai) )
+		self.toShow.other.forEach( function( prp ) {
+//			console.debug('details.other',prp.value);
+			rO += attrV( titleOf(prp), valOf(self.toShow,prp) )
 		});
 		// 4 The type info:
 		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'] ) );
@@ -1285,7 +1278,7 @@ function Resource( obj ) {
 						net.resources.push({
 							id: 	rR.id,
 							title: 	elementTitleWithIcon(rR)
-/*							title: 	resTitleOf(rR),
+/*							title: 	elementTitleOf(rR),
 							class: rR['class']
 						});
 					// add its resourceClass:
@@ -1410,25 +1403,29 @@ function Resource( obj ) {
 			return rT  // return rendered statement table for display
 		}
 	};
-	function renderTitle( clAtts ) {
-		if( !clAtts.title ) return '';
+	function renderTitle( clsPrp ) {
+		if( !clsPrp.title ) return '';
+		// Remove all formatting for the title, as the app's format shall prevail.
+		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
+		let ti = languageValueOf( clsPrp.title );
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
-			return '<div class="chapterTitle" >'+(clAtts.order?clAtts.order+'&#xa0;':'')+clAtts.title+'</div>';
+			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
 		// else: is not a heading:
 		// take title and add icon, if configured:
-		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance?clAtts.title.addIcon(clAtts['class'].icon):clAtts.title)+'</div>'
+//		console.debug('renderTitle',simpleClone(clsPrp));
+		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti)+'</div>'
 	}
-	function renderChangeInfo( ob ) {
-		if( !ob || !ob.revision ) return '';  // the view may be faster than the data, so avoid an error
+	function renderChangeInfo( clsPrp ) {
+		if( !clsPrp || !clsPrp.revision ) return '';  // the view may be faster than the data, so avoid an error
 		var rChI = '';
 		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.objectRevisions: 
-				rChI = 	attrV( i18n.LblRevision, ob.revision, 'attribute-condensed' );
+				rChI = 	attrV( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
 				// no break
 			case '#'+CONFIG.comments: 
-				rChI += attrV( i18n.LblModifiedAt, localDateTime(ob.changedAt), 'attribute-condensed' ) 
-					+	attrV( i18n.LblModifiedBy, ob.changedBy, 'attribute-condensed' )
+				rChI += attrV( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
+					+	attrV( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' )
 		//	default: no change info!			
 		};
 		return rChI
@@ -1437,6 +1434,34 @@ function Resource( obj ) {
 	// initialize:
 	self.set( obj );
 	return self
+
+/*	function deformat( txt ) {
+		// Remove all HTML-tags from 'txt',
+		// but keep all marked deletions and insertions (as prepared be diffmatchpatch):
+		// ToDo: consider to use this function only in the context of showing revisions and filter results,
+		// 		 ... and to use a similar implementation which does not save the deletions and insertions, otherwise.
+		let mL = [], dL = [], iL = [];
+		txt = txt.replace(/<del[^<]+<\/del>/g, function($0) {
+										dL.push($0);
+										return 'hoKu§pokus'+(dL.length-1)+'#'
+									});
+		txt = txt.replace(/<ins[^<]+<\/ins>/g, function($0) {
+										iL.push($0);
+										return 'siM§alabim'+(iL.length-1)+'#'
+									});
+		txt = txt.replace(/<mark[^<]+<\/mark>/g, function($0) {
+										mL.push($0);
+										return 'abRakad@bra'+(mL.length-1)+'#'
+									});
+		// Remove all formatting for the title, as the app's format shall prevail:
+		txt = txt.stripHTML().trim();
+		// Finally re-insert the deletions and insertions with their tags:
+		// ToDo: Remove any HTML-tags within insertions and deletions
+		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
+		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
+		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
+		return txt
+	}  */
 }
 function Resources() {
 	"use strict";
@@ -1522,24 +1547,25 @@ function valOf( ob, prp, opts ) {
 			linkifiedURLs: false
 		}
 	};
-//	console.debug('valOf',ob,prp,opts);
+	// Malicious content has been removed upon import ( specif.toInt() ).
 	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
-			var ct = noCode(prp.value).ctrl2HTML();
-			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
+			var ct = languageValueOf( prp.value ).ctrl2HTML();
+			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
-			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'
+		/*	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
+				ct = '&#x00ab;'+ct+'&#x00bb;'  */
 			break;
 		case 'xhtml':
 			var os = {
 					rev: ob.revision,
 					clickableElements: opts.clickableElements
 				},
-				ct = fileRef.toGUI( noCode(prp.value), os );
-			if( opts.linkifiedURLs ) ct = ct.linkifyURLs();
-//			console.debug('valOf XHTML',ct);
+				ct = languageValueOf( prp.value ).unescapeHTMLTags();
+			ct = makeHTML( ct );
+			ct = fileRef.toGUI( ct, os );
+			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			break;
 		case 'xs:dateTime':
@@ -1551,7 +1577,7 @@ function valOf( ob, prp, opts ) {
 			var ct = enumValStr( dT, prp );		// translate IDs to values, if appropriate
 			break;
 		default:
-			var ct = noCode(prp.value)
+			var ct = prp.value
 	};
 	return ct
 
@@ -1590,8 +1616,8 @@ function valOf( ob, prp, opts ) {
 						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
 						// avoid self-reflection:
 					//	if(ob.id==cO.id) return true;
-					//	ti = resTitleOf( cO ).stripHTML();
-						ti = resTitleOf( cO );
+					//	ti = elementTitleOf( cO ).stripHTML();
+						ti = elementTitleOf( cO );
 						// if the dynLink content equals a resource's title, remember the first occurrence:
 						if( notFound && ti && m==ti.toLowerCase() ) {
 							notFound = false;
@@ -1968,7 +1994,7 @@ var fileRef = {
 						addViewBoxIfMissing(svg);
 						
 						// now collect all clickable elements:
-						svg.clEls = [];
+						svg.clkEls = [];
 						// For all elements in CONFIG.clickElementClasses:
 						// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
 						// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
@@ -1976,17 +2002,17 @@ var fileRef = {
 						// 	Array.from() converts the HTMLCollection to a regular array, 
 						//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
 						CONFIG.clickElementClasses.forEach( function(cl) {
-							svg.clEls = svg.clEls.concat(Array.from( svg.getElementsByClassName( cl )));
+							svg.clkEls = svg.clkEls.concat(Array.from( svg.getElementsByClassName( cl )));
 						});
-//						console.debug(svg.clEls, typeof(svg.clEls))
-						let clEl = null;
-						svg.clEls.forEach( function(clEl) {
+//						console.debug(svg.clkEls, typeof(svg.clkEls))
+						let clkEl = null;
+						svg.clkEls.forEach( function(clkEl) {
 							// set cursor for clickable elements:
-							clEl.setAttribute("style", "cursor:pointer;");
+							clkEl.setAttribute("style", "cursor:pointer;");
 
 							// see https://www.quirksmode.org/js/events_mouse.html
 							// see https://www.quirksmode.org/dom/events/
-							clEl.addEventListener("dblclick", 
+							clkEl.addEventListener("dblclick", 
 								function(evt){ 
 									// ToDo: So far, this only works with ARCWAY generated SVGs.
 									let eId = this.className.baseVal.split(' ')[1];		// second class is element id
@@ -2003,29 +2029,30 @@ var fileRef = {
 							);
 
 							// Show the description of the element under the cursor to the left:
-							clEl.addEventListener("mouseover", 
+							clkEl.addEventListener("mouseover", 
 								function(evt){ 
 //									console.debug(evt,this,$(this));
 									// ToDo: So far, this only works with ARCWAY generated SVGs.
 								//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 									let eId = this.className.baseVal.split(' ')[1],		// id is second class
-										clAtts = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
+										clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
+										ti = languageValueOf( clsPrp.title );
 										dsc = '';
-									clAtts.descriptions.forEach( function(d) {
+									clsPrp.descriptions.forEach( function(d) {
 										// to avoid an endless recursive call, valOf shall add neither dynLinks nor clickableElements
-										dsc += valOf(clAtts,d)
+										dsc += valOf(clsPrp,d)
 									});
 									if( dsc.stripCtrl().stripHTML().trim() ) {
 										// Remove the dynamic linking pattern from the text:
 										$("#details").html( '<span style="font-size:120%">' 
-															+ (CONFIG.addIconToInstance?clAtts.title.addIcon(clAtts['class'].icon):clAtts.title) 
+															+ (CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti) 
 															+ '</span>\n'
 															+ dsc );
 										app.specs.showTree.set(false)
 									}
 								}
 							);
-							clEl.addEventListener("mouseout", 
+							clkEl.addEventListener("mouseout", 
 								function(evt){ 
 								//	evt.target.setAttribute("style", "cursor:default;"); 
 									app.specs.showTree.set(true);
@@ -2040,13 +2067,13 @@ var fileRef = {
 							// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 							if( !CONFIG.selectCorrespondingDiagramFirst ) return id;
 							// else, replace the id of a resource by the id of a diagram carrying the same title:
-							let ti = resTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id)),
+							let ti = elementTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id)),
 								rT = null;
 							for( var i=app.cache.selectedProject.data.resources.length-1;i>-1;i--) {
 								rT = itemById(app.cache.selectedProject.data.resourceClasses,app.cache.selectedProject.data.resources[i]['class']);
 								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( resTitleOf(app.cache.selectedProject.data.resources[i])==ti ) {
+								if( elementTitleOf(app.cache.selectedProject.data.resources[i])==ti ) {
 									// found: the diagram carries the same title 
 									if( app.specs.resources.selected().value && app.specs.resources.selected().value.id==app.cache.selectedProject.data.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 

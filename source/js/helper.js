@@ -139,7 +139,7 @@ function radioInput( lbl, opts ) {
 		rB +=			'<div>'
 			+				'<label>'
 			+					'<input type="radio" name="radio'+nm+'" value="'+(o.id||i)+'" '+chd+'/>'
-			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+(o.title||titleOf(o))+tp+'</span>'
+			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+o.title+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
 	});
@@ -177,7 +177,7 @@ function checkboxInput( lbl, opts ) {
 		cB +=			'<div>'
 			+				'<label>'
 			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(o.id||i)+'" '+(o.checked?'checked ':'')+'/>'
-			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+(o.title||titleOf(o))+tp+'</span>'
+			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+o.title+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
 	});
@@ -580,6 +580,22 @@ function isHTML(str) {
   var doc = new DOMParser().parseFromString(str, "text/html");
   return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
 }
+function makeHTML(str) {
+	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
+	if( isHTML(str) ) 
+		return str;
+	if( CONFIG.convertMarkdown && app.markdown )
+		// don't interpret the '+' as list item, but do so with '•',
+		// transform arrows assembled by characters to special arrow characters:
+		return app.markdown.makeHtml( str
+										.replace(/-?-(?:&gt;|>)/g,'&rarr;') 
+										.replace(/(?:&lt;|<)--?/g,'&larr;') 
+										.replace(/\+ /g,'&#x2b; ')
+										.replace(/• /g,'* ') 
+									);
+	return '<div><p>'+str.ctrl2HTML()+'</p></div>'
+} 
+
 if (!String.prototype.stripHTML) {
 	String.prototype.stripHTML = function() {
 		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
@@ -624,7 +640,9 @@ String.prototype.addIcon = function( ic ) {
 };
 
 // Add a link to an isolated URL:
-String.prototype.linkifyURLs = function() {
+String.prototype.linkifyURLs = function( opts ) {
+	// perform the operation, unless specifically disabled:
+	if( typeof(opts)=='object' && !opts.linkifiedURLs ) return this;
 	return this.replace( RE.URL,  
 		function( $0, $1, $2, $3, $4, $5, $6, $7, $8 ){ 
 			// all links which do not start with "http" are considered local by most browsers:
@@ -934,6 +952,15 @@ function noCode( s ) {
 	function log(c) {
 		console.error('Considered harmful ('+c+'):',s)
 	}
+}
+function cleanValue( o ) {
+	switch( typeof(o) ) {
+		case 'string': return noCode( o ); 
+		case 'object': 
+			if( Array.isArray( o ) )
+				return forAll( o, function( val ) { val.text = noCode(val.text); return val } )
+	};
+	return ''  // unexpected input (programming error with all likelihood
 }
 
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray

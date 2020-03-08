@@ -2031,18 +2031,18 @@ function Project( pr ) {
 						if ( refC.maxLength==undefined )
 							return {status:0};
 						if ( newC.maxLength==undefined || refC.maxLength<newC.maxLength )
-							return {status:951, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
+							return {status:951, statusText:"new dataType '"+newC.id+"' of type '"+newC.type+"' is incompatible"};
 						return {status:0};
 					case 'xs:double':
 						// to be compatible, the new 'fragmentDigits' must be lower or equal:
 						if( refC.fragmentDigits<newC.fragmentDigits )
-							return {status:952, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
+							return {status:952, statusText:"new dataType '"+newC.id+"' of type '"+newC.type+"' is incompatible"};
 						// else: go on ...
 					case 'xs:integer':
 						// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 //						console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
 						if( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive )
-							return {status:953, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"}
+							return {status:953, statusText:"new dataType '"+newC.id+"' of type '"+newC.type+"' is incompatible"}
 						else
 							return {status:0};
 					case 'xs:enumeration':
@@ -2053,10 +2053,10 @@ function Project( pr ) {
 							idx = indexById( refC.values, newC.values[v].id );
 							// the id must be present:
 							if( idx<0 ) 
-								return {status:954, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"};
+								return {status:954, statusText:"new dataType '"+newC.id+"' of type '"+newC.type+"' is incompatible"};
 							//  ... and the titles must be equal:
 							if( refC.values[idx].title != newC.values[v].title )
-								return {status:955, statusText:"new dataType '"+titleOf(newC)+"' of type '"+newC.type+"' is incompatible"}
+								return {status:955, statusText:"new dataType '"+newC.id+"' of type '"+newC.type+"' is incompatible"}
 						};
 						return {status:0}
 				};
@@ -2067,11 +2067,11 @@ function Project( pr ) {
 				// ... and similarly for the targetTypes:
 				if( refC.sourceTypes && !newC.sourceTypes
 					|| refC.sourceTypes && newC.sourceTypes && !containsById( refC.sourceTypes, newC.sourceTypes ) ) {
-							return {status:961, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+							return {status:961, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"}
 				};
 				if( refC.targetTypes && !newC.targetTypes
 					|| refC.targetTypes && newC.targetTypes && !containsById( refC.targetTypes, newC.targetTypes ) ) {
-							return {status:962, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+							return {status:962, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"}
 				};
 				// else: so far everything is OK, but go on checking ... (no break!)
 			case 'resourceClass':
@@ -2081,7 +2081,7 @@ function Project( pr ) {
 							return {status:0};
 				// else: The new type has at least one property.
 				if( mode=='match' && (!refC.propertyClasses || !refC.propertyClasses.length) ) 
-							return {status:963, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"};
+							return {status:963, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"};
 				var idx=null, pc=null;
 				for( var a=newC.propertyClasses.length-1; a>-1; a-- ) {
 					npc = newC.propertyClasses[a];
@@ -2098,7 +2098,7 @@ function Project( pr ) {
 						// The property class in the new data is not found in the existing (reference) data:
 						if( mode=='match' )
 							// the property class is expected and thus an error is signalled:
-							return {status:964, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+							return {status:964, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"}
 						else
 							// cases 'extend' and 'ignore';
 							// either the property will be created later on, or it will be ignored;
@@ -2107,7 +2107,7 @@ function Project( pr ) {
 					};
 					//  else: the property class is present; in this case and in all modes the dataTypes must be equal:
 					if( refC.propertyClasses[idx].dataType != npc.dataType ) {
-						return {status:965, statusText:"new "+ctg+" '"+titleOf(newC)+"' is incompatible"}
+						return {status:965, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"}
 					}
 				};
 				return {status:0}
@@ -2287,7 +2287,7 @@ function Project( pr ) {
 		L[n] = e; 
 		return n 
 	}  */
-}
+}  // end of function Project()
 
 //////////////////////////
 // global helper functions:
@@ -2385,14 +2385,15 @@ const specif = {
 				names.sClass = 'class';
 				names.pClass = 'class'
 		};
-		if( spD.specifVersion.startsWith('0.1') ) 
-			var frct = 'accuracy',
-				minI = 'min',
-				maxI = 'max';
-		else
-			var frct = 'fractionDigits',
-				minI = 'minInclusive',
-				maxI = 'maxInclusive';
+		if( spD.specifVersion.startsWith('0.1') ) {
+				names.frct = 'accuracy';
+				names.minI = 'min';
+				names.maxI = 'max'
+		} else {
+				names.frct = 'fractionDigits';
+				names.minI = 'minInclusive';
+				names.maxI = 'maxInclusive'
+		};
 
 		let iD = {};
 		try {
@@ -2421,7 +2422,7 @@ const specif = {
 		if( spD.createdBy ) iD.createdBy = spD.createdBy;
 		if( spD.createdAt ) iD.createdAt = spD.createdAt;
 		
-//		console.debug('specif.set',iD);
+//		console.debug('specif.toInt',simpleClone(iD));
 		return iD
 
 			// common for all items:
@@ -2430,7 +2431,7 @@ const specif = {
 					id: iE.id,
 					changedAt: iE.changedAt
 				};
-				if( iE.description ) oE.description = noCode(iE.description);
+				if( iE.description ) oE.description = cleanValue(iE.description);
 				// revision is a number up until v0.10.6 and a string thereafter:
 				switch( typeof(iE.revision) ) {
 					case 'undefined':
@@ -2452,14 +2453,14 @@ const specif = {
 			function dT2int( iE ) {
 		//		iE.category = 'dataType';
 				var oE = i2int( iE );
-				oE.title = noCode(iE.title);
+				oE.title = cleanValue(iE.title);
 				oE.type = iE.type;
 				switch( iE.type ) {
 					case "double":
 					case "integer":
-						oE.fractionDigits = iE[frct];
-						oE.minInclusive = iE[minI];
-						oE.maxInclusive = iE[maxI];
+						oE.fractionDigits = iE[names.frct];
+						oE.minInclusive = iE[names.minI];
+						oE.maxInclusive = iE[names.maxI];
 						break;
 					case "xhtml": 
 					case "xs:string":		
@@ -2468,10 +2469,11 @@ const specif = {
 					case "xs:enumeration": 	
 						if( iE.values ) 
 							oE.values = forAll( iE.values, function(v) {
-								// 'title' jusque v0.10.6, 'value' thereafter:
+								// 'v.title' until v0.10.6, 'v.value' thereafter;
+								// 'v.value' can be a string or a multilanguage object.
 								return {
 									id: v.id,
-									value: typeof(v.value)=='string'?v.value : v.title	// must also work for v.value==''
+									value: typeof(v.value)=='string'||typeof(v.value)=='object'? v.value : v.title  // works also for v.value==''
 								}
 							})
 				};
@@ -2481,9 +2483,9 @@ const specif = {
 			// a property class:
 			function pC2int( iE ) {
 				var oE = i2int( iE );
-				oE.title = vocabulary.property.specif(noCode(iE.title));	// an input file may have titles which are not from the SpecIF vocabulary.
-				if( iE.description ) oE.description = noCode(iE.description);
-				if( iE.value ) oE.value = noCode(iE.value);
+				oE.title = cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
+				if( iE.description ) oE.description = cleanValue(iE.description);
+				if( iE.value ) oE.value = cleanValue(iE.value);
 				oE.dataType = iE.dataType;
 				let dT = itemById( iD.dataTypes, iE.dataType );
 				switch( dT.type ) {
@@ -2498,7 +2500,7 @@ const specif = {
 			// common for all instance classes:
 			function aC2int( iE ) {
 				var oE = i2int( iE );
-				oE.title = vocabulary.resource.specif(noCode(iE.title));
+				oE.title = cleanValue(iE.title);
 				if( iE.icon ) oE.icon = iE.icon;
 				if( iE.creation ) oE.instantiation = iE.creation;	// deprecated, for compatibility
 				if( iE['extends'] ) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5 
@@ -2577,51 +2579,28 @@ const specif = {
 				return oE
 			}
 			// a property:
-			function makeHTML(str) {
-				// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
-				if( isHTML(str) ) 
-					return str;
-				if( CONFIG.convertMarkdown && app.markdown )
-					// don't interpret the '+' as list item, but do so with '•',
-					// transform arrows assembled by characters to special arrow characters:
-					return app.markdown.makeHtml( str
-													.replace(/-?-(?:&gt;|>)/g,'&rarr;') 
-													.replace(/(?:&lt;|<)--?/g,'&larr;') 
-													.replace(/\+ /g,'&#x2b; ')
-													.replace(/• /g,'* ') 
-												)
-				else
-					return '<div><p>'+str.ctrl2HTML()+'</p></div>'
-			} 
 			function p2int( iE ) {
 				let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
-					dT = itemById( iD.dataTypes, pT.dataType );
-				var oE = {
-					// no id
-					// an input file may have titles which are not from the SpecIF vocabulary:
-					title: vocabulary.property.specif(noCode(iE.title || pT.title))	
-				};
-				oE['class'] = iE[names.pClass];
-				if( iE.description ) oE.description = noCode(iE.description);
+					dT = itemById( iD.dataTypes, pT.dataType ),
+					oE = {
+						// no id
+						class: iE[names.pClass]
+					};
+				if( iE.title ) oE.title = cleanValue(iE.title);
+				if( iE.description ) oE.description = cleanValue(iE.description);
 
 				// According to the schema, all property values are represented by a string
 				// and internally they are stored as string as well to avoid inaccuracies 
 				// by multiple transformations:
-				switch( dT.type ) {
-					case 'xs:boolean':
-					case 'xs:integer':
-					case 'xs:double':
-					case 'xs:enumeration':
-					case 'xs:dateTime':
-						oE.value = noCode(iE.value);
-						break;
+				oE.value = cleanValue(iE.value);
+			/*	switch( dT.type ) {
 					case 'xhtml':
 					//	oE.value = iE.value.unescapeHTML();  // includes noCode(), works
 						oE.value = makeHTML(iE.value.unescapeHTMLTags());  // unescapeHTMLTags includes noCode()
 						break;
 					default:
-						oE.value = noCode(iE.value)
-				};
+						oE.value = cleanValue(iE.value)
+				};  */
 				// sub-elements do not have their own revision and change info
 //				console.debug('propValue 2int',iE,pT,oE);
 				return oE
@@ -2631,8 +2610,9 @@ const specif = {
 				var oE = i2int( iE );
 				if( iE.properties && iE.properties.length>0 )
 					oE.properties = forAll( iE.properties, p2int );
-				oE.title = noCode(iE.title);
-				oE.title = resTitleOf ( oE );
+				if( iE.title ) {
+					oE.title = cleanValue(iE.title)
+				};
 				return oE
 			}
 			// a resource:
@@ -2645,18 +2625,20 @@ const specif = {
 			// a statement:
 			function s2int( eS ) {
 				var iS = a2int( eS );
-				iS.title = itemById( iD.statementClasses, eS[names.sClass] ).title;
+				// by default of a title adopt the title of the statement class:
+				// ToDo: consider to replace the native title only for viewing and editing;
+				//       idea: don't change the original data without need.
+				iS.title = eS.title || itemById( iD.statementClasses, eS[names.sClass] ).title;
 				iS['class'] = eS[names.sClass];
-				// SpecIF allows subjects and objects with id (v0.10.2) or with id+revision (v0.11.1),
+				// SpecIF allows subjects and objects with id alone or with  a key (id+revision),
 				// so normalize internally to id+revision:
-				switch( typeof(eS.subject) ) {
-					case "object": iS.subject = eS.subject; break;				// eS is SpecIF 0.11.1
-					case "string": iS.subject = {id: eS.subject, revision: 0}	// eS is SpecIF 0.10.2
-				};
-				switch( typeof(eS.object) ) {
-					case "object": iS.object = eS.object; break;			
-					case "string": iS.object = {id: eS.object, revision: 0} 
-				};
+				// ToDo: consider to replace the native title only for viewing and editing;
+				//       idea: don't change the original data without need.
+				iS.subject = keyOf( eS.subject );
+				iS.object = keyOf( eS.object );
+
+				// special feature to import statements to complete, 
+				// used for example by the XLS or ReqIF import:
 				if( eS.subjectToFind ) iS.subjectToFind = eS.subjectToFind;
 				if( eS.objectToFind ) iS.objectToFind = eS.objectToFind;
 //				console.debug('statement 2int',eS,iS);
@@ -2682,7 +2664,7 @@ const specif = {
 					if(eH.revision) iH.revision = eH.revision.toString()
 				} else {
 					// starting v0.10.8:
-					var iH = a2int( eH );
+					var iH = i2int( eH );
 					iH.resource = eH.resource
 				};
 			/*	// list all resource ids in a flat list:
@@ -2806,12 +2788,13 @@ const specif = {
 				var oE = i2ext( iE );
 				oE.title = opts.translateTitles? titleOf(iE) : iE.title;
 				if( iE.description ) oE.description = iE.description;
-				if( iE.value ) oE.value = iE.value;
+				if( iE.value ) oE.value = iE.value;  // a default value
 				oE.dataType = iE.dataType;
 				let dT = itemById( iD.dataTypes, iE.dataType );
 				switch( dT.type ) {
 					case 'xs:enumeration': 
-						// With SpecIF, he 'multiple' property should be defined at dataType level and can be overridden at propertyType level.
+						// With SpecIF, he 'multiple' property should be defined at dataType level 
+						// and can be overridden at propertyType level.
 						// 	dT.multiple 	aTs.multiple 	aTs.multiple	effect
 						// ---------------------------------------------------------
 						//	undefined		undefined 		undefined		false
@@ -2874,7 +2857,7 @@ const specif = {
 			function a2ext( iE ) {
 				var oE = i2ext( iE );
 				// resources and hierarchies usually have individual titles, and so we will not translate:
-				oE.title = resTitleOf( iE );
+				oE.title = elementTitleOf( iE );
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
@@ -2935,6 +2918,14 @@ const specif = {
 			}
 	}
 }
+function keyOf( item ) {
+	// Normalize the identification including revision:
+	switch( typeof(item) ) {
+		case "object": return item;
+		case "string": return {id: item, revision: "0"};
+		default: return null // programming error
+	}
+}
 function dataTypeOf( prj, pCid ) {
 	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
@@ -2948,18 +2939,21 @@ function dataTypeOf( prj, pCid ) {
 function enumValStr( dT, prp ) {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
-	if( dT.type!='xs:enumeration' ) return prp.value;
+	if( dT.type!='xs:enumeration' || !prp.value ) return prp.value;
 	let ct = '',
 		eV,
-		st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
+	//	st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
 		vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 	vL.forEach( function(v,i) {
-		eV = itemById(dT.values,v);
+	//	if( !v ) return;
+	//	console.debug('enumValStr',dT,prp,vL);
+		eV = languageValueOf( itemById(dT.values,v).value );
 		// If 'eV' is an id, replace it by title, otherwise don't change:
 		// For example, when an object is from a search hitlist or from a revision list, 
 		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
 		// Add 'double-angle quotation' in case of stereotype values.
-		if( eV ) ct += (i==0?'':', ')+(st?('&#x00ab;'+eV.value+'&#x00bb;'):eV.value)
+	//	if( eV ) ct += (i==0?'':', ')+(st?('&#x00ab;'+eV+'&#x00bb;'):eV)
+		if( eV ) ct += (i==0?'':', ')+eV
 		else ct += (i==0?'':', ')+v
 	});
 	return ct
@@ -2969,58 +2963,84 @@ function multipleChoice( pC, prj ) {
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
 	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
-	// Note: specif-check applies the same logic in function 'checkpropValues(..)'
+	// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 }
-function titleIdx( aL ) {
+function titleIdx( pL, prj ) {
 	// Find the index of the property to be used as title.
-	// The result depends on the current user - only the properties with read permission are taken into consideration
+	// The result depends on the current user - only the properties with read permission are taken into consideration.
+	// This works for title strings and multi-language title objects.
 		
 /*	// Note that the logic has been simplified.
 	// Up until revision 0.92.34, the title property which was listed first in CONFIG.XXAttributes was chosen.
 		var idx = -1;
 		for( var c=0, C=CONFIG.headingProperties.length; c<C; c++) {  // iterate configuration list; leading entry has priority
-			idx = indexByTitle( aL, CONFIG.headingProperties[c] );
+			idx = indexByTitle( pL, CONFIG.headingProperties[c] );
 			if( idx>-1 ) return idx
 		};
 	// Now, the first property which is found in the respective list is chosen.
 	// ToDo: Check, if the results differ in practice ...
-*/	
-	for( var a=0,A=aL.length;a<A;a++ ) {
-		// First, check the configured headings:
-		if( CONFIG.headingProperties.indexOf( aL[a].title )>-1 ) return a;
-		// If nothing has been found, check the configured titles:
-		if( CONFIG.titleProperties.indexOf( aL[a].title )>-1 ) return a
-	};
+*/
+	if( !prj ) prj = app.cache.selectedProject.data;
+	let ti;
+	if( pL )
+		for( var a=0,A=pL.length;a<A;a++ ) {
+			ti = vocabulary.property.specif( pL[a].title || itemById( prj.propertyClasses, pL[a]['class'] ).title );
+			// First, check the configured headings:
+			if( CONFIG.headingProperties.indexOf( ti )>-1 ) return a;
+			// If nothing has been found, check the configured titles:
+			if( CONFIG.titleProperties.indexOf( ti )>-1 ) return a
+		};
 	return -1
 }
+function languageValueOf( val ) {
+	// Get the value according the current browser setting .. or the first value in the list by default.
+	// 'val' can be a string or a multi-language object. 
+	if( typeof(val)=='string' ) return val;
+	if( !Array.isArray(val) ) return null;  // programming error
+	
+	let lVs = val.filter( function(v) {
+		return browser.language == v.language
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if( lVs.length>0 ) return lVs[0].text;
+	
+	// next try a little less stringent:
+	lVs = val.filter( function(v) {
+		return browser.language.slice(0,2) == v.language.slice(0,2)
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if( lVs.length>0 ) return lVs[0].text;
+	
+	// As a final resourt take the first element in the list:
+	return val[0].text
+}
 function titleOf( item ) {
-	// look for a translation, take it as is or take the id by default:
-	return i18n.lookup( item.title ) || item.id
+	// Pick up the native title of any item;
+	// look for a translation, take it as is or take the id by default.
+	// It can be a title string or a multi-language title object. 
+	return i18n.lookup( languageValueOf(item.title) ) || item.id
 }
 function titleFromProperties( pL ) {
-	// get the title from the properties:
-	if( pL && pL.length>0 ) {
-		// 1. look for a property serving as title:
-		let ti = titleIdx( pL );
-		if( ti>-1 ) {  // found!
-			// Remove all formatting for the title, as the app's format shall prevail.
-			// Before, remove all marked deletions (as prepared be diffmatchpatch).
-			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-			return pL[ti].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
-		};
-		// 2. otherwise, find a description and take the beginning:
-		// find a description and take the beginning:
-		for( var a=0,A=pL.length;a<A;a++ ) {
-			if( CONFIG.descProperties.indexOf( pL[a].title )>-1 ) 
-				return pL[a].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().truncate( CONFIG.maxTitleLength )
-		}
+	// look for a property serving as title:
+	let idx = titleIdx( pL );
+	if( idx>-1 ) {  // found!
+		// Remove all formatting for the title, as the app's format shall prevail.
+		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+		// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+	//	if( modules.ready.indexOf( 'diff' )>-1 )
+	//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
+		// For now, let's try without replacements; so far this function is called before the filters are applied,
+		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+//		console.debug('titleFromProperties', pL[idx], languageValueOf( pL[idx].value ) );
+		return languageValueOf( pL[idx].value ).stripHTML().trim()
 	};
-	return ''
+	return
 }
-function resTitleOf( res ) {
+function elementTitleOf( res ) {
 	// get the title from the properties or a replacement value in case of default:
-	if( typeof(res)!='object' ) return undefined;
-	return res.title || titleFromProperties( res.properties ) || titleOf( res )
+	if( typeof(res)!='object' ) return null;  // programming error
+	return titleFromProperties( res.properties ) || titleOf( res )
 }
 function propTitleOf( dta, prp ) {
 	// get the title of a property as defined by itself or it's class:
@@ -3030,7 +3050,7 @@ function elementTitleWithIcon( el ) {
 	// add an icon to an element's title;
 	// works for all types of elements, i.e. resources, statements and hierarchies.
 	// The icon is defined in the elements's type:
-	return CONFIG.addIconToInstance?resTitleOf(el).addIcon( itemById( app.cache.selectedProject.data.allClasses, el['class'] ).icon ):resTitleOf(el)
+	return CONFIG.addIconToInstance? elementTitleOf(el).addIcon( itemById( app.cache.selectedProject.data.allClasses, el['class'] ).icon ) : elementTitleOf(el)
 }
 /*	function classTitleWithIcon( t ) {
 	// add the icon to a type's title, if defined:
@@ -3046,6 +3066,7 @@ function typeOf( res ) {
 	if( tP ) return tP.value
 }
 function hasContent( pV ) {
+	// must be a string with the value of the selected language.
 	if( !pV ) return false;
 	return pV.stripHTML().trim().length>0
 		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
@@ -3166,12 +3187,11 @@ function classifyProps( el, data ) {
 	// add missing (empty) properties and classify properties into title, descriptions and other;
 	// for resources and statements.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
-	// ToDo: Implementation is limited to resources, so far. See normalizeProps().
 	if( !data ) data = app.cache.selectedProject.data;
 	var cP = {
 			id: el.id,
 			title: undefined,
-			class: itemById( data.resourceClasses, el['class']),
+			class: itemById( data.resourceClasses, el['class']),  // the object, not the id !
 			revision: el.revision,
 			descriptions: [],
 			// create a new list by copying the elements (do not copy the list ;-):
@@ -3179,6 +3199,12 @@ function classifyProps( el, data ) {
 		};
 	cP.isHeading = cP['class'].isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 	if( el.order ) cP.order = el.order;
+	cP.changedAt = el.changedAt;
+	if( el.revision ) cP.revision = el.revision;
+	if( el.replaces ) cP.replaces = el.replaces;
+	if( el.changedBy ) cP.changedBy = el.changedBy;
+	if( el.createdAt ) cP.createdAt = el.createdAt;
+	if( el.createdBy ) cP.createdBy = el.createdBy;
 
 	// Now, all properties are listed in cP.other;
 	// in the following, the properties used as title and description will be identified
@@ -3186,11 +3212,9 @@ function classifyProps( el, data ) {
 	// ToDo: Hide hidden properties: CONFIG.hiddenProperties
 
 	// a) Find and set the configured title:
-	let a = titleIdx( cP.other );
+	let a = titleIdx( cP.other, data );
 	if( a>-1 ) {  // found!
-		// Remove all formatting for the title, as the app's format shall prevail.
-		// Before, remove all marked deletions (as prepared be diffmatchpatch).
-		if( cP.other[a].value ) cP.title = deformat( cP.other[a].value );
+		if( cP.other[a].value ) cP.title = cP.other[a].value;
 		// remove title from other:
 		cP.other.splice(a,1) 
 	};
@@ -3208,44 +3232,17 @@ function classifyProps( el, data ) {
 	// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
 	if( !cP.title && el.title ) cP.title = el.title;
 	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description} );
-//	console.debug( 'classifyProps', cP );
+//	console.debug( 'classifyProps', simpleClone(cP) );
 	return cP
 
-	function deformat( txt ) {
-		// Remove all HTML-tags from 'txt',
-		// but keep all marked deletions and insertions (as prepared be diffmatchpatch):
-		// ToDo: consider to use this function only in the context of showing revisions and filter results,
-		// 		 ... and to use a similar implementation which does not save the deletions and insertions, otherwise.
-		let mL = [], dL = [], iL = [];
-		txt = txt.replace(/<del[^<]+<\/del>/g, function($0) {
-										dL.push($0);
-										return 'hoKu§pokus'+(dL.length-1)+'#'
-									});
-		txt = txt.replace(/<ins[^<]+<\/ins>/g, function($0) {
-										iL.push($0);
-										return 'siM§alabim'+(iL.length-1)+'#'
-									});
-		txt = txt.replace(/<mark[^<]+<\/mark>/g, function($0) {
-										mL.push($0);
-										return 'abRakad@bra'+(mL.length-1)+'#'
-									});
-		// Remove all formatting for the title, as the app's format shall prevail:
-		txt = txt.stripHTML().trim();
-		// Finally re-insert the deletions and insertions with their tags:
-		// ToDo: Remove any HTML-tags within insertions and deletions
-		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
-		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
-		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
-		return txt
-	}
 	function normalizeProps( i, dta ) { 
 		// i: instance (resource or statement)
 		// Create a list of properties in the sequence of propertyClasses of the respective class.
 		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
 		let p,pCs,nL=[],
-			// iCs: instance class list (resourceClasses or statementClasses)
-			// ToDo: check whether instance is resource or statement, take resp. class list.
-			iCs = dta.resourceClasses,
+			// iCs: instance class list (resourceClasses or statementClasses),
+			// the existence of subject (or object) let's us recognize that it is a statement:
+			iCs = i.subject? dta.statementClasses : dta.resourceClasses,
 			iC = itemById(iCs,i['class']);
 		// build a list of propertyClass identifiers including the extended class':
 		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
@@ -3254,9 +3251,17 @@ function classifyProps( el, data ) {
 		pCs.forEach( function(pCid) {
 			p = itemBy( i.properties, 'class', pCid )
 				|| createPropR(dta.propertyClasses,pCid);
-			if( p ) nL.push( p )
+			if( p ) {
+				// by default, use the propertyClass' title,
+				// replace the result with a current vocabulary term:
+				if( !p.title ) 
+					p.title = itemById( dta.propertyClasses, pCid ).title;
+				// An input data-set may have titles which are not from the SpecIF vocabulary:
+				p.title = vocabulary.property.specif( p.title );	
+				nL.push( p )
+			}
 		});
-//		console.debug('normalizeProps result',nL);
+//		console.debug('normalizeProps result',simpleClone(nL));
 		return nL // normalized property list
 	}
 }

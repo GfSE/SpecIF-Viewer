@@ -3,8 +3,10 @@ function toOxml( data, opts ) {
 	// Create and save a MS WORD OpenXML document using SpecIF data.
 	// OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
 	// http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
-	// Accepts data-sets according to SpecIF v0.10.8 and later.
 	// License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	// Limitations:
+	// - Accepts data-sets according to SpecIF v0.10.8 and later.
+	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
 
 	// Reject versions < 0.10.8:
 	let v = data.specifVersion.split('.');

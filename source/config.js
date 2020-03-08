@@ -474,10 +474,9 @@ const vocabulary = {
 	}
 };
 
-
 /////////////////////////////////////////////////
 // Regular expressions:	
-var RE = {};
+const RE = {};
 	RE.Id = /^[_a-zA-Z]{1}[_a-zA-Z0-9.-]*$/;	// compliant with ReqIF and SpecIF
 //	RE.Email = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
 //	RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
@@ -555,3 +554,6 @@ var RE = {};
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
 	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;
+
+/////////////////
+const nbsp = '&#160;'; // non-breakable space

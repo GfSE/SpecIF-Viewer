@@ -6,6 +6,8 @@ function toXhtml( data, opts ) {
 	// Limitations:
 	// - HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
 	// - Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
+	// - Accepts data-sets according to SpecIF v0.10.8 and later.
+	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
 
 	// Reject versions < 0.10.8:
 	let v = data.specifVersion.split('.');

@@ -273,6 +273,7 @@ function xslx2specif( buf, pN, chgAt ) {
 						return ( Number.isInteger(parseFloat(xlsDate))?d.substr(0,10):d )
 					}
 */					function getVal( dT, cell ) {
+						// malicious content will be removed upon import.
 						if( !cell ) return '';
 //						console.debug( 'getVal', cell, dT );
 						switch( dT ) {
@@ -280,7 +281,7 @@ function xslx2specif( buf, pN, chgAt ) {
 							case 'xs:integer':
 							case 'xs:double':	return cell.v.toString();
 							case 'xs:string':
-							case 'xhtml':		return noCode(cell.v);
+							case 'xhtml':		return cell.v;
 							// we have found earlier that it is a valid boolean, so all values not beeing true are false:
 							case 'xs:boolean':	return cell.v.isTrue().toString()  
 						};
@@ -365,9 +366,9 @@ function xslx2specif( buf, pN, chgAt ) {
 							}
 						}
 					}
-					function createS( ws, l ) {
+				/*	function createS( ws, l ) {
 						// create a statement:
-					}
+					}  */
 		
 				// Processing of createFld:
 				// Create folder resource:

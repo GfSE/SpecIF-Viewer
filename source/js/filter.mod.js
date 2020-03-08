@@ -249,11 +249,11 @@ modules.construct({
 					patt = new RegExp( str, f.caseSensitive?'':'i' ), 
 					dT;
 					
-					function matchStr( prp, type ) {
+					function matchStr( prp, dT ) {
 //						console.debug('matchStr',prp,type);
-						switch( type ) {
+						switch( dT.type ) {
 							case 'xhtml':
-								if( patt.test( prp.value.stripHTML() )) return true; // if found return, continue searching, otherwise
+								if( patt.test( languageValueOf(prp.value).stripHTML() )) return true; // if found return, continue searching, otherwise
 								break;
 							case 'xs:enumeration':
 								// only if enumerated values are included in the search:
@@ -262,20 +262,20 @@ modules.construct({
 								};
 								break;
 							default:
-								if( patt.test( prp.value ) ) return true; // if found return, continue searching, otherwise
+								if( patt.test( languageValueOf(prp.value) )) return true; // if found return, continue searching, otherwise
 								break
 						}
 					}
 				
 				var a;
-				if( matchStr( {value:res.toShow.title}, 'xhtml' ) ) return true;
+				if( matchStr( {value:res.toShow.title}, {type:'xhtml'} ) ) return true;
 				for( a=res.toShow.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.toShow.descriptions[a], 'xhtml' ) ) return true;
+					if( matchStr( res.toShow.descriptions[a], {type:'xhtml'} ) ) return true;
 				for( a=res.toShow.other.length-1; a>-1; a-- ){
 					// for each property test whether it contains 'str':
 					dT = dataTypeOf( dta, res.toShow.other[a]['class'] );
 //					console.debug('matchSearchString',f,res.toShow.other[a],dT);
-					if( matchStr( res.toShow.other[a], dT.type ) ) return true
+					if( matchStr( res.toShow.other[a], dT ) ) return true
 				};
 				return false  // not found
 			}
@@ -373,14 +373,14 @@ modules.construct({
 								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' ),
 								    lE, i;
 									
-								res.toShow.title = res.toShow.title.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
+								res.toShow.title = languageValueOf(res.toShow.title).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
 								// Clone the marked list elements for not modifying the original resources:
 								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
 									lE = res.toShow.descriptions[i];
 									res.toShow.descriptions.splice( i, 1, {
 											title: lE.title,  // for sorting the property into the columns
 											class: lE['class'],
-											value: lE.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+											value: languageValueOf(lE.value).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									})
 								}; 
 								for( i= res.toShow.other.length-1; i>-1; i-- ) {
@@ -388,7 +388,7 @@ modules.construct({
 									res.toShow.other.splice( i, 1, {
 											title: lE.title,  // for sorting the property into the columns
 											class: lE['class'],
-											value: lE.value.replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+											value: languageValueOf(lE.value).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									}); 
 	//								console.debug(res)
 								}
