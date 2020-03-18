@@ -365,7 +365,7 @@ function Project( pr ) {
 		// ToDo: Consider, if model-elements are only considered equal, if they have the same type, 
 		// i.e. if a property with title CONFIG.propClassType has the same value 
 		return r.title==n.title
-				&& classTitleOf(dta,r)==classTitleOf(dta,n)
+				&& classTitleOf(r,dta)==classTitleOf(n,dta)
 		// Note that the content of the new resource is lost;
 		// this is no problem, if the new data is a BPMN model, for example, 
 		// which usually have a title and do not carry any description.
@@ -433,7 +433,7 @@ function Project( pr ) {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let pT = propTitleOf(prj,nP),
+					let pT = propTitleOf(nP,prj),
 						rP = propByTitle(self.data,r,pT);
 //					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( self.data, r, pT )));
 					if( !hasContent(valByTitle( self.data, r, pT )) 
@@ -557,7 +557,7 @@ function Project( pr ) {
 				nR = dta.resources[n];
 				rR = dta.resources[r];
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( classTitleOf(dta,rR) )>-1 
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( classTitleOf(rR,dta) )>-1 
 					&& eqR(dta,rR,nR) 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
@@ -898,7 +898,7 @@ function Project( pr ) {
 				let itm = nD.resources[i];
 			//		typ = itemById( nD.resourceClasses, itm['class'] );
 			//	if( CONFIG.modelElementClasses.indexOf( typ.title )>-1
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( classTitleOf(nD,itm) )>-1 
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( classTitleOf(itm,nD) )>-1 
 					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nD,itm,CONFIG.propClassType) )<0 
 				) {
 						// Check for a resource with the same title:
@@ -909,7 +909,7 @@ function Project( pr ) {
 //						console.debug('~1',itm,exs?exs:'');
 						if( exs 
 							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, exs, CONFIG.propClassType ))<0 
-							&& classTitleOf(nD,itm)==classTitleOf(self.data,exs) 
+							&& classTitleOf(itm,nD)==classTitleOf(exs,self.data) 
 					//		&& valByTitle(nD,itm,CONFIG.propClassType)==valByTitle(self.data,exs,CONFIG.propClassType) 
 						) {
 //							console.debug('~2',exs,itm);
@@ -1204,8 +1204,8 @@ function Project( pr ) {
 						switch( nDT.type ) {
 							case 'xs:enumeration':
 								// value has a comma-separated list of value-IDs,
-								rV = enumValStr(rDT,rA);
-								nV = enumValStr(nDT,nA);
+								rV = enumValueOf(rDT,rA);
+								nV = enumValueOf(nDT,nA);
 //								console.debug('contentChanged','ENUM',rA,nA,rV!=nV);
 								if( rV!=nV ) return true;
 								break;
@@ -1685,36 +1685,41 @@ function Project( pr ) {
 			self.data.exporting = true;
 
 			switch( opts.format ) {
-				case 'specif':
 				case 'reqif':
+					
+					// no break
+				case 'specif':
 					storeAs( opts );
 					break;
 				case 'epub':
 				case 'oxml':
-					generate( opts )  
+					publish( opts )  
 			}
 		} else {
 			eDO.reject({status: 999, statusText: "No permission to export"})
 		};
 		return eDO
 
-		function generate( opts ) {
-//				console.debug( "generate", opts );
-			if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null;
-			if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = true;
-			// don't translate now, but within toOxml() to ascertain that classifyProps() works properly:
-				// ToDo; Use self.read() to get the newest data from the server.
-			let data = specif.toExt( self.data, {translateTitles: false} ), 
+		function publish( opts ) {
+//			console.debug( "publish", opts );
+			if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
+			// ToDo: Get the newest data from the server.
+
+			// Don't lookup titles now, but within toOxml(), so that that classifyProps() works properly.
+			// But DO reduce to the language desired.
+			opts.lookupTitles = false;  // applies to specif.toExt()
+			if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+			let data = specif.toExt( self.data, opts ), 
 				options = { 
 					classifyProperties: classifyProps,
-					translateTitles: opts.translateTitles,
-					translate: i18n.lookup,
+					lookupTitles: true,
+					lookup: i18n.lookup,
 					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 					stereotypeProperties: CONFIG.stereotypeProperties,
 					// If a hidden property is defined with value, it is suppressed only if it has this value;
 					// if the value is undefined, the property is suppressed in all cases.
 					// so far (iLaH v0.92.44), property titles are translated:
-				//	hiddenProperties: opts.translateTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+				//	hiddenProperties: opts.lookupTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 					hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
 					showEmptyProperties: CONFIG.showEmptyProperties,
 					imgExtensions: CONFIG.imgExtensions,
@@ -1751,19 +1756,19 @@ function Project( pr ) {
 											};
 	//										console.debug('SVG',svg,L);
 											if( --pend<1 ) 
-												// Now, generate in the desired format:
-												gen();
+												// Now, publish in the desired format:
+												pub();
 										})
 							}, 0)
 					}
 				});  
 			// In case there is nothing to transform, we start right away:
 			if( pend<1 ) 
-				// Generate in the desired format:
-				gen();
+				// publish in the desired format:
+				pub();
 			return;
 			
-			function gen() {
+			function pub() {
 				switch( opts.format ) {
 					case 'epub':
 						toEpub( data, options );
@@ -1775,9 +1780,20 @@ function Project( pr ) {
 		}
 		function storeAs( opts ) {
 			if( !opts || ['specif','reqif'].indexOf(opts.format)<0 ) return null;
+			// ToDo: Get the newest data from the server.
+
+			switch( opts.format ) {
+				case 'specif':
+					opts.lookupTitles = false;  // keep vocabulary terms
+					opts.targetLanguage = undefined;  // export all languages
+					break;
+				case 'reqif':
+					opts.lookupTitles = false;  // keep vocabulary terms
+					// ReqIF only supports a single Language
+					if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+			};
 			let zip = new JSZip(),
-				// ToDo; Use self.read() to get the newest data from the server.
-				data = specif.toExt( self.data, {translateTitles: false} );
+				data = specif.toExt( self.data, opts );
 
 			// Add the files:
 			if( data.files )
@@ -1807,16 +1823,19 @@ function Project( pr ) {
 				})
 				.then(
 					function(blob) {
-//							console.debug("storing ",data.title+".specifz");
+						// successfully generated:
+//						console.debug("storing ",data.title+".specifz");
 						saveAs(blob, fName+"z");
 						self.data.exporting = false;
 						eDO.resolve()
-				}, 
+					}, 
 					function(xhr) {
+						// an error has occurred:
 						console.error("Cannot store ",fName+"z");
 						self.data.exporting = false;
 						eDO.reject()
-				})
+					}
+				)
 		}
 	}
 	self.abort = function() {
@@ -2464,7 +2483,10 @@ const specif = {
 						break;
 					case "xhtml": 
 					case "xs:string":		
-						if( typeof(iE.maxLength)!='number' ) iE.maxLength = CONFIG.maxStringLength;
+						if( typeof(iE.maxLength)=='number' ) 
+							oE.maxLength = iE.maxLength
+						else
+							oE.maxLength = CONFIG.maxStringLength;
 						break;
 					case "xs:enumeration": 	
 						if( iE.values ) 
@@ -2595,7 +2617,7 @@ const specif = {
 				oE.value = cleanValue(iE.value);
 			/*	switch( dT.type ) {
 					case 'xhtml':
-					//	oE.value = iE.value.unescapeHTML();  // includes noCode(), works
+					//	oE.value = iE.value.unescapeHTMLEntities();  // includes noCode(), works
 						oE.value = makeHTML(iE.value.unescapeHTMLTags());  // unescapeHTMLTags includes noCode()
 						break;
 					default:
@@ -2616,33 +2638,29 @@ const specif = {
 				return oE
 			}
 			// a resource:
-			function r2int( eR ) {
-				var oE = a2int( eR );
-				oE['class'] = eR[names.rClass];
-//				console.debug('resource 2int',eR,oE);
+			function r2int( iE ) {
+				var oE = a2int( iE );
+				oE['class'] = iE[names.rClass];
+//				console.debug('resource 2int',iE,oE);
 				return oE
 			}
 			// a statement:
-			function s2int( eS ) {
-				var iS = a2int( eS );
-				// by default of a title adopt the title of the statement class:
-				// ToDo: consider to replace the native title only for viewing and editing;
-				//       idea: don't change the original data without need.
-				iS.title = eS.title || itemById( iD.statementClasses, eS[names.sClass] ).title;
-				iS['class'] = eS[names.sClass];
+			function s2int( iE ) {
+				var oE = a2int( iE );
+				oE['class'] = iE[names.sClass];
 				// SpecIF allows subjects and objects with id alone or with  a key (id+revision),
 				// so normalize internally to id+revision:
 				// ToDo: consider to replace the native title only for viewing and editing;
 				//       idea: don't change the original data without need.
-				iS.subject = keyOf( eS.subject );
-				iS.object = keyOf( eS.object );
+				oE.subject = keyOf( iE.subject );
+				oE.object = keyOf( iE.object );
 
 				// special feature to import statements to complete, 
 				// used for example by the XLS or ReqIF import:
-				if( eS.subjectToFind ) iS.subjectToFind = eS.subjectToFind;
-				if( eS.objectToFind ) iS.objectToFind = eS.objectToFind;
-//				console.debug('statement 2int',eS,iS);
-				return iS
+				if( iE.subjectToFind ) oE.subjectToFind = iE.subjectToFind;
+				if( iE.objectToFind ) oE.objectToFind = iE.objectToFind;
+//				console.debug('statement 2int',iE,oE);
+				return oE
 			}
 			// a hierarchy:
 			function h2int( eH ) {
@@ -2703,24 +2721,27 @@ const specif = {
 	},
 	toExt: function( iD, opts ) {
 		// transform the data in internal data format to SpecIF:
-		if( opts ) {
-			if( typeof(opts.translateTitles)!='boolean' ) 
-				opts.translateTitles = false
+	/*	if( opts ) {
+			if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = true;
+			if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
 		} else {
 			opts = {
-				translateTitles: false
+				lookupTitles: true,
+				targetLanguage: browser.language
 			}
-		};
-		
+		};  */
+		// if opts.targetLanguage has no value, all available languages are kept.
+
+//		console.debug('toExt', opts );
 		// transform internal data to SpecIF:
 		var spD = {
 				id: iD.id,
-				title: iD.title,
+				title: languageValueOf( iD.title, opts ),
 				specifVersion: app.specifVersion,
 				generator: app.productTitle,
 				generatorVersion: app.productVersion
 			};
-		if( app.cache.selectedProject.data.description ) spD.description = iD.description;
+		if( iD.description ) spD.description = languageValueOf( iD.description, opts );
 		spD.rights = {
 			title: "Creative Commons 4.0 CC BY-SA",
 			type: "dcterms:rights",
@@ -2768,7 +2789,7 @@ const specif = {
 					id: iE.id,
 					changedAt: iE.changedAt
 				};
-				if( iE.description ) oE.description = iE.description;
+				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
 				if( iE.revision ) oE.revision = iE.revision;
 				if( iE.replaces ) oE.replaces = iE.replaces;
 				if( iE.changedBy ) oE.changedBy = iE.changedBy;
@@ -2778,16 +2799,36 @@ const specif = {
 			}
 			// a data type:
 			function dT2ext( iE ) {
-		/*		var oE = simpleClone(iE);
-		//		delete oE.category;
-				return oE  */
-				return iE 
+				var oE = simpleClone(iE);
+				oE.title = titleOf( iE, opts );
+				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
+				if( opts.targetLanguage && iE.type=="xs:enumeration" ) {
+					// reduce to the language specified: 					
+					oE.values = forAll( iE.values, function(val) { return {id:val.id,value:languageValueOf(val.value,opts)} })
+				}; 
+			/*	var oE = i2ext( iE );
+				oE.title = titleOf( iE.title, opts );
+				oE.type = iE.type;
+				switch( iE.type ) {
+					case "double":
+					case "integer":
+						oE.fractionDigits = iE.fractionDigits;
+						oE.minInclusive = iE.minInclusive;
+						oE.maxInclusive = iE.maxInclusive;
+						break;
+					case "xhtml": 
+					case "xs:string":		
+						oE.maxLength = iE.maxLength;
+						break;
+					case "xs:enumeration": 	
+						oE.values = iE.values
+				};  */
+				return oE 
 			}
 			// a property class:
 			function pC2ext( iE ) {
 				var oE = i2ext( iE );
-				oE.title = opts.translateTitles? titleOf(iE) : iE.title;
-				if( iE.description ) oE.description = iE.description;
+				oE.title = titleOf( iE, opts );
 				if( iE.value ) oE.value = iE.value;  // a default value
 				oE.dataType = iE.dataType;
 				let dT = itemById( iD.dataTypes, iE.dataType );
@@ -2815,7 +2856,7 @@ const specif = {
 			// common for all instance classes:
 			function aC2ext( iE ) {
 				var oE = i2ext( iE );
-				oE.title = opts.translateTitles? titleOf(iE) : iE.title;
+				oE.title = titleOf(iE,opts);
 				if( iE.icon ) oE.icon = iE.icon;
 				if( iE.instantiation ) oE.instantiation = iE.instantiation;
 				if( iE._extends ) oE['extends'] = iE._extends;
@@ -2841,23 +2882,41 @@ const specif = {
 				if( !iE.value ) return;	// skip empty properties
 				var oE = {
 					// no id
-					// internally only valid SpecIF terms are used (hope so ;-)
-					title: opts.translateTitles? titleOf(iE) : iE.title		
+					class:  iE['class']
 				};
-				oE['class'] = iE['class'];
-				if( iE.description ) oE.description = iE.description;
+				if( iE.title ) oE.title = titleOf( iE, opts );
+				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
 				
 				// According to the schema, all property values are represented by a string
 				// and we want to store them as string to avoid inaccuracies by multiple transformations:
-				oE.value = iE.value;
+				if( opts.targetLanguage ) {
+					// reduce to the selected language; is used for generation of human readable documents 
+					// or for formats not supporting multiple languages:
+					let dT = dataTypeOf( iD, iE['class'] );
+					switch( dT.type ) {
+						case 'xs:string':
+						case 'xhtml':
+							oE.value = languageValueOf( iE.value, opts );
+							break;
+					/*	case 'xs:enumeration':
+							// an id of the dataType's value is given in this case,  
+							// so it can be taken directly:   */
+						default:
+							oE.value = iE.value;
+					}
+				} else {
+					// for SpecIF export, keep full data structure:
+					oE.value = iE.value;
+				};
 				// properties do not have their own revision and change info; the parent's apply.
 				return oE
 			}
 			// common for all instances:
 			function a2ext( iE ) {
 				var oE = i2ext( iE );
-				// resources and hierarchies usually have individual titles, and so we will not translate:
-				oE.title = elementTitleOf( iE );
+//				console.debug('a2ext',iE,opts);
+				// resources and hierarchies usually have individual titles, and so we will not lookup:
+				oE.title = elementTitleOf( iE, opts );
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
@@ -2865,24 +2924,25 @@ const specif = {
 			}
 			// a resource:
 			function r2ext( iE ) {
-				var eR = a2ext( iE );
-//				console.debug('resource 2int',iE,eR);
-				return eR
+				var oE = a2ext( iE );
+//				console.debug('resource 2int',iE,oE);
+				return oE
 			}
 			// a statement:
-			function s2ext( iS ) {
-//				console.debug('statement 2ext',iS.title);
-				if( CONFIG.hiddenStatements.indexOf( iS.title )>-1 ) return;  // do not export invisible statements
-				var eS = a2ext( iS );
+			function s2ext( iE ) {
+//				console.debug('statement 2ext',iE.title);
+				if( CONFIG.hiddenStatements.indexOf( iE.title )>-1 ) return;  // do not export invisible statements
+				var oE = a2ext( iE );
 				// The statements usually do use a vocabulary item (and not have an individual title), 
-				// so we translate, if so desired, e.g. when exporting to ePub:
+				// so we lookup, if so desired, e.g. when exporting to ePub:
 				// ToDo: Take the title from statement properties, if provided (similarly to resources).
 				// Take the statementClass's title, if the statement does not have it:
-				iS.title = iS.title || itemById( iD.statementClasses, iS['class'] ).title;
-				eS.title = opts.translateTitles? titleOf(iS) : iS.title;
-				eS.subject = iS.subject.id;
-				eS.object = iS.object.id;
-				return eS
+				if( opts.targetLanguage && !iE.title )
+					iE.title = itemById( iD.statementClasses, iE['class'] ).title;
+				oE.title = titleOf(iE,opts);
+				oE.subject = iE.subject.id;
+				oE.object = iE.object.id;
+				return oE
 			}
 			// a hierarchy node:
 			function n2ext( iN ) {
@@ -2930,24 +2990,24 @@ function dataTypeOf( prj, pCid ) {
 	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
 		return itemById( prj.dataTypes, itemById( prj.propertyClasses, pCid ).dataType )
-		//                             get class
+		//                              get class
 		//	   get dataType
 	// else:
 	// may happen, if a resource does not have any properties and it's title or description is being used:
 	return {type: 'xs:string'} // by default
 }
-function enumValStr( dT, prp ) {
+function enumValueOf( dT, val, opts ) {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
-	if( dT.type!='xs:enumeration' || !prp.value ) return prp.value;
+//	console.debug('enumValueOf',dT,val,opts);
+	if( dT.type!='xs:enumeration' || !val ) return val;
 	let ct = '',
 		eV,
 	//	st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
-		vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
+		vL = val.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 	vL.forEach( function(v,i) {
 	//	if( !v ) return;
-	//	console.debug('enumValStr',dT,prp,vL);
-		eV = languageValueOf( itemById(dT.values,v).value );
+		eV = languageValueOf( itemById(dT.values,v).value, opts );
 		// If 'eV' is an id, replace it by title, otherwise don't change:
 		// For example, when an object is from a search hitlist or from a revision list, 
 		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
@@ -2992,38 +3052,16 @@ function titleIdx( pL, prj ) {
 		};
 	return -1
 }
-function languageValueOf( val ) {
-	// Get the value according the current browser setting .. or the first value in the list by default.
-	// 'val' can be a string or a multi-language object. 
-	if( typeof(val)=='string' ) return val;
-	if( !Array.isArray(val) ) return null;  // programming error
-	
-	let lVs = val.filter( function(v) {
-		return browser.language == v.language
-	});
-	// lVs should have none or one elements; any additional ones are simply ignored:
-	if( lVs.length>0 ) return lVs[0].text;
-	
-	// next try a little less stringent:
-	lVs = val.filter( function(v) {
-		return browser.language.slice(0,2) == v.language.slice(0,2)
-	});
-	// lVs should have none or one elements; any additional ones are simply ignored:
-	if( lVs.length>0 ) return lVs[0].text;
-	
-	// As a final resourt take the first element in the list:
-	return val[0].text
-}
-function titleOf( item ) {
-	// Pick up the native title of any item;
-	// look for a translation, take it as is or take the id by default.
-	// It can be a title string or a multi-language title object. 
-	return i18n.lookup( languageValueOf(item.title) ) || item.id
-}
-function titleFromProperties( pL ) {
+function titleFromProperties( pL, opts ) {
+//	if( !pL ) return;
 	// look for a property serving as title:
 	let idx = titleIdx( pL );
 	if( idx>-1 ) {  // found!
+		// the result must be a string for display, in this case:
+		let os = {
+			targetLanguage: opts.targetLanguage || browser.language,
+			lookupTitles: true
+		};
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
 		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
@@ -3032,36 +3070,70 @@ function titleFromProperties( pL ) {
 	//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
 		// For now, let's try without replacements; so far this function is called before the filters are applied,
 		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//		console.debug('titleFromProperties', pL[idx], languageValueOf( pL[idx].value ) );
-		return languageValueOf( pL[idx].value ).stripHTML().trim()
+//		console.debug('titleFromProperties', idx, pL[idx], os, languageValueOf( pL[idx].value,os ) );
+		return languageValueOf( pL[idx].value, os ).stripHTML().trim()
 	};
 	return
 }
-function elementTitleOf( res ) {
+function elementTitleOf( el, opts ) {
 	// get the title from the properties or a replacement value in case of default:
-	if( typeof(res)!='object' ) return null;  // programming error
-	return titleFromProperties( res.properties ) || titleOf( res )
+	if( typeof(el)!='object' ) return null;  // programming error
+	let ti = titleFromProperties( el.properties, opts ) || titleOf( el, opts );
+	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
 }
-function propTitleOf( dta, prp ) {
+function propTitleOf( prp, dta ) {
 	// get the title of a property as defined by itself or it's class:
 	return prp.title || itemById(dta.propertyClasses,prp['class']).title
 }
-function elementTitleWithIcon( el ) {
+function elementTitleWithIcon( el, opts ) {
 	// add an icon to an element's title;
 	// works for all types of elements, i.e. resources, statements and hierarchies.
 	// The icon is defined in the elements's type:
-	return CONFIG.addIconToInstance? elementTitleOf(el).addIcon( itemById( app.cache.selectedProject.data.allClasses, el['class'] ).icon ) : elementTitleOf(el)
+	return CONFIG.addIconToInstance? elementTitleOf(el,opts).addIcon( itemById( app.cache.selectedProject.data.allClasses, el['class'] ).icon ) : elementTitleOf(el,opts)
 }
 /*	function classTitleWithIcon( t ) {
 	// add the icon to a type's title, if defined:
 	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
 }*/
-function classTitleOf(dta,r) {
+function classTitleOf( r, dta ) {
 	return itemById(dta.resourceClasses,r['class']).title
 	// ToDo: .. or the title of the title attribute (dcterms:title) if the resource title is undefined
 }
-function typeOf( res ) {
-	let tP = itemByTitle(res.properties,CONFIG.propClassType);
+function titleOf( item, opts ) {
+	// Pick up the native title of any item;
+	// look for a translation, take it as is or take the id by default.
+	// It can be a title string or a multi-language title object. 
+	let ti = languageValueOf( item.title, opts );
+//	console.debug('titleOf',item,opts,ti);
+	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti
+	// last resort:
+	return item.id
+}
+function languageValueOf( val, opts ) {
+	// Get the value according the current browser setting .. or the first value in the list by default.
+	// 'val' can be a string or a multi-language object.
+	// if tgtLan is not defined, keep all language options.
+	if( typeof(val)=='string' || !opts || !opts.targetLanguage ) return val;
+	if( !Array.isArray(val) ) return null;  // programming error
+	
+	let lVs = val.filter( function(v) {
+		return opts.targetLanguage == v.language
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if( lVs.length>0 ) return lVs[0].text;
+	
+	// next try a little less stringent:
+	lVs = val.filter( function(v) {
+		return opts.targetLanguage.slice(0,2) == v.language.slice(0,2)
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if( lVs.length>0 ) return lVs[0].text;
+	
+	// As a final resourt take the first element in the original list of values:
+	return val[0].text
+}
+function typeOf( el ) {
+	let tP = itemByTitle(el.properties,CONFIG.propClassType);
 	// ToDo: .. or the title of the property class (dcterms:title) if the property title is undefined
 	if( tP ) return tP.value
 }
@@ -3248,16 +3320,20 @@ function classifyProps( el, data ) {
 		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
 		pCs = pCs.concat( itemById( iCs, i['class'] ).propertyClasses||[] );
 		// add the properties in sequence of the propertyClass identifiers:
+//		console.debug('normalizeProps',simpleClone(i),dta.propertyClasses,pCs);
 		pCs.forEach( function(pCid) {
 			p = itemBy( i.properties, 'class', pCid )
 				|| createPropR(dta.propertyClasses,pCid);
 			if( p ) {
-				// by default, use the propertyClass' title,
-				// replace the result with a current vocabulary term:
+				// by default, use the propertyClass' title:
+				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
 				if( !p.title ) 
 					p.title = itemById( dta.propertyClasses, pCid ).title;
-				// An input data-set may have titles which are not from the SpecIF vocabulary:
+//				console.debug('normalizeProps prp 1',pCid,simpleClone(p));
+				// An input data-set may have titles which are not from the SpecIF vocabulary;
+				// replace the result with a current vocabulary term:
 				p.title = vocabulary.property.specif( p.title );	
+//				console.debug('normalizeProps prp 2',simpleClone(p));
 				nL.push( p )
 			}
 		});

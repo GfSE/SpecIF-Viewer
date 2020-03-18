@@ -156,17 +156,17 @@ function toOxml( data, opts ) {
 			};
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-			if( typeof(opts.translateTitles)!='boolean' ) opts.translateTitles = false;
-			if( !opts.translateTitles || typeof(opts.translate)!='function' )
-				opts.translate = function(str) { return str };
+			if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = false;
+			if( !opts.lookupTitles || typeof(opts.lookup)!='function' )
+				opts.lookup = function(str) { return str };
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
 			// If no label is provided, the respective properties are skipped:
-			if( opts.propertiesLabel && opts.translateTitles ) opts.propertiesLabel = opts.translate( opts.propertiesLabel );	
-			if( opts.statementsLabel && opts.translateTitles ) opts.statementsLabel = opts.translate( opts.statementsLabel );	
+			if( opts.propertiesLabel && opts.lookupTitles ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
+			if( opts.statementsLabel && opts.lookupTitles ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegExp
 			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegExp
 			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
@@ -283,7 +283,7 @@ function toOxml( data, opts ) {
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
 					// we don't have the individual statement's title; so we determine the class to get it's title, instead:
-					sTi = opts.translate( itemById(data.statementClasses,cid).title );
+					sTi = opts.lookup( itemById(data.statementClasses,cid).title );
 
 					// 3 columns:
 					if( sts[cid].subjects.length>0 ) {
@@ -396,7 +396,7 @@ function toOxml( data, opts ) {
 				let c1='', rows='', c3, rt;
 
 				r.descriptions.forEach( function(prp) {
-					valOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
+					propertyValueOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
 				});
 //				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
@@ -409,13 +409,12 @@ function toOxml( data, opts ) {
 				// Finally, list the remaining properties with title (name) and value:
 				r.other.forEach( function(prp) {
 					// the property title or it's class's title:
-//					console.debug('#',prp);
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
 					if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
-						rt = opts.translate( prp.title || propertyClassOf( prp['class'] ).title );
+						rt = minEscape( opts.lookup( prp.title || propertyClassOf( prp['class'] ).title ));
 						c3 = '';
-						valOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
-//						console.debug('other properties',prp,c3);
+						propertyValueOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
+//						console.debug('other properties',prp,rt,c3);
 						rows += wTableRow( wTableCell( wParagraph({
 														text:rt,
 														align:'end',
@@ -656,6 +655,8 @@ function toOxml( data, opts ) {
 									delete fmt.font.color;	// simply, since there is only one value so far.
 									return ''
 								};
+								// ToDo: Transform '<span style="text-decoration: underline;">'
+								// Similarly: <u>, see https://www.tutorialspoint.com/How-to-underline-a-text-in-HTML
 								// an internal link (hyperlink, "titleLink"):
 								if( reTitleLink.test($2) ) {
 									p.runs.push(titleLink($2,opts));
@@ -853,11 +854,11 @@ function toOxml( data, opts ) {
 						};
 					return null  // should never arrive here
 				}
-				function valOf( prp ) {
+				function propertyValueOf( prp ) {
 					// return the value of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
-//					console.debug('valOf',prp,'"',prp.value,'"');
+//					console.debug('propertyValueOf',prp,'"',prp.value,'"');
 					if(prp['class']) {
 						let dT = itemById( data.dataTypes, propertyClassOf( prp['class']).dataType );
 						switch( dT.type ) {
@@ -865,7 +866,7 @@ function toOxml( data, opts ) {
 								let ct = '',
 									val = null,
 									st = opts.stereotypeProperties.indexOf(prp.title)>-1,
-									vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
+									vL = prp.value.split(',');  // in case of xs:enumeration, content carries comma-separated value-IDs
 								for( var v=0,V=vL.length;v<V;v++ ) {
 									val = itemById(dT.values,vL[v].trim());
 									// If 'val' is an id, replace it by title, otherwise don't change:
@@ -875,7 +876,7 @@ function toOxml( data, opts ) {
 								};
 								return [{p:{text:minEscape(ct)}}];
 							case opts.dataTypeXhtml:
-//								console.debug('valOf - xhtml',prp.value);
+//								console.debug('propertyValueOf - xhtml',prp.value);
 								return parseXhtml( prp.value, opts );
 							case opts.dataTypeString:
 								return parseText( prp.value, opts )
@@ -2479,6 +2480,7 @@ function toOxml( data, opts ) {
 	}
 	function hasContent( str ) {
 		// check whether str has content or a reference:
+		if( !str ) return false;
 		return str.replace(/<[^>]+>/g, '').trim().length>0	// strip HTML and trim
 			|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
 			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
@@ -2488,6 +2490,20 @@ function toOxml( data, opts ) {
 	// than MS WORD would correctly show.
 	// Thus transform all but the necessary ones '&' and '<' to UTF-8.
 	function minEscape( s ) {
+		let el = document.createElement('div');
+		// first unescape all HTML entities:
+		return s.replace(/\&#?[0-9a-z]+;/gi, function (enc) {
+					el.innerHTML = enc;
+					return el.innerText
+				})
+		// then re-escape the essential ones:
+				.replace(/[&<>]/g, function($0) {
+					return "&#" + {"&":"38", "<":"60", ">":"62"}[$0] + ";";
+			//	.replace(/[&<>"'`=\/]/g, function($0) {
+			//		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
+				})
+		
+	/*	This works, but misses out on '&auml;' for example:
 		return s.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
 					if( ['26','3C','3c','3E','3e'].indexOf(numStr)>-1 ) return match;
 					// supply all hex characters except '&', '<' and '>' as utf-8 chars:
@@ -2500,6 +2516,14 @@ function toOxml( data, opts ) {
 				})
 				.replace(/&quot;/g, '"')
 				.replace(/&apos;/g, "'")
+			//	.replace(/&auml;/g, "ä")
+			//	.replace(/&Auml;/g, "Ä")
+			//	.replace(/&ouml;/g, "ö")
+			//	.replace(/&Ouml;/g, "Ö")
+			//	.replace(/&uuml;/g, "ü")
+			//	.replace(/&Uuml;/g, "Ü")
+			//	.replace(/&szlig;/g, "ß")
+			// can't do that for all characters ... 
 				.replace( REAmpersandPlus, function($0,$1) {
 					// 1. Replace &, unless it belongs to an XML entity:
 					if( REXMLmin.test($0) ) {
@@ -2511,7 +2535,7 @@ function toOxml( data, opts ) {
 					}
 				})
 				.replace(/</g, '&#60;')
-				.replace(/>/g, '&#62;')
+				.replace(/>/g, '&#62;')  */
 	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/

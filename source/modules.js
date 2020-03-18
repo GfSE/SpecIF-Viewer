@@ -361,7 +361,7 @@ function ModuleManager() {
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.3.1/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.3.3/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;

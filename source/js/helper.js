@@ -619,8 +619,8 @@ String.prototype.escapeHTML = function() {
 	})
 };
 // see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
-String.prototype.unescapeHTML = function() {
-//  Unescape, but do not strip HTML-tags:
+String.prototype.unescapeHTMLEntities = function() {
+	// unescape HTML encoded entities (characters):
 	var el = document.createElement('div');
 	return noCode(this.replace(/\&#?[0-9a-z]+;/gi, function (enc) {
         el.innerHTML = enc;
@@ -628,6 +628,7 @@ String.prototype.unescapeHTML = function() {
 	}))
 };
 String.prototype.unescapeHTMLTags = function() {
+//  Unescape known HTML-tags:
 	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, function ($0,$1,$2,$3) {
 		return '<'+$1+$2+$3+'>'
 	}))

@@ -85,7 +85,7 @@ modules.construct({
 	name: CONFIG.objectFilter
 }, function(self) {
 	"use strict";
-	var pData,prj,dta;
+	let pData,prj,dta;
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
 
@@ -102,8 +102,8 @@ modules.construct({
 			+	'</div>'
 			+	'<div id="filterCtrl" class="contentCtrl" >'
 			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
-			+			'<button class="btn btn-default" onclick="app.'+CONFIG.objectFilter+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
-			+			'<button class="btn btn-default" onclick="app.'+CONFIG.objectFilter+'.goClicked()" >'+i18n.BtnGo+'</button>'
+			+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
+			+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.goClicked()" >'+i18n.BtnGo+'</button>'
 			+		'</div>'
 			+		'<div id="filterNotice" class="notice-default contentNotice" />'
 			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" />'
@@ -131,14 +131,19 @@ modules.construct({
 	// standard module entry:
 	self.show = function( opts ) {   // optional urlParams or filter settings
 //		console.debug( 'filter.show', opts, self.filterList );
+		if( typeof( opts ) != 'object' ) opts = {};
 		prj = app.cache.selectedProject;
 		dta = prj.data;
 		pData = self.parent;
 		pData.showLeft.reset();
 		$('#filterNotice').empty();
 
+		// Language options have been selected at project level:
+		opts.targetLanguage = self.parent.targetLanguage;
+		opts.lookupTitles = self.parent.lookupTitles;
+
 		// build filterList from the specTypes when executed for the first time:
-		if( self.filterList.length<1 || opts&&opts.filters || opts&&opts.forced ) 
+		if( self.filterList.length<1 || opts.filters || opts.forced ) 
 			build( opts );  
 
 		// Now start the evaluation based on the current filter settings:
@@ -150,7 +155,7 @@ modules.construct({
 
 		// Update browser history, if it is a view change, 
 		// but not navigation in the browser history:
-		if( !opts || !opts.urlParams ) 
+		if( !opts.urlParams ) 
 			setUrlParams({
 				project: dta.id,
 				view: self.view.substr(1)	// remove leading hash
@@ -196,7 +201,7 @@ modules.construct({
 			// Note also, that a resource may be listed several times, if it appears several times in the hierarchies.
 			prj.readContent( 'resource', {id: nd.ref} )
 				.done(function(rsp) {
-					h = match( new Resource(rsp) );
+					h = match( new Resource(rsp), opts );
 //					console.debug('tree.iterate',self.filterList,pend,rsp,h);
 					if( h )	{
 						hCnt++;
@@ -212,7 +217,7 @@ modules.construct({
 		})
 	};
 	
-	function match(res) {
+	function match(res,opts) {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
 		// Note that res is not a SpecIF resource, but a Viewer Resource built using classifyProps()!
 		// If an enumerated property is missing, the resource does NOT match.
@@ -253,16 +258,16 @@ modules.construct({
 //						console.debug('matchStr',prp,type);
 						switch( dT.type ) {
 							case 'xhtml':
-								if( patt.test( languageValueOf(prp.value).stripHTML() )) return true; // if found return, continue searching, otherwise
+								if( patt.test( languageValueOf(prp.value,opts).stripHTML() )) return true; // if found return, continue searching, otherwise
 								break;
 							case 'xs:enumeration':
 								// only if enumerated values are included in the search:
 								if( !f.excludeEnums ) {
-									if( patt.test( enumValStr(dT,prp) ) ) return true  // if found return, continue searching, otherwise
+									if( patt.test( enumValueOf(dT,prp.value,opts) ) ) return true  // if found return, continue searching, otherwise
 								};
 								break;
 							default:
-								if( patt.test( languageValueOf(prp.value) )) return true; // if found return, continue searching, otherwise
+								if( patt.test( languageValueOf(prp.value,opts) )) return true; // if found return, continue searching, otherwise
 								break
 						}
 					}
@@ -292,16 +297,17 @@ modules.construct({
 				// 
 				switch ( f.baseType ) {
 					case 'xs:enumeration':
-						// Assuming that there is max. one property per resource with the class specified by the filter:
-						let oa = itemBy( res.toShow.other, 'class', f.propClass ), // the concerned property
+						// Assuming that there is max. one property per resource with the class specified by the filter,
+						// and also assuming that any property with enumerated value will only be found in the 'other' list:
+						let oa = itemBy( res.toShow.other, 'class', f.propClass ), // select the concerned property by class
 							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies 'notAssigned':
 //						console.debug('matchPropValue',f,oa,no);
 						if( !oa.value ) return no;
 						
-						// return 'true' only if there is a match between any resource property value and the specified filter option 'opt':
-						let ct = oa.value.trim(),
+						// return 'true' only if there is a match between any resource property value and the specified filter option 'box':
+						let ct = languageValueOf( oa.value, opts ).trim(),
 							cL, z, j;
 						// works with single-valued and multiple-valued ENUMERATIONs:
 						for( j=f.options.length-1; j>-1; j--) { 
@@ -373,14 +379,14 @@ modules.construct({
 								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' ),
 								    lE, i;
 									
-								res.toShow.title = languageValueOf(res.toShow.title).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
+								res.toShow.title = languageValueOf(res.toShow.title,opts).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
 								// Clone the marked list elements for not modifying the original resources:
 								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
 									lE = res.toShow.descriptions[i];
 									res.toShow.descriptions.splice( i, 1, {
 											title: lE.title,  // for sorting the property into the columns
 											class: lE['class'],
-											value: languageValueOf(lE.value).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+											value: languageValueOf(lE.value,opts).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									})
 								}; 
 								for( i= res.toShow.other.length-1; i>-1; i-- ) {
@@ -388,7 +394,7 @@ modules.construct({
 									res.toShow.other.splice( i, 1, {
 											title: lE.title,  // for sorting the property into the columns
 											class: lE['class'],
-											value: languageValueOf(lE.value).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
+											value: languageValueOf(lE.value,opts).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } )
 									}); 
 	//								console.debug(res)
 								}
@@ -426,7 +432,7 @@ modules.construct({
 			};
 			function checkPropertyValue(f) {   // 
 				// 'f' is 'not applicable', if the scope of the specified filter 'f' is not contained in rCL:
-//				console.debug( f.scope, rCL.indexOf(f.scope) );
+//				console.debug( f.scope, simpleClone(rCL), rCL.indexOf(f.scope) );
 				if( f.scope && rCL.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
 
 				switch( f.baseType ) {
@@ -441,7 +447,9 @@ modules.construct({
 		
 		// top-level:
 		var clogged = false;  // initialize
-		for( var i=self.filterList.length-1; !clogged && i>-1; i--) {   // stop iterating right away if known it is clogged.
+		// must iterate with ascending index, because rCL is filled by checkResourceClass():
+		for( var i=0, I=self.filterList.length; !clogged && i<I; i++) {   
+			// stop iterating right away if known it is clogged.
 			switch( self.filterList[i].category ) {
 				case 'resourceClass': clogged = clogged || checkResourceClass(self.filterList[i]); break;
 			//	case 'statementClass': ....
@@ -452,32 +460,32 @@ modules.construct({
 		return clogged  // returns false, if hits are possible.
 	}
 	
-	function addEnumValueFilters( def ) { 
+	function addEnumValueFilters( def, opts ) { 
 		// def is like {category: 'enumValue', rCid: 'resourceClass.title', pCid: 'propertyClass.title', values: ['title1','title2']}
-//		console.debug( 'addEnumValueFilters', def );
+//		console.debug( 'addEnumValueFilters', def, opts );
 		
-			function possibleValues(pC, vL) {
-				var opts = [], v=null, V=null;
+			function allEnumValues(pC, vL) {
+				var boxes = [], v, V;
 				// Look up the baseType and include all possible enumerated values:
 				for( var d=0, D=dta.dataTypes.length; d<D; d++ ) {
 					if( dta.dataTypes[d].id === pC.dataType ) {
 						dta.dataTypes[d].values.forEach( function(v) {
-							var opt = {
-									title: v.value, 
+							// the checkboxes for the secondary filter selector per enum value:
+							var box = {
+									title: languageValueOf( v.value, opts ), 
 									id: v.id, 
 									checked: true
 								};
-							if( vL ) { opt.checked = vL.indexOf( v.id )>-1 };
-//							console.debug( 'opt', opt );
-							opts.push( opt )
+							if( vL ) { box.checked = vL.indexOf( v.id )>-1 };
+							boxes.push( box )
 						});
 						// add one more option for the case 'value not assigned':
-						opts.push({ 
+						boxes.push({ 
 								title: i18n.LblNotAssigned, 
 								id: 'notAssigned', 			// matches resource properties without a value (empty value list).
 								checked: (!vL || vL.indexOf('notAssigned')>-1)
 							}); 
-						return opts  // no need to iterate the remaining dataTypes
+						return boxes  // no need to iterate the remaining dataTypes
 					}
 				};
 				return null  // this should never happen ...
@@ -489,19 +497,19 @@ modules.construct({
 				for( var i=self.filterList.length-1; i>-1; i--) {
 					if (( self.filterList[i].dataType==pC.dataType )
 						&& ( self.filterList[i].scope==rC.id )) 
-						return undefined									
+						return // undefined									
 				};
 				
 				// Construct the filter descriptor and add it to the list of filters:
 				var eVF = { 
-					title: titleOf(rC)+': '+titleOf(pC),
+					title: titleOf(rC,opts)+': '+titleOf(pC,opts),
 					category: 'propertyValue',
 					primary: false,
 					scope: rC.id, 
 					propClass: pC.id,
 					dataType: pC.dataType,
 					baseType: 'xs:enumeration',
-					options: possibleValues( pC, vals )
+					options: allEnumValues( pC, vals )
 				};
 //				console.debug( 'eVF', eVF );
 				self.filterList.push(eVF)
@@ -578,16 +586,16 @@ modules.construct({
 				dta.resourceClasses.forEach( function( rC ) {
 					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
-//					console.debug( rC.title );
-					var opt =  
-						{ title: titleOf(rC),
-						id: rC.id,
-						checked: true};   // set selection by default
+					var box = { 
+							title: titleOf( rC, settings ),
+							id: rC.id,
+							checked: true
+						};   // set selection by default
 					// if there are preset options, set the select flag accordingly:
 					if( pre && pre.options ) { 
-						opt.checked = pre.options.indexOf( rC.id )>-1
+						box.checked = pre.options.indexOf( rC.id )>-1
 					};
-					oTF.options.push( opt )
+					oTF.options.push( box )
 				});
 				self.filterList.push(oTF)
 			}
@@ -612,7 +620,7 @@ modules.construct({
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
 			settings.filters.forEach( function(s) {
 				if( s.category == 'enumValue' )
-					addEnumValueFilters( s )
+					addEnumValueFilters( s, settings )
 			})
 		}
 		// Secondary filters are also added to the list on request via addEnumValueFilters().

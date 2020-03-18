@@ -46,7 +46,7 @@ modules.construct({
 	};
 	self.hide = function() {
 //		console.debug( 'reports.hide' );
-		$('#'+CONFIG.reports).empty();
+		$(self.view).empty();
 		app.busy.reset()
 	};
 	function handleError(xhr) {
@@ -66,6 +66,10 @@ modules.construct({
 		dta = prj.data;
 		pData = self.parent;
 		pData.showLeft.reset();
+
+		// Language options have been selected at project level:
+		opts.targetLanguage = self.parent.targetLanguage;
+		opts.lookupTitles = self.parent.lookupTitles;
 
 		self.list = [];
 
@@ -107,7 +111,7 @@ modules.construct({
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
 								rCR.datasets.push({
-									label: titleOf(rC),
+									label: titleOf(rC,opts),
 									id: rC.id,
 									count: 0,
 									color: '#1690d8' 
@@ -117,7 +121,7 @@ modules.construct({
 			}
 		addResourceClassReport( dta );  // must be on the first position
 
-		/*	function addStatementClassReport( prj ) {
+	/*		function addStatementClassReport( prj ) {
 				// Add a report with a counter per statementClass:
 				var sCR = {
 						title: i18n.LblStatementClasses,
@@ -131,7 +135,7 @@ modules.construct({
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
 								sCR.datasets.push({
-									label: titleOf(sC),
+									label: titleOf(sC,opts),
 									id: sC.id,
 									count: 0,
 									color: '#1690d8' 
@@ -142,21 +146,21 @@ modules.construct({
 		addStatementClassReport( dta );  */
 					
 			function addEnumeratedValueReports( prj ) {
-				function addPossibleValues(pC,r) {
+				function addPossibleValues(pC,rep) {
 					// Look up the dataType and create a counter for all possible enumerated values:
 					for( var d=0, D=prj.dataTypes.length; d<D; d++ ) {
 						if( prj.dataTypes[d].id == pC.dataType ) {
 							prj.dataTypes[d].values.forEach( function(val) {
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
-								r.datasets.push({  
-									label: val.value, 
+								rep.datasets.push({  
+									label: languageValueOf( val.value, opts ), 
 									id: val.id,
 									count: 0,    // resource count with a certain property value
 									color: '#1a48aa'
 								})
 							});
 							// add a counter for resources whose properties are without value:
-							r.datasets.push(  
+							rep.datasets.push(  
 								{ label: i18n.LblNotAssigned, 
 								id: 'notAssigned',
 								count: 0,	// resource count without an property value
@@ -175,7 +179,7 @@ modules.construct({
 						pC = itemById( dta.propertyClasses, id );
 						if( itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration' ) {
 							var aVR = {
-									title: titleOf(rC)+': '+titleOf(pC),
+									title: titleOf(rC,opts)+': '+titleOf(pC,opts),
 									category: 'enumValue',
 									pid: dta.id,	// pid: project-id
 									rCid: rC.id, 	// rCid: resourceClass-id
@@ -192,11 +196,11 @@ modules.construct({
 			}
 		addEnumeratedValueReports( dta );
 
-/*			function addBooleaenValueReports( prj ) {
+	/*		function addBooleaenValueReports( prj ) {
 			// ToDo
 			}
-		addBooleanValueReports( dta );  
-*/
+		addBooleanValueReports( dta );  */
+
 			function incVal( i,j ) {
 				self.list[i].datasets[j].count++;
 				self.list[i].scaleMax = Math.max( self.list[i].scaleMax, self.list[i].datasets[j].count )
@@ -214,9 +218,9 @@ modules.construct({
 			}
 			function evalResource( res ) {
 //				console.debug( 'evalResource', self.list, res );
-					function findPanel(pL,r,p) {
+					function findPanel(pL,rep,p) {
 						for( var i=pL.length-1;i>-1;i--  ) {
-							if( pL[i].rCid==r && pL[i].pCid==p ) return i
+							if( pL[i].rCid==rep && pL[i].pCid==p ) return i
 						};
 						return -1
 					}
@@ -277,7 +281,7 @@ modules.construct({
 						self.list = removeEmptyReports( self.list );
 //						console.debug('self-list',self.list);
 						if( self.list.length>0 )
-							$('#'+CONFIG.reports).html( renderReports( self.list ) )
+							$(self.view).html( renderReports( self.list ) )
 						else
 							showNotice(i18n.MsgNoReports);
 						app.busy.reset()
@@ -301,7 +305,7 @@ modules.construct({
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
 				li.datasets.forEach( function(ds,s) {
-					lb = ds.count>0? '<a onclick="app.'+CONFIG.reports+'.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
+					lb = ds.count>0? '<a onclick="app.'+self.loadAs+'.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
 						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
 						+					'<td style="width:15%; padding:0.2em" class="text-right">'+ds.count+'</td>'
@@ -333,12 +337,12 @@ modules.construct({
 			return ( (val-rp.scaleMin)/(rp.scaleMax-rp.scaleMin)*100+'%' )
 		}
 	/*	function self.barColor( i1, i0 ) {
-	//		if( i0<0 || i1<0 || i0 > self.list[i1].datasets.length-1 ) return null;
+		//	if( i0<0 || i1<0 || i0 > self.list[i1].datasets.length-1 ) return null;
 			if( i0<0 || i1<0 ) return null;	
 			return ( self.list[i1].datasets[i0].color )
 		}
 		function self.barStyle( i1, i0 ) {
-	//		if( i0<0 || i1<0 || i0 > self.list[i1].datasets.length-1 ) return null;
+		//	if( i0<0 || i1<0 || i0 > self.list[i1].datasets.length-1 ) return null;
 			if( i0<0 || i1<0 ) return null;	
 			return ( 'width: '+barLength()+'; background-color: '+self.barColor()+'; height: 0.5em; border-radius: 0.2em' )
 		} */
@@ -349,7 +353,7 @@ modules.construct({
 		// so assemble a corresponding filter list to show them in the filter module.
 		// Add the primary filters in any case, even if they don't get a constraint.
 		var itm = self.list[rX],
-	//		fL = [{category: 'textSearch'}];   // fL: filter list
+		//	fL = [{category: 'textSearch'}];   // fL: filter list
 			fL = [];
 //		console.debug( 'countClicked', rX, cX, self.list, itm );
 		switch( itm.category ) {
@@ -365,6 +369,7 @@ modules.construct({
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
 		modules.show( { newView:'#'+CONFIG.objectFilter, filters:fL } )
+		// ToDo: query the filter view, don't just assemble it.
 	};
 
 	return self

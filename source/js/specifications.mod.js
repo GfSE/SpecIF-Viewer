@@ -316,7 +316,7 @@ modules.construct({
 //		console.debug('permissions',self.resCreClasses,self.staCreClasses,self.staDelClasses)
 	}
 
-	self.updateTree = function( spc ) {
+	self.updateTree = function( spc, opts ) {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
@@ -349,7 +349,7 @@ modules.construct({
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// String.fromCodePoint()
-				name: elementTitleOf(r).unescapeHTML(), 
+				name: elementTitleOf(r,opts), 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -379,8 +379,12 @@ modules.construct({
 		
  		let uP = opts.urlParams,
 			fNd = self.tree.firstNode(),
-			nd = undefined;
-		
+			nd;
+
+		// Select the language options at project level:
+		opts.targetLanguage = self.targetLanguage = browser.language;
+		opts.lookupTitles = self.lookupTitles = true;
+				
 		// Initialize the tree, unless
 		// - URL parameters are specified where the project is equal to the loaded one
 		// - just a newView is specifed without URL parameters (coming from another page)
@@ -399,7 +403,7 @@ modules.construct({
 			.done(function(rsp) {
 //				console.debug('load',rsp);
 		//		self.updateTree( itemById( app.cache.selectedProject.data.hierarchies, rsp.id ) )
-				self.updateTree( rsp )
+				self.updateTree( rsp, opts )
 
 				// all hierarchies have been loaded;
 				// try to select the requested node:
@@ -760,6 +764,11 @@ modules.construct({
 		pData.showLeft.set();
 		pData.showTree.set();
 		
+		// Select the language options at project level:
+		if( typeof( opts ) != 'object' ) opts = {};
+		opts.targetLanguage = self.targetLanguage = browser.language;
+		opts.lookupTitles = self.lookupTitles = true;
+				
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
 		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.objectList); return };  // quit, because the tree is empty
 //		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
@@ -834,6 +843,11 @@ modules.construct({
 		pData.showLeft.set();
 		pData.showTree.set();
 
+		// Select the language options at project level:
+		if( typeof( opts ) != 'object' ) opts = {};
+		opts.targetLanguage = self.targetLanguage = browser.language;
+		opts.lookupTitles = self.lookupTitles = true;
+				
 		// The tree knows the selected resource; if not take the first:
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
 		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.relations); return };  // quit, because the tree is empty
@@ -955,7 +969,12 @@ modules.construct({
 				$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
 
 			// If in delete mode, provide the name of the delete function as string:
-			let net = selRes.statements({ fnDel: modeStaDel? 'app.'+self.parent.loadAs+'.deleteNode()':'' });
+			let os = { 
+				fnDel: modeStaDel? 'app.'+self.parent.loadAs+'.deleteNode()':'',
+				targetLanguage: opts.targetLanguage,
+				lookupTitles: true
+			},
+				net = selRes.statements( os );
 //			console.debug('renderStatements',net);
 			switch( typeof(net) ) {
 				case 'string':
@@ -992,13 +1011,13 @@ modules.construct({
 			// take the original (unchanged) resources from cache:
 			// First the currently selected resource:
 			let sO=itemById( app.cache.selectedProject.data.resources, pData.tree.selectedNode.ref );
-//			console.debug('addMentionsRels',pData.tree.selectedNode,sO);
+//			console.debug('addMentionsRels',pData.tree.selectedNode,sO,opts);
 			if( !sO ) return;
 			// There is no need to have a statementClass .... at least currently:
 //				var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
 //				if( !rT ) return;
 			
-			var ti = elementTitleOf( sO ),
+			var ti = elementTitleOf( sO, opts ),
 				rG = { rGs: [], rGt: [] };		// construct a statement group for the new statement type
 			// In contrast to the statements collected before, these are not stored in the server.
 
@@ -1011,7 +1030,7 @@ modules.construct({
 				// so there is no need to check it, here:
 				// disregard resources which are not referenced in the current tree:
 				if( pData.tree.nodesByRef(rO.id).length<1 ) return;
-				let ti = elementTitleOf( rO );
+				let ti = elementTitleOf( rO, opts );
 				if( !ti || ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
 				
 				// 1. The titles of other resource's found in the selected resource's texts 
@@ -1113,7 +1132,11 @@ function Resource( obj ) {
 	"use strict";
 	// for the list view, where title and text are shown in the main column and the others to the right.
 	var self = this;
-	const noRes = {descriptions:[],other:[]};
+	const noRes = {descriptions:[],other:[]},
+		opts = {
+				lookupTitles: true,
+				targetLanguage: browser.language
+			};
 	self.toShow = noRes;
 	self.staGroups = [];
 
@@ -1136,10 +1159,10 @@ function Resource( obj ) {
 	};
 
 	self.listEntry = function() {
-			function showPrp( prp ) {
+			function showPrp( prp, opts ) {
 //				console.debug('showPrp',prp);
 				if( CONFIG.overviewHiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value) ))
+				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value,opts) ))
 			} 
 		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
@@ -1153,23 +1176,22 @@ function Resource( obj ) {
 			case '#'+CONFIG.objectList:
 				// move item to the top, if the title is clicked:
 				rO += '<div onclick="app.specs.itemClicked(\''+self.toShow.id+'\')">'
-					+	renderTitle( self.toShow )
+					+	renderTitle( self.toShow, opts )
 					+ '</div>';
 				break;
 			default:
-				rO += renderTitle( self.toShow );
+				rO += renderTitle( self.toShow, opts );
 		};
 		
 		// 1.2 The description properties:
 		self.toShow.descriptions.forEach( function(prp) {
-			if( showPrp( prp ) ) {
-				var v = ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
-					os = {
-						dynLinks: v,
-						clickableElements: v,
-						linkifiedURLs: v
-					};
-				rO += '<div class="attribute attribute-wide">'+valOf(self.toShow,prp,os)+'</div>'
+			if( showPrp( prp, opts ) ) {
+				opts.dynLinks 
+				= opts.clickableElements
+				= opts. linkifiedURLs
+				= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
+
+				rO += '<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
 			}
 		});
 		rO += 	'</div>'  // end of content-main
@@ -1192,12 +1214,12 @@ function Resource( obj ) {
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining atts:
 		self.toShow.other.forEach( function( prp ) {
-			if( showPrp( prp ) ) {
-				rO += attrV( titleOf(prp), valOf(self.toShow,prp), 'attribute-condensed' )
+			if( showPrp( prp, opts ) ) {
+				rO += attrV( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts), 'attribute-condensed' )
 			}
 		});
 		// 3.2 The type info:
-	//	rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'] ), 'attribute-condensed' )
+	//	rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
 		// 3.3 The change info depending on selectedView:
 		rO += renderChangeInfo( self.toShow );		
 		rO +=   '</div>'	// end of content-other
@@ -1210,27 +1232,27 @@ function Resource( obj ) {
 
 		// Create HTML for a detail view:
 		// 1 The title:
-		var rO = renderTitle( self.toShow );	
+		var rO = renderTitle( self.toShow, opts );	
 		// 2 The description properties:
 		self.toShow.descriptions.forEach( function(prp) {
 //			console.debug('details.descr',prp.value);
 			if( hasContent(prp.value) ) {
-				var os = {
+				var opts = {
 				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 						dynLinks: true,
 						clickableElements: true,
 						linkifiedURLs: true
 					};
-				rO += 	'<div class="attribute attribute-wide">'+valOf(self.toShow,prp,os)+'</div>'
+				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
 			}
 		});
 		// 3 The remaining properties:
 		self.toShow.other.forEach( function( prp ) {
 //			console.debug('details.other',prp.value);
-			rO += attrV( titleOf(prp), valOf(self.toShow,prp) )
+			rO += attrV( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'] ) );
+		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
 		// 5 The change info depending on selectedView:
 		rO += renderChangeInfo( self.toShow );
 //		console.debug( 'Resource.details', self.toShow, rO );
@@ -1240,6 +1262,7 @@ function Resource( obj ) {
 	//  Create a reduced SpecIF data set for rendering a graph:
 	self.statements = function( opts ) {
 		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+		
 		if( browser.isIE ) return renderStatementsTable( self.staGroups, opts );
 		
 		// Build a simplified SpecIF data set with the selected resource in focus: 
@@ -1251,23 +1274,28 @@ function Resource( obj ) {
 			}],
 			resources: [{
 				id: 	self.toShow.id,
-				title: 	self.toShow.title,
+				title: 	elementTitleOf( self.toShow, opts ),
 				class:  self.toShow['class'].id
 			}],
 			statements: []
 		};
 		
 		// add all statements:
-		let sGL = self.staGroups, rR=null;
+		let sGL = self.staGroups, rR;
 		if( sGL.length>0 ) {
 			sGL.forEach( function(sG) {
 				// each statement group, where the selected resource is the object:
 				sG.rGs.forEach( function(s) {
 					rR = s.subject;
+
+					// by default of a title adopt the title of the statement class;
+					// in case there is a title property, it will always prevail:
+					s.title = s.title || itemById( app.cache.selectedProject.data.statementClasses, s['class'] ).title;
+
+					console.debug('s',s,opts,elementTitleOf(s,opts));
 					// add each statement:
-//					console.debug('s',s,titleOf(s));
 					net.statements.push({
-						title:		titleOf(s),	// translated
+						title:		elementTitleOf(s,opts),	// translated
 						id:			s.id,
 						subject:	rR.id,
 						object:		self.toShow.id
@@ -1277,23 +1305,27 @@ function Resource( obj ) {
 						// here, the icon is added to the string right away and there is no need to supply the resourceType:
 						net.resources.push({
 							id: 	rR.id,
-							title: 	elementTitleWithIcon(rR)
-/*							title: 	elementTitleOf(rR),
+							title: 	elementTitleWithIcon(rR,opts)
+				/*			title: 	elementTitleOf(rR,opts),
 							class: rR['class']
 						});
 					// add its resourceClass:
 					if( indexById( net.resourceClasses, rR['class'] )<0 )    // avoid duplication 
 						net.resourceClasses.push({
 							id: 	rR['class'],
-							icon: 	itemById( app.cache.selectedProject.data.resourceClasses, rR['class'] ).icon
-*/						})
+							icon: 	itemById( app.cache.selectedProject.data.resourceClasses, rR['class'] ).icon  */
+						})
 				});
 				sG.rGt.forEach( function(s) {
 					rR = s.object;
+
+					// by default of a title adopt the title of the statement class;
+					// in case there is a title property, it will always prevail:
+					s.title = s.title || itemById( app.cache.selectedProject.data.statementClasses, s['class'] ).title;
+
 					// add each statement:
-//					console.debug('s',s,titleOf(s));
 					net.statements.push({
-						title:		titleOf(s),	// translated
+						title:		elementTitleOf(s,opts),	// translated
 						id:			s.id,
 						subject:	self.toShow.id,
 						object:		rR.id
@@ -1302,11 +1334,11 @@ function Resource( obj ) {
 					if( indexById( net.resources, rR.id )<0 )    // avoid duplication 
 						net.resources.push({
 							id: 	rR.id,
-							title: 	elementTitleWithIcon(rR)
+							title: 	elementTitleWithIcon(rR,opts)
 						})
 				})
 			});
-//			console.debug('statements to render',net);
+			console.debug('statements to render',net);
 			return net
 		} else {
 			return '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
@@ -1315,7 +1347,8 @@ function Resource( obj ) {
 		function renderStatementsTable( sGL, opts ) {
 			// Render a table with all statements grouped by type:
 		//	if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-			if( typeof(opts)!='object' ) opts = {fnDel:false};
+			if( typeof(opts)!='object' ) opts = {};
+		//	if( typeof(fnDel)!='boolean' ) opts.fnDel: false
 
 			// opts.fnDel is a name of a delete function to call. If provided, it is assumed that we are in delete mode.
 			// ToDo: The 'mentions' statements shall not be for deletion, and not appear to be for deletion (in red)
@@ -1323,7 +1356,7 @@ function Resource( obj ) {
 				var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
 			else
 				var rT = '<div>';  // render table with the resource's statements in display mode
-			rT += renderTitle( self.toShow );	// rendered statements
+			rT += renderTitle( self.toShow, opts );	// rendered statements
 			if( sGL.length>0 ) {
 //				console.debug( sGL.length, sGL );
 				if( opts.fnDel ) 
@@ -1339,7 +1372,7 @@ function Resource( obj ) {
 							relG.push({
 								id: r.id,
 								sId: r.subject.id,
-								sT: elementTitleWithIcon(r.subject),
+								sT: elementTitleWithIcon(r.subject,opts),
 								computed: !r['class']
 							});
 						});
@@ -1359,8 +1392,8 @@ function Resource( obj ) {
 								rT += '<a onclick="app.specs.relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
 						});
 						// Title and object are the same for all statements in this list:
-						rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0])+'</i></td>';
-						rT += '<td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGs[0].object)+'</span></td></tr>'
+						rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0],opts)+'</i></td>';
+						rT += '<td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGs[0].object,opts)+'</span></td></tr>'
 					};
 					if( sG.rGt.length ) {
 						// Show a table row with a group of statements where the selected resource is the subject (subject).
@@ -1370,7 +1403,7 @@ function Resource( obj ) {
 							relG.push({
 								id: r.id,
 								tId: r.object.id,
-								tT: elementTitleWithIcon(r.object),
+								tT: elementTitleWithIcon(r.object,opts),
 								computed: !r['class']
 							});
 						});
@@ -1381,8 +1414,8 @@ function Resource( obj ) {
 										return dick==doof?0:(dick>doof?-1:1) 
 						});
 						// Title and subject are the same for all statements in this list:
-						rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject)+'</span></td>';
-						rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0])+'</i></td><td>';
+						rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject,opts)+'</span></td>';
+						rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0],opts)+'</i></td><td>';
 						// The list of resources:
 						relG.forEach( function(tg) {
 							if( opts.fnDel && tg.computed )
@@ -1403,17 +1436,17 @@ function Resource( obj ) {
 			return rT  // return rendered statement table for display
 		}
 	};
-	function renderTitle( clsPrp ) {
+	function renderTitle( clsPrp, opts ) {
 		if( !clsPrp.title ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf( clsPrp.title );
+		let ti = languageValueOf( clsPrp.title, opts );
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
 		// else: is not a heading:
 		// take title and add icon, if configured:
-//		console.debug('renderTitle',simpleClone(clsPrp));
+//		console.debug('renderTitle',simpleClone(clsPrp),ti);
 		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti)+'</div>'
 	}
 	function renderChangeInfo( clsPrp ) {
@@ -1470,40 +1503,40 @@ function Resources() {
 	self.init = function() { 
 		self.values = []
 	};
-	self.push = function( el ) {
+	self.push = function( r ) {
 		// append a resource to the list:
-		self.values.push( new Resource( el ) );
+		self.values.push( new Resource( r ) );
 		return true  // a change has been effected
 	};
-	self.append = function( oL ) {
+	self.append = function( rL ) {
 		// append a list of resources:
-		oL.forEach( function(o) { 
-			self.values.push( new Resource( o ) )
+		rL.forEach( function(r) { 
+			self.values.push( new Resource( r ) )
 		})
 	};
-	self.update = function( oL ) {
-		// update self.values with oL and return 'true' if a change has been effected:
-		if( oL.length==self.values.length ) {
+	self.update = function( rL ) {
+		// update self.values with rL and return 'true' if a change has been effected:
+		if( rL.length==self.values.length ) {
 			// there is a chance no change is necessary:
 			var chg=false;
-			for( var i=oL.length-1;i>-1;i-- ) 
+			for( var i=rL.length-1;i>-1;i-- ) 
 				// set() must be on the left, so that it is executed for every list item:
-				chg = self.values[i].set( oL[i] ) || chg;
+				chg = self.values[i].set( rL[i] ) || chg;
 			return chg
 		} else {
 			// there will be a change anyways:
 			self.init();
-			self.append( oL );
+			self.append( rL );
 			return true
 		}
 	};
-	self.updateSelected = function( o ) {
+	self.updateSelected = function( r ) {
 		// update the first item (= selected resource), if it exists, or create it;
 		// return 'true' if a change has been effected:
 		if( self.values.length>0 )
-			return self.values[0].set( o )
+			return self.values[0].set( r )
 		else
-			return self.push( o )
+			return self.push( r )
 	};
 	self.selected = function() {
 		// return the selected resource; it is the first in the list by design:
@@ -1534,7 +1567,7 @@ function Resources() {
 }
 
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function valOf( ob, prp, opts ) {
+function propertyValueOf( ob, prp, opts ) {
 	"use strict";
 	if( typeof(opts)=='object' ) {
 		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
@@ -1551,20 +1584,17 @@ function valOf( ob, prp, opts ) {
 	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ); 
 	switch( dT.type ) {
 		case 'xs:string':
-			var ct = languageValueOf( prp.value ).ctrl2HTML();
+			var ct = languageValueOf( prp.value, opts ).ctrl2HTML();
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 		/*	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
 				ct = '&#x00ab;'+ct+'&#x00bb;'  */
 			break;
 		case 'xhtml':
-			var os = {
-					rev: ob.revision,
-					clickableElements: opts.clickableElements
-				},
-				ct = languageValueOf( prp.value ).unescapeHTMLTags();
+			opts.rev = ob.revision;
+			var ct = languageValueOf( prp.value, opts ).unescapeHTMLTags();
 			ct = makeHTML( ct );
-			ct = fileRef.toGUI( ct, os );
+			ct = fileRef.toGUI( ct, opts );
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			break;
@@ -1574,7 +1604,7 @@ function valOf( ob, prp, opts ) {
 		case 'xs:enumeration':
 			// usually value has a comma-separated list of value-IDs,
 			// but the filter module delivers potentially marked titles in content.
-			var ct = enumValStr( dT, prp );		// translate IDs to values, if appropriate
+			var ct = enumValueOf( dT, prp.value, opts );		// translate IDs to values, if appropriate
 			break;
 		default:
 			var ct = prp.value
@@ -1589,9 +1619,9 @@ function valOf( ob, prp, opts ) {
 		// - Titles shorter than 4 characters are ignored
 		// - see: https://www.mediawiki.org/wiki/Help:Links
 
-			function lnk(o,t){ 
-//				console.debug('lnk',o,t,'app.specs.relatedItemClicked(\''+o.id+'\')');
-				return '<a onclick="app.specs.relatedItemClicked(\''+o.id+'\')">'+t+'</a>'
+			function lnk(r,t){ 
+//				console.debug('lnk',r,t,'app.specs.relatedItemClicked(\''+r.id+'\')');
+				return '<a onclick="app.specs.relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
 			}				
 		
 		// in certain situations, just remove the dynamic linking pattern from the text:
@@ -1616,8 +1646,8 @@ function valOf( ob, prp, opts ) {
 						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
 						// avoid self-reflection:
 					//	if(ob.id==cO.id) return true;
-					//	ti = elementTitleOf( cO ).stripHTML();
-						ti = elementTitleOf( cO );
+					//	ti = elementTitleOf( cO, opts ).stripHTML();
+						ti = elementTitleOf( cO, opts );
 						// if the dynLink content equals a resource's title, remember the first occurrence:
 						if( notFound && ti && m==ti.toLowerCase() ) {
 							notFound = false;
@@ -2039,8 +2069,8 @@ var fileRef = {
 										ti = languageValueOf( clsPrp.title );
 										dsc = '';
 									clsPrp.descriptions.forEach( function(d) {
-										// to avoid an endless recursive call, valOf shall add neither dynLinks nor clickableElements
-										dsc += valOf(clsPrp,d)
+										// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
+										dsc += propertyValueOf(clsPrp,d)
 									});
 									if( dsc.stripCtrl().stripHTML().trim() ) {
 										// Remove the dynamic linking pattern from the text:
@@ -2067,13 +2097,13 @@ var fileRef = {
 							// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 							if( !CONFIG.selectCorrespondingDiagramFirst ) return id;
 							// else, replace the id of a resource by the id of a diagram carrying the same title:
-							let ti = elementTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id)),
+							let ti = elementTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id),opts),
 								rT = null;
 							for( var i=app.cache.selectedProject.data.resources.length-1;i>-1;i--) {
 								rT = itemById(app.cache.selectedProject.data.resourceClasses,app.cache.selectedProject.data.resources[i]['class']);
 								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( elementTitleOf(app.cache.selectedProject.data.resources[i])==ti ) {
+								if( elementTitleOf(app.cache.selectedProject.data.resources[i],opts)==ti ) {
 									// found: the diagram carries the same title 
 									if( app.specs.resources.selected().value && app.specs.resources.selected().value.id==app.cache.selectedProject.data.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 
