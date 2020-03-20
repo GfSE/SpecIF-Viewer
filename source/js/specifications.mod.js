@@ -1187,9 +1187,13 @@ function Resource( obj ) {
 		self.toShow.descriptions.forEach( function(prp) {
 			if( showPrp( prp, opts ) ) {
 				opts.dynLinks 
-				= opts.clickableElements
-				= opts. linkifiedURLs
-				= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
+					= opts.clickableElements
+					= opts. linkifiedURLs
+					= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
+				// ToDo: Consider to make it a user option:
+				opts.unescapeHTMLTags = true;
+				// ToDo: Make it a user option:
+				opts.makeHTML = true; 
 
 				rO += '<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
 			}
@@ -1572,7 +1576,11 @@ function propertyValueOf( ob, prp, opts ) {
 	if( typeof(opts)=='object' ) {
 		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
 		if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-		if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false
+		if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false;
+		// some environments escape the tags on export, e.g. camunda / in|flux:
+		if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
+		// markup to HTML:
+		if( typeof(opts.makeHTML)!='boolean' ) 			opts.makeHTML = false
 	} else {
 		opts = {
 			dynLinks: false,
@@ -1592,8 +1600,11 @@ function propertyValueOf( ob, prp, opts ) {
 			break;
 		case 'xhtml':
 			opts.rev = ob.revision;
-			var ct = languageValueOf( prp.value, opts ).unescapeHTMLTags();
-			ct = makeHTML( ct );
+			var ct = languageValueOf( prp.value, opts );
+			if( opts.unescapeHTMLTags )
+				ct = ct.unescapeHTMLTags();
+			if( opts.makeHTML )
+				ct = makeHTML( ct );
 			ct = fileRef.toGUI( ct, opts );
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );

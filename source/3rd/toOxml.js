@@ -9,13 +9,15 @@ function toOxml( data, opts ) {
 	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
 
 	// Reject versions < 0.10.8:
-	let v = data.specifVersion.split('.');
-	if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
-		if (typeof(opts.fail)=='function' )
-			opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
-		else
-			console.error("SpecIF Version < v0.10.8 is not supported.");
-		return
+	if( data.specifVersion ) {
+		let v = data.specifVersion.split('.');
+		if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
+			if (typeof(opts.fail)=='function' )
+				opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
+			else
+				console.error("SpecIF Version < v0.10.8 is not supported.");
+			return
+		}
 	};
 	
 	// Check for missing options:

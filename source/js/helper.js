@@ -582,8 +582,7 @@ function isHTML(str) {
 }
 function makeHTML(str) {
 	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
-	if( isHTML(str) ) 
-		return str;
+	if( isHTML(str) ) return str;
 	if( CONFIG.convertMarkdown && app.markdown )
 		// don't interpret the '+' as list item, but do so with '•',
 		// transform arrows assembled by characters to special arrow characters:
@@ -629,6 +628,7 @@ String.prototype.unescapeHTMLEntities = function() {
 };
 String.prototype.unescapeHTMLTags = function() {
 //  Unescape known HTML-tags:
+	if( isHTML(this) ) return this;
 	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, function ($0,$1,$2,$3) {
 		return '<'+$1+$2+$3+'>'
 	}))
@@ -955,6 +955,7 @@ function noCode( s ) {
 	}
 }
 function cleanValue( o ) {
+	// remove potential malicious code from a value which may be supplied in several languages:
 	switch( typeof(o) ) {
 		case 'string': return noCode( o ); 
 		case 'object': 

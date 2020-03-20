@@ -671,7 +671,7 @@ function Project( pr ) {
 
 			// 3. Create a new combined process folder:
 			let processF = {
-				specifVersion: 'v1.0',
+				specifVersion: 'v0.8',
 				dataTypes: DataTypes(tim),
 				propertyClasses: PropertyClasses(tim),
 				resourceClasses: ResourceClasses(tim),
@@ -730,7 +730,7 @@ function Project( pr ) {
 
 		// 2. Create a new combined glossary:
 		let glossary = {
-			specifVersion: 'v1.0',
+			specifVersion: 'v0.8',
 			dataTypes: DataTypes(tim),
 			propertyClasses: PropertyClasses(tim),
 			resourceClasses: ResourceClasses(tim),
@@ -2325,7 +2325,7 @@ const specif = {
 		// Get the specified schema file from the server:
 		httpGet({
 		//	url: "https://specif.de/v"+data.specifVersion+"/schema", 
-			url: "./specif.de/v"+data.specifVersion+"/schema", 
+			url: data['$schema'] || './specif.de/v'+data.specifVersion+'/schema', 
 			responseType: 'arraybuffer',
 			withCredentials: false,	
 			done: function(xhr) { 
@@ -2356,7 +2356,8 @@ const specif = {
 			fail: function(xhr) { 
 				switch( xhr.status ) {
 					case 404:
-						xhr = { status: 903, statusText: 'SpecIF version '+data.specifVersion+' is not supported by the program!' };
+						let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
+						xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
 					default:
 						cDO.reject(xhr)
 				}
@@ -2404,11 +2405,13 @@ const specif = {
 				names.sClass = 'class';
 				names.pClass = 'class'
 		};
-		if( spD.specifVersion.startsWith('0.1') ) {
+		if( spD.specifVersion ) {
+				// for all versions <1.0:
 				names.frct = 'accuracy';
 				names.minI = 'min';
 				names.maxI = 'max'
 		} else {
+				// starting SpecIF v1.0:
 				names.frct = 'fractionDigits';
 				names.minI = 'minInclusive';
 				names.maxI = 'maxInclusive'
@@ -2737,7 +2740,7 @@ const specif = {
 		var spD = {
 				id: iD.id,
 				title: languageValueOf( iD.title, opts ),
-				specifVersion: app.specifVersion,
+				$schema: 'https://specif.de/v'+app.specifVersion+'/schema.json',
 				generator: app.productTitle,
 				generatorVersion: app.productVersion
 			};
@@ -3052,34 +3055,38 @@ function titleIdx( pL, prj ) {
 		};
 	return -1
 }
-function titleFromProperties( pL, opts ) {
-//	if( !pL ) return;
-	// look for a property serving as title:
-	let idx = titleIdx( pL );
-	if( idx>-1 ) {  // found!
-		// the result must be a string for display, in this case:
-		let os = {
-			targetLanguage: opts.targetLanguage || browser.language,
-			lookupTitles: true
-		};
-		// Remove all formatting for the title, as the app's format shall prevail.
-		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
-		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-		// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-	//	if( modules.ready.indexOf( 'diff' )>-1 )
-	//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
-		// For now, let's try without replacements; so far this function is called before the filters are applied,
-		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//		console.debug('titleFromProperties', idx, pL[idx], os, languageValueOf( pL[idx].value,os ) );
-		return languageValueOf( pL[idx].value, os ).stripHTML().trim()
-	};
-	return
-}
 function elementTitleOf( el, opts ) {
 	// get the title from the properties or a replacement value in case of default:
 	if( typeof(el)!='object' ) return null;  // programming error
-	let ti = titleFromProperties( el.properties, opts ) || titleOf( el, opts );
-	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
+	// in case of a resource, we never want to lookup a title,
+	// in case of a statement, we would want to:
+	let op = {
+			lookupTitles: opts.lookupTitles && el.subject,
+			targetLanguage: opts.targetLanguage || browser.language
+		},
+		ti = titleFromProperties( el.properties, op ) || titleOf( el, op );
+//	console.debug('elementTitleOf',el,opts,ti);
+//	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
+	return typeof(ti)=='string'? ti.stripHTML() : ti
+
+	function titleFromProperties( pL, opts ) {
+	//	if( !pL ) return;
+		// look for a property serving as title:
+		let idx = titleIdx( pL );
+		if( idx>-1 ) {  // found!
+			// Remove all formatting for the title, as the app's format shall prevail.
+			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+		//	if( modules.ready.indexOf( 'diff' )>-1 )
+		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
+			// For now, let's try without replacements; so far this function is called before the filters are applied,
+			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+//			console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
+			return languageValueOf( pL[idx].value, op ).stripHTML().trim()
+		};
+		return
+	}
 }
 function propTitleOf( prp, dta ) {
 	// get the title of a property as defined by itself or it's class:
