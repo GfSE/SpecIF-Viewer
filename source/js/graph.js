@@ -1,6 +1,6 @@
-/*	ReqIF Server: Semantic Graphing.
+/*	SpecIF: Semantic Graphing.
 	Dependencies: vis-network
-	(C)copyright 2017-2018 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
@@ -39,11 +39,11 @@ function Graph() {
 		// if there are no relations, do not create a graph:
 		if ( !relations ) return;
 
-		let nodesData = [];
-		let edgeData = [];
+		let nodesData = [],
+			edgeData = [];
 
-		let relProp = countRelationTypesAndEdges(relations);
-		let idx = pushMainNode( specifData.resources[opts.index] );  // returns always 1
+		let relProp = countRelationTypesAndEdges(relations),
+			idx = pushMainNode( specifData.resources[opts.index] );  // returns always 1
 		for(var entry in relations) {
 			// an iteration per relation type,
 			// first the inbound relations, i.e. where the node in focus is target:
@@ -52,14 +52,14 @@ function Graph() {
 		};
 		for(var entry in relations) {
 			// an iteration per relation type,
-			// then the outbound relations, i.e. where the node in focus is source:
+			// now the outbound relations, i.e. where the node in focus is source:
 			if (relations.hasOwnProperty(entry) && relations[entry].targets.length )
 					idx = pushChildNodesAndEdges(idx, relations[entry].targets, relProp, false)
 		};
 //		console.debug('rawData',nodesData,edgeData);
-		let nodes = new vis.DataSet(nodesData);
-		let edges = new vis.DataSet(edgeData);
-		let container = document.getElementById( opts.canvas );
+		let nodes = new vis.DataSet(nodesData),
+			edges = new vis.DataSet(edgeData),
+			container = document.getElementById( opts.canvas );
 
 		let data = {
 			nodes: nodes,
@@ -286,8 +286,7 @@ function Graph() {
 					children[0].statement,
 					inbound);
 				idx++
-            } 
-			else {
+            } else {
 				// there are several nodes related by the same type and same direction,
 				// so there will be a cluster node:
                 let pos = calculateNodePosition( sectorIdx, Math.PI, edges, {x:0, y:0}, 300, offs );
@@ -396,7 +395,7 @@ function Graph() {
 						return getIconForResourceClass(res['class']) + xmlChar2utf8(res.properties[n].value)
             };
             if( res.title ) return getIconForResourceClass(res['class']) + xmlChar2utf8(res.title);
-            return undefined
+            return // undefined
         }
 
         /**
@@ -421,7 +420,7 @@ function Graph() {
 						return xmlChar2utf8(specifData.statementClasses[i].title)
 				}
 			};
-            return undefined
+            return // undefined
         }
 
         /**
@@ -432,12 +431,12 @@ function Graph() {
         function resourceById(id) {
             for(var i = specifData.resources.length-1; i>-1; i--)
                 if (specifData.resources[i].id === id) return specifData.resources[i];
-			return undefined
+			return // undefined
         }
         function statementById(id) {
             for(var i = specifData.statements.length-1; i>-1; i--)
                 if (specifData.statements[i].id === id) return specifData.statements[i];
-			return undefined
+			return // undefined
         }
 
         /**

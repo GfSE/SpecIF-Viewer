@@ -11,6 +11,7 @@ const CONFIG = {};
 	CONFIG.imgURL = './'+app.productVersion+'/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
+	CONFIG.placeholder = 'to-be-replaced';
 	CONFIG.loginTimeout = 3000;
 	CONFIG.defaultCommunicationTimeout = 12000;
 	CONFIG.imageRenderingTimelag = 250;  // timelag between building the DOM and inserting the images
@@ -398,6 +399,7 @@ const vocabulary = {
 				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
 				case "dc_author":
 				case "dcterms_author":			// deprecated, for compatibility		
+				case "specif_createdat":			oT = "dcterms:modified"; break;
 				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
 	//			case "reqif_foreignmodifiedby":		oT = ""; break;
 	//			case "reqif_foreigncreatedon":		oT = ""; break;
@@ -426,7 +428,8 @@ const vocabulary = {
 				case "specif_status":				oT = "ReqIF.ForeignState"; break;
 				case "dcterms_author":			// deprecated, for compatibility
 				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
-	//			case "dcterms_modified":			oT = "";
+	//			case "specif_createdat":
+	//			case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
 				default:							oT = iT
 			};
 			return oT

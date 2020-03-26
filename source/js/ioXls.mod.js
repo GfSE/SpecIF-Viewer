@@ -58,8 +58,9 @@ modules.construct({
 		xDO = $.Deferred();
 		
 		xDO.notify('Transforming Excel to SpecIF',10); 
-		// Extract resourceClass in [square brackets] and delete it from the projectName:
-		self.parent.projectName = self.parent.projectName.replace( /\s*\[([a-z0-9_].+?)\]/i,
+		// Extract resourceClass in [square brackets] or (round brackets), if they are at the end of the filename,
+		// ... and delete it from the projectName:
+		self.parent.projectName = self.parent.projectName.replace( /\s*(?:\(|\[)([a-z0-9_\-].+?)(?:\)|\])$/i,
 																function($0,$1) { self.resourceClass = $1; return '' } );
 //		console.debug('input.prjName', self.parent.projectName, self.resourceClass );
 		// Transform the XLSX-data to SpecIF:
@@ -209,7 +210,7 @@ function xslx2specif( buf, pN, chgAt ) {
 				return colName(coord.col)+coord.row
 			}  */
 			function isDateTime( cell ) {
-	//			console.debug('cell:',cell);
+//				console.debug('cell:',cell);
 				return cell && cell.t=='d' 
 			}
 			function isNumber( cell ) {
@@ -331,9 +332,10 @@ function xslx2specif( buf, pN, chgAt ) {
 												class: staClassId( ti ),	// make id from column title
 										//		subject: undefined,	// defined further down, when the resource's id has been determined
 												objectToFind: oInner[1] || oInner[2],  // for content in double and single quotes
-												object: 'to-be-replaced', 	// just a placeholder for passing the schema-check,
-																			// it will be replaced with a resource.id when importing.
-													// Remember that the constraint-check on the statement.object must be disabled.
+												// just a placeholder for passing the schema-check,
+												// it will be replaced with a resource.id when importing.
+												// Remember that the constraint-check on the statement.object must be disabled.
+												object: CONFIG.placeholder, 
 												changedAt: chgAt
 											})
 										}
@@ -428,14 +430,14 @@ function xslx2specif( buf, pN, chgAt ) {
 									|| isNumber(a) && isNumber(b)
 									|| isBool(a) && isBool(b);
 									// no need to compare strings, as this is the default
-	//						console.debug('compatibleClasses',a,b,e)
+//							console.debug('compatibleClasses',a,b,e)
 							return e
 						}
 
 					// the cell value in the first line is the title, either of a property or a statement:
 					let ti = col[0]?(col[0].w || col[0].v):i18n.MsgNoneSpecified,
 						pC=null;
-	//				console.debug( 'getPropClass 1', ti );
+//					console.debug( 'getPropClass 1', ti );
 
 					// Do not return a propertyClass, if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
@@ -451,7 +453,7 @@ function xslx2specif( buf, pN, chgAt ) {
 							 || isInt(pC) && isReal(col[i]) ) { 
 								pC = col[i] 							// take least restrictive number format
 						};
-	//					console.debug('getPropClass 2',i,I,pC,col[i])
+//						console.debug('getPropClass 2',i,I,pC,col[i])
 					};
 					// the loop has ended early, i.e. the types are not compatible for all lines>0:
 					if( i<I || !pC )		return new PropClass( ws.name, cX, ti, 'Text' );

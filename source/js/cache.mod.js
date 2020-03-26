@@ -360,6 +360,13 @@ function Project( pr ) {
 			return true
 		}
 	}
+
+	function eqKey(r,n) {
+		// Return true if both keys are equivalent;
+		// this applies if only an id is given or a key with id and revision:
+		return itemIdOf(r)==itemIdOf(n)
+			&& r.revision==n.revision
+	}
 	function eqR(dta,r,n) {
 		// return true, if reference and new resource are equal:
 		// ToDo: Consider, if model-elements are only considered equal, if they have the same type, 
@@ -375,10 +382,8 @@ function Project( pr ) {
 		// ToDo: Model-elements are only equal, if they have the same type,
 		// i.e. a property with title CONFIG.propClassType has the same value
 		return r['class']==n['class']
-			&& r.subject.id==n.subject.id
-			&& r.subject.revision==n.subject.revision
-			&& r.object.id==n.object.id
-			&& r.object.revision==n.object.revision
+			&& eqKey(r.subject,n.subject)
+			&& eqKey(r.object,n.object)
 	}
 	function eqL(rL,nL) {
 		// return true, if both lists have equal members:
@@ -524,7 +529,7 @@ function Project( pr ) {
 		// Uses the cache.
 		// ToDo: update the server.
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
-//		console.debug('deduplicate',dta);
+//		console.debug('deduplicate',simpleClone(dta));
 		let n,r,nR,rR;
 
 		// 1. Deduplicate equal types having different ids;
@@ -1596,19 +1601,19 @@ function Project( pr ) {
 
 		var rsp = app.cache.selectedProject.data.statements.filter( function(s){ 
 								// filter all statements involving res as subject or object:
-								return ( res.id==s.subject.id || res.id==s.object.id )
+								return ( res.id==itemIdOf(s.subject) || res.id==itemIdOf(s.object) )
 								// AND fulfilling certain conditions:
 									&&  ( 	
 											// related subject and object must be referenced in the tree to be navigable,
 											// also, the statement must not be declared 'hidden':
 											!showComments
-												&&	isReferenced( s.subject.id )
-												&&	isReferenced( s.object.id )
+												&&	isReferenced( itemIdOf(s.subject) )
+												&&	isReferenced( itemIdOf(s.object) )
 												&&	s.title!=CONFIG.staClassCommentRefersTo
 												&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
 											// In case of a comment, the comment itself is not referenced, but the resource:
 										||	showComments
-												&&	isReferenced( s.object.id )
+												&&	isReferenced( itemIdOf(s.object) )
 												&&	s.title==CONFIG.staClassCommentRefersTo
 										)
 							});
@@ -1705,10 +1710,13 @@ function Project( pr ) {
 			if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
 			// ToDo: Get the newest data from the server.
 
+			// take newest revision:
+			opts.revisionDate = new Date().toISOString();
 			// Don't lookup titles now, but within toOxml(), so that that classifyProps() works properly.
 			// But DO reduce to the language desired.
 			opts.lookupTitles = false;  // applies to specif.toExt()
 			if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+
 			let data = specif.toExt( self.data, opts ), 
 				options = { 
 					classifyProperties: classifyProps,
@@ -1786,11 +1794,15 @@ function Project( pr ) {
 				case 'specif':
 					opts.lookupTitles = false;  // keep vocabulary terms
 					opts.targetLanguage = undefined;  // export all languages
+					opts.revisionDate = undefined;  // keep all revisions
 					break;
 				case 'reqif':
-					opts.lookupTitles = false;  // keep vocabulary terms
-					// ReqIF only supports a single Language
-					if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+					// take newest revision:
+					opts.revisionDate = new Date().toISOString();
+					// keep vocabulary terms:
+					opts.lookupTitles = false;  
+					// ReqIF only supports a single Language:
+					if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
 			};
 			let zip = new JSZip(),
 				data = specif.toExt( self.data, opts );
@@ -2651,12 +2663,10 @@ const specif = {
 			function s2int( iE ) {
 				var oE = a2int( iE );
 				oE['class'] = iE[names.sClass];
-				// SpecIF allows subjects and objects with id alone or with  a key (id+revision),
-				// so normalize internally to id+revision:
-				// ToDo: consider to replace the native title only for viewing and editing;
-				//       idea: don't change the original data without need.
-				oE.subject = keyOf( iE.subject );
-				oE.object = keyOf( iE.object );
+				// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
+				// keep original and normalize to id+revision for display:
+				oE.subject = iE.subject;
+				oE.object = iE.object;
 
 				// special feature to import statements to complete, 
 				// used for example by the XLS or ReqIF import:
@@ -2690,6 +2700,8 @@ const specif = {
 				};
 			/*	// list all resource ids in a flat list:
 				iH.flatL = [eH.id];  */
+
+				// SpecIF allows resource references with id alone or with  a key (id+revision):
 				iH.nodes = forAll( eH.nodes, n2int );
 //				console.debug('hierarchy 2int',eH,iH);
 				return iH
@@ -2934,7 +2946,9 @@ const specif = {
 			// a statement:
 			function s2ext( iE ) {
 //				console.debug('statement 2ext',iE.title);
-				if( CONFIG.hiddenStatements.indexOf( iE.title )>-1 ) return;  // do not export invisible statements
+				if( CONFIG.hiddenStatements.indexOf( iE.title )>-1 	 // do not export invisible statements
+					|| !iE.subject || iE.subject==CONFIG.placeholder // ... or statements with an open end
+					|| !iE.object || iE.object==CONFIG.placeholder ) return;  
 				var oE = a2ext( iE );
 				// The statements usually do use a vocabulary item (and not have an individual title), 
 				// so we lookup, if so desired, e.g. when exporting to ePub:
@@ -2943,8 +2957,16 @@ const specif = {
 				if( opts.targetLanguage && !iE.title )
 					iE.title = itemById( iD.statementClasses, iE['class'] ).title;
 				oE.title = titleOf(iE,opts);
-				oE.subject = iE.subject.id;
-				oE.object = iE.object.id;
+				// for the time being, multiple revisions are not supported:
+				if( opts.revisionDate ) {
+					// supply only the id, but not a key:
+					oE.subject = itemIdOf(iE.subject);
+					oE.object = itemIdOf(iE.object)
+				} else {
+					// supply key or id:
+					oE.subject = iE.subject;
+					oE.object = iE.object
+				};
 				return oE
 			}
 			// a hierarchy node:
@@ -2952,8 +2974,15 @@ const specif = {
 				// just take the non-redundant properties (omit 'title', for example):
 				let eN = {
 					id: iN.id,
-					resource: iN.resource,
 					changedAt: iN.changedAt
+				};
+				// for the time being, multiple revisions are not supported:
+				if( opts.revisionDate ) {
+					// supply only the id, but not a key:
+					eN.resource = itemIdOf(iN.resource)
+				} else {
+					// supply key or id:
+					eN.resource = iN.resource
 				};
 				if( iN.nodes && iN.nodes.length>0 )
 					eN.nodes = forAll(iN.nodes,n2ext);
@@ -2981,14 +3010,22 @@ const specif = {
 			}
 	}
 }
-function keyOf( item ) {
-	// Normalize the identification including revision:
-	switch( typeof(item) ) {
-		case "object": return item;
-		case "string": return {id: item, revision: "0"};
-		default: return null // programming error
-	}
-}
+	function itemIdOf( key ) {
+		// Return the id of the referenced item; the key can be
+		// - a string with the requested id
+		// - an pbject with id and a revision
+		return key.id || key
+	} 
+/*
+	function keyOf( item ) {
+		// Normalize the identification including revision:
+		switch( typeof(item) ) {
+			case "object": return item;
+			case "string": return {id: item, revision: "0"};
+			default: return null // programming error
+		}
+	}  
+*/
 function dataTypeOf( prj, pCid ) {
 	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
@@ -3057,7 +3094,7 @@ function titleIdx( pL, prj ) {
 }
 function elementTitleOf( el, opts ) {
 	// get the title from the properties or a replacement value in case of default:
-	if( typeof(el)!='object' ) return null;  // programming error
+	if( typeof(el)!='object' ) return;
 	// in case of a resource, we never want to lookup a title,
 	// in case of a statement, we would want to:
 	let op = {
@@ -3093,6 +3130,7 @@ function propTitleOf( prp, dta ) {
 	return prp.title || itemById(dta.propertyClasses,prp['class']).title
 }
 function elementTitleWithIcon( el, opts ) {
+	if( typeof(el)!='object' ) return;
 	// add an icon to an element's title;
 	// works for all types of elements, i.e. resources, statements and hierarchies.
 	// The icon is defined in the elements's type:
@@ -3153,10 +3191,12 @@ function hasContent( pV ) {
 		|| RE.tagA.test(pV)
 }
 function iterateNodes( tree, eFn, lFn ) {
+	// Iterate a SpecIF hierarchy or a branch of a hierarchy.
+	// Do NOT use with a tree for display (jqTree).
 	// 1. Execute eFn for every node of the tree as long as eFn returns true;
 	//    return true as a whole, if iterating is finished early.
 	//    For example, if eFn tests for a certain attribute value of a tree node,
-	//    the iterate function ends with true, as soon as the test is positive (cont is false).
+	//    iterateNodes() ends with true, as soon as the test is positive (cont is false).
 	// 2. Call lFn at the end of treating all elements of a folder (list),
 	//    for example to eliminate duplicates.
 	let cont=true;

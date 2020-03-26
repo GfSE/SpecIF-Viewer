@@ -45,9 +45,9 @@ function toOxml( data, opts ) {
 		pageWidth = 210,	// mm for A4
 		columnWidth = pageWidth-opts.marginLeft-opts.marginRight,
 		columnHeight = pageHeight-opts.marginTop-opts.marginBottom,
-		twips = 56.692913385826,  // twips per mm
-		REAmpersandPlus = new RegExp( '&(.{0,8})', 'g' ),
-		REXMLmin = new RegExp( '&(amp|#x[0]*26|#[0]*38|lt|#x[0]*3C|#x[0]*3c|#[0]*60|gt|#x[0]*3E|#x[0]*3e|#[0]*62);', '');
+		twips = 56.692913385826;  // twips per mm
+	//	REAmpersandPlus = new RegExp( '&(.{0,8})', 'g' ),
+	//	REXMLmin = new RegExp( '&(amp|#x[0]*26|#[0]*38|lt|#x[0]*3C|#x[0]*3c|#[0]*60|gt|#x[0]*3E|#x[0]*3e|#[0]*62);', '');
 	//	REXMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 	
 //	console.debug('toOxml',data,opts);
@@ -180,7 +180,6 @@ function toOxml( data, opts ) {
 			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];
 			// if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
 
-			
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			let reB = '([\\s\\S]*?)'
@@ -220,7 +219,7 @@ function toOxml( data, opts ) {
 			let reT = '(.*?)(<br ?/>)',
 				reText = new RegExp(reT,'g');
 			
-			// All required parameters are available, so we can begin.
+			// All required parameters are available, so we can begin:
 			const nbsp = '&#160;'; // non-breakable space
 			var oxml = {
 		//			headings: [],
@@ -276,7 +275,7 @@ function toOxml( data, opts ) {
 						else sts[cid].subjects.push( itemById(data.resources,sid) )
 					}
 				});
-//				console.debug( 'statements', r, sts );
+				console.debug( 'statements', r, sts );
 				if( noSts ) return '';	// no statements ...
 
 				// The heading:
@@ -292,66 +291,82 @@ function toOxml( data, opts ) {
 						cell = '';
 						// collect all related resources (here sources):
 						sts[cid].subjects.forEach( function(s) {
-							cell += wParagraph({
-										text: titleOf( s, null, opts ), 
-										hyperlink: {internal:anchorOf( s )}, 
-										noSpacing: true,
-										align: 'end'
-							})
+							// it may happen that an element is undefined:
+							if( s )
+								cell += wParagraph({
+											text: titleOf( s, null, opts ), 
+											hyperlink: {internal:anchorOf( s )}, 
+											noSpacing: true,
+											align: 'end'
+								})
 						});
-						// The subjects:
-						row = wTableCell({
-								content:cell,
-								border:{type:'single'}
-							});
-						// The predicate:
-						row += wTableCell({
-								content:wParagraph({
-										text:sTi,
-										align:'center',
-										noSpacing:true
-								}),
-								border:{type:'single'}
-							});
-						// The object:
-						row += wTableCell({
-								content:wParagraph({ 
-										text: titleOf( r, null, opts ), 
-										noSpacing: true
-								}),
-								border: {type:'single'}
-							});
-						ct += wTableRow( row )
+						// Create a table row, if there is content:
+						if( cell ) {
+							// The subjects:
+							row = wTableCell({
+									content:cell,
+									border:{type:'single'}
+								});
+							// The predicate:
+							row += wTableCell({
+									content:wParagraph({
+											text:sTi,
+											align:'center',
+											noSpacing:true
+									}),
+									border:{type:'single'}
+								});
+							// The object:
+							row += wTableCell({
+									content:wParagraph({ 
+											text: titleOf( r, null, opts ), 
+											noSpacing: true
+									}),
+									border: {type:'single'}
+								});
+							ct += wTableRow( row )
+						}
 					};
 					
 					if( sts[cid].objects.length>0 ) {
-						row = wTableCell({
-								content:wParagraph({
-										text:titleOf( r, null, opts ),
-										noSpacing: true,
-										align:'end'
-								}), 
-								border:{type:'single'}
-							});
-						row += wTableCell({
-								content:wParagraph({
-										text:sTi,
-										align:'center',
-										noSpacing:true
-								}),
-								border:{type:'single'}
-							});
 						cell = '';
 						// collect all related resources (here objects):
 						sts[cid].objects.forEach( function(o) {
-							cell += wParagraph({
-										text:titleOf( o, null, opts ), 
-										hyperlink:{internal:anchorOf( o )},
-										noSpacing: true
-							})
+							// it may happen that an element is undefined:
+							if( o )
+								cell += wParagraph({
+											text:titleOf( o, null, opts ), 
+											hyperlink:{internal:anchorOf( o )},
+											noSpacing: true
+								})
 						});
-						row += wTableCell( {content:cell,border:{type:'single'}} );
-						ct += wTableRow( row )
+						// Create a table row, if there is content:
+						if( cell ) {
+							// The subject:
+							row = wTableCell({
+									content:wParagraph({
+											text:titleOf( r, null, opts ),
+											noSpacing: true,
+											align:'end'
+									}), 
+									border:{type:'single'}
+								});
+							// The predicate:
+							row += wTableCell({
+									content:wParagraph({
+											text:sTi,
+											align:'center',
+											noSpacing:true
+									}),
+									border:{type:'single'}
+								});
+							// The objects:
+							row += wTableCell({
+									content:cell,
+									border:{type:'single'}
+								});
+							ct += wTableRow( row )
+						}
 					}
 				};
 //				console.debug('statementsOf',ct);
@@ -908,7 +923,6 @@ function toOxml( data, opts ) {
 					nd.nodes.forEach( function(n) {
 						ch += renderHierarchy( n, lvl+1 )		// next level
 					});
-
 				return ch
 			}
 

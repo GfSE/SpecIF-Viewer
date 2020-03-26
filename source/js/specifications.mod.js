@@ -206,8 +206,6 @@ modules.construct({
 		refreshReqCnt = 0;
 		app.cache.clear();
 		app.busy.reset()
-	//	self.cacheLoaded( false );
-	//	if( modules.isReady( CONFIG.objectFilter ) ) filterView.clear();  // clear the filter, if it is loaded.
 	};
 	// module entry 'self.show()' see further down
 	// module exit;
@@ -451,7 +449,7 @@ modules.construct({
 		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
 	};
 	function doRefresh( parms ) {
-		// Route execution depending on the current state (selected tab):
+		// Route execution depending on the current state (selected view):
 		// This routine is called in the following situations:
 		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in editing mode.
 		// - cache update is signalled -> again, refresh only any content in view mode.
@@ -770,12 +768,12 @@ modules.construct({
 		opts.lookupTitles = self.lookupTitles = true;
 				
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
-		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.objectList); return };  // quit, because the tree is empty
+		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
 //		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
 
 		app.busy.set();
 		if( pData.resources.values.length<1 )
-			$( '#'+CONFIG.objectList ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
 		var nd = pData.tree.selectedNode,
 			oL = [],  // id list of the resources to view
@@ -812,7 +810,7 @@ modules.construct({
 				if( pData.resources.update( rL ) || opts && opts.forced ) {
 					// list value has changed in some way:
 				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
-					$( '#'+CONFIG.objectList ).html( pData.resources.render() )
+					$( self.view ).html( pData.resources.render() )
 				};
 				app.busy.reset();
 				$( '#contentActions' ).html( pData.actionBtns() )
@@ -821,7 +819,7 @@ modules.construct({
 	};
 	self.hide = function() {
 //		console.debug(CONFIG.objectList, 'hide');
-		$( '#'+CONFIG.objectList ).empty()
+		$( self.view ).empty()
 	};
 	return self
 });
@@ -830,8 +828,9 @@ modules.construct({
 	view:'#'+CONFIG.relations
 }, function(self) {
 	// Render the statements of a selected resource:
-	var pData,
+	var pData,				// the parent's data
 		selRes,				// the currently selected resource
+		net,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
 	self.init = function() {
@@ -847,18 +846,20 @@ modules.construct({
 		if( typeof( opts ) != 'object' ) opts = {};
 		opts.targetLanguage = self.targetLanguage = browser.language;
 		opts.lookupTitles = self.lookupTitles = true;
+	//	opts.revisionDate = new Date().toISOString();
+		// If in delete mode, provide the name of the delete function as string:
+		opts.fnDel = modeStaDel? 'app.'+self.parent.loadAs+'.deleteNode()':'';
 				
 		// The tree knows the selected resource; if not take the first:
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
-		if( !pData.tree.selectedNode ) { pData.emptyTab('#'+CONFIG.relations); return };  // quit, because the tree is empty
+		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
 
 		// else: the tree has entries:
 		app.busy.set();
-	//	$( '#'+CONFIG.relations ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+	//	$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 		// ToDo: Redraw only if the selected node has changed, to avoid a flicker.
 
-		var nd = pData.tree.selectedNode,
-			mG;
+		var nd = pData.tree.selectedNode;
 						
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
@@ -873,81 +874,43 @@ modules.construct({
 		app.cache.selectedProject.readStatementsOf( {id: nd.ref} )
 			.done(function(sL) {
 				// sL is the list of statements involving the selected resource.
-				var relatedObjs = [];
 //				console.debug( 'statements', sL );
-				// Store all related resources while avoiding duplicate entries:
-				sL.forEach( function(s) {
-					// skip hidden statements:
-					if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
-						
-					if( s.subject.id == nd.ref ) { 
-						// the selected node is a subject, so the related resource is a object:
-						if( indexById( relatedObjs, s.object.id )<0 ) 
-							//  list the related resource, but only once:
-							relatedObjs.unshift( {id: s.object.id} )
-					} else {
-						// the related resource is a subject:
-						if( indexById( relatedObjs, s.subject.id )<0 ) 
-							//  list the related resource, but only once:
-							relatedObjs.unshift( {id: s.subject.id} )
-					}
-				});
-				// Finally, add the selected resource itself to the list as first item:
-				relatedObjs.unshift({id: nd.ref});
-//				console.debug( 'relatedObjs', relatedObjs );
+
+				// First, add the selected resource itself to the list:
+				net = { resources: [{id: nd.ref}], statements: sL };
+				// Store all related resources while avoiding duplicate entries,
+				// the title attribute will be undefined, 
+				// but we are interested only in the resource id at this point:
+				sL.forEach( cacheNet );
 
 				// Obtain the titles (labels) of all resources in the list.
-				// The titles in the tree don't have the icon, therefore obtain the title from the referenced resources.
+				// The titles may not be defined in a tree node and anyways don't have the icon, 
+				// therefore obtain the title from the referenced resources.
 				// Since the resources are cached, this is not too expensive.
-				app.cache.selectedProject.readContent( 'resource', relatedObjs )
-					.done( function(roL) {   
-						// roL is a list of the selected plus it's related resources
+				app.cache.selectedProject.readContent( 'resource', net.resources )
+					.done( function(rResL) {   
+						// rResL is a list of the selected plus it's related resources
 
-						// First get the selected resource, 
-						// assuming that the sequence is arbitrary:
-						selRes = new Resource( itemById(roL,nd.ref) );
-						selRes.staGroups = [];
-					//	selectResource( pData.tree.selectedNode );
+						// Assuming that the sequence may be arbitrary:
+						selRes = itemById(rResL,nd.ref);
+						// Now get the titles with icon of the resources,
+						// as the sequence of list items in net.resources is maintained, 
+						// the selected resource will be the first element in the list: 
+						rResL.forEach( function(r) { cacheMinRes( net.resources, r ) });
 					
-						// For display, sort all statements in groups (=table rows) according to their type and direction;
-						// the groups shall be ordered according to the statementClasses, therefore we cycle through the types:
-						app.cache.selectedProject.data.statementClasses.forEach( function(sC) { 
-							var rG = { rGs: [], rGt: [] };		// construct a statement group per type
-							sL.forEach( function(s) {    // iterate statements
-								// skip hidden statements:
-								if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
-								// for sorting continue only if the class matches;
-								// it assumed that every class appears only once:
-								if( s['class'] != sC.id ) return;
-							
-								// for every statement type found, make an entry with a subgroup per direction:
-								// - rGs contains statements of a given type, where the related resource is a subject
-								// - rGt contains statements of a given type, where the related resource is a object
-								if((s.subject.id == nd.ref) ) { 
-									// selected resource, replace cripple by full resource:
-									s.subject = roL[0];
-									// the related partner, replace cripple by full resource:
-									s.object = itemById(roL,s.object.id);
-									rG.rGt.push( s )
-								} else {
-									// similarly in the opposite direction:
-									s.subject = itemById(roL,s.subject.id);
-									s.object = roL[0];
-									rG.rGs.push( s )
-								}
-							});
-							// add the statements for display:
-//							console.debug( 'rG', t, rG );
-							if( rG.rGs.length || rG.rGt.length) selRes.staGroups.push( rG )
-						});
-						// finally add the mentions-Relations:
-						// find the 'mentions' statements:
-						mG = addMentionsRels();
-						if( mG && (mG.rGs.length || mG.rGt.length)) selRes.staGroups.push( mG )
-						app.busy.reset();	
-						$( '#contentActions' ).html( linkBtns() );
-//						console.debug('statement groups',selRes.staGroups);
-						renderStatements()
+						// finally add the 'mentions' statements:
+						getMentionsRels(selRes,opts)
+							.done( function(stL) {
+								stL.forEach( cacheNet );
+								$( '#contentActions' ).html( linkBtns() ); 
+//								console.debug('local net',net);
+								renderStatements( net );
+								app.busy.reset()
+							})
+							.fail( function(xhr) {
+								stdError(xhr);
+								app.busy.reset()	
+							})
 					})
 					.fail( function(xhr) {
 						app.busy.reset();	
@@ -962,132 +925,251 @@ modules.construct({
 			.fail( stdError );
 		return
 
-		function renderStatements() {
+		function cacheMinRes(L,r) {
+			// cache the minimal representation of a resource;
+			// r may be a resource, a key pointing to a resource or a resource-id;
+			// note that the sequence of items in L is always maintained:
+			cacheE( L, { id: itemIdOf(r), title: elementTitleWithIcon(r,opts) } )
+		}
+		function cacheMinSta(L,s) {
+			// cache the minimal representation of a statement;
+			cacheE( L, { id: s.id, title: elementTitleOf(s,opts), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} )
+		}
+		function cacheNet(s) {
+			// skip hidden statements:
+			if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
+
+			// store the statements in the net:
+			cacheMinSta( net.statements, s );					
+
+			// collect the related resources:
+			if( itemIdOf(s.subject) == nd.ref ) { 
+				// the selected node is a subject, so the related resource is an object,
+				// list the related resource, but only once:
+				cacheMinRes( net.resources, s.object )
+			} else {
+				// the related resource is a subject,
+				// list the related resource, but only once:
+				cacheMinRes( net.resources, s.subject )
+			}
+		}
+		function renderStatements(net) {
+			// net contains resources and statements as a SpecIF data-set for graph rendering,
+			// where the selected resource is the first element in the resources list.
+
+			if( net.statements.length<1 ) {
+				$( self.view ).html( '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>' );
+				return
+			};
+			if( browser.isIE ) {
+		//		renderStatementsTable( net );
+				$('#contentNotice').html( '<span class="notice-default" >Statements cannot be displayed with IE, for now.</span>' );
+				return
+			};
 			if( modeStaDel ) 
 				$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' )
 			else
 				$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
 
-			// If in delete mode, provide the name of the delete function as string:
-			let os = { 
-				fnDel: modeStaDel? 'app.'+self.parent.loadAs+'.deleteNode()':'',
-				targetLanguage: opts.targetLanguage,
-				lookupTitles: true
-			},
-				net = selRes.statements( os );
 //			console.debug('renderStatements',net);
-			switch( typeof(net) ) {
-				case 'string':
-					// notice or statements in a table:
-					$( '#'+CONFIG.relations ).html( net );
-					break;
-				case 'object':
-					// statements as a SpecIF data-set for graph rendering:
-					$( '#'+CONFIG.relations ).html( '<div id="statementGraph" style="width:100%; height: 600px;" />' );
-					let options = {
-						index: 0,
-						canvas:'statementGraph',
-						titleProperties: CONFIG.titleProperties,
-						onDoubleClick: function( evt ) {
-//							console.debug('Double Click on:',evt);
-							if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
-								pData.relatedItemClicked(evt.target.resource,evt.target.statement);
-								// changing the tree node triggers an event, by which 'self.refresh' will be called.
-						}
-					};
-					if( modeStaDel )
-						options.nodeColor = '#ef9a9a';
-//					console.debug('showStaGraph',net,options);
-					app.busy.reset();
-					app.statementsGraph.show(net,options)
-			}
+			
+			$( self.view ).html( '<div id="statementGraph" style="width:100%; height: 600px;" />' );
+			let options = {
+				index: 0,
+				canvas:'statementGraph',
+				titleProperties: CONFIG.titleProperties,
+				onDoubleClick: function( evt ) {
+//					console.debug('Double Click on:',evt);
+					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
+						pData.relatedItemClicked(evt.target.resource,evt.target.statement);
+						// changing the tree node triggers an event, by which 'self.refresh' will be called.
+				}
+			};
+			if( modeStaDel )
+				options.nodeColor = '#ef9a9a';
+//			console.debug('showStaGraph',net,options);
+			app.statementsGraph.show(net,options)
 		}
-		function addMentionsRels() {
+		function getMentionsRels(res,opts) {
+			var mDO = $.Deferred();
 			// Search all resource text properties and detect where other resource's titles are referenced.
 			// Only findings with marks for dynamic linking are taken.
 			// Add a statement for each finding for display; do not save any of these statements in the server.
-			if( !CONFIG.findMentionedObjects ) return;
-			if( !pData.tree.selectedNode ) return;
-			// take the original (unchanged) resources from cache:
-			// First the currently selected resource:
-			let sO=itemById( app.cache.selectedProject.data.resources, pData.tree.selectedNode.ref );
-//			console.debug('addMentionsRels',pData.tree.selectedNode,sO,opts);
-			if( !sO ) return;
-			// There is no need to have a statementClass .... at least currently:
-//				var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
-//				if( !rT ) return;
+			if( !CONFIG.findMentionedObjects || !res ) 
+				mDO.resolve([]);
+//			console.debug('getMentionsRels',res,opts);
+		/*	// There is no need to have a statementClass .... at least currently:
+			var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
+			if( !rT ) return;  */
 			
-			var ti = elementTitleOf( sO, opts ),
-				rG = { rGs: [], rGt: [] };		// construct a statement group for the new statement type
-			// In contrast to the statements collected before, these are not stored in the server.
-
-			let rPatt=null, rStr=null, sT=null,
+			let ti = elementTitleOf( res, opts ),
+				staL = [],	// a list of artificial statements; these are not stored in the server
+				pend = 0,
+				rPatt,
 				// assumption: the dynamic link tokens don't need to be HTML-escaped:
 				sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
-			app.cache.selectedProject.data.resources.forEach( function(rO) {
+			// Iterate the tree ... 
+			pData.tree.iterate( function(nd) {
 				// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 				// so there is no need to check it, here:
-				// disregard resources which are not referenced in the current tree:
-				if( pData.tree.nodesByRef(rO.id).length<1 ) return;
-				let ti = elementTitleOf( rO, opts );
-				if( !ti || ti.length<CONFIG.dynLinkMinLength || rO.id==sO.id ) return;
-				
-				// 1. The titles of other resource's found in the selected resource's texts 
-				//    result in a 'this mentions other' statement (selected resource is subject):
-				rStr = (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE();
-				rPatt = new RegExp( rStr, "i" );
+				pend++;
+				app.cache.selectedProject.readContent( 'resource', {id: nd.ref} )
+					.done( function(refR) {   
+						// refR is a resource referenced in a hierarchy
+						let ti = elementTitleOf( refR, opts );
+						if( !ti || ti.length<CONFIG.dynLinkMinLength || refR.id==res.id ) {
+							--pend;
+							return
+						};
+//						console.debug('pData.tree.iterate',nd,ti,pend);
 
-				sT = itemById( app.cache.selectedProject.data.resourceClasses, sO['class'] );
-				if( sO.properties )
-					sO.properties.forEach( function(p) {
-						switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
-							case 'xs:string':
-							case 'xhtml':	
-								// add, if the iterated resource's title appears in the selected resource's property ..
-								// and if it is not yet listed:
-								if( rPatt.test( p.value ) && notListed( rG.rGt,sO,rO ) ) {
-									rG.rGt.push( {
-										title: 	'SpecIF:mentions',
-	//										class:	// no class indicates that the statement cannot be deleted
-										subject:	sO,
-										object:		rO
-									} )
-									// - rGt contains statements of a given type, where the related resource is a object
+						// 1. The titles of other resource's found in the selected resource's texts 
+						//    result in a 'this mentions other' statement (selected resource is subject):
+						rPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
+						if( res.properties )
+							res.properties.forEach( function(p) {
+								// assuming that the dataTypes are always cached:
+								switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
+									case 'xs:string':
+									case 'xhtml':	
+										// add, if the iterated resource's title appears in the selected resource's property ..
+										// and if it is not yet listed:
+										if( rPatt.test( p.value ) && notListed( staL,res,refR ) ) {
+											staL.push({
+												title: 	'SpecIF:mentions',
+									//			class:	// no class indicates also that the statement cannot be deleted
+												subject:	res,
+												object:		refR
+											})
+										}
 								}
-						}
-					});
-				// 2. The selected resource's title found in other resource's texts 
-				//    result in a 'other mentions this' statement (selected resource is object):
-				sT = itemById( app.cache.selectedProject.data.resourceClasses, rO['class'] );
-				if( rO.properties )
-					rO.properties.forEach( function(p) {
-						switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
-							case 'xs:string':
-							case 'xhtml':	
-								// add, if the selected resource's title appears in the iterated resource's property ..
-								// and if it is not yet listed:
-								if( sPatt.test( p.value ) && notListed( rG.rGs,rO,sO ) ) {
-									rG.rGs.push( {
-										title: 	'SpecIF:mentions',
-	//										class:	// no class indicates that the statement cannot be deleted
-										subject:	rO,
-										object:		sO
-									} )
-									// - rGs contains statements of a given type, where the related resource is a subject
+							});
+						// 2. The selected resource's title found in other resource's texts 
+						//    result in a 'other mentions this' statement (selected resource is object):
+						if( refR.properties )
+							refR.properties.forEach( function(p) {
+								// assuming that the dataTypes are always cached:
+								switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
+									case 'xs:string':
+									case 'xhtml':	
+										// add, if the selected resource's title appears in the iterated resource's property ..
+										// and if it is not yet listed:
+										if( sPatt.test( p.value ) && notListed( staL,refR,res ) ) {
+											staL.push({
+												title: 	'SpecIF:mentions',
+									//			class:	// no class indicates also that the statement cannot be deleted
+												subject:	refR,
+												object:		res
+											})
+										}
 								}
-						}
-				})  
+							});
+						if( --pend<1 ) mDO.resolve(staL)
+					})
+					.fail( mDO.reject );
+				return true 
 			});
-			return rG
-		
+			return mDO
+			
 			function notListed( L,s,t ) {
 				for( var i=L.length-1;i>-1;i--  ) {
-					if( L[i].subject.id==s.id && L[i].object.id==t.id ) return false
+					if( itemIdOf(L[i].subject)==s.id && itemIdOf(L[i].object)==t.id ) return false
 				};
 				return true
 			}
 		}
+	/*	function renderStatementsTable( sGL, opts ) {
+			// Render a table with all statements grouped by type:
+		//	if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+			if( typeof(opts)!='object' ) opts = {};
+		//	if( typeof(fnDel)!='boolean' ) opts.fnDel: false
+
+			// opts.fnDel is a name of a delete function to call. If provided, it is assumed that we are in delete mode.
+			// ToDo: The 'mentions' statements shall not be for deletion, and not appear to be for deletion (in red)
+			if( opts.fnDel ) 
+				var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
+			else
+				var rT = '<div>';  // render table with the resource's statements in display mode
+			rT += renderTitle( self.toShow, opts );	// rendered statements
+			if( sGL.length>0 ) {
+//				console.debug( sGL.length, sGL );
+				if( opts.fnDel ) 
+					rT += '<div class="notice-danger" style="margin-bottom:0.4em" >'+i18n.MsgClickToDeleteRel+'</div>';
+				rT += '<table id="relationsTable" class="table table-condensed listEntry" ><tbody>';
+				let relG=null;
+				sGL.forEach( function(sG) {
+					if( sG.rGs.length ) {
+						// Show a table row with a group of statements where the selected resource is the object.
+						// First, get the relevant properties and get the title of the related subject (subject object), in particular:
+						relG=[];
+						sG.rGs.forEach( function(s) {
+							relG.push({
+								id: s.id,
+								sId: itemIdOf(s.subject),
+								sT: elementTitleWithIcon(s.subject,opts),
+								computed: !s['class']
+							});
+						});
+						// Then, sort the statements by title of the subject in descending order, as the loop further down iterates backwards:
+						relG.sort( function(fix, foxi) { 
+										fix = fix.sT.toLowerCase();
+										foxi = foxi.sT.toLowerCase();
+										return fix==foxi ? 0 : (fix>foxi ? -1 : 1) 
+						});
+						rT += '<tr><td>';
+						// The list of subject resources:
+						relG.forEach( function(sc) {
+							// Do not linkify, if the statement cannot be deleted (since it is not stored in the server).
+							if( opts.fnDel && sc.computed )
+								rT += sc.sT+'<br />'
+							else
+								rT += '<a onclick="app.specs.relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
+						});
+						// Title and object are the same for all statements in this list:
+						rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0],opts)+'</i></td>';
+						rT += '<td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGs[0].object,opts)+'</span></td></tr>'
+					};
+					if( sG.rGt.length ) {
+						// Show a table row with a group of statements where the selected resource is the subject (subject).
+						// First, get the relevant properties and get the title of the related object, in particular:
+						relG=[];
+						sG.rGt.forEach( function(s) {
+							relG.push({
+								id: s.id,
+								tId: itemIdOf(s.object),
+								tT: elementTitleWithIcon(s.object,opts),
+								computed: !s['class']
+							});
+						});
+						// Then, sort the statements by title of the object title in descending order, as the loop further down iterates backwards:
+						relG.sort( function(dick, doof) { 
+										dick = dick.tT.toLowerCase();
+										doof = doof.tT.toLowerCase();
+										return dick==doof?0:(dick>doof?-1:1) 
+						});
+						// Title and subject are the same for all statements in this list:
+						rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject,opts)+'</span></td>';
+						rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0],opts)+'</i></td><td>';
+						// The list of resources:
+						relG.forEach( function(tg) {
+							if( opts.fnDel && tg.computed )
+								rT += tg.tT+'<br />'
+							else
+								rT += '<a onclick="app.specs.relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
+						});
+						rT += '</td></tr>'
+					}
+				});
+				rT += 	'</tbody></table>';
+				if( opts.fnDel ) 
+					rT += '<div class="doneBtns"><button class="btn btn-default btn-sm" onclick="'+opts.fnDel+'" >'+i18n.BtnCancel+'</button></div>'
+			} else {
+				rT += '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
+			};
+			rT += '</div>';
+			return rT  // return rendered statement table for display
+		}  */
 	};
 	function linkBtns() {
 		if( !selRes ) return '';
@@ -1107,7 +1189,7 @@ modules.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';  */
 
-		if( self.staDel && selRes.staGroups.length>0 ) {
+		if( self.staDel && selRes.staL.length>0 ) {
 			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
 		} else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
@@ -1123,7 +1205,7 @@ modules.construct({
 	}; */
 	self.hide = function() {
 //		console.debug(CONFIG.relations, 'hide');
-		$( '#'+CONFIG.relations ).empty()
+		$( self.view ).empty()
 	};
 	return self
 });
@@ -1263,183 +1345,6 @@ function Resource( obj ) {
 		return rO  // return rendered resource for display
 	};
 */
-	//  Create a reduced SpecIF data set for rendering a graph:
-	self.statements = function( opts ) {
-		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-		
-		if( browser.isIE ) return renderStatementsTable( self.staGroups, opts );
-		
-		// Build a simplified SpecIF data set with the selected resource in focus: 
-		var net = {
-			// here, the icon is transferred in a resourceClass ... like SpecIF:
-			resourceClasses: [{
-				id:		self.toShow['class'].id,
-				icon:	self.toShow['class'].icon
-			}],
-			resources: [{
-				id: 	self.toShow.id,
-				title: 	elementTitleOf( self.toShow, opts ),
-				class:  self.toShow['class'].id
-			}],
-			statements: []
-		};
-		
-		// add all statements:
-		let sGL = self.staGroups, rR;
-		if( sGL.length>0 ) {
-			sGL.forEach( function(sG) {
-				// each statement group, where the selected resource is the object:
-				sG.rGs.forEach( function(s) {
-					rR = s.subject;
-
-					// by default of a title adopt the title of the statement class;
-					// in case there is a title property, it will always prevail:
-					s.title = s.title || itemById( app.cache.selectedProject.data.statementClasses, s['class'] ).title;
-
-					console.debug('s',s,opts,elementTitleOf(s,opts));
-					// add each statement:
-					net.statements.push({
-						title:		elementTitleOf(s,opts),	// translated
-						id:			s.id,
-						subject:	rR.id,
-						object:		self.toShow.id
-					});
-					// add related resource:
-					if( indexById( net.resources, rR.id )<0 )    // avoid duplication 
-						// here, the icon is added to the string right away and there is no need to supply the resourceType:
-						net.resources.push({
-							id: 	rR.id,
-							title: 	elementTitleWithIcon(rR,opts)
-				/*			title: 	elementTitleOf(rR,opts),
-							class: rR['class']
-						});
-					// add its resourceClass:
-					if( indexById( net.resourceClasses, rR['class'] )<0 )    // avoid duplication 
-						net.resourceClasses.push({
-							id: 	rR['class'],
-							icon: 	itemById( app.cache.selectedProject.data.resourceClasses, rR['class'] ).icon  */
-						})
-				});
-				sG.rGt.forEach( function(s) {
-					rR = s.object;
-
-					// by default of a title adopt the title of the statement class;
-					// in case there is a title property, it will always prevail:
-					s.title = s.title || itemById( app.cache.selectedProject.data.statementClasses, s['class'] ).title;
-
-					// add each statement:
-					net.statements.push({
-						title:		elementTitleOf(s,opts),	// translated
-						id:			s.id,
-						subject:	self.toShow.id,
-						object:		rR.id
-					});
-					// add related resource:
-					if( indexById( net.resources, rR.id )<0 )    // avoid duplication 
-						net.resources.push({
-							id: 	rR.id,
-							title: 	elementTitleWithIcon(rR,opts)
-						})
-				})
-			});
-			console.debug('statements to render',net);
-			return net
-		} else {
-			return '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
-		}
-
-		function renderStatementsTable( sGL, opts ) {
-			// Render a table with all statements grouped by type:
-		//	if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-			if( typeof(opts)!='object' ) opts = {};
-		//	if( typeof(fnDel)!='boolean' ) opts.fnDel: false
-
-			// opts.fnDel is a name of a delete function to call. If provided, it is assumed that we are in delete mode.
-			// ToDo: The 'mentions' statements shall not be for deletion, and not appear to be for deletion (in red)
-			if( opts.fnDel ) 
-				var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
-			else
-				var rT = '<div>';  // render table with the resource's statements in display mode
-			rT += renderTitle( self.toShow, opts );	// rendered statements
-			if( sGL.length>0 ) {
-//				console.debug( sGL.length, sGL );
-				if( opts.fnDel ) 
-					rT += '<div class="notice-danger" style="margin-bottom:0.4em" >'+i18n.MsgClickToDeleteRel+'</div>';
-				rT += '<table id="relationsTable" class="table table-condensed listEntry" ><tbody>';
-				let relG=null;
-				sGL.forEach( function(sG) {
-					if( sG.rGs.length ) {
-						// Show a table row with a group of statements where the selected resource is the object.
-						// First, get the relevant properties and get the title of the related subject (subject object), in particular:
-						relG=[];
-						sG.rGs.forEach( function(r) {
-							relG.push({
-								id: r.id,
-								sId: r.subject.id,
-								sT: elementTitleWithIcon(r.subject,opts),
-								computed: !r['class']
-							});
-						});
-						// Then, sort the statements by title of the subject in descending order, as the loop further down iterates backwards:
-						relG.sort( function(fix, foxi) { 
-										fix = fix.sT.toLowerCase();
-										foxi = foxi.sT.toLowerCase();
-										return fix==foxi ? 0 : (fix>foxi ? -1 : 1) 
-						});
-						rT += '<tr><td>';
-						// The list of subject resources:
-						relG.forEach( function(sc) {
-							// Do not linkify, if the statement cannot be deleted (since it is not stored in the server).
-							if( opts.fnDel && sc.computed )
-								rT += sc.sT+'<br />'
-							else
-								rT += '<a onclick="app.specs.relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
-						});
-						// Title and object are the same for all statements in this list:
-						rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0],opts)+'</i></td>';
-						rT += '<td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGs[0].object,opts)+'</span></td></tr>'
-					};
-					if( sG.rGt.length ) {
-						// Show a table row with a group of statements where the selected resource is the subject (subject).
-						// First, get the relevant properties and get the title of the related object, in particular:
-						relG=[];
-						sG.rGt.forEach( function(r) {
-							relG.push({
-								id: r.id,
-								tId: r.object.id,
-								tT: elementTitleWithIcon(r.object,opts),
-								computed: !r['class']
-							});
-						});
-						// Then, sort the statements by title of the object title in descending order, as the loop further down iterates backwards:
-						relG.sort( function(dick, doof) { 
-										dick = dick.tT.toLowerCase();
-										doof = doof.tT.toLowerCase();
-										return dick==doof?0:(dick>doof?-1:1) 
-						});
-						// Title and subject are the same for all statements in this list:
-						rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject,opts)+'</span></td>';
-						rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0],opts)+'</i></td><td>';
-						// The list of resources:
-						relG.forEach( function(tg) {
-							if( opts.fnDel && tg.computed )
-								rT += tg.tT+'<br />'
-							else
-								rT += '<a onclick="app.specs.relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
-						});
-						rT += '</td></tr>'
-					}
-				});
-				rT += 	'</tbody></table>';
-				if( opts.fnDel ) 
-					rT += '<div class="doneBtns"><button class="btn btn-default btn-sm" onclick="'+opts.fnDel+'" >'+i18n.BtnCancel+'</button></div>'
-			} else {
-				rT += '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
-			};
-			rT += '</div>';
-			return rT  // return rendered statement table for display
-		}
-	};
 	function renderTitle( clsPrp, opts ) {
 		if( !clsPrp.title ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
