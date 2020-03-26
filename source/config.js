@@ -154,7 +154,8 @@ const CONFIG = {};
 //	CONFIG.staClassRefersTo = 'SpecIF:refersTo';	
 	CONFIG.staClassCommentRefersTo = 'SpecIF:commentRefersTo';	
 //	CONFIG.staClassIssueRefersTo = 'SpecIF:issueRefersTo';	
-	
+	CONFIG.staClassMentions = 'SpecIF:mentions';	
+
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement in various tabs
 

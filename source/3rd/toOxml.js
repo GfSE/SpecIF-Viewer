@@ -7,6 +7,7 @@ function toOxml( data, opts ) {
 	// Limitations:
 	// - Accepts data-sets according to SpecIF v0.10.8 and later.
 	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
+	// - There must only be one revision per resource or statement
 
 	// Reject versions < 0.10.8:
 	if( data.specifVersion ) {
@@ -262,20 +263,20 @@ function toOxml( data, opts ) {
 				if( !opts.statementsLabel ) return '';
 				let sts={}, cid, oid, sid, noSts=true;
 				// Sort statements by type:
-				data.statements.forEach( function(st) {		// alle Relationen = Statements
-					cid = st['class'];			// id der Klasse von st
+				data.statements.forEach( function(st) {		// all statements
+					cid = st['class'];	 // class id of st
 					// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
 //					console.debug(st,cid,sid,oid);
-					if( sid==r.id || oid==r.id ) {    // nur Relationen mit der betreffenden Ressource st
+					if( sid==r.id || oid==r.id ) {    // only statements with Resource r
 						noSts = false;
 						if( !sts[cid] ) sts[cid] = {subjects:[],objects:[]};
 						if( sid==r.id ) sts[cid].objects.push( itemById(data.resources,oid) )
 						else sts[cid].subjects.push( itemById(data.resources,sid) )
 					}
 				});
-				console.debug( 'statements', r, sts );
+//				console.debug( 'statements', r, sts );
 				if( noSts ) return '';	// no statements ...
 
 				// The heading:
@@ -289,7 +290,7 @@ function toOxml( data, opts ) {
 					// 3 columns:
 					if( sts[cid].subjects.length>0 ) {
 						cell = '';
-						// collect all related resources (here sources):
+						// collect all related resources (here subjects):
 						sts[cid].subjects.forEach( function(s) {
 							// it may happen that an element is undefined:
 							if( s )
@@ -2449,12 +2450,12 @@ function toOxml( data, opts ) {
 		return n
 	}
 	function itemById(L,id) {
-		if(!L||!id) return undefined;
+		if(!L||!id) return // undefined;
 		// given the ID of an element in a list, return the element itself:
 //		id = id.trim();
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id === id ) return L[i];   // return list item
-		return undefined
+		return // undefined
 	}
 	function itemByTitle(L,ln) {
 		if(!L||!ln) return null;
@@ -2491,7 +2492,7 @@ function toOxml( data, opts ) {
 		// get the value of XHTML property 'pnm':
 		let re = new RegExp( pnm+'="([^"]+)"', '' ),
 			l = re.exec(str);
-		if( l == null ) { return undefined }; 
+		if( l == null ) { return }; 
 		return l[1]
 	}
 	function hasContent( str ) {

@@ -914,12 +914,12 @@ modules.construct({
 					})
 					.fail( function(xhr) {
 						app.busy.reset();	
-						switch( xhr.status ) {
-							case 404:   // related resource(s) not found, just ignore it
-								break;
-							default:
+					//	switch( xhr.status ) {
+					//		case 404:   // related resource(s) not found, just ignore it
+					//			break;
+					//		default:
 								stdError(xhr)
-						}
+					//	}
 					})
 			})
 			.fail( stdError );
@@ -999,7 +999,7 @@ modules.construct({
 				mDO.resolve([]);
 //			console.debug('getMentionsRels',res,opts);
 		/*	// There is no need to have a statementClass .... at least currently:
-			var rT = itemByName( app.cache.selectedProject.data.statementClasses, 'SpecIF:mentions' );
+			var rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassMentions );
 			if( !rT ) return;  */
 			
 			let ti = elementTitleOf( res, opts ),
@@ -1037,7 +1037,7 @@ modules.construct({
 										// and if it is not yet listed:
 										if( rPatt.test( p.value ) && notListed( staL,res,refR ) ) {
 											staL.push({
-												title: 	'SpecIF:mentions',
+												title: 	CONFIG.staClassMentions,
 									//			class:	// no class indicates also that the statement cannot be deleted
 												subject:	res,
 												object:		refR
@@ -1057,7 +1057,7 @@ modules.construct({
 										// and if it is not yet listed:
 										if( sPatt.test( p.value ) && notListed( staL,refR,res ) ) {
 											staL.push({
-												title: 	'SpecIF:mentions',
+												title: 	CONFIG.staClassMentions,
 									//			class:	// no class indicates also that the statement cannot be deleted
 												subject:	refR,
 												object:		res
