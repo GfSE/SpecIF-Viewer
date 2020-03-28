@@ -347,7 +347,7 @@ modules.construct({
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// String.fromCodePoint()
-				name: elementTitleOf(r,opts), 
+				name: itemTitleOf(r,opts), 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -829,6 +829,7 @@ modules.construct({
 }, function(self) {
 	// Render the statements of a selected resource:
 	var pData,				// the parent's data
+		cData,				// the cached data
 		selRes,				// the currently selected resource
 		net,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
@@ -841,6 +842,7 @@ modules.construct({
 		pData = self.parent;
 		pData.showLeft.set();
 		pData.showTree.set();
+		cData = app.cache.selectedProject.data;
 
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -857,15 +859,15 @@ modules.construct({
 		// else: the tree has entries:
 		app.busy.set();
 	//	$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
-		// ToDo: Redraw only if the selected node has changed, to avoid a flicker.
 
+		// ToDo: Redraw only if the selected node has changed, to avoid a flicker.
 		var nd = pData.tree.selectedNode;
 						
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: app.cache.selectedProject.data.id,
+				project: cData.id,
 				view: self.view.substr(1),	// remove leading hash
 				node: nd.id,
 				item: nd.ref
@@ -874,7 +876,6 @@ modules.construct({
 		app.cache.selectedProject.readStatementsOf( {id: nd.ref} )
 			.done(function(sL) {
 				// sL is the list of statements involving the selected resource.
-//				console.debug( 'statements', sL );
 
 				// First, add the selected resource itself to the list:
 				net = { resources: [{id: nd.ref}], statements: sL };
@@ -882,6 +883,7 @@ modules.construct({
 				// the title attribute will be undefined, 
 				// but we are interested only in the resource id at this point:
 				sL.forEach( cacheNet );
+//				console.debug( 'statements', sL, net );
 
 				// Obtain the titles (labels) of all resources in the list.
 				// The titles may not be defined in a tree node and anyways don't have the icon, 
@@ -929,11 +931,12 @@ modules.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			cacheE( L, { id: itemIdOf(r), title: elementTitleWithIcon(r,opts) } )
+			cacheE( L, { id: itemIdOf(r), title: itemTitleOf( r, $.extend(opts,{addIcon:true}), cData )})
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
-			cacheE( L, { id: s.id, title: elementTitleOf(s,opts), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} )
+			// s is a statement:
+			cacheE( L, { id: s.id, title: itemTitleOf(s,opts,cData), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} )
 		}
 		function cacheNet(s) {
 			// skip hidden statements:
@@ -945,11 +948,11 @@ modules.construct({
 			// collect the related resources:
 			if( itemIdOf(s.subject) == nd.ref ) { 
 				// the selected node is a subject, so the related resource is an object,
-				// list the related resource, but only once:
+				// list it, but only once:
 				cacheMinRes( net.resources, s.object )
 			} else {
 				// the related resource is a subject,
-				// list the related resource, but only once:
+				// list it, but only once:
 				cacheMinRes( net.resources, s.subject )
 			}
 		}
@@ -999,10 +1002,10 @@ modules.construct({
 				mDO.resolve([]);
 //			console.debug('getMentionsRels',res,opts);
 		/*	// There is no need to have a statementClass .... at least currently:
-			var rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassMentions );
+			var rT = itemByName( cData.statementClasses, CONFIG.staClassMentions );
 			if( !rT ) return;  */
 			
-			let ti = elementTitleOf( res, opts ),
+			let ti = itemTitleOf( res, opts ),
 				staL = [],	// a list of artificial statements; these are not stored in the server
 				pend = 0,
 				rPatt,
@@ -1017,54 +1020,53 @@ modules.construct({
 				app.cache.selectedProject.readContent( 'resource', {id: nd.ref} )
 					.done( function(refR) {   
 						// refR is a resource referenced in a hierarchy
-						let ti = elementTitleOf( refR, opts );
-						if( !ti || ti.length<CONFIG.dynLinkMinLength || refR.id==res.id ) {
-							--pend;
-							return
-						};
-//						console.debug('pData.tree.iterate',nd,ti,pend);
+						let ti = itemTitleOf( refR, opts );
+//						console.debug('pData.tree.iterate',refR,ti,pend);
+						if( ti && ti.length>CONFIG.dynLinkMinLength-1 && refR.id!=res.id ) {
+							// ToDo: Search in a native description field ... not only in properties ...
 
-						// 1. The titles of other resource's found in the selected resource's texts 
-						//    result in a 'this mentions other' statement (selected resource is subject):
-						rPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
-						if( res.properties )
-							res.properties.forEach( function(p) {
-								// assuming that the dataTypes are always cached:
-								switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
-									case 'xs:string':
-									case 'xhtml':	
-										// add, if the iterated resource's title appears in the selected resource's property ..
-										// and if it is not yet listed:
-										if( rPatt.test( p.value ) && notListed( staL,res,refR ) ) {
-											staL.push({
-												title: 	CONFIG.staClassMentions,
-									//			class:	// no class indicates also that the statement cannot be deleted
-												subject:	res,
-												object:		refR
-											})
-										}
-								}
-							});
-						// 2. The selected resource's title found in other resource's texts 
-						//    result in a 'other mentions this' statement (selected resource is object):
-						if( refR.properties )
-							refR.properties.forEach( function(p) {
-								// assuming that the dataTypes are always cached:
-								switch( dataTypeOf( app.cache.selectedProject.data, p['class'] ).type ) {
-									case 'xs:string':
-									case 'xhtml':	
-										// add, if the selected resource's title appears in the iterated resource's property ..
-										// and if it is not yet listed:
-										if( sPatt.test( p.value ) && notListed( staL,refR,res ) ) {
-											staL.push({
-												title: 	CONFIG.staClassMentions,
-									//			class:	// no class indicates also that the statement cannot be deleted
-												subject:	refR,
-												object:		res
-											})
-										}
-								}
-							});
+							// 1. The titles of other resource's found in the selected resource's texts 
+							//    result in a 'this mentions other' statement (selected resource is subject):
+							rPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
+							if( res.properties )
+								res.properties.forEach( function(p) {
+									// assuming that the dataTypes are always cached:
+									switch( dataTypeOf( cData, p['class'] ).type ) {
+										case 'xs:string':
+										case 'xhtml':	
+											// add, if the iterated resource's title appears in the selected resource's property ..
+											// and if it is not yet listed:
+											if( rPatt.test( p.value ) && notListed( staL,res,refR ) ) {
+												staL.push({
+													title: 	CONFIG.staClassMentions,
+										//			class:	// no class indicates also that the statement cannot be deleted
+													subject:	res,
+													object:		refR
+												})
+											}
+									}
+								});
+							// 2. The selected resource's title found in other resource's texts 
+							//    result in a 'other mentions this' statement (selected resource is object):
+							if( refR.properties )
+								refR.properties.forEach( function(p) {
+									// assuming that the dataTypes are always cached:
+									switch( dataTypeOf( cData, p['class'] ).type ) {
+										case 'xs:string':
+										case 'xhtml':	
+											// add, if the selected resource's title appears in the iterated resource's property ..
+											// and if it is not yet listed:
+											if( sPatt.test( p.value ) && notListed( staL,refR,res ) ) {
+												staL.push({
+													title: 	CONFIG.staClassMentions,
+										//			class:	// no class indicates also that the statement cannot be deleted
+													subject:	refR,
+													object:		res
+												})
+											}
+									}
+								});
+						};
 						if( --pend<1 ) mDO.resolve(staL)
 					})
 					.fail( mDO.reject );
@@ -1562,8 +1564,8 @@ function propertyValueOf( ob, prp, opts ) {
 						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
 						// avoid self-reflection:
 					//	if(ob.id==cO.id) return true;
-					//	ti = elementTitleOf( cO, opts ).stripHTML();
-						ti = elementTitleOf( cO, opts );
+					//	ti = itemTitleOf( cO, opts ).stripHTML();
+						ti = itemTitleOf( cO, opts );
 						// if the dynLink content equals a resource's title, remember the first occurrence:
 						if( notFound && ti && m==ti.toLowerCase() ) {
 							notFound = false;
@@ -2013,13 +2015,13 @@ var fileRef = {
 							// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 							if( !CONFIG.selectCorrespondingDiagramFirst ) return id;
 							// else, replace the id of a resource by the id of a diagram carrying the same title:
-							let ti = elementTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id),opts),
+							let ti = itemTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id),opts),
 								rT = null;
 							for( var i=app.cache.selectedProject.data.resources.length-1;i>-1;i--) {
 								rT = itemById(app.cache.selectedProject.data.resourceClasses,app.cache.selectedProject.data.resources[i]['class']);
 								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( elementTitleOf(app.cache.selectedProject.data.resources[i],opts)==ti ) {
+								if( itemTitleOf(app.cache.selectedProject.data.resources[i],opts)==ti ) {
 									// found: the diagram carries the same title 
 									if( app.specs.resources.selected().value && app.specs.resources.selected().value.id==app.cache.selectedProject.data.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 

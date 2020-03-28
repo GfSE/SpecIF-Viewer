@@ -372,7 +372,7 @@ function Project( pr ) {
 		// ToDo: Consider, if model-elements are only considered equal, if they have the same type, 
 		// i.e. if a property with title CONFIG.propClassType has the same value 
 		return r.title==n.title
-				&& classTitleOf(r,dta)==classTitleOf(n,dta)
+				&& resClassTitleOf(r,dta)==resClassTitleOf(n,dta)
 		// Note that the content of the new resource is lost;
 		// this is no problem, if the new data is a BPMN model, for example, 
 		// which usually have a title and do not carry any description.
@@ -562,7 +562,7 @@ function Project( pr ) {
 				nR = dta.resources[n];
 				rR = dta.resources[r];
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( classTitleOf(rR,dta) )>-1 
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( resClassTitleOf(rR,dta) )>-1 
 					&& eqR(dta,rR,nR) 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
@@ -903,7 +903,7 @@ function Project( pr ) {
 				let itm = nD.resources[i];
 			//		typ = itemById( nD.resourceClasses, itm['class'] );
 			//	if( CONFIG.modelElementClasses.indexOf( typ.title )>-1
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( classTitleOf(itm,nD) )>-1 
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( resClassTitleOf(itm,nD) )>-1 
 					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nD,itm,CONFIG.propClassType) )<0 
 				) {
 						// Check for a resource with the same title:
@@ -914,7 +914,7 @@ function Project( pr ) {
 //						console.debug('~1',itm,exs?exs:'');
 						if( exs 
 							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, exs, CONFIG.propClassType ))<0 
-							&& classTitleOf(itm,nD)==classTitleOf(exs,self.data) 
+							&& resClassTitleOf(itm,nD)==resClassTitleOf(exs,self.data) 
 					//		&& valByTitle(nD,itm,CONFIG.propClassType)==valByTitle(self.data,exs,CONFIG.propClassType) 
 						) {
 //							console.debug('~2',exs,itm);
@@ -2931,7 +2931,7 @@ const specif = {
 				var oE = i2ext( iE );
 //				console.debug('a2ext',iE,opts);
 				// resources and hierarchies usually have individual titles, and so we will not lookup:
-				oE.title = elementTitleOf( iE, opts );
+				oE.title = itemTitleOf( iE, opts );
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
@@ -3092,7 +3092,7 @@ function titleIdx( pL, prj ) {
 		};
 	return -1
 }
-function elementTitleOf( el, opts ) {
+function itemTitleOf( el, opts, dta ) {
 	// get the title from the properties or a replacement value in case of default:
 	if( typeof(el)!='object' ) return;
 	// in case of a resource, we never want to lookup a title,
@@ -3102,7 +3102,17 @@ function elementTitleOf( el, opts ) {
 			targetLanguage: opts.targetLanguage || browser.language
 		},
 		ti = titleFromProperties( el.properties, op ) || titleOf( el, op );
-//	console.debug('elementTitleOf',el,opts,ti);
+		// if it is a statement and does not have a title of it's own, take the class' title:
+		if( el.subject ) {
+			// it is a statement
+			if( !ti && dta ) 
+				ti = staClassTitleOf( el, dta, op )
+		} else {
+			// it is a resource
+			if( opts.addIcon && CONFIG.addIconToInstance && dta )
+				ti = ti.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
+		};
+//	console.debug('itemTitleOf',el,opts,ti);
 //	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
 	return typeof(ti)=='string'? ti.stripHTML() : ti
 
@@ -3125,24 +3135,19 @@ function elementTitleOf( el, opts ) {
 		return
 	}
 }
-function propTitleOf( prp, dta ) {
-	// get the title of a property as defined by itself or it's class:
-	return prp.title || itemById(dta.propertyClasses,prp['class']).title
-}
-function elementTitleWithIcon( el, opts ) {
-	if( typeof(el)!='object' ) return;
-	// add an icon to an element's title;
-	// works for all types of elements, i.e. resources, statements and hierarchies.
-	// The icon is defined in the elements's type:
-	return CONFIG.addIconToInstance? elementTitleOf(el,opts).addIcon( itemById( app.cache.selectedProject.data.allClasses, el['class'] ).icon ) : elementTitleOf(el,opts)
-}
-/*	function classTitleWithIcon( t ) {
+/*function classTitleWithIcon( t ) {
 	// add the icon to a type's title, if defined:
 	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
 }*/
-function classTitleOf( r, dta ) {
-	return itemById(dta.resourceClasses,r['class']).title
-	// ToDo: .. or the title of the title attribute (dcterms:title) if the resource title is undefined
+function resClassTitleOf( e, dta, opts ) {
+	return titleOf( itemById( dta.resourceClasses, e['class'] ), opts )
+}
+function staClassTitleOf( e, dta, opts ) {
+	return titleOf( itemById( dta.statementClasses, e['class'] ), opts )
+}
+function propTitleOf( prp, dta ) {
+	// get the title of a property as defined by itself or it's class:
+	return prp.title || itemById(dta.propertyClasses,prp['class']).title
 }
 function titleOf( item, opts ) {
 	// Pick up the native title of any item;
@@ -3151,14 +3156,13 @@ function titleOf( item, opts ) {
 	let ti = languageValueOf( item.title, opts );
 //	console.debug('titleOf',item,opts,ti);
 	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti
-	// last resort:
-	return item.id
+	return // undefined
 }
 function languageValueOf( val, opts ) {
 	// Get the value according the current browser setting .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object.
 	// if tgtLan is not defined, keep all language options.
-	if( typeof(val)=='string' || !opts || !opts.targetLanguage ) return val;
+	if( typeof(val)=='string' || !(opts&&opts.targetLanguage) ) return val;
 	if( !Array.isArray(val) ) return null;  // programming error
 	
 	let lVs = val.filter( function(v) {
