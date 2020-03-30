@@ -1720,7 +1720,6 @@ function Project( pr ) {
 			let data = specif.toExt( self.data, opts ), 
 				options = { 
 					classifyProperties: classifyProps,
-					lookupTitles: true,
 					lookup: i18n.lookup,
 					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 					stereotypeProperties: CONFIG.stereotypeProperties,
@@ -1793,6 +1792,7 @@ function Project( pr ) {
 			switch( opts.format ) {
 				case 'specif':
 					opts.lookupTitles = false;  // keep vocabulary terms
+					opts.lookupValues = false;
 					opts.targetLanguage = undefined;  // export all languages
 					opts.revisionDate = undefined;  // keep all revisions
 					break;
@@ -1801,6 +1801,7 @@ function Project( pr ) {
 					opts.revisionDate = new Date().toISOString();
 					// keep vocabulary terms:
 					opts.lookupTitles = false;  
+					opts.lookupValues = false;
 					// ReqIF only supports a single Language:
 					if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
 			};
@@ -3044,11 +3045,13 @@ function enumValueOf( dT, val, opts ) {
 	let ct = '',
 		eV,
 	//	st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
-		vL = val.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
+		vL = val.split(',');  // in case of ENUMERATION, val may carry comma-separated value-IDs
 	vL.forEach( function(v,i) {
 	//	if( !v ) return;
 		eV = languageValueOf( itemById(dT.values,v).value, opts );
-		// If 'eV' is an id, replace it by title, otherwise don't change:
+		if( opts&&opts.lookupValues )
+			eV = i18n.lookup(eV);
+		// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
 		// For example, when an object is from a search hitlist or from a revision list, 
 		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
 		// Add 'double-angle quotation' in case of stereotype values.
@@ -3102,17 +3105,18 @@ function itemTitleOf( el, opts, dta ) {
 			targetLanguage: opts.targetLanguage || browser.language
 		},
 		ti = titleFromProperties( el.properties, op ) || titleOf( el, op );
-		// if it is a statement and does not have a title of it's own, take the class' title:
-		if( el.subject ) {
-			// it is a statement
-			if( !ti && dta ) 
-				ti = staClassTitleOf( el, dta, op )
-		} else {
-			// it is a resource
-			if( opts.addIcon && CONFIG.addIconToInstance && dta )
-				ti = ti.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
-		};
+	// if it is a statement and does not have a title of it's own, take the class' title:
 //	console.debug('itemTitleOf',el,opts,ti);
+	if( el.subject ) {
+		// it is a statement
+		if( !ti && dta ) 
+			ti = staClassTitleOf( el, dta, op )
+	} else {
+		// it is a resource
+		if( opts.addIcon && CONFIG.addIconToInstance && dta && ti )
+			ti = ti.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
+	};
+//	console.debug('itemTitleOf 2',ti);
 //	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
 	return typeof(ti)=='string'? ti.stripHTML() : ti
 

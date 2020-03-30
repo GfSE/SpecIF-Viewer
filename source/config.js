@@ -463,6 +463,11 @@ const vocabulary = {
 				case 'merkmal':
 				case 'features':
 				case 'feature':						oT = "SpecIF:Feature"; break;
+				case 'annotations':
+				case 'annotationen':
+				case 'annotation':					oT = "IR:Annotation"; break;
+				case 'user_stories':
+				case 'user_story':					oT = 'SpecIF:UserStory'; break;
 				case 'specif_view':
 				case 'fmc_plan':					oT = 'SpecIF:Diagram'; break;
 				case 'specif_folder':				oT = "SpecIF:Heading"; break;

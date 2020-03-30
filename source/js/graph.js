@@ -499,7 +499,7 @@ function Graph() {
          * @returns json object of the statements with titles for statements, subjects and objects
          */
         function collectStatementsByType(res) {
-            let stms = {}, oid=null, sid=null;
+            let sts = {}, cid, oid, sid;
             specifData.statements.forEach( function(st) {
 				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 				oid = st.object.id || st.object;
@@ -507,19 +507,19 @@ function Graph() {
 				
 				if ( sid === res.id || oid === res.id) {
 					// all statements having the same title are clustered:
-					let stmC = getStatementTitle(st);
-					// all statements having the same class are clustered:
-//					let stmC = st['class'];
-					if (!stms[stmC]) {
-						stms[stmC] = { targets: [], sources: [] }
+					cid = getStatementTitle(st);
+				/*	// all statements having the same class are clustered:
+					cid = st['class']; */
+					if (!sts[cid]) {
+						sts[cid] = { targets: [], sources: [] }
 					};
 					if ( oid===res.id )
-						stms[stmC].sources.push( {resource:resourceById(sid),statement:st} )
+						sts[cid].sources.push( {resource:resourceById(sid),statement:st} )
 					else
-						stms[stmC].targets.push( {resource:resourceById(oid),statement:st} )
+						sts[cid].targets.push( {resource:resourceById(oid),statement:st} )
 				}
             });
-            return stms
+            return sts
         }
 
         /**

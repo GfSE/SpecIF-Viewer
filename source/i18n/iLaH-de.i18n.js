@@ -5,25 +5,21 @@
 	- phrase('MsgText', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
-var i18n = new Object();
-i18n.phrase = function( ms, pA ) { 
-	// replace a variable '~A' with pA, if available:
-	// for use in HTML fields.
-	if( ms ) {
-		if( pA!=undefined ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-		return i18n[ms] 
-	};
-	return ''
-};
-i18n.lookup = function( lb ) { 
-	// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-	// for use in regular text fields.
-	return i18n[lb.toJsId()] || lb
-/*	try {
-		return i18n[lb.toJsId()].stripHTML()
-	} catch(e) {
-		return lb
-	}  */
+var i18n = {
+	phrase: function( ms, pA ) { 
+		// replace a variable '~A' with pA, if available:
+		// for use in HTML fields.
+		if( ms ) {
+			if( pA ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
+			return i18n[ms] 
+		};
+		return ''
+	},
+	lookup: function( lb ) { 
+		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
+		// for use in regular text fields.
+		return i18n[lb.toJsId()] || lb
+	}
 };
 
 i18n.IcoUser = '<span class="glyphicon glyphicon-user"/>';
@@ -343,8 +339,8 @@ i18n.oslc_rm_validatedBy = "wird validiert von";
 //i18n.oslc_rm_constrainedBy = "";
 //i18n.oslc_rm_constrains = "";
 // SpecIF entity, relation and attribute names
-i18n.SpecIF_Heading = "überschrift";
-i18n.SpecIF_Headings = "überschriften";
+i18n.SpecIF_Heading = "Überschrift";
+i18n.SpecIF_Headings = "Überschriften";
 i18n.SpecIF_Name = i18n.LblName;
 //i18n.SpecIF_Names = "Namen";
 i18n.SpecIF_Folder = "Ordner";	// deprecated, use SpecIF:Heading
@@ -382,6 +378,10 @@ i18n.SpecIF_Requirement =
 i18n.IREB_Requirement = "Anforderung";
 i18n.SpecIF_Requirements = 
 i18n.IREB_Requirements = "Anforderungen";
+i18n.IREB_RequirementType = "Art";
+i18n.IREB_RequirementTypeFunction = "Funktion";
+i18n.IREB_RequirementTypeQuality = "Qualität";
+i18n.IREB_RequirementTypeConstraint = "Randbedingung";
 i18n.SpecIF_BusinessProcess = 'Geschäftsprozess'; 
 i18n.SpecIF_BusinessProcesses = 'Geschäftsprozesse';
 i18n.SpecIF_Rationale = "Motivation";
@@ -411,6 +411,7 @@ i18n.oslc_rm_satisfiedBy = "wird erfüllt von";;
 i18n.oslc_rm_satisfies = 
 i18n.SpecIF_satisfies =
 i18n.IREB_satisfies = "erfüllt";
+i18n.oslc_rm_implementedBy = "wird realisiert von";
 i18n.SpecIF_implements = "realisiert";
 i18n.SpecIF_modifies =
 i18n.SpecIF_stores = "schreibt und liest";
@@ -465,6 +466,7 @@ i18n.SpecIF_DueDate = "Termin";
 i18n.SpecIF_Icon = "Symbol";
 i18n.SpecIF_Tag = "Schlagwort";
 i18n.SpecIF_Tags = "Schlagworte";
+i18n.SpecIF_UserStory = "User-Story";
 //i18n.SpecIF_Creation = "";
 i18n.SpecIF_Instantiation = "Instanziierung";
 i18n.SpecIF_Origin = "Quelle";		// oder "Herkunft"
@@ -497,6 +499,16 @@ i18n.Object_Text = i18n.ReqIF_Text;
 i18n.VALUE_Object_Text = i18n.ReqIF_Text;
 i18n.Object_ID = i18n.ReqIF_ForeignID;
 i18n.VALUE_Object_ID = i18n.ReqIF_ForeignID;
+i18n.SpecIF_priorityHigh = "hoch";
+i18n.SpecIF_priorityRatherHigh = "eher hoch";
+i18n.SpecIF_priorityMedium = "mittel";
+i18n.SpecIF_priorityRatherLow = "eher niedrig";
+i18n.SpecIF_priorityLow = "niedrig";
+i18n.SpecIF_sizeXL = "sehr groß";
+i18n.SpecIF_sizeL = "groß";
+i18n.SpecIF_sizeM = "mittelgroß";
+i18n.SpecIF_sizeS = "klein";
+i18n.SpecIF_sizeXS = "sehr klein";
 
 // Messages:
 i18n.MsgConfirm = 'Bitte bestätigen:';

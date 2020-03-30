@@ -524,6 +524,7 @@ function xslx2specif( buf, pN, chgAt ) {
 		wb = XLSX.read(xDta, {type:'array', cellDates:true, cellStyles:true}),	// the excel content, i.e. "workbook"
 		wsCnt = wb.SheetNames.length;		// number of sheets in the workbook
 	console.info( 'SheetNames: '+wb.SheetNames+' ('+wsCnt+')' );
+//	console.debug('workbook',wb);
 
 	// Transform the worksheets to SpecIF:
 	// 1 Create the project:

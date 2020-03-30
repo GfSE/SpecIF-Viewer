@@ -472,7 +472,7 @@ modules.construct({
 						dta.dataTypes[d].values.forEach( function(v) {
 							// the checkboxes for the secondary filter selector per enum value:
 							var box = {
-									title: languageValueOf( v.value, opts ), 
+									title: i18n.lookup( languageValueOf( v.value, opts )), 
 									id: v.id, 
 									checked: true
 								};

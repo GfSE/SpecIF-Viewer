@@ -159,17 +159,16 @@ function toOxml( data, opts ) {
 			};
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-			if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = false;
-			if( !opts.lookupTitles || typeof(opts.lookup)!='function' )
-				opts.lookup = function(str) { return str };
+			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
 			// If no label is provided, the respective properties are skipped:
-			if( opts.propertiesLabel && opts.lookupTitles ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
-			if( opts.statementsLabel && opts.lookupTitles ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
+			if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
+			if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
+			
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegExp
 			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegExp
 			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
@@ -238,22 +237,25 @@ function toOxml( data, opts ) {
 			return oxml
 			
 			// ---------------
-			function titleOf( r, pars, opts ) { // resource, resourceClass, parameters, options
+			function titleOf( itm, pars, opts ) { // resource, resourceClass, parameters, options
 				// render the resource title
 				// designed for use also by statements.
 				
-				// depending on the context, r['class'] is an class object or a class id:
-				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] );
+				// depending on the context, itm['class'] is a class object or a class id:
+				let cL = itm.subject? data.statementClasses : data.resourceClasses,
+					rC = itm['class'].id? itm['class'] : itemById( cL, itm['class'] );
 				
-				let ti = minEscape( r.title ),
-					ic = rC.icon;
-				if( typeof(ic)!='string' ) ic = '';
-				if( ic ) ic += nbsp;
+				let ti = minEscape( itm.title ),
+					ic = rC&&rC.icon? rC.icon+nbsp : '';
+					
+				// in case of a statement take the class' title by default:
+				if( itm.subject && !ti && rC ) ti = minEscape( rC.title );
+				
 				if( !pars || pars.level<1 ) return  (ti?ic+ti:'');  // return raw text
+
 				// SpecIF headings are chapter level 2, all others level 3:
 				let l = pars.level==1? 1:rC.isHeading? 2:3;
-
-//				console.debug('titleOf',r,ti);
+//				console.debug('titleOf',itm,ti);
 				// all titles get a bookmark, so that any titleLink has a target:
 				return wParagraph( {text: (ti?ic+ti:''), heading:l, bookmark:pars.nodeId } )
 			}	
@@ -261,10 +263,14 @@ function toOxml( data, opts ) {
 			function statementsOf( r, opts ) {
 				// get the statements of the resource as table:
 				if( !opts.statementsLabel ) return '';
+				
 				let sts={}, cid, oid, sid, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
-					cid = st['class'];	 // class id of st
+					// all statements having the same title are clustered:
+					cid = titleOf(st);
+				/*	// all statements having the same class are clustered:
+					cid = st['class']; */
 					// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
@@ -284,8 +290,11 @@ function toOxml( data, opts ) {
 					sTi, row, cell;
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
+					// if we have clustered by title:
+					sTi = opts.lookup( cid );
+				/*	// if we have clustered by class:
 					// we don't have the individual statement's title; so we determine the class to get it's title, instead:
-					sTi = opts.lookup( itemById(data.statementClasses,cid).title );
+					sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 					// 3 columns:
 					if( sts[cid].subjects.length>0 ) {
@@ -295,7 +304,7 @@ function toOxml( data, opts ) {
 							// it may happen that an element is undefined:
 							if( s )
 								cell += wParagraph({
-											text: titleOf( s, null, opts ), 
+											text:titleOf( s, null, opts ), 
 											hyperlink: {internal:anchorOf( s )}, 
 											noSpacing: true,
 											align: 'end'
@@ -320,7 +329,7 @@ function toOxml( data, opts ) {
 							// The object:
 							row += wTableCell({
 									content:wParagraph({ 
-											text: titleOf( r, null, opts ), 
+											text:titleOf( r, null, opts ), 
 											noSpacing: true
 									}),
 									border: {type:'single'}
@@ -886,11 +895,11 @@ function toOxml( data, opts ) {
 									st = opts.stereotypeProperties.indexOf(prp.title)>-1,
 									vL = prp.value.split(',');  // in case of xs:enumeration, content carries comma-separated value-IDs
 								for( var v=0,V=vL.length;v<V;v++ ) {
-									val = itemById(dT.values,vL[v].trim());
-									// If 'val' is an id, replace it by title, otherwise don't change:
+									val = itemById(dT.values,vL[v]);
+									// If 'val' is an id, replace it by the corresponding value, otherwise don't change:
 									// Add 'double-angle quotation' in case of SubClass values.
-									if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+val.value+'&#x00bb;'):val.value)
-									else ct += (v==0?'':', ')+vL[v]
+									if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(val.value)+'&#x00bb;'):opts.lookup(val.value))
+									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
 								return [{p:{text:minEscape(ct)}}];
 							case opts.dataTypeXhtml:

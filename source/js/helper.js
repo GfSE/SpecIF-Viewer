@@ -1009,23 +1009,29 @@ function localDateTime(iso) {
 
 function simpleClone( o ) { 
 	// "deep" clone;
-	// does only work, if none of the property values are references or functions:
-		function clonePr(p) {
+	// does only work, if none of the property values are functions:
+		function cloneProp(p) {
 			return ( typeof(p) == 'object' )? simpleClone(p) : p
 		}
-	var n={};
-	for( var p in o ) {
-		if( Array.isArray(o[p]) ) {
-			n[p] = [];
-			o[p].forEach( function(op) {
-				n[p].push( clonePr(op) )
-			});
-			continue
+	if( typeof(o)=='object' ) {
+		if( Array.isArray(o) )
+			var n=[]
+		else
+			var n={};
+		for( var p in o ) {
+			if( Array.isArray(o[p]) ) {
+				n[p] = [];
+				o[p].forEach( function(op) {
+					n[p].push( cloneProp(op) )
+				});
+				continue
+			};
+			// else
+			n[p] = cloneProp(o[p])
 		};
-		// else
-		n[p] = clonePr(o[p])
+		return n
 	};
-	return n
+	return o
 }
 function hasUrlParams() {
 	let p = document.URL.split('#');

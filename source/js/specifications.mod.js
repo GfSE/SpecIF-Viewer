@@ -877,13 +877,12 @@ modules.construct({
 			.done(function(sL) {
 				// sL is the list of statements involving the selected resource.
 
-				// First, add the selected resource itself to the list:
-				net = { resources: [{id: nd.ref}], statements: sL };
+				// First, initialize the list and add the selected resource:
+				net = { resources: [{id: nd.ref}], statements: [] };
 				// Store all related resources while avoiding duplicate entries,
 				// the title attribute will be undefined, 
 				// but we are interested only in the resource id at this point:
 				sL.forEach( cacheNet );
-//				console.debug( 'statements', sL, net );
 
 				// Obtain the titles (labels) of all resources in the list.
 				// The titles may not be defined in a tree node and anyways don't have the icon, 
@@ -905,7 +904,7 @@ modules.construct({
 							.done( function(stL) {
 								stL.forEach( cacheNet );
 								$( '#contentActions' ).html( linkBtns() ); 
-//								console.debug('local net',net);
+//								console.debug('local net',stL,net);
 								renderStatements( net );
 								app.busy.reset()
 							})
@@ -931,7 +930,7 @@ modules.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			cacheE( L, { id: itemIdOf(r), title: itemTitleOf( r, $.extend(opts,{addIcon:true}), cData )})
+			cacheE( L, { id: itemIdOf(r), title: itemTitleOf(r,$.extend(opts,{addIcon:true}),cData) })
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
@@ -943,7 +942,8 @@ modules.construct({
 			if( CONFIG.hiddenStatements.indexOf( s.title )>-1 ) return;
 
 			// store the statements in the net:
-			cacheMinSta( net.statements, s );					
+			cacheMinSta( net.statements, s );
+//			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// collect the related resources:
 			if( itemIdOf(s.subject) == nd.ref ) { 
@@ -1251,6 +1251,17 @@ function Resource( obj ) {
 		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 		// Create HTML for a list entry:
 //		console.debug( 'Resource.listEntry', self.toShow );
+
+			opts.dynLinks 
+				= opts.clickableElements
+				= opts. linkifiedURLs
+				= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
+			// ToDo: Consider to make it a user option:
+			opts.unescapeHTMLTags = true;
+			// ToDo: Make it a user option:
+			opts.makeHTML = true; 
+			opts.lookupValues = true;
+
 		var rO = '<div class="listEntry">'
 			+		'<div class="content-main">';
 		
@@ -1270,15 +1281,6 @@ function Resource( obj ) {
 		// 1.2 The description properties:
 		self.toShow.descriptions.forEach( function(prp) {
 			if( showPrp( prp, opts ) ) {
-				opts.dynLinks 
-					= opts.clickableElements
-					= opts. linkifiedURLs
-					= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
-				// ToDo: Consider to make it a user option:
-				opts.unescapeHTMLTags = true;
-				// ToDo: Make it a user option:
-				opts.makeHTML = true; 
-
 				rO += '<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
 			}
 		});
@@ -1492,7 +1494,8 @@ function propertyValueOf( ob, prp, opts ) {
 		opts = {
 			dynLinks: false,
 			clickableElements: false,
-			linkifiedURLs: false
+			linkifiedURLs: false,
+			lookupTitles: false
 		}
 	};
 	// Malicious content has been removed upon import ( specif.toInt() ).

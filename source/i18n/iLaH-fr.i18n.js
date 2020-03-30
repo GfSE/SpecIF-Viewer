@@ -5,25 +5,21 @@
 	- phrase('MsgText', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
-var i18n = new Object();
-i18n.phrase = function( ms, pA ) { 
-	// replace a variable '~A' with pA, if available:
-	// for use in HTML fields.
-	if( ms ) {
-		if( pA!=undefined ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-		return i18n[ms] 
-	};
-	return ''
-};
-i18n.lookup = function( lb ) { 
-	// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-	// for use in regular text fields.
-	return i18n[lb.toJsId()] || lb
-/*	try {
-		return i18n[lb.toJsId()].stripHTML()
-	} catch(e) {
-		return lb
-	}  */
+var i18n = {
+	phrase: function( ms, pA ) { 
+		// replace a variable '~A' with pA, if available:
+		// for use in HTML fields.
+		if( ms ) {
+			if( pA ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
+			return i18n[ms] 
+		};
+		return ''
+	},
+	lookup: function( lb ) { 
+		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
+		// for use in regular text fields.
+		return i18n[lb.toJsId()] || lb
+	}
 };
 
 i18n.IcoUser = '<span class="glyphicon glyphicon-user"/>';
@@ -372,16 +368,20 @@ i18n.SpecIF_Property = "Attribut";
 i18n.SpecIF_Properties = "Attributs";
 i18n.FMC_Actor = "Acteur";
 i18n.FMC_Actors = "Acteurs";
-i18n.FMC_State = "état";
-i18n.FMC_States = "états";
-i18n.FMC_Event = "évenement";
-i18n.FMC_Events = "évenements";
+i18n.FMC_State = "État";
+i18n.FMC_States = "États";
+i18n.FMC_Event = "Évenement";
+i18n.FMC_Events = "Évenements";
 i18n.SpecIF_Feature = "Marque";
 i18n.SpecIF_Features = "Marques";
 i18n.SpecIF_Requirement =
 i18n.IREB_Requirement = "Exigence";
 i18n.SpecIF_Requirements = 
 i18n.IREB_Requirements = "Exigences";
+i18n.IREB_RequirementType = i18n.LblType;
+i18n.IREB_RequirementTypeFunction = "Fonction";
+i18n.IREB_RequirementTypeQuality = "Qualité";
+i18n.IREB_RequirementTypeConstraint = "Contrainte";
 i18n.SpecIF_BusinessProcess = 'Processus'; 
 i18n.SpecIF_BusinessProcesses = 'Processus';
 i18n.SpecIF_Rationale = "Motivation";
@@ -395,7 +395,7 @@ i18n.SpecIF_Outline =
 i18n.SpecIF_Hierarchy = "Arborescence";
 i18n.SpecIF_Outlines =
 i18n.SpecIF_Hierarchies = "Arborescences";
-i18n.SpecIF_Glossary = "élements de modèle (Glossaire)";
+i18n.SpecIF_Glossary = "Élements de modèle (Glossaire)";
 i18n.SpecIF_Annotations = "Annotations";
 i18n.SpecIF_Vote = "Evaluation";
 i18n.SpecIF_Votes = "Evaluations";
@@ -411,6 +411,7 @@ i18n.oslc_rm_satisfiedBy = "satisfait par";
 i18n.oslc_rm_satisfies =
 i18n.SpecIF_satisfies =
 i18n.IREB_satisfies = "satisfait";
+i18n.oslc_rm_implementedBy = "realisé par";
 i18n.SpecIF_implements = "realise";
 i18n.SpecIF_modifies =
 i18n.SpecIF_stores = "écrit et lit";
@@ -465,6 +466,7 @@ i18n.SpecIF_DueDate = "Délai";
 i18n.SpecIF_Icon = "Symbole";
 i18n.SpecIF_Tag = "Mot-clé";
 i18n.SpecIF_Tags = "Mots-clés";
+i18n.SpecIF_UserStory = "User-Story";
 //i18n.SpecIF_Creation = "";
 i18n.SpecIF_Instantiation = "Instanciation";
 i18n.SpecIF_Origin = "Origine";
@@ -497,6 +499,16 @@ i18n.Object_Text = i18n.ReqIF_Text;
 i18n.VALUE_Object_Text = i18n.ReqIF_Text;
 i18n.Object_ID = i18n.ReqIF_ForeignID;
 i18n.VALUE_Object_ID = i18n.ReqIF_ForeignID;
+i18n.SpecIF_priorityHigh = "haut";
+i18n.SpecIF_priorityRatherHigh = "plutôt haut";
+i18n.SpecIF_priorityMedium = "moyen";
+i18n.SpecIF_priorityRatherLow = "plutôt bas";
+i18n.SpecIF_priorityLow = "bas";
+i18n.SpecIF_sizeXL = "très grand";
+i18n.SpecIF_sizeL = "grand";
+i18n.SpecIF_sizeM = "moyen";
+i18n.SpecIF_sizeS = "petit";
+i18n.SpecIF_sizeXS = "très petit";
 
 // Messages:
 i18n.MsgConfirm = "Confirmez, s'il vous plaît:";
@@ -576,8 +588,8 @@ i18n.Err403NoProjectFolder = 'Votre rôle ne permet pas de mettre à jour au moins
 i18n.Err403NoProjectDelete = "Votre rôle ne permet pas d'effacer ce projet.";
 i18n.Err403NoUserDelete = "Votre rôle ne permet pas d'effacer des utilisateurs.";
 i18n.Err403NoRoleDelete = "Votre rôle ne permet pas d'effacer des rôles.";
-i18n.Err404NotFound = "élement n'a pas été trouvé.";
-i18n.ErrNoItem = "élement '~A' n'a pas été trouvé.";
+i18n.Err404NotFound = "Élement n'a pas été trouvé.";
+i18n.ErrNoItem = "Élement '~A' n'a pas été trouvé.";
 i18n.ErrNoObject = "Ressource '~A' n'a pas été trouvé.";
 i18n.ErrNoSpec = "Ce projet n'a pas d'arborescence; il faut en créer au moins une.";
 i18n.ErrInvalidFile = 'Fichier non valide ou erroné.';

@@ -153,7 +153,7 @@ modules.construct({
 							prj.dataTypes[d].values.forEach( function(val) {
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
 								rep.datasets.push({  
-									label: languageValueOf( val.value, opts ), 
+									label: i18n.lookup( languageValueOf( val.value, opts )), 
 									id: val.id,
 									count: 0,    // resource count with a certain property value
 									color: '#1a48aa'

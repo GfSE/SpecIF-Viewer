@@ -5,25 +5,21 @@
 	- phrase('MsgText', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
-var i18n = new Object();
-i18n.phrase = function( ms, pA ) { 
-	// replace a variable '~A' with pA, if available:
-	// for use in HTML fields.
-	if( ms ) {
-		if( pA!=undefined ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-		return i18n[ms] 
-	};
-	return ''
-};
-i18n.lookup = function( lb ) { 
-	// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-	// for use in regular text fields.
-	return i18n[lb.toJsId()] || lb
-/*	try {
-		return i18n[lb.toJsId()].stripHTML()
-	} catch(e) {
-		return lb
-	}  */
+var i18n = {
+	phrase: function( ms, pA ) { 
+		// replace a variable '~A' with pA, if available:
+		// for use in HTML fields.
+		if( ms ) {
+			if( pA ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
+			return i18n[ms] 
+		};
+		return ''
+	},
+	lookup: function( lb ) { 
+		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
+		// for use in regular text fields.
+		return i18n[lb.toJsId()] || lb
+	}
 };
 	
 i18n.IcoUser = '<span class="glyphicon glyphicon-user"/>';
@@ -382,6 +378,10 @@ i18n.SpecIF_Requirement =
 i18n.IREB_Requirement = "Requirement";
 i18n.SpecIF_Requirements = 
 i18n.IREB_Requirements = "Requirements";
+i18n.IREB_RequirementType = i18n.LblType;
+i18n.IREB_RequirementTypeFunction = "Function";
+i18n.IREB_RequirementTypeQuality = "Quality";
+i18n.IREB_RequirementTypeConstraint = "Constraint";
 i18n.SpecIF_BusinessProcess = 'Business Process'; 
 i18n.SpecIF_BusinessProcesses = 'Business Processes';
 i18n.SpecIF_Rationale = "Rationale";
@@ -411,6 +411,7 @@ i18n.oslc_rm_satisfiedBy = "satisfied bv";
 i18n.oslc_rm_satisfies =
 i18n.SpecIF_satisfies =
 i18n.IREB_satisfies = "satisfies";
+i18n.oslc_rm_implementedBy = "implemented by";
 i18n.SpecIF_implements = "implements";
 i18n.SpecIF_modifies =
 i18n.SpecIF_stores = "writes and reads";
@@ -465,6 +466,7 @@ i18n.SpecIF_DueDate = "Due date";
 i18n.SpecIF_Icon = "Symbol";
 i18n.SpecIF_Tag = "Tag";
 i18n.SpecIF_Tags = "Tags";
+i18n.SpecIF_UserStory = "User-Story";
 //i18n.SpecIF_Creation = "";
 i18n.SpecIF_Instantiation = "Instantiation";
 i18n.SpecIF_Origin = "Origin";
@@ -497,6 +499,16 @@ i18n.Object_Text = i18n.ReqIF_Text;
 i18n.VALUE_Object_Text = i18n.ReqIF_Text;
 i18n.Object_ID = i18n.ReqIF_ForeignID;
 i18n.VALUE_Object_ID = i18n.ReqIF_ForeignID;
+i18n.SpecIF_priorityHigh = "high";
+i18n.SpecIF_priorityRatherHigh = "rather high";
+i18n.SpecIF_priorityMedium = "medium";
+i18n.SpecIF_priorityRatherLow = "rather low";
+i18n.SpecIF_priorityLow = "low";
+i18n.SpecIF_sizeXL = "very large";
+i18n.SpecIF_sizeL = "large";
+i18n.SpecIF_sizeM = "medium";
+i18n.SpecIF_sizeS = "small";
+i18n.SpecIF_sizeXS = "very small";
 
 // Messages:
 i18n.MsgConfirm = 'Please confirm:';

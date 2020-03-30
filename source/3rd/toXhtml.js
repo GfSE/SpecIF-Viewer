@@ -36,9 +36,7 @@ function toXhtml( data, opts ) {
 
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-	if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = false;
-	if( !opts.lookupTitles || typeof(opts.lookup)!='function' )
-		opts.lookup = function(str) { return str };
+	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 	// If a hidden property is defined with value, it is suppressed only if it has this value;
 	// if the value is undefined, the property is suppressed in all cases.
 	if( !opts.hiddenProperties ) opts.hiddenProperties = [];
@@ -46,8 +44,8 @@ function toXhtml( data, opts ) {
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
 
 	// If no label is provided, the respective properties are skipped:
-	if( opts.propertiesLabel && opts.lookupTitles ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
-	if( opts.statementsLabel && opts.lookupTitles ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
+	if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
+	if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
 	if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegEx
 	if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegEx
 	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
@@ -540,11 +538,11 @@ function toXhtml( data, opts ) {
 							st = opts.stereotypeProperties.indexOf(prp.title)>-1,
 							vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
 						for( var v=0,V=vL.length;v<V;v++ ) {
-							eV = itemBy(dT.values,'id',vL[v].trim());
+							eV = itemBy(dT.values,'id',vL[v]);
 							// If 'eV' is an id, replace it by title, otherwise don't change:
 							// Add 'double-angle quotation' in case of SubClass values.
-							if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+eV.value+'&#x00bb;'):eV.value)
-							else ct += (v==0?'':', ')+vL[v]
+							if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(eV.value)+'&#x00bb;'):opts.lookup(eV.value))
+							else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 						};
 						return escapeXML( ct );
 					case opts.dataTypeXhtml:
