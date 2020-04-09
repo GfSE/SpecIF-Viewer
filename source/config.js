@@ -12,6 +12,7 @@ const CONFIG = {};
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
+	CONFIG.notAssigned = 'notAssigned';
 	CONFIG.loginTimeout = 3000;
 	CONFIG.defaultCommunicationTimeout = 12000;
 	CONFIG.imageRenderingTimelag = 250;  // timelag between building the DOM and inserting the images
@@ -86,6 +87,7 @@ const CONFIG = {};
 	CONFIG.objectTable = 'table';
 	CONFIG.objectList = 'doc';  
 	CONFIG.objectFilter = 'filter';
+	CONFIG.resourceEdit = 'edit';
 	CONFIG.objectDetails = 'resource';
 	CONFIG.objectRevisions = 'revisions';
 	CONFIG.relations = 'statements';
@@ -142,6 +144,7 @@ const CONFIG = {};
 	CONFIG.dataTypeComment = 'Datatype for comment text';
 	CONFIG.propClassTitle = 'dcterms:title';
 	CONFIG.propClassDesc = 'dcterms:description';
+	CONFIG.resClassDiagram = 'SpecIF:Diagram';
 	CONFIG.propClassType = 'dcterms:type';
 //	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';
@@ -333,7 +336,8 @@ const CONFIG = {};
 	CONFIG.selectCorrespondingDiagramFirst = true;	// when clicking on a diagram element, select a diagram having the same title as the clicked model element
 	// A list of resources representing Model Diagrams, specified by title resp. class title:
 	CONFIG.diagramClasses = [
-		'SpecIF:Diagram',
+		CONFIG.resClassDiagram,
+	//	'SpecIF:Diagram',
 		'FMC:Plan',
 		'SpecIF:View'		// deprecated
 	];
@@ -379,7 +383,6 @@ const vocabulary = {
 				case "_berschrift":
 				case "title":
 				case "titel":
-				case "name":
 				case "dc_title":
 				case "specif_heading":			//  'SpecIF:Heading' may be used falsely as property title
 				case "reqif_chaptername": 	

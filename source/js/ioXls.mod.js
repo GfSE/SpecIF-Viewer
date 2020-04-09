@@ -345,6 +345,15 @@ function xslx2specif( buf, pN, chgAt ) {
 							}
 						};
 						if( res.properties.length>0 ) {
+						/*	// Check and warn, if the property classes are not unique:
+							let cL=[], pC;
+							res.properties.forEach( function(p) {
+								pC = p['class'];
+								if( cL.indexOf(pC)>-1 ) 
+									console.warn('The property class '+pC+' of element '+res.id+' is occurring more than once.');
+								cL.push( pC )
+							});  */
+							
 							// Build an id from the worksheet-name plus the value of the declared id attribute
 							// or generate a new id, otherwise.
 							// An id is needed to recognize the resource when updating.

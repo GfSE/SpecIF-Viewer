@@ -8,43 +8,34 @@ modules.construct({
 	name: 'profileAnonymous'
 }, function(self) {
 	"use strict";
-	// ToDo: Get rid of all dependencies except server.
-/*	var returnView = null;
-	function returnToCaller() {
-		self.hide();
-		returnView()
-	}  */
-
-	self.loggedin = false;
-	self.generalAdmin = false; 	// current user is global admin?
-	self.projectRoles = [];  	// list with projects and roles of the current user.
 	
 	self.init = function( opt ) {
 //		console.debug('me.init',opt);
-	//	returnView = opt.callback
+		self.clear();
 		return true
 	};
 	self.clear = function() {
 		self.loggedin = false;
-		self.generalAdmin = false;
-		self.projectRoles = []
+		self.generalAdmin = false; 	// current user is global admin?
+		self.projectRoles = []  	// list with projects and roles of the current user.
 	};
 	self.login = function() {
+/*		console.info( 'Login: '+CONFIG.userNameAnonymous );
+		if( app.server ) 
+			return app.erver.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
+				.done(function(rsp) {
+					self.loggedin = true
+				})
+				.fail(function(rsp) {
+					self.loggedin = false;
+					message.show( i18n.MsgCredentialsUnknown, 'warning', CONFIG.messageDisplayTimeNormal );
+					console.warn( "login '"+un+"': "+i18n.MsgCredentialsUnknown )
+				})  
+		// else: */
 		var pDO = $.Deferred();
 		self.loggedin = true;
 		pDO.resolve();
 		return pDO
-/*		console.info( 'Login: '+CONFIG.userNameAnonymous );
-		return server.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
-			.done(function(rsp) {
-				self.loggedin = true;
-				returnToCaller()  ???
-			})
-			.fail(function(rsp) {
-				self.loggedin = false;
-				message.show( i18n.MsgCredentialsUnknown, 'warning', CONFIG.messageDisplayTimeNormal );
-				console.info( "login '"+un+"': "+i18n.MsgCredentialsUnknown )
-			})  */
 	};
 	self.logout = function() {
 		self.loggedin = false;
@@ -76,11 +67,11 @@ modules.construct({
 	};
 	self.isGeneralAdmin = function() {
 		// The current user is generalAdmin:
-		return false
+		return self.generalAdmin
 	};
 	self.isAdmin = function(prj) { 
 		// The current user is projectAdmin for the specified project or generalAdmin:
-		return false
+		return self.generalAdmin
 	};
 /*	self.adminCnt = function() { 
 		// return the number of times, where the current user is project admin or generalAdmin:

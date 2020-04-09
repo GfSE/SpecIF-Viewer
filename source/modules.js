@@ -440,7 +440,7 @@ function ModuleManager() {
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
-				case 'resourceEdit': 		// loadM( 'xhtmlEditor' );
+				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
 											getScript( vPath+'/js/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
