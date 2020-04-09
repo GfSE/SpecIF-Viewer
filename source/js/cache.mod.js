@@ -34,6 +34,11 @@ modules.construct({
 		self.selectedProject = undefined;
 	//	autoLoadId = undefined;  // stop any autoLoad chain
 	//	autoLoadCb = undefined;
+
+		// initialize the markdown converter:
+		// ToDo: load lazily, when needed for the first time.
+		if( CONFIG.convertMarkdown ) app.markdown = new showdown.Converter();
+
 		return true
 	};
 	self.create = function(p) {
@@ -669,6 +674,7 @@ function Project( pr ) {
 			// Sort the list of process diagrams alphabetically by title:
 			if( pL.length>1 )
 				pL.sort( function(bim, bam) {
+							if( !bim.title || !bam.title ) return 1;
 							bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
 							bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
 							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
@@ -796,7 +802,8 @@ function Project( pr ) {
 			// In case of model elements the resource class is distinctive;
 			// The title of the resource class indicates the model element type.
 			if( resL.length>1 )
-				resL.sort( function(bim, bam) {
+				resL.sort( function(bim,bam) {
+							if( !bim.title || !bam.title ) return 1;
 							bim = bim.title.toLowerCase();
 							bam = bam.title.toLowerCase();
 							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
@@ -1393,13 +1400,13 @@ function Project( pr ) {
 		
 	//	if( !opts.reload ) {
 			// Try to read from cache:
-			if( typeof(opts)=='undefined') opts = {reload:false,timelag:10};
+			if( !opts ) opts = {reload:false,timelag:10};
 			// override 'reload' as long as there is no server and we know that the resource is found in the cache:
 			opts.reload = false;
-			var dO = readCache( ctg, item, opts );
-			if( dO ) return dO;
+//			console.debug('readContent',ctg,item,opts);
+			return readCache( ctg, item, opts );
 	//	};
-		return null
+	//	return null
 	};
 	self.updateContent = function( ctg, item ) {  
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
@@ -1492,7 +1499,8 @@ function Project( pr ) {
 										return dDO
 									};
 									// no break;  */
-			case 'node':			
+			case 'node':	
+//				console.debug('deleteContent',ctg,item);
 				uncache( ctg, item );
 				break;
 			default:				
@@ -1553,35 +1561,43 @@ function Project( pr ) {
 	//		})
 	//		.fail( dPr.reject )  
 		return dPr 
-	};
+	};  
+	self.rejectTest = function() {
+		var dO = $.Deferred();  
+//		console.debug( 'rejectTest', arr, itm );
+		dO.reject( {status:417,statusText:'rejected to test'} );	// return a new list with the original elements
+		return dO
+	};  */
 
 	self.createResource = function( oT ) { 
 		// Create an empty form (resource instance) for the resource class oT:
-		var fDO = $.Deferred();
-//		console.debug( 'createResource', oT );
-
-		// Get the class's permissions. So far, it's property permissions are not loaded ...
-		self.readContent( 'resourceClass', oT, {reload:true} )
-			.done( function(dta) {
-				// return an empty resource instance of the given type: 
-				var res = 
-					{ class: dta.id,
-					title: '',
-					upd: true,
-					properties: [] };
-				dta.propertyClasses.forEach( function(pC) {
-					if( pC.cre )
-						res.properties.push( createPropC(pC) )
-				});
-//				console.debug('fillObject',res);
-				if( res.properties.length ) 
-					fDO.resolve( res )
-				else
-					fDO.reject({status:977, statusText:i18n.ErrInconsistentPermissions})
-			})
-			.fail( fDO.reject );
-		return fDO
-	};*/
+		// Note: Here ES6 promises will be used; the other functions will follow;
+		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
+		return new Promise((resolve, reject) => {
+			// Get the class's permissions. So far, it's property permissions are not loaded ...
+			self.readContent( 'resourceClass', oT, {reload:true} )
+				.done( function(rC) {
+					// return an empty resource instance of the given type: 
+					var res = {
+						id: genID('R-'),
+						class: rC.id,
+						title: '',
+						permissions: rC.permissions||{cre:true,rea:true,upd:true,del:true},
+						properties: [] 
+						};
+					self.readContent( 'propertyClass', rC.propertyClasses )
+						.done( function(pCL) {
+							res.properties = forAll( pCL, createProp );
+							if( res.properties.length ) 
+								resolve( res )
+							else
+								reject({status:977, statusText:i18n.ErrInconsistentPermissions})
+						})
+						.fail( reject )
+				})
+				.fail( reject )
+		})
+	};
 	self.readStatementsOf = function( res, showComments ) {  
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
@@ -1629,8 +1645,8 @@ function Project( pr ) {
 				var form = $('<form id="exportFmt" role="form" class="form-horizontal" ></form>');
 				form.append( 
 					"<p>"+i18n.MsgExport+"</p>"
-				+	radioInput( i18n.LblFormat, [
-						{ title: 'SpecIF', id: 'specif' },
+				+	radioForm( i18n.LblFormat, [
+						{ title: 'SpecIF', id: 'specif', checked: true },
 						{ title: 'ReqIF', id: 'reqif' },
 						{ title: 'ePub', id: 'epub' },
 						{ title: 'MS WORD (Open XML)', id: 'oxml' }
@@ -2224,13 +2240,15 @@ function Project( pr ) {
 		}
 	}
 	function readCache( ctg, itm, opts ) {
-		// Read an item from cache, unless 'reload' is specified:
+		// Read an item from cache, unless 'reload' is specified.
+		// - itm can be single or a list, 
+		// - each element can be an object with attribute id or an id string
 		if( !opts.reload ) {
 			let arr = cacheOf(ctg),
 				idx=null;
-//			console.debug( 'readCache', arr );
+//			console.debug( 'readCache', simpleClone(arr) );
 			if( itm=='all' ) {
-					// return all cached resources asynchronously:
+					// return all cached items asynchronously:
 					var dO = $.Deferred();  
 //					console.debug( 'readCache', arr, itm );
 					dO.resolve( [].concat(arr) );	// return a new list with the original elements
@@ -2238,10 +2256,11 @@ function Project( pr ) {
 			};
 			if( Array.isArray(itm) ) {
 				let allFound=true, i=0, I=itm.length;
+				var rL = [];
 				while( allFound && i<I ) {
-					idx = indexById( arr, itm[i].id );
+					idx = indexById( arr, itm[i].id||itm[i] );
 					if( idx>-1 )
-						itm[i] = arr[idx]
+						rL.push( arr[idx] )
 					else
 						allFound = false;
 					i++
@@ -2252,13 +2271,13 @@ function Project( pr ) {
 //					console.debug( 'readCache array - allFound', arr, itm );
 					// delay the answer a little, so that the caller can properly process a batch:
 					setTimeout(function() {
-						dO.resolve( itm )
+						dO.resolve( rL )
 					}, opts.timelag );
 					return dO
 				}
 			} else {
 				// is a single item:
-				idx = indexById( arr, itm.id );
+				idx = indexById( arr, itm.id||itm );
 				if( idx>-1 ) {
 					// return the cached object asynchronously:
 					var dO = $.Deferred();  
@@ -2539,9 +2558,9 @@ const specif = {
 			function aC2int( iE ) {
 				var oE = i2int( iE );
 				oE.title = cleanValue(iE.title);
+				if( iE['extends'] ) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5 
 				if( iE.icon ) oE.icon = iE.icon;
 				if( iE.creation ) oE.instantiation = iE.creation;	// deprecated, for compatibility
-				if( iE['extends'] ) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5 
 				if( iE.instantiation ) oE.instantiation = iE.instantiation;
 				if( oE.instantiation ) 	{
 					let idx = oE.instantiation.indexOf('manual');	// deprecated
@@ -2646,6 +2665,7 @@ const specif = {
 			// common for all instances:
 			function a2int( iE ) {
 				var oE = i2int( iE );
+//				console.debug('a2int',iE,simpleClone(oE));
 				if( iE.properties && iE.properties.length>0 )
 					oE.properties = forAll( iE.properties, p2int );
 				if( iE.title ) {
@@ -2657,7 +2677,7 @@ const specif = {
 			function r2int( iE ) {
 				var oE = a2int( iE );
 				oE['class'] = iE[names.rClass];
-//				console.debug('resource 2int',iE,oE);
+//				console.debug('resource 2int',iE,simpleClone(oE));
 				return oE
 			}
 			// a statement:
@@ -2932,7 +2952,7 @@ const specif = {
 				var oE = i2ext( iE );
 //				console.debug('a2ext',iE,opts);
 				// resources and hierarchies usually have individual titles, and so we will not lookup:
-				oE.title = itemTitleOf( iE, opts );
+				oE.title = elementTitleOf( iE, opts );
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
@@ -3031,7 +3051,7 @@ function dataTypeOf( prj, pCid ) {
 	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
 		return itemById( prj.dataTypes, itemById( prj.propertyClasses, pCid ).dataType )
-		//                              get class
+		//     |                        get class
 		//	   get dataType
 	// else:
 	// may happen, if a resource does not have any properties and it's title or description is being used:
@@ -3068,6 +3088,17 @@ function multipleChoice( pC, prj ) {
 	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
 	// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 }
+function visibleIdOf( pL, prj ) {
+	if( !prj ) prj = app.cache.selectedProject.data;
+	let pt;
+	if( pL )
+		for( var a=0,A=pL.length;a<A;a++ ) {
+			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
+			// Check the configured ids:
+			if( CONFIG.idProperties.indexOf( pt )>-1 ) return pL[a].value
+		};
+	return // undefined
+}
 function titleIdx( pL, prj ) {
 	// Find the index of the property to be used as title.
 	// The result depends on the current user - only the properties with read permission are taken into consideration.
@@ -3084,41 +3115,42 @@ function titleIdx( pL, prj ) {
 	// ToDo: Check, if the results differ in practice ...
 */
 	if( !prj ) prj = app.cache.selectedProject.data;
-	let ti;
+	let pt;
 	if( pL )
 		for( var a=0,A=pL.length;a<A;a++ ) {
-			ti = vocabulary.property.specif( pL[a].title || itemById( prj.propertyClasses, pL[a]['class'] ).title );
+			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
 			// First, check the configured headings:
-			if( CONFIG.headingProperties.indexOf( ti )>-1 ) return a;
+			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
 			// If nothing has been found, check the configured titles:
-			if( CONFIG.titleProperties.indexOf( ti )>-1 ) return a
+			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a
 		};
 	return -1
 }
-function itemTitleOf( el, opts, dta ) {
-	// get the title from the properties or a replacement value in case of default:
+function elementTitleOf( el, opts, dta ) {
+	// Get the title of a resource or a statement
+	// ... from the properties or a replacement value in case of default:
 	if( typeof(el)!='object' ) return;
 	// in case of a resource, we never want to lookup a title,
 	// in case of a statement, we would want to:
 	let op = {
-			lookupTitles: opts.lookupTitles && el.subject,
-			targetLanguage: opts.targetLanguage || browser.language
+			lookupTitles: opts && opts.lookupTitles && el.subject,
+			targetLanguage: opts && opts.targetLanguage || browser.language
 		},
-		ti = titleFromProperties( el.properties, op ) || titleOf( el, op );
+		pt = titleFromProperties( el.properties, op ) || titleOf( el, op );
 	// if it is a statement and does not have a title of it's own, take the class' title:
-//	console.debug('itemTitleOf',el,opts,ti);
+//	console.debug('elementTitleOf',el,opts,pt);
 	if( el.subject ) {
 		// it is a statement
-		if( !ti && dta ) 
-			ti = staClassTitleOf( el, dta, op )
+		if( !pt && dta ) 
+			pt = staClassTitleOf( el, dta, op )
 	} else {
 		// it is a resource
-		if( opts.addIcon && CONFIG.addIconToInstance && dta && ti )
-			ti = ti.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
+		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && pt )
+			pt = pt.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
 	};
-//	console.debug('itemTitleOf 2',ti);
-//	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
-	return typeof(ti)=='string'? ti.stripHTML() : ti
+//	console.debug('elementTitleOf 2',pt);
+//	return opts.targetLanguage? pt.unescapeHTMLEntities() : pt
+	return typeof(pt)=='string'? pt.stripHTML() : pt
 
 	function titleFromProperties( pL, opts ) {
 	//	if( !pL ) return;
@@ -3134,7 +3166,7 @@ function itemTitleOf( el, opts, dta ) {
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //			console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-			return languageValueOf( pL[idx].value, op ).stripHTML().trim()
+			return languageValueOf( pL[idx].value, opts ).stripHTML().trim()
 		};
 		return
 	}
@@ -3143,15 +3175,15 @@ function itemTitleOf( el, opts, dta ) {
 	// add the icon to a type's title, if defined:
 	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
 }*/
-function resClassTitleOf( e, dta, opts ) {
-	return titleOf( itemById( dta.resourceClasses, e['class'] ), opts )
+function resClassTitleOf( e, prj, opts ) {
+	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts )
 }
-function staClassTitleOf( e, dta, opts ) {
-	return titleOf( itemById( dta.statementClasses, e['class'] ), opts )
+function staClassTitleOf( e, prj, opts ) {
+	return titleOf( itemById( prj.statementClasses, e['class'] ), opts )
 }
-function propTitleOf( prp, dta ) {
+function propTitleOf( prp, prj ) {
 	// get the title of a property as defined by itself or it's class:
-	return prp.title || itemById(dta.propertyClasses,prp['class']).title
+	return prp.title || itemById(prj.propertyClasses,prp['class']).title
 }
 function titleOf( item, opts ) {
 	// Pick up the native title of any item;
@@ -3162,6 +3194,18 @@ function titleOf( item, opts ) {
 	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti
 	return // undefined
 }
+/* function elementDescOf( el, prj ) {
+	var dscL = [];
+	for( a=el.properties.length-1;a>-1;a-- ) {
+		if( CONFIG.descProperties.indexOf( propTitleOf(el.properties[a]),prj)>-1 ) {
+			// To keep the original order of the properties, the unshift() method is used.
+			if( el.properties[a].value ) dscL.unshift( el.properties[a] )
+		}
+	};
+	// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
+	if( dscL.length<1 && el.description ) dscL.push( { title:CONFIG.propClassDesc, value:el.description });
+	return dscL
+} */
 function languageValueOf( val, opts ) {
 	// Get the value according the current browser setting .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object.
@@ -3175,7 +3219,7 @@ function languageValueOf( val, opts ) {
 	// lVs should have none or one elements; any additional ones are simply ignored:
 	if( lVs.length>0 ) return lVs[0].text;
 	
-	// next try a little less stringent:
+	// next try a little less stringently:
 	lVs = val.filter( function(v) {
 		return opts.targetLanguage.slice(0,2) == v.language.slice(0,2)
 	});
@@ -3225,15 +3269,15 @@ function createProp( pC, pCid ) {
 	// Create an empty property from the supplied class;
 	// the propertyClass may be supplied by the first parameter
 	// or will be selected from the propertyClasses list using the supplied propertyClass id pCid:
-//	console.debug('createProp',pCs,pCid);
 	if( Array.isArray(pC) )
 		pC = itemById( pC, pCid );
+//	console.debug('createProp',pC,pCid);
 	var	p = {
 		title: pC.title,
 		class: pC.id,
 		// supply default value if available:
 		value: pC.value||'',	
-		upd: pC.upd,
+		permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true},
 		del: pC.del
 	};
 /*	switch( itemById( app.cache.selectedProject.data.dataTypes, pC.dataType ).type ) {
@@ -3248,17 +3292,17 @@ function createProp( pC, pCid ) {
 //	console.debug('createProp',p);
 	return p
 }
-function createPropR( pCs, pCid ) {
+/* function createPropR( pCs, pCid ) {
 	// Return an initialized property, if read permission is given:
-//	Return pC.rea?createProp( pCs, pCid ):undefined
+//	return pC.permissions.rea?createProp( pCs, pCid ):undefined
 	// we assume that the current user has read permission for all data in cache:
 	return createProp( pCs, pCid )
 }
 function createPropC( pCs, pCid ) {
 	// return an initialized property, if create permission is given:
-	return pC.cre?createProp( pCs, pCid ):undefined
+	return pC.permissions.cre?createProp( pCs, pCid ):undefined
 }
-/* function propClassByTitle(itm,pN) {
+function propClassByTitle(itm,pN) {
 	// Return the class of a resource's (or statement's) property with title pN:
 	if( itm.properties ) {
 		var pC, i;
@@ -3309,20 +3353,20 @@ function valByTitle(dta,itm,pN) {
 	};
 	return
 }
-function classifyProps( el, data ) {
+function classifyProps( el, prj ) {
 	"use strict";
 	// add missing (empty) properties and classify properties into title, descriptions and other;
 	// for resources and statements.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
-	if( !data ) data = app.cache.selectedProject.data;
+	if( !prj ) prj = app.cache.selectedProject.data;
 	var cP = {
 			id: el.id,
 			title: undefined,
-			class: itemById( data.resourceClasses, el['class']),  // the object, not the id !
+			class: itemById( prj.resourceClasses, el['class']),  // the object, not the id !
 			revision: el.revision,
 			descriptions: [],
 			// create a new list by copying the elements (do not copy the list ;-):
-			other: normalizeProps( el, data )
+			other: normalizeProps( el, prj )
 		};
 	cP.isHeading = cP['class'].isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 	if( el.order ) cP.order = el.order;
@@ -3339,9 +3383,9 @@ function classifyProps( el, data ) {
 	// ToDo: Hide hidden properties: CONFIG.hiddenProperties
 
 	// a) Find and set the configured title:
-	let a = titleIdx( cP.other, data );
+	let a = titleIdx( cP.other, prj );
 	if( a>-1 ) {  // found!
-		if( cP.other[a].value ) cP.title = cP.other[a].value;
+		cP.title = cP.other[a].value;
 		// remove title from other:
 		cP.other.splice(a,1) 
 	};
@@ -3350,22 +3394,38 @@ function classifyProps( el, data ) {
 	// We must iterate backwards, because we alter the list of other.
 	// ToDo: use cP.other.filter()
 	for( a=cP.other.length-1;a>-1;a-- ) {
-		if( CONFIG.descProperties.indexOf( cP.other[a].title )>-1 ) {
+		if( CONFIG.descProperties.indexOf( propTitleOf(cP.other[a]), prj )>-1 ) {
 			// To keep the original order of the properties, the unshift() method is used.
-			if( cP.other[a].value ) cP.descriptions.unshift( cP.other[a] );
+			cP.descriptions.unshift( cP.other[a] );
 			cP.other.splice(a,1) 
 		}
 	};
-	// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
-	if( !cP.title && el.title ) cP.title = el.title;
-	if( cP.descriptions.length<1 && el.description ) cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description} );
-//	console.debug( 'classifyProps', simpleClone(cP) );
+
+	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
+	if( !cP.title && el.title ) 
+		cP.title = el.title;
+	if( cP.descriptions.length<1 && el.description ) 
+		cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description} );
+//	console.debug( 'classifyProps 2', simpleClone(cP) );
 	return cP
 
 	function normalizeProps( i, dta ) { 
 		// i: instance (resource or statement)
 		// Create a list of properties in the sequence of propertyClasses of the respective class.
 		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+		// Assumption: Property classes are unique!
+		
+		// check uniqueness of property classes:
+		if( i.properties ) {
+			let cL=[], pC;
+			i.properties.forEach( function(p) {
+				pC = p['class'];
+				if( cL.indexOf(pC)>-1 ) 
+					console.warn('The property class '+pC+' of element '+i.id+' is occurring more than once.');
+				cL.push( pC )
+			})
+		};
+		
 		let p,pCs,nL=[],
 			// iCs: instance class list (resourceClasses or statementClasses),
 			// the existence of subject (or object) let's us recognize that it is a statement:
@@ -3375,20 +3435,16 @@ function classifyProps( el, data ) {
 		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
 		pCs = pCs.concat( itemById( iCs, i['class'] ).propertyClasses||[] );
 		// add the properties in sequence of the propertyClass identifiers:
-//		console.debug('normalizeProps',simpleClone(i),dta.propertyClasses,pCs);
 		pCs.forEach( function(pCid) {
-			p = itemBy( i.properties, 'class', pCid )
-				|| createPropR(dta.propertyClasses,pCid);
+			// the following matching will fail, if the property classes are not unique:
+			p = simpleClone( itemBy( i.properties, 'class', pCid ) )
+				|| createProp(dta.propertyClasses,pCid);
 			if( p ) {
 				// by default, use the propertyClass' title:
 				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
-				if( !p.title ) 
-					p.title = itemById( dta.propertyClasses, pCid ).title;
-//				console.debug('normalizeProps prp 1',pCid,simpleClone(p));
 				// An input data-set may have titles which are not from the SpecIF vocabulary;
 				// replace the result with a current vocabulary term:
-				p.title = vocabulary.property.specif( p.title );	
-//				console.debug('normalizeProps prp 2',simpleClone(p));
+				p.title = vocabulary.property.specif( propTitleOf(p,dta) );	
 				nL.push( p )
 			}
 		});

@@ -254,12 +254,12 @@ function xslx2specif( buf, pN, chgAt ) {
 						// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
 						return obj.properties[ti].value.stripHTML().trim()
 					};
-					// 2. otherwise, find a description and take the beginning:
+				/*	// 2. otherwise, find a description and take the beginning:
 					// find a description and take the beginning:
 					for( var a=0,A=obj.properties.length;a<A;a++ ) {
 						if( CONFIG.descProperties.indexOf( obj.properties[a].title )>-1 ) 
 							return obj.properties[a].value.stripHTML().truncate( CONFIG.maxTitleLength )
-					}
+					}  */
 				};
 				return ''
 			}
@@ -309,9 +309,10 @@ function xslx2specif( buf, pN, chgAt ) {
 									// it is a property:
 									dT = itemById(specif.dataTypes,pC.dataType);
 
-									// Find the value to be taken as resource identifier:
-									// id is the first identifier found as declared in CONFIG.idProperties:
-									if( !id ) id = CONFIG.idProperties.indexOf(pC.title)<0?undefined:getVal( dT.type, cell );
+									// Find the value to be taken as resource identifier.
+									// id is the first identifier found as declared in CONFIG.idProperties;
+									// the first id value found will prevail:
+									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = getVal( dT.type, cell );
 									// ToDo: Consider to select the id property beforehand and not over and over again for every resource.
 
 									res.properties.push({
@@ -344,12 +345,39 @@ function xslx2specif( buf, pN, chgAt ) {
 							}
 						};
 						if( res.properties.length>0 ) {
+						/*	// Check and warn, if the property classes are not unique:
+							let cL=[], pC;
+							res.properties.forEach( function(p) {
+								pC = p['class'];
+								if( cL.indexOf(pC)>-1 ) 
+									console.warn('The property class '+pC+' of element '+res.id+' is occurring more than once.');
+								cL.push( pC )
+							});  */
+							
 							// Build an id from the worksheet-name plus the value of the declared id attribute
 							// or generate a new id, otherwise.
 							// An id is needed to recognize the resource when updating.
 							// So, if a resource has no id attribute, it gets a new id 
 							// and consequently a new resource will be created instead of updating the existing.
-							res.id = id?'R-'+(ws.name+id).simpleHash():genID('R-');
+							if( id ) {
+								// An id has been specified
+								res.id = 'R-'+(ws.name+id).simpleHash();
+								if( indexById( specif.resources, res.id )>-1 ) {
+									// The specified id is not unique,
+									// it will be modified deterministically based on the number of occurrences of that same id:
+									// see https://stackoverflow.com/questions/19395257/how-to-count-duplicate-value-in-an-array-in-javascript
+									dupIdL.push(id);
+									let counts = {};
+									dupIdL.forEach(function(x) { counts[x] = (counts[x]||0)+1 });
+									console.warn('The user-defined identifier',id,'is occurring',counts[id]+1,'times.');
+//									console.debug('dupId',id,simpleClone(dupIdL),counts[id]);
+									res.id = 'R-'+(ws.name+id+counts[id]).simpleHash()
+								}
+							} else {
+								// No id specified, so a random value must be generated. 
+								// No chance to update the element later on!
+								res.id = genID('R-')
+							};
 							res.title = titleFromProps( res );
 //							console.debug('xls-resource',res);
 							// add the hierarchy entry to the tree:
@@ -390,11 +418,12 @@ function xslx2specif( buf, pN, chgAt ) {
 
 				// Create the hierarchy entry for the folder containing all resources of the current worksheet:
 				var hTree = { 
-					id: sh.hid, 
-					resource: fld.id,
-					nodes: [],
-					changedAt: chgAt
-				}; 
+						id: sh.hid, 
+						resource: fld.id,
+						nodes: [],
+						changedAt: chgAt
+					},
+					dupIdL=[];  // list of duplicate resource ids 
 					
 				// Create the resources:
 				for( var l=sh.firstCell.row+1,L=sh.lastCell.row+1;l<L;l++) {	// every line except the first carrying the attribute names

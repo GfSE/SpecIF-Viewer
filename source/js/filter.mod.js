@@ -255,7 +255,7 @@ modules.construct({
 					dT;
 					
 					function matchStr( prp, dT ) {
-//						console.debug('matchStr',prp,type);
+//						console.debug('matchStr',prp,dT.type);
 						switch( dT.type ) {
 							case 'xhtml':
 								if( patt.test( languageValueOf(prp.value,opts).stripHTML() )) return true; // if found return, continue searching, otherwise
@@ -273,13 +273,13 @@ modules.construct({
 					}
 				
 				var a;
-				if( matchStr( {value:res.toShow.title}, {type:'xhtml'} ) ) return true;
+				if( res.toShow.title && matchStr( {value:res.toShow.title}, {type:'xhtml'} ) ) return true;
 				for( a=res.toShow.descriptions.length-1; a>-1; a-- )
 					if( matchStr( res.toShow.descriptions[a], {type:'xhtml'} ) ) return true;
 				for( a=res.toShow.other.length-1; a>-1; a-- ){
 					// for each property test whether it contains 'str':
 					dT = dataTypeOf( dta, res.toShow.other[a]['class'] );
-//					console.debug('matchSearchString',f,res.toShow.other[a],dT);
+//					console.debug('matchSearchString',f,res.toShow.other[a],dT,f.excludeEnums);
 					if( matchStr( res.toShow.other[a], dT ) ) return true
 				};
 				return false  // not found
@@ -300,9 +300,9 @@ modules.construct({
 						// Assuming that there is max. one property per resource with the class specified by the filter,
 						// and also assuming that any property with enumerated value will only be found in the 'other' list:
 						let oa = itemBy( res.toShow.other, 'class', f.propClass ), // select the concerned property by class
-							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id=='notAssigned';
+							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id==CONFIG.notAssigned;
 						// If the resource does not have a property of the specified class,
-						// it is a match only if the filter specifies 'notAssigned':
+						// it is a match only if the filter specifies CONFIG.notAssigned:
 //						console.debug('matchPropValue',f,oa,no);
 						if( !oa.value ) return no;
 						
@@ -322,7 +322,7 @@ modules.construct({
 								}
 							} else {
 								// the resource property has no value:
-								if( f.options[j].id=='notAssigned' ) return true;
+								if( f.options[j].id==CONFIG.notAssigned ) return true;
 								if( f.options[j].id.length<1 ) return true
 							}
 						};
@@ -378,8 +378,9 @@ modules.construct({
 							if( f.searchString.length>0 ) {
 								let rgxS = new RegExp( f.searchString, f.caseSensitive?'g':'gi' ),
 								    lE, i;
-									
-								res.toShow.title = languageValueOf(res.toShow.title,opts).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
+								
+								if( res.toShow.title )
+									res.toShow.title = languageValueOf(res.toShow.title,opts).replace( rgxS, function( $0 ){ return '<mark>'+$0+'</mark>' } );
 								// Clone the marked list elements for not modifying the original resources:
 								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
 									lE = res.toShow.descriptions[i];
@@ -482,8 +483,8 @@ modules.construct({
 						// add one more option for the case 'value not assigned':
 						boxes.push({ 
 								title: i18n.LblNotAssigned, 
-								id: 'notAssigned', 			// matches resource properties without a value (empty value list).
-								checked: (!vL || vL.indexOf('notAssigned')>-1)
+								id: CONFIG.notAssigned, 			// matches resource properties without a value (empty value list).
+								checked: (!vL || vL.indexOf(CONFIG.notAssigned)>-1)
 							}); 
 						return boxes  // no need to iterate the remaining dataTypes
 					}
@@ -638,8 +639,8 @@ modules.construct({
 	};
 	function renderTextFilterSettings( flt ) {
 		// render a single panel for text search settings:
-		return textInput( {label:flt.title,display:'none'}, flt.searchString, 'line' )
-			+	checkboxInput( {label:flt.title,display:'none',classes:''}, [
+		return textForm( {label:flt.title,display:'none'}, flt.searchString, 'line' )
+			+	checkboxForm( {label:flt.title,display:'none',classes:''}, [
 					{ title: i18n.LblWordBeginnings, id: 'wordBeginnings', checked: flt.wordBeginnings },
 					{ title: i18n.LblWholeWords, id: 'wholeWords', checked: flt.wholeWords },
 					{ title: i18n.LblCaseSensitive, id: 'caseSensitive', checked: flt.caseSensitive },
@@ -648,7 +649,7 @@ modules.construct({
 	}
 	function renderEnumFilterSettings( flt ) {
 		// render a single panel for enum filter settings:
-		return checkboxInput( {label:flt.title,display:'none',classes:''}, flt.options )
+		return checkboxForm( {label:flt.title,display:'none',classes:''}, flt.options )
 	}
 	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) }

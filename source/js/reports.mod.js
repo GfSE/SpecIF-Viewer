@@ -162,7 +162,7 @@ modules.construct({
 							// add a counter for resources whose properties are without value:
 							rep.datasets.push(  
 								{ label: i18n.LblNotAssigned, 
-								id: 'notAssigned',
+								id: CONFIG.notAssigned,
 								count: 0,	// resource count without an property value
 								color: '#ffff00' }
 							);

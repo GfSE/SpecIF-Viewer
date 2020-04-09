@@ -28,9 +28,12 @@ function toOxml( data, opts ) {
 
 	if( typeof(opts)!='object' ) opts = {};
 //	if( !opts.metaFontSize ) opts.metaFontSize = '70%';	
-//	if( !opts.metaFontColor ) opts.metaFontColor = '#0071B9';	// adesso blue
-//	if( !opts.linkFontColor ) opts.linkFontColor = '#0071B9';
-//	if( !opts.linkFontColor ) opts.linkFontColor = '#005A92';	// darker
+//	if( !opts.metaFontColor ) opts.metaFontColor = '0071B9';	// adesso blue
+//	if( !opts.linkFontColor ) opts.linkFontColor = '0071B9';
+//	if( !opts.linkFontColor ) opts.linkFontColor = '005A92';	// darker
+//	if( !opts.colorAccent1 ) opts.colorAccent1 = '5B9BD5';   // original Office
+	if( !opts.colorAccent1 ) opts.colorAccent1 = '0071B9';  // adesso blue
+
 //	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
 	
@@ -83,7 +86,6 @@ function toOxml( data, opts ) {
 					}
 				pend++;
 				let img = new Image();   
-			//	$(img).on('load', storeR );
 				img.addEventListener('load', storeR, false ); // 'loadend' does not work in Chrome
 				const reader = new FileReader();
 				reader.addEventListener('loadend', function(e) {
@@ -121,7 +123,6 @@ function toOxml( data, opts ) {
 				let can = document.createElement('canvas'), // Not shown on page
 					ctx = can.getContext('2d'),
 					img = new Image();                      // Not shown on page
-			//	$(img).on('load', storeV );
 				img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
 
 				const reader = new FileReader();
@@ -182,14 +183,14 @@ function toOxml( data, opts ) {
 
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
-			let reB = '([\\s\\S]*?)'
+			const reB = '([\\s\\S]*?)'
 				+	'(<p */>|<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
 				+	'|<table[^>]*>[\\s\\S]*?</table>)',
 				reBlocks = new RegExp(reB,'g');
 				
-			let reA = '<a([^>]+)>([\\s\\S]*?)</a>',
+			const reA = '<a([^>]+)>([\\s\\S]*?)</a>',
 				reLink = new RegExp( reA, '' ),
 			// A single comprehensive <img .../> or tag pair <img ...>..</img>.
 				reI = '<img([^>]+)/>',
@@ -197,15 +198,15 @@ function toOxml( data, opts ) {
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 			// Limitation: the innerHTML may not have any tags.
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-			let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+			const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
 			// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-		//	let reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+		//	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
 		//		reNestedObjects = new RegExp( reNO, '' );
 		
 			// The Regex to isolate text runs constituting a paragraph:
-			let reR = '([\\s\\S]*?)('
+			const reR = '([\\s\\S]*?)('
 				+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
 				+	'|'+reA
 				+	'|'+reI
@@ -216,7 +217,7 @@ function toOxml( data, opts ) {
 				+	')',
 				reRuns = new RegExp(reR,'g');
 			// The Regex to isolate text fragments within a run:
-			let reT = '(.*?)(<br ?/>)',
+			const reT = '(.*?)(<br ?/>)',
 				reText = new RegExp(reT,'g');
 			
 			// All required parameters are available, so we can begin:
@@ -255,7 +256,9 @@ function toOxml( data, opts ) {
 
 				// SpecIF headings are chapter level 2, all others level 3:
 				let l = pars.level==1? 1:rC.isHeading? 2:3;
-//				console.debug('titleOf',itm,ti);
+//				console.debug('titleOf',itm,ic,ti);
+				// no paragraph, if title is empty:
+				if( !ti ) return '';
 				// all titles get a bookmark, so that any titleLink has a target:
 				return wParagraph( {text: (ti?ic+ti:''), heading:l, bookmark:pars.nodeId } )
 			}	
@@ -305,6 +308,7 @@ function toOxml( data, opts ) {
 							if( s )
 								cell += wParagraph({
 											text:titleOf( s, null, opts ), 
+											font: {color:opts.colorAccent1},
 											hyperlink: {internal:anchorOf( s )}, 
 											noSpacing: true,
 											align: 'end'
@@ -321,6 +325,7 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content:wParagraph({
 											text:sTi,
+											font: {color:opts.colorAccent1},
 											align:'center',
 											noSpacing:true
 									}),
@@ -330,6 +335,7 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content:wParagraph({ 
 											text:titleOf( r, null, opts ), 
+											font: {color:opts.colorAccent1},
 											noSpacing: true
 									}),
 									border: {type:'single'}
@@ -346,6 +352,7 @@ function toOxml( data, opts ) {
 							if( o )
 								cell += wParagraph({
 											text:titleOf( o, null, opts ), 
+											font: {color:opts.colorAccent1},
 											hyperlink:{internal:anchorOf( o )},
 											noSpacing: true
 								})
@@ -356,6 +363,7 @@ function toOxml( data, opts ) {
 							row = wTableCell({
 									content:wParagraph({
 											text:titleOf( r, null, opts ),
+											font: {color:opts.colorAccent1},
 											noSpacing: true,
 											align:'end'
 									}), 
@@ -365,6 +373,7 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content:wParagraph({
 											text:sTi,
+											font: {color:opts.colorAccent1},
 											align:'center',
 											noSpacing:true
 									}),
@@ -440,12 +449,12 @@ function toOxml( data, opts ) {
 					if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
 						rt = minEscape( opts.lookup( prp.title || propertyClassOf( prp['class'] ).title ));
 						c3 = '';
-						propertyValueOf( prp ).forEach(function(e){ c3 += generateOxml(e) });
+						propertyValueOf( prp ).forEach(function(e){ c3 += generateOxml(e,{font:{color:opts.colorAccent1}}) });
 //						console.debug('other properties',prp,rt,c3);
 						rows += wTableRow( wTableCell( wParagraph({
 														text:rt,
-														align:'end',
-														font:{style:'italic'}
+														font:{style:'italic',color:opts.colorAccent1},
+														align:'end'
 													})) 
 											+ wTableCell( c3 ))
 					}
@@ -467,7 +476,7 @@ function toOxml( data, opts ) {
 					let arr = txt.split(/\n/);
 //					console.debug('parseText',txt,arr);
 					// return a list with a paragraph for each of the arr elements:
-					return forAll(arr,function(s) {return {p:{text:s}}} )
+					return forAll( arr, function(s) {return {p:{text:s}}} )
 				}
 				function parseXhtml( txt, opts ) {
 					// Parse formatted text.
@@ -906,7 +915,7 @@ function toOxml( data, opts ) {
 //								console.debug('propertyValueOf - xhtml',prp.value);
 								return parseXhtml( prp.value, opts );
 							case opts.dataTypeString:
-								return parseText( prp.value, opts )
+								return parseText( opts.lookup(prp.value), opts )
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
@@ -936,17 +945,18 @@ function toOxml( data, opts ) {
 				return ch
 			}
 
-			function generateOxml( ct ) {
+			function generateOxml( ct, fmt ) {
 				return chain( ct,
 					function(ct) {
-						if( ct.p )
-							return wParagraph( ct.p )
+						if( ct.p ) {
+							return wParagraph( addFmt( ct.p, fmt ) )
+						};
 						if( ct.table ) {
 							var rs = '';
 							ct.table.rows.forEach( function(r) {
 								var cs = '';
 								r.cells.forEach( function(c) {
-									cs += wTableCell( {content:wParagraph( c.p ),border:c.border} )
+									cs += wTableCell( {content:wParagraph( addFmt( c.p, fmt ) ),border:c.border} )
 								});
 								rs += wTableRow( cs )
 							});
@@ -956,6 +966,11 @@ function toOxml( data, opts ) {
 					}
 				)
 				
+				function addFmt( p, fmt ) {
+					if( typeof(fmt)=='object' ) 
+						for( var f in fmt ) { p[f] = fmt[f] };
+					return p
+				}
 				function chain( ct, fn ) {
 					if( Array.isArray(ct) ) {
 						var bs = '';
@@ -1337,7 +1352,7 @@ function toOxml( data, opts ) {
 		+									'<a:srgbClr val="E7E6E6"/>'
 		+								'</a:lt2>'
 		+								'<a:accent1>'
-		+									'<a:srgbClr val="5B9BD5"/>'
+		+									'<a:srgbClr val="'+opts.colorAccent1+'"/>'
 		+								'</a:accent1>'
 		+								'<a:accent2>'
 		+									'<a:srgbClr val="ED7D31"/>'
@@ -1355,10 +1370,12 @@ function toOxml( data, opts ) {
 		+									'<a:srgbClr val="70AD47"/>'
 		+								'</a:accent6>'
 		+								'<a:hlink>'
-		+									'<a:srgbClr val="0563C1"/>'
+//		+									'<a:srgbClr val="0563C1"/>'
+		+									'<a:srgbClr val="'+opts.colorAccent1+'"/>'
 		+								'</a:hlink>'
 		+								'<a:folHlink>'
-		+									'<a:srgbClr val="954F72"/>'
+//		+									'<a:srgbClr val="954F72"/>'
+		+									'<a:srgbClr val="'+opts.colorAccent1+'"/>'
 		+								'</a:folHlink>'
 		+							'</a:clrScheme>'
 		+							'<a:fontScheme name="Office">'
@@ -2059,7 +2076,7 @@ function toOxml( data, opts ) {
 		+							'</w:pPr>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
-		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
+//		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
 		+								'<w:sz w:val="36"/>'
 		+								'<w:szCs w:val="36"/>'
 		+							'</w:rPr>'
@@ -2081,7 +2098,7 @@ function toOxml( data, opts ) {
 		+							'</w:pPr>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>						'
-		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
+//		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
 		+								'<w:sz w:val="32"/>'
 		+								'<w:szCs w:val="32"/>'
 		+							'</w:rPr>'
@@ -2102,7 +2119,7 @@ function toOxml( data, opts ) {
 		+							'</w:pPr>							'
 		+							'<w:rPr>							'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>						'
-		+								'<w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F"/>'
+//		+								'<w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F"/>'
 		+								'<w:sz w:val="28"/>'
 		+								'<w:szCs w:val="28"/>'
 		+							'</w:rPr>'
@@ -2123,7 +2140,8 @@ function toOxml( data, opts ) {
 		+							'</w:pPr>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
-		+								'<w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F"/>'
+//		+								'<w:color w:val="1F4D78" w:themeColor="accent1" w:themeShade="7F"/>'
+		+								'<w:color w:val="1F4D78" w:themeColor="accent1" />'
 		+								'<w:sz w:val="24"/>'
 		+								'<w:szCs w:val="24"/>'
 		+							'</w:rPr>'
@@ -2163,7 +2181,7 @@ function toOxml( data, opts ) {
 //		+							'<w:rsid w:val="002D0214"/>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
-		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
+//		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
 		+								'<w:sz w:val="36"/>'
 		+								'<w:szCs w:val="36"/>'
 		+							'</w:rPr>'
@@ -2176,7 +2194,7 @@ function toOxml( data, opts ) {
 //		+							'<w:rsid w:val="002D0214"/>'
 		+							'<w:rPr>'
 		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
-		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
+//		+								'<w:color w:val="2E74B5" w:themeColor="accent1" w:themeShade="BF"/>'
 		+								'<w:sz w:val="32"/>'
 		+								'<w:szCs w:val="32"/>'
 		+							'</w:rPr>'
@@ -2516,6 +2534,7 @@ function toOxml( data, opts ) {
 	// than MS WORD would correctly show.
 	// Thus transform all but the necessary ones '&' and '<' to UTF-8.
 	function minEscape( s ) {
+		if( !s ) return '';
 		let el = document.createElement('div');
 		// first unescape all HTML entities:
 		return s.replace(/\&#?[0-9a-z]+;/gi, function (enc) {

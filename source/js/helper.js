@@ -20,9 +20,9 @@ function attrV( lbl, val, cssCl ) {
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>'
 }
-function textInput( lbl, val, typ, fn ) {  
+function textForm( lbl, val, typ, fn ) {  
 	// assemble a form for text input:
-//	console.debug('textInput 1',lbl,val,typ,fn);
+//	console.debug('textForm 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
 			val = noCode( val )
@@ -37,7 +37,7 @@ function textInput( lbl, val, typ, fn ) {
 			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
 	else	fG = '<div class="attribute" >';				// for display field
 
-//	console.debug('textInput 2',lbl.label,val,typ,fn,fG);
+//	console.debug('textForm 2',lbl.label,val,typ,fn,fG);
 	switch( lbl.display ) {
 		case 'none':
 			aC = 'attribute-wide';
@@ -52,7 +52,7 @@ function textInput( lbl, val, typ, fn ) {
 	switch( typ ) {
 		case 'line':
 			fG += 	'<div class="'+aC+'">' +
-						'<input type="text" id="field'+sH+'" class="form-control input-sm"'+fn+' value="'+val+'" />' +
+						'<input type="text" id="field'+sH+'" class="form-control"'+fn+' value="'+val+'" />' +
 					'</div>'; 
 			break;
 		case 'area':
@@ -115,7 +115,7 @@ function getTextLength( lbl ) {
 	}
 }
 				
-function radioInput( lbl, opts ) {
+function radioForm( lbl, entries ) {
 	// assemble the form for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	var rB;
@@ -126,20 +126,28 @@ function radioInput( lbl, opts ) {
 			break;
 		case 'left': 
 			rB = 	'<div class="form-group '+(lbl.classes||'')+'">'
-				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
+				+		'<div class="attribute-label" >'+lbl.label+'</div>'
 				+		'<div class="attribute-value radio" >';
 			break;
 		default:
 			return null
 	};
-	let tp, chd, nm=lbl.label.simpleHash();
-	opts.forEach( function(o,i) {
-		chd = (i==0)?'checked ':'';  // initialize with first option
-		tp = ( o.type )?'&#160;('+o.type+')':'';   // add type in brackets, if available
+	// zero or one checked entry is allowed:
+	let found = false, temp; 
+	entries.forEach( function(e) {
+		temp = found || e.checked;
+		if( found && e.checked )
+			e.checked = false; // only the first check will remain
+		found = temp
+	});
+	// render options:
+	let tp, nm=lbl.label.simpleHash();
+	entries.forEach( function(e,i) {
+		tp = ( e.type )?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		rB +=			'<div>'
 			+				'<label>'
-			+					'<input type="radio" name="radio'+nm+'" value="'+(o.id||i)+'" '+chd+'/>'
-			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+o.title+tp+'</span>'
+			+					'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+'/>'
+			+					'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
 	});
@@ -154,7 +162,7 @@ function radioValue( lbl ) {
 //	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works nicely
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked')[0].value
 }
-function checkboxInput( lbl, opts ) {
+function checkboxForm( lbl, entries ) {
 	// assemble the form for a set of checkboxes;
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	var cB;
@@ -165,19 +173,20 @@ function checkboxInput( lbl, opts ) {
 			break;
 		case 'left': 
 			cB = 	'<div class="form-group '+(lbl.classes||'')+'">'
-				+		'<label class="attribute-label control-label input-sm" >'+lbl.label+'</label>'
+				+		'<div class="attribute-label" >'+lbl.label+'</div>'
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
 			return null
 	};
+	// render options:
 	let tp, nm=lbl.label.simpleHash();;
-	opts.forEach( function(o,i) {
-		tp = o.type?'&#160;('+o.type+')':'';   // add type in brackets, if available
+	entries.forEach( function(e,i) {
+		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		cB +=			'<div>'
 			+				'<label>'
-			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(o.id||i)+'" '+(o.checked?'checked ':'')+'/>'
-			+					'<span data-toggle="popover" title="'+(o.description||'')+'" >'+o.title+tp+'</span>'
+			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+'/>'
+			+					'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
 	});

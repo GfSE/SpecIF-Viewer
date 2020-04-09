@@ -211,7 +211,7 @@ modules.construct({
 				return
 			}; 
 			// Show the name of the specified import file:
-			let rF = textInput(i18n.LblFileName,self.file.name);
+			let rF = textForm(i18n.LblFileName,self.file.name);
 			$("#formNames").html( rF );
 			// Take fileName as project name:
 			self.projectName = self.file.name.fileName();	
@@ -289,10 +289,10 @@ modules.construct({
 		};
 
 		// show the file name:
-		let rF = textInput(i18n.LblFileName,'&nbsp;');
+		let rF = textForm(i18n.LblFileName,'&nbsp;');
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textInput(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
+			rF += textForm(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
 
 		$('#HelpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
@@ -409,7 +409,7 @@ modules.construct({
 						message: function (thisDlg) {
 							// ToDo: error message, if no specification type is found.
 							let form = $('<form id="attrInput" role="form" class="form-horizontal" ></form>');
-							form.append( radioInput( 'Import Mode', modes ) );
+							form.append( radioForm( 'Import Mode', modes ) );
 							return form },
 						buttons: [{
 								label: i18n.BtnCancel,
