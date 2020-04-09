@@ -361,7 +361,7 @@ function ModuleManager() {
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.3.3/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.3.4/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
@@ -440,6 +440,8 @@ function ModuleManager() {
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
+				case 'resourceEdit': 		// loadM( 'xhtmlEditor' );
+											getScript( vPath+'/js/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
@@ -447,9 +449,6 @@ function ModuleManager() {
 											getScript( "./js/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true;
 				case CONFIG.files: 			$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
 											getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
-				case 'object': 		 		loadM( 'xhtmlEditor' );
-											$('#specsBody').append( '<div id="'+mod+'" class="content" ></div>' );
-											$('#'+mod).load( "./js/objectEdit-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case 'linker':  			$('#specsBody').append( '<div id="'+mod+'" class="content" ></div>' );
 											$('#'+mod).load( "./js/linker-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 		*/

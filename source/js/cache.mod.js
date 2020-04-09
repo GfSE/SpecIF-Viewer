@@ -34,6 +34,11 @@ modules.construct({
 		self.selectedProject = undefined;
 	//	autoLoadId = undefined;  // stop any autoLoad chain
 	//	autoLoadCb = undefined;
+
+		// initialize the markdown converter:
+		// ToDo: load lazily, when needed for the first time.
+		if( CONFIG.convertMarkdown ) app.markdown = new showdown.Converter();
+
 		return true
 	};
 	self.create = function(p) {
@@ -669,6 +674,7 @@ function Project( pr ) {
 			// Sort the list of process diagrams alphabetically by title:
 			if( pL.length>1 )
 				pL.sort( function(bim, bam) {
+							if( !bim.title || !bam.title ) return 1;
 							bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
 							bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
 							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
@@ -796,7 +802,8 @@ function Project( pr ) {
 			// In case of model elements the resource class is distinctive;
 			// The title of the resource class indicates the model element type.
 			if( resL.length>1 )
-				resL.sort( function(bim, bam) {
+				resL.sort( function(bim,bam) {
+							if( !bim.title || !bam.title ) return 1;
 							bim = bim.title.toLowerCase();
 							bam = bam.title.toLowerCase();
 							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
@@ -3068,6 +3075,17 @@ function multipleChoice( pC, prj ) {
 	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
 	// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 }
+function visibleIdOf( pL, prj ) {
+	if( !prj ) prj = app.cache.selectedProject.data;
+	let pt;
+	if( pL )
+		for( var a=0,A=pL.length;a<A;a++ ) {
+			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
+			// Check the configured ids:
+			if( CONFIG.idProperties.indexOf( pt )>-1 ) return pL[a].value
+		};
+	return // undefined
+}
 function titleIdx( pL, prj ) {
 	// Find the index of the property to be used as title.
 	// The result depends on the current user - only the properties with read permission are taken into consideration.
@@ -3084,14 +3102,14 @@ function titleIdx( pL, prj ) {
 	// ToDo: Check, if the results differ in practice ...
 */
 	if( !prj ) prj = app.cache.selectedProject.data;
-	let ti;
+	let pt;
 	if( pL )
 		for( var a=0,A=pL.length;a<A;a++ ) {
-			ti = vocabulary.property.specif( pL[a].title || itemById( prj.propertyClasses, pL[a]['class'] ).title );
+			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
 			// First, check the configured headings:
-			if( CONFIG.headingProperties.indexOf( ti )>-1 ) return a;
+			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
 			// If nothing has been found, check the configured titles:
-			if( CONFIG.titleProperties.indexOf( ti )>-1 ) return a
+			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a
 		};
 	return -1
 }
@@ -3104,21 +3122,21 @@ function itemTitleOf( el, opts, dta ) {
 			lookupTitles: opts.lookupTitles && el.subject,
 			targetLanguage: opts.targetLanguage || browser.language
 		},
-		ti = titleFromProperties( el.properties, op ) || titleOf( el, op );
+		pt = titleFromProperties( el.properties, op ) || titleOf( el, op );
 	// if it is a statement and does not have a title of it's own, take the class' title:
-//	console.debug('itemTitleOf',el,opts,ti);
+//	console.debug('itemTitleOf',el,opts,pt);
 	if( el.subject ) {
 		// it is a statement
-		if( !ti && dta ) 
-			ti = staClassTitleOf( el, dta, op )
+		if( !pt && dta ) 
+			pt = staClassTitleOf( el, dta, op )
 	} else {
 		// it is a resource
-		if( opts.addIcon && CONFIG.addIconToInstance && dta && ti )
-			ti = ti.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
+		if( opts.addIcon && CONFIG.addIconToInstance && dta && pt )
+			pt = pt.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
 	};
-//	console.debug('itemTitleOf 2',ti);
-//	return opts.targetLanguage? ti.unescapeHTMLEntities() : ti
-	return typeof(ti)=='string'? ti.stripHTML() : ti
+//	console.debug('itemTitleOf 2',pt);
+//	return opts.targetLanguage? pt.unescapeHTMLEntities() : pt
+	return typeof(pt)=='string'? pt.stripHTML() : pt
 
 	function titleFromProperties( pL, opts ) {
 	//	if( !pL ) return;
@@ -3149,9 +3167,9 @@ function resClassTitleOf( e, dta, opts ) {
 function staClassTitleOf( e, dta, opts ) {
 	return titleOf( itemById( dta.statementClasses, e['class'] ), opts )
 }
-function propTitleOf( prp, dta ) {
+function propTitleOf( prp, prj ) {
 	// get the title of a property as defined by itself or it's class:
-	return prp.title || itemById(dta.propertyClasses,prp['class']).title
+	return prp.title || itemById(prj.propertyClasses,prp['class']).title
 }
 function titleOf( item, opts ) {
 	// Pick up the native title of any item;

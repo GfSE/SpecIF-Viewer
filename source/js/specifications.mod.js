@@ -11,7 +11,11 @@ modules.construct({
 	name: CONFIG.specifications
 }, function(self) {
 	"use strict";
+	// This module and view is responsible for the selection tabs and the navigation tree which are shared by several sub-views.
 	
+	let myName = self.loadAs,
+		myFullName = 'app.'+myName;
+
 	// Permissions for resources and statements:
 	self.resCreClasses = [];  // all resource types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
 	self.staCreClasses = [];  // all statement types, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -26,25 +30,16 @@ modules.construct({
 	self.cmtCre = false;
 	self.cmtDel = false;
 		
-	self.resources = new Resources(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
-//	self.comments = new Resources();  	// flat-listed comments for display
-//	self.files = new Files();			// files for display
-
-	let myName = self.loadAs,
-		myFullName = 'app.'+myName,
-		tabsWithEditing = [ '#'+CONFIG.objectList, '#'+CONFIG.objectDetails ];
-
 	self.selectedView = function() {
 //		console.debug('selectedView',self.viewCtl.selected.view)
 		return self.viewCtl.selected.view
 	};
-	self.emptyTab = function( div ) {
-		selectResource( null );
+	self.emptyTab = function( view ) {
 		app.busy.reset();
 		// but show the buttons anyways, so the user can create the first resource:
 		$( '#contentNotice' ).empty();
-		$( '#contentActions' ).html( self.actionBtns() );
-		$( div ).empty()
+		$( '#contentActions' ).empty();
+		$( view ).empty()
 	};
 
 	// standard module interface:
@@ -195,10 +190,6 @@ modules.construct({
 		return true
 	};
 	self.clear = function() {
-		selectResource(null);
-		self.resources.init();
-	//	self.comments.init();
-		self.modeCmtDel = false;
 		self.resCreClasses = [];
 		self.staCreClasses = [];
 		self.staDelClasses = [];
@@ -228,17 +219,6 @@ modules.construct({
 		}
 	} */
 
-	function selectResource( nd ) {
-		setPermissions( nd );   // nd may be null
-		if( !nd ) return self.resources.init();
-		// Assuming that the resource has been refreshed shortly before selectResource is called:
-		var r = itemById( app.cache.selectedProject.data.resources, nd.ref );
-		if( !r ) return self.resources.init();  // this shouldn't ever happen ...
-		
-		// Must update the selected resource, if it has a different id or if it has been updated:
-		r.order = nd.order;
-		return self.resources.updateSelected( r )
-	}
 	function setPermissions( nd ) {
 			function noPerms() {
 				self.resCln = false;
@@ -314,7 +294,7 @@ modules.construct({
 //		console.debug('permissions',self.resCreClasses,self.staCreClasses,self.staDelClasses)
 	}
 
-	self.updateTree = function( spc, opts ) {
+	self.updateTree = function( spc, prj, opts ) {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
@@ -325,6 +305,8 @@ modules.construct({
 		// - use this function to auto-update the tree in the background.
 	*/
 	
+		if( !prj ) prj = app.cache.selectedProject.data;
+		
 		let tr;
 		// Replace the tree:
 		if( Array.isArray( spc ) )
@@ -343,11 +325,12 @@ modules.construct({
 		function toChild( iE ) {
 			// transform SpecIF hierarchy to jqTree:
 			let r = itemById( app.cache.selectedProject.data.resources, iE.resource );
+			console.debug('updateTree',r,visibleIdOf(r,prj));
 			var oE = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				// String.fromCodePoint()
-				name: itemTitleOf(r,opts), 
+				name: itemTitleOf(r,opts) || visibleIdOf(r.properties,prj) || r.id, 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -401,7 +384,7 @@ modules.construct({
 			.done(function(rsp) {
 //				console.debug('load',rsp);
 		//		self.updateTree( itemById( app.cache.selectedProject.data.hierarchies, rsp.id ) )
-				self.updateTree( rsp, opts )
+				self.updateTree( rsp, app.cache.selectedProject.data, opts )
 
 				// all hierarchies have been loaded;
 				// try to select the requested node:
@@ -465,94 +448,6 @@ modules.construct({
 
 /* +++++++++++++++++++++++++++++++                    
 	Functions called by GUI events */
-/*	self.addLinkClicked = function() {
-		// load the linker template:
-		// The button to which this function is bound is enabled only if the current user has permission to create statements.
-		
-		// load the linker module, if not yet available:
-		if( modules.load( 'linker', function() {self.addLinkClicked()} ) ) return;  // try again as soon as module is loaded, a WARNING will be logged.
-
-		modeStaDel = false;  // when returning, the statement table shan't be in delete mode.
-		
-	//	$( '#contentActions' ).empty();
-		self.selectTab( 'linker' );
-	//	self.views.show('linker');
-
-		linker.init( function(){self.selectTab(CONFIG.relations)} );  // callback to continue when finished.
-		linker.show( self.staCreClasses, self.tree.selectedNode )
-	};
-	self.editObjClicked = function( mode ) {
-		// enter edit mode: load the edit template:
-		// The button to which this function is bound is enabled only if the current user has edit permission.
-
-		// load the edit module, if not yet available:
-		if( modules.load( 'object', function() {self.editObjClicked( mode )} ) ) return;  // try again as soon as module is loaded.
-
-	//	$( '#contentActions' ).empty();
-		var returnTab = self.selectedView();		// after editing, return to the tab we are coming from
-		self.selectTab( 'object' );
-	//	self.views.show('object');
-
-		objectEdit.init( function(){self.selectTab(returnTab)}, mode );  // callback to continue when finished with editing.
-		objectEdit.show( self.resCreClasses )
-	};
-	self.deleteResource = function() {
-		// Delete the selected resource, all tree nodes and their children.
-		// very dangerous ....
-	}); 
-		
-	self.deleteNode = function() {
-		// Delete the selected node and its children.
-		// The resources are just dereferenced, but not deleted, themselves.
-		function delNd( nd ) {
-//			console.info( 'deleting', nd.name );
-			// 1. Delete the hierarchy entry with all its children in the cache and server:
-			app[myName].tree.selectNode( nd.getNextSibling() );  // select the inserted node, where the current node may have children
-			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
-				.done( function() {
-					app[myName].updateTree();
-				doRefresh({forced:true})
-				})
-				.fail( handleError );
-			
-			// 2. Delete the resource from the cache, so that it is not any more used for dynamic linking
-			// - assuming that the resource is referenced only once, which is true in most cases.
-			// - However, on next autoload, all referenced resources are updated, so all is again fine, then.
-			uncacheE( app.cache.selectedProject.data.resources, {id:nd.ref} )
-		};
-		var dlg = new BootstrapDialog({
-			title: i18n.MsgConfirm,
-			type: BootstrapDialog.TYPE_DANGER,
-			size: BootstrapDialog.SIZE_WIDE,
-			message: i18n.phrase( 'MsgConfirmObjectDeletion', self.tree.selectedNode.name ),
-			buttons: [{
-				label: i18n.BtnCancel,
-				action: function(thisDlg){ 
-					thisDlg.close() 
-				}
-			},{
-				label: i18n.BtnDeleteObjectRef,
-				action: function (thisDlg) {
-//					console.debug( "Deleting tree object '"+self.tree.selectedNode.name+"'." );
-					delNd( self.tree.selectedNode );
-					thisDlg.close() 
-				}
-		//	},{
-		//		label: i18n.BtnDeleteObject,
-		//		// This button is enabled, if the user has permission to delete the referenced resource,
-		//		// and if the resource has no further references in any tree:
-		//		cssClass: 'btn-danger'+(self.resources.selected().value.del?'':' disabled'), 
-		//		action: function (thisDlg) {
-//					console.debug( "Deleting resource '"+self.tree.selectedNode.name+"'." );
-		//			delNd( self.tree.selectedNode );
-					// ToDo: Delete the resource itself
-					// ToDo: Delete all other references
-		//			thisDlg.close() 
-		//		}
-			}]
-		})
-		.init()
-	};  */
 		
 	self.itemClicked = function( rId ) {
 		if( self.selectedView() == '#'+CONFIG.objectRevisions || self.selectedView() == '#'+CONFIG.comments ) return;
@@ -681,69 +576,6 @@ modules.construct({
 			})
 	};
 */
-	self.actionBtns = function() {
-		if( tabsWithEditing.indexOf( self.selectedView() )<0 ) return '';
-
-		// rendered buttons:
-		var selR = null,
-			rB = '';
-		if( self.resources.selected() ) selR = self.resources.selected().value;
-	/*	if( selR )
-			// Create a 'direct link' to the resource (the server renders the resource without client app):
-			rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+app.cache.selectedProject.data.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
-	*/	
-		// Add the create button depending on the current user's permissions:
-		// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
-	//	if( self.resCre && app.cache.selectedProject.data.selectedHierarchy.upd )
-	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
-	//	else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
-			
-		if( !selR ) { return( rB )};
-
-			function attrUpd() {
-				// check whether at least one property is editable:
-				if( selR.properties )
-					for( var a=selR.properties.length-1;a>-1;a-- ) {
-						if( selR.properties[a].upd ) return true   // true, if at least one property is editable
-					};
-				return false
-			}
-
-		// Add the clone, update and delete buttons depending on the current user's permissions:
-	//	if( self.resCln && app.cache.selectedProject.data.selectedHierarchy.upd )
-	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
-	//	else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
-
-		if( attrUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-			rB += '<button class="btn btn-default" onclick="'+myFullName+'.editObjClicked(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
-		else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
-
-		// Add the commenting button, if all needed types are available and if permitted:
-		if( self.cmtCre )
-			rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
-		else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
-
-		// The delete button is shown, if a hierarchy entry can be deleted.
-		// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-	//	if( app.cache.selectedProject.data.selectedHierarchy.del )
-	//		rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
-	//	else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
-
-		return rB	// return rendered buttons for display
-	};
-/*	self.cmtBtns = function() {
-		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
-		// Show the commenting button, if all needed types are available and if permitted:
-		if( self.cmtCre )
-			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
-		else
-			return '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>'
-	}; */
 
 	return self
 });
@@ -752,15 +584,33 @@ modules.construct({
 	view:'#'+CONFIG.objectList
 }, function(self) {
 	// Construct an object for displaying a hierarchy of resources:
-	var pData;
+
+	self.resources = new Resources(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
+//	self.comments = new Resources();  	// flat-listed comments for display
+//	self.files = new Files();			// files for display
+
+	var pData = self.parent,	// the parent's data
+		cData;				// the cached data
+//		selRes;				// the currently selected resource
+		
 	self.init = function() {
+	};
+	self.clear = function() {
+	//	selectResource(null);
+		self.resources.init();
+	//	self.comments.init();
+	//	self.modeCmtDel = false;
+	};
+	self.hide = function() {
+//		console.debug(CONFIG.objectList, 'hide');
+		$( self.view ).empty()
 	};
 	self.show = function( opts ) {
 		// Show the next resources starting with the selected one:
 //		console.debug(CONFIG.objectList, 'show', opts);
-		pData = self.parent;
 		pData.showLeft.set();
 		pData.showTree.set();
+		cData = app.cache.selectedProject.data;
 		
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -772,7 +622,7 @@ modules.construct({
 //		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
 
 		app.busy.set();
-		if( pData.resources.values.length<1 )
+		if( self.resources.values.length<1 )
 			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
 		var nd = pData.tree.selectedNode,
@@ -783,7 +633,7 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: app.cache.selectedProject.data.id,
+				project: cData.id,
 				view: self.view.substr(1),	// remove leading hash
 				node: nd.id,
 				item: nd.ref
@@ -807,20 +657,174 @@ modules.construct({
 				// Update the view list, if changed:
 				// Note that the list is always changed, when execution gets here,
 				// unless in a multi-user configuration with server and auto-update enabled.
-				if( pData.resources.update( rL ) || opts && opts.forced ) {
+				if( self.resources.update( rL ) || opts && opts.forced ) {
 					// list value has changed in some way:
 				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
-					$( self.view ).html( pData.resources.render() )
+					$( self.view ).html( self.resources.render() )
 				};
-				app.busy.reset();
-				$( '#contentActions' ).html( pData.actionBtns() )
+				$( '#contentActions' ).html( actionBtns() );
+				app.busy.reset()
 			})
 			.fail( stdError )
 	};
-	self.hide = function() {
-//		console.debug(CONFIG.objectList, 'hide');
-		$( self.view ).empty()
+	function actionBtns() {
+
+		// the currently selected resource:
+		var selRes = self.resources.selected();
+
+		// rendered buttons:
+		var rB = '<div class="btn-group btn-group-sm" >';
+//		console.debug( 'linkBtns', self.staCre );
+
+	/*	if( selRes )
+			// Create a 'direct link' to the resource (the server renders the resource without client app):
+			rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
+	*/	
+		// Add the create button depending on the current user's permissions:
+		// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
+	//	if( self.resCre && cData.selectedHierarchy.upd )
+	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'new\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
+	//	else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
+			
+		if( !selRes ) { return( rB )};
+
+			function attrUpd() {
+				// check whether at least one property is editable:
+				if( selRes.properties )
+					for( var a=selRes.properties.length-1;a>-1;a-- ) {
+						if( selRes.properties[a].upd ) return true   // true, if at least one property is editable
+					};
+				return false
+			}
+
+		// Add the clone, update and delete buttons depending on the current user's permissions:
+	//	if( self.resCln && cData.selectedHierarchy.upd )
+	//		rB += '<button class="btn btn-success" onclick="'+myFullName+'.editObjClicked(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
+	//	else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
+
+		if( attrUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
+			rB += '<button class="btn btn-default" onclick="'+myFullName+'.editObjClicked(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
+		else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
+
+		// Add the commenting button, if all needed types are available and if permitted:
+		if( self.cmtCre )
+			rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+		else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
+
+		// The delete button is shown, if a hierarchy entry can be deleted.
+		// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
+	//	if( cData.selectedHierarchy.del )
+	//		rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
+	//	else
+			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
+
+//		console.debug('actionBtns',rB+'</div>');
+		return rB+'</div>'	// return rendered buttons for display
 	};
+/*	self.cmtBtns = function() {
+		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
+		// Show the commenting button, if all needed types are available and if permitted:
+		if( self.cmtCre )
+			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+		else
+			return '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>'
+	}; */
+
+/* +++++++++++++++++++++++++++++++                    
+	Functions called by GUI events */
+
+/*	self.addLinkClicked = function() {
+		// load the linker template:
+		// The button to which this function is bound is enabled only if the current user has permission to create statements.
+		
+		// load the linker module, if not yet available:
+		if( modules.load( 'linker', function() {self.addLinkClicked()} ) ) return;  // try again as soon as module is loaded, a WARNING will be logged.
+
+		modeStaDel = false;  // when returning, the statement table shan't be in delete mode.
+		
+	//	$( '#contentActions' ).empty();
+		self.selectTab( 'linker' );
+	//	self.views.show('linker');
+
+		linker.init( function(){self.selectTab(CONFIG.relations)} );  // callback to continue when finished.
+		linker.show( self.staCreClasses, self.tree.selectedNode )
+	};
+	self.editObjClicked = function( mode ) {
+		// enter edit mode: load the edit template:
+		// The button to which this function is bound is enabled only if the current user has edit permission.
+
+		// load the edit module, if not yet available:
+		if( modules.load( 'object', function() {self.editObjClicked( mode )} ) ) return;  // try again as soon as module is loaded.
+
+	//	$( '#contentActions' ).empty();
+		var returnTab = self.selectedView();		// after editing, return to the tab we are coming from
+		self.selectTab( 'object' );
+	//	self.views.show('object');
+
+		objectEdit.init( function(){self.selectTab(returnTab)}, mode );  // callback to continue when finished with editing.
+		objectEdit.show( self.resCreClasses )
+	};
+	self.deleteResource = function() {
+		// Delete the selected resource, all tree nodes and their children.
+		// very dangerous ....
+	}); 
+		
+	self.deleteNode = function() {
+		// Delete the selected node and its children.
+		// The resources are just dereferenced, but not deleted, themselves.
+		function delNd( nd ) {
+//			console.info( 'deleting', nd.name );
+			// 1. Delete the hierarchy entry with all its children in the cache and server:
+			app[myName].tree.selectNode( nd.getNextSibling() );  // select the inserted node, where the current node may have children
+			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
+				.done( function() {
+					app[myName].updateTree();
+				doRefresh({forced:true})
+				})
+				.fail( handleError );
+			
+			// 2. Delete the resource from the cache, so that it is not any more used for dynamic linking
+			// - assuming that the resource is referenced only once, which is true in most cases.
+			// - However, on next autoload, all referenced resources are updated, so all is again fine, then.
+			uncacheE( app.cache.selectedProject.data.resources, {id:nd.ref} )
+		};
+		var dlg = new BootstrapDialog({
+			title: i18n.MsgConfirm,
+			type: BootstrapDialog.TYPE_DANGER,
+			size: BootstrapDialog.SIZE_WIDE,
+			message: i18n.phrase( 'MsgConfirmObjectDeletion', self.tree.selectedNode.name ),
+			buttons: [{
+				label: i18n.BtnCancel,
+				action: function(thisDlg){ 
+					thisDlg.close() 
+				}
+			},{
+				label: i18n.BtnDeleteObjectRef,
+				action: function (thisDlg) {
+//					console.debug( "Deleting tree object '"+self.tree.selectedNode.name+"'." );
+					delNd( self.tree.selectedNode );
+					thisDlg.close() 
+				}
+		//	},{
+		//		label: i18n.BtnDeleteObject,
+		//		// This button is enabled, if the user has permission to delete the referenced resource,
+		//		// and if the resource has no further references in any tree:
+		//		cssClass: 'btn-danger'+(self.resources.selected().value.del?'':' disabled'), 
+		//		action: function (thisDlg) {
+//					console.debug( "Deleting resource '"+self.tree.selectedNode.name+"'." );
+		//			delNd( self.tree.selectedNode );
+					// ToDo: Delete the resource itself
+					// ToDo: Delete all other references
+		//			thisDlg.close() 
+		//		}
+			}]
+		})
+		.init()
+	};  */
 	return self
 });
 // Construct the controller for displaying the statements ('Statement View'):
@@ -828,7 +832,7 @@ modules.construct({
 	view:'#'+CONFIG.relations
 }, function(self) {
 	// Render the statements of a selected resource:
-	var pData,				// the parent's data
+	var pData = self.parent,	// the parent's data
 		cData,				// the cached data
 		selRes,				// the currently selected resource
 		net,
@@ -837,9 +841,12 @@ modules.construct({
 	self.init = function() {
 		modeStaDel = false
 	};
+	self.hide = function() {
+//		console.debug(CONFIG.relations, 'hide');
+		$( self.view ).empty()
+	};
 	self.show = function( opts ) {
 //		console.debug(CONFIG.relations, 'show');
-		pData = self.parent;
 		pData.showLeft.set();
 		pData.showTree.set();
 		cData = app.cache.selectedProject.data;
@@ -1205,10 +1212,6 @@ modules.construct({
 		$( '#contentActions' ).html( linkBtns() );
 		renderStatements()
 	}; */
-	self.hide = function() {
-//		console.debug(CONFIG.relations, 'hide');
-		$( self.view ).empty()
-	};
 	return self
 });
 
@@ -1505,6 +1508,7 @@ function propertyValueOf( ob, prp, opts ) {
 			var ct = languageValueOf( prp.value, opts ).ctrl2HTML();
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
+			ct = i18n.lookup( ct );
 		/*	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
 				ct = '&#x00ab;'+ct+'&#x00bb;'  */
 			break;
