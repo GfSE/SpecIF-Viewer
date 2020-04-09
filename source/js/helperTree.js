@@ -101,9 +101,8 @@ function Tree( options ) {
 		return self.firstNode()   // default: first node
 	};
 	self.selectNode = function( nd ) {
-		if( self.selectedNode && nd && self.selectedNode.id==nd.id )
-			// no change:
-			return self.selectedNode; 
+		if( self.selectedNode && self.selectedNode.id==nd.id ) 
+			return self.selectedNode;
 		// selectNode( null ) is a valid use case:
 		if( nd&&nd.id ) {
 			nd = self.nodeById(nd.id);

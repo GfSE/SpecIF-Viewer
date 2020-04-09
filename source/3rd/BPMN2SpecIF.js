@@ -139,7 +139,7 @@ function BPMN2Specif( xmlString, opts ) {
 	
 	// 3. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
 	// x[0].childNodes.forEach does not work for NodeLists in IE:
-	Array.from(x[0].childNodes, function(el) {
+	Array.from(x[0].childNodes).forEach( function(el) {
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
 		if( !el.tagName ) return;
@@ -264,7 +264,7 @@ function BPMN2Specif( xmlString, opts ) {
 				id = el.getAttribute("id");
 				title = el.getAttribute("name");
 				desc = '';
-				Array.from(el.childNodes, function(el2) {
+				Array.from(el.childNodes).forEach( function(el2) {
 					if( el2.tagName && el2.tagName.split(':').pop() == 'documentation' 
 						&& el2.innerHTML.length>0 && el2.innerHTML.length<opts.descriptionLength ) 
 							desc = el2.innerHTML
@@ -293,7 +293,7 @@ function BPMN2Specif( xmlString, opts ) {
 								</childLaneSet>
 							  </lane>
 						*/
-						Array.from(el.childNodes, function(el2) {
+						Array.from(el.childNodes).forEach( function(el2) {
 							if( el2.nodeName.includes('lane') ) {
 								let el2Id = el2.getAttribute("id"),
 									elName = el2.getAttribute("name").slice(0,opts.titleLength);
@@ -322,7 +322,7 @@ function BPMN2Specif( xmlString, opts ) {
 										changedAt: opts.fileDate
 									});
 									// temporarily store relations for the contained model-elements:
-									Array.from(el2.childNodes, function(el3) {
+									Array.from(el2.childNodes).forEach( function(el3) {
 										if( el3.nodeName.includes('flowNodeRef') ) {
 											ctL.push({
 												class: 'SC-contains',
@@ -396,11 +396,11 @@ function BPMN2Specif( xmlString, opts ) {
 //			console.debug( 'consolidatedResources', consolidatedResources );
 			// 4.2 Second pass to collect the model-elements:
 				function storeAccessAssociations(el) {
-					Array.from(el.childNodes, function(ch) {
+					Array.from(el.childNodes).forEach( function(ch) {
 						if( !ch.tagName ) return;
 						if( ch.tagName.includes('dataInputAssociation') ) {
 							// find sourceRef:
-							Array.from(ch.childNodes, function(ref) {
+							Array.from(ch.childNodes).forEach( function(ref) {
 //								console.debug('dataInputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
 								if( opts.isIE ) {
@@ -431,7 +431,7 @@ function BPMN2Specif( xmlString, opts ) {
 						};
 						if( ch.tagName.includes('dataOutputAssociation') ) {
 							// find targetRef:
-							Array.from(ch.childNodes, function(ref) {
+							Array.from(ch.childNodes).forEach( function(ref) {
 //								console.debug('dataOutputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
 								if( opts.isIE ) {
@@ -468,7 +468,7 @@ function BPMN2Specif( xmlString, opts ) {
 				id = el.getAttribute("id");
 				title = (el.getAttribute("name")||'').slice(0,opts.titleLength);
 				desc = '';
-				Array.from(el.childNodes, function(el2) {
+				Array.from(el.childNodes).forEach( function(el2) {
 					if( el2.tagName && el2.tagName.split(':').pop() == 'documentation' && el2.innerHTML ) {
 						if( el2.innerHTML.length<opts.descriptionLength ) 
 							desc = el2.innerHTML
@@ -581,7 +581,7 @@ function BPMN2Specif( xmlString, opts ) {
 					case 'exclusiveGateway':
 					case 'inclusiveGateway':
 						gw = {id:id,class:tag,incoming:[],outgoing:[]};
-						Array.from(el.childNodes, function(ch) {
+						Array.from(el.childNodes).forEach( function(ch) {
 							if( !ch.tagName ) return;
 							if( ch.tagName.includes('incoming') )
 								gw.incoming.push( ch.innerHTML );
@@ -797,17 +797,19 @@ function BPMN2Specif( xmlString, opts ) {
 				}
 			})
 		}
-	Array.from( xmlDoc.querySelectorAll("process"), analyzeProcess );
+	Array.from( xmlDoc.querySelectorAll("process") )
+	.forEach( analyzeProcess );
 
 	// 5. Select all textAnnotations:
 	let taL = []; 	// temporary list of text annotations
-	Array.from(xmlDoc.querySelectorAll("textAnnotation"), function(ann) {
+	Array.from(xmlDoc.querySelectorAll("textAnnotation"))
+	.forEach( function(ann) {
 //		console.debug('ann',ann);
 		let idx = taL.length+1,
 			id = ann.getAttribute("id"),
 			title = opts.strTextAnnotation + (idx>9? ' '+idx : ' 0'+idx);  // assuming there won't be more than 99 annotations
 		// even though there should be only one sub-element:
-		Array.from(ann.childNodes, function(txt) {
+		Array.from(ann.childNodes).forEach( function(txt) {
 //			console.debug('textAnnotation.childNode',txt);
 			if( txt.tagName && txt.tagName.includes('text') && txt.innerHTML ) {
 				if( txt.innerHTML.length<opts.descriptionLength ) {
@@ -834,7 +836,7 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 	
 	// 6. Select all associations of textAnnotations:
-	Array.from(xmlDoc.querySelectorAll("association"), function(asc) {
+	Array.from(xmlDoc.querySelectorAll("association")).forEach( function(asc) {
 //		console.debug('asc',asc);
 		let id = asc.getAttribute("id"),
 			su = findStoredResource( asc.getAttribute('targetRef') ),

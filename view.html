@@ -32,6 +32,9 @@ function App() {
 		self.productTitle = 'SpecIF View';
 		self.label = i18n.LblReader;
 		document.title = self.label;
+		// initialize the markdown converter:
+		// ToDo: load lazily, when needed for the first time.
+		if( CONFIG.convertMarkdown ) app.markdown = new showdown.Converter();
 		// Add a global spinner with state control;
 		// all actions are deactivated as long as the app is busy.
 		// - 'pageActions' are at the top of the page and can be initiated independently of the app's state

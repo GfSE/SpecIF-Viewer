@@ -56,8 +56,6 @@ function toXhtml( data, opts ) {
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 
-	const nbsp = '&#160;'; // non-breakable space
-
 	// Create a local list of images, which can be used in XHTML or ePub:
 	// - Take any raster image right away,
 	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
@@ -141,11 +139,11 @@ function toXhtml( data, opts ) {
 		// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 		// Limitation: the innerHTML may not have any tags.
 		// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-		const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+		let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
 			reSingleObject = new RegExp( reSO, 'g' );
 		// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 		// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-		const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+		let reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
 			reNestedObjects = new RegExp( reNO, 'g' );
 
 		var xhtml = {
@@ -196,11 +194,10 @@ function toXhtml( data, opts ) {
 		let ti = escapeXML( r.title ),
 			ic = rC.icon;
 		if( typeof(ic)!='string' ) ic = '';
-		if( ic ) ic += nbsp; // non-breakable space
+		if( ic ) ic += '&#160;'; // non-breakable space
 		if( !pars || pars.level<1 ) return (ti?ic+ti:'');
 		if( rC.isHeading ) pushHeading( ti, pars );
 		let l = pars.level==1? 1:rC.isHeading? 2:3;
-		if( !ti ) return '';
 		return '<h'+l+' id="'+pars.nodeId+'">'+(ti?ic+ti:'')+'</h'+l+'>'
 	}
 	function statementsOf( r, hi, opts ) { // resource, options
@@ -312,7 +309,7 @@ function toXhtml( data, opts ) {
 		// return the content of all properties, sorted by description and other properties:
 		let c1='', rows='', rt, hPi;
 		r.descriptions.forEach( function(prp) {
-			c1 += '<p>'+propertyValueOf( prp, hi )+'</p>'
+			c1 += propertyValueOf( prp, hi )
 		});
 		// Skip the remaining properties, if no label is provided:
 //		console.debug('#1',c1)
@@ -632,7 +629,6 @@ function toXhtml( data, opts ) {
 		return txt.replace( /<([^a-z//]{1})/g, function($0,$1) {return '&lt;'+$1} )
 	}
 	function escapeXML( s ) {
-		if( !s ) return '';
 		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {
 				// 1. Replace &, unless it belongs to an XML entity:
 				if( opts.RE.XMLEntity.test($0) ) {

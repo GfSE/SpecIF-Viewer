@@ -106,7 +106,7 @@ modules.construct({
 		+			'<td>Excel parser and writer ... <a href="https://github.com/SheetJS/js-xlsx" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/SheetJS/js-xlsx/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>'
 		+		'</tr>'
-		+ (modules.isReady('markdown')?
+		+ (CONFIG.convertMarkdown?
 				'<tr>'
 			+		'<td>showdownJS</td>'
 			+		'<td></td>'
@@ -135,7 +135,7 @@ modules.construct({
 		+				'<a href="http://getbootstrap.com/" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/twbs/bootstrap/blob/master/LICENSE" target="_blank">MIT</a></td>'
 		+		'</tr>'
-		+ (modules.isReady('diff')?
+		+ (modules.ready.indexOf('diff')>-1?
 				'<tr>'
 			+		'<td>diff-match-patch</td>'
 			+		'<td></td>'

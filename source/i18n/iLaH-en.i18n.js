@@ -141,8 +141,9 @@ i18n.LblDataType = 'Data-type';
 i18n.LblDataTypeTitle = 'Data-type Name';
 i18n.LblSpecTypes = 'Types';
 i18n.LblSpecType = "Type";
+i18n.LblObjectTypes = 
 i18n.LblResourceClasses = 'Resource-classes';
-i18n.LblResourceClass = 'Resource-class';
+i18n.LblObjectType = 'Resource-class';
 i18n.LblRelationTypes = 
 i18n.LblStatementClasses = 'Statement-classes';
 i18n.LblRelationType = 'Statement-type';
@@ -151,9 +152,9 @@ i18n.LblRelationType = 'Statement-type';
 i18n.LblSpecificationTypes = 'Outline-types';
 i18n.hierarchyType = 
 i18n.LblSpecificationType = 'Outline-type';
-//i18n.LblRifTypes = 'Types';
-//i18n.rifType = 
-//i18n.LblRifType = 'Type';
+i18n.LblRifTypes = 'Types';
+i18n.rifType = 
+i18n.LblRifType = 'Type';
 i18n.LblSpecTypeTitle = 'Name';
 i18n.LblAttributeTitle = 'Attribute Name';
 i18n.LblSecondaryFiltersForObjects = i18n.IcoFilter+"&#160;Facet filters for '~A'";
@@ -252,12 +253,12 @@ i18n.TabUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projects';
 i18n.TabPermissions = '<span class="glyphicon glyphicon-lock"/>&#160;Permissions';
 i18n.TabTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblTypes;
 i18n.TabDataTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblDataTypes;
-i18n.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblResourceClasses;
-i18n.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblResourceClasses;
+i18n.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblObjectTypes;
+i18n.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblObjectTypes;
 i18n.TabRelationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelationTypes;
-//i18n.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelGroupTypes;
+i18n.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelGroupTypes;
 i18n.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblSpecificationTypes;
-//i18n.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRifTypes;
+i18n.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRifTypes;
 i18n.TabTable = '<span class="glyphicon glyphicon-th"/>&#160;Table';
 i18n.TabDocument = '<span class="glyphicon glyphicon-book"/>&#160;Document';
 i18n.TabFind = '<span class="glyphicon glyphicon-search"/>&#160;Search';
@@ -316,10 +317,7 @@ i18n.DC_type =
 i18n.dcterms_type = "Element Type";
 i18n.DC_creator =
 i18n.dcterms_creator = "Author";
-i18n.DC_source =
 i18n.dcterms_source = "Source";
-i18n.DC_subject =
-i18n.dcterms_subject = "Subject";
 i18n.DC_modified =
 i18n.dcterms_modified = i18n.LblModifiedAt;
 //i18n.dcterms_contributor = "";
@@ -333,9 +331,7 @@ i18n.dcterms_modified = i18n.LblModifiedAt;
 //i18n.oslc_rm_specifies = "";
 //i18n.oslc_rm_affectedBy = "";
 //i18n.oslc_rm_trackedBy = "";
-i18n.SpecIF_implements = 
-i18n.oslc_rm_implements = "implements";
-i18n.oslc_rm_implementedBy = "implemented by";
+//i18n.oslc_rm_implementedBy = "";
 i18n.oslc_rm_validates = "validates";
 i18n.oslc_rm_validatedBy = "is validated by";
 //i18n.oslc_rm_decomposes = "decomposes";
@@ -415,6 +411,8 @@ i18n.oslc_rm_satisfiedBy = "satisfied bv";
 i18n.oslc_rm_satisfies =
 i18n.SpecIF_satisfies =
 i18n.IREB_satisfies = "satisfies";
+i18n.oslc_rm_implementedBy = "implemented by";
+i18n.SpecIF_implements = "implements";
 i18n.SpecIF_modifies =
 i18n.SpecIF_stores = "writes and reads";
 i18n.SpecIF_reads = "reads";
@@ -525,10 +523,6 @@ i18n.MsgInitialLoading = 'Loading the index for brisker navigation ... ';
 i18n.MsgNoProject = 'No project found.';
 i18n.MsgNoUser = 'No user found.';
 i18n.MsgNoObject = 'No resource selected.';
-i18n.MsgCreateResource = "Create a resource";
-i18n.MsgCloneResource = "Clone a resource";
-i18n.MsgUpdateResource = i18n.LblUpdate+" a resource";
-i18n.MsgDeleteResource = "Delete a resource";
 i18n.MsgOtherProject = "Late response; another project has been selected meanwhile";
 i18n.MsgWaitPermissions = 'Please wait while loading the permissions.';
 i18n.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.';
@@ -546,7 +540,7 @@ i18n.MsgNoComments = 'This resource does not have any comments.';
 i18n.MsgNoFiles = 'No file found.';
 i18n.MsgAnalyzing = 'Still analyzing ...';
 i18n.MsgNoReports = 'No reports for this project.';
-i18n.MsgTypeNoObjectType = "Please add at least one resource-class, otherwise no resources can be created.";
+i18n.MsgTypeNoObjectType = "Please add at least one resource-type, otherwise no resources can be created.";
 i18n.MsgTypeNoAttribute = "Please add at least one attribute, otherwise the type is not useful.";
 i18n.MsgNoObjectTypeForManualCreation = "Ressources cannot be created, because of missing permission or because there are no resourc-types for manual creation.";
 i18n.MsgFilterClogged = 'Filter is clogged - at least one branch will not yield any results!';
@@ -571,7 +565,6 @@ i18n.MsgBrowserSaving = "Your browser saves the file according to its settings."
 i18n.MsgSuccess = "Successful!";
 i18n.MsgSelectImg = "Select or upload an image:";
 i18n.MsgImgWidth = "Image width [px]";
-i18n.MsgSelectResClass = "Choose a "+i18n.LblResourceClass;
 i18n.MsgNoEligibleRelTypes = "No statement-type defined for this resource-type.";
 i18n.MsgClickToNavigate = "Double-click a resource to navigate:";
 i18n.MsgClickToDeleteRel = "Double-click a resource to delete the respective statement:";
@@ -644,7 +637,7 @@ i18n.LblUserAdministration = 'Users';
 i18n.LblProjectAdministration = 'Types & Permissions';   // for the browser tabs - no HTML!
 i18n.LblSpecifications = 'Content';
 i18n.LblReader = 'SpecIF Reader';
-i18n.LblEditor = 'SpecIF Editor';
+i18n.LblLocal = 'SpecIF Editor';
 i18n.LblSupport = 'Support';
 i18n.AppHome = i18n.IcoHome+'&#160;'+i18n.LblHome;
 i18n.AppSystemAdministration = i18n.IcoSystemAdministration+'&#160;Interactive Spec: '+i18n.LblSystemAdministration;
@@ -653,5 +646,5 @@ i18n.AppProjectAdministration = i18n.IcoProjectAdministration+'&#160;Interactive
 i18n.AppSpecifications = i18n.IcoSpecifications+'&#160;Interactive Spec: '+i18n.LblSpecifications;
 i18n.AppReader = i18n.IcoReader+'&#160;'+i18n.LblReader;
 i18n.AppImport = i18n.IcoImport+'&#160;Import';
-i18n.AppLocal = i18n.IcoSpecifications+'&#160;'+i18n.LblEditor;
+i18n.AppLocal = i18n.IcoSpecifications+'&#160;'+i18n.LblLocal;
 i18n.AppSupport = i18n.IcoSupport+'&#160;'+i18n.LblSupport;

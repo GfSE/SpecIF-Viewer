@@ -141,8 +141,9 @@ i18n.LblDataType = 'Datentyp';
 i18n.LblDataTypeTitle = 'Datentyp-Name';
 i18n.LblSpecTypes = 'Typen';
 i18n.LblSpecType = 'Typ';
+i18n.LblObjectTypes = 
 i18n.LblResourceClasses = 'Ressource-Klassen';
-i18n.LblResourceClass = 'Ressource-Klasse';
+i18n.LblObjectType = 'Ressource-Klasse';
 i18n.LblRelationTypes = 
 i18n.LblStatementClasses = 'Aussage-Klassen';
 i18n.LblRelationType = 'Aussage-Typ';
@@ -151,9 +152,9 @@ i18n.LblRelationType = 'Aussage-Typ';
 i18n.LblSpecificationTypes = 'Gliederungs-Typen';
 i18n.hierarchyType = 
 i18n.LblSpecificationType = 'Gliederungs-Typ';
-//i18n.LblRifTypes = 'Typen';
-//i18n.rifType = 
-//i18n.LblRifType = 'Typ';
+i18n.LblRifTypes = 'Typen';
+i18n.rifType = 
+i18n.LblRifType = 'Typ';
 i18n.LblSpecTypeTitle = 'Name';
 i18n.LblAttributeTitle = 'Attribut-Name';
 i18n.LblSecondaryFiltersForObjects = i18n.IcoFilter+"&#160;Facetten-Filter für '~A'";
@@ -169,8 +170,6 @@ i18n.LblExcludeEnums = 'Auswahlwerte übergehen';
 i18n.LblNotAssigned = '(ohne zugewiesenen Wert)';
 i18n.LblPrevious = 'Voriges';
 i18n.LblNext = 'Nächstes';
-i18n.LblPreviousStep = 'Zurück';
-i18n.LblNextStep = 'Weiter';
 i18n.LblGo = 'Los!';
 i18n.LblAll = 'Alle';
 i18n.LblHitCount = 'Trefferzahl';
@@ -254,12 +253,12 @@ i18n.TabUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projekte';
 i18n.TabPermissions = '<span class="glyphicon glyphicon-lock"/>&#160;Rechte';
 i18n.TabTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblTypes;
 i18n.TabDataTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblDataTypes;
-i18n.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblResourceClasses;
-i18n.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblResourceClasses;
+i18n.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblObjectTypes;
+i18n.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblObjectTypes;
 i18n.TabRelationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelationTypes;
-//i18n.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelGroupTypes;
+i18n.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelGroupTypes;
 i18n.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblSpecificationTypes;
-//i18n.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRifTypes;
+i18n.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRifTypes;
 i18n.TabTable = '<span class="glyphicon glyphicon-th"/>&#160;Tabelle';
 i18n.TabDocument = '<span class="glyphicon glyphicon-book"/>&#160;Dokument';
 i18n.TabFind = '<span class="glyphicon glyphicon-search"/>&#160;Suche';
@@ -318,10 +317,7 @@ i18n.DC_type =
 i18n.dcterms_type = "Element-Typ";
 i18n.DC_creator =
 i18n.dcterms_creator = "Autor";
-i18n.DC_source =
 i18n.dcterms_source = "Quelle";
-i18n.DC_subject =
-i18n.dcterms_subject = "Stichworte";
 i18n.DC_modified =
 i18n.dcterms_modified = i18n.LblModifiedAt;
 //i18n.dcterms_contributor = "";
@@ -335,9 +331,7 @@ i18n.dcterms_modified = i18n.LblModifiedAt;
 //i18n.oslc_rm_specifies = "";
 //i18n.oslc_rm_affectedBy = "";
 //i18n.oslc_rm_trackedBy = "";
-i18n.SpecIF_implements = 
-i18n.oslc_rm_implements = "realisiert";
-i18n.oslc_rm_implementedBy = "wird realisiert von";
+//i18n.oslc_rm_implementedBy = "";
 i18n.oslc_rm_validates = "validiert";
 i18n.oslc_rm_validatedBy = "wird validiert von";
 //i18n.oslc_rm_decomposes = "ist Bestandteil von";
@@ -417,6 +411,8 @@ i18n.oslc_rm_satisfiedBy = "wird erfüllt von";;
 i18n.oslc_rm_satisfies = 
 i18n.SpecIF_satisfies =
 i18n.IREB_satisfies = "erfüllt";
+i18n.oslc_rm_implementedBy = "wird realisiert von";
+i18n.SpecIF_implements = "realisiert";
 i18n.SpecIF_modifies =
 i18n.SpecIF_stores = "schreibt und liest";
 i18n.SpecIF_reads = "liest";
@@ -527,10 +523,6 @@ i18n.MsgInitialLoading = 'Lade den Index für flottere Navigation ... ';
 i18n.MsgNoProject = 'Kein Projekt gefunden.';
 i18n.MsgNoUser = 'Keinen Nutzer gefunden.';
 i18n.MsgNoObject = 'Keine Ressource gewählt.';
-i18n.MsgCreateResource = "Ressource anlegen";
-i18n.MsgCloneResource = "Ressource klonen";
-i18n.MsgUpdateResource = "Ressource bearbeiten";
-i18n.MsgDeleteResource = "Ressource löschen";
 i18n.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 i18n.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
 i18n.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
@@ -548,7 +540,7 @@ i18n.MsgNoComments = 'Zu dieser Ressource gibt es keine Kommentare.';
 i18n.MsgNoFiles = 'Keine Datei gefunden.';
 i18n.MsgAnalyzing = 'Setze Analyse fort ...';
 i18n.MsgNoReports = 'Keine Auswertungen für dieses Projekt.';
-i18n.MsgTypeNoObjectType = "Mindestens eine Ressource-Klasse anlegen, sonst können keine Ressourcen erzeugt werden.";
+i18n.MsgTypeNoObjectType = "Mindestens einen Ressource-Typ anlegen, sonst können keine Ressourcen erzeugt werden.";
 i18n.MsgTypeNoAttribute = "Mindestens ein Attribut anlegen, sonst ist der Typ nicht brauchbar.";
 i18n.MsgNoObjectTypeForManualCreation = "Es können keine Ressourcen angelegt werden, weil entweder keine Rechte eingeräumt sind oder weil kein Ressouce-Typ für manuelles Anlegen vorgesehen ist.";
 i18n.MsgFilterClogged = 'Filter ist undurchlässig - mindestens ein Kriterium ist nicht erfüllbar.';
@@ -571,9 +563,8 @@ i18n.MsgUploading = "übertragen";
 i18n.MsgImporting = "Importieren";
 i18n.MsgBrowserSaving = "Ihr Browser speichert die Datei gemäß Voreinstellungen.";
 i18n.MsgSuccess = "Erfolgreich!";
-i18n.MsgSelectImg = "Wählen oder laden Sie ein Bild";
+i18n.MsgSelectImg = "Wählen oder laden Sie ein Bild:";
 i18n.MsgImgWidth = "Bildbreite [px]";
-i18n.MsgSelectResClass = i18n.LblResourceClass+" auswählen";
 i18n.MsgNoEligibleRelTypes = "Keine Aussage-Typen für diesen Ressource-Typ definiert.";
 i18n.MsgClickToNavigate = "Eine Ressource doppelt klicken, um dorthin zu navigieren:";
 i18n.MsgClickToDeleteRel = "Eine Ressource doppelt klicken, um die betreffende Aussage zu löschen:";
@@ -646,7 +637,7 @@ i18n.LblUserAdministration = 'Nutzer';
 i18n.LblProjectAdministration = 'Typen & Rechte';   // for the browser tabs - no HTML!
 i18n.LblSpecifications = 'Inhalte';
 i18n.LblReader = 'SpecIF Leser';
-i18n.LblEditor = 'SpecIF Editor';
+i18n.LblLocal = 'SpecIF Editor';
 i18n.LblSupport = 'Unterstützung';
 i18n.AppHome = i18n.IcoHome+'&#160;'+i18n.LblHome;
 i18n.AppSystemAdministration = i18n.IcoSystemAdministration+'&#160;Interaktives Lastenheft: '+i18n.LblSystemAdministration;
@@ -655,5 +646,5 @@ i18n.AppProjectAdministration = i18n.IcoProjectAdministration+'&#160;Interaktive
 i18n.AppSpecifications = i18n.IcoSpecifications+'&#160;Interaktives Lastenheft: '+i18n.LblSpecifications;
 i18n.AppReader = i18n.IcoReader+'&#160;'+i18n.LblReader;
 i18n.AppImport = i18n.IcoImport+'&#160;Import';
-i18n.AppLocal = i18n.IcoSpecifications+'&#160;'+i18n.LblEditor;
+i18n.AppLocal = i18n.IcoSpecifications+'&#160;'+i18n.LblLocal;
 i18n.AppSupport = i18n.IcoSupport+'&#160;'+i18n.LblSupport;

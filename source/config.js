@@ -86,7 +86,7 @@ const CONFIG = {};
 	CONFIG.objectTable = 'table';
 	CONFIG.objectList = 'doc';  
 	CONFIG.objectFilter = 'filter';
-	CONFIG.objectDetails = 'resource';
+	CONFIG.objectDetails = 'resources';
 	CONFIG.objectRevisions = 'revisions';
 	CONFIG.relations = 'statements';
 //	CONFIG.objectSort = 'sort';
@@ -353,8 +353,6 @@ const CONFIG = {};
 	CONFIG.statementClasses = [
 		'oslc_rm:satisfies',
 		'oslc_rm:satisfiedBy',
-		'oslc_rm:implements',
-		'oslc_rm:implementedBy',
 		'oslc_rm:validates',
 		'oslc_rm:validatedBy',
 	//	'oslc_rm:decomposes',
@@ -402,8 +400,8 @@ const vocabulary = {
 				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
 				case "dc_author":
 				case "dcterms_author":			// deprecated, for compatibility		
-				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
 				case "specif_createdat":			oT = "dcterms:modified"; break;
+				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
 	//			case "reqif_foreignmodifiedby":		oT = ""; break;
 	//			case "reqif_foreigncreatedon":		oT = ""; break;
 	//			case "reqif_foreigncreatedthru":	oT = ""; break;
