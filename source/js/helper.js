@@ -103,7 +103,7 @@ function textValue( lbl ) {
 	try {
 		return noCode(document.getElementById('field'+lbl.simpleHash()).value)
 	} catch(e) {
-		return null
+		return
 	}
 }
 function getTextLength( lbl ) {
@@ -111,7 +111,7 @@ function getTextLength( lbl ) {
 	try {
 		return textValue( lbl ).length
 	} catch(e) {
-		return null
+		return
 	}
 }
 				
@@ -157,10 +157,8 @@ function radioForm( lbl, entries ) {
 }
 function radioValue( lbl ) {
 	// get the selected radio button, it is the index number as string:
-//	let prB = $('input[name="radio'+lbl.simpleHash()+'"]:checked');
-//	console.debug( 'radioValue',prB, prB.attr('value'), typeof prB.attr('value'), prB[0].value, typeof prB[0].value );
-//	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works nicely
-	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked')[0].value
+	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
+//	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked')[0].value		// fails when  none is checked
 }
 function checkboxForm( lbl, entries ) {
 	// assemble the form for a set of checkboxes;
@@ -180,7 +178,7 @@ function checkboxForm( lbl, entries ) {
 			return null
 	};
 	// render options:
-	let tp, nm=lbl.label.simpleHash();;
+	let tp, nm=lbl.label.simpleHash();
 	entries.forEach( function(e,i) {
 		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		cB +=			'<div>'
@@ -202,6 +200,9 @@ function checkboxValues( lbl ) {
 		resL.push( chd[i].value )
 	};
 	return resL
+}
+function tagId(str) {
+	return 'X-'+str.simpleHash()
 }
 function setStyle( sty ) {
 		let css = document.createElement('style');
@@ -573,7 +574,7 @@ String.prototype.utf8ToXmlChar = function() {
 		let iC = this[i].charCodeAt(0);
 		if (iC < 65 || iC > 127 || (iC > 90 && iC < 97)) aRet[i] = '&#' + iC + ';';
 		else aRet[i] = this[i];
-	}
+	};
 	return aRet.join('');
 }
 /*	String.prototype.xmlChar2utf8 = function() {

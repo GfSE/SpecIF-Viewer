@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!--<title>SpecIF View</title>-->
+	<!--<title>SpecIF Edit</title>-->
 	<link rel="icon" type="image/png" href="./favicon.ico">
 	<meta charset="utf-8" />
 	<!--<meta http-equiv="cache-control" content="no-Cache" />-->
@@ -29,8 +29,8 @@ function App() {
 	self.specifVersion = '1.0';
 	self.init = function() {
 		// must set it here, because the language files must be read first:
-		self.productTitle = 'SpecIF View';
-		self.label = i18n.LblReader;
+		self.productTitle = 'SpecIF Edit';
+		self.label = i18n.LblEditor;
 		document.title = self.label;
 		// Add a global spinner with state control;
 		// all actions are deactivated as long as the app is busy.
@@ -89,7 +89,7 @@ function App() {
 				loadAs: 'specs',					// the name of the controller object to construct
 				// This is a view of the parent:
 				view: '#'+CONFIG.specifications,	// uses implicit actions show/hide
-				label: i18n.BtnRead,
+				label: i18n.BtnEdit,
 				selectedBy: '#selectSpecs',			// DOM element in parent's selector to choose this view
 				// To control the views of the children:
 				selector: '#specsSelector',			// DOM element to choose the view of a child (next level)
@@ -129,8 +129,15 @@ function App() {
 					viewClass: 'contentWide',		// whole width under control of the view
 					label: i18n.TabReports,
 					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
+				},{
+					name: CONFIG.resourceEdit,
+					// no loadAs, so name will be used for the controller object
+					// no view as a modal window will be used
+					// no selector
+					// the view will be called by pressing an item action button; the function to call
+					//   is added manually in view 'CONFIG.specifications'.
 				}]
-			}, {
+			},{
 				action: 'app.cache.selectedProject.export()',
 				label: i18n.BtnExport,
 				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action

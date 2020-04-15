@@ -588,16 +588,15 @@ modules.construct({
 }, function(self) {
 	// Construct an object for displaying a hierarchy of resources:
 
-	let myName = self.loadAs,
-		myFullName = 'app.'+myName;
+	var myName = self.loadAs,
+		myFullName = 'app.'+myName,
+		pData = self.parent,	// the parent's data
+		cData;				// the cached data
+//		selRes;				// the currently selected resource
 
 	self.resources = new Resources(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
-
-	var pData = self.parent,	// the parent's data
-		cData;				// the cached data
-//		selRes;				// the currently selected resource
 		
 	self.init = function() {
 	};
@@ -824,12 +823,11 @@ modules.construct({
 modules.construct({
 	view:'#'+CONFIG.relations
 }, function(self) {
-
-	let myName = self.loadAs,
-		myFullName = 'app.'+myName;
-
 	// Render the statements of a selected resource:
-	var pData = self.parent,	// the parent's data
+
+	var myName = self.loadAs,
+		myFullName = 'app.'+myName,
+		pData = self.parent,	// the parent's data
 		cData,				// the cached data
 		selRes,				// the currently selected resource
 		net,
@@ -854,8 +852,8 @@ modules.construct({
 		opts.lookupTitles = self.lookupTitles = true;
 	//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
-	//	opts.fnDel = modeStaDel? 'app.'+self.parent.loadAs+'.deleteNode()':'';
-				
+	//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
+	
 		// The tree knows the selected resource; if not take the first:
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
 		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
@@ -1176,7 +1174,10 @@ modules.construct({
 			rT += '</div>';
 			return rT  // return rendered statement table for display
 		}  */
-	};
+	}; 
+//	self.deleteStatement = function() {
+//	};
+
 	function linkBtns() {
 		if( !selRes ) return '';
 		if( modeStaDel ) return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
@@ -1495,8 +1496,8 @@ function Resources() {
 
 function desperateTitleOf(r,opts,prj) {
 	// Some elements don't have a title at all; 
-	// and we desperately need a title for the tree and the statement graph, for example:
-	return elementTitleOf(r,opts) || visibleIdOf(r.properties,prj) || r.id 
+	// and we desperately need a title, for example, for the tree and the statement graph:
+	return elementTitleOf(r,opts,prj) || visibleIdOf(r,prj) || r.id 
 }
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
 function propertyValueOf( prp, opts ) {
@@ -1612,7 +1613,10 @@ function propertyValueOf( prp, opts ) {
 	*/
 	}
 }
-var fileRef = {
+function File() {
+	"use strict";
+	var self = this;
+
 /*	All sample data (except ProSTEP) taken from a JSON response of the ReqIF Server.
 
 	Attention: The html-sanitizing in the xhtml-Editor (SCEditor) 
@@ -1625,7 +1629,7 @@ var fileRef = {
 	Known limitation: if there are two references of the same image on a page, only the first is shown,
 	because the id of the image container is made from the image file name.
 */
-	toGUI: function( txt, opts ) {
+	self.toGUI = function( txt, opts ) {
 /*		Properly handle file references in XHTML-Text. 
 		- An image is to be displayed 
 		- a file is to be downloaded
@@ -1656,28 +1660,27 @@ var fileRef = {
 				return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob )
 			}  */
 			function getType( str ) {
-				var t = /(type="[^"]+")/.exec( str );
-				if( t==null ) return '';
-				return (' '+t[1])
+				let t = /(type="[^"]+")/.exec( str );
+				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
+				return ''
 			}
 			function getStyle( str ) {
-				var s = /(style="[^"]+")/.exec( str );
-				if( s==null ) return '';  
-				return (' '+s[1])
+				let s = /(style="[^"]+")/.exec( str );
+				if( Array.isArray(s)&&s.length>0 ) return (' '+s[1]);
+				return ''
 			}
 			function getUrl( str ) {
-				// get the URL:
-				var l = /data="([^"]+)"/.exec( str );  // url in l[1]
+				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
 				// return null, because an URL is expected in any case:
-				if( l == null ) { return null };    
-				return l[1].replace('\\','/')
+				if( Array.isArray(l)&&l.length>0 ) return l[1].replace('\\','/');
+				return // undefined
 			}
 			function getPrp( pnm, str ) {
 				// get the value of XHTML property 'pnm':
 				let re = new RegExp( pnm+'="([^"]+)"', '' ),
 					l = re.exec(str);
-				if( l == null ) { return undefined }; 
-				return l[1]
+				if( Array.isArray(l)&&l.length>0 ) return l[1];
+				return // undefined
 			}
 
 		// Prepare a file reference for viewing and editing:
@@ -1718,9 +1721,9 @@ var fileRef = {
 				let f = itemByTitle(app.cache.selectedProject.data.files,u2);
 //				console.debug('fileRef.toGUI 1a found: ', f );
 				if( f && f.blob ) {
-//					console.debug('containerId',containerId(u2));
-					repSts.push( '<div class="'+opts.imgClass+' '+containerId(u2)+'"></div>' );
-					showImg( f, opts );
+//					console.debug('tagId',tagId(u2));
+					repSts.push( '<div class="'+opts.imgClass+' '+tagId(u2)+'"></div>' );
+					self.render( f, opts );
 					return 'aBra§kadabra'+(repSts.length-1)+'§'
 				} else {
 					return '<div class="notice-danger" >Image missing: '+u2+'</div>'
@@ -1770,8 +1773,8 @@ var fileRef = {
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
 					if( f && f.blob ) {
 						hasImg = true;
-						d= '<div class="'+opts.imgClass+' '+containerId(u1)+'"></div>';
-						showImg( f, opts );
+						d= '<div class="'+opts.imgClass+' '+tagId(u1)+'"></div>';
+						self.render( f, opts );
 					} else {
 						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
 					}
@@ -1856,17 +1859,17 @@ var fileRef = {
 			});
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
+	};
+	self.render = function(f, opts) {
+			if( typeof(opts)!='object' ) opts = {};
+			if( !opts.timelag )  opts.timelag = CONFIG.imageRenderingTimelag;
 
-		function showImg(f, opts) {
-			if( typeof(opts)!='object' ) 
-				opts = {};
-
-//			console.debug('showImg',f,opts);
+//			console.debug('render',f,opts);
 			if( !f || !f.blob ) {
-				Array.from(document.getElementsByClassName(containerId(f.title)), 
+				Array.from(document.getElementsByClassName(tagId(f.title)), 
 					function(el) {el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
 				);
-//				document.getElementById(containerId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
+//				document.getElementById(tagId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
 				return
 			};
 			// ToDo: in case of a server, the blob itself must be fetched first ...
@@ -1878,14 +1881,13 @@ var fileRef = {
 				case 'image/jpg':
 				case 'image/gif':
 					// reference the original list item, which has the blob and other properties:
-					showRaster( f, {timelag:CONFIG.imageRenderingTimelag} );
+					showRaster( f, opts );
 					break;
 				case 'image/svg+xml':
-					opts.timelag = CONFIG.imageRenderingTimelag;
 					showSvg( f, opts );
 					break;
 				case 'application/bpmn+xml':
-					showBpmn( f, {timelag:CONFIG.imageRenderingTimelag} );
+					showBpmn( f, opts );
 					break;
 				default:
 					console.warn('Cannot show unknown diagram type: ',f.type)
@@ -1899,7 +1901,7 @@ var fileRef = {
 					blob2dataURL(f,function(r,fTi,fTy) {
 						// add image to DOM using an image-tag with data-URI.
 						// set a grey background color for images with transparency:
-						Array.from( document.getElementsByClassName(containerId(fTi)), 
+						Array.from( document.getElementsByClassName(tagId(fTi)), 
 							function(el) {el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'}
 						)
 					},opts.timelag)
@@ -1926,7 +1928,7 @@ var fileRef = {
 						let ef = null,
 							mL = null;
 						svg = {
-							locs: document.getElementsByClassName(containerId(f.title)),
+							locs: document.getElementsByClassName(tagId(f.title)),
 							img: r
 						};
 						// process all image references within the SVG image one by one:
@@ -2022,7 +2024,7 @@ var fileRef = {
 								//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 									let eId = this.className.baseVal.split(' ')[1],		// id is second class
 										clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
-										ti = languageValueOf( clsPrp.title );
+										ti = languageValueOf( clsPrp.title ),
 										dsc = '';
 									clsPrp.descriptions.forEach( function(d) {
 										// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
@@ -2109,7 +2111,7 @@ var fileRef = {
 										return 
 									};
 //									console.debug('SVG',svg);
-									Array.from( document.getElementsByClassName(containerId(fTi)), 
+									Array.from( document.getElementsByClassName(tagId(fTi)), 
 										function(el) {el.innerHTML = svg}
 									)
 								})
@@ -2131,36 +2133,33 @@ var fileRef = {
 						if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
 					return null
 				}
-		}	// end of showImg()
-		function containerId(str) {
-			return 'C-'+str.simpleHash()
-		}
-/*	},
+		// end of self.render()
+/*	};
 	// Prepare a file reference to be compatible with ReqIF spec and conventions:
-	fromGUI: function( txt ) {
+	self.fromGUI = function( txt ) {
 			function getType( str ) {
-				var t = /(type="[^"]+")/.exec( str );
-				if( t==null ) return '';
-				return (' '+t[1])
+				let t = /(type="[^"]+")/.exec( str );
+				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
+				return ''
 			}
 			function getStyle( str ) {
-				var s = /(style="[^"]+")/.exec( str );
-				if( s==null ) return '';  
-				return (' '+s[1])
+				let s = /(style="[^"]+")/.exec( str );
+				if( Array.isArray(s)&&s.length>0 ) return (' '+s[1]);
+				return ''
 			}
 			function getUrl( str, prp ) {
-				// get the URL:
-				var l = new RegExp(prp+'="([^"]+)"','').exec( str );
+				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
 				// return null, because an URL is expected in any case:
-				if( l==null ) return null;    
-
-				// ToDo: More greediness!?
-				var loc = /[^"]*\/projects\/[^"]*\/files\/([^"]+)/i.exec( l[1] );    // ...projects/.../files/..
-				// If matching, it is a local path, otherwise an external:
-				// ToDo: If the path is pointing to a specific revision of a file, the revision is ignored/removed.
-				if( loc == null ) return l[1];  		// external link: keep full path
-				return loc[1]              				// local link: take path following '.../files/'
-			};
+				if( Array.isArray(l)&&l.length>0 ) {
+					// ToDo: More greediness!?
+					let loc = /[^"]*\/projects\/[^"]*\/files\/([^"]+)/i.exec( l[1] );    // ...projects/.../files/..
+					// If matching, it is a local path, otherwise an external:
+					// ToDo: If the path is pointing to a specific revision of a file, the revision is ignored/removed.
+					if( Array.isArray(loc)&&loc.length>0 ) return loc[1];	// local link: take path following '.../files/'
+					return l[1];  											// external link: keep full path
+				};
+				return // undefined
+			}
 //		console.debug('fromGUI 0: ', JSON.stringify(txt));
 
 		// Remove the div which has been added for formatting:
@@ -2266,5 +2265,7 @@ var fileRef = {
 //		console.debug('fromGUI result:', JSON.stringify(txt));
 
 		return txt
-*/	}
-}	// end of fileRef()
+*/	};
+	return self
+};	// end of File()
+fileRef = new File();

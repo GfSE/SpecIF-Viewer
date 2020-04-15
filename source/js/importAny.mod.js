@@ -382,7 +382,7 @@ modules.construct({
 	};
 	function handleResult( data ) {
 		// import specif data as JSON:
-//		console.debug('handleResult',data);
+//		console.debug('handleResult',simpleClone(data));
 
 		return specif.check( data, self.format.opts )
 			.fail( handleError )
