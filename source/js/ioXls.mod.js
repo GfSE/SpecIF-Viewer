@@ -37,7 +37,7 @@ modules.construct({
 		fDate = new Date( f.lastModified || f.lastModifiedDate ).toISOString();
 	/*	// take the actual date as a final fall back 
 		if( !fdate ) fDate = new Date().toISOString();  */
-		console.debug( 'file', f, fDate );
+//		console.debug( 'file', f, fDate );
 		return f
 	};
 	self.toSpecif = function( buf ) {
@@ -240,28 +240,27 @@ function xslx2specif( buf, pN, chgAt ) {
 						// Remove all formatting for the title, as the app's format shall prevail.
 						// Before, remove all marked deletions (as prepared be diffmatchpatch).
 						// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-						return obj.properties[ti].value.stripHTML().trim()
+						return obj.properties[ti].value.stripHTML()
 					};
-				/*	// 2. otherwise, find a description and take the beginning:
-					// find a description and take the beginning:
+					// 2. otherwise, look for an id-property:
 					for( var a=0,A=obj.properties.length;a<A;a++ ) {
-						if( CONFIG.descProperties.indexOf( obj.properties[a].title )>-1 ) 
-							return obj.properties[a].value.stripHTML().truncate( CONFIG.maxTitleLength )
-					}  */
+						if( CONFIG.idProperties.indexOf( obj.properties[a].title )>-1 ) 
+							return obj.properties[a].value.stripHTML()
+					} 
 				};
 				return ''
 			}
 			function createFld( sh ) {
 				if( sh.lastCell.row-sh.firstCell.row<1 ) return;   // skip, if there are no resources
 
-/*					function isoOf( xlsDate ) {
+				/*	function isoOf( xlsDate ) {
 						// https://gist.github.com/christopherscott/2782634
 						let d = new Date((parseFloat(xlsDate) - 25567 - 2)*86400*1000);
 						d = d.toISOString();
 						// omit the time, if it is 00:00:00, i.e. if the dateTime value is an integer:
 						return ( Number.isInteger(parseFloat(xlsDate))?d.substr(0,10):d )
-					}
-*/					function getVal( dT, cell ) {
+					}   */
+					function getVal( dT, cell ) {
 						// malicious content will be removed upon import.
 						if( !cell ) return '';
 //						console.debug( 'getVal', cell, dT );
@@ -279,7 +278,8 @@ function xslx2specif( buf, pN, chgAt ) {
 					function createR( ws, l ) {
 						// create a resource:
 						var res = {
-								// ... title will be set according to the properties, later on.
+								// id will be set later on using the visibleId, if provided.
+								// title will be set according to the properties, later on.
 								class: resClassId( ws.resClassName ),
 								properties: [],
 								changedAt: chgAt
@@ -391,14 +391,15 @@ function xslx2specif( buf, pN, chgAt ) {
 				// Processing of createFld:
 				// Create folder resource:
 				var fld = {
-						id: 'F-'+(sh.name+CONFIG.resClassFolder).simpleHash(),
+						id: 'F-'+(pN+sh.name+CONFIG.resClassFolder).simpleHash(),
 						title: sh.name,
 						class: resClassId( CONFIG.resClassFolder ),
-						properties: [{
+						properties: [],   // needed for 0.10.4
+					/*	properties: [{
 							title: CONFIG.propClassTitle,
 							class: 'PC-'+(CONFIG.resClassFolder).toSpecifId()+'-title',
 							value: sh.name
-						}],
+						}], */
 						changedAt: chgAt
 					};
 //				console.debug( 'createFld:', fld );
@@ -508,7 +509,7 @@ function xslx2specif( buf, pN, chgAt ) {
 			name: wb.SheetNames[idx],			// the name of the selected sheet (first has index '0'!)
 			data: wb.Sheets[wb.SheetNames[idx]],
 			// ToDo: Check if the type name does not yet exist. Should not occur as Excel does not allow equal sheet names in a file.
-			hid: 'H-'+wb.SheetNames[idx].simpleHash()	// the hierarchy ID of the folder carrying all resources of the selected sheet
+			hid: 'H-'+(pN+wb.SheetNames[idx]).simpleHash()	// the hierarchy ID of the folder carrying all resources of the selected sheet
 		};
 		ws.range = ws.data["!ref"]; 				// e.g. A1:C25
 //		console.debug( 'sheet', ws );

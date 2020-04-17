@@ -20,6 +20,51 @@ function attrV( lbl, val, cssCl ) {
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>'
 }
+function CheckForm() {
+	// Construct an object performing the key-by-key input checking.
+	var self = this;
+	self.list = [];  // the list of parameter-sets, each for checking a certain input field.
+	self.init = function() {
+		self.list.length = 0;
+	};
+	self.add = function( lb, ty ) {
+		// Add a parameter-set for checking an input field:
+		self.list.push( { label:lb, dataType:ty } );
+//		console.debug( 'checkForms', self.list );
+	};
+	self.do = function() {
+		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
+		let val, ok, allOk = true;
+		self.list.forEach( function(cPs) {
+			// cPs holds the parameters for checking a single property resp. input field.
+			// Get the input value:
+			val = textValue( cPs.label );
+			// Perform the test depending on the dataType:
+			switch( cPs.dataType.type ) {
+				case 'xs:string':
+				case 'xhtml':
+					ok = val.length<=cPs.dataType.maxLength;
+					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					break;
+				case 'xs:double':
+					ok = val.length<1 || RE.Real(cPs.dataType.fractionDigits).test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
+					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					break;
+				case 'xs:integer':
+					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
+					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					break;
+				case 'xs:dateTime':
+					ok = val.length<1 || RE.IsoDate.test(val);
+					setTextState( cPs.label, ok? 'has-success':'has-error' );
+			};
+			allOk = allOk && ok;
+//			console.debug( 'do ', cPs, val );
+		});
+		return allOk
+	};
+	return self
+}
 function textForm( lbl, val, typ, fn ) {  
 	// assemble a form for text input:
 //	console.debug('textForm 1',lbl,val,typ,fn);
@@ -101,9 +146,9 @@ function setTextState( lbl, state ) {
 function textValue( lbl ) {
 	// get the input value:
 	try {
-		return noCode(document.getElementById('field'+lbl.simpleHash()).value)
+		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || ''
 	} catch(e) {
-		return
+		return ''
 	}
 }
 function getTextLength( lbl ) {
@@ -225,7 +270,7 @@ function stdError( xhr, cb ) {
 		case 0:
 		case 200:
 		case 201:
-			return; // some calls end up in the fail trail, even though all went well.
+			return; // some server calls end up in the fail trail, even though all went well.
 		case 401:  // unauthorized
 			userProfile.logout();
 			break;
@@ -608,7 +653,7 @@ function makeHTML(str) {
 if (!String.prototype.stripHTML) {
 	String.prototype.stripHTML = function() {
 		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-		return $("<dummy/>").html( this ).text()
+		return $("<dummy/>").html( this ).text().trim()
 	}
 };
 

@@ -1415,7 +1415,7 @@ function Resource( obj ) {
 										return 'abRakad@bra'+(mL.length-1)+'#'
 									});
 		// Remove all formatting for the title, as the app's format shall prevail:
-		txt = txt.stripHTML().trim();
+		txt = txt.stripHTML();
 		// Finally re-insert the deletions and insertions with their tags:
 		// ToDo: Remove any HTML-tags within insertions and deletions
 		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
@@ -2030,7 +2030,7 @@ function File() {
 										// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
 										dsc += propertyValueOf(d)
 									});
-									if( dsc.stripCtrl().stripHTML().trim() ) {
+									if( dsc.stripCtrl().stripHTML() ) {
 										// Remove the dynamic linking pattern from the text:
 										$("#details").html( '<span style="font-size:120%">' 
 															+ (CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti) 

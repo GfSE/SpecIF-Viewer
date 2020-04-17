@@ -435,7 +435,7 @@ function Project( pr ) {
 		// But: Rescue any property of n, if undefined for r.
 //		console.debug('substituteR',r,n,prj.statements);
 		
-		if( opts && opts.rescueProperties ) {
+		if( n.properties && opts && opts.rescueProperties ) {
 			// 1 Rescue property values, 
 			// if the corresponding property of the adopted resource is undefined or empty.
 			// 1.1 Looking at the property types, which ones are in common:
@@ -496,7 +496,7 @@ function Project( pr ) {
 				// replace resource id:
 				function(nd) { if(nd.resource==dId) {nd.resource=rId}; return true },
 				// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
-				// for example it avoids that the same diagram is shown twice if it has been imported twice:
+				// for example it is avoided that the same diagram is shown twice if it has been imported twice:
 				function(ndL) { for(var i=ndL.length-1; i>0; i--) { if( indexBy(ndL.slice(0,i),'resource',ndL[i].resource)>-1 ) { ndL.splice(i,1) }}}
 		)
 		// ToDo: Make it work, if keys are used as a reference.
@@ -688,7 +688,7 @@ function Project( pr ) {
 											return true  // continue always to the end
 										}
 		);
-		console.debug('createProcessesFolder',dF,pL);
+//		console.debug('createProcessesFolder',dF,pL);
 		if( pL.length>0 ) {
 			// 2. Delete any existing process folders,
 			self.deleteContent( 'node', dF );
@@ -760,7 +760,7 @@ function Project( pr ) {
 										}
 		);
 		// 1.2 Delete now:
-		console.debug('createGlossary',gF);
+//		console.debug('createGlossary',gF);
 		self.deleteContent( 'node', gF )
 
 		// 2. Create a new combined glossary:
@@ -908,22 +908,22 @@ function Project( pr ) {
 			types.forEach( function(ty) {
 				itmL=[];
 				for( i=0,I=nD[ty.list].length; i<I; i++ ) {
-					let itm = nD[ty.list][i],
+					let nC = nD[ty.list][i],  // nC is a class in the new data
 						// types are compared by id, instances by title:
-						idx = indexById( self.data[ty.list], itm.id );
+						idx = indexById( self.data[ty.list], nC  .id );
 					if( idx<0 ) {
 						// there is no item with the same id:
-						itmL.push( itm )
+						itmL.push( nC )
 					} else {
 						// there is an item with the same id:
-						if( !ty.eqFn( self.data[ty.list][idx], itm) ) {
+						if( !ty.eqFn( self.data[ty.list][idx], nC) ) {
 							// c) create a new id and update all references:
 							// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 							// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-							let alterId = itm.id;
-							itm.id += '-' + new Date().toISOString().simpleHash();
-							ty.sbFn( nD, itm.id, alterId );
-							itmL.push( itm );
+							let alterId = nC.id;
+							nC.id += '-' + new Date().toISOString().simpleHash();
+							ty.sbFn( nD, nC.id, alterId );
+							itmL.push( nC );
 						}
 					}
 				};
@@ -938,49 +938,51 @@ function Project( pr ) {
 			//    b) if same title and type, just use it and update all references
 			itmL=[];
 			for( i=0,I=nD.resources.length; i<I; i++ ) {
-				let itm = nD.resources[i];
-			//		typ = itemById( nD.resourceClasses, itm['class'] );
-			//	if( CONFIG.modelElementClasses.indexOf( typ.title )>-1
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( resClassTitleOf(itm,nD) )>-1 
-					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nD,itm,CONFIG.propClassType) )<0 
+				let nR = nD.resources[i]; // nR is a resource in the new data
+
+				// If the resource' class belongs to a collection of class-titles and is not excluded from deduplication:
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( resClassTitleOf(nR,nD) )>-1 
+					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nD,nR,CONFIG.propClassType) )<0 
 				) {
 						// Check for a resource with the same title:
-						let exs = itemByTitle( self.data.resources, itm.title );
+						let eR = itemByTitle( self.data.resources, nR.title );  // resource in the existing data
 						// If there is an instance with the same title ... and if the types match;
 						// the class title reflects the role of it's instances ...
 						// and is less restrictive than the class ID:
-//						console.debug('~1',itm,exs?exs:'');
-						if( exs 
-							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, exs, CONFIG.propClassType ))<0 
-							&& resClassTitleOf(itm,nD)==resClassTitleOf(exs,self.data) 
-					//		&& valByTitle(nD,itm,CONFIG.propClassType)==valByTitle(self.data,exs,CONFIG.propClassType) 
+//						console.debug('~1',nR,eR?eR:'');
+						if( eR 
+							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, eR, CONFIG.propClassType ))<0 
+							&& resClassTitleOf(nR,nD)==resClassTitleOf(eR,self.data) 
+					//		&& valByTitle(nD,nR,CONFIG.propClassType)==valByTitle(self.data,eR,CONFIG.propClassType) 
 						) {
-//							console.debug('~2',exs,itm);
+//							console.debug('~2',eR,nR);
 							// There is an item with the same title and type,
 							// adopt it and update all references:
-							substituteR( nD, exs, itm, {rescueProperties:true} );
+							substituteR( nD, eR, nR, {rescueProperties:true} );
 							continue
 						}
 				};
-				// Else, keep separate instances:
+				
+				// Execution gets here, unless a substitution has taken place;
+				// keep separate instances:
 				
 				// Note that in theory, there shouldn't be any conflicting ids, but in reality there are;
 				// for example it has been observed with BPMN/influx which is based on bpmn.io like cawemo.
 				// ToDo: make it an option.
 
 				// Check, whether the existing model has an element with the same id,
-				// and if it has a different title, assign a new id to the new element:
-				if( hasDuplicateId(self.data,itm.id) ) {
-					// ToDo: check whether titles are different .... otherwise adopt as well ??
-//					console.debug('duplicate ID',itm);
+				// and since it does have a different title or different type (otherwise it would have been substituted above),
+				// assign a new id to the new element:
+				if( hasDuplicateId(self.data,nR.id) ) {
+//					console.debug('duplicate ID',nR);
 					let newId = genID('R-');
 					// first assign new ID to all references:
-					substituteR( nD, {id:newId}, itm );
+					substituteR( nD, {id:newId}, nR );
 					// and then to the resource itself:
-					itm.id = newId
+					nR.id = newId
 				};
-//				console.debug('+ resource',itm);
-				itmL.push( itm ) 
+//				console.debug('+ resource',nR);
+				itmL.push( nR ) 
 			};
 			pend++;
 			self.createContent( 'resource', itmL )
@@ -1528,7 +1530,7 @@ function Project( pr ) {
 				return false
 			}  */
 		
-		console.debug('deleteContent',ctg,item);
+//		console.debug('deleteContent',ctg,item);
 		var dDO = $.Deferred();
 		// Do not try to delete types which are in use;
 		// ToDo: Delete in the server, as well.
@@ -1663,10 +1665,11 @@ function Project( pr ) {
 				form.append( 
 					"<p>"+i18n.MsgExport+"</p>"
 				+	radioForm( i18n.LblFormat, [
-						{ title: 'SpecIF', id: 'specif', checked: true },
-						{ title: 'ReqIF', id: 'reqif' },
-						{ title: 'ePub', id: 'epub' },
-						{ title: 'MS WORD (Open XML)', id: 'oxml' }
+						{ title: 'SpecIF v0.10.8', id: 'specif-v0.10.8' },
+						{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
+						{ title: 'ReqIF v1.2', id: 'reqif' },
+						{ title: 'ePub v2', id: 'epub' },
+						{ title: 'MS WORD® (Open XML)', id: 'oxml' }
 					]) 
 				);
 				return form },
@@ -1681,9 +1684,9 @@ function Project( pr ) {
 					action: function (thisDlg) {
 						// Get index of option:
 						app.busy.set();
+						message.show( i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
 						self.exportAs( {format: radioValue( i18n.LblFormat )} )
 							.done( function() { 
-								message.show( "OK (200): "+i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
 								app.busy.reset();
 							})
 							.fail( handleError );
@@ -1724,8 +1727,7 @@ function Project( pr ) {
 
 			switch( opts.format ) {
 				case 'reqif':
-					
-					// no break
+				case 'specif-v0.10.8':
 				case 'specif':
 					storeAs( opts );
 					break;
@@ -1739,9 +1741,9 @@ function Project( pr ) {
 		return eDO
 
 		function publish( opts ) {
-//			console.debug( "publish", opts );
 			if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
 			// ToDo: Get the newest data from the server.
+//			console.debug( "publish", opts );
 
 			// take newest revision:
 			opts.revisionDate = new Date().toISOString();
@@ -1819,10 +1821,14 @@ function Project( pr ) {
 			}
 		}
 		function storeAs( opts ) {
-			if( !opts || ['specif','reqif'].indexOf(opts.format)<0 ) return null;
+			if( !opts || ['specif-v0.10.8','specif','reqif'].indexOf(opts.format)<0 ) return null;
 			// ToDo: Get the newest data from the server.
+//			console.debug( "storeAs", opts );
 
-			switch( opts.format ) {
+			switch( opts.format ) { 
+				case 'specif-v0.10.8':
+					opts.specifVersion = '0.10.8';	// for backlevel compatibility
+					// no break;
 				case 'specif':
 					opts.lookupTitles = false;  // keep vocabulary terms
 					opts.lookupValues = false;
@@ -1839,7 +1845,8 @@ function Project( pr ) {
 					if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
 			};
 			let zip = new JSZip(),
-				data = specif.toExt( self.data, opts );
+				data = specif.toExt( self.data, opts ),
+				fname;
 
 			// Add the files:
 			if( data.files )
@@ -1850,12 +1857,14 @@ function Project( pr ) {
 				});
 
 			// Prepare the output data:
-			let fName = data.title+"."+opts.format;
 			switch( opts.format ) {
+				case 'specif-v0.10.8':
 				case 'specif':
+					fName = data.title+".specif";
 					data = JSON.stringify( data );
 					break;
 				case 'reqif':
+					fName = data.title+".reqifz";
 					data = app.ioReqif.toReqif( data )
 			};
 			let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
@@ -1870,7 +1879,7 @@ function Project( pr ) {
 				.then(
 					function(blob) {
 						// successfully generated:
-//						console.debug("storing ",data.title+".specifz");
+//						console.debug("storing ",fName+"z");
 						saveAs(blob, fName+"z");
 						self.data.exporting = false;
 						eDO.resolve()
@@ -2225,7 +2234,7 @@ function Project( pr ) {
 							// delete the node, if present:
 							function(ndL) { 
 								let i=indexById(ndL,e.predecessor); 
-								if(i>-1) console.debug('predecessor found', ndL, i, ndL[i]);
+//								if(i>-1) console.debug('predecessor found', ndL, i, ndL[i]);
 								if(i>-1) ndL.splice(i+1,0,e)
 							}
 						)
@@ -2260,13 +2269,13 @@ function Project( pr ) {
 				// not yet listed, so add;
 				// after the predecessor, if specified, or by default as first element:
 				e.predecessor? L.splice(++p,0,e) : L.unshift(e);   
-				console.debug('cacheA 1',p,L);
+//				console.debug('cacheA 1',p,L);
 				return p
 			};
 			if( e.predecessor && n!=p ) {
 				// remove existing and add the new element:
 				L.splice(n,1).splice(++p,0,e);
-				console.debug('cacheA 2',p,L);
+//				console.debug('cacheA 2',p,L);
 				return p
 			};
 			// update the existing otherwise:
@@ -2353,7 +2362,7 @@ function Project( pr ) {
 			// if el is the node, 'id' will be used,
 			// and if el is the referenced resource, 'resource' will be used to identify the node.
 			if( !Array.isArray( L ) ) return;
-			console.debug('delNodes',simpleClone(L),el);
+//			console.debug('delNodes',simpleClone(L),el);
 			for( var h=L.length-1; h>-1; h-- ) {
 				if( L[h].id==el.id || L[h].resource==el.resource ) {
 //					console.debug( 'deleting node ',simpleClone(L[h]) );
@@ -2471,7 +2480,7 @@ const specif = {
 				cDO.notify('Checking constraints',20);
 				rc = checkConstraints( data, opts );
 				if( rc.status==0 ) {
-					console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
+//					console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
 					cDO.resolve( data, rc )
 				} else {
 					// older versions of the checking routine don't set the responseType:
@@ -3283,11 +3292,11 @@ function elementTitleOf( el, opts, dta ) {
 			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
 			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
 		//	if( modules.ready.indexOf( 'diff' )>-1 )
-		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML().trim()
+		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //			console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-			return languageValueOf( pL[idx].value, opts ).stripHTML().trim()
+			return languageValueOf( pL[idx].value, opts ).stripHTML()
 		};
 		return
 	}
@@ -3358,7 +3367,7 @@ function typeOf( el ) {
 function hasContent( pV ) {
 	// must be a string with the value of the selected language.
 	if( !pV ) return false;
-	return pV.stripHTML().trim().length>0
+	return pV.stripHTML().length>0
 		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
 		|| RE.tagImg.test(pV)
 		|| RE.tagA.test(pV)

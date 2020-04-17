@@ -16,165 +16,69 @@ modules.construct({
 		pData = self.parent,	// the parent's data
 		cData,					// the cached data
 		opts,					// the processing options
-		toEdit,					// the classified properties to edit
-		selNd;					// the selected tree node
+		toEdit;					// the classified properties to edit
 	self.newRes;				// the resource to edit
 	self.newFiles = [];			// collect uploaded files before committing the change
+	self.checkForm = new CheckForm();
 
 	self.init = function() {
 //		console.debug('resourceEdit.init')
 		self.clear()
 	};
 	self.clear = function() {
-		self.newFiles.length = 0
+		self.newFiles.length = 0;
+		self.checkForm.list.length = 0;
 	};
 
+	// The choice of modal dialog buttons:
 	let msgBtns = {
 		cancel: {
-				label: i18n.BtnCancel,
-				action: function(thisDlg){ 
-					console.debug('action cancelled');
-					thisDlg.close() 
-				}
-			},
+			id: 'btn-modal-cancel',
+			label: i18n.BtnCancel,
+			action: function(thisDlg){ 
+				console.debug('action cancelled');
+				thisDlg.close() 
+			}
+		},
 		update: { 	
-				label: i18n.BtnUpdate,
-				cssClass: 'btn-success', 
-				action: function(thisDlg) {
-					save('update');
-					thisDlg.close()
-				}  
-			},	
+			id: 'btn-modal-update',
+			label: i18n.BtnUpdate,
+			cssClass: 'btn-success btn-modal-save',
+			action: function(thisDlg) {
+				save('update');
+				thisDlg.close()
+			}  
+		},	
 		insertAfter: {
-				label: i18n.BtnInsertSuccessor,
-				cssClass: 'btn-success', 
-				action: function(thisDlg) {
-					save('insertAfter');
-					thisDlg.close()
-				}  
-			},
+			id: 'btn-modal-insertAfter',
+			label: i18n.BtnInsertSuccessor,
+			cssClass: 'btn-success btn-modal-save', 
+			action: function(thisDlg) {
+				save('insertAfter');
+				thisDlg.close()
+			}  
+		},
 		insertBelow: { 	
-				label: i18n.BtnInsertChild,
-				cssClass: 'btn-success', 
-				action: function(thisDlg) {
-					save('insertBelow');
-					thisDlg.close()
-				}  
-			}
+			id: 'btn-modal-insertBelow',
+			label: i18n.BtnInsertChild,
+			cssClass: 'btn-success btn-modal-save', 
+			action: function(thisDlg) {
+				save('insertBelow');
+				thisDlg.close()
+			}  
+		}
 	};
-	function save(mode) {
-		let p, 
-			pend=2, // minimally 2 calls with promise
-			// The properties of toEdit are complete in contrast to the original self.newRes:
-			allProps = toEdit.descriptions.concat(toEdit.other),
-			chD = new Date().toISOString();  // changedAt
-		for( var a=allProps.length-1;a>-1;a-- ) {
-			p = allProps[a];
-			// delete any title property, as the resource's native title has been set:
-			if( CONFIG.titleProperties.concat(CONFIG.headingProperties).indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('delete',p);
-				allProps.properties.splice(a,1);
-				continue
-			};
-			// Skip the diagrams, as they are directly updated if the user uploads a new file:
-			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('skip',p);
-				continue
-			};
-			console.debug( 'save',mode, p, getP( p ) );
-			p.value = getP( p );
-		//	itemBy( allProps, 'class', p['class'] ).value = getP( p )
-		};
-		console.debug( 'save allProps', allProps );
-		// set the resource's native title:
-		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
-		// suppress empty properties:
-		self.newRes.properties = forAll( allProps, function(p) { if( hasContent(p.value) ) return p });
-		self.newRes.changedAt = chD;
-		switch( mode ) {
-			case 'update':
-				app.cache.selectedProject.updateContent( 'resource', self.newRes )
-					.then( finalize, stdError );
-				break;
-			case 'insertAfter':
-				app.cache.selectedProject.createContent( 'resource', self.newRes )
-					.then( finalize, stdError );
-				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selResId} )
-					.then( finalize, stdError );
-				break;
-			case 'insertBelow':
-				app.cache.selectedProject.createContent( 'resource', self.newRes )
-					.then( finalize, stdError );
-				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selResId} )
-					.then( finalize, stdError );
-		};
-		// has no effect, if newFiles is empty:
-		app.cache.selectedProject.createContent( 'file', self.newFiles )
-			.then( finalize, stdError );
-		return;
-			
-		function finalize() {	
-			if(--pend<1) {
-				pData.updateTree();
-				selNd = pData.tree.selectedNode;
-				switch( mode ) {
-					case 'insertAfter':
-						console.debug('nd',selNd,pData.tree.selectedNode)
-						pData.tree.selectNode( selNd.getNextSibling() ); 
-						break;
-					case 'insertBelow':
-						pData.tree.openNode( selNd );
-						pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
-				};  
-				pData.doRefresh({forced:true})
-			}
-		}
-		function getP(p) {
-			// Get the value of a property:
-			// ToDo: Works only, if all propertyClasses are always cached:
-			let pC = itemById( cData.propertyClasses, p['class'] ),
-				dT = itemById( cData.dataTypes, pC.dataType ),
-				opts = {
-					lookupTitles: true,
-					targetLanguage: browser.language
-				};
-			switch( dT.type ) {
-				case 'xs:dateTime':
-				case 'xs:string':
-				case 'xhtml':
-					// The diagrams are skipped in the calling layer.
-//					console.debug( '*',p,textValue( titleOf(p,opts) ) );
-					return textValue( titleOf(p,opts) );
-				case 'xs:enumeration':
-//					console.debug('xs:enumeration',p,pC,separatedValues,vals);
-					if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-//						console.debug( '*',p,checkboxValues( titleOf(p,opts) ).toString() );
-						return checkboxValues( titleOf(p,opts) ).toString()
-					} else {
-//						console.debug( '*',p,radioValue( titleOf(p,opts) ) );
-						return radioValue( titleOf(p,opts) )
-					};
-				case 'xs:boolean':
-					return checkboxValues( titleOf(p,opts) ).toString();
-				case 'xs:integer':
-				case 'xs:double':
-					return '' /* ToDo */
-			}
-		}
-	}
 
 	// The module entry;
 	// called by the parent's view controller:
 	self.show = function( options ) {
 
 		self.clear();
-		opts = simpleClone( options );
 		cData = app.cache.selectedProject.data;
-		selNd = pData.tree.selectedNode;
+		opts = simpleClone( options );
+		opts.selResId = self.parent.tree.selectedNode.id;
 
-		console.debug('resourceEdit.show',opts);
+//		console.debug('resourceEdit.show',opts);
 		// Note: Here ES6 promises will be used. 
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
 		switch( opts.mode ) {
@@ -186,7 +90,6 @@ modules.construct({
 						.then( 
 							(r)=>{
 //								console.debug( '#', opts.mode, r );
-								opts.selResId = self.parent.tree.selectedNode.id;
 								self.newRes = simpleClone(r);
 								opts.dialogTitle = i18n.MsgCreateResource;
 								opts.msgBtns = [
@@ -194,7 +97,7 @@ modules.construct({
 									msgBtns.insertAfter,
 									msgBtns.insertBelow
 								];
-								editResource(r)
+								editResource(r,opts)
 							}, 
 							stdError
 						)
@@ -205,12 +108,12 @@ modules.construct({
 			case 'clone':
 			case 'update':
 //				console.debug('~',nd);
-				app.cache.selectedProject.readContent( 'resource', selNd.ref )
+				// get the selected resource:
+				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 					.done( function(r) {
 					//	app.cache.selectedProject.readContent( 'resourceClass', r['class'] )
 					//		.done( function(rC) {
 								// create a clone to collect the changed values before committing:
-								opts.selResId = r.id;
 								self.newRes = simpleClone(r);
 								if( opts.mode=='clone' ) {
 									self.newRes.id = genID('R-');
@@ -227,34 +130,40 @@ modules.construct({
 										msgBtns.update
 									]
 								}; 
-								editResource(self.newRes)
+								editResource(self.newRes,opts)
 					//		})
 					//		.fail( stdError )
 					})
 					.fail( stdError );
 		};
-		
 		return;
 		
-		function editResource(res) {
+		function editResource(res,opts) {
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
+			// complete and sort the properties according to their role (title, descriptions, ..):
 			toEdit = classifyProps( res, cData );
-			let dlg = new BootstrapDialog({
+			let ti = i18n.lookup(CONFIG.propClassTitle),
+				dlg = new BootstrapDialog({
 				title: opts.dialogTitle,
 			//	type: 'type-success',
 				type: 'type-primary',
 				size: BootstrapDialog.SIZE_WIDE,
+				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
+				onshown: function() { setTextFocus(ti); app[myName].check() },
 				message: function (thisDlg) {
 					var form = '<form id="attrInput" role="form" class="form-horizontal" ></form>';
-						form += textForm( i18n.lookup(CONFIG.propClassTitle), toEdit.title, 'line' );
+						// field for the title property:
+						form += textForm( ti, toEdit.title, 'line' );
+						// fields for the description properties: 
 						toEdit.descriptions.forEach( function(d) {
 							form += editP(d)
 						});
+						// fields for the remaining properties:
 						toEdit.other.forEach( function(p) {
 							form +=editP(p)
 						});
-					return $( form ) 
+					return $( form )
 				},
 				buttons: opts.msgBtns
 			})
@@ -270,49 +179,54 @@ modules.construct({
 						lookupTitles: true,
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
-					};
+					},
+					ti = titleOf(p,opts);
+				// create an input field depending on the property's dataType:
 				switch( dT.type ) {
 					case 'xs:string':
 					case 'xhtml':
 						if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-							// it is a diagram reference:
+							// it is a diagram reference (works only with XHTML-fields):
 							return renderDiagram(p,opts)
 						} else {
+							// add parameters to check this input field:
+							self.checkForm.add( ti, dT );
 							// it is a text (in case of xhtml, it may contain a diagram reference:
-							return textForm( titleOf(p,opts), languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line' )
+							return textForm( ti, languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line', myFullName+'.check()' )
 						};
 					case 'xs:enumeration':
 						let separatedValues = p.value.split(','),
 							vals = forAll( dT.values, function(v) { return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-							return checkboxForm( titleOf(p,opts), vals )
+							return checkboxForm( ti, vals )
 						} else {
-							return radioForm( titleOf(p,opts), vals )
+							return radioForm( ti, vals )
 						};
-					case 'xs:dateTime':
-						return textForm( titleOf(p,opts), p.value, 'line' );
 					case 'xs:boolean':
-						return checkboxInput( titleOf(p,opts), {checked:p.value=='true'} )
+						return checkboxInput( ti, {checked:p.value=='true'} );
+					case 'xs:dateTime':
 					case 'xs:integer':
 					case 'xs:double':
-						return '' /* ToDo */
+						// add parameters to check this input field:
+						self.checkForm.add( ti, dT );
+						return textForm( ti, p.value, 'line', myFullName+'.check()' );
 				};
 				return
 
 				function renderDiagram(p,opts) {
-					console.debug('renderDiagram',p);
+//					console.debug('renderDiagram',p);
 					return '<div class="form-group form-active" >'
 						+ 		'<div class="attribute-label" >'+titleOf(p,opts)+'</div>'
 						+ 		'<div class="attribute-value">'
-						+			itemBtns(p)
+						+			diagBtns(p)
 									// Add a container based on the propertyClass (which should be unique and since there is usually no property-id), 
 									// so that the user can update and delete the diagram later on:
 						+			'<div id="'+tagId(p['class'])+'">'+fileRef.toGUI( p.value, opts )+'</div>'
 						+		'</div>'
 						+ '</div>'
 					
-					function itemBtns(p) {
+					function diagBtns(p) {
 						// p['class'] is used to identify the property; 
 						// it is supposed to be unique in the resource's properties
 						// and at most one resource is edited in this session at any point in time.
@@ -373,6 +287,8 @@ modules.construct({
 			})
 		}
 	};
+	self.hide = function() {
+	};
 	self.updateDiagram = function(cId) {
         let f = document.getElementById("file"+cId.simpleHash()).files[0];
 //		console.debug('updateDiagram',cId,f.name);
@@ -400,8 +316,136 @@ modules.construct({
 		itemBy(self.newRes.properties, 'class', cId ).value = '';
 		document.getElementById(tagId(cId)).innerHTML = ''
 	};
-	self.hide = function() {
+	self.check = function() {
+		// called on every key-input;
+		// check all input fields:
+		let notOk = !self.checkForm.do();
+		// enable save buttons, if all input fields have acceptable content:
+		Array.from( document.getElementsByClassName('btn-modal-save'), function(btn) {
+//			console.debug('#',btn,notOk);
+			btn.disabled = notOk
+		})
+	//	console.debug('input made',document.getElementsByClassName('btn-modal-save'));
 	};
+/*	self.checkInput = function( fieldId, dataTypeId ) {
+		// checking routines for all alphanumeric input fields;
+		// no need to check enumerations and boolean.
+		let input,
+			dT = itemById( cData.dataTypes, dataTypeId );
+		switch( dT.type ) {
+			case 'xs:integer':
+				break;
+			case 'xs:double':
+			case 'xs:dateTime':
+			case 'xs:string':
+			case 'xhtml':
+				input = textValue( fieldId );
+		}
+	};*/
+
+	function save(mode) {
+		// Save the new or changed resource:
+		let p, 
+			pend=2, // minimally 2 calls with promise
+			// The properties of toEdit are complete in contrast to the original self.newRes:
+			allProps = toEdit.descriptions.concat(toEdit.other),
+			chD = new Date().toISOString();  // changedAt
+		for( var a=allProps.length-1;a>-1;a-- ) {
+			p = allProps[a];
+			// delete any title property, as the resource's native title has been set:
+			if( CONFIG.titleProperties.concat(CONFIG.headingProperties).indexOf(propTitleOf(p,cData))>-1 ) {
+//				console.debug('delete',p);
+				allProps.properties.splice(a,1);
+				continue
+			};
+			// Skip the diagrams, as they are directly updated if the user uploads a new file:
+			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
+//				console.debug('skip',p);
+				continue
+			};
+//			console.debug( 'save',mode, p, getP( p ) );
+			p.value = getP( p );
+		//	itemBy( allProps, 'class', p['class'] ).value = getP( p )
+		};
+//		console.debug( 'save allProps', allProps );
+		// set the resource's native title:
+		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
+		// suppress empty properties:
+		self.newRes.properties = forAll( allProps, function(p) { if( hasContent(p.value) ) return p });
+		self.newRes.changedAt = chD;
+		switch( mode ) {
+			case 'update':
+				app.cache.selectedProject.updateContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				break;
+			case 'insertAfter':
+				app.cache.selectedProject.createContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				pend++;
+				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selResId} )
+					.then( finalize, stdError );
+				break;
+			case 'insertBelow':
+				app.cache.selectedProject.createContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				pend++;
+				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selResId} )
+					.then( finalize, stdError );
+		};
+		// has no effect, if newFiles is empty:
+		app.cache.selectedProject.createContent( 'file', self.newFiles )
+			.then( finalize, stdError );
+		return;
+			
+		function finalize() {	
+			if(--pend<1) {
+				pData.updateTree();
+				// get the selected node:
+				let selNd = pData.tree.selectedNode;
+				switch( mode ) {
+					case 'insertAfter':
+//						console.debug('nd',selNd,pData.tree.selectedNode)
+						pData.tree.selectNode( selNd.getNextSibling() ); 
+						break;
+					case 'insertBelow':
+						pData.tree.openNode( selNd );
+						pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
+				};  
+				pData.doRefresh({forced:true})
+			}
+		}
+		function getP(p) {
+			// Get the value of a property:
+			// ToDo: Works only, if all propertyClasses are always cached:
+			let pC = itemById( cData.propertyClasses, p['class'] ),
+				dT = itemById( cData.dataTypes, pC.dataType ),
+				opts = {
+					lookupTitles: true,
+					targetLanguage: browser.language
+				};
+			switch( dT.type ) {
+				case 'xs:integer':
+				case 'xs:double':
+				case 'xs:dateTime':
+				case 'xs:string':
+				case 'xhtml':
+					// The diagrams are skipped in the calling layer above.
+//					console.debug( '*',p,textValue( titleOf(p,opts) ) );
+					return textValue( titleOf(p,opts) );
+				case 'xs:enumeration':
+//					console.debug('xs:enumeration',p,pC,separatedValues,vals);
+					if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
+//						console.debug( '*',p,checkboxValues( titleOf(p,opts) ).toString() );
+						return checkboxValues( titleOf(p,opts) ).toString()
+					} else {
+//						console.debug( '*',p,radioValue( titleOf(p,opts) ) );
+						return radioValue( titleOf(p,opts) )
+					};
+				case 'xs:boolean':
+					return checkboxValues( titleOf(p,opts) ).toString()
+			}
+		}
+	}
 	return;
 })
 

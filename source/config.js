@@ -13,22 +13,22 @@ const CONFIG = {};
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
 	CONFIG.notAssigned = 'notAssigned';
-	CONFIG.loginTimeout = 3000;
-	CONFIG.defaultCommunicationTimeout = 12000;
-	CONFIG.imageRenderingTimelag = 250;  // timelag between building the DOM and inserting the images
+//	CONFIG.loginTimeout = 3000;
+//	CONFIG.communicationTimeout = 12000;
 	CONFIG.messageDisplayTimeShort = 4000;
 	CONFIG.messageDisplayTimeNormal = 8000;
 	CONFIG.messageDisplayTimeLong = 12000;
 	CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms). The faster the browser and processor, the shorter the time may be chosen.
-	CONFIG.textThreshold = 192;  // for longer strings a text area is offered for editing.
-	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
+	CONFIG.imageRenderingTimelag = 160;  // timelag between building the DOM and inserting the images
 	CONFIG.minInteger = -32768;
 	CONFIG.maxInteger = 32767;
 	CONFIG.minReal = -10000000.0;
 	CONFIG.maxReal = 10000000.0;
-	CONFIG.maxAccuracy = 3;		// max decimals of real numbers
+	CONFIG.maxAccuracy = 9;		// max decimals of real numbers
+	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
+	CONFIG.textThreshold = 192;  // for longer strings a text area is offered for editing.
 	CONFIG.maxTitleLength = CONFIG.textThreshold;  // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
-	CONFIG.treeMaxTitleLength = 60;  // truncate longer titles in the tree (module specifications*.mod.js)
+	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications*.mod.js)
 	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules reqifserver*.js, specifications*.mod.js, objectFilter*.mod.js)
 	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications*.mod.js)
 	CONFIG.genIdLength = 27;  // length of generated GUIDs, any prefix comes in addition (but it does not add significantly to the probability of collision)
@@ -38,7 +38,7 @@ const CONFIG = {};
 //	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
-	CONFIG.findMentionedObjects = true;	// looks for object titles mentiones in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
+	CONFIG.findMentionedObjects = true;	// looks for object titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
 	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
@@ -142,6 +142,7 @@ const CONFIG = {};
 
 	// The following can have an i18n label in the translation files:
 	CONFIG.dataTypeComment = 'Datatype for comment text';
+	CONFIG.propClassId = 'dcterms:identifier';
 	CONFIG.propClassTitle = 'dcterms:title';
 	CONFIG.propClassDesc = 'dcterms:description';
 	CONFIG.resClassDiagram = 'SpecIF:Diagram';
@@ -186,11 +187,11 @@ const CONFIG = {};
 		'ReqIF.ChapterName',	// do not remove
 		// DocBridge Resource Director:
 		'DBRD.ChapterName',
-		// Glossary:
+	/*	// Glossary:
 		'Heading.en',
 		'Heading.de',
 		'Heading.fr',
-		'Heading.es',
+		'Heading.es', */
 		// Other:
 		'Überschrift'
 	];
@@ -216,11 +217,11 @@ const CONFIG = {};
 */		// RIF 1.1a Atego Exerpt:	
 		'Object Heading',
 //		'VALUE-Object Heading',   // 'VALUE-' is now removed right at the beginning
-		// Glossary:
+/*		// Glossary:
 		'Title.en',
 		'Title.de',
 		'Title.fr',
-		'Title.es',
+		'Title.es', */
 		// Viacar Glossary:
 		'Bezeichnung_DE',
 		'Bezeichnung_FR',
@@ -527,11 +528,12 @@ const RE = {};
 	RE.IsoDate = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;	
 	// see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
 	// /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
-//	RE.Integer = /^[+-]?[0-9]+$/;   // server does not accept '+'
-	RE.Integer = /^-?[0-9]+$/;
-//	RE.Real = /^[\-]{0,1}[0-9]+[.][0-9]+$|^[\-]{0,1}[0-9]+$/;  // any number of decimals >1
+	RE.Integer = /^(-?[1-9]\d*|0)$/;
+//	RE.Real = /^-?[0-9]+[.][0-9]+$|^-?[0-9]+$/;  // any number of decimals
+//	RE.Real = /^-?\d*(\.\d+)?$/;   // any number of decimals
 	RE.Real = function( decimals ) {
-		return new RegExp( '^-?[0-9]+[.][0-9]{1,'+Math.max(1,decimals)+'}$|^-?[0-9]+$', '' )
+		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d{1,'+Math.max(1,decimals)+'}$|^(-?[1-9]\\d*|0)$', '' )
+//		return new RegExp( '^-?[0-9]+[.][0-9]{1,'+Math.max(1,decimals)+'}$|^-?[0-9]+$', '' )
 	};
 //	RE.CSV = /^[\s\-,_#&$§0-9a-zA-Z]+$/;   // works!
 //	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z]+$', '');  // works: escape the \ in js strings!

@@ -414,8 +414,8 @@ function ModuleManager() {
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-//				case 'checkSpecif':			getScript( 'https://specif.de/v1.0/check.js' ).done( function() {setReady(mod)} ); return true;
-				case 'checkSpecif':			getScript( './specif.de/v1.0/check.js' ).done( function() {setReady(mod)} ); return true;
+//				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
+				case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
