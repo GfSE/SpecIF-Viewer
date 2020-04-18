@@ -153,6 +153,7 @@ const CONFIG = {};
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
 	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
 	CONFIG.resClassFolder = 'SpecIF:Heading';   
+	CONFIG.resClassParagraph = "SpecIF:Paragraph";
 	CONFIG.resClassComment = 'SpecIF:Comment';   
 //	CONFIG.resClassIssue = 'SpecIF:Issue';   	
 //	CONFIG.staClassRefersTo = 'SpecIF:refersTo';	
@@ -313,6 +314,8 @@ const CONFIG = {};
 	// .. even if they have the same or no title/name.
 	// Note: For example, these are generated items when transforming BPMN models:
 	CONFIG.excludedFromDeduplication = [
+		CONFIG.resClassFolder,
+		CONFIG.resClassParagraph,
 		'SpecIF:Condition',
 		'BPMN:parallelGateway',
 		'BPMN:exclusiveGateway',
@@ -343,7 +346,7 @@ const CONFIG = {};
 		'SpecIF:View'		// deprecated
 	];
 	CONFIG.folderClasses = [
-		'SpecIF:Heading'
+		CONFIG.resClassFolder
 	];
 	// A list with all model-element types by title,
 	// is used for example to build a glossary; 
@@ -365,7 +368,8 @@ const CONFIG = {};
 	//	'oslc_rm:decomposes',
 	//	'oslc_rm:decomposedBy',
 		'IREB:refines',
-		'IREB:refinedBy'
+		'IREB:refinedBy',
+		'IR:refersTo'
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
 	// The term appearing in the first position of an equivalence list is the preferred one:
@@ -532,7 +536,8 @@ const RE = {};
 //	RE.Real = /^-?[0-9]+[.][0-9]+$|^-?[0-9]+$/;  // any number of decimals
 //	RE.Real = /^-?\d*(\.\d+)?$/;   // any number of decimals
 	RE.Real = function( decimals ) {
-		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d{1,'+Math.max(1,decimals)+'}$|^(-?[1-9]\\d*|0)$', '' )
+		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
+		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' )
 //		return new RegExp( '^-?[0-9]+[.][0-9]{1,'+Math.max(1,decimals)+'}$|^-?[0-9]+$', '' )
 	};
 //	RE.CSV = /^[\s\-,_#&$§0-9a-zA-Z]+$/;   // works!

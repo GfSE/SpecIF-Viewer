@@ -13,9 +13,9 @@ modules.construct({
 }, function(self) {
 	"use strict";
 	// the mode for creating a new project:
-	var	fDate = null,		// the file modification date
-		data = null,		// the SpecIF data structure for xls content
-		xDO = null;
+	var	fDate,		// the file modification date
+		data,		// the SpecIF data structure for xls content
+		xDO;
 		
 	self.init = function() {
 		self.resourceClass = '';
@@ -69,81 +69,81 @@ function xslx2specif( buf, pN, chgAt ) {
 
 		function BaseTypes() {
 			this.dataTypes = [{
-				id: 'DT-Text',
-				title: 'Text',  		// dataType for XLS columns with text content
-				description: "String with length "+CONFIG.maxStringLength,
-				maxLength: CONFIG.maxStringLength,
-				type: "xs:string",
-				changedAt: chgAt
+			  id: "DT-Text",
+			  title: "Plain Text",  // dataType for XLS columns with text content
+			  description: "A text string",
+			  maxLength: CONFIG.maxStringLength,
+			  type: "xs:string",
+			  changedAt: "2016-05-26T08:59:00+02:00"
+		/*	},{
+			  id: "DT-ShortString",
+			  title: "String["+CONFIG.textThreshold+"]",
+			  description: "String with max. length "+CONFIG.textThreshold,
+			  type: "xs:string",
+			  maxLength: CONFIG.textThreshold,
+			  changedAt: "2016-05-26T08:59:00+02:00"
+			},{
+			  id: "DT-FormattedText",
+			  title: "Formatted Text",
+			  description: "XHTML formatted text.",
+			  maxLength: CONFIG.maxStringLength,
+			  type: "xhtml",
+			  changedAt: "2016-05-26T08:59:00+02:00" */
 			},{ 
-				id: 'DT-DateTime',
-				title: 'ISO Date-time',	// dataType for XLS columns with dateTime content
-				description: "Date or Timestamp in ISO-Format",
-				type: 'xs:dateTime',
-				changedAt: chgAt
+			  id: "DT-DateTime",  
+			  title: "Date or Timestamp",  // dataType for XLS columns with dateTime content
+			  description: "Date or Timestamp in ISO-Format",
+			  type: "xs:dateTime",
+			  changedAt: "2016-05-26T08:59:00+02:00"
 			},{ 
-				id: 'DT-Boolean',
-				title: 'Boolean',  		// dataType for XLS columns with boolean content
-				description: "Boolean value",
-				type: 'xs:boolean',
-				changedAt: chgAt
+			  id: "DT-Boolean",
+			  title: "Boolean",  // dataType for XLS columns with boolean content
+			  description: "The Boolean data type.",
+			  type: "xs:boolean",
+			  changedAt: "2016-05-26T08:59:00+02:00"
 			},{ 
-				id: 'DT-Integer',
-				title: 'Integer',  		// dataType for XLS columns with integer content
-				description: "Integer value",
-				min: CONFIG.minInteger,
-				max: CONFIG.maxInteger,
-				type: 'xs:integer',
-				changedAt: chgAt
+			  id: "DT-Integer",
+			  title: "Integer",  // dataType for XLS columns with integer content
+			  description: "A numerical integer value from -32768 to 32768.",
+			  type: "xs:integer",
+			  "minInclusive": CONFIG.minInteger,
+			  "maxInclusive": CONFIG.maxInteger,
+			  changedAt: "2016-05-26T08:59:00+02:00"
 			},{ 
-				id: 'DT-Real',
-				title: 'Real',  		// dataType for XLS columns with real content
-				description: "Real value",
-				min: CONFIG.minReal,
-				max: CONFIG.maxReal,
-				accuracy: CONFIG.maxAccuracy,
-				type: 'xs:double',
-				changedAt: chgAt
-			},{	
-				id: 'DT-Title-string',
-				title: 'Title String',	// dataType for resource titles
-				description: "String with length "+CONFIG.textThreshold,
-				maxLength: CONFIG.textThreshold,
-				type: "xs:string",
-				changedAt: chgAt
+			  id: "DT-Real",
+			  title: "Real",  // dataType for XLS columns with real content
+			  description: "A floating point number (double) with 5 fraction digits.",
+			  type: "xs:double",
+			  "fractionDigits": CONFIG.maxAccuracy,
+			  "minInclusive": CONFIG.minReal,
+			  "maxInclusive": CONFIG.maxReal,
+			  changedAt: "2016-05-26T08:59:00+02:00"
 			}];	
+			this.propertyClasses = [];	
 			this.resourceClasses = [{	
 				id: resClassId( CONFIG.resClassFolder ),
 				title: CONFIG.resClassFolder,			// specType for folders (e.g. representing sheets) 
 				description: 'Resource type for folders',
 				instantiation: ["auto","user"],
-				propertyClasses: [{
-					id: 'PC-'+(CONFIG.resClassFolder).toSpecifId()+'-title',
-					title: CONFIG.propClassTitle,
-					description: 'Folder title',
-					dataType: 'DT-Title-string',
-					changedAt: chgAt
-				}],
 				changedAt: chgAt
-			}];
-			this.statementClasses = [];
-			this.hierarchyClasses = [{	
+			},{
 				id: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
 				title: CONFIG.resClassOutline,			// specType for hierarchies
 				description: 'Hierarchy type for outlines',
 				instantiation: ["auto","user"],
 				changedAt: chgAt
-			}]
+			}];
+			this.statementClasses = []
 		}
-		function PropClass( ws, cX, ti, dT ) { 
-			this.id = propClassId( ws, cX );
+		function PropClass( str, ti, dT ) { 
+			this.id = propClassId( str );
 			this.title = ti;
 			this.dataType = 'DT-'+dT;		// like baseTypes[i].id
 			this.changedAt = chgAt
 		}
-		function propClassId( ws, cX ) { 
+		function propClassId( str ) { 
 			// must be able to find it just knowing the ws-name and the column index:
-			return 'PC-'+(ws+cX).simpleHash()
+			return 'PC-'+str.simpleHash()
 		}
 		function ResClass( nm, ti ) { 
 			this.id = resClassId( nm );
@@ -253,13 +253,6 @@ function xslx2specif( buf, pN, chgAt ) {
 			function createFld( sh ) {
 				if( sh.lastCell.row-sh.firstCell.row<1 ) return;   // skip, if there are no resources
 
-				/*	function isoOf( xlsDate ) {
-						// https://gist.github.com/christopherscott/2782634
-						let d = new Date((parseFloat(xlsDate) - 25567 - 2)*86400*1000);
-						d = d.toISOString();
-						// omit the time, if it is 00:00:00, i.e. if the dateTime value is an integer:
-						return ( Number.isInteger(parseFloat(xlsDate))?d.substr(0,10):d )
-					}   */
 					function getVal( dT, cell ) {
 						// malicious content will be removed upon import.
 						if( !cell ) return '';
@@ -289,8 +282,8 @@ function xslx2specif( buf, pN, chgAt ) {
 							cell = ws.data[colName(c)+l];
 //							console.debug('#',c,colName(c)+l,cell);
 							if( cell ) {											// ... if it has content
-								rC = itemById(specif.resourceClasses,resClassId( ws.resClassName ));
-								pC = itemById(rC.propertyClasses, propClassId(ws.name,c));
+								rC = itemById( specif.resourceClasses, resClassId(ws.resClassName) );
+								pC = itemById( specif.propertyClasses, propClassId(ws.name+c) );
 								
 							//	if( pC && CONFIG.statementClasses.indexOf(pC.title)<0 ) {
 								if( pC ) {
@@ -301,7 +294,7 @@ function xslx2specif( buf, pN, chgAt ) {
 									// id is the first identifier found as declared in CONFIG.idProperties;
 									// the first id value found will prevail:
 									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = getVal( dT.type, cell );
-									// ToDo: Consider to select the id property beforehand and not over and over again for every resource.
+									// ToDo: Consider to select the id property beforehand and not over and over again for every resource/row.
 
 									res.properties.push({
 										title: pC.title,	// needed for titleFromProps()
@@ -384,9 +377,6 @@ function xslx2specif( buf, pN, chgAt ) {
 							}
 						}
 					}
-				/*	function createS( ws, l ) {
-						// create a statement:
-					}  */
 		
 				// Processing of createFld:
 				// Create folder resource:
@@ -394,12 +384,6 @@ function xslx2specif( buf, pN, chgAt ) {
 						id: 'F-'+(pN+sh.name+CONFIG.resClassFolder).simpleHash(),
 						title: sh.name,
 						class: resClassId( CONFIG.resClassFolder ),
-						properties: [],   // needed for 0.10.4
-					/*	properties: [{
-							title: CONFIG.propClassTitle,
-							class: 'PC-'+(CONFIG.resClassFolder).toSpecifId()+'-title',
-							value: sh.name
-						}], */
 						changedAt: chgAt
 					};
 //				console.debug( 'createFld:', fld );
@@ -423,22 +407,28 @@ function xslx2specif( buf, pN, chgAt ) {
 				specif.hierarchies[0].nodes.push( hTree )
 			}
 
-			function getPropClasses( ws ) { 
-				// build a list of propertyClasses; default type is "TEXT"
-				var pCL=[],vL=null,pC=null;
+			function addPropClasses( ws, pCL ) { 
+				// build a list of propertyClasses for the given worksheet; default type is "TEXT";
+				// a complete propertyClass is added to pCL per column which is not titled with a statement title
+				// and a corresponding list of propertyClass ids is returned for the resourceClass.
+				var pCIdL=[], // list of propertyClass ids found on this worksheet
+					vL,pC;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
 					vL=[];
 					// add all values of the current column to a list:
 					for( var r=ws.firstCell.row,R=ws.lastCell.row+1;r<R;r++) {		// every line
 						vL.push( ws.data[ colName(c)+r ])							
 					};
-					pC = getPropClass( c, vL );
-//					console.debug( 'getPropClasses', vL, pC );
-					if( pC ) pCL.push( pC )
+					pC = addPropClass( c, vL );
+//					console.debug( 'addPropClasses', vL, pC );
+					if( pC ) { 
+						cacheE( pCL, pC ); // add it to propertyClasses, avoid duplicates
+						pCIdL.push( pC.id )  // add it to the resourceClass' propertyClasses
+					}
 				};
-				return pCL;
+				return pCIdL;
 
-				function getPropClass( cX, col ) {	
+				function addPropClass( cX, valL ) {	
 					// Determine the data type of all values of the column starting with the second row (= second list entry).
 					// If all are equal, the data type is assumed; by default it is 'TEXT'.
 					// Some values may be null, i.e. no value.
@@ -453,9 +443,9 @@ function xslx2specif( buf, pN, chgAt ) {
 						}
 
 					// the cell value in the first line is the title, either of a property or a statement:
-					let ti = col[0]?(col[0].w || col[0].v):i18n.MsgNoneSpecified,
-						pC=null;
-//					console.debug( 'getPropClass 1', ti );
+					let ti = valL[0]?(valL[0].w || valL[0].v):i18n.MsgNoneSpecified,
+						pC;
+//					console.debug( 'addPropClass 1', ti );
 
 					// Do not return a propertyClass, if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
@@ -466,26 +456,26 @@ function xslx2specif( buf, pN, chgAt ) {
 					
 					// cycle through the list as long as one of the values is undefined/null OR both are equal,
 					// start with the second line:
-					for( var i=1, I=col.length; i<I && ( !pC || !col[i] || compatibleClasses( pC, col[i] )); i++ ) {
-						if( !pC && col[i] 								// catch the first valid cell
-							 || isInt(pC) && isReal(col[i]) ) { 
-								pC = col[i] 							// take least restrictive number format
+					for( var i=1, I=valL.length; i<I && ( !pC || !valL[i] || compatibleClasses( pC, valL[i] )); i++ ) {
+						if( !pC && valL[i] 								// catch the first valid cell
+							 || isInt(pC) && isReal(valL[i]) ) { 
+								pC = valL[i] 							// take least restrictive number format
 						};
-//						console.debug('getPropClass 2',i,I,pC,col[i])
+//						console.debug('addPropClass 2',i,I,pC,valL[i])
 					};
 					// the loop has ended early, i.e. the types are not compatible for all lines>0:
-					if( i<I || !pC )		return new PropClass( ws.name, cX, ti, 'Text' );
+					if( i<I || !pC )		return new PropClass( ws.name+cX, ti, 'Text' );
 					// else, the types are equal for all lines>0:
-	//				if( isXHTML(pC) ) 		return new PropClass( ws.name, cX, ti, 'XLS Formatted Text' );				
-					if( isDateTime(pC) ) 	return new PropClass( ws.name, cX, ti, 'DateTime' );				
-					if( isReal(pC) ) 		return new PropClass( ws.name, cX, ti, 'Real' );				
-					if( isInt(pC) ) 		return new PropClass( ws.name, cX, ti, 'Integer' );				
-					if( isBool(pC) ) 		return new PropClass( ws.name, cX, ti, 'Boolean' );	
+	//				if( isXHTML(pC) ) 		return new PropClass( ws.name+cX, ti, 'XLS Formatted Text' );				
+					if( isDateTime(pC) ) 	return new PropClass( ws.name+cX, ti, 'DateTime' );				
+					if( isReal(pC) ) 		return new PropClass( ws.name+cX, ti, 'Real' );				
+					if( isInt(pC) ) 		return new PropClass( ws.name+cX, ti, 'Integer' );				
+					if( isBool(pC) ) 		return new PropClass( ws.name+cX, ti, 'Boolean' );	
 					// by default:
-					return new PropClass( ws.name, cX, ti, 'Text' )
+					return new PropClass( ws.name+cX, ti, 'Text' )
 				}
 			}
-			function getStaClasses( ws, sCL ) { 
+			function addStaClasses( ws, sCL ) { 
 				// build a list of statementClasses:
 				var ti,sC;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
@@ -494,11 +484,10 @@ function xslx2specif( buf, pN, chgAt ) {
 					// Add statementClass, if it is declared as such and if it is not yet listed:
 					if( indexById(sCL,staClassId(ti))<0 && CONFIG.statementClasses.indexOf( ti )>-1 ) {
 						sC = new StaClass( ti );
-//						console.debug( 'getStaClasses', ti, sC );
+//						console.debug( 'addStaClasses', ti, sC );
 						sCL.push( sC )
 					}
-				};
-				return sCL
+				}
 			}
 
 		// Processing of transformSheet(idx):
@@ -521,12 +510,12 @@ function xslx2specif( buf, pN, chgAt ) {
 			ws.lastCell = coord(ws.range.split(":")[1]);
 
 			// 3.1 Create a resourceClass per XLS-sheet so that a resource can be created per XLS-row:
-			var ot = new ResClass( ws.resClassName, self.resourceClass || CONFIG.resClassXlsRow );
+			var rC = new ResClass( ws.resClassName, self.resourceClass || CONFIG.resClassXlsRow );
 			// Create a property class for each column using the names specified in line 1:
-			ot.propertyClasses = getPropClasses( ws );
-//			console.debug('ot',ot);
-			specif.resourceClasses.push(ot);
-			getStaClasses( ws, specif.statementClasses );
+			rC.propertyClasses = addPropClasses( ws, specif.propertyClasses );
+//			console.debug('rC',rC);
+			specif.resourceClasses.push(rC);
+			addStaClasses( ws, specif.statementClasses );
 			
 			// 3.2 Create a folder with the resources of this worksheet:
 			createFld( ws )
@@ -550,15 +539,19 @@ function xslx2specif( buf, pN, chgAt ) {
 	specif.id = 'dummy';	// must be string to satisfy the schema
 	specif.title = pN;
 	specif.generator = "Excel";
-	specif.specifVersion = '0.10.4';
-	specif.resources = [];
+	specif.$schema = 'https://specif.de/v1.0/schema.json'
+	specif.resources = [{
+		id: 'R-'+pN.toSpecifId(),
+		title: pN,
+		class: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
+		changedAt: chgAt
+	}];
 	specif.statements = [];
 
 	// 2 Create the specification (hierarchy root) for the file:
 	specif.hierarchies = [{
 		id: 'H-'+pN.toSpecifId(),
-		title: pN,
-		class: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
+		resource: 'R-'+pN.toSpecifId(),
 		nodes: [],
 		changedAt: chgAt
 	}];
@@ -569,7 +562,7 @@ function xslx2specif( buf, pN, chgAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created');
-//	console.debug('SpecIF',specif);
+	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 

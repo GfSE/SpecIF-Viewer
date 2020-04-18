@@ -586,7 +586,7 @@ function Project( pr ) {
 				nR = dta.resources[n];
 				rR = dta.resources[r];
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( resClassTitleOf(rR,dta) )>-1 
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf( resClassTitleOf(rR,dta) )>-1 
 					&& eqR(dta,rR,nR) 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
 					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
@@ -941,7 +941,7 @@ function Project( pr ) {
 				let nR = nD.resources[i]; // nR is a resource in the new data
 
 				// If the resource' class belongs to a collection of class-titles and is not excluded from deduplication:
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).concat(CONFIG.folderClasses).indexOf( resClassTitleOf(nR,nD) )>-1 
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf( resClassTitleOf(nR,nD) )>-1 
 					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nD,nR,CONFIG.propClassType) )<0 
 				) {
 						// Check for a resource with the same title:
