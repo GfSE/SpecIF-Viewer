@@ -161,6 +161,8 @@ function App() {
 //		console.debug( self.label+" will be initialized!" );
 
 		window.addEventListener("hashchange", self.show );
+
+		// Make sure page divs are resized, if the browser window is changed in size: 
 		bindResizer();
 		
 		modules.load( define, {done:function() { self.show() }} );

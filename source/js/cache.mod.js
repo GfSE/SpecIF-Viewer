@@ -2249,7 +2249,7 @@ function Project( pr ) {
 									// we will not find a predecessor at this point any more,
 									// so insert as first element:
 									nd.nodes.unshift( e );
-									console.debug('parent found', nd );
+//									console.debug('parent found', nd );
 									return false // stop searching
 								};
 								return true  // continue searching

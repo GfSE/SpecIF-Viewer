@@ -562,7 +562,7 @@ function xslx2specif( buf, pN, chgAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created');
-	console.debug('SpecIF',specif);
+//	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 

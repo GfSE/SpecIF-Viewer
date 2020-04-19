@@ -425,7 +425,7 @@ function doResize( opt ) {
 	} */
 }
 function bindResizer() {
-	// correct display in case the window has been resized:
+	// adapt the display in case the window is being resized:
 	$(window).resize(function() {
 //		console.debug('resize'); 
 		doResize();
@@ -699,10 +699,10 @@ String.prototype.addIcon = function( ic ) {
 String.prototype.linkifyURLs = function( opts ) {
 	// perform the operation, unless specifically disabled:
 	if( typeof(opts)=='object' && !opts.linkifiedURLs ) return this;
-	return this.replace( RE.URL,  
+	return this.replace( RE.URI,  
 		function( $0, $1, $2, $3, $4, $5, $6, $7, $8 ){ 
 			// all links which do not start with "http" are considered local by most browsers:
-			if( !$2.startsWith('http') ) $2 = 'http://'+$2;  // starts with "www." then according to RE.URL
+			if( !$2.startsWith('http') ) $2 = 'http://'+$2;  // starts with "www." then according to RE.URI
 			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$8
 		})
 };

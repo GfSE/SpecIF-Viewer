@@ -2,7 +2,10 @@ function toOxml( data, opts ) {
 	"use strict";
 	// Create and save a MS WORD OpenXML document using SpecIF data.
 	// OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
-	// http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
+	//   http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
+	// or
+	//   https://www.data2type.de/xml-xslt-xslfo/wordml/praxistipps-word-ooxml/
+	//
 	// License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
 	// Limitations:
 	// - Accepts data-sets according to SpecIF v0.10.8 and later.
@@ -256,7 +259,7 @@ function toOxml( data, opts ) {
 
 				// SpecIF headings are chapter level 2, all others level 3:
 				let l = pars.level==1? 1:rC.isHeading? 2:3;
-				console.debug('titleOf',itm,ic,ti);
+//				console.debug('titleOf',itm,ic,ti);
 				// no paragraph, if title is empty:
 				if( !ti ) return '';
 				// all titles get a bookmark, so that any titleLink has a target:

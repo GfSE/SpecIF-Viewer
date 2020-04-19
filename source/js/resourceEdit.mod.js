@@ -36,7 +36,7 @@ modules.construct({
 			id: 'btn-modal-cancel',
 			label: i18n.BtnCancel,
 			action: function(thisDlg){ 
-				console.debug('action cancelled');
+//				console.debug('action cancelled');
 				thisDlg.close() 
 			}
 		},
@@ -327,21 +327,6 @@ modules.construct({
 		})
 	//	console.debug('input made',document.getElementsByClassName('btn-modal-save'));
 	};
-/*	self.checkInput = function( fieldId, dataTypeId ) {
-		// checking routines for all alphanumeric input fields;
-		// no need to check enumerations and boolean.
-		let input,
-			dT = itemById( cData.dataTypes, dataTypeId );
-		switch( dT.type ) {
-			case 'xs:integer':
-				break;
-			case 'xs:double':
-			case 'xs:dateTime':
-			case 'xs:string':
-			case 'xhtml':
-				input = textValue( fieldId );
-		}
-	};*/
 
 	function save(mode) {
 		// Save the new or changed resource:
@@ -402,15 +387,19 @@ modules.construct({
 				pData.updateTree();
 				// get the selected node:
 				let selNd = pData.tree.selectedNode;
-				switch( mode ) {
-					case 'insertAfter':
-//						console.debug('nd',selNd,pData.tree.selectedNode)
-						pData.tree.selectNode( selNd.getNextSibling() ); 
-						break;
-					case 'insertBelow':
-						pData.tree.openNode( selNd );
-						pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
-				};  
+				if( selNd )
+					switch( mode ) {
+						case 'insertAfter':
+//							console.debug('nd',selNd,pData.tree.selectedNode)
+							pData.tree.selectNode( selNd.getNextSibling() ); 
+							break;
+						case 'insertBelow':
+							pData.tree.openNode( selNd );
+							pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
+					}
+				else
+					// we get here only after creating the first node of a tree:
+					pData.tree.selectFirstNode();
 				pData.doRefresh({forced:true})
 			}
 		}

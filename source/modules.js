@@ -58,6 +58,11 @@ function ModuleManager() {
 		};
 		// init phase 1: Load the javascript routines common to all apps:
 		loadH( ['config', 'bootstrap', 'i18n'], {done:init2} );
+		
+		// Warn before leaving the page (back button, or outgoinglink)
+		window.onbeforeunload = function() {
+		   return "You are about to leave this application - did you save any changes you made?";
+		};		
 		return
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:

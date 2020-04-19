@@ -623,12 +623,12 @@ modules.construct({
 		opts.lookupTitles = self.lookupTitles = true;
 				
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
-		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
+	//	if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
 //		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
 
 		app.busy.set();
-		if( self.resources.values.length<1 )
-			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+	/*	if( self.resources.values.length<1 )
+			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' ); */
 
 		var nd = pData.tree.selectedNode,
 			oL = [],  // id list of the resources to view
@@ -636,7 +636,7 @@ modules.construct({
 				
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
-		if( !opts || !opts.urlParams ) 
+		if( nd && !(opts && opts.urlParams) ) 
 			setUrlParams({
 				project: cData.id,
 				view: self.view.substr(1),	// remove leading hash
@@ -674,9 +674,6 @@ modules.construct({
 	};
 	function actionBtns() {
 
-		// the currently selected resource:
-		var selRes = self.resources.selected().toShow;
-
 		// rendered buttons:
 		var rB = '<div class="btn-group btn-group-sm" >';
 //		console.debug( 'linkBtns', self.staCre );
@@ -694,7 +691,14 @@ modules.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 			
-		if( !selRes ) { return(rB) };
+		// the currently selected resource:
+		var selRes = self.resources.selected();
+
+		if( selRes ) 
+			selRes = selRes.toShow
+		else
+			// just show the create-button (nothing to update or delete):
+			return(rB);  
 
 		// Add the clone button depending on the current user's permissions:
 	//	if( self.resCln && cData.selectedHierarchy.upd )

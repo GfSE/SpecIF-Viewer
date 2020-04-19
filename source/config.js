@@ -501,9 +501,9 @@ const RE = {};
 //	RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
 	RE.Email = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
 	
-	// Reliably recognize an URL, not validate an URL:
+	// Reliably recognize an URI, not validate an URI:
 	// text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
-	RE.URL = /(^|\s|\\t|\\n|\\r\\n|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*[^\s\/.$?#=]+\.[\w]{2,4}(\/[()\w\/\.%-]*[\w])?\/?(#[\w\/\.()%-]*[\w])?([?][\w\.()=&;%\"\'-]*[\w\/)\'])?)(\s|\.\s|:\s|\\t|\\n|\\r\\n|<|\.$|$)/g;
+	RE.URI = /(^|\s|\\t|\\n|\\r\\n|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*[^\s\/.$?#=]+\.[\w]{2,4}(\/[()\w\/\.%-]*[\w])?\/?(#[\w\/\.()%-]*[\w])?([?][\w\.()=&;%\"\'-]*[\w\/)\'])?)(\s|\.\s|:\s|\\t|\\n|\\r\\n|<|\.$|$)/g;
 //             $1: Begins with start of text or space or tag end
 //                                    $2: complete link
 //                                     $3: "http(s)://" or "www."
