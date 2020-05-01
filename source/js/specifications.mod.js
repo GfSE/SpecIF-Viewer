@@ -64,16 +64,6 @@ modules.construct({
 						// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree ;-):
 //						console.debug('tree.select',event);
 						self.tree.selectedNode = event.node;
-
-					/*	// Update browser history:
-						setUrlParams({
-							project: app.cache.selectedProject.data.id,
-							view: self.viewCtl.selected.view.substr(1),	// remove leading hash
-							node: event.node.id,
-							item: event.node.ref
-						});
-						// .. this is done in the leaf view */
-
 						document.getElementById(CONFIG.objectList).scrollTop = 0;
 						self.refresh()
 					},
@@ -511,8 +501,8 @@ modules.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData;				// the cached data
-//		selRes;				// the currently selected resource
+		cData,				// the cached data
+		selRes;				// the currently selected resource
 
 	// Permissions for resources:
 	self.resCreClasses = [];  // all resource classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -598,6 +588,8 @@ modules.construct({
 					//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
 						$( self.view ).html( self.resources.render() )
 					};
+					// the currently selected resource:
+					selRes = self.resources.selected();
 					$( '#contentActions' ).html( actionBtns() );
 					app.busy.reset()
 				},
@@ -623,12 +615,8 @@ modules.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 			
-		// the currently selected resource:
-		var selRes = self.resources.selected();
 
-		if( selRes ) 
-			selRes = selRes.toShow
-		else
+		if( !selRes ) 
 			// just show the create-button (nothing to update or delete):
 			return(rB);  
 
@@ -1895,279 +1883,283 @@ function File() {
 		return txt
 	};
 	self.render = function(f, opts) {
-			if( typeof(opts)!='object' ) opts = {};
-			if( !opts.timelag )  opts.timelag = CONFIG.imageRenderingTimelag;
+		if( typeof(opts)!='object' ) opts = {};
+		if( !opts.timelag )  opts.timelag = CONFIG.imageRenderingTimelag;
 
-//			console.debug('render',f,opts);
-			if( !f || !f.blob ) {
-				Array.from(document.getElementsByClassName(tagId(f.title)), 
-					function(el) {el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
-				);
-//				document.getElementById(tagId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
-				return
-			};
-			// ToDo: in case of a server, the blob itself must be fetched first ...
-			
-			switch( f.type ) {
-				case 'image/png':
-				case 'image/x-png':
-				case 'image/jpeg':
-				case 'image/jpg':
-				case 'image/gif':
-					// reference the original list item, which has the blob and other properties:
-					showRaster( f, opts );
-					break;
-				case 'image/svg+xml':
-					showSvg( f, opts );
-					break;
-				case 'application/bpmn+xml':
-					showBpmn( f, opts );
-					break;
-				default:
-					console.warn('Cannot show unknown diagram type: ',f.type)
-			};
+//		console.debug('render',f,opts);
+		if( !f || !f.blob ) {
+			Array.from(document.getElementsByClassName(tagId(f.title)), 
+				function(el) {el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
+			);
+//			document.getElementById(tagId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
 			return
+		};
+		// ToDo: in case of a server, the blob itself must be fetched first ...
+		
+		switch( f.type ) {
+			case 'image/png':
+			case 'image/x-png':
+			case 'image/jpeg':
+			case 'image/jpg':
+			case 'image/gif':
+				// reference the original list item, which has the blob and other properties:
+				showRaster( f, opts );
+				break;
+			case 'image/svg+xml':
+				showSvg( f, opts );
+				break;
+			case 'application/bpmn+xml':
+				showBpmn( f, opts );
+				break;
+			default:
+				console.warn('Cannot show unknown diagram type: ',f.type)
+		};
+		return
 
-						
-				function showRaster(f,opts) {
-					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-					// increase the timelag between building the DOM and rendering the images, if necessary.
-					blob2dataURL(f,function(r,fTi,fTy) {
-						// add image to DOM using an image-tag with data-URI.
-						// set a grey background color for images with transparency:
-						Array.from( document.getElementsByClassName(tagId(fTi)), 
-							function(el) {el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'}
-						)
-					},opts.timelag)
-				}
-				function showSvg(f,opts) {
-					// Show a SVG image.
-					// ToDo: IE shows the image rather small.
 					
-					// Load pixel images embedded in SVG,
-					// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
-					// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
-					let svg = {},		// the SVG image with or without embedded images
-						dataURLs = [],	// list of embedded images
-						// RegExp for embedded images,
-						// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
-						rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
-						pend = 0;		// the count of embedded images waiting for transformation
-					
-					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-					// increase the timelag between building the DOM and rendering the images, if necessary.
-//					console.debug('showSvg',f,opts);
-					// Read and render SVG:
-					blob2text(f,function(r) {
-						let ef = null,
-							mL = null;
-						svg = {
-							locs: document.getElementsByClassName(tagId(f.title)),
-							img: r
-						};
-						// process all image references within the SVG image one by one:
-						// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-						while((mL=rE.exec(r)) != null ) {
-							// skip all images already provided as data-URLs:
-							if( mL[2].startsWith('data:') ) continue;
-							// avoid transformation of redundant images:
-							if( indexById(dataURLs,mL[2])>-1 ) continue;
-							pend++;
-							ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
-//							console.debug('SVG embedded file',mL[2],ef,pend);
-							// transform file to data-URL and display, when done:
-							blob2dataURL(ef, function(r,fTi) {
-								dataURLs.push({
-									id: fTi,
-									val: r
-								});
-//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
-								if( --pend<1 ) {
-									// all embedded images have been transformed,
-									// replace references by dataURLs and add complete image to DOM:
-									svg.img = svg.img.replace( rE, function($0,$1,$2,$3) {
-																return $1+itemBySimilarId(dataURLs,$2).val+$3
-															});
-									Array.from( svg.locs, 
-										function(loc) {
-											loc.innerHTML = svg.img;
-											if( opts && opts.clickableElements ) registerClickEls(loc)
-										}
-									)
-								}
+			function showRaster(f,opts) {
+				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+				// increase the timelag between building the DOM and rendering the images, if necessary.
+				blob2dataURL(f,function(r,fTi,fTy) {
+					// add image to DOM using an image-tag with data-URI.
+					// set a grey background color for images with transparency:
+					Array.from( document.getElementsByClassName(tagId(fTi)), 
+						function(el) {el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'}
+					)
+				},opts.timelag)
+			}
+			function showSvg(f,opts) {
+				// Show a SVG image.
+				// ToDo: IE shows the image rather small.
+				
+				// Load pixel images embedded in SVG,
+				// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
+				// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
+				let svg = {},		// the SVG image with or without embedded images
+					dataURLs = [],	// list of embedded images
+					// RegExp for embedded images,
+					// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
+					rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
+					pend = 0;		// the count of embedded images waiting for transformation
+				
+				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+				// increase the timelag between building the DOM and rendering the images, if necessary.
+//				console.debug('showSvg',f,opts);
+				// Read and render SVG:
+				blob2text(f,function(r) {
+					let ef = null,
+						mL = null;
+					svg = {
+						locs: document.getElementsByClassName(tagId(f.title)),
+						img: r
+					};
+					// process all image references within the SVG image one by one:
+					// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+					while((mL=rE.exec(r)) != null ) {
+						// skip all images already provided as data-URLs:
+						if( mL[2].startsWith('data:') ) continue;
+						// avoid transformation of redundant images:
+						if( indexById(dataURLs,mL[2])>-1 ) continue;
+						pend++;
+						ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
+//						console.debug('SVG embedded file',mL[2],ef,pend);
+						// transform file to data-URL and display, when done:
+						blob2dataURL(ef, function(r,fTi) {
+							dataURLs.push({
+								id: fTi,
+								val: r
 							});
-						};
-						if( pend==0 ) {
-							// there are no embedded images, so display right away:
-							Array.from( svg.locs, 
-								function(loc) {
-									loc.innerHTML = svg.img;
-									if( opts && opts.clickableElements ) registerClickEls(loc)
-								}
-							)
-						}
-					}, opts.timelag)  
-					return
-
-					// see http://tutorials.jenkov.com/svg/scripting.html
-					function registerClickEls(svg) {
-						if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
-//						console.debug('registerClickEls',svg);
-						addViewBoxIfMissing(svg);
-						
-						// now collect all clickable elements:
-						svg.clkEls = [];
-						// For all elements in CONFIG.clickElementClasses:
-						// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
-						// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
-						//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
-						// 	Array.from() converts the HTMLCollection to a regular array, 
-						//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
-						CONFIG.clickElementClasses.forEach( function(cl) {
-							svg.clkEls = svg.clkEls.concat(Array.from( svg.getElementsByClassName( cl )));
-						});
-//						console.debug(svg.clkEls, typeof(svg.clkEls))
-						let clkEl = null;
-						svg.clkEls.forEach( function(clkEl) {
-							// set cursor for clickable elements:
-							clkEl.setAttribute("style", "cursor:pointer;");
-
-							// see https://www.quirksmode.org/js/events_mouse.html
-							// see https://www.quirksmode.org/dom/events/
-							clkEl.addEventListener("dblclick", 
-								function(evt){ 
-									// ToDo: So far, this only works with ARCWAY generated SVGs.
-									let eId = this.className.baseVal.split(' ')[1];		// second class is element id
-									// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
-									eId = correspondingPlan(eId);
-									// delete the details to make sure that images of the click target are shown,
-									// otherwise there will be more than one image container with the same id:
-									$("#details").empty();
-									// jump to the click target:
-									app.specs.tree.selectNodeByRef( eId, true );  // true: 'similar'; id must be a substring of nd.ref
-									// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
-									document.getElementById(CONFIG.objectList).scrollTop = 0
-								}
-							);
-
-							// Show the description of the element under the cursor to the left:
-							clkEl.addEventListener("mouseover", 
-								function(evt){ 
-//									console.debug(evt,this,$(this));
-									// ToDo: So far, this only works with ARCWAY generated SVGs.
-								//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
-									let eId = this.className.baseVal.split(' ')[1],		// id is second class
-										clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
-										ti = languageValueOf( clsPrp.title ),
-										dsc = '';
-									clsPrp.descriptions.forEach( function(d) {
-										// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
-										dsc += propertyValueOf(d)
-									});
-									if( dsc.stripCtrl().stripHTML() ) {
-										// Remove the dynamic linking pattern from the text:
-										$("#details").html( '<span style="font-size:120%">' 
-															+ (CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti) 
-															+ '</span>\n'
-															+ dsc );
-										app.specs.showTree.set(false)
+//							console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
+							if( --pend<1 ) {
+								// all embedded images have been transformed,
+								// replace references by dataURLs and add complete image to DOM:
+								svg.img = svg.img.replace( rE, function($0,$1,$2,$3) {
+															return $1+itemBySimilarId(dataURLs,$2).val+$3
+														});
+								Array.from( svg.locs, 
+									function(loc) {
+										loc.innerHTML = svg.img;
+										if( opts && opts.clickableElements ) registerClickEls(loc)
 									}
-								}
-							);
-							clkEl.addEventListener("mouseout", 
-								function(evt){ 
-								//	evt.target.setAttribute("style", "cursor:default;"); 
-									app.specs.showTree.set(true);
-									$("#details").empty()
-								}
-							) 
+								)
+							}
 						});
-						return svg
-						
-						function correspondingPlan(id) {
-							// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
-							// This routine checks whether there is a plan with the same name to show that plan instead of the element.
-							if( !CONFIG.selectCorrespondingDiagramFirst ) return id;
-							// else, replace the id of a resource by the id of a diagram carrying the same title:
-							let ti = elementTitleOf(itemBySimilarId(app.cache.selectedProject.data.resources,id),opts),
+					};
+					if( pend==0 ) {
+						// there are no embedded images, so display right away:
+						Array.from( svg.locs, 
+							function(loc) {
+								loc.innerHTML = svg.img;
+								if( opts && opts.clickableElements ) registerClickEls(loc)
+							}
+						)
+					}
+				}, opts.timelag)  
+				return
+
+				// see http://tutorials.jenkov.com/svg/scripting.html
+				function registerClickEls(svg) {
+					if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
+//					console.debug('registerClickEls',svg);
+					addViewBoxIfMissing(svg);
+					
+					// now collect all clickable elements:
+					svg.clkEls = [];
+					// For all elements in CONFIG.clickElementClasses:
+					// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
+					// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
+					//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
+					// 	Array.from() converts the HTMLCollection to a regular array, 
+					//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
+					CONFIG.clickElementClasses.forEach( function(cl) {
+						svg.clkEls = svg.clkEls.concat(Array.from( svg.getElementsByClassName( cl )));
+					});
+//					console.debug(svg.clkEls, typeof(svg.clkEls))
+					let clkEl = null;
+					svg.clkEls.forEach( function(clkEl) {
+						// set cursor for clickable elements:
+						clkEl.setAttribute("style", "cursor:pointer;");
+
+						// see https://www.quirksmode.org/js/events_mouse.html
+						// see https://www.quirksmode.org/dom/events/
+						clkEl.addEventListener("dblclick", 
+							function(evt){ 
+								// ToDo: So far, this only works with ARCWAY generated SVGs.
+								let eId = this.className.baseVal.split(' ')[1];		// second class is element id
+								// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
+								eId = correspondingPlan(eId);
+								// delete the details to make sure that images of the click target are shown,
+								// otherwise there will be more than one image container with the same id:
+								$("#details").empty();
+								app.specs.showTree.set(true);
+								// jump to the click target:
+								app.specs.tree.selectNodeByRef( eId, true );  // true: 'similar'; id must be a substring of nd.ref
+								// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
+								document.getElementById(CONFIG.objectList).scrollTop = 0
+							}
+						);
+
+						// Show the description of the element under the cursor to the left:
+						clkEl.addEventListener("mouseover", 
+							function(evt){ 
+//								console.debug(evt,this,$(this));
+								// ToDo: So far, this only works with ARCWAY generated SVGs.
+							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
+								let eId = this.className.baseVal.split(' ')[1],		// id is second class
+									clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
+									ti = languageValueOf( clsPrp.title ),
+									dsc = '';
+								clsPrp.descriptions.forEach( function(d) {
+									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
+									dsc += propertyValueOf(d)
+								});
+								if( dsc.stripCtrl().stripHTML() ) {
+									// Remove the dynamic linking pattern from the text:
+									$("#details").html( '<span style="font-size:120%">' 
+														+ (CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti) 
+														+ '</span>\n'
+														+ dsc );
+									app.specs.showTree.set(false)
+								}
+							}
+						);
+						clkEl.addEventListener("mouseout", 
+							function(evt){ 
+							//	evt.target.setAttribute("style", "cursor:default;"); 
+								$("#details").empty();
+								app.specs.showTree.set(true)
+							}
+						) 
+					});
+					return svg
+					
+					function correspondingPlan(id) {
+						// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
+						// This routine checks whether there is a plan with the same name to show that plan instead of the element.
+						if( CONFIG.selectCorrespondingDiagramFirst ) {
+							// replace the id of a resource by the id of a diagram carrying the same title:
+							let cData = app.cache.selectedProject.data,
+								ti = elementTitleOf(itemBySimilarId(cData.resources,id),opts),
 								rT = null;
-							for( var i=app.cache.selectedProject.data.resources.length-1;i>-1;i--) {
-								rT = itemById(app.cache.selectedProject.data.resourceClasses,app.cache.selectedProject.data.resources[i]['class']);
+							for( var i=cData.resources.length-1;i>-1;i-- ) {
+								rT = itemById(cData.resourceClasses,cData.resources[i]['class']);
 								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( elementTitleOf(app.cache.selectedProject.data.resources[i],opts)==ti ) {
+								if( elementTitleOf(cData.resources[i],opts)==ti ) {
 									// found: the diagram carries the same title 
-									if( app.specs.resources.selected().value && app.specs.resources.selected().value.id==app.cache.selectedProject.data.resources[i].id )
+									if( app[CONFIG.objectList].resources.selected().toShow 
+										&& app[CONFIG.objectList].resources.selected().toShow.id==cData.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 
 										return id
 									else
-										return app.cache.selectedProject.data.resources[i].id	// the corresponding diagram's id
+										return cData.resources[i].id	// the corresponding diagram's id
 								}
-							};
-							return id	// no corresponding diagram found
-						}
-						// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
-						function addViewBoxIfMissing(svg) {
-							let el=null;
-							// in Case of IE 'forEach' does not work with svg.childNodes
-							for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
-								let el = svg.childNodes[i];
-//								console.debug('svg',svg,el,el.outerHTML);
-								// look for '<svg .. >' tag with its properties, often but not always the first child node:
-								if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {
-									if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
+							}
+						};
+						return id	// no corresponding diagram found
+					}
+					// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+					function addViewBoxIfMissing(svg) {
+						let el=null;
+						// in Case of IE 'forEach' does not work with svg.childNodes
+						for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
+							let el = svg.childNodes[i];
+//							console.debug('svg',svg,el,el.outerHTML);
+							// look for '<svg .. >' tag with its properties, often but not always the first child node:
+							if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {
+								if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
 
-									// no viewbox property, so add it:
-									let w = el.getAttribute('width'),
-										h = el.getAttribute('height');
-									// get rid of 'px':
-									// ToDo: perhaps this is a little too simple ...
-									if( w.endsWith('px') ) w = w.slice(0,-2);
-									if( h.endsWith('px') ) h = h.slice(0,-2);
-									el.setAttribute("viewBox", '0 0 '+w+' '+h );
-									return
-								}
+								// no viewbox property, so add it:
+								let w = el.getAttribute('width'),
+									h = el.getAttribute('height');
+								// get rid of 'px':
+								// ToDo: perhaps this is a little too simple ...
+								if( w.endsWith('px') ) w = w.slice(0,-2);
+								if( h.endsWith('px') ) h = h.slice(0,-2);
+								el.setAttribute("viewBox", '0 0 '+w+' '+h );
+								return
 							}
 						}
 					}
 				}
-				function showBpmn(f,opts) {
-//					console.debug('showBpmn',f);
-				
-					// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-					// increase the timelag between building the DOM and rendering the images, if necessary.
-					// Read and render BPMN:
-					blob2text(f,function(r,fTi) {
-						bpmn2svg(r, function(err, svg) { 
-									// this is the bpmnViewer callback function:
-									if (err) {
-										console.error('BPMN-Viewer could not deliver SVG', err);
-										return 
-									};
-//									console.debug('SVG',svg);
-									Array.from( document.getElementsByClassName(tagId(fTi)), 
-										function(el) {el.innerHTML = svg}
-									)
-								})
-					}, opts.timelag)  
-				}
-				function itemBySimilarId(L,id) {
-					// return the list element having an id similar to the specified one:
-					id = id.trim();
-					for( var i=L.length-1;i>-1;i-- )
-						// is id a substring of L[i].id?
-						if( L[i].id.indexOf(id)>-1 ) return L[i];   // return list item
-					return null
-				}
-				function itemBySimilarTitle(L,ti) {
-					// return the list element having a title similar to the specified one:
-					ti = ti.trim();
-					for( var i=L.length-1;i>-1;i-- )
-						// is ti a substring of L[i].title?
-						if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
-					return null
-				}
-		// end of self.render()
+			}
+			function showBpmn(f,opts) {
+//				console.debug('showBpmn',f);
+			
+				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+				// increase the timelag between building the DOM and rendering the images, if necessary.
+				// Read and render BPMN:
+				blob2text(f,function(r,fTi) {
+					bpmn2svg(r, function(err, svg) { 
+								// this is the bpmnViewer callback function:
+								if (err) {
+									console.error('BPMN-Viewer could not deliver SVG', err);
+									return 
+								};
+//								console.debug('SVG',svg);
+								Array.from( document.getElementsByClassName(tagId(fTi)), 
+									function(el) {el.innerHTML = svg}
+								)
+							})
+				}, opts.timelag)  
+			}
+			function itemBySimilarId(L,id) {
+				// return the list element having an id similar to the specified one:
+				id = id.trim();
+				for( var i=L.length-1;i>-1;i-- )
+					// is id a substring of L[i].id?
+					if( L[i].id.indexOf(id)>-1 ) return L[i];   // return list item
+				return null
+			}
+			function itemBySimilarTitle(L,ti) {
+				// return the list element having a title similar to the specified one:
+				ti = ti.trim();
+				for( var i=L.length-1;i>-1;i-- )
+					// is ti a substring of L[i].title?
+					if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
+				return null
+			}
+	// end of self.render()
 /*	};
 	// Prepare a file reference to be compatible with ReqIF spec and conventions:
 	self.fromGUI = function( txt ) {
