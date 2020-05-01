@@ -27,9 +27,11 @@ function CheckForm() {
 	self.init = function() {
 		self.list.length = 0;
 	};
-	self.add = function( lb, ty ) {
-		// Add a parameter-set for checking an input field:
-		self.list.push( { label:lb, dataType:ty } );
+	self.add = function( elementId, dataType ) {
+		// Add a parameter-set for checking an input field;
+		// - 'elementId' is the id of the HTML input element
+		// - 'dataType' is the dataType of the property
+		self.list.push( { label:elementId, type:dataType } );
 //		console.debug( 'checkForms', self.list );
 	};
 	self.do = function() {
@@ -39,19 +41,19 @@ function CheckForm() {
 			// cPs holds the parameters for checking a single property resp. input field.
 			// Get the input value:
 			val = textValue( cPs.label );
-			// Perform the test depending on the dataType:
-			switch( cPs.dataType.type ) {
+			// Perform the test depending on the type:
+			switch( cPs.type.type ) {
 				case 'xs:string':
 				case 'xhtml':
-					ok = val.length<=cPs.dataType.maxLength;
+					ok = val.length<=cPs.type.maxLength;
 					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:double':
-					ok = val.length<1 || RE.Real(cPs.dataType.fractionDigits).test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
+					ok = val.length<1 || RE.Real(cPs.type.fractionDigits).test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
 					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:integer':
-					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
+					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
 					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:dateTime':
@@ -160,10 +162,13 @@ function getTextLength( lbl ) {
 	}
 }
 				
-function radioForm( lbl, entries ) {
+function radioForm( lbl, entries, opts ) {
 	// assemble the form for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
-	var rB;
+	let rB, fn;
+	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
+			fn = 'onclick="'+opts.handle+'"'
+	else 	fn = '';
 	switch( lbl.display ) {
 		case 'none': 
 			rB = 	'<div class="form-group '+(lbl.classes||'')+'">'
@@ -191,7 +196,7 @@ function radioForm( lbl, entries ) {
 		tp = ( e.type )?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		rB +=			'<div>'
 			+				'<label>'
-			+					'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+'/>'
+			+					'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+fn+'/>'
 			+					'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
@@ -205,10 +210,13 @@ function radioValue( lbl ) {
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
 //	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked')[0].value		// fails when  none is checked
 }
-function checkboxForm( lbl, entries ) {
+function checkboxForm( lbl, entries, opts ) {
 	// assemble the form for a set of checkboxes;
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	var cB;
+	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
+			fn = 'onclick="'+opts.handle+'"'
+	else 	fn = '';
 	switch( lbl.display ) {
 		case 'none': 
 			cB = 	'<div class="form-group '+(lbl.classes||'')+'">'
@@ -228,7 +236,7 @@ function checkboxForm( lbl, entries ) {
 		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		cB +=			'<div>'
 			+				'<label>'
-			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+'/>'
+			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+fn+'/>'
 			+					'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
 			+				'</label><br />'
 			+			'</div>'
@@ -442,6 +450,7 @@ function indexById(L,id) {
 	return -1
 }
 function itemById(L,id) {
+//	console.debug('+',L,id,(L && id));
 	if( L && id ) {
 		// given the ID of an item in a list, return the item itself:
 		id = id.trim();
@@ -525,7 +534,8 @@ function cacheL( L, es ) {  // ( list, entries )
 function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
-	if( n>-1 ) L.splice(n,1)  // remove, if found
+	if( n>-1 ) L.splice(n,1);  // remove, if found
+	return n
 }
 function uncacheL( L, es ) {  // ( list, entries )
 	// remove the items es from a list L:
@@ -702,7 +712,7 @@ String.prototype.linkifyURLs = function( opts ) {
 	return this.replace( RE.URI,  
 		function( $0, $1, $2, $3, $4, $5, $6, $7, $8 ){ 
 			// all links which do not start with "http" are considered local by most browsers:
-			if( !$2.startsWith('http') ) $2 = 'http://'+$2;  // starts with "www." then according to RE.URI
+			if( !$2.startsWith('http') ) $2 = 'https://'+$2;  // starts with "www." then according to RE.URI
 			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$8
 		})
 };

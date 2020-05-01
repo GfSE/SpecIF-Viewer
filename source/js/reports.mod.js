@@ -275,7 +275,8 @@ modules.construct({
 			visitedR.push(nd.ref); // memorize all resources already evaluated
 			// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
 			prj.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
-				.done(function(rsp) {
+			.then(
+				(rsp)=>{
 					evalResource( rsp );
 					if( --pend<1 ) {  // all done:
 						self.list = removeEmptyReports( self.list );
@@ -286,8 +287,9 @@ modules.construct({
 							showNotice(i18n.MsgNoReports);
 						app.busy.reset()
 					}
-				})
-				.fail( handleError );
+				},
+				handleError
+			);
 		//	prj.readStatementsOf( {id: nd.ref}, false )
 		//		.done(function(rsp) {
 		//		})

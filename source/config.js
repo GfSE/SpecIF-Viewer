@@ -88,6 +88,7 @@ const CONFIG = {};
 	CONFIG.objectList = 'doc';  
 	CONFIG.objectFilter = 'filter';
 	CONFIG.resourceEdit = 'edit';
+	CONFIG.resourceLink = 'link';
 	CONFIG.objectDetails = 'resource';
 	CONFIG.objectRevisions = 'revisions';
 	CONFIG.relations = 'statements';
@@ -541,7 +542,6 @@ const RE = {};
 //		return new RegExp( '^-?[0-9]+[.][0-9]{1,'+Math.max(1,decimals)+'}$|^-?[0-9]+$', '' )
 	};
 //	RE.CSV = /^[\s\-,_#&$§0-9a-zA-Z]+$/;   // works!
-//	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z]+$', '');  // works: escape the \ in js strings!
 	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values	
 
 // Regexes to identify XHTML tags for objects and links:

@@ -25,7 +25,7 @@ function App() {
 	"use strict";
 	// construct main app:
 	var self = this;
-	self.productVersion = 'v0.98.1'; // the name of the subdirectory needs to be changed, accordingly.
+	self.productVersion = 'v0.98.2'; // the name of the subdirectory needs to be changed, accordingly.
 	self.specifVersion = '1.0';
 	self.init = function() {
 		// must set it here, because the language files must be read first:
@@ -130,12 +130,15 @@ function App() {
 					label: i18n.TabReports,
 					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 				},{
-					name: CONFIG.resourceEdit,
+					name: CONFIG.resourceEdit
 					// no loadAs, so name will be used for the controller object
 					// no view as a modal window will be used
 					// no selector
 					// the view will be called by pressing an item action button; the function to call
 					//   is added manually in view 'CONFIG.specifications'.
+				},{
+					name: CONFIG.resourceLink
+					// as above
 				}]
 			},{
 				action: 'app.cache.selectedProject.export()',
@@ -160,7 +163,12 @@ function App() {
 
 //		console.debug( self.label+" will be initialized!" );
 
+		// React on Browser Back/Forward buttons:
 		window.addEventListener("hashchange", self.show );
+		// Warn before leaving the page (back button, or outgoinglink):
+		window.onbeforeunload = function() {
+		   return "You are about to leave this application - did you save any changes you made?";
+		};		
 
 		// Make sure page divs are resized, if the browser window is changed in size: 
 		bindResizer();

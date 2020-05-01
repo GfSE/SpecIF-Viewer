@@ -58,11 +58,6 @@ function ModuleManager() {
 		};
 		// init phase 1: Load the javascript routines common to all apps:
 		loadH( ['config', 'bootstrap', 'i18n'], {done:init2} );
-		
-		// Warn before leaving the page (back button, or outgoinglink)
-		window.onbeforeunload = function() {
-		   return "You are about to leave this application - did you save any changes you made?";
-		};		
 		return
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
@@ -447,15 +442,12 @@ function ModuleManager() {
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
 											getScript( vPath+'/js/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case CONFIG.resourceLink:	getScript( vPath+'/js/resourceLink.mod.js' ); return true; // 'setReady' is called by 'construct'
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
-											$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
 											getScript( "./js/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true;
-				case CONFIG.files: 			$('#specsBody').append( '<div id="'+mod+'" class="contentWide" ></div>' );
-											getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
-				case 'linker':  			$('#specsBody').append( '<div id="'+mod+'" class="content" ></div>' );
-											$('#'+mod).load( "./js/linker-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+				case CONFIG.files: 			getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
 		*/
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false
 			};
@@ -534,9 +526,9 @@ function ModuleManager() {
 		};
 		self.show = function( params ) {
 			// Select a new view 
-			// and start implicit actions 'show'/'hide' in case they are implemented in the respective modules.
+			// and call implicit actions 'show'/'hide' in case they are implemented in the respective modules.
 			// - simple case: params is a string with the name of the new view.
-			// - more powerful: params is an object with the new (target) view plus optionally content or other parameters 
+			// - more powerful: params is an object with the new target view plus optionally content or other parameters 
 			switch( typeof(params) ) {
 				case 'undefined': return null;
 				case 'string': params = {newView: params}
@@ -579,7 +571,6 @@ function ModuleManager() {
 					s.removeClass('active');
 					// control visibility:
 					v.hide();
-				//	v.empty();
 					// initiate the corresponding action implicitly:
 					if( typeof(le.hide)=='function' ) {
 						le.hide();
@@ -587,7 +578,10 @@ function ModuleManager() {
 					}
 				}
 			});
-			doResize()
+			// not all applications may need resizing of the window elements:
+			if( typeof(doResize)=='function' ) {
+				doResize()
+			}
 		};
 		self.hide = function(v) {
 			if( typeof(v)=='string' && self.exists(v) ) {

@@ -21,11 +21,11 @@ modules.construct({
 	self.newFiles = [];			// collect uploaded files before committing the change
 	self.checkForm = new CheckForm();
 
-	self.init = function() {
+	self.init = ()=>{
 //		console.debug('resourceEdit.init')
 		self.clear()
 	};
-	self.clear = function() {
+	self.clear = ()=>{
 		self.newFiles.length = 0;
 		self.checkForm.list.length = 0;
 	};
@@ -35,7 +35,7 @@ modules.construct({
 		cancel: {
 			id: 'btn-modal-cancel',
 			label: i18n.BtnCancel,
-			action: function(thisDlg){ 
+			action: (thisDlg)=>{ 
 //				console.debug('action cancelled');
 				thisDlg.close() 
 			}
@@ -44,7 +44,7 @@ modules.construct({
 			id: 'btn-modal-update',
 			label: i18n.BtnUpdate,
 			cssClass: 'btn-success btn-modal-save',
-			action: function(thisDlg) {
+			action: (thisDlg)=>{
 				save('update');
 				thisDlg.close()
 			}  
@@ -53,7 +53,7 @@ modules.construct({
 			id: 'btn-modal-insertAfter',
 			label: i18n.BtnInsertSuccessor,
 			cssClass: 'btn-success btn-modal-save', 
-			action: function(thisDlg) {
+			action: (thisDlg)=>{
 				save('insertAfter');
 				thisDlg.close()
 			}  
@@ -62,7 +62,7 @@ modules.construct({
 			id: 'btn-modal-insertBelow',
 			label: i18n.BtnInsertChild,
 			cssClass: 'btn-success btn-modal-save', 
-			action: function(thisDlg) {
+			action: (thisDlg)=>{
 				save('insertBelow');
 				thisDlg.close()
 			}  
@@ -70,20 +70,19 @@ modules.construct({
 	};
 
 	// The module entry;
-	// called by the parent's view controller:
-	self.show = function( options ) {
+	self.show = ( options )=>{
 
 		self.clear();
 		cData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
-		opts.selResId = self.parent.tree.selectedNode.id;
+		opts.selNodeId = self.parent.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
 		// Note: Here ES6 promises will be used. 
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
 		switch( opts.mode ) {
 			case 'create':
-				getResClass()
+				selectResClass( opts )
 				.then(
 					(rC)=>{ 
 						app.cache.selectedProject.createResource(rC)
@@ -110,31 +109,29 @@ modules.construct({
 //				console.debug('~',nd);
 				// get the selected resource:
 				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
-					.done( function(r) {
-					//	app.cache.selectedProject.readContent( 'resourceClass', r['class'] )
-					//		.done( function(rC) {
-								// create a clone to collect the changed values before committing:
-								self.newRes = simpleClone(r);
-								if( opts.mode=='clone' ) {
-									self.newRes.id = genID('R-');
-									opts.dialogTitle = i18n.MsgCloneResource,
-									opts.msgBtns = [
-										msgBtns.cancel,
-										msgBtns.insertAfter,
-										msgBtns.insertBelow
-									]
-								} else {
-									opts.dialogTitle = i18n.MsgUpdateResource;
-									opts.msgBtns = [
-										msgBtns.cancel,
-										msgBtns.update
-									]
-								}; 
-								editResource(self.newRes,opts)
-					//		})
-					//		.fail( stdError )
-					})
-					.fail( stdError );
+				.then( 
+					(r)=>{
+						// create a clone to collect the changed values before committing:
+						self.newRes = simpleClone(r);
+						if( opts.mode=='clone' ) {
+							self.newRes.id = genID('R-');
+							opts.dialogTitle = i18n.MsgCloneResource,
+							opts.msgBtns = [
+								msgBtns.cancel,
+								msgBtns.insertAfter,
+								msgBtns.insertBelow
+							]
+						} else {
+							opts.dialogTitle = i18n.MsgUpdateResource;
+							opts.msgBtns = [
+								msgBtns.cancel,
+								msgBtns.update
+							]
+						}; 
+						editResource(self.newRes,opts)
+					},
+					stdError
+				)
 		};
 		return;
 		
@@ -149,18 +146,17 @@ modules.construct({
 			//	type: 'type-success',
 				type: 'type-primary',
 				size: BootstrapDialog.SIZE_WIDE,
+				// initialize the dialog;
 				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
-				onshown: function() { setTextFocus(ti); app[myName].check() },
-				message: function (thisDlg) {
-					var form = '<form id="attrInput" role="form" class="form-horizontal" ></form>';
-						// field for the title property:
-						form += textForm( ti, toEdit.title, 'line' );
+				onshown: ()=>{ setTextFocus(ti); app[myName].check() },
+				message: (thisDlg)=>{
+					var form = textForm( ti, toEdit.title, 'line' );  // field for the title property
 						// fields for the description properties: 
-						toEdit.descriptions.forEach( function(d) {
+						toEdit.descriptions.forEach( (d)=>{
 							form += editP(d)
 						});
 						// fields for the remaining properties:
-						toEdit.other.forEach( function(p) {
+						toEdit.other.forEach( (p)=>{
 							form +=editP(p)
 						});
 					return $( form )
@@ -196,7 +192,7 @@ modules.construct({
 						};
 					case 'xs:enumeration':
 						let separatedValues = p.value.split(','),
-							vals = forAll( dT.values, function(v) { return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+							vals = forAll( dT.values, (v)=>{ return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
 							return checkboxForm( ti, vals )
@@ -247,52 +243,59 @@ modules.construct({
 				}
 			}
 		}
-		function getResClass() {		
+		function selectResClass( opts ) {		
 			// Let the user choose the class of the resource to be created later on:
-			return new Promise((resolve, reject) => {	
-				app.cache.selectedProject.readContent( 'resourceClass', forAll( opts.eligibleResourceClasses, function(rCId){return {id:rCId}} ))
-					.done( function(rCL) {
+			return new Promise((resolve, reject) => {
+				app.cache.selectedProject.readContent( 'resourceClass', forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
+				.then( 
+					(rCL)=>{
 						// store a clone and get the title to display:
-						let resClasses = forAll( simpleClone( rCL ), function(rC) { rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
+						let resClasses = forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
 						resClasses[0].checked = true;
 //						console.debug('#2',simpleClone(cData.resourceClasses));
 						let dlg = new BootstrapDialog({
 							title: i18n.MsgSelectResClass,
-							type: 'type-success',
-						//	type: 'type-primary',
+						//	type: 'type-success',
+							type: 'type-primary',
 						//	size: BootstrapDialog.SIZE_WIDE,
-							message: function (thisDlg) {
-								var form = '<form id="attrInput" role="form" class="form-horizontal" ></form>';
-									form += radioForm( i18n.LblResourceClass, resClasses );
+							message: (thisDlg)=>{
+								var form = '<form id="attrInput" role="form" >'
+										+ radioForm( i18n.LblResourceClass, resClasses )
+										+ '</form>';
 								return $( form ) 
 							},
 							buttons: [{
 									label: i18n.BtnCancel,
-									action: function(thisDlg){ 
+									action: (thisDlg)=>{ 
 										reject({status:0,statusText:'Create Resource cancelled by the user'});
 										thisDlg.close() 
 									}
 								},{ 	
 									label: i18n.LblNextStep,
 									cssClass: 'btn-success', 
-									action: function (thisDlg) {
+									action: (thisDlg)=>{
 										resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
 										thisDlg.close()
 									}  
 								}]
 						})
 						.open()
-					})
-					.fail( reject )
+					},
+					reject
+				)
 			})
 		}
 	};
-	self.hide = function() {
+	self.hide = ()=>{
 	};
-	self.updateDiagram = function(cId) {
+
+/* ++++++++++++++++++++++++++++++++
+	Functions called by GUI events 
+*/
+	self.updateDiagram = (cId)=>{
         let f = document.getElementById("file"+cId.simpleHash()).files[0];
 //		console.debug('updateDiagram',cId,f.name);
-		readFile( f, function(data) {
+		readFile( f, (data)=>{
 				// "<div><p class=\"inline-label\">Plan:</p><p><object type=\"image/svg+xml\" data=\"files_and_images\\50f2e49a0029b1a8016ea6a5f78ff594.svg\">Arbeitsumgebung</object></p></div>"
 				let fType = f.type||opts.mediaTypeOf(f.name),
 					fName = 'files_and_images/'+f.name,
@@ -305,23 +308,23 @@ modules.construct({
 		
 		function readFile( f, fn ) {
 			const rdr = new FileReader();
-			rdr.onload = function() {
+			rdr.onload = ()=>{
 				fn( new Blob([rdr.result], { type: f.type }) )
 			};
 			rdr.readAsArrayBuffer( f )
 		}
 	};
-	self.removeDiagram = function(cId) {
+	self.removeDiagram = (cId)=>{
 //		console.debug('removeDiagram',cId,self.newRes);
 		itemBy(self.newRes.properties, 'class', cId ).value = '';
 		document.getElementById(tagId(cId)).innerHTML = ''
 	};
-	self.check = function() {
+	self.check = ()=>{
 		// called on every key-input;
 		// check all input fields:
 		let notOk = !self.checkForm.do();
 		// enable save buttons, if all input fields have acceptable content:
-		Array.from( document.getElementsByClassName('btn-modal-save'), function(btn) {
+		Array.from( document.getElementsByClassName('btn-modal-save'), (btn)=>{
 //			console.debug('#',btn,notOk);
 			btn.disabled = notOk
 		})
@@ -356,7 +359,7 @@ modules.construct({
 		// set the resource's native title:
 		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
 		// suppress empty properties:
-		self.newRes.properties = forAll( allProps, function(p) { if( hasContent(p.value) ) return p });
+		self.newRes.properties = forAll( allProps, (p)=>{ if( hasContent(p.value) ) return p });
 		self.newRes.changedAt = chD;
 		switch( mode ) {
 			case 'update':
@@ -367,14 +370,14 @@ modules.construct({
 				app.cache.selectedProject.createContent( 'resource', self.newRes )
 					.then( finalize, stdError );
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selResId} )
+				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selNodeId} )
 					.then( finalize, stdError );
 				break;
 			case 'insertBelow':
 				app.cache.selectedProject.createContent( 'resource', self.newRes )
 					.then( finalize, stdError );
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selResId} )
+				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selNodeId} )
 					.then( finalize, stdError );
 		};
 		// has no effect, if newFiles is empty:
@@ -434,7 +437,6 @@ modules.construct({
 					return checkboxValues( titleOf(p,opts) ).toString()
 			}
 		}
-	}
-	return;
+	};
+	return self
 })
-

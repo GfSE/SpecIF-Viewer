@@ -187,7 +187,8 @@ function toOxml( data, opts ) {
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			const reB = '([\\s\\S]*?)'
-				+	'(<p */>|<p[^>]*>[\\s\\S]*?</p>'
+			//	+	'(<p */>|<p[^>]*>[\\s\\S]*?</p>'
+				+	'(<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
 				+	'|<table[^>]*>[\\s\\S]*?</table>)',
@@ -195,7 +196,7 @@ function toOxml( data, opts ) {
 				
 			const reA = '<a([^>]+)>([\\s\\S]*?)</a>',
 				reLink = new RegExp( reA, '' ),
-			// A single comprehensive <img .../> or tag pair <img ...>..</img>.
+			// A single comprehensive <img .../> tag:
 				reI = '<img([^>]+)/>',
 				reImg = new RegExp( reI, '' );
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
@@ -203,12 +204,12 @@ function toOxml( data, opts ) {
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
 			const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
-			// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
+		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-		//	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
-		//		reNestedObjects = new RegExp( reNO, '' );
+			const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+				reNestedObjects = new RegExp( reNO, '' ); */
 		
-			// The Regex to isolate text runs constituting a paragraph:
+			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
 				+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
 				+	'|'+reA
@@ -218,8 +219,8 @@ function toOxml( data, opts ) {
 				+	'|'+reSO
 				+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
 				+	')',
-				reRuns = new RegExp(reR,'g');
-			// The Regex to isolate text fragments within a run:
+				reRun = new RegExp(reR,'g');
+			// Regex to isolate text fragments within a run:
 			const reT = '(.*?)(<br ?/>)',
 				reText = new RegExp(reT,'g');
 			
@@ -504,11 +505,11 @@ function toOxml( data, opts ) {
 					if( !txt ) return [];
 
 					// Identify and separate the blocks:
-					var blocks = splitParagraphs(txt);
+					var blocks = splitBlocks(txt);
 //					console.debug('parseXhtml',txt,blocks);
 					return blocks;
 					
-					function splitParagraphs(txt) {
+					function splitBlocks(txt) {
 						// Identify paragraphs and store them in the block list:
 						// Note that <ul>, <ol> and <table> are block-level elements like <p> and
 						// that none of them may be inside <p>..</p>
@@ -531,11 +532,11 @@ function toOxml( data, opts ) {
 							//    but we do not want to ignore any content in case there is ...
 							if( opts.hasContent($1) ) 
 								bL.push( {p:{text:$1}} );
-							// c) an empty paragraph:
+					/*		// c) an empty paragraph:
 							if( /<p *\/>/.test($2) ) {
 								bL.push( {p:{text:''}} );
 								return ''
-							};
+							};  */
 							// d) a paragraph:
 							$2 = $2.replace(/<p[^>]*>([\s\S]*?)<\/p>/, function($0,$1) {
 								bL.push( {p:{text:$1.trim()}} );
@@ -656,10 +657,11 @@ function toOxml( data, opts ) {
 							//   to identify any formatting change - the preceding text will be stored as a 'run'.
 							// - for all others which cannot be nested and which cannot contain others (such as <object>), the pair is specified.
 							//   In that case, the total construct is stored as a run.
-							txt = txt.replace( reRuns, function($0,$1,$2) {
+							txt = txt.replace( reRun, function($0,$1,$2) {
 								// $1 is the string before ... and
-								// $2 is the first identified tag.
+								// $2 is the first identified tag or tag pair.
 //								console.debug('lets run 0:"',$0,'" 1:"',$1,'" 2:"',$2,'"');
+
 								// store the preceding text as run with a clone of the current formatting:
 								if( opts.hasContent($1) )
 									p.runs.push({text:$1,font:clone(fmt.font)});

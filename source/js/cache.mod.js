@@ -664,7 +664,7 @@ function Project( pr ) {
 				changedAt: chAt
 			}]
 		}
-	self.createProcessesFolder = function( dta ) {	
+	self.createProcessesFolder = ( dta )=>{	
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 		// Assumes that the folder objects for the process folder are available
 		
@@ -691,33 +691,37 @@ function Project( pr ) {
 //		console.debug('createProcessesFolder',dF,pL);
 		if( pL.length>0 ) {
 			// 2. Delete any existing process folders,
-			self.deleteContent( 'node', dF );
+			self.deleteContent( 'node', dF )
+				.then(
+					function() {
+						// Sort the list of process diagrams alphabetically by title:
+						if( pL.length>1 )
+							pL.sort( function(bim, bam) {
+										if( !bim.title || !bam.title ) return 1;
+										bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
+										bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
+										return bim==bam ? 0 : (bim<bam ? -1 : 1) 
+							});
 
-			// Sort the list of process diagrams alphabetically by title:
-			if( pL.length>1 )
-				pL.sort( function(bim, bam) {
-							if( !bim.title || !bam.title ) return 1;
-							bim = itemById( dta.resources, bim.resource ).title.toLowerCase();
-							bam = itemById( dta.resources, bam.resource ).title.toLowerCase();
-							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
-				});
-
-			// 3. Create a new combined process folder:
-			let processF = {
-				specifVersion: 'v0.8',
-				dataTypes: DataTypes(tim),
-				propertyClasses: PropertyClasses(tim),
-				resourceClasses: ResourceClasses(tim),
-				resources: Folders(),
-				hierarchies: [{
-					id: "H-FolderProcesses-" + apx,
-					resource: "FolderProcesses-" + apx,
-					nodes: pL,
-					changedAt: tim
-				}]
-			};
-			// use the update function to eliminate duplicate types:
-			self.update( processF, {mode:'adopt'} )  
+						// 3. Create a new combined process folder:
+						let processF = {
+							specifVersion: 'v0.8',
+							dataTypes: DataTypes(tim),
+							propertyClasses: PropertyClasses(tim),
+							resourceClasses: ResourceClasses(tim),
+							resources: Folders(),
+							hierarchies: [{
+								id: "H-FolderProcesses-" + apx,
+								resource: "FolderProcesses-" + apx,
+								nodes: pL,
+								changedAt: tim
+							}]
+						};
+						// use the update function to eliminate duplicate types:
+						self.update( processF, {mode:'adopt'} )  
+					},
+					stdError
+				)
 		};
 		return;
 		
@@ -738,7 +742,7 @@ function Project( pr ) {
 			return fL
 		}
 	};
-	self.createGlossary = function( dta ) {	
+	self.createGlossary = ( dta )=>{	
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 		// Assumes that the folder objects for the glossary are available
 		
@@ -762,19 +766,23 @@ function Project( pr ) {
 		// 1.2 Delete now:
 //		console.debug('createGlossary',gF);
 		self.deleteContent( 'node', gF )
-
-		// 2. Create a new combined glossary:
-		let glossary = {
-			specifVersion: 'v0.8',
-			dataTypes: DataTypes(tim),
-			propertyClasses: PropertyClasses(tim),
-			resourceClasses: ResourceClasses(tim),
-			resources: Folders(),
-			hierarchies: NodeList(self.data.resources)
-		};
-//		console.debug('glossary',glossary);
-		// use the update function to eliminate duplicate types:
-		self.update( glossary, {mode:'adopt'} )
+				.then(
+					function() {
+						// 2. Create a new combined glossary:
+						let glossary = {
+							specifVersion: 'v0.8',
+							dataTypes: DataTypes(tim),
+							propertyClasses: PropertyClasses(tim),
+							resourceClasses: ResourceClasses(tim),
+							resources: Folders(),
+							hierarchies: NodeList(self.data.resources)
+						};
+//						console.debug('glossary',glossary);
+						// use the update function to eliminate duplicate types:
+						self.update( glossary, {mode:'adopt'} )
+					},
+					stdError
+				)
 		return;
 		
 		function Folders() {
@@ -1531,59 +1539,31 @@ function Project( pr ) {
 			}  */
 		
 //		console.debug('deleteContent',ctg,item);
-		var dDO = $.Deferred();
-		// Do not try to delete types which are in use;
-		// ToDo: Delete in the server, as well.
-		switch( ctg ) {
-		/*	case 'class':	
-			case 'dataType':
-			case 'resourceClass':
-			case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
-									if( isInUse(ctg,item) ) {
-										dDO.reject({status:972, statusText:i18n.Err400TypeIsInUse});
-										return dDO
-									};
-									// no break;  */
-			case 'node':	
-//				console.debug('deleteContent',ctg,item);
-				uncache( ctg, item );
-				break;
-			default:				
-				return null
-		};
-		dDO.resolve({status:0});
-		return dDO
+		return new Promise((resolve, reject) => {
+			// Do not try to delete types which are in use;
+			switch( ctg ) {
+			/*	case 'class':	
+				case 'dataType':
+				case 'resourceClass':
+				case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
+										if( isInUse(ctg,item) ) {
+											dDO.reject({status:972, statusText:i18n.Err400TypeIsInUse});
+											return dDO
+										};
+										// no break;  */
+				case 'statement':
+				case 'node':	
+	//				console.debug('deleteContent',ctg,item);
+					if( uncache( ctg, item )<0 ) reject({status:999,statusText:ctg+' '+item.id+' not found and thus not deleted.'});
+					break;
+				default:				
+					reject({status:999,statusText:'Category '+ctg+' is unknown; item '+item.id+' could not be deleted.'})
+			};
+			resolve({status:0})
+		})
 	};
-/*	self.createNode = function( el ) {
-		// creating a node is updating the hierarchy:
-		var cPr = $.Deferred();
-		let sId = self.data.selectedHierarchy.id, // memorize
-			nI; 
-		// 1. reload hierarchy to minimize update conflict,
-		//    just specify the id to obtain the last revision:
-	//	self.readContent( 'hierarchy', {id:self.data.selectedHierarchy.id}, {reload: true} )
-	//		.done( function( nH ) {
-//				console.debug('createNode current hierarchy',nH,el);
-	//			cache( 'hierarchy', nH );
-	//			self.data.selectedHierarchy = itemById( self.data.hierarchies, sId ) // update address
-//				console.debug('createNode selected hierarchy',sId,self.data.selectedHierarchy);
-				// 2. insert the node:
-				nI = cache( 'node', el );
-//				console.debug('createNode updated hierarchy',nI,self.data.selectedHierarchy);
-				if( typeof(nI)=='number' && nI>-1 ) 
-					// 3. update the hierarchy:
-					self.updateContent( 'hierarchy', self.data.selectedHierarchy )
-						.done( cPr.resolve )
-						.fail( cPr.reject )
-	//		})
-	//		.fail( cPr.reject )
-		return cPr
-	};
-	self.moveNode = function( el ) {
-	};
-	self.rejectTest = function() {
+/*	self.rejectTest = function() {
 		var dO = $.Deferred();  
-//		console.debug( 'rejectTest', arr, itm );
 		dO.reject( {status:417,statusText:'rejected to test'} );	// return a new list with the original elements
 		return dO
 	};  */
@@ -1595,7 +1575,8 @@ function Project( pr ) {
 		return new Promise((resolve, reject) => {
 			// Get the class's permissions. So far, it's property permissions are not loaded ...
 			self.readContent( 'resourceClass', oT, {reload:true} )
-				.done( function(rC) {
+			.then( 
+				(rC)=>{
 					// return an empty resource instance of the given type: 
 					var res = {
 						id: genID('R-'),
@@ -1605,19 +1586,22 @@ function Project( pr ) {
 						properties: [] 
 						};
 					self.readContent( 'propertyClass', rC.propertyClasses )
-						.done( function(pCL) {
-							res.properties = forAll( pCL, createProp );
-							if( res.properties.length ) 
-								resolve( res )
-							else
-								reject({status:977, statusText:i18n.ErrInconsistentPermissions})
-						})
-						.fail( reject )
-				})
-				.fail( reject )
+						.then( 
+							(pCL)=>{
+								res.properties = forAll( pCL, createProp );
+								if( res.properties.length ) 
+									resolve( res )
+								else
+									reject({status:977, statusText:i18n.ErrInconsistentPermissions})
+							},
+							reject
+						)
+				},
+				reject
+			)
 		})
 	};
-	self.readStatementsOf = function( res, showComments ) {  
+	self.readStatementsOf = ( res, showComments )=>{  
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
 		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
@@ -1630,30 +1614,37 @@ function Project( pr ) {
 			/*	for( var s=self.data.hierarchies.length-1; s>-1; s-- )
 					if( iterateNodes( self.data.hierarchies[s], function(nd) { return nd.resource!=rId } ) ) return true;
 				return false */
-				return iterateNodes( self.data.hierarchies, function(nd) { return nd.resource!=rId } )
+				return iterateNodes( self.data.hierarchies, (nd)=>{ return nd.resource!=rId } )
 			}
-		var sDO = $.Deferred();
+		return new Promise( (resolve, reject) => {
 
-		var rsp = app.cache.selectedProject.data.statements.filter( function(s){ 
-								// filter all statements involving res as subject or object:
+			self.readContent( 'statement', 'all' )
+			.then(
+				(sL)=>{
+					// filter all statements involving res as subject or object:
+					resolve( 
+						sL.filter( (s)=>{ 
 								return ( res.id==itemIdOf(s.subject) || res.id==itemIdOf(s.object) )
-								// AND fulfilling certain conditions:
-									&&  ( 	
-											// related subject and object must be referenced in the tree to be navigable,
-											// also, the statement must not be declared 'hidden':
-											!showComments
-												&&	isReferenced( itemIdOf(s.subject) )
-												&&	isReferenced( itemIdOf(s.object) )
-												&&	s.title!=CONFIG.staClassCommentRefersTo
-												&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
-											// In case of a comment, the comment itself is not referenced, but the resource:
-										||	showComments
-												&&	isReferenced( itemIdOf(s.object) )
-												&&	s.title==CONFIG.staClassCommentRefersTo
-										)
-							});
-		sDO.resolve(rsp);
-		return sDO
+										// AND fulfilling certain conditions:
+										&&  ( 	
+												// related subject and object must be referenced in the tree to be navigable,
+												// also, the statement must not be declared 'hidden':
+												!showComments
+													&&	isReferenced( itemIdOf(s.subject) )
+													&&	isReferenced( itemIdOf(s.object) )
+													&&	s.title!=CONFIG.staClassCommentRefersTo
+													&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
+												// In case of a comment, the comment itself is not referenced, but the resource:
+											||	showComments
+													&&	isReferenced( itemIdOf(s.object) )
+													&&	s.title==CONFIG.staClassCommentRefersTo
+											)
+						})
+					)
+				},
+				reject
+			)
+		})
 	};
 	self.export = function() {
 		if( self.data.exporting ) return;
@@ -2393,50 +2384,55 @@ function Project( pr ) {
 		// - itm can be single or a list, 
 		// - each element can be an object with attribute id or an id string
 		if( !opts.reload ) {
-			let arr = cacheOf(ctg),
+			let cch = cacheOf(ctg),
 				idx=null;
-//			console.debug( 'readCache', simpleClone(arr) );
+//			console.debug( 'readCache', simpleClone(cch) );
 			if( itm=='all' ) {
 					// return all cached items asynchronously:
-					var dO = $.Deferred();  
-//					console.debug( 'readCache', arr, itm );
-					dO.resolve( [].concat(arr) );	// return a new list with the original elements
-					return dO
+					return new Promise(( resolve, reject)=>{
+//						console.debug( 'readCache', cch, itm );
+						resolve( [].concat(cch) );	// return a new list with the original elements
+					})
 			};
 			if( Array.isArray(itm) ) {
 				let allFound=true, i=0, I=itm.length;
 				var rL = [];
 				while( allFound && i<I ) {
-					idx = indexById( arr, itm[i].id||itm[i] );
-					if( idx>-1 )
-						rL.push( arr[idx] )
-					else
-						allFound = false;
-					i++
+					idx = indexById( cch, itm[i].id||itm[i] );
+					if( idx>-1 ) {
+						rL.push( cch[idx] );
+						i++
+					} else {
+						allFound = false
+					}
 				};
-				if( allFound ) {
-					// return the cached resources asynchronously:
-					var dO = $.Deferred();  
-//					console.debug( 'readCache array - allFound', arr, itm );
+				// return the cached resources asynchronously:
+				return new Promise((resolve, reject) => {
 					// delay the answer a little, so that the caller can properly process a batch:
 					setTimeout(function() {
-						dO.resolve( rL )
-					}, opts.timelag );
-					return dO
-				}
+						if( allFound ) {
+//							console.debug( 'readCache array - allFound', cch, itm );
+							resolve( rL )
+						} else {
+							reject( {status:999,statusText:ctg+' with id '+itm[i].id||itm[i]+' not found.'} )
+						}
+					}, opts.timelag )
+				})
 			} else {
 				// is a single item:
-				idx = indexById( arr, itm.id||itm );
-				if( idx>-1 ) {
-					// return the cached object asynchronously:
-					var dO = $.Deferred();  
+				idx = indexById( cch, itm.id||itm );
+				// return the cached object asynchronously:
+				return new Promise( (resolve, reject)=>{
 					// delay the answer a little, so that the caller can properly process a batch:
-					setTimeout(function() {
-						dO.resolve( arr[idx] )
+					setTimeout( ()=>{
+						if( idx>-1 ) {
+							resolve( cch[idx] )
+						} else {
+							reject( {status:999,statusText:ctg+' with id '+itm.id||itm+' not found.'} )
+						}
 					}, opts.timelag );
-//					console.debug('readCache single item - found', ctg, 'from cache:',arr[idx]);
-					return dO
-				}
+//					console.debug('readCache single item - found', ctg, 'from cache:',cch[idx]);
+				})
 			}
 //			console.debug('readCache - not found', ctg, itm);
 		};
@@ -3197,6 +3193,7 @@ function enumValueOf( dT, val, opts ) {
 		eV,
 	//	st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
 		vL = val.split(',');  // in case of ENUMERATION, val may carry comma-separated value-IDs
+//	console.debug('enumValueOf',dT,val,vL,opts);
 	vL.forEach( function(v,i) {
 	//	if( !v ) return;
 		eV = languageValueOf( itemById(dT.values,v).value, opts );

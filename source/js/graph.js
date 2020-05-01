@@ -32,6 +32,8 @@ function Graph() {
 		if( !opts.nodeColor ) opts.nodeColor = '#afcbef';
 		if( !opts.edgeColor ) opts.edgeColor = 'black';
 		if( !opts.clusterColor ) opts.clusterColor = '#c3daf6';
+		if( !opts.fontFace ) opts.fontFace = 'Arial';
+		if( !opts.fontSize ) opts.fontSize = '14px';
 			
 		// All required parameters are available, so we can begin:
 		let relations = collectStatementsByType( specifData.resources[opts.index] );
@@ -364,6 +366,7 @@ function Graph() {
                     x: 0,
                     y: 0,
 					color: opts.focusColor,
+					font: opts.fontSize+" "+opts.fontFace+" #fff",
                     shape: "box"
                 }
             );
