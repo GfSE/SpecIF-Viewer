@@ -42,12 +42,13 @@ modules.construct({
 		self.list = []
 	};
 	self.clear = function() {
-		self.list = []
+		self.list = [];
+		app.busy.reset()
 	};
 	self.hide = function() {
 //		console.debug( 'reports.hide' );
 		$(self.view).empty();
-		app.busy.reset()
+		self.clear()
 	};
 	function handleError(xhr) {
 		self.hide();

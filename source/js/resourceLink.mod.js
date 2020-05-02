@@ -232,24 +232,8 @@ modules.construct({
 		self.selectedCandidate = {resource:self.allResources[idx],div:el};
 
 		// enable the appropriate save buttons
-		// (a) the selected candidate may be a subject:
-		let btn = $("#btn-modal-saveResourceAsObject");
-		if( candidateMayBeSubject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
-			btn.prop('disabled',false);
-			// show the statement to create in a popup:
-			btn.attr("data-toggle","popover");
-			btn.popover({
-				trigger:"hover",
-				placement:"top",
-				html: true,
-				content: "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
-							+ '<i>'+titleOf(self.selectedStatementClass,opts,cData) +"</i> '"
-							+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'"
-			})
-		} else {
-			btn.prop('disabled',true);
-		};
-	/*	let btn = document.getElementById("btn-modal-saveResourceAsObject");
+		// (a) the selected candidate may be a object:
+		let btn = document.getElementById("btn-modal-saveResourceAsObject");
 		if( candidateMayBeObject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
 			btn.disabled = false;
 			// show the statement to create in a popup:
@@ -259,11 +243,42 @@ modules.construct({
 										+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
 		} else {
 			btn.disabled = true
+		}; 
+	/*	unfortunately the popup content keeps the first text and is not updated on selecting another candidate:
+		let btn = $("#btn-modal-saveResourceAsObject");
+		if( candidateMayBeObject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
+			console.debug( 'candidateMayBeSubject', self.selectedCandidate.resource );
+			btn.prop('disabled',false);
+			// show the statement to create in a popup:
+			btn.attr("data-toggle","popover");
+			btn.popover({
+				trigger:"hover",
+				placement:"top"
+				html: true,
+				content: "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
+							+ '<i>'+titleOf(self.selectedStatementClass,opts,cData) +"</i> '"
+							+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" 
+			})
+		} else {
+			btn.prop('disabled',true)
 		}; */
 
-		// (b) the selected candidate may be an object:
+		// (b) the selected candidate may be an subject:
+		btn = document.getElementById("btn-modal-saveResourceAsSubject");
+		if( candidateMayBeSubject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
+			btn.disabled = false;
+			// show the statement to create in a popup:
+			btn.setAttribute("data-toggle","popover");
+			btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
+										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ desperateTitleOf(self.selRes,opts,cData) +"'" )
+		} else {
+			btn.disabled = true
+		}; 
+	/*	unfortunately the popup content keeps the first text and is not updated on selecting another candidate:
 		btn = $("#btn-modal-saveResourceAsSubject");
 		if( candidateMayBeSubject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
+			console.debug( 'candidateMayBeObject', self.selectedCandidate.resource );
 			btn.prop('disabled',false);
 			// show the statement to create in a popup:
 			btn.attr("data-toggle","popover");
@@ -276,8 +291,8 @@ modules.construct({
 							+ desperateTitleOf(self.selRes,opts,cData) +"'"
 			})
 		} else {
-			btn.prop('disabled',true);
-		};
+			btn.prop('disabled',true)
+		}  */
 	};
 	self.saveStatement = (dir)=>{
 //		console.debug('saveStatement',self.selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);

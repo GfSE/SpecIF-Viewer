@@ -176,7 +176,7 @@ modules.construct({
 	// called by the parent's view controller:
 	self.hide = function() {
 //		console.debug( 'specs.hide' );
-	//	self.emptyTab();
+		// don't delete the page with $(self.view).empty(), as the structure is built in init()
 		app.busy.reset()
 	}; 
 

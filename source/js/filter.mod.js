@@ -97,15 +97,39 @@ modules.construct({
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
 
+	// Construct a Regex to isolate content from XHTML-tags:
+	const reA = '<a([^>]+)>([\\s\\S]*?)</a>',
+		// A single comprehensive <img .../>:
+		reI = '<img([^>]+)/>',
+		// A single comprehensive <object .../> or tag pair <object ...>..</object>.
+		// Limitation: the innerHTML may not have any tags.
+		// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
+		reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+		// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
+		reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+		reR = '([\\s\\S]*?)('
+			+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>|<br ?/>'
+			+	'|<div[^>]*>|</div>|<div ?/>'
+			+	'|<p[^>]*>|</p>'
+			+	'|<ul[^>]*>|</ul>'
+			+	'|<ol[^>]*>|</ol>'
+			+	'|<li[^>]*>|</li>'
+			+	'|<table[^>]*>|<thead[^>]*>|<tbody[^>]*>|<tfoot[^>]*>|<tr[^>]*>|<tr[^>]*>|<th[^>]*>|<td[^>]*>'
+			+	'|</table>|</thead>|</tbody>|</tfoot>|</tr>|</tr>|</th>|</td>'
+			+	'|'+reA
+			+	'|'+reI
+			// The nested object pattern must be checked before the single object pattern:
+			+	'|'+reNO
+			+	'|'+reSO
+	//		+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
+			+	')',
+		reRun = new RegExp(reR,'g');
+		
 	// Standard module interface methods:
 	self.init = ()=>{
 //		console.debug( 'filters.init' );
 		self.filterList = []
 		self.secondaryFilters = undefined;
-
-		// Language options have been selected at project level:
-		displayOptions.targetLanguage = self.parent.targetLanguage;
-		displayOptions.lookupTitles = self.parent.lookupTitles;
 
 		// The left panel on this page (only for this view):
 		let h = '<div id="filterLeft" class="paneLeft">'
@@ -131,8 +155,9 @@ modules.construct({
 	};
 	self.hide = ()=>{
 //		console.debug( 'filter.hide' );
+		// don't delete the page with $(self.view).empty(), as the structure is built in init()
 		$( '#hitlist' ).empty();
-		app.busy.reset()
+		self.clear()
 	};
 	function handleError(xhr) {
 		self.clear();
@@ -148,6 +173,10 @@ modules.construct({
 		dta = prj.data;
 		pData.showLeft.reset();
 		$('#filterNotice').empty();
+
+		// Language options have been selected at project level:
+		displayOptions.targetLanguage = self.parent.targetLanguage;
+		displayOptions.lookupTitles = self.parent.lookupTitles;
 
 		// build filterList from the specTypes when executed for the first time:
 		if( self.filterList.length<1 || opts.filters || opts.forced ) 
@@ -424,53 +453,25 @@ modules.construct({
 				function mark( txt, re ) {
 					// Mark the txt, but spare XHTML-tags.
 					
-					// Construct a Regex to isolate content from XHTML-tags:
-					const reA = '<a([^>]+)>([\\s\\S]*?)</a>',
-						// A single comprehensive <img .../>:
-						reI = '<img([^>]+)/>',
-						// A single comprehensive <object .../> or tag pair <object ...>..</object>.
-						// Limitation: the innerHTML may not have any tags.
-						// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-						reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
-						// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
-						reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
-						reR = '([\\s\\S]*?)('
-							+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>|<br ?/>'
-							+	'|<div[^>]*>|</div>|<div ?/>'
-							+	'|<p[^>]*>|</p>'
-							+	'|<ul[^>]*>|</ul>'
-							+	'|<ol[^>]*>|</ol>'
-							+	'|<li[^>]*>|</li>'
-							+	'|<table[^>]*>|<thead[^>]*>|<tbody[^>]*>|<tfoot[^>]*>|<tr[^>]*>|<tr[^>]*>|<th[^>]*>|<td[^>]*>'
-							+	'|</table>|</thead>|</tbody>|</tfoot>|</tr>|</tr>|</th>|</td>'
-							+	'|'+reA
-							+	'|'+reI
-							// The nested object pattern must be checked before the single object pattern:
-							+	'|'+reNO
-							+	'|'+reSO
-					//		+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
-							+	')',
-						reRun = new RegExp(reR,'g');
-						
-						// 1. txt is iteratively processed until the first tag or tag pair,
-						//    where the text before the tag is appropriately marked,
-						let markedText = '';
-						txt = txt.replace( reRun, ($0,$1,$2)=>{
-								// $1 is the string before ... and
-								// $2 is the first identified tag or tag pair.
+					// 1. txt is iteratively processed until the first tag or tag pair,
+					//    where the text before the tag is appropriately marked,
+					let markedText = '';
+					txt = txt.replace( reRun, ($0,$1,$2)=>{
+							// $1 is the string before ... and
+							// $2 is the first identified tag or tag pair.
 
-//								console.debug( '$0,$1,$2',$0,$1,$2 );
-								// 1. mark the preceding text:
-								if( $1.stripHTML().length>0 )
-									$1 = $1.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
-								markedText += $1+$2;
-								// consume txt:
-								return ''  
-							});
-						// 2. finally mark the remainder (the rest of the txt not consumed before):
-						if( txt.stripHTML().length>0 )
-							markedText += txt.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
-						return markedText
+//							console.debug( '$0,$1,$2',$0,$1,$2 );
+							// 1. mark the preceding text:
+							if( $1.stripHTML().length>0 )
+								$1 = $1.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
+							markedText += $1+$2;
+							// consume txt:
+							return ''  
+						});
+					// 2. finally mark the remainder (the rest of the txt not consumed before):
+					if( txt.stripHTML().length>0 )
+						markedText += txt.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
+					return markedText
 				}
 			}
 			function isChecked( opts, id ) {
