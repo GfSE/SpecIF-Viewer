@@ -111,7 +111,7 @@ modules.construct({
 			return
 
 			function selectResource() {
-				console.debug('sCL, rL',self.eligibleSCL, self.allResources, pend );
+//				console.debug('sCL, rL',self.eligibleSCL, self.allResources, pend );
 				if( --pend<1 ) {
 					// all parallel requests are done,
 					// store a clone and get the title to display:

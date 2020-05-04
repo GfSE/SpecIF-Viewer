@@ -315,8 +315,8 @@ modules.construct({
 		}
 	};
 	self.removeDiagram = (cId)=>{
-//		console.debug('removeDiagram',cId,self.newRes);
-		itemBy(self.newRes.properties, 'class', cId ).value = '';
+//		console.debug('removeDiagram',cId,toEdit);
+		itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '';
 		document.getElementById(tagId(cId)).innerHTML = ''
 	};
 	self.check = ()=>{
@@ -325,7 +325,6 @@ modules.construct({
 		let notOk = !self.checkForm.do();
 		// enable save buttons, if all input fields have acceptable content:
 		Array.from( document.getElementsByClassName('btn-modal-save'), (btn)=>{
-//			console.debug('#',btn,notOk);
 			btn.disabled = notOk
 		})
 	//	console.debug('input made',document.getElementsByClassName('btn-modal-save'));
@@ -335,32 +334,32 @@ modules.construct({
 		// Save the new or changed resource:
 		let p, 
 			pend=2, // minimally 2 calls with promise
-			// The properties of toEdit are complete in contrast to the original self.newRes:
+			// The properties of toEdit are complete (in contrast to self.newRes):
 			allProps = toEdit.descriptions.concat(toEdit.other),
 			chD = new Date().toISOString();  // changedAt
 		for( var a=allProps.length-1;a>-1;a-- ) {
 			p = allProps[a];
-			// delete any title property, as the resource's native title has been set:
+			// Delete any title property, as the resource's native title has been set:
 			if( CONFIG.titleProperties.concat(CONFIG.headingProperties).indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('delete',p);
+//				console.debug('delete title property',p);
 				allProps.properties.splice(a,1);
 				continue
 			};
 			// Skip the diagrams, as they are directly updated if the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('skip',p);
+//				console.debug('skip diagram property',p);
 				continue
 			};
 //			console.debug( 'save',mode, p, getP( p ) );
-			p.value = getP( p );
-		//	itemBy( allProps, 'class', p['class'] ).value = getP( p )
+			// get the new or unchanged input value of the other properties:
+			p.value = getP( p )
 		};
-//		console.debug( 'save allProps', allProps );
 		// set the resource's native title:
 		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
 		// suppress empty properties:
 		self.newRes.properties = forAll( allProps, (p)=>{ if( hasContent(p.value) ) return p });
 		self.newRes.changedAt = chD;
+//		console.debug( 'save', self.newRes );
 		switch( mode ) {
 			case 'update':
 				app.cache.selectedProject.updateContent( 'resource', self.newRes )

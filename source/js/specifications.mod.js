@@ -1067,7 +1067,7 @@ modules.construct({
 			// b) set the permissions for the edit buttons:
 			self.staCre = self.staCreClasses.subjectClasses.length>0 || self.staCreClasses.objectClasses.length>0
 		};
-		console.debug('permissions',sRes,self.staCreClasses,self.staCre)
+//		console.debug('permissions',sRes,self.staCreClasses,self.staCre)
 	}
 	function renderStatements(net) {
 		// net contains resources and statements as a SpecIF data-set for graph rendering,
@@ -1232,7 +1232,6 @@ modules.construct({
 		if( modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
-			console.debug('relatedItemClicked delete',rId,sId);
 			app.cache.selectedProject.deleteContent( 'statement', {id: sId} )
 				.then(
 					pData.doRefresh({forced:true}),
