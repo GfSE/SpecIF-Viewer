@@ -75,7 +75,7 @@ modules.construct({
 		self.clear();
 		cData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
-		opts.selNodeId = self.parent.tree.selectedNode.id;
+		opts.selNodeId = pData.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
 		// Note: Here ES6 promises will be used. 
@@ -386,18 +386,24 @@ modules.construct({
 			
 		function finalize() {	
 			if(--pend<1) {
+				// update the tree because the title may have changed:
 				pData.updateTree();
 				// get the selected node:
 				let selNd = pData.tree.selectedNode;
+				// update the node name:
+			//	pData.tree.updateNode( selNd, self.newRes.title );
 				if( selNd )
 					switch( mode ) {
-						case 'insertAfter':
-//							console.debug('nd',selNd,pData.tree.selectedNode)
-							pData.tree.selectNode( selNd.getNextSibling() ); 
-							break;
+				//		case 'update':
+				//			break;
 						case 'insertBelow':
 							pData.tree.openNode( selNd );
-							pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
+						//	pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
+							// no break
+						case 'insertAfter':
+//							console.debug('nd',selNd,pData.tree.selectedNode)
+						//	pData.tree.selectNode( selNd.getNextSibling() ); 
+							pData.tree.selectNode( selNd.getNextNode() )
 					}
 				else
 					// we get here only after creating the first node of a tree:

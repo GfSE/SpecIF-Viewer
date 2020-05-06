@@ -56,7 +56,7 @@ modules.construct({
 		// holds the hierarchy tree (or outline):
 		self.tree = new Tree({
 			loc: '#hierarchy',
-			dragAndDrop: false,
+			dragAndDrop: app.label!=i18n.LblReader,
 			eventHandlers: {
 				'select':  
 					// when a node is clicked or traversed by up/down keys
@@ -79,7 +79,7 @@ modules.construct({
 					function(event) {  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
-			/*		},
+					},
 				'move':
 					function(event) {
 						// event: A node, potentially with children, has been moved by drag'n'drop.
@@ -95,56 +95,53 @@ modules.construct({
 							function moveNodeInside( movedNd, targetNd ) {
 								let rT = self.tree.newIds( movedNd );
 //								console.debug( 'insert inside: ', movedNd.name, targetNd.name, rT );
-								app.cache.selectedProject.createNode({
+								app.cache.selectedProject.createContent( 'node', {
 									id: rT.id,
 									name: rT.name,
 									ref: rT.ref,
 									children: rT.children,
-									parent: targetNd.id || app.cache.selectedHierarchy.id
+									parent: targetNd.id
 								})
-									.done( finishMove )
-									.fail( handleError )
+								.then( finishMove, stdError )
 							}
 							function moveNodeAfter( movedNd, targetNd ) {
 								let rT = self.tree.newIds( movedNd );
 //								console.debug( 'insert after: ', movedNd.name, targetNd.name, rT );
-								app.cache.selectedProject.createNode({
+								app.cache.selectedProject.createContent( 'node', {
 									id: rT.id,
 									name: rT.name,
 									ref: rT.ref,
 									children: rT.children,
-									parent: targetNd.id || app.cache.selectedHierarchy.id,
 									predecessor: targetNd.id
 								})
-									.done( finishMove )
-									.fail( handleError )
+								.then( finishMove, stdError )
 							}
 						
 						// 1. Delete the moved node with all its children:
-						// ToDo: implement 'app.cache.selectedProject.moveNode()'
-						app.cache.selectedProject.deleteNode( {id: event.move_info.moved_node.id} )
-							.done( function() {
-//								console.debug('delete node done',event)
-								// 2. Move the entry including any sub-tree to the new position
-								//  - Update the server, where the tree entries get new ids.
-								//  - Update the moved tree entries with the new id corresponding with the server.
-								let are = /after/,
-									ire = /inside/;
-								if( are.test(event.move_info.position) ) {
-									// (a) event.move_info.position=='position after': 
-									//     The node is dropped between two nodes.
-									moveNodeAfter( event.move_info.moved_node, event.move_info.target_node )
-								} else if( ire.test(event.move_info.position) ) {
-									// (b) event.move_info.position=='position inside': 
-									//     The node is dropped on a target node without children or before the first node in a folder.
-									moveNodeInside( event.move_info.moved_node, event.move_info.target_node )
-								} else {
-									// (c) event.move_info.position=='position before': 
-									//     The node is dropped before the first node in the tree:
-									moveNodeInside( event.move_info.moved_node, event.move_info.target_node.parent )
-								}
-							})
-							.fail( handleError ); */
+						app.cache.selectedProject.deleteContent( 'node', {id: event.move_info.moved_node.id} )
+						.then( ()=>{
+//							console.debug('delete node done',event)
+							// 2. Move the entry including any sub-tree to the new position
+							//  - Update the server, where the tree entries get new ids.
+							//  - Update the moved tree entries with the new id corresponding with the server.
+							let are = /after/,
+								ire = /inside/;
+							if( are.test(event.move_info.position) ) {
+								// (a) event.move_info.position=='position after': 
+								//     The node is dropped between two nodes.
+								moveNodeAfter( event.move_info.moved_node, event.move_info.target_node )
+							} else if( ire.test(event.move_info.position) ) {
+								// (b) event.move_info.position=='position inside': 
+								//     The node is dropped on a target node without children or before the first node in a folder.
+								moveNodeInside( event.move_info.moved_node, event.move_info.target_node )
+							} else {
+								// (c) event.move_info.position=='position before': 
+								//     The node is dropped before the first node in the tree:
+								moveNodeInside( event.move_info.moved_node, event.move_info.target_node.parent )
+							}
+						},
+						stdError 
+						); 
 					}
 			}
 		});
@@ -258,10 +255,10 @@ modules.construct({
 		function toChild( iE ) {
 			// transform SpecIF hierarchy to jqTree:
 			let r = itemById( app.cache.selectedProject.data.resources, iE.resource );
+//			console.debug('toChild',iE.resource,r);
 			var oE = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				// String.fromCodePoint()
 				name: desperateTitleOf(r,opts,prj), 
 				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
 			};
@@ -575,26 +572,27 @@ modules.construct({
 		};
 
 		app.cache.selectedProject.readContent( 'resource', oL )
-			.then( (rL)=>{
-					// Format the titles with numbering:
-					for( var i=rL.length-1; i>-1; i-- )
-						rL[i].order = nL[i].order;
-		
-					// Update the view list, if changed:
-					// Note that the list is always changed, when execution gets here,
-					// unless in a multi-user configuration with server and auto-update enabled.
-					if( self.resources.update( rL ) || opts && opts.forced ) {
-						// list value has changed in some way:
-					//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
-						$( self.view ).html( self.resources.render() )
-					};
-					// the currently selected resource:
-					selRes = self.resources.selected();
-					$( '#contentActions' ).html( actionBtns() );
-					app.busy.reset()
-				},
-				stdError
-			)
+		.then( 
+			(rL)=>{
+				// Format the titles with numbering:
+				for( var i=rL.length-1; i>-1; i-- )
+					rL[i].order = nL[i].order;
+	
+				// Update the view list, if changed:
+				// Note that the list is always changed, when execution gets here,
+				// unless in a multi-user configuration with server and auto-update enabled.
+				if( self.resources.update( rL ) || opts && opts.forced ) {
+					// list value has changed in some way:
+				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
+					$( self.view ).html( self.resources.render() )
+				};
+				// the currently selected resource:
+				selRes = self.resources.selected();
+				$( '#contentActions' ).html( actionBtns() );
+				app.busy.reset()
+			},
+			stdError
+		)
 	};
 	function actionBtns() {
 

@@ -17,10 +17,19 @@ modules.construct({
 		self.clear()
 	};
 	self.show = function( opts ) {
+		let isEditor = app.label==i18n.LblEditor;
+
+		// Update browser history, if it is a view change or item selection, 
+		// but not navigation in the browser history:
+		if( !(opts && opts.urlParams) ) 
+			setUrlParams({
+				view: self.view.substr(1)	// remove leading hash
+			}); 
+
 		$('#pageTitle').html( app.productTitle );
 		$('#about').html(
 			'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'
-		+   '<p>An app for your web-browser to view and transform system specifications.</p>'
+		+   '<p>An app for your web-browser to view'+(isEditor? ', edit':'')+' and transform system specifications.</p>'
 		+	'<p>SpecIF is the \'Specification Integration Facility\'. It\'s purpose is to combine partial specifications from different tools in a single model to allow</p>'
 		+	'<ul>'
 		+	'<li>to search, navigate and audit partial results in a common context,</li>'
@@ -32,19 +41,32 @@ modules.construct({
 	//	+	'<p>Please press \'<a href="http://reqif.de/index.php/contact/articles/reqif-message.html" target="_blank">Support</a>\' to file a request for assistance.</p>'
 		+	'<h4>Features:</h4>'
 		+		'<ul>'
-		+		"<li>Import 'specif' and 'specifz' file with schema and consistency check</li>"
-		+		"<li>Import 'reqif' file (planned)</li>"
-		+		"<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
-		+		"<li>Import 'BPMN-XML' file</li>"
-		+		"<li>Import from an URL or the local file system</li>"
-		+		"<li>Browse the content ('resources') along any supplied hierarchy</li>"
-		+		"<li>Inspect the semantic net ('statements')</li>"
-		+		"<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
-		+		"<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
-		+		"<li>Export 'specifz' file</li>"
-		+		"<li>Export 'reqif' file</li>"
-		+		"<li>Export 'ePub' file</li>"
-		+		"<li>Export MS-Word OOXML file</li>"
+		+		  "<li>Import 'specif' and 'specifz' file with schema and consistency check</li>"
+		+		  "<li>Import 'reqif' file (planned)</li>"
+		+		  "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
+		+		  "<li>Import 'BPMN-XML' file</li>"
+		+		  "<li>Import from an URL or the local file system</li>"
+		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
+		+ (isEditor? "<li>Create, clone and update resources with an input form derived from the respective resource class</li>":"")
+		+ (isEditor? "<li>Move single nodes and subtrees in the hierarchy by drag'n'drop</li>":"")
+		+		  "<li>Inspect the semantic net ('statements')</li>"
+		+ (isEditor? "<li>Create statements according to the options defined in the statement classes</li>":"")
+		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
+		+		  "<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
+		+		  "<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
+		+		  "<li>Export 'specifz' file</li>"
+		+		  "<li>Export 'reqifz' file</li>"
+		+		  "<li>Export 'ePub' file</li>"
+		+		  "<li>Export MS-Word OOXML file</li>"
+		+		'</ul>'
+		+	'<h4>Compatibility:</h4>'
+		+		'<ul>'
+		+		  "<li>Mozilla Firefox</li>"
+		+		  "<li>Google Chromium and Chrome</li>"
+		+		  "<li>Apple Safari</li>"
+		+		  "<li>Opera</li>"
+		+		  "<li>Microsoft Edge <em>(beware of performance issues in case of bigger models)</em></li>"
+		+		  "<li>Microsoft Internet Explorer is <em>not</em> supported</li>"
 		+		'</ul>'
 		+	'</div>'
 		+	'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'

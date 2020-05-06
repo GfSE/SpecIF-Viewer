@@ -1156,8 +1156,9 @@ function setUrlParams(actSt) {
 		newParams = path[path.length-1],   	// last element is 'appname.html' (without URL params)
 		is='=',sep=';';
 
-	newParams += '#'+CONFIG.keyProject+is+actSt.project
-				+ sep+CONFIG.keyView+is+actSt.view
+	newParams += '#'
+				+ CONFIG.keyView+is+actSt.view
+				+ (actSt.project? sep+CONFIG.keyProject+is+actSt.project : "")
 				+ (actSt.node? sep+CONFIG.keyNode+is+actSt.node : (actSt.item? sep+CONFIG.keyItem+is+actSt.item : ''));
 
 	// update the browser history:

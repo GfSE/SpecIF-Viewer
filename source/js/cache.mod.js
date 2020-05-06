@@ -1424,11 +1424,10 @@ function Project( pr ) {
 		return new Promise((resolve, reject) => {
 //			console.debug('createContent', ctg, item );
 			switch( ctg ) {
-				case 'node':
-			//		return null;  // not supported
 			//	case 'resource':
 			//	case 'statement':
 			//	case 'hierarchy':
+				case 'node':
 					// add the baseType to property values to simplify the transformation for storing:
 			//		addBaseTypes( item );
 					// no break
@@ -1677,10 +1676,11 @@ function Project( pr ) {
 						app.busy.set();
 						message.show( i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
 						self.exportAs( {format: radioValue( i18n.LblFormat )} )
-							.done( function() { 
+						.then( ()=>{ 
 								app.busy.reset();
-							})
-							.fail( handleError );
+							},
+							handleError 
+						);
 //						app.busy.reset();
 						thisDlg.close()
 					}
@@ -1706,183 +1706,184 @@ function Project( pr ) {
 	//	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;   ... is the default
 	//	if( !opts.alternatePngFor ) opts.alternatePngFor = ['svg','ole'];	... not yet supported
 		
-		var eDO = $.Deferred();
+		return new Promise( (resolve, reject)=>{
 
-		/*	function handleError(xhr) {
-				self.data.exporting = false; 
-				eDO.reject(xhr)
-			}  */
-		
-		if( self.data.exp ) {
-			self.data.exporting = true;
-
-			switch( opts.format ) {
-				case 'reqif':
-				case 'specif-v0.10.8':
-				case 'specif':
-					storeAs( opts );
-					break;
-				case 'epub':
-				case 'oxml':
-					publish( opts )  
-			}
-		} else {
-			eDO.reject({status: 999, statusText: "No permission to export"})
-		};
-		return eDO
-
-		function publish( opts ) {
-			if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
-			// ToDo: Get the newest data from the server.
-//			console.debug( "publish", opts );
-
-			// take newest revision:
-			opts.revisionDate = new Date().toISOString();
-			// Don't lookup titles now, but within toOxml(), so that that classifyProps() works properly.
-			// But DO reduce to the language desired.
-			opts.lookupTitles = false;  // applies to specif.toExt()
-			if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
-
-			let data = specif.toExt( self.data, opts ), 
-				options = { 
-					classifyProperties: classifyProps,
-					lookup: i18n.lookup,
-					// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-					stereotypeProperties: CONFIG.stereotypeProperties,
-					// If a hidden property is defined with value, it is suppressed only if it has this value;
-					// if the value is undefined, the property is suppressed in all cases.
-					// so far (iLaH v0.92.44), property titles are translated:
-				//	hiddenProperties: opts.lookupTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-					hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-					showEmptyProperties: CONFIG.showEmptyProperties,
-					imgExtensions: CONFIG.imgExtensions,
-					applExtensions: CONFIG.applExtensions,
-				//	hasContent: hasContent,
-					propertiesLabel: 'SpecIF:Properties',
-					statementsLabel: 'SpecIF:Statements',
-					done: function() { app.cache.selectedProject.data.exporting=false; eDO.resolve() },
-					fail: function(xhr) { app.cache.selectedProject.data.exporting=false; eDO.reject(xhr) }
-				},
-				pend=0;
-
-			if( data.files )
-				// Transform any special format:
-				data.files.forEach( function(f,i,L) {  
-					switch( f.type ) {
-						case 'application/bpmn+xml':
-							pend++;
-							// Read and render BPMN as SVG:
-							blob2text(f,function(b) {
-								bpmn2svg(b, function(err, svg) { 
-											// this is the bpmnViewer callback function:
-											if (err) {
-												console.error('BPMN-Viewer could not deliver SVG', err)
-											} else {
-												// replace:
-												L.splice(i,1,{
-													blob: new Blob([svg],{type: "text/plain; charset=utf-8"}),
-													id: 'F-'+f.title.simpleHash(),
-													title: f.title.fileName()+'.svg',
-													type: 'image/svg+xml',
-													changedAt: f.changedAt
-												})
-											};
-//											console.debug('SVG',svg,L);
-											if( --pend<1 ) 
-												// Now, publish in the desired format:
-												pub();
-										})
-							}, 0)
-					}
-				});  
-			// In case there is nothing to transform, we start right away:
-			if( pend<1 ) 
-				// publish in the desired format:
-				pub();
-			return;
+			/*	function handleError(xhr) {
+					self.data.exporting = false; 
+					reject(xhr)
+				}  */
 			
-			function pub() {
+			if( self.data.exp ) {
+				self.data.exporting = true;
+
 				switch( opts.format ) {
-					case 'epub':
-						toEpub( data, options );
+					case 'reqif':
+					case 'specif-v0.10.8':
+					case 'specif':
+						storeAs( opts );
 						break;
+					case 'epub':
 					case 'oxml':
-						toOxml( data, options )
+						publish( opts )  
+				}
+			} else {
+				reject({status: 999, statusText: "No permission to export"})
+			};
+			return
+
+			function publish( opts ) {
+				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
+				// ToDo: Get the newest data from the server.
+	//			console.debug( "publish", opts );
+
+				// take newest revision:
+				opts.revisionDate = new Date().toISOString();
+				// Don't lookup titles now, but within toOxml(), so that that classifyProps() works properly.
+				// But DO reduce to the language desired.
+				opts.lookupTitles = false;  // applies to specif.toExt()
+				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+
+				let data = specif.toExt( self.data, opts ), 
+					options = { 
+						classifyProperties: classifyProps,
+						lookup: i18n.lookup,
+						// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
+						stereotypeProperties: CONFIG.stereotypeProperties,
+						// If a hidden property is defined with value, it is suppressed only if it has this value;
+						// if the value is undefined, the property is suppressed in all cases.
+						// so far (iLaH v0.92.44), property titles are translated:
+					//	hiddenProperties: opts.lookupTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+						hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
+						showEmptyProperties: CONFIG.showEmptyProperties,
+						imgExtensions: CONFIG.imgExtensions,
+						applExtensions: CONFIG.applExtensions,
+					//	hasContent: hasContent,
+						propertiesLabel: 'SpecIF:Properties',
+						statementsLabel: 'SpecIF:Statements',
+						done: function() { app.cache.selectedProject.data.exporting=false; resolve() },
+						fail: function(xhr) { app.cache.selectedProject.data.exporting=false; reject(xhr) }
+					},
+					pend=0;
+
+				if( data.files )
+					// Transform any special format:
+					data.files.forEach( function(f,i,L) {  
+						switch( f.type ) {
+							case 'application/bpmn+xml':
+								pend++;
+								// Read and render BPMN as SVG:
+								blob2text(f,function(b) {
+									bpmn2svg(b, function(err, svg) { 
+												// this is the bpmnViewer callback function:
+												if (err) {
+													console.error('BPMN-Viewer could not deliver SVG', err)
+												} else {
+													// replace:
+													L.splice(i,1,{
+														blob: new Blob([svg],{type: "text/plain; charset=utf-8"}),
+														id: 'F-'+f.title.simpleHash(),
+														title: f.title.fileName()+'.svg',
+														type: 'image/svg+xml',
+														changedAt: f.changedAt
+													})
+												};
+	//											console.debug('SVG',svg,L);
+												if( --pend<1 ) 
+													// Now, publish in the desired format:
+													pub();
+											})
+								}, 0)
+						}
+					});  
+				// In case there is nothing to transform, we start right away:
+				if( pend<1 ) 
+					// publish in the desired format:
+					pub();
+				return;
+				
+				function pub() {
+					switch( opts.format ) {
+						case 'epub':
+							toEpub( data, options );
+							break;
+						case 'oxml':
+							toOxml( data, options )
+					}
 				}
 			}
-		}
-		function storeAs( opts ) {
-			if( !opts || ['specif-v0.10.8','specif','reqif'].indexOf(opts.format)<0 ) return null;
-			// ToDo: Get the newest data from the server.
-//			console.debug( "storeAs", opts );
+			function storeAs( opts ) {
+				if( !opts || ['specif-v0.10.8','specif','reqif'].indexOf(opts.format)<0 ) return null;
+				// ToDo: Get the newest data from the server.
+	//			console.debug( "storeAs", opts );
 
-			switch( opts.format ) { 
-				case 'specif-v0.10.8':
-					opts.specifVersion = '0.10.8';	// for backlevel compatibility
-					// no break;
-				case 'specif':
-					opts.lookupTitles = false;  // keep vocabulary terms
-					opts.lookupValues = false;
-					opts.targetLanguage = undefined;  // export all languages
-					opts.revisionDate = undefined;  // keep all revisions
-					break;
-				case 'reqif':
-					// take newest revision:
-					opts.revisionDate = new Date().toISOString();
-					// keep vocabulary terms:
-					opts.lookupTitles = false;  
-					opts.lookupValues = false;
-					// ReqIF only supports a single Language:
-					if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
-			};
-			let zip = new JSZip(),
-				data = specif.toExt( self.data, opts ),
-				fname;
+				switch( opts.format ) { 
+					case 'specif-v0.10.8':
+						opts.specifVersion = '0.10.8';	// for backlevel compatibility
+						// no break;
+					case 'specif':
+						opts.lookupTitles = false;  // keep vocabulary terms
+						opts.lookupValues = false;
+						opts.targetLanguage = undefined;  // export all languages
+						opts.revisionDate = undefined;  // keep all revisions
+						break;
+					case 'reqif':
+						// take newest revision:
+						opts.revisionDate = new Date().toISOString();
+						// keep vocabulary terms:
+						opts.lookupTitles = false;  
+						opts.lookupValues = false;
+						// ReqIF only supports a single Language:
+						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
+				};
+				let zip = new JSZip(),
+					data = specif.toExt( self.data, opts ),
+					fname;
 
-			// Add the files:
-			if( data.files )
-				data.files.forEach( function(f) {
-//					console.debug('zip a file',f);
-					zip.file( f.title, f.blob );
-					delete f.blob // the SpecIF data below shall not contain it ...
-				});
+				// Add the files:
+				if( data.files )
+					data.files.forEach( function(f) {
+	//					console.debug('zip a file',f);
+						zip.file( f.title, f.blob );
+						delete f.blob // the SpecIF data below shall not contain it ...
+					});
 
-			// Prepare the output data:
-			switch( opts.format ) {
-				case 'specif-v0.10.8':
-				case 'specif':
-					fName = data.title+".specif";
-					data = JSON.stringify( data );
-					break;
-				case 'reqif':
-					fName = data.title+".reqifz";
-					data = app.ioReqif.toReqif( data )
-			};
-			let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
-			// Add the project:
-			zip.file( fName, blob );
-			blob = undefined; // free heap space
-			
-			// done, store the specifz:
-			zip.generateAsync({
-					type: "blob"
-				})
-				.then(
-					function(blob) {
-						// successfully generated:
-//						console.debug("storing ",fName+"z");
-						saveAs(blob, fName+"z");
-						self.data.exporting = false;
-						eDO.resolve()
-					}, 
-					function(xhr) {
-						// an error has occurred:
-						console.error("Cannot store ",fName+"z");
-						self.data.exporting = false;
-						eDO.reject()
-					}
-				)
-		}
+				// Prepare the output data:
+				switch( opts.format ) {
+					case 'specif-v0.10.8':
+					case 'specif':
+						fName = data.title+".specif";
+						data = JSON.stringify( data );
+						break;
+					case 'reqif':
+						fName = data.title+".reqifz";
+						data = app.ioReqif.toReqif( data )
+				};
+				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
+				// Add the project:
+				zip.file( fName, blob );
+				blob = undefined; // free heap space
+				
+				// done, store the specifz:
+				zip.generateAsync({
+						type: "blob"
+					})
+					.then(
+						function(blob) {
+							// successfully generated:
+	//						console.debug("storing ",fName+"z");
+							saveAs(blob, fName+"z");
+							self.data.exporting = false;
+							resolve()
+						}, 
+						function(xhr) {
+							// an error has occurred:
+							console.error("Cannot store ",fName+"z");
+							self.data.exporting = false;
+							reject()
+						}
+					)
+			}
+		})
 	}
 	self.abort = function() {
 		console.info('abort specif');

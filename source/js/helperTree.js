@@ -149,14 +149,15 @@ function Tree( options ) {
 	self.appendNode = function( nd, val ) {
 		if( nd ) domE.tree( 'appendNode', val, nd )
 	};
-	self.addNodeBefore = function( nd, val ) {
+/*	self.addNodeBefore = function( nd, val ) {
 		if( nd ) domE.tree( 'addNodeBefore', val, nd )
-	};
+	}; */
 	self.addNodeAfter = function( nd, val ) {
 		if( nd ) domE.tree( 'addNodeAfter', val, nd )
 	};
 	self.updateNode = function( nd, val ) {
-		// update node nd with the properties specified in {val}:
+		// update node nd with the properties specified in {val},
+		// where val may be a title string or an object with all attributes:
 		if( nd ) domE.tree('updateNode', nd, val )
 	};
 	self.removeNode = function( nd ) {

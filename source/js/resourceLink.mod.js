@@ -18,9 +18,8 @@ modules.construct({
 		opts;					// the processing options
 	//	toEdit;					// the classified properties to edit
 
-
 	self.eligibleSCL=[];		// all eligible statementClasses
-	self.selResStatements=[];	// all statement of the selected resourceClasses
+	self.selResStatements=[];	// all statements of the selected resource
 	self.allResources=[];		// all resources referenced in the tree
 
 	self.init = ()=>{
@@ -72,17 +71,17 @@ modules.construct({
 			.then( 
 				(list)=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
-					selectResource()
+					chooseResourceToLink()
 				}, 
 				stdError
 			);
 
-			// 2. collect all statements of the originally selected resource to avoid duplication:
+			// 2. collect all statements of the originally selected resource to exclude them from selection:
 			app.cache.selectedProject.readStatementsOf( {id: self.selRes.id} )
 			.then(
 				(list)=>{
 					self.selResStatements = list;
-					selectResource()
+					chooseResourceToLink()
 				},
 				stdError
 			);
@@ -104,13 +103,13 @@ modules.construct({
 					});
 					//	self.allResources = simpleClone( list );
 					self.allResources = list;  // now self.allResources contains the full resources
-					selectResource()
+					chooseResourceToLink()
 				}, 
 				stdError
 			);
 			return
 
-			function selectResource() {
+			function chooseResourceToLink() {
 //				console.debug('sCL, rL',self.eligibleSCL, self.allResources, pend );
 				if( --pend<1 ) {
 					// all parallel requests are done,
@@ -125,11 +124,12 @@ modules.construct({
 						// initialize the dialog:
 						onshown: ()=>{ app[myName].filterClicked() },
 						message: (thisDlg)=>{
-							var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%">'
+							var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
 									+ radioForm( i18n.LblStatementClass, staClasses, {handle:myFullName+'.filterClicked()'} )
 								//	+ textForm( i18n.LblStringMatch,'','line' )
 									+ textForm( i18n.TabFind,'','line',myFullName+'.filterClicked()' )
-									+ '</td><td><div id="resCandidates" class="panel panel-default" style="max-height:'+($('#app').outerHeight(true)-210)+'px; overflow:auto" >'
+									+ '</td><td style="padding-left:0.4em">'
+									+ '<div id="resCandidates" class="panel panel-default" style="max-height:'+($('#app').outerHeight(true)-210)+'px; overflow:auto" >'
 									+ '</div></td></tr></tbody></table>';
 							return $( form ) 
 						},
@@ -209,7 +209,7 @@ modules.construct({
 				}
 			}
 		);
-		document.getElementById("resCandidates").innerHTML = eligibleRs || i18n.MsgNoMatchingObjects;
+		document.getElementById("resCandidates").innerHTML = eligibleRs || "<em>"+i18n.MsgNoMatchingObjects+"</em>";
 		// disable the 'save' buttons:
 		document.getElementById("btn-modal-saveResourceAsObject").disabled = true;
 		document.getElementById("btn-modal-saveResourceAsSubject").disabled = true
