@@ -195,7 +195,7 @@ div.pane-filter {
 }
 div.pane-details {
 	display: none;
-	background-color:#ffffe0;
+	background-color:#c8def0;
 	box-sizing: border-box;
 	overflow: auto;
 	padding: 8px 2px 2px 2px;

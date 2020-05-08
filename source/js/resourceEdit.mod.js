@@ -150,15 +150,17 @@ modules.construct({
 				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
 				onshown: ()=>{ setTextFocus(ti); app[myName].check() },
 				message: (thisDlg)=>{
-					var form = textForm( ti, toEdit.title, 'line' );  // field for the title property
-						// fields for the description properties: 
-						toEdit.descriptions.forEach( (d)=>{
-							form += editP(d)
-						});
-						// fields for the remaining properties:
-						toEdit.other.forEach( (p)=>{
-							form +=editP(p)
-						});
+					var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
+					form += textForm( ti, toEdit.title, 'line' );  // field for the title property
+					// fields for the description properties: 
+					toEdit.descriptions.forEach( (d)=>{
+						form += editP(d)
+					});
+					// fields for the remaining properties:
+					toEdit.other.forEach( (p)=>{
+						form += editP(p)
+					});
+					form += '</div>';
 					return $( form )
 				},
 				buttons: opts.msgBtns

@@ -146,15 +146,15 @@ function Tree( options ) {
 		if( !nd ) nd = self.selectedNode;
 		if( nd ) domE.tree('closeNode', nd)
 	};
-	self.appendNode = function( nd, val ) {
+/*	self.appendNode = function( nd, val ) {
 		if( nd ) domE.tree( 'appendNode', val, nd )
 	};
-/*	self.addNodeBefore = function( nd, val ) {
+	self.addNodeBefore = function( nd, val ) {
 		if( nd ) domE.tree( 'addNodeBefore', val, nd )
-	}; */
+	}; 
 	self.addNodeAfter = function( nd, val ) {
 		if( nd ) domE.tree( 'addNodeAfter', val, nd )
-	};
+	};  */
 	self.updateNode = function( nd, val ) {
 		// update node nd with the properties specified in {val},
 		// where val may be a title string or an object with all attributes:
@@ -228,14 +228,14 @@ function Tree( options ) {
 
 			function setONo( nd, oNoP ) {
 				for( var k=0, K=nd.children.length; k<K; k++ ) {
-					oNo = oNoP.length ? oNoP+'.'+(k+1) : (k+1).toString();	// deeper levels : first level
+					oNo = oNoP.length? oNoP+'.'+(k+1) : (k+1).toString();	// deeper levels : first level
 					self.updateNode( nd.children[k], {order: oNo} );
 					setONo( nd.children[k], oNo )
 				}
 			};
 		setONo( domE.tree('getTree'), '' )	// start numberizing with the root
 	};
-	self.newIds = function( nd ) {
+/*	self.newIds = function( nd ) {
 		// assert new ids to nd and it's sub-tree, as the server doesn't allow to reuse any ID:
 		let rt = {};
 		for( var p in nd ) rt[p] = nd[p];
@@ -249,7 +249,7 @@ function Tree( options ) {
 			}
 		};
 		return rt
-	};
+	}; */
 	self.saveState = function() {
 		self.savedState = domE.tree('getState')
 	};

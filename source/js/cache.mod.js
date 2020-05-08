@@ -1421,25 +1421,27 @@ function Project( pr ) {
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 		// ...  not all of them may be implemented, so far.
 		// cache the value before sending it to the server, as the result is not received after sending (except for 'resource' and 'statement')
-		return new Promise((resolve, reject) => {
-//			console.debug('createContent', ctg, item );
-			switch( ctg ) {
-			//	case 'resource':
-			//	case 'statement':
-			//	case 'hierarchy':
-				case 'node':
-					// add the baseType to property values to simplify the transformation for storing:
-			//		addBaseTypes( item );
-					// no break
-				default:
-					// if current user can create an item, he has the other permissions, as well:
-			//		addPermissions( item );
-			//		item.createdAt = new Date().toISOString();
-			//		item.createdBy = item.changedBy;
-					cache( ctg, item )
-			};
-			resolve({status:0})
-		})
+		return new Promise( 
+			(resolve,reject)=>{
+//				console.debug('createContent', ctg, item );
+				switch( ctg ) {
+				//	case 'resource':
+				//	case 'statement':
+				//	case 'hierarchy':
+					case 'node':
+						// add the baseType to property values to simplify the transformation for storing:
+				//		addBaseTypes( item );
+						// no break
+					default:
+						// if current user can create an item, he has the other permissions, as well:
+				//		addPermissions( item );
+				//		item.createdAt = new Date().toISOString();
+				//		item.createdBy = item.changedBy;
+						cache( ctg, item )
+				};
+				resolve({status:0})
+			}
+		)
 	};
 	self.readContent = function( ctg, item, opts ) {  
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
@@ -1467,27 +1469,29 @@ function Project( pr ) {
 				itm.changedBy = app.me.userName
 			}
 
-		return new Promise((resolve, reject) => {
-			switch( ctg ) {
-				case 'node':	
-					// nodes can only be created or deleted
-					return null; 
-			//	case 'resource':
-			//	case 'statement':
-			//	case 'hierarchy':
-					// add the baseType to property values to simplify the transformation for storing:
-			//		addBaseTypes( item );
-					// no break
-				default:
-//					console.debug('updateContent - cache', ctg );
-					if( Array.isArray(item) )
-						item.forEach( updateCh )
-					else
-						updateCh(item);
-					cache( ctg, item )
-			};
-			resolve({status:0})
-		})
+		return new Promise(
+			(resolve, reject) => {
+				switch( ctg ) {
+					case 'node':	
+						// nodes can only be created or deleted
+						return null; 
+				//	case 'resource':
+				//	case 'statement':
+				//	case 'hierarchy':
+						// add the baseType to property values to simplify the transformation for storing:
+				//		addBaseTypes( item );
+						// no break
+					default:
+	//					console.debug('updateContent - cache', ctg );
+						if( Array.isArray(item) )
+							item.forEach( updateCh )
+						else
+							updateCh(item);
+						cache( ctg, item )
+				};
+				resolve({status:0})
+			}
+		)
 	};
 	self.deleteContent = function( ctg, item ) {  
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
@@ -1538,28 +1542,30 @@ function Project( pr ) {
 			}  */
 		
 //		console.debug('deleteContent',ctg,item);
-		return new Promise((resolve, reject) => {
-			// Do not try to delete types which are in use;
-			switch( ctg ) {
-			/*	case 'class':	
-				case 'dataType':
-				case 'resourceClass':
-				case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
-										if( isInUse(ctg,item) ) {
-											dDO.reject({status:972, statusText:i18n.Err400TypeIsInUse});
-											return dDO
-										};
-										// no break;  */
-				case 'statement':
-				case 'node':	
-	//				console.debug('deleteContent',ctg,item);
-					if( uncache( ctg, item )<0 ) reject({status:999,statusText:ctg+' '+item.id+' not found and thus not deleted.'});
-					break;
-				default:				
-					reject({status:999,statusText:'Category '+ctg+' is unknown; item '+item.id+' could not be deleted.'})
-			};
-			resolve({status:0})
-		})
+		return new Promise(
+			(resolve, reject) => {
+				// Do not try to delete types which are in use;
+				switch( ctg ) {
+				/*	case 'class':	
+					case 'dataType':
+					case 'resourceClass':
+					case 'statementClass':	if( Array.isArray(item) ) return null;	// not yet supported
+											if( isInUse(ctg,item) ) {
+												dDO.reject({status:972, statusText:i18n.Err400TypeIsInUse});
+												return dDO
+											};
+											// no break;  */
+					case 'statement':
+					case 'node':	
+//						console.debug('deleteContent',ctg,item);
+						if( uncache( ctg, item )<0 ) reject({status:999,statusText:ctg+' '+item.id+' not found and thus not deleted.'});
+						break;
+					default:				
+						reject({status:999,statusText:'Category '+ctg+' is unknown; item '+item.id+' could not be deleted.'})
+				};
+				resolve({status:0})
+			}
+		)
 	};
 /*	self.rejectTest = function() {
 		var dO = $.Deferred();  
@@ -1571,34 +1577,36 @@ function Project( pr ) {
 		// Create an empty form (resource instance) for the resource class oT:
 		// Note: Here ES6 promises will be used; the other functions will follow;
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
-		return new Promise((resolve, reject) => {
-			// Get the class's permissions. So far, it's property permissions are not loaded ...
-			self.readContent( 'resourceClass', oT, {reload:true} )
-			.then( 
-				(rC)=>{
-					// return an empty resource instance of the given type: 
-					var res = {
-						id: genID('R-'),
-						class: rC.id,
-						title: '',
-						permissions: rC.permissions||{cre:true,rea:true,upd:true,del:true},
-						properties: [] 
-						};
-					self.readContent( 'propertyClass', rC.propertyClasses )
-						.then( 
-							(pCL)=>{
-								res.properties = forAll( pCL, createProp );
-								if( res.properties.length ) 
-									resolve( res )
-								else
-									reject({status:977, statusText:i18n.ErrInconsistentPermissions})
-							},
-							reject
-						)
-				},
-				reject
-			)
-		})
+		return new Promise(
+			(resolve, reject) => {
+				// Get the class's permissions. So far, it's property permissions are not loaded ...
+				self.readContent( 'resourceClass', oT, {reload:true} )
+				.then( 
+					(rC)=>{
+						// return an empty resource instance of the given type: 
+						var res = {
+							id: genID('R-'),
+							class: rC.id,
+							title: '',
+							permissions: rC.permissions||{cre:true,rea:true,upd:true,del:true},
+							properties: [] 
+							};
+						self.readContent( 'propertyClass', rC.propertyClasses )
+							.then( 
+								(pCL)=>{
+									res.properties = forAll( pCL, createProp );
+									if( res.properties.length ) 
+										resolve( res )
+									else
+										reject({status:977, statusText:i18n.ErrInconsistentPermissions})
+								},
+								reject
+							)
+					},
+					reject
+				)
+			}
+		)
 	};
 	self.readStatementsOf = ( res, showComments )=>{  
 		// Get the statements of a resource ... there are 2 use-cases:
@@ -1615,15 +1623,16 @@ function Project( pr ) {
 				return false */
 				return iterateNodes( self.data.hierarchies, (nd)=>{ return nd.resource!=rId } )
 			}
-		return new Promise( (resolve, reject) => {
-
-			self.readContent( 'statement', 'all' )
-			.then(
-				(sL)=>{
-					// filter all statements involving res as subject or object:
-					resolve( 
-						sL.filter( (s)=>{ 
-								return ( res.id==itemIdOf(s.subject) || res.id==itemIdOf(s.object) )
+		return new Promise( 
+			(resolve, reject) => {
+				self.readContent( 'statement', 'all' )
+				.then(
+					(sL)=>{
+						// filter all statements involving res as subject or object:
+						resolve( 
+							sL.filter( 
+								(s)=>{
+									return ( res.id==itemIdOf(s.subject) || res.id==itemIdOf(s.object) )
 										// AND fulfilling certain conditions:
 										&&  ( 	
 												// related subject and object must be referenced in the tree to be navigable,
@@ -1638,12 +1647,14 @@ function Project( pr ) {
 													&&	isReferenced( itemIdOf(s.object) )
 													&&	s.title==CONFIG.staClassCommentRefersTo
 											)
-						})
-					)
-				},
-				reject
-			)
-		})
+								}
+							)
+						)
+					},
+					reject
+				)
+			}
+		)
 	};
 	self.export = function() {
 		if( self.data.exporting ) return;
@@ -3120,6 +3131,7 @@ const specif = {
 			}
 			// a hierarchy node:
 			function n2ext( iN ) {
+				console.debug( 'n2ext', iN );
 				// just take the non-redundant properties (omit 'title', for example):
 				let eN = {
 					id: iN.id,

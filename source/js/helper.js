@@ -232,7 +232,7 @@ function checkboxForm( lbl, entries, opts ) {
 	};
 	// render options:
 	let tp, nm=lbl.label.simpleHash();
-	entries.forEach( function(e,i) {
+	entries.forEach( (e,i)=>{
 		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		cB +=			'<div>'
 			+				'<label>'
@@ -338,7 +338,7 @@ function Message() {
 	function init() {
 		$('#app').prepend('<div id="message" ></div>')
 	};
-	self.hide = function() {
+	self.hide = ()=>{
 		$('#message')
 			.empty()
 			.hide();
@@ -348,7 +348,7 @@ function Message() {
 		if( --pend<1 )
 			self.hide()
 	}
-	self.show = function( msg, opts ) {
+	self.show = ( msg, opts )=>{
 		// msg: message string or jqXHR object
 		// opts.severity: severity with a value listed below 
 		// opts.duration: time in ms before fading out
@@ -517,7 +517,7 @@ function forAll( L, fn ) {
 	// return a new list with the results from applying the specified function to all items of input list L:
 	if(!L) return [];
 	var nL = [];
-	L.forEach( function(e){ var r=fn(e); if(r) nL.push(r) } );
+	L.forEach( (e)=>{ var r=fn(e); if(r) nL.push(r) } );
 	return nL
 }
 
@@ -529,7 +529,7 @@ function cacheE( L, e ) {  // ( list, entry )
 }
 function cacheL( L, es ) {  // ( list, entries )
 	// add or update the items es in a list L:
-	es.forEach( function(e) { cacheE( L, e ) } )
+	es.forEach( (e)=>{ cacheE( L, e ) } )
 }
 function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
@@ -539,7 +539,7 @@ function uncacheE( L, e ) {  // ( list, entry )
 }
 function uncacheL( L, es ) {  // ( list, entries )
 	// remove the items es from a list L:
-	es.forEach( function(e) { uncacheE( L, e ) } )
+	es.forEach( (e)=>{ uncacheE( L, e ) } )
 }
 	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript

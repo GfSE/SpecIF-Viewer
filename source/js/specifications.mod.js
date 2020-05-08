@@ -16,11 +16,11 @@ modules.construct({
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName;
 
-	self.selectedView = function() {
+	self.selectedView = ()=>{
 //		console.debug('selectedView',self.viewCtl.selected.view)
 		return self.viewCtl.selected.view
 	};
-	self.emptyTab = function( view ) {
+	self.emptyTab = ( view )=>{
 		app.busy.reset();
 		// but show the buttons anyways, so the user can create the first resource:
 		$( '#contentNotice' ).empty();
@@ -29,7 +29,7 @@ modules.construct({
 	};
 
 	// standard module interface:
-	self.init = function() {
+	self.init = ()=>{
 	//	if( !opts || ( typeof(opts.callback) != "function" ) ) return false;
 		// initialize the module:
 //		console.debug( 'specs.init', self );
@@ -60,7 +60,7 @@ modules.construct({
 			eventHandlers: {
 				'select':  
 					// when a node is clicked or traversed by up/down keys
-					function(event) {  // The clicked node is 'event.node'
+					(event)=>{  // The clicked node is 'event.node'
 						// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree ;-):
 //						console.debug('tree.select',event);
 						self.tree.selectedNode = event.node;
@@ -69,78 +69,78 @@ modules.construct({
 					},
 				'open':
 					// when a node is opened, but not when an opened node receives an open command
-					function(event) {  // The clicked node is 'event.node', but we don't care
+					(event)=>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 //						console.debug('tree.open',event);
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'close':
 					// when a node is closed, but not when a closed node receives a close command
-					function(event) {  // The clicked node is 'event.node', but we don't care
+					(event)=>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'move':
-					function(event) {
+					(event)=>{
 						// event: A node, potentially with children, has been moved by drag'n'drop.
+						
+							function moveNode( movedNd, target ) {
+//								console.debug( 'move: ', movedNd.name, target );
+								let chd = new Date().toISOString();
+								app.cache.selectedProject.createContent( 'node', toSpecIF(movedNd,target) )
+								.then( 
+									()=>{
+										self.tree.numberize();
+//										console.debug( self.tree.selectedNode.name, event.move_info.moved_node.name );
+										document.getElementById(CONFIG.objectList).scrollTop = 0;
+										self.refresh()
+									},
+									stdError 
+								);
+								return
+
+								function toSpecIF(mNd,tgt) {
+									// transform from jqTree node to SpecIF node:
+									var nd = {
+											id: genID('N-'),
+										//	title: movedNd.name,
+											resource: mNd.ref,
+											changedAt: chd
+										},
+										ch = forAll( mNd.children, toSpecIF );
+									if( ch.length>0 ) nd.nodes = ch;
+									// copy predecessor or parent:
+									if( tgt ) for( var p in tgt ) { nd[p] = tgt[p].id };
+									return nd
+								}
+							}
+						
 						app.busy.set();
-						
-							function finishMove() {
-								self.tree.numberize();
-//								console.debug( self.tree.selectedNode, event.move_info.moved_node );
-								self.tree.selectedNode = null;
-								self.tree.selectNode( event.move_info.moved_node );
-								app.busy.reset()
-							}
-							function moveNodeInside( movedNd, targetNd ) {
-								let rT = self.tree.newIds( movedNd );
-//								console.debug( 'insert inside: ', movedNd.name, targetNd.name, rT );
-								app.cache.selectedProject.createContent( 'node', {
-									id: rT.id,
-									name: rT.name,
-									ref: rT.ref,
-									children: rT.children,
-									parent: targetNd.id
-								})
-								.then( finishMove, stdError )
-							}
-							function moveNodeAfter( movedNd, targetNd ) {
-								let rT = self.tree.newIds( movedNd );
-//								console.debug( 'insert after: ', movedNd.name, targetNd.name, rT );
-								app.cache.selectedProject.createContent( 'node', {
-									id: rT.id,
-									name: rT.name,
-									ref: rT.ref,
-									children: rT.children,
-									predecessor: targetNd.id
-								})
-								.then( finishMove, stdError )
-							}
-						
 						// 1. Delete the moved node with all its children:
 						app.cache.selectedProject.deleteContent( 'node', {id: event.move_info.moved_node.id} )
-						.then( ()=>{
-//							console.debug('delete node done',event)
-							// 2. Move the entry including any sub-tree to the new position
-							//  - Update the server, where the tree entries get new ids.
-							//  - Update the moved tree entries with the new id corresponding with the server.
-							let are = /after/,
-								ire = /inside/;
-							if( are.test(event.move_info.position) ) {
-								// (a) event.move_info.position=='position after': 
-								//     The node is dropped between two nodes.
-								moveNodeAfter( event.move_info.moved_node, event.move_info.target_node )
-							} else if( ire.test(event.move_info.position) ) {
-								// (b) event.move_info.position=='position inside': 
-								//     The node is dropped on a target node without children or before the first node in a folder.
-								moveNodeInside( event.move_info.moved_node, event.move_info.target_node )
-							} else {
-								// (c) event.move_info.position=='position before': 
-								//     The node is dropped before the first node in the tree:
-								moveNodeInside( event.move_info.moved_node, event.move_info.target_node.parent )
-							}
-						},
-						stdError 
+						.then( 
+							()=>{
+//								console.debug('delete node done',event)
+								// 2. Move the entry including any sub-tree to the new position
+								//  - Update the server, where the tree entries get new ids.
+								//  - Update the moved tree entries with the new id corresponding with the server.
+								let are = /after/,
+									ire = /inside/;
+								if( are.test(event.move_info.position) ) {
+									// (a) event.move_info.position=='position after': 
+									//     The node is dropped between two nodes.
+									moveNode( event.move_info.moved_node, {predecessor:event.move_info.target_node} )
+								} else if( ire.test(event.move_info.position) ) {
+									// (b) event.move_info.position=='position inside': 
+									//     The node is dropped on a target node without children or before the first node in a folder.
+									moveNode( event.move_info.moved_node, {parent:event.move_info.target_node} )
+								} else {
+									// (c) event.move_info.position=='position before': 
+									//     The node is dropped before the first node in the tree:
+									moveNode( event.move_info.moved_node, {parent:event.move_info.target_node.parent} )
+								}
+							},
+							stdError 
 						); 
 					}
 			}
@@ -162,7 +162,7 @@ modules.construct({
 		
 		return true
 	};
-	self.clear = function() {
+	self.clear = ()=>{
 		self.tree.init();
 		refreshReqCnt = 0;
 		app.cache.clear();
@@ -171,7 +171,7 @@ modules.construct({
 	// module entry 'self.show()' see further down
 	// module exit;
 	// called by the parent's view controller:
-	self.hide = function() {
+	self.hide = ()=>{
 //		console.debug( 'specs.hide' );
 		// don't delete the page with $(self.view).empty(), as the structure is built in init()
 		app.busy.reset()
@@ -229,7 +229,7 @@ modules.construct({
 		}
 	}  */
 
-	self.updateTree = function( spc, prj, opts ) {
+	self.updateTree = ( spc, prj, opts )=>{
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
@@ -273,7 +273,7 @@ modules.construct({
 
 	// The module entry;
 	// called by the parent's view controller:
-	self.show = function( opts ) {
+	self.show = ( opts )=>{
 //		console.debug( CONFIG.specifications, 'show', opts );
 		if( !(app.cache.selectedProject && app.cache.selectedProject.data && app.cache.selectedProject.data.id) ) {
 			console.error( 'No selected project on entry of spec.show' );
@@ -351,7 +351,7 @@ modules.construct({
 	// for example if the user quickly traverses the tree. 
 	// Do finally refresh, if there has been no further request in a certain time period.
 	var refreshReqCnt = 0;
-	self.refresh = function( params ) {
+	self.refresh = ( params )=>{
 		// refresh the content, only;
 		// primarily provided for showing changes made by this client:
 			function tryRefresh() {
@@ -360,7 +360,7 @@ modules.construct({
 		refreshReqCnt++;
 		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
 	};
-	self.doRefresh = function( parms ) {
+	self.doRefresh = ( parms )=>{
 		// Route execution depending on the current state (selected view):
 		// This routine is called in the following situations:
 		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in editing mode.
@@ -377,7 +377,7 @@ modules.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.itemClicked = function( rId ) {
+	self.itemClicked = ( rId )=>{
 		if( self.selectedView() == '#'+CONFIG.objectRevisions || self.selectedView() == '#'+CONFIG.comments ) return;
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
@@ -401,7 +401,7 @@ modules.construct({
 			}
 		};
 	};
-/*	self.addComment = function() {
+/*	self.addComment = ()=>{
 //		console.debug( 'addComment', self.tree.selectedNode );
 		var cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.resClassComment ),
 			rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassCommentRefersTo );
@@ -464,7 +464,7 @@ modules.construct({
 		})
 		.init()
 	};
-	self.delComment = function(el) {
+	self.delComment = (el)=>{
 //		console.debug('delComment',id);
 		app.busy.set();
 		var pend=2;
@@ -513,19 +513,19 @@ modules.construct({
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
-	self.init = function() {
+	self.init = ()=>{
 	};
-	self.clear = function() {
+	self.clear = ()=>{
 	//	selectResource(null);
 		self.resources.init();
 	//	self.comments.init();
 	//	self.modeCmtDel = false;
 	};
-	self.hide = function() {
+	self.hide = ()=>{
 //		console.debug(CONFIG.objectList, 'hide');
 		$( self.view ).empty()
 	};
-	self.show = function( opts ) {
+	self.show = ( opts )=>{
 		// Show the next resources starting with the selected one:
 //		console.debug(CONFIG.objectList, 'show', opts);
 
@@ -686,7 +686,7 @@ modules.construct({
 
 //		console.debug('permissions',self.resCreClasses)
 	}
-/*	self.cmtBtns = function() {
+/*	self.cmtBtns = ()=>{
 		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
@@ -698,7 +698,7 @@ modules.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.editResource = function( mode ) {
+	self.editResource = ( mode )=>{
 		// enter edit mode: load the edit template:
 		// The button to which this function is bound is enabled only if the current user has edit permission.
 
@@ -714,7 +714,7 @@ modules.construct({
 			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.")
 		}
 	}; 
-	self.deleteNode = function() {
+	self.deleteNode = ()=>{
 		// Delete the selected node and its children.
 		// The resources are just dereferenced, but not deleted, themselves.
 		function delNd( nd ) {
@@ -765,14 +765,14 @@ modules.construct({
 		})
 		.open()
 	};
-	self.relatedItemClicked = function( rId ) {
+	self.relatedItemClicked = ( rId )=>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
 		pData.tree.selectNodeByRef( rId );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 		document.getElementById(CONFIG.objectList).scrollTop = 0
 	};
-/*	self.deleteResource = function() {
+/*	self.deleteResource = ()=>{
 		// Delete the selected resource, all tree nodes and their children.
 		// very dangerous ....
 	};  */
@@ -797,13 +797,13 @@ modules.construct({
 	self.staCre = false;
 	self.staDel = false;
 		
-	self.init = function() {
+	self.init = ()=>{
 	};
-	self.hide = function() {
+	self.hide = ()=>{
 //		console.debug(CONFIG.relations, 'hide');
 		$( self.view ).empty()
 	};
-	self.show = function( opts ) {
+	self.show = ( opts )=>{
 //		console.debug(CONFIG.relations, 'show');
 		pData.showLeft.set();
 		pData.showTree.set();
@@ -1201,7 +1201,7 @@ modules.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.linkResource = function() {
+	self.linkResource = ()=>{
 		// enter edit mode: load the edit template:
 		// The button to which this function is bound is enabled only if the current user has edit permission.
 
@@ -1217,14 +1217,14 @@ modules.construct({
 			console.error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.")
 		}
 	}; 
-	self.toggleModeStaDel = function() {
+	self.toggleModeStaDel = ()=>{
 		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
 //		console.debug( 'toggle delete statement mode:', modeStaDel);
 		$( '#contentActions' ).html( linkBtns() );
 		renderStatements( net )
 	};
-	self.relatedItemClicked = function( rId, sId ) {
+	self.relatedItemClicked = ( rId, sId )=>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
 //		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, itemById( app.cache.selectedProject.data.statements, sId ) );
 		if( modeStaDel ) {
