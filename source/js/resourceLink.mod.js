@@ -98,7 +98,7 @@ modules.construct({
 			.then( 
 				(list)=>{
 					// Sort the resources:
-					list.sort( function(dick,doof) { 
+					list.sort( (dick,doof)=>{ 
 								return elementTitleOf(dick,opts,cData).toLowerCase()<elementTitleOf(doof,opts,cData).toLowerCase()? -1 : 1 
 					});
 					//	self.allResources = simpleClone( list );
@@ -116,7 +116,7 @@ modules.construct({
 					// store a clone and get the title to display:
 					let staClasses = forAll( self.eligibleSCL, (sC)=>{ return {title:titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} );
 					staClasses[0].checked = true;
-//						console.debug('#2',simpleClone(staClasses));
+//					console.debug('#2',simpleClone(staClasses));
 					let dlg = new BootstrapDialog({
 						title: i18n.MsgCreateStatement,
 						type: 'type-primary',
@@ -299,8 +299,8 @@ modules.construct({
 		return app.cache.selectedProject.createContent( 'statement', {
 									id:genID('S-'),
 									class: self.selectedStatementClass.id,
-									subject: ( dir.secondAs=='object'? self.selectedCandidate.resource.id : self.selRes.id ),
-									object: ( dir.secondAs=='object'? self.selRes.id : self.selectedCandidate.resource.id ),
+									subject: ( dir.secondAs=='object'? self.selRes.id : self.selectedCandidate.resource.id ),
+									object: ( dir.secondAs=='object'? self.selectedCandidate.resource.id : self.selRes.id ),
 									changedAt: new Date().toISOString()
 								}
 		)
