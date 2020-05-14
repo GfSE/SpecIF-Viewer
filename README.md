@@ -41,7 +41,7 @@ The app has been installed for demonstration
 - Apple Safari
 - Opera
 - Microsoft Edge _(beware of performance issues in case of bigger models)_
-- Microsoft Internet Explorer is _not_ any more supported
+- Microsoft Internet Explorer is _not any more_ supported
 
 ## Installation
 For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view.html' with a web-browser.
