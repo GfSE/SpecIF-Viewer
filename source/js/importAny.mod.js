@@ -190,7 +190,7 @@ modules.construct({
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
 					if( p.indexOf('.'+formats[i].id)>0 && modules.isReady(formats[i].name) ) 
-						return formats[i].id
+						return formats[i]
 				};
 				return undefined
 			}
@@ -201,8 +201,7 @@ modules.construct({
 			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
 			// check the format:
-			self.setFormat( getFormat( urlP[CONFIG.keyImport] ));
-			app[self.format.name].init( self.format.opts );
+			self.format = getFormat( urlP[CONFIG.keyImport] );
 //			console.debug('filename:',self.file.name,self.format);
 			if( !app[self.format.name] || !app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} )) {
 				self.clear();
@@ -210,6 +209,7 @@ modules.construct({
 				self.show();
 				return
 			}; 
+			app[self.format.name].init( self.format.opts );
 			// Show the name of the specified import file:
 			let rF = textForm(i18n.LblFileName,self.file.name);
 			$("#formNames").html( rF );
@@ -397,7 +397,7 @@ modules.construct({
 					}
 					function sameName() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
-							console.debug(data.id,self.projectL[p]);
+//							console.debug(data.id,self.projectL[p]);
 							if( self.projectName==self.projectL[p].title ) return self.projectL[p]
 						};
 						return false 	// no project with the same name

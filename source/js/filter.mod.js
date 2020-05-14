@@ -701,8 +701,11 @@ modules.construct({
 		}
 		// Secondary filters are also added to the list on request via addEnumValueFilters().
 	}
-	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
-		var rC = itemById( dta.allClasses, rCid ),
+/*	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
+		// Check if a resourceClass (or statementClass ) has a property with enumerated values,
+		// so that a secondary facet filter can be built
+	//	var rC = itemById( dta.allClasses, rCid ),
+		var rC = itemById( dta.resourceClasses, rCid ),
 			pC;  
 		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
 			// if the class has at least one property with enums
@@ -711,7 +714,7 @@ modules.construct({
 			if( itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
 		};
 		return false
-	};
+	}; */
 	function renderTextFilterSettings( flt ) {
 		// render a single panel for text search settings:
 		return textForm( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )

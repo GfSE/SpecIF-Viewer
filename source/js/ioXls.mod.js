@@ -33,11 +33,23 @@ modules.construct({
 			message.show( i18n.phrase('ErrInvalidFileXls', f.name) );
 			return
 		};
-		// f.lastModifiedDate is deprecated, but at the time of coding, Edge does not support the above, yet:
-		fDate = new Date( f.lastModified || f.lastModifiedDate ).toISOString();
-	/*	// take the actual date as a final fall back 
-		if( !fdate ) fDate = new Date().toISOString();  */
-//		console.debug( 'file', f, fDate );
+//		console.debug( 'file', f );
+		if( f.lastModified ) {
+			fDate = new Date(f.lastModified);
+			fDate = fDate.toISOString();
+//			console.debug( 'file.lastModified', fDate )
+			return f
+		};
+		if( f.lastModifiedDate ) {
+			// this is deprecated, but at the time of coding, Edge does not support the above, yet:
+			fDate = new Date(f.lastModifiedDate);
+			fDate = fDate.toISOString();
+//			console.debug( 'file.lastModifiedDate', fDate )
+			return f
+		};
+		// take the actual date as a final fall back
+		fDate = new Date().toISOString();
+//		console.debug( 'date', fDate );
 		return f
 	};
 	self.toSpecif = function( buf ) {

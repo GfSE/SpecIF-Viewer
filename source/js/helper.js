@@ -45,7 +45,7 @@ function CheckForm() {
 			switch( cPs.type.type ) {
 				case 'xs:string':
 				case 'xhtml':
-					ok = val.length<=cPs.type.maxLength;
+					ok = cPs.type.maxLength==undefined || val.length<=cPs.type.maxLength;
 					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:double':

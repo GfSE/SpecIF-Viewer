@@ -8,7 +8,7 @@
 // Construct the resource editor:
 modules.construct({
 	name: CONFIG.resourceEdit
-}, function(self) {
+}, (self)=>{
 	"use strict";
 
 	let myName = self.loadAs,

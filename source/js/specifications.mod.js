@@ -9,7 +9,7 @@
 // Construct the specifications controller:
 modules.construct({
 	name: CONFIG.specifications
-}, function(self) {
+}, (self)=>{
 	"use strict";
 	// This module and view is responsible for the selection tabs and the navigation tree which are shared by several sub-views.
 	
@@ -102,7 +102,8 @@ modules.construct({
 								function toSpecIF(mNd,tgt) {
 									// transform from jqTree node to SpecIF node:
 									var nd = {
-											id: genID('N-'),
+										//	id: genID('N-'),
+											id: mNd.id,
 										//	title: movedNd.name,
 											resource: mNd.ref,
 											changedAt: chd
@@ -492,7 +493,7 @@ modules.construct({
 // Construct the controller for resource listing ('Document View'):
 modules.construct({
 	view:'#'+CONFIG.objectList
-}, function(self) {
+}, (self)=>{
 	// Construct an object for displaying a hierarchy of resources:
 
 	var myName = self.loadAs,
@@ -665,7 +666,7 @@ modules.construct({
 		
 			// using the cached allClasses:
 			// a) identify the resource and statement types which can be created by the current user:
-			app.cache.selectedProject.data.resourceClasses.forEach( function(rC) {
+			app.cache.selectedProject.data.resourceClasses.forEach( (rC)=>{
 				// list all resource types, for which the current user has permission to create new instances
 				// ... and which allow manual instantiation:
 				// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
@@ -727,7 +728,7 @@ modules.construct({
 			// 2. Delete the hierarchy entry with all its children in cache and server:
 			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
 				.then( 
-					function() {
+					()=>{
 						pData.updateTree();
 						pData.doRefresh({forced:true})
 					},
@@ -740,7 +741,7 @@ modules.construct({
 			message: i18n.phrase( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
 			buttons: [{
 				label: i18n.BtnCancel,
-				action: function(thisDlg){ 
+				action: (thisDlg)=>{ 
 					thisDlg.close() 
 				}
 			},{
@@ -781,7 +782,7 @@ modules.construct({
 // Construct the controller for displaying the statements ('Statement View'):
 modules.construct({
 	view:'#'+CONFIG.relations
-}, function(self) {
+}, (self)=>{
 	// Render the statements of a selected resource:
 
 	var myName = self.loadAs,
@@ -866,7 +867,7 @@ modules.construct({
 						// Now get the titles with icon of the resources,
 						// as the sequence of list items in net.resources is maintained, 
 						// the selected resource will be the first element in the list: 
-						rResL.forEach( function(r) { cacheMinRes( net.resources, r ) });
+						rResL.forEach( (r)=>{ cacheMinRes( net.resources, r ) });
 					
 						// finally add the 'mentions' statements:
 						getMentionsRels(selRes,opts)
@@ -949,7 +950,7 @@ modules.construct({
 					sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
-				pData.tree.iterate( function(nd) {
+				pData.tree.iterate( (nd)=>{
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check it, here:
 					pend++;
@@ -966,7 +967,7 @@ modules.construct({
 								//    result in a 'this mentions other' statement (selected resource is subject):
 								rPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
 								if( res.properties )
-									res.properties.forEach( function(p) {
+									res.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cData, p['class'] ).type ) {
 											case 'xs:string':
@@ -986,7 +987,7 @@ modules.construct({
 								// 2. The selected resource's title found in other resource's texts 
 								//    result in a 'other mentions this' statement (selected resource is object):
 								if( refR.properties )
-									refR.properties.forEach( function(p) {
+									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cData, p['class'] ).type ) {
 											case 'xs:string':
@@ -1046,22 +1047,22 @@ modules.construct({
 			self.staCreClasses.subjectClasses.length = 0;
 			self.staCreClasses.objectClasses.length = 0;
 
-			// using the cached allClasses:
 			// a) identify the resource and statement types which can be created by the current user:
-
-			app.cache.selectedProject.data.statementClasses.forEach( function(sC) {
-				// list all statement types, for which the current user has permission to create new instances:
-				// ... and which allow user instantiation:
-				// store the classes' ids as it is invariant, when app.cache.selectedProject.data.allClasses is updated
-//				console.debug('staCreClasses',sC,sRes['class']);
-			//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
-				if(!sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
-					if( !sC.subjectClasses || sC.subjectClasses.indexOf( sRes['class'] )>-1 ) 
-						self.staCreClasses.subjectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
-					if( !sC.objectClasses || sC.objectClasses.indexOf( sRes['class'] )>-1 )
-						self.staCreClasses.objectClasses.push( sC.id )		// all statementClasses eligible for the currently selected resource
+			app.cache.selectedProject.data.statementClasses.forEach( 
+				(sC)=>{
+					// list all statement types, for which the current user has permission to create new instances:
+					// ... and which allow user instantiation:
+					// store the classes' ids as it is invariant, when app.cache.selectedProject.data.allClasses is updated
+//					console.debug('staCreClasses',sC,sRes['class']);
+				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
+					if(!sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
+						if( !sC.subjectClasses || sC.subjectClasses.indexOf( sRes['class'] )>-1 ) 
+							self.staCreClasses.subjectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
+						if( !sC.objectClasses || sC.objectClasses.indexOf( sRes['class'] )>-1 )
+							self.staCreClasses.objectClasses.push( sC.id )		// all statementClasses eligible for the currently selected resource
+					}
 				}
-			});
+			);
 			// b) set the permissions for the edit buttons:
 			self.staCre = self.staCreClasses.subjectClasses.length>0 || self.staCreClasses.objectClasses.length>0
 		};
@@ -1093,7 +1094,7 @@ modules.construct({
 			index: 0,
 			canvas:'statementGraph',
 			titleProperties: CONFIG.titleProperties,
-			onDoubleClick: function( evt ) {
+			onDoubleClick: ( evt )=>{
 //					console.debug('Double Click on:',evt);
 				if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
 					app[myName].relatedItemClicked(evt.target.resource,evt.target.statement);
@@ -1257,7 +1258,7 @@ function Resource( obj ) {
 	self.toShow = noRes;
 	self.staGroups = [];
 
-	self.set = function( res ) { 
+	self.set = ( res )=>{ 
 		if( res ) {
 			if( self.toShow.id==res.id && self.toShow.changedAt==res.changedAt ) {
 				// assume that no change has happened:
@@ -1275,7 +1276,7 @@ function Resource( obj ) {
 		}
 	};
 
-	self.listEntry = function() {
+	self.listEntry = ()=>{
 			function showPrp( prp, opts ) {
 //				console.debug('showPrp',prp);
 				if( CONFIG.overviewHiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
@@ -1313,7 +1314,7 @@ function Resource( obj ) {
 		};
 		
 		// 1.2 The description properties:
-		self.toShow.descriptions.forEach( function(prp) {
+		self.toShow.descriptions.forEach( (prp)=>{
 			if( showPrp( prp, opts ) ) {
 				rO += '<div class="attribute attribute-wide">'+propertyValueOf(prp,opts)+'</div>'
 			}
@@ -1337,7 +1338,7 @@ function Resource( obj ) {
 		
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining atts:
-		self.toShow.other.forEach( function( prp ) {
+		self.toShow.other.forEach( ( prp )=>{
 			if( showPrp( prp, opts ) ) {
 				rO += attrV( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' )
 			}
@@ -1447,21 +1448,21 @@ function Resources() {
 	"use strict";
 	var self = this;
 
-	self.init = function() { 
+	self.init = ()=>{ 
 		self.values = []
 	};
-	self.push = function( r ) {
+	self.push = ( r )=>{
 		// append a resource to the list:
 		self.values.push( new Resource( r ) );
 		return true  // a change has been effected
 	};
-	self.append = function( rL ) {
+	self.append = ( rL )=>{
 		// append a list of resources:
-		rL.forEach( function(r) { 
+		rL.forEach( (r)=>{ 
 			self.values.push( new Resource( r ) )
 		})
 	};
-	self.update = function( rL ) {
+	self.update = ( rL )=>{
 		// update self.values with rL and return 'true' if a change has been effected:
 		if( rL.length==self.values.length ) {
 			// there is a chance no change is necessary:
@@ -1477,7 +1478,7 @@ function Resources() {
 			return true
 		}
 	};
-	self.updateSelected = function( r ) {
+	self.updateSelected = ( r )=>{
 		// update the first item (= selected resource), if it exists, or create it;
 		// return 'true' if a change has been effected:
 		if( self.values.length>0 )
@@ -1485,16 +1486,16 @@ function Resources() {
 		else
 			return self.push( r )
 	};
-	self.selected = function() {
+	self.selected = ()=>{
 		// return the selected resource; it is the first in the list by design:
 		return self.values[0]
 	};
-	self.exists = function( rId ) {
+	self.exists = ( rId )=>{
 		for( var i=self.values.length-1; i>-1; i-- )
 			if( self.values[i].toShow.id==rId ) return true;
 		return false
 	};
-	self.render = function(resL) {
+	self.render = (resL)=>{
 		if( !Array.isArray(resL) ) resL = self.values;
 		// generate HTML representing the resource list:
 		if( resL.length<1 )
@@ -1502,7 +1503,7 @@ function Resources() {
 		// else:
 		var rL = '';	
 		// render list of resources
-		resL.forEach( function(v) {
+		resL.forEach( (v)=>{
 			rL += v? v.listEntry() : ''
 		});
 		return rL	// return rendered resource list
@@ -1587,7 +1588,7 @@ function propertyValueOf( prp, opts ) {
 		
 		// in certain situations, just remove the dynamic linking pattern from the text:
 		if( !CONFIG.dynLinking || !add )
-			return str.replace( RE.titleLink, function( $0, $1 ) { return $1 } );
+			return str.replace( RE.titleLink, ( $0, $1 )=>{ return $1 } );
 			
 	/*	let date1 = new Date();
 		let n1 = date1.getTime(); 
@@ -1597,13 +1598,13 @@ function propertyValueOf( prp, opts ) {
 		do {
 			replaced = false;
 			str = str.replace( RE.titleLink, 
-				function( $0, $1 ) { 
+				( $0, $1 )=>{ 
 					replaced = true;
 					// disregard links being too short:
 					if( $1.length<CONFIG.dynLinkMinLength ) return $1;
 					let m=$1.toLowerCase(), cO=null, ti=null, target=null, notFound=true;
 					// is ti a title of any resource?
-					app.specs.tree.iterate( function(nd) {
+					app.specs.tree.iterate( (nd)=>{
 						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
 						// avoid self-reflection:
 					//	if(ob.id==cO.id) return true;
@@ -1648,7 +1649,7 @@ function File() {
 	Known limitation: if there are two references of the same image on a page, only the first is shown,
 	because the id of the image container is made from the image file name.
 */
-	self.toGUI = function( txt, opts ) {
+	self.toGUI = ( txt, opts )=>{
 /*		Properly handle file references in XHTML-Text. 
 		- An image is to be displayed 
 		- a file is to be downloaded
@@ -1708,7 +1709,7 @@ function File() {
 			
 		// 1. transform two nested objects to link+object resp. link+image:
 		txt = txt.replace( RE.tagNestedObjects,   
-			function( $0, $1, $2, $3, $4 ) {        // description is $4
+			( $0, $1, $2, $3, $4 )=>{        // description is $4
 				var u1 = getUrl( $1 ),  			// the primary file
 					t1 = getType( $1 ); 
 				var u2 = getUrl( $2 ), 				// the preview image
@@ -1753,8 +1754,8 @@ function File() {
 			
 		// 2. transform a single object to link+object resp. link+image:
 		txt = txt.replace( RE.tagSingleObject,   //  comprehensive tag or tag pair
-			function( $0, $1, $2, $3 ){ 
-//				var pairedImgExists = function( url ) {
+			( $0, $1, $2, $3 )=>{ 
+//				var pairedImgExists = ( url )=>{
 //					// ToDo: check actually ...
 //					return true
 //				};
@@ -1847,7 +1848,7 @@ function File() {
 		// 3. process a single link:
 		// add an icon to known office files.
 		txt = txt.replace( RE.tagA,  
-			function( $0, $1, $2 ){ 
+			( $0, $1, $2 )=>{ 
 				var u1 = getPrp( 'href', $1 ),
 					e = u1.fileExt();
 //				console.debug( $1, $2, u1, e );
@@ -1873,20 +1874,20 @@ function File() {
 
 		// Now, at the end, replace the placeholders with the respective strings,
 		txt = txt.replace( /aBra§kadabra([0-9]+)§/g,  
-			function( $0, $1 ) { 
+			( $0, $1 )=>{ 
 				return repSts[$1]
 			});
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	};
-	self.render = function(f, opts) {
+	self.render = (f, opts)=>{
 		if( typeof(opts)!='object' ) opts = {};
 		if( !opts.timelag )  opts.timelag = CONFIG.imageRenderingTimelag;
 
 //		console.debug('render',f,opts);
 		if( !f || !f.blob ) {
 			Array.from(document.getElementsByClassName(tagId(f.title)), 
-				function(el) {el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
+				(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
 			);
 //			document.getElementById(tagId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
 			return
@@ -1917,11 +1918,11 @@ function File() {
 			function showRaster(f,opts) {
 				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 				// increase the timelag between building the DOM and rendering the images, if necessary.
-				blob2dataURL(f,function(r,fTi,fTy) {
+				blob2dataURL( f, (r,fTi,fTy)=>{
 					// add image to DOM using an image-tag with data-URI.
 					// set a grey background color for images with transparency:
 					Array.from( document.getElementsByClassName(tagId(fTi)), 
-						function(el) {el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'}
+						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'}
 					)
 				},opts.timelag)
 			}
@@ -1943,7 +1944,7 @@ function File() {
 				// increase the timelag between building the DOM and rendering the images, if necessary.
 //				console.debug('showSvg',f,opts);
 				// Read and render SVG:
-				blob2text(f,function(r) {
+				blob2text( f, (r)=>{
 					let ef = null,
 						mL = null;
 					svg = {
@@ -1961,7 +1962,7 @@ function File() {
 						ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
 //						console.debug('SVG embedded file',mL[2],ef,pend);
 						// transform file to data-URL and display, when done:
-						blob2dataURL(ef, function(r,fTi) {
+						blob2dataURL( ef, (r,fTi)=>{
 							dataURLs.push({
 								id: fTi,
 								val: r
@@ -1970,11 +1971,11 @@ function File() {
 							if( --pend<1 ) {
 								// all embedded images have been transformed,
 								// replace references by dataURLs and add complete image to DOM:
-								svg.img = svg.img.replace( rE, function($0,$1,$2,$3) {
+								svg.img = svg.img.replace( rE, ($0,$1,$2,$3)=>{
 															return $1+itemBySimilarId(dataURLs,$2).val+$3
 														});
 								Array.from( svg.locs, 
-									function(loc) {
+									(loc)=>{
 										loc.innerHTML = svg.img;
 										if( opts && opts.clickableElements ) registerClickEls(loc)
 									}
@@ -1985,7 +1986,7 @@ function File() {
 					if( pend==0 ) {
 						// there are no embedded images, so display right away:
 						Array.from( svg.locs, 
-							function(loc) {
+							(loc)=>{
 								loc.innerHTML = svg.img;
 								if( opts && opts.clickableElements ) registerClickEls(loc)
 							}
@@ -2008,12 +2009,12 @@ function File() {
 					//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
 					// 	Array.from() converts the HTMLCollection to a regular array, 
 					//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
-					CONFIG.clickElementClasses.forEach( function(cl) {
+					CONFIG.clickElementClasses.forEach( (cl)=>{
 						svg.clkEls = svg.clkEls.concat(Array.from( svg.getElementsByClassName( cl )));
 					});
 //					console.debug(svg.clkEls, typeof(svg.clkEls))
 					let clkEl = null;
-					svg.clkEls.forEach( function(clkEl) {
+					svg.clkEls.forEach( (clkEl)=>{
 						// set cursor for clickable elements:
 						clkEl.setAttribute("style", "cursor:pointer;");
 
@@ -2038,7 +2039,7 @@ function File() {
 
 						// Show the description of the element under the cursor to the left:
 						clkEl.addEventListener("mouseover", 
-							function(evt){ 
+							function(evt) { 
 //								console.debug(evt,this,$(this));
 								// ToDo: So far, this only works with ARCWAY generated SVGs.
 							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
@@ -2046,7 +2047,7 @@ function File() {
 									clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
 									ti = languageValueOf( clsPrp.title ),
 									dsc = '';
-								clsPrp.descriptions.forEach( function(d) {
+								clsPrp.descriptions.forEach( (d)=>{
 									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
 									dsc += propertyValueOf(d)
 								});
@@ -2061,7 +2062,7 @@ function File() {
 							}
 						);
 						clkEl.addEventListener("mouseout", 
-							function(evt){ 
+							function(evt) { 
 							//	evt.target.setAttribute("style", "cursor:default;"); 
 								$("#details").empty();
 								app.specs.showTree.set(true)
@@ -2126,8 +2127,8 @@ function File() {
 				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 				// increase the timelag between building the DOM and rendering the images, if necessary.
 				// Read and render BPMN:
-				blob2text(f,function(r,fTi) {
-					bpmn2svg(r, function(err, svg) { 
+				blob2text( f, (r,fTi)=>{
+					bpmn2svg(r, (err,svg)=>{ 
 								// this is the bpmnViewer callback function:
 								if (err) {
 									console.error('BPMN-Viewer could not deliver SVG', err);
@@ -2135,7 +2136,7 @@ function File() {
 								};
 //								console.debug('SVG',svg);
 								Array.from( document.getElementsByClassName(tagId(fTi)), 
-									function(el) {el.innerHTML = svg}
+									(el)=>{el.innerHTML = svg}
 								)
 							})
 				}, opts.timelag)  

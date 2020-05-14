@@ -19,7 +19,7 @@
 
 modules.construct({
 	name: 'cache'
-}, function(self) {
+}, (self)=>{
 	"use strict";
 	// Construct a representative of the selected project with cached data:
 	// ToDo: enforce CONFIG.maxObjToCacheCount
@@ -2174,12 +2174,14 @@ function Project( pr ) {
 		switch(ctg) {
 			case 'hierarchy':
 			case 'dataType':
-			case 'propertyClass':		return fn( cacheOf(ctg), item );
-			case 'resourceClass': 
+			case 'propertyClass':
+			case 'resourceClass':		
+			case 'statementClass':		return fn( cacheOf(ctg), item );
+		/*	case 'resourceClass': 
 			case 'statementClass':		fn( self.data.allClasses, item); return fn( cacheOf(ctg), item );
 			case 'class':				if(Array.isArray(item)||!item['class']) return null;  // cannot process arrays in this case, yet.
 //										console.debug('cache class',item,itemById(self.data.allClasses,item['class'])); 
-										return cacheAtPosition( itemById(self.data.allClasses,item['class']).propertyClasses, item ); ;
+										return cacheAtPosition( itemById(self.data.resourceClasses.concat(self.data.statementClasses),item['class']).propertyClasses, item );  */
 			case 'resource': 		
 			case 'statement': 	
 			case 'file': 				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
@@ -2191,26 +2193,22 @@ function Project( pr ) {
 		};
 		return
 		
-		function cacheNode( e ) {  // ( hierarchy entry )
+		function cacheNode( e ) { 
 			// add or replace a node in a hierarchy;
 			// e may specify a predecessor or parent, the former prevails if both are specified
 			// - if there is no predecessor or it isn't found, insert as first element
 			// - if no parent is specified or the parent isn't found, insert at root level
 			
-			// 1. Delete the node, if it exists somewhere:
+			// 1. Delete the node, if it exists somewhere to prevent 
+			//    that there are multiple nodes with the same id;
+			//    Thus, 'cacheNode' is in fact a 'move':
 			uncache( 'node', {id:e.id} );
-		/*	iterateNodes( self.data.hierarchies, 
-							// continue searching until found:
-							function(nd) { return nd.id!=e.id },
-							// delete the node, if present:
-							function(ndL) { let i=indexById(ndL,e.id); if(i>-1 ) { ndL.splice(i,1) }}
-						); */
 
 			// 2. Insert the node, if the predecessor exists somewhere:
 			if( iterateNodes( self.data.hierarchies, 
 							// continue searching until found:
 							(nd)=>{ return nd.id!=e.predecessor },
-							// delete the node, if present:
+							// insert the node after the predecessor:
 							(ndL)=>{ 
 								let i=indexById(ndL,e.predecessor); 
 //								if(i>-1) console.debug('predecessor found', ndL, i, ndL[i]);
@@ -2226,7 +2224,7 @@ function Project( pr ) {
 								if( nd.id==e['parent'] ) {
 									if( !Array.isArray(nd.nodes) ) nd.nodes = [];
 									// we will not find a predecessor at this point any more,
-									// so insert as first element:
+									// so insert as first element of the children:
 									nd.nodes.unshift( e );
 //									console.debug('parent found', nd );
 									return false // stop searching
@@ -2242,8 +2240,8 @@ function Project( pr ) {
 		}
 		function cacheAtPosition( L, e ) {  // ( list, entry )
 			// add or update the element e in a list L:
-			let n = indexById( L, e.id );
-			let p = indexById( L, e.predecessor );
+			let n = indexById( L, e.id ),
+				p = indexById( L, e.predecessor );
 			if( n<0 ) 	{  
 				// not yet listed, so add;
 				// after the predecessor, if specified, or by default as first element:
@@ -2261,55 +2259,6 @@ function Project( pr ) {
 			L[n] = e; 
 			return n 
 		} 
-	/*	function cacheNode( e ) {  // ( hierarchy entry )
-			// add or replace a node in a hierarchy;
-			// e may specify a parent and a predecessor.
-			// - if there is no predecessor or it isn't found, insert as first element
-			
-			// cycle through all hierarchies and nodes to find the parent:
-			let pa = findNode( self.data.hierarchies, e['parent'] ); 
-			console.debug('cacheNode 1',e,pa);
-
-			// If no parent is specified or the parent isn't found, insert at root level:
-			if( !pa ) return cacheAtPosition( self.data.hierarchies, e )
-
-			// Parent has been found:
-			if( !Array.isArray(pa.nodes) ) pa.nodes = [];
-			console.debug('cacheNode 2',e,pa);
-			return cacheAtPosition( pa.nodes, e );
-
-			function findNode( L, eId ) {
-				console.debug('findNode',L);
-				let nd;
-				for( var h=L.length-1;h>-1;h-- ) {
-					if( L[h].id==eId ) return L[h];
-					nd = findNode( L[h].nodes, eId );
-					if( nd ) return nd
-				};
-				return
-			}
-		}
-		function cacheAtPosition( L, e ) {  // ( list, entry )
-			// add or update the element e in a list L:
-			let n = indexById( L, e.id );
-			let p = indexById( L, e.predecessor );
-			if( n<0 ) 	{  
-				// not yet listed, so add;
-				// after the predecessor, if specified, or by default as first element:
-				e.predecessor? L.splice(++p,0,e) : L.unshift(e);   
-				console.debug('cacheA 1',p,L);
-				return p
-			};
-			if( e.predecessor && n!=p ) {
-				// remove existing and add the new element:
-				L.splice(n,1).splice(++p,0,e);
-				console.debug('cacheA 2',p,L);
-				return p
-			};
-			// update the existing otherwise:
-			L[n] = e; 
-			return n 
-		}  */
 	}
 	function uncache( ctg, item ) { 
 		if( !item ) return;
@@ -2317,12 +2266,13 @@ function Project( pr ) {
 		switch(ctg) {
 			case 'hierarchy':		
 			case 'dataType': 
-			case 'propertyClass':		return fn( cacheOf(ctg), item );
-			case 'resourceClass': 	
+			case 'propertyClass':
+			case 'resourceClass':		
+			case 'statementClass':		return fn( cacheOf(ctg), item );
+		/*	case 'resourceClass': 	
 			case 'statementClass': 		fn( self.data.allClasses, item); return fn( cacheOf(ctg), item );
-			case 'class':				let sT = itemById(self.data.allClasses,item['class']);
-//										console.debug('uncache class',item,sT); 
-										return fn( sT.propertyClasses, item );
+			case 'class':				let sT = itemById(self.data.resourceClasses.concat(self.data.statementClasses),item['class']);
+										return fn( sT.propertyClasses, item );  */
 			case 'resource': 	
 			case 'statement': 			
 			case 'file':				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
@@ -2338,8 +2288,8 @@ function Project( pr ) {
 		
 		function delNodes( L, el ) {
 			// Delete all nodes specified by the element;
-			// if el is the node, 'id' will be used,
-			// and if el is the referenced resource, 'resource' will be used to identify the node.
+			// if el is the node, 'id' will be used to identify it (obviously at most one node),
+			// and if el is the referenced resource, 'resource' will be used to identify all referencing nodes.
 			if( !Array.isArray( L ) ) return;
 //			console.debug('delNodes',simpleClone(L),el);
 			for( var h=L.length-1; h>-1; h-- ) {
@@ -3107,7 +3057,7 @@ const specif = {
 			}
 			// a hierarchy node:
 			function n2ext( iN ) {
-				console.debug( 'n2ext', iN );
+//				console.debug( 'n2ext', iN );
 				// just take the non-redundant properties (omit 'title', for example):
 				let eN = {
 					id: iN.id,
