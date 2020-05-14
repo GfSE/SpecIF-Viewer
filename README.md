@@ -1,5 +1,5 @@
-# SpecIF-Viewer
-An app for your web-browser to view and transform system specifications.
+# SpecIF Viewer and Editor
+An app for your web-browser to view, edit* and transform system specifications. (Features of the SpecIF Editor are market with an asterisk*).
 
 SpecIF is the 'Specification Integration Facility'. It's purpose is to combine partial specifications from different tools in a single model to allow
 - to search, navigate and audit partial results in a common context
@@ -14,8 +14,12 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
 - Import from an URL or the local file system
-- Browse the content ('resources') along the hierarchy
+- Browse the content ('resources') along the supplied hierarchy
+- Create, clone and update resources with an input form derived from the respective resource class*
+- Move single nodes and subtrees in the hierarchy by drag'n'drop*
 - Inspect the semantic net ('statements')
+- Create statements according to the options defined in the statement classes*
+- Delete selected resources and statements*
 - Filter using text fragments ('full text search'), resource types or enumerated property values
 - Report some model-based statistics, such as used resource types or used property enumerated values
 - Export 'specifz' file
@@ -25,11 +29,19 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 
 ## Demonstration
 The app has been installed for demonstration
-- View the [dimmer example](https://specif.de/apps/view.html#import=../examples/Dimmer.specifz) in SpecIF format,
-- View a [BPMN example](https://specif.de/apps/view.html#import=../examples/Fahrtbeginn.bpmn) in BPMN 2.0 XML format,
-- View a [XLSX example](https://specif.de/apps/view.html#import=../examples/Requirements.xlsx) in XSLX format,
-- View the [SpecIF Vocabulary](https://specif.de/apps/view.html#import=../examples/Vocabulary.specifz) in SpecIF format,
-- Start the [viewer](https://specif.de/apps/view.html) to load your own files.
+- View the [dimmer example](https://specif.de/apps/view#import=../examples/Dimmer.specifz) in SpecIF format,
+- View a [BPMN example](https://specif.de/apps/view#import=../examples/Fahrtbeginn.bpmn) in BPMN 2.0 XML format,
+- View a [XLSX example](https://specif.de/apps/view#import=../examples/Requirements.xlsx) in XSLX format,
+- View the [SpecIF Vocabulary](https://specif.de/apps/view#import=../examples/Vocabulary.specifz) in SpecIF format,
+- Start the [viewer](https://specif.de/apps/view) to load your own files.
+
+## Compatibility
+- Mozilla Firefox
+- Google Chromium and Chrome
+- Apple Safari
+- Opera
+- Microsoft Edge _(beware of performance issues in case of bigger models)_
+- Microsoft Internet Explorer is _not_ any more supported
 
 ## Installation
 For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view.html' with a web-browser.
