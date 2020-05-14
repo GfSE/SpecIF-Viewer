@@ -33,7 +33,8 @@ The app has been installed for demonstration
 - View a [BPMN example](https://specif.de/apps/view#import=../examples/Fahrtbeginn.bpmn) in BPMN 2.0 XML format,
 - View a [XLSX example](https://specif.de/apps/view#import=../examples/Requirements.xlsx) in XSLX format,
 - View the [SpecIF Vocabulary](https://specif.de/apps/view#import=../examples/Vocabulary.specifz) in SpecIF format,
-- Start the [viewer](https://specif.de/apps/view) to load your own files.
+- Start the [viewer](https://specif.de/apps/view) to load and view your own files.
+- Start the [editor](https://specif.de/apps/edit) to load and edit your own files.
 
 ## Compatibility
 - Mozilla Firefox
@@ -44,7 +45,7 @@ The app has been installed for demonstration
 - Microsoft Internet Explorer is _not any more_ supported
 
 ## Installation
-For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view.html' with a web-browser.
+For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view' or 'yourPath/edit' with a web-browser.
 
 ## Acknowledgements
 This work has been sponsored by [enso-managers gmbh](http://enso-managers.de), Berlin
