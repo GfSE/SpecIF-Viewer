@@ -289,7 +289,7 @@ modules.construct({
 		};
 
 		// show the file name:
-		let rF = textForm(i18n.LblFileName,'&nbsp;');
+		let rF = textForm(i18n.LblFileName,'');
 		if( fId=='xls' )
 			// create input form for the project name:
 			rF += textForm(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');

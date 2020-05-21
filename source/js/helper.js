@@ -14,7 +14,7 @@ function attrV( lbl, val, cssCl ) {
 	// assemble a label:value pair resp. a wide value field for display:
 	cssCl = cssCl ? ' '+cssCl : '';
 	if( typeof(val)=='string' ) 
-			val = noCode( val.ctrl2HTML() )
+			val = noCode( val ).toHTML()
 	else	val = '';
 	
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
@@ -72,7 +72,7 @@ function textForm( lbl, val, typ, fn ) {
 //	console.debug('textForm 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
-			val = noCode( val )
+			val = noCode( val ).toHTML()
 	else 	val = '';
 
 	if( typeof(fn)=='string' && fn.length>0 )	
@@ -208,7 +208,6 @@ function radioForm( lbl, entries, opts ) {
 function radioValue( lbl ) {
 	// get the selected radio button, it is the index number as string:
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
-//	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked')[0].value		// fails when  none is checked
 }
 function checkboxForm( lbl, entries, opts ) {
 	// assemble the form for a set of checkboxes;
@@ -606,13 +605,17 @@ String.prototype.truncate = function(l) {
 	if( t.length < this.length ) t += '...';  // must work also in non-html fields
 	return t
 };
-String.prototype.reduceWhiteSpace = function() {
+/*String.prototype.reduceWhiteSpace = function() {
 // Reduce white space to a single blank:
 	return this.replace( /[\s]{2,}/g, ' ' )
 };
+String.prototype.log = function(m) {
+	console.debug( m, this );
+	return this
+};*/
 String.prototype.stripCtrl = function() {
 // Remove js/json control characters from HTML-Text or other:
-	return this.replace( /\r|\n|\f/g, '' ).replace( /\t/g, ' ' )
+	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' )
 };
 String.prototype.ctrl2HTML = function() {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
@@ -682,14 +685,20 @@ String.prototype.escapeHTML = function() {
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	})
 };
-// see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
+/*// see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
 String.prototype.unescapeHTMLEntities = function() {
 	// unescape HTML encoded entities (characters):
 	var el = document.createElement('div');
-	return noCode(this.replace(/\&#?[0-9a-z]+;/gi, function (enc) {
+	return noCode(this.replace(/\&#?x?[0-9a-z]+?;/gi, function (enc) {
         el.innerHTML = enc;
         return el.innerText
-	}))
+		
+	})) 
+}; */
+// better: https://stackoverflow.com/a/34064434/5445
+String.prototype.unescapeHTMLEntities = function() {
+	var doc = new DOMParser().parseFromString(input, "text/html");
+    return noCode( doc.documentElement.textContent )
 };
 String.prototype.unescapeHTMLTags = function() {
 //  Unescape known HTML-tags:
@@ -710,10 +719,10 @@ String.prototype.linkifyURLs = function( opts ) {
 	// perform the operation, unless specifically disabled:
 	if( typeof(opts)=='object' && !opts.linkifiedURLs ) return this;
 	return this.replace( RE.URI,  
-		function( $0, $1, $2, $3, $4, $5, $6, $7, $8 ){ 
+		function( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ){ 
 			// all links which do not start with "http" are considered local by most browsers:
 			if( !$2.startsWith('http') ) $2 = 'https://'+$2;  // starts with "www." then according to RE.URI
-			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$8
+			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$9
 		})
 };
 

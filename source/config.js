@@ -504,15 +504,16 @@ const RE = {};
 	
 	// Reliably recognize an URI, not validate an URI:
 	// text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
-	RE.URI = /(^|\s|\\t|\\n|\\r\\n|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*[^\s\/.$?#=]+\.[\w]{2,4}(\/[()\w\/\.%-]*[\w])?\/?(#[\w\/\.()%-]*[\w])?([?][\w\.()=&;%\"\'-]*[\w\/)\'])?)(\s|\.\s|:\s|\\t|\\n|\\r\\n|<|\.$|$)/g;
+	RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]+?)*(\?[^\s#]+?)?(#\S+?)?)(\s|\.\s|:\s|<|\.$|$)/g;
 //             $1: Begins with start of text or space or tag end
-//                                    $2: complete link
-//                                     $3: "http(s)://" or "www."
-//                                                        $3: 0..n subdomains  domain         tld
-//                                                                                                  $4: 0..n subdirectories with or without trailing '/'
-//                                                                                                                         0..1 page anchor (hash)
-//                                                                                                                               0..1 query string
-//                                                                                                                                           ends with space or .space or .end or end
+//                     $2: complete link
+//                      $3: "http(s)://" or "www."
+//                                         $4: 0..n subdomains  
+//                                                           $5: domain.tld
+//                                                                                     $6: 0..n subdirectories with or without trailing '/'
+//                                                                                                    $7: 0..1 query string
+//                                                                                                                 $8: 0..1 fragment=page anchor (hash)
+//                                                                                                                          $9: ends with space or .space or .end or end
 	
 	const 	chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // ÄäÖöÜüß
 			chars_fr = '\u00c0\u00e0\u00c2\u00e2\u00c7\u00e7\u00c8\u00e8\u00c9\u00e9\u00ca\u00ea\u00d4\u00f4\u00d9\u00f9\u00db\u00fb\u00cb\u00eb'; // ÀàÂâÇçÈèÉéÊêÔôÙùÛûËë
