@@ -22,7 +22,7 @@ function toXhtml( data, opts ) {
 	};
 	
 	// Check for missing options:
-	if( typeof(opts)!='object' || typeof(opts.callback)!='function' ) return null;;
+	if( typeof(opts)!='object' ) return null;;
 	if( typeof(opts.classifyProperties)!='function') {
 		if (typeof(opts.fail)=='function' )
 			opts.fail({status:904,statusText:"Programming error: function 'opts.classifyProperties' is undefined."})
@@ -41,7 +41,6 @@ function toXhtml( data, opts ) {
 	// if the value is undefined, the property is suppressed in all cases.
 	if( !opts.hiddenProperties ) opts.hiddenProperties = [];
 	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
-	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
 
 	// If no label is provided, the respective properties are skipped:
 	if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
@@ -58,132 +57,52 @@ function toXhtml( data, opts ) {
 
 	const nbsp = '&#160;'; // non-breakable space
 
-	// Create a local list of images, which can be used in XHTML or ePub:
-	// - Take any raster image right away,
-	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
-	// - Otherwise transform SVG to PNG, as many ePub-Readers does not (yet) support SVG.
-	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
-	var images = [],
-		pend = 0;		// the number of pending operations
+	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
+	// Limitation: the innerHTML may not have any tags.
+	// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
+	const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+		reSingleObject = new RegExp( reSO, 'g' );
+	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
+	// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
+	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+		reNestedObjects = new RegExp( reNO, 'g' );
 
-	// Select and/or transform files as outlined above:
-	if( data.files && data.files.length>0 )
-		data.files.forEach( function(f,i,L) {
-			if( !f.blob ) {
-				console.warn("File '"+f.title+"' content is missing.");
-				return
-			};
+	// All required parameters are available, so we can begin.
+	var xhtml = {
+			headings: [],		// used to build the ePub table of contents
+			sections: [],		// the xhtml files for the title and each chapter=section
+			images: []			// the referenced images
+		};
 
-			// If it is a raster image:
-			if ( ['image/png','image/jpg','image/jpeg','image/gif'].indexOf(f.type)>-1 ) {
-				// take it as is:
-				images.push( f );
-				return
-			};
-			
-			// If it is a vector image:
-			if ( ['image/svg+xml'].indexOf(f.type)>-1 ) {
-				if( !opts.preferPng ) {
-					// take it as is:
-					images.push( f );
-					return
-				};
-				let pngN = nameOf(f.title)+'.png';
-				// check whether there is already a PNG version of this image:
-				if( itemBy( L, 'title', pngN ) ) {
-					console.info("File '"+f.title+"' has a sibling of type PNG");
-					// The PNG file has been added to images, before.
-					return
-				};
-				// else, transform SVG to PNG:
-					function storeV(){
-//						console.debug('vector',pend);
-						can.width = img.width;
-						can.height = img.height;
-						ctx.drawImage( img, 0, 0 );
-						can.toBlob( function(b) {
-							images.push( {id:f.id,title:pngN,type:'image/png',h:img.height,w:img.width,blob:b} );
-							if( --pend<1 ) {
-								// all images have been converted, continue processing:
-								opts.callback( createXHTML() )
-							}
-						}, 'image/png' )
-					}				
-				pend++;
-				let can = document.createElement('canvas'), // Not shown on page
-					ctx = can.getContext('2d'),
-					img = new Image();                      // Not shown on page
-			//	$(img).on('load', storeV );
-				img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
-
-				const reader = new FileReader();
-				reader.addEventListener('loadend', function(e) {
-					img.src = 'data:image/svg+xml,' + encodeURIComponent( e.target.result );
-				});
-				reader.readAsText(f.blob);
-
-				console.info("File '"+f.title+"' transformed to PNG");
-				return
-			};
-			console.warn("Format of file '"+f.title+"' is not supported by MS Word.")
-		});
-	if( pend<1 ) {
-		// start right away when there are no images to convert:
-//		console.debug('images', images);
-		opts.callback( createXHTML() )
-	};
-	return;
-
-// -----------------------
-	function createXHTML() {
-		// All required parameters are available, so we can begin.
-
-		// A single comprehensive <object .../> or tag pair <object ...>..</object>.
-		// Limitation: the innerHTML may not have any tags.
-		// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-		const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
-			reSingleObject = new RegExp( reSO, 'g' );
-		// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
-		// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-		const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
-			reNestedObjects = new RegExp( reNO, 'g' );
-
-		var xhtml = {
-				headings: [],		// used to build the ePub table of contents
-				sections: [],		// the xhtml files for the title and each chapter=section
-				images: []			// the referenced images
-			};
-		
-		// Create a title page as xhtml-file and add it as first section:
+	// Create a title page as xhtml-file and add it as first section:
+	xhtml.sections.push(
+			xhtmlOf({ 
+				title: escapeXML(data.title),
+				body: '<div class="title">'+escapeXML(data.title)+'</div>'
+			})
+	);
+	
+	// For each SpecIF hierarchy, create a xhtml-file and add it as subsequent section:
+	const firstHierarchySection = xhtml.sections.length;  // index of the next section number
+	data.hierarchies.forEach( function(h,hi) {
+		pushHeading( h.title, {nodeId: h.id, level: 1} );
 		xhtml.sections.push(
-				xhtmlOf({ 
-					title: escapeXML(data.title),
-					body: '<div class="title">'+escapeXML(data.title)+'</div>'
-				})
-		);
-		
-		// For each SpecIF hierarchy, create a xhtml-file and add it as subsequent section:
-		const firstHierarchySection = xhtml.sections.length;  // index of the next section number
-		data.hierarchies.forEach( function(h,hi) {
-			pushHeading( h.title, {nodeId: h.id, level: 1} );
-			xhtml.sections.push(
-				xhtmlOf({ 
-					title: escapeXML(data.title),
-					body: renderHierarchy( h, hi, 1 )
-				})
-			)
-		});
+			xhtmlOf({ 
+				title: escapeXML(data.title),
+				body: renderHierarchy( h, hi, 1 )
+			})
+		)
+	});
 
-//		console.debug('xhtml',xhtml);
-	//	return { result: xhtml, status: 200, statusText: 'OK!' };
-		return xhtml
+//	console.debug('xhtml',xhtml);
+	return xhtml
 	
 	// ---------------
 	function pushHeading( t, pars ) {	// title, parameters
 		xhtml.headings.push({
 				id: pars.nodeId,
 				title: t,
-				section: xhtml.sections.length,  // the index of the section in preparation (before it is pushed)
+				section: xhtml.sections.length,  // the index of the section in preparation (once it is pushed)
 				level: pars.level
 		})
 	}
@@ -233,20 +152,7 @@ function toXhtml( data, opts ) {
 		for( cid in sts ) {
 			// we don't have (and don't need) the individual statement, just the class:
 			sTi = opts.lookup( itemBy(data.statementClasses,'id',cid).title );
-/*			// 5 columns:
-			ct += '<tr><td>';
-			sts[cid].subjects.forEach( function(r2) {
-//				console.debug('r2',r2,itemBy( data.resourceClasses,'id',r2['class']))
-				ct += '<a href="#'+r2.id+'">'+titleOf( r2, null, opts )+'</a><br/>'
-			};
-			ct += '</td><td class="statementTitle">'+(sts[cid].subjects.length>0?sTi:'');
-			ct += '</td><td>'+titleOf( r, null, opts );
-			ct += '</td><td class="statementTitle">'+(sts[cid].objects.length>0?sTi:'')+'</td><td>';
-			sts[cid].objects.forEach( function(r2) {
-				ct += '<a href="#'+r2.id+'">'+titleOf( r2, null, opts )+'</a><br/>'
-			};
-			ct += '</td></tr>'
-*/
+
 			// 3 columns:
 			if( sts[cid].subjects.length>0 ) {
 				ct += '<tr><td>';
@@ -316,7 +222,7 @@ function toXhtml( data, opts ) {
 		});
 		// Skip the remaining properties, if no label is provided:
 //		console.debug('#1',c1)
-		if( !opts.propertiesLabel ) return c1;
+		if( !opts.propertiesLabel || r.isHeading ) return c1;
 		
 		// Finally, list the remaining properties with property title (name) and value:
 		r.other.forEach( function(prp) {
@@ -341,16 +247,6 @@ function toXhtml( data, opts ) {
 			if( opts.applExtensions==undefined ) opts.applExtensions = [ 'bpmn' ];
 		//	if( opts.clickableElements==undefined ) opts.clickableElements = false;
 			
-			/*	function getType( str ) {
-					var t = /type="([^"]+)"/.exec( str );
-					if( t==null ) return '';
-					return (' '+t[1])
-				}
-				function getStyle( str ) {
-					var s = /(style="[^"]+")/.exec( str );
-					if( s==null ) return '';  
-					return (' '+s[1])
-				}  */
 				function getUrl( str ) {
 					// get the URL:
 					var l = /(href|data)="([^"]+)"/.exec( str );  // url in l[2]
@@ -366,11 +262,10 @@ function toXhtml( data, opts ) {
 					str = str.replace('\\','/');
 					return str.substring( 0, str.lastIndexOf('.') )
 				}
-				function addEpubPath( u ) {
+				function fileNameWithPath( u ) {
 					// Unfortunately some (or even most) ePub-Readers do not support subfolders for images,
 					// so we need to generate a GUID and to store all files in a single folder.
 					return '../'+opts.epubImgPath+'F-'+u.simpleHash()
-//					return '../'+opts.epubImgPath+withoutPath( u )
 				}
 				function pushReferencedFile( f ) {
 					// avoid duplicate entries:
@@ -453,9 +348,9 @@ function toXhtml( data, opts ) {
 					if( opts.applExtensions.indexOf( e )>-1 ) {  
 							let noPreview = true;
 							// replace by preview image, if possible:
-							for( var i=images.length-1; noPreview && i>-1; i-- ) {
-								if( images[i].title.indexOf( fileName(u1) )>-1 ) {
-									u1 = images[i].title;
+							for( var i=data.files.length-1; noPreview && i>-1; i-- ) {
+								if( data.files[i].title.indexOf( fileName(u1) )>-1 ) {
+									u1 = data.files[i].title;
 									e = extOf(u1).toLowerCase();
 									noPreview = false;
 //									console.debug('*0', u1, e);
@@ -482,8 +377,8 @@ function toXhtml( data, opts ) {
 						if( ( ti.indexOf('svg')>-1 ) && opts.preferPng )
 							ti = fileName(ti)+'.png';
 						
-						pushReferencedFile( itemBy( images, 'title', ti ) );
-						return '<img src="'+addEpubPath(ti)+'" style="max-width:100%" alt="'+alt+'" />'
+						pushReferencedFile( itemBy( data.files, 'title', ti ) );
+						return '<img src="'+fileNameWithPath(ti)+'" style="max-width:100%" alt="'+alt+'" />'
 					};
 					// as a last resort, just show the description:
 					return '<span>'+alt+'</span>'  
@@ -648,12 +543,8 @@ function toXhtml( data, opts ) {
 				return "&#" + {"<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 			})
 	}
-	}  // end of createXHTML
-	function nameOf( str ) {
-		return str.substring( 0, str.lastIndexOf('.') )
-	}
 	function extOf( str ) {
 		// get the file extension without the '.':
 		return str.substring( str.lastIndexOf('.')+1 )
-	}
+	}  
 }

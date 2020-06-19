@@ -1,0 +1,187 @@
+<script type="text/javascript">
+/*	SpecIF: User Profile and Login.
+	Dependencies: jQuery, knockout, bootstrap
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+*/
+
+function UserProfileVM() {
+	"use strict";
+	// ToDo: Get rid of all dependencies except server.
+	var self = this;
+	var returnView = null;
+
+	self.appTitle = ko.observable(i18n.AppUserAdministration);  // default value - can be specified with open().
+	self.loggedin = ko.observable(true);  // try first whether the user is logged-in, before showing the login dialog.
+	self.loginUserName = ko.observable('');
+	self.loginPassword = ko.observable('');
+	self.userName = '';
+	self.firstName = '';
+	self.lastName = '';
+	self.email = '';
+	self.organization = '';
+	self.generalAdmin = false;           
+	self.projectRoles = [];  // list with projects and roles of the current user.
+	
+	self.userNameValidClass = ko.pureComputed(function() {
+		return ( server.validateUserName(self.loginUserName()) ) ? "has-success" : "has-error"
+	});
+	self.passwordValidClass = ko.pureComputed(function() {
+		return ( server.validatePassword(self.loginPassword()) ) ? "has-success" : "has-error"
+	});
+	self.allValid = ko.pureComputed(function() {
+		return ( server.validateUserName(self.loginUserName()) && server.validatePassword(self.loginPassword()) )
+	});
+
+	self.open = function( opt ) {
+		returnView = opt.callback;  
+		if( opt.title ) {self.appTitle(opt.title)};
+//		console.debug( 'userProfile.open !' );
+	};
+	self.clear = function() {
+		// keep appTitle for display in login form
+//		self.loggedin(false);
+		self.loginUserName('');
+		self.loginPassword('');
+		self.userName = '';
+		self.generalAdmin = false;
+		self.projectRoles = []  // list with projects and roles of the current user.
+	};
+	self.hide = function() {
+	};
+	self.returnToCaller = function() {
+		self.hide();
+		returnView()
+	};
+	self.close = function() {
+		self.logout();
+		self.hide();
+		self.clear()
+	};
+	self.login = function() {
+		console.info( 'Login: '+self.loginUserName() );
+		// ToDo: Find a way to directly pass the password from form to server call - without client variable.
+		return server.login( self.loginUserName(), self.loginPassword() )
+			.done(function(rsp) {
+				self.loginPassword(null);   // discard for security reasons.  
+				self.loggedin(true);
+				self.returnToCaller()
+			})
+			.fail(function(xhr) {
+				self.loginPassword(null);   // discard for security reasons.  
+				self.loggedin(false);
+//				console.debug('login failed',xhr,xhr.status,xhr.statusText)
+				stdError( xhr )
+			})
+	};
+	self.logout = function() {
+		user.hide();
+		self.loggedin(false);
+		server.logout()
+	};
+	self.readMe = function() {
+		return server.me().read()
+			.done( function(rsp) {
+				// This version of readMe() is not called by the Reader, only by the other Apps requiring 'real' login.
+				// Thus, if the current is already logged-in as Anonymous (having used the Reader before), 
+				// he must be logged-out:
+				if( rsp.userName == CONFIG.userNameAnonymous ) {
+					user.hide();
+					self.logout();
+					// no message
+					return
+				};
+				// else:
+				self.userName = rsp.userName;
+				self.firstName = rsp.firstName;
+				self.lastName = rsp.lastName;
+				self.email = rsp.email;
+				self.organization = rsp.organizations[0].name;
+				self.generalAdmin = rsp.generalAdmin;
+				self.projectRoles = rsp.projectRoles;
+				self.loggedin(true)
+			})
+			.fail(function(xhr) {
+				user.hide();
+				self.loggedin(false);
+				switch( xhr.status ) {
+					case 401:  // Unauthorized
+//						message.show( xhr.statusText + " (" + xhr.status + ")", 'warning', CONFIG.messageDisplayTimeNormal );
+						break;
+					case 403:  // Forbidden, if the user is not an admin
+						xhr.responseText = i18n.MsgUserMgmtNeedsAdminRole;
+						// no break
+					default:
+						self.logout();
+						stdError(xhr)
+				}
+			})
+	};
+	self.beginUpdate = function() {
+		return user.edit( "Edit Me", {userName: self.userName} )
+	};
+	self.iAmGeneralAdmin = function() {
+		// The current user is generalAdmin:
+		return self.generalAdmin
+	};
+/*	self.iAmProjectAdmin = function( prj ) { 
+		// without argument: returns true, if the current user is project admin for any project
+		// with argument: returns true, if the current user is project admin for the specified project
+		if( prj ) {
+			for( var r=self.projectRoles.length-1;i>-1;i-- ) {
+				if( self.projectRoles[r].role == i18n.LblRoleProjectAdmin 
+					&& self.projectRoles[r].id == prj.id ) { return true } 
+			};			
+		}
+		else {
+			for( var r=self.projectRoles.length-1;i>-1;i-- ) {
+				if( self.projectRoles[r].role == i18n.LblRoleProjectAdmin ) { return true }
+			};
+		};
+		return false
+	};
+*/	
+	self.iAmAdmin = function( prj ) { 
+		// The current user is projectAdmin for the specified project or generalAdmin:
+		if( self.generalAdmin ) return true;
+		if( !prj ) return false;
+		for( var r=self.projectRoles.length-1;r>-1;r-- ) {
+			if( self.projectRoles[r].role == i18n.LblRoleProjectAdmin 
+				&& self.projectRoles[r].id == prj.id ) return true
+		};			
+		return false
+	};
+	self.adminCnt = function() { 
+		// returns the number of times, where the current user is project admin or generalAdmin:
+		if( self.generalAdmin ) return Math.max( self.projectRoles.length, 1 );
+		let cnt = 0;
+		for( var r=self.projectRoles.length-1;r>-1;r-- ) {
+			if( self.projectRoles[r].role == i18n.LblRoleProjectAdmin ) cnt++
+		};
+		return cnt
+	};
+	return self
+};
+var userProfile = new UserProfileVM();
+ko.applyBindings( userProfile, $('#loginT')[0] );
+</script>
+
+<div id="loginT" data-bind="ifnot: loggedin">
+	<h1><span data-bind="html: appTitle"></span></h1>
+	<form class="form-horizontal" role="form" style="max-width:600px; margin-top:60px">
+		<div class="form-group" data-bind="css: userNameValidClass">
+			<label for="loginUserName" class="col-sm-3 control-label" data-bind="text: i18n.LblUserName"></label>
+			<div class="col-sm-9">
+				<input type="text" id="loginUserName" data-bind="textInput: loginUserName" class="form-control input-sm" />
+			</div>
+		</div>
+		<div class="form-group" data-bind="css: passwordValidClass">
+			<label for="loginPassword" class="col-sm-3 control-label" data-bind="text: i18n.LblPassword"></label>
+			<div class="col-sm-9">
+				<input type="password" id="loginPassword" data-bind="textInput: loginPassword" class="form-control input-sm" />
+			</div>
+		</div>
+		<button data-bind="click: login, html: i18n.BtnLogin, enable: allValid" class="btn btn-primary btn-sm pull-right" style="margin-right: 15px"></button>
+	</form>
+</div>  <!-- id="loginT" -->

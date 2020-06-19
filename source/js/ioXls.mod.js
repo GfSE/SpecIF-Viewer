@@ -35,21 +35,19 @@ modules.construct({
 		};
 //		console.debug( 'file', f );
 		if( f.lastModified ) {
-			fDate = new Date(f.lastModified);
-			fDate = fDate.toISOString();
+			fDate = new Date(f.lastModified).toISOString();
 //			console.debug( 'file.lastModified', fDate )
 			return f
 		};
 		if( f.lastModifiedDate ) {
 			// this is deprecated, but at the time of coding, Edge does not support the above, yet:
-			fDate = new Date(f.lastModifiedDate);
-			fDate = fDate.toISOString();
+			fDate = new Date(f.lastModifiedDate).toISOString();
 //			console.debug( 'file.lastModifiedDate', fDate )
 			return f
 		};
 		// take the actual date as a final fall back
 		fDate = new Date().toISOString();
-//		console.debug( 'date', fDate );
+//		console.debug( 'file', f, fDate );
 		return f
 	};
 	self.toSpecif = function( buf ) {
@@ -58,11 +56,6 @@ modules.construct({
 		xDO = $.Deferred();
 		
 		xDO.notify('Transforming Excel to SpecIF',10); 
-		// Extract resourceClass in [square brackets] or (round brackets), if they are at the end of the filename,
-		// ... and delete it from the projectName:
-		self.parent.projectName = self.parent.projectName.replace( /\s*(?:\(|\[)([a-z0-9_\-].+?)(?:\)|\])$/i,
-																function($0,$1) { self.resourceClass = $1; return '' } );
-//		console.debug('input.prjName', self.parent.projectName, self.resourceClass );
 		// Transform the XLSX-data to SpecIF:
 		data = xslx2specif( buf, self.parent.projectName, fDate );
 		xDO.resolve( data );
@@ -75,7 +68,7 @@ modules.construct({
 	};
 	return self
 
-function xslx2specif( buf, pN, chgAt ) {
+function xslx2specif( buf, pN, chAt ) {
 	"use strict";
 	// requires sheetjs
 
@@ -135,15 +128,10 @@ function xslx2specif( buf, pN, chgAt ) {
 			this.resourceClasses = [{	
 				id: resClassId( CONFIG.resClassFolder ),
 				title: CONFIG.resClassFolder,			// specType for folders (e.g. representing sheets) 
-				description: 'Resource type for folders',
+				isHeading: true,
+				description: 'Resource class for folders',
 				instantiation: ["auto","user"],
-				changedAt: chgAt
-			},{
-				id: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
-				title: CONFIG.resClassOutline,			// specType for hierarchies
-				description: 'Hierarchy type for outlines',
-				instantiation: ["auto","user"],
-				changedAt: chgAt
+				changedAt: chAt
 			}];
 			this.statementClasses = []
 		}
@@ -151,7 +139,7 @@ function xslx2specif( buf, pN, chgAt ) {
 			this.id = propClassId( str );
 			this.title = ti;
 			this.dataType = 'DT-'+dT;		// like baseTypes[i].id
-			this.changedAt = chgAt
+			this.changedAt = chAt
 		}
 		function propClassId( str ) { 
 			// must be able to find it just knowing the ws-name and the column index:
@@ -163,7 +151,7 @@ function xslx2specif( buf, pN, chgAt ) {
 			this.description = 'For resources specified per line of an excel sheet';
 			this.instantiation = ["auto","user"];
 			this.propertyClasses = [];
-			this.changedAt = chgAt
+			this.changedAt = chAt
 		}
 		function resClassId( ti ) { 
 			return 'RC-'+ti.toSpecifId()
@@ -175,7 +163,7 @@ function xslx2specif( buf, pN, chgAt ) {
 			this.instantiation = ["auto","user"];
 			// No subjectClasses or objectClasses means all are allowed.
 			// Cannot specify any, as we don't know the resourceClasses.
-			this.changedAt = chgAt
+			this.changedAt = chAt
 		}
 		function staClassId( ti ) { 
 			return 'SC-'+ti.toSpecifId()
@@ -287,7 +275,7 @@ function xslx2specif( buf, pN, chgAt ) {
 								// title will be set according to the properties, later on.
 								class: resClassId( ws.resClassName ),
 								properties: [],
-								changedAt: chgAt
+								changedAt: chAt
 							};
 						let c, C, cell, rC, pC, dT, id, stL=[], ti, obL, oInner;
 						for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++) {		// an attribute per column ...
@@ -330,7 +318,7 @@ function xslx2specif( buf, pN, chgAt ) {
 												// it will be replaced with a resource.id when importing.
 												// Remember that the constraint-check on the statement.object must be disabled.
 												object: CONFIG.placeholder, 
-												changedAt: chgAt
+												changedAt: chAt
 											})
 										}
 									})
@@ -377,7 +365,7 @@ function xslx2specif( buf, pN, chgAt ) {
 							hTree.nodes.push({ 
 								id: 'N-'+(res.id+hTree.nodes.length).simpleHash(),
 								resource: res.id,
-								changedAt: chgAt
+								changedAt: chAt
 							}); 
 							// add the resource to the list:
 							specif.resources.push(res);
@@ -396,7 +384,7 @@ function xslx2specif( buf, pN, chgAt ) {
 						id: 'F-'+(pN+sh.name+CONFIG.resClassFolder).simpleHash(),
 						title: sh.name,
 						class: resClassId( CONFIG.resClassFolder ),
-						changedAt: chgAt
+						changedAt: chAt
 					};
 //				console.debug( 'createFld:', fld );
 				specif.resources.push( fld );
@@ -406,7 +394,7 @@ function xslx2specif( buf, pN, chgAt ) {
 						id: sh.hid, 
 						resource: fld.id,
 						nodes: [],
-						changedAt: chgAt
+						changedAt: chAt
 					},
 					dupIdL=[];  // list of duplicate resource ids 
 					
@@ -542,8 +530,13 @@ function xslx2specif( buf, pN, chgAt ) {
 	let xDta = new Uint8Array(buf),
 		wb = XLSX.read(xDta, {type:'array', cellDates:true, cellStyles:true}),	// the excel content, i.e. "workbook"
 		wsCnt = wb.SheetNames.length;		// number of sheets in the workbook
+
+	// Extract resourceClass in [square brackets] or (round brackets), if they are at the end of the filename,
+	let resL = /\s*(?:\(|\[)([a-zA-Z0-9:_\-].+?)(?:\)|\])$/.exec( pN );
+	if( Array.isArray(resL) && resL.length>1 ) self.resourceClass = resL[1];
+
 	console.info( 'SheetNames: '+wb.SheetNames+' ('+wsCnt+')' );
-//	console.debug('workbook',wb);
+//	console.debug('workbook',pN,wb,self.resourceClass);
 
 	// Transform the worksheets to SpecIF:
 	// 1 Create the project:
@@ -552,11 +545,12 @@ function xslx2specif( buf, pN, chgAt ) {
 	specif.title = pN;
 	specif.generator = "Excel";
 	specif.$schema = 'https://specif.de/v1.0/schema.json'
+	// the root folder resource:
 	specif.resources = [{
 		id: 'R-'+pN.toSpecifId(),
 		title: pN,
-		class: 'RC-'+CONFIG.resClassOutline.toSpecifId(),
-		changedAt: chgAt
+		class: resClassId( CONFIG.resClassFolder ),
+		changedAt: chAt
 	}];
 	specif.statements = [];
 
@@ -565,15 +559,15 @@ function xslx2specif( buf, pN, chgAt ) {
 		id: 'H-'+pN.toSpecifId(),
 		resource: 'R-'+pN.toSpecifId(),
 		nodes: [],
-		changedAt: chgAt
+		changedAt: chAt
 	}];
-	specif.changedAt = chgAt;	
+	specif.changedAt = chAt;	
 
 	// 3 Transform the xls data to SpecIF:
 	for( var l=0; l<wsCnt; l++ )
 		transformSheet(l);
 
-//	console.info('SpecIF created');
+//	console.info('SpecIF created from '+pN+' (Excel)');
 //	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif

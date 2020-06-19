@@ -78,6 +78,7 @@ modules.construct({
 					// when a node is closed, but not when a closed node receives a close command
 					(event)=>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
+//						console.debug('tree.close',event);
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'move':
@@ -379,7 +380,8 @@ modules.construct({
 	Functions called by GUI events 
 */
 	self.itemClicked = ( rId )=>{
-		if( self.selectedView() == '#'+CONFIG.objectRevisions || self.selectedView() == '#'+CONFIG.comments ) return;
+		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].indexOf( self.selectedView() )>-1 ) return;
+		console.debug('#0',rId);
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
 		// If it is a resource with children (folder with content), assure it is open.
@@ -389,18 +391,22 @@ modules.construct({
 	//	self.selectTab(CONFIG.objectList);  // itemClicked can be called from the hitlist ..
 		if( self.tree.selectedNode.ref != rId ) {
 			// different node: select it and open it:
+			console.debug('#1',rId,self.tree.selectedNode);
 			self.tree.selectNodeByRef( rId );
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			self.tree.openNode( self.tree.selectedNode )
 			// opening a node triggers an event, by which 'self.refresh' will be called.
 		} else {
-			if( self.tree.selectedNode.children.length ) {
+			if( self.tree.selectedNode.children.length>0 ) {
+				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
 				self.tree.toggleNode( self.tree.selectedNode )
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
 			}
 		};
+		if( self.selectedView() != '#'+CONFIG.objectList ) 
+			modules.show({ newView: '#'+CONFIG.objectList })
 	};
 /*	self.addComment = ()=>{
 //		console.debug( 'addComment', self.tree.selectedNode );
@@ -729,8 +735,16 @@ modules.construct({
 			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
 				.then( 
 					()=>{
-						pData.updateTree();
-						pData.doRefresh({forced:true})
+						// If it was a diagram, build a new glossary with elements 
+						// which are still shown by any of the remaining diagrams:
+						app.cache.selectedProject.createGlossary( cData, {mode:'adopt',addGlossary:true} )
+							.then( 
+								function() {  
+									pData.updateTree();
+									pData.doRefresh({forced:true})
+								},
+								stdError 
+							)
 					},
 					stdError 
 				)
@@ -1141,9 +1155,9 @@ modules.construct({
 					});
 					// Then, sort the statements by title of the subject in descending order, as the loop further down iterates backwards:
 					relG.sort( function(fix, foxi) { 
-									fix = fix.sT.toLowerCase();
-									foxi = foxi.sT.toLowerCase();
-									return fix==foxi ? 0 : (fix>foxi ? -1 : 1) 
+									let i = fix.sT.toLowerCase(),
+										o = foxi.sT.toLowerCase();
+									return i==o ? 0 : (i>o ? -1 : 1) 
 					});
 					rT += '<tr><td>';
 					// The list of subject resources:
@@ -1172,9 +1186,9 @@ modules.construct({
 					});
 					// Then, sort the statements by title of the object title in descending order, as the loop further down iterates backwards:
 					relG.sort( function(dick, doof) { 
-									dick = dick.tT.toLowerCase();
-									doof = doof.tT.toLowerCase();
-									return dick==doof?0:(dick>doof?-1:1) 
+									let i = dick.tT.toLowerCase(),
+									    o = doof.tT.toLowerCase();
+									return i==o?0:(i>o?-1:1) 
 					});
 					// Title and subject are the same for all statements in this list:
 					rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject,opts)+'</span></td>';
@@ -1303,6 +1317,7 @@ function Resource( obj ) {
 		// 1 Fill the main column:
 		// 1.1 The title:
 		switch( app.specs.selectedView() ) {
+			case '#'+CONFIG.objectFilter:
 			case '#'+CONFIG.objectList:
 				// move item to the top, if the title is clicked:
 				rO += '<div onclick="app.specs.itemClicked(\''+self.toShow.id+'\')">'
@@ -1388,7 +1403,7 @@ function Resource( obj ) {
 		if( !clsPrp.title ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf( clsPrp.title, opts );
+		let ti = languageValueOf( clsPrp.title, opts ).stripCtrl();
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
@@ -1539,11 +1554,12 @@ function propertyValueOf( prp, opts ) {
 		}
 	};
 	// Malicious content has been removed upon import ( specif.toInt() ).
-	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ); 
+	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ),
+		ct; 
 //	console.debug('*',prp,dT);
 	switch( dT.type ) {
 		case 'xs:string':
-			var ct = languageValueOf( prp.value, opts ).ctrl2HTML();
+			ct = languageValueOf( prp.value, opts ).toHTML();
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			ct = i18n.lookup( ct );
@@ -1551,25 +1567,23 @@ function propertyValueOf( prp, opts ) {
 				ct = '&#x00ab;'+ct+'&#x00bb;'  */
 			break;
 		case 'xhtml':
-			var ct = languageValueOf( prp.value, opts );
+			ct = languageValueOf( prp.value, opts );
 			if( opts.unescapeHTMLTags )
 				ct = ct.unescapeHTMLTags();
-			if( opts.makeHTML )
-				ct = makeHTML( ct );
+			ct = makeHTML( ct, opts );
 			ct = fileRef.toGUI( ct, opts );   // show the diagrams
-			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			break;
 		case 'xs:dateTime':
-			var ct = localDateTime( prp.value );
+			ct = localDateTime( prp.value );
 			break;
 		case 'xs:enumeration':
 			// usually value has a comma-separated list of value-IDs,
 			// but the filter module delivers potentially marked titles in content.
-			var ct = enumValueOf( dT, prp.value, opts );		// translate IDs to values, if appropriate
+			ct = enumValueOf( dT, prp.value, opts );		// translate IDs to values, if appropriate
 			break;
 		default:
-			var ct = prp.value
+			ct = prp.value
 	};
 	return ct
 
@@ -1675,7 +1689,6 @@ function File() {
 					return u  		
 				};
 				// else, add relative path:
-//				console.debug('addFilepath', u );
 //				console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
 				return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob )
 			}  */
@@ -1742,7 +1755,9 @@ function File() {
 //				console.debug('fileRef.toGUI 1a found: ', f );
 				if( f && f.blob ) {
 //					console.debug('tagId',tagId(u2));
+					// first add the element to which the image will be added:
 					repSts.push( '<div class="'+opts.imgClass+' '+tagId(u2)+'"></div>' );
+					// now add the image as innerHTML:
 					self.render( f, opts );
 					return 'aBra§kadabra'+(repSts.length-1)+'§'
 				} else {
@@ -1793,7 +1808,9 @@ function File() {
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
 					if( f && f.blob ) {
 						hasImg = true;
+						// first add the element to which the image will be added:
 						d= '<div class="'+opts.imgClass+' '+tagId(u1)+'"></div>';
+						// now add the image as innerHTML:
 						self.render( f, opts );
 					} else {
 						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
@@ -1819,8 +1836,6 @@ function File() {
 								d = '<img src="'+u1.fileName()+'.png" type="image/png" alt="'+d+'" />';
 								// ToDo: Offer a link for downloading the file
 								break;
-						//	case 'bpmn':
-						//		break;
 							default:
 								// last resort is to take the filename:
 								d = '<span>'+d+'</span>'  
@@ -1835,7 +1850,6 @@ function File() {
 				// avoid that a pattern is processed twice.
 				// insert a placeholder and replace it with the prepared string at the end ...
 				if( hasImg )
-			//		repSts.push( '<div class="'+opts.imgClass+'"><a href="'+u1+'"'+t1+' >'+d+'</a></div>' )
 					repSts.push( d )
 				else
 					repSts.push( '<a href="'+u1+'"'+t1+' >'+d+'</a>' );

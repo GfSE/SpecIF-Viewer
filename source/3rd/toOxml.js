@@ -63,8 +63,10 @@ function toOxml( data, opts ) {
 	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
 	// - Otherwise transform SVG to PNG, as MS Word does not (yet) support SVG.
 	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
+	const ulId = 1;	// the numId for bulleted lists; '0' does not work
 	var images = [],
-		pend = 0;		// the number of pending operations
+		pend = 0,	// the number of pending operations
+		olCnt = ulId;	// the sequential count of numbered lists, when used as id, every one will start at ulId+1
 
 	// Select and/or transform files according to the needs of MS Office:
 	if( data.files && data.files.length>0 )
@@ -440,7 +442,7 @@ function toOxml( data, opts ) {
 				});
 //				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
-				if( !opts.propertiesLabel ) return c1;
+				if( !opts.propertiesLabel || r.isHeading ) return c1;
 				
 			/*	// Add a property 'SpecIF:Class':
 				if( rC.title )
@@ -545,15 +547,16 @@ function toOxml( data, opts ) {
 							// e) an unordered list:
 							$2 = $2.replace(/<ul>([\s\S]*?)<\/ul>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{text:$1.trim(),style:'bulleted'}} );
+									bL.push( {p:{ text:$1. trim(), style:'bulleted' }} );
 									return ''
 								});
 								return ''
 							});
 							// f) an ordered list:
 							$2 = $2.replace(/<ol>([\s\S]*?)<\/ol>/, function($0,$1) {
+								olCnt++;
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{text:$1.trim(),style:'numbered'}} );
+									bL.push( {p:{ text:$1.trim(), style:'numbered', numId:olCnt }} );
 									return ''
 								});
 								return ''
@@ -896,9 +899,10 @@ function toOxml( data, opts ) {
 					return null  // should never arrive here
 				}
 				function propertyValueOf( prp ) {
-					// return the value of a single property
+					// In a first transformation step, return the value of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
+					// The second transformation step will be done in generateOxml().
 //					console.debug('propertyValueOf',prp,'"',prp.value,'"');
 					if(prp['class']) {
 						let dT = itemById( data.dataTypes, propertyClassOf( prp['class']).dataType );
@@ -951,6 +955,7 @@ function toOxml( data, opts ) {
 			}
 
 			function generateOxml( ct, fmt ) {
+				// In a second step, transform the internal representation to OOXML.
 				return chain( ct,
 					function(ct) {
 						if( ct.p ) {
@@ -1022,8 +1027,8 @@ function toOxml( data, opts ) {
 							+ '</w:p>'
 				};
 				if( ct.style=='numbered' ) {
-					// ToDo: use style for ordered lists:
-					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
+					// ToDo: use style for ordered lists. with w:val="1" the numbers are shown, but not reset when the next list starts.
+					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+ct.numId+'"/></w:numPr></w:pPr>'
 							+ p
 							+ '</w:p>'
 				};
@@ -1226,7 +1231,7 @@ function toOxml( data, opts ) {
 	let i=null, I=null, 
 		file = createText( data, opts );
 
-	file.name = data.title;
+	file.name = opts.fileName || data.title;
 	file.parts = [];
 	
 	file.parts.push( packGlobalRels() );
@@ -2250,92 +2255,93 @@ function toOxml( data, opts ) {
 		+						'<cp:keywords/>								'
 		+						'<dc:description/>								'
 		+						'<cp:lastModifiedBy>Dungern, Dr. Oskar von</cp:lastModifiedBy>								'
-		+						'<cp:revision>5</cp:revision>								'
-		+						'<dcterms:created xsi:type="dcterms:W3CDTF">2018-05-09T06:31:00Z</dcterms:created>								'
-		+						'<dcterms:modified xsi:type="dcterms:W3CDTF">2018-08-30T14:26:00Z</dcterms:modified>								'
-		+					'</cp:coreProperties>									'
-		+				'</pkg:xmlData>										'
-		+			'</pkg:part>											'
+		+						'<cp:revision>5</cp:revision>'
+		+						'<dcterms:created xsi:type="dcterms:W3CDTF">2018-05-09T06:31:00Z</dcterms:created>'
+		+						'<dcterms:modified xsi:type="dcterms:W3CDTF">2018-08-30T14:26:00Z</dcterms:modified>'
+		+					'</cp:coreProperties>'
+		+				'</pkg:xmlData>'
+		+			'</pkg:part>'
 		+			'<pkg:part pkg:name="/word/numbering.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml">											'
-		+				'<pkg:xmlData>										'
+		+				'<pkg:xmlData>'
 		+					'<w:numbering mc:Ignorable="w14 w15 wp14" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">									'
-		+						'<w:abstractNum w:abstractNumId="0" w15:restartNumberingAfterBreak="0">								'
-		+							'<w:nsid w:val="5BFB07E1"/>							'
-		+							'<w:multiLevelType w:val="multilevel"/>							'
-		+							'<w:tmpl w:val="8F2E77AE"/>							'
-		+							'<w:lvl w:ilvl="0">							'
-		+								'<w:start w:val="1"/>						'
-		+								'<w:numFmt w:val="bullet"/>						'
-		+								'<w:lvlText w:val=""/>						'
-		+								'<w:lvlJc w:val="left"/>						'
-		+								'<w:pPr>						'
-		+									'<w:tabs>					'
-		+										'<w:tab w:val="num" w:pos="720"/>				'
+								// for bulleted lists:
+		+						'<w:abstractNum w:abstractNumId="'+ulId+'" w15:restartNumberingAfterBreak="0">'
+	//	+							'<w:nsid w:val="5BFB07E1"/>'
+		+							'<w:multiLevelType w:val="singleLevel"/>'
+		+							'<w:tmpl w:val="8F2E77AE"/>'
+		+							'<w:lvl w:ilvl="0">'
+		+								'<w:start w:val="1"/>'
+		+								'<w:numFmt w:val="bullet"/>'
+		+								'<w:lvlText w:val=""/>'
+		+								'<w:lvlJc w:val="left"/>'
+		+								'<w:pPr>'
+		+									'<w:tabs>'
+		+										'<w:tab w:val="num" w:pos="720"/>'
+		+									'</w:tabs>'
+		+									'<w:ind w:left="720" w:hanging="540"/>'
+		+								'</w:pPr>'
+		+								'<w:rPr>'
+		+									'<w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/>'
+		+								'</w:rPr>'
+		+							'</w:lvl>'
+	/*	+							'<w:lvl w:ilvl="1">'
+		+								'<w:start w:val="1"/>'
+		+								'<w:numFmt w:val="decimal"/>'
+		+								'<w:lvlText w:val="%2."/>'
+		+								'<w:lvlJc w:val="left"/>'
+		+								'<w:pPr>'
+		+									'<w:tabs>'
+		+										'<w:tab w:val="num" w:pos="1440"/>'
+		+									'</w:tabs>'
+		+									'<w:ind w:left="1440" w:hanging="540"/>'
+		+								'</w:pPr>'
+		+							'</w:lvl>'
+		+							'<w:lvl w:ilvl="2">'
+		+								'<w:start w:val="1"/>'
+		+								'<w:numFmt w:val="decimal"/>'
+		+								'<w:lvlText w:val="%3."/>'
+		+								'<w:lvlJc w:val="left"/>'
+		+								'<w:pPr>'
+		+									'<w:tabs>'
+		+										'<w:tab w:val="num" w:pos="2160"/>'
 		+									'</w:tabs>					'
-		+									'<w:ind w:left="720" w:hanging="720"/>					'
-		+								'</w:pPr>						'
-		+								'<w:rPr>						'
-		+									'<w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/>					'
-		+								'</w:rPr>						'
-		+							'</w:lvl>							'
-		+							'<w:lvl w:ilvl="1">							'
-		+								'<w:start w:val="1"/>						'
-		+								'<w:numFmt w:val="decimal"/>						'
-		+								'<w:lvlText w:val="%2."/>						'
-		+								'<w:lvlJc w:val="left"/>						'
-		+								'<w:pPr>						'
-		+									'<w:tabs>					'
-		+										'<w:tab w:val="num" w:pos="1440"/>				'
-		+									'</w:tabs>					'
-		+									'<w:ind w:left="1440" w:hanging="720"/>					'
-		+								'</w:pPr>						'
-		+							'</w:lvl>							'
-		+							'<w:lvl w:ilvl="2">							'
-		+								'<w:start w:val="1"/>						'
-		+								'<w:numFmt w:val="decimal"/>						'
-		+								'<w:lvlText w:val="%3."/>						'
-		+								'<w:lvlJc w:val="left"/>						'
-		+								'<w:pPr>						'
-		+									'<w:tabs>					'
-		+										'<w:tab w:val="num" w:pos="2160"/>				'
-		+									'</w:tabs>					'
-		+									'<w:ind w:left="2160" w:hanging="720"/>					'
-		+								'</w:pPr>						'
-		+							'</w:lvl>							'
-		+							'<w:lvl w:ilvl="3">							'
-		+								'<w:start w:val="1"/>						'
-		+								'<w:numFmt w:val="decimal"/>						'
-		+								'<w:lvlText w:val="%4."/>						'
-		+								'<w:lvlJc w:val="left"/>						'
-		+								'<w:pPr>						'
-		+									'<w:tabs>					'
-		+										'<w:tab w:val="num" w:pos="2880"/>				'
-		+									'</w:tabs>					'
-		+									'<w:ind w:left="2880" w:hanging="720"/>					'
-		+								'</w:pPr>						'
-		+							'</w:lvl>							'
-		+							'<w:lvl w:ilvl="4">							'
-		+								'<w:start w:val="1"/>						'
-		+								'<w:numFmt w:val="decimal"/>						'
-		+								'<w:lvlText w:val="%5."/>						'
-		+								'<w:lvlJc w:val="left"/>						'
-		+								'<w:pPr>						'
-		+									'<w:tabs>					'
-		+										'<w:tab w:val="num" w:pos="3600"/>				'
-		+									'</w:tabs>					'
-		+									'<w:ind w:left="3600" w:hanging="720"/>					'
-		+								'</w:pPr>						'
-		+							'</w:lvl>							'
-		+							'<w:lvl w:ilvl="5">							'
-		+								'<w:start w:val="1"/>						'
-		+								'<w:numFmt w:val="decimal"/>						'
-		+								'<w:lvlText w:val="%6."/>						'
-		+								'<w:lvlJc w:val="left"/>						'
-		+								'<w:pPr>						'
-		+									'<w:tabs>					'
+		+									'<w:ind w:left="2160" w:hanging="540"/>'
+		+								'</w:pPr>'
+		+							'</w:lvl>'
+		+							'<w:lvl w:ilvl="3">'
+		+								'<w:start w:val="1"/>'
+		+								'<w:numFmt w:val="decimal"/>'
+		+								'<w:lvlText w:val="%4."/>'
+		+								'<w:lvlJc w:val="left"/>'
+		+								'<w:pPr>'
+		+									'<w:tabs>'
+		+										'<w:tab w:val="num" w:pos="2880"/>'
+		+									'</w:tabs>'
+		+									'<w:ind w:left="2880" w:hanging="540"/>'
+		+								'</w:pPr>'
+		+							'</w:lvl>'
+		+							'<w:lvl w:ilvl="4">'
+		+								'<w:start w:val="1"/>'
+		+								'<w:numFmt w:val="decimal"/>'
+		+								'<w:lvlText w:val="%5."/>'
+		+								'<w:lvlJc w:val="left"/>'
+		+								'<w:pPr>'
+		+									'<w:tabs>'
+		+										'<w:tab w:val="num" w:pos="3600"/>'
+		+									'</w:tabs>'
+		+									'<w:ind w:left="3600" w:hanging="540"/>'
+		+								'</w:pPr>'
+		+							'</w:lvl>'
+		+							'<w:lvl w:ilvl="5">'
+		+								'<w:start w:val="1"/>'
+		+								'<w:numFmt w:val="decimal"/>'
+		+								'<w:lvlText w:val="%6."/>'
+		+								'<w:lvlJc w:val="left"/>'
+		+								'<w:pPr>'
+		+									'<w:tabs>'
 		+										'<w:tab w:val="num" w:pos="4320"/>				'
 		+									'</w:tabs>					'
-		+									'<w:ind w:left="4320" w:hanging="720"/>					'
+		+									'<w:ind w:left="4320" w:hanging="540"/>					'
 		+								'</w:pPr>						'
 		+							'</w:lvl>							'
 		+							'<w:lvl w:ilvl="6">							'
@@ -2347,7 +2353,7 @@ function toOxml( data, opts ) {
 		+									'<w:tabs>					'
 		+										'<w:tab w:val="num" w:pos="5040"/>				'
 		+									'</w:tabs>					'
-		+									'<w:ind w:left="5040" w:hanging="720"/>					'
+		+									'<w:ind w:left="5040" w:hanging="540"/>					'
 		+								'</w:pPr>						'
 		+							'</w:lvl>							'
 		+							'<w:lvl w:ilvl="7">							'
@@ -2359,7 +2365,7 @@ function toOxml( data, opts ) {
 		+									'<w:tabs>'
 		+										'<w:tab w:val="num" w:pos="5760"/>'
 		+									'</w:tabs>'
-		+									'<w:ind w:left="5760" w:hanging="720"/>'
+		+									'<w:ind w:left="5760" w:hanging="540"/>'
 		+								'</w:pPr>'
 		+							'</w:lvl>'
 		+							'<w:lvl w:ilvl="8">'
@@ -2371,14 +2377,41 @@ function toOxml( data, opts ) {
 		+									'<w:tabs>'
 		+										'<w:tab w:val="num" w:pos="6480"/>'
 		+									'</w:tabs>'
-		+									'<w:ind w:left="6480" w:hanging="720"/>'
+		+									'<w:ind w:left="6480" w:hanging="540"/>'
 		+								'</w:pPr>'
-		+							'</w:lvl>'
-		+						'</w:abstractNum>'
-		+						'<w:num w:numId="1">'
-		+							'<w:abstractNumId w:val="0"/>'
-		+						'</w:num>'
-		+					'</w:numbering>'
+		+							'</w:lvl>'  */
+		+						'</w:abstractNum>';
+		// For numbered lists:
+		// not only a separate num-section below, but also a separate abstractNum-section 
+		// is needed for every numbered list, which starts at 1.
+		for( var i=ulId+1; i<olCnt+1; i++ ) {
+			ct +=				'<w:abstractNum w:abstractNumId="'+i+'" w15:restartNumberingAfterBreak="0">'
+	//		+						'<w:nsid w:val="5BFB07E1"/>'
+			+						'<w:multiLevelType w:val="singleLevel"/>'
+			+						'<w:tmpl w:val="8F2E77AE"/>'
+			+						'<w:lvl w:ilvl="0">'
+			+							'<w:start w:val="1"/>'
+			+							'<w:numFmt w:val="decimal"/>'
+			+							'<w:lvlText w:val="%1."/>'
+			+							'<w:lvlJc w:val="left"/>'
+			+							'<w:pPr>'
+			+								'<w:tabs>'
+			+									'<w:tab w:val="num" w:pos="720"/>'
+			+								'</w:tabs>'
+			+								'<w:ind w:left="720" w:hanging="540"/>'
+			+							'</w:pPr>'
+			+						'</w:lvl>'
+			+					'</w:abstractNum>'
+		};
+		ct +=					'<w:num w:numId="'+ulId+'">'
+		+							'<w:abstractNumId w:val="'+ulId+'"/>'
+		+						'</w:num>';
+		for( var i=ulId+1; i<olCnt+1; i++ ) {
+			ct += 				'<w:num w:numId="'+i+'">'
+			+						'<w:abstractNumId w:val="'+i+'"/>'
+			+					'</w:num>'
+		};
+		ct +=				'</w:numbering>'
 		+				'</pkg:xmlData>'
 		+			'</pkg:part>'
 		+			'<pkg:part pkg:name="/word/fontTable.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml">											'

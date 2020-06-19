@@ -17,7 +17,7 @@ modules.construct({
 		cData,					// the cached data
 		opts,					// the processing options
 		toEdit;					// the classified properties to edit
-	self.newRes;				// the resource to edit
+//	self.newRes;				// the resource to edit
 	self.newFiles = [];			// collect uploaded files before committing the change
 	self.checkForm = new CheckForm();
 
@@ -151,7 +151,8 @@ modules.construct({
 				onshown: ()=>{ setTextFocus(ti); app[myName].check() },
 				message: (thisDlg)=>{
 					var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
-					form += textForm( ti, toEdit.title, 'line' );  // field for the title property
+					// field for the title property:
+					form += textForm( ti, languageValueOf(toEdit.title), 'line' ); 
 					// fields for the description properties: 
 					toEdit.descriptions.forEach( (d)=>{
 						form += editP(d)

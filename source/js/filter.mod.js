@@ -628,9 +628,9 @@ modules.construct({
 					searchString: pre&&pre.searchString? pre.searchString : '',
 					options: [
 						{ id: 'wordBeginnings', title: i18n.LblWordBeginnings, checked: pre&&pre.options.indexOf('wordBeginnings')>-1 },
-						{ id: 'wholeWords', title: i18n.LblWholeWords, checked: pre&&pre.options.indexOf('wholeWords')>-1},
-						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1},
-						{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1}
+						{ id: 'wholeWords', title: i18n.LblWholeWords, checked: pre&&pre.options.indexOf('wholeWords')>-1 },
+						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1 },
+						{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1 }
 					]
 				};
 //				console.debug('addTextSearchFilter',flt);

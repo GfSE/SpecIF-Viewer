@@ -19,16 +19,91 @@ function toEpub( data, opts ) {
 	if( !opts.linkFontColor ) opts.linkFontColor = '#0071B9';
 //	if( !opts.linkFontColor ) opts.linkFontColor = '#005A92';	// darker
 	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
+	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
 	opts.epubImgPath = 'Images/';
-		
-	// All required parameters are available, so we can begin:
-	opts.callback = storeEpub;
-	toXhtml( data, opts );
+
+	// Check the files:
+	// - any raster image is OK right away,
+	// - If SVG, look if there is a sibling (same filename) of type PNG. If so, nothing to do.
+	// - Otherwise transform SVG to PNG, as many ePub-Readers does not (yet) support SVG.
+	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
+
+	var transformedImgL = [],
+		pend = 0;		// the number of pending operations
+	// Select and/or transform files as outlined above:
+	if( data.files && data.files.length>0 ) {
+		data.files.forEach( function(f,i,L) {
+			if( !f.blob ) {
+				console.warn("File '"+f.title+"' content is missing.");
+				return
+			};
+
+			// If it is a raster image:
+			if ( ['image/png','image/jpg','image/jpeg','image/gif'].indexOf(f.type)>-1 ) {
+				// nothing to do:
+				return
+			};
+			
+			// If it is a vector image:
+			if ( ['image/svg+xml'].indexOf(f.type)>-1 ) {
+				if( !opts.preferPng ) {
+					// take it as is:
+					return
+				};
+				let pngN = nameOf(f.title)+'.png';
+				// check whether there is already a PNG version of this image:
+				if( itemBy( L, 'title', pngN ) ) {
+					console.info("File '"+f.title+"' has a sibling of type PNG");
+					// A corresponding PNG file exists already, so nothing to do:
+					return
+				};
+				// else, transform SVG to PNG:
+					function storeV(){
+//						console.debug('vector',pend);
+						can.width = img.width;
+						can.height = img.height;
+						ctx.drawImage( img, 0, 0 );
+						can.toBlob( function(b) {
+							transformedImgL.push( {id:f.id,title:pngN,type:'image/png',h:img.height,w:img.width,blob:b} );
+							if( --pend<1 ) {
+								// all images have been converted, add them to the original file list:
+								data.files = data.files.concat( transformedImgL );
+								// continue processing:
+								makeEpub()
+							}
+						}, 'image/png' )
+					}				
+				pend++;
+				let can = document.createElement('canvas'), // Not shown on page
+					ctx = can.getContext('2d'),
+					img = new Image();                      // Not shown on page
+				img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
+
+				const reader = new FileReader();
+				reader.addEventListener('loadend', (e)=>{
+					// provide the image as dataURL:
+					img.src = 'data:image/svg+xml,' + encodeURIComponent( e.target.result );
+				});
+				reader.readAsText(f.blob);
+
+				console.info("File '"+f.title+"' transformed to PNG");
+				return
+			};
+			console.warn("Format of file '"+f.title+"' is not supported by MS Word.")
+		})
+	};
+	if( pend<1 ) {
+		// start right away when there are no images to convert:
+		makeEpub()
+	};
 	return;
 
 // -----------------------
-	function storeEpub( ePub ) {
-		ePub.fileName = data.title;
+	function makeEpub() {
+		// transform to ePub/xhtml:
+		let ePub = toXhtml( data, opts );
+
+		ePub.fileName = opts.fileName || data.title;
 		ePub.mimetype = 'application/epub+zip';
 
 	//	ePub.cover = undefined;
@@ -107,15 +182,18 @@ function toEpub( data, opts ) {
 			+				'<content src="Text/title.xhtml"/>'
 			+			'</navPoint>'
 	*/
-		ePub.headings.forEach( function(h,i) {
-			// Build a table of content;
-			// not all readers support nested ncx, so we provide a flat list.
-			// Some tutorials have proposed to indent the title instead, but this does not work, as leading whitespace seems to be ignored.
-			ePub.toc += 	'<navPoint id="tocHd'+i+'" playOrder="'+(i+1)+'">'
-				+				'<navLabel><text>'+h.title+'</text></navLabel>'
-				+				'<content src="Text/sect'+h.section+'.xhtml#'+h.id+'"/>'
-				+			'</navPoint>'
-		});
+		ePub.headings.forEach( 
+			(h,i)=>{
+				// Build a table of content;
+				// not all readers support nested ncx, so we provide a flat list.
+				// Some tutorials have proposed to indent the title instead, but this does not work, 
+				// as leading whitespace seems to be ignored.
+				ePub.toc += 	'<navPoint id="tocHd'+i+'" playOrder="'+(i+1)+'">'
+					+				'<navLabel><text>'+h.title+'</text></navLabel>'
+					+				'<content src="Text/sect'+h.section+'.xhtml#'+h.id+'"/>'
+					+			'</navPoint>'
+			}
+		);
 		ePub.toc +=	'</navMap>'
 			+		'</ncx>';
 			
@@ -179,5 +257,8 @@ function toEpub( data, opts ) {
 				return null
 			}
 		}
+	}
+	function nameOf( str ) {
+		return str.substring( 0, str.lastIndexOf('.') )
 	}
 }

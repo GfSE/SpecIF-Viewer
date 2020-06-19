@@ -124,13 +124,19 @@ modules.construct({
 						// initialize the dialog:
 						onshown: ()=>{ app[myName].filterClicked() },
 						message: (thisDlg)=>{
-							var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
+							var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
+									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+					//		var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
 									+ radioForm( i18n.LblStatementClass, staClasses, {handle:myFullName+'.filterClicked()'} )
 								//	+ textForm( i18n.LblStringMatch,'','line' )
 									+ textForm( i18n.TabFind,'','line',myFullName+'.filterClicked()' )
-									+ '</td><td style="padding-left:0.4em">'
-									+ '<div id="resCandidates" class="panel panel-default" style="max-height:'+($('#app').outerHeight(true)-210)+'px; overflow:auto" >'
-									+ '</div></td></tr></tbody></table>';
+									+	'</div></div>'
+									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+					//				+ '</td><td style="padding-left:0.4em">'
+									+ '<div id="resCandidates" style="max-height:'+($('#app').outerHeight(true)-220)+'px; overflow:auto" >'
+									+ '</div>'
+									+ '</div></div>'
+					//				+ '</td></tr></tbody></table>';
 							return $( form ) 
 						},
 						buttons: [{

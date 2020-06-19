@@ -72,7 +72,7 @@ function textForm( lbl, val, typ, fn ) {
 //	console.debug('textForm 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
-			val = noCode( val ).toHTML()
+			val = noCode( val )
 	else 	val = '';
 
 	if( typeof(fn)=='string' && fn.length>0 )	
@@ -109,7 +109,7 @@ function textForm( lbl, val, typ, fn ) {
 			break;
 		default:
 			// display the value:
-			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val.ctrl2HTML()+'</div>';
+			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val.toHTML()+'</div>';
 	};
 	fG += 	'</div>';
 	return fG
@@ -541,6 +541,12 @@ function uncacheL( L, es ) {  // ( list, entries )
 	es.forEach( (e)=>{ uncacheE( L, e ) } )
 }
 	
+// Add a leading icon to a title:
+// use only for display, don't add to stored variables.
+String.prototype.addIcon = function( ic ) {
+	if( ic ) return ic+'&#xa0;'+this;
+	return this
+};
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
 function genID(pfx) {
 	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
@@ -591,41 +597,72 @@ if (!String.prototype.startsWith) {
 if (!String.prototype.endsWith) {
 	String.prototype.endsWith = function(searchString, position) {
       let subjectString = this.toString();
-      if (position === undefined || position > subjectString.length) {
+      if (position===undefined || position > subjectString.length) {
         position = subjectString.length
       };
       position -= searchString.length;
       let lastIndex = subjectString.indexOf(searchString, position);
-      return lastIndex !== -1 && lastIndex === position
+      return lastIndex!==-1 && lastIndex===position
 	}
 };
 String.prototype.truncate = function(l) {
 	var t = this.substring(0,l-1);
-//	if( t.length < this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
-	if( t.length < this.length ) t += '...';  // must work also in non-html fields
+//	if( t.length<this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
+	if( t.length<this.length ) t += '...';  // must work also in non-html fields
 	return t
 };
 /*String.prototype.reduceWhiteSpace = function() {
 // Reduce white space to a single blank:
 	return this.replace( /[\s]{2,}/g, ' ' )
-};
+}; 
 String.prototype.log = function(m) {
 	console.debug( m, this );
 	return this
-};*/
+}; */
 String.prototype.stripCtrl = function() {
 // Remove js/json control characters from HTML-Text or other:
 	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' )
 };
 String.prototype.ctrl2HTML = function() {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
-	return this.replace( /\r|\f/g, '' ).replace( /\t/g, '&nbsp;&nbsp;&nbsp;' ).replace( /\n/g, '<br />' )
+	return this.replace( /\r|\f/g, '' )
+				.replace( /&#x0{0,3}a;/gi, '' )
+				.replace( /\t/g, '&nbsp;&nbsp;&nbsp;' )
+				.replace( /\n/g, '<br />' )
+				.replace( /&#x0{0,3}d;/gi, '<br />' )
 };
 String.prototype.toHTML = function() {
 // Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
 	return this.escapeHTML().ctrl2HTML()
 };
-String.prototype.utf8ToXmlChar = function() {
+// https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
+function isHTML(str) {
+  var doc = new DOMParser().parseFromString(str, "text/html");
+  return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
+}
+function makeHTML(str,opts) {
+	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
+	if( typeof(opts)=='object' && !opts.makeHTML ) 
+		return str;
+	let newS = str.ctrl2HTML()
+			.linkifyURLs( opts )
+			.replace(/--(?:&gt;|>)/g,'&#8594;')  // &rarr;
+			.replace(/(?:&lt;|<)--/g,'&#8592;')  // &larr;
+	if( isHTML(str) ) 
+		return newS;
+	if( CONFIG.convertMarkdown && app.markdown ) {
+		// don't interpret the '+' as list item, but do so with '•',
+		// transform arrows assembled by characters to special arrow characters:
+		return app.markdown.render( str
+			.replace(/\+ /g,'&#x2b; ') // '+'
+			.replace(/• /g,'* ')
+		)
+		.linkifyURLs( opts )
+	};
+	return '<div>'+newS+'</div>'
+} 
+
+/* String.prototype.utf8ToXmlChar = function() {
 	let i = this.length,
 		aRet = [];
 	while (i--) {
@@ -635,41 +672,14 @@ String.prototype.utf8ToXmlChar = function() {
 	};
 	return aRet.join('');
 }
-/*	String.prototype.xmlChar2utf8 = function() {
+String.prototype.xmlChar2utf8 = function() {
 		this = this.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 16))
 		});
 		return this.replace(/&#([0-9]+);/g, function (match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 10))
 		})
-	} */
-// https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
-function isHTML(str) {
-  var doc = new DOMParser().parseFromString(str, "text/html");
-  return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
-}
-function makeHTML(str) {
-	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
-	if( isHTML(str) ) return str;
-	if( CONFIG.convertMarkdown && app.markdown )
-		// don't interpret the '+' as list item, but do so with '•',
-		// transform arrows assembled by characters to special arrow characters:
-		return app.markdown.makeHtml( str
-										.replace(/-?-(?:&gt;|>)/g,'&rarr;') 
-										.replace(/(?:&lt;|<)--?/g,'&larr;') 
-										.replace(/\+ /g,'&#x2b; ')
-										.replace(/• /g,'* ') 
-									);
-	return '<div><p>'+str.ctrl2HTML()+'</p></div>'
-} 
-
-if (!String.prototype.stripHTML) {
-	String.prototype.stripHTML = function() {
-		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-		return $("<dummy/>").html( this ).text().trim()
-	}
-};
-
+} */
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
@@ -685,21 +695,6 @@ String.prototype.escapeHTML = function() {
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	})
 };
-/*// see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
-String.prototype.unescapeHTMLEntities = function() {
-	// unescape HTML encoded entities (characters):
-	var el = document.createElement('div');
-	return noCode(this.replace(/\&#?x?[0-9a-z]+?;/gi, function (enc) {
-        el.innerHTML = enc;
-        return el.innerText
-		
-	})) 
-}; */
-// better: https://stackoverflow.com/a/34064434/5445
-String.prototype.unescapeHTMLEntities = function() {
-	var doc = new DOMParser().parseFromString(input, "text/html");
-    return noCode( doc.documentElement.textContent )
-};
 String.prototype.unescapeHTMLTags = function() {
 //  Unescape known HTML-tags:
 	if( isHTML(this) ) return this;
@@ -707,11 +702,26 @@ String.prototype.unescapeHTMLTags = function() {
 		return '<'+$1+$2+$3+'>'
 	}))
 };
-// Add a leading icon to a title:
-// use only for display, don't add to stored variables.
-String.prototype.addIcon = function( ic ) {
-	if( ic ) return ic+'&#xa0;'+this;
-	return this
+// see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
+String.prototype.unescapeHTMLEntities = function() {
+	// unescape HTML encoded entities (characters):
+	var el = document.createElement('div');
+	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, function (enc) {
+        el.innerHTML = enc;
+        return el.innerText
+		
+	})) 
+};
+/*// better: https://stackoverflow.com/a/34064434/5445 but strips HTML tags.
+String.prototype.unescapeHTMLEntities = function() {
+	var doc = new DOMParser().parseFromString(input, "text/html");
+    return noCode( doc.documentElement.textContent )
+};*/
+if (!String.prototype.stripHTML) {
+	String.prototype.stripHTML = function() {
+		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
+		return $("<dummy/>").html( this ).text().trim()
+	}
 };
 
 // Add a link to an isolated URL:
@@ -722,23 +732,21 @@ String.prototype.linkifyURLs = function( opts ) {
 		function( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ){ 
 			// all links which do not start with "http" are considered local by most browsers:
 			if( !$2.startsWith('http') ) $2 = 'https://'+$2;  // starts with "www." then according to RE.URI
-			return $1+'<a href="'+$2+'" >'+$2+'</a>'+$9
+		/*	// we must encode the URI, but to avoid that an already encoded URI is corrupted, we first decode it
+			// under the assumption that a decoding a non-encoded URI does not cause a change.
+			// This does not work if a non-encoded URI contains '%'.
+			return $1+'<a href="'+encodeURI(decodeURI($2))+'" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9 */
+			return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9
 		})
 };
 
 String.prototype.fileExt = function() {
 	// return the file extension only:
 	return this.substring( this.lastIndexOf('.')+1 )
-//	let e = RE.FileExt.exec(this);   // extension excluding '.'
-//	if( e==null ) return null;
-//	return e[1]
 };
 String.prototype.fileName = function() {
 	// return the filename without extension:
 	return this.substring( 0, this.lastIndexOf('.') )
-//	let e = RE.FileName.exec(this);  // name excluding '.'
-//	if( e==null ) return null;
-//	return e[1]
 };
 String.prototype.isTrue = function() {
 	return CONFIG.valuesTrue.indexOf( this.toLowerCase().trim() )>-1
@@ -1177,7 +1185,7 @@ function clearUrlParams() {
 	if( !browser.supportsHtml5History || !hasUrlParams() ) return;
 	
 	let path = window.location.pathname.split('/');  // get the path in pieces
-	console.debug( 'clearUrlParams', path );
+//	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1])    // last element is 'appname.html' without url parameters;
 };
 function httpGet(parms) {

@@ -25,7 +25,7 @@ function App() {
 	"use strict";
 	// construct main app:
 	var self = this;
-	self.productVersion = 'v0.98.5'; // the name of the subdirectory needs to be changed, accordingly.
+	self.productVersion = 'v0.98.7'; // the name of the subdirectory needs to be changed, accordingly.
 	self.specifVersion = '1.0';
 	self.init = function() {
 		// must set it here, because the language files must be read first:
@@ -73,6 +73,9 @@ function App() {
 				// no selector: the children don't have views
 				children: [{
 					name: 'ioSpecif'
+					// no view
+				},{
+					name: 'ioArchimate'
 					// no view
 				},{
 					name: 'ioReqif'

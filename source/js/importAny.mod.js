@@ -48,25 +48,26 @@ modules.construct({
 			help: i18n.MsgImportSpecif,	
 			opts: {mediaTypeOf: attachment2mediaType}
 		},{
-			id:'reqif',	
-			name:'ioReqif',	
-			desc:'Requirement Interchange Format',
-			label:'ReqIF',
-			help: i18n.MsgImportReqif, 
-			opts: {mediaTypeOf: attachment2mediaType}
+			id:'archimate',	
+			name:'ioArchimate',	
+			desc:'Archimate Open Exchange',
+			label:'Archimate®',
+//			help: i18n.MsgImportArchmate, 
+			help: '... experimental ... import an Archimate Open Exchange file (*.xml) and add the diagrams using the editor function', 
+			opts: {mediaTypeOf: attachment2mediaType} 
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
 			desc:'Business Process',
 			label:'BPMN',
 			help: i18n.MsgImportBpmn
-	/*	},{
-			id:'togaf',	
-			name:'ioTogaf',	
-			desc:'The Open Group Architecture Framework',
-			label:'TOGAF®',
-			help: i18n.MsgImportTogaf, 
-			opts: {mediaTypeOf: attachment2mediaType}  */
+		},{
+			id:'reqif',	
+			name:'ioReqif',	
+			desc:'Requirement Interchange Format',
+			label:'ReqIF',
+			help: i18n.MsgImportReqif, 
+			opts: {mediaTypeOf: attachment2mediaType}
 		},{ 
 			id:'xls',
 			name:'ioXls',
@@ -103,6 +104,7 @@ modules.construct({
 		)
 	}
 	function handleError(xhr) {
+//		console.debug( 'handleError', xhr );
 		self.clear();
 		stdError(xhr);
 		self.show()
@@ -469,7 +471,7 @@ modules.construct({
 						break;
 					case 'adopt':
 						opts.addGlossary = true;
-						opts.addProcessesFolder = true;
+						opts.collectProcesses = true;
 					case 'update':
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )

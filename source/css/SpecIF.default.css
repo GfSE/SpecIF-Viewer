@@ -206,6 +206,10 @@ div.panel-filter {
 	margin: 0 0 0.4em 0;
 	padding: 0.2em;
 }
+div.panel-options {
+    box-sizing: border-box;
+	padding: 0.2em;
+}
 .listEntry {
 	border-bottom:1px solid #ddd;
 }

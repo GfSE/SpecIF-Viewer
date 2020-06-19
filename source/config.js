@@ -157,6 +157,7 @@ const CONFIG = {};
 	CONFIG.resClassParagraph = "SpecIF:Paragraph";
 	CONFIG.resClassComment = 'SpecIF:Comment';   
 //	CONFIG.resClassIssue = 'SpecIF:Issue';   	
+	CONFIG.staClassShows = 'SpecIF:shows';	
 //	CONFIG.staClassRefersTo = 'SpecIF:refersTo';	
 	CONFIG.staClassCommentRefersTo = 'SpecIF:commentRefersTo';	
 //	CONFIG.staClassIssueRefersTo = 'SpecIF:issueRefersTo';	
@@ -355,7 +356,8 @@ const CONFIG = {};
 	CONFIG.modelElementClasses = [
 		'FMC:Actor',
 		'FMC:State',
-		'FMC:Event'
+		'FMC:Event',
+		'SpecIF:Collection'
 	];
 	// A list of statement types by title,
 	// is used for example to recognize a statement to create when importing an xls sheet:
@@ -504,7 +506,7 @@ const RE = {};
 	
 	// Reliably recognize an URI, not validate an URI:
 	// text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
-	RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]+?)*(\?[^\s#]+?)?(#\S+?)?)(\s|\.\s|:\s|<|\.$|$)/g;
+	RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]*?)*(\?[^\s#]+?)?(#\S+?)?)(\.\s|:\s|\s|\.<|:<|<|\.$|:$|$)/g;
 //             $1: Begins with start of text or space or tag end
 //                     $2: complete link
 //                      $3: "http(s)://" or "www."

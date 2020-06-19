@@ -39,7 +39,7 @@ modules.construct({
 		+	'<p>Version: '+app.productVersion+' supporting SpecIF up to version '+app.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
 	//	+	'<p>Please press \'<a href="http://reqif.de/index.php/contact/articles/reqif-message.html" target="_blank">Support</a>\' to file a request for assistance.</p>'
-		+	'<h4>Features:</h4>'
+		+	'<h4>Features</h4>'
 		+		'<ul>'
 		+		  "<li>Import 'specif' and 'specifz' file with schema and consistency check</li>"
 		+		  "<li>Import 'reqif' file (planned)</li>"
@@ -59,7 +59,7 @@ modules.construct({
 		+		  "<li>Export 'ePub' file</li>"
 		+		  "<li>Export MS-Word OOXML file</li>"
 		+		'</ul>'
-		+	'<h4>Compatibility:</h4>'
+		+	'<h4>Compatibility</h4>'
 		+		'<ul>'
 		+		  "<li>Mozilla Firefox</li>"
 		+		  "<li>Google Chromium and Chrome</li>"
@@ -70,11 +70,11 @@ modules.construct({
 		+		'</ul>'
 		+	'</div>'
 		+	'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'
-		+	'<h4>Embedded Libraries</h4>'
+		+	'<h4>Credits</h4>'
 		+	'<p>The web-apps have been built with the open source components listed below. These are fine pieces of software '
 		+				'and we gratefully thank the contributors for their effort.'
 	//	+				'and we gratefully thank the contributors for their effort. Our policy is to donate 12% of our revenues made with'
-	//	+				'the ReqIF Apps to these projects ... and we hope that our software will be useful to many people, as well.'
+	//	+				'the SpecIF Apps to these projects ... and we hope that our software will be useful to many people, as well.'
 		+	'</p>'
 		+	'<table class="table table-condensed">'
 		+	'<thead>'
@@ -96,6 +96,20 @@ modules.construct({
 		+				'for rearranging chapters and paragraphs ... <a href="http://mbraak.github.io/jqTree/" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/mbraak/jqTree/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>'
 		+		'</tr>'
+		+ (modules.isReady('markdown')?
+	/*			'<tr>'
+			+		'<td>remarkable</td>'
+			+		'<td><a href="https://github.com/jonschlinkert" target="_blank">Jon Schlinkert</a></td>'
+			+		'<td>Markdown parser, done right. Commonmark support, extensions, syntax plugins, high speed ... <a href="https://github.com/jonschlinkert/remarkable" target="_blank">more</a></td>'
+			+		'<td><a href="https://github.com/jonschlinkert/remarkable/blob/master/LICENSE" target="_blank">MIT</a></td>'
+			+	'</tr>' */
+				'<tr>'
+			+		'<td>markdown-it</td>'
+			+		'<td><a href="https://github.com/Kirill89" target="_blank">Kirill</a>,&nbsp;<a href="https://github.com/puzrin" target="_blank">Vitaly Puzrin</a>,&nbsp;<a href="https://github.com/rlidwka" target="_blank">Alex Kocharin</a></td>'
+			+		'<td>Markdown parser, done right. 100% CommonMark support, extensions, syntax plugins & high speed ... <a href="https://markdown-it.github.io/" target="_blank">more</a></td>'
+			+		'<td><a href="https://github.com/jonschlinkert/remarkable/blob/master/LICENSE" target="_blank">MIT</a></td>'
+			+	'</tr>' 
+			:   '')
 		+		'<tr>'
 		+			'<td>JSZip</td>'
 		+			'<td><a href="https://github.com/Stuk" target="_blank">Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso</a></td>'
@@ -128,14 +142,6 @@ modules.construct({
 		+			'<td>Excel parser and writer ... <a href="https://github.com/SheetJS/js-xlsx" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/SheetJS/js-xlsx/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>'
 		+		'</tr>'
-		+ (modules.isReady('markdown')?
-				'<tr>'
-			+		'<td>showdownJS</td>'
-			+		'<td></td>'
-			+		'<td>A bidirectional Markdown to HTML to Markdown converter written in Javascript ... <a href="http://showdownjs.com/" target="_blank">more</a></td>'
-			+		'<td><a href="https://github.com/showdownjs/showdown/blob/master/LICENSE" target="_blank">MIT</a></td>'
-			+	'</tr>'
-			:   '')
 	/*	+		'<tr>'
 		+			'<td>DataTables</td>'
 		+			'<td></td>'
