@@ -13,6 +13,7 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Import 'reqif' file (planned)
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
+- Archimate Open-Exchange (experimental)
 - Import from an URL or the local file system
 - Browse the content ('resources') along the supplied hierarchy
 - Create, clone and update resources with an input form derived from the respective resource class*
