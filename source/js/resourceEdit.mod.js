@@ -196,20 +196,21 @@ modules.construct({
 					case 'xs:enumeration':
 						let separatedValues = p.value.split(','),
 							vals = forAll( dT.values, (v)=>{ return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
-//						console.debug('xs:enumeration',p,pC,separatedValues,vals);
+//						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
 							return checkboxForm( ti, vals )
 						} else {
 							return radioForm( ti, vals )
 						};
 					case 'xs:boolean':
-						return checkboxInput( ti, {checked:p.value=='true'} );
+//						console.debug('xs:boolean',ti,p,pC);
+						return booleanForm( ti, p.value=='true' );
 					case 'xs:dateTime':
 					case 'xs:integer':
 					case 'xs:double':
 						// add parameters to check this input field:
 						self.checkForm.add( ti, dT );
-						return textForm( ti, p.value, 'line', myFullName+'.check()' );
+						return textForm( ti, p.value, 'line', myFullName+'.check()' )
 				};
 				return
 
@@ -442,7 +443,7 @@ modules.construct({
 						return radioValue( titleOf(p,opts) )
 					};
 				case 'xs:boolean':
-					return checkboxValues( titleOf(p,opts) ).toString()
+					return booleanValue( titleOf(p,opts) ).toString()
 			}
 		}
 	};

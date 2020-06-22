@@ -278,9 +278,9 @@ function xslx2specif( buf, pN, chAt ) {
 								changedAt: chAt
 							};
 						let c, C, cell, rC, pC, dT, id, stL=[], ti, obL, oInner;
-						for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++) {		// an attribute per column ...
+						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {		// an attribute per column ...
 							cell = ws.data[colName(c)+l];
-//							console.debug('#',c,colName(c)+l,cell);
+//							console.debug('createR',c,colName(c)+l,cell);
 							if( cell ) {											// ... if it has content
 								rC = itemById( specif.resourceClasses, resClassId(ws.resClassName) );
 								pC = itemById( specif.propertyClasses, propClassId(ws.name+c) );
@@ -288,6 +288,7 @@ function xslx2specif( buf, pN, chAt ) {
 							//	if( pC && CONFIG.statementClasses.indexOf(pC.title)<0 ) {
 								if( pC ) {
 									// it is a property:
+//									console.debug('createR - property',pC);
 									dT = itemById(specif.dataTypes,pC.dataType);
 
 									// Find the value to be taken as resource identifier.
@@ -305,7 +306,8 @@ function xslx2specif( buf, pN, chAt ) {
 									// it is a statement:
 									ti = ws.data[colName(c)+ws.firstCell.row].v;  // column title in the first line of the same column
 									obL = cell.v.split(",");
-									obL.forEach( function(ob) {
+//									console.debug('createR - statement',ti,obL);
+									obL.forEach( (ob)=>{
 										oInner = RE.quote.exec( ob );
 										if( oInner && oInner.length>2 ) {
 											stL.push({
@@ -349,7 +351,7 @@ function xslx2specif( buf, pN, chAt ) {
 									// see https://stackoverflow.com/questions/19395257/how-to-count-duplicate-value-in-an-array-in-javascript
 									dupIdL.push(id);
 									let counts = {};
-									dupIdL.forEach(function(x) { counts[x] = (counts[x]||0)+1 });
+									dupIdL.forEach( (x)=>{ counts[x] = (counts[x]||0)+1 });
 									console.warn('The user-defined identifier',id,'is occurring',counts[id]+1,'times.');
 //									console.debug('dupId',id,simpleClone(dupIdL),counts[id]);
 									res.id = 'R-'+(ws.name+id+counts[id]).simpleHash()
@@ -372,7 +374,7 @@ function xslx2specif( buf, pN, chAt ) {
 							// store any statements only if the resource is stored, as well
 							// that's why it is here and not outside the 'if' block:
 							if( stL.length>0 ) {
-								stL.forEach( function(st) { st.id = 'S-'+(res.id+st.title+st.objectToFind).simpleHash(); st.subject = res.id } );
+								stL.forEach( (st)=>{ st.id = 'S-'+(res.id+st.title+st.objectToFind).simpleHash(); st.subject = res.id } );
 								specif.statements = specif.statements.concat(stL)
 							}
 						}
@@ -434,12 +436,10 @@ function xslx2specif( buf, pN, chAt ) {
 					// Some values may be null, i.e. no value.
 						
 						function compatibleClasses( a, b ) {
-							var e =	isDateTime(a) && isDateTime(b)
+							return isDateTime(a) && isDateTime(b)
 									|| isNumber(a) && isNumber(b)
-									|| isBool(a) && isBool(b);
+									|| isBool(a) && isBool(b)
 									// no need to compare strings, as this is the default
-//							console.debug('compatibleClasses',a,b,e)
-							return e
 						}
 
 					// the cell value in the first line is the title, either of a property or a statement:
@@ -447,7 +447,7 @@ function xslx2specif( buf, pN, chAt ) {
 						pC;
 //					console.debug( 'addPropClass 1', ti );
 
-					// Do not return a propertyClass, if it is a statement title,
+					// Skip, if it is a statement title
 					// (the check is done here - and not a level above - because here we know the title value):
 					if( CONFIG.statementClasses.indexOf( ti )>-1 ) return;
 
@@ -466,7 +466,7 @@ function xslx2specif( buf, pN, chAt ) {
 					// the loop has ended early, i.e. the types are not compatible for all lines>0:
 					if( i<I || !pC )		return new PropClass( ws.name+cX, ti, 'Text' );
 					// else, the types are equal for all lines>0:
-	//				if( isXHTML(pC) ) 		return new PropClass( ws.name+cX, ti, 'XLS Formatted Text' );				
+				//	if( isXHTML(pC) ) 		return new PropClass( ws.name+cX, ti, 'FormattedText' );				
 					if( isDateTime(pC) ) 	return new PropClass( ws.name+cX, ti, 'DateTime' );				
 					if( isReal(pC) ) 		return new PropClass( ws.name+cX, ti, 'Real' );				
 					if( isInt(pC) ) 		return new PropClass( ws.name+cX, ti, 'Integer' );				
@@ -568,7 +568,7 @@ function xslx2specif( buf, pN, chAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created from '+pN+' (Excel)');
-//	console.debug('SpecIF',specif);
+	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 

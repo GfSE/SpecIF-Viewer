@@ -167,7 +167,7 @@ function radioForm( lbl, entries, opts ) {
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let rB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
-			fn = 'onclick="'+opts.handle+'"'
+			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
 	switch( lbl.display ) {
 		case 'none': 
@@ -194,12 +194,10 @@ function radioForm( lbl, entries, opts ) {
 	let tp, nm=lbl.label.simpleHash();
 	entries.forEach( function(e,i) {
 		tp = ( e.type )?'&#160;('+e.type+')':'';   // add type in brackets, if available
-		rB +=			'<div>'
-			+				'<label>'
-			+					'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+fn+'/>'
-			+					'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
-			+				'</label><br />'
-			+			'</div>'
+		rB +=			'<label>'
+			+				'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
+			+				'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
+			+			'</label><br />'
 	});
 	rB +=			'</div>'
 		+		'</div>';
@@ -214,7 +212,7 @@ function checkboxForm( lbl, entries, opts ) {
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	var cB;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
-			fn = 'onclick="'+opts.handle+'"'
+			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
 	switch( lbl.display ) {
 		case 'none': 
@@ -233,12 +231,10 @@ function checkboxForm( lbl, entries, opts ) {
 	let tp, nm=lbl.label.simpleHash();
 	entries.forEach( (e,i)=>{
 		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
-		cB +=			'<div>'
-			+				'<label>'
-			+					'<input type="checkbox" name="checkbox'+nm+'" value="'+(e.id||i)+'" '+(e.checked?'checked ':'')+fn+'/>'
-			+					'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
-			+				'</label><br />'
-			+			'</div>'
+		cB +=			'<label>'
+			+				'<input type="checkbox" name="checkbox'+nm+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
+			+				'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
+			+			'</label><br />'
 	});
 	cB +=			'</div>'
 			+	'</div>';
@@ -253,6 +249,25 @@ function checkboxValues( lbl ) {
 	};
 	return resL
 }
+function booleanForm( lbl, val, opts ) {
+//	console.debug('booleanForm',lbl,val);
+	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
+			fn = ' onclick="'+opts.handle+'"'
+	else 	fn = '';
+	return 	'<div class="form-group form-active">'
+		+		'<div class="attribute-label" >'+lbl+'</div>'
+		+		'<div class="attribute-value checkbox" >'
+		+			'<label>'
+		+				'<input type="checkbox" name="boolean'+lbl.simpleHash()+'"'+(val?' checked':'')+fn+' />'
+		+			'</label><br />'
+		+		'</div>'
+		+	'</div>'
+}
+function booleanValue( lbl ) {
+	let chd = $('input[name="boolean'+lbl.simpleHash()+'"]:checked');
+	return chd.length>0
+}
+
 function tagId(str) {
 	return 'X-'+str.simpleHash()
 }
@@ -511,6 +526,23 @@ function containsByTitle( cL, L ) {
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
 		return true
 	}
+}
+function cmp( i, a ) {
+	if( !i ) return -1;
+	if( !a ) return 1;
+	i = i.toLowerCase(),
+	a = a.toLowerCase();
+	return i==a? 0 : (i<a? -1 : 1) 
+}
+function sortByTitle( L ) {
+	return L.sort( 
+		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
+	)
+}
+function sortBy( L, fn ) {
+	return L.sort( 
+		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
+	)
 }
 function forAll( L, fn ) {
 	// return a new list with the results from applying the specified function to all items of input list L:

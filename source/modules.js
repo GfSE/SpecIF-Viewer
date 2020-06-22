@@ -64,7 +64,7 @@ function ModuleManager() {
 		function init2() {
 //			console.debug('init2',opts);
 			let loadL = ['helper', 'helperTree', 'tree', 'bootstrapDialog', 'mainCSS'];
-			if( CONFIG.convertMarkdown ) loadL.unshift('markdown');
+			if( CONFIG.convertMarkdown ) loadL.push('markdown');
 			loadH( loadL, opts )
 		}
 	};
@@ -156,27 +156,25 @@ function ModuleManager() {
 		setViewToLeaf( mo, params );
 		return;
 		
-		function setViewFromRoot( le, pars ) {
+		function setViewFromRoot( le, pL ) {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
 				// all levels get access to the parameters besides newView, if needed:
-				let nPars = simpleClone( pars );
-				nPars.newView = le.parent.view;
-			// 	let nPars = $.extend( {}, pars, {newView:le.parent.view} );
-				setViewFromRoot( le.parent, nPars )
+				let nPL = simpleClone( pL );
+				nPL.newView = le.parent.view;
+				setViewFromRoot( le.parent, nPL )
 			};
 			// set this level's view controller to choose the view:
-			le.parent.viewCtl.show( pars )
+			le.parent.viewCtl.show( pL )
 		}
-		function setViewToLeaf( le, pars ) {
+		function setViewToLeaf( le, pL ) {
 			// step down, if there is a child view:
 			if( le.viewCtl && le.viewCtl.list.length>0 ) {
 				let ch = findDefault( le.viewCtl.list ),
-					nPars = simpleClone( pars );
-				nPars.newView = ch.view;
-//				console.debug( 'setViewToLeaf',le,ch,nPars );
-				le.viewCtl.show( nPars );
-				setViewToLeaf( ch, pars )
+					nPL = simpleClone( pL );
+				nPL.newView = ch.view;
+				le.viewCtl.show( nPL );
+				setViewToLeaf( ch, pL )
 			};
 			return;
 			
@@ -350,7 +348,18 @@ function ModuleManager() {
 				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
-				case "markdown": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js' ).done( function() {setReady(mod)} ); return true;
+		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' ).then( 
+														function(m) {
+															app.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true});
+															setReady(mod) 
+														});
+														return true;  */
+				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@11/dist/markdown-it.min.js' ).done( 
+														function() {
+															app.markdown = window.markdownit({xhtmlOut:true,breaks:true,linkify:false});
+															setReady(mod) 
+														});
+														return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
@@ -373,13 +382,22 @@ function ModuleManager() {
 				// libraries:
 				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "config": 				$.getScript( vPath+'/config.js', function() {setReady(mod)} ); return true;   // don't cache
-				case "i18n": 				let langFile = null;
+				case "i18n": 				let langFile;
 											switch( browser.language ) {
 												case 'de':  langFile = vPath+'/i18n/iLaH-de.i18n.js'; break;
 												case 'fr':  langFile = vPath+'/i18n/iLaH-fr.i18n.js'; break;
-												default:	langFile = vPath+'/i18n/iLaH-en.i18n.js'
+												default:	langFile = vPath+'/i18n/iLaH-en.i18n.js'; 
 											};
-											getScript( langFile ).done( function() {setReady(mod)} ); return true;
+											getScript( langFile )
+											.done( function() {
+												switch( browser.language ) {
+													case 'de':  i18n = new LanguageTextsDe(); break;
+													case 'fr':  i18n = new LanguageTextsFr(); break;
+													default:	i18n = new LanguageTextsEn()
+												};
+												setReady(mod)
+											}); 
+											return true;
 				case "helper": 				getScript( vPath+'/js/helper.js' ).done( function() {setReady(mod)} ); return true;
 				case "helperTree": 			getScript( vPath+'/js/helperTree.js' ).done( function() {setReady(mod)} ); return true;
 /*				case "pouchDB":		 		getScript( vPath+'/3rd/pouchdb-7.0.0.min.js' ).done( function() {setReady(mod)} ); return true;
@@ -533,7 +551,7 @@ function ModuleManager() {
 			// - simple case: params is a string with the name of the new view.
 			// - more powerful: params is an object with the new target view plus optionally content or other parameters 
 			switch( typeof(params) ) {
-				case 'undefined': return null;
+				case 'undefined': return null;	// should never be the case.
 				case 'string': params = {newView: params}
 			};
 //			console.debug('ViewCtl.show',self.list,self.selected,params);
@@ -654,5 +672,6 @@ function State(opt) {
 	self.reset();
 	return self
 }
-var browser = null,
+var browser,
+	i18n,
 	modules = new ModuleManager();

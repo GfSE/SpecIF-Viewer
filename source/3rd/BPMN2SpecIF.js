@@ -264,9 +264,10 @@ function BPMN2Specif( xmlString, opts ) {
 				tag = el.nodeName.split(':').pop();	// tag without namespace
 //				console.debug('#1',tag);
 					function getLane(nd,pId) {
+//						console.debug('getLane',nd,pId);
 						if( nd.nodeName.includes('lane') ) {
 							let ndId = nd.getAttribute("id"),
-								ndName = nd.getAttribute("name").slice(0,opts.titleLength);
+								ndName = (nd.getAttribute("name")||'').slice(0,opts.titleLength);
 							if( ndName ) {
 								// store the lane:
 								model.resources.push({

@@ -26,7 +26,7 @@ const CONFIG = {};
 	CONFIG.maxReal = 10000000.0;
 	CONFIG.maxAccuracy = 9;		// max decimals of real numbers
 	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
-	CONFIG.textThreshold = 192;  // for longer strings a text area is offered for editing.
+	CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
 	CONFIG.maxTitleLength = CONFIG.textThreshold;  // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
 	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications*.mod.js)
 	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules reqifserver*.js, specifications*.mod.js, objectFilter*.mod.js)
@@ -35,7 +35,7 @@ const CONFIG = {};
 	CONFIG.maxObjToCacheCount = 2000; // 0: object cache is disabled; null: object cache is enabled with no limit
 //	CONFIG.cacheAutoLoadPeriod = 90000; // in ms ... should be at least 60000ms
 //	CONFIG.cacheAutoLoadReader = false; // load the cache for the reader app
-//	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
+	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
 	CONFIG.findMentionedObjects = true;	// looks for object titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
@@ -185,12 +185,13 @@ const CONFIG = {};
 	// it is considered a heading (chapter title) and will be included in the outline numbering.
 	// Also, this property will be used for the title when displaying the resource.
 	CONFIG.headingProperties = [
+		CONFIG.resClassOutline, // do not remove
 		CONFIG.resClassFolder,	// do not remove
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.ChapterName',	// do not remove
 		// DocBridge Resource Director:
 		'DBRD.ChapterName',
-	/*	// Glossary:
+	/*	// Viacar Glossary:
 		'Heading.en',
 		'Heading.de',
 		'Heading.fr',
@@ -205,7 +206,7 @@ const CONFIG = {};
 	// the value of the latter will be the title of the resource.
 	CONFIG.titleProperties = [
 		// Dublin core:
-		'dcterms:title',
+		CONFIG.propClassTitle,
 		'DC.title',
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Name',
@@ -216,8 +217,8 @@ const CONFIG = {};
 		'Name',
 		// carhs SafetyWissen:
 		'carhs.Title.en',
-		'carhs.Title.de',
-*/		// RIF 1.1a Atego Exerpt:	
+		'carhs.Title.de',  */
+		// RIF 1.1a Atego Exerpt:	
 		'Object Heading',
 //		'VALUE-Object Heading',   // 'VALUE-' is now removed right at the beginning
 /*		// Glossary:
@@ -238,9 +239,9 @@ const CONFIG = {};
 	// The content of all properties with a title in this list will be concatenated to form the description in the 'document' view:
 	CONFIG.descProperties = [
 		// Dublin core:
-		'dcterms:description',
+		CONFIG.propClassDesc,
 		'DC.description',
-		'SpecIF:Diagram',
+		CONFIG.resClassDiagram,
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Text',
 		// DocBridge Resource Director:
@@ -292,8 +293,6 @@ const CONFIG = {};
 	// A list of attributes not to show in the object list (document view), specified by title:
 	// You must enter the titles used by SpecIF.
 	CONFIG.overviewHiddenProperties = [
-		'SpecIF:Id',
-		CONFIG.resType
 	];
 
 	// Show or suppress empty properties in the object list (document view):
@@ -304,9 +303,9 @@ const CONFIG = {};
 		CONFIG.staClassCommentRefersTo
 	];
 	
-	// A list of classes which are excluded from the type filtering, specified by title:
-	// All types for objects which are not referenced in the tree should be listed, here.
-	// Note that only objects which are referenced in a hierarchy (tree) are included in the filter process.
+	// A list of classes which are excluded from the class filtering, specified by title:
+	// All types for resources which are not referenced in the tree should be listed, here.
+	// Only resources which are referenced in a hierarchy (tree) are included in the filter process.
 	CONFIG.excludedFromTypeFiltering = [
 		CONFIG.resClassComment
 	];
@@ -343,11 +342,11 @@ const CONFIG = {};
 	// A list of resources representing Model Diagrams, specified by title resp. class title:
 	CONFIG.diagramClasses = [
 		CONFIG.resClassDiagram,
-	//	'SpecIF:Diagram',
 		'FMC:Plan',
 		'SpecIF:View'		// deprecated
 	];
 	CONFIG.folderClasses = [
+		CONFIG.resClassOutline,
 		CONFIG.resClassFolder
 	];
 	// A list with all model-element types by title,
@@ -526,23 +525,14 @@ const RE = {};
 	// corresponding to SpecIF schema v0.10.0+:
 	RE.Icon = new RegExp( '^(&#[0-9]{1,5};|&#x[0-9]{1,4};|&[a-zA-Z]{1,6};|[@$%#*_\u007B\u20AC\u00A3\u00A5\u00A7]{1,1}[0-9a-zA-Z@$%#*_\u007D\u20AC\u00A3\u00A5\u00A7]{0,6})$', '');
 
-	// allowed are extensions with 3 or 4 alpha characters 
-	//                        OR an extension with 2 alpha characters plus '~' (this is used for inactive Compart filter profiles):
-//	RE.FileExt = /\.([a-z]{3,7}|[a-z]{2}\~)$/i;
-//	RE.FileName = /^([\ a-z0-9_\.\-\(\)\/\\]+)\.[a-z]{2,4}$/i;  // name excluding '.'    
-//	RE.FileName = new RegExp( '^([a-z0-9'+chars_de+chars_fr+'_\s\.\,\-\(\)\[\]\%\/\\]+)\.([a-z]{3,7}|[a-z]{2}\~)$', 'i');  // name excluding '.'
-
 	// Various datatypes:
 	RE.IsoDate = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;	
 	// see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
 	// /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
-//	RE.Real = /^-?[0-9]+[.][0-9]+$|^-?[0-9]+$/;  // any number of decimals
-//	RE.Real = /^-?\d*(\.\d+)?$/;   // any number of decimals
 	RE.Real = function( decimals ) {
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
 		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' )
-//		return new RegExp( '^-?[0-9]+[.][0-9]{1,'+Math.max(1,decimals)+'}$|^-?[0-9]+$', '' )
 	};
 //	RE.CSV = /^[\s\-,_#&$§0-9a-zA-Z]+$/;   // works!
 	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values	

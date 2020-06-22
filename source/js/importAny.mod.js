@@ -276,6 +276,7 @@ modules.construct({
 		self.projectName = '';
 		setProgress('',0);     // reset progress bar
 		setImporting( false );
+		app.busy.reset();
 		self.enableActions()
 	};
 	
@@ -476,9 +477,9 @@ modules.construct({
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
-							.fail( handleError );
+							.fail( handleError )
 				};
-				console.info(importMode.id+' project',dta.title||dta.id);
+				console.info(importMode.id+' project',dta.title||dta.id)
 			})
 	}; 
 	function setProgress(msg,perc) {

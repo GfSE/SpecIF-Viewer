@@ -1,669 +1,675 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'Français' (fr).
 	The result can be obtained by reference of:
-	- i18n.MsgText
+	- 	self.MsgText
 	- phrase('MsgText')
 	- phrase('MsgText', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
-var i18n = {
-	phrase: function( ms, pA ) { 
+function LanguageTextsFr() {
+	var self = this;
+	self.phrase = function( ms, pA ) { 
 		// replace a variable '~A' with pA, if available:
 		// for use in HTML fields.
 		if( ms ) {
-			if( pA ) return i18n[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-			return i18n[ms] 
+			if( pA ) return self[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
+			return self[ms] 
 		};
 		return ''
-	},
-	lookup: function( lb ) { 
+	};
+	self.lookup = function( lb ) { 
 		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
 		// for use in regular text fields.
-		return i18n[lb.toJsId()] || lb
-	}
-};
+		return self[lb.toJsId()] || lb
+	};
 
-i18n.IcoUser = '<span class="glyphicon glyphicon-user"/>';
-i18n.IcoSpecification = '<span class="glyphicon glyphicon-book"/>';
-//i18n.IcoReadSpecification = '<span class="glyphicon glyphicon-eye-open"/>';
-//i18n.IcoUpdateSpecification = '<span class="glyphicon glyphicon-pencil"/>';
-//i18n.IcoRead = '<span class="glyphicon glyphicon-eye-open"/>';
-i18n.IcoImport = '<span class="glyphicon glyphicon-import"/>';
-i18n.IcoExport = '<span class="glyphicon glyphicon-export"/>';
-i18n.IcoAdminister = '<span class="glyphicon glyphicon-wrench"/>';
-i18n.IcoUpdate = '<span class="glyphicon glyphicon-pencil"/>';
-i18n.IcoDelete = '<span class="glyphicon glyphicon-remove"/>';
-i18n.IcoAdd = '<span class="glyphicon glyphicon-plus"/>';
-i18n.IcoClone = '<span class="glyphicon glyphicon-duplicate"/>';
-i18n.IcoPrevious = '<span class="glyphicon glyphicon-chevron-up"/>';
-i18n.IcoNext = '<span class="glyphicon glyphicon-chevron-down"/>';
-i18n.IcoGo = '<span class="glyphicon glyphicon-search"/>';
-i18n.IcoFilter = '<span class="glyphicon glyphicon-filter"/>';
-i18n.IcoComment = '<span class="glyphicon glyphicon-comment"/>';
-i18n.IcoURL = '<span class="glyphicon glyphicon-map-marker"/>';
-i18n.IcoLogout = '<span class="glyphicon glyphicon-log-out"/>';
-i18n.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
+	self.IcoUser = '<span class="glyphicon glyphicon-user"/>';
+	self.IcoSpecification = '<span class="glyphicon glyphicon-book"/>';
+//	self.IcoReadSpecification = '<span class="glyphicon glyphicon-eye-open"/>';
+//	self.IcoUpdateSpecification = '<span class="glyphicon glyphicon-pencil"/>';
+//	self.IcoRead = '<span class="glyphicon glyphicon-eye-open"/>';
+	self.IcoImport = '<span class="glyphicon glyphicon-import"/>';
+	self.IcoExport = '<span class="glyphicon glyphicon-export"/>';
+	self.IcoAdminister = '<span class="glyphicon glyphicon-wrench"/>';
+	self.IcoUpdate = '<span class="glyphicon glyphicon-pencil"/>';
+	self.IcoDelete = '<span class="glyphicon glyphicon-remove"/>';
+	self.IcoAdd = '<span class="glyphicon glyphicon-plus"/>';
+	self.IcoClone = '<span class="glyphicon glyphicon-duplicate"/>';
+	self.IcoPrevious = '<span class="glyphicon glyphicon-chevron-up"/>';
+	self.IcoNext = '<span class="glyphicon glyphicon-chevron-down"/>';
+	self.IcoGo = '<span class="glyphicon glyphicon-search"/>';
+	self.IcoFilter = '<span class="glyphicon glyphicon-filter"/>';
+	self.IcoComment = '<span class="glyphicon glyphicon-comment"/>';
+	self.IcoURL = '<span class="glyphicon glyphicon-map-marker"/>';
+	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"/>';
+	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 
 // Buttons:
-//i18n.LblImportReqif = 'ReqIF Import';
-//i18n.LblImportCsv = 'CSV Import';
-//i18n.LblImportXls = 'XLS Import';
-//i18n.LblExportPdf = 'PDF Export';
-i18n.LblAll = "Tous";
-i18n.LblAllObjects = "Tous les ressources";
-i18n.LblImport = 'Importer';
-i18n.LblExport = 'Exporter';
-i18n.LblExportReqif = 'Exporter fichier ReqIF';
-i18n.LblExportSpecif = 'Exporter fichier SpecIF';
-i18n.LblAdminister = 'Administrer';
-i18n.LblCreate = 'Créer';
-i18n.LblRead = 'Lire';
-i18n.LblUpdate = 'Mettre à jour';
-i18n.LblUpdateProject = "Mettre à jour les attributs du projet";
-i18n.LblUpdateSpec = "Mettre à jour les attributs de l'arborescence";
-i18n.LblUpdateTypes = 'Mettre à jour les types & permissions';
-i18n.LblUpdateObject = "Mettre à jour cette ressource";
-i18n.LblDelete = 'Effacer';
-i18n.LblDeleteProject = 'Effacer ce project';
-i18n.LblDeleteType = 'Effacer ce type';
-i18n.LblDeleteObject = 'Effacer cette ressource';
-i18n.LblDeleteAttribute = 'Effacer cet attribut';
-i18n.LblDeleteRelation = 'Effacer cette affirmation';
-i18n.LblDeleteRole = 'Effacer ce rôle';
-i18n.LblAdd = 'Créer';
-i18n.LblAddItem = 'Créer ~A';
-i18n.LblAddProject = "Créer un projet";
-i18n.LblAddType = "Créer un type";
-i18n.LblAddDataType = "Créer un type de données";
-i18n.LblAddObjType = "Créer un type de ressources";
-i18n.LblAddRelType = "Créer un type d'affirmations";
-i18n.LblAddSpcType = "Créer un type d'arborescence";
-i18n.LblAddTypeComment = 'Créer les types pour commentaires';
-i18n.LblAddObject = "Créer une ressource";
-i18n.LblAddRelation = "Créer une affirmation";
-i18n.LblAddAttribute = "Créer un attribut";
-i18n.LblAddUser = "Créer un utilisateur";
-i18n.LblAddComment = 'Commenter';
-i18n.LblAddCommentTo = "Ajouter un commentaire à '~A':";
-i18n.LblAddCommentToObject = 'Commenter cette ressource';
-i18n.LblAddFolder = "Créer un dossier";
-i18n.LblAddSpec = "Créer une arborescence";
-i18n.LblClone = 'Cloner';
-i18n.LblCloneObject = 'Cloner cette ressource';
-i18n.LblCloneType = 'Cloner ce type';
-i18n.LblCloneSpec = 'Cloner cet arborescence';
-i18n.LblUserName = "Nom d'utilisateur";
-i18n.LblPassword = 'Mot de passe';
-i18n.LblTitle = 'Titre';
-i18n.LblProject = 'Projet';
-i18n.LblName = 'Nom';
-i18n.LblFirstName = 'Prénom';
-i18n.LblLastName = 'Nom';
-i18n.LblOrganizations = 'Organisation';  // until multiple orgs per user are supported
-i18n.LblEmail = 'e-mail';
-i18n.LblFileName = 'Nom de fichier';
-i18n.LblRoleGeneralAdmin = 'GENERAL-ADMIN';
-i18n.LblRoleProjectAdmin = 'ADMIN';
-i18n.LblRoleUserAdmin = 'USER-ADMIN';
-i18n.LblRoleReader = 'READER';
-i18n.LblRoleReqif = 'REQIF';
-i18n.LblGlobalActions = 'Actions';
-i18n.LblItemActions = 'Actions';
-i18n.LblIdentifier = "Identifiant";
-i18n.LblProjectName = 'Nom de projet';
-i18n.LblDescription = 'Description';
-i18n.LblState = 'Statut';
-i18n.LblPriority = 'Priorité';
-i18n.LblCategory = 'Catégorie';
-i18n.LblAttribute = 'Attribut';
-i18n.LblAttributes = 'Attributs';
-i18n.LblAttributeValueRange = "Plage de valeurs";
-i18n.LblAttributeValues = "Valeurs";
-i18n.LblAttributeValue = "Valeur";
-i18n.LblTool = "Outil auteur";
-i18n.LblMyRole = 'Mon rôle';
-i18n.LblRevision = 'Révision';
-i18n.LblCreatedAt = 'Créé le';
-i18n.LblCreatedBy = 'Créé par';
-i18n.LblCreatedThru = 'Créé par';
-i18n.LblModifiedAt = 'Modifié le';
-i18n.LblModifiedBy = 'Modifié par';
-i18n.LblProjectDetails = 'Attributs';
-i18n.LblProjectUsers = '<span class="glyphicon glyphicon-user"/>&#160;Utilisateur de ce projet';
-i18n.LblOtherUsers = 'Autres utilisateurs';
-i18n.LblUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projets de cet utilisateur';
-i18n.LblOtherProjects = 'Autres projets';
-i18n.LblType = 'Type';
-i18n.LblTypes = 'Types';
-i18n.LblDataTypes = 'Types de données';
-i18n.LblDataType = 'Type de données';
-i18n.LblDataTypeTitle = 'Nom de type de données';
-i18n.LblSpecTypes = "Types";
-i18n.LblSpecType = "Type";
-i18n.LblResourceClasses = "Classes de ressource";
-i18n.LblResourceClass = "Classe de ressource";
-i18n.LblStatementClasses = "Classes d'affirmation";
-i18n.LblStatementClass = "Classe d'affirmation";
-//i18n.LblRelGroupTypes = "Types de groupe d'affirmations";
-//i18n.LblRelGroupType = "Type de groupe d'affirmation";
-i18n.LblSpecificationTypes = "Types d'arborescence";
-i18n.hierarchyType = 
-i18n.LblSpecificationType = "Type d'arborescence";
-//i18n.LblRifTypes = 'Types';
-//i18n.rifType = 
-//i18n.LblRifType = 'Type';
-i18n.LblSpecTypeTitle = "Nom";
-i18n.LblAttributeTitle = "Nom d'attribut";
-i18n.LblSecondaryFiltersForObjects = i18n.IcoFilter+"&#160;Filtres à facette pour '~A'";
-i18n.LblPermissions = 'Autorisations';
-i18n.LblRoles = 'Rôles';
-i18n.LblFormat = 'Format';
-i18n.LblOptions = 'Options';
-i18n.LblFileFormat = 'Format de fichier';
-i18n.modelElements = 'Élements de modèle';
-i18n.withOtherProperties = 'avec autres attributes';
-i18n.withStatements = 'avec affirmations';
-i18n.LblStringMatch = '<span class="glyphicon glyphicon-text-background" />&#160;Recherche de texte';
-i18n.LblWordBeginnings = 'Seulement mots commençant par';
-i18n.LblWholeWords = 'Seulement mots entiers';
-i18n.LblCaseSensitive = 'Respecter majuscules et minuscules';
-i18n.LblExcludeEnums = 'Ignorer énumérateurs';
-i18n.LblNotAssigned = '(sans attribution de valeur)';
-i18n.LblPrevious = 'Dernier';
-i18n.LblNext = 'Prochain';
-i18n.LblPreviousStep = 'Au précédent';
-i18n.LblNextStep = 'Au suivant';
-i18n.LblGo = 'Démarrer';
-i18n.LblAll = 'Tous';
-i18n.LblHitCount = 'Score';
-i18n.LblRelateAs = "Relier comme";
-i18n.LblSource = "Sujet";
-i18n.LblTarget = "Objet";
-i18n.LblEligibleSources = "Ressources éligible comme "+i18n.LblSource;
-i18n.LblEligibleTargets = "Ressources éligible comme "+i18n.LblTarget;
-i18n.LblSaveRelationAsSource = 'Relier ressource comme '+LblSource;
-i18n.LblSaveRelationAsTarget = 'Relier ressource comme '+LblTarget;
-i18n.LblIcon = 'Symbole';
-i18n.LblCreation = 'Création';
-i18n.LblCreateLink1 = "&#x2776;&#160;Affirmation désirée";
-i18n.LblCreateLink2 = "&#x2777;&#160;Ressource à relier";
-i18n.LblReferences = "Références";
-i18n.LblInherited = "hérité";
-i18n.LblMaxLength = "Longueur max.";
-i18n.LblMinValue = "Valeur min.";
-i18n.LblMaxValue = "Valeur max.";
-i18n.LblAccuracy = "Décimales";
-i18n.LblEnumValues = "Valeurs (sép. par virgules)";
-i18n.LblSingleChoice = "Choix unique";
-i18n.LblMultipleChoice = "Choix multiple";
-i18n.LblDirectLink = "Lien direct";
+//	self.LblImportReqif = 'ReqIF Import';
+//	self.LblImportCsv = 'CSV Import';
+//	self.LblImportXls = 'XLS Import';
+//	self.LblExportPdf = 'PDF Export';
+	self.LblAll = "Tous";
+	self.LblAllObjects = "Tous les ressources";
+	self.LblImport = 'Importer';
+	self.LblExport = 'Exporter';
+	self.LblExportReqif = 'Exporter fichier ReqIF';
+	self.LblExportSpecif = 'Exporter fichier SpecIF';
+	self.LblAdminister = 'Administrer';
+	self.LblCreate = 'Créer';
+	self.LblRead = 'Lire';
+	self.LblUpdate = 'Mettre à jour';
+	self.LblUpdateProject = "Mettre à jour les attributs du projet";
+	self.LblUpdateSpec = "Mettre à jour les attributs de l'arborescence";
+	self.LblUpdateTypes = 'Mettre à jour les types & permissions';
+	self.LblUpdateObject = "Mettre à jour cette ressource";
+	self.LblDelete = 'Effacer';
+	self.LblDeleteProject = 'Effacer ce project';
+	self.LblDeleteType = 'Effacer ce type';
+	self.LblDeleteObject = 'Effacer cette ressource';
+	self.LblDeleteAttribute = 'Effacer cet attribut';
+	self.LblDeleteRelation = 'Effacer cette affirmation';
+	self.LblDeleteRole = 'Effacer ce rôle';
+	self.LblAdd = 'Créer';
+	self.LblAddItem = 'Créer ~A';
+	self.LblAddProject = "Créer un projet";
+	self.LblAddType = "Créer un type";
+	self.LblAddDataType = "Créer un type de données";
+	self.LblAddObjType = "Créer un type de ressources";
+	self.LblAddRelType = "Créer un type d'affirmations";
+	self.LblAddSpcType = "Créer un type d'arborescence";
+	self.LblAddTypeComment = 'Créer les types pour commentaires';
+	self.LblAddObject = "Créer une ressource";
+	self.LblAddRelation = "Créer une affirmation";
+	self.LblAddAttribute = "Créer un attribut";
+	self.LblAddUser = "Créer un utilisateur";
+	self.LblAddComment = 'Commenter';
+	self.LblAddCommentTo = "Ajouter un commentaire à '~A':";
+	self.LblAddCommentToObject = 'Commenter cette ressource';
+	self.LblAddFolder = "Créer un dossier";
+	self.LblAddSpec = "Créer une arborescence";
+	self.LblClone = 'Cloner';
+	self.LblCloneObject = 'Cloner cette ressource';
+	self.LblCloneType = 'Cloner ce type';
+	self.LblCloneSpec = 'Cloner cet arborescence';
+	self.LblUserName = "Nom d'utilisateur";
+	self.LblPassword = 'Mot de passe';
+	self.LblTitle = 'Titre';
+	self.LblProject = 'Projet';
+	self.LblName = 'Nom';
+	self.LblFirstName = 'Prénom';
+	self.LblLastName = 'Nom';
+	self.LblOrganizations = 'Organisation';  // until multiple orgs per user are supported
+	self.LblEmail = 'e-mail';
+	self.LblFileName = 'Nom de fichier';
+	self.LblRoleGeneralAdmin = 'GENERAL-ADMIN';
+	self.LblRoleProjectAdmin = 'PROJECT-ADMIN';
+	self.LblRoleUserAdmin = 'USER-ADMIN';
+	self.LblRoleReader = 'READER';
+//	self.LblRoleReqif = 'REQIF';
+	self.LblGlobalActions = 'Actions';
+	self.LblItemActions = 'Actions';
+	self.LblIdentifier = "Identifiant";
+	self.LblProjectName = 'Nom de projet';
+	self.LblDescription = 'Description';
+	self.LblState = 'Statut';
+	self.LblPriority = 'Priorité';
+	self.LblCategory = 'Catégorie';
+	self.LblAttribute = 'Attribut';
+	self.LblAttributes = 'Attributs';
+	self.LblAttributeValueRange = "Plage de valeurs";
+	self.LblAttributeValues = "Valeurs";
+	self.LblAttributeValue = "Valeur";
+	self.LblTool = "Outil auteur";
+	self.LblMyRole = 'Mon rôle';
+	self.LblRevision = 'Révision';
+	self.LblCreatedAt = 'Créé le';
+	self.LblCreatedBy = 'Créé par';
+	self.LblCreatedThru = 'Créé par';
+	self.LblModifiedAt = 'Modifié le';
+	self.LblModifiedBy = 'Modifié par';
+	self.LblProjectDetails = 'Attributs';
+	self.LblProjectUsers = '<span class="glyphicon glyphicon-user"/>&#160;Utilisateur de ce projet';
+	self.LblOtherUsers = 'Autres utilisateurs';
+	self.LblUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projets de cet utilisateur';
+	self.LblOtherProjects = 'Autres projets';
+	self.LblType = 'Type';
+	self.LblTypes = 'Types';
+	self.LblDataTypes = 'Types de données';
+	self.LblDataType = 'Type de données';
+	self.LblDataTypeTitle = 'Nom de type de données';
+	self.LblSpecTypes = "Types";
+	self.LblSpecType = "Type";
+	self.LblResourceClasses = "Classes de ressource";
+	self.LblResourceClass = "Classe de ressource";
+	self.LblStatementClasses = "Classes d'affirmation";
+	self.LblStatementClass = "Classe d'affirmation";
+//	self.LblRelGroupTypes = "Types de groupe d'affirmations";
+//	self.LblRelGroupType = "Type de groupe d'affirmation";
+	self.LblSpecificationTypes = "Types d'arborescence";
+	self.hierarchyType = 
+	self.LblSpecificationType = "Type d'arborescence";
+//	self.LblRifTypes = 'Types';
+//	self.rifType = 
+//	self.LblRifType = 'Type';
+	self.LblSpecTypeTitle = "Nom";
+	self.LblAttributeTitle = "Nom d'attribut";
+	self.LblSecondaryFiltersForObjects = 	self.IcoFilter+"&#160;Filtres à facette pour '~A'";
+	self.LblPermissions = 'Autorisations';
+	self.LblRoles = 'Rôles';
+	self.LblFormat = 'Format';
+	self.LblOptions = 'Options';
+	self.LblFileFormat = 'Format de fichier';
+	self.modelElements = 'Élements de modèle';
+	self.withOtherProperties = 'avec autres attributes';
+	self.withStatements = 'avec affirmations';
+	self.LblStringMatch = '<span class="glyphicon glyphicon-text-background" />&#160;Recherche de texte';
+	self.LblWordBeginnings = 'Seulement mots commençant par';
+	self.LblWholeWords = 'Seulement mots entiers';
+	self.LblCaseSensitive = 'Respecter majuscules et minuscules';
+	self.LblExcludeEnums = 'Ignorer énumérateurs';
+	self.LblNotAssigned = '(sans attribution de valeur)';
+	self.LblPrevious = 'Dernier';
+	self.LblNext = 'Prochain';
+	self.LblPreviousStep = 'Au précédent';
+	self.LblNextStep = 'Au suivant';
+	self.LblGo = 'Démarrer';
+	self.LblAll = 'Tous';
+	self.LblHitCount = 'Score';
+	self.LblRelateAs = "Relier comme";
+	self.LblSource = "Sujet";
+	self.LblTarget = "Objet";
+	self.LblEligibleSources = "Ressources éligible comme "+	self.LblSource;
+	self.LblEligibleTargets = "Ressources éligible comme "+	self.LblTarget;
+	self.LblSaveRelationAsSource = 'Relier ressource comme '+LblSource;
+	self.LblSaveRelationAsTarget = 'Relier ressource comme '+LblTarget;
+	self.LblIcon = 'Symbole';
+	self.LblCreation = 'Création';
+	self.LblCreateLink1 = "&#x2776;&#160;Affirmation désirée";
+	self.LblCreateLink2 = "&#x2777;&#160;Ressource à relier";
+	self.LblReferences = "Références";
+	self.LblInherited = "hérité";
+	self.LblMaxLength = "Longueur max.";
+	self.LblMinValue = "Valeur min.";
+	self.LblMaxValue = "Valeur max.";
+	self.LblAccuracy = "Décimales";
+	self.LblEnumValues = "Valeurs (sép. par virgules)";
+	self.LblSingleChoice = "Choix unique";
+	self.LblMultipleChoice = "Choix multiple";
+	self.LblDirectLink = "Lien direct";
 
-i18n.BtnLogin = '<span class="glyphicon glyphicon-log-in"/>&#160;Se connecter';
-i18n.BtnLogout = '<span class="glyphicon glyphicon-log-out"/>&#160;Se déconnecter';
-i18n.BtnProfile = 'Profile';
-i18n.BtnBack = 'Retour';
-i18n.BtnCancel = 'Annuler';
-i18n.BtnCancelImport = "Interrompre";
-i18n.BtnApply = 'Appliquer';
-i18n.BtnDelete = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer';
-i18n.BtnDeleteObject = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer la ressource avec ses references';
-i18n.BtnDeleteObjectRef = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer cette reference de ressource';
-i18n.BtnImport = '<span class="glyphicon glyphicon-import"/>&#160;Importer';
-i18n.BtnCreate = '<span class="glyphicon glyphicon-import"/>&#160;Créer';
-i18n.BtnReplace = '<span class="glyphicon glyphicon-import"/>&#160;Remplacer';
-i18n.BtnAdopt = '<span class="glyphicon glyphicon-import"/>&#160;Adopter';
-i18n.BtnUpdate = '<span class="glyphicon glyphicon-import"/>&#160;'+i18n.LblUpdate;
-//i18n.BtnImportSpecif = '<span class="glyphicon glyphicon-import"/>&#160;SpecIF';
-//i18n.BtnImportReqif = '<span class="glyphicon glyphicon-import"/>&#160;ReqIF';
-//i18n.BtnImportXls = '<span class="glyphicon glyphicon-import"/>&#160;xlsx';
-//i18n.BtnProjectFromTemplate = "Créer un projet avec métadonnées ReqIF";
-i18n.BtnRead = '<span class="glyphicon glyphicon-eye-open"/>&#160;Lire';
-i18n.BtnExport = '<span class="glyphicon glyphicon-export"/>&#160;Exporter';
-//i18n.BtnExportSpecif = '<span class="glyphicon glyphicon-export"/>&#160;SpecIF';
-//i18n.BtnExportReqif = '<span class="glyphicon glyphicon-export"/>&#160;ReqIF';
-i18n.BtnAdd = '<span class="glyphicon glyphicon-plus"/>&#160;Ajouter';
-i18n.BtnAddUser = '<span class="glyphicon glyphicon-plus"/>&#160;Utilisateur';
-i18n.BtnAddProject = '<span class="glyphicon glyphicon-plus"/>&#160;'+i18n.LblProject;
-i18n.BtnAddSpec = '<span class="glyphicon glyphicon-plus"/>&#160;Arborescence';
-i18n.BtnAddFolder = '<span class="glyphicon glyphicon-plus"/>&#160;Dossier';
-i18n.BtnAddAttribute = '<span class="glyphicon glyphicon-plus"/>&#160;Attribut';
-i18n.BtnAddTypeComment = '<span class="glyphicon glyphicon-plus"/>&#160;Classes pour commentaires';
-i18n.BtnClone = '<span class="glyphicon glyphicon-duplicate"/>&#160;Clone';
-i18n.BtnEdit = '<span class="glyphicon glyphicon-pencil"/>&#160;Modifier';
-i18n.BtnSave = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer';
-i18n.BtnSaveRole = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer rôle';
-i18n.BtnSaveAttr = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer attribut';
-i18n.BtnInsert = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer';
-i18n.BtnInsertSuccessor = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer après';
-i18n.BtnInsertChild = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer en dessous';
-i18n.BtnSaveRelation = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer affirmation';
-i18n.BtnSaveItem = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer ~A';
-i18n.BtnDetails = 'Détails';
-i18n.BtnAddRole = '<span class="glyphicon glyphicon-plus" />&#160;Rôle';
-i18n.BtnFileSelect = '<span class="glyphicon glyphicon-plus" />&#160;Choisir un fichier ...';
-i18n.BtnPrevious = '<span class="glyphicon glyphicon-chevron-up"/>&#160;'+i18n.LblPrevious;
-i18n.BtnNext = '<span class="glyphicon glyphicon-chevron-down"/>&#160;'+i18n.LblNext;
-i18n.BtnGo = i18n.IcoGo+'&#160;'+i18n.LblGo;
-i18n.BtnFilterReset = i18n.IcoFilter+'&#160;Neuf';
-i18n.BtnSelectHierarchy = "Choix d'une arborescence";
+	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"/>&#160;Se connecter';
+	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"/>&#160;Se déconnecter';
+	self.BtnProfile = 'Profile';
+	self.BtnBack = 'Retour';
+	self.BtnCancel = 'Annuler';
+	self.BtnCancelImport = "Interrompre";
+	self.BtnApply = 'Appliquer';
+	self.BtnDelete = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer';
+	self.BtnDeleteObject = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer la ressource avec ses references';
+	self.BtnDeleteObjectRef = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer cette reference de ressource';
+	self.BtnImport = '<span class="glyphicon glyphicon-import"/>&#160;Importer';
+	self.BtnCreate = '<span class="glyphicon glyphicon-import"/>&#160;Créer';
+	self.BtnReplace = '<span class="glyphicon glyphicon-import"/>&#160;Remplacer';
+	self.BtnAdopt = '<span class="glyphicon glyphicon-import"/>&#160;Adopter';
+	self.BtnUpdate = '<span class="glyphicon glyphicon-import"/>&#160;'+	self.LblUpdate;
+//	self.BtnImportSpecif = '<span class="glyphicon glyphicon-import"/>&#160;SpecIF';
+//	self.BtnImportReqif = '<span class="glyphicon glyphicon-import"/>&#160;ReqIF';
+//	self.BtnImportXls = '<span class="glyphicon glyphicon-import"/>&#160;xlsx';
+//	self.BtnProjectFromTemplate = "Créer un projet avec métadonnées ReqIF";
+	self.BtnRead = '<span class="glyphicon glyphicon-eye-open"/>&#160;Lire';
+	self.BtnExport = '<span class="glyphicon glyphicon-export"/>&#160;Exporter';
+//	self.BtnExportSpecif = '<span class="glyphicon glyphicon-export"/>&#160;SpecIF';
+//	self.BtnExportReqif = '<span class="glyphicon glyphicon-export"/>&#160;ReqIF';
+	self.BtnAdd = '<span class="glyphicon glyphicon-plus"/>&#160;Ajouter';
+	self.BtnAddUser = '<span class="glyphicon glyphicon-plus"/>&#160;Utilisateur';
+	self.BtnAddProject = '<span class="glyphicon glyphicon-plus"/>&#160;'+	self.LblProject;
+	self.BtnAddSpec = '<span class="glyphicon glyphicon-plus"/>&#160;Arborescence';
+	self.BtnAddFolder = '<span class="glyphicon glyphicon-plus"/>&#160;Dossier';
+	self.BtnAddAttribute = '<span class="glyphicon glyphicon-plus"/>&#160;Attribut';
+	self.BtnAddTypeComment = '<span class="glyphicon glyphicon-plus"/>&#160;Classes pour commentaires';
+	self.BtnClone = '<span class="glyphicon glyphicon-duplicate"/>&#160;Clone';
+	self.BtnEdit = '<span class="glyphicon glyphicon-pencil"/>&#160;Modifier';
+	self.BtnSave = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer';
+	self.BtnSaveRole = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer rôle';
+	self.BtnSaveAttr = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer attribut';
+	self.BtnInsert = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer';
+	self.BtnInsertSuccessor = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer après';
+	self.BtnInsertChild = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer en dessous';
+	self.BtnSaveRelation = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer affirmation';
+	self.BtnSaveItem = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer ~A';
+	self.BtnDetails = 'Détails';
+	self.BtnAddRole = '<span class="glyphicon glyphicon-plus" />&#160;Rôle';
+	self.BtnFileSelect = '<span class="glyphicon glyphicon-plus" />&#160;Choisir un fichier ...';
+	self.BtnPrevious = '<span class="glyphicon glyphicon-chevron-up"/>&#160;'+	self.LblPrevious;
+	self.BtnNext = '<span class="glyphicon glyphicon-chevron-down"/>&#160;'+	self.LblNext;
+	self.BtnGo = 	self.IcoGo+'&#160;'+	self.LblGo;
+	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neuf';
+	self.BtnSelectHierarchy = "Choix d'une arborescence";
 
 // Tabs:
-i18n.TabAll = '<span class="glyphicon glyphicon-list"/>';   
-i18n.TabUserList = '<span class="glyphicon glyphicon-list"/>&#160;Utilisateurs';
-i18n.TabProjectList = '<span class="glyphicon glyphicon-list"/>&#160;Projets';
-//i18n.TabProjectDetails = '<span class="glyphicon glyphicon-pencil"/>&#160;Attributs';  // métadonnées
-i18n.TabUserDetails = '<span class="glyphicon glyphicon-pencil"/>&#160;Attributs';
-i18n.TabProjectUsers = '<span class="glyphicon glyphicon-user"/>&#160;Utilisateurs';
-i18n.TabUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projets';
-i18n.TabPermissions = '<span class="glyphicon glyphicon-lock"/>&#160;Autorisations';
-i18n.TabTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblTypes;
-i18n.TabDataTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblDataTypes;
-i18n.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblResourceClasses;
-i18n.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblResourceClasses;
-i18n.TabRelationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelationTypes;
-//i18n.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRelGroupTypes;
-i18n.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblSpecificationTypes;
-//i18n.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+i18n.LblRifTypes;
-i18n.TabTable = '<span class="glyphicon glyphicon-th"/>&#160;Table';
-i18n.TabDocument = '<span class="glyphicon glyphicon-book"/>&#160;Document';
-i18n.TabFind = '<span class="glyphicon glyphicon-search"/>&#160;Recherche';
-i18n.TabFilter = i18n.IcoFilter+'&#160;Filtre';
-i18n.TabPage = '<span class="glyphicon glyphicon-file"/>&#160;Page';
-i18n.TabRevisions = '<span class="glyphicon glyphicon-grain"/>&#160;Révisions';
-i18n.TabTimeline = '<span class="glyphicon glyphicon-film"/>&#160;Chronologie';
-i18n.TabRelations = '<span class="glyphicon glyphicon-link"/>&#160;Affirmations';
-i18n.TabSort = '<span class="glyphicon glyphicon-magnet"/>&#160;Triage';
-i18n.TabAttachments = '<span class="glyphicon glyphicon-paperclip"/>&#160;Images et fichiers';
-i18n.TabComments = '<span class="glyphicon glyphicon-comment"/>&#160;Commentaires';
-i18n.TabReports = '<span class="glyphicon glyphicon-stats"/>&#160;Rapports';
+	self.TabAll = '<span class="glyphicon glyphicon-list"/>';   
+	self.TabUserList = '<span class="glyphicon glyphicon-list"/>&#160;Utilisateurs';
+	self.TabProjectList = '<span class="glyphicon glyphicon-list"/>&#160;Projets';
+//	self.TabProjectDetails = '<span class="glyphicon glyphicon-pencil"/>&#160;Attributs';  // métadonnées
+	self.TabUserDetails = '<span class="glyphicon glyphicon-pencil"/>&#160;Attributs';
+	self.TabProjectUsers = '<span class="glyphicon glyphicon-user"/>&#160;Utilisateurs';
+	self.TabUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projets';
+	self.TabPermissions = '<span class="glyphicon glyphicon-lock"/>&#160;Autorisations';
+	self.TabTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblTypes;
+	self.TabDataTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblDataTypes;
+	self.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblResourceClasses;
+	self.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblResourceClasses;
+	self.TabRelationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblRelationTypes;
+//	self.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblRelGroupTypes;
+	self.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblSpecificationTypes;
+//	self.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblRifTypes;
+	self.TabTable = '<span class="glyphicon glyphicon-th"/>&#160;Table';
+	self.TabDocument = '<span class="glyphicon glyphicon-book"/>&#160;Document';
+	self.TabFind = '<span class="glyphicon glyphicon-search"/>&#160;Recherche';
+	self.TabFilter = 	self.IcoFilter+'&#160;Filtre';
+	self.TabPage = '<span class="glyphicon glyphicon-file"/>&#160;Page';
+	self.TabRevisions = '<span class="glyphicon glyphicon-grain"/>&#160;Révisions';
+	self.TabTimeline = '<span class="glyphicon glyphicon-film"/>&#160;Chronologie';
+	self.TabRelations = '<span class="glyphicon glyphicon-link"/>&#160;Affirmations';
+	self.TabSort = '<span class="glyphicon glyphicon-magnet"/>&#160;Triage';
+	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"/>&#160;Images et fichiers';
+	self.TabComments = '<span class="glyphicon glyphicon-comment"/>&#160;Commentaires';
+	self.TabReports = '<span class="glyphicon glyphicon-stats"/>&#160;Rapports';
 
 // Functions:
-i18n.FnProjectCreate = '<span class="glyphicon glyphicon-plus"/>&#160;Projet';
-i18n.FnProjectImport = '<span class="glyphicon glyphicon-import"/>&#160;Importer projet';
-//i18n.FnImportReqif = '<span class="glyphicon glyphicon-import"/>&#160;Importer ReqIF';
-//i18n.FnImportCsv = '<span class="glyphicon glyphicon-import"/>&#160;Importer CSV';
-//i18n.FnImportXls = '<span class="glyphicon glyphicon-import"/>&#160;XLS Import';
-//i18n.FnProjectFromTemplate = '<span class="glyphicon glyphicon-plus"/>&#160;Projet avec métadonnées';
-i18n.FnRefresh = '<span class="glyphicon glyphicon-refresh"/>&#160;Actualiser';
-i18n.FnRead = '<span class="glyphicon glyphicon-eye-open"/>';
-i18n.FnOpen = i18n.FnRead;
-i18n.FnUpdate = '<span class="glyphicon glyphicon-wrench"/>';
-i18n.FnDelete = '<span class="glyphicon glyphicon-remove"/>';
-i18n.FnRemove = i18n.FnDelete;
+	self.FnProjectCreate = '<span class="glyphicon glyphicon-plus"/>&#160;Projet';
+	self.FnProjectImport = '<span class="glyphicon glyphicon-import"/>&#160;Importer projet';
+//	self.FnImportReqif = '<span class="glyphicon glyphicon-import"/>&#160;Importer ReqIF';
+//	self.FnImportCsv = '<span class="glyphicon glyphicon-import"/>&#160;Importer CSV';
+//	self.FnImportXls = '<span class="glyphicon glyphicon-import"/>&#160;XLS Import';
+//	self.FnProjectFromTemplate = '<span class="glyphicon glyphicon-plus"/>&#160;Projet avec métadonnées';
+	self.FnRefresh = '<span class="glyphicon glyphicon-refresh"/>&#160;Actualiser';
+	self.FnRead = '<span class="glyphicon glyphicon-eye-open"/>';
+	self.FnOpen = 	self.FnRead;
+	self.FnUpdate = '<span class="glyphicon glyphicon-wrench"/>';
+	self.FnDelete = '<span class="glyphicon glyphicon-remove"/>';
+	self.FnRemove = 	self.FnDelete;
 
 // ReqIF attribute names (replace any '.' by '_', so 'ReqIF.Text' becomes 'ReqIF_Text ):
-i18n.ReqIF_ForeignID = 'Identifiant';
-i18n.ReqIF_ChapterName = 'Titre';
-i18n.ReqIF_Name = 'Titre';
-i18n.ReqIF_Text = 'Texte';
-i18n.ReqIF_ForeignCreatedOn = i18n.LblCreatedAt;
-i18n.ReqIF_ForeignCreatedBy = i18n.LblCreatedBy;
-i18n.ReqIF_ForeignCreatedThru = i18n.LblCreatedThru;
-i18n.ReqIF_ForeignModifiedOn = i18n.LblModifiedAt;
-i18n.ReqIF_ForeignModifiedBy = i18n.LblModifiedBy;
-i18n.ReqIF_Revision = i18n.LblRevision;
-i18n.ReqIF_Description = i18n.LblDescription;
-i18n.ReqIF_ChangeDescription = 'Description de la modification';
-i18n.ReqIF_Project = i18n.LblProject;
-i18n.ReqIF_ForeignState = i18n.LblState;
-i18n.ReqIF_Category = i18n.LblCategory;
-i18n.ReqIF_Prefix = 'Préfixe';
-i18n.ReqIF_FitCriteria = "Critères d'acceptation";
-i18n.ReqIF_AssociatedFiles = 'Fichiers';
-i18n.ReqIF_ChapterNumber = 'Numéro de chapitre';   // shouldn't be used, as an object cannot (should not) know its position in the outline
+	self.ReqIF_ForeignID = 'Identifiant';
+	self.ReqIF_ChapterName = 'Titre';
+	self.ReqIF_Name = 'Titre';
+	self.ReqIF_Text = 'Texte';
+	self.ReqIF_ForeignCreatedOn = 	self.LblCreatedAt;
+	self.ReqIF_ForeignCreatedBy = 	self.LblCreatedBy;
+	self.ReqIF_ForeignCreatedThru = 	self.LblCreatedThru;
+	self.ReqIF_ForeignModifiedOn = 	self.LblModifiedAt;
+	self.ReqIF_ForeignModifiedBy = 	self.LblModifiedBy;
+	self.ReqIF_Revision = 	self.LblRevision;
+	self.ReqIF_Description = 	self.LblDescription;
+	self.ReqIF_ChangeDescription = 'Description de la modification';
+	self.ReqIF_Project = 	self.LblProject;
+	self.ReqIF_ForeignState = 	self.LblState;
+	self.ReqIF_Category = 	self.LblCategory;
+	self.ReqIF_Prefix = 'Préfixe';
+	self.ReqIF_FitCriteria = "Critères d'acceptation";
+	self.ReqIF_AssociatedFiles = 'Fichiers';
+	self.ReqIF_ChapterNumber = 'Numéro de chapitre';   // shouldn't be used, as an object cannot (should not) know its position in the outline
 // Dublin Core (DCMI) attribute names:
-i18n.DC_title =
-i18n.dcterms_title = "Titre";
-i18n.DC_description =
-i18n.dcterms_description = "Description";
-i18n.DC_identifier =
-i18n.dcterms_identifier = i18n.LblIdentifier;
-i18n.DC_type =
-i18n.dcterms_type = "Type d'élément";
-i18n.DC_creator =
-i18n.dcterms_creator = "Auteur";
-i18n.DC_source =
-i18n.dcterms_source = "Source";
-i18n.DC_subject =
-i18n.dcterms_subject = "Mots-clé";
-i18n.DC_modified =
-i18n.dcterms_modified = i18n.LblModifiedAt;
-//i18n.dcterms_contributor = "";
-//i18n.dcterms_serviceProvider = "";
-//i18n.dcterms_instanceShape = "";
+	self.DC_title =
+	self.dcterms_title = "Titre";
+	self.DC_description =
+	self.dcterms_description = "Description";
+	self.DC_identifier =
+	self.dcterms_identifier = 	self.LblIdentifier;
+	self.DC_type =
+	self.dcterms_type = "Type d'élément";
+	self.DC_creator =
+	self.dcterms_creator = "Auteur";
+	self.DC_source =
+	self.dcterms_source = "Source";
+	self.DC_subject =
+	self.dcterms_subject = "Mots-clé";
+	self.DC_modified =
+	self.dcterms_modified = 	self.LblModifiedAt;
+//	self.dcterms_contributor = "";
+//	self.dcterms_serviceProvider = "";
+//	self.dcterms_instanceShape = "";
 // OSLC attribute names:
-//i18n.rdf_type = "Type";
-//i18n.oslc_rm_elaboratedBy = "";
-//i18n.oslc_rm_elaborates = "";
-//i18n.oslc_rm_specifiedBy = "";
-//i18n.oslc_rm_specifies = "";
-//i18n.oslc_rm_affectedBy = "";
-//i18n.oslc_rm_trackedBy = "";
-i18n.SpecIF_implements = 
-i18n.oslc_rm_implements = "realise";
-i18n.oslc_rm_implementedBy = "realisé par";
-i18n.oslc_rm_validates = "valides";
-i18n.oslc_rm_validatedBy = "est validé de";
-//i18n.oslc_rm_decomposes = "decomposes";
-//i18n.oslc_rm_decomposedBy = "is decomposed by";
-//i18n.oslc_rm_constrainedBy = "";
-//i18n.oslc_rm_constrains = "";
+//	self.rdf_type = "Type";
+//	self.oslc_rm_elaboratedBy = "";
+//	self.oslc_rm_elaborates = "";
+//	self.oslc_rm_specifiedBy = "";
+//	self.oslc_rm_specifies = "";
+//	self.oslc_rm_affectedBy = "";
+//	self.oslc_rm_trackedBy = "";
+	self.SpecIF_implements = 
+	self.oslc_rm_implements = "realise";
+	self.oslc_rm_implementedBy = "realisé par";
+	self.oslc_rm_validates = "valides";
+	self.oslc_rm_validatedBy = "est validé de";
+//	self.oslc_rm_decomposes = "decomposes";
+//	self.oslc_rm_decomposedBy = "is decomposed by";
+//	self.oslc_rm_constrainedBy = "";
+//	self.oslc_rm_constrains = "";
 // SpecIF entity, relation and attribute names
-i18n.SpecIF_Heading = "Intitulé";
-i18n.SpecIF_Headings = "Intitulés";
-i18n.SpecIF_Name = i18n.LblName;
-//i18n.SpecIF_Names = "Namen";
-i18n.SpecIF_Folder = "Dossier";   // deprecated, use SpecIF:Heading
-i18n.SpecIF_Folders = "Dossiers"; // deprecated, use SpecIF:Headings
-i18n.SpecIF_Chapter = "Chapitre"; // deprecated, use SpecIF:Heading
-i18n.SpecIF_Chapters = "Chapitres";// deprecated, use SpecIF:Headings
-i18n.SpecIF_Paragraph = "Section";
-i18n.SpecIF_Paragraphs = "Sections";
-i18n.SpecIF_Information = "Information";// deprecated, use SpecIF:Paragraph
-i18n.SpecIF_Diagram = "Diagramme";
-i18n.SpecIF_Diagrams = "Diagrammes";
-i18n.SpecIF_View = "Diagramme";		// deprecated
-i18n.SpecIF_Views = "Diagrammes";	// deprecated
-i18n.FMC_Plan = "Plan";
-i18n.FMC_Plans = "Plans";
-i18n.SpecIF_Object = 
-i18n.SpecIF_Resource = "Ressource";
-i18n.SpecIF_Objects = 
-i18n.SpecIF_Resources = "Ressources";
-i18n.SpecIF_Relation = 
-i18n.SpecIF_Statement = "Affirmation";
-i18n.SpecIF_Relations = 
-i18n.SpecIF_Statements = "Affirmations";
-i18n.SpecIF_Property = "Attribut";
-i18n.SpecIF_Properties = "Attributs";
-i18n.FMC_Actor = "Acteur";
-i18n.FMC_Actors = "Acteurs";
-i18n.FMC_State = "État";
-i18n.FMC_States = "États";
-i18n.FMC_Event = "Évenement";
-i18n.FMC_Events = "Évenements";
-i18n.SpecIF_Feature = "Marque";
-i18n.SpecIF_Features = "Marques";
-i18n.SpecIF_Requirement =
-i18n.IREB_Requirement = "Exigence";
-i18n.SpecIF_Requirements = 
-i18n.IREB_Requirements = "Exigences";
-i18n.IREB_RequirementType = i18n.LblType;
-i18n.IREB_RequirementTypeFunction = "Fonction";
-i18n.IREB_RequirementTypeQuality = "Qualité";
-i18n.IREB_RequirementTypeConstraint = "Contrainte";
-i18n.SpecIF_BusinessProcess = 'Processus'; 
-i18n.SpecIF_BusinessProcesses = 'Processus';
-i18n.SpecIF_Rationale = "Motivation";
-i18n.SpecIF_Note = "Remarque";
-i18n.SpecIF_Notes = "Remarques";
-i18n.SpecIF_Comment = "Commentaire";
-i18n.SpecIF_Comments = "Commentaires";
-i18n.SpecIF_Issue = "Problème";
-i18n.SpecIF_Issues = "Problèmes";
-i18n.SpecIF_Outline =
-i18n.SpecIF_Hierarchy = "Arborescence";
-i18n.SpecIF_Outlines =
-i18n.SpecIF_Hierarchies = "Arborescences";
-i18n.SpecIF_Glossary = "Élements de modèle (Glossaire)";
-i18n.SpecIF_Annotations = "Annotations";
-i18n.SpecIF_Collection = "Collection ou Groupe";
-i18n.SpecIF_Collections = "Collections et Groupes";
-i18n.SpecIF_Vote = "Evaluation";
-i18n.SpecIF_Votes = "Evaluations";
-i18n.SpecIF_Effort = "Effort";
-i18n.SpecIF_Risk = 
-i18n.IREB_Risk = "Risque";
-i18n.SpecIF_Benefit = "Bénéfice";
-i18n.SpecIF_Damage = "Dommage";
-i18n.SpecIF_Probability = "Probabilité";
-i18n.SpecIF_shows = "montre";
-i18n.SpecIF_contains = "contient";
-i18n.oslc_rm_satisfiedBy = "satisfait par";
-i18n.oslc_rm_satisfies =
-i18n.SpecIF_satisfies =
-i18n.IREB_satisfies = "satisfait";
-i18n.SpecIF_modifies =
-i18n.SpecIF_stores = "écrit et lit";
-i18n.SpecIF_reads = "lit";
-i18n.SpecIF_writes = "écrit";
-i18n.SpecIF_sendsTo = "émets à";
-i18n.SpecIF_receivesFrom = "reçoit de";
-i18n.SpecIF_influences = "influence";
-i18n.SpecIF_follows = "succèdes à";
-i18n.SpecIF_precedes = "precède";
-i18n.SpecIF_signals = "signale";
-i18n.SpecIF_triggers = "déclenche";
-i18n.SpecIF_dependsOn = "depend de";
-i18n.SpecIF_refines =
-i18n.IREB_refines = "affine";
-i18n.IREB_refinedBy = "est affiné de";
-i18n.SpecIF_duplicates = "reprend";
-i18n.SpecIF_contradicts = "contredit";
-i18n.SpecIF_isAssociatedWith =
-i18n.SysML_isAssociatedWith = "est associé avec";
-i18n.SysML_isAllocatedTo = "est éxecuté par";
-i18n.SysML_includes = "inclut";
-i18n.SysML_extends = "élargit";
-i18n.SpecIF_isDerivedFrom = 
-i18n.SysML_isDerivedFrom = "est dérivé de";
-i18n.SysML_isComposedOf = "est composé de";
-i18n.SysML_isAggregatedBy = "est aggregé de";
-i18n.SpecIF_isGeneralisationOf = 
-i18n.SysML_isGeneralisationOf = "est generalisé de";
-i18n.SpecIF_isSpecialisationOf = 
-i18n.SysML_isSpecialisationOf = "est specialisé de";
-i18n.SpecIF_isSynonymOf = "est synonyme de";
-i18n.SpecIF_isInverseOf = "est l'inverse de";
-i18n.SpecIF_inheritsFrom = "hérite de";
-i18n.SpecIF_refersTo = "concerne";
-i18n.SpecIF_commentRefersTo = "concerne";
-i18n.SpecIF_issueRefersTo = "concerne";
-i18n.SpecIF_includes = "inclures";
-i18n.SpecIF_excludes = "exclures";
-i18n.SpecIF_mentions = "évoque";
-i18n.SpecIF_sameAs =
-i18n.owl_sameAs = "est identique à";
-i18n.SpecIF_Id = i18n.LblIdentifier;
-i18n.SpecIF_Type = i18n.LblType;
-i18n.SpecIF_Notation = "Notation";
-//i18n.SpecIF_Stereotype = 
-//i18n.SpecIF_SubClass = "Sous-classe";
-i18n.SpecIF_Category = i18n.LblCategory;
-i18n.SpecIF_Status = i18n.LblState;
-i18n.SpecIF_State = i18n.LblState;			// DEPRECATED
-i18n.SpecIF_Priority = i18n.LblPriority;
-i18n.SpecIF_Milestone = "Jalon";
-i18n.SpecIF_DueDate = "Délai";
-i18n.SpecIF_Icon = "Symbole";
-i18n.SpecIF_Tag = "Mot-clé";
-i18n.SpecIF_Tags = "Mots-clés";
-i18n.SpecIF_UserStory = "User-Story";
-//i18n.SpecIF_Creation = "";
-i18n.SpecIF_Instantiation = "Instanciation";
-i18n.SpecIF_Origin = "Origine";
-i18n.SpecIF_Source = i18n.LblSource;
-i18n.SpecIF_Target = i18n.LblTarget;
-//i18n.SpecIF_Author = "Auteur";
-//i18n.SpecIF_Authors = "Auteurs";
-i18n.IREB_Stakeholder = "Stakeholder";
-i18n.SpecIF_Responsible = "Responsable";
-i18n.SpecIF_Responsibles = "Responsables";
+	self.SpecIF_Heading = "Intitulé";
+	self.SpecIF_Headings = "Intitulés";
+	self.SpecIF_Name = 	self.LblName;
+//	self.SpecIF_Names = "Namen";
+	self.SpecIF_Folder = "Dossier";   // deprecated, use SpecIF:Heading
+	self.SpecIF_Folders = "Dossiers"; // deprecated, use SpecIF:Headings
+	self.SpecIF_Chapter = "Chapitre"; // deprecated, use SpecIF:Heading
+	self.SpecIF_Chapters = "Chapitres";// deprecated, use SpecIF:Headings
+	self.SpecIF_Paragraph = "Section";
+	self.SpecIF_Paragraphs = "Sections";
+	self.SpecIF_Information = "Information";// deprecated, use SpecIF:Paragraph
+	self.SpecIF_Diagram = "Diagramme";
+	self.SpecIF_Diagrams = "Diagrammes";
+	self.SpecIF_View = "Diagramme";		// deprecated
+	self.SpecIF_Views = "Diagrammes";	// deprecated
+	self.FMC_Plan = "Plan";
+	self.FMC_Plans = "Plans";
+	self.SpecIF_Object = 
+	self.SpecIF_Resource = "Ressource";
+	self.SpecIF_Objects = 
+	self.SpecIF_Resources = "Ressources";
+	self.SpecIF_Relation = 
+	self.SpecIF_Statement = "Affirmation";
+	self.SpecIF_Relations = 
+	self.SpecIF_Statements = "Affirmations";
+	self.SpecIF_Property = "Attribut";
+	self.SpecIF_Properties = "Attributs";
+	self.FMC_Actor = "Acteur";
+	self.FMC_Actors = "Acteurs";
+	self.FMC_State = "État";
+	self.FMC_States = "États";
+	self.FMC_Event = "Évenement";
+	self.FMC_Events = "Évenements";
+	self.SpecIF_Feature = "Marque";
+	self.SpecIF_Features = "Marques";
+	self.SpecIF_Requirement =
+	self.IREB_Requirement = "Exigence";
+	self.SpecIF_Requirements = 
+	self.IREB_Requirements = "Exigences";
+	self.IREB_RequirementType = 	self.LblType;
+	self.IREB_RequirementTypeFunction = "Fonction";
+	self.IREB_RequirementTypeQuality = "Qualité";
+	self.IREB_RequirementTypeConstraint = "Contrainte";
+	self.SpecIF_BusinessProcess = 'Processus'; 
+	self.SpecIF_BusinessProcesses = 'Processus';
+	self.SpecIF_Rationale = "Motivation";
+	self.SpecIF_Note = "Remarque";
+	self.SpecIF_Notes = "Remarques";
+	self.SpecIF_Comment = "Commentaire";
+	self.SpecIF_Comments = "Commentaires";
+	self.SpecIF_Issue = "Problème";
+	self.SpecIF_Issues = "Problèmes";
+	self.SpecIF_Outline =
+	self.SpecIF_Hierarchy = "Arborescence";
+	self.SpecIF_Outlines =
+	self.SpecIF_Hierarchies = "Arborescences";
+	self.SpecIF_Glossary = "Élements de modèle (Glossaire)";
+	self.SpecIF_Annotations = "Annotations";
+	self.SpecIF_Collection = "Collection ou Groupe";
+	self.SpecIF_Collections = "Collections et Groupes";
+	self.SpecIF_Vote = "Evaluation";
+	self.SpecIF_Votes = "Evaluations";
+	self.SpecIF_Effort = "Effort";
+	self.SpecIF_Risk = 
+	self.IREB_Risk = "Risque";
+	self.SpecIF_Benefit = "Bénéfice";
+	self.SpecIF_Damage = "Dommage";
+	self.SpecIF_Probability = "Probabilité";
+	self.SpecIF_shows = "montre";
+	self.SpecIF_contains = "contient";
+	self.oslc_rm_satisfiedBy = "satisfait par";
+	self.oslc_rm_satisfies =
+	self.SpecIF_satisfies =
+	self.IREB_satisfies = "satisfait";
+	self.SpecIF_modifies =
+	self.SpecIF_stores = "écrit et lit";
+	self.SpecIF_reads = "lit";
+	self.SpecIF_writes = "écrit";
+	self.SpecIF_sendsTo = "émets à";
+	self.SpecIF_receivesFrom = "reçoit de";
+	self.SpecIF_influences = "influence";
+	self.SpecIF_follows = "succèdes à";
+	self.SpecIF_precedes = "precède";
+	self.SpecIF_signals = "signale";
+	self.SpecIF_triggers = "déclenche";
+	self.SpecIF_dependsOn = "depend de";
+	self.SpecIF_realizes = "realises";
+	self.SpecIF_serves = "rends service à";
+	self.SpecIF_refines =
+	self.IREB_refines = "affine";
+	self.IREB_refinedBy = "est affiné de";
+	self.SpecIF_duplicates = "reprend";
+	self.SpecIF_contradicts = "contredit";
+	self.SpecIF_isAssociatedWith =
+	self.SysML_isAssociatedWith = "est associé avec";
+	self.SysML_isAllocatedTo = "est éxecuté par";
+	self.SysML_includes = "inclut";
+	self.SysML_extends = "élargit";
+	self.SpecIF_isDerivedFrom = 
+	self.SysML_isDerivedFrom = "est dérivé de";
+	self.SpecIF_isComposedOf = 
+	self.SysML_isComposedOf = "est composé de";
+	self.SpecIF_isAggregatedBy =
+	self.SysML_isAggregatedBy = "est aggregé de";
+	self.SpecIF_isGeneralisationOf = 
+	self.SysML_isGeneralisationOf = "est generalisé de";
+	self.SpecIF_isSpecializationOf =
+	self.SpecIF_isSpecialisationOf = 
+	self.SysML_isSpecialisationOf = "est specialisé de";
+	self.SpecIF_isSynonymOf = "est synonyme de";
+	self.SpecIF_isInverseOf = "est l'inverse de";
+	self.SpecIF_inheritsFrom = "hérite de";
+	self.SpecIF_refersTo = "concerne";
+	self.SpecIF_commentRefersTo = "concerne";
+	self.SpecIF_issueRefersTo = "concerne";
+	self.SpecIF_includes = "inclures";
+	self.SpecIF_excludes = "exclures";
+	self.SpecIF_mentions = "évoque";
+	self.SpecIF_sameAs =
+	self.owl_sameAs = "est identique à";
+	self.SpecIF_Id = 	self.LblIdentifier;
+	self.SpecIF_Type = 	self.LblType;
+	self.SpecIF_Notation = "Notation";
+//	self.SpecIF_Stereotype = 
+//	self.SpecIF_SubClass = "Sous-classe";
+	self.SpecIF_Category = 	self.LblCategory;
+	self.SpecIF_Status = 	self.LblState;
+	self.SpecIF_State = 	self.LblState;			// DEPRECATED
+	self.SpecIF_Priority = 	self.LblPriority;
+	self.SpecIF_Milestone = "Jalon";
+	self.SpecIF_DueDate = "Délai";
+	self.SpecIF_Icon = "Symbole";
+	self.SpecIF_Tag = "Mot-clé";
+	self.SpecIF_Tags = "Mots-clés";
+	self.SpecIF_UserStory = "User-Story";
+//	self.SpecIF_Creation = "";
+	self.SpecIF_Instantiation = "Instanciation";
+	self.SpecIF_Origin = "Origine";
+	self.SpecIF_Source = 	self.LblSource;
+	self.SpecIF_Target = 	self.LblTarget;
+//	self.SpecIF_Author = "Auteur";
+//	self.SpecIF_Authors = "Auteurs";
+	self.IREB_Stakeholder = "Stakeholder";
+	self.SpecIF_Responsible = "Responsable";
+	self.SpecIF_Responsibles = "Responsables";
 // attribute names used by the Interaction Room:
-i18n.IR_Annotation = "Annotation";
-i18n.IR_refersTo = i18n.SpecIF_refersTo;
-i18n.IR_approves = "approves";
-i18n.IR_opposes = "retoques";
-i18n.IR_inheritsFrom = i18n.SpecIF_inheritsFrom;
+	self.IR_Annotation = "Annotation";
+	self.IR_refersTo = 	self.SpecIF_refersTo;
+	self.IR_approves = "approves";
+	self.IR_opposes = "retoques";
+	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
 // for oem-supplier agreement as defined by the "Hersteller-Initiative-Software":
-i18n.HIS_OemStatus = 'OEM-Status';
-i18n.HIS_OemComment = 'OEM-Comment';
-i18n.HIS_SupplierStatus = 'Supplier-Status';
-i18n.HIS_SupplierComment = 'Supplier-Comment';
+	self.HIS_OemStatus = 'OEM-Status';
+	self.HIS_OemComment = 'OEM-Comment';
+	self.HIS_SupplierStatus = 'Supplier-Status';
+	self.HIS_SupplierComment = 'Supplier-Comment';
 // attribute names used by DocBridge Resource Director:
-i18n.DBRD_ChapterName = 'Titre';
-i18n.DBRD_Name = 'Titre';
-i18n.DBRD_Text = 'Texte';
+	self.DBRD_ChapterName = 'Titre';
+	self.DBRD_Name = 'Titre';
+	self.DBRD_Text = 'Texte';
 // attribute names used by Atego Exerpt with RIF 1.1a:
-i18n.Object_Heading = i18n.ReqIF_Name;
-i18n.VALUE_Object_Heading = i18n.ReqIF_Name;
-i18n.Object_Text = i18n.ReqIF_Text;
-i18n.VALUE_Object_Text = i18n.ReqIF_Text;
-i18n.Object_ID = i18n.ReqIF_ForeignID;
-i18n.VALUE_Object_ID = i18n.ReqIF_ForeignID;
-i18n.SpecIF_priorityHigh = "haut";
-i18n.SpecIF_priorityRatherHigh = "plutôt haut";
-i18n.SpecIF_priorityMedium = "moyen";
-i18n.SpecIF_priorityRatherLow = "plutôt bas";
-i18n.SpecIF_priorityLow = "bas";
-i18n.SpecIF_sizeXL = "très grand";
-i18n.SpecIF_sizeL = "grand";
-i18n.SpecIF_sizeM = "moyen";
-i18n.SpecIF_sizeS = "petit";
-i18n.SpecIF_sizeXS = "très petit";
+	self.Object_Heading = 	self.ReqIF_Name;
+	self.VALUE_Object_Heading = 	self.ReqIF_Name;
+	self.Object_Text = 	self.ReqIF_Text;
+	self.VALUE_Object_Text = 	self.ReqIF_Text;
+	self.Object_ID = 	self.ReqIF_ForeignID;
+	self.VALUE_Object_ID = 	self.ReqIF_ForeignID;
+	self.SpecIF_priorityHigh = "haut";
+	self.SpecIF_priorityRatherHigh = "plutôt haut";
+	self.SpecIF_priorityMedium = "moyen";
+	self.SpecIF_priorityRatherLow = "plutôt bas";
+	self.SpecIF_priorityLow = "bas";
+	self.SpecIF_sizeXL = "très grand";
+	self.SpecIF_sizeL = "grand";
+	self.SpecIF_sizeM = "moyen";
+	self.SpecIF_sizeS = "petit";
+	self.SpecIF_sizeXS = "très petit";
 
 // Messages:
-i18n.MsgConfirm = "Confirmez, s'il vous plaît:";
-i18n.MsgConfirmDeletion = "Effacer '~A'?";
-i18n.MsgConfirmObjectDeletion = "Effacer la ressource '<b>~A</b>' ?";
-i18n.MsgConfirmUserDeletion = "Effacer l'utilisateur '<b>~A</b>' ?";
-i18n.MsgConfirmProjectDeletion = "Effacer le projet '<b>~A</b>' ?";
-i18n.MsgConfirmSpecDeletion = "Effacer l'arborescence '<b>~A</b>' avec tout les references de ressource?";
-i18n.MsgConfirmRoleDeletion = "Effacer le rôle '<b>~A</b>' ?";
-i18n.MsgConfirmFolderDeletion = "Effacer le dossier '<b>~A</b>' ?";
-i18n.MsgInitialLoading = "Téléchargement de l'indexe en cours ...";
-i18n.MsgNoProject = 'Aucun projet trouvé.';
-i18n.MsgNoUser = 'Aucun utilisateur trouvé.';
-i18n.MsgNoObject = 'Aucune ressource choisi.';
-i18n.MsgCreateResource = "Créer une ressource";
-i18n.MsgCloneResource = "Cloner une ressource";
-i18n.MsgUpdateResource = i18n.LblUpdate+" une ressource";
-i18n.MsgDeleteResource = "Effacer une ressource";
-i18n.MsgCreateStatement = "Créer une affirmation";
-i18n.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
-i18n.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
-i18n.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
-i18n.MsgImportSpecif = "Types de fichiers valides: *.specifz et *.specif. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
-i18n.MsgImportBpmn = "Type de fichier valide est *.bpmn. Le contenu doit correspondre au schéma BPMN 2.0 XML. Le téléchargement peut durer quelques minutes.";
-i18n.MsgImportXls = "Types de fichiers valides: *.xls, *.xlsx et *.csv. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
-i18n.MsgExport = "Un fichier zip-comprimé au format choisi sera créé. Le téléchargement peut durer quelques minutes dans le cas de très gros projets; le navigateur va enregistrer le fichier comme configuré.";
-i18n.MsgLoading = 'Téléchargement en cours ...';
-i18n.MsgSearching = 'Recherche en cours ...';
-i18n.MsgObjectsProcessed = '~A ressources analysé. ';
-i18n.MsgObjectsFound = '~A ressources trouvé.';
-i18n.MsgNoMatchingObjects = 'Aucune ressource trouvé.';
-i18n.MsgNoRelatedObjects = "Cette ressource n'a pas d'affirmations.";
-i18n.MsgNoComments = "Cette ressource n'a pas de commentaires.";
-i18n.MsgNoFiles = 'Aucun fichier trouvé.';
-i18n.MsgAnalyzing = 'Analyse en cours ...';
-i18n.MsgNoReports = 'Aucun rapport pour ce projet.';
-i18n.MsgTypeNoObjectType = "Ajoutez au moins une classe de ressource, sinon il est impossible de créer une ressource.";
-i18n.MsgTypeNoAttribute = "Ajoutez au moins un attribut, sinon le type n'est pas utile.";
-i18n.MsgNoObjectTypeForManualCreation = "Les ressources ne peuvent pas être créés, parce que vous n'avez pas de permission ou parce que il n'y a pas de type de ressource pouvant être créé manuellement.";
-i18n.MsgFilterClogged = "Filtre trôp restreint - au moins un critère n'est peut pas être rempli.";
-i18n.MsgCredentialsUnknown = 'Utilisateur inconnu ou mot de passe erroné.';
-i18n.MsgUserMgmtNeedsAdminRole = "Adressez-vous à l'administrateur pour gérer les utilisateurs et leur rôle.";
-i18n.MsgProjectMgmtNeedsAdminRole = "Adressez-vous à l'administrateur pour gérer les projets, leurs utilisateurs et autorisations.";
-i18n.MsgImportSuccessful = "Importation de '~A' achevée.";
-i18n.MsgImportDenied = "Import refusé: Le projet '~A' est en cours d'utilisation ou le schema n'est pas respecté.";
-i18n.MsgImportFailed = "Import interrompu à cause d'une erreur.";
-i18n.MsgImportAborted = "Import interrompu par l'utilisateur.";
-i18n.MsgChooseRoleName = "Choisissez un nom de rôle, s'il vous plaît:";
-i18n.MsgIdConflict = "Existe déja - '~A' ne peut pas être créé.";
-i18n.MsgRoleNameConflict = "Existe déja - rôle '~A' ne peut pas être créé.";
-i18n.MsgUserNameConflict = "Existe déja - l'utilisateur '~A' ne peut pas être créé.";
-i18n.MsgFileApiNotSupported = "Ce navigateur ne permet pas l'accès aux fichiers. Choisissez un navigateur plus récent.";
-i18n.MsgDoNotLoadAllObjects = "Il n'est pas recommandé de charger tous les ressources en une seule demande.";
-i18n.MsgReading = "Lire";
-i18n.MsgCreating = "Créer";
-i18n.MsgUploading = "Transmettre";
-i18n.MsgImporting = "Importer";
-i18n.MsgBrowserSaving = "Le navigateur enregistres le fichier comme configuré.";
-i18n.MsgSuccess = "Succès!";
-i18n.MsgSelectImg = "Choisissez ou chargez un image:";
-i18n.MsgImgWidth = "Largeur de l'image [px]";
-i18n.MsgSelectResClass = "Choisissez une "+i18n.LblResourceClass;
-i18n.MsgSelectStaClass = "Choisissez une "+i18n.LblStatementClass;
-i18n.MsgNoEligibleRelTypes = "Aucune affirmation défini pour ce type de ressource.";
-i18n.MsgClickToNavigate = "Double-cliquer une ressource pour y naviguer:";
-i18n.MsgClickToDeleteRel = "Double-cliquer une ressource pour supprimer l'affirmation respective:";
-i18n.MsgNoSpec = "Aucune arborescence trouvé.";
-i18n.MsgTypesCommentCreated = 'Les types pour commentaires ont été créés.';
-i18n.MsgOutlineAdded = "L'arborescence à été ajoutée au debut - consolidez l'existante avec la nouvelle, si vous desirez";
-i18n.MsgLoadingTypes = 'Transmets types';
-i18n.MsgLoadingFiles = 'Transmets images et fichiers';
-i18n.MsgLoadingObjects = 'Transmets ressources';
-i18n.MsgLoadingRelations = 'Transmets affirmations';
-i18n.MsgLoadingHierarchies = "Transmets l'arborescences";
-i18n.MsgProjectCreated = 'Projet cré avec succes';
-i18n.MsgProjectUpdated = 'Project mis à jour avec succes';
-i18n.MsgNoneSpecified = 'vide';
+	self.MsgConfirm = "Confirmez, s'il vous plaît:";
+	self.MsgConfirmDeletion = "Effacer '~A'?";
+	self.MsgConfirmObjectDeletion = "Effacer la ressource '<b>~A</b>' ?";
+	self.MsgConfirmUserDeletion = "Effacer l'utilisateur '<b>~A</b>' ?";
+	self.MsgConfirmProjectDeletion = "Effacer le projet '<b>~A</b>' ?";
+	self.MsgConfirmSpecDeletion = "Effacer l'arborescence '<b>~A</b>' avec tout les references de ressource?";
+	self.MsgConfirmRoleDeletion = "Effacer le rôle '<b>~A</b>' ?";
+	self.MsgConfirmFolderDeletion = "Effacer le dossier '<b>~A</b>' ?";
+	self.MsgInitialLoading = "Téléchargement de l'indexe en cours ...";
+	self.MsgNoProject = 'Aucun projet trouvé.';
+	self.MsgNoUser = 'Aucun utilisateur trouvé.';
+	self.MsgNoObject = 'Aucune ressource choisi.';
+	self.MsgCreateResource = "Créer une ressource";
+	self.MsgCloneResource = "Cloner une ressource";
+	self.MsgUpdateResource = 	self.LblUpdate+" une ressource";
+	self.MsgDeleteResource = "Effacer une ressource";
+	self.MsgCreateStatement = "Créer une affirmation";
+	self.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
+	self.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
+	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
+	self.MsgImportSpecif = "Types de fichiers valides: *.specifz et *.specif. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
+	self.MsgImportBpmn = "Type de fichier valide est *.bpmn. Le contenu doit correspondre au schéma BPMN 2.0 XML. Le téléchargement peut durer quelques minutes.";
+	self.MsgImportXls = "Types de fichiers valides: *.xls, *.xlsx et *.csv. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
+	self.MsgExport = "Un fichier zip-comprimé au format choisi sera créé. Le téléchargement peut durer quelques minutes dans le cas de très gros projets; le navigateur va enregistrer le fichier comme configuré.";
+	self.MsgLoading = 'Téléchargement en cours ...';
+	self.MsgSearching = 'Recherche en cours ...';
+	self.MsgObjectsProcessed = '~A ressources analysé. ';
+	self.MsgObjectsFound = '~A ressources trouvé.';
+	self.MsgNoMatchingObjects = 'Aucune ressource trouvé.';
+	self.MsgNoRelatedObjects = "Cette ressource n'a pas d'affirmations.";
+	self.MsgNoComments = "Cette ressource n'a pas de commentaires.";
+	self.MsgNoFiles = 'Aucun fichier trouvé.';
+	self.MsgAnalyzing = 'Analyse en cours ...';
+	self.MsgNoReports = 'Aucun rapport pour ce projet.';
+	self.MsgTypeNoObjectType = "Ajoutez au moins une classe de ressource, sinon il est impossible de créer une ressource.";
+	self.MsgTypeNoAttribute = "Ajoutez au moins un attribut, sinon le type n'est pas utile.";
+	self.MsgNoObjectTypeForManualCreation = "Les ressources ne peuvent pas être créés, parce que vous n'avez pas de permission ou parce que il n'y a pas de type de ressource pouvant être créé manuellement.";
+	self.MsgFilterClogged = "Filtre trôp restreint - au moins un critère n'est peut pas être rempli.";
+	self.MsgCredentialsUnknown = 'Utilisateur inconnu ou mot de passe erroné.';
+	self.MsgUserMgmtNeedsAdminRole = "Adressez-vous à l'administrateur pour gérer les utilisateurs et leur rôle.";
+	self.MsgProjectMgmtNeedsAdminRole = "Adressez-vous à l'administrateur pour gérer les projets, leurs utilisateurs et autorisations.";
+	self.MsgImportSuccessful = "Importation de '~A' achevée.";
+	self.MsgImportDenied = "Import refusé: Le projet '~A' est en cours d'utilisation ou le schema n'est pas respecté.";
+	self.MsgImportFailed = "Import interrompu à cause d'une erreur.";
+	self.MsgImportAborted = "Import interrompu par l'utilisateur.";
+	self.MsgChooseRoleName = "Choisissez un nom de rôle, s'il vous plaît:";
+	self.MsgIdConflict = "Existe déja - '~A' ne peut pas être créé.";
+	self.MsgRoleNameConflict = "Existe déja - rôle '~A' ne peut pas être créé.";
+	self.MsgUserNameConflict = "Existe déja - l'utilisateur '~A' ne peut pas être créé.";
+	self.MsgFileApiNotSupported = "Ce navigateur ne permet pas l'accès aux fichiers. Choisissez un navigateur plus récent.";
+	self.MsgDoNotLoadAllObjects = "Il n'est pas recommandé de charger tous les ressources en une seule demande.";
+	self.MsgReading = "Lire";
+	self.MsgCreating = "Créer";
+	self.MsgUploading = "Transmettre";
+	self.MsgImporting = "Importer";
+	self.MsgBrowserSaving = "Le navigateur enregistres le fichier comme configuré.";
+	self.MsgSuccess = "Succès!";
+	self.MsgSelectImg = "Choisissez ou chargez un image:";
+	self.MsgImgWidth = "Largeur de l'image [px]";
+	self.MsgSelectResClass = "Choisissez une "+	self.LblResourceClass;
+	self.MsgSelectStaClass = "Choisissez une "+	self.LblStatementClass;
+	self.MsgNoEligibleRelTypes = "Aucune affirmation défini pour ce type de ressource.";
+	self.MsgClickToNavigate = "Double-cliquer une ressource pour y naviguer:";
+	self.MsgClickToDeleteRel = "Double-cliquer une ressource pour supprimer l'affirmation respective:";
+	self.MsgNoSpec = "Aucune arborescence trouvé.";
+	self.MsgTypesCommentCreated = 'Les types pour commentaires ont été créés.';
+	self.MsgOutlineAdded = "L'arborescence à été ajoutée au debut - consolidez l'existante avec la nouvelle, si vous desirez";
+	self.MsgLoadingTypes = 'Transmets types';
+	self.MsgLoadingFiles = 'Transmets images et fichiers';
+	self.MsgLoadingObjects = 'Transmets ressources';
+	self.MsgLoadingRelations = 'Transmets affirmations';
+	self.MsgLoadingHierarchies = "Transmets l'arborescences";
+	self.MsgProjectCreated = 'Projet cré avec succes';
+	self.MsgProjectUpdated = 'Project mis à jour avec succes';
+	self.MsgNoneSpecified = 'vide';
 
 // Error messages:
-i18n.Error = "Erreur";
-i18n.Err403Forbidden = "Vous n'avez pas les permissions requises pour cet information.";
-i18n.Err403NoProjectFolder = 'Votre rôle ne permet pas de mettre à jour au moins un projet concerné.';
-//i18n.Err403NoProjectUpdate = 'Votre rôle ne permet pas de mettre à jour ce projet.';
-i18n.Err403NoProjectDelete = "Votre rôle ne permet pas d'effacer ce projet.";
-i18n.Err403NoUserDelete = "Votre rôle ne permet pas d'effacer des utilisateurs.";
-i18n.Err403NoRoleDelete = "Votre rôle ne permet pas d'effacer des rôles.";
-i18n.Err404NotFound = "Élement n'a pas été trouvé.";
-i18n.ErrNoItem = "Élement '~A' n'a pas été trouvé.";
-i18n.ErrNoObject = "Ressource '~A' n'a pas été trouvé.";
-i18n.ErrNoSpec = "Ce projet n'a pas d'arborescence; il faut en créer au moins une.";
-i18n.ErrInvalidFile = 'Fichier non valide ou erroné.';
-i18n.ErrInvalidFileType = "Type de fichier '~A' non valide.";
-i18n.ErrInvalidAttachment = "Type de fichier non valide. Choisissez entre ~A.";
-i18n.ErrInvalidFileReqif = "Type de fichier '~A' non valide. Choisissez '*.reqifz', '*.reqif', '*.zip' ou '*.xml'.";
-i18n.ErrInvalidFileSpecif = "Type de fichier '~A' non valide. Choisissez '*.specifz' ou '*.specif'.";
-i18n.ErrInvalidFileBpmn = "Type de fichier '~A' non valide. Choisissez '*.bpmn'.";
-i18n.ErrInvalidFileTogaf = "Type de fichier '~A' non valide. Choisissez '*.xml'.";
-i18n.ErrInvalidFileXls = "Type de fichier '~A' non valide. Choisissez '*.xlsx', '*.xls', ou '*.csv'.";
-//i18n.ErrInvalidFileElic = "Type de fichier '~A' non valide. Choisissez '*.elic_signed.xml'.";
-i18n.ErrUpload = 'Erreur pendant le téléchargement.';
-i18n.ErrImport = "Erreur pendant l'import.";
-i18n.ErrImportTimeout = "Temps limite dépassé lors de l'import.";
-i18n.ErrCommunicationTimeout = "Temps limite dépassé lors de demande de serveur";
-i18n.ErrInvalidData = 'Données nocives ou non valides.';
-i18n.ErrInvalidContent = 'Données non valides; très probablement contenu nocif ou structure XHTML erronée.';
-i18n.ErrInvalidRoleName = "Nom de rôle '~A' non valide.";
-i18n.ErrUpdateConflict = "Votre modification est en conflit avec une modification d'un autre utilisateur.";
-i18n.ErrInconsistentPermissions = "Les permissions sont contradictoires, s'il vous plaît contactez l'administrateur.";
-i18n.ErrObjectNotEligibleForRelation = "Cettes ressources ne peuvent pas être reliées avec l'affirmation choisie.";
-i18n.Err400TypeIsInUse = "Impossible d'effacer ce type, parce qu'il est utilisé."
-i18n.Err402InsufficientLicense = "La license déposée ne suffit pas pour cette opération.";
+	self.Error = "Erreur";
+	self.Err403Forbidden = "Vous n'avez pas les permissions requises pour cet information.";
+	self.Err403NoProjectFolder = 'Votre rôle ne permet pas de mettre à jour au moins un projet concerné.';
+//	self.Err403NoProjectUpdate = 'Votre rôle ne permet pas de mettre à jour ce projet.';
+	self.Err403NoProjectDelete = "Votre rôle ne permet pas d'effacer ce projet.";
+	self.Err403NoUserDelete = "Votre rôle ne permet pas d'effacer des utilisateurs.";
+	self.Err403NoRoleDelete = "Votre rôle ne permet pas d'effacer des rôles.";
+	self.Err404NotFound = "Élement n'a pas été trouvé.";
+	self.ErrNoItem = "Élement '~A' n'a pas été trouvé.";
+	self.ErrNoObject = "Ressource '~A' n'a pas été trouvé.";
+	self.ErrNoSpec = "Ce projet n'a pas d'arborescence; il faut en créer au moins une.";
+	self.ErrInvalidFile = 'Fichier non valide ou erroné.';
+	self.ErrInvalidFileType = "Type de fichier '~A' non valide.";
+	self.ErrInvalidAttachment = "Type de fichier non valide. Choisissez entre ~A.";
+	self.ErrInvalidFileReqif = "Type de fichier '~A' non valide. Choisissez '*.reqifz', '*.reqif', '*.zip' ou '*.xml'.";
+	self.ErrInvalidFileSpecif = "Type de fichier '~A' non valide. Choisissez '*.specifz' ou '*.specif'.";
+	self.ErrInvalidFileBpmn = "Type de fichier '~A' non valide. Choisissez '*.bpmn'.";
+	self.ErrInvalidFileTogaf = "Type de fichier '~A' non valide. Choisissez '*.xml'.";
+	self.ErrInvalidFileXls = "Type de fichier '~A' non valide. Choisissez '*.xlsx', '*.xls', ou '*.csv'.";
+//	self.ErrInvalidFileElic = "Type de fichier '~A' non valide. Choisissez '*.elic_signed.xml'.";
+	self.ErrUpload = 'Erreur pendant le téléchargement.';
+	self.ErrImport = "Erreur pendant l'import.";
+	self.ErrImportTimeout = "Temps limite dépassé lors de l'import.";
+	self.ErrCommunicationTimeout = "Temps limite dépassé lors de demande de serveur";
+	self.ErrInvalidData = 'Données nocives ou non valides.';
+	self.ErrInvalidContent = 'Données non valides; très probablement contenu nocif ou structure XHTML erronée.';
+	self.ErrInvalidRoleName = "Nom de rôle '~A' non valide.";
+	self.ErrUpdateConflict = "Votre modification est en conflit avec une modification d'un autre utilisateur.";
+	self.ErrInconsistentPermissions = "Les permissions sont contradictoires, s'il vous plaît contactez l'administrateur.";
+	self.ErrObjectNotEligibleForRelation = "Cettes ressources ne peuvent pas être reliées avec l'affirmation choisie.";
+	self.Err400TypeIsInUse = "Impossible d'effacer ce type, parce qu'il est utilisé."
+	self.Err402InsufficientLicense = "La license déposée ne suffit pas pour cette opération.";
 
-i18n.monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre' ];
-//i18n.monthAbbrs = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juill.', 'août', 'sept.', 'oct.', 'nov.', 'déc.' ];
+//	self.monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre' ];
+//	self.monthAbbrs = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juill.', 'août', 'sept.', 'oct.', 'nov.', 'déc.' ];
 
 // App icons and titles:
-i18n.IcoHome = '<span class="glyphicon glyphicon-home"/>';
-i18n.IcoSystemAdministration = '<span class="glyphicon glyphicon-wrench"/>';
-i18n.IcoUserAdministration = '<span class="glyphicon glyphicon-user"/>';
-i18n.IcoProjectAdministration = '<span class="glyphicon glyphicon-cog"/>';
-//i18n.IcoProjectAdministration = '<span style="font-size:130%">&#9881;</span>';
-i18n.IcoSpecifications = '<span class="glyphicon glyphicon-book"/>';
-i18n.IcoReader = '<span class="glyphicon glyphicon-eye-open"/>';
-//i18n.IcoImportReqif = '<span class="glyphicon glyphicon-import"/>';
-//i18n.IcoImportCsv = '<span class="glyphicon glyphicon-import"/>';
-//i18n.IcoImportXls = '<span class="glyphicon glyphicon-import"/>';
-i18n.IcoSupport = '<span class="glyphicon glyphicon-question-sign"/>';
+	self.IcoHome = '<span class="glyphicon glyphicon-home"/>';
+	self.IcoSystemAdministration = '<span class="glyphicon glyphicon-wrench"/>';
+	self.IcoUserAdministration = '<span class="glyphicon glyphicon-user"/>';
+	self.IcoProjectAdministration = '<span class="glyphicon glyphicon-cog"/>';
+//	self.IcoProjectAdministration = '<span style="font-size:130%">&#9881;</span>';
+	self.IcoSpecifications = '<span class="glyphicon glyphicon-book"/>';
+	self.IcoReader = '<span class="glyphicon glyphicon-eye-open"/>';
+//	self.IcoImportReqif = '<span class="glyphicon glyphicon-import"/>';
+//	self.IcoImportCsv = '<span class="glyphicon glyphicon-import"/>';
+//	self.IcoImportXls = '<span class="glyphicon glyphicon-import"/>';
+	self.IcoSupport = '<span class="glyphicon glyphicon-question-sign"/>';
 
 // App names:
-i18n.LblHome = 'Bienvenue!';
-i18n.LblProjects = 'Projets';
-i18n.LblSystemAdministration = 'Configuration';
-i18n.LblUserAdministration = 'Utilisateurs';
-i18n.LblProjectAdministration = 'Types & Permissions';   // for the browser tabs - no HTML!
-i18n.LblSpecifications = 'Contenu';
-i18n.LblReader = 'Lecteur SpecIF';
-i18n.LblEditor = 'Editeur SpecIF';
-i18n.LblSupport = 'Support';
-i18n.AppHome = i18n.IcoHome+'&#160;'+i18n.LblHome;
-i18n.AppSystemAdministration = i18n.IcoSystemAdministration+'&#160;Spécification interactive: '+i18n.LblSystemAdministration;
-i18n.AppUserAdministration = i18n.IcoUserAdministration+'&#160;Spécification interactive: '+i18n.LblUserAdministration;
-i18n.AppProjectAdministration = i18n.IcoProjectAdministration+'&#160;Spécification interactive: '+i18n.LblProjectAdministration;
-i18n.AppSpecifications = i18n.IcoSpecifications+'&#160;Spécification interactive: '+i18n.LblSpecifications;
-i18n.AppReader = i18n.IcoReader+'&#160;'+i18n.LblReader;
-i18n.AppImport = i18n.IcoImport+'&#160;Import';
-i18n.AppLocal = i18n.IcoSpecifications+'&#160;'+i18n.LblEditor;
-i18n.AppSupport = i18n.IcoSupport+'&#160;'+i18n.LblSupport;
+	self.LblHome = 'Bienvenue!';
+	self.LblProjects = 'Projets';
+	self.LblSystemAdministration = 'Configuration';
+	self.LblUserAdministration = 'Utilisateurs';
+	self.LblProjectAdministration = 'Types & Permissions';   // for the browser tabs - no HTML!
+	self.LblSpecifications = 'Contenu';
+	self.LblReader = 'Lecteur SpecIF';
+	self.LblEditor = 'Editeur SpecIF';
+	self.LblSupport = 'Support';
+	self.AppHome = 	self.IcoHome+'&#160;'+	self.LblHome;
+	self.AppSystemAdministration = 	self.IcoSystemAdministration+'&#160;Spécification interactive: '+	self.LblSystemAdministration;
+	self.AppUserAdministration = 	self.IcoUserAdministration+'&#160;Spécification interactive: '+	self.LblUserAdministration;
+	self.AppProjectAdministration = 	self.IcoProjectAdministration+'&#160;Spécification interactive: '+	self.LblProjectAdministration;
+	self.AppSpecifications = 	self.IcoSpecifications+'&#160;Spécification interactive: '+	self.LblSpecifications;
+	self.AppReader = 	self.IcoReader+'&#160;'+	self.LblReader;
+	self.AppImport = 	self.IcoImport+'&#160;Import';
+	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
+	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+};

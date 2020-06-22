@@ -91,18 +91,21 @@ modules.construct({
 			iterateNodes( cData.hierarchies, 
 				(nd)=>{
 					cacheE( self.allResources, nd.resource );
+					// self.allResources contains the resource ids
 					return true // continue until the end
 				}
 			);
 			app.cache.selectedProject.readContent( 'resource', self.allResources )
 			.then( 
 				(list)=>{
+					
 					// Sort the resources:
-					list.sort( (dick,doof)=>{ 
-								return elementTitleOf(dick,opts,cData).toLowerCase()<elementTitleOf(doof,opts,cData).toLowerCase()? -1 : 1 
-					});
-					//	self.allResources = simpleClone( list );
-					self.allResources = list;  // now self.allResources contains the full resources
+					self.allResources = sortBy( 
+							list, 
+							(el)=>{ return elementTitleOf(el,opts,cData) } 
+					);
+				//	self.allResources = sortBy( simpleClone( list ), (el)=>{ return elementTitleOf(el,opts,cData) } );
+					// now self.allResources contains the full resources
 					chooseResourceToLink()
 				}, 
 				stdError
@@ -114,7 +117,10 @@ modules.construct({
 				if( --pend<1 ) {
 					// all parallel requests are done,
 					// store a clone and get the title to display:
-					let staClasses = forAll( self.eligibleSCL, (sC)=>{ return {title:titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} );
+					let staClasses = forAll( 
+							self.eligibleSCL, 
+							(sC)=>{ return {title:titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} 
+						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
 					let dlg = new BootstrapDialog({

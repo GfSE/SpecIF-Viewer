@@ -20,8 +20,6 @@ function Archimate2Specif( xmlString, opts ) {
 	if( typeof(opts.isIE)!='boolean' )
 		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent );
 
-	if( !opts.strNamespace ) 
-		opts.strNamespace = "archimate:";
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramsType ) 
@@ -44,6 +42,8 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strAnnotationFolder = "Text Annotations";
 	if( !opts.strRoleType ) 
 		opts.strRoleType = "SpecIF:Role";  */
+	if( !opts.strNamespace ) 
+		opts.strNamespace = "Archimate:";
 	if( !opts.strArchimateType ) 
 		opts.strArchimateType = 'SpecIF:Archimate';
 /*	if( !opts.strArchimateFolder ) 
@@ -585,7 +585,7 @@ function Archimate2Specif( xmlString, opts ) {
 		},{
 			// ToDo: Make more specific with respect to subjectClasses and objectClasses, if possible
 			id: "SC-isAssignedTo",
-			title: opts.strNamespace+"isAssignedTo",
+			title: "SpecIF:isAssignedTo",
 			description: "Statement: The allocation of responsibility, performance of behavior, or execution",
 			instantiation: ['auto'],
 			subjectClasses: ["RC-Actor", "RC-State", "RC-Event"],
@@ -593,7 +593,7 @@ function Archimate2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isComposedOf",
-			title: opts.strNamespace+"isComposedOf",
+			title: "SpecIF:isComposedOf",
 			description: "Statement: A state (data-object) is composed of a state",
 			instantiation: ['auto'],
 			subjectClasses: ["RC-State"],
@@ -601,7 +601,7 @@ function Archimate2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAggregatedBy",
-			title: opts.strNamespace+"isAggregatedBy",
+			title: "SpecIF:isAggregatedBy",
 			description: "Statement: A state (data-object) is aggregated by a state",
 			instantiation: ['auto'],
 			subjectClasses: ["RC-State"],
@@ -609,7 +609,7 @@ function Archimate2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isSpecializationOf",
-			title: opts.strNamespace+"isSpecializationOf",
+			title: "SpecIF:isSpecializationOf",
 			description: "Statement: A state (data-object) is a specialization of a state",
 			instantiation: ['auto'],
 			subjectClasses: ["RC-State"],
@@ -625,7 +625,7 @@ function Archimate2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-serves",
-			title: opts.strNamespace+"serves",
+			title: "SpecIF:serves",
 			description: "Statement: An element provides its functionality to another element.",
 			instantiation: ['auto'],
 			subjectClasses: ["RC-Actor"],
@@ -633,7 +633,7 @@ function Archimate2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-influences",
-			title: opts.strNamespace+"influences",
+			title: "SpecIF:influences",
 			description: "Statement: An element affects the implementation or achievement of some motivation element.",
 			instantiation: ['auto'],
 			subjectClasses: ["RC-Actor","RC-State"],

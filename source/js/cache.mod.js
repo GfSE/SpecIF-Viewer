@@ -179,14 +179,14 @@ function Project( pr ) {
 		mode = mode || 'deduplicate';
 		// Use jQuery instead of ECMA Promises for the time being, because of progress notification.
 		var sDO = $.Deferred();
-		if( !newD ) {
-			sDO.reject({ status: 995, statusText: i18n.MsgImportFailed });
-			return sDO
-		};
-//		console.debug('app.cache.selectedProject.data.create',newD);
 
 		// Create the specified project:
 		newD = specif.toInt(newD);	// transform to internal data structure
+		if( !newD ) {
+			sDO.reject({ status: 995, statusText: i18n.MsgImportFailed }); // ToDo: this message may specify a file or similar.
+			return sDO
+		};
+//		console.debug('app.cache.selectedProject.data.create',newD);
 		
 		self.data.id = newD.id;
 		self.data.title = newD.title;
@@ -408,11 +408,13 @@ function Project( pr ) {
 		})
 	}
 	function substituteRC(dta,rId,nId) {
+		// Substitute new by original resourceClasses:
 		substituteLe(dta.statementClasses,'subjectClasses',rId,nId);
 		substituteLe(dta.statementClasses,'objectClasses',rId,nId);
 		substituteAtt(dta.resources,'class',rId,nId)
 	}
 	function substituteSC(dta,rId,nId) {
+		// Substitute new by original statementClasses:
 		substituteAtt(dta.statements,'class',rId,nId)
 	}
 	function substituteR(prj,r,n,opts) {
@@ -489,6 +491,7 @@ function Project( pr ) {
 	}  
 	function hookStatements( dta ) {
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+//		console.debug('hookStatements',dta);
 		// For all statements with a loose end, hook the resource 
 		// specified by title or by a property titled dcterms:identifier:
 		dta.statements.forEach( (st)=>{
@@ -650,26 +653,27 @@ function Project( pr ) {
 				changedAt: chAt
 			}]
 		}
-		const resourceClassesToCollect = [
+		const resourcesToCollect = [
 			{id: "SpecIF:BusinessProcess", flag:"collectProcesses", folder:CONFIG.resClassProcesses, folderName:"FolderProcesses-"}
 		];
-	self.collectResourceClasses = ( dta, opts )=>{	
-		// Collect all business processes, requirements etc according to 'resourceClassesToCollect':
-		let	apx = self.data.id.simpleHash(),
-			tim = new Date().toISOString();
+	self.collectResourcesByClass = ( dta, opts )=>{	
+		// Collect all business processes, requirements etc according to 'resourcesToCollect':
 		return new Promise( 
 			(resolve,reject)=>{
 				if( typeof(opts)!='object' ) { resolve({status:0}); return };
 				if( typeof(dta)!='object' || !dta.id ) dta = self.data;
-				resourceClassesToCollect.forEach( 
+				let	apx = dta.id.simpleHash(),
+					tim = new Date().toISOString();
+				
+				resourcesToCollect.forEach( 
 					( rC )=>{
-						console.debug('rc2c',rC,opts);
+//						console.debug('rc2c',rC,opts);
 						if( !opts[rC.flag] ) { resolve({status:0}); return };
 						// Assumes that the folder objects for the process folder are available
 						
 						// 1 Find all process folders:
 						let delL = [], prL = [], res, pV;
-						console.debug('collectResourceClasses',dta.hierarchies,opts);
+//						console.debug('collectResourcesByClass',dta.hierarchies,opts);
 						iterateNodes( dta.hierarchies, 
 										(nd)=>{
 											// get the referenced resource:
@@ -687,7 +691,7 @@ function Project( pr ) {
 											return true  // continue always to the end
 										}
 						);
-						console.debug('collectResourceClasses',delL,prL);
+//						console.debug('collectResourcesByClass',delL,prL);
 						resolve({status:0});
 						// 2. Delete any existing folders,
 						self.deleteContent( 'node', delL )
@@ -695,30 +699,20 @@ function Project( pr ) {
 								()=>{
 									// Create a Business Processes folder with all process diagrams:
 									if( prL.length>0 ) {
-										// Sort the list of process diagrams alphabetically by title,
-										// use the resource:
-										if( prL.length>1 )
-											prL.sort( 
-												(bim, bam)=>{
-													if( !bim.r.title ) return -1;
-													if( !bam.r.title ) return 1;
-													let i = bim.r.title.toLowerCase(),
-														a = bam.r.title.toLowerCase();
-													return i==a ? 0 : (i<a ? -1 : 1) 
-												}
-											);
+										// 3. Sort the list alphabetically by the resources' title:
+										sortBy( prL, (el)=>{ return el.r.title } );
 
-										// 3. Create a new combined process folder:
+										// 4. Create a new combined folder:
 										let dta = {
 											$schema: 'https://specif.de/v1.0/schema.json',
 											dataTypes: DataTypes(tim),
 											propertyClasses: PropertyClasses(tim),
 											resourceClasses: ResourceClasses(tim),
-											resources: Folder( rC.folderName+apx, i18n.lookup(CONFIG.resClassProcesses) ),
+											resources: Folder( rC.folderName+apx, i18n.lookup(CONFIG.resClassProcesses), tim ),
 											hierarchies: [{
 												id: "H"+rC.folderName+apx,
 												resource: rC.folderName+apx,
-												// use the node:
+												// re-use the nodes with their references to the resources:
 												nodes: forAll( prL, (pr)=>{ return pr.n } ),
 												changedAt: tim
 											}]
@@ -735,10 +729,9 @@ function Project( pr ) {
 							)
 					}
 				);
-				console.debug('exit');
 				return;
 				
-				function Folder(fId,ti) {
+				function Folder(fId,ti,tim) {
 					var fL = [{
 						id: fId,
 						class: "RC-Folder",
@@ -786,21 +779,21 @@ function Project( pr ) {
 							}
 				);
 				// 1.2 Delete now:
-				console.debug('createGlossary',delL,dgL);
+//				console.debug('createGlossary',delL,dgL);
 				self.deleteContent( 'node', delL )
 					.then(
 						()=>{
 							// 2. Create a new combined glossary:
 							if( dgL.length>0 ) {
 								let dta = {
-									specifVersion: 'v0.8',
+									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: DataTypes(tim),
 									propertyClasses: PropertyClasses(tim),
 									resourceClasses: ResourceClasses(tim),
 									resources: Folders(),
 									hierarchies: NodeList(self.data.resources)
 								};
-								console.debug('glossary',dta);
+//								console.debug('glossary',dta);
 								// The glossary is the only item in the hierarchies list:
 							//	if( hasChildren( dta.hierarchies[0] ) )
 									// use the update function to eliminate duplicate types:
@@ -827,13 +820,7 @@ function Project( pr ) {
 								}
 							).length>0
 				}
-			/*	function hasChildren( h ) {
-					for( var i=0, I=h.nodes.length-1;i>-1;i--) {
-						if( h.nodes[i].nodes.length>0 ) return true
-					};
-					return false
-				}
-				function extractByType(fn) {
+			/*	function extractByType(fn) {
 					var L=[], el;
 					iterateNodes( dta.hierarchies, 
 								(nd)=>{
@@ -914,32 +901,23 @@ function Project( pr ) {
 //					console.debug('gl tL',gl,tL);
 
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
-					let sL = dta.statements.filter(
+					let staL = dta.statements.filter(
 								(s)=>{
 									return staClassTitleOf( s, dta )==CONFIG.staClassShows && indexById( dgL, s.subject )>-1
 								}
 							);
-//					console.debug('gl tL dL',gl,tL,sL);
+//					console.debug('gl tL dL',gl,tL,staL);
 					
 					// c. Add model elements by class to the respective folders.
 					// In case of model elements the resource class is distinctive;
 					// the title of the resource class indicates the model element type.
 					// List only resources which are shown on a referenced diagram:
 					let resL = resources.filter(
-						(r)=>{
-							return indexBy( sL, 'object', r.id )>-1
-						}
-					);
+									(r)=>{ return indexBy( staL, 'object', r.id )>-1 }
+								);
 					// in alphanumeric order:
-					resL.sort( 
-						(bim,bam)=>{
-							if( !bim.title ) return -1;
-							if( !bam.title ) return 1;
-							let i = bim.title.toLowerCase(),
-								a = bam.title.toLowerCase();
-							return i==a ? 0 : (i<a ? -1 : 1) 
-						}
-					);
+					sortByTitle( resL );
+
 					// Categorize resources:
 					resL.forEach( 
 						(r)=>{ 
@@ -949,9 +927,10 @@ function Project( pr ) {
 							};
 							if( idx>-1 )
 								gl.nodes[idx].nodes.push({
+									// Create new hierarchy node with reference to the resource:
 									// ID should be the same when the glossary generated multiple times, 
 									// but must be different from a potential reference somewhere else.
-									id: 'N-' + (r.id + '-gen').simpleHash(),
+								//	id: 'N-' + (r.id + '-gen').simpleHash(),
 									resource: r.id,
 									changedAt: tim
 								})
@@ -1110,7 +1089,7 @@ function Project( pr ) {
 					// ToDo: Save changes from deduplication to the server.
 //					console.debug('#5',simpleClone(self.data),opts);
 				//	uDO.resolve({status:0});
-					self.collectResourceClasses(self.data,opts)
+					self.collectResourcesByClass(self.data,opts)
 					.then( 
 						()=>{ 
 							self.createGlossary(self.data,opts)
@@ -2684,8 +2663,8 @@ const specif = {
 		} catch (e) {
 			console.error( "Error when importing the project '"+spD.title+"'" );
 			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
-			return null
-		};
+			return undefined
+		}; 
 		
 		// header information provided only in case of project creation, but not in case of project update:
 		if( spD.id ) iD.id = spD.id;
@@ -2768,6 +2747,7 @@ const specif = {
 				if( iE.value ) oE.value = cleanValue(iE.value);
 				oE.dataType = iE.dataType;
 				let dT = itemById( iD.dataTypes, iE.dataType );
+//				console.debug('pC2int',iE,dT);
 				switch( dT.type ) {
 					case 'xs:enumeration': 
 						// include the property only, if is different from the dataType's:
