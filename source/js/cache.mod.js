@@ -930,7 +930,7 @@ function Project( pr ) {
 									// Create new hierarchy node with reference to the resource:
 									// ID should be the same when the glossary generated multiple times, 
 									// but must be different from a potential reference somewhere else.
-								//	id: 'N-' + (r.id + '-gen').simpleHash(),
+									id: 'N-' + (r.id + '-gen').simpleHash(),
 									resource: r.id,
 									changedAt: tim
 								})
