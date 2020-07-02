@@ -1,5 +1,5 @@
 # SpecIF Viewer and Editor
-An app for your web-browser to view, edit* and transform system specifications. (Features of the SpecIF Editor are market with an asterisk*).
+An app for your web-browser to view, edit* and transform system specifications. (Features of the SpecIF Editor are marked with an asterisk*).
 
 SpecIF is the 'Specification Integration Facility'. It's purpose is to combine partial specifications from different tools in a single model to allow
 - to search, navigate and audit partial results in a common context
