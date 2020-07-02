@@ -49,4 +49,4 @@ The app has been installed for demonstration
 For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view' or 'yourPath/edit' with a web-browser.
 
 ## Acknowledgements
-This work has been sponsored by [enso-managers gmbh](http://enso-managers.de), Berlin
+This work has been sponsored by [enso-managers gmbh](http://enso-managers.de) and [adesso SE](http://adesso.de), both Berlin
