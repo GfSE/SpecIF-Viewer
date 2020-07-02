@@ -40,7 +40,7 @@ The app has been installed for demonstration
 ## Compatibility
 - Mozilla Firefox
 - Google Chromium and Chrome
-- Apple Safari
+- Apple Safari _(beware of performance issues in case of bigger models)_
 - Opera
 - Microsoft Edge _(beware of performance issues in case of bigger models)_
 - Microsoft Internet Explorer is _not any more_ supported
