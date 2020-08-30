@@ -6,7 +6,7 @@
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
 */
 
-// Constructor for BPMN import:
+// Constructor for Archimate Open-Exchange import:
 // (A module constructor is needed, because there is an access to parent's data via 'self')
 modules.construct({
 	name: 'ioArchimate'
@@ -17,9 +17,6 @@ modules.construct({
 		data = null,		// the SpecIF data structure for xls content
 		bDO = null;
 
-	// Create a DOM element for the bpmnViewer outside of the visible area:
-	$('#app').after('<div id="bpmnView"></div>');
-		
 	self.init = function() {
 		return true
 	};
@@ -56,7 +53,7 @@ modules.construct({
 		return f
 	},
 	self.toSpecif = function( buf ) {
-		// import a BPMN file from a buffer:
+		// import an Archimate Open-Exchange file (XML) from a buffer:
 		self.abortFlag = false;
 		bDO = $.Deferred();
 

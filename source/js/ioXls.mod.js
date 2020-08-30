@@ -568,7 +568,7 @@ function xslx2specif( buf, pN, chAt ) {
 		transformSheet(l);
 
 //	console.info('SpecIF created from '+pN+' (Excel)');
-	console.debug('SpecIF',specif);
+//	console.debug('SpecIF',specif);
 	return specif
 }	// end of xlsx2specif
 

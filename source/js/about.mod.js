@@ -63,14 +63,14 @@ modules.construct({
 		+		'<ul>'
 		+		  "<li>Mozilla Firefox</li>"
 		+		  "<li>Google Chromium and Chrome</li>"
-		+		  "<li>Apple Safari</li>"
+		+		  "<li>Apple Safari <em>(beware of performance issues in case of bigger models)</em></li>"
 		+		  "<li>Opera</li>"
 		+		  "<li>Microsoft Edge <em>(beware of performance issues in case of bigger models)</em></li>"
 		+		  "<li>Microsoft Internet Explorer is <em>not</em> supported</li>"
 		+		'</ul>'
 		+	'</div>'
 		+	'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'
-		+	'<h4>Credits</h4>'
+		+	'<h4>Credits and License Information</h4>'
 		+	'<p>The web-apps have been built with the open source components listed below. These are fine pieces of software '
 		+				'and we gratefully thank the contributors for their effort.'
 	//	+				'and we gratefully thank the contributors for their effort. Our policy is to donate 12% of our revenues made with'

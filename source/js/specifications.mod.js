@@ -36,16 +36,16 @@ modules.construct({
 		
 		//  Add the left panel for tree or details and the up/down buttons to the DOM:
 		let h = '<div id="specLeft" class="paneLeft">'
-			+		'<div id="hierarchy" class="pane-tree" />'
-			+		'<div id="details" class="pane-details" />'
+			+		'<div id="hierarchy" class="pane-tree" ></div>'
+			+		'<div id="details" class="pane-details" ></div>'
 			+	'</div>'
 			+	'<div id="specCtrl" class="contentCtrl" >'
 			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
 			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
 			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
 			+		'</div>'
-			+		'<div id="contentNotice" class="contentNotice" />'
-			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" />'
+			+		'<div id="contentNotice" class="contentNotice" ></div>'
+			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" ></div>'
 			+	'</div>';
 		if(self.selector)
 			$(self.selector).after( h )
@@ -143,7 +143,7 @@ modules.construct({
 								}
 							},
 							stdError 
-						); 
+						)
 					}
 			}
 		});
@@ -231,13 +231,14 @@ modules.construct({
 		}
 	}  */
 
-	self.updateTree = ( spc, prj, opts )=>{
+	self.updateTree = ( opts, spc, prj )=>{
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
+		// undefined parameters are replaced by default values:
 		if( !prj ) prj = app.cache.selectedProject.data;
 		if( !spc ) spc = prj.hierarchies;
-//		console.debug('updateTree',spc, simpleClone(prj), opts);
+//		console.debug( 'updateTree', simpleClone(spc), simpleClone(prj), opts );
 		
 		let tr;
 		// Replace the tree:
@@ -256,19 +257,18 @@ modules.construct({
 		// -----------------
 		function toChild( iE ) {
 			// transform SpecIF hierarchy to jqTree:
-			let r = itemById( app.cache.selectedProject.data.resources, iE.resource );
+			let r = itemById( prj.resources, iE.resource );
 //			console.debug('toChild',iE.resource,r);
 			var oE = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				name: desperateTitleOf(r,opts,prj), 
-				ref: iE.resource.id || iE.resource // for SpecIF 0.11.x and 0.10.x
+				ref: iE.resource.id || iE.resource // for key (with revision) or for id (without revision)
 			};
 			oE.children = forAll( iE.nodes, toChild );
 		//	if( typeof(iE.upd)=='boolean' ) oE.upd = iE.upd;
 			if( iE.revision ) oE.revision = iE.revision;
 			oE.changedAt = iE.changedAt;
-//			console.debug( 'toChild', iE,r,oE )
 			return oE
 		}
 	};
@@ -292,8 +292,8 @@ modules.construct({
 			nd;
 
 		// Select the language options at project level:
-		opts.targetLanguage = self.targetLanguage = browser.language;
-		opts.lookupTitles = self.lookupTitles = true;
+		opts.targetLanguage = browser.language;
+		opts.lookupTitles = true;
 				
 		// Initialize the tree, unless
 		// - URL parameters are specified where the project is equal to the loaded one
@@ -313,8 +313,8 @@ modules.construct({
 			.then( 
 				(rsp)=>{
 //					console.debug('load',rsp);
-			//		self.updateTree( itemById( app.cache.selectedProject.data.hierarchies, rsp.id ) )
-					self.updateTree( rsp, app.cache.selectedProject.data, opts )
+					// undefined parameters will be replaced by default value:
+					self.updateTree( opts, rsp )
 
 					// all hierarchies have been loaded;
 					// try to select the requested node:
@@ -542,8 +542,8 @@ modules.construct({
 		
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
-		opts.targetLanguage = self.targetLanguage = browser.language;
-		opts.lookupTitles = self.lookupTitles = true;
+		opts.targetLanguage = browser.language;
+		opts.lookupTitles = true;
 				
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
 	//	if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
@@ -602,7 +602,6 @@ modules.construct({
 		)
 	};
 	function actionBtns() {
-
 		// rendered buttons:
 		var rB = '<div class="btn-group btn-group-sm" >';
 //		console.debug( 'linkBtns', self.resCre );
@@ -633,7 +632,7 @@ modules.construct({
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
 		// Add the update and delete buttons depending on the current user's permissions for the selected resource:
-		/*	function attrUpd() {
+		/*	function propUpd() {
 				// check whether at least one property is editable:
 				console.debug('#',selRes);
 				if( selRes.other )
@@ -642,7 +641,7 @@ modules.construct({
 					};
 				return false
 			}  */
-	//	if( attrUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
+	//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
 		if( app.label!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
 			rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
 		else
@@ -737,10 +736,14 @@ modules.construct({
 					()=>{
 						// If it was a diagram, build a new glossary with elements 
 						// which are still shown by any of the remaining diagrams:
-						app.cache.selectedProject.createGlossary( cData, {mode:'adopt',addGlossary:true} )
+						app.cache.selectedProject.createGlossary( cData, {addGlossary:true} )
 							.then( 
-								function() {  
-									pData.updateTree();
+								()=>{  
+									// undefined parameters will be replaced by default value:
+									pData.updateTree({
+										targetLanguage: browser.language,
+										lookupTitles: true
+									});
 									pData.doRefresh({forced:true})
 								},
 								stdError 
@@ -760,7 +763,7 @@ modules.construct({
 				}
 			},{
 				label: i18n.BtnDeleteObjectRef,
-				action: function (thisDlg) {
+				action: (thisDlg)=>{
 					delNd( pData.tree.selectedNode );
 					thisDlg.close() 
 				}
@@ -1103,7 +1106,7 @@ modules.construct({
 
 //			console.debug('renderStatements',net);
 		
-		$( self.view ).html( '<div id="statementGraph" style="width:100%; height: 600px;" />' );
+		$( self.view ).html( '<div id="statementGraph" style="width:100%; height: 600px;" ></div>' );
 		let options = {
 			index: 0,
 			canvas:'statementGraph',
@@ -1397,13 +1400,12 @@ function Resource( obj ) {
 		rO += renderChangeInfo( self.toShow );
 //		console.debug( 'Resource.details', self.toShow, rO );
 		return rO  // return rendered resource for display
-	};
-*/
+	};  */
 	function renderTitle( clsPrp, opts ) {
 		if( !clsPrp.title ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf( clsPrp.title, opts ).stripCtrl();
+		let ti = titleOf( clsPrp, opts );
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
@@ -1537,22 +1539,16 @@ function desperateTitleOf(r,opts,prj) {
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
 function propertyValueOf( prp, opts ) {
 	"use strict";
-	if( typeof(opts)=='object' ) {
-		if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
-		if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-		if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false;
-		// some environments escape the tags on export, e.g. camunda / in|flux:
-		if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
-		// markup to HTML:
-		if( typeof(opts.makeHTML)!='boolean' ) 			opts.makeHTML = false
-	} else {
-		opts = {
-			dynLinks: false,
-			clickableElements: false,
-			linkifiedURLs: false,
-			lookupTitles: false
-		}
-	};
+	if( typeof(opts)!='object' ) opts = {};
+	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
+	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
+	if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false;
+	// some environments escape the tags on export, e.g. camunda / in|flux:
+	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
+	// markup to HTML:
+	if( typeof(opts.makeHTML)!='boolean' ) 			opts.makeHTML = false;
+	if( typeof(opts.lookupTitles)!='boolean' ) 		opts.lookupTitles = false;
+
 	// Malicious content has been removed upon import ( specif.toInt() ).
 	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ),
 		ct; 
@@ -1789,6 +1785,7 @@ function File() {
 //				console.debug('fileRef.toGUI 2 found: ', $0, u1, t1, s1, d, e );
 //				u1 = addFilePath(u1);
 				if( !u1 ) console.info('no image found');
+				let f = itemByTitle(app.cache.selectedProject.data.files,u1);
 					
 				if( CONFIG.imgExtensions.indexOf( e )>-1 || e=='bpmn' ) {  
 		/*			// it is an image, show it:
@@ -1804,7 +1801,6 @@ function File() {
 						d = '<img src="'+u1+'"'+t1+s1+' alt="'+d+'" />'
 					}  */
 				
-					let f = itemByTitle(app.cache.selectedProject.data.files,u1);
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
 					if( f && f.blob ) {
 						hasImg = true;
@@ -1815,39 +1811,48 @@ function File() {
 					} else {
 						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
 					}
-				} else {
-					if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
-						// it is an office file, show an icon plus filename:
+				} else if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
+					// it is an office file, show an icon plus filename:
+					if( f && f.blob ) {
 						hasImg = true;
-						d = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="'+d+'" />'
-						// ToDo: Offer a link for downloading the file
-						// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
-						// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+						// first add the element to which the attachment will be added:
+						d= '<div id="'+tagId(u1)+'"></div>';
+						// now add the download link of the attachment as innerHTML:
+						// see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+						// see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+						blob2dataURL( f, (r,fTi,fTy)=>{
+							// add link with icon to DOM using an a-tag with data-URI:
+							document.getElementById(tagId(fTi)).innerHTML = 
+								'<a href="'+r+'" type="'+fTy+'" download="'+fTi+'" >'
+							+		'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />'
+							+	'</a>'
+						},opts.timelag)
 					} else {
-						switch( e ) { 
-							case 'ole': 
-								// It is an ole-file, so add a preview image;
-								// in case there is no preview image, the browser will display d holding the description
-								// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
-								// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
-								// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
-								hasImg = true;
-							//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
-								d = '<img src="'+u1.fileName()+'.png" type="image/png" alt="'+d+'" />';
-								// ToDo: Offer a link for downloading the file
-								break;
-							default:
-								// last resort is to take the filename:
-								d = '<span>'+d+'</span>'  
-								// ToDo: Offer a link for downloading the file
-						}
+						d = '<div class="notice-danger" >File missing: '+d+'</div>'
+					}
+				} else {
+					switch( e ) { 
+						case 'ole': 
+							// It is an ole-file, so add a preview image;
+							// in case there is no preview image, the browser will display d holding the description
+							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
+							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
+							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
+							hasImg = true;
+						//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
+							d = '<img src="'+u1.fileName()+'.png" type="image/png" alt="'+d+'" />';
+							// ToDo: Offer a link for downloading the file
+							break;
+						default:
+							// last resort is to take the filename:
+							d = '<span>'+d+'</span>'  
+							// ToDo: Offer a link for downloading the file
 					}
 				};
 					
 				// finally add the link and an enclosing div for the formatting:
-			//	return ('<div class="'+opts.imgClass+'"><a href="'+u1+'"'+t1+' >'+d+'</a></div>')
-
 				// avoid that a pattern is processed twice.
+
 				// insert a placeholder and replace it with the prepared string at the end ...
 				if( hasImg )
 					repSts.push( d )
@@ -1881,7 +1886,7 @@ function File() {
 				e = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />'
 					
 				// finally add the link and an enclosing div for the formatting:
-				return ('<div class="'+opts.imgClass+'"><a href="'+u1+'"'+t1+' >'+e+'</a></div>')
+				return ('<a href="'+u1+'" '+t1+' target="_blank" >'+e+'</a>')
 			}
 		);	
 //		console.debug('fileRef.toGUI 3: ', txt);
@@ -1896,7 +1901,7 @@ function File() {
 	};
 	self.render = (f, opts)=>{
 		if( typeof(opts)!='object' ) opts = {};
-		if( !opts.timelag )  opts.timelag = CONFIG.imageRenderingTimelag;
+		if( !opts.timelag ) opts.timelag = CONFIG.imageRenderingTimelag;
 
 //		console.debug('render',f,opts);
 		if( !f || !f.blob ) {
@@ -1933,16 +1938,16 @@ function File() {
 				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 				// increase the timelag between building the DOM and rendering the images, if necessary.
 				blob2dataURL( f, (r,fTi,fTy)=>{
-					// add image to DOM using an image-tag with data-URI.
-					// set a grey background color for images with transparency:
+					// add image to DOM using an image-tag with data-URI:
 					Array.from( document.getElementsByClassName(tagId(fTi)), 
-						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'}
+						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" />'}
+					/*	// set a grey background color for images with transparency:
+						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
 					)
 				},opts.timelag)
 			}
 			function showSvg(f,opts) {
 				// Show a SVG image.
-				// ToDo: IE shows the image rather small.
 				
 				// Load pixel images embedded in SVG,
 				// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
@@ -1972,32 +1977,37 @@ function File() {
 						if( mL[2].startsWith('data:') ) continue;
 						// avoid transformation of redundant images:
 						if( indexById(dataURLs,mL[2])>-1 ) continue;
-						pend++;
 						ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
-//						console.debug('SVG embedded file',mL[2],ef,pend);
-						// transform file to data-URL and display, when done:
-						blob2dataURL( ef, (r,fTi)=>{
-							dataURLs.push({
-								id: fTi,
-								val: r
-							});
-//							console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
-							if( --pend<1 ) {
-								// all embedded images have been transformed,
-								// replace references by dataURLs and add complete image to DOM:
-								svg.img = svg.img.replace( rE, ($0,$1,$2,$3)=>{
-															return $1+itemBySimilarId(dataURLs,$2).val+$3
-														});
-								Array.from( svg.locs, 
-									(loc)=>{
-										loc.innerHTML = svg.img;
-										if( opts && opts.clickableElements ) registerClickEls(loc)
-									}
-								)
-							}
-						});
+						if( ef && ef.blob ) {
+							pend++;
+//							console.debug('SVG embedded file',mL[2],ef,pend);
+							// transform file to data-URL and display, when done:
+							blob2dataURL( ef, (r,fTi)=>{
+								dataURLs.push({
+									id: fTi,
+									val: r
+								});
+//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
+								if( --pend<1 ) {
+									// all embedded images have been transformed,
+									// replace references by dataURLs and add complete image to DOM:
+									svg.img = svg.img.replace( rE, ($0,$1,$2,$3)=>{
+																let dURL=itemBySimilarId(dataURLs,$2);
+																// replace only if dataURL is available:
+																if( dURL ) return $1+dURL.val+$3
+																else return '';
+															});
+									Array.from( svg.locs, 
+										(loc)=>{
+											loc.innerHTML = svg.img;
+											if( opts && opts.clickableElements ) registerClickEls(loc)
+										}
+									)
+								}
+							})
+						}
 					};
-					if( pend==0 ) {
+					if( pend<1 ) {
 						// there are no embedded images, so display right away:
 						Array.from( svg.locs, 
 							(loc)=>{
@@ -2063,7 +2073,7 @@ function File() {
 									dsc = '';
 								clsPrp.descriptions.forEach( (d)=>{
 									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
-									dsc += propertyValueOf(d)
+									dsc += propertyValueOf( d, {unescapeHTMLTags:true,makeHTML:true} )
 								});
 								if( dsc.stripCtrl().stripHTML() ) {
 									// Remove the dynamic linking pattern from the text:
@@ -2141,18 +2151,19 @@ function File() {
 				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 				// increase the timelag between building the DOM and rendering the images, if necessary.
 				// Read and render BPMN:
-				blob2text( f, (r,fTi)=>{
-					bpmn2svg(r, (err,svg)=>{ 
-								// this is the bpmnViewer callback function:
-								if (err) {
-									console.error('BPMN-Viewer could not deliver SVG', err);
-									return 
-								};
-//								console.debug('SVG',svg);
-								Array.from( document.getElementsByClassName(tagId(fTi)), 
-									(el)=>{el.innerHTML = svg}
-								)
-							})
+				blob2text( f, (b,fTi)=>{
+					bpmn2svg(b)
+					.then(
+						(result)=>{
+//							console.debug('SVG',result);
+							Array.from( document.getElementsByClassName(tagId(fTi)), 
+								(el)=>{ el.innerHTML = result.svg }
+							)
+						},
+						(err)=>{
+							console.error('BPMN-Viewer could not deliver SVG', err)
+						}
+					)
 				}, opts.timelag)  
 			}
 			function itemBySimilarId(L,id) {

@@ -37,7 +37,7 @@ function CheckForm() {
 	self.do = function() {
 		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
 		let val, ok, allOk = true;
-		self.list.forEach( function(cPs) {
+		self.list.forEach( (cPs)=>{
 			// cPs holds the parameters for checking a single property resp. input field.
 			// Get the input value:
 			val = textValue( cPs.label );
@@ -184,7 +184,7 @@ function radioForm( lbl, entries, opts ) {
 	};
 	// zero or one checked entry is allowed:
 	let found = false, temp; 
-	entries.forEach( function(e) {
+	entries.forEach( (e)=>{
 		temp = found || e.checked;
 		if( found && e.checked )
 			e.checked = false; // only the first check will remain
@@ -192,7 +192,7 @@ function radioForm( lbl, entries, opts ) {
 	});
 	// render options:
 	let tp, nm=lbl.label.simpleHash();
-	entries.forEach( function(e,i) {
+	entries.forEach( (e,i)=>{
 		tp = ( e.type )?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		rB +=			'<label>'
 			+				'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
@@ -402,7 +402,7 @@ function Message() {
 		
 		if( opts.duration>10 ) {
 			pend++;
-			setTimeout(function() {remove()}, opts.duration)
+			setTimeout( remove, opts.duration)
 		}
 		// else: static message until it is over-written
 	};
@@ -448,7 +448,7 @@ function doResize( opt ) {
 }
 function bindResizer() {
 	// adapt the display in case the window is being resized:
-	$(window).resize(function() {
+	$(window).resize( ()=>{
 //		console.debug('resize'); 
 		doResize();
 	})
@@ -705,10 +705,10 @@ function makeHTML(str,opts) {
 	return aRet.join('');
 }
 String.prototype.xmlChar2utf8 = function() {
-		this = this.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
+		this = this.replace(/&#x([0-9a-fA-F]+);/g, function(match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 16))
 		});
-		return this.replace(/&#([0-9]+);/g, function (match, numStr) {
+		return this.replace(/&#([0-9]+);/g, function(match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 10))
 		})
 } */
@@ -718,19 +718,19 @@ String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]
 String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
 // escape HTML characters:
 String.prototype.escapeXML = function() {
-	return this.replace(/["'&<>]/g, function($0) {
+	return this.replace(/["'&<>]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 	})
 };
 String.prototype.escapeHTML = function() {
-	return this.replace(/[&<>"'`=\/]/g, function($0) {
+	return this.replace(/[&<>"'`=\/]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	})
 };
 String.prototype.unescapeHTMLTags = function() {
 //  Unescape known HTML-tags:
 	if( isHTML(this) ) return this;
-	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, function ($0,$1,$2,$3) {
+	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, ($0,$1,$2,$3)=>{
 		return '<'+$1+$2+$3+'>'
 	}))
 };
@@ -738,7 +738,7 @@ String.prototype.unescapeHTMLTags = function() {
 String.prototype.unescapeHTMLEntities = function() {
 	// unescape HTML encoded entities (characters):
 	var el = document.createElement('div');
-	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, function (enc) {
+	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
         return el.innerText
 		
@@ -761,7 +761,7 @@ String.prototype.linkifyURLs = function( opts ) {
 	// perform the operation, unless specifically disabled:
 	if( typeof(opts)=='object' && !opts.linkifiedURLs ) return this;
 	return this.replace( RE.URI,  
-		function( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 ){ 
+		( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 )=>{ 
 			// all links which do not start with "http" are considered local by most browsers:
 			if( !$2.startsWith('http') ) $2 = 'https://'+$2;  // starts with "www." then according to RE.URI
 		/*	// we must encode the URI, but to avoid that an already encoded URI is corrupted, we first decode it
@@ -797,7 +797,7 @@ String.prototype.removeBOM = function() {
 	// remove the byte order mask from a UTF-8 coded string
 	// ToDo: Any whitespace between BOM and JSON is not taken care of.
 	// ToDo: The BOM may be "FE FF" in certain representations.
-	return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, function($0,$1,$2) {return $2} )
+	return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, ($0,$1,$2)=>{return $2} )
 };
 */
 function toHex(str) {
@@ -808,6 +808,7 @@ function toHex(str) {
 	};
 	return hex
 }
+/*
 if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) {
     'use strict';
@@ -921,25 +922,25 @@ if (!Array.prototype.find) {
 };
 // Production steps of ECMA-262, Edition 6, 22.1.2.1
 if (!Array.from) {
-  Array.from = (function () {
+  Array.from = ( function() {
     var toStr = Object.prototype.toString;
-    var isCallable = function (fn) {
+    var isCallable = function(fn) {
       return typeof(fn) === 'function' || toStr.call(fn) === '[object Function]';
     };
-    var toInteger = function (value) {
+    var toInteger = function(value) {
       var number = Number(value);
       if (isNaN(number)) { return 0; }
       if (number === 0 || !isFinite(number)) { return number; }
       return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
     };
     var maxSafeInteger = Math.pow(2, 53) - 1;
-    var toLength = function (value) {
+    var toLength = function(value) {
       var len = toInteger(value);
       return Math.min(Math.max(len, 0), maxSafeInteger);
     };
 
     // The length property of the from method is 1.
-    return function from(arrayLike/*, mapFn, thisArg */) {
+    return function from(arrayLike) {
       // 1. Let C be the this value.
       var C = this;
 
@@ -996,7 +997,7 @@ if (!Array.from) {
       return A;
     };
   }());
-};
+};*/
 // Convert arrayBuffer from and to string:
 function buf2str(buf) {
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
@@ -1029,20 +1030,22 @@ function str2buf(str) {
 	}
 }
 function blob2dataURL(file,fn,timelag) {
+	if( !file || !file.blob ) return;
 	const reader = new FileReader();
-	reader.addEventListener('loadend', function(e) { fn(e.target.result,file.title,file.type) });
+	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
 	if( typeof(timelag)=='number' && timelag>0 )
-		setTimeout(function() {
+		setTimeout( ()=>{
 			reader.readAsDataURL(file.blob)
 		}, timelag )
 	else
 		reader.readAsDataURL(file.blob)
 } 
 function blob2text(file,fn,timelag) {
+	if( !file || !file.blob ) return;
 	const reader = new FileReader();
-	reader.addEventListener('loadend', function(e) { fn(e.target.result,file.title,file.type) });
+	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
 	if( typeof(timelag)=='number' && timelag>0 )
-		setTimeout(function() {
+		setTimeout( ()=>{
 			reader.readAsText(file.blob)
 		}, timelag )
 	else
@@ -1074,20 +1077,20 @@ function cleanValue( o ) {
 		case 'string': return noCode( o ); 
 		case 'object': 
 			if( Array.isArray( o ) )
-				return forAll( o, function( val ) { val.text = noCode(val.text); return val } )
+				return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } )
 	};
 	return ''  // unexpected input (programming error with all likelihood
 }
 
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
-    Array.isArray = function(obj) {
+    Array.isArray = (obj)=>{
         return Object.prototype.toString.call(obj) === "[object Array]"
     }
 }
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger
 if (!Number.isInteger) {
-	Number.isInteger = function(val) {
+	Number.isInteger = (val)=>{
 		return typeof(val)==='number' && isFinite(val) && Math.floor(val) === val
 	}
 };
@@ -1135,7 +1138,7 @@ function simpleClone( o ) {
 		for( var p in o ) {
 			if( Array.isArray(o[p]) ) {
 				n[p] = [];
-				o[p].forEach( function(op) {
+				o[p].forEach( (op)=>{
 					n[p].push( cloneProp(op) )
 				});
 				continue
@@ -1172,7 +1175,7 @@ function getUrlParams(opts) {
 		if( !h ) return {};
 		var pO = {};
 		h = h.split(opts.separator);
-		h.forEach( function(p) {
+		h.forEach( (p)=>{
 			p = p.split('=');
 			// remove enclosures from the value part:
 			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
@@ -1228,7 +1231,7 @@ function httpGet(parms) {
 	if( parms.withCredentials ) xhr.withCredentials = "true";
 	// https://stackoverflow.com/a/42916772/2214
 	xhr.responseType = parms.responseType;
-	xhr.onreadystatechange = function () {
+	xhr.onreadystatechange = function() {
 //		console.debug('xhr',this.readyState,this)
 		if (this.readyState<4 ) return;
 		if ( this.readyState==4 ) {

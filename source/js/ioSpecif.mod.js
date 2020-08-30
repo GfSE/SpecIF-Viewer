@@ -112,7 +112,7 @@ modules.construct({
 															zDO.resolve( data )		// data is in SpecIF format
 													}) 
 												});
-								if( pend==0 ) zDO.resolve( data )	// no suitable file found, continue anyways
+								if( pend<1 ) zDO.resolve( data )	// no suitable file found, continue anyways
 							} else {
 								// no files with permissible types are supplied:
 								zDO.resolve( data )		// data is in SpecIF format

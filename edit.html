@@ -25,9 +25,9 @@ function App() {
 	"use strict";
 	// construct main app:
 	var self = this;
-	self.productVersion = 'v0.98.8'; // the name of the subdirectory needs to be changed, accordingly.
+	self.productVersion = 'v0.98.10'; // the name of the subdirectory needs to be changed, accordingly.
 	self.specifVersion = '1.0';
-	self.init = function() {
+	self.init = ()=>{
 		// must set it here, because the language files must be read first:
 		self.productTitle = 'SpecIF Edit';
 		self.label = i18n.LblEditor;
@@ -87,7 +87,7 @@ function App() {
 					name: 'ioXls'
 					// no view
 				}]
-			}, {
+			},{
 				name: CONFIG.specifications,
 				loadAs: 'specs',					// the name of the controller object to construct
 				// This is a view of the parent:
@@ -135,7 +135,7 @@ function App() {
 				},{
 					name: CONFIG.resourceEdit
 					// no loadAs, so name will be used for the controller object
-					// no view as a modal window will be used
+					// no view; just modal dialogs will be used
 					// no selector
 					// the view will be called by pressing an item action button; the function to call
 					//   is added manually in view 'CONFIG.specifications'.
@@ -144,7 +144,7 @@ function App() {
 					// as above
 				}]
 			},{
-				action: 'app.cache.selectedProject.export()',
+				action: 'app.export()',
 				label: i18n.BtnExport,
 				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
 				// no selector: the children don't have views
@@ -169,19 +169,19 @@ function App() {
 		// React on Browser Back/Forward buttons:
 		window.addEventListener("hashchange", self.show );
 		// Warn before leaving the page (back button, or outgoinglink):
-		window.onbeforeunload = function() {
+		window.onbeforeunload = ()=>{
 		   return "You are about to leave this application - did you save any changes you made?";
 		};		
 
 		// Make sure page divs are resized, if the browser window is changed in size: 
 		bindResizer();
 		
-		modules.load( define, {done:function() { self.show() }} );
+		modules.load( define, {done: ()=>{ self.show() }} );
 		console.info( self.label+" started!" )
 	};
-	self.show = function() {
+	self.show = ()=>{
 		self.me.read()
-			.done(function() {
+			.done( ()=>{
 				var uP = getUrlParams(), v;
 				if( !app.cache.selectedProject 
 					|| !app.cache.selectedProject.loaded() 
@@ -196,20 +196,25 @@ function App() {
 //				console.debug( 'app.view', uP, v );
 				modules.show({newView:v,urlParams:uP});
 			})
-			.fail(function() {
+			.fail(()=>{
 				self.hide()
 			})
 	};
-/*	self.hide = function() {
+	self.export = ()=>{
+		if( !app.cache.selectedProject || !app.cache.selectedProject.data.id )
+			message.show( i18n.MsgNoProjectLoaded, {severity:'warning', duration:CONFIG.messageDisplayTimeShort} );
+		app.cache.selectedProject.export()
+	};
+/*	self.hide = ()=>{
 		// hide the app:
 		// ToDo, but so far it is not called and it is not even clear what should happen ;-)
 	};
-	self.updateMe = function() {
+	self.updateMe = ()=>{
 		message.hide();
 		self.hide();
 //		me.beginUpdate()
 	};
-	self.logout = function() {
+	self.logout = ()=>{
 //		me.logout();
 		self.hide();
 	}; */
@@ -220,18 +225,15 @@ app = new App();
 // Get two fundamental libraries in parallel, then initialize the module loader using 'modules.init' ..
 // and finally start the app using 'app.init':
 	// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
-	function getScript(url, callback) {
+	function getScript(url) {
 		var el = document.createElement('script');
-		el.onload = callback;
+		el.onload = ()=>{ if( --pend<1 ) modules.init({ done: app.init }) };
 		el.src = url;
 		document.body.appendChild(el)
 	}
-	function start() {
-		if( --pend<1 ) modules.init({ done: app.init })
-	}
 let pend=2;
-getScript('https://code.jquery.com/jquery-3.4.1.min.js', start );
-getScript('./'+app.productVersion+'/modules.js', start )
+getScript('https://code.jquery.com/jquery-3.5.1.min.js' );
+getScript('./'+app.productVersion+'/modules.js' )
 
 </script>  
 </body>

@@ -22,25 +22,25 @@ function LanguageTextsFr() {
 		return self[lb.toJsId()] || lb
 	};
 
-	self.IcoUser = '<span class="glyphicon glyphicon-user"/>';
-	self.IcoSpecification = '<span class="glyphicon glyphicon-book"/>';
-//	self.IcoReadSpecification = '<span class="glyphicon glyphicon-eye-open"/>';
-//	self.IcoUpdateSpecification = '<span class="glyphicon glyphicon-pencil"/>';
-//	self.IcoRead = '<span class="glyphicon glyphicon-eye-open"/>';
-	self.IcoImport = '<span class="glyphicon glyphicon-import"/>';
-	self.IcoExport = '<span class="glyphicon glyphicon-export"/>';
-	self.IcoAdminister = '<span class="glyphicon glyphicon-wrench"/>';
-	self.IcoUpdate = '<span class="glyphicon glyphicon-pencil"/>';
-	self.IcoDelete = '<span class="glyphicon glyphicon-remove"/>';
-	self.IcoAdd = '<span class="glyphicon glyphicon-plus"/>';
-	self.IcoClone = '<span class="glyphicon glyphicon-duplicate"/>';
-	self.IcoPrevious = '<span class="glyphicon glyphicon-chevron-up"/>';
-	self.IcoNext = '<span class="glyphicon glyphicon-chevron-down"/>';
-	self.IcoGo = '<span class="glyphicon glyphicon-search"/>';
-	self.IcoFilter = '<span class="glyphicon glyphicon-filter"/>';
-	self.IcoComment = '<span class="glyphicon glyphicon-comment"/>';
-	self.IcoURL = '<span class="glyphicon glyphicon-map-marker"/>';
-	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"/>';
+	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
+	self.IcoSpecification = '<span class="glyphicon glyphicon-book"></span>';
+//	self.IcoReadSpecification = '<span class="glyphicon glyphicon-eye-open"></span>';
+//	self.IcoUpdateSpecification = '<span class="glyphicon glyphicon-pencil"></span>';
+//	self.IcoRead = '<span class="glyphicon glyphicon-eye-open"></span>';
+	self.IcoImport = '<span class="glyphicon glyphicon-import"></span>';
+	self.IcoExport = '<span class="glyphicon glyphicon-export"></span>';
+	self.IcoAdminister = '<span class="glyphicon glyphicon-wrench"></span>';
+	self.IcoUpdate = '<span class="glyphicon glyphicon-pencil"></span>';
+	self.IcoDelete = '<span class="glyphicon glyphicon-remove"></span>';
+	self.IcoAdd = '<span class="glyphicon glyphicon-plus"></span>';
+	self.IcoClone = '<span class="glyphicon glyphicon-duplicate"></span>';
+	self.IcoPrevious = '<span class="glyphicon glyphicon-chevron-up"></span>';
+	self.IcoNext = '<span class="glyphicon glyphicon-chevron-down"></span>';
+	self.IcoGo = '<span class="glyphicon glyphicon-search"></span>';
+	self.IcoFilter = '<span class="glyphicon glyphicon-filter"></span>';
+	self.IcoComment = '<span class="glyphicon glyphicon-comment"></span>';
+	self.IcoURL = '<span class="glyphicon glyphicon-map-marker"></span>';
+	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
 	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 
 // Buttons:
@@ -128,9 +128,9 @@ function LanguageTextsFr() {
 	self.LblModifiedAt = 'Modifié le';
 	self.LblModifiedBy = 'Modifié par';
 	self.LblProjectDetails = 'Attributs';
-	self.LblProjectUsers = '<span class="glyphicon glyphicon-user"/>&#160;Utilisateur de ce projet';
+	self.LblProjectUsers = '<span class="glyphicon glyphicon-user"></span>&#160;Utilisateur de ce projet';
 	self.LblOtherUsers = 'Autres utilisateurs';
-	self.LblUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projets de cet utilisateur';
+	self.LblUserProjects = '<span class="glyphicon glyphicon-book"></span>&#160;Projets de cet utilisateur';
 	self.LblOtherProjects = 'Autres projets';
 	self.LblType = 'Type';
 	self.LblTypes = 'Types';
@@ -162,7 +162,7 @@ function LanguageTextsFr() {
 	self.modelElements = 'Élements de modèle';
 	self.withOtherProperties = 'avec autres attributes';
 	self.withStatements = 'avec affirmations';
-	self.LblStringMatch = '<span class="glyphicon glyphicon-text-background" />&#160;Recherche de texte';
+	self.LblStringMatch = '<span class="glyphicon glyphicon-text-background" ></span>&#160;Recherche de texte';
 	self.LblWordBeginnings = 'Seulement mots commençant par';
 	self.LblWholeWords = 'Seulement mots entiers';
 	self.LblCaseSensitive = 'Respecter majuscules et minuscules';
@@ -197,97 +197,97 @@ function LanguageTextsFr() {
 	self.LblMultipleChoice = "Choix multiple";
 	self.LblDirectLink = "Lien direct";
 
-	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"/>&#160;Se connecter';
-	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"/>&#160;Se déconnecter';
+	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"></span>&#160;Se connecter';
+	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"></span>&#160;Se déconnecter';
 	self.BtnProfile = 'Profile';
 	self.BtnBack = 'Retour';
 	self.BtnCancel = 'Annuler';
 	self.BtnCancelImport = "Interrompre";
 	self.BtnApply = 'Appliquer';
-	self.BtnDelete = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer';
-	self.BtnDeleteObject = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer la ressource avec ses references';
-	self.BtnDeleteObjectRef = '<span class="glyphicon glyphicon-remove"/>&#160;Effacer cette reference de ressource';
-	self.BtnImport = '<span class="glyphicon glyphicon-import"/>&#160;Importer';
-	self.BtnCreate = '<span class="glyphicon glyphicon-import"/>&#160;Créer';
-	self.BtnReplace = '<span class="glyphicon glyphicon-import"/>&#160;Remplacer';
-	self.BtnAdopt = '<span class="glyphicon glyphicon-import"/>&#160;Adopter';
-	self.BtnUpdate = '<span class="glyphicon glyphicon-import"/>&#160;'+	self.LblUpdate;
-//	self.BtnImportSpecif = '<span class="glyphicon glyphicon-import"/>&#160;SpecIF';
-//	self.BtnImportReqif = '<span class="glyphicon glyphicon-import"/>&#160;ReqIF';
-//	self.BtnImportXls = '<span class="glyphicon glyphicon-import"/>&#160;xlsx';
+	self.BtnDelete = '<span class="glyphicon glyphicon-remove"></span>&#160;Effacer';
+	self.BtnDeleteObject = '<span class="glyphicon glyphicon-remove"></span>&#160;Effacer la ressource avec ses references';
+	self.BtnDeleteObjectRef = '<span class="glyphicon glyphicon-remove"></span>&#160;Effacer cette reference de ressource';
+	self.BtnImport = '<span class="glyphicon glyphicon-import"></span>&#160;Importer';
+	self.BtnCreate = '<span class="glyphicon glyphicon-import"></span>&#160;Créer';
+	self.BtnReplace = '<span class="glyphicon glyphicon-import"></span>&#160;Remplacer';
+	self.BtnAdopt = '<span class="glyphicon glyphicon-import"></span>&#160;Adopter';
+	self.BtnUpdate = '<span class="glyphicon glyphicon-import"></span>&#160;'+	self.LblUpdate;
+//	self.BtnImportSpecif = '<span class="glyphicon glyphicon-import"></span>&#160;SpecIF';
+//	self.BtnImportReqif = '<span class="glyphicon glyphicon-import"></span>&#160;ReqIF';
+//	self.BtnImportXls = '<span class="glyphicon glyphicon-import"></span>&#160;xlsx';
 //	self.BtnProjectFromTemplate = "Créer un projet avec métadonnées ReqIF";
-	self.BtnRead = '<span class="glyphicon glyphicon-eye-open"/>&#160;Lire';
-	self.BtnExport = '<span class="glyphicon glyphicon-export"/>&#160;Exporter';
-//	self.BtnExportSpecif = '<span class="glyphicon glyphicon-export"/>&#160;SpecIF';
-//	self.BtnExportReqif = '<span class="glyphicon glyphicon-export"/>&#160;ReqIF';
-	self.BtnAdd = '<span class="glyphicon glyphicon-plus"/>&#160;Ajouter';
-	self.BtnAddUser = '<span class="glyphicon glyphicon-plus"/>&#160;Utilisateur';
-	self.BtnAddProject = '<span class="glyphicon glyphicon-plus"/>&#160;'+	self.LblProject;
-	self.BtnAddSpec = '<span class="glyphicon glyphicon-plus"/>&#160;Arborescence';
-	self.BtnAddFolder = '<span class="glyphicon glyphicon-plus"/>&#160;Dossier';
-	self.BtnAddAttribute = '<span class="glyphicon glyphicon-plus"/>&#160;Attribut';
-	self.BtnAddTypeComment = '<span class="glyphicon glyphicon-plus"/>&#160;Classes pour commentaires';
-	self.BtnClone = '<span class="glyphicon glyphicon-duplicate"/>&#160;Clone';
-	self.BtnEdit = '<span class="glyphicon glyphicon-pencil"/>&#160;Modifier';
-	self.BtnSave = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer';
-	self.BtnSaveRole = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer rôle';
-	self.BtnSaveAttr = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer attribut';
-	self.BtnInsert = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer';
-	self.BtnInsertSuccessor = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer après';
-	self.BtnInsertChild = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer en dessous';
-	self.BtnSaveRelation = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer affirmation';
-	self.BtnSaveItem = '<span class="glyphicon glyphicon-save"/>&#160;Enregistrer ~A';
+	self.BtnRead = '<span class="glyphicon glyphicon-eye-open"></span>&#160;Lire';
+	self.BtnExport = '<span class="glyphicon glyphicon-export"></span>&#160;Exporter';
+//	self.BtnExportSpecif = '<span class="glyphicon glyphicon-export"></span>&#160;SpecIF';
+//	self.BtnExportReqif = '<span class="glyphicon glyphicon-export"></span>&#160;ReqIF';
+	self.BtnAdd = '<span class="glyphicon glyphicon-plus"></span>&#160;Ajouter';
+	self.BtnAddUser = '<span class="glyphicon glyphicon-plus"></span>&#160;Utilisateur';
+	self.BtnAddProject = '<span class="glyphicon glyphicon-plus"></span>&#160;'+	self.LblProject;
+	self.BtnAddSpec = '<span class="glyphicon glyphicon-plus"></span>&#160;Arborescence';
+	self.BtnAddFolder = '<span class="glyphicon glyphicon-plus"></span>&#160;Dossier';
+	self.BtnAddAttribute = '<span class="glyphicon glyphicon-plus"></span>&#160;Attribut';
+	self.BtnAddTypeComment = '<span class="glyphicon glyphicon-plus"></span>&#160;Classes pour commentaires';
+	self.BtnClone = '<span class="glyphicon glyphicon-duplicate"></span>&#160;Clone';
+	self.BtnEdit = '<span class="glyphicon glyphicon-pencil"></span>&#160;Modifier';
+	self.BtnSave = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer';
+	self.BtnSaveRole = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer rôle';
+	self.BtnSaveAttr = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer attribut';
+	self.BtnInsert = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer';
+	self.BtnInsertSuccessor = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer après';
+	self.BtnInsertChild = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer en dessous';
+	self.BtnSaveRelation = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer affirmation';
+	self.BtnSaveItem = '<span class="glyphicon glyphicon-save"></span>&#160;Enregistrer ~A';
 	self.BtnDetails = 'Détails';
-	self.BtnAddRole = '<span class="glyphicon glyphicon-plus" />&#160;Rôle';
-	self.BtnFileSelect = '<span class="glyphicon glyphicon-plus" />&#160;Choisir un fichier ...';
-	self.BtnPrevious = '<span class="glyphicon glyphicon-chevron-up"/>&#160;'+	self.LblPrevious;
-	self.BtnNext = '<span class="glyphicon glyphicon-chevron-down"/>&#160;'+	self.LblNext;
+	self.BtnAddRole = '<span class="glyphicon glyphicon-plus" ></span>&#160;Rôle';
+	self.BtnFileSelect = '<span class="glyphicon glyphicon-plus" ></span>&#160;Choisir un fichier ...';
+	self.BtnPrevious = '<span class="glyphicon glyphicon-chevron-up"></span>&#160;'+	self.LblPrevious;
+	self.BtnNext = '<span class="glyphicon glyphicon-chevron-down"></span>&#160;'+	self.LblNext;
 	self.BtnGo = 	self.IcoGo+'&#160;'+	self.LblGo;
 	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neuf';
 	self.BtnSelectHierarchy = "Choix d'une arborescence";
 
 // Tabs:
-	self.TabAll = '<span class="glyphicon glyphicon-list"/>';   
-	self.TabUserList = '<span class="glyphicon glyphicon-list"/>&#160;Utilisateurs';
-	self.TabProjectList = '<span class="glyphicon glyphicon-list"/>&#160;Projets';
-//	self.TabProjectDetails = '<span class="glyphicon glyphicon-pencil"/>&#160;Attributs';  // métadonnées
-	self.TabUserDetails = '<span class="glyphicon glyphicon-pencil"/>&#160;Attributs';
-	self.TabProjectUsers = '<span class="glyphicon glyphicon-user"/>&#160;Utilisateurs';
-	self.TabUserProjects = '<span class="glyphicon glyphicon-book"/>&#160;Projets';
-	self.TabPermissions = '<span class="glyphicon glyphicon-lock"/>&#160;Autorisations';
-	self.TabTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblTypes;
-	self.TabDataTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblDataTypes;
-	self.TabSpecTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblResourceClasses;
-	self.TabObjectTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblResourceClasses;
-	self.TabRelationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblRelationTypes;
-//	self.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblRelGroupTypes;
-	self.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblSpecificationTypes;
-//	self.TabRifTypes = '<span class="glyphicon glyphicon-cog"/>&#160;'+	self.LblRifTypes;
-	self.TabTable = '<span class="glyphicon glyphicon-th"/>&#160;Table';
-	self.TabDocument = '<span class="glyphicon glyphicon-book"/>&#160;Document';
-	self.TabFind = '<span class="glyphicon glyphicon-search"/>&#160;Recherche';
+	self.TabAll = '<span class="glyphicon glyphicon-list"></span>';   
+	self.TabUserList = '<span class="glyphicon glyphicon-list"></span>&#160;Utilisateurs';
+	self.TabProjectList = '<span class="glyphicon glyphicon-list"></span>&#160;Projets';
+//	self.TabProjectDetails = '<span class="glyphicon glyphicon-pencil"></span>&#160;Attributs';  // métadonnées
+	self.TabUserDetails = '<span class="glyphicon glyphicon-pencil"></span>&#160;Attributs';
+	self.TabProjectUsers = '<span class="glyphicon glyphicon-user"></span>&#160;Utilisateurs';
+	self.TabUserProjects = '<span class="glyphicon glyphicon-book"></span>&#160;Projets';
+	self.TabPermissions = '<span class="glyphicon glyphicon-lock"></span>&#160;Autorisations';
+	self.TabTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblTypes;
+	self.TabDataTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblDataTypes;
+	self.TabSpecTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblResourceClasses;
+	self.TabObjectTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblResourceClasses;
+	self.TabRelationTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblRelationTypes;
+//	self.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblRelGroupTypes;
+	self.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblSpecificationTypes;
+//	self.TabRifTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblRifTypes;
+	self.TabTable = '<span class="glyphicon glyphicon-th"></span>&#160;Table';
+	self.TabDocument = '<span class="glyphicon glyphicon-book"></span>&#160;Document';
+	self.TabFind = '<span class="glyphicon glyphicon-search"></span>&#160;Recherche';
 	self.TabFilter = 	self.IcoFilter+'&#160;Filtre';
-	self.TabPage = '<span class="glyphicon glyphicon-file"/>&#160;Page';
-	self.TabRevisions = '<span class="glyphicon glyphicon-grain"/>&#160;Révisions';
-	self.TabTimeline = '<span class="glyphicon glyphicon-film"/>&#160;Chronologie';
-	self.TabRelations = '<span class="glyphicon glyphicon-link"/>&#160;Affirmations';
-	self.TabSort = '<span class="glyphicon glyphicon-magnet"/>&#160;Triage';
-	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"/>&#160;Images et fichiers';
-	self.TabComments = '<span class="glyphicon glyphicon-comment"/>&#160;Commentaires';
-	self.TabReports = '<span class="glyphicon glyphicon-stats"/>&#160;Rapports';
+	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Page';
+	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Révisions';
+	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Chronologie';
+	self.TabRelations = '<span class="glyphicon glyphicon-link"></span>&#160;Affirmations';
+	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Triage';
+	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Images et fichiers';
+	self.TabComments = '<span class="glyphicon glyphicon-comment"></span>&#160;Commentaires';
+	self.TabReports = '<span class="glyphicon glyphicon-stats"></span>&#160;Rapports';
 
 // Functions:
-	self.FnProjectCreate = '<span class="glyphicon glyphicon-plus"/>&#160;Projet';
-	self.FnProjectImport = '<span class="glyphicon glyphicon-import"/>&#160;Importer projet';
-//	self.FnImportReqif = '<span class="glyphicon glyphicon-import"/>&#160;Importer ReqIF';
-//	self.FnImportCsv = '<span class="glyphicon glyphicon-import"/>&#160;Importer CSV';
-//	self.FnImportXls = '<span class="glyphicon glyphicon-import"/>&#160;XLS Import';
-//	self.FnProjectFromTemplate = '<span class="glyphicon glyphicon-plus"/>&#160;Projet avec métadonnées';
-	self.FnRefresh = '<span class="glyphicon glyphicon-refresh"/>&#160;Actualiser';
-	self.FnRead = '<span class="glyphicon glyphicon-eye-open"/>';
+	self.FnProjectCreate = '<span class="glyphicon glyphicon-plus"></span>&#160;Projet';
+	self.FnProjectImport = '<span class="glyphicon glyphicon-import"></span>&#160;Importer projet';
+//	self.FnImportReqif = '<span class="glyphicon glyphicon-import"></span>&#160;Importer ReqIF';
+//	self.FnImportCsv = '<span class="glyphicon glyphicon-import"></span>&#160;Importer CSV';
+//	self.FnImportXls = '<span class="glyphicon glyphicon-import"></span>&#160;XLS Import';
+//	self.FnProjectFromTemplate = '<span class="glyphicon glyphicon-plus"></span>&#160;Projet avec métadonnées';
+	self.FnRefresh = '<span class="glyphicon glyphicon-refresh"></span>&#160;Actualiser';
+	self.FnRead = '<span class="glyphicon glyphicon-eye-open"></span>';
 	self.FnOpen = 	self.FnRead;
-	self.FnUpdate = '<span class="glyphicon glyphicon-wrench"/>';
-	self.FnDelete = '<span class="glyphicon glyphicon-remove"/>';
+	self.FnUpdate = '<span class="glyphicon glyphicon-wrench"></span>';
+	self.FnDelete = '<span class="glyphicon glyphicon-remove"></span>';
 	self.FnRemove = 	self.FnDelete;
 
 // ReqIF attribute names (replace any '.' by '_', so 'ReqIF.Text' becomes 'ReqIF_Text ):
@@ -410,6 +410,8 @@ function LanguageTextsFr() {
 	self.SpecIF_Collections = "Collections et Groupes";
 	self.SpecIF_Vote = "Evaluation";
 	self.SpecIF_Votes = "Evaluations";
+	self.SpecIF_Perspective = "Perspective";
+	self.SpecIF_Discipline = "Discipline";
 	self.SpecIF_Effort = "Effort";
 	self.SpecIF_Risk = 
 	self.IREB_Risk = "Risque";
@@ -441,6 +443,7 @@ function LanguageTextsFr() {
 	self.IREB_refinedBy = "est affiné de";
 	self.SpecIF_duplicates = "reprend";
 	self.SpecIF_contradicts = "contredit";
+	self.SpecIF_isAssignedTo =
 	self.SpecIF_isAssociatedWith =
 	self.SysML_isAssociatedWith = "est associé avec";
 	self.SysML_isAllocatedTo = "est éxecuté par";
@@ -536,6 +539,7 @@ function LanguageTextsFr() {
 	self.MsgConfirmRoleDeletion = "Effacer le rôle '<b>~A</b>' ?";
 	self.MsgConfirmFolderDeletion = "Effacer le dossier '<b>~A</b>' ?";
 	self.MsgInitialLoading = "Téléchargement de l'indexe en cours ...";
+	self.MsgNoProjectLoaded = 'Aucun projet chargé.';
 	self.MsgNoProject = 'Aucun projet trouvé.';
 	self.MsgNoUser = 'Aucun utilisateur trouvé.';
 	self.MsgNoObject = 'Aucune ressource choisi.';
@@ -641,17 +645,17 @@ function LanguageTextsFr() {
 //	self.monthAbbrs = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juill.', 'août', 'sept.', 'oct.', 'nov.', 'déc.' ];
 
 // App icons and titles:
-	self.IcoHome = '<span class="glyphicon glyphicon-home"/>';
-	self.IcoSystemAdministration = '<span class="glyphicon glyphicon-wrench"/>';
-	self.IcoUserAdministration = '<span class="glyphicon glyphicon-user"/>';
-	self.IcoProjectAdministration = '<span class="glyphicon glyphicon-cog"/>';
+	self.IcoHome = '<span class="glyphicon glyphicon-home"></span>';
+	self.IcoSystemAdministration = '<span class="glyphicon glyphicon-wrench"></span>';
+	self.IcoUserAdministration = '<span class="glyphicon glyphicon-user"></span>';
+	self.IcoProjectAdministration = '<span class="glyphicon glyphicon-cog"></span>';
 //	self.IcoProjectAdministration = '<span style="font-size:130%">&#9881;</span>';
-	self.IcoSpecifications = '<span class="glyphicon glyphicon-book"/>';
-	self.IcoReader = '<span class="glyphicon glyphicon-eye-open"/>';
-//	self.IcoImportReqif = '<span class="glyphicon glyphicon-import"/>';
-//	self.IcoImportCsv = '<span class="glyphicon glyphicon-import"/>';
-//	self.IcoImportXls = '<span class="glyphicon glyphicon-import"/>';
-	self.IcoSupport = '<span class="glyphicon glyphicon-question-sign"/>';
+	self.IcoSpecifications = '<span class="glyphicon glyphicon-book"></span>';
+	self.IcoReader = '<span class="glyphicon glyphicon-eye-open"></span>';
+//	self.IcoImportReqif = '<span class="glyphicon glyphicon-import"></span>';
+//	self.IcoImportCsv = '<span class="glyphicon glyphicon-import"></span>';
+//	self.IcoImportXls = '<span class="glyphicon glyphicon-import"></span>';
+	self.IcoSupport = '<span class="glyphicon glyphicon-question-sign"></span>';
 
 // App names:
 	self.LblHome = 'Bienvenue!';

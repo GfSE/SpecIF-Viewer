@@ -131,19 +131,19 @@ modules.construct({
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="FormatSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" ></div>'
-				+		'<div id="HelpImport" style="margin: 0 0 0.4em 0" />'
-				+		'<span id="selectBtn" class="btn btn-default btn-fileinput btn-sm" style="margin: 0 0 0.8em 0" >'
-				+			'<span id="lblSelectFile" >'+i18n.BtnFileSelect+'</span>'
+				+		'<div id="formatSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" ></div>'
+				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
+				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput btn-sm" style="margin: 0 0 0.8em 0" >'
+				+			'<span>'+i18n.BtnFileSelect+'</span>'
 				+			'<input id="importFile" type="file" onchange="'+myFullName+'.select()" />'
-				+		'</span>'
+				+		'</div>'
 				+   '</div>'
 			+	'</div>'
 			+	'<form id="formNames" class="form-horizontal" role="form"></form>'
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="FormatSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" >'
+				+		'<div id="modeSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" >'
 				+	function() {
 						let btns = '';
 						importModes.forEach( function(b) { 
@@ -250,13 +250,13 @@ modules.construct({
 //				console.debug('isReady',s.id,self.format);
 				app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' ) {
-					str += '<button id="FormatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
 				} else {
 					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
 				}
 			}
 		});
-		$('#FormatSelector').html( str );
+		$('#formatSelector').html( str );
 		showFileSelect.set();
 
 		setImporting( false )
@@ -285,9 +285,9 @@ modules.construct({
 //		console.debug('setFormat',self.format,fId);
 
 		if( typeof(self.format)=='object' && fId!=self.format.id )
-			$('#FormatSelector-'+self.format.id).removeClass('active');
+			$('#formatSelector-'+self.format.id).removeClass('active');
 		if( typeof(self.format)!='object' || fId!=self.format.id ) {
-			$('#FormatSelector-'+fId).addClass('active');
+			$('#formatSelector-'+fId).addClass('active');
 			self.format = itemById(formats,fId)
 		};
 
@@ -297,7 +297,7 @@ modules.construct({
 			// create input form for the project name:
 			rF += textForm(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
 
-		$('#HelpImport').html( self.format.help ); 
+		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
 		self.enableActions()
 	};
@@ -326,7 +326,7 @@ modules.construct({
 		importing = st;
 		app.busy.set( st );
 		try {
-			document.getElementById("selectBtn").disabled = st;
+			document.getElementById("fileSelectBtn").disabled = st;
 		//	document.getElementById("cloneBtn").disabled = 
 			document.getElementById("createBtn").disabled = st || !allValid || loaded;
 			document.getElementById("updateBtn").disabled = true;

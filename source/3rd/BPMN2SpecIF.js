@@ -1,9 +1,17 @@
 /* 	Transform BPMN-XML to SpecIF
-	Author: Robert Kanitz, adesso AG
+	Author: Robert.Kanitz@adesso.de and se@enso-managers.de
 	License: Apache 2.0
+    
+    Bugs:
+	- Consolidation of messageFlow may result in inconsistency:
+	  When a messageFlow has the same name/title as a data object, both are currently consolidated. 
+	  If a messageFlow does not have a description and the data object has, the latter prevails. 
+	  In this case the statements including the former are not modified accordingly, so that they 
+	  become invalid - the object id of the statement is not known and the consistency check fails.
+	  See: https://github.com/GfSE/BPMN-SpecIF-Bridge/issues/5
 */
 
-// Durchlaufen der XML Datei und Überführen der Elemente in das SpecIF Format
+// Parse the BPMN-XML file and extract both model-elements and semantic relations in SpecIF Format
 // Reference: https://docs.camunda.org/stable/api-references/bpmn20/
 function BPMN2Specif( xmlString, opts ) {
 	"use strict";
@@ -81,19 +89,19 @@ function BPMN2Specif( xmlString, opts ) {
 	// BPMN Collaborations list participants (with referenced processes) and messageFlows.
 	// Participants are source and/or target for message-flows (not the referenced processes),
 	// so we decide to transform the participants to SpecIF, but not the processes.
-	let L = Array.from(xmlDoc.querySelectorAll("collaboration"));
+	let Cs = Array.from(xmlDoc.querySelectorAll("collaboration"));
 	// There should be exactly one collaboration per BPMN file:
-	if( L.length<1 ) {
+	if( Cs.length<1 ) {
 		console.error("Diagram with id '",model.id,"' has no collaboration.");
 		return
 	};
-	if( L.length>1 )
+	if( Cs.length>1 )
 		console.warn("Diagram with id '",model.id,"' has more than one collaboration.");
-//	console.debug('collaboration',L);
+//	console.debug('collaboration',Cs);
 
 	// The project's id and title:
-	model.id = L[0].getAttribute("id");
-	model.title = opts.title || L[0].nodeName;
+	model.id = Cs[0].getAttribute("id");
+	model.title = opts.title || Cs[0].nodeName;
 	// 1. Additional attributes such as title and description:
 	model.dataTypes = DataTypes();
 	model.propertyClasses = PropertyClasses();
@@ -101,8 +109,7 @@ function BPMN2Specif( xmlString, opts ) {
 	model.statementClasses = StatementClasses();
 	model.statements = [];
 
-	// Reference used files,
-	// - the BPMN file:
+	// Include the original BPMN file itself:
 	model.files = [{
 		id: 'F-'+simpleHash(opts.fileName),
 		title: opts.fileName,
@@ -116,8 +123,10 @@ function BPMN2Specif( xmlString, opts ) {
 		diagramId = 'D-' + apx,
 		hId = 'BPMN-outline-' + apx,
 		diagRef = "<object data=\""+opts.fileName+"\" type=\"application/bpmn+xml\" >"+opts.fileName+"</object>";
+
 	// 1. Add the folders:
 	model.resources = Folders();
+
 	// 2. Represent the diagram itself:
 	model.resources.push({
 		id: diagramId,
@@ -137,7 +146,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// see: https://stackoverflow.com/questions/4878484/difference-between-tagname-and-nodename
 	
 	// 3. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
-	Array.from(L[0].childNodes, function(el) {
+	Array.from(Cs[0].childNodes, (el)=>{
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
 		if( !el.tagName ) return;
@@ -146,13 +155,12 @@ function BPMN2Specif( xmlString, opts ) {
 		if (el.nodeName.includes("documentation")) {
 			let diag = itemBy(model.resources,'id',diagramId);
 			if( diag && el.innerHTML ) {
-				if( el.innerHTML.length<opts.descriptionLength ) 
-					diag.properties.push({
-						class: "PC-Text",
-						value: el.innerHTML
-					})
-				else 
-					console.warn('Documentation of collaboration '+diagramId+'has been skipped because it is too long')
+				if( el.innerHTML.length>opts.descriptionLength ) 
+					console.warn('Documentation of collaboration '+diagramId+' has been truncated because it is too long');
+				diag.properties.push({
+					class: "PC-Text",
+					value: el.innerHTML.slice(0,opts.descriptionLength)
+				})
 			}
 		};		
 		// 3.2 The participating processes;
@@ -177,9 +185,14 @@ function BPMN2Specif( xmlString, opts ) {
 		};
 		// 3.3 The messages between the processes:
 		if (el.nodeName.includes("messageFlow")) {
+			let oId = el.getAttribute("id"),
+				sRef = el.getAttribute("sourceRef"),
+				tRef = el.getAttribute("targetRef");
+			console.debug('#8',el.nodeName,oId,sRef,tRef);
+				
 			// a. The message data (FMC:State):
 			model.resources.push({
-				id: el.getAttribute("id"),
+				id: oId,
 				// no need to give them a unique name; messages and flows are only consolidated if they have equal subject and object:
 				title: (el.getAttribute("name") || tag).slice(0,opts.titleLength),
 				class: 'RC-State',
@@ -192,21 +205,21 @@ function BPMN2Specif( xmlString, opts ) {
 			// b. We assume that the sourceRef and targetRef will be found later on.
 			// c. The writing relation (statement):
 			model.statements.push({
-				id: genID('S-'),
+				id: 'S-'+simpleHash(sRef+oId+'SpecIF:writes'),
 				title: 'SpecIF:writes',
 				class: 'SC-writes',
-				subject: el.getAttribute("sourceRef"),
-				object: el.getAttribute("id"),
+				subject: sRef,
+				object: oId,
 				changedAt: opts.fileDate
 			});
 			// d. The reading relation (statement):
 			// ToDo: Is the signalling characteristic well covered? It is not just reading!
 			model.statements.push({
-				id: genID('S-'),
+				id: 'S-'+simpleHash(tRef+oId+'SpecIF:reads'),
 				title: 'SpecIF:reads',
 				class: 'SC-reads',
-				subject: el.getAttribute("targetRef"),
-				object: el.getAttribute("id"),
+				subject: tRef,
+				object: oId,
 				changedAt: opts.fileDate
 			})
 		}
@@ -216,9 +229,10 @@ function BPMN2Specif( xmlString, opts ) {
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
 
-	// temporarily memorize those elements which are represented by another with the same name:
-	let	consolidatedResources = [];  
-
+	let	consolidatedResources = [], // temporary list of elements which are represented by another with the same name
+		ctL = [],					// temporary list for containment relations between lanes and model-elements
+		gwL = [];					// temporary list for gateways needing some special attention later
+				
 		function findStoredResource( id ) {
 			let	itm = itemBy(model.resources,'id',id);
 			if( itm ) {
@@ -236,27 +250,27 @@ function BPMN2Specif( xmlString, opts ) {
 		function analyzeProcess(pr) {
 			// analyze a process or subprocess and transform all contained model elements;
 			// the container element with a temporary attribute 'project' must be found in model.resources:
-//			console.debug('process',pr.getAttribute('id'),pr);
+
 			// find the participant representing (or being responsible for) the process:
-			let pa = model.resources.find( function(e) { return e.process==pr.getAttribute('id') } );
+			let prId = pr.getAttribute('id'),
+				pa = model.resources.find( (e)=>{ return e.process==prId } ),
+				tag, id, title, desc;
+//			console.debug('process',model.resources,pr,prId,pa);
 			// depending on the BPMN generator, the name is supplied in the participant or in the process definition ... or both.
 			// ToDo: pa.title is never used ??
 		//	pa.title = (pa.title || pr.getAttribute('name')).slice(0,opts.titleLength);
-			let ctL = [],	// temporary list for containment relations between lanes and model-elements
-				gwL = [],	// temporary list for gateways needing some special attention later
-				tag, id, title, desc,
-				chNs = Array.from(pr.childNodes);
+			let chNs = Array.from(pr.childNodes);
 
 			// 4.1 First pass to get the lanes, which do not necessarily come first,
 			//     and the dataStores/dataObjects, so that the input- and outputAssociations can be added in the next pass:
-			chNs.forEach( function(el) {
+			chNs.forEach( (el)=>{
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
 				// else:
 				id = el.getAttribute("id");
 				title = el.getAttribute("name");
 				desc = '';
-				Array.from(el.childNodes, function(nd) {
+				Array.from(el.childNodes, (nd)=>{
 					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' 
 						&& nd.innerHTML.length>0 && nd.innerHTML.length<opts.descriptionLength ) 
 							desc = nd.innerHTML
@@ -275,9 +289,6 @@ function BPMN2Specif( xmlString, opts ) {
 									title: ndName,
 									class: 'RC-Actor',
 									properties: [{
-										class: "PC-Name",
-										value: ndName
-									}, {
 										class: "PC-Type",
 										value: opts.strRoleType
 									}],
@@ -293,11 +304,11 @@ function BPMN2Specif( xmlString, opts ) {
 									changedAt: opts.fileDate
 								});
 								// temporarily store relations for the contained model-elements:
-								Array.from(nd.childNodes, function(nd) {
+								Array.from(nd.childNodes, (nd)=>{
 									if( nd.nodeName.includes('flowNodeRef') ) {
 										ctL.push({
 											class: 'SC-contains',
-											subject: ndId, 		// the lane
+											subject: ndId, 			// the lane
 											object: nd.innerHTML	// the contained model-element
 										})
 									};
@@ -346,12 +357,9 @@ function BPMN2Specif( xmlString, opts ) {
 							res = {
 								id: id,
 								// make dataObjects unique per model (should be per participant/process):
-								title: title || tag+( tag=='dataObject'? '_'+apx : '' ),
+								title: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength),
 								class: "RC-State",
 								properties: [{
-									class: "PC-Name",
-									value: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength)
-								}, {
 									class: "PC-Type",
 									value: 'BPMN:'+tag
 								}],
@@ -359,16 +367,13 @@ function BPMN2Specif( xmlString, opts ) {
 							};
 						// add a property, if there is content:
 						if( desc ) {
-							if( desc.length<opts.descriptionLength ) 
-								res.properties.push({
-									class: "PC-Text",
-									value: desc
-								})
-							else 
-								console.warn('Documentation of dataObject or dataStore '+id+'has been skipped because it is too long')
+							res.properties.push({
+								class: "PC-Text",
+								value: desc
+							})
 						};
 						
-						// Don't add a second element with the same name.
+						// Don't add a second element with the same name/title.
 						// But the first one with description prevails:
 						if( rI>-1 ) {
 							let dI = indexBy( model.resources[rI].properties, 'class', "PC-Text" );
@@ -390,13 +395,14 @@ function BPMN2Specif( xmlString, opts ) {
 				}
 			});
 //			console.debug( 'consolidatedResources', consolidatedResources, ctL );
+
 			// 4.2 Second pass to collect the model-elements:
 				function storeAccessAssociations(el) {
-					Array.from(el.childNodes, function(ch) {
+					Array.from(el.childNodes, (ch)=>{
 						if( !ch.tagName ) return;
 						if( ch.tagName.includes('dataInputAssociation') ) {
 							// find sourceRef:
-							Array.from(ch.childNodes, function(ref) {
+							Array.from(ch.childNodes, (ref)=>{
 //								console.debug('dataInputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
 								if( opts.isIE ) {
@@ -404,7 +410,6 @@ function BPMN2Specif( xmlString, opts ) {
 												+', because IE cannot read the object reference.');
 									return
 								};
-								// ToDo: Get it going with IE
 								if( ref.tagName.includes('sourceRef') ) {
 									let dS = findStoredResource( ref.innerHTML );  // does not work in IE, not even IE11
 //									console.debug('storeAccessAssociations',ref.innerHTML,dS);
@@ -427,7 +432,7 @@ function BPMN2Specif( xmlString, opts ) {
 						};
 						if( ch.tagName.includes('dataOutputAssociation') ) {
 							// find targetRef:
-							Array.from(ch.childNodes, function(ref) {
+							Array.from(ch.childNodes, (ref)=>{
 //								console.debug('dataOutputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
 								if( opts.isIE ) {
@@ -435,7 +440,6 @@ function BPMN2Specif( xmlString, opts ) {
 												+', because IE cannot read the object reference.');
 									return
 								};
-								// ToDo: Get it going with IE
 								if( ref.tagName.includes('targetRef') ) {
 									let dS = findStoredResource( ref.innerHTML );  // does not work in IE, not even IE11
 									if( dS ) {
@@ -456,7 +460,7 @@ function BPMN2Specif( xmlString, opts ) {
 						}
 					})
 				};
-			chNs.forEach( function(el) {
+			chNs.forEach( (el)=>{
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
 				// else:
@@ -464,12 +468,11 @@ function BPMN2Specif( xmlString, opts ) {
 				id = el.getAttribute("id");
 				title = (el.getAttribute("name")||'').slice(0,opts.titleLength);
 				desc = '';
-				Array.from(el.childNodes, function(nd) {
+				Array.from(el.childNodes, (nd)=>{
 					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' && nd.innerHTML ) {
-						if( nd.innerHTML.length<opts.descriptionLength ) 
-							desc = nd.innerHTML
-						else
-							console.warn('Documentation of element '+id+' has been skipped because it is too long')
+						if( nd.innerHTML.length>opts.descriptionLength ) 
+							console.warn('Documentation of element '+id+' has been truncated because it is too long');
+						desc = nd.innerHTML.slice(0,opts.descriptionLength)
 					}
 				});
 //				console.debug('#2',el,tag,id,title,desc);
@@ -487,6 +490,7 @@ function BPMN2Specif( xmlString, opts ) {
 						// will be analyzed in a later pass
 						return;
 					case 'task':
+					case 'manualTask':
 					case 'userTask':
 					case 'scriptTask':
 					case 'serviceTask':
@@ -499,28 +503,22 @@ function BPMN2Specif( xmlString, opts ) {
 						let r = {
 							id: id,
 							// make them unique to avoid consolidation:
-							title: title || tag+'_'+simpleHash(id),
+							title: (title || tag+'_'+simpleHash(id)).slice(0,opts.titleLength),
 							class: "RC-Actor",
 							properties: [{
-								class: "PC-Name",
-								value: (title || tag+'_'+simpleHash(id)).slice(0,opts.titleLength)
-							}, {
 								class: "PC-Type",
 								value: 'BPMN:'+tag
 							}],
 							changedAt: opts.fileDate
 						};
 						if( desc ) {
-							if( desc.length<opts.descriptionLength ) 
-								r.properties.push({
-									class: "PC-Text",
-									value: desc
-								})
-							else 
-								console.warn('Documentation of task, callActivity or subProcess '+id+'has been skipped because it is too long')
+							r.properties.push({
+								class: "PC-Text",
+								value: desc
+							})
 						};
 						if( tag=='subProcess' ) {
-							r.process = id;  // temporarily store process id
+							r.process = id   // temporarily store process id
 						}
 						model.resources.push( r );
 						// only add a property, if there is content:
@@ -546,12 +544,9 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push({
 							id: id,
 							// no need to make unnamed events unique, the consolidation takes care of the needs of different event types:
-							title: title || tag,
+							title: (title || tag).slice(0,opts.titleLength),
 							class: "RC-Event",
 							properties: [{
-								class: "PC-Name",
-								value: (title || tag).slice(0,opts.titleLength)
-							}, {
 								class: "PC-Type",
 								value: 'BPMN:'+tag
 							}],
@@ -559,13 +554,10 @@ function BPMN2Specif( xmlString, opts ) {
 						});
 						// only add a property, if there is content:
 						if( desc ) {
-							if( desc.length<opts.descriptionLength ) 
-								model.resources[model.resources.length-1].properties.push({
-									class: "PC-Text",
-									value: desc
-								})
-							else 
-								console.warn('Documentation of dataObject or dataStore '+id+'has been skipped because it is too long')
+							model.resources[model.resources.length-1].properties.push({
+								class: "PC-Text",
+								value: desc
+							})
 						};
 
 						// store the read/write associations:
@@ -577,7 +569,7 @@ function BPMN2Specif( xmlString, opts ) {
 					case 'exclusiveGateway':
 					case 'inclusiveGateway':
 						gw = {id:id,class:tag,incoming:[],outgoing:[]};
-						Array.from(el.childNodes, function(ch) {
+						Array.from(el.childNodes, (ch)=>{
 							if( !ch.tagName ) return;
 							if( ch.tagName.includes('incoming') )
 								gw.incoming.push( ch.innerHTML );
@@ -643,9 +635,6 @@ function BPMN2Specif( xmlString, opts ) {
 							title: title,
 							class: "RC-Actor",
 							properties: [{
-								class: "PC-Name",
-								value: title
-							}, {
 								class: "PC-Text",
 								value: desc
 							}, {
@@ -681,7 +670,9 @@ function BPMN2Specif( xmlString, opts ) {
 							})
 						}
 					);
-					if( cL.length<1 ) 
+					// In certain cases of data generated by Signavio, 
+					// the participant pa is not associated with the process:
+					if( cL.length<1 && pa ) 
 							model.statements.push({
 								id: pa.id+'-contains-'+id,
 								title: 'SpecIF:contains',
@@ -691,161 +682,141 @@ function BPMN2Specif( xmlString, opts ) {
 								changedAt: opts.fileDate
 							})
 				}
-			});
-			// 4.3 Third pass to collect the relations between model-elements:
-			chNs.forEach( function(el) {
-				// quit, if the child node does not have a tag, e.g. it is '#text':
-				if( !el.tagName ) return;
-				// else:
-				tag = el.tagName.split(':').pop();	// tag without namespace
-				// quit, if it is a laneSet, as it would cause a runtime error below
-				// (it does not have the properties we try to obtain):
-				if( tag=='laneSet' ) return;
-				// else:
-				id = el.getAttribute("id");
-				title = el.getAttribute("name");
-	//			console.debug('#3',gwL,el,tag,id,title);
-				switch(tag) {
-					case 'sequenceFlow':
-						// A sequenceFlow, where the subject is a forking exclusive or inclusive gateway, needs special attention,
-						// these have been listed in gwL in the previous pass:
-
-						// In case of a forking exclusive or inclusive gateway, every outgoing connection is transformed
-						// to an event with a signal and trigger relation,
-						// but only, if the sequenceFlow's title is defined:
-						let feG = itemBy(gwL,'id',el.getAttribute('sourceRef')), 
-							seqF;
-						if( feG && title ) {
-							seqF = {
-								subject: feG,
-								object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
-							};
-							// a. store an event representing the case:
-							let ev = {
-								id: id,
-								title: title,
-								class: "RC-Event",
-								properties: [{
-									class: "PC-Name",
-									value: title
-								}, {
-									class: "PC-Type",
-									value: opts.strConditionType
-								}],
-								changedAt: opts.fileDate
-							};
-							// Add a description to the last element, if there is additional information:
-							if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.descriptionLength ) 
-								ev.properties.push({
-									class: "PC-Text",
-									value: seqF.subject.title+' → '+title	// → = &rarr; = &#8594;
-								});
-								
-							model.resources.push( ev );
-							// b. store the signal relation:
-							model.statements.push({
-								id: id+'-s',
-								title: "SpecIF:signals",
-								class: "SC-signals",
-								subject: seqF.subject.id,
-								object: id,
-								changedAt: opts.fileDate
-							});
-							// c. store the trigger relation:
-							model.statements.push({
-								id: id+'-t',
-								title: "SpecIF:triggers",
-								class: "SC-triggers",
-								subject: id,
-								object: seqF.object.id,
-								changedAt: opts.fileDate
-							});
-							return
-						};
-						// else:
-						seqF = {
-							subject: itemBy(model.resources,'id',el.getAttribute('sourceRef')),
-							object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
-						};
-	//					console.debug('seqF',seqF);
-						// none or one of the following conditions is true, so we can return right away:
-						if( seqF.subject['class']=='RC-Actor' && seqF.object['class']=='RC-Actor' ) {
-							model.statements.push({
-								id: id,
-								title: "SpecIF:precedes",
-								class: "SC-precedes",
-								subject: seqF.subject.id,
-								object: seqF.object.id,
-								changedAt: opts.fileDate
-							});
-							return
-						};
-						if ((["RC-Actor","RC-Event"].indexOf(seqF.subject['class'])>-1) && seqF.object['class']=="RC-Event") {
-							model.statements.push({
-								id: id,
-								title: "SpecIF:signals",
-								class: "SC-signals",
-								subject: seqF.subject.id,
-								object: seqF.object.id,
-								changedAt: opts.fileDate
-							});
-							return
-						};
-						// else: seqF.subject['class']=="RC-Event" && seqF.object['class']=="RC-Actor"
-						model.statements.push({
-							id: id,
-							title: "SpecIF:triggers",
-							class: "SC-triggers",
-							subject: seqF.subject.id,
-							object: seqF.object.id,
-							changedAt: opts.fileDate
-						});
-						break;
-					case 'association':
-						// will be analyzed in a later pass
-						return;
-					// all other tags (should ;-) have been processed before
-				}
 			})
 		}
 	Array.from( xmlDoc.querySelectorAll("process"), analyzeProcess );
 
-	// 5. Select all textAnnotations:
+	// 5. Collect the sequence flows between model-elements:
+	Array.from(xmlDoc.querySelectorAll("sequenceFlow"), (el)=>{
+		// At least in case of Signavio-generated files it may happen that a sequenceFlow 
+		// references a model-element (resource) which is defined in *another* subprocess. 
+		// That's why the sequenceFlows are parsed separately after collecting all resouces.
+		let	id = el.getAttribute("id"),
+			title = el.getAttribute("name"),
+			feG = itemBy(gwL,'id',el.getAttribute('sourceRef')), 
+			seqF;
+//		console.debug('#3',gwL,el,id,title);
+
+		// A sequenceFlow, where the subject is a forking exclusive or inclusive gateway, needs special attention,
+		// these have been listed in gwL in the previous pass:
+
+		// In case of a forking exclusive or inclusive gateway, every outgoing connection is transformed
+		// to an event with a signal and trigger relation,
+		// but only, if the sequenceFlow's title is defined:
+		if( feG && title ) {
+			seqF = {
+				subject: feG,
+				object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
+			};
+			// a. store an event representing the case:
+			let ev = {
+				id: id,
+				title: title,
+				class: "RC-Event",
+				properties: [{
+					class: "PC-Type",
+					value: opts.strConditionType
+				}],
+				changedAt: opts.fileDate
+			};
+			// Add a description to the last element, if there is additional information:
+			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.descriptionLength ) 
+				ev.properties.push({
+					class: "PC-Text",
+					value: seqF.subject.title+' → '+title	// → = &rarr; = &#8594;
+				});
+				
+			model.resources.push( ev );
+			// b. store the signal relation:
+			model.statements.push({
+				id: id+'-s',
+				title: "SpecIF:signals",
+				class: "SC-signals",
+				subject: seqF.subject.id,
+				object: id,
+				changedAt: opts.fileDate
+			});
+			// c. store the trigger relation:
+			model.statements.push({
+				id: id+'-t',
+				title: "SpecIF:triggers",
+				class: "SC-triggers",
+				subject: id,
+				object: seqF.object.id,
+				changedAt: opts.fileDate
+			});
+			return
+		};
+		// else:
+		seqF = {
+			subject: itemBy(model.resources,'id',el.getAttribute('sourceRef')),
+			object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
+		};
+//		console.debug('seqF',model.resources,el,seqF);
+		if( seqF.subject['class']=='RC-Actor' && seqF.object['class']=='RC-Actor' ) {
+			model.statements.push({
+				id: id,
+				title: "SpecIF:precedes",
+				class: "SC-precedes",
+				subject: seqF.subject.id,
+				object: seqF.object.id,
+				changedAt: opts.fileDate
+			});
+			return
+		};
+		if ((["RC-Actor","RC-Event"].indexOf(seqF.subject['class'])>-1) && seqF.object['class']=="RC-Event") {
+			model.statements.push({
+				id: id,
+				title: "SpecIF:signals",
+				class: "SC-signals",
+				subject: seqF.subject.id,
+				object: seqF.object.id,
+				changedAt: opts.fileDate
+			});
+			return
+		};
+		// else: seqF.subject['class']=="RC-Event" && seqF.object['class']=="RC-Actor"
+		model.statements.push({
+			id: id,
+			title: "SpecIF:triggers",
+			class: "SC-triggers",
+			subject: seqF.subject.id,
+			object: seqF.object.id,
+			changedAt: opts.fileDate
+		});
+	});
+
+	// 6. Select all textAnnotations:
 	let taL = []; 	// temporary list of text annotations
-	Array.from(xmlDoc.querySelectorAll("textAnnotation"), function(ann) {
+	Array.from(xmlDoc.querySelectorAll("textAnnotation"), (ann)=>{
 //		console.debug('ann',ann);
 		let idx = taL.length+1,
 			id = ann.getAttribute("id"),
 			title = opts.strTextAnnotation + (idx>9? ' '+idx : ' 0'+idx);  // assuming there won't be more than 99 annotations
 		// even though there should be only one sub-element:
-		Array.from(ann.childNodes, function(txt) {
+		Array.from(ann.childNodes, (txt)=>{
 //			console.debug('textAnnotation.childNode',txt);
 			if( txt.tagName && txt.tagName.includes('text') && txt.innerHTML ) {
-				if( txt.innerHTML.length<opts.descriptionLength ) {
-					model.resources.push({
-						id: id,
-						title: title,
-						class: "RC-Note",
-						properties: [{
-							class: "PC-Name",
-							value: title
-						}, {
-							class: "PC-Text",
-							value: txt.innerHTML
-						}],
-						changedAt: opts.fileDate
-					});
-					// memorize all text annotations to include them in the hierarchy:
-					taL.push(id)
-				} else {
-					console.warn('Text of annotation '+id+'has been skipped because it is too long')
-				}
+				if( txt.innerHTML.length>opts.descriptionLength )
+					console.warn('Text of annotation '+id+' has been truncated because it is too long');
+				model.resources.push({
+					id: id,
+					title: title,
+					class: "RC-Note",
+					properties: [{
+						class: "PC-Text",
+						value: txt.innerHTML.slice(0,opts.descriptionLength)
+					}],
+					changedAt: opts.fileDate
+				});
+				// memorize all text annotations to include them in the hierarchy:
+				taL.push(id)
 			}
 		})
 	});
 	
-	// 6. Select all associations of textAnnotations:
-	Array.from(xmlDoc.querySelectorAll("association"), function(asc) {
+	// 7. Select all associations of textAnnotations:
+	Array.from(xmlDoc.querySelectorAll("association"), (asc)=>{
 //		console.debug('asc',asc);
 		let id = asc.getAttribute("id"),
 			su = findStoredResource( asc.getAttribute('targetRef') ),
@@ -863,8 +834,8 @@ function BPMN2Specif( xmlString, opts ) {
 			console.warn("Omitted association "+id+", because either the source or more probably the target is missing")
 	});
 
-	// 7. Add the 'diagram shows model-element' statements:
-	model.resources.forEach( function(r) {
+	// 8. Add the 'diagram shows model-element' statements:
+	model.resources.forEach( (r)=>{
 		// only certain resources are model-elements:
 		if( ['RC-Actor','RC-State','RC-Event'].indexOf(r['class'])>-1 ) {
 			model.statements.push({
@@ -877,15 +848,11 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		}
 	});
-	// 8. The hierarchy with pointers to all resources:
+	
+	// 9. The hierarchy with pointers to all resources:
 	function NodeList(res) {
-		// 8.1 first add the folders:
+		// 9.1 first add the folders:
 		let nL =  [{
-		/*	id: "H-"+hId,
-		//	resource: hId,
-		//	nodes: [{
-		//	}],
-		//	changedAt: opts.fileDate */
 			id: genID("N-"),
 			resource: "FolderProcesses-" + apx,
 			nodes: [{
@@ -916,17 +883,14 @@ function BPMN2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.fileDate
 		}];
-		// 8.2 Add Actors, States and Events to the respective folders in alphabetical order:
-	/*	res.forEach( function(r) { 
-			r.title = r.title || ''
-		});  */
+		// 9.2 Add Actors, States and Events to the respective folders in alphabetical order:
 		if( res.length>1 )
-			res.sort( function(bim, bam) {
+			res.sort( (bim, bam)=>{
 						bim = bim.title.toLowerCase();
 						bam = bam.title.toLowerCase();
 						return bim==bam ? 0 : (bim<bam ? -1 : 1) 
 			});
-		res.forEach( function(r) { 
+		res.forEach( (r)=>{ 
 			let nd = {
 				id: genID("N-"),
 				resource: r.id,
@@ -937,8 +901,8 @@ function BPMN2Specif( xmlString, opts ) {
 			if( idx>-1 )
 				nL[1].nodes[idx].nodes.push(nd)
 		});
-		// 8.3 Add text annotations to the model diagram:
-		taL.forEach( function(a) { 
+		// 9.3 Add text annotations to the model diagram:
+		taL.forEach( (a)=>{ 
 			nL[0].nodes[0].nodes.push({
 				id: genID("N-"),
 				resource: a,
@@ -947,7 +911,7 @@ function BPMN2Specif( xmlString, opts ) {
 		});
 		return nL
 	};
-/*	// 9. Add the resource for the hierarchy root:
+/*	// 10. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
 		title: model.title,
@@ -958,7 +922,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-//	console.debug('BPMN-XML',model);
+	console.debug('BPMN-XML',model);
 	return model;
 	
 // =======================================
@@ -1027,7 +991,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Diagram","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Diagram","PC-Type"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -1035,7 +999,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
@@ -1043,7 +1007,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
@@ -1051,21 +1015,21 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9830;",
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: ["PC-Name","PC-Text"],
+			propertyClasses: ["PC-Text"],
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Collection",
 			title: "SpecIF:Collection",
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Folder",
@@ -1073,7 +1037,7 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ['auto','user'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate
 	/*	},{
 			id: "RC-ProcessModel",
@@ -1081,7 +1045,7 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Root node of a process model (outline).",
 			isHeading: true,
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate  */
 		}]
 	}
@@ -1202,10 +1166,7 @@ function BPMN2Specif( xmlString, opts ) {
 			id: "FolderNte-" + apx,
 			class: "RC-Folder",
 			title: opts.strAnnotationFolder,
-			properties: [{
-				class: "PC-Name",
-				value: opts.strAnnotationFolder
-			}],
+			properties: [],
 			changedAt: opts.fileDate */
 		}]
 	}
@@ -1216,7 +1177,6 @@ function BPMN2Specif( xmlString, opts ) {
 	function itemBy( L, p, s ) {
 		if( L && p && s ) {
 			// Return the element in list 'L' whose property 'p' equals searchterm 's':
-		//	s = s.trim();
 			for( var i=L.length-1;i>-1;i-- )
 				if( L[i][p]==s ) return L[i]   // return list item
 		}

@@ -391,7 +391,10 @@ modules.construct({
 		function finalize() {	
 			if(--pend<1) {
 				// update the tree because the title may have changed:
-				pData.updateTree();
+				pData.updateTree({
+					lookupTitles: true,
+					targetLanguage: browser.language
+				});
 				// get the selected node:
 				let selNd = pData.tree.selectedNode;
 				// update the node name:
@@ -418,12 +421,12 @@ modules.construct({
 		function getP(p) {
 			// Get the value of a property:
 			// ToDo: Works only, if all propertyClasses are always cached:
+			const opts = {
+				lookupTitles: true,
+				targetLanguage: browser.language
+			};
 			let pC = itemById( cData.propertyClasses, p['class'] ),
-				dT = itemById( cData.dataTypes, pC.dataType ),
-				opts = {
-					lookupTitles: true,
-					targetLanguage: browser.language
-				};
+				dT = itemById( cData.dataTypes, pC.dataType );
 			switch( dT.type ) {
 				case 'xs:integer':
 				case 'xs:double':

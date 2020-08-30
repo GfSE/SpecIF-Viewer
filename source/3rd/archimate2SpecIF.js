@@ -3,7 +3,7 @@
 	License: Apache 2.0
 */
 
-// Durchlaufen der XML Datei und Überführen der Elemente in das SpecIF Format
+// Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format
 function Archimate2Specif( xmlString, opts ) {
 	"use strict";
 	if( typeof(opts)!='object' || !opts.fileName ) return null;
@@ -15,10 +15,10 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.titleLength = 96;
 	if( typeof(opts.descriptionLength)!='number' )
 		opts.descriptionLength = 8192;
-	if( !opts.mimeType ) 
-		opts.mimeType = "application/bpmn+xml";
+/*	if( !opts.mimeType ) 
+		opts.mimeType = "application/archimate+xml";
 	if( typeof(opts.isIE)!='boolean' )
-		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent );
+		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent ); */
 
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
@@ -90,7 +90,7 @@ function Archimate2Specif( xmlString, opts ) {
 					model.title = ch.innerHTML;
 					break;
 				case 'documentation':
-					model.description = ch.innerHTML;
+					model.description = ch.innerHTML
 			}
 		}
 	);
@@ -252,6 +252,7 @@ function Archimate2Specif( xmlString, opts ) {
 				&& indexById(model.resources,s.object)>-1 ) {
 				// Additional attributes such as title and description:
 				Array.from( rs.children, 
+					// if a relation does not have a name, the statementClass' title acts as default value.
 					(ch)=>{
 						switch( ch.tagName ) {
 							case 'name': 
@@ -282,8 +283,13 @@ function Archimate2Specif( xmlString, opts ) {
 				
 				// The view's nodes are hierarchically ordered: 
 				function getNode(nd) {
+					// ToDo: Extract nodes of xsi:type "Label" = Note elements
+					//       as well as xsi:type="Container" = Group
+
+					// This node is contained in the diagram in the outer loop;
+					// it is of xsi:type "Element":
 					let ref = nd.getAttribute('elementRef');
-					// Store a relation, only if the element has been regognized:
+					// Store a relation, only if the element has been recognized before:
 					if( ref && indexById(model.resources,ref)>-1 )
 						model.statements.push({
 							id: genID('S-'),
@@ -314,13 +320,10 @@ function Archimate2Specif( xmlString, opts ) {
 							});
 							break;
 						case 'node':
-							// ToDo: Include nodes of xsi:type "Label" = Note elements
-							// This node is shown by the diagram in the outer loop;
-							// it is of xsi:type "Element":
 							getNode(ch);
 					/*		break;
 						case 'connection':
-							// This connection is shown by the diagram in the outer loop:
+							// This connection is contained in the diagram in the outer loop:
 							model.statements.push({
 								id: genID('S-'),
 								class: "SC-shows",
@@ -373,7 +376,7 @@ function Archimate2Specif( xmlString, opts ) {
 		changedAt: opts.fileDate
 	}];  */
 
-	console.debug('Archimate',model);
+//	console.debug('Archimate',model);
 	return model;
 
 
@@ -514,7 +517,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Diagram","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Diagram","PC-Type"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -522,7 +525,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
@@ -530,7 +533,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
@@ -538,21 +541,21 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9830;",
 			changedAt: opts.fileDate
 		},{
 /*			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: ["PC-Name","PC-Text"],
+			propertyClasses: ["PC-Text"],
 			changedAt: opts.fileDate  
 		},{  */
 			id: "RC-Collection",
 			title: "SpecIF:Collection",
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Folder",
@@ -560,7 +563,7 @@ function Archimate2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ['auto','user'],
-			propertyClasses: ["PC-Name","PC-Text","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate
 		}]
 	}
@@ -748,10 +751,7 @@ function Archimate2Specif( xmlString, opts ) {
 			id: "FolderNte-" + apx,
 			class: "RC-Folder",
 			title: opts.strAnnotationFolder,
-			properties: [{
-				class: "PC-Name",
-				value: opts.strAnnotationFolder
-			}],
+			properties: [],
 			changedAt: opts.fileDate */
 		}, {
 			id: "FolderCol-" + apx,

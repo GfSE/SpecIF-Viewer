@@ -12,20 +12,22 @@ function ModuleManager() {
 	"use strict";
 	// Supports two types of modules:
 	// 1. Libraries
-	//		- 'load' registers and loads a file or a list of files with named javascript functions 
-	//		- 'setReady' is executed when the 'getScipt' load-event triggers
+	//		- 'load()' registers and loads a file or a list of files with named javascript functions 
+	//		- 'setReady()' is executed when the 'getScipt' load-event triggers
 	//		- the specified callback function is executed as soon as all modules are ready.
+	//      - Libraries don't support view control.
 	// 2. Objects
-	//		- 'load' registers and loads a file or a list of files with constructors (similar to reqireJs 'reqire')
-	//		- 'construct' creates an object (singleton) using the constructor specified as parameter (similar to reqireJs 'define')
+	//		- 'load()' registers and loads a file or a list of files with constructors (similar to reqireJs 'reqire')
+	//		- 'construct()' creates an object (controller) using the constructor specified as parameter (similar to reqireJs 'define')
 	//		- the constructor may append a new subtree to a DOM element to be used by the constructed object
-	//		- 'setReady' is executed, if 'construct' finishes successfully.
+	//		- 'setReady()' is executed, if 'construct()' finishes successfully.
 	//		- the specified callback function is executed as soon as all modules are ready.
+	//      - 'show()' selects the view of the specified module and hides all others.
 	
 	var self = this,
 		callWhenReady = null,
 		vPath;
-	self.init = function( opts ) {
+	self.init = ( opts )=>{
 		vPath = './'+app.productVersion;
 		self.registered = [];
 		self.ready = [];
@@ -33,7 +35,7 @@ function ModuleManager() {
 		// Identify browser type and load language file:
 		browser = new function() { 
 			var self = this;
-/*			function supports_html5_storage() {
+		/*	function supports_html5_storage() {
 				// see: http://diveintohtml5.info/storage.html
 				try {
 					return 'sessionStorage' in window && window['sessionStorage'] !== null;
@@ -41,8 +43,8 @@ function ModuleManager() {
 					return false
 				}
 			};
-			self.supportsHtml5Storage = supports_html5_storage();
-*/			self.supportsHtml5History = Boolean(window.history && window.history.pushState);
+			self.supportsHtml5Storage = supports_html5_storage();  */
+			self.supportsHtml5History = Boolean(window.history && window.history.pushState);
 			self.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
 			self.supportsCORS = $.support.cors;
 			self.displaysObjects = self.supportsHtml5Storage; // Firefox, Chrome and IE10+; note that IE displays the object tag only in case of SVG and PNG
@@ -51,7 +53,7 @@ function ModuleManager() {
 			self.isIE = /MSIE |rv:11.0/i.test(navigator.userAgent);
 			self.language = navigator.language || navigator.userLanguage;
 			console.info( "Browser Language is '"+self.language+"'." );
-//			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" );
+		//	if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" );
 			if( self.supportsHtml5History ) console.info( "Browser supports HTML5 History" );
 			if( self.supportsCORS ) console.info( "Browser supports CORS" );
 			return self
@@ -72,7 +74,7 @@ function ModuleManager() {
 		// return true, if mod has been successfully registered and is ready to load
 		// return false, if mod is already registered and there is no need to load it 
 		if( self.registered.indexOf(mod)>-1 ) { 
-//			console.warn( "WARNING: Did not reload module '"+mod+"'." );
+			console.warn( "WARNING: Did not reload module '"+mod+"'." );
 			return false 
 		};
 
@@ -88,14 +90,14 @@ function ModuleManager() {
 		if( i>-1 ) self.registered.splice(i,1);
 //		console.info( "Deregister: "+mod+" ("+self.registered.length+")" );
 	};  */
-	self.load = function( tr, opts ) {
+	self.load = ( tr, opts )=>{
 //		console.debug('modules.load',tr,opts);
 		// tr is a hierarchy of modules, where the top element represents the application itself;
 		// only modules with a specified name will be loaded:
 		self.tree = tr;
 		return loadH( tr, opts )
 	};
-	self.construct = function( defs, constructorFn ) {
+	self.construct = ( defs, constructorFn )=>{
 		// Construct controller and view of a module.
 		// This routine is called by the code in the file, once loaded with 'loadH'/'loadM',
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
@@ -135,7 +137,7 @@ function ModuleManager() {
 		
 		// the module will be initialized within setReady() once all modules are loaded.
 	};
-	self.show = function( params ) {
+	self.show = ( params )=>{
 		// Show the specified view, which may be located somewhere in the hierarchy;
 		// Assuming that it's parent has a viewCtl: 
 		switch( typeof(params) ) {
@@ -148,8 +150,9 @@ function ModuleManager() {
 			console.error("'"+params.newView+"' is not a defined view");
 			return undefined
 		};
-		// Set the view beginning at the top-level, so that it is possible to jump
-		// from any branch to another at any level:
+		// Set the view from the top-level to the lowest level, 
+		// so that it is possible to jump from any branch to another at any level.
+		// Begin from the top:
 		setViewFromRoot( mo, params );
 		// Now we have selected the specified view;
 		// select a subview, if there is any:
@@ -169,29 +172,27 @@ function ModuleManager() {
 		}
 		function setViewToLeaf( le, pL ) {
 			// step down, if there is a child view:
+				function findDefault( vL ) {
+					for( var i=vL.length-1; i>-1; i-- ) {
+						if( vL[i].isDefault ) return vL[i]
+					};
+					// in absence of a default view, take the first in the list:
+					return vL[0]
+				}
 			if( le.viewCtl && le.viewCtl.list.length>0 ) {
 				let ch = findDefault( le.viewCtl.list ),
 					nPL = simpleClone( pL );
 				nPL.newView = ch.view;
 				le.viewCtl.show( nPL );
 				setViewToLeaf( ch, pL )
-			};
-			return;
-			
-			function findDefault( vL ) {
-				for( var i=vL.length-1; i>-1; i-- ) {
-					if( vL[i].isDefault ) return vL[i]
-				};
-				// in absence of a default view, take the first in the list:
-				return vL[0]
 			}
 		}
 	};
-	self.hide = function() {
+	self.hide = ()=>{
 		// hide all views of the top level:
 		self.tree.viewCtl.hide()
 	};
-	self.isReady = function( mod ) {
+	self.isReady = ( mod )=>{
 		return self.ready.indexOf( mod ) >-1
 	};
 	return self
@@ -278,7 +279,7 @@ function ModuleManager() {
 								// the elements of viewCtl are a subset of the elements of children, namely those with a view:
 								e.viewCtl.add( ch );
 								
-								// Add a view selector element for the child (buttons resp. tabs):
+								// Add a view selector element for the child (button resp. tab):
 								id = ch.selectedBy.substring(1);	// without '#'
 								lbl = ch.label || id;
 //								console.debug('e',e,ch,id,lbl);
@@ -301,7 +302,7 @@ function ModuleManager() {
 									console.error( "Module '"+ch.name+"' must have both properties 'action' and 'selectedBy' or none." );
 									return
 								};
-								// Add a view selector element for the child (only buttons are implemented):
+								// Add a view selector element for the child (only button is implemented):
 								id = ch.selectedBy.substring(1);	// without '#'
 								lbl = ch.label || id;
 								switch( e.selectorType ) {
@@ -316,8 +317,8 @@ function ModuleManager() {
 							}
 						})
 					}; 
-					// load all the children:
-					e.children.forEach(function(c) {
+					// finally load all the children, as well:
+					e.children.forEach( (c)=>{
 											c.parent = e;
 											loadH(c)
 										})
@@ -329,7 +330,7 @@ function ModuleManager() {
 			callWhenReady = opts.done;
 		
 		if( Array.isArray(h) )
-			h.forEach( function(e) {ld(e)} )
+			h.forEach( (e)=>{ld(e)} )
 		else
 			ld(h)
 	}
@@ -342,11 +343,11 @@ function ModuleManager() {
 				// 3rd party:
 				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />');
 											$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" />');
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" />');
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" />');
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
 		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' ).then( 
 														function(m) {
@@ -355,42 +356,42 @@ function ModuleManager() {
 														});
 														return true;  */
 				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@11/dist/markdown-it.min.js' ).done( 
-														function() {
+														()=>{
 															app.markdown = window.markdownit({xhtmlOut:true,breaks:true,linkify:false});
 															setReady(mod) 
 														});
 														return true;
-				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "excel": 				loadM( 'zip' );	
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
-				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@6.5.1/dist/bpmn-viewer.production.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( function() {setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'zip' );
 											loadM( 'toXhtml' );
-											getScript( vPath+'/js/toEpub.js' ).done( function() {setReady(mod)} ); return true;
-				case "toOxml": 				getScript( vPath+'/js/toOxml.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toOxml": 				getScript( vPath+'/js/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
 				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case "config": 				$.getScript( vPath+'/config.js', function() {setReady(mod)} ); return true;   // don't cache
+				case "config": 				$.getScript( vPath+'/config.js', ()=>{setReady(mod)} ); return true;   // don't cache
 				case "i18n": 				let langFile;
-											switch( browser.language ) {
+											switch( browser.language.slice(0,2) ) {
 												case 'de':  langFile = vPath+'/i18n/iLaH-de.i18n.js'; break;
 												case 'fr':  langFile = vPath+'/i18n/iLaH-fr.i18n.js'; break;
 												default:	langFile = vPath+'/i18n/iLaH-en.i18n.js'; 
 											};
 											getScript( langFile )
 											.done( function() {
-												switch( browser.language ) {
+												switch( browser.language.slice(0,2) ) {
 													case 'de':  i18n = new LanguageTextsDe(); break;
 													case 'fr':  i18n = new LanguageTextsFr(); break;
 													default:	i18n = new LanguageTextsEn()
@@ -398,14 +399,14 @@ function ModuleManager() {
 												setReady(mod)
 											}); 
 											return true;
-				case "helper": 				getScript( vPath+'/js/helper.js' ).done( function() {setReady(mod)} ); return true;
-				case "helperTree": 			getScript( vPath+'/js/helperTree.js' ).done( function() {setReady(mod)} ); return true;
-/*				case "pouchDB":		 		getScript( vPath+'/3rd/pouchdb-7.0.0.min.js' ).done( function() {setReady(mod)} ); return true;
+				case "helper": 				getScript( vPath+'/js/helper.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "helperTree": 			getScript( vPath+'/js/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.1/dist/pouchdb.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript( vPath+'/js/serverPouch-0.93.1.js' ).done( function() {setReady(mod)} ); return true;
-*/				case "cache": 				loadM( 'fileSaver' );
+											getScript( vPath+'/js/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "cache": 				loadM( 'fileSaver' );
 											getScript( vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( function() {setReady(mod)} ); return true;
+				case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 /*				case "profileMe":			$('#app').append( '<div id="'+mod+'"></div>' );
@@ -428,15 +429,15 @@ function ModuleManager() {
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( vPath+'/js/BPMN2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
+				case 'bpmn2specif':			getScript( vPath+'/js/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'archimate2specif':	getScript( vPath+'/js/archimate2SpecIF.js' ).done( function() {setReady(mod)} ); return true;
+				case 'archimate2specif':	getScript( vPath+'/js/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
 											getScript( vPath+'/js/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
 //				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
-				case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
+				case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
@@ -459,7 +460,7 @@ function ModuleManager() {
 				// sub-modules of module 'specifications':
 				case CONFIG.reports: 		getScript( vPath+'/js/reports.mod.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript( vPath+'/js/graph.js' ).done( function() {setReady(mod)} ); return true;
+											getScript( vPath+'/js/graph.js' ).done( ()=>{setReady(mod)} ); return true;
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
 											getScript( vPath+'/js/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -484,16 +485,18 @@ function ModuleManager() {
 					e.init();
 				if( e.children )
 					// initialize all the children:
-					e.children.forEach(function(c) { initH(c) })
+					e.children.forEach( (c)=>{ initH(c) })
 			}
 		if( h ) {
 			if( Array.isArray(h) )
-				h.forEach( function(e) {it(e)} )
+				h.forEach( (e)=>{it(e)} )
 			else
 				it(h)
 		}
 	}
 	function setReady( mod ) {
+		// Include mod in the 'ready' list, once successfully loaded;
+		// Execute 'callWhenReady()', if/when the last registered module is ready.
 		if( self.ready.indexOf(mod)<0 ) {
 			self.ready.push( mod );
 			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" )
@@ -531,21 +534,21 @@ function ModuleManager() {
 		var self = this;
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
-		self.exists = function(v) {
+		self.exists = (v)=>{
 			return indexBy(self.list, 'view', v)>-1
 		}
-		self.init = function(vL) {
+		self.init = (vL)=>{
 			self.list = vL || [];
-			self.list.forEach(function(e){$(e).hide()}); 
+			self.list.forEach( (e)=>{$(e).hide()}); 
 			self.selected = {}
 		};
-		self.add = function(v) {
+		self.add = (v)=>{
 			// add the module to the view list of this level:
 			self.list.push(v);
 			$(v.view).hide()
 			// we could add the visual selector, here ... it is now part of loadH.
 		};
-		self.show = function( params ) {
+		self.show = ( params )=>{
 			// Select a new view 
 			// and call implicit actions 'show'/'hide' in case they are implemented in the respective modules.
 			// - simple case: params is a string with the name of the new view.
@@ -563,7 +566,7 @@ function ModuleManager() {
 			};  */
 			// else: show params.newView and hide all others:
 			let v, s;
-			self.list.forEach( function(le) {
+			self.list.forEach( (le)=>{
 //				console.debug('ViewCtl.show le',le);
 				v = $(le.view);			// the view
 				s = $(le.selectedBy); 	// the visual selector
@@ -604,7 +607,7 @@ function ModuleManager() {
 				doResize()
 			}
 		};
-		self.hide = function(v) {
+		self.hide = (v)=>{
 			if( typeof(v)=='string' && self.exists(v) ) {
 				// hide a specific view:
 				$(v).hide();
@@ -633,7 +636,7 @@ function State(opt) {
 		state = false;
 	if( !Array.isArray(options.showWhenSet) ) options.showWhenSet = [];
 	if( !Array.isArray(options.hideWhenSet) ) options.hideWhenSet = [];
-	self.set = function( flag ) {
+	self.set = ( flag )=>{
 		switch( flag ) {
 			case false:
 				self.reset();
@@ -641,32 +644,32 @@ function State(opt) {
 			case undefined:
 			case true:
 				state = true;
-				options.hideWhenSet.forEach( function(e) { 
+				options.hideWhenSet.forEach( (e)=>{ 
 					try {
 						$(e).hide()
 					} catch(e) {}
 				});
-				options.showWhenSet.forEach( function(e) { 
+				options.showWhenSet.forEach( (e)=>{ 
 					try {
 						$(e).show()
 					} catch(e) {}
 				})
 		}
 	},
-	self.reset = function() {
+	self.reset = ()=>{
 				state = false;
-				options.showWhenSet.forEach( function(e) { 
+				options.showWhenSet.forEach( (e)=>{ 
 					try {
 						$(e).hide()
 					} catch(e) {}
 				})
-				options.hideWhenSet.forEach( function(e) { 
+				options.hideWhenSet.forEach( (e)=>{ 
 					try {
 						$(e).show()
 					} catch(e) {}
 				})
 	},
-	self.get = function() {
+	self.get = ()=>{
 		return state
 	};
 	self.reset();

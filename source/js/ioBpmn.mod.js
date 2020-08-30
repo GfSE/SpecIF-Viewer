@@ -101,24 +101,32 @@ modules.construct({
 // https://bpmn.io/blog/posts/2014-bpmn-js-viewer-is-here.html
 // https://forum.bpmn.io/t/how-to-get-svg-object-from-viewer/1948
 // https://forum.bpmn.io/t/saving-bpmn-and-svg-to-a-website-rather-than-download/210
+// https://github.com/bpmn-io/bpmn-js-callbacks-to-promises
 // https://www.pleus.net/blog/?p=2142
-function bpmn2svg(f,fn) {
+function bpmn2svg(xml) {
 	// transform the BPMN-XML and render the diagram,
-	// where fn is the bpmnViewer callback function:
-	if( typeof(fn)!='function' ) return null;
-	// viewer instance:
-	let bpmnViewer = new BpmnJS({container: '#bpmnView'});
-	bpmnViewer.importXML( f, function(err) {
-		if (err) {
-			fn(err);
-			return 
-		};
-		// The caller defines in fn what to do with the resulting SVG:
-		bpmnViewer.saveSVG( fn );
-/*		// access viewer components:
-		var canvas = bpmnViewer.get('canvas');
-		// set viewport: ToDo
-		// zoom to fit full viewport:
-		canvas.zoom('fit-viewport')  */
-	})  
+	return new Promise( (resolve,reject)=>{
+		// create viewer instance:
+		var bpmnViewer = new BpmnJS({container: '#bpmnView'});
+		
+		bpmnViewer.importXML( xml )
+		.then(
+			()=>{
+		/*		// access viewer components:
+				var canvas = bpmnViewer.get('canvas');
+				// set viewport: ToDo
+				// zoom to fit full viewport:
+				canvas.zoom('fit-viewport')  */
+		
+				return bpmnViewer.saveSVG()
+			}
+		)
+		.then( resolve )
+		.catch( reject )
+		.finally(
+			()=>{
+				$('#bpmnView').empty()
+			}
+		)
+	})
 }

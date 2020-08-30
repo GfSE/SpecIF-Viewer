@@ -33,8 +33,8 @@ modules.construct({
 		// initialize/clear all variables:
 		self.projects = [];
 		self.selectedProject = undefined;
-	//	autoLoadId = undefined;  // stop any autoLoad chain
-	//	autoLoadCb = undefined;
+	/*	autoLoadId = undefined;  // stop any autoLoad chain
+		autoLoadCb = undefined;  */
 
 	// initialize the markdown converter:
 	// ToDo: load lazily, when needed for the first time.
@@ -42,6 +42,7 @@ modules.construct({
 		app.remarkable = new Remarkable('full',{xhtmlOut:true,breaks:true});
 	//	app.remarkable.use( 'linkify' )
 	}; */
+
 		return true
 	};
 	self.create = (p)=>{
@@ -60,7 +61,7 @@ modules.construct({
 		if( typeof(cb)=="function" ) { autoLoadCb = cb };
 		autoLoadId = genID( 'aU-' );
 		// get all resources from the server to fill the cache:
-		setTimeout( function() { autoLoad(autoLoadId) }, 600 )  // start a little later ...			
+		setTimeout( ()=>{ autoLoad(autoLoadId) }, 600 )  // start a little later ...			
 	};
 	self.stopAutoLoad = ()=>{
 //		console.info('stopAutoLoad');
@@ -76,21 +77,21 @@ modules.construct({
 			loading = true;  
 			// update all resources referenced by the selectedHierarchy:
 			loadObjsOf( self.selectedHierarchy )
-				.done( function() {			
+				.done( ()=>{			
 //					loadRelsOf( self.selectedHierarchy );
 					// update the hierarchy (outline).
 					// it is done after the resources to reflect any change in the hierarchy made during the loading.
 					self.readContent( 'hierarchy', self.selectedHierarchy, true )	// true: reload
 						// - call cb to refresh the app:
-						.done( function() { 
+						.done( ()=>{ 
 							if( typeof(cb)=="function" ) cb();
 							loading = false
 						})
-						.fail( function(xhr) { 
+						.fail( (xhr)=>{ 
 							loading = false
 						})
 				})
-				.fail( function(xhr) { 
+				.fail( (xhr)=>{ 
 					loading = false
 				})
 		}
@@ -102,7 +103,7 @@ modules.construct({
 		if( opts.loadObjects ) {
 			if( opts.loadAllSpecs ) 
 				loadAll( 'resource' )
-					.done( function() { 
+					.done( ()=>{ 
 						if( opts.loadRelations )
 							return loadAll( 'statement' )
 								.done( lDO.resolve )
@@ -113,7 +114,7 @@ modules.construct({
 					.fail( lDo.reject )
 			else					
 				loadObjsOf( self.selectedHierarchy )
-					.done( function() { 
+					.done( ()=>{ 
 						if( opts.loadRelations )
 							return loadRelsOf( self.selectedHierarchy )
 								.done( lDO.resolve )
@@ -133,6 +134,7 @@ modules.construct({
 });  
 
 function Project( pr ) {
+	"use strict";
 	// Constructor for a project containing SpecIF data.
 	var self = this,
 		loading = false,		// true: data is being gathered from the server.
@@ -155,7 +157,6 @@ function Project( pr ) {
 			createdBy: undefined,
 
 			dataTypes: [],
-			allClasses: [], 		// common list of all resourceClasses and statementClasses
 			propertyClasses: [],
 			resourceClasses: [],
 			statementClasses: [],
@@ -247,7 +248,7 @@ function Project( pr ) {
 				break;
 			case 'object':
 				// normal case (as designed):
-//				if( typeof opts.reload!='boolean' ) opts.reload = false;
+			//	if( typeof opts.reload!='boolean' ) opts.reload = false;
 				break;
 			default:
 				opts = {reload: false}
@@ -264,33 +265,18 @@ function Project( pr ) {
 		// else
 		return null	
 	};
-	self.updateMeta = function( prj ) {
+	self.updateMeta = ( prj )=>{
 		if( !prj ) return;
 		for( var p in prj ) self[p] = prj[p];			// update only the provided properties
 		// Update the meta-data (header):
 	//	return server.project(self).update()
 	};*/
-	const types = [{
-					name: 'dataType',
-					list: 'dataTypes',
-					eqFn: eqDT,
-					sbFn: substituteDT
-				},{ 
-					name: 'propertyClass',
-					list: 'propertyClasses',
-					eqFn: eqPC,
-					sbFn: substitutePC
-				},{ 
-					name: 'resourceClass',
-					list: 'resourceClasses',
-					eqFn: eqRC,
-					sbFn: substituteRC
-				},{ 
-					name: 'statementClass',
-					list: 'statementClasses',
-					eqFn: eqSC,
-					sbFn: substituteSC
-				}];
+	const types = [
+			{ name: 'dataType', 		list: 'dataTypes', 			eqFn: eqDT, 	sbFn: substituteDT },
+			{ name: 'propertyClass', 	list: 'propertyClasses', 	eqFn: eqPC, 	sbFn: substitutePC },
+			{ name: 'resourceClass', 	list: 'resourceClasses', 	eqFn: eqRC, 	sbFn: substituteRC },
+			{ name: 'statementClass', 	list: 'statementClasses', 	eqFn: eqSC, 	sbFn: substituteSC }
+		];
 	function eqDT(r,n) {
 		// return true, if reference and new dataType are equal:
 		if( r.type!=n.type ) return false;
@@ -390,32 +376,32 @@ function Project( pr ) {
 			if( nL.indexOf( rL[i] )<0 ) return false;
 		return true
 	}
-	function substituteDT(dta,rId,nId) {
+	function substituteDT(prj,rId,nId) {
 		// For all propertyClasses, substitute new by the original dataType:
-		substituteAtt(dta.propertyClasses,'dataType',rId,nId)
+		substituteAtt(prj.propertyClasses,'dataType',rId,nId)
 	}
-	function substitutePC(dta,rId,nId) {
+	function substitutePC(prj,rId,nId) {
 		// For all resourceClasses, substitute new by the original propertyClass:
-		substituteLe(dta.resourceClasses,'propertyClasses',rId,nId);
+		substituteLe(prj.resourceClasses,'propertyClasses',rId,nId);
 		// Also substitute the resource properties' class:
-		dta.resources.forEach( (res)=>{
+		prj.resources.forEach( (res)=>{
 			substituteAtt(res.properties,'class',rId,nId)
 		});
 		// The same with the statementClasses:
-		substituteLe(dta.statementClasses,'propertyClasses',rId,nId);
-		dta.statements.forEach( (sta)=>{
+		substituteLe(prj.statementClasses,'propertyClasses',rId,nId);
+		prj.statements.forEach( (sta)=>{
 			substituteAtt(sta.properties,'class',rId,nId)
 		})
 	}
-	function substituteRC(dta,rId,nId) {
+	function substituteRC(prj,rId,nId) {
 		// Substitute new by original resourceClasses:
-		substituteLe(dta.statementClasses,'subjectClasses',rId,nId);
-		substituteLe(dta.statementClasses,'objectClasses',rId,nId);
-		substituteAtt(dta.resources,'class',rId,nId)
+		substituteLe(prj.statementClasses,'subjectClasses',rId,nId);
+		substituteLe(prj.statementClasses,'objectClasses',rId,nId);
+		substituteAtt(prj.resources,'class',rId,nId)
 	}
-	function substituteSC(dta,rId,nId) {
+	function substituteSC(prj,rId,nId) {
 		// Substitute new by original statementClasses:
-		substituteAtt(dta.statements,'class',rId,nId)
+		substituteAtt(prj.statements,'class',rId,nId)
 	}
 	function substituteR(prj,r,n,opts) {
 		// Substitute resource n by r in all references of n,
@@ -423,10 +409,10 @@ function Project( pr ) {
 		// But: Rescue any property of n, if undefined for r.
 //		console.debug('substituteR',r,n,prj.statements);
 		
-		if( n.properties && opts && opts.rescueProperties ) {
-			// 1 Rescue property values, 
-			// if the corresponding property of the adopted resource is undefined or empty.
-			// 1.1 Looking at the property types, which ones are in common:
+		if( opts && opts.rescueProperties ) {
+			// Rescue any property value of n, 
+			// if the corresponding property of the adopted resource r is undefined or empty;
+			// looking at the property types, which ones are in common:
 			n.properties.forEach( (nP)=>{ 
 				if( hasContent(nP.value) ) {
 					// check whether existing resource has similar property;
@@ -536,77 +522,6 @@ function Project( pr ) {
 			})
 		}
 	}
-	self.deduplicate = ( dta )=>{
-		// Uses the cache.
-		// ToDo: update the server.
-		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
-//		console.debug('deduplicate',simpleClone(dta));
-		let n,r,nR,rR;
-
-		// 1. Deduplicate equal types having different ids;
-		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
-		// whereas the second in a pair is removed.
-		types.forEach( (ty)=>{
-			if( Array.isArray(dta[ty.list]) )
-				// skip last loop, as no duplicates can be found:
-				for( n=dta[ty.list].length-1; n>0; n-- ) {
-					for( r=0; r<n; r++ ) {
-//						console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.eqFn(dta[ty.list][r],dta[ty.list][n]) );
-						// Do it for all types: 
-						if( ty.eqFn(dta[ty.list][r],dta[ty.list][n]) ) {
-							// Are equal, so substitute it's ids by the original item:
-							ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
-							// ... and remove the duplicate item:
-							dta[ty.list].splice(n,1); 
-							// skip the remaining iterations of the inner loop:
-							break
-						}
-					}
-				}
-		});
-//		console.debug( 'deduplicate 1', simpleClone(dta) );
-
-		// 2. Remove duplicate resources:
-		// skip last loop, as no duplicates can be found:
-		for( n=dta.resources.length-1; n>0; n-- ) {
-			for( r=0; r<n; r++ ) {
-				// Do it for all model elements, diagrams and folders
-				// but exclude process gateways and generated events for optional branches: 
-				nR = dta.resources[n];
-				rR = dta.resources[r];
-//				console.debug( 'duplicate resource ?', rR, nR );
-				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf( resClassTitleOf(rR,dta) )>-1 
-					&& eqR(dta,rR,nR) 
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
-				) {
-					// Are equal, so remove the duplicate resource:
-//					console.debug( 'duplicate resource', rR, nR, valByTitle( dta, nR, CONFIG.propClassType ) );
-					substituteR(dta,rR,nR,{rescueProperties:true});
-					dta.resources.splice(n,1); 
-					// skip the remaining iterations of the inner loop:
-					break
-				}
-			}
-		};
-//		console.debug( 'deduplicate 2', simpleClone(dta) );
-
-		// 3. Remove duplicate statements:
-		// skip last loop, as no duplicates can be found:
-		for( n=dta.statements.length-1; n>0; n-- ) {
-			for( r=0; r<n; r++ ) {
-				// Do it for all statements: 
-				if( eqS(dta.statements[r],dta.statements[n]) ) {
-					// Are equal, so remove the duplicate statement:
-					dta.statements.splice(n,1); 
-					// skip the remaining iterations of the inner loop:
-					break
-				}
-			}
-		};
-//		console.debug( 'deduplicate 3', simpleClone(dta) );
-		return dta
-	};
 		function DataTypes(chAt) {
 			return [{
 				id: "DT-ShortString",
@@ -626,11 +541,6 @@ function Project( pr ) {
 		} 
 		function PropertyClasses(chAt) {
 			return [{
-					id: "PC-Name",
-					title: "dcterms:title",
-					dataType: "DT-ShortString",
-					changedAt: chAt
-				},{
 					id: "PC-Description",
 					title: "dcterms:description",
 					dataType: "DT-FormattedText",
@@ -649,13 +559,10 @@ function Project( pr ) {
 				description: "Folder with title and text for chapters or descriptive paragraphs.",
 				isHeading: true,
 				instantiation: ['auto','user'],
-				propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+				propertyClasses: ["PC-Description","PC-Type"],
 				changedAt: chAt
 			}]
 		}
-		const resourcesToCollect = [
-			{id: "SpecIF:BusinessProcess", flag:"collectProcesses", folder:CONFIG.resClassProcesses, folderName:"FolderProcesses-"}
-		];
 	self.collectResourcesByClass = ( dta, opts )=>{	
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
 		return new Promise( 
@@ -664,14 +571,17 @@ function Project( pr ) {
 				if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 				let	apx = dta.id.simpleHash(),
 					tim = new Date().toISOString();
-				
+
+				const resourcesToCollect = [
+					{id: "SpecIF:BusinessProcess", flag:"collectProcesses", folder:CONFIG.resClassProcesses, folderName:"FolderProcesses-"}
+				];
 				resourcesToCollect.forEach( 
-					( rC )=>{
-//						console.debug('rc2c',rC,opts);
-						if( !opts[rC.flag] ) { resolve({status:0}); return };
-						// Assumes that the folder objects for the process folder are available
+					( r2c )=>{
+//						console.debug('rc2c',r2c,opts);
+						if( !opts[r2c.flag] ) { resolve({status:0}); return };
+						// Assumes that the folder objects for the respective folder are available
 						
-						// 1 Find all process folders:
+						// 1 Find all resp. folders (e.g. process folder):
 						let delL = [], prL = [], res, pV;
 //						console.debug('collectResourcesByClass',dta.hierarchies,opts);
 						iterateNodes( dta.hierarchies, 
@@ -681,11 +591,11 @@ function Project( pr ) {
 											// find the property defining the type:
 											pV = valByTitle(dta,res,CONFIG.propClassType);
 											// collect all nodes to delete, there should be only one:
-											if( pV==rC.folder ) {
+											if( pV==r2c.folder ) {
 												delL.push( nd )
 											};
-											// collect all process diagrams for the new folders:
-											if( pV==rC.id ) {
+											// collect all diagrams for the new folders:
+											if( pV==r2c.id ) {
 												prL.push( {n:nd,r:res} )
 											}; 
 											return true  // continue always to the end
@@ -697,7 +607,7 @@ function Project( pr ) {
 						self.deleteContent( 'node', delL )
 							.then(
 								()=>{
-									// Create a Business Processes folder with all process diagrams:
+									// Create a folder with all respective objects (e.g. diagrams):
 									if( prL.length>0 ) {
 										// 3. Sort the list alphabetically by the resources' title:
 										sortBy( prL, (el)=>{ return el.r.title } );
@@ -708,10 +618,10 @@ function Project( pr ) {
 											dataTypes: DataTypes(tim),
 											propertyClasses: PropertyClasses(tim),
 											resourceClasses: ResourceClasses(tim),
-											resources: Folder( rC.folderName+apx, i18n.lookup(CONFIG.resClassProcesses), tim ),
+											resources: Folder( r2c.folderName+apx, CONFIG.resClassProcesses, tim ),
 											hierarchies: [{
-												id: "H"+rC.folderName+apx,
-												resource: rC.folderName+apx,
+												id: "H"+r2c.folderName+apx,
+												resource: r2c.folderName+apx,
 												// re-use the nodes with their references to the resources:
 												nodes: forAll( prL, (pr)=>{ return pr.n } ),
 												changedAt: tim
@@ -796,7 +706,8 @@ function Project( pr ) {
 //								console.debug('glossary',dta);
 								// The glossary is the only item in the hierarchies list:
 							//	if( hasChildren( dta.hierarchies[0] ) )
-									// use the update function to eliminate duplicate types:
+									// use the update function to eliminate duplicate types;
+									// 'opts.addGlossary' must not be true to avoid an infinite loop:
 									self.update( dta, {mode:'adopt'} )
 									.done( resolve )
 									.fail( reject )
@@ -844,11 +755,8 @@ function Project( pr ) {
 					var fL = [{
 						id: "FolderGlossary-" + apx,
 						class: "RC-Folder",
-						title: i18n.lookup(CONFIG.resClassGlossary),
+						title: CONFIG.resClassGlossary,
 						properties: [{
-							class: "PC-Name",
-							value: i18n.lookup(CONFIG.resClassGlossary)
-						},{
 							class: "PC-Type",
 							value: CONFIG.resClassGlossary
 						}],
@@ -859,11 +767,8 @@ function Project( pr ) {
 						fL.push({
 							id: "Folder-" + mEl.toJsId() + "-" + apx,
 							class: "RC-Folder",
-							title: i18n.lookup(mEl+'s'),  // just adding the 's' is an ugly quickfix ... that works for now.
-							properties: [{
-								class: "PC-Name",
-								value: i18n.lookup(mEl+'s')
-							}],
+							title: mEl+'s',  // just adding the 's' is an ugly quickfix ... that works for now.
+							properties: [],
 							changedAt: tim
 						})
 					});
@@ -902,19 +807,17 @@ function Project( pr ) {
 
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
 					let staL = dta.statements.filter(
-								(s)=>{
-									return staClassTitleOf( s, dta )==CONFIG.staClassShows && indexById( dgL, s.subject )>-1
-								}
-							);
+							(s)=>{
+								return staClassTitleOf( s, dta )==CONFIG.staClassShows && indexById( dgL, s.subject )>-1
+							}
+						);
 //					console.debug('gl tL dL',gl,tL,staL);
 					
 					// c. Add model elements by class to the respective folders.
 					// In case of model elements the resource class is distinctive;
 					// the title of the resource class indicates the model element type.
 					// List only resources which are shown on a referenced diagram:
-					let resL = resources.filter(
-									(r)=>{ return indexBy( staL, 'object', r.id )>-1 }
-								);
+					let resL = resources.filter( (r)=>{ return indexBy( staL, 'object', r.id )>-1 } );
 					// in alphanumeric order:
 					sortByTitle( resL );
 
@@ -941,16 +844,87 @@ function Project( pr ) {
 			}
 		)
 	};
-	function hasDuplicateId(dta,id) {
+	self.deduplicate = ( dta )=>{
+		// Uses the cache.
+		// ToDo: update the server.
+		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
+//		console.debug('deduplicate',simpleClone(dta));
+		let n,r,nR,rR;
+
+		// 1. Deduplicate equal types having different ids;
+		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
+		// whereas the second in a pair is removed.
+		types.forEach( (ty)=>{
+			if( Array.isArray(dta[ty.list]) )
+				// skip last loop, as no duplicates can be found:
+				for( n=dta[ty.list].length-1; n>0; n-- ) {
+					for( r=0; r<n; r++ ) {
+//						console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.eqFn(dta[ty.list][r],dta[ty.list][n]) );
+						// Do it for all types: 
+						if( ty.eqFn(dta[ty.list][r],dta[ty.list][n]) ) {
+							// Are equal, so substitute it's ids by the original item:
+							ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
+							// ... and remove the duplicate item:
+							dta[ty.list].splice(n,1); 
+							// skip the remaining iterations of the inner loop:
+							break
+						}
+					}
+				}
+		});
+//		console.debug( 'deduplicate 1', simpleClone(dta) );
+
+		// 2. Remove duplicate resources:
+		// skip last loop, as no duplicates can be found:
+		for( n=dta.resources.length-1; n>0; n-- ) {
+			for( r=0; r<n; r++ ) {
+				// Do it for all model elements, diagrams and folders
+				// but exclude process gateways and generated events for optional branches: 
+				nR = dta.resources[n];
+				rR = dta.resources[r];
+//				console.debug( 'duplicate resource ?', rR, nR );
+				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf( resClassTitleOf(rR,dta) )>-1 
+					&& eqR(dta,rR,nR) 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0 
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0 
+				) {
+					// Are equal, so remove the duplicate resource:
+//					console.debug( 'duplicate resource', rR, nR, valByTitle( dta, nR, CONFIG.propClassType ) );
+					substituteR(dta,rR,nR,{rescueProperties:true});
+					dta.resources.splice(n,1); 
+					// skip the remaining iterations of the inner loop:
+					break
+				}
+			}
+		};
+//		console.debug( 'deduplicate 2', simpleClone(dta) );
+
+		// 3. Remove duplicate statements:
+		// skip last loop, as no duplicates can be found:
+		for( n=dta.statements.length-1; n>0; n-- ) {
+			for( r=0; r<n; r++ ) {
+				// Do it for all statements: 
+				if( eqS(dta.statements[r],dta.statements[n]) ) {
+					// Are equal, so remove the duplicate statement:
+					dta.statements.splice(n,1); 
+					// skip the remaining iterations of the inner loop:
+					break
+				}
+			}
+		};
+//		console.debug( 'deduplicate 3', simpleClone(dta) );
+		return dta
+	};
+	function getDuplicate(dta,id) {
 		// check whether there is an item with the same id in dta.
 		// If so, return the item:
 		if( dta.id==id ) return dta;
-		let duplId;
+		let dupl;
 		for( var i in dta ) {
 			if( Array.isArray( dta[i] ) ) {
 				for( var j=dta[i].length-1;j>-1;j-- ) {
-					duplId = hasDuplicateId(dta[i][j],id);
-					if( duplId ) return duplId
+					dupl = getDuplicate(dta[i][j],id);
+					if( dupl ) return dupl
 				}
 			}	
 		};
@@ -959,10 +933,19 @@ function Project( pr ) {
 	// var updateModes = ["adopt","match","extend","ignore"];
 	self.update = ( newD, opts )=>{	
 //		console.debug('update',newD,opts);
-		newD = specif.toInt(newD);	// transform to internal data structure
 		// Use jQuery instead of ECMA Promises for the time being, because of progress notification.
 		var uDO = $.Deferred();
+
+		newD = specif.toInt(newD);	// transform to internal data structure
+	/*	if( !newD ) {
+			uDO.reject({ status: 995, statusText: i18n.MsgImportFailed });
+			return uDO
+		}; */
+		
 		switch( opts.mode ) {
+			case 'update': 
+				updateWithLastChanged( newD, opts );
+				break;
 			case 'adopt': 
 				adopt( newD, opts );
 				break;
@@ -975,7 +958,7 @@ function Project( pr ) {
 		// The processing per mode:
 		function adopt( nD, opts ) {
 			// First check whether BPMN collaboration and process have unique ids:
-//			console.debug('adopt',nD);
+//			console.debug('adopt project',nD);
 			// ToDo: The new collaboration id gets lost, so far!
 			
 			// 1. Integrate the types:
@@ -985,30 +968,32 @@ function Project( pr ) {
 			let i,I,pend=0,itmL;
 //			console.debug('#1',simpleClone(self.data),simpleClone(nD));
 			types.forEach( (ty)=>{
-				itmL=[];
-				for( i=0,I=nD[ty.list].length; i<I; i++ ) {
-					let nC = nD[ty.list][i],  // nC is a class in the new data
-						// types are compared by id, instances by title:
-						idx = indexById( self.data[ty.list], nC  .id );
-					if( idx<0 ) {
-						// there is no item with the same id:
-						itmL.push( nC )
-					} else {
-						// there is an item with the same id:
-						if( !ty.eqFn( self.data[ty.list][idx], nC) ) {
-							// c) create a new id and update all references:
-							// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
-							// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-							let alterId = nC.id;
-							nC.id += '-' + new Date().toISOString().simpleHash();
-							ty.sbFn( nD, nC.id, alterId );
-							itmL.push( nC );
+				if( Array.isArray(nD[ty.list]) ) {
+					itmL=[];
+					for( i=0,I=nD[ty.list].length; i<I; i++ ) {
+						let nC = nD[ty.list][i],  // nC is a class in the new data
+							// types are compared by id, instances by title:
+							idx = indexById( self.data[ty.list], nC.id );
+						if( idx<0 ) {
+							// there is no item with the same id:
+							itmL.push( nC )
+						} else {
+							// there is an item with the same id:
+							if( !ty.eqFn( self.data[ty.list][idx], nC) ) {
+								// c) create a new id and update all references:
+								// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
+								// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
+								let alterId = nC.id;
+								nC.id += '-' + new Date().toISOString().simpleHash();
+								ty.sbFn( nD, nC.id, alterId );
+								itmL.push( nC );
+							}
 						}
-					}
-				};
-				pend++;
-				self.createContent( ty.name, itmL )
-					.then( finalize, uDO.reject )
+					};
+					pend++;
+					self.createContent( ty.name, itmL )
+						.then( finalize, uDO.reject )
+				}
 			});
 //			console.debug('#2',simpleClone(self.data),simpleClone(nD));
 
@@ -1054,8 +1039,7 @@ function Project( pr ) {
 				// Check, whether the existing model has an element with the same id,
 				// and since it does have a different title or different type (otherwise it would have been substituted above),
 				// assign a new id to the new element:
-				if( hasDuplicateId(self.data,nR.id) ) {
-//					console.debug('duplicate ID',nR);
+				if( getDuplicate(self.data,nR.id) ) {
 					let newId = genID('R-');
 					// first assign new ID to all references:
 					substituteR( nD, {id:newId}, nR );
@@ -1099,13 +1083,45 @@ function Project( pr ) {
 					)
 				}
 			}
-		};
+		}
+		function updateWithLastChanged( nD, opts ) {
+			console.debug('update project',nD,opts);
+			// Update a loaded project with data of the new:
+			// - Types with the same id must be compatible
+			// - New types will be added
+			// - Instances with newer changedAt replace older ones
+			// - Both the id and alternativeIds are used to associate existing and new instances
+
+		/*	// In a first pass check, if there is any incompatible type making an update impossible:
+			rc = classesAreCompatible('dataType',mode);
+			if( rc.status>0 ) {
+				uDO.reject( rc );
+				return uDO
+			};
+			rc = classesAreCompatible('propertyClass',mode);
+			if( rc.status>0 ) {
+				uDO.reject( rc );
+				return uDO
+			};
+			rc = classesAreCompatible('resourceClass',mode);
+			if( rc.status>0 ) {
+				uDO.reject( rc );
+				return uDO
+			};
+			rc = classesAreCompatible('statementClass',mode);
+			if( rc.status>0 ) {
+				uDO.reject( rc );
+				return uDO
+			};
+			console.info("All existing types are compatible with '"+newD.title+"'");  */
+
+		}
 	
 /*		// newD is new data in 'internal' data structure
 		// add new elements
 		// update elements with the same id
 		// exception: since types cannot be updated, return with error in case newD contains incompatible types
-		// There are tree modes with respect to the types:
+		// There are four modes with respect to the types:
 		//	- "match": if a type in newD with the same id is already present and it differs, quit with error-code.
 		//    This is the minimum condition and true for all of the following modes, as well.
 		//  - "deduplicate": if an identical type in newD with a different id is found, take the existing one 
@@ -1169,39 +1185,17 @@ function Project( pr ) {
 						break;
 				default: uDO.reject() //should never arrive here
 			}
-		}
-		function classesAreCompatible( ctg, mode ) {
-			let aL= null, nL= null; 
-			switch( ctg ) {
-				case 'dataType': aL = self.data.dataTypes; nL = newD.dataTypes; break;
-				case 'resourceClass': aL = self.data.resourceClasses; nL = newD.resourceClasses; break;
-				case 'statementClass': aL = self.data.statementClasses; nL = newD.statementClasses; break;
-				default: return null //should never arrive here
-			};
-			// true, if every element in nL is compatibly present in aL or if it can be added;
-			// loop backwards because only one variable is needed:
-			let j=null, rC=null;
-			for( var i=nL.length-1;i>-1;i-- ) {
-				for( j=aL.length-1;j>-1;j-- ) {
-//					console.debug('classesAreCompatible',aL[j],nL[i]);
-					// if a single element is incompatible the lists are incompatible:
-					rC = classIsCompatible(ctg,aL[j],nL[i],mode);
-					// on first error occurring, quit with return code:
-					if( rC.status>0 ) return rC 
-				}
-			};
-			return {status:0}
-		}
+		} 
 		function addNewTypes( ctg ) {
 			// Is commonly used for resource and statement classes with their propertyClasses.
-			let rL= null, nL= null, rT=null, nT=null; 
+			let rL, nL, rT; 
 			switch( ctg ) {
 				case 'dataType': rL = self.data.dataTypes; nL = newD.dataTypes; break;
 				case 'resourceClass': rL = self.data.resourceClasses; nL = newD.resourceClasses; break;
 				case 'statementClass': rL = self.data.statementClasses; nL = newD.statementClasses; break;
 				default: return null //should never arrive here
 			};
-			nL.forEach( function(nT) {
+			nL.forEach( (nT)=>{
 				rT = itemById(rL,nT.id);
 				if( rT ) {
 					// a type with the same id exists. 
@@ -1225,7 +1219,7 @@ function Project( pr ) {
 							if( nT.propertyClasses && nT.propertyClasses.length>0 ) {
 								// must create missing propertyClasses one by one in ascending sequence, 
 								// because a newly added property class can be specified as predecessor: 
-								addNewAT( rT, nT.propertyClasses, 0 )
+								addNewPC( rT, nT.propertyClasses, 0 )
 							}
 					}
 				} else {
@@ -1233,7 +1227,7 @@ function Project( pr ) {
 					pend++;
 					console.info('Creating type',nT.title);
 					self.createContent(nT.category,nT)
-						.done(function() {
+						.done(()=>{
 							if( --pend<1 ) updateNext( ctg )
 						})
 						.fail( uDO.reject )
@@ -1243,32 +1237,31 @@ function Project( pr ) {
 			if(pend<1) updateNext( ctg );
 			return
 				
-				function addNewAT( r, nATs, idx ) {
+				function addNewPC( r, nPCs, idx ) {
 					// r: existing (=reference) type with its propertyClasses
-					// nATs: new list of propertyClasses
-					// idx: current index of nATs
-					if( nATs[idx].id?itemById( r.propertyClasses, nATs[idx].id ):itemByName( r.propertyClasses, nATs[idx].title ) ) {
+					// nPCs: new list of propertyClasses
+					// idx: current index of nPCs
+					if( nPCs[idx].id?itemById( r.propertyClasses, nPCs[idx].id ):itemByName( r.propertyClasses, nPCs[idx].title ) ) {
 						// not missing, so try next:
-						if( ++idx<nATs.length ) addNewAT( r, nATs, idx );
+						if( ++idx<nPCs.length ) addNewPC( r, nPCs, idx );
 						return
 					};
 
 					// else: not found, so create:
 					pend++;
 					if( idx>0 ) 
-						nATs[idx].predecessor = nATs[idx-1].id;
+						nPCs[idx].predecessor = nPCs[idx-1].id;
 
 					// add the new property class also to r:
-					let p = indexById( r.propertyClasses, nATs[idx].predecessor );
-					console.info('Creating property class', nATs[idx].title);
+					let p = indexById( r.propertyClasses, nPCs[idx].predecessor );
+					console.info('Creating property class', nPCs[idx].title);
 					// insert at the position similarly to the new type;
 					// if p==-1, then it will be inserted at the first position:
-					r.propertyClasses.splice( p+1, 0, nATs[idx] );
-				//	nATs[idx].class = r.id;  // eine Verzweiflungstat ... siehe server...js
-					server.project({id:self.data.id}).allClasses({id:r.id}).class(nATs[idx]).create()
-						.done( function() {
+					r.propertyClasses.splice( p+1, 0, nPCs[idx] );
+					server.project({id:self.data.id}).allClasses({id:r.id}).class(nPCs[idx]).create()
+						.done( ()=>{
 							// Type creation must be completed before starting to update the elements:
-							if( ++idx<nATs.length ) addNewAT( r, nATs, idx );
+							if( ++idx<nPCs.length ) addNewPC( r, nPCs, idx );
 							if( --pend<1 ) updateNext( ctg )
 						})
 						.fail( uDO.reject )
@@ -1289,7 +1282,7 @@ function Project( pr ) {
 					// So we lose 'only' the transfer time.
 					if( newD.files && newD.files.length>0 )
 						self.updateContent(ctg,newD.files)
-							.done( function() {
+							.done( ()=>{
 								// Wait for all files to be loaded, so that resources will have higher revision numbers:
 								newD.files = [];
 								updateNext(ctg)
@@ -1303,7 +1296,7 @@ function Project( pr ) {
 				case 'hierarchy': itemL = newD.hierarchies; uDO.notify(i18n.MsgLoadingHierarchies,80); break;
 				default: return null //should never arrive here
 			};
-			itemL.forEach( function(itm) {
+			itemL.forEach( (itm)=>{
 				updateInstanceIfChanged(ctg,itm)
 			});
 			// if list is empty, continue directly with the next item type:
@@ -1386,7 +1379,7 @@ function Project( pr ) {
 				// Update an element/item of the specified category, if changed.
 				pend++;
 				self.readContent(ctg,nI,true)	// reload from the server to obtain most recent data
-					.done( function(rI) {
+					.done( (rI)=>{
 						// compare actual and new item:
 //						console.debug('updateInstanceIfChanged',ctg,rI,nI);
 						// ToDo: Detect parallel changes and merge interactively ...
@@ -1397,7 +1390,7 @@ function Project( pr ) {
 							nI.upd = rI.upd;
 							nI.del = rI.del;
 							let nA=null;
-							rI.properties.forEach( function(rA) {
+							rI.properties.forEach( (rA)=>{
 								// in case the nI.properties are supplied in a different order:
 								nA = itemBy(nI.properties,'class',rA['class']);
 								if( nA ) {
@@ -1415,7 +1408,7 @@ function Project( pr ) {
 							updateTreeIfChanged( ctg, rI, nI )	// update the tree, if necessary.
 						}
 					})
-					.fail( function(xhr) {
+					.fail( (xhr)=Y{
 						switch( xhr.status ) {
 							case 403:
 								// This is a hack to circumvent a server limitation.
@@ -1431,7 +1424,7 @@ function Project( pr ) {
 //								console.debug('not found',xhr.status);
 								// no item with this id, so create a new one:
 								self.createContent(ctg,nI)
-									.done(function() {
+									.done(()=>{
 										if( --pend<1 ) updateNext( ctg )
 									})
 									.fail( uDO.reject )
@@ -1449,7 +1442,7 @@ function Project( pr ) {
 
 					function newIds(h) {
 						// new and updated hierarchy entries must have a new id (server does not support revisions for hierarchies):
-						h.children.forEach( function(ch) {
+						h.children.forEach( (ch)=>{
 							ch.id = genID('N-');
 							newIds(ch)
 						})
@@ -1479,7 +1472,7 @@ function Project( pr ) {
 			//		self.deleteContent('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
 					newIds(nI);
 					server.project(app.cache.selectedProject.data).specification(nI).createChildren()
-						.done( function() {
+						.done( ()=>{
 							if( --pend<1 ) updateNext( ctg )
 						})
 						.fail( uDO.reject )
@@ -1503,9 +1496,7 @@ function Project( pr ) {
 				//	case 'resource':
 				//	case 'statement':
 				//	case 'hierarchy':
-					case 'node':
-						// add the baseType to property values to simplify the transformation for storing:
-				//		addBaseTypes( item );
+				//	case 'node':
 						// no break
 					default:
 						// if current user can create an item, he has the other permissions, as well:
@@ -1553,8 +1544,6 @@ function Project( pr ) {
 				//	case 'resource':
 				//	case 'statement':
 				//	case 'hierarchy':
-						// add the baseType to property values to simplify the transformation for storing:
-				//		addBaseTypes( item );
 						// no break
 					default:
 //						console.debug('updateContent - cache', ctg );
@@ -1642,44 +1631,40 @@ function Project( pr ) {
 			}
 		)
 	};
-/*	self.rejectTest = ()=Y{
-		var dO = $.Deferred();  
-		dO.reject( {status:417,statusText:'rejected to test'} );	// return a new list with the original elements
-		return dO
-	};  */
 
 	self.createResource = ( oT )=>{ 
 		// Create an empty form (resource instance) for the resource class oT:
-		// Note: Here ES6 promises will be used; the other functions will follow;
+		// Note: ES6 promises are used;
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
+		// also https://javascript.info/promise-chaining
 		return new Promise(
 			(resolve, reject) => {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
+				var res;
+				
 				self.readContent( 'resourceClass', oT, {reload:true} )
 				.then( 
 					(rC)=>{
+//						console.debug('#1',rC);
 						// return an empty resource instance of the given type: 
-						var res = {
+						res = {
 							id: genID('R-'),
 							class: rC.id,
 							title: '',
 							permissions: rC.permissions||{cre:true,rea:true,upd:true,del:true},
 							properties: [] 
-							};
-						self.readContent( 'propertyClass', rC.propertyClasses )
-							.then( 
-								(pCL)=>{
-									res.properties = forAll( pCL, createProp );
-									if( res.properties.length ) 
-										resolve( res )
-									else
-										reject({status:977, statusText:i18n.ErrInconsistentPermissions})
-								},
-								reject
-							)
-					},
-					reject
+						};
+						return self.readContent( 'propertyClass', rC.propertyClasses )
+					}
 				)
+				.then( 
+					(pCL)=>{
+//						console.debug('#2',pCL);
+						res.properties = forAll( pCL, createProp );
+						resolve( res )
+					}
+				)
+				.catch(	reject ) 
 			}
 		)
 	};
@@ -1692,9 +1677,6 @@ function Project( pr ) {
 		//   the resource is found in the cache, but the comment is not.
 		//   --> set 'showComments' to true
 		
-			function isReferenced( rId ) {
-				return iterateNodes( self.data.hierarchies, (nd)=>{ return nd.resource!=rId } )
-			}
 		return new Promise( 
 			(resolve, reject) => {
 				self.readContent( 'statement', 'all' )
@@ -1710,14 +1692,15 @@ function Project( pr ) {
 												// related subject and object must be referenced in the tree to be navigable,
 												// also, the statement must not be declared 'hidden':
 												!showComments
-													&&	isReferenced( itemIdOf(s.subject) )
-													&&	isReferenced( itemIdOf(s.object) )
+													// cheap tests first:
 													&&	s.title!=CONFIG.staClassCommentRefersTo
 													&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
-												// In case of a comment, the comment itself is not referenced, but the resource:
+													&&	isReferencedByHierarchy( itemIdOf(s.subject) )
+													&&	isReferencedByHierarchy( itemIdOf(s.object) )
+												// In case of a comment, the comment itself is not referenced in the tree:
 											||	showComments
-													&&	isReferenced( itemIdOf(s.object) )
 													&&	s.title==CONFIG.staClassCommentRefersTo
+													&&	isReferencedByHierarchy( itemIdOf(s.object) )
 											)
 								}
 							)
@@ -1771,6 +1754,7 @@ function Project( pr ) {
 	};
 	self.export = ()=>{
 		if( self.exporting ) return;
+		
 		const exportFormatClicked = 'app.cache.selectedProject.exportFormatClicked()';
 		let dlg = new BootstrapDialog({
 			title: i18n.LblExport+": '"+self.data.title+"'",
@@ -1813,7 +1797,7 @@ function Project( pr ) {
 						// Get index of option:
 						app.busy.set();
 						message.show( i18n.MsgBrowserSaving, {severity:'success', duration:CONFIG.messageDisplayTimeShort} );
-						console.debug('options',checkboxValues( i18n.LblOptions ));
+//						console.debug('options',checkboxValues( i18n.LblOptions ));
 						let options = {
 							format: radioValue( i18n.LblFormat ),
 							fileName: fileName
@@ -1822,7 +1806,8 @@ function Project( pr ) {
 						checkboxValues( i18n.modelElements ).forEach(
 							(op)=>{
 								options[op] = true
-						});
+							}
+						);
 						self.exportAs( options )
 						.then(  
 							app.busy.reset,
@@ -1887,9 +1872,9 @@ function Project( pr ) {
 				// Don't lookup titles now, but within toOxml(), so that that classifyProps() works properly.
 				// But DO reduce to the language desired.
 				opts.lookupTitles = false;  // applies to specif.toExt()
+				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
 				opts.linkifiedURLs = true;
-				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 
 				let data = specif.toExt( self.data, opts ), 
 					options = { 
@@ -1921,25 +1906,26 @@ function Project( pr ) {
 								pend++;
 								// Read and render BPMN as SVG:
 								blob2text(f, (b)=>{
-									bpmn2svg(b, (err, svg)=>{ 
-												// this is the bpmnViewer callback function:
-												if (err) {
-													console.error('BPMN-Viewer could not deliver SVG', err)
-												} else {
-													// replace:
-													L.splice(i,1,{
-														blob: new Blob([svg],{type: "text/plain; charset=utf-8"}),
-														id: 'F-'+f.title.simpleHash(),
-														title: f.title.fileName()+'.svg',
-														type: 'image/svg+xml',
-														changedAt: f.changedAt
-													})
-												};
-	//											console.debug('SVG',svg,L);
-												if( --pend<1 ) 
-													// Finally publish in the desired format:
-													pub();
-											})
+									bpmn2svg(b)
+									.then(
+										(result)=>{
+											// replace BPMN by SVG:
+											L.splice(i,1,{
+												blob: new Blob([result.svg],{type: "text/plain; charset=utf-8"}),
+												id: 'F-'+f.title.simpleHash(),
+												title: f.title.fileName()+'.svg',
+												type: 'image/svg+xml',
+												changedAt: f.changedAt
+											});
+//											console.debug('SVG',result.svg,L);
+											if( --pend<1 ) 
+												// Finally publish in the desired format:
+												pub();
+										},
+										(err)=>{
+											console.error('BPMN-Viewer could not deliver SVG', err)
+										}
+									)
 								}, 0)
 						}
 					});  
@@ -1962,7 +1948,7 @@ function Project( pr ) {
 			function storeAs( opts ) {
 				if( !opts || ['specif-v0.10.8','specif','reqif'].indexOf(opts.format)<0 ) return null;
 				// ToDo: Get the newest data from the server.
-				console.debug( "storeAs", opts );
+//				console.debug( "storeAs", opts );
 
 				switch( opts.format ) { 
 					case 'specif-v0.10.8':
@@ -1985,12 +1971,12 @@ function Project( pr ) {
 				};
 				let zip = new JSZip(),
 					data = specif.toExt( self.data, opts ),
-					fname;
+					fName = (opts.fileName || data.title);
 
 				// Add the files:
 				if( data.files )
 					data.files.forEach( (f)=>{
-	//					console.debug('zip a file',f);
+//						console.debug('zip a file',f);
 						zip.file( f.title, f.blob );
 						delete f.blob // the SpecIF data below shall not contain it ...
 					});
@@ -1999,11 +1985,11 @@ function Project( pr ) {
 				switch( opts.format ) {
 					case 'specif-v0.10.8':
 					case 'specif':
-						fName = (opts.fileName || data.title) +".specif";
+						fName += ".specif";
 						data = JSON.stringify( data );
 						break;
 					case 'reqif':
-						fName = (opts.fileName || data.title) +".reqif";
+						fName += ".reqif";
 						data = app.ioReqif.toReqif( data )
 				};
 				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
@@ -2018,7 +2004,7 @@ function Project( pr ) {
 					.then(
 						(blob)=>{
 							// successfully generated:
-	//						console.debug("storing ",fName+"z");
+//							console.debug("storing ",fName+"z");
 							saveAs(blob, fName+"z");
 							self.exporting = false;
 							resolve()
@@ -2047,7 +2033,7 @@ function Project( pr ) {
 		// get all resources of the specified type: qu is {type: class}
 	//	if( !reload ) {
 			// collect all resources with the queried type:
-			var oL = forAll( self.data.resources, function(o) { return o['class']==qu.type?o:null } ),
+			var oL = forAll( self.data.resources, (o)=>{ return o['class']==qu.type?o:null } ),
 				dO = $.Deferred();  
 			dO.resolve( oL );
 			return dO
@@ -2073,7 +2059,7 @@ function Project( pr ) {
 				for( var o=oL.length-1;o>-1;o-- ) rL[o] = {id: oL[o]};  
 
 				return server.readContent( 'resource', rL )
-					.done(function(rsp) {
+					.done( (rsp)=>{
 						// continue caching, if the project hasn't been left, meanwhile:
 						if( sp ) {  // sp is null, if the project has been left.
 							cacheL( self.data.resources, rsp );
@@ -2113,7 +2099,7 @@ function Project( pr ) {
 				if( !loading && !self.exporting ) { return };  // in case the loading has been stopped (by stopAutoLoad) ...
 //				console.debug( 'loadRels', ob );
 				self.readStatementsOf( ob )
-					.done(function(rsp) {
+					.done( (rsp)=>{
 						// continue caching, if the project hasn't been left, meanwhile (sp==null):
 						if( sp && ++cI<sp.flatL.length ) {
 							loadRels( {id:sp.flatL[cI]} )
@@ -2143,7 +2129,7 @@ function Project( pr ) {
 			pend = self.data.hierarchies.length;
 		for( var i=self.data.hierarchies.length-1; i>-1; i-- ) {
 			fn( self.data.hierarchies[i] )
-				.done(function() {
+				.done(()=>{
 					if(--pend<1) dO.resolve()
 				})
 				.fail( dO.reject )
@@ -2156,7 +2142,7 @@ function Project( pr ) {
 		// only update the cache and continue the chain, if autoLoadId of the time of execution is equal to the time of calling (aU):
 		if( autoLoadId && aU==autoLoadId ) {
 			// Start timer for next update:
-			setTimeout( function() { autoLoad( aU ) }, CONFIG.cacheAutoLoadPeriod )
+			setTimeout( ()=>{ autoLoad( aU ) }, CONFIG.cacheAutoLoadPeriod )
 			
 			// skip this turn, if autoLoad from last trigger is still being executed (avoid multiple updates in parallel):
 			if( loading ) { console.info( 'Skipping autoLoad cycle' ); return };
@@ -2164,48 +2150,28 @@ function Project( pr ) {
 			loading = true;
 			// 1) load the dataTypes:
 			self.readContent( 'dataType', [], true )	// true: reload
-				.done( function() {
+				.done( ()=>{
 					if( autoLoadId && aU==autoLoadId ) {  // if the update hasn't been stopped, meanwhile
 						// 2) load allClasses:
 						self.readContent( 'anyClass', [], true )
-							.done( function() {
+							.done( ()=>{
 								// new allClasses and the permissions have arrived.
 								// 3) update the current spec and the referenced resources:
 								if( autoLoadId && aU==autoLoadId )   // if the update hasn't been stopped, meanwhile
 									self.loadInstances( autoLoadCb )
 							})
-							.fail( function(xhr) { 
+							.fail( (xhr)=>{ 
 								loading = false	// e.g. when importing, the calls will fail, but thereafter the autoLoad shall resume.
 							})
 					}
 				})
-				.fail( function(xhr) { 
+				.fail( (xhr)=>{ 
 					loading = false	// e.g. when importing, the calls will fail, but thereafter the autoLoad shall resume.
 				})
 		}
 		// else: project has been left or another autoLoad chain has been started, so break this chain.
 	} 
 
-	function addBaseTypes( item ) {
-		if( !server || server.type=='PouchDB' ) return;
-		// only needed for ReqIF Server:
-		// add base types for easier (context-free) processing of properties when storing; 
-		// for use with createContent and updateContent functions. 
-		if( !item || Array.isArray(item)&&item.length<1 ) return;
-			function addBT(itm) {
-				if( !itm.properties || itm.properties.length<1 ) return;
-				let sT = itemById( self.data.allClasses, itm['class'] ),pT=null,dT=null;
-				for( var a=itm.properties.length-1; a>-1; a-- ) {
-					pT = itemById( sT.propertyClasses, itm.properties[a].class );
-					dT = itemById( self.data.dataTypes, pT.dataType );
-					itm.properties[a].baseType = dT.type
-				}
-			}
-		if( Array.isArray(item) )
-			item.forEach( function(itm) {addBT(itm)} )
-		else 
-			addBT(item)
-	}
 	function addPermissions( item ) { 
 		// add permissions; 
 		// for use with createContent and updateContent functions. 
@@ -2216,13 +2182,13 @@ function Project( pr ) {
 				itm.upd=true; 
 				itm.del=true;
 				if( itm.properties )
-					itm.properties.forEach( function(ip) {
+					itm.properties.forEach( (ip)=>{
 						ip.upd=true;
 						ip.del=true
 					})
 			}
 		if( Array.isArray(item) )
-			item.forEach( function(itm) {addPerms(itm)} )
+			item.forEach( (itm)=>{addPerms(itm)} )
 		else 
 			addPerms(item)
 	}  
@@ -2274,6 +2240,9 @@ function Project( pr ) {
 						};
 						return {status:0}
 				};
+				return null;	// should never arrive here ... as every branch in every case above has a return.
+			case 'propertyClass':
+				// ToDo
 				return null;	// should never arrive here ... as every branch in every case above has a return.
 			case 'statementClass':
 				// To be compatible, all sourceTypes of newC must be contained in the sourceTypes of refC;
@@ -2328,6 +2297,29 @@ function Project( pr ) {
 		};
 		return null		// should never arrive here ...
 	}
+/*	function classesAreCompatible( ctg, mode ) {
+		let aL= null, nL= null; 
+		switch( ctg ) {
+			case 'dataType': aL = self.data.dataTypes; nL = newD.dataTypes; break;
+			case 'propertyClass': aL = self.data.propertyClasses; nL = newD.propertyClasses; break;
+			case 'resourceClass': aL = self.data.resourceClasses; nL = newD.resourceClasses; break;
+			case 'statementClass': aL = self.data.statementClasses; nL = newD.statementClasses; break;
+			default: return null //should never arrive here
+		};
+		// true, if every element in nL is compatibly present in aL or if it can be added:
+		let j=null, rC=null;
+		for( var i=nL.length-1;i>-1;i-- ) {
+			for( j=aL.length-1;j>-1;j-- ) {
+				console.debug('classesAreCompatible',aL[j],nL[i]);
+				// if a single element is incompatible the lists are incompatible:
+				rC = classIsCompatible(ctg,aL[j],nL[i],mode);
+				// on first error occurring, quit with return code:
+				if( rC.status>0 ) return rC 
+			}
+		};
+		return {status:0}
+	} */
+
 	function cache( ctg, item ) { 
 		if( !item || Array.isArray(item)&&item.length<1 ) return;
 		// If item is a list, all elements must have the same category.
@@ -2338,11 +2330,6 @@ function Project( pr ) {
 			case 'propertyClass':
 			case 'resourceClass':		
 			case 'statementClass':		return fn( cacheOf(ctg), item );
-		/*	case 'resourceClass': 
-			case 'statementClass':		fn( self.data.allClasses, item); return fn( cacheOf(ctg), item );
-			case 'class':				if(Array.isArray(item)||!item['class']) return null;  // cannot process arrays in this case, yet.
-//										console.debug('cache class',item,itemById(self.data.allClasses,item['class'])); 
-										return cacheAtPosition( itemById(self.data.resourceClasses.concat(self.data.statementClasses),item['class']).propertyClasses, item );  */
 			case 'resource': 		
 			case 'statement': 	
 			case 'file': 				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
@@ -2351,8 +2338,8 @@ function Project( pr ) {
 //										console.debug('cache',ctg,item);
 										return cacheNode( item ); 
 			default: return null
-		};
-		return
+		}
+		// all cases have a return statement ..
 		
 		function cacheNode( e ) { 
 			// add or replace a node in a hierarchy;
@@ -2372,7 +2359,6 @@ function Project( pr ) {
 							// insert the node after the predecessor:
 							(ndL)=>{ 
 								let i=indexById(ndL,e.predecessor); 
-//								if(i>-1) console.debug('predecessor found', ndL, i, ndL[i]);
 								if(i>-1) ndL.splice(i+1,0,e)
 							}
 						)
@@ -2430,10 +2416,6 @@ function Project( pr ) {
 			case 'propertyClass':
 			case 'resourceClass':		
 			case 'statementClass':		return fn( cacheOf(ctg), item );
-		/*	case 'resourceClass': 	
-			case 'statementClass': 		fn( self.data.allClasses, item); return fn( cacheOf(ctg), item );
-			case 'class':				let sT = itemById(self.data.resourceClasses.concat(self.data.statementClasses),item['class']);
-										return fn( sT.propertyClasses, item );  */
 			case 'resource': 	
 			case 'statement': 			
 			case 'file':				if(app.cache.cacheInstances) return fn( cacheOf(ctg), item );
@@ -2445,17 +2427,15 @@ function Project( pr ) {
 										return;
 			default: return null // programming error
 		};
-		return
+		// all cases have a return statement ..
 		
 		function delNodes( L, el ) {
 			// Delete all nodes specified by the element;
 			// if el is the node, 'id' will be used to identify it (obviously at most one node),
 			// and if el is the referenced resource, 'resource' will be used to identify all referencing nodes.
 			if( !Array.isArray( L ) ) return;
-//			console.debug('delNodes',simpleClone(L),el);
 			for( var h=L.length-1; h>-1; h-- ) {
 				if( L[h].id==el.id || L[h].resource==el.resource ) {
-//					console.debug( 'deleting node ',simpleClone(L[h]) );
 					L.splice(h,1);
 					break	// can't delete any children
 				};
@@ -2485,11 +2465,9 @@ function Project( pr ) {
 		if( !opts.reload ) {
 			let cch = cacheOf(ctg),
 				idx=null;
-//			console.debug( 'readCache', simpleClone(cch) );
 			if( itm=='all' ) {
 				// return all cached items asynchronously:
 				return new Promise(( resolve, reject)=>{
-//					console.debug( 'readCache', cch, itm );
 					resolve( [].concat(cch) );	// return a new list with the original elements
 				})
 			};
@@ -2598,6 +2576,7 @@ const specif = {
 		return cDO
 	},
 	toInt: ( spD )=>{
+		"use strict";
 		// transform SpecIF to internal data;
 		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.
@@ -2663,7 +2642,7 @@ const specif = {
 		} catch (e) {
 			console.error( "Error when importing the project '"+spD.title+"'" );
 			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
-			return undefined
+			return
 		}; 
 		
 		// header information provided only in case of project creation, but not in case of project update:
@@ -2687,8 +2666,8 @@ const specif = {
 				if( iE.description ) oE.description = cleanValue(iE.description);
 				// revision is a number up until v0.10.6 and a string thereafter:
 				switch( typeof(iE.revision) ) {
-					case 'undefined':
-						break;
+				/*	case 'undefined':
+						break; */
 					case 'number':
 						oE.revision = iE.revision.toString();	// for <v0.10.8
 						break;
@@ -2704,7 +2683,6 @@ const specif = {
 			}
 			// a data type:
 			function dT2int( iE ) {
-		//		iE.category = 'dataType';
 				var oE = i2int( iE );
 				oE.title = cleanValue(iE.title);
 				oE.type = iE.type;
@@ -2792,7 +2770,6 @@ const specif = {
 			// a resource class:
 			function rC2int( iE ) {
 				var oE = aC2int( iE );
-		//		oE.category = 'resourceClass';
 
 				// If "iE.isHeading" is defined, use it:
 				if( typeof(iE.isHeading)=='boolean' ) {
@@ -2821,7 +2798,6 @@ const specif = {
 			// a statementClass:
 			function sC2int( iE ) {
 				var oE = aC2int( iE );
-		//		oE.category = 'statementClass';
 				if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 				if( iE[names.subClasses] ) oE.subjectClasses = iE[names.subClasses];
 				if( iE[names.objClasses] ) oE.objectClasses = iE[names.objClasses];
@@ -2834,15 +2810,14 @@ const specif = {
 				// later on, the hierarchy-roots will be stored as resources referenced by a node:
 				var oE = aC2int( iE );
 				oE.isHeading = true;
-		//		oE.category = 'resourceClass';
 //				console.debug('hierarchyClass 2int',iE,oE);
 				return oE
 			}
 			// a property:
 			function p2int( iE ) {
-				let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
-					dT = itemById( iD.dataTypes, pT.dataType ),
-					oE = {
+			/*	let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
+					dT = itemById( iD.dataTypes, pT.dataType ); */
+				var	oE = {
 						// no id
 						class: iE[names.pClass]
 					};
@@ -2902,12 +2877,11 @@ const specif = {
 			}
 			// a hierarchy:
 			function h2int( eH ) {
-			//	var iH = a2int( eH );
-			//	iH['class'] = eH[names.hClass];
 				// the properties are stored with a resource, while the hierarchy is stored as a node with reference to that resource:
 				if( names.hClasses ) {
-					// up until v0.10.6;
+					// up until v0.10.6, transform hierarchy root to a regular resource:
 					var iR = a2int( eH ),
+					//  ... and add a link to the hierarchy:
 						iH = {
 							id: 'N-'+iR.id,
 							resource: iR.id,
@@ -2923,8 +2897,6 @@ const specif = {
 					var iH = i2int( eH );
 					iH.resource = eH.resource
 				};
-			/*	// list all resource ids in a flat list:
-				iH.flatL = [eH.id];  */
 
 				// SpecIF allows resource references with id alone or with  a key (id+revision):
 				iH.nodes = forAll( eH.nodes, n2int );
@@ -2933,15 +2905,12 @@ const specif = {
 
 				// a hierarchy node:
 				function n2int( eN ) {
-			//		iH.flatL.push(eN.resource);
 					switch( typeof(eN.revision) ) {
-						case 'undefined':
-							break;
-						case 'number':
-							eN.revision = eN.revision.toString();
-							break;
+				/*		case 'undefined':
 						case 'string':
-							eN.revision = eN.revision
+							break;  */
+						case 'number':
+							eN.revision = eN.revision.toString()
 					};
 					forAll( eN.nodes, n2int );
 					return eN
@@ -2960,7 +2929,8 @@ const specif = {
 			}
 	},
 	toExt: ( iD, opts )=>{
-		// transform the data in internal data format to SpecIF:
+		"use strict";
+		// transform iD (data in internal data format) to SpecIF:
 	/*	if( opts ) {
 			if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = true;
 			if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
@@ -2972,7 +2942,7 @@ const specif = {
 		};  */
 		// if opts.targetLanguage has no value, all available languages are kept.
 
-//		console.debug('toExt', opts );
+//		console.debug('toExt', iD, opts );
 		// transform internal data to SpecIF:
 		var spD = {
 				id: iD.id,
@@ -3024,7 +2994,7 @@ const specif = {
 				if( iD.createdBy.org && iD.createdBy.org.organizationName )
 					spD.createdBy.org = iD.createdBy.org
 			}
-			// else: no createdBy, if there is no data 
+			// else: don't add createdBy without data 
 		};
 		if( iD.dataTypes && iD.dataTypes.length>0 ) 
 			spD.dataTypes = forAll( iD.dataTypes, dT2ext );
@@ -3032,7 +3002,7 @@ const specif = {
 			spD.propertyClasses = forAll( iD.propertyClasses, pC2ext );
 		spD.resourceClasses = forAll( iD.resourceClasses, rC2ext );
 		spD.statementClasses = forAll( iD.statementClasses, sC2ext );
-		spD.resources = forAll( iD.resources, r2ext );
+		spD.resources = forAll( (opts.allResources? iD.resources : collectResourcesByHierarchy( iD )), r2ext );
 		spD.statements = forAll( iD.statements, s2ext );
 		spD.hierarchies = forAll( iD.hierarchies, h2ext );
 		if( iD.files && iD.files.length>0 ) 
@@ -3058,13 +3028,6 @@ const specif = {
 			}
 			// a data type:
 			function dT2ext( iE ) {
-			/*	var oE = simpleClone(iE);
-				oE.title = titleOf( iE, opts );
-				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
-				if( opts.targetLanguage && iE.type=="xs:enumeration" ) {
-					// reduce to the language specified: 					
-					oE.values = forAll( iE.values, function(val) { return {id:val.id,value:languageValueOf(val.value,opts)} })
-				};  */
 				var oE = i2ext( iE );
 				oE.title = titleOf( iE, opts );
 				oE.type = iE.type;
@@ -3184,7 +3147,6 @@ const specif = {
 				var oE = i2ext( iE );
 //				console.debug('a2ext',iE,opts);
 				// resources and hierarchies usually have individual titles, and so we will not lookup:
-				oE.title = elementTitleOf( iE, opts );
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
@@ -3193,15 +3155,19 @@ const specif = {
 			// a resource:
 			function r2ext( iE ) {
 				var oE = a2ext( iE );
+				oE.title = elementTitleOf( iE, opts );
 //				console.debug('resource 2int',iE,oE);
 				return oE
 			}
 			// a statement:
 			function s2ext( iE ) {
-//				console.debug('statement 2ext',iE.title);
+//				console.debug('statement2ext',iE.title);
 				if( CONFIG.hiddenStatements.indexOf( iE.title )>-1 	 // do not export invisible statements
 					|| !iE.subject || itemIdOf(iE.subject)==CONFIG.placeholder // ... or statements with an open end
-					|| !iE.object || itemIdOf(iE.object)==CONFIG.placeholder ) return;  
+					|| indexById( spD.resources, itemIdOf(iE.subject) )<0    // ... or statements referencing absent resources
+					|| !iE.object || itemIdOf(iE.object)==CONFIG.placeholder 
+					|| indexById( spD.resources, itemIdOf(iE.object) )<0 ) return;
+					
 				var oE = a2ext( iE );
 				// The statements usually do use a vocabulary item (and not have an individual title), 
 				// so we lookup, if so desired, e.g. when exporting to ePub:
@@ -3281,6 +3247,20 @@ const specif = {
 		}
 	}  
 */
+function isReferencedByHierarchy( rId, H ) {
+	// checks whether a resource is referenced by the hierarchy:
+	// ToDo: make it work with revisions.
+	if( !H ) H = app.cache.selectedProject.data.hierarchies;
+	return iterateNodes( H, (nd)=>{ return nd.resource!=rId } )
+}
+function collectResourcesByHierarchy( prj, H ) {
+	// collect all resources referenced by the given hierarchy:
+	if( !prj ) prj = app.cache.selectedProject.data;
+	if( !H ) H = prj.hierarchies;
+	var rL=[];
+	iterateNodes( H, (nd)=>{ cacheE( rL, itemById(prj.resources,itemIdOf(nd.resource)) ); return true } );
+	return rL
+}
 function dataTypeOf( prj, pCid ) {
 	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
@@ -3332,7 +3312,7 @@ function visibleIdOf( r, prj ) {
 				return r.properties[a].value
 		}
 	};
-	return // undefined
+//	return undefined
 }
 function titleIdx( pL, prj ) {
 	// Find the index of the property to be used as title.
@@ -3349,16 +3329,17 @@ function titleIdx( pL, prj ) {
 	// Now, the first property which is found in the respective list is chosen.
 	// ToDo: Check, if the results differ in practice ...
 */
-	if( !prj ) prj = app.cache.selectedProject.data;
-	let pt;
-	if( pL )
+	if( pL ) {
+		if( !prj ) prj = app.cache.selectedProject.data;
+		let pt;
 		for( var a=0,A=pL.length;a<A;a++ ) {
 			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
 			// First, check the configured headings:
 			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
 			// If nothing has been found, check the configured titles:
 			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a
-		};
+		}
+	};
 	return -1
 }
 function elementTitleOf( el, opts, dta ) {
@@ -3367,17 +3348,13 @@ function elementTitleOf( el, opts, dta ) {
 	if( typeof(el)!='object' ) return;
 	// in case of a resource, we never want to lookup a title,
 	// in case of a statement, we would want to:
-	let op = {
-			lookupTitles: opts && opts.lookupTitles && el.subject,
-			targetLanguage: opts && opts.targetLanguage || browser.language
-		},
-		pt = titleFromProperties( el.properties, op ) || titleOf( el, op );
+	let pt = titleFromProperties( el.properties, opts ) || titleOf( el, opts );
 	// if it is a statement and does not have a title of it's own, take the class' title:
-//	console.debug('elementTitleOf',el,opts,pt);
+// 	console.debug('elementTitleOf',el,opts,pt);
 	if( el.subject ) {
 		// it is a statement
 		if( !pt && dta ) 
-			pt = staClassTitleOf( el, dta, op )
+			pt = staClassTitleOf( el, dta, opts )
 	} else {
 		// it is a resource
 		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && pt )
@@ -3402,13 +3379,9 @@ function elementTitleOf( el, opts, dta ) {
 //			console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
 			return languageValueOf( pL[idx].value, opts ).stripHTML()
 		};
-		return
+	//	return undefined
 	}
 }
-/*function classTitleWithIcon( t ) {
-	// add the icon to a type's title, if defined:
-	return (CONFIG.addIconToType?titleOf(t).addIcon( t.icon ):titleOf(t))
-}*/
 function resClassTitleOf( e, prj, opts ) {
 	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts )
 }
@@ -3426,26 +3399,20 @@ function titleOf( item, opts ) {
 	let ti = languageValueOf( item.title, opts );
 //	console.debug('titleOf',item,opts,ti);
 	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti
-	return // undefined
+//	return undefined
 }
-/* function elementDescOf( el, prj ) {
-	var dscL = [];
-	for( a=el.properties.length-1;a>-1;a-- ) {
-		if( CONFIG.descProperties.indexOf( propTitleOf(el.properties[a]),prj)>-1 ) {
-			// To keep the original order of the properties, the unshift() method is used.
-			if( el.properties[a].value ) dscL.unshift( el.properties[a] )
-		}
-	};
-	// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property: 
-	if( dscL.length<1 && el.description ) dscL.push( { title:CONFIG.propClassDesc, value:el.description });
-	return dscL
-} */
 function languageValueOf( val, opts ) {
-	// Get the value according the current browser setting .. or the first value in the list by default.
+	// Get the value according to a specified target language .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object;
 	// if targetLanguage is not defined, keep all language options:
 	if( typeof(val)=='string' || !(opts&&opts.targetLanguage) ) return val;
-	if( !Array.isArray(val) ) return null;  // programming error
+	// The value may be undefined:
+	if( val==undefined ) return;
+	if( !Array.isArray(val) ) {
+		// neither a strring nor an array is a programming error:
+		console.error('Invalid value: ',val);
+		return null  
+	};
 	
 	let lVs = val.filter( (v)=>{
 		return opts.targetLanguage == v.language
@@ -3506,48 +3473,15 @@ function createProp( pC, pCid ) {
 	if( Array.isArray(pC) )
 		pC = itemById( pC, pCid );
 //	console.debug('createProp',pC,pCid);
-	var	p = {
+	return {
 		title: pC.title,
 		class: pC.id,
 		// supply default value if available:
 		value: pC.value||'',	
 		permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true},
 		del: pC.del
-	};
-/*	switch( itemById( app.cache.selectedProject.data.dataTypes, pC.dataType ).type ) {
-		case 'xhtml':
-			p.value = '<div>\n</div>';
-			break;
-		case 'xs:enumeration':
-		//	p.valueIDs = [];	// needed for editing
-		default:
-			p.value = ''
-	}; */
-//	console.debug('createProp',p);
-	return p
+	}
 }
-/* function createPropR( pCs, pCid ) {
-	// Return an initialized property, if read permission is given:
-//	return pC.permissions.rea?createProp( pCs, pCid ):undefined
-	// we assume that the current user has read permission for all data in cache:
-	return createProp( pCs, pCid )
-}
-function createPropC( pCs, pCid ) {
-	// return an initialized property, if create permission is given:
-	return pC.permissions.cre?createProp( pCs, pCid ):undefined
-}
-function propClassByTitle(itm,pN) {
-	// Return the class of a resource's (or statement's) property with title pN:
-	if( itm.properties ) {
-		var pC, i;
-		for( i=itm.properties.length-1;i>-1;i-- ) {
-			pC = itemById( self.data.propertyClasses, itm.properties[i]['class'] );
-			if( pC.title==pN )
-				return pC
-		}
-	};
-	return
-} */
 function propByTitle(dta,itm,pN) {
 	// Return the property of itm with title pN.
 	// If it doesn't exist, create it,
@@ -3573,7 +3507,7 @@ function propByTitle(dta,itm,pN) {
 				return prp
 		}
 	};
-	return
+//	return undefined
 }
 function valByTitle(dta,itm,pN) {
 	// Return the value of a resource's (or statement's) property with title pN:
@@ -3585,7 +3519,7 @@ function valByTitle(dta,itm,pN) {
 				return itm.properties[i].value
 		}
 	};
-	return
+//	return undefined
 }
 function classifyProps( el, prj ) {
 	"use strict";

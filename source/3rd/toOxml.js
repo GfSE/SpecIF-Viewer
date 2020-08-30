@@ -63,10 +63,10 @@ function toOxml( data, opts ) {
 	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
 	// - Otherwise transform SVG to PNG, as MS Word does not (yet) support SVG.
 	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
-	const ulId = 1;	// the numId for bulleted lists; '0' does not work
+	const olId = 1;	// the first numId for bulleted lists; '0' does not work
 	var images = [],
 		pend = 0,	// the number of pending operations
-		olCnt = ulId;	// the sequential count of numbered lists, when used as id, every one will start at ulId+1
+		olCnt = olId;	// the sequential count of numbered lists, when used as id, every one will start at olId+1
 
 	// Select and/or transform files according to the needs of MS Office:
 	if( data.files && data.files.length>0 )
@@ -252,7 +252,7 @@ function toOxml( data, opts ) {
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
 					rC = itm['class'].id? itm['class'] : itemById( cL, itm['class'] );
 				
-				let ti = minEscape( itm.title ),
+				let ti = minEscape( opts.lookup(itm.title) ),
 					ic = rC&&rC.icon? rC.icon+nbsp : '';
 					
 				// in case of a statement take the class' title by default:
@@ -277,7 +277,7 @@ function toOxml( data, opts ) {
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
 					// all statements having the same title are clustered:
-					cid = titleOf(st);
+					cid = titleOf( st, undefined, opts );
 				/*	// all statements having the same class are clustered:
 					cid = st['class']; */
 					// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
@@ -313,7 +313,7 @@ function toOxml( data, opts ) {
 							// it may happen that an element is undefined:
 							if( s )
 								cell += wParagraph({
-											text:titleOf( s, null, opts ), 
+											text:titleOf( s, undefined, opts ), 
 											font: {color:opts.colorAccent1},
 											hyperlink: {internal:anchorOf( s )}, 
 											noSpacing: true,
@@ -340,7 +340,7 @@ function toOxml( data, opts ) {
 							// The object:
 							row += wTableCell({
 									content:wParagraph({ 
-											text:titleOf( r, null, opts ), 
+											text:titleOf( r, undefined, opts ), 
 											font: {color:opts.colorAccent1},
 											noSpacing: true
 									}),
@@ -357,7 +357,7 @@ function toOxml( data, opts ) {
 							// it may happen that an element is undefined:
 							if( o )
 								cell += wParagraph({
-											text:titleOf( o, null, opts ), 
+											text:titleOf( o, undefined, opts ), 
 											font: {color:opts.colorAccent1},
 											hyperlink:{internal:anchorOf( o )},
 											noSpacing: true
@@ -368,7 +368,7 @@ function toOxml( data, opts ) {
 							// The subject:
 							row = wTableCell({
 									content:wParagraph({
-											text:titleOf( r, null, opts ),
+											text:titleOf( r, undefined, opts ),
 											font: {color:opts.colorAccent1},
 											noSpacing: true,
 											align:'end'
@@ -381,7 +381,7 @@ function toOxml( data, opts ) {
 											text:sTi,
 											font: {color:opts.colorAccent1},
 											align:'center',
-											noSpacing:true
+											noSpacing: true
 									}),
 									border:{type:'single'}
 								});
@@ -431,14 +431,14 @@ function toOxml( data, opts ) {
 				// designed for use also by statements.
 			//	if( !r.properties || r.properties.length<1 ) return '';
 
-			/*	// depending on the context, r['class'] is an class object or a class id:
+			/*	// depending on the context, r['class'] is a class or just it's id:
 				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] ); 
 			*/
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', rows='', c3, rt;
 
-				r.descriptions.forEach( function(prp) {
-					propertyValueOf( prp ).forEach(function(e){ c1 += generateOxml(e) })
+				r.descriptions.forEach( (prp)=>{
+					propertyValueOf( prp ).forEach( (e)=>{ c1 += generateOxml(e) })
 				});
 //				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
@@ -449,17 +449,20 @@ function toOxml( data, opts ) {
 					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
-				r.other.forEach( function(prp) {
+				r.other.forEach( (prp)=>{
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
 					if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
 						rt = minEscape( opts.lookup( prp.title || propertyClassOf( prp['class'] ).title ));
 						c3 = '';
-						propertyValueOf( prp ).forEach(function(e){ c3 += generateOxml(e,{font:{color:opts.colorAccent1}}) });
+						propertyValueOf( prp ).forEach( 
+							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
+						);
 //						console.debug('other properties',prp,rt,c3);
 						rows += wTableRow( wTableCell( wParagraph({
 														text:rt,
 														font:{style:'italic',color:opts.colorAccent1},
+														noSpacing: true,
 														align:'end'
 													})) 
 											+ wTableCell( c3 ))
@@ -2265,7 +2268,7 @@ function toOxml( data, opts ) {
 		+				'<pkg:xmlData>'
 		+					'<w:numbering mc:Ignorable="w14 w15 wp14" xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">									'
 								// for bulleted lists:
-		+						'<w:abstractNum w:abstractNumId="'+ulId+'" w15:restartNumberingAfterBreak="0">'
+		+						'<w:abstractNum w:abstractNumId="'+olId+'" w15:restartNumberingAfterBreak="0">'
 	//	+							'<w:nsid w:val="5BFB07E1"/>'
 		+							'<w:multiLevelType w:val="singleLevel"/>'
 		+							'<w:tmpl w:val="8F2E77AE"/>'
@@ -2384,7 +2387,7 @@ function toOxml( data, opts ) {
 		// For numbered lists:
 		// not only a separate num-section below, but also a separate abstractNum-section 
 		// is needed for every numbered list, which starts at 1.
-		for( var i=ulId+1; i<olCnt+1; i++ ) {
+		for( var i=olId+1; i<olCnt+1; i++ ) {
 			ct +=				'<w:abstractNum w:abstractNumId="'+i+'" w15:restartNumberingAfterBreak="0">'
 	//		+						'<w:nsid w:val="5BFB07E1"/>'
 			+						'<w:multiLevelType w:val="singleLevel"/>'
@@ -2403,10 +2406,10 @@ function toOxml( data, opts ) {
 			+						'</w:lvl>'
 			+					'</w:abstractNum>'
 		};
-		ct +=					'<w:num w:numId="'+ulId+'">'
-		+							'<w:abstractNumId w:val="'+ulId+'"/>'
+		ct +=					'<w:num w:numId="'+olId+'">'
+		+							'<w:abstractNumId w:val="'+olId+'"/>'
 		+						'</w:num>';
-		for( var i=ulId+1; i<olCnt+1; i++ ) {
+		for( var i=olId+1; i<olCnt+1; i++ ) {
 			ct += 				'<w:num w:numId="'+i+'">'
 			+						'<w:abstractNumId w:val="'+i+'"/>'
 			+					'</w:num>'

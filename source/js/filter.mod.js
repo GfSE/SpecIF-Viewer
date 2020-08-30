@@ -133,18 +133,18 @@ modules.construct({
 
 		// The left panel on this page (only for this view):
 		let h = '<div id="filterLeft" class="paneLeft">'
-	//		+		'<div id="clicklist" class="pane-tree" />'
-			+		'<div id="primaryFilters" class="pane-filter" />'
+	//		+		'<div id="clicklist" class="pane-tree" ></div>'
+			+		'<div id="primaryFilters" class="pane-filter" ></div>'
 			+	'</div>'
 			+	'<div id="filterCtrl" class="contentCtrl" >'
 			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
 			+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
 	//		+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.goClicked()" >'+i18n.BtnGo+'</button>'
 			+		'</div>'
-			+		'<div id="filterNotice" class="notice-default contentNotice" />'
-			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" />'
+			+		'<div id="filterNotice" class="notice-default contentNotice" ></div>'
+			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" ></div>'
 			+	'</div>'
-			+	'<div id="hitlist" class="content" />';
+			+	'<div id="hitlist" class="content" ></div>';
 		$(self.view).html( h )
 	};
 	self.clear = ()=>{
@@ -238,8 +238,8 @@ modules.construct({
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
-				// Note that the sequence may differ from the hierarchy one's due to varying response times.
-				// Note also, that a resource may be listed several times, if it appears several times in the hierarchies.
+				// - The sequence may differ from the hierarchy one's due to varying response times.
+				// - A resource may be listed several times, if it appears several times in the hierarchies.
 				prj.readContent( 'resource', {id: nd.ref} )
 				.then(
 					(rsp)=>{
