@@ -66,7 +66,7 @@ function toOxml( data, opts ) {
 	const olId = 1;	// the first numId for bulleted lists; '0' does not work
 	var images = [],
 		pend = 0,	// the number of pending operations
-		olCnt = olId;	// the sequential count of numbered lists, when used as id, every one will start at olId+1
+		olCnt = olId;	// the count of numbered lists, when used as id, every one will start at olId+1
 
 	// Select and/or transform files according to the needs of MS Office:
 	if( data.files && data.files.length>0 )
@@ -151,7 +151,6 @@ function toOxml( data, opts ) {
 		// create the file content as OXML:
 
 		function createText( data, opts ) {
-			"use strict";
 			// Accepts data-sets according to SpecIF v0.10.8 and later.
 
 			// Check for missing options:
@@ -244,7 +243,7 @@ function toOxml( data, opts ) {
 			return oxml
 			
 			// ---------------
-			function titleOf( itm, pars, opts ) { // resource, resourceClass, parameters, options
+			function titleOf( itm, pars, opts ) { // resource, parameters, options
 				// render the resource title
 				// designed for use also by statements.
 				
@@ -491,8 +490,8 @@ function toOxml( data, opts ) {
 					// Parse formatted text.
 					
 					// Transform an XHTML text to an internal data structure which allows easy generation of OpenXML.
-					// While XHTML is block structured, OpenXML expects a series of paragraphs with a series of 'runs' within.
-					// In a nested procedure, the XHTML is separated into 'paragraphs', then 'runs' and finally 'text'.
+					// While XHTML is block structured, OpenXML expects a series of 'paragraphs' with a series of 'runs' within.
+					// In a nested procedure, the XHTML is first separated into 'paragraphs', then 'runs' and finally 'text'.
 					// Depending on it's type, formatting information may be applied either at paragraph or at run level.
 					
 					// In principle, the procedure works as follows at every level:
@@ -674,11 +673,13 @@ function toOxml( data, opts ) {
 
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
-								if( /<b>/.test($2) ) {
+
+								// assuming that <b> and <strong> are not nested:
+								if( /<b>|<strong>/.test($2) ) {
 									fmt.font.weight = 'bold';
 									return ''
 								};
-								if( /<\/b>/.test($2) ) {
+								if( /<\/b>|</strong>/.test($2) ) {
 									delete fmt.font.weight;	// simply, since there is only one value so far.
 									return ''
 								};
@@ -1106,7 +1107,7 @@ function toOxml( data, opts ) {
 			}
 			function wText( ct ) {
 				// return when there is no content: 
-				if( !ct || ct.picture || typeof(ct)=='object' && !ct.text ) return undefined;  
+				if( !ct || ct.picture || typeof(ct)=='object' && !ct.text ) return // undefined;  
 //				console.debug('wText',ct);
 				// ct is a string with length>0, an array ct.text or an object ct.text with length>0:
 				// in case of an array:
@@ -1124,7 +1125,7 @@ function toOxml( data, opts ) {
 			}
 			function wPict( ct ) {
 //				console.debug('wPict',ct,images);
-				if( !ct || !ct.picture ) return undefined;
+				if( !ct || !ct.picture ) return // undefined;
 				// inserts an image at 'run' level:
 				// width, height: a string with number and unit, e.g. '100pt' or '160mm' is expected
 				let imgIdx = indexBy( images, 'id', ct.picture.id );
