@@ -7,7 +7,7 @@
     "build": "tsc",
     "clean": "rm -rf coverage build",
     "start": "",
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "repository": {
     "type": "git",
