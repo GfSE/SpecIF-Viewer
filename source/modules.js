@@ -5,29 +5,34 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution!           
 */
 
-function ModuleManager() {
-	"use strict";
-	// Supports two types of modules:
-	// 1. Libraries
-	//		- 'load()' registers and loads a file or a list of files with named javascript functions 
-	//		- 'setReady()' is executed when the 'getScipt' load-event triggers
-	//		- the specified callback function is executed as soon as all modules are ready.
-	//      - Libraries don't support view control.
-	// 2. Objects
-	//		- 'load()' registers and loads a file or a list of files with constructors (similar to reqireJs 'reqire')
-	//		- 'construct()' creates an object (controller) using the constructor specified as parameter (similar to reqireJs 'define')
-	//		- the constructor may append a new subtree to a DOM element to be used by the constructed object
-	//		- 'setReady()' is executed, if 'construct()' finishes successfully.
-	//		- the specified callback function is executed as soon as all modules are ready.
-	//      - 'show()' selects the view of the specified module and hides all others.
+var browser,
+	i18n,
+	modules = new function() {
+		"use strict";
+		// Supports two types of modules:
+		// 1. Libraries
+		//		- 'load()' registers and loads a file or a list of files with named javascript functions 
+		//		- 'setReady()' is executed when the 'getScipt' load-event triggers
+		//		- the specified callback function is executed as soon as all modules are ready.
+		//      - Libraries don't support view control.
+		// 2. Objects
+		//		- 'load()' registers and loads a file or a list of files with constructors (similar to reqireJs 'reqire')
+		//		- 'construct()' creates an object (controller) using the constructor specified as parameter (similar to reqireJs 'define')
+		//		- the constructor may append a new subtree to a DOM element to be used by the constructed object
+		//		- 'setReady()' is executed, if 'construct()' finishes successfully.
+		//		- the specified callback function is executed as soon as all modules are ready.
+		//      - 'show()' selects the view of the specified module and hides all others.
 	
 	var self = this,
 		callWhenReady = null,
 		vPath;
-	self.init = ( opts )=>{
+	
+	self.init = ( initDone, initFail )=>{
+		// IE does not support ES6 promises, so we use callbacks 'initDone' and 'initFail'.
+
 		vPath = './'+app.productVersion;
 		self.registered = [];
 		self.ready = [];
@@ -35,27 +40,27 @@ function ModuleManager() {
 		// Identify browser type and load language file:
 		browser = new function() { 
 			var self = this;
-		/*	function supports_html5_storage() {
+
+			self.language = navigator.language || navigator.userLanguage;
+			console.info( "Browser Language is '"+self.language+"'." );
+
+			self.supportsHtml5History = Boolean(window.history && window.history.pushState);
+			if( self.supportsHtml5History ) console.info( "Browser supports HTML5 History" );
+
+			self.supportsCORS = $.support.cors;
+			if( self.supportsCORS ) console.info( "Browser supports CORS" );
+
+			self.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
+		/*	self.supportsHtml5Storage = new function() {
 				// see: http://diveintohtml5.info/storage.html
 				try {
 					return 'sessionStorage' in window && window['sessionStorage'] !== null;
 				} catch(e) {
 					return false
 				}
-			};
-			self.supportsHtml5Storage = supports_html5_storage();  */
-			self.supportsHtml5History = Boolean(window.history && window.history.pushState);
-			self.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
-			self.supportsCORS = $.support.cors;
-			self.displaysObjects = self.supportsHtml5Storage; // Firefox, Chrome and IE10+; note that IE displays the object tag only in case of SVG and PNG
-
-			// check the browser type, the first test is true for IE <= 10, the second for IE 11.
-			self.isIE = /MSIE |rv:11.0/i.test(navigator.userAgent);
-			self.language = navigator.language || navigator.userLanguage;
-			console.info( "Browser Language is '"+self.language+"'." );
-		//	if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" );
-			if( self.supportsHtml5History ) console.info( "Browser supports HTML5 History" );
-			if( self.supportsCORS ) console.info( "Browser supports CORS" );
+			}; 
+			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" ); */
+			
 			return self
 		};
 		// init phase 1: Load the javascript routines common to all apps:
@@ -67,7 +72,7 @@ function ModuleManager() {
 //			console.debug('init2',opts);
 			let loadL = ['helper', 'helperTree', 'tree', 'bootstrapDialog', 'mainCSS'];
 			if( CONFIG.convertMarkdown ) loadL.push('markdown');
-			loadH( loadL, opts )
+			loadH( loadL, {done:initDone} )
 		}
 	};
 	function register( mod ) {
@@ -99,11 +104,11 @@ function ModuleManager() {
 	};
 	self.construct = ( defs, constructorFn )=>{
 		// Construct controller and view of a module.
-		// This routine is called by the code in the file, once loaded with 'loadH'/'loadM',
+		// This routine is called by the respective module in the code file, once loaded with 'loadH'/'loadM',
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
 		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
 		
-		// find module by name or by view somewhere in the complete tree:
+		// find module by name or by view somewhere in the complete module tree of the app:
 		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
 			console.error(defs.name? "'"+defs.name+"' is not a defined module name" : "'"+defs.view+"' is not a defined view");
@@ -116,10 +121,11 @@ function ModuleManager() {
 		// create a component with similar interface, but different function.
 		// For example, 'me' can be implemented by 'profileAnonymous' with minimal function or
 		// by 'profileMe' with full-fledged user management including user-roles and permissions;
-		// in this case the module carries the name 'profileAnonymous' resp. 'profileMe', while both
+		// in this case the modules carry the name 'profileAnonymous' resp. 'profileMe', while both
 		// specify loadAs: 'me'.
 		// An app uses both similarly, e.g. me.attribute or me.function().
-		// Of course loadAs must be unique in an app at any time.
+		// Of course, loadAs must be unique in an app at any time.
+		
 		// By default of 'loadAs', use 'name' or 'view' without the leading '#':
 		if( !mo.loadAs ) mo.loadAs = mo.name || mo.view.substring(1);
 
@@ -220,7 +226,7 @@ function ModuleManager() {
 		}
 	}
 	function loadH(h,opts) {
-		// loads the specified modules;
+		// load the modules in hierarchy h
 		// specified by a name string or an object with property 'name';
 		// h can be a single element, a list or a tree.
 			function ld(e) {
@@ -365,8 +371,7 @@ function ModuleManager() {
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "excel": 				loadM( 'zip' );	
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
@@ -374,11 +379,10 @@ function ModuleManager() {
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( vPath+'/js/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toEpub": 				loadM( 'zip' );
-											loadM( 'toXhtml' );
-											getScript( vPath+'/js/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toOxml": 				getScript( vPath+'/js/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( vPath+'/3rd/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toEpub": 				loadM( 'toXhtml' );
+											getScript( vPath+'/3rd/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toOxml": 				getScript( vPath+'/3rd/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
 				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -406,7 +410,7 @@ function ModuleManager() {
 											getScript( vPath+'/js/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "cache": 				loadM( 'fileSaver' );
 											getScript( vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
+		//		case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 /*				case "profileMe":			$('#app').append( '<div id="'+mod+'"></div>' );
@@ -429,11 +433,11 @@ function ModuleManager() {
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( vPath+'/js/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'bpmn2specif':			getScript( vPath+'/3rd/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'archimate2specif':	getScript( vPath+'/js/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'archimate2specif':	getScript( vPath+'/3rd/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
 											getScript( vPath+'/js/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
 //				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
@@ -448,11 +452,6 @@ function ModuleManager() {
 											$('#'+mod).load( "./js/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 		*/
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
-											if( browser.isIE ) {
-												// In case of Internet Explorer, override CSS classes for image display:
-											//	$('head').append( '<link rel="stylesheet" type="text/css" href="./css/ReqIF-Server.ie.css" />');
-												$('head').append( '<style type="text/css" >div.forImage img[type="image/svg+xml"],div.forImagePreview img[type="image/svg+xml"],div.forImage object[type="image/svg+xml"],div.forImagePreview object[type="image/svg+xml"] { width: 100%; height: auto; }</style>');
-											};
 									//		loadM( 'stdTypes' );
 									//		loadM( 'diff' );
 											getScript( vPath+'/js/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -464,7 +463,7 @@ function ModuleManager() {
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
 											getScript( vPath+'/js/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case CONFIG.resourceLink:	getScript( vPath+'/js/resourceLink.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case CONFIG.resourceLink:	getScript( vPath+'/js/resourceLink.mod.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
@@ -675,6 +674,3 @@ function State(opt) {
 	self.reset();
 	return self
 }
-var browser,
-	i18n,
-	modules = new ModuleManager();

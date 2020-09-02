@@ -4,7 +4,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution!
 
 	Naming:
 	- readX: Get it from cache, if available, or otherwise from the server. Is always asynchronous.
@@ -763,7 +763,7 @@ function Project( pr ) {
 						changedAt: tim
 					}];
 					// Create a folder resource for every model-element type:
-					CONFIG.modelElementClasses.forEach( function (mEl) {
+					CONFIG.modelElementClasses.forEach( (mEl)=>{
 						fL.push({
 							id: "Folder-" + mEl.toJsId() + "-" + apx,
 							class: "RC-Folder",

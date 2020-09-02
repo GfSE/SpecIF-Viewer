@@ -3,7 +3,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution!          
 */
 
 // Construct the specifications controller:
@@ -1094,11 +1094,6 @@ modules.construct({
 			modeStaDel = false;
 			return
 		};
-		if( browser.isIE ) {
-	//		renderStatementsTable( net );
-			$('#contentNotice').html( '<span class="notice-default" >Statements cannot be displayed with IE, for now.</span>' );
-			return
-		};
 		if( modeStaDel ) 
 			$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' )
 		else
@@ -1788,19 +1783,8 @@ function File() {
 				let f = itemByTitle(app.cache.selectedProject.data.files,u1);
 					
 				if( CONFIG.imgExtensions.indexOf( e )>-1 || e=='bpmn' ) {  
-		/*			// it is an image, show it:
-					if( opts.clickableElements && ( !browser.isIE || ( e=='svg' || e=='png' ) && browser.displaysObjects ) ) {  
-						// For Firefox, Chrome. And for IE10+, if and only if the object is PNG or SVG.
-						// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-						d = '<object data="'+u1+'"'+t1+s1+' >'+d+'</object>'
-					} else {
-						// IE only displays images of type SVG and PNG with an <object> tag, so the others will be rendered with an <img> tag.
-						// In case of IE9 prohibit that svg diagram elements can be clicked.
-						//   For the time being, the click is handled via URL with hash parameters and with IE9 there is no chance to modify the browser history (=URL).
-						//   As soon as the clicks are handled internally, also a clickable svg (via <object ..> can be presented to IE9, as well.
-						d = '<img src="'+u1+'"'+t1+s1+' alt="'+d+'" />'
-					}  */
-				
+					// it is an image, show it:
+					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
 //					console.debug('fileRef.toGUI 2a found: ', f, u1 );
 					if( f && f.blob ) {
 						hasImg = true;

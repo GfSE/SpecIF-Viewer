@@ -3,7 +3,7 @@
 	Copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
+	We appreciate any correction, comment or contribution!
 */
 
 modules.construct({

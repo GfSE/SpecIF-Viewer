@@ -70,17 +70,17 @@ modules.construct({
 								titleLength: CONFIG.textThreshold,
 								descriptionLength: CONFIG.maxStringLength,
 								strGlossaryType: CONFIG.resClassGlossary,
-								strGlossaryFolder: i18n.lookup(CONFIG.resClassGlossary),
-								strActorFolder: i18n.lookup("FMC:Actors"),
-								strStateFolder: i18n.lookup("FMC:States"),
-								strEventFolder: i18n.lookup("FMC:Events"),
-								strAnnotationFolder: i18n.lookup("SpecIF:Annotations"),
+								strGlossaryFolder: CONFIG.resClassGlossary,
+								strActorFolder: "FMC:Actors",
+								strStateFolder: "FMC:States",
+								strEventFolder: "FMC:Events",
+							//	strAnnotationFolder: "SpecIF:Annotations",
 								strRoleType: "SpecIF:Role",
 								strConditionType: "SpecIF:Condition",
 								strBusinessProcessType: "SpecIF:BusinessProcess",
 								strBusinessProcessesType: CONFIG.resClassProcesses,
-								strBusinessProcessFolder: i18n.lookup(CONFIG.resClassProcesses),
-								isIE: browser.isIE 
+								strBusinessProcessFolder: CONFIG.resClassProcesses,
+								isIE: false
 							});
 //		console.debug('input.prjName', self.parent.projectName, data );
 		if( typeof(data)=='object' && data.id )

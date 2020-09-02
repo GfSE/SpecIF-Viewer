@@ -124,6 +124,9 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'ApplicationProcess':
 				case 'ApplicationService':
 				case 'Node':
+				case 'Equipment':
+				case 'Facility':
+				case 'DistributionNetwork':
 				case 'Device':
 				case 'SystemSoftware':
 				case 'TechnologyCollaboration':
@@ -136,6 +139,7 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'TechnologyService':
 					r['class'] = "RC-Actor"
 					break;
+				case 'Capability':
 				case 'BusinessObject':
 				case 'Contract':
 				case 'Representation':
@@ -246,7 +250,7 @@ function Archimate2Specif( xmlString, opts ) {
 					console.warn('Relationship: Unknown xsi:type ', ty)
 			};
 
-			// Store a relation, only if it has a known class and when both subject and object have been regognized:
+			// Store a relation, only if it has a known class and when both subject and object have been recognized:
 			if( s['class'] 
 				&& indexById(model.resources,s.subject)>-1
 				&& indexById(model.resources,s.object)>-1 ) {

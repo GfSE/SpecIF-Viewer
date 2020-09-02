@@ -65,12 +65,12 @@ modules.construct({
 								titleLength: CONFIG.textThreshold,
 								descriptionLength: CONFIG.maxStringLength,
 								strGlossaryType: CONFIG.resClassGlossary,
-								strGlossaryFolder: i18n.lookup(CONFIG.resClassGlossary),
-								strActorFolder: i18n.lookup("FMC:Actors"),
-								strStateFolder: i18n.lookup("FMC:States"),
-								strEventFolder: i18n.lookup("FMC:Events"),
-								strCollectionFolder: i18n.lookup("SpecIF:Collections")
-						//		strAnnotationFolder: i18n.lookup("SpecIF:Annotations"),
+								strGlossaryFolder: CONFIG.resClassGlossary,
+								strActorFolder: "FMC:Actors",
+								strStateFolder: "FMC:States",
+								strEventFolder: "FMC:Events",
+								strCollectionFolder: "SpecIF:Collections"
+						//		strAnnotationFolder: "SpecIF:Annotations",
 						//		strRoleType: "SpecIF:Role"
 							}); 
 //		console.debug('ioArchimate.toSpecif', self.parent.projectName, data );

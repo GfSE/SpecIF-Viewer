@@ -1,18 +1,14 @@
 /* 	Transform BPMN-XML to SpecIF
+    - Parse the BPMN-XML file
+	- Extract both model-elements and semantic relations in SpecIF Format
+	- Model elements with same type and title are NOT consolidated by this transformation
+	- Reference: https://docs.camunda.org/stable/api-references/bpmn20/
+	
 	Author: Robert.Kanitz@adesso.de and se@enso-managers.de
-	License: Apache 2.0
-    
-    Bugs:
-	- Consolidation of messageFlow may result in inconsistency:
-	  When a messageFlow has the same name/title as a data object, both are currently consolidated. 
-	  If a messageFlow does not have a description and the data object has, the latter prevails. 
-	  In this case the statements including the former are not modified accordingly, so that they 
-	  become invalid - the object id of the statement is not known and the consistency check fails.
-	  See: https://github.com/GfSE/BPMN-SpecIF-Bridge/issues/5
+	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution!        
 */
 
-// Parse the BPMN-XML file and extract both model-elements and semantic relations in SpecIF Format
-// Reference: https://docs.camunda.org/stable/api-references/bpmn20/
 function BPMN2Specif( xmlString, opts ) {
 	"use strict";
 	if( typeof(opts)!='object' || !opts.fileName ) return null;
@@ -42,17 +38,17 @@ function BPMN2Specif( xmlString, opts ) {
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strBusinessProcessFolder ) 
-		opts.strBusinessProcessFolder = "Business Processes";
+		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
 	if( !opts.strGlossaryFolder ) 
-		opts.strGlossaryFolder = "Model-Elements (Glossary)";
+		opts.strGlossaryFolder = "SpecIF:Glossary";
 	if( !opts.strActorFolder ) 
-		opts.strActorFolder = "Actors";
+		opts.strActorFolder = "FMC:Actors";
 	if( !opts.strStateFolder ) 
-		opts.strStateFolder = "States";
+		opts.strStateFolder = "FMC:States";
 	if( !opts.strEventFolder ) 
-		opts.strEventFolder = "Events";
-//	if( !opts.strAnnotationFolder ) 
-//		opts.strAnnotationFolder = "Text Annotations";
+		opts.strEventFolder = "FMC:Events";
+/*	if( !opts.strAnnotationFolder ) 
+		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
 	if( !opts.strJoinExcGateway ) 
 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
@@ -188,7 +184,7 @@ function BPMN2Specif( xmlString, opts ) {
 			let oId = el.getAttribute("id"),
 				sRef = el.getAttribute("sourceRef"),
 				tRef = el.getAttribute("targetRef");
-			console.debug('#8',el.nodeName,oId,sRef,tRef);
+//			console.debug('#8',el.nodeName,oId,sRef,tRef);
 				
 			// a. The message data (FMC:State):
 			model.resources.push({
@@ -229,23 +225,15 @@ function BPMN2Specif( xmlString, opts ) {
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
 
-	let	consolidatedResources = [], // temporary list of elements which are represented by another with the same name
-		ctL = [],					// temporary list for containment relations between lanes and model-elements
+	let	ctL = [],					// temporary list for containment relations between lanes and model-elements
 		gwL = [];					// temporary list for gateways needing some special attention later
 				
 		function findStoredResource( id ) {
 			let	itm = itemBy(model.resources,'id',id);
-			if( itm ) {
+			if( itm )
 				return itm
-			} else {
-				// see whether the referenced resource has been consolidated;
-				// and use the stored element (reference): 
-				itm = itemBy(consolidatedResources,'id',id);
-				if( itm && itm.title )
-					return itemBy(model.resources,'title', itm.title)
-				else
-					console.error("Did not find a resource with id '"+id+"'.")
-			}
+			else
+				console.error("Did not find a resource with id '"+id+"'.")
 		}
 		function analyzeProcess(pr) {
 			// analyze a process or subprocess and transform all contained model elements;
@@ -353,8 +341,7 @@ function BPMN2Specif( xmlString, opts ) {
 						// we consolidate them, here. 
 						// The first to provide a description will prevail.
 						tag = ( tag=='dataStoreReference'? 'dataStore' : 'dataObject' );
-						let rI = indexBy( model.resources, 'title', title ),
-							res = {
+						let res = {
 								id: id,
 								// make dataObjects unique per model (should be per participant/process):
 								title: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength),
@@ -372,20 +359,10 @@ function BPMN2Specif( xmlString, opts ) {
 								value: desc
 							})
 						};
-						
-						// Don't add a second element with the same name/title.
-						// But the first one with description prevails:
-						if( rI>-1 ) {
-							let dI = indexBy( model.resources[rI].properties, 'class', "PC-Text" );
-							if( dI<0 && desc ) 
-								// replace the previously stored resource and add the replaced to consolidatedResources:
-								consolidatedResources.push( model.resources.splice( rI, 1, res )[0] )
-							else
-								// keep the already stored data resource but remember the consolidated one:
-								consolidatedResources.push( res )
-						} else {
-							model.resources.push( res )
-						};
+
+						// Now, model-elements with duplicate names are not consolidated, any more;
+						// this will be done upon import/adoption/update of the model:
+						model.resources.push( res )
 						break;
 					case 'dataObject':
 					case 'dataStore':
@@ -394,7 +371,6 @@ function BPMN2Specif( xmlString, opts ) {
 					// skip all other tags for now.
 				}
 			});
-//			console.debug( 'consolidatedResources', consolidatedResources, ctL );
 
 			// 4.2 Second pass to collect the model-elements:
 				function storeAccessAssociations(el) {

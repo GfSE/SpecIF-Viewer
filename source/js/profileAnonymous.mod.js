@@ -1,7 +1,7 @@
 /* 	Log into a special account CONFIG.userNameAnonymous/CONFIG.passwordAnonymous.  The server must have a corresponding user, of course.
 	The adminstrators must take care that only roles and content are made available to this user which may be accessed publicly.
 	The idea is to publish some content, e.g. documentation, without the need to login.
-	Derived from profileUser.xxxx.mod.html - it serves the same API calls and is supposed to replace it when appropriate.
+	Derived from profileUser.xxxx.mod.js - it serves the same API calls and is supposed to replace it when appropriate.
 */
 
 modules.construct({
@@ -32,10 +32,12 @@ modules.construct({
 					console.warn( "login '"+un+"': "+i18n.MsgCredentialsUnknown )
 				})  
 		// else: */
-		var pDO = $.Deferred();
-		self.loggedin = true;
-		pDO.resolve();
-		return pDO
+		return new Promise( 
+			(resolve,reject)=>{
+				self.loggedin = true;
+				resolve();
+			}
+		)
 	};
 	self.logout = function() {
 		self.loggedin = false;
@@ -43,11 +45,9 @@ modules.construct({
 	};
 	self.read = function() {
 //		console.debug('me.read');
-		var pDO = $.Deferred();
-		self.loggedin = true;
-		pDO.resolve();
-		return pDO
-/*		return server.me().read()
+		return self.login()
+/*		-- originally: --
+		return server.me().read()
 		.done( function(rsp) {
 			self.projectRoles = rsp.projectRoles;
 			self.loggedin = true;

@@ -4,7 +4,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution!     
 
  	Attention: 
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
@@ -343,7 +343,7 @@ function stdError( xhr, cb ) {
 	};
 */
 // standard message box:
-function Message() {
+var message = new function() {
 	"use strict";
 	// constructor for message-box:
 	var self = this;
@@ -409,7 +409,6 @@ function Message() {
 	init();
 	return self
 };
-message = new Message();
 
 function doResize( opt ) {
 	// Resizes DOM-tree elements to fit in the current browser window.
@@ -1029,6 +1028,8 @@ function str2buf(str) {
 		return buf
 	}
 }
+// see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+// see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 function blob2dataURL(file,fn,timelag) {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
