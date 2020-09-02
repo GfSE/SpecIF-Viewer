@@ -45,6 +45,7 @@ function toOxml( data, opts ) {
 	if( typeof(opts.marginRight)!='number' ) opts.marginRight = 25; // mm
 	if( typeof(opts.marginTop)!='number' ) opts.marginTop = 25; // mm
 	if( typeof(opts.marginBottom)!='number' ) opts.marginBottom = 40; // mm
+//	console.debug('toOxml',data,opts);
 
 	const startRID = 7,		// first relationship index for images
 		maxHeading = 4,  	// Headings from 1 to maxHeading are defined
@@ -53,11 +54,7 @@ function toOxml( data, opts ) {
 		columnWidth = pageWidth-opts.marginLeft-opts.marginRight,
 		columnHeight = pageHeight-opts.marginTop-opts.marginBottom,
 		twips = 56.692913385826;  // twips per mm
-	//	REAmpersandPlus = new RegExp( '&(.{0,8})', 'g' ),
-	//	REXMLmin = new RegExp( '&(amp|#x[0]*26|#[0]*38|lt|#x[0]*3C|#x[0]*3c|#[0]*60|gt|#x[0]*3E|#x[0]*3e|#[0]*62);', '');
-	//	REXMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 	
-//	console.debug('toOxml',data,opts);
 	// Create a local list of images, which can be used in OXML:
 	// - Take any raster image right away,
 	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
@@ -174,8 +171,8 @@ function toOxml( data, opts ) {
 			if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
 			if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
 			
-			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegExp
-			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegExp
+			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp
+			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';
 			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
 			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
 			if( opts.addTitleLinks )
@@ -188,7 +185,6 @@ function toOxml( data, opts ) {
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			const reB = '([\\s\\S]*?)'
-			//	+	'(<p */>|<p[^>]*>[\\s\\S]*?</p>'
 				+	'(<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
@@ -212,11 +208,11 @@ function toOxml( data, opts ) {
 		
 			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
-				+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
+				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
 				+	'|'+reA
 				+	'|'+reI
-				// The nested object pattern must be checked before the single object pattern:
-		//		+	'|'+reNO
+		/*		// The nested object pattern must be checked before the single object pattern:
+				+	'|'+reNO */
 				+	'|'+reSO
 				+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
 				+	')',
@@ -679,7 +675,7 @@ function toOxml( data, opts ) {
 									fmt.font.weight = 'bold';
 									return ''
 								};
-								if( /<\/b>|</strong>/.test($2) ) {
+								if( /<\/b>|<\/strong>/.test($2) ) {
 									delete fmt.font.weight;	// simply, since there is only one value so far.
 									return ''
 								};
@@ -2583,46 +2579,12 @@ function toOxml( data, opts ) {
 					el.innerHTML = enc;
 					return el.innerText
 				})
-		// then re-escape the essential ones:
+				// then re-escape the essential ones:
 				.replace(/[&<>]/g, function($0) {
 					return "&#" + {"&":"38", "<":"60", ">":"62"}[$0] + ";";
-			//	.replace(/[&<>"'`=\/]/g, function($0) {
-			//		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
+			/*	.replace(/[&<>"'`=\/]/g, function($0) {
+					return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";"; */
 				})
-		
-	/*	This works, but misses out on '&auml;' for example:
-		return s.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
-					if( ['26','3C','3c','3E','3e'].indexOf(numStr)>-1 ) return match;
-					// supply all hex characters except '&', '<' and '>' as utf-8 chars:
-					return String.fromCharCode(parseInt(numStr, 16))
-				})
-				.replace(/&#([0-9]+);/g, function (match, numStr) {
-					if( ['38','60','62'].indexOf(numStr)>-1 ) return match;
-					// supply all dec characters except '&', '<' and '>' as utf-8 chars:
-					return String.fromCharCode(parseInt(numStr, 10))
-				})
-				.replace(/&quot;/g, '"')
-				.replace(/&apos;/g, "'")
-			//	.replace(/&auml;/g, "ä")
-			//	.replace(/&Auml;/g, "Ä")
-			//	.replace(/&ouml;/g, "ö")
-			//	.replace(/&Ouml;/g, "Ö")
-			//	.replace(/&uuml;/g, "ü")
-			//	.replace(/&Uuml;/g, "Ü")
-			//	.replace(/&szlig;/g, "ß")
-			// can't do that for all characters ... 
-				.replace( REAmpersandPlus, function($0,$1) {
-					// 1. Replace &, unless it belongs to an XML entity:
-					if( REXMLmin.test($0) ) {
-						// no replacement:
-						return $0
-					} else {
-						// encode the '&' and add the remainder of the pattern:
-						return '&#38;'+$1
-					}
-				})
-				.replace(/</g, '&#60;')
-				.replace(/>/g, '&#62;')  */
 	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
