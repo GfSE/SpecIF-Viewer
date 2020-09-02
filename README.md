@@ -1,4 +1,4 @@
-# SpecIF Viewer and Editor
+# SpecIF Viewer and Editor [![Build Status](https://travis-ci.org/GfSE/SpecIF-Viewer.svg?branch=master)](https://travis-ci.org/GfSE/SpecIF-Viewer)
 An app for your web-browser to view, edit* and transform system specifications. (Features of the SpecIF Editor are marked with an asterisk*).
 
 SpecIF is the 'Specification Integration Facility'. It's purpose is to combine partial specifications from different tools in a single model to allow
