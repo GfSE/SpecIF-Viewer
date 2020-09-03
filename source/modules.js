@@ -12,19 +12,19 @@ var browser,
 	i18n,
 	modules = new function() {
 		"use strict";
-		// Supports two types of modules:
-		// 1. Libraries
-		//		- 'load()' registers and loads a file or a list of files with named javascript functions 
-		//		- 'setReady()' is executed when the 'getScipt' load-event triggers
-		//		- the specified callback function is executed as soon as all modules are ready.
-		//      - Libraries don't support view control.
-		// 2. Objects
-		//		- 'load()' registers and loads a file or a list of files with constructors (similar to reqireJs 'reqire')
-		//		- 'construct()' creates an object (controller) using the constructor specified as parameter (similar to reqireJs 'define')
-		//		- the constructor may append a new subtree to a DOM element to be used by the constructed object
-		//		- 'setReady()' is executed, if 'construct()' finishes successfully.
-		//		- the specified callback function is executed as soon as all modules are ready.
-		//      - 'show()' selects the view of the specified module and hides all others.
+		/* Supports two types of modules:
+		   1. Libraries
+				- 'load()' registers and loads a file or a list of files with named javascript functions 
+				- 'setReady()' is executed when the 'getScipt' load-event triggers
+				- the specified callback function is executed as soon as all modules are ready.
+				- Libraries can be used globally and don't support view control.
+		   2. Controllers
+				- 'load()' registers and loads a file or a list of files with constructors (similar to reqireJs 'reqire')
+				- 'construct()' creates a controller using the constructor specified as parameter (similar to reqireJs 'define')
+				- the constructor may append a new subtree to a DOM element to be used by the constructed object
+				- 'setReady()' is executed, if 'construct()' finishes successfully.
+				- the specified callback function is executed as soon as all modules are ready.
+				- 'show()' selects the view of the specified module and hides all others.  */
 	
 	var self = this,
 		callWhenReady = null,
@@ -154,7 +154,7 @@ var browser,
 		let mo = findM( self.tree, params.newView );
 		if( !mo || !mo.parent.viewCtl ) {
 			console.error("'"+params.newView+"' is not a defined view");
-			return undefined
+			return // undefined
 		};
 		// Set the view from the top-level to the lowest level, 
 		// so that it is possible to jump from any branch to another at any level.
@@ -173,7 +173,7 @@ var browser,
 				nPL.newView = le.parent.view;
 				setViewFromRoot( le.parent, nPL )
 			};
-			// set this level's view controller to choose the view:
+			// set this level's view controller to choose the desired view:
 			le.parent.viewCtl.show( pL )
 		}
 		function setViewToLeaf( le, pL ) {
@@ -343,7 +343,6 @@ var browser,
 	function loadM( mod ) {
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before)
-			// For a module with HTML forms there must be a corresponding HTML div tag with id="mod".
 //			console.debug('loadM',mod);
 			switch( mod ) {	
 				// 3rd party:
@@ -413,17 +412,13 @@ var browser,
 		//		case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
-/*				case "profileMe":			$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
-				case "user":				$('#app').append( '<div id="'+mod+'"></div>' );
-											$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+/*				case "profileMe":			$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
+				case "user":				$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 				case "projects":			loadM( 'toEpub' );
-											$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 */
 				// main modules:
 /*				case CONFIG.users:		//	loadM( 'mainCSS' );
-											$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
 */				case 'importAny':			loadM( 'zip' ); 
 											getScript( vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -448,7 +443,6 @@ var browser,
 										//	loadM( 'mainCSS' );
 										//	loadM( 'cache' );
 											loadM( 'stdTypes' );
-											$('#app').append( '<div id="'+mod+'"></div>' );
 											$('#'+mod).load( "./js/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 		*/
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
@@ -549,7 +543,7 @@ var browser,
 		};
 		self.show = ( params )=>{
 			// Select a new view 
-			// and call implicit actions 'show'/'hide' in case they are implemented in the respective modules.
+			// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
 			// - simple case: params is a string with the name of the new view.
 			// - more powerful: params is an object with the new target view plus optionally content or other parameters 
 			switch( typeof(params) ) {
@@ -601,7 +595,6 @@ var browser,
 					}
 				}
 			});
-			// not all applications may need resizing of the window elements:
 			if( typeof(doResize)=='function' ) {
 				doResize()
 			}
