@@ -3,7 +3,7 @@
 	Dependencies: jQuery
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution!
 
 	Naming:
@@ -35,13 +35,6 @@ modules.construct({
 		self.selectedProject = undefined;
 	/*	autoLoadId = undefined;  // stop any autoLoad chain
 		autoLoadCb = undefined;  */
-
-	// initialize the markdown converter:
-	// ToDo: load lazily, when needed for the first time.
-/*	if( CONFIG.convertMarkdown ) {
-		app.remarkable = new Remarkable('full',{xhtmlOut:true,breaks:true});
-	//	app.remarkable.use( 'linkify' )
-	}; */
 
 		return true
 	};

@@ -245,6 +245,7 @@ var browser,
 					$(e.parent.view).append(d)
 				};
 				// load a module in case of elements with a name:
+				// (lazy loading is not yet implemented)
 				if( e.name && !e.lazy )
 					loadM( e.name );
 				if( e.children ) {
@@ -370,7 +371,7 @@ var browser,
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.6/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" />');
@@ -378,13 +379,9 @@ var browser,
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( vPath+'/vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toEpub": 				loadM( 'toXhtml' );
-											getScript( vPath+'/vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toOxml": 				getScript( vPath+'/vendor/assets/javascripts/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.1/dist/pouchdb.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
-				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "config": 				$.getScript( vPath+'/config.js', ()=>{setReady(mod)} ); return true;   // don't cache
 				case "i18n": 				let langFile;
 											switch( browser.language.slice(0,2) ) {
@@ -404,23 +401,33 @@ var browser,
 											return true;
 				case "helper": 				getScript( vPath+'/js/helper.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "helperTree": 			getScript( vPath+'/js/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.1/dist/pouchdb.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript( vPath+'/js/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "cache": 				loadM( 'fileSaver' );
 											getScript( vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
 		//		case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/SpecIF.default.css" />' ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
-/*				case "profileMe":			$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( vPath+'/vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toEpub": 				loadM( 'toXhtml' );
+											getScript( vPath+'/vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toOxml": 				getScript( vPath+'/vendor/assets/javascripts/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'bpmn2specif':			getScript( vPath+'/vendor/assets/javascripts/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'archimate2specif':	getScript( vPath+'/vendor/assets/javascripts/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+		/*		case "profileMe":			$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 				case "projects":			loadM( 'toEpub' );
-											$('#'+mod).load( "./js/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true;
-*/
-				// main modules:
-/*				case CONFIG.users:		//	loadM( 'mainCSS' );
-											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
-*/				case 'importAny':			loadM( 'zip' );
+											$('#'+mod).load( "./js/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true; */
+				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
+		//		case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'statementsGraph': 	loadM( 'graphViz' );
+											getScript( vPath+'/js/graph.js' ).done( ()=>{setReady(mod)} ); return true;
+		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
+									//		loadM( 'dataTableButtons' );
+									//		loadM( 'zip' );  // needed for Excel export
+											getScript( "./js/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true; */
+
+				// modules; 'setReady' is called by 'construct':
+				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case 'importAny':			loadM( 'zip' );
 											getScript( vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
@@ -428,18 +435,18 @@ var browser,
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( vPath+'/vendor/assets/javascripts/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'archimate2specif':	getScript( vPath+'/vendor/assets/javascripts/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
 											getScript( vPath+'/js/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
-//				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
-				case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "serverPouch": 		loadM( 'pouchDB' );
+											getScript( vPath+'/js/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
-		/*		case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
+		/*		case CONFIG.users:		//	loadM( 'mainCSS' );
+											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
+				case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 										//	loadM( 'mainCSS' );
 										//	loadM( 'cache' );
 											loadM( 'stdTypes' );
@@ -452,18 +459,12 @@ var browser,
 
 				// sub-modules of module 'specifications':
 				case CONFIG.reports: 		getScript( vPath+'/js/reports.mod.js' ); return true;
-				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript( vPath+'/js/graph.js' ).done( ()=>{setReady(mod)} ); return true;
 				case CONFIG.objectFilter:  	getScript( vPath+'/js/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
 											getScript( vPath+'/js/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case CONFIG.resourceLink:	getScript( vPath+'/js/resourceLink.mod.js' ); return true;
-		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
-									//		loadM( 'dataTableButtons' );
-									//		loadM( 'zip' );  // needed for Excel export
-											getScript( "./js/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true;
-				case CONFIG.files: 			getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
-		*/
+		//		case CONFIG.files: 			getScript( "./js/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
+		
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false
 			};
 		};
