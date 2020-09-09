@@ -367,13 +367,13 @@ var browser,
 														});
 														return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
+		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" />');
 		//									getScript( vPath+'/vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
+		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" />');
 		//									getScript( vPath+'/vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
@@ -410,7 +410,7 @@ var browser,
 				case "cache": 				loadM( 'fileSaver' );
 											getScript( vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
 		//		case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
+				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/SpecIF.default.css" />' ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 /*				case "profileMe":			$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
