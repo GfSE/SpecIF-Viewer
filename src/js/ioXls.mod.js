@@ -34,19 +34,20 @@ modules.construct({
 			return
 		};
 //		console.debug( 'file', f );
+
+		// Remember the file modification date:
 		if( f.lastModified ) {
 			fDate = new Date(f.lastModified).toISOString();
-//			console.debug( 'file.lastModified', fDate )
-			return f
+		} else {
+			if( f.lastModifiedDate )
+				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
+				fDate = new Date(f.lastModifiedDate).toISOString()
+			else
+				// Take the actual date as a final fall back.
+				// Date() must get *no* parameter here; 
+				// an undefined value causes an error and a null value brings the UNIX start date:
+				fDate = new Date().toISOString()
 		};
-		if( f.lastModifiedDate ) {
-			// this is deprecated, but at the time of coding, Edge does not support the above, yet:
-			fDate = new Date(f.lastModifiedDate).toISOString();
-//			console.debug( 'file.lastModifiedDate', fDate )
-			return f
-		};
-		// take the actual date as a final fall back
-		fDate = new Date().toISOString();
 //		console.debug( 'file', f, fDate );
 		return f
 	};
