@@ -5,7 +5,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!           
+	We appreciate any correction, comment or contribution!
 */
 
 var browser,
@@ -14,7 +14,7 @@ var browser,
 		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
-				- 'load()' registers and loads a file or a list of files with named javascript functions 
+				- 'load()' registers and loads a file or a list of files with named javascript functions
 				- 'setReady()' is executed when the 'getScipt' load-event triggers
 				- the specified callback function is executed as soon as all modules are ready.
 				- Libraries can be used globally and don't support view control.
@@ -25,11 +25,11 @@ var browser,
 				- 'setReady()' is executed, if 'construct()' finishes successfully.
 				- the specified callback function is executed as soon as all modules are ready.
 				- 'show()' selects the view of the specified module and hides all others.  */
-	
+
 	var self = this,
 		callWhenReady = null,
 		vPath;
-	
+
 	self.init = ( initDone, initFail )=>{
 		// IE does not support ES6 promises, so we use callbacks 'initDone' and 'initFail'.
 
@@ -38,7 +38,7 @@ var browser,
 		self.ready = [];
 
 		// Identify browser type and load language file:
-		browser = new function() { 
+		browser = new function() {
 			var self = this;
 
 			self.language = navigator.language || navigator.userLanguage;
@@ -58,9 +58,9 @@ var browser,
 				} catch(e) {
 					return false
 				}
-			}; 
+			};
 			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" ); */
-			
+
 			return self
 		};
 		// init phase 1: Load the javascript routines common to all apps:
@@ -77,10 +77,10 @@ var browser,
 	};
 	function register( mod ) {
 		// return true, if mod has been successfully registered and is ready to load
-		// return false, if mod is already registered and there is no need to load it 
-		if( self.registered.indexOf(mod)>-1 ) { 
+		// return false, if mod is already registered and there is no need to load it
+		if( self.registered.indexOf(mod)>-1 ) {
 			console.warn( "WARNING: Did not reload module '"+mod+"'." );
-			return false 
+			return false
 		};
 
 		self.registered.push( mod );
@@ -107,17 +107,17 @@ var browser,
 		// This routine is called by the respective module in the code file, once loaded with 'loadH'/'loadM',
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
 		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
-		
+
 		// find module by name or by view somewhere in the complete module tree of the app:
 		let mo = findM(self.tree,defs.name||defs.view);
 		if(!mo) {
 			console.error(defs.name? "'"+defs.name+"' is not a defined module name" : "'"+defs.view+"' is not a defined view");
 			return null
 		};
-		$.extend( mo, defs ); 
+		$.extend( mo, defs );
 //		console.debug('construct', defs, mo);
 
-		// An execution name ('loadAs') may be specified when different modules (with diffent names) 
+		// An execution name ('loadAs') may be specified when different modules (with diffent names)
 		// create a component with similar interface, but different function.
 		// For example, 'me' can be implemented by 'profileAnonymous' with minimal function or
 		// by 'profileMe' with full-fledged user management including user-roles and permissions;
@@ -125,7 +125,7 @@ var browser,
 		// specify loadAs: 'me'.
 		// An app uses both similarly, e.g. me.attribute or me.function().
 		// Of course, loadAs must be unique in an app at any time.
-		
+
 		// By default of 'loadAs', use 'name' or 'view' without the leading '#':
 		if( !mo.loadAs ) mo.loadAs = mo.name || mo.view.substring(1);
 
@@ -133,19 +133,19 @@ var browser,
 		constructorFn(mo);
 		// make the module directly addressable by loadAs:
 		app[ mo.loadAs ] = mo;
-		
+
 //		console.debug('construct',defs,mo);
 		// Set the module to 'ready', if registered, ignore otherwise.
-		// If a module is constructed explicitly and not as a result of file loading, it is not registered. 
+		// If a module is constructed explicitly and not as a result of file loading, it is not registered.
 		// In that case it does not have a name, so the condition is in fact redundant:
 		if( defs.name && self.registered.indexOf(defs.name)>-1 )
 			setReady( defs.name )
-		
+
 		// the module will be initialized within setReady() once all modules are loaded.
 	};
 	self.show = ( params )=>{
 		// Show the specified view, which may be located somewhere in the hierarchy;
-		// Assuming that it's parent has a viewCtl: 
+		// Assuming that it's parent has a viewCtl:
 		switch( typeof(params) ) {
 			case 'undefined': return null;
 			case 'string': params = {newView: params}
@@ -156,7 +156,7 @@ var browser,
 			console.error("'"+params.newView+"' is not a defined view");
 			return // undefined
 		};
-		// Set the view from the top-level to the lowest level, 
+		// Set the view from the top-level to the lowest level,
 		// so that it is possible to jump from any branch to another at any level.
 		// Begin from the top:
 		setViewFromRoot( mo, params );
@@ -164,7 +164,7 @@ var browser,
 		// select a subview, if there is any:
 		setViewToLeaf( mo, params );
 		return;
-		
+
 		function setViewFromRoot( le, pL ) {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
@@ -245,8 +245,8 @@ var browser,
 					$(e.parent.view).append(d)
 				};
 				// load a module in case of elements with a name:
-				if( e.name && !e.lazy ) 
-					loadM( e.name );   
+				if( e.name && !e.lazy )
+					loadM( e.name );
 				if( e.children ) {
 					// in certain cases prepare for controlling the children's views:
 					if( e.selector ) {
@@ -280,11 +280,11 @@ var browser,
 									return
 								};
 								// else, both 'view' and 'selectedBy' are present:
-								
+
 								// Add the child's view to the view controller;
 								// the elements of viewCtl are a subset of the elements of children, namely those with a view:
 								e.viewCtl.add( ch );
-								
+
 								// Add a view selector element for the child (button resp. tab):
 								id = ch.selectedBy.substring(1);	// without '#'
 								lbl = ch.label || id;
@@ -322,7 +322,7 @@ var browser,
 								}
 							}
 						})
-					}; 
+					};
 					// finally load all the children, as well:
 					e.children.forEach( (c)=>{
 											c.parent = e;
@@ -334,7 +334,7 @@ var browser,
 
 		if( opts&&typeof(opts.done)=="function" )
 			callWhenReady = opts.done;
-		
+
 		if( Array.isArray(h) )
 			h.forEach( (e)=>{ld(e)} )
 		else
@@ -344,7 +344,7 @@ var browser,
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before)
 //			console.debug('loadM',mod);
-			switch( mod ) {	
+			switch( mod ) {
 				// 3rd party:
 				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />');
 											$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" />');
@@ -354,43 +354,43 @@ var browser,
 				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
-		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' ).then( 
+		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' ).then(
 														function(m) {
 															app.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true});
-															setReady(mod) 
+															setReady(mod)
 														});
 														return true;  */
-				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@11/dist/markdown-it.min.js' ).done( 
+				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@11/dist/markdown-it.min.js' ).done(
 														()=>{
 															app.markdown = window.markdownit({xhtmlOut:true,breaks:true,linkify:false});
-															setReady(mod) 
+															setReady(mod)
 														});
 														return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
-		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
+		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" />');
+		//									getScript( vPath+'/vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
-		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
+		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" />');
+		//									getScript( vPath+'/vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( vPath+'/3rd/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( vPath+'/vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
-											getScript( vPath+'/3rd/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toOxml": 				getScript( vPath+'/3rd/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript( vPath+'/vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toOxml": 				getScript( vPath+'/vendor/assets/javascripts/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
 				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "config": 				$.getScript( vPath+'/config.js', ()=>{setReady(mod)} ); return true;   // don't cache
 				case "i18n": 				let langFile;
 											switch( browser.language.slice(0,2) ) {
-												case 'de':  langFile = vPath+'/i18n/iLaH-de.i18n.js'; break;
-												case 'fr':  langFile = vPath+'/i18n/iLaH-fr.i18n.js'; break;
-												default:	langFile = vPath+'/i18n/iLaH-en.i18n.js'; 
+												case 'de':  langFile = vPath+'/config/locales/iLaH-de.i18n.js'; break;
+												case 'fr':  langFile = vPath+'/config/locales/iLaH-fr.i18n.js'; break;
+												default:	langFile = vPath+'/config/locales/iLaH-en.i18n.js';
 											};
 											getScript( langFile )
 											.done( function() {
@@ -400,7 +400,7 @@ var browser,
 													default:	i18n = new LanguageTextsEn()
 												};
 												setReady(mod)
-											}); 
+											});
 											return true;
 				case "helper": 				getScript( vPath+'/js/helper.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "helperTree": 			getScript( vPath+'/js/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
@@ -410,7 +410,7 @@ var browser,
 				case "cache": 				loadM( 'fileSaver' );
 											getScript( vPath+'/js/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
 		//		case "stdTypes":			getScript( vPath+'/js/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/SpecIF.default.css" />' ); setReady(mod); return true;
+				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/vendor/assets/stylesheets/SpecIF.default.css" />' ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( vPath+'/js/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 /*				case "profileMe":			$('#'+mod).load( "./js/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( "./js/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
@@ -420,7 +420,7 @@ var browser,
 				// main modules:
 /*				case CONFIG.users:		//	loadM( 'mainCSS' );
 											$('#'+mod).load( "./js/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
-*/				case 'importAny':			loadM( 'zip' ); 
+*/				case 'importAny':			loadM( 'zip' );
 											getScript( vPath+'/js/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
@@ -428,11 +428,11 @@ var browser,
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( vPath+'/3rd/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'bpmn2specif':			getScript( vPath+'/vendor/assets/javascripts/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'archimate2specif':	getScript( vPath+'/3rd/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'archimate2specif':	getScript( vPath+'/vendor/assets/javascripts/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
 											getScript( vPath+'/js/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
 //				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
@@ -497,7 +497,7 @@ var browser,
 			console.error("Module '"+mod+"' is set 'ready' more than once");
 			return null
 		};
-		
+
 		if( self.registered.length === self.ready.length ) {
 			initH( self.tree );
 			console.info( "All "+self.ready.length+" modules loaded --> ready!" );
@@ -532,7 +532,7 @@ var browser,
 		}
 		self.init = (vL)=>{
 			self.list = vL || [];
-			self.list.forEach( (e)=>{$(e).hide()}); 
+			self.list.forEach( (e)=>{$(e).hide()});
 			self.selected = {}
 		};
 		self.add = (v)=>{
@@ -542,10 +542,10 @@ var browser,
 			// we could add the visual selector, here ... it is now part of loadH.
 		};
 		self.show = ( params )=>{
-			// Select a new view 
+			// Select a new view
 			// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
 			// - simple case: params is a string with the name of the new view.
-			// - more powerful: params is an object with the new target view plus optionally content or other parameters 
+			// - more powerful: params is an object with the new target view plus optionally content or other parameters
 			switch( typeof(params) ) {
 				case 'undefined': return null;	// should never be the case.
 				case 'string': params = {newView: params}
@@ -554,7 +554,7 @@ var browser,
 
 		/*	if( self.selected && params.newView==self.selected.view ) {
 				// just update the current view:
-				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content); 	
+				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content);
 				return
 			};  */
 			// else: show params.newView and hide all others:
@@ -621,7 +621,7 @@ var browser,
 };
 function State(opt) {
 	"use strict";
-	// sets and resets some binary state (e.g. 'busy'), 
+	// sets and resets some binary state (e.g. 'busy'),
 	// hides resp. shows certain DOM elements according to the lists specified.
 	var self = this,
 		options = opt || {},
@@ -636,12 +636,12 @@ function State(opt) {
 			case undefined:
 			case true:
 				state = true;
-				options.hideWhenSet.forEach( (e)=>{ 
+				options.hideWhenSet.forEach( (e)=>{
 					try {
 						$(e).hide()
 					} catch(e) {}
 				});
-				options.showWhenSet.forEach( (e)=>{ 
+				options.showWhenSet.forEach( (e)=>{
 					try {
 						$(e).show()
 					} catch(e) {}
@@ -650,12 +650,12 @@ function State(opt) {
 	},
 	self.reset = ()=>{
 				state = false;
-				options.showWhenSet.forEach( (e)=>{ 
+				options.showWhenSet.forEach( (e)=>{
 					try {
 						$(e).hide()
 					} catch(e) {}
 				})
-				options.hideWhenSet.forEach( (e)=>{ 
+				options.hideWhenSet.forEach( (e)=>{
 					try {
 						$(e).show()
 					} catch(e) {}
