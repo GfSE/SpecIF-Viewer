@@ -368,20 +368,20 @@ var browser,
 														return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/jquery.dataTables-1.10.19.min.css" />');
-		//									getScript( vPath+'/3rd/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
+		//									getScript( vPath+'/vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="'+vPath+'/css/sceditor-1.5.2.modern.min.css" />');
-		//									getScript( vPath+'/3rd/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
+		//									getScript( vPath+'/vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toXhtml": 			getScript( vPath+'/3rd/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toXhtml": 			getScript( vPath+'/vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
-											getScript( vPath+'/3rd/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toOxml": 				getScript( vPath+'/3rd/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript( vPath+'/vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toOxml": 				getScript( vPath+'/vendor/assets/javascripts/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
 				case "about":				getScript( vPath+'/js/about.mod.js' ); return true; // 'setReady' is called by 'construct'
@@ -428,11 +428,11 @@ var browser,
 				case 'ioReqif': 			getScript( vPath+'/js/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( vPath+'/js/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'bpmn2specif':			getScript( vPath+'/3rd/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'bpmn2specif':			getScript( vPath+'/vendor/assets/javascripts/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
 											getScript( vPath+'/js/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'archimate2specif':	getScript( vPath+'/3rd/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'archimate2specif':	getScript( vPath+'/vendor/assets/javascripts/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
 											getScript( vPath+'/js/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
 //				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
