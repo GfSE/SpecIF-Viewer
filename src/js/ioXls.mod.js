@@ -34,19 +34,9 @@ modules.construct({
 			return
 		};
 //		console.debug( 'file', f );
-		if( f.lastModified ) {
-			fDate = new Date(f.lastModified).toISOString();
-//			console.debug( 'file.lastModified', fDate )
-			return f
-		};
-		if( f.lastModifiedDate ) {
-			// this is deprecated, but at the time of coding, Edge does not support the above, yet:
-			fDate = new Date(f.lastModifiedDate).toISOString();
-//			console.debug( 'file.lastModifiedDate', fDate )
-			return f
-		};
-		// take the actual date as a final fall back
-		fDate = new Date().toISOString();
+
+		// The actual date is taken, if none of the file properties are defined:
+		fDate = new Date( f.lastModified || f.lastModifiedDate ).toISOString();
 //		console.debug( 'file', f, fDate );
 		return f
 	};
