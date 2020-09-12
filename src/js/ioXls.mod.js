@@ -256,23 +256,26 @@ function xslx2specif( buf, pN, chAt ) {
 			function createFld( sh ) {
 				if( sh.lastCell.row-sh.firstCell.row<1 ) return;   // skip, if there are no resources
 
-					function getVal( dT, cell ) {
-						// malicious content will be removed upon import.
-						if( !cell || !cell.v ) return '';
-//						console.debug( 'getVal', cell, dT );
-						switch( dT ) {
-							case 'xs:dateTime': return cell.v.toISOString();
-							case 'xs:integer':
-							case 'xs:double':	return cell.v.toString();
-							case 'xs:string':
-							case 'xhtml':		return cell.v;
-							// we have found earlier that it is a valid boolean, so all values not beeing true are false:
-							case 'xs:boolean':	return cell.v.isTrue().toString()  
-						};
-						return ''
-					}
 					function createR( ws, row ) {
 						// create a resource:
+
+							function getVal( dT, cell ) {
+								// malicious content will be removed upon import.
+								if( !cell || !cell.v ) return '';
+		//						console.debug( 'getVal', cell, dT );
+								switch( dT ) {
+									case 'xs:dateTime': return cell.v.toISOString();
+									case 'xs:integer':
+									case 'xs:double':	return cell.v.toString();
+									case 'xs:string':
+									case 'xhtml':		return cell.v;
+									// we have found earlier that it is a valid boolean, 
+									// so all values not beeing true are false:
+									case 'xs:boolean':	return cell.v.isTrue().toString()  
+								};
+								return ''
+							}
+
 						var res = {
 								// id will be set later on using the visibleId, if provided.
 								// title will be set according to the properties, later on.
@@ -280,11 +283,12 @@ function xslx2specif( buf, pN, chAt ) {
 								properties: [],
 								changedAt: chAt
 							};
-						let c, C, cell, rC, pC, dT, id, stL=[], ti, obL, oInner;
-						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {		// an attribute per column ...
+
+						let c, C, cell, val, rC, pC, dT, id, stL=[], ti, obL, oInner;
+						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {	// an attribute per column ...
 							cell = ws.data[colName(c)+row];
 //							console.debug('createR',c,colName(c)+row,cell);
-							if( cell && cell.v ) {											// ... if it has content
+							if( cell && cell.v ) {									// ... if it has content
 								rC = itemById( specif.resourceClasses, resClassId(ws.resClassName) );
 								pC = itemById( specif.propertyClasses, propClassId(ws.name+c) );
 								
@@ -293,17 +297,22 @@ function xslx2specif( buf, pN, chAt ) {
 									// it is a property:
 //									console.debug('createR - property',pC);
 									dT = itemById(specif.dataTypes,pC.dataType);
+									val = getVal( dT.type, cell );
 
 									// Find the value to be taken as resource identifier.
 									// id is the first identifier found as declared in CONFIG.idProperties;
 									// the first id value found will prevail:
-									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = getVal( dT.type, cell );
+									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = val;
 									// ToDo: Consider to select the id property beforehand and not over and over again for every resource/row.
 
+									if( dT.maxLength && dT.maxLength < val.length ) {
+										val = val.slice(0,dT.maxLength);
+										console.warn('Text of cell '+colName(c)+row+' on sheet '+sh.name+' has been truncated because it is too long')
+									};
 									res.properties.push({
 										title: pC.title,	// needed for titleFromProps()
 										class: pC.id,
-										value: getVal( dT.type, cell )
+										value: val
 									})
 								} else {
 									// it is a statement:
@@ -441,7 +450,7 @@ function xslx2specif( buf, pN, chAt ) {
 						
 					// the cell value in the first line is the title, either of a property or a statement:
 					let ti = valL[0]?(valL[0].w || valL[0].v):i18n.MsgNoneSpecified,
-						pC,nC;
+						pC,nC,i,maxL=0;
 //					console.debug( 'getPropClass 1', ti );
 
 					// Skip, if it is a statement title
@@ -453,7 +462,7 @@ function xslx2specif( buf, pN, chAt ) {
 					
 					// Cycle through all elements of the column and select the most restrictive type,
 					// start with the last and stop with the second line:
-					for( var i=valL.length-1; i>0; i-- ) {
+					for( i=valL.length-1; i>0; i-- ) {
 						nC = classOf(valL[i]);
 //						console.debug('getPropClass 2',i,pC,valL[i],nC);
 						if( !nC ) continue;
@@ -466,6 +475,15 @@ function xslx2specif( buf, pN, chAt ) {
 					};
 					// Assign a longer text field for descriptions:
 					if( CONFIG.descProperties.indexOf( ti )>-1 ) pC = 'Text';
+
+					// Assign a longer text field for columns with cells having a longer text:
+					if( pC=='ShortString' ) {
+						// determine the max length of the column values:
+						for( i=valL.length-1; i>0; i-- ) {
+							maxL = Math.max( maxL, valL[i].v? valL[i].v.length : 0 )
+						};
+						if( maxL>CONFIG.textThreshold ) pC = 'Text'
+					};
 //					console.debug( 'getPropClass 3',valL[i],pC );
 					return new PropClass( ws.name+cX, ti, pC || defaultC );
 
