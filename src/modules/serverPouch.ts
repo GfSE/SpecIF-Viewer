@@ -13,7 +13,7 @@ function Server() {
 		remoteCouch = false;
 	const	reservedRoleNames = [ i18n.LblRoleGeneralAdmin, i18n.LblRoleProjectAdmin, i18n.LblRoleUserAdmin, i18n.LblRoleReader, i18n.LblRoleReqif ],
 			sep = '|';
-		
+
 /////////////////////
 	function init() {
 		self.type = 'PouchDB';
@@ -35,9 +35,9 @@ function Server() {
 	};
 
 /////////////////////
-	self.projects = function() { 
+	self.projects = function() {
 		var self = this;
-			
+
 		self.read = function() {
 			// return a list of projects with their meta information:
 			return readL( 'project', 'all' )
@@ -45,11 +45,11 @@ function Server() {
 		return self
 	};
 
-	self.project = function( prj ) { 
+	self.project = function( prj ) {
 		var self = this;
 		self.selectedPrj = {id: prj.id};
-		self.create = function() { 
-			// create a project with metadata and types: 
+		self.create = function() {
+			// create a project with metadata and types:
 			return new Promise( (resolve,reject)=>{
 					nP = {
 						id: prj.id,
@@ -74,7 +74,7 @@ function Server() {
 				.catch( reject )
 			})
 		};
-		self.read = function() { 
+		self.read = function() {
 			// read the project metadata, the types and the hierarchies, which are kept in a cache:
 			if( !prj || !prj.id ) return null;
 			console.debug( 'server.project.read - project.id: ', prj.id);
@@ -96,32 +96,32 @@ function Server() {
 							pr.propertyClasses = pCs;
 //							console.debug( 'hierarchy types read: ', pr );
 							finalize( pr )
-						}, 
-						reject 
+						},
+						reject
 					);
 					readL( 'resourceClass', 'all' )
 					.then( ( rCs )=>{
 							pr.resourceClasses = rCs;
 //							console.debug( 'resource types read: ', pr );
 							finalize( pr )
-						}, 
-						reject 
+						},
+						reject
 					);
 					readL( 'statementClass', 'all' )
 					.then( ( sCs )=>{
 							pr.statementClasses	= sCs;
 //							console.debug( 'statement types read: ', pr );
 							finalize( pr )
-						}, 
-						reject 
+						},
+						reject
 					);
 					readL( 'hierarchy', 'all' )
 					.then( ( hL )=>{
 							pr.specs = hL;
 //							console.debug( 'hierarchies read: ', pr );
 							finalize( pr )
-						}, 
-						reject 
+						},
+						reject
 					);
 					readL( 'file', 'all' )
 					.then( ( fL )=>{
@@ -129,17 +129,17 @@ function Server() {
 //							console.debug( 'hierarchies read: ', pr );
 							finalize( pr )
 						},
-						reject 
+						reject
 					);
 				})
 				.catch( reject )
-			
+
 				function finalize( prj ) {
 					if( --pend<1 ) resolve( prj, '', {status:200} )		// result, textStatus, xhr
 				}
 			})
 		};
-		self.update = function() { 
+		self.update = function() {
 			// update the project header attributes:
 			var nP = {
 					id: prj.id,
@@ -149,7 +149,7 @@ function Server() {
 				};
 			return updateE( 'project', nP )
 		};
-		self.remove = function() { 
+		self.remove = function() {
 			// delete a project with all its content:
 			return new Promise( (resolve,reject)=>{
 				// delete all elements of the current project:
@@ -183,7 +183,7 @@ function Server() {
 			})
 		};
 
-/////////////////////		
+/////////////////////
 		self.createContent = function( ctg, item ) {
 //			console.debug('server.createContent',ctg,item);
 			return Array.isArray(item)?createL( ctg, item ):createE( ctg, item )
@@ -218,9 +218,9 @@ function Server() {
 		};
 */		return self
 	};	// end of function self.project()
-	
-/////////////////////		
-	// ToDo: implement mine().roles().read() ... 
+
+/////////////////////
+	// ToDo: implement mine().roles().read() ...
 	self.me = function() {
 		// Manage the profile and the project roles of the current user.
 		var self = this;
@@ -247,47 +247,47 @@ function Server() {
 			return PUT( CONFIG.serverURL+'/me.json', usr )
 		};
 */		return self
-	};  
-/*	self.users = function() { 
+	};
+/*	self.users = function() {
 		// ToDo: allow a parameter with a list of users for which results are returned similar to self.objects()....
 //		console.debug('users');
 		var self = this;
-		self.read = function() { 
+		self.read = function() {
 			return GET( usersURL+'.json' )
-					.done( function(dta) { 
+					.done( function(dta) {
 						dta.users = forAll( dta.values, transform.user.fromServer );
-						dta.users.sort(function(laurel, hardy) { 
+						dta.users.sort(function(laurel, hardy) {
 							laurel = laurel.userName.toLowerCase();
 							hardy = hardy.userName.toLowerCase();
-							return laurel == hardy ? 0 : (laurel < hardy ? -1 : 1) 
+							return laurel == hardy ? 0 : (laurel < hardy ? -1 : 1)
 						});
 						delete dta.values
 					})
 		};
 		return self
 	};
-	self.usersWithRoles = function() { 
+	self.usersWithRoles = function() {
 //			console.debug('usersWithRoles');
 			var self = this;
-			self.read = function() { 
+			self.read = function() {
 //				console.debug('users.roles.read');
 				return GET( CONFIG.serverURL+'/usersWithRoles.json' )
-					.done( function(dta) { 
+					.done( function(dta) {
 						// Simplify the structure of the server response
 						// Returns { users: [{userName: un, .., projectRoles: [{id: id, role: rl}, ..]}, ..]}
 						// List only those projects for which the user has a role.
 						dta.users = forAll( dta.values, transform.user.fromServer );
-						dta.users.sort(function(laurel, hardy) { 
+						dta.users.sort(function(laurel, hardy) {
 							laurel = laurel.userName.toLowerCase();
 							hardy = hardy.userName.toLowerCase();
-							return laurel == hardy ? 0 : (laurel < hardy ? -1 : 1) 
+							return laurel == hardy ? 0 : (laurel < hardy ? -1 : 1)
 						});
 						delete dta.values
 					})
 			};
 			return self
 	};
-	self.user = function( usr ) { 
+	self.user = function( usr ) {
 		// Manage the profile and the project roles of the specified user:
 		var self = this;
 //		console.debug('user',usr);
@@ -302,7 +302,7 @@ function Server() {
 		self.read = function() {
 			// returns a user as {userName: name, organization: [org, ..], ... }
 //			console.debug( 'user.read', usr );
-			var urDO = $.Deferred(); 
+			var urDO = $.Deferred();
 			GET( usersURL+"/"+usr.userName+".json" )
 				.done( function(dta, textStatus, xhr) {
 					// Returns {userName: un, .., projects: [{id: id, role: rl}, ..], organizations: [{ name: xy }, ..]}
@@ -320,7 +320,7 @@ function Server() {
 			delete usr.generalAdmin;
 			return POST( usersURL+"/"+usr.userName+".json", usr )
 		};
-		self.remove = function() { 
+		self.remove = function() {
 			return DELETE( usersURL+"/"+usr.userName+".json" )
 		};
 		self.roles = function() {
@@ -332,7 +332,7 @@ function Server() {
 					.done( function(dta) {
 						// Filter the project roles of the specified user:
 						for( var i=0, I=dta.users.length; i<I; i++ ) {  // iterate users
-							if( dta.users[i].userName === usr ) {   
+							if( dta.users[i].userName === usr ) {
 								dta.user = dta.users[i];
 							};
 						};
@@ -343,14 +343,14 @@ function Server() {
 		};
 		return self
 	};	// end of self.user()
-	self.organizations = function() { 
+	self.organizations = function() {
 		var self = this;
 		self.read = function() {
 			var self = this;
 		};
 		return self
 	};
-	self.organization = function( org ) { 
+	self.organization = function( org ) {
 		var self = this;
 		self.read = function() {
 			var self = this;
@@ -364,7 +364,7 @@ function Server() {
 		};
 		return self
 	};
-*/		
+*/
 
 /////////////////////
 /*	self.login = function( un, pw ) {
@@ -374,11 +374,11 @@ function Server() {
 	self.logout = function() {
 	};
 */
-/////////////////////		
+/////////////////////
 	self.abort = function() {
 //		self.abortFlag = true
 	};
-		
+
 		// ++++++++++++++++++++++++++
 		function createL( ctg, eL ) {
 //			console.debug('createL',ctg,eL);
@@ -405,7 +405,7 @@ function Server() {
 			if( !ctg || !el ) return null;
 //			console.debug('createE',ctg,el);
 			if( ctg=='node' ) return null;  // not supported
-			
+
 			return new Promise( (resolve,reject)=>{
 				db.put( dbE( ctg, el ) )
 				.then( (res)=>{
@@ -439,7 +439,7 @@ function Server() {
 					if( ctg=='file' ) {
 						options.attachments = true;
 						options.binary = true
-					}; 
+					};
 //					console.debug('readL 2', options );
 					db.allDocs(options)
 					.then( (res)=>{
@@ -487,7 +487,7 @@ function Server() {
 						if( ctg=='file' ) {
 							options.attachments = true;
 							options.binary = true
-						}; 
+						};
 //						console.debug('readL 3', options );
 						db.allDocs(options)
 						.then( function(res) {
@@ -503,7 +503,7 @@ function Server() {
 					};
 					return
 				};
-				// default: 
+				// default:
 				console.error('Invalid parameter when reading from DB');
 				reject( {status:412, statusText:'Invalid parameter when reading from DB'} )
 			})
@@ -516,7 +516,7 @@ function Server() {
 			if( ctg=='file' ) {
 				opts.attachments = true;
 				opts.binary = true
-			}; 
+			};
 //			console.debug('readE',ctg,el,opts);
 			return new Promise( (resolve,reject)=>{
 				db.get( dbId(ctg,el), opts )
@@ -536,11 +536,11 @@ function Server() {
 //			console.debug('updateL',ctg,eL);
 			if( ctg=='node' ) return null;  // not supported
 
-			nL = forAll( eL, (e)=>{ let n = dbE( ctg, e ); n._rev=e.revision; return n };
+			nL = forAll( eL, (e)=>{ let n = dbE( ctg, e ); n._rev=e.revision; return n });
 //			console.debug('updateL',ctg,eL,nL);
 			// .. and submit the updated elements:
 			return db.bulkDocs( nL )
-			
+
 		/*	original code:
 			let nL=[], i, I;
 			// assuming that both length and sequence of eL and dL are equal:
@@ -561,7 +561,7 @@ function Server() {
 //					console.debug('Update-list fail:', err );
 					uPr.reject( {status:414, statusText:'Update-list failed'} )
 				})
-			return uPr */ 
+			return uPr */
 		}
 		function updateE( ctg, el ) {
 			// Update an element,
@@ -573,20 +573,20 @@ function Server() {
 			nE._rev = el.revision;
 //			console.debug('updateE', ctg, el, nE );
 			return db.put( nE )
-			
+
 		/*	original code:
 			return new Promise( (resolve,reject)=>{
 				let nE = dbE( ctg, el );
 				nE._rev = el.revision;
 				console.debug('updateE', ctg, el, nE );
 				db.put( nE )
-					.then( function() { 
+					.then( function() {
 						console.debug('updateE done',ctg);
-						resolve( null, '', {status:200} ) 
+						resolve( null, '', {status:200} )
 					})
 					.catch( function(err) {
 						console.debug('updateE fail:',ctg,err );
-						reject( {status:414, statusText:'Updating element in DB failed'} ) 
+						reject( {status:414, statusText:'Updating element in DB failed'} )
 					})
 			}) */
 		}
@@ -624,13 +624,13 @@ function Server() {
 //						console.debug('db.get done:', doc );
 						return db.remove( doc._id, doc._rev )
 					})
-					.then( ()=>{ 
+					.then( ()=>{
 //						console.debug('db.remove done');
-						resolve( undefined, '', {status:200} ) 
+						resolve( undefined, '', {status:200} )
 					})
 					.catch( (err)=>{
 //						console.debug('deleteE fail:', err );
-						reject( {status:413, statusText:'Deleting from DB failed'} ) 
+						reject( {status:413, statusText:'Deleting from DB failed'} )
 					})
 			})
 		}
@@ -645,7 +645,7 @@ function Server() {
 					var vL = [];
 					for( var i=0, I=rL._revs_info.length; i<I; i++ )
 						if( rL._revs_info[i].status=='available' ) vL.push( { id:rL.id, revision:rL._revs_info[i].rev } );
-					resolve( vL, '', {status:200} ) 
+					resolve( vL, '', {status:200} )
 				})
 				.catch( reject )
 			})
@@ -690,13 +690,13 @@ function Server() {
 			return dbPath(ctg,cls)+e.id  */
 			return dbPath(ctg)+e.id
 		}
-		function specifId( id ) { 
+		function specifId( id ) {
 			// remove all additional info from the compound-id to obtain the real SpecIF-id,
 			// which is always at the end:
 			id = id.split(sep);
 			return id[id.length-1]
 		}
-		function dbE( ctg, e ) { 
+		function dbE( ctg, e ) {
 			// transform a SpecIF element to a db element:
 //			console.debug('dbE',e);
 			var n = clone(e);  // the cached items must remain unchanged
@@ -718,7 +718,7 @@ function Server() {
 //			console.debug('dbE',ctg,e,n);
 			return n
 		}
-		function clone( o ) { 
+		function clone( o ) {
 			// applied to all elements before storing in the DB to avoid that any modification affects the elements themselves.
 			// does only work, if none of the property values are references or functions:
 				function clonePr(p) {
@@ -730,7 +730,7 @@ function Server() {
 				// especially the permissions ('upd','del','cre','rea') must be set for the user at that point in time,
 				// 'parent','predecessor','hierarchy' are specified to insert a node, but are not any more necessary once inserted,
 				// 'blob' will be stored as attachment.
-				if( ['upd','del','blob','objectRefs','cre','rea','revision','parent','predecessor','hierarchy'].indexOf(p)>-1 ) 
+				if( ['upd','del','blob','objectRefs','cre','rea','revision','parent','predecessor','hierarchy'].indexOf(p)>-1 )
 					continue;
 				// else
 				if( Array.isArray(o[p]) ) {
@@ -745,13 +745,13 @@ function Server() {
 //			console.debug('clone',o,n);
 			return n
 		}
-		function specifE( ctg, e ) { 
+		function specifE( ctg, e ) {
 			// transform a db element to a SpecIF element:
 //			console.debug('specifE',e);
-			e.id = specifId(e._id); 
-			delete e._id; 
+			e.id = specifId(e._id);
+			delete e._id;
 			e.revision = e._rev;
-			delete e._rev; 
+			delete e._rev;
 			let adm = userProfile.iAmAdmin()
 			e.del = e.upd = adm;
 			switch( ctg ) {
@@ -790,7 +790,7 @@ function Server() {
 			};
 			return e
 		}
-		function specifL( ctg, l ) { 
+		function specifL( ctg, l ) {
 			// transform a db list to a SpecIF list:
 			return forAll( l.rows, function(e) { return specifE( ctg, e.doc ) } )
 		}
@@ -805,7 +805,7 @@ function Server() {
 				function getElements( jqT ) {
 					for( var j=0, J=jqT.length; j<J; j++) {
 						oRefs.push( jqT[j].ref );
-						if(	jqT[j].children.length )  
+						if(	jqT[j].children.length )
 							getElements( jqT[j].children ) // next level, if it exists
 					};
 					return jqT
@@ -817,19 +817,19 @@ function Server() {
 			return oRefs
 		}
 /*		// Assure that the server will not reject the following data for formal reasons:
-		self.validateUserName = function(un) { 
+		self.validateUserName = function(un) {
 //			var re = /^[A-Z0-9ยง$_\-]+$/i;  // including the dash
 			let re = /^[A-Z0-9ยง$_]+$/i;
 			return re.test(un)
 		};
-		self.validatePassword = function(pw) { 
+		self.validatePassword = function(pw) {
 			let re = /^[A-Z0-9*#ยง$_\-]{5,}$/i;  // at least 5 chars
 			return re.test(pw)
 		};
-		self.validateEmail = function(eml) { 
+		self.validateEmail = function(eml) {
 			return !eml || RE.Email.test(eml)  // allowed is no e-mail address or a correct one
 		};
-		self.validateRoleName = function(rn) { 
+		self.validateRoleName = function(rn) {
 			// the roleName must be different from any rolename defined in the server:
 			if( !rn ) return false;
 			rn = rn.toUpperCase();
@@ -838,7 +838,7 @@ function Server() {
 			// the roleName must use only certain characters:
 			var re = /^[A-Z0-9ยง$_\-]+$/i;  // including the dash
 			return re.test(rn)
-		}; 
+		};
 		self.isReservedRoleName = function( rN ) {
 			if( !rN ) return false;
 			return reservedRoleNames.indexOf( rN )>-1;
@@ -846,7 +846,7 @@ function Server() {
 		self.equivalentRoleName = function( rN ) {
 			if( !rN ) return false;
 			var idx = serverReservedRoleNames.indexOf( rN.toUpperCase() );
-			if( idx>-1 ) return reservedRoleNames[idx]; 
+			if( idx>-1 ) return reservedRoleNames[idx];
 			return rN
 		};
 */	return self

@@ -1,11 +1,11 @@
 /* 	CSS for SpecIF Web-Apps.
 	Defines own CSS classes and overrides certain classes of Bootstrap and other libs.
-	Intended to be replaced with a custom file; 
+	Intended to be replaced with a custom file;
 	it is recommended to use a different name and to change path and name in config-XX.js.
 	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
-	
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
+
 	Notes:
 	- #4A8C00 SpecIF dark green
 */
@@ -26,21 +26,21 @@ body {
 	height: 36px;
 	float: right;
 	margin-right: 16px;
-	background-image: url("../logo-navbar.png");
+	background-image: url("../images/logo-navbar-right.png");
 	background-repeat: no-repeat;
 	background-size: 121px;
 }
 #spinner {
 	width: 32px;
 	height: 32px;
-	background-image: url("../spinner-32.gif");
+	background-image: url("../images/spinner-32.gif");
 	background-repeat: no-repeat;
 	float: right;
 	margin: 2px 16px 0 0;
 }
 #message {
- position:fixed; 
- top:8px;	
+ position:fixed;
+ top:8px;
  z-index:990;
 }
 .pageTitle {
@@ -94,7 +94,7 @@ div.contentCtrl {
 	top: 120px;
 	display: inline-block;
     box-sizing: border-box;
-	padding: 8px 30px 0 4px;  
+	padding: 8px 30px 0 4px;
 	width: 100%;
 	z-index: 900;
 }
@@ -128,14 +128,14 @@ div.content {   /* width is 75% with wide screen, 100% otherwise */
     padding: 44px 0 0 4px;
 }
 /* main column for title and description: */
-div.content-main { 
+div.content-main {
 	clear: both;
     width: 100%;
     box-sizing: border-box;
     padding: 0;
 }
 /* selector on the left: */
-div.paneLeft, 
+div.paneLeft,
 /* column on the right for additional properties: */
 div.content-other {
 	display: none;
@@ -144,7 +144,7 @@ div.content-other {
   div.paneLeft {
 	font-size: 90%;
 	display: inline-block;
-	margin-right: -4px;  
+	margin-right: -4px;
 	vertical-align: top;
     width: 25%;
     /* height is set by script */
@@ -162,7 +162,7 @@ div.content-other {
   }
   div.content-main {
 	display: inline-block;
-	margin-right: -4px;  
+	margin-right: -4px;
 	vertical-align: top;
 	width: 67%;
 	padding-right: 8px;
@@ -178,7 +178,7 @@ div.content-other {
 /* div.primaryFilters {
     box-sizing: border-box;
     overflow: auto;
-} 
+}
 #secondaryFilters {
 	font-size: 90%;
 }
@@ -201,7 +201,7 @@ div.pane-details {
 	padding: 8px 2px 2px 2px;
 }
 div.panel-filter {
-	background-color:#f5f5f5; 
+	background-color:#f5f5f5;
     box-sizing: border-box;
 	margin: 0 0 0.4em 0;
 	padding: 0.2em;
@@ -227,7 +227,7 @@ div.attribute-wide {
 /* or use two blocks for label and value: */
 div.attribute-label {
 	display: inline-block;
-	margin-right: -4px;  
+	margin-right: -4px;
 	padding-right: 8px;
 	vertical-align: middle;
     text-align: right;
@@ -239,7 +239,7 @@ div.attribute-label {
 }
 div.attribute-value {
 	display: inline-block;
-	margin-right: -4px;  
+	margin-right: -4px;
 	padding-left: 8px;
 	vertical-align: middle;
 	width: 75%;
@@ -263,13 +263,13 @@ div.attribute td {
 }
 div.forImage { max-width: 960px; margin: 8px 0; }
 div.forImagePreview { max-width: 160px; margin: 4px 0; }
-div.forImage object, 
-div.forImage img, 
-div.forImage svg, 
-div.forImagePreview object, 
+div.forImage object,
+div.forImage img,
+div.forImage svg,
+div.forImagePreview object,
 div.forImagePreview img,
-div.forImagePreview svg { 
-	max-width: 100%; 
+div.forImagePreview svg {
+	max-width: 100%;
 /*	width: auto; */
 	height: auto;
 }
@@ -291,7 +291,7 @@ div.form-active {
 	font-size: 90%;
 	color: #23527c; /* bootstrap brand-primary */
 }
-table.stdInlineWithBorder, 
+table.stdInlineWithBorder,
 table.doors-table {
 	width:100%;
     border: 1px solid #DDDDDD;
@@ -299,8 +299,8 @@ table.doors-table {
 	vertical-align:top;
 	margin: 0;
 }
-table.stdInlineWithBorder th, 
-table.stdInlineWithBorder td, 
+table.stdInlineWithBorder th,
+table.stdInlineWithBorder td,
 table.doors-table th,
 table.doors-table td {
     border: 1px solid #DDDDDD;
@@ -310,7 +310,7 @@ table.doors-table td {
 }
 /*
 th.stdInlineWithBorder,
-td.stdInlineWithBorder, 
+td.stdInlineWithBorder,
 td.doors-table-cell {
     border: 1px solid #DDDDDD;
     margin: 0;
@@ -333,8 +333,8 @@ td.doors-table-cell {
 ul.nav-tabs {
 	font-size: 90%;
 }
-.nav-tabs > li > a { 
-	line-height: 1; 
+.nav-tabs > li > a {
+	line-height: 1;
 }
 .nav > li.disabled,
 .nav > li.disabled > a {
@@ -383,13 +383,13 @@ mark{
 .jqtree-tree .jqtree-title.jqtree-title-folder {
 	display: inline;
 }
-ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler, 
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler,
 ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-title {
 	color: #ffffff;
 }
-ul.jqtree-tree li.jqtree-selected > .jqtree-element, 
+ul.jqtree-tree li.jqtree-selected > .jqtree-element,
 ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
-	background: none; 
+	background: none;
 	background-color: #1690D8;
 	text-shadow: none;
 }
