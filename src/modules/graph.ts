@@ -2,7 +2,7 @@
 	Dependencies: vis-network
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
 */
 function Graph() {
 	"use strict";
@@ -34,7 +34,7 @@ function Graph() {
 		if( !opts.clusterColor ) opts.clusterColor = '#c3daf6';
 		if( !opts.fontFace ) opts.fontFace = 'Arial';
 		if( !opts.fontSize ) opts.fontSize = '14px';
-			
+
 		// All required parameters are available, so we can begin:
 		let relations = collectStatementsByType( specifData.resources[opts.index] );
 //		console.debug('init relations',relations);
@@ -94,7 +94,7 @@ function Graph() {
 
 		let network = new vis.Network(container, data, options);
 		// Collapse/close a 'large' sub-network:
-		// see https://github.com/GfSE/SpecIF-Graph/blob/master/source/js/graph.js
+		// see https://github.com/GfSE/SpecIF-Graph/blob/master/src/modules/graph.js
 		network.getConnectedNodes("0").forEach(function (connectedNode) {
 			let neighbours = network.getConnectedNodes(connectedNode);
 			if (neighbours.length > 5) {
@@ -105,7 +105,7 @@ function Graph() {
 //			console.debug("doubleClick",prms);
 			if (prms.nodes.length === 1) {
 				if( prms.nodes[0] == 0 ) return;  // no action for the node in focus
-				if( !isIE() && 
+				if( !isIE() &&
 					(typeof(opts.onDoubleClick)==="function") &&
 					network.getConnectedNodes(prms.nodes[0]).length === 1 &&
 					!network.clustering.isCluster(prms.nodes[0])) {
@@ -135,11 +135,11 @@ function Graph() {
 											if (clusterPosition.x < 0) offset += Math.PI;
 											dist = 160;
 										}
-									} 
+									}
 									else {
 										newPositions[id] = calculateNodePosition(
 											i,
-											Math.sqrt(2)*Math.PI, 
+											Math.sqrt(2)*Math.PI,
 											length,
 											clusterPosition,
 											dist,
@@ -152,7 +152,7 @@ function Graph() {
 						}
 					};
 					network.clustering.openCluster(prms.nodes[0], releaseOptions)
-				} 
+				}
 				else {
 					closeCluster(prms.nodes[0], network);
 				}
@@ -192,7 +192,7 @@ function Graph() {
         function wrap( str, maxLen ) {
             if ( str.length<maxLen+1 ) return str;
 			// separate title into single words:
-			let words = str.match(/[^-\s]+[-\s]{0,}/g),  // don't like '*/', even if it is correct and working 
+			let words = str.match(/[^-\s]+[-\s]{0,}/g),  // don't like '*/', even if it is correct and working
 				newLine = '\n',
 				lineLength = 0,
 				part = '',
@@ -243,8 +243,8 @@ function Graph() {
 			if (!dist) dist = 200;
 			let r = dist;
 			// alternate distance of neighboring nodes:
-			r = (i%2 === 1)? (r/1.2):(r*1.2);	
-			
+			r = (i%2 === 1)? (r/1.2):(r*1.2);
+
 			let segment = sector/count;
 			let alpha = offset - sector/2 + segment*i + segment/2;
 			pos.x = parentPos.x + r * Math.cos(alpha);
@@ -303,7 +303,7 @@ function Graph() {
 				children.forEach(function (child) {
 					let childPos = calculateNodePosition(
 						childID,
-						Math.sqrt(2)*Math.PI, 
+						Math.sqrt(2)*Math.PI,
 						children.length,
 						pos,
 						160,
@@ -507,7 +507,7 @@ function Graph() {
 				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 				oid = st.object.id || st.object;
 				sid = st.subject.id || st.subject;
-				
+
 				if ( sid === res.id || oid === res.id) {
 					// all statements having the same title are clustered:
 					cid = getStatementTitle(st);

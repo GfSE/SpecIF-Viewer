@@ -2,7 +2,7 @@
 	Dependencies: jQuery, jqTree, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution!          
 */
 
@@ -1638,7 +1638,7 @@ function propertyValueOf( prp, opts ) {
 	*/
 	}
 }
-function File() {
+fileRef = new function() {
 	"use strict";
 	var self = this;
 
@@ -2301,4 +2301,3 @@ function File() {
 */	};
 	return self
 };	// end of File()
-fileRef = new File();

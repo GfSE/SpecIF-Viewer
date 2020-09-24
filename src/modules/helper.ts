@@ -3,7 +3,7 @@
 	Dependencies: jQuery 3.0, bootstrap 3.
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution!     
 
  	Attention: 

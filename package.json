@@ -2,12 +2,22 @@
   "name": "specif-viewer",
   "version": "0.98.10",
   "description": "An app for your web-browser to view, edit* and transform system specifications.",
-  "main": "view.html",
+  "main": "src/views/view.html",
   "scripts": {
-    "build": "tsc",
+    "test": "jest --coverage",
+
     "clean": "rm -rf coverage build",
-    "start": "",
-    "test": "jest --coverage"
+    "build": "(tsc && npm run _postbuild) || npm run _postbuild",
+
+    "start": "node start.js",
+    "open_browser_macos": "open ./build/views/view.html || echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
+    "open_browser_linux": "xdg-open ./build/views/view.html || echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
+    "open_browser_win": "explorer './build/views/view.html' || echo 'Could not open default browser. Please open ./build/view.html manually.'",
+
+    "_postbuild": "npm run _copy_assets_folder & npm run _copy_config_folder & npm run _copy_views_folder",
+    "_copy_assets_folder": "mkdir ./build/vendor/ & mkdir ./build/vendor/assets/ & cp -R ./src/vendor/assets ./build/vendor/",
+    "_copy_config_folder": "mkdir ./build/config/ & cp -R ./src/config/*/**.json ./build/config/locales/",
+    "_copy_views_folder": "mkdir ./build/views/ & cp -R ./src/views/* ./build/views/"
   },
   "repository": {
     "type": "git",

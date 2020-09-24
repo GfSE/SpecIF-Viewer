@@ -1,10 +1,10 @@
 ///////////////////////////////
 /*	Helper functions for Marco Braak's jqTree (https://mbraak.github.io/jqTree/)
-	Dependencies: jQuery 2.1 and later.
+	Dependencies: jQuery 3.1 and later.
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	License and terms of use: MIT license (http://opensource.org/licenses/MIT)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution!
 */
 // a constructor for the tree object:
 function Tree( options ) {

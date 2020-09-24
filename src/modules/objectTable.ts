@@ -2,7 +2,7 @@
 	Dependencies: jQuery, http://https://datatables.net/
 	(C)copyright 2010-2017 enso managers gmbh (http://www.enso-managers.com)
 	Author: se@enso-managers.com, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
 */
 
 function ObjectTable() {
@@ -15,8 +15,8 @@ function ObjectTable() {
 	function allCols() {
 
 		let cols = [
-			{ /*"title": i18n.LblOrder,*/ "data": "order", "type":"hierarchical", "defaultContent": "" },   
-			{ "title": i18n.LblTitle+' / '+i18n.LblDescription, "data": "titleAndDescr", "type":"title", "defaultContent": "" } 
+			{ /*"title": i18n.LblOrder,*/ "data": "order", "type":"hierarchical", "defaultContent": "" },
+			{ "title": i18n.LblTitle+' / '+i18n.LblDescription, "data": "titleAndDescr", "type":"title", "defaultContent": "" }
 			// types 'hierarchical' and 'title' are self-defined datatypes with respective sorting routines.
 		];
 		// Add columns for all attributes of all spec-object-types:
@@ -30,11 +30,11 @@ function ObjectTable() {
 				// only for attributes which are not a title or a description (already contained in column "titleAndDescr")
 				// .. and only if it is a new column (there isn't any with the same name, yet):
 				// ToDo: Exclude only the first title attribute, the active one.
-				if( CONFIG.titleProperties.indexOf( ln )<0   
-					&& CONFIG.descProperties.indexOf( ln )<0 
+				if( CONFIG.titleProperties.indexOf( ln )<0
+					&& CONFIG.descProperties.indexOf( ln )<0
 					&& indexBy(cols, 'data', ln.toJsId() )<0 ) {
 //						console.debug( s, a, ti );
-						cols.push({ 
+						cols.push({
 							title: ti,
 							data: ln.toJsId(),
 							visible: false,    // set true, if there is content in at least one row
@@ -66,7 +66,7 @@ function ObjectTable() {
 //		if( $.isFunction(cb) ) returnView = cb;   // callback
 
 		let css = document.createElement('style');
-		css.innerHTML = 
+		css.innerHTML =
 			// reduce the size of the diagrams in this view:
 			'#objectTable div.forImage object, #objectTable div.forImage img { max-width: 160px }\n'
 			// override dataTables.css:
@@ -79,7 +79,7 @@ function ObjectTable() {
 			+ '.dataTables_wrapper .dataTables_paginate '
 			+ 		'{ font-size: 90%; color: #23527c; }\n' /* bootstrap brand-primary */
 			+ '.dataTables_wrapper .dataTables_paginate .paginate_button '
-			+		'{ padding: 0.2em 1em; color: #23527c; }\n' 
+			+		'{ padding: 0.2em 1em; color: #23527c; }\n'
 			+ '.dataTables_wrapper .dataTables_info '
 			+		'{ padding-top: 0.5em; }\n';
 			/*  div.dt-buttons { float: left; margin-right: 0.8em;}*/
@@ -117,7 +117,7 @@ function ObjectTable() {
 		self.clear();
 		stdError(xhr,specs.returnToCaller)
 	}
-		
+
 	self.show = function() {
 //		console.debug( 'Entering showTable' );
 		if( myProject==null || myProject.selectedSpec==null ) return false;
@@ -130,7 +130,7 @@ function ObjectTable() {
 		projects.busy.set( true );
 
 		// It is assumed that the cache is full upon entry.
-/*		if( !myProject.selectedSpec.objectsLoaded || myProject.loading() ) { 
+/*		if( !myProject.selectedSpec.objectsLoaded || myProject.loading() ) {
 			setTimeout(function() {self.show()}, 200);  // retry later
 			console.debug( CONFIG.objectTable, {status: 10, statusText: 'Still loading, retry in 100 ms.'});
 			return // skip operation for now
@@ -144,7 +144,7 @@ function ObjectTable() {
 							order: oR.order,    // in table view multiple occurrences of the same object have their own instance with their respective order numbers.
 							titleAndDescr: ''
 						};
-						
+
 						let clAtts = classifyProps(rsp),
 							att=null;
 //						console.debug('clAtts',rsp,clAtts);
@@ -152,7 +152,7 @@ function ObjectTable() {
 						// This happens regularly in DOORS/Exerpt exports.
 						if( clAtts.title ) {
 							if( clAtts.specType.isHeading )
-								obj.titleAndDescr = '<div class="chapterTitle">'+clAtts.title+'</div>' 
+								obj.titleAndDescr = '<div class="chapterTitle">'+clAtts.title+'</div>'
 							else
 								obj.titleAndDescr = '<div class="objectTitle">'+(CONFIG.addIconToInstance?clAtts.title.addIcon( clAtts.specType.icon ):clAtts.title)+'</div>'
 						};
@@ -161,18 +161,18 @@ function ObjectTable() {
 							att = clAtts.descriptions[d];
 							obj.titleAndDescr += contentOf( clAtts, att )
 						};
-						
+
 						var col= null;
 						for( var a=0,A=clAtts.other.length; a<A; a++ ) {
 							att = clAtts.other[a];
 							// take the attribute title to relate the data to the column:
-							col = att.longName.toJsId();  
+							col = att.longName.toJsId();
 							obj[col] = contentOf( clAtts, att );
 							// add column, if it is new and has a value:
-							if( hasContent(att) && visCols.indexOf( col )<0 ) 
+							if( hasContent(att) && visCols.indexOf( col )<0 )
 								visCols.push( col )
 						};
-						
+
 //						console.debug( 'dtable.row.add', obj, visCols );
 						// add a row per object:
 						self.dtable.row.add( obj );
@@ -195,7 +195,7 @@ function ObjectTable() {
 				return true  // continue iterating
 			}
 		);
-		
+
 		let pend=oRefs.length;
 		if( pend<1 ) {
 			self.dtable.rows().invalidate().draw();
@@ -215,9 +215,9 @@ function ObjectTable() {
 	};
 */
 	function initTable() {
-		let langF = "./i18n/datatables-en.i18n.json";
-		if( browser.language == 'de' ) langF = "./i18n/datatables-de.i18n.json";
-		if( browser.language == 'fr' ) langF = "./i18n/datatables-fr.i18n.json";
+		let langF = "./config/locales/datatables-en.i18n.json";
+		if( browser.language == 'de' ) langF = "./config/locales/datatables-de.i18n.json";
+		if( browser.language == 'fr' ) langF = "./config/locales/datatables-fr.i18n.json";
 
 		jQuery.extend( jQuery.fn.dataTableExt.oSort, {
 			// the sorting routines for the hierarchical chapter ordering (type 'hierarchical'):
@@ -257,7 +257,7 @@ function ObjectTable() {
 				return ((a < b) ? 1 : ((a > b) ? -1 : 0))
 			}
 		} );
-		
+
 		// set table options and get the instance:
 		var table = $('#objectTable').DataTable( {
 /*			// First trials with csv export went fine, but it still needs to be explored how to control the separator used (',' vs. ';' vs. tab).
@@ -269,7 +269,7 @@ function ObjectTable() {
 				{ extend: 'excelHtml5', text: '&#8599;&#160;Excel' },
 //				'pdfHtml5',
 				{ extend: 'csvHtml5', text: '&#8599;&#160;CSV' }
-			],		
+			],
 */			lengthMenu: [ [ -1, 100, 30, 10 ], [ i18n.LblAll, 100, 30, 10 ] ],
 			language: { "url": langF },
 			columns: self.columns,
@@ -285,13 +285,13 @@ function ObjectTable() {
 			let data = table.row( this ).data();
 //			console.debug( 'cl', data );
 			// a row has been clicked: show the detail view of the object.
-			specs.showTab( CONFIG.objectDetails );  
-			specs.selectNodeByRef( data.id )	
+			specs.showTab( CONFIG.objectDetails );
+			specs.selectNodeByRef( data.id )
 			// changing the tree node triggers an event, by which the display is refreshed
 		});
 		return table
 	};
-		
+
 	return self
 };
 var objectTable = new ObjectTable();

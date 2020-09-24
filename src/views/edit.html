@@ -2,7 +2,8 @@
 <html>
 <head>
 	<title>SpecIF Edit</title>
-	<link rel="icon" type="image/png" href="favicon.ico" />
+	<link rel="shortcut icon" href="../vendor/assets/icons/favicon.ico" type="image/x-icon">
+	<link rel="icon" href="../vendor/assets/icons/favicon.ico" type="image/x-icon">
 	<meta charset="utf-8" />
 	<meta http-equiv="expires" content="0" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -51,12 +52,12 @@ app = new function() {
 		});
 		// Define the module hierarchy; it will be used to load the modules and to control the views later on:
 		let define = {
-			// Define 
+			// Define
 			// - name: the modules to load as specified in 'modules.js'
-			// - loadAs: name for execution (addressable javascript object) 
+			// - loadAs: name for execution (addressable javascript object)
 			// - the hierarchy of views using implicit actions hide/show or refresh
 			// - the explicit actions independent of any view
-			
+
 			// Let's start at the top level:
 			// no name, thus no additional script file will be loaded at top level
 			view: '#app',
@@ -178,24 +179,24 @@ app = new function() {
 		// Warn before leaving the page (back button, or outgoinglink):
 		window.onbeforeunload = function() {
 		   return "You are about to leave this application - did you save any changes you made?";
-		};		
+		};
 
-		// Make sure page divs are resized, if the browser window is changed in size: 
+		// Make sure page divs are resized, if the browser window is changed in size:
 		bindResizer();
-		
+
 		modules.load( define, {done: function() { self.show() }} );
 		console.info( self.label+" started!" )
 	};
 	self.show = function() {
 		self.me.read()
-		.then( 
+		.then(
 			function() {
 				var uP = getUrlParams(), v;
-				if( !self.cache.selectedProject 
-					|| !self.cache.selectedProject.loaded() 
-					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=self.cache.selectedProject.data.id 
+				if( !self.cache.selectedProject
+					|| !self.cache.selectedProject.loaded()
+					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=self.cache.selectedProject.data.id
 					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
-					// - no project is loaded 
+					// - no project is loaded
 					// - a project id is found in the URL parameters and it differs from the one of the loaded project
 					// - an URL parameter 'import' has been found:
 					v = '#import'
@@ -218,7 +219,7 @@ app = new function() {
 	self.logout = function() {
 		self.me.logout();
 		self.hide()
-	}; 
+	};
 	self.hide = function() {
 		// hide the app and show the login dialog:
 		// ToDo
@@ -229,20 +230,20 @@ app = new function() {
 		// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
 		function getScript(url) {
 			var el = document.createElement('script');
-			el.onload = function() { 
-							if( --pend<1 ) 
-								modules.init( self.init, function(xhr) { alert( xhr.statusText ) } ) 
+			el.onload = function() {
+							if( --pend<1 )
+								modules.init( self.init, function(xhr) { alert( xhr.statusText ) } )
 						};
 			el.src = url;
 			document.body.appendChild(el)
 		}
 	let pend=2;
 	getScript( 'https://code.jquery.com/jquery-3.5.1.min.js' );
-	getScript( './'+self.productVersion+'/modules.js' )
+	getScript( '../app.module.js' )
 
 	return self
 };
 
-</script>  
+</script>
 </body>
 </html>

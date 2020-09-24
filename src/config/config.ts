@@ -5,10 +5,10 @@
 		all minor versions j.n.p of this library work with all ReqIF Server minor versions j.n.q
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
 */
 const CONFIG = {};
-	CONFIG.imgURL = './'+app.productVersion+'/images';
+	CONFIG.imgURL = './'+app.productVersion+'./../vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
@@ -43,13 +43,13 @@ const CONFIG = {};
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
-	
+
 	// values for boolean 'true' and 'false':
 	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];
 	CONFIG.valuesFalse = ['false','no','falsch','nein','faux','non','0'];
 
 	// The indices of ..Extensions and ..Types must correspond!
-	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png 
+	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
 //	CONFIG.rasterImgExtensions = [ 'png', 'jpg', 'gif', 'jpeg' ];
@@ -66,8 +66,8 @@ const CONFIG = {};
 	CONFIG.keyImport = 'import';
 	CONFIG.keyMode = 'mode';
 	CONFIG.keyProject = 'project';	// projectId
-	CONFIG.keyItem = 'item';	
-	CONFIG.keyNode = 'node';	
+	CONFIG.keyItem = 'item';
+	CONFIG.keyNode = 'node';
 	CONFIG.keyView = 'view';	// dialog
 	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyMode,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
 
@@ -85,7 +85,7 @@ const CONFIG = {};
 	CONFIG.folders = 'folders';
 	// Specifications:
 	CONFIG.objectTable = 'table';
-	CONFIG.objectList = 'doc';  
+	CONFIG.objectList = 'doc';
 	CONFIG.objectFilter = 'filter';
 	CONFIG.resourceEdit = 'edit';
 	CONFIG.resourceLink = 'link';
@@ -153,15 +153,15 @@ const CONFIG = {};
 	CONFIG.resClassOutline = 'SpecIF:Outline';
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
 	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
-	CONFIG.resClassFolder = 'SpecIF:Heading';   
+	CONFIG.resClassFolder = 'SpecIF:Heading';
 	CONFIG.resClassParagraph = "SpecIF:Paragraph";
-	CONFIG.resClassComment = 'SpecIF:Comment';   
-//	CONFIG.resClassIssue = 'SpecIF:Issue';   	
-	CONFIG.staClassShows = 'SpecIF:shows';	
-//	CONFIG.staClassRefersTo = 'SpecIF:refersTo';	
-	CONFIG.staClassCommentRefersTo = 'SpecIF:commentRefersTo';	
-//	CONFIG.staClassIssueRefersTo = 'SpecIF:issueRefersTo';	
-	CONFIG.staClassMentions = 'SpecIF:mentions';	
+	CONFIG.resClassComment = 'SpecIF:Comment';
+//	CONFIG.resClassIssue = 'SpecIF:Issue';
+	CONFIG.staClassShows = 'SpecIF:shows';
+//	CONFIG.staClassRefersTo = 'SpecIF:refersTo';
+	CONFIG.staClassCommentRefersTo = 'SpecIF:commentRefersTo';
+//	CONFIG.staClassIssueRefersTo = 'SpecIF:issueRefersTo';
+	CONFIG.staClassMentions = 'SpecIF:mentions';
 
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement in various tabs
@@ -173,7 +173,7 @@ const CONFIG = {};
 		'dcterms:identifier',
 		'DC.identifier',
 		'ReqIF.ForeignID',
-		// RIF 1.1a Atego Exerpt:	
+		// RIF 1.1a Atego Exerpt:
 		'Object Identifier',
 		'VALUE-Object Identifier',
 		'id',
@@ -181,7 +181,7 @@ const CONFIG = {};
 		'Identifier'
 	];
 
-	// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list, 
+	// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
 	// it is considered a heading (chapter title) and will be included in the outline numbering.
 	// Also, this property will be used for the title when displaying the resource.
 	CONFIG.headingProperties = [
@@ -197,12 +197,12 @@ const CONFIG = {};
 		'Heading.fr',
 		'Heading.es', */
 		// Other:
-		'Überschrift'
+		'ï¿½berschrift'
 	];
 
 	// The content of the property with a title in this list will be used for the title when displaying the resource:
 	// The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
-	// For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name', 
+	// For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name',
 	// the value of the latter will be the title of the resource.
 	CONFIG.titleProperties = [
 		// Dublin core:
@@ -213,12 +213,12 @@ const CONFIG = {};
 		// DocBridge Resource Director:
 		'DBRD.Name',
 /*		// ARCWAY Cockpit Copilot:
-		'Objektüberschrift',
+		'Objektï¿½berschrift',
 		'Name',
 		// carhs SafetyWissen:
 		'carhs.Title.en',
 		'carhs.Title.de',  */
-		// RIF 1.1a Atego Exerpt:	
+		// RIF 1.1a Atego Exerpt:
 		'Object Heading',
 //		'VALUE-Object Heading',   // 'VALUE-' is now removed right at the beginning
 /*		// Glossary:
@@ -257,7 +257,7 @@ const CONFIG = {};
 		'carhs.Text.de',
 		'carhs.Image',
 		'Dokument',
-*/		// RIF 1.1a Atego Exerpt:	
+*/		// RIF 1.1a Atego Exerpt:
 		'Object Text',
 //		'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning
 		// Glossary:
@@ -276,7 +276,7 @@ const CONFIG = {};
 		'UML:Stereotype'
 	];
 
-	// A list of properties to suppress generally, specified by title.  
+	// A list of properties to suppress generally, specified by title.
 	// Applies to propertyClasses and property values (types and instances).
 	// Properties with a title corresponding to the list entries are hidden,
 	// You must enter the title used by SpecIF (after translation):
@@ -302,7 +302,7 @@ const CONFIG = {};
 	CONFIG.hiddenStatements = [
 		CONFIG.staClassCommentRefersTo
 	];
-	
+
 	// A list of classes which are excluded from the class filtering, specified by title:
 	// All types for resources which are not referenced in the tree should be listed, here.
 	// Only resources which are referenced in a hierarchy (tree) are included in the filter process.
@@ -326,13 +326,13 @@ const CONFIG = {};
 		'BPMN:intermediateCatchEvent',
 		'BPMN:callActivity'
 	];
-	
+
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
 /*	// A list of SVG diagram class names. SVGs having a root element with this class will be subject to diagram level events:
 	CONFIG.clickDiagramClasses = [
 		'diagram'
 	];
-*/	
+*/
 	// A list of SVG element class names. A click handler will be attached to all SVG elements having a class in the list:
 	CONFIG.clickElementClasses = [
 		'clickEl',
@@ -350,7 +350,7 @@ const CONFIG = {};
 		CONFIG.resClassFolder
 	];
 	// A list with all model-element types by title,
-	// is used for example to build a glossary; 
+	// is used for example to build a glossary;
 	// it is expected that a plural of any list element exists ( element+'s' ):
 	CONFIG.modelElementClasses = [
 		'FMC:Actor',
@@ -378,7 +378,7 @@ const CONFIG = {};
 	// ToDo: Very similar purpose as the vocabulary translation below.
 	CONFIG.eqivalentTypes = [
 	];  */
-	
+
 const vocabulary = {
 // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
 	property: {
@@ -392,7 +392,7 @@ const vocabulary = {
 				case "titel":
 				case "dc_title":
 				case "specif_heading":			//  'SpecIF:Heading' may be used falsely as property title
-				case "reqif_chaptername": 	
+				case "reqif_chaptername":
 				case "reqif_name": 					oT = "dcterms:title"; break;
 				case "description":
 				case "beschreibung":
@@ -408,10 +408,10 @@ const vocabulary = {
 				case "specif_notation":				oT = "dcterms:type"; break;
 				case 'specif_id':				// deprecated, for compatibility
 				case "reqif_foreignid":				oT = "dcterms:identifier"; break;
-				case "specif_state":			// deprecated, for compatibility			
+				case "specif_state":			// deprecated, for compatibility
 				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
 				case "dc_author":
-				case "dcterms_author":			// deprecated, for compatibility		
+				case "dcterms_author":			// deprecated, for compatibility
 				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
 				case "specif_createdat":			oT = "dcterms:modified"; break;
 	//			case "reqif_foreignmodifiedby":		oT = ""; break;
@@ -434,10 +434,10 @@ const vocabulary = {
 				case "dcterms_description": 		oT = "ReqIF.Text"; break;
 				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
 				case "specif_heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
-				case "specif_category":				
+				case "specif_category":
 				case "dcterms_type":				oT = "ReqIF.Category"; break;
 				case "specif_revision":				oT = "ReqIF.Revision"; break;
-				case "specif_state":			// deprecated, for compatibility			
+				case "specif_state":			// deprecated, for compatibility
 				case "specif_status":				oT = "ReqIF.ForeignState"; break;
 				case "dcterms_author":			// deprecated, for compatibility
 				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
@@ -456,15 +456,15 @@ const vocabulary = {
 			switch( iT.toSpecifId().toLowerCase() ) {
 				case 'actors':
 				case 'actor':
-				case 'akteure':	
+				case 'akteure':
 				case 'akteur':						oT = "FMC:Actor"; break;
 				case 'states':
 				case 'state':
-				case 'zustände':
+				case 'zustï¿½nde':
 				case 'zustand':						oT = "FMC:State"; break;
 				case 'events':
 				case 'event':
-				case 'ereignisse':	
+				case 'ereignisse':
 				case 'ereignis':					oT = "FMC:Event"; break;
 				case 'anforderungen':
 				case 'anforderung':
@@ -496,28 +496,28 @@ const vocabulary = {
 };
 
 /////////////////////////////////////////////////
-// Regular expressions:	
+// Regular expressions:
 const RE = {};
 	RE.Id = /^[_a-zA-Z]{1}[_a-zA-Z0-9.-]*$/;	// compliant with ReqIF and SpecIF
 //	RE.Email = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
 //	RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
 	RE.Email = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
-	
+
 	// Reliably recognize an URI, not validate an URI:
 	// text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
 	RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]*?)*(\?[^\s#]+?)?(#\S+?)?)(\.\s|:\s|\s|\.<|:<|<|\.$|:$|$)/g;
 //             $1: Begins with start of text or space or tag end
 //                     $2: complete link
 //                      $3: "http(s)://" or "www."
-//                                         $4: 0..n subdomains  
+//                                         $4: 0..n subdomains
 //                                                           $5: domain.tld
 //                                                                                     $6: 0..n subdirectories with or without trailing '/'
 //                                                                                                    $7: 0..1 query string
 //                                                                                                                 $8: 0..1 fragment=page anchor (hash)
 //                                                                                                                          $9: ends with space or .space or .end or end
-	
-	const 	chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // ÄäÖöÜüß
-			chars_fr = '\u00c0\u00e0\u00c2\u00e2\u00c7\u00e7\u00c8\u00e8\u00c9\u00e9\u00ca\u00ea\u00d4\u00f4\u00d9\u00f9\u00db\u00fb\u00cb\u00eb'; // ÀàÂâÇçÈèÉéÊêÔôÙùÛûËë
+
+	const 	chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			chars_fr = '\u00c0\u00e0\u00c2\u00e2\u00c7\u00e7\u00c8\u00e8\u00c9\u00e9\u00ca\u00ea\u00d4\u00f4\u00d9\u00f9\u00db\u00fb\u00cb\u00eb'; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	const	chars_icon = "&#[0-9]{1,5};|&#x[0-9]{1,4};|&[a-zA-Z]{1,6};|[^0-9a-zA-Z"+chars_de+chars_fr+"&\"'\\s\\\\/]{1,6}";
 	//                HTML-encoded chars ...
 	//                                               OR all except alphanumerical characters (allowing not-escaped unicode chars)
@@ -526,7 +526,7 @@ const RE = {};
 	RE.Icon = new RegExp( '^(&#[0-9]{1,5};|&#x[0-9]{1,4};|&[a-zA-Z]{1,6};|[@$%#*_\u007B\u20AC\u00A3\u00A5\u00A7]{1,1}[0-9a-zA-Z@$%#*_\u007D\u20AC\u00A3\u00A5\u00A7]{0,6})$', '');
 
 	// Various datatypes:
-	RE.IsoDate = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;	
+	RE.IsoDate = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;
 	// see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
 	// /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
@@ -534,8 +534,8 @@ const RE = {};
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
 		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' )
 	};
-//	RE.CSV = /^[\s\-,_#&$§0-9a-zA-Z]+$/;   // works!
-	RE.CSV = new RegExp( '^[\\s\\-,_#&$§0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values	
+//	RE.CSV = /^[\s\-,_#&$ï¿½0-9a-zA-Z]+$/;   // works!
+	RE.CSV = new RegExp( '^[\\s\\-,_#&$ï¿½0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values
 
 // Regexes to identify XHTML tags for objects and links:
 // a) Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
@@ -545,8 +545,8 @@ const RE = {};
 //				<object data=\"OLE_AB_4b448d054fad33a1_23_2100028c0d_28000001c9__2bb521e3-8a8c-484d-988a-62f532b73612_OBJECTTEXT_0.png\" type=\"image/png\">OLE Object</object>
 //			</object>
 //		Sample data from ReX:
-//			<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.ole\" type=\"application/oleobject\">\n   
-//				<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.png\" type=\"image/png\">OLE Object</object>\n 
+//			<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.ole\" type=\"application/oleobject\">\n
+//				<object data=\"Tabelle mit WordPics_Partner1/4_Object_Text_0.png\" type=\"image/png\">OLE Object</object>\n
 //			</object>
 //		Sample from ProSTEP ReqIF Implementation Guide:
 //			<xhtml:object data="files/powerpoint.rtf" height="96" type="application/rtf" width="96">

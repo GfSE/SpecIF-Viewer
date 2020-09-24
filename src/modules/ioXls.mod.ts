@@ -34,19 +34,20 @@ modules.construct({
 			return
 		};
 //		console.debug( 'file', f );
+
+		// Remember the file modification date:
 		if( f.lastModified ) {
 			fDate = new Date(f.lastModified).toISOString();
-//			console.debug( 'file.lastModified', fDate )
-			return f
+		} else {
+			if( f.lastModifiedDate )
+				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
+				fDate = new Date(f.lastModifiedDate).toISOString()
+			else
+				// Take the actual date as a final fall back.
+				// Date() must get *no* parameter here; 
+				// an undefined value causes an error and a null value brings the UNIX start date:
+				fDate = new Date().toISOString()
 		};
-		if( f.lastModifiedDate ) {
-			// this is deprecated, but at the time of coding, Edge does not support the above, yet:
-			fDate = new Date(f.lastModifiedDate).toISOString();
-//			console.debug( 'file.lastModifiedDate', fDate )
-			return f
-		};
-		// take the actual date as a final fall back
-		fDate = new Date().toISOString();
 //		console.debug( 'file', f, fDate );
 		return f
 	};
@@ -74,13 +75,6 @@ function xslx2specif( buf, pN, chAt ) {
 
 		function BaseTypes() {
 			this.dataTypes = [{
-			  id: "DT-Text",
-			  title: "Plain Text",  // dataType for XLS columns with text content
-			  description: "A text string",
-			  maxLength: CONFIG.maxStringLength,
-			  type: "xs:string",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-		/*	},{
 			  id: "DT-ShortString",
 			  title: "String["+CONFIG.textThreshold+"]",
 			  description: "String with max. length "+CONFIG.textThreshold,
@@ -88,6 +82,13 @@ function xslx2specif( buf, pN, chAt ) {
 			  maxLength: CONFIG.textThreshold,
 			  changedAt: "2016-05-26T08:59:00+02:00"
 			},{
+			  id: "DT-Text",
+			  title: "Plain Text",  // dataType for XLS columns with text content
+			  description: "A text string",
+			  maxLength: CONFIG.maxStringLength,
+			  type: "xs:string",
+			  changedAt: "2016-05-26T08:59:00+02:00"
+		/*	},{
 			  id: "DT-FormattedText",
 			  title: "Formatted Text",
 			  description: "XHTML formatted text.",
@@ -198,7 +199,7 @@ function xslx2specif( buf, pN, chAt ) {
 				return colName(coord.col)+coord.row
 			}  */
 			function isDateTime( cell ) {
-//				console.debug('cell:',cell);
+//				console.debug('isDateTime:',cell);
 				return cell && cell.t=='d' 
 			}
 			function isNumber( cell ) {
@@ -211,12 +212,13 @@ function xslx2specif( buf, pN, chAt ) {
 				return isNumber( cell ) && !Number.isInteger( parseFloat(cell.v) )
 			}
 			function isBool( cell ) {
-				return cell && (cell.v.isTrue() || cell.v.isFalse() || cell.t=='b')
+//				console.debug('isBool',cell);
+				return cell && ( cell.t=='b' || typeof(cell.v)=='string' && ( cell.v.isTrue() || cell.v.isFalse() ) )
 			}
-	/*		function isStr( cell ) {
+			function isStr( cell ) {
 				return cell && cell.t=='s'
 			}
-			function isXHTML( cell ) {
+		/*	function isXHTML( cell ) {
 				return cell && cell.t=='s' && ....
 			}  */			
 			function titleFromProps( obj ) {
@@ -232,6 +234,7 @@ function xslx2specif( buf, pN, chAt ) {
 						};
 						return -1
 					}
+//				console.debug( 'titleFromProps', obj );
 				// get the title from the properties:
 				if( obj.properties ) {
 					// 1. look for a property serving as title:
@@ -253,23 +256,26 @@ function xslx2specif( buf, pN, chAt ) {
 			function createFld( sh ) {
 				if( sh.lastCell.row-sh.firstCell.row<1 ) return;   // skip, if there are no resources
 
-					function getVal( dT, cell ) {
-						// malicious content will be removed upon import.
-						if( !cell ) return '';
-//						console.debug( 'getVal', cell, dT );
-						switch( dT ) {
-							case 'xs:dateTime': return cell.v.toISOString();
-							case 'xs:integer':
-							case 'xs:double':	return cell.v.toString();
-							case 'xs:string':
-							case 'xhtml':		return cell.v;
-							// we have found earlier that it is a valid boolean, so all values not beeing true are false:
-							case 'xs:boolean':	return cell.v.isTrue().toString()  
-						};
-						return ''
-					}
-					function createR( ws, l ) {
+					function createR( ws, row ) {
 						// create a resource:
+
+							function getVal( dT, cell ) {
+								// malicious content will be removed upon import.
+								if( !cell || !cell.v ) return '';
+		//						console.debug( 'getVal', cell, dT );
+								switch( dT ) {
+									case 'xs:dateTime': return cell.v.toISOString();
+									case 'xs:integer':
+									case 'xs:double':	return cell.v.toString();
+									case 'xs:string':
+									case 'xhtml':		return cell.v;
+									// we have found earlier that it is a valid boolean, 
+									// so all values not beeing true are false:
+									case 'xs:boolean':	return cell.v.isTrue().toString()  
+								};
+								return ''
+							}
+
 						var res = {
 								// id will be set later on using the visibleId, if provided.
 								// title will be set according to the properties, later on.
@@ -277,11 +283,12 @@ function xslx2specif( buf, pN, chAt ) {
 								properties: [],
 								changedAt: chAt
 							};
-						let c, C, cell, rC, pC, dT, id, stL=[], ti, obL, oInner;
-						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {		// an attribute per column ...
-							cell = ws.data[colName(c)+l];
-//							console.debug('createR',c,colName(c)+l,cell);
-							if( cell ) {											// ... if it has content
+
+						let c, C, cell, val, rC, pC, dT, id, stL=[], ti, obL, oInner;
+						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {	// an attribute per column ...
+							cell = ws.data[colName(c)+row];
+//							console.debug('createR',c,colName(c)+row,cell);
+							if( cell && cell.v ) {									// ... if it has content
 								rC = itemById( specif.resourceClasses, resClassId(ws.resClassName) );
 								pC = itemById( specif.propertyClasses, propClassId(ws.name+c) );
 								
@@ -290,17 +297,22 @@ function xslx2specif( buf, pN, chAt ) {
 									// it is a property:
 //									console.debug('createR - property',pC);
 									dT = itemById(specif.dataTypes,pC.dataType);
+									val = getVal( dT.type, cell );
 
 									// Find the value to be taken as resource identifier.
 									// id is the first identifier found as declared in CONFIG.idProperties;
 									// the first id value found will prevail:
-									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = getVal( dT.type, cell );
+									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = val;
 									// ToDo: Consider to select the id property beforehand and not over and over again for every resource/row.
 
+									if( dT.maxLength && dT.maxLength < val.length ) {
+										val = val.slice(0,dT.maxLength);
+										console.warn('Text of cell '+colName(c)+row+' on sheet '+sh.name+' has been truncated because it is too long')
+									};
 									res.properties.push({
 										title: pC.title,	// needed for titleFromProps()
 										class: pC.id,
-										value: getVal( dT.type, cell )
+										value: val
 									})
 								} else {
 									// it is a statement:
@@ -340,7 +352,7 @@ function xslx2specif( buf, pN, chAt ) {
 							// Build an id from the worksheet-name plus the value of the declared id attribute
 							// or generate a new id, otherwise.
 							// An id is needed to recognize the resource when updating.
-							// So, if a resource has no id attribute, it gets a new id 
+							// So, if a resource has no id attribute, it gets a new id on every import
 							// and consequently a new resource will be created instead of updating the existing.
 							if( id ) {
 								// An id has been specified
@@ -409,11 +421,11 @@ function xslx2specif( buf, pN, chAt ) {
 				specif.hierarchies[0].nodes.push( hTree )
 			}
 
-			function addPropClasses( ws, pCL ) { 
-				// build a list of propertyClasses for the given worksheet; default type is "TEXT";
+			function getPropClasses( ws, pCL ) { 
+				// build a list of propertyClasses for the given worksheet;
 				// a complete propertyClass is added to pCL per column which is not titled with a statement title
 				// and a corresponding list of propertyClass ids is returned for the resourceClass.
-				var pCIdL=[], // list of propertyClass ids found on this worksheet
+				var pCs=[], // list of propertyClass ids found on this worksheet
 					vL,pC;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
 					vL=[];
@@ -421,31 +433,25 @@ function xslx2specif( buf, pN, chAt ) {
 					for( var r=ws.firstCell.row,R=ws.lastCell.row+1;r<R;r++) {		// every line
 						vL.push( ws.data[ colName(c)+r ])							
 					};
-					pC = addPropClass( c, vL );
-//					console.debug( 'addPropClasses', vL, pC );
+					pC = getPropClass( c, vL );
+//					console.debug( 'getPropClasses', vL, pC );
 					if( pC ) { 
 						cacheE( pCL, pC ); // add it to propertyClasses, avoid duplicates
-						pCIdL.push( pC.id )  // add it to the resourceClass' propertyClasses
+						pCs.push( pC.id )  // add it to the resourceClass' propertyClasses
 					}
 				};
-				return pCIdL;
+				return pCs;
 
-				function addPropClass( cX, valL ) {	
+				function getPropClass( cX, valL ) {	
 					// Determine the data type of all values of the column starting with the second row (= second list entry).
-					// If all are equal, the data type is assumed; by default it is 'TEXT'.
+					// If all are equal, the data type is assumed; by default it is 'ShortString'.
+					const defaultC = 'ShortString';
 					// Some values may be null, i.e. no value.
 						
-						function compatibleClasses( a, b ) {
-							return isDateTime(a) && isDateTime(b)
-									|| isNumber(a) && isNumber(b)
-									|| isBool(a) && isBool(b)
-									// no need to compare strings, as this is the default
-						}
-
 					// the cell value in the first line is the title, either of a property or a statement:
 					let ti = valL[0]?(valL[0].w || valL[0].v):i18n.MsgNoneSpecified,
-						pC;
-//					console.debug( 'addPropClass 1', ti );
+						pC,nC,i,maxL=0;
+//					console.debug( 'getPropClass 1', ti );
 
 					// Skip, if it is a statement title
 					// (the check is done here - and not a level above - because here we know the title value):
@@ -454,28 +460,45 @@ function xslx2specif( buf, pN, chAt ) {
 					// else, it is a property:
 					ti = vocabulary.property.specif( ti );  // translate the title to standard term
 					
-					// cycle through the list as long as one of the values is undefined/null OR both are equal,
-					// start with the second line:
-					for( var i=1, I=valL.length; i<I && ( !pC || !valL[i] || compatibleClasses( pC, valL[i] )); i++ ) {
-						if( !pC && valL[i] 								// catch the first valid cell
-							 || isInt(pC) && isReal(valL[i]) ) { 
-								pC = valL[i] 							// take least restrictive number format
-						};
-//						console.debug('addPropClass 2',i,I,pC,valL[i])
+					// Cycle through all elements of the column and select the most restrictive type,
+					// start with the last and stop with the second line:
+					for( i=valL.length-1; i>0; i-- ) {
+						nC = classOf(valL[i]);
+//						console.debug('getPropClass 2',i,pC,valL[i],nC);
+						if( !nC ) continue;
+						if( !pC ) { pC = nC; continue };
+						if( pC==nC ) continue;
+						if( pC=='Real'&&nC=='Integer' ) continue;
+						if( pC=='Integer'&&nC=='Real' ) { pC = 'Real'; continue };
+						// if the classes are not equal, take the least restrictive:
+						pC = defaultC
 					};
-					// the loop has ended early, i.e. the types are not compatible for all lines>0:
-					if( i<I || !pC )		return new PropClass( ws.name+cX, ti, 'Text' );
-					// else, the types are equal for all lines>0:
-				//	if( isXHTML(pC) ) 		return new PropClass( ws.name+cX, ti, 'FormattedText' );				
-					if( isDateTime(pC) ) 	return new PropClass( ws.name+cX, ti, 'DateTime' );				
-					if( isReal(pC) ) 		return new PropClass( ws.name+cX, ti, 'Real' );				
-					if( isInt(pC) ) 		return new PropClass( ws.name+cX, ti, 'Integer' );				
-					if( isBool(pC) ) 		return new PropClass( ws.name+cX, ti, 'Boolean' );	
-					// by default:
-					return new PropClass( ws.name+cX, ti, 'Text' )
+					// Assign a longer text field for descriptions:
+					if( CONFIG.descProperties.indexOf( ti )>-1 ) pC = 'Text';
+
+					// Assign a longer text field for columns with cells having a longer text:
+					if( pC=='ShortString' ) {
+						// determine the max length of the column values:
+						for( i=valL.length-1; i>0; i-- ) {
+							maxL = Math.max( maxL, valL[i].v? valL[i].v.length : 0 )
+						};
+						if( maxL>CONFIG.textThreshold ) pC = 'Text'
+					};
+//					console.debug( 'getPropClass 3',valL[i],pC );
+					return new PropClass( ws.name+cX, ti, pC || defaultC );
+
+						function classOf( cell ) {
+							if( isBool(cell) ) return 'Boolean';
+							if( isInt(cell) ) return 'Integer';
+							if( isReal(cell) ) return 'Real';
+							if( isDateTime(cell) ) return 'DateTime'
+						//	if( isXHTML(cell) ) return 'FormattedText';
+							if( isStr(cell) ) return defaultC
+							// else return undefined
+						}
 				}
 			}
-			function addStaClasses( ws, sCL ) { 
+			function getStaClasses( ws, sCL ) { 
 				// build a list of statementClasses:
 				var ti,sC;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
@@ -484,7 +507,7 @@ function xslx2specif( buf, pN, chAt ) {
 					// Add statementClass, if it is declared as such and if it is not yet listed:
 					if( indexById(sCL,staClassId(ti))<0 && CONFIG.statementClasses.indexOf( ti )>-1 ) {
 						sC = new StaClass( ti );
-//						console.debug( 'addStaClasses', ti, sC );
+//						console.debug( 'getStaClasses', ti, sC );
 						sCL.push( sC )
 					}
 				}
@@ -512,10 +535,10 @@ function xslx2specif( buf, pN, chAt ) {
 			// 3.1 Create a resourceClass per XLS-sheet so that a resource can be created per XLS-row:
 			var rC = new ResClass( ws.resClassName, self.resourceClass || CONFIG.resClassXlsRow );
 			// Create a property class for each column using the names specified in line 1:
-			rC.propertyClasses = addPropClasses( ws, specif.propertyClasses );
+			rC.propertyClasses = getPropClasses( ws, specif.propertyClasses );
 //			console.debug('rC',rC);
 			specif.resourceClasses.push(rC);
-			addStaClasses( ws, specif.statementClasses );
+			getStaClasses( ws, specif.statementClasses );
 			
 			// 3.2 Create a folder with the resources of this worksheet:
 			createFld( ws )
