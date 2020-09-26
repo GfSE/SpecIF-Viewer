@@ -7,22 +7,6 @@ SpecIF is the 'Specification Integration Facility'. It's purpose is to combine p
 
 Please have a look at the [SpecIF Homepage](https://specif.de) for further information.
 
-## Running the App Locally
-First, make sure, that you have NodeJS and NPM installed.
-
-Then, install all dependencies:
-```bash
-  npm install
-```
-
-After installing all dependencies, run this script:
-```bash
-  npm run start
-```
-
-Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
-Make sure to activate these settings after viewing.
-
 ## Features
 - Import 'specif' and 'specifz' file with schema and consistency check
 - Import 'reqif' file (planned)
@@ -62,6 +46,22 @@ The app has been installed for demonstration
 
 ## Installation
 For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view' or 'yourPath/edit' with a web-browser.
+
+## Running the App Locally
+First, make sure, that you have NodeJS and NPM installed.
+
+Then, install all dependencies:
+```bash
+  npm install
+```
+
+After installing all dependencies, run this script:
+```bash
+  npm run start
+```
+
+Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
+Make sure to activate these settings after viewing.
 
 ## Acknowledgements
 This work has been sponsored by [enso-managers gmbh](http://enso-managers.de) and [adesso SE](http://adesso.de), both Berlin
