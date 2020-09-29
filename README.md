@@ -60,7 +60,7 @@ After installing all dependencies, run this script:
   npm run start
 ```
 
-## On Windows
+### On Windows
 
 In order to access the viewer after the build directory was built use the command 
 ```
@@ -68,8 +68,7 @@ In order to access the viewer after the build directory was built use the comman
 ```
 
 - Afterwards navigate to localhost -> build -> views -> view.html file to open the SpecIF Viewer 
-
-Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
+- Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
 Make sure to activate these settings after viewing.
 
 ## Acknowledgements
