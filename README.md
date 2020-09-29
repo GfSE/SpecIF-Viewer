@@ -1,5 +1,5 @@
 # SpecIF Viewer and Editor [![Build Status](https://travis-ci.org/GfSE/SpecIF-Viewer.svg?branch=master)](https://travis-ci.org/GfSE/SpecIF-Viewer)
-An app for your web-browser to view, edit* and transform system specifications. (Features of the SpecIF Editor are marked with an asterisk*).
+An app for your web-browser to view, edit\* and transform system specifications. (Features of the SpecIF Editor are marked with an asterisk\*).
 
 SpecIF is the 'Specification Integration Facility'. It's purpose is to combine partial specifications from different tools in a single model to allow
 - to search, navigate and audit partial results in a common context
@@ -59,6 +59,15 @@ After installing all dependencies, run this script:
 ```bash
   npm run start
 ```
+
+## On Windows
+
+In order to access the viewer after the build directory was built use the command 
+```
+  http-server
+```
+
+- Afterwards navigate to localhost -> build -> views -> view.html file to open the SpecIF Viewer 
 
 Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
 Make sure to activate these settings after viewing.
