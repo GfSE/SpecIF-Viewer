@@ -20,11 +20,14 @@ After installing all dependencies, run this script:
   npm run start
 ```
 
-## on Windows
+## On Windows
 
 In order to access the viewer after the build directory was built use the command 
-'http-server'
-Afterwards go to your localhost -> build -> views -> view.html to open the SpecIF Viewer 
+```
+http-server
+```
+
+- Afterwards navigate to localhost -> build -> views -> view.html file to open the SpecIF Viewer 
 
 
 Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
