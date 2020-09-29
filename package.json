@@ -1,23 +1,20 @@
 {
   "name": "specif-viewer",
-  "version": "0.98.10",
+  "version": "0.99.00",
   "description": "An app for your web-browser to view, edit* and transform system specifications.",
   "main": "src/views/view.html",
   "scripts": {
     "test": "jest --coverage",
-
-    "clean": "rm -rf coverage build",
+    "clean": "shx rm -rf coverage build",
     "build": "(tsc && npm run _postbuild) || npm run _postbuild",
-
     "start": "node start.js",
-    "open_browser_macos": "open ./build/views/view.html || echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
-    "open_browser_linux": "xdg-open ./build/views/view.html || echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
-    "open_browser_win": "explorer './build/views/view.html' || echo 'Could not open default browser. Please open ./build/view.html manually.'",
-
+    "open_browser_macos": "shx open ./build/views/view.html || shx echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
+    "open_browser_linux": "shx xdg-open ./build/views/view.html || shx echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
+    "open_browser_win": "explorer 'build\\views\\view.html' || shx echo 'Could not open default browser. Please open ./build/view.html manually.'",
     "_postbuild": "npm run _copy_assets_folder & npm run _copy_config_folder & npm run _copy_views_folder",
-    "_copy_assets_folder": "mkdir ./build/vendor/ & mkdir ./build/vendor/assets/ & cp -R ./src/vendor/assets ./build/vendor/",
-    "_copy_config_folder": "mkdir ./build/config/ & cp -R ./src/config/*/**.json ./build/config/locales/",
-    "_copy_views_folder": "mkdir ./build/views/ & cp -R ./src/views/* ./build/views/"
+    "_copy_assets_folder": "shx mkdir ./build/vendor/ & shx mkdir ./build/vendor/assets/ & shx cp -R ./src/vendor/assets ./build/vendor/",
+    "_copy_config_folder": "shx mkdir ./build/config/ & shx cp -R ./src/config/*/**.json ./build/config/locales/",
+    "_copy_views_folder": "shx mkdir ./build/views/ & shx cp -R ./src/views/* ./build/views/"
   },
   "repository": {
     "type": "git",
@@ -38,6 +35,10 @@
   "devDependencies": {
     "@types/jest": "^26.0.12",
     "jest": "^26.4.2",
+    "shx": "^0.3.2",
     "typescript": "^4.0.2"
+  },
+  "dependencies": {
+    "@types/jquery": "^3.5.1"
   }
 }
