@@ -210,7 +210,7 @@ function radioValue( lbl ) {
 function checkboxForm( lbl, entries, opts ) {
 	// assemble the form for a set of checkboxes;
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
-	var cB;
+	let cB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';

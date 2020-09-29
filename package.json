@@ -1,16 +1,16 @@
 {
   "name": "specif-viewer",
   "version": "0.99.00",
-  "description": "An app for your web-browser to view, edit* and transform system specifications.",
+  "description": "An app for your web-browser to view, edit and transform system specifications.",
   "main": "src/views/view.html",
   "scripts": {
     "test": "jest --coverage",
     "clean": "shx rm -rf coverage build",
     "build": "(tsc && npm run _postbuild) || npm run _postbuild",
     "start": "node start.js",
-    "open_browser_macos": "shx open ./build/views/view.html || shx echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
-    "open_browser_linux": "shx xdg-open ./build/views/view.html || shx echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
-    "open_browser_win": "explorer 'build\\views\\view.html' || shx echo 'Could not open default browser. Please open ./build/view.html manually.'",
+    "open_browser_macos": "shx open ./build/views/view.html || echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
+    "open_browser_linux": "shx xdg-open ./build/views/view.html || echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
+    "open_browser_win": "explorer 'build\\views\\view.html' || echo 'Could not open default browser. Please open ./build/view.html manually.'",
     "_postbuild": "npm run _copy_assets_folder & npm run _copy_config_folder & npm run _copy_views_folder",
     "_copy_assets_folder": "shx mkdir ./build/vendor/ & shx mkdir ./build/vendor/assets/ & shx cp -R ./src/vendor/assets ./build/vendor/",
     "_copy_config_folder": "shx mkdir ./build/config/ & shx cp -R ./src/config/*/**.json ./build/config/locales/",
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/togiberlin/SpecIF-Viewer.git"
+    "url": "git+https://github.com/GfSE/SpecIF-Viewer.git"
   },
   "keywords": [
     "interactive-system-specifications",
@@ -26,12 +26,12 @@
     "uml",
     "sysml"
   ],
-  "author": "Adesso SE, enso managers gmbh",
+  "author": "adesso SE, enso managers gmbh",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/togiberlin/SpecIF-Viewer/issues"
+    "url": "https://github.com/GfSE/SpecIF-Viewer/issues"
   },
-  "homepage": "https://github.com/togiberlin/SpecIF-Viewer#readme",
+  "homepage": "https://github.com/GfSE/SpecIF-Viewer#readme",
   "devDependencies": {
     "@types/jest": "^26.0.12",
     "jest": "^26.4.2",
