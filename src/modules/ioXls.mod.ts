@@ -203,6 +203,7 @@ function xslx2specif( buf, pN, chAt ) {
 		}
 
 	function collectMetaData(ws) {
+		if( !ws ) return;
 		switch( ws.name ) {
 			// It is assumed that all lists of enumerated values are defined on a worksheet named:
 			case "(Enumerations)":
@@ -237,6 +238,8 @@ function xslx2specif( buf, pN, chAt ) {
 	}
 
 	function transformData(ws) {
+		if( !ws ) return;
+
 			function isDateTime( cell ) {
 //				console.debug('isDateTime:',cell);
 				return cell && cell.t=='d' 
@@ -669,9 +672,12 @@ function xslx2specif( buf, pN, chAt ) {
 				hid: 'H-'+(pN+wsN).simpleHash()	// the hierarchy ID of the folder carrying all resources of the selected sheet
 			};
 			ws.range = ws.data["!ref"]; 	// e.g. A1:C25
-			ws.firstCell = coord(ws.range.split(":")[0]);
-			ws.lastCell = coord(ws.range.split(":")[1]);
-			return ws
+			if( ws.range ) {							
+				// only if the sheet has content:
+				ws.firstCell = coord(ws.range.split(":")[0]);
+				ws.lastCell = coord(ws.range.split(":")[1]);
+				return ws
+			}
 		}
 }	// end of xlsx2specif
 
