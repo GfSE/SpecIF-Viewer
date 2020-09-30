@@ -2526,7 +2526,7 @@ const specif = {
 		// Get the specified schema file from the server:
 		httpGet({
 		//	url: "https://specif.de/v"+data.specifVersion+"/schema",
-			url: data['$schema'] || './specif.de/v'+data.specifVersion+'/schema',
+			url: data['$schema'] || 'https://specif.de/v'+data.specifVersion+'/schema',
 			responseType: 'arraybuffer',
 			withCredentials: false,
 			done: (xhr)=>{

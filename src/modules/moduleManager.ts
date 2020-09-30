@@ -1,5 +1,5 @@
 ///////////////////////////////
-/*	A simple module loader and object (singleton) factory.
+/*!	A simple module loader and object (singleton) factory.
 	When all registered modules are ready, a callback function is executed to start or continue the application.
 	Dependencies: jQuery 3.1 and later.
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
@@ -27,7 +27,7 @@ var browser,
 				- 'show()' selects the view of the specified module and hides all others.  */
 
 	const self = this;
-  let callWhenReady = null;
+	let callWhenReady = null;
 
 	self.init = ( initDone, initFail )=>{
 		// IE does not support ES6 promises, so we use callbacks 'initDone' and 'initFail'.
@@ -345,12 +345,12 @@ var browser,
 //			console.debug('loadM',mod);
 			switch( mod ) {
 				// 3rd party:
-				case "bootstrap":			$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" />');
-											$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" />');
+				case "bootstrap":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" );
+											getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "bootstrapDialog":		$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" />');
+				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "tree": 				$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" />');
+				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ).done( ()=>{setReady(mod)} ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ).done( function() {setReady(mod)} ); return true;
 		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' ).then(
@@ -366,26 +366,26 @@ var browser,
 														});
 														return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "dataTable": 			$('head').append( '<link rel="stylesheet" type="text/css" href="./.../../vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" />');
-		//									getScript('./../vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
+		//		case "dataTable": 			getCss( "./vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" );
+		//									getScript('./vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.6/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "xhtmlEditor": 		$('head').append( '<link rel="stylesheet" type="text/css" href="./../vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" />');
-		//									getScript('./../vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
+		//		case "xhtmlEditor": 		getCss( "./vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" );
+		//									getScript('./vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "graphViz":	 	//	$('head').append( '<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" />');
+				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.1/dist/pouchdb.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
-				case "config": 				$.getScript('./../config/config.js', ()=>{setReady(mod)} ); return true;   // don't cache
+				case "config": 				$.getScript('./config/config.js', ()=>{setReady(mod)} ); return true;   // don't cache
 				case "i18n": 				let langFile;
 											switch( browser.language.slice(0,2) ) {
-												case 'de':  langFile = './../config/locales/iLaH-de.i18n.js'; break;
-												case 'fr':  langFile = './../config/locales/iLaH-fr.i18n.js'; break;
-												default:	langFile = './../config/locales/iLaH-en.i18n.js';
+												case 'de':  langFile = './config/locales/iLaH-de.i18n.js'; break;
+												case 'fr':  langFile = './config/locales/iLaH-fr.i18n.js'; break;
+												default:	langFile = './config/locales/iLaH-en.i18n.js'
 											};
 											getScript( langFile )
 											.done( function() {
@@ -397,19 +397,19 @@ var browser,
 												setReady(mod)
 											});
 											return true;
-				case "helper": 				getScript('./../modules/helper.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "helperTree": 			getScript('./../modules/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "helper": 				getScript( './modules/helper.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "helperTree": 			getScript( './modules/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "cache": 				loadM( 'fileSaver' );
-											getScript('./../modules/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
-		//		case "stdTypes":			getScript('./../modules/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="./../vendor/assets/stylesheets/SpecIF.default.css" />' ); setReady(mod); return true;
-				case "profileAnonymous":	getScript('./../modules/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case "toXhtml": 			getScript('./../vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript( './modules/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
+		//		case "stdTypes":			getScript( './modules/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
+				case "profileAnonymous":	getScript( './modules/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "toXhtml": 			getScript( './vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
-											getScript('./../vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "toOxml": 				getScript('./../vendor/assets/javascripts/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
-				case 'bpmn2specif':			getScript('./../vendor/assets/javascripts/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
-				case 'archimate2specif':	getScript('./../vendor/assets/javascripts/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript( './vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "toOxml": 				getScript( './vendor/assets/javascripts/toOxml.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'bpmn2specif':			getScript( './vendor/assets/javascripts/BPMN2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
+				case 'archimate2specif':	getScript( './vendor/assets/javascripts/archimate2SpecIF.js' ).done( ()=>{setReady(mod)} ); return true;
 		/*		case "profileMe":			$('#'+mod).load( "./modules/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( "./modules/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
 				case "projects":			loadM( 'toEpub' );
@@ -417,29 +417,29 @@ var browser,
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
 		//		case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript('./../modules/graph.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript( './modules/graph.js' ).done( ()=>{setReady(mod)} ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
 											getScript( "./modules/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true; */
 
 				// modules; 'setReady' is called by 'construct':
-				case "about":				getScript('./../modules/about.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "about":				getScript( './modules/about.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'importAny':			loadM( 'zip' );
-											getScript('./../modules/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
-											getScript('./../modules/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'ioReqif': 			getScript('./../modules/ioReqif.mod.js' ); return true;
+											getScript( './modules/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case 'ioReqif': 			getScript( './modules/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
-											getScript('./../modules/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript('./../modules/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioArchimate':			loadM( 'archimate2specif' );
-											getScript('./../modules/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript('./../modules/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript( './modules/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.users:		//	loadM( 'mainCSS' );
@@ -453,14 +453,14 @@ var browser,
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 									//		loadM( 'stdTypes' );
 									//		loadM( 'diff' );
-											getScript('./../modules/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript('./../modules/reports.mod.js' ); return true;
-				case CONFIG.objectFilter:  	getScript('./../modules/filter.mod.js' ); return true;
+				case CONFIG.reports: 		getScript( './modules/reports.mod.js' ); return true;
+				case CONFIG.objectFilter:  	getScript( './modules/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
-											getScript('./../modules/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case CONFIG.resourceLink:	getScript('./../modules/resourceLink.mod.js' ); return true;
+											getScript( './modules/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case CONFIG.resourceLink:	getScript( './modules/resourceLink.mod.js' ); return true;
 		//		case CONFIG.files: 			getScript( "./modules/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false
@@ -506,18 +506,6 @@ var browser,
 				return false
 			}
 		}
-	}
-	function getScript( url, options ) {
-		// see http://api.jquery.com/jQuery.getScript/
-		// Any option may be set from external except for dataType and cache:
-		options = $.extend( options || {}, {
-			dataType: "script",
-			cache: true,
-			url: url
-		});
-		// Use $.ajax() since it is more flexible than $.getScript
-		// Return the jqXHR object so we can chain callbacks
-		return $.ajax( options )
 	}
 	function ViewCtl( viewL ) {
 		// Constructor for an object to control the visibility of the DOM-tree elements listed in 'list';
@@ -616,6 +604,23 @@ var browser,
 		};
 		self.init(viewL);
 		return self
+	}
+	// add cache-buster to all relative URLs;
+	// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
+	function getCss( url ) {
+		$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.productVersion)+'" />' )
+	}
+	function getScript( url, options ) {
+		// see http://api.jquery.com/jQuery.getScript/
+		// Any option may be set by the caller except for dataType and cache:
+		options = $.extend( options || {}, {
+			dataType: "script",
+			cache: true,
+			url: url + (url.slice(0,4)=='http'? "" : "?"+app.productVersion)
+		});
+		// Use $.ajax() since it is more flexible than $.getScript
+		// Return the jqXHR object so we can chain callbacks
+		return $.ajax( options )
 	}
 };
 function State(opt) {
