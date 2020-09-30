@@ -397,13 +397,13 @@ var browser,
 												setReady(mod)
 											});
 											return true;
-				case "helper": 				getScript('./../modules/helper.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "helperTree": 			getScript('./../modules/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "helper": 				getScript('./helper.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "helperTree": 			getScript('./helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "cache": 				loadM( 'fileSaver' );
-											getScript('./../modules/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
-		//		case "stdTypes":			getScript('./../modules/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript('./cache.mod.js' ); return true; // 'setReady' is called by 'construct'
+		//		case "stdTypes":			getScript('./stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "mainCSS":				$('head').append( '<link rel="stylesheet" type="text/css" href="./../vendor/assets/stylesheets/SpecIF.default.css" />' ); setReady(mod); return true;
-				case "profileAnonymous":	getScript('./../modules/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "profileAnonymous":	getScript('./profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "toXhtml": 			getScript('./../vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
 											getScript('./../vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
@@ -417,29 +417,29 @@ var browser,
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
 		//		case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript('./../modules/graph.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript('./graph.js' ).done( ()=>{setReady(mod)} ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 									//		loadM( 'dataTableButtons' );
 									//		loadM( 'zip' );  // needed for Excel export
 											getScript( "./modules/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true; */
 
 				// modules; 'setReady' is called by 'construct':
-				case "about":				getScript('./../modules/about.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "about":				getScript('./about.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'importAny':			loadM( 'zip' );
-											getScript('./../modules/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript('./importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
-											getScript('./../modules/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case 'ioReqif': 			getScript('./../modules/ioReqif.mod.js' ); return true;
+											getScript('./ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case 'ioReqif': 			getScript('./ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
-											getScript('./../modules/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript('./ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript('./../modules/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript('./ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case 'ioArchimate':			loadM( 'archimate2specif' );
-											getScript('./../modules/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript('./ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
 				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript('./../modules/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
+											getScript('./serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.users:		//	loadM( 'mainCSS' );
@@ -453,14 +453,14 @@ var browser,
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 									//		loadM( 'stdTypes' );
 									//		loadM( 'diff' );
-											getScript('./../modules/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript('./specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript('./../modules/reports.mod.js' ); return true;
-				case CONFIG.objectFilter:  	getScript('./../modules/filter.mod.js' ); return true;
+				case CONFIG.reports: 		getScript('./reports.mod.js' ); return true;
+				case CONFIG.objectFilter:  	getScript('./filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
-											getScript('./../modules/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
-				case CONFIG.resourceLink:	getScript('./../modules/resourceLink.mod.js' ); return true;
+											getScript('./resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case CONFIG.resourceLink:	getScript('./resourceLink.mod.js' ); return true;
 		//		case CONFIG.files: 			getScript( "./modules/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false
