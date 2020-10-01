@@ -1,4 +1,9 @@
-/* 	Short Description
+/*! Module Template
+	Dependencies: 
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	Author: se@enso-managers.de, Berlin
+	We appreciate any correction, comment or contribution!
 */
 
 modules.construct({

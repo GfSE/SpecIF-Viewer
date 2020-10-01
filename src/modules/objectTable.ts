@@ -1,8 +1,8 @@
-/*	ReqIF Server: Object Table.
+/*!	iLaH: Object Table.
 	Dependencies: jQuery, http://https://datatables.net/
 	(C)copyright 2010-2017 enso managers gmbh (http://www.enso-managers.com)
 	Author: se@enso-managers.com, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
+	We appreciate any correction, comment or contribution
 */
 
 function ObjectTable() {

@@ -1,11 +1,9 @@
-///////////////////////////////
-/*	Standard type definitions with methods. 
-	When all registered modules are ready, a callback function is executed to start or continue the application.
-	Dependencies: jQuery 3.2 and later, reqifserver, cache.
+/*!	Standard type definitions with methods. 
+	Dependencies: -
 	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
-	Author: se@enso-managers.com, Berlin
 	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	Author: se@enso-managers.com, Berlin
+	We appreciate any correction, comment or contribution!
 */
 		
 /*  ToDo: REWORK FOR v0.10.8:

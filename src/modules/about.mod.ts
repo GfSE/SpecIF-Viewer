@@ -1,4 +1,9 @@
-/* 	Short Description of the SpecIF Viewer with a List of all used libraries and their respective licenses.
+/*!	Short Description of the SpecIF Viewer with a List of all used libraries and their respective licenses.
+	Dependencies: jQuery
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	Author: se@enso-managers.de, Berlin
+	We appreciate any correction, comment or contribution!
 */
 
 modules.construct({
@@ -17,7 +22,7 @@ modules.construct({
 		self.clear()
 	};
 	self.show = function( opts ) {
-		let isEditor = app.label==i18n.LblEditor;
+		let isEditor = app.title==i18n.LblEditor;
 
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
@@ -26,7 +31,7 @@ modules.construct({
 				view: self.view.substr(1)	// remove leading hash
 			}); 
 
-		$('#pageTitle').html( app.productTitle );
+		$('#pageTitle').html( app.title );
 		$('#about').html(
 			'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'
 		+   '<p>An app for your web-browser to view'+(isEditor? ', edit':'')+' and transform system specifications.</p>'
@@ -36,7 +41,7 @@ modules.construct({
 		+	'<li>to exchange model information between organizations and tools.</li>'
 		+	'</ul>'
 		+	'<p>Please have a look at the <a href="https://specif.de" target="_blank">SpecIF Homepage</a> for further information.</p>'
-		+	'<p>Version: '+app.productVersion+' supporting SpecIF up to version '+app.specifVersion+'.</p>'
+		+	'<p>Version: '+app.version+' supporting SpecIF up to version '+app.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
 	//	+	'<p>Please press \'<a href="http://reqif.de/index.php/contact/articles/reqif-message.html" target="_blank">Support</a>\' to file a request for assistance.</p>'
 		+	'<h4>Features</h4>'

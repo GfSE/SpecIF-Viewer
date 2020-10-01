@@ -1,4 +1,4 @@
-﻿/*	iLaH: BPMN import 
+﻿/*!	iLaH: BPMN import 
 	Dependencies: jQuery 3.0+
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin

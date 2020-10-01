@@ -1,4 +1,11 @@
-/* 	Log into a special account CONFIG.userNameAnonymous/CONFIG.passwordAnonymous.  The server must have a corresponding user, of course.
+/*!	User profile - simple implementation without identity and permissions.
+	Dependencies: -
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution!
+*/
+/*  Log into a special account CONFIG.userNameAnonymous/CONFIG.passwordAnonymous.  The server must have a corresponding user, of course.
 	The adminstrators must take care that only roles and content are made available to this user which may be accessed publicly.
 	The idea is to publish some content, e.g. documentation, without the need to login.
 	Derived from profileUser.xxxx.mod.js - it serves the same API calls and is supposed to replace it when appropriate.

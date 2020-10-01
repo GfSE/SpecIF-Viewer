@@ -1,4 +1,4 @@
-/*	GUI and control for SpecIF, ReqIF and XLS import
+/*!	GUI and control for SpecIF, ReqIF and XLS import
 	Dependencies: jQuery 3.1+, bootstrap 3.1
 	Copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin

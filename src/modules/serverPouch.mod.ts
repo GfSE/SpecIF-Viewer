@@ -1,5 +1,4 @@
-/*  //////////////////////////////
-    PouchDB Library for Javascript.
+/*! PouchDB Library for Javascript.
     Dependencies: jQuery 3.0 and later, pouchdb
     (C)copyright 2010-2020 enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)

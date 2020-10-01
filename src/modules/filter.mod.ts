@@ -1,10 +1,10 @@
-/*	iLAH: Resource Filters.
+/*!	iLAH: Resource Filters.
 	Dependencies: jQuery, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
-
-	Resource filtering
+	We appreciate any correction, comment or contribution!          
+*/
+/*	Resource filtering
 	// Primary or top-level filters apply to resources of all classes (scope: project), whereas
 	//    secondary filters are 'applicable', only if the corresponding resource class (scope: resourceClass) is selected.
 	// The filter lets a resource pass, if all primary filters plus all applicable secondary filters discover a match (conjunction of filter criteria).

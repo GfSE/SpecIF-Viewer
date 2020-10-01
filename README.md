@@ -55,21 +55,21 @@ Then, install all dependencies:
   npm install
 ```
 
-After installing all dependencies, run this script:
+After installing all dependencies, run the build script:
 ```bash
   npm run start
 ```
 
 ### On Windows
 
-In order to access the viewer after the build directory was built use the command 
+After creating the build directory, you may start the local web-server:
 ```
   http-server
 ```
 
-- Afterwards navigate to localhost -> build -> views -> view.html file to open the SpecIF Viewer 
+- Then, navigate to localhost -> build -> view.html to open the SpecIF Viewer 
 - Temporarily deactivate ```Cross-Origin Restrictions``` and ```Local File Restrictions``` in your browser, if you encounter a blank screen.
-Make sure to activate these settings after viewing.
+Make sure to re-activate these settings, later.
 
 ## Acknowledgements
 This work has been sponsored by [enso-managers gmbh](http://enso-managers.de) and [adesso SE](http://adesso.de), both Berlin

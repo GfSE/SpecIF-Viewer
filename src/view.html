@@ -32,14 +32,12 @@ app = new function() {
 
 	// construct main app:
 	var self = this;
-	self.productVersion = 'v0.99.3';
+	self.version = 'v0.99.3';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
 		// must set it here, because the language files must be read first:
-		self.productTitle = 'SpecIF View';
-		self.label = i18n.LblReader;
-		document.title = self.label;
+		document.title = self.title = i18n.LblReader;
 		// Add a global spinner with state control;
 		// all actions are deactivated as long as the app is busy.
 		// - 'pageActions' are at the top of the page and can be initiated independently of the app's state
@@ -171,7 +169,7 @@ app = new function() {
 		modules.load( define, {done: function() { self.show() }} );
 	};
 	self.show = function() {
-		console.info( self.label+" started!" );
+		console.info( self.title+" started!" );
 		self.me.read()
 		.then(
 			function() {
@@ -223,7 +221,7 @@ app = new function() {
 		}
 	let pend=2;
 	getScript( 'https://code.jquery.com/jquery-3.5.1.min.js' );
-	getScript( './modules/moduleManager.js?'+self.productVersion ); // with cache-buster
+	getScript( './modules/moduleManager.js?'+self.version ); // with cache-buster
 
 	return self;
 };

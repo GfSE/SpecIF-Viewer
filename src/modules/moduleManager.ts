@@ -30,7 +30,6 @@ var browser,
 	let callWhenReady = null;
 
 	self.init = ( initDone, initFail )=>{
-		// IE does not support ES6 promises, so we use callbacks 'initDone' and 'initFail'.
 
 		self.registered = [];
 		self.ready = [];
@@ -94,7 +93,6 @@ var browser,
 //		console.info( "Deregister: "+mod+" ("+self.registered.length+")" );
 	};  */
 	self.load = ( tr, opts )=>{
-//		console.debug('modules.load',tr,opts);
 		// tr is a hierarchy of modules, where the top element represents the application itself;
 		// only modules with a specified name will be loaded:
 		self.tree = tr;
@@ -341,7 +339,9 @@ var browser,
 	}
 	function loadM( mod ) {
 		if( register( mod ) ) {
-			// Load the module, if registration went well (if it hadn't been registered before)
+			// Load the module, if registration went well (if it hadn't been registered before);
+			// If it is a library, 'setReady' must be set here.
+			// If it is a controller (or module), 'setReady' is called by 'construct'.
 //			console.debug('loadM',mod);
 			switch( mod ) {
 				// 3rd party:
@@ -366,12 +366,12 @@ var browser,
 														});
 														return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ).done( ()=>{setReady(mod)} ); return true;
-		//		case "dataTable": 			getCss( "./vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" );
-		//									getScript('./vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ).done( ()=>{setReady(mod)} ); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.6/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.7/xlsx.full.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ).done( ()=>{setReady(mod)} ); return true;
+		//		case "dataTable": 			getCss( "./vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" );
+		//									getScript('./vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ).done( function() {setReady(mod)} ); return true;
 		//		case "xhtmlEditor": 		getCss( "./vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" );
 		//									getScript('./vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ).done( function() {setReady(mod)} ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ).done( ()=>{setReady(mod)} ); return true;
@@ -380,7 +380,7 @@ var browser,
 				case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.1/dist/pouchdb.min.js' ).done( ()=>{setReady(mod)} ); return true;
 
 				// libraries:
-				case "config": 				$.getScript('./config/config.js', ()=>{setReady(mod)} ); return true;   // don't cache
+				case "config": 				getScript( './config/config.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "i18n": 				let langFile;
 											switch( browser.language.slice(0,2) ) {
 												case 'de':  langFile = './config/locales/iLaH-de.i18n.js'; break;
@@ -400,10 +400,10 @@ var browser,
 				case "helper": 				getScript( './modules/helper.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "helperTree": 			getScript( './modules/helperTree.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "cache": 				loadM( 'fileSaver' );
-											getScript( './modules/cache.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/cache.mod.js' ); return true;
 		//		case "stdTypes":			getScript( './modules/stdTypes.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
-				case "profileAnonymous":	getScript( './modules/profileAnonymous.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "profileAnonymous":	getScript( './modules/profileAnonymous.mod.js' ); return true;
 				case "toXhtml": 			getScript( './vendor/assets/javascripts/toXhtml.js' ).done( ()=>{setReady(mod)} ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
 											getScript( './vendor/assets/javascripts/toEpub.js' ).done( ()=>{setReady(mod)} ); return true;
@@ -415,29 +415,28 @@ var browser,
 				case "projects":			loadM( 'toEpub' );
 											$('#'+mod).load( "./modules/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true; */
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ).done( function() {setReady(mod)} ); return true;
-		//		case 'checkSpecif':			getScript( './specif.de/v'+app.specifVersion+'/check.js' ).done( ()=>{setReady(mod)} ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( './modules/graph.js' ).done( ()=>{setReady(mod)} ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
-									//		loadM( 'dataTableButtons' );
-									//		loadM( 'zip' );  // needed for Excel export
+										//	loadM( 'dataTableButtons' );
+										//	loadM( 'zip' );  // needed for Excel export
 											getScript( "./modules/objectTable-0.93.1.js").done( function() {setReady(mod)} ); return true; */
 
 				// modules; 'setReady' is called by 'construct':
-				case "about":				getScript( './modules/about.mod.js' ); return true; // 'setReady' is called by 'construct'
+				case "about":				getScript( './modules/about.mod.js' ); return true;
 				case 'importAny':			loadM( 'zip' );
-											getScript( './modules/importAny.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/importAny.mod.js' ); return true;
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
-											getScript( './modules/ioSpecif.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			getScript( './modules/ioReqif.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
-											getScript( './modules/ioXls.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioXls.mod.js' ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript( './modules/ioBpmn.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioBpmn.mod.js' ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
-											getScript( './modules/ioArchimate.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/ioArchimate.mod.js' ); return true;
 				case "serverPouch": 		loadM( 'pouchDB' );
 											getScript( './modules/serverPouch.js' ).done( ()=>{setReady(mod)} ); return true;
 
@@ -451,15 +450,15 @@ var browser,
 											$('#'+mod).load( "./modules/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 		*/
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
-									//		loadM( 'stdTypes' );
-									//		loadM( 'diff' );
-											getScript( './modules/specifications.mod.js' ); return true; // 'setReady' is called by 'construct'
+										//	loadM( 'stdTypes' );
+										//	loadM( 'diff' );
+											getScript( './modules/specifications.mod.js' ); return true;
 
 				// sub-modules of module 'specifications':
 				case CONFIG.reports: 		getScript( './modules/reports.mod.js' ); return true;
 				case CONFIG.objectFilter:  	getScript( './modules/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
-											getScript( './modules/resourceEdit.mod.js' ); return true; // 'setReady' is called by 'construct'
+											getScript( './modules/resourceEdit.mod.js' ); return true;
 				case CONFIG.resourceLink:	getScript( './modules/resourceLink.mod.js' ); return true;
 		//		case CONFIG.files: 			getScript( "./modules/files-0.93.1.js").done( function() {setReady(mod)} ); return true;
 
@@ -608,7 +607,7 @@ var browser,
 	// add cache-buster to all relative URLs;
 	// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
 	function getCss( url ) {
-		$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.productVersion)+'" />' )
+		$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.version)+'" />' )
 	}
 	function getScript( url, options ) {
 		// see http://api.jquery.com/jQuery.getScript/
@@ -616,7 +615,7 @@ var browser,
 		options = $.extend( options || {}, {
 			dataType: "script",
 			cache: true,
-			url: url + (url.slice(0,4)=='http'? "" : "?"+app.productVersion)
+			url: url + (url.slice(0,4)=='http'? "" : "?"+app.version)
 		});
 		// Use $.ajax() since it is more flexible than $.getScript
 		// Return the jqXHR object so we can chain callbacks

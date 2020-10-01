@@ -1,4 +1,4 @@
-/*	iLaH: Excel (XLS) import 
+/*!	iLaH: Excel (XLS) import 
 	Dependencies: jQuery 3.0+, sheetjs
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
