@@ -1,10 +1,10 @@
-/*	SpecIF Class-based Reports.
+/*!	SpecIF Class-based Reports.
 	Dependencies: jQuery, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
-
-	The report descriptors for display, two examples:
+	We appreciate any correction, comment or contribution!          
+*/
+/*	The report descriptors for display, two examples:
 		{	title: 'Anforderung: Priorit&auml;t',
 			category: 'resourceClass',
 			scaleMin: 0,

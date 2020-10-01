@@ -1,4 +1,4 @@
-/*	SpecIF import 
+/*!	SpecIF import 
 	Dependencies: jQuery 3.1+
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin

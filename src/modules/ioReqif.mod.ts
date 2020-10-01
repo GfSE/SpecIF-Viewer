@@ -1,4 +1,4 @@
-﻿/*	ReqIF Server: ReqIF import
+﻿/*!	ReqIF Server: ReqIF import
 	Dependencies: -
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin

@@ -1,5 +1,4 @@
-///////////////////////////////
-/*	Helper functions for Marco Braak's jqTree (https://mbraak.github.io/jqTree/)
+/*!	Helper functions for Marco Braak's jqTree (https://mbraak.github.io/jqTree/)
 	Dependencies: jQuery 3.1 and later.
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin

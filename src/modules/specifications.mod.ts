@@ -1,4 +1,4 @@
-/*	SpecIF View
+/*!	SpecIF View
 	Dependencies: jQuery, jqTree, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
@@ -56,7 +56,7 @@ modules.construct({
 		// holds the hierarchy tree (or outline):
 		self.tree = new Tree({
 			loc: '#hierarchy',
-			dragAndDrop: app.label!=i18n.LblReader,
+			dragAndDrop: app.title!=i18n.LblReader,
 			eventHandlers: {
 				'select':  
 					// when a node is clicked or traversed by up/down keys
@@ -642,7 +642,7 @@ modules.construct({
 				return false
 			}  */
 	//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-		if( app.label!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
+		if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
 			rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
@@ -656,7 +656,7 @@ modules.construct({
 		// The delete button is shown, if a hierarchy entry can be deleted.
 		// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
 	//	if( cData.selectedHierarchy.del )
-		if( app.label!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) )
+		if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) )
 			rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
@@ -666,7 +666,7 @@ modules.construct({
 	};
 	function getPermissions() {
 		// No permissions beyond read, if it is the viewer:
-		if( app.label!=i18n.LblReader ) {
+		if( app.title!=i18n.LblReader ) {
 			self.resCreClasses.length = 0;
 		
 			// using the cached allClasses:
@@ -1046,12 +1046,12 @@ modules.construct({
 		var rB = '<div class="btn-group btn-group-sm" >';
 //		console.debug( 'linkBtns', self.staCre );
 
-		if( app.label!=i18n.LblReader && self.staCre )
+		if( app.title!=i18n.LblReader && self.staCre )
 			rB += '<button class="btn btn-success" onclick="'+myFullName+'.linkResource()" data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 
-		if( app.label!=i18n.LblReader && net.statements.length>0 && (!selRes.permissions || selRes.permissions.del) )
+		if( app.title!=i18n.LblReader && net.statements.length>0 && (!selRes.permissions || selRes.permissions.del) )
 			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
@@ -1060,7 +1060,7 @@ modules.construct({
 	}
 	function getPermissions( sRes ) {
 		// No permissions beyond read, if it is the viewer:
-		if( app.label!=i18n.LblReader && sRes ) {
+		if( app.title!=i18n.LblReader && sRes ) {
 			self.staCreClasses.subjectClasses.length = 0;
 			self.staCreClasses.objectClasses.length = 0;
 
@@ -1638,7 +1638,7 @@ function propertyValueOf( prp, opts ) {
 	*/
 	}
 }
-fileRef = new function() {
+var fileRef = new function() {
 	"use strict";
 	var self = this;
 
@@ -2300,4 +2300,4 @@ fileRef = new function() {
 		return txt
 */	};
 	return self
-};	// end of File()
+};	// end of fileRef()
