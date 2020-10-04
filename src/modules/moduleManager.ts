@@ -390,38 +390,32 @@ var browser,
 
 				// libraries:
 				case "config": 				getScript( './config/config.js' ); return true;
-				case "i18n": 				let langFile;
-											switch( browser.language.slice(0,2) ) {
-												case 'de':  langFile = './config/locales/iLaH-de.i18n.js'; break;
-												case 'fr':  langFile = './config/locales/iLaH-fr.i18n.js'; break;
-												default:	langFile = './config/locales/iLaH-en.i18n.js'
+				case "i18n": 				switch( browser.language.slice(0,2) ) {
+												case 'de':  getScript( './config/locales/iLaH-de.i18n.js' )
+															.done( ()=>{ i18n = new LanguageTextsDe() }; break;
+												case 'fr':  getScript( './config/locales/iLaH-fr.i18n.js' )
+															.done( ()=>{ i18n = new LanguageTextsFr() }; break;
+												default:	getScript( './config/locales/iLaH-en.i18n.js' )
+															.done( ()=>{ i18n = new LanguageTextsEn() }
 											};
-											getScript( langFile )
-											.done( function() {
-												switch( browser.language.slice(0,2) ) {
-													case 'de':  i18n = new LanguageTextsDe(); break;
-													case 'fr':  i18n = new LanguageTextsFr(); break;
-													default:	i18n = new LanguageTextsEn()
-												}
-											});
 											return true;
+				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
+		//		case "stdTypes":			getScript( './modules/stdTypes.js' ); return true;
 				case "helper": 				getScript( './modules/helper.js' ); return true;
 				case "helperTree": 			getScript( './modules/helperTree.js' ); return true;
 				case "cache": 				loadM( 'fileSaver' );
 											getScript( './modules/cache.mod.js' ); return true;
-		//		case "stdTypes":			getScript( './modules/stdTypes.js' ); return true;
-				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
 				case "profileAnonymous":	getScript( './modules/profileAnonymous.mod.js' ); return true;
+		/*		case "profileMe":			$('#'+mod).load( "./modules/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
+				case "user":				$('#'+mod ).load( "./modules/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+				case "projects":			loadM( 'toEpub' );
+											$('#'+mod).load( "./modules/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true; */
 				case "toXhtml": 			getScript( './vendor/assets/javascripts/toXhtml.js' ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
 											getScript( './vendor/assets/javascripts/toEpub.js' ); return true;
 				case "toOxml": 				getScript( './vendor/assets/javascripts/toOxml.js' ); return true;
 				case 'bpmn2specif':			getScript( './vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
 				case 'archimate2specif':	getScript( './vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
-		/*		case "profileMe":			$('#'+mod).load( "./modules/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
-				case "user":				$('#'+mod ).load( "./modules/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
-				case "projects":			loadM( 'toEpub' );
-											$('#'+mod).load( "./modules/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true; */
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( './modules/graph.js' ); return true;
