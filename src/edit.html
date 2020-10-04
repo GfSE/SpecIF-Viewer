@@ -32,7 +32,7 @@ app = new function() {
 
 	// construct main app:
 	var self = this;
-	self.version = 'v0.99.3';
+	self.version = 'v0.99.4';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
@@ -240,7 +240,7 @@ app = new function() {
 		}
 	let pend=2;
 	getScript( 'https://code.jquery.com/jquery-3.5.1.min.js' );
-	getScript( './modules/moduleManager.js?'+self.version ); // with cache-buster
+	getScript( './modules/moduleManager.js?'+self.version ); // with cache-busting on version-change
 
 	return self
 };
