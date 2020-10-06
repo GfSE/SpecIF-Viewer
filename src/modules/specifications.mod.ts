@@ -30,7 +30,6 @@ modules.construct({
 
 	// standard module interface:
 	self.init = ()=>{
-	//	if( !opts || ( typeof(opts.callback) != "function" ) ) return false;
 		// initialize the module:
 //		console.debug( 'specs.init', self );
 		
@@ -1072,7 +1071,7 @@ modules.construct({
 					// store the classes' ids as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 //					console.debug('staCreClasses',sC,sRes['class']);
 				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
-					if(!sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
+					if( !sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
 						if( !sC.subjectClasses || sC.subjectClasses.indexOf( sRes['class'] )>-1 ) 
 							self.staCreClasses.subjectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
 						if( !sC.objectClasses || sC.objectClasses.indexOf( sRes['class'] )>-1 )
@@ -1085,7 +1084,7 @@ modules.construct({
 		};
 //		console.debug('permissions',sRes,self.staCreClasses,self.staCre)
 	}
-	function renderStatements(net) {
+	function renderStatements( net ) {
 		// net contains resources and statements as a SpecIF data-set for graph rendering,
 		// where the selected resource is the first element in the resources list.
 
@@ -1885,6 +1884,9 @@ var fileRef = new function() {
 	};
 	self.render = (f, opts)=>{
 		if( typeof(opts)!='object' ) opts = {};
+
+		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
 		if( !opts.timelag ) opts.timelag = CONFIG.imageRenderingTimelag;
 
 //		console.debug('render',f,opts);
@@ -1892,7 +1894,6 @@ var fileRef = new function() {
 			Array.from(document.getElementsByClassName(tagId(f.title)), 
 				(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
 			);
-//			document.getElementById(tagId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
 			return
 		};
 		// ToDo: in case of a server, the blob itself must be fetched first ...
@@ -1919,8 +1920,6 @@ var fileRef = new function() {
 
 					
 			function showRaster(f,opts) {
-				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-				// increase the timelag between building the DOM and rendering the images, if necessary.
 				blob2dataURL( f, (r,fTi,fTy)=>{
 					// add image to DOM using an image-tag with data-URI:
 					Array.from( document.getElementsByClassName(tagId(fTi)), 
@@ -1943,8 +1942,6 @@ var fileRef = new function() {
 					rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
 					pend = 0;		// the count of embedded images waiting for transformation
 				
-				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-				// increase the timelag between building the DOM and rendering the images, if necessary.
 //				console.debug('showSvg',f,opts);
 				// Read and render SVG:
 				blob2text( f, (r)=>{
@@ -2132,8 +2129,6 @@ var fileRef = new function() {
 			function showBpmn(f,opts) {
 //				console.debug('showBpmn',f);
 			
-				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-				// increase the timelag between building the DOM and rendering the images, if necessary.
 				// Read and render BPMN:
 				blob2text( f, (b,fTi)=>{
 					bpmn2svg(b)
@@ -2297,7 +2292,7 @@ var fileRef = new function() {
 		);
 //		console.debug('fromGUI result:', JSON.stringify(txt));
 
-		return txt
-*/	};
+		return txt  */
+	};
 	return self
 };	// end of fileRef()

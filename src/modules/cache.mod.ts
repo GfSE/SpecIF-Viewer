@@ -2515,58 +2515,57 @@ const specif = {
 	check: ( data, opts )=>{
 		// Check the SpecIF data for schema compliance and consistency;
 		// no data of app.cache is modified:
-		var cDO = $.Deferred();
-		if( typeof(data)!='object' ) {
-			cDO.reject( {status:999,statusText:'No SpecIF data to check'} );
-			return cDO
-		};
-		// 1. Validate the data using the SpecIF schema:
-		cDO.notify('Checking schema',10);
+		return new Promise(
+			(resolve,reject)=>{
 
-		// Get the specified schema file from the server:
-		httpGet({
-		//	url: "https://specif.de/v"+data.specifVersion+"/schema",
-			url: data['$schema'] || 'https://specif.de/v'+data.specifVersion+'/schema',
-			responseType: 'arraybuffer',
-			withCredentials: false,
-			done: (xhr)=>{
-//				console.debug('schema', xhr);
-				// 1. check data against schema:
-				let rc = checkSchema( data, {schema: JSON.parse( buf2str(xhr.response) )} );
-				if( rc.status!=0 ) {
-					// older versions of the checking routine don't set the responseType:
-					if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-						rc.responseType = 'text';
-					cDO.reject( rc );
-					return
+				if( typeof(data)!='object' ) {
+					reject( {status:999,statusText:'No SpecIF data to check'} )
 				};
 
-				// 2. Check further constraints:
-				cDO.notify('Checking constraints',20);
-				rc = checkConstraints( data, opts );
-				if( rc.status==0 ) {
-//					console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
-					cDO.resolve( data, rc )
-				} else {
-					// older versions of the checking routine don't set the responseType:
-					if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-						rc.responseType = 'text';
-//					console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
-					cDO.reject( rc )
-				}
-			},
-			fail: (xhr)=>{
-				switch( xhr.status ) {
-					case 404:
-						let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
-						xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
-					default:
-						cDO.reject(xhr)
-				}
+				// 1. Validate the data using the SpecIF schema:
+
+				// Get the specified schema file from the server:
+				httpGet({
+					url: data['$schema'] || 'https://specif.de/v'+data.specifVersion+'/schema',
+					responseType: 'arraybuffer',
+					withCredentials: false,
+					done: (xhr)=>{
+//						console.debug('schema', xhr);
+						// 1. check data against schema:
+						let rc = checkSchema( data, {schema: JSON.parse( buf2str(xhr.response) )} );
+						if( rc.status!=0 ) {
+							// older versions of the checking routine don't set the responseType:
+							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
+								rc.responseType = 'text';
+							reject( rc );
+							return
+						};
+
+						// 2. Check further constraints:
+						rc = checkConstraints( data, opts );
+						if( rc.status==0 ) {
+//							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
+							resolve( data, rc )
+						} else {
+							// older versions of the checking routine don't set the responseType:
+							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
+								rc.responseType = 'text';
+//							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
+							reject( rc )
+						}
+					},
+					fail: (xhr)=>{
+						switch( xhr.status ) {
+							case 404:
+								let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
+								xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
+							default:
+								reject(xhr)
+						}
+					}
+				})
 			}
-		//	then:
-		});
-		return cDO
+		)
 	},
 	toInt: ( spD )=>{
 		"use strict";

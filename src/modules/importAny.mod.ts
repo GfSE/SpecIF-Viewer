@@ -388,8 +388,7 @@ modules.construct({
 //		console.debug('handleResult',simpleClone(data));
 
 		return specif.check( data, self.format.opts )
-			.fail( handleError )
-			.done( function(dta) {
+			.then( (dta)=>{
 			/*	// First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
@@ -480,7 +479,9 @@ modules.construct({
 							.fail( handleError )
 				};
 				console.info(importMode.id+' project',dta.title||dta.id)
-			})
+			},
+			handleError 
+		)
 	}; 
 	function setProgress(msg,perc) {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
