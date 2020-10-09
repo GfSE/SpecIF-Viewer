@@ -20,7 +20,7 @@ modules.construct({
 		toEdit;					// the classified properties to edit
 //	self.newRes;				// the resource to edit
 	self.newFiles = [];			// collect uploaded files before committing the change
-	self.checkForm = new CheckForm();
+	self.dialogForm = new DialogForm();
 
 	self.init = ()=>{
 //		console.debug('resourceEdit.init')
@@ -28,7 +28,7 @@ modules.construct({
 	};
 	self.clear = ()=>{
 		self.newFiles.length = 0;
-		self.checkForm.list.length = 0;
+		self.dialogForm.list.length = 0;
 	};
 
 	// The choice of modal dialog buttons:
@@ -153,7 +153,7 @@ modules.construct({
 				message: (thisDlg)=>{
 					var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
 					// field for the title property:
-					form += textForm( ti, languageValueOf(toEdit.title), 'line' ); 
+					form += textField( ti, languageValueOf(toEdit.title), 'line' ); 
 					// fields for the description properties: 
 					toEdit.descriptions.forEach( (d)=>{
 						form += editP(d)
@@ -190,28 +190,28 @@ modules.construct({
 							return renderDiagram(p,opts)
 						} else {
 							// add parameters to check this input field:
-							self.checkForm.add( ti, dT );
+							self.dialogForm.addField( ti, dT );
 							// it is a text (in case of xhtml, it may contain a diagram reference:
-							return textForm( ti, languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line', myFullName+'.check()' )
+							return textField( ti, languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line', myFullName+'.check()' )
 						};
 					case 'xs:enumeration':
 						let separatedValues = p.value.split(','),
 							vals = forAll( dT.values, (v)=>{ return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-							return checkboxForm( ti, vals )
+							return checkboxField( ti, vals )
 						} else {
-							return radioForm( ti, vals )
+							return radioField( ti, vals )
 						};
 					case 'xs:boolean':
 //						console.debug('xs:boolean',ti,p,pC);
-						return booleanForm( ti, p.value=='true' );
+						return booleanField( ti, p.value=='true' );
 					case 'xs:dateTime':
 					case 'xs:integer':
 					case 'xs:double':
 						// add parameters to check this input field:
-						self.checkForm.add( ti, dT );
-						return textForm( ti, p.value, 'line', myFullName+'.check()' )
+						self.dialogForm.addField( ti, dT );
+						return textField( ti, p.value, 'line', myFullName+'.check()' )
 				};
 				return
 
@@ -265,7 +265,7 @@ modules.construct({
 						//	size: BootstrapDialog.SIZE_WIDE,
 							message: (thisDlg)=>{
 								var form = '<form id="attrInput" role="form" >'
-										+ radioForm( i18n.LblResourceClass, resClasses )
+										+ radioField( i18n.LblResourceClass, resClasses )
 										+ '</form>';
 								return $( form ) 
 							},
@@ -327,7 +327,7 @@ modules.construct({
 	self.check = ()=>{
 		// called on every key-input;
 		// check all input fields:
-		let notOk = !self.checkForm.do();
+		let notOk = !self.dialogForm.check();
 		// enable save buttons, if all input fields have acceptable content:
 		Array.from( document.getElementsByClassName('btn-modal-save'), (btn)=>{
 			btn.disabled = notOk

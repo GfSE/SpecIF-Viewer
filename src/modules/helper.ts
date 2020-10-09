@@ -1,6 +1,5 @@
-///////////////////////////////
-/*	helper functions for Javascript.
-	Dependencies: jQuery 3.0, bootstrap 3.
+/*	helper functions for iLaH.
+	Dependencies: jQuery 3.0
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
@@ -10,31 +9,32 @@
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
-function attrV( lbl, val, cssCl ) {
-	// assemble a label:value pair resp. a wide value field for display:
+function renderProp( lbl, val, cssCl ) {
+	// show a property value:
 	cssCl = cssCl ? ' '+cssCl : '';
 	if( typeof(val)=='string' ) 
 			val = noCode( val ).toHTML()
 	else	val = '';
 	
+	// assemble a label:value pair resp. a wide value field for display:
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>'
 }
-function CheckForm() {
-	// Construct an object performing the key-by-key input checking.
+function DialogForm() {
+	// Construct an object performing the key-by-key input checking on an input form;
+	// check *all* fields on a key-stroke and return the overall result.
 	var self = this;
 	self.list = [];  // the list of parameter-sets, each for checking a certain input field.
 	self.init = function() {
-		self.list.length = 0;
+		self.list.length = 0
 	};
-	self.add = function( elementId, dataType ) {
+	self.addField = function( elementId, dataType ) {
 		// Add a parameter-set for checking an input field;
 		// - 'elementId' is the id of the HTML input element
 		// - 'dataType' is the dataType of the property
 		self.list.push( { label:elementId, type:dataType } );
-//		console.debug( 'checkForms', self.list );
 	};
-	self.do = function() {
+	self.check = function() {
 		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
 		let val, ok, allOk = true;
 		self.list.forEach( (cPs)=>{
@@ -46,30 +46,28 @@ function CheckForm() {
 				case 'xs:string':
 				case 'xhtml':
 					ok = cPs.type.maxLength==undefined || val.length<=cPs.type.maxLength;
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:double':
 					ok = val.length<1 || RE.Real(cPs.type.fractionDigits).test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:integer':
 					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
 					break;
 				case 'xs:dateTime':
-					ok = val.length<1 || RE.IsoDate.test(val);
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					ok = val.length<1 || RE.IsoDate.test(val)
+				// no need to check enumeration
 			};
+			setTextState( cPs.label, ok? 'has-success':'has-error' );
 			allOk = allOk && ok;
-//			console.debug( 'do ', cPs, val );
+//			console.debug( 'DialogForm.check: ', cPs, val );
 		});
 		return allOk
 	};
 	return self
 }
-function textForm( lbl, val, typ, fn ) {  
+function textField( lbl, val, typ, fn ) {  
 	// assemble a form for text input:
-//	console.debug('textForm 1',lbl,val,typ,fn);
+//	console.debug('textField 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
 			val = noCode( val )
@@ -84,7 +82,7 @@ function textForm( lbl, val, typ, fn ) {
 			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
 	else	fG = '<div class="attribute" >';				// for display field
 
-//	console.debug('textForm 2',lbl.label,val,typ,fn,fG);
+//	console.debug('textField 2',lbl.label,val,typ,fn,fG);
 	switch( lbl.display ) {
 		case 'none':
 			aC = 'attribute-wide';
@@ -162,8 +160,8 @@ function getTextLength( lbl ) {
 	}
 }
 				
-function radioForm( lbl, entries, opts ) {
-	// assemble the form for a set of radio buttons:
+function radioField( lbl, entries, opts ) {
+	// assemble an input field for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let rB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
@@ -207,8 +205,8 @@ function radioValue( lbl ) {
 	// get the selected radio button, it is the index number as string:
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
 }
-function checkboxForm( lbl, entries, opts ) {
-	// assemble the form for a set of checkboxes;
+function checkboxField( lbl, entries, opts ) {
+	// assemble an input field for a set of checkboxes:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let cB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
@@ -249,8 +247,8 @@ function checkboxValues( lbl ) {
 	};
 	return resL
 }
-function booleanForm( lbl, val, opts ) {
-//	console.debug('booleanForm',lbl,val);
+function booleanField( lbl, val, opts ) {
+//	console.debug('booleanField',lbl,val);
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
@@ -668,7 +666,7 @@ String.prototype.toHTML = function() {
 };
 // https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
 function isHTML(str) {
-  var doc = new DOMParser().parseFromString(str, "text/html");
+  let doc = new DOMParser().parseFromString(str, "text/html");
   return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
 }
 function makeHTML(str,opts) {
@@ -758,7 +756,7 @@ if (!String.prototype.stripHTML) {
 // Add a link to an isolated URL:
 String.prototype.linkifyURLs = function( opts ) {
 	// perform the operation, unless specifically disabled:
-	if( typeof(opts)=='object' && !opts.linkifiedURLs ) return this;
+	if( typeof(opts)=='object' && !opts.linkifyURLs ) return this;
 	return this.replace( RE.URI,  
 		( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 )=>{ 
 			// all links which do not start with "http" are considered local by most browsers:
@@ -1224,14 +1222,14 @@ function clearUrlParams() {
 //	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1])    // last element is 'appname.html' without url parameters;
 };
-function httpGet(parms) {
+function httpGet(params) {
 	// https://blog.garstasio.com/you-dont-need-jquery/
 	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', parms.url, true);
-	if( parms.withCredentials ) xhr.withCredentials = "true";
+	xhr.open('GET', params.url, true);
+	if( params.withCredentials ) xhr.withCredentials = "true";
 	// https://stackoverflow.com/a/42916772/2214
-	xhr.responseType = parms.responseType;
+	xhr.responseType = params.responseType;
 	xhr.onreadystatechange = function() {
 //		console.debug('xhr',this.readyState,this)
 		if (this.readyState<4 ) return;
@@ -1240,15 +1238,15 @@ function httpGet(parms) {
 				case 200:
 				case 201:
 					// done without error:
-					if( typeof(parms.done)=="function" ) parms.done(this);
+					if( typeof(params.done)=="function" ) params.done(this);
 					break;
 				default:
 					// done with error:
-					if( typeof(parms.fail)=="function" ) parms.fail(this)
+					if( typeof(params.fail)=="function" ) params.fail(this)
 			}
 		};
 		// continue in case of success and error:
-		if( typeof(parms.then)=="function" ) parms.then()	
+		if( typeof(params.then)=="function" ) params.then()	
 	};
 	xhr.send(null)
 }

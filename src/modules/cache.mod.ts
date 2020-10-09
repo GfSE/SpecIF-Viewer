@@ -371,30 +371,30 @@ function Project( pr ) {
 	}
 	function substituteDT(prj,rId,nId) {
 		// For all propertyClasses, substitute new by the original dataType:
-		substituteAtt(prj.propertyClasses,'dataType',rId,nId)
+		substituteProp(prj.propertyClasses,'dataType',rId,nId)
 	}
 	function substitutePC(prj,rId,nId) {
 		// For all resourceClasses, substitute new by the original propertyClass:
 		substituteLe(prj.resourceClasses,'propertyClasses',rId,nId);
 		// Also substitute the resource properties' class:
 		prj.resources.forEach( (res)=>{
-			substituteAtt(res.properties,'class',rId,nId)
+			substituteProp(res.properties,'class',rId,nId)
 		});
 		// The same with the statementClasses:
 		substituteLe(prj.statementClasses,'propertyClasses',rId,nId);
 		prj.statements.forEach( (sta)=>{
-			substituteAtt(sta.properties,'class',rId,nId)
+			substituteProp(sta.properties,'class',rId,nId)
 		})
 	}
 	function substituteRC(prj,rId,nId) {
 		// Substitute new by original resourceClasses:
 		substituteLe(prj.statementClasses,'subjectClasses',rId,nId);
 		substituteLe(prj.statementClasses,'objectClasses',rId,nId);
-		substituteAtt(prj.resources,'class',rId,nId)
+		substituteProp(prj.resources,'class',rId,nId)
 	}
 	function substituteSC(prj,rId,nId) {
 		// Substitute new by original statementClasses:
-		substituteAtt(prj.statements,'class',rId,nId)
+		substituteProp(prj.statements,'class',rId,nId)
 	}
 	function substituteR(prj,r,n,opts) {
 		// Substitute resource n by r in all references of n,
@@ -438,22 +438,22 @@ function Project( pr ) {
 		// 3 Replace the references in all hierarchies:
 		substituteRef(prj.hierarchies,r.id,n.id)
 	}
-	function substituteAtt(L,attN,rAV,dAV) {
+	function substituteProp(L,propN,rAV,dAV) {
 		// replace ids of the duplicate item by the id of the original one;
-		// this applies to the attribute 'attN' of each element in the list L:
+		// this applies to the property 'propN' of each element in the list L:
 		if( Array.isArray(L) )
-			L.forEach( (e)=>{ if(e[attN]==dAV) e[attN] = rAV } )
+			L.forEach( (e)=>{ if(e[propN]==dAV) e[propN] = rAV } )
 	}
-	function substituteLe(L,attN,rAV,dAV) {
+	function substituteLe(L,propN,rAV,dAV) {
 		// Replace the duplicate id by the id of the original item;
-		// so replace dAV by rAV in the list named 'attN'
-		// (for example: in L[i].attN (which is a list as well), replace dAV by rAV):
+		// so replace dAV by rAV in the list named 'propN'
+		// (for example: in L[i].propN (which is a list as well), replace dAV by rAV):
 		let idx;
 		if( Array.isArray(L) )
 			L.forEach( (e)=>{
-				if( !Array.isArray(e[attN]) ) return;
-				idx = e[attN].indexOf(dAV);
-				if( idx>-1 ) e[attN].splice( idx, 1, rAV )
+				if( !Array.isArray(e[propN]) ) return;
+				idx = e[propN].indexOf(dAV);
+				if( idx>-1 ) e[propN].splice( idx, 1, rAV )
 			})
 	}
 	function substituteRef(L,rId,dId) {
@@ -1726,12 +1726,12 @@ function Project( pr ) {
 		var pnl =  '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 						// add 'zero with space' (&#x200b;) to make the label = div-id unique:
-				+ 		textForm( '&#x200b;'+i18n.LblProjectName, self.data.title, 'line', exportOptionsClicked )
-				+ 		textForm( '&#x200b;'+i18n.LblFileName, self.data.title, 'line', exportOptionsClicked );
+				+ 		textField( '&#x200b;'+i18n.LblProjectName, self.data.title, 'line', exportOptionsClicked )
+				+ 		textField( '&#x200b;'+i18n.LblFileName, self.data.title, 'line', exportOptionsClicked );
 		switch( fmt ) {
 			case 'epub':
 			case 'oxml':
-				pnl +=	checkboxForm(
+				pnl +=	checkboxField(
 						//	i18n.LblOptions,
 							i18n.modelElements,
 							[
@@ -1759,7 +1759,7 @@ function Project( pr ) {
 						+     '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
 					//	+		"<h4>"+i18n.LblFormat+"</h4>"
 						+		"<p>"+i18n.MsgExport+"</p>"
-						+		radioForm(
+						+		radioField(
 									i18n.LblFormat,
 									[
 								//		{ title: 'SpecIF v0.10.8', id: 'specif-v0.10.8' },
@@ -1867,7 +1867,7 @@ function Project( pr ) {
 				opts.lookupTitles = false;  // applies to specif.toExt()
 				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
-				opts.linkifiedURLs = true;
+				opts.linkifyURLs = true;
 
 				let data = specif.toExt( self.data, opts ),
 					options = {
@@ -2820,14 +2820,6 @@ const specif = {
 				// and internally they are stored as string as well to avoid inaccuracies
 				// by multiple transformations:
 				oE.value = cleanValue(iE.value);
-			/*	switch( dT.type ) {
-					case 'xhtml':
-					//	oE.value = iE.value.unescapeHTMLEntities();  // includes noCode(), works
-						oE.value = makeHTML(iE.value.unescapeHTMLTags());  // unescapeHTMLTags includes noCode()
-						break;
-					default:
-						oE.value = cleanValue(iE.value)
-				};  */
 				// sub-elements do not have their own revision and change info
 //				console.debug('propValue 2int',iE,pT,oE);
 				return oE
@@ -3114,10 +3106,9 @@ const specif = {
 					let dT = dataTypeOf( iD, iE['class'] );
 					switch( dT.type ) {
 						case 'xs:string':
-							oE.value = languageValueOf( iE.value, opts );
-							break;
-						case 'xhtml':
 					//		oE.value = languageValueOf( iE.value, opts );
+					//		break;
+						case 'xhtml':
 							oE.value = makeHTML( languageValueOf( iE.value, opts ), opts );
 //							console.debug('p2ext',iE.value,languageValueOf( iE.value, opts ),oE.value);
 							break;
@@ -3125,11 +3116,11 @@ const specif = {
 							// an id of the dataType's value is given in this case,
 							// so it can be taken directly:   */
 						default:
-							oE.value = iE.value;
+							oE.value = iE.value
 					}
 				} else {
 					// for SpecIF export, keep full data structure:
-					oE.value = iE.value;
+					oE.value = iE.value
 				};
 				// properties do not have their own revision and change info; the parent's apply.
 				return oE

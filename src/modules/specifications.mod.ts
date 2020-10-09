@@ -364,7 +364,7 @@ modules.construct({
 	self.doRefresh = ( parms )=>{
 		// Route execution depending on the current state (selected view):
 		// This routine is called in the following situations:
-		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in editing mode.
+		// - user clicks in the tree -> update the view only if in a pure reading mode, but not in editing mode.
 		// - cache update is signalled -> again, refresh only any content in view mode.
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
 //		console.debug('doRefresh',parms);
@@ -425,15 +425,15 @@ modules.construct({
 		
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
 		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
-			txtAtT = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
-		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtAtT.dataType );
+			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
+		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtPrC.dataType );
 
 		var addC = new BootstrapDialog({
 			title: i18n.phrase( 'LblAddCommentTo', self.tree.selectedNode.name ),
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(textForm( txtLbl, '', 'area' )) );
+				form.append( $(textField( txtLbl, '', 'area' )) );
 				return form 
 			},
 			buttons: [{
@@ -1299,7 +1299,7 @@ function Resource( obj ) {
 
 			opts.dynLinks 
 				= opts.clickableElements
-				= opts. linkifiedURLs
+				= opts. linkifyURLs
 				= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
 			// ToDo: Consider to make it a user option:
 			opts.unescapeHTMLTags = true;
@@ -1349,14 +1349,14 @@ function Resource( obj ) {
 		}; */
 		
 		// 3 Fill a separate column to the right
-		// 3.1 The remaining atts:
+		// 3.1 The remaining properties:
 		self.toShow.other.forEach( ( prp )=>{
 			if( showPrp( prp, opts ) ) {
-				rO += attrV( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' )
+				rO += renderProp( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' )
 			}
 		});
 		// 3.2 The type info:
-	//	rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
+	//	rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
 		// 3.3 The change info depending on selectedView:
 		rO += renderChangeInfo( self.toShow );		
 		rO +=   '</div>'	// end of content-other
@@ -1378,7 +1378,7 @@ function Resource( obj ) {
 				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 						dynLinks: true,
 						clickableElements: true,
-						linkifiedURLs: true
+						linkifyURLs: true
 					};
 				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
 			}
@@ -1386,10 +1386,10 @@ function Resource( obj ) {
 		// 3 The remaining properties:
 		self.toShow.other.forEach( function( prp ) {
 //			console.debug('details.other',prp.value);
-			rO += attrV( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
+			rO += renderProp( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
+		rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
 		// 5 The change info depending on selectedView:
 		rO += renderChangeInfo( self.toShow );
 //		console.debug( 'Resource.details', self.toShow, rO );
@@ -1413,11 +1413,11 @@ function Resource( obj ) {
 		var rChI = '';
 		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.objectRevisions: 
-				rChI = 	attrV( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
+				rChI = 	renderProp( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
 				// no break
 			case '#'+CONFIG.comments: 
-				rChI += attrV( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
-					+	attrV( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' )
+				rChI += renderProp( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
+					+	renderProp( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' )
 		//	default: no change info!			
 		};
 		return rChI
@@ -1536,7 +1536,7 @@ function propertyValueOf( prp, opts ) {
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
 	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-	if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false;
+	if( typeof(opts.linkifyURLs)!='boolean' ) 	opts.linkifyURLs = false;
 	// some environments escape the tags on export, e.g. camunda / in|flux:
 	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
 	// markup to HTML:

@@ -244,18 +244,16 @@ function toEpub( data, opts ) {
 //						console.debug("cannot store ",ePub.fileName+".epub");
 						if( typeof(opts.fail)=="function" ) opts.fail({status:299,statusText:"Cannot store "+ePub.fileName+".epub"})
 					}
-				);
-			return
-
-			// ---------- helper -----------
-			function itemById(L,id) {
-				if(!L||!id) return null;
-				// given the ID of an element in a list, return the element itself:
-				id = id.trim();
-				for( var i=L.length-1;i>-1;i-- )
-					if( L[i].id === id ) return L[i];   // return list item
-				return null
-			}
+				)
+		}
+	}
+	// ---------- helper -----------
+	function itemBy( L, p, s ) {
+		if( L && p && s ) {
+			// Return the element in list 'L' whose property 'p' equals searchterm 's':
+		//	s = s.trim();
+			for( var i=L.length-1;i>-1;i-- )
+				if( L[i][p]==s ) return L[i]   // return list item
 		}
 	}
 	function nameOf( str ) {

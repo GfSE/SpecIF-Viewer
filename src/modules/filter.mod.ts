@@ -717,12 +717,12 @@ modules.construct({
 	}; */
 	function renderTextFilterSettings( flt ) {
 		// render a single panel for text search settings:
-		return textForm( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )
+		return textField( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )
 			+	renderEnumFilterSettings( flt )
 	}
 	function renderEnumFilterSettings( flt ) {
 		// render a single panel for enum filter settings:
-		return checkboxForm( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} )
+		return checkboxField( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} )
 	}
 	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) }
