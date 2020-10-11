@@ -49,6 +49,8 @@ modules.construct({
 		// - sort properties according to the propertyClasses
 		// - in ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 		
+		console.debug( 'ioReqif.toReqif', pr );
+
 		const date = new Date().toISOString(),
 			ns_xhtml = 'xhtml';
 
@@ -221,8 +223,8 @@ modules.construct({
 			xml += '<SPECIFICATION '+commonAtts( el )+'>'
 				+		'<TYPE><SPECIFICATION-TYPE-REF>'+el['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
 				+		attsOf( el )
-				+   	childrenOf( el );
-			xml + '</SPECIFICATION>'
+				+   	childrenOf( el )
+				+ '</SPECIFICATION>'
 		});
 		xml +=  '</SPECIFICATIONS>'
 			+	'<SPEC-RELATION-GROUPS></SPEC-RELATION-GROUPS>'

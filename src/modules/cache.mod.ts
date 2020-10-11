@@ -2807,8 +2807,6 @@ const specif = {
 			}
 			// a property:
 			function p2int( iE ) {
-			/*	let pT = itemById( iD.propertyClasses, iE[names.pClass] ),
-					dT = itemById( iD.dataTypes, pT.dataType ); */
 				var	oE = {
 						// no id
 						class: iE[names.pClass]
@@ -2820,7 +2818,7 @@ const specif = {
 				// and internally they are stored as string as well to avoid inaccuracies
 				// by multiple transformations:
 				oE.value = cleanValue(iE.value);
-				// sub-elements do not have their own revision and change info
+				// properties do not have their own revision and change info
 //				console.debug('propValue 2int',iE,pT,oE);
 				return oE
 			}
@@ -2828,10 +2826,10 @@ const specif = {
 			function a2int( iE ) {
 				var oE = i2int( iE );
 //				console.debug('a2int',iE,simpleClone(oE));
-				if( iE.properties && iE.properties.length>0 )
-					oE.properties = forAll( iE.properties, p2int );
 				if( iE.title ) {
-					oE.title = cleanValue(iE.title)
+					oE.title = cleanValue(iE.title);
+				if( iE.properties && iE.properties.length>0 )
+					oE.properties = forAll( iE.properties, p2int )
 				};
 				return oE
 			}
@@ -2874,7 +2872,6 @@ const specif = {
 					iR['class'] = eH[names.hClass];
 					iD.resources.push(iR);
 
-			//		if(iR.title) iH.title = iR.title;
 					if(eH.revision) iH.revision = eH.revision.toString()
 				} else {
 					// starting v0.10.8:
@@ -3001,7 +2998,7 @@ const specif = {
 					id: iE.id,
 					changedAt: iE.changedAt
 				};
-				// oE.title created later depending on the element
+				oE.title = titleOf( iE, opts );
 				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
 				if( iE.revision ) oE.revision = iE.revision;
 				if( iE.replaces ) oE.replaces = iE.replaces;
@@ -3013,7 +3010,6 @@ const specif = {
 			// a data type:
 			function dT2ext( iE ) {
 				var oE = i2ext( iE );
-				oE.title = titleOf( iE, opts );
 				oE.type = iE.type;
 				switch( iE.type ) {
 					case "xs:double":
@@ -3038,7 +3034,6 @@ const specif = {
 			// a property class:
 			function pC2ext( iE ) {
 				var oE = i2ext( iE );
-				oE.title = titleOf( iE, opts );
 				if( iE.value ) oE.value = iE.value;  // a default value
 				oE.dataType = iE.dataType;
 				let dT = itemById( iD.dataTypes, iE.dataType );
@@ -3066,7 +3061,6 @@ const specif = {
 			// common for all instance classes:
 			function aC2ext( iE ) {
 				var oE = i2ext( iE );
-				oE.title = titleOf(iE,opts);
 				if( iE.icon ) oE.icon = iE.icon;
 				if( iE.instantiation ) oE.instantiation = iE.instantiation;
 				if( iE._extends ) oE['extends'] = iE._extends;
@@ -3106,16 +3100,24 @@ const specif = {
 					let dT = dataTypeOf( iD, iE['class'] );
 					switch( dT.type ) {
 						case 'xs:string':
-					//		oE.value = languageValueOf( iE.value, opts );
-					//		break;
 						case 'xhtml':
-							oE.value = makeHTML( languageValueOf( iE.value, opts ), opts );
-//							console.debug('p2ext',iE.value,languageValueOf( iE.value, opts ),oE.value);
-							break;
-					/*	case 'xs:enumeration':
-							// an id of the dataType's value is given in this case,
-							// so it can be taken directly:   */
+							if( opts.targetLanguage ) {
+								if( CONFIG.titleProperties.indexOf( iE.title )>-1
+									|| CONFIG.headingProperties.indexOf( iE.title )>-1 )
+									// if it is a title, remove all formatting:
+									oE.value = languageValueOf( iE.value, opts ).stripHTML();
+								else
+									// otherwise transform to HTML, if possible;
+									// especially for publication, for example using WORD format:
+									oE.value = makeHTML( languageValueOf( iE.value, opts ), opts )
+								
+	//							console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
+								break
+							}
+							// else: no break - return the original value
 						default:
+							//	in case of 'xs:enumeration', 
+							//  an id of the dataType's value is given, so it can be taken directly:
 							oE.value = iE.value
 					}
 				} else {
@@ -3138,7 +3140,6 @@ const specif = {
 			// a resource:
 			function r2ext( iE ) {
 				var oE = a2ext( iE );
-				oE.title = elementTitleOf( iE, opts );
 //				console.debug('resource 2int',iE,oE);
 				return oE
 			}
@@ -3155,10 +3156,7 @@ const specif = {
 				// The statements usually do use a vocabulary item (and not have an individual title),
 				// so we lookup, if so desired, e.g. when exporting to ePub:
 				// ToDo: Take the title from statement properties, if provided (similarly to resources).
-				// Take the statementClass's title, if the statement does not have it:
-				if( opts.targetLanguage && !iE.title )
-					iE.title = itemById( iD.statementClasses, iE['class'] ).title;
-				oE.title = titleOf(iE,opts);
+
 				if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 				// for the time being, multiple revisions are not supported:
 				if( opts.revisionDate ) {
@@ -3329,11 +3327,12 @@ function elementTitleOf( el, opts, dta ) {
 	// Get the title of a resource or a statement
 	// ... from the properties or a replacement value in case of default:
 	if( typeof(el)!='object' ) return;
-	// in case of a resource, we never want to lookup a title,
-	// in case of a statement, we would want to:
 	let pt = titleFromProperties( el.properties, opts ) || titleOf( el, opts );
 	// if it is a statement and does not have a title of it's own, take the class' title:
 // 	console.debug('elementTitleOf',el,opts,pt);
+
+	// In case of a resource, we never want to lookup a title,
+	// however in case of a statement, we do:
 	if( el.subject ) {
 		// it is a statement
 		if( !pt && dta )
@@ -3360,7 +3359,7 @@ function elementTitleOf( el, opts, dta ) {
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //			console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-			return languageValueOf( pL[idx].value, opts ).stripHTML()
+			return languageValueOf( pL[idx].value, opts )
 		};
 	//	return undefined
 	}
@@ -3512,7 +3511,7 @@ function classifyProps( el, prj ) {
 	if( !prj ) prj = app.cache.selectedProject.data;
 	var cP = {
 			id: el.id,
-			title: undefined,
+		//	title: undefined,  .. assigned further down
 			class: itemById( prj.resourceClasses, el['class']),  // the object, not the id !
 			revision: el.revision,
 			descriptions: [],

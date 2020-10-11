@@ -1399,7 +1399,7 @@ function Resource( obj ) {
 		if( !clsPrp.title ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = titleOf( clsPrp, opts );
+		let ti = titleOf( clsPrp, opts ).stripHTML();
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
