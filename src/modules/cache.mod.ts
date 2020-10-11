@@ -7,12 +7,15 @@
 	We appreciate any correction, comment or contribution!
 */
 /*	Naming:
+	- 'item' is any SpecIF object including classes and instances
+	- 'model-element' or 'element' is a SpecIF resource or a SpecIF statement
+
 	- readX: Get it from cache, if available, or otherwise from the server. Is always asynchronous.
 	- loadX: Get it from the server and update the cache
 	- cacheX: Add to cache
 	- createX: Create a new instance of the specified data which is also cached.
 	- updateX: Add non-existing instances and update existing instances. The cache is updated.
-
+	
 	Note:
 	- No error handling - it is left to the calling layers
 */
@@ -440,7 +443,7 @@ function Project( pr ) {
 	}
 	function substituteProp(L,propN,rAV,dAV) {
 		// replace ids of the duplicate item by the id of the original one;
-		// this applies to the property 'propN' of each element in the list L:
+		// this applies to the property 'propN' of each member of the list L:
 		if( Array.isArray(L) )
 			L.forEach( (e)=>{ if(e[propN]==dAV) e[propN] = rAV } )
 	}
@@ -806,9 +809,9 @@ function Project( pr ) {
 						);
 //					console.debug('gl tL dL',gl,tL,staL);
 
-					// c. Add model elements by class to the respective folders.
-					// In case of model elements the resource class is distinctive;
-					// the title of the resource class indicates the model element type.
+					// c. Add model-elements by class to the respective folders.
+					// In case of model-elements the resource class is distinctive;
+					// the title of the resource class indicates the model-element type.
 					// List only resources which are shown on a referenced diagram:
 					let resL = resources.filter( (r)=>{ return indexBy( staL, 'object', r.id )>-1 } );
 					// in alphanumeric order:
@@ -871,7 +874,7 @@ function Project( pr ) {
 		// skip last loop, as no duplicates can be found:
 		for( n=dta.resources.length-1; n>0; n-- ) {
 			for( r=0; r<n; r++ ) {
-				// Do it for all model elements, diagrams and folders
+				// Do it for all model-elements, diagrams and folders
 				// but exclude process gateways and generated events for optional branches:
 				nR = dta.resources[n];
 				rR = dta.resources[r];
@@ -1309,7 +1312,7 @@ function Project( pr ) {
 				// Resources without properties are useless, as they do not carry any user payload (information).
 				// Note that the actual property list delivered by the server depends on the read privilege of the user.
 				// Only the properties, for which the current user has update privilege, will be compared.
-				// Use case: Update diagrams with model elements only:
+				// Use case: Update diagrams with model-elements only:
 				//		Create a user with update privileges for resourceClass 'diagram'
 				//		and property class 'title' of resourceClass 'model-element'.
 				//		Then, only the diagrams and the title of the model-elements will be updated.
@@ -2825,12 +2828,12 @@ const specif = {
 			// common for all instances:
 			function a2int( iE ) {
 				var oE = i2int( iE );
-//				console.debug('a2int',iE,simpleClone(oE));
-				if( iE.title ) {
+				// resources must have a title, but statements may come without:
+				if( iE.title )
 					oE.title = cleanValue(iE.title);
 				if( iE.properties && iE.properties.length>0 )
-					oE.properties = forAll( iE.properties, p2int )
-				};
+					oE.properties = forAll( iE.properties, p2int );
+//				console.debug('a2int',iE,simpleClone(oE));
 				return oE
 			}
 			// a resource:
@@ -2998,7 +3001,8 @@ const specif = {
 					id: iE.id,
 					changedAt: iE.changedAt
 				};
-				oE.title = titleOf( iE, opts );
+				// most items must have a title, but statements may come without:
+				if( iE.title ) oE.title = titleOf( iE, opts );
 				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
 				if( iE.revision ) oE.revision = iE.revision;
 				if( iE.replaces ) oE.replaces = iE.replaces;

@@ -144,6 +144,7 @@ modules.construct({
 					iterate( n, prepObj )
 				});
 		});
+		console.debug( 'after collecting referenced resources: ', req );
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( function(h) {
 			// The resources referenced at the lowest level of hierarchies 
