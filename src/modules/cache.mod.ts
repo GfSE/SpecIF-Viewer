@@ -527,11 +527,12 @@ function Project( pr ) {
 				maxLength: CONFIG.textThreshold,
 				changedAt: chAt
 			},{
-				id: "DT-FormattedText",
-				title: "XHTML ["+CONFIG.maxStringLength+"]",
-				description: "Formatted String with length "+CONFIG.maxStringLength,
-				type: "xhtml",
-				maxLength: CONFIG.maxStringLength,
+				id: "DT-Text",
+				title: "Text",
+			//	title: "XHTML ["+CONFIG.maxStringLength+"]",
+			//	description: "Text with length "+CONFIG.maxStringLength,
+				type: "xs:string",
+			//	maxLength: CONFIG.maxStringLength,
 				changedAt: chAt
 			}]
 		}
@@ -539,7 +540,7 @@ function Project( pr ) {
 			return [{
 					id: "PC-Description",
 					title: "dcterms:description",
-					dataType: "DT-FormattedText",
+					dataType: "DT-Text",
 					changedAt: chAt
 				},{
 					id: "PC-Type",
@@ -1765,7 +1766,6 @@ function Project( pr ) {
 						+		radioField(
 									i18n.LblFormat,
 									[
-								//		{ title: 'SpecIF v0.10.8', id: 'specif-v0.10.8' },
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
 										{ title: 'ePub v2', id: 'epub' },
@@ -1845,7 +1845,6 @@ function Project( pr ) {
 
 				switch( opts.format ) {
 					case 'reqif':
-					case 'specif-v0.10.8':
 					case 'specif':
 						storeAs( opts );
 						break;
@@ -1942,34 +1941,36 @@ function Project( pr ) {
 				}
 			}
 			function storeAs( opts ) {
-				if( !opts || ['specif-v0.10.8','specif','reqif'].indexOf(opts.format)<0 ) return null;
+				if( !opts || ['specif','reqif'].indexOf(opts.format)<0 ) return null;
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
 				switch( opts.format ) {
-					case 'specif-v0.10.8':
-						opts.specifVersion = '0.10.8';	// for backlevel compatibility
-						// no break;
 					case 'specif':
-						opts.lookupTitles = false;  // keep vocabulary terms
+						// keep vocabulary terms:
+						opts.lookupTitles = false;
 						opts.lookupValues = false;
-						opts.targetLanguage = undefined;  // export all languages
-						opts.revisionDate = undefined;  // keep all revisions
+						// export all languages:
+						opts.targetLanguage = undefined;
+						// keep all revisions:
+						opts.revisionDate = undefined;
 						break;
 					case 'reqif':
-						// take newest revision:
-						opts.revisionDate = new Date().toISOString();
 						// keep vocabulary terms:
 						opts.lookupTitles = false;
 						opts.lookupValues = false;
 						// ReqIF only supports a single Language:
-						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
+						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+						// if missing, create a title property ... ReqIF needs it:
+						opts.makeTitleProperty = true; 
+						// take newest revision:
+						opts.revisionDate = new Date().toISOString()
 				};
 				let zip = new JSZip(),
 					data = specif.toExt( self.data, opts ),
 					fName = (opts.fileName || data.title);
 
-				// Add the files:
+				// Add the files to the ZIP container:
 				if( data.files )
 					data.files.forEach( (f)=>{
 //						console.debug('zip a file',f);
@@ -1979,7 +1980,6 @@ function Project( pr ) {
 
 				// Prepare the output data:
 				switch( opts.format ) {
-					case 'specif-v0.10.8':
 					case 'specif':
 						fName += ".specif";
 						data = JSON.stringify( data );
@@ -2890,9 +2890,6 @@ const specif = {
 				// a hierarchy node:
 				function n2int( eN ) {
 					switch( typeof(eN.revision) ) {
-				/*		case 'undefined':
-						case 'string':
-							break;  */
 						case 'number':
 							eN.revision = eN.revision.toString()
 					};
@@ -2931,27 +2928,16 @@ const specif = {
 		var spD = {
 				id: iD.id,
 				title: languageValueOf( iD.title, opts ),
+				$schema: 'https://specif.de/v'+app.specifVersion+'/schema.json',
 				generator: app.title,
 				generatorVersion: app.version
 			},
-			names = {};
-
-		if( opts.specifVersion ) {
-			// for all versions <1.0:
-			names.frct = 'accuracy';
-			names.minI = 'min';
-			names.maxI = 'max';
-			spD.specifVersion = '0.10.8';
-			// before v1.0 no support for multiple languages:
-			if( !opts.targetLanguage )
-				opts.targetLanguage = browser.language
-		} else {
-			// starting SpecIF v1.0:
-			names.frct = 'fractionDigits';
-			names.minI = 'minInclusive';
-			names.maxI = 'maxInclusive';
-			spD.$schema = 'https://specif.de/v'+app.specifVersion+'/schema.json'
-		};
+			names = {
+				// starting SpecIF v1.0:
+				frct: 'fractionDigits',
+				minI: 'minInclusive',
+				maxI: 'maxInclusive'
+			};
 
 		if( iD.description ) spD.description = languageValueOf( iD.description, opts );
 		spD.rights = {
@@ -3139,7 +3125,53 @@ const specif = {
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
+				// if missing, add a title property ... e.g. ReqIF needs it:
+				if( opts.makeTitleProperty && titleIdx( oE.properties, spD )<0 ) {
+					console.debug( 'addTitleProperty I', iE, simpleClone(spD) );
+					// a. Add dataType, if not yet defined:
+					let dT = {
+							id: "DT-ShortString",
+							title: "String ["+CONFIG.textThreshold+"]",
+							description: "String with length "+CONFIG.textThreshold,
+							type: "xs:string",
+							maxLength: CONFIG.textThreshold,
+							changedAt: iE.changedAt
+						};
+					if( !Array.isArray( spD.dataTypes ) ) spD.dataTypes = [];
+					cacheE( spD.dataTypes, dT );
+					// b. Add propertyClass, if not yet defined:
+					let pC = {
+							id: "PC-Title",
+							title: "dcterms:title",
+							dataType: "DT-ShortString",
+							changedAt: iE.changedAt
+						};
+					if( !Array.isArray( spD.propertyClasses ) ) spD.propertyClasses = [];
+					cacheE( spD.propertyClasses, pC );
+					// c. Add propertyClass to element class:
+					let eC = itemById( spD.resourceClasses, iE['class'] )
+							|| itemById( spD.statementClasses, iE['class'] );
+					if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
+					cacheE( eC.propertyClasses, pC.id );
+					// d. Add title property to element;
+					//    in case of a statement, it's class' title is used by default:
+					let p = {
+							class: "PC-Title",
+							value: titleOf( iE ) || titleOf( eC )
+					};
+					if( !Array.isArray( oE.properties ) ) oE.properties = [];
+					oE.properties.unshift( p )
+					console.debug( 'addTitleProperty O', oE, simpleClone(spD) );
+				}; 
 				return oE
+				/*	function PropertyClasses(chAt) {
+						return [{
+								id: "PC-Title",
+								title: "dcterms:title",
+								dataType: "DT-ShortString",
+								changedAt: chAt
+							}]
+					} */
 			}
 			// a resource:
 			function r2ext( iE ) {

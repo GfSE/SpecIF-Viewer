@@ -88,13 +88,6 @@ function xslx2specif( buf, pN, chAt ) {
 			  maxLength: CONFIG.maxStringLength,
 			  type: "xs:string",
 			  changedAt: "2016-05-26T08:59:00+02:00"
-		/*	},{
-			  id: "DT-FormattedText",
-			  title: "Formatted Text",
-			  description: "XHTML formatted text.",
-			  maxLength: CONFIG.maxStringLength,
-			  type: "xhtml",
-			  changedAt: "2016-05-26T08:59:00+02:00" */
 			},{ 
 			  id: "DT-DateTime",  
 			  title: "Date or Timestamp",  // dataType for XLS columns with dateTime content
@@ -521,7 +514,7 @@ function xslx2specif( buf, pN, chAt ) {
 
 					// the cell value in the first line is the title, either of a property or a statement:
 					let ti = valL[0]?(valL[0].w || valL[0].v):i18n.MsgNoneSpecified,
-						pC,nC,i,maxL=0;
+						pC,nC,i;
 //					console.debug( 'getPropClass 1', ti, valL );
 
 					// Skip, if it is a statement title
@@ -549,11 +542,15 @@ function xslx2specif( buf, pN, chAt ) {
 
 					// Assign a longer text field for columns with cells having a longer text:
 					if( pC=='ShortString' ) {
-						// determine the max length of the column values:
+						let maxL=0, multLines=false;
+						// determine the max length of the column values and if there are multiple lines:
 						for( i=valL.length-1; i>0; i-- ) {
-							maxL = Math.max( maxL, valL[i]&&valL[i].v? valL[i].v.length : 0 )
+							maxL = Math.max( maxL, valL[i]&&valL[i].v? valL[i].v.length : 0 );
+							multLines = multLines || valL[i]&&typeof(valL[i].v)=='string'&&valL[i].v.indexOf('\n')>-1
 						};
-						if( maxL>CONFIG.textThreshold ) pC = 'Text'
+						// if so, choose a text property:
+						if( maxL>CONFIG.textThreshold || multLines ) 
+							pC = 'Text'
 					};
 //					console.debug( 'getPropClass 3',valL[i],pC );
 					return new PropClass( ws.name+cX, ti, pC || defaultC );

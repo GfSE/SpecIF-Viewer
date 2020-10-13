@@ -54,6 +54,117 @@ modules.construct({
 		const date = new Date().toISOString(),
 			ns_xhtml = 'xhtml';
 
+		// 0. SpecIF has a number of optional items which are required for ReqIF;
+		//    these are complemented in the following.
+		//    - Add title properties of resources and statements
+		//    - Add hierarchy root
+		
+	/*	// if missing, add a title property of resources and statements:
+			if( opts.makeTitleProperty && titleIdx( oE.properties, spD )<0 ) {
+				console.debug( 'addTitleProperty I', iE, simpleClone(spD) );
+				// a. Add dataType, if not yet defined:
+				let dT = {
+						id: "DT-ShortString",
+						title: "String ["+CONFIG.textThreshold+"]",
+						description: "String with length "+CONFIG.textThreshold,
+						type: "xs:string",
+						maxLength: CONFIG.textThreshold,
+						changedAt: iE.changedAt
+					};
+				if( !Array.isArray( spD.dataTypes ) ) spD.dataTypes = [];
+				cacheE( spD.dataTypes, dT );
+				// b. Add propertyClass, if not yet defined:
+				let pC = {
+						id: "PC-Title",
+						title: "dcterms:title",
+						dataType: "DT-ShortString",
+						changedAt: iE.changedAt
+					};
+				if( !Array.isArray( spD.propertyClasses ) ) spD.propertyClasses = [];
+				cacheE( spD.propertyClasses, pC );
+				// c. Add propertyClass to element class:
+				let eC = itemById( spD.resourceClasses, iE['class'] )
+						|| itemById( spD.statementClasses, iE['class'] );
+				if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
+				cacheE( eC.propertyClasses, pC.id );
+				// d. Add title property to element;
+				//    in case of a statement, it's class' title is used by default:
+				let p = {
+						class: "PC-Title",
+						value: titleOf( iE ) || titleOf( eC )
+				};
+				if( !Array.isArray( oE.properties ) ) oE.properties = [];
+				oE.properties.unshift( p )
+				console.debug( 'addTitleProperty O', oE, simpleClone(spD) );
+			}; */
+
+		// Add a resource as hierarchyRoot, if needed.
+		// It is assumed, 
+		// - that general SpecIF data do not have a hierarchy root with meta-data.
+		// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+		// Therefore, the somewhat complicated solution is chosen, in which hierarchyRoots are added as resources, 
+		// *only when needed* and then, later on, the resources at the root are transformed to SPECIFICATION roots.
+		// No need to consolidate, as ReqIF redefines the ATTRIBUTE-DEFINITIONS for all OBJECT-TYPES, anyways.
+		// ToDo: Design the ReqIF import and export so that a roundtrip works; neither loss nor growth is accepted.
+		cacheL( pr.dataTypes, [{
+				id: "DT-ShortString",
+				title: "String ["+CONFIG.textThreshold+"]",
+			//	description: "String with length "+CONFIG.textThreshold,
+				type: "xs:string",
+				maxLength: CONFIG.textThreshold,
+				changedAt: date
+		}, {
+				id: "DT-Text",
+				title: "Text",
+			//	description: "Text with length "+CONFIG.maxStringLength,
+				type: "xs:string",
+			//	maxLength: CONFIG.maxStringLength,
+				changedAt: date
+		}]);
+		cacheL( pr.propertyClasses, [{
+				id: "PC-Title",
+				title: "dcterms:title",
+				dataType: "DT-ShortString",
+				changedAt: date
+		}, {
+				id: "PC-Description",
+			//	id: "PC-Text",
+				title: "dcterms:description",
+				dataType: "DT-Text",
+				changedAt: date
+		}]);
+		cacheE( pr.resourceClasses, {
+				id: "RC-HierarchyRoot",
+				title: CONFIG.resClassOutline,
+				description: "Metadata of a hierarchy.",
+				isHeading: true,
+				instantiation: ['auto'],
+				propertyClasses: ["PC-Title", "PC-Description"],
+				changedAt: date
+		});
+		let res = {
+				id: "R-MetaData",
+				title: pr.title,
+				class: "RC-HierarchyRoot",
+				properties: [{
+					class: "PC-Title",
+					value: pr.title
+				}],
+				changedAt: date
+		};
+		if( pr.description ) 
+			res.properties.push({
+					class: "PC-Description",
+					value: pr.description
+			});
+		pr.resources.push( res );
+		pr.hierarchies = [{
+				id: "H-R-MetaData",
+				resource: "R-MetaData",
+				nodes: pr.hierarchies,
+				changedAt: date
+		}];
+
 		var xml = 
 				'<?xml version="1.0" encoding="UTF-8"?>'
 			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns_xhtml+'="http://www.w3.org/1999/xhtml">'
@@ -79,13 +190,16 @@ modules.construct({
 						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAtts( el )+'/>';
 						break;
 					case 'xs:integer':
-						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAtts( el )+' MAX="'+el.maxInclusive+'" MIN="'+el.minInclusive+'" />';
+						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAtts( el )
+									+' MAX="'+(el.maxInclusive||CONFIG.maxInteger)+'" MIN="'+(el.minInclusive||CONFIG.minInteger)+'" />';
 						break;
 					case 'xs:double':
-						xml += '<DATATYPE-DEFINITION-REAL '+commonAtts( el )+' MAX="'+el.maxInclusive+'" MIN="'+el.minInclusive+'" ACCURACY="'+el.fragmentDigits+'" />';
+						xml += '<DATATYPE-DEFINITION-REAL '+commonAtts( el )
+									+' MAX="'+(el.maxInclusive||CONFIG.maxReal)+'" MIN="'+(el.minInclusive||CONFIG.minReal)
+									+'" ACCURACY="'+(el.fragmentDigits||CONFIG.maxAccuracy)+'" />';
 						break;
 					case 'xs:string':
-						xml += '<DATATYPE-DEFINITION-STRING '+commonAtts( el )+' MAX-LENGTH="'+el.maxLength+'" />';
+						xml += '<DATATYPE-DEFINITION-STRING '+commonAtts( el )+' MAX-LENGTH="'+(el.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
 					case 'xhtml':
 						xml += '<DATATYPE-DEFINITION-XHTML '+commonAtts( el )+'/>';
@@ -173,7 +287,7 @@ modules.construct({
 		});
 //		console.debug( 'reqSort', req );
 		
-		// 3. Transform resourceClasses to OBJECT-TYPEs:
+		// 3. Transform resourceClasses to OBJECT-TYPES:
 		req.objTypes.forEach( function(el) {
 			xml += '<SPEC-OBJECT-TYPE '+commonAtts( el )+'>'
 				+		attrTypes( el )
@@ -188,7 +302,7 @@ modules.construct({
 				    +  '</SPEC-RELATION-TYPE>'
 			});
 		
-		// 5. Write SPECIFICATION-TYPEs:
+		// 5. Write SPECIFICATION-TYPES:
 		req.spcTypes.forEach( function(el) {
 			xml += '<SPECIFICATION-TYPE '+commonAtts( el )+'>'
 				+		attrTypes( el )
@@ -271,10 +385,10 @@ modules.construct({
 								+	'</ATTRIBUTE-DEFINITION-REAL>'
 							break;
 						case 'xs:string':
-							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
+						/*	xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+el.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-STRING>'
-							break;
+							break; */
 						case 'xhtml':
 							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+el.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
@@ -318,10 +432,10 @@ modules.construct({
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+el.value+'">'
+						/*	xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+el.value+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
-							break;
+							break; */
 						case 'xhtml':
 							// ToDo: Replace or remove XHTML tags not supported by ReqIF
 							// - <img ..>

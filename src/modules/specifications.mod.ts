@@ -1536,7 +1536,7 @@ function propertyValueOf( prp, opts ) {
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
 	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-	if( typeof(opts.linkifyURLs)!='boolean' ) 	opts.linkifyURLs = false;
+	if( typeof(opts.linkifyURLs)!='boolean' ) 		opts.linkifyURLs = false;
 	// some environments escape the tags on export, e.g. camunda / in|flux:
 	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
 	// markup to HTML:
@@ -1549,13 +1549,13 @@ function propertyValueOf( prp, opts ) {
 //	console.debug('*',prp,dT);
 	switch( dT.type ) {
 		case 'xs:string':
-			ct = languageValueOf( prp.value, opts ).toHTML();
+		/*	ct = languageValueOf( prp.value, opts ).toHTML();
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			ct = i18n.lookup( ct );
-		/*	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'  */
-			break;
+		//	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
+		//		ct = '&#x00ab;'+ct+'&#x00bb;' 
+			break; */
 		case 'xhtml':
 			ct = languageValueOf( prp.value, opts );
 			if( opts.unescapeHTMLTags )

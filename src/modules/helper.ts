@@ -13,7 +13,7 @@ function renderProp( lbl, val, cssCl ) {
 	// show a property value:
 	cssCl = cssCl ? ' '+cssCl : '';
 	if( typeof(val)=='string' ) 
-			val = noCode( val ).toHTML()
+			val = noCode( val )
 	else	val = '';
 	
 	// assemble a label:value pair resp. a wide value field for display:
@@ -96,9 +96,10 @@ function textField( lbl, val, typ, fn ) {
 	};
 	switch( typ ) {
 		case 'line':
-			fG += 	'<div class="'+aC+'">' +
-						'<input type="text" id="field'+sH+'" class="form-control"'+fn+' value="'+val+'" />' +
-					'</div>'; 
+			fG += 	'<div class="'+aC+'">'
+				+		(val.indexOf('\n')<0? '<input type="text" id="field'+sH+'" class="form-control"'+fn+' value="'+val+'" />'
+						: '<textarea id="field'+sH+'" class="form-control" rows="2"'+fn+'>'+val+'</textarea>')
+				+	'</div>'; 
 			break;
 		case 'area':
 			fG += 	'<div class="'+aC+'">' +
@@ -107,7 +108,7 @@ function textField( lbl, val, typ, fn ) {
 			break;
 		default:
 			// display the value:
-			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val.toHTML()+'</div>';
+			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val+'</div>';
 	};
 	fG += 	'</div>';
 	return fG

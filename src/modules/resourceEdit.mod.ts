@@ -192,9 +192,11 @@ modules.construct({
 							// add parameters to check this input field:
 							self.dialogForm.addField( ti, dT );
 							// it is a text (in case of xhtml, it may contain a diagram reference:
+//							console.debug( 'editP', languageValueOf(p.value,opts) );
 							return textField( ti, languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line', myFullName+'.check()' )
 						};
 					case 'xs:enumeration':
+						// no input checking needed:
 						let separatedValues = p.value.split(','),
 							vals = forAll( dT.values, (v)=>{ return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
@@ -204,6 +206,7 @@ modules.construct({
 							return radioField( ti, vals )
 						};
 					case 'xs:boolean':
+						// no input checking needed:
 //						console.debug('xs:boolean',ti,p,pC);
 						return booleanField( ti, p.value=='true' );
 					case 'xs:dateTime':
@@ -435,7 +438,7 @@ modules.construct({
 				case 'xs:string':
 				case 'xhtml':
 					// The diagrams are skipped in the calling layer above.
-//					console.debug( '*',p,textValue( titleOf(p,opts) ) );
+//					console.debug( 'getP',p,textValue( titleOf(p,opts) ) );
 					return textValue( titleOf(p,opts) );
 				case 'xs:enumeration':
 //					console.debug('xs:enumeration',p,pC,separatedValues,vals);
