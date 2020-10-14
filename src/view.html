@@ -32,7 +32,7 @@ app = new function() {
 
 	// construct main app:
 	var self = this;
-	self.version = 'v0.99.4.5';
+	self.version = 'v0.99.4.6';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
@@ -59,7 +59,7 @@ app = new function() {
 			// Let's start at the top level:
 			// no name, thus no additional script file will be loaded at top level
 			view: '#app',
-			selector: '#pageSelector',		// DOM element to choose the view of a child (top level)
+			selector: '#pageSelector',			// DOM element to choose the view of a child (top level)
 			selectorType: 'btns',
 			children: [{
 				name: 'profileAnonymous',
@@ -117,7 +117,7 @@ app = new function() {
 					view: '#'+CONFIG.relations,		// uses implicit action refresh at parent level
 					viewClass: 'content',
 					label: i18n.TabRelations,
-					selectedBy: '#selectStatements',	// DOM element in parent's selector to choose this view
+					selectedBy: '#selectStatements',// DOM element in parent's selector to choose this view
 					children: [{
 						name: 'statementsGraph'
 						// no view
@@ -154,9 +154,9 @@ app = new function() {
 			},{
 				name: 'about',
 				view: '#about',
-				viewClass: 'contentWide',		// whole width under control of the view
+				viewClass: 'contentWide',			// whole width under control of the view
 				label: i18n.IcoAbout,
-				selectedBy: '#selectAbout'		// DOM element in parent's selector to choose this view
+				selectedBy: '#selectAbout'			// DOM element in parent's selector to choose this view
 			}]
 		};
 

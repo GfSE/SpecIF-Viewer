@@ -518,48 +518,6 @@ function Project( pr ) {
 			})
 		}
 	}
-		function DataTypes(chAt) {
-			return [{
-				id: "DT-ShortString",
-				title: "String ["+CONFIG.textThreshold+"]",
-				description: "String with length "+CONFIG.textThreshold,
-				type: "xs:string",
-				maxLength: CONFIG.textThreshold,
-				changedAt: chAt
-			},{
-				id: "DT-Text",
-				title: "Text",
-			//	title: "XHTML ["+CONFIG.maxStringLength+"]",
-			//	description: "Text with length "+CONFIG.maxStringLength,
-				type: "xs:string",
-			//	maxLength: CONFIG.maxStringLength,
-				changedAt: chAt
-			}]
-		}
-		function PropertyClasses(chAt) {
-			return [{
-					id: "PC-Description",
-					title: "dcterms:description",
-					dataType: "DT-Text",
-					changedAt: chAt
-				},{
-					id: "PC-Type",
-					title: "dcterms:type",
-					dataType: "DT-ShortString",
-					changedAt: chAt
-				}]
-		}
-		function ResourceClasses(chAt) {
-			return [{
-				id: "RC-Folder",
-				title: "SpecIF:Heading",
-				description: "Folder with title and text for chapters or descriptive paragraphs.",
-				isHeading: true,
-				instantiation: ['auto','user'],
-				propertyClasses: ["PC-Description","PC-Type"],
-				changedAt: chAt
-			}]
-		}
 	self.collectResourcesByClass = ( dta, opts )=>{
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
 		return new Promise(
@@ -612,9 +570,16 @@ function Project( pr ) {
 										// 4. Create a new combined folder:
 										let dta = {
 											$schema: 'https://specif.de/v1.0/schema.json',
-											dataTypes: DataTypes(tim),
-											propertyClasses: PropertyClasses(tim),
-											resourceClasses: ResourceClasses(tim),
+											dataTypes: [
+												app.standardTypes.make('dataType',"DT-ShortString"),
+												app.standardTypes.make('dataType',"DT-Text")
+											],
+											propertyClasses: [
+												app.standardTypes.make('propertyClass',"DT-ShortString"),
+												app.standardTypes.make('propertyClass',"DT-Text")
+											],
+											resourceClasses: 
+												app.standardTypes.make('resourceClass',"RC-HierarchyRoot"),
 											resources: Folder( r2c.folderName+apx, CONFIG.resClassProcesses, tim ),
 											hierarchies: [{
 												id: "H"+r2c.folderName+apx,
@@ -694,7 +659,10 @@ function Project( pr ) {
 							if( dgL.length>0 ) {
 								let dta = {
 									$schema: 'https://specif.de/v1.0/schema.json',
-									dataTypes: DataTypes(tim),
+									dataTypes: [
+										app.standardTypes.make('dataType',"DT-ShortString"),
+										app.standardTypes.make('dataType',"DT-Text")
+									],
 									propertyClasses: PropertyClasses(tim),
 									resourceClasses: ResourceClasses(tim),
 									resources: Folders(),
@@ -2450,8 +2418,7 @@ function Project( pr ) {
 			case 'resource':		return self.data.resources;
 			case 'statement':		return self.data.statements;
 			case 'hierarchy':		return self.data.hierarchies;
-			case 'file':			return self.data.files;
-			default: return null
+			case 'file':			return self.data.files
 		}
 	}
 	function readCache( ctg, itm, opts ) {

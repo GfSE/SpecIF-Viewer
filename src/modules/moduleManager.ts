@@ -61,13 +61,13 @@ var browser,
 			return self
 		};
 		// init phase 1: Load the javascript routines common to all apps:
-		loadH( ['config', 'bootstrap', 'i18n'], {done:init2} );
+		loadH( ['config','bootstrap','i18n'], {done:init2} );
 		return
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2() {
 //			console.debug('init2',opts);
-			let loadL = ['helper', 'helperTree', 'tree', 'bootstrapDialog', 'mainCSS'];
+			let loadL = ['helper','helperTree','tree','stdTypes','bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) loadL.push('markdown');
 			loadH( loadL, {done:initDone} )
 		}
@@ -400,7 +400,7 @@ var browser,
 											};
 											return true;
 				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
-		//		case "stdTypes":			getScript( './modules/stdTypes.js' ); return true;
+				case "stdTypes":			getScript( './modules/stdTypes.js' ); return true;
 				case "helper": 				getScript( './modules/helper.js' ); return true;
 				case "helperTree": 			getScript( './modules/helperTree.js' ); return true;
 				case "cache": 				loadM( 'fileSaver' );

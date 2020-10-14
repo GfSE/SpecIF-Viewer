@@ -104,46 +104,20 @@ modules.construct({
 		// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
 		// Therefore, the somewhat complicated solution is chosen, in which hierarchyRoots are added as resources, 
 		// *only when needed* and then, later on, the resources at the root are transformed to SPECIFICATION roots.
-		// No need to consolidate, as ReqIF redefines the ATTRIBUTE-DEFINITIONS for all OBJECT-TYPES, anyways.
 		// ToDo: Design the ReqIF import and export so that a roundtrip works; neither loss nor growth is accepted.
-		cacheL( pr.dataTypes, [{
-				id: "DT-ShortString",
-				title: "String ["+CONFIG.textThreshold+"]",
-			//	description: "String with length "+CONFIG.textThreshold,
-				type: "xs:string",
-				maxLength: CONFIG.textThreshold,
-				changedAt: date
-		}, {
-				id: "DT-Text",
-				title: "Text",
-			//	description: "Text with length "+CONFIG.maxStringLength,
-				type: "xs:string",
-			//	maxLength: CONFIG.maxStringLength,
-				changedAt: date
-		}]);
-		cacheL( pr.propertyClasses, [{
-				id: "PC-Title",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: date
-		}, {
-				id: "PC-Description",
-			//	id: "PC-Text",
-				title: "dcterms:description",
-				dataType: "DT-Text",
-				changedAt: date
-		}]);
-		cacheE( pr.resourceClasses, {
-				id: "RC-HierarchyRoot",
-				title: CONFIG.resClassOutline,
-				description: "Metadata of a hierarchy.",
-				isHeading: true,
-				instantiation: ['auto'],
-				propertyClasses: ["PC-Title", "PC-Description"],
-				changedAt: date
-		});
+		cacheL( pr.dataTypes, [
+			app.standardTypes.make("dataType","DT-ShortString"),
+			app.standardTypes.make("dataType","DT-Text")
+		]);
+		cacheL( pr.propertyClasses, [
+			app.standardTypes.make("propertyClass","PC-Description"),
+			app.standardTypes.make("propertyClass","PC-Type")
+		]);
+		cacheE( pr.resourceClasses,
+			app.standardTypes.make("resourceClass","RC-HierarchyRoot")
+		);
 		let res = {
-				id: "R-MetaData",
+				id: "R-HierarchyRoot",
 				title: pr.title,
 				class: "RC-HierarchyRoot",
 				properties: [{
@@ -152,6 +126,7 @@ modules.construct({
 				}],
 				changedAt: date
 		};
+		// avoid an undefined or empty value string:
 		if( pr.description ) 
 			res.properties.push({
 					class: "PC-Description",
@@ -159,8 +134,8 @@ modules.construct({
 			});
 		pr.resources.push( res );
 		pr.hierarchies = [{
-				id: "H-R-MetaData",
-				resource: "R-MetaData",
+				id: "H-R-HierarchyRoot",
+				resource: "R-HierarchyRoot",
 				nodes: pr.hierarchies,
 				changedAt: date
 		}];
@@ -184,31 +159,31 @@ modules.construct({
 		
 		// 1. Transform dataTypes:
 		if(pr.dataTypes)	
-			pr.dataTypes.forEach( function(el) {
-				switch( el.type ) {
+			pr.dataTypes.forEach( function(dT) {
+				switch( dT.type ) {
 					case 'xs:boolean':
-						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAtts( el )+'/>';
+						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
 						break;
 					case 'xs:integer':
-						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAtts( el )
-									+' MAX="'+(el.maxInclusive||CONFIG.maxInteger)+'" MIN="'+(el.minInclusive||CONFIG.minInteger)+'" />';
+						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAttsOf( dT )
+									+' MAX="'+(dT.maxInclusive||CONFIG.maxInteger)+'" MIN="'+(dT.minInclusive||CONFIG.minInteger)+'" />';
 						break;
 					case 'xs:double':
-						xml += '<DATATYPE-DEFINITION-REAL '+commonAtts( el )
-									+' MAX="'+(el.maxInclusive||CONFIG.maxReal)+'" MIN="'+(el.minInclusive||CONFIG.minReal)
-									+'" ACCURACY="'+(el.fragmentDigits||CONFIG.maxAccuracy)+'" />';
+						xml += '<DATATYPE-DEFINITION-REAL '+commonAttsOf( dT )
+									+' MAX="'+(dT.maxInclusive||CONFIG.maxReal)+'" MIN="'+(dT.minInclusive||CONFIG.minReal)
+									+'" ACCURACY="'+(dT.fragmentDigits||CONFIG.maxAccuracy)+'" />';
 						break;
 					case 'xs:string':
-						xml += '<DATATYPE-DEFINITION-STRING '+commonAtts( el )+' MAX-LENGTH="'+(el.maxLength||CONFIG.maxStringLength)+'" />';
+						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
 					case 'xhtml':
-						xml += '<DATATYPE-DEFINITION-XHTML '+commonAtts( el )+'/>';
+						xml += '<DATATYPE-DEFINITION-XHTML '+commonAttsOf( dT )+'/>';
 						break;
 					case 'xs:enumeration':
-						xml += '<DATATYPE-DEFINITION-ENUMERATION '+commonAtts( el )+'>' +
+						xml += '<DATATYPE-DEFINITION-ENUMERATION '+commonAttsOf( dT )+'>' +
 								'<SPECIFIED-VALUES>';
-						el.values.forEach( function(val,i) {
-							xml += '<ENUM-VALUE IDENTIFIER="'+val.id+'" LONG-NAME="'+val.value+'" LAST-CHANGE="'+dateTime(el)+'" >' +
+						dT.values.forEach( function(val,i) {
+							xml += '<ENUM-VALUE IDENTIFIER="'+val.id+'" LONG-NAME="'+val.value+'" LAST-CHANGE="'+dateTime(dT)+'" >' +
 									 '<PROPERTIES><EMBEDDED-VALUE KEY="'+i+'" OTHER-CONTENT="" /></PROPERTIES>' +
 								   '</ENUM-VALUE>';
 						});
@@ -216,10 +191,10 @@ modules.construct({
 								'</DATATYPE-DEFINITION-ENUMERATION>';
 						break;
 					case 'xs:dateTime':
-						xml += '<DATATYPE-DEFINITION-DATE '+commonAtts( el )+'/>';
+						xml += '<DATATYPE-DEFINITION-DATE '+commonAttsOf( dT )+'/>';
 						break;
 					default: 
-						console.error('Error: unknown dataType: ',el.type)
+						console.error('Error: unknown dataType: ',dT.type)
 				}
 			});
 		xml +=  '</DATATYPES>'
@@ -288,57 +263,57 @@ modules.construct({
 //		console.debug( 'reqSort', req );
 		
 		// 3. Transform resourceClasses to OBJECT-TYPES:
-		req.objTypes.forEach( function(el) {
-			xml += '<SPEC-OBJECT-TYPE '+commonAtts( el )+'>'
-				+		attrTypes( el )
+		req.objTypes.forEach( function(oT) {
+			xml += '<SPEC-OBJECT-TYPE '+commonAttsOf( oT )+'>'
+				+		attrTypesOf( oT )
 				+ '</SPEC-OBJECT-TYPE>'
 		});
 		
 		// 4. Transform statementClasses to RELATION-TYPES:
 		if(pr.statementClasses)	
-			pr.statementClasses.forEach( function(el) {
-				xml += '<SPEC-RELATION-TYPE '+commonAtts( el )+'>'
-					+		attrTypes( el )
+			pr.statementClasses.forEach( function(sC) {
+				xml += '<SPEC-RELATION-TYPE '+commonAttsOf( sC )+'>'
+					+		attrTypesOf( sC )
 				    +  '</SPEC-RELATION-TYPE>'
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
-		req.spcTypes.forEach( function(el) {
-			xml += '<SPECIFICATION-TYPE '+commonAtts( el )+'>'
-				+		attrTypes( el )
+		req.spcTypes.forEach( function(sC) {
+			xml += '<SPECIFICATION-TYPE '+commonAttsOf( sC )+'>'
+				+		attrTypesOf( sC )
 				+  '</SPECIFICATION-TYPE>';
 		}); 
 		xml +=  '</SPEC-TYPES>'
 			+	'<SPEC-OBJECTS>';
 		
 		// 6. Transform resources to OBJECTS:
-		req.objects.forEach( function(el) {
-			xml += '<SPEC-OBJECT '+commonAtts( el )+'>'
-				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+el['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
-				+		attsOf( el )
+		req.objects.forEach( function(sC) {
+			xml += '<SPEC-OBJECT '+commonAttsOf( sC )+'>'
+				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+sC['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
+				+		attsOf( sC )
 				+ '</SPEC-OBJECT>'
 		});
 		xml +=  '</SPEC-OBJECTS>'
 			+	'<SPEC-RELATIONS>';
 		
 		// 7. Transform statements to RELATIONs:
-		pr.statements.forEach( function(el) {
-			xml += '<SPEC-RELATION '+commonAtts( el )+'>'
-				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+el['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
-				+		attsOf( el )
-				+		'<SOURCE><SPEC-OBJECT-REF>'+el.subject+'</SPEC-OBJECT-REF></SOURCE>'
-				+		'<TARGET><SPEC-OBJECT-REF>'+el.object+'</SPEC-OBJECT-REF></TARGET>'
+		pr.statements.forEach( function(sC) {
+			xml += '<SPEC-RELATION '+commonAttsOf( sC )+'>'
+				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+sC['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
+				+		attsOf( sC )
+				+		'<SOURCE><SPEC-OBJECT-REF>'+sC.subject+'</SPEC-OBJECT-REF></SOURCE>'
+				+		'<TARGET><SPEC-OBJECT-REF>'+sC.object+'</SPEC-OBJECT-REF></TARGET>'
 				+ '</SPEC-RELATION>'
 		});
 		xml +=  '</SPEC-RELATIONS>'
 			+	'<SPECIFICATIONS>';
 		
 		// 8. Transform hierarchies to SPECIFICATIONs:
-		pr.hierarchies.forEach( function(el) {
-			xml += '<SPECIFICATION '+commonAtts( el )+'>'
-				+		'<TYPE><SPECIFICATION-TYPE-REF>'+el['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
-				+		attsOf( el )
-				+   	childrenOf( el )
+		pr.hierarchies.forEach( function(sC) {
+			xml += '<SPECIFICATION '+commonAttsOf( sC )+'>'
+				+		'<TYPE><SPECIFICATION-TYPE-REF>'+sC['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
+				+		attsOf( sC )
+				+   	childrenOf( sC )
 				+ '</SPECIFICATION>'
 		});
 		xml +=  '</SPECIFICATIONS>'
@@ -356,54 +331,55 @@ modules.construct({
 			function dateTime( e ) {
 				return e.changedAt || pr.changedAt || date
 			}
-			function commonAtts( e ) {
+			function commonAttsOf( e ) {
 				return 'IDENTIFIER="'+e.id+'" LONG-NAME="'+(e.title?e.title:'')+'" DESC="'+(e.description?e.description:'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
-			function attrTypes( ty ) {
-				if( !ty || !ty.propertyClasses || ty.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
+			function attrTypesOf( eC ) { 
+				// eC: resourceClass or statementClass
+				if( !eC || !eC.propertyClasses || eC.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
 				var xml='<SPEC-ATTRIBUTES>';
 				// SpecIF resourceClasses and statementClasses may share propertyClasses,
 				// but in ReqIF every type has its own ATTRIBUTE-DEFINITIONs.
 				// This is taken care of below, but it may not be necessary to extend the id, e.g. if SpecIF has been created from ReqIF, before.
 				// ToDo: Avoid that the id gets longer every time a ReqIF-SpecIF roundtrip is made.
-				ty.propertyClasses.forEach( function(el) {
-					el = itemById( pr.propertyClasses, el );  // replace id by the item itself
-					switch( itemById( pr.dataTypes, el.dataType ).type ) {
+				eC.propertyClasses.forEach( function(pC) {
+					pC = itemById( pr.propertyClasses, pC );  // replace id by the item itself
+					switch( itemById( pr.dataTypes, pC.dataType ).type ) {
 						case 'xs:boolean':
-							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+el.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-BOOLEAN>'
 							break;
 						case 'xs:integer':
-							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+el.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-INTEGER>'
 							break;
 						case 'xs:double':
-							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+el.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-REAL>'
 							break;
 						case 'xs:string':
-						/*	xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+el.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
+						/*	xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-STRING>'
 							break; */
 						case 'xhtml':
-							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+el.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+pC.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-XHTML>'
 							break;
 						case 'xs:enumeration':
 							// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
 							// The property 'dataType.multiple' is invisible for the server. 
-							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" MULTI-VALUED="'+multipleChoice(el,pr)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+el.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" MULTI-VALUED="'+multipleChoice(pC,pr)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-ENUMERATION>'
 							break;
 						case 'xs:dateTime':
-							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+el.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="'+eC.id+'_'+pC.id+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-DATE>'
 							break;
 					}
@@ -412,28 +388,30 @@ modules.construct({
 			}
 			function attsOf( me ) {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
-				var xml='<VALUES>';
-				me.properties.forEach( function(el) {
-					let dT = itemById( pr.dataTypes, itemById( pr.propertyClasses, el['class'] ).dataType );
+				var xml='<VALUES>',
+					eC = itemById( pr.resourceClasses.concat(pr.statementClasses), me['class'] );
+				me.properties.forEach( function(prp) {
+					let pC = itemById( pr.propertyClasses, prp['class'] ),
+						dT = itemById( pr.dataTypes, pC.dataType );
 					switch( dT.type ) {
 						case 'xs:boolean':
-							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-BOOLEAN>'
 							break;
 						case 'xs:integer':
-							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-INTEGER>'
 							break;
 						case 'xs:double':
-							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-						/*	xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
+						/*	xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break; */
 						case 'xhtml':
@@ -460,20 +438,20 @@ modules.construct({
 			} 
 		); */
 							// add a xtml namespace and an enclosing <div> bracket, if needed:
-							let	hasDiv = RE_hasDiv.test(el.value),
-								txt = el.value.replace( RE_tag, function($0,$1,$2) { 
+							let	hasDiv = RE_hasDiv.test(prp.value),
+								txt = prp.value.replace( RE_tag, function($0,$1,$2) { 
 									return $1+ns_xhtml+':'+$2
 								});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
 								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns_xhtml+':div>')+txt+(hasDiv?'':'</'+ns_xhtml+':div>')+'</THE-VALUE>'
 								+  '</ATTRIBUTE-VALUE-XHTML>'
 							break;
 						case 'xs:enumeration':
 							xml += '<ATTRIBUTE-VALUE-ENUMERATION>'
-								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
+								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
-							let vL = el.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
+							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 							vL.forEach( function(v) {
 								xml += '<ENUM-VALUE-REF>'+v+'</ENUM-VALUE-REF>'
 							});
@@ -481,6 +459,9 @@ modules.construct({
 								+	'</ATTRIBUTE-VALUE-ENUMERATION>'
 							break;
 						case 'xs:dateTime':
+							xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>'+eC.id+'_'+prp['class']+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
+								+  '</ATTRIBUTE-VALUE-DATE>'
 							break;
 					};
 
