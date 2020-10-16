@@ -18,7 +18,7 @@ function renderProp( lbl, val, cssCl ) {
 	
 	// assemble a label:value pair resp. a wide value field for display:
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
-	return '<div class="attribute'+cssCl+'">'+val+'</div>'
+	return '<div class="attribute'+cssCl+'">'+val+'</div>';
 }
 function DialogForm() {
 	// Construct an object performing the key-by-key input checking on an input form;
@@ -26,13 +26,13 @@ function DialogForm() {
 	var self = this;
 	self.list = [];  // the list of parameter-sets, each for checking a certain input field.
 	self.init = function() {
-		self.list.length = 0
+		self.list.length = 0;
 	};
-	self.addField = function( elementId, dataType ) {
+	self.addField = function( elementId, dT ) {
 		// Add a parameter-set for checking an input field;
 		// - 'elementId' is the id of the HTML input element
 		// - 'dataType' is the dataType of the property
-		self.list.push( { label:elementId, type:dataType } );
+		self.list.push( { label:elementId, dataType:dT } );
 	};
 	self.check = function() {
 		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
@@ -42,16 +42,17 @@ function DialogForm() {
 			// Get the input value:
 			val = textValue( cPs.label );
 			// Perform the test depending on the type:
-			switch( cPs.type.type ) {
+			// In case of a title or description it may happen, that there is no dataType (tutorial "Related Terms":
+            switch ( cPs.dataType? cPs.dataType.type : "xs:string" ) {
 				case 'xs:string':
 				case 'xhtml':
-					ok = cPs.type.maxLength==undefined || val.length<=cPs.type.maxLength;
+					ok = !cPs.dataType || cPs.dataType.maxLength==undefined || val.length<=cPs.dataType.maxLength;
 					break;
 				case 'xs:double':
-					ok = val.length<1 || RE.Real(cPs.type.fractionDigits).test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
+					ok = val.length<1 || RE.Real(cPs.dataType.fractionDigits).test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
 				case 'xs:integer':
-					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
+					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
 				case 'xs:dateTime':
 					ok = val.length<1 || RE.IsoDate.test(val)
@@ -61,9 +62,9 @@ function DialogForm() {
 			allOk = allOk && ok;
 //			console.debug( 'DialogForm.check: ', cPs, val );
 		});
-		return allOk
+		return allOk;
 	};
-	return self
+	return self;
 }
 function textField( lbl, val, typ, fn ) {  
 	// assemble a form for text input:

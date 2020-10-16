@@ -74,50 +74,14 @@ function xslx2specif( buf, pN, chAt ) {
 	// requires sheetjs
 
 		function BaseTypes() {
-			this.dataTypes = [{
-			  id: "DT-ShortString",
-			  title: "String["+CONFIG.textThreshold+"]",
-			  description: "String with max. length "+CONFIG.textThreshold,
-			  type: "xs:string",
-			  maxLength: CONFIG.textThreshold,
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{
-			  id: "DT-Text",
-			  title: "Plain Text",  // dataType for XLS columns with text content
-			  description: "A text string",
-			  maxLength: CONFIG.maxStringLength,
-			  type: "xs:string",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-DateTime",  
-			  title: "Date or Timestamp",  // dataType for XLS columns with dateTime content
-			  description: "Date or Timestamp in ISO-Format",
-			  type: "xs:dateTime",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-Boolean",
-			  title: "Boolean",  // dataType for XLS columns with boolean content
-			  description: "The Boolean data type.",
-			  type: "xs:boolean",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-Integer",
-			  title: "Integer",  // dataType for XLS columns with integer content
-			  description: "A numerical integer value from -32768 to 32768.",
-			  type: "xs:integer",
-			  "minInclusive": CONFIG.minInteger,
-			  "maxInclusive": CONFIG.maxInteger,
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-Real",
-			  title: "Real",  // dataType for XLS columns with real content
-			  description: "A floating point number (double) with 5 fraction digits.",
-			  type: "xs:double",
-			  "fractionDigits": CONFIG.maxAccuracy,
-			  "minInclusive": CONFIG.minReal,
-			  "maxInclusive": CONFIG.maxReal,
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			}];	
+			this.dataTypes = [
+				app.standardTypes.make("dataType","DT-ShortString"),
+				app.standardTypes.make("dataType","DT-Text"),
+				app.standardTypes.make("dataType","DT-DateTime"),
+				app.standardTypes.make("dataType","DT-Boolean"),
+				app.standardTypes.make("dataType","DT-Integer"),
+				app.standardTypes.make("dataType","DT-Real")
+			];	
 			this.propertyClasses = [];	
 			this.resourceClasses = [{	
 				id: resClassId( CONFIG.resClassFolder ),

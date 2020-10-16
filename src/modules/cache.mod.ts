@@ -571,16 +571,17 @@ function Project( pr ) {
 										let dta = {
 											$schema: 'https://specif.de/v1.0/schema.json',
 											dataTypes: [
-												app.standardTypes.make('dataType',"DT-ShortString"),
-												app.standardTypes.make('dataType',"DT-Text")
+												app.standardTypes.get('dataType',"DT-ShortString"),
+												app.standardTypes.get('dataType',"DT-Text")
 											],
 											propertyClasses: [
-												app.standardTypes.make('propertyClass',"DT-ShortString"),
-												app.standardTypes.make('propertyClass',"DT-Text")
+												app.standardTypes.get('propertyClass',"DT-ShortString"),
+												app.standardTypes.get('propertyClass',"DT-Text")
 											],
-											resourceClasses: 
-												app.standardTypes.make('resourceClass',"RC-HierarchyRoot"),
-											resources: Folder( r2c.folderName+apx, CONFIG.resClassProcesses, tim ),
+											resourceClasses: [
+												app.standardTypes.get('resourceClass',"RC-Folder")
+											],
+											resources: Folder( r2c.folderName+apx, CONFIG.resClassProcesses ),
 											hierarchies: [{
 												id: "H"+r2c.folderName+apx,
 												resource: r2c.folderName+apx,
@@ -603,7 +604,7 @@ function Project( pr ) {
 				);
 				return;
 
-				function Folder(fId,ti,tim) {
+				function Folder(fId,ti) {
 					var fL = [{
 						id: fId,
 						class: "RC-Folder",
@@ -660,11 +661,16 @@ function Project( pr ) {
 								let dta = {
 									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: [
-										app.standardTypes.make('dataType',"DT-ShortString"),
-										app.standardTypes.make('dataType',"DT-Text")
+										app.standardTypes.get('dataType',"DT-ShortString"),
+										app.standardTypes.get('dataType',"DT-Text")
 									],
-									propertyClasses: PropertyClasses(tim),
-									resourceClasses: ResourceClasses(tim),
+									propertyClasses: [
+										app.standardTypes.get('propertyClass',"DT-ShortString"),
+										app.standardTypes.get('propertyClass',"DT-Text")
+									],
+									resourceClasses: [
+										app.standardTypes.get('resourceClass',"RC-Folder")
+									],
 									resources: Folders(),
 									hierarchies: NodeList(self.data.resources)
 								};
@@ -1929,8 +1935,6 @@ function Project( pr ) {
 						opts.lookupValues = false;
 						// ReqIF only supports a single Language:
 						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
-						// if missing, create a title property ... ReqIF needs it:
-						opts.makeTitleProperty = true; 
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString()
 				};
@@ -2517,10 +2521,7 @@ const specif = {
 //							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
 							resolve( data, rc )
 						} else {
-							// older versions of the checking routine don't set the responseType:
-							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
-								rc.responseType = 'text';
-//							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
+//							console.debug('SpecIF Consistency Check:', rc);
 							reject( rc )
 						}
 					},
@@ -2650,20 +2651,18 @@ const specif = {
 				oE.type = iE.type;
 				switch( iE.type ) {
 					case "xs:double":
-						oE.fractionDigits = iE[names.frct] || CONFIG.maxAccuracy;
-						oE.minInclusive = iE[names.minI] || CONFIG.minReal;
-						oE.maxInclusive = iE[names.maxI] || CONFIG.maxReal;
+						oE.fractionDigits = iE[names.frct];
+						oE.minInclusive = iE[names.minI];
+						oE.maxInclusive = iE[names.maxI];
 						break;
 					case "xs:integer":
-						oE.minInclusive = iE[names.minI] || CONFIG.minInteger;
-						oE.maxInclusive = iE[names.maxI] || CONFIG.maxInteger;
+						oE.minInclusive = iE[names.minI];
+						oE.maxInclusive = iE[names.maxI];
 						break;
 					case "xhtml":
 					case "xs:string":
 						if( typeof(iE.maxLength)=='number' )
-							oE.maxLength = iE.maxLength
-						else
-							oE.maxLength = CONFIG.maxStringLength;
+							oE.maxLength = iE.maxLength;
 						break;
 					case "xs:enumeration":
 						if( iE.values )
@@ -2970,14 +2969,14 @@ const specif = {
 				oE.type = iE.type;
 				switch( iE.type ) {
 					case "xs:double":
-						oE[names.frct] = iE.fractionDigits;
+						if( iE.fractionDigits ) oE[names.frct] = iE.fractionDigits;
 					case "xs:integer":
-						oE[names.minI] = iE.minInclusive;
-						oE[names.maxI] = iE.maxInclusive;
+						if( iE.minInclusive ) oE[names.minI] = iE.minInclusive;
+						if( iE.maxInclusive ) oE[names.maxI] = iE.maxInclusive;
 						break;
 					case "xhtml":
 					case "xs:string":
-						oE.maxLength = iE.maxLength;
+						if( iE.maxLength ) oE.maxLength = iE.maxLength;
 						break;
 					case "xs:enumeration":
 						if( opts.targetLanguage )
@@ -3092,59 +3091,13 @@ const specif = {
 				oE['class'] = iE['class'];
 				if( iE.alternativeIds ) oE.alternativeIds = iE.alternativeIds;
 				if( iE.properties && iE.properties.length>0 ) oE.properties = forAll( iE.properties, p2ext );
-				// if missing, add a title property ... e.g. ReqIF needs it:
-				if( opts.makeTitleProperty && titleIdx( oE.properties, spD )<0 ) {
-					console.debug( 'addTitleProperty I', iE, simpleClone(spD) );
-					// a. Add dataType, if not yet defined:
-					let dT = {
-							id: "DT-ShortString",
-							title: "String ["+CONFIG.textThreshold+"]",
-							description: "String with length "+CONFIG.textThreshold,
-							type: "xs:string",
-							maxLength: CONFIG.textThreshold,
-							changedAt: iE.changedAt
-						};
-					if( !Array.isArray( spD.dataTypes ) ) spD.dataTypes = [];
-					cacheE( spD.dataTypes, dT );
-					// b. Add propertyClass, if not yet defined:
-					let pC = {
-							id: "PC-Title",
-							title: "dcterms:title",
-							dataType: "DT-ShortString",
-							changedAt: iE.changedAt
-						};
-					if( !Array.isArray( spD.propertyClasses ) ) spD.propertyClasses = [];
-					cacheE( spD.propertyClasses, pC );
-					// c. Add propertyClass to element class:
-					let eC = itemById( spD.resourceClasses, iE['class'] )
-							|| itemById( spD.statementClasses, iE['class'] );
-					if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
-					cacheE( eC.propertyClasses, pC.id );
-					// d. Add title property to element;
-					//    in case of a statement, it's class' title is used by default:
-					let p = {
-							class: "PC-Title",
-							value: titleOf( iE ) || titleOf( eC )
-					};
-					if( !Array.isArray( oE.properties ) ) oE.properties = [];
-					oE.properties.unshift( p )
-					console.debug( 'addTitleProperty O', oE, simpleClone(spD) );
-				}; 
-				return oE
-				/*	function PropertyClasses(chAt) {
-						return [{
-								id: "PC-Title",
-								title: "dcterms:title",
-								dataType: "DT-ShortString",
-								changedAt: chAt
-							}]
-					} */
+				return oE;
 			}
 			// a resource:
 			function r2ext( iE ) {
 				var oE = a2ext( iE );
 //				console.debug('resource 2int',iE,oE);
-				return oE
+				return oE;
 			}
 			// a statement:
 			function s2ext( iE ) {
@@ -3171,7 +3124,7 @@ const specif = {
 					oE.subject = iE.subject;
 					oE.object = iE.object
 				};
-				return oE
+				return oE;
 			}
 			// a hierarchy node:
 			function n2ext( iN ) {
@@ -3415,14 +3368,14 @@ function languageValueOf( val, opts ) {
 	// As a final resourt take the first element in the original list of values:
 	return val[0].text
 }
-function typeOf( el ) {
+/* function typeOf( el ) {
 	let tP = itemByTitle(el.properties,CONFIG.propClassType);
 	// ToDo: .. or the title of the property class (dcterms:title) if the property title is undefined
 	if( tP ) return tP.value
-}
+} */
 function hasContent( pV ) {
 	// must be a string with the value of the selected language.
-	if( !pV ) return false;
+	if( typeof(pV)!="string" ) return false;
 	return pV.stripHTML().length>0
 		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
 		|| RE.tagImg.test(pV)

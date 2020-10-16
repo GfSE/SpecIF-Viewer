@@ -171,29 +171,33 @@ modules.construct({
 			return
 			
 			function editP(p) {
-				// Return a form element for a property:
-				// ToDo: Works only, if all propertyClasses are always cached:
+				// Return a form element for a property;
+				// works only, if all propertyClasses and dataTypes are always cached:
 				let pC = itemById( cData.propertyClasses, p['class'] ),
-					dT = itemById( cData.dataTypes, pC.dataType ),
+					// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
+					dT = pC? itemById( cData.dataTypes, pC.dataType ) : undefined,
 					opts = {
 						lookupTitles: true,
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
 					},
 					ti = titleOf(p,opts);
-				// create an input field depending on the property's dataType:
-				switch( dT.type ) {
+				// create an input field depending on the property's dataType;
+				// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
+				switch( dT? dT.type : "xs:string" ) {
 					case 'xs:string':
 					case 'xhtml':
-						if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
+						if( propTitleOf(p,cData)==CONFIG.propClassDiagram ) {
 							// it is a diagram reference (works only with XHTML-fields):
 							return renderDiagram(p,opts)
 						} else {
 							// add parameters to check this input field:
 							self.dialogForm.addField( ti, dT );
-							// it is a text (in case of xhtml, it may contain a diagram reference:
+							// it is a text;
+							// in case of xhtml, it may contain a diagram reference, 
+							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
 //							console.debug( 'editP', languageValueOf(p.value,opts) );
-							return textField( ti, languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line', myFullName+'.check()' )
+							return textField( ti, languageValueOf(p.value,opts), (dT&&dT.maxLength&&dT.maxLength<CONFIG.textThreshold)? 'line' : 'area', myFullName+'.check()' )
 						};
 					case 'xs:enumeration':
 						// no input checking needed:
@@ -362,8 +366,12 @@ modules.construct({
 			// get the new or unchanged input value of the other properties:
 			p.value = getP( p )
 		};
-		// set the resource's native title:
+		// Set the resource's native title;
+		// the resulting resource revision will not have a title property, even if the
+		// previous revision had one:
+		// ToDo: Update a title property, if there had been one, we would potentially lose dataType info like maxLength.
 		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
+		
 		// suppress empty properties:
 		self.newRes.properties = forAll( allProps, (p)=>{ if( hasContent(p.value) ) return p });
 		self.newRes.changedAt = chD;
@@ -430,8 +438,9 @@ modules.construct({
 				targetLanguage: browser.language
 			};
 			let pC = itemById( cData.propertyClasses, p['class'] ),
-				dT = itemById( cData.dataTypes, pC.dataType );
-			switch( dT.type ) {
+				// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
+				dT = pC? itemById( cData.dataTypes, pC.dataType ) : undefined;
+			switch( dT? dT.type : "xs:string" ) {
 				case 'xs:integer':
 				case 'xs:double':
 				case 'xs:dateTime':

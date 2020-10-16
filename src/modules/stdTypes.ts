@@ -14,48 +14,91 @@ app.standardTypes = new function() {
 		description: "String with length "+CONFIG.textThreshold,
 		type: "xs:string",
 		maxLength: CONFIG.textThreshold,
-		changedAt: "2020-10-14T20:00:00Z"
+		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "DT-Text",
 		title: "Text",
 	//	title: "Text ["+CONFIG.maxStringLength+"]",
 		type: "xs:string",
 	//	maxLength: CONFIG.maxStringLength,
-		changedAt: "2020-10-14T20:00:00Z"
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{
+		// DEPRECATED for SpecIF, but needed for ReqIF:
+		id: "DT-FormattedText",
+		title: "XHTML-formatted Text",
+	//	title: "XHTML-formatted Text ["+CONFIG.maxStringLength+"]",
+		type: "xhtml",
+	//	maxLength: CONFIG.maxStringLength,
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-DateTime",  
+		title: "Date or Timestamp",
+		description: "Date or Timestamp in ISO-Format",
+		type: "xs:dateTime",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-Boolean",
+		title: "Boolean",
+		description: "The Boolean data type.",
+		type: "xs:boolean",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-Integer",
+		title: "Integer",
+		description: "A numerical integer value from -32768 to 32768.",
+		type: "xs:integer",
+		minInclusive: CONFIG.minInteger,
+		maxInclusive: CONFIG.maxInteger,
+	  changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-Real",
+		title: "Real",
+		description: "A floating point number (double) with 5 fraction digits.",
+		type: "xs:double",
+		fractionDigits: CONFIG.maxAccuracy,
+		minInclusive: CONFIG.minReal,
+		maxInclusive: CONFIG.maxReal,
+		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.propertyClasses = [{
-		id: "PC-Title",
-		title: "dcterms:title",
+		id: "PC-Name",
+		title: CONFIG.propClassTitle,
 		dataType: "DT-ShortString",
-		changedAt: "2020-10-14T20:00:00Z"
+		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
 		id: "PC-Description",
-		title: "dcterms:description",
-		dataType: "DT-Text",
-		changedAt: "2020-10-14T20:00:00Z"
+		title: CONFIG.propClassDesc,
+	//	dataType: "DT-Text",
+		dataType: "DT-FormattedText",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	}, {
+		id: "PC-Diagram",
+		title: CONFIG.resClassDiagram,
+		dataType: "DT-FormattedText",
+		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "PC-Type",
-		title: "dcterms:type",
+		title: CONFIG.propClassType,
 		dataType: "DT-ShortString",
-		changedAt: "2020-10-14T20:00:00Z"
+		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.resourceClasses = [{
 		id: "RC-Folder",
-		title: "SpecIF:Heading",
+		title: CONFIG.resClassFolder,
 		description: "Folder with title and text for chapters or descriptive paragraphs.",
 		isHeading: true,
 		instantiation: ['auto','user'],
 		propertyClasses: ["PC-Description","PC-Type"],
-		changedAt: "2020-10-14T20:00:00Z"
+		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
 		instantiation: ['auto'],
-		propertyClasses: ["PC-Title", "PC-Description"],
-		changedAt: "2020-10-14T20:00:00Z"
+		propertyClasses: ["PC-Name", "PC-Description"],
+		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
-	self.make = (ctg,id,chAt)=>{
+	self.get = (ctg,id,chAt)=>{
 		var item = itemById( listOf(ctg), id );
 		if( item ) {
 			if( chAt ) item.changedAt = chAt;

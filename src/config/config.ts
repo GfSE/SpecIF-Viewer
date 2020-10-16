@@ -146,8 +146,9 @@ const CONFIG = {};
 	CONFIG.propClassId = 'dcterms:identifier';
 	CONFIG.propClassTitle = 'dcterms:title';
 	CONFIG.propClassDesc = 'dcterms:description';
-	CONFIG.resClassDiagram = 'SpecIF:Diagram';
 	CONFIG.propClassType = 'dcterms:type';
+	CONFIG.propClassDiagram = 
+	CONFIG.resClassDiagram = 'SpecIF:Diagram';
 //	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';
 	CONFIG.resClassOutline = 'SpecIF:Outline';
@@ -339,10 +340,15 @@ const CONFIG = {};
 		'com.arcway.cockpit.uniqueelement'
 	];
 	CONFIG.selectCorrespondingDiagramFirst = true;	// when clicking on a diagram element, select a diagram having the same title as the clicked model element
-	// A list of resources representing Model Diagrams, specified by title resp. class title:
+	
+/*	// A list of property titles denoting the property containing a diagram:
+	CONFIG.diagramPropertyClasses = [
+		CONFIG.propClassDiagram
+	]; */
+	// A list of resources representing Model Diagrams, specified by resource title:
 	CONFIG.diagramClasses = [
 		CONFIG.resClassDiagram,
-		'FMC:Plan',
+		'FMC:Plan',			// equivalent
 		'SpecIF:View'		// deprecated
 	];
 	CONFIG.folderClasses = [
@@ -391,23 +397,23 @@ const vocabulary = {
 				case "title":
 				case "titel":
 				case "dc_title":
-				case "specif_heading":			//  'SpecIF:Heading' may be used falsely as property title
+				case "specif_heading":			//  'SpecIF:Heading' has been used falsely as property title
 				case "reqif_chaptername":
-				case "reqif_name": 					oT = "dcterms:title"; break;
+				case "reqif_name": 					oT = CONFIG.propClassTitle; break;
 				case "description":
 				case "beschreibung":
 				case "text":
 				case "dc_description":
 	//			case "reqif_changedescription":
 				case "reqif_description":
-				case "reqif_text":					oT = "dcterms:description"; break;
+				case "reqif_text":					oT = CONFIG.propClassDesc; break;
 				case "reqif_revision":				oT = "SpecIF:Revision"; break;
 				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
 				case "specif_subclass":			// deprecated, for compatibility
 				case "reqif_category":
-				case "specif_notation":				oT = "dcterms:type"; break;
+				case "specif_notation":				oT = CONFIG.propClassType; break;
 				case 'specif_id':				// deprecated, for compatibility
-				case "reqif_foreignid":				oT = "dcterms:identifier"; break;
+				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
 				case "specif_state":			// deprecated, for compatibility
 				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
 				case "dc_author":
@@ -481,9 +487,9 @@ const vocabulary = {
 				case 'user_stories':
 				case 'user_story':					oT = 'SpecIF:UserStory'; break;
 				case 'specif_view':
-				case 'fmc_plan':					oT = 'SpecIF:Diagram'; break;
-				case 'specif_folder':				oT = "SpecIF:Heading"; break;
-				case 'specif_outline':				oT = "SpecIF:Hierarchy"; break;
+				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
+				case 'specif_folder':				oT = CONFIG.resClassFolder; break;
+				case 'specif_hierarchy':			oT = CONFIG.resClassOutline; break;
 				default:							oT = iT
 			};
 			return oT
