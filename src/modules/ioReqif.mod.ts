@@ -499,7 +499,7 @@ modules.construct({
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value+'">'
+							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.escapeXML()+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
@@ -528,9 +528,11 @@ modules.construct({
 		); */
 							// add a xtml namespace and an enclosing <div> bracket, if needed:
 							let	hasDiv = RE_hasDiv.test(prp.value),
-								txt = prp.value.replace( RE_tag, function($0,$1,$2) { 
-									return $1+ns_xhtml+':'+$2
-								});
+								txt = prp.value
+										.escapeXML()
+										.replace( RE_tag, function($0,$1,$2) { 
+											return $1+ns_xhtml+':'+$2
+										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
 								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns_xhtml+':div>')+txt+(hasDiv?'':'</'+ns_xhtml+':div>')+'</THE-VALUE>'

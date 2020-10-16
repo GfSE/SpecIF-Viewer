@@ -197,7 +197,7 @@ modules.construct({
 							// in case of xhtml, it may contain a diagram reference, 
 							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
 //							console.debug( 'editP', languageValueOf(p.value,opts) );
-							return textField( ti, languageValueOf(p.value,opts), (dT&&dT.maxLength&&dT.maxLength<CONFIG.textThreshold)? 'line' : 'area', myFullName+'.check()' )
+							return textField( ti, languageValueOf(p.value,opts), (dT&&dT.maxLength&&dT.maxLength<CONFIG.textThreshold+1)? 'line' : 'area', myFullName+'.check()' )
 						};
 					case 'xs:enumeration':
 						// no input checking needed:

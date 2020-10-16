@@ -75,12 +75,12 @@ function xslx2specif( buf, pN, chAt ) {
 
 		function BaseTypes() {
 			this.dataTypes = [
-				app.standardTypes.make("dataType","DT-ShortString"),
-				app.standardTypes.make("dataType","DT-Text"),
-				app.standardTypes.make("dataType","DT-DateTime"),
-				app.standardTypes.make("dataType","DT-Boolean"),
-				app.standardTypes.make("dataType","DT-Integer"),
-				app.standardTypes.make("dataType","DT-Real")
+				app.standardTypes.get("dataType","DT-ShortString"),
+				app.standardTypes.get("dataType","DT-Text"),
+				app.standardTypes.get("dataType","DT-DateTime"),
+				app.standardTypes.get("dataType","DT-Boolean"),
+				app.standardTypes.get("dataType","DT-Integer"),
+				app.standardTypes.get("dataType","DT-Real")
 			];	
 			this.propertyClasses = [];	
 			this.resourceClasses = [{	
@@ -513,10 +513,11 @@ function xslx2specif( buf, pN, chAt ) {
 							multLines = multLines || valL[i]&&typeof(valL[i].v)=='string'&&valL[i].v.indexOf('\n')>-1
 						};
 						// if so, choose a text property:
+//						console.debug( 'getPropClass 3',maxL,multLines );
 						if( maxL>CONFIG.textThreshold || multLines ) 
 							pC = 'Text'
 					};
-//					console.debug( 'getPropClass 3',valL[i],pC );
+//					console.debug( 'getPropClass 4',valL[i],pC );
 					return new PropClass( ws.name+cX, ti, pC || defaultC );
 
 						function classOf( cell ) {
