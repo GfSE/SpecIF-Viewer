@@ -1742,6 +1742,7 @@ function Project( pr ) {
 									[
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
+										{ title: 'RDF', id: 'rdf' },
 										{ title: 'ePub v2', id: 'epub' },
 										{ title: 'MS WORD® (Open XML)', id: 'oxml' }
 									],
@@ -1793,6 +1794,7 @@ function Project( pr ) {
 		// ---
 		function handleError(xhr) {
 			self.exporting = false;
+			app.busy.reset();
 			message.show( xhr )
 		}
 	};
@@ -1809,15 +1811,11 @@ function Project( pr ) {
 
 		return new Promise( (resolve, reject)=>{
 
-			/*	function handleError(xhr) {
-					self.exporting = false;
-					reject(xhr)
-				}  */
-
 			if( self.data.exp ) {
 				self.exporting = true;
 
 				switch( opts.format ) {
+					case 'rdf':
 					case 'reqif':
 					case 'specif':
 						storeAs( opts );
@@ -1915,7 +1913,7 @@ function Project( pr ) {
 				}
 			}
 			function storeAs( opts ) {
-				if( !opts || ['specif','reqif'].indexOf(opts.format)<0 ) return null;
+				if( !opts || ['specif','reqif','rdf'].indexOf(opts.format)<0 ) return null;
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
@@ -1929,6 +1927,7 @@ function Project( pr ) {
 						// keep all revisions:
 						opts.revisionDate = undefined;
 						break;
+					case 'rdf':
 					case 'reqif':
 						// keep vocabulary terms:
 						opts.lookupTitles = false;
@@ -1959,6 +1958,14 @@ function Project( pr ) {
 					case 'reqif':
 						fName += ".reqif";
 						data = app.ioReqif.toReqif( data )
+						break;
+					case 'rdf':
+						if( !app.ioRdf ) {
+							reject({status:999,statusText:"ioRdf not loaded."});
+							return;
+						};
+						fName += ".rdf";
+						data = app.ioRdf.toRdf( data )
 				};
 				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
 				// Add the project:

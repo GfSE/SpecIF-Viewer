@@ -432,6 +432,7 @@ var browser,
 											loadM( 'checkSpecif' );
 											getScript( './modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			getScript( './modules/ioReqif.mod.js' ); return true;
+				case 'ioRdf': 				getScript( './modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( './modules/ioXls.mod.js' ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
