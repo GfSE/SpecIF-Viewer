@@ -66,8 +66,14 @@ modules.construct({
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			help: i18n.MsgImportReqif, 
+			help: i18n.MsgImportReqif,
 			opts: {mediaTypeOf: attachment2mediaType}
+        }, {
+            id: 'rdf',
+            name: 'ioRdf',
+            desc: 'Resource Description Format',
+            label: 'RDF',
+            help: 'ToDo'
 		},{ 
 			id:'xls',
 			name:'ioXls',

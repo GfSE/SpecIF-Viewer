@@ -16,6 +16,20 @@ modules.construct({
 	self.init = function() {
 		mime = null
 	};
+	self.verify = function( f ) {
+	
+			function rdfFile2mediaType( fname ) {
+				if( fname.endsWith('.rdf') || fname.endsWith('.xml') ) return 'application/rdf+xml';
+				return null
+			}
+				
+		mime = rdfFile2mediaType( f.name );
+		if ( !mime ) {
+			message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
+			return null
+		};
+		return f
+	};
 	self.toSpecif = function( buf ) {
 	};
 	self.toRdf = function(pr) {
