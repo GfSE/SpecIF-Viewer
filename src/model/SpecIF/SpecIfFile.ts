@@ -1,4 +1,4 @@
-import { SpecIfObject } from "../../Interfaces/SpecIfObject";
+import { SpecIfObject } from "../Interfaces/SpecIfObject";
 
 export class SpecIfFile implements SpecIfObject {
     extractSpecIfFromArray(specIfObjectArray: SpecIfObject[]): string {

@@ -1,4 +1,4 @@
-import { SpecIfObject } from "../../Interfaces/SpecIfObject";
+import { SpecIfObject } from "../Interfaces/SpecIfObject";
 import { Property } from "./Property";
 
 export class Resource implements SpecIfObject{

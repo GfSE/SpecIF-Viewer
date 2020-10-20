@@ -1,4 +1,4 @@
-import { SpecIfObject } from "../../Interfaces/SpecIfObject";
+import { SpecIfObject } from "../Interfaces/SpecIfObject";
 
 export class SpecIfNode implements SpecIfObject{
     id: string;

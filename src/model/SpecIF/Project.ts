@@ -6,7 +6,7 @@ import { ResourceClass } from "./ResourceClass";
 import { SpecIfFile } from "./SpecIfFile";
 import { Statement } from "./Statement";
 import { StatementClass } from "./StatementClass";
-import { SpecIfObject } from "../../Interfaces/SpecIfObject";
+import { SpecIfObject } from "../Interfaces/SpecIfObject";
 
 class project implements SpecIfObject {
     schema: string;
