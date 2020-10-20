@@ -3472,7 +3472,7 @@ function classifyProps( el, prj ) {
 			revision: el.revision,
 			descriptions: [],
 			// create a new list by copying the elements (do not copy the list ;-):
-			other: normalizeProps( el, prj )
+			other: normalizeProps( el, prj );
 		};
 	cP.isHeading = cP['class'].isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 	if( el.order ) cP.order = el.order;
@@ -3491,9 +3491,9 @@ function classifyProps( el, prj ) {
 	// a) Find and set the configured title:
 	let a = titleIdx( cP.other, prj );
 	if( a>-1 ) {  // found!
-		cP.title = cP.other[a].value;
+		cP.title = cP.other[a];
 		// remove title from other:
-		cP.other.splice(a,1)
+		cP.other.splice(a,1);
 	};
 
 	// b) Check the configured descriptions:
@@ -3504,16 +3504,16 @@ function classifyProps( el, prj ) {
 			// To keep the original order of the properties, the unshift() method is used.
 			cP.descriptions.unshift( cP.other[a] );
 			cP.other.splice(a,1)
-		}
+		};
 	};
 
 	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property:
 	if( !cP.title && el.title )
-		cP.title = el.title;
+		cP.title = {title: CONFIG.propClassTitle, value: el.title};
 	if( cP.descriptions.length<1 && el.description )
 		cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description} );
 //	console.debug( 'classifyProps 2', simpleClone(cP) );
-	return cP
+	return cP;
 
 	function normalizeProps( el, dta ) {
 		// el: instance (resource or statement)

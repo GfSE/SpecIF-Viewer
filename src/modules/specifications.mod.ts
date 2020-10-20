@@ -1396,17 +1396,17 @@ function Resource( obj ) {
 		return rO  // return rendered resource for display
 	};  */
 	function renderTitle( clsPrp, opts ) {
-		if( !clsPrp.title ) return '';
+		if( !clsPrp.title || !clsPrp.title.value ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = titleOf( clsPrp, opts ).stripHTML();
+		let ti = languageValueOf( clsPrp.title.value, opts ).stripHTML();
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
 		// else: is not a heading:
 		// take title and add icon, if configured:
 //		console.debug('renderTitle',simpleClone(clsPrp),ti);
-		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti)+'</div>'
+		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti)+'</div>';
 	}
 	function renderChangeInfo( clsPrp ) {
 		if( !clsPrp || !clsPrp.revision ) return '';  // the view may be faster than the data, so avoid an error
@@ -1417,10 +1417,10 @@ function Resource( obj ) {
 				// no break
 			case '#'+CONFIG.comments: 
 				rChI += renderProp( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
-					+	renderProp( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' )
+					+	renderProp( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' );
 		//	default: no change info!			
 		};
-		return rChI
+		return rChI;
 	}
 
 	// initialize:
@@ -2050,7 +2050,7 @@ var fileRef = new function() {
 							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 								let eId = this.className.baseVal.split(' ')[1],		// id is second class
 									clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
-									ti = languageValueOf( clsPrp.title ),
+									ti = languageValueOf( clsPrp.title.value ),
 									dsc = '';
 								clsPrp.descriptions.forEach( (d)=>{
 									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements

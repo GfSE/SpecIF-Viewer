@@ -153,17 +153,17 @@ modules.construct({
 				message: (thisDlg)=>{
 					var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
 					// field for the title property:
-					form += textField( ti, languageValueOf(toEdit.title), 'line' ); 
+					form += editP(toEdit.title);
 					// fields for the description properties: 
 					toEdit.descriptions.forEach( (d)=>{
-						form += editP(d)
+						form += editP(d);
 					});
 					// fields for the remaining properties:
 					toEdit.other.forEach( (p)=>{
-						form += editP(p)
+						form += editP(p);
 					});
 					form += '</div>';
-					return $( form )
+					return $( form );
 				},
 				buttons: opts.msgBtns
 			})
