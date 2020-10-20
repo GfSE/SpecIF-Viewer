@@ -37,7 +37,6 @@ modules.construct({
 		return f
 	};
 	self.toSpecif = function( buf ) {
-		return server.project().upload( buf, mime )
 	};   */
 	self.toReqif = function(pr) {
 		// pr is a SpecIF data in JSON format (not the internal cache),
@@ -84,9 +83,9 @@ modules.construct({
 											// It is expected that descriptions with multiple languages have been reduced, before.
 											return false; // description property is available
 								};
-							return true;
+							return true; // no array or no description property
 						};
-						return false;
+						return false; // no description, thus no property needed
 					}
 				// for every element of the given class:
 				for( var j=eL.length-1; j>-1; j-- ) {
@@ -183,6 +182,10 @@ modules.construct({
 		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
 		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });
 
+		// ReqIF does not allow media objects other than PNG.
+		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
+		// ToDo!
+
 		// Add a resource as hierarchyRoot, if needed.
 		// It is assumed, 
 		// - that general SpecIF data do not have a hierarchy root with meta-data.
@@ -190,19 +193,21 @@ modules.construct({
 		// Therefore, a somewhat complicated solution is chosen, in which hierarchyRoots are added as resources, 
 		// *only when needed* and then, later on, the resources at the root are transformed to SPECIFICATION roots.
 		// ToDo: Design the ReqIF import and export so that a roundtrip works; neither loss nor growth is acceptable.
-		cacheE( pr.resourceClasses,
-			app.standardTypes.get("resourceClass","RC-HierarchyRoot")
-		);
+		if( indexById( pr.resourceClasses, "RC-HierarchyRoot" )<0 ) 
+			pr.resourceClasses.push( app.standardTypes.get("resourceClass","RC-HierarchyRoot") );
+
 		// ToDo: Get the referenced propertyClass ids from the above
-		cacheL( pr.propertyClasses, [
-			app.standardTypes.get("propertyClass","PC-Name"),
-			app.standardTypes.get("propertyClass","PC-Description")
-		]);
+		if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
+			pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") );
+		if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
+			pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") );
+
 		// ToDo: Get the referenced dataType ids from the above
-		cacheL( pr.dataTypes, [
-			app.standardTypes.get("dataType","DT-ShortString"),
-			app.standardTypes.get("dataType","DT-FormattedText")
-		]);
+		if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
+			pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
+		if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
+			pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") );
+
 		let resId = 'R-'+pr.id.simpleHash(),
 			res = {
 				id: resId,
