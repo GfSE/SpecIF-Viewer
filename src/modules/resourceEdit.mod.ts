@@ -314,7 +314,7 @@ modules.construct({
 					newFile = { blob:data, id:'F-'+fName.simpleHash(), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
 				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
-				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.render( newFile )+'</div>'
+				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.render( newFile )+'</div>';
 		});
 		return;
 		
@@ -323,7 +323,7 @@ modules.construct({
 			rdr.onload = ()=>{
 				fn( new Blob([rdr.result], { type: f.type }) )
 			};
-			rdr.readAsArrayBuffer( f )
+			rdr.readAsArrayBuffer( f );
 		}
 	};
 	self.removeDiagram = (cId)=>{
@@ -337,45 +337,75 @@ modules.construct({
 		let notOk = !self.dialogForm.check();
 		// enable save buttons, if all input fields have acceptable content:
 		Array.from( document.getElementsByClassName('btn-modal-save'), (btn)=>{
-			btn.disabled = notOk
+			btn.disabled = notOk;
 		})
 	//	console.debug('input made',document.getElementsByClassName('btn-modal-save'));
 	};
 
 	function save(mode) {
 		// Save the new or changed resource:
+		// ToDo: If the original resource had different languages, take care of them;
+		//       The new values must not replace the multi-language property values!
 		let p, 
 			pend=2, // minimally 2 calls with promise
 			// The properties of toEdit are complete (in contrast to self.newRes):
-			allProps = toEdit.descriptions.concat(toEdit.other),
 			chD = new Date().toISOString();  // changedAt
-		for( var a=allProps.length-1;a>-1;a-- ) {
-			p = allProps[a];
-			// Delete any title property, as the resource's native title has been set:
-			if( CONFIG.titleProperties.concat(CONFIG.headingProperties).indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('delete title property',p);
-				allProps.properties.splice(a,1);
-				continue
-			};
-			// Skip the diagrams, as they are directly updated if the user uploads a new file:
+
+		self.newRes.properties.length = 0;
+
+		toEdit.title.value = getP( toEdit.title );
+		// In any case, update the elements native title:
+		self.newRes.title = toEdit.title.value.stripHTML();
+		// If the title property doesn't have a class, 
+		// it has been added by classifyProps() and there is no need to create it;
+		// in this case the title will only be seen in the element's title:
+		if( toEdit.title['class'] ) {
+			delete toEdit.title.title;  // redundant
+			self.newRes.properties.push( toEdit.title );
+		}
+
+		toEdit.descriptions.forEach( function(p) {
+
+			// In case of a diagram, the value is already updated when the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('skip diagram property',p);
-				continue
+				self.newRes.properties.push( p );
+				return;
+			};
+
+			// get the new or unchanged input value of the property from the input field:
+			p.value = getP( p );
+			delete p.title;
+
+			let pV = p.value.stripHTML();
+			if( pV ) {
+				// update the elements native title:
+				self.newRes.description = pV
+
+				// If the description property doesn't have a class, 
+				// it has been added by classifyProps() and there is no need to create it;
+				// in this case the description will only be seen in the element's description:
+				if( p['class'] )
+					self.newRes.properties.push( p );
+			} else {
+				// delete it:
+				delete self.newRes.description;
 			};
 //			console.debug( 'save',mode, p, getP( p ) );
-			// get the new or unchanged input value of the other properties:
-			p.value = getP( p )
 		};
-		// Set the resource's native title;
-		// the resulting resource revision will not have a title property, even if the
-		// previous revision had one:
-		// ToDo: Update a title property, if there had been one, we would potentially lose dataType info like maxLength.
-		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
-		
-		// suppress empty properties:
-		self.newRes.properties = forAll( allProps, (p)=>{ if( hasContent(p.value) ) return p });
+
+		toEdit.other.forEach( function(p) {
+			// get the new or unchanged input value of the property from the input field:
+			p.value = getP( p );
+			delete p.title;
+			// no need for checking the existence of a class, 
+			// because classifyProps() puts only 'real' properties to 'other':
+			if( hasContent(p.value) )
+				self.newRes.properties.push( p );
+		};
+
 		self.newRes.changedAt = chD;
 //		console.debug( 'save', self.newRes );
+
 		switch( mode ) {
 			case 'update':
 				app.cache.selectedProject.updateContent( 'resource', self.newRes )
@@ -416,19 +446,20 @@ modules.construct({
 				//		case 'update':
 				//			break;
 						case 'insertBelow':
+							console.debug('nd below',selNd,pData.tree.selectedNode)
 							pData.tree.openNode( selNd );
 						//	pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
 							// no break
 						case 'insertAfter':
-//							console.debug('nd',selNd,pData.tree.selectedNode)
+							console.debug('nd after',selNd,pData.tree.selectedNode)
 						//	pData.tree.selectNode( selNd.getNextSibling() ); 
 							pData.tree.selectNode( selNd.getNextNode() )
-					}
+					};
 				else
 					// we get here only after creating the first node of a tree:
 					pData.tree.selectFirstNode();
-				pData.doRefresh({forced:true})
-			}
+				pData.doRefresh({forced:true});
+			};
 		}
 		function getP(p) {
 			// Get the value of a property:
@@ -463,5 +494,5 @@ modules.construct({
 			}
 		}
 	};
-	return self
+	return self;
 })

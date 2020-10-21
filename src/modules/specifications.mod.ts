@@ -749,7 +749,7 @@ modules.construct({
 							)
 					},
 					stdError 
-				)
+				);
 		}
 		var dlg = new BootstrapDialog({
 			title: i18n.MsgConfirm,
@@ -758,13 +758,13 @@ modules.construct({
 			buttons: [{
 				label: i18n.BtnCancel,
 				action: (thisDlg)=>{ 
-					thisDlg.close() 
+					thisDlg.close();
 				}
 			},{
 				label: i18n.BtnDeleteObjectRef,
 				action: (thisDlg)=>{
 					delNd( pData.tree.selectedNode );
-					thisDlg.close() 
+					thisDlg.close();
 				}
 	/*	//	},{
 		//		label: i18n.BtnDeleteObject,
@@ -780,14 +780,14 @@ modules.construct({
 		//		}  */
 			}]
 		})
-		.open()
+		.open();
 	};
 	self.relatedItemClicked = ( rId )=>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
 		pData.tree.selectNodeByRef( rId );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
-		document.getElementById(CONFIG.objectList).scrollTop = 0
+		document.getElementById(CONFIG.objectList).scrollTop = 0;
 	};
 /*	self.deleteResource = ()=>{
 		// Delete the selected resource, all tree nodes and their children.
@@ -1396,6 +1396,7 @@ function Resource( obj ) {
 		return rO  // return rendered resource for display
 	};  */
 	function renderTitle( clsPrp, opts ) {
+//		console.debug('renderTitle',simpleClone(clsPrp),opts);
 		if( !clsPrp.title || !clsPrp.title.value ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()

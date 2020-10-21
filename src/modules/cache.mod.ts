@@ -568,15 +568,15 @@ function Project( pr ) {
 										sortBy( prL, (el)=>{ return el.r.title } );
 
 										// 4. Create a new combined folder:
-										let dta = {
+										let newD = {
 											$schema: 'https://specif.de/v1.0/schema.json',
 											dataTypes: [
 												app.standardTypes.get('dataType',"DT-ShortString"),
-												app.standardTypes.get('dataType',"DT-Text")
+												app.standardTypes.get('dataType',"DT-FormattedText")
 											],
 											propertyClasses: [
-												app.standardTypes.get('propertyClass',"DT-ShortString"),
-												app.standardTypes.get('propertyClass',"DT-Text")
+												app.standardTypes.get('propertyClass',"PC-Description"),
+												app.standardTypes.get('propertyClass',"PC-Type")
 											],
 											resourceClasses: [
 												app.standardTypes.get('resourceClass',"RC-Folder")
@@ -591,7 +591,7 @@ function Project( pr ) {
 											}]
 										};
 										// use the update function to eliminate duplicate types:
-										self.update( dta, {mode:'adopt'} )
+										self.update( newD, {mode:'adopt'} )
 										.done( resolve )
 										.fail( reject )
 									} else {
@@ -658,15 +658,15 @@ function Project( pr ) {
 						()=>{
 							// 2. Create a new combined glossary:
 							if( dgL.length>0 ) {
-								let dta = {
+								let newD = {
 									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: [
 										app.standardTypes.get('dataType',"DT-ShortString"),
-										app.standardTypes.get('dataType',"DT-Text")
+										app.standardTypes.get('dataType',"DT-FormattedText")
 									],
 									propertyClasses: [
-										app.standardTypes.get('propertyClass',"DT-ShortString"),
-										app.standardTypes.get('propertyClass',"DT-Text")
+										app.standardTypes.get('propertyClass',"PC-Description"),
+										app.standardTypes.get('propertyClass',"PC-Type")
 									],
 									resourceClasses: [
 										app.standardTypes.get('resourceClass',"RC-Folder")
@@ -674,16 +674,14 @@ function Project( pr ) {
 									resources: Folders(),
 									hierarchies: NodeList(self.data.resources)
 								};
-//								console.debug('glossary',dta);
-								// The glossary is the only item in the hierarchies list:
-							//	if( hasChildren( dta.hierarchies[0] ) )
-									// use the update function to eliminate duplicate types;
-									// 'opts.addGlossary' must not be true to avoid an infinite loop:
-									self.update( dta, {mode:'adopt'} )
-									.done( resolve )
-									.fail( reject )
+//								console.debug('glossary',newD);
+								// use the update function to eliminate duplicate types;
+								// 'opts.addGlossary' must not be true to avoid an infinite loop:
+								self.update( newD, {mode:'adopt'} )
+								.done( resolve )
+								.fail( reject );
 							} else {
-								resolve({status:0})
+								resolve({status:0});
 							}
 						},
 						reject
@@ -3415,9 +3413,8 @@ function createProp( pC, pCid ) {
 		title: pC.title,
 		class: pC.id,
 		// supply default value if available:
-		value: pC.value||'',
-		permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true},
-		del: pC.del
+		value: pC.value||''
+	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
 	}
 }
 function propByTitle(dta,itm,pN) {
@@ -3494,6 +3491,15 @@ function classifyProps( el, prj ) {
 		cP.title = cP.other[a];
 		// remove title from other:
 		cP.other.splice(a,1);
+		
+		// Special case:
+		// - if the current instance does not have a title property
+		// - but it's class defines one,
+		// the title would get lost.
+		// Thus, the instance title is copied to the title property,
+		// which has been newly created by normalizeProps():
+		if( !cP.title.value && el.title )
+			cP.title.value = el.title;
 	};
 
 	// b) Check the configured descriptions:
@@ -3507,11 +3513,13 @@ function classifyProps( el, prj ) {
 		};
 	};
 
-	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title or no description property:
-	if( !cP.title && el.title )
-		cP.title = {title: CONFIG.propClassTitle, value: el.title};
-	if( cP.descriptions.length<1 && el.description )
-		cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description} );
+	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export), 
+	//    there is no title or no description property:
+	//    ToDo: If the instance is a statement, a title is optional - don't create if it doesn't exist!
+	if( !cP.title )
+		cP.title = {title: CONFIG.propClassTitle, value: el.title || ''};
+	if( cP.descriptions.length<1 )
+		cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
 //	console.debug( 'classifyProps 2', simpleClone(cP) );
 	return cP;
 
