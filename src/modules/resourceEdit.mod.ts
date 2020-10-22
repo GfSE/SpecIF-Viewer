@@ -79,8 +79,6 @@ modules.construct({
 		opts.selNodeId = pData.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
-		// Note: Here ES6 promises will be used. 
-		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
 		switch( opts.mode ) {
 			case 'create':
 				selectResClass( opts )
@@ -91,7 +89,7 @@ modules.construct({
 							(r)=>{
 //								console.debug( '#', opts.mode, r );
 								self.newRes = simpleClone(r);
-								opts.dialogTitle = i18n.MsgCreateResource;
+								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
 								opts.msgBtns = [
 									msgBtns.cancel,
 									msgBtns.insertAfter,
@@ -202,7 +200,7 @@ modules.construct({
 					case 'xs:enumeration':
 						// no input checking needed:
 						let separatedValues = p.value.split(','),
-							vals = forAll( dT.values, (v)=>{ return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+							vals = forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
 							return checkboxField( ti, vals )
@@ -261,41 +259,52 @@ modules.construct({
 				app.cache.selectedProject.readContent( 'resourceClass', forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
 				.then( 
 					(rCL)=>{
-						// store a clone and get the title to display:
-						let resClasses = forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
-						resClasses[0].checked = true;
-//						console.debug('#2',simpleClone(cData.resourceClasses));
-						let dlg = new BootstrapDialog({
-							title: i18n.MsgSelectResClass,
-						//	type: 'type-success',
-							type: 'type-primary',
-						//	size: BootstrapDialog.SIZE_WIDE,
-							message: (thisDlg)=>{
-								var form = '<form id="attrInput" role="form" >'
-										+ radioField( i18n.LblResourceClass, resClasses )
-										+ '</form>';
-								return $( form ) 
-							},
-							buttons: [{
-									label: i18n.BtnCancel,
-									action: (thisDlg)=>{ 
-										reject({status:0,statusText:'Create Resource cancelled by the user'});
-										thisDlg.close() 
-									}
-								},{ 	
-									label: i18n.LblNextStep,
-									cssClass: 'btn-success', 
-									action: (thisDlg)=>{
-										resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
-										thisDlg.close()
-									}  
-								}]
-						})
-						.open()
+						if( rCL.length>0 ) {
+							// store a clone and get the title to display:
+							let resClasses = forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
+							if( resClasses.length>1 ) {
+								// open a modal dialog to let the user select the class for the resource to create:
+								resClasses[0].checked = true;  // default selection
+//								console.debug('#2',simpleClone(cData.resourceClasses));
+								let dlg = new BootstrapDialog({
+									title: i18n.MsgSelectResClass,
+								//	type: 'type-success',
+									type: 'type-primary',
+								//	size: BootstrapDialog.SIZE_WIDE,
+									message: (thisDlg)=>{
+										var form = '<form id="attrInput" role="form" >'
+												+ radioField( i18n.LblResourceClass, resClasses )
+												+ '</form>';
+										return $( form ) 
+									},
+									buttons: [{
+											label: i18n.BtnCancel,
+											action: (thisDlg)=>{ 
+												reject({status:0,statusText:'Create Resource cancelled by the user'});
+												thisDlg.close() 
+											}
+										},{ 	
+											label: i18n.LblNextStep,
+											cssClass: 'btn-success', 
+											action: (thisDlg)=>{
+												resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
+												thisDlg.close()
+											}  
+										}]
+								})
+								.open();
+							} else {
+								// exactly on class, so we can continue immediately:
+								resolve( resClasses[0] );
+							};
+						} else {
+							// ToDo: Don't enable the 'create resource' button, if there are no eligible resourceClasses ..
+							reject({status:999;statusText:"No resource class defined for manual creation of a resource."});
+						};
 					},
 					reject
-				)
-			})
+				);
+			});
 		}
 	};
 	self.hide = ()=>{
@@ -351,7 +360,8 @@ modules.construct({
 			// The properties of toEdit are complete (in contrast to self.newRes):
 			chD = new Date().toISOString();  // changedAt
 
-		self.newRes.properties.length = 0;
+		if( Array.isArray(self.newRes.properties) )
+			self.newRes.properties.length = 0;
 
 		toEdit.title.value = getP( toEdit.title );
 		// In any case, update the elements native title:
@@ -360,7 +370,7 @@ modules.construct({
 		// it has been added by classifyProps() and there is no need to create it;
 		// in this case the title will only be seen in the element's title:
 		if( toEdit.title['class'] ) {
-			delete toEdit.title.title;  // redundant
+			delete toEdit.title.title;  // is redundant, the property's class title applies
 			self.newRes.properties.push( toEdit.title );
 		}
 
@@ -397,10 +407,14 @@ modules.construct({
 			// get the new or unchanged input value of the property from the input field:
 			p.value = getP( p );
 			delete p.title;
-			// no need for checking the existence of a class, 
-			// because classifyProps() puts only 'real' properties to 'other':
-			if( hasContent(p.value) )
-				self.newRes.properties.push( p );
+			// a property class must exist, 
+			// because classifyProps() puts only existing properties to 'other':
+			if( p['class'] ) {
+				if( hasContent(p.value) )
+					self.newRes.properties.push( p )
+			} else {
+					console.error('Cannot save edited property',p,' because it has no class');
+			};
 		};
 
 		self.newRes.changedAt = chD;
@@ -439,25 +453,27 @@ modules.construct({
 				});
 				// get the selected node:
 				let selNd = pData.tree.selectedNode;
+//				console.debug('save.finalize',selNd);
 				// update the node name:
 			//	pData.tree.updateNode( selNd, self.newRes.title );
-				if( selNd )
+				if( selNd ) {
 					switch( mode ) {
-				//		case 'update':
-				//			break;
+				/*		case 'update':
+							break; */
 						case 'insertBelow':
-							console.debug('nd below',selNd,pData.tree.selectedNode)
+//							console.debug('nd below',selNd,pData.tree.selectedNode)
 							pData.tree.openNode( selNd );
 						//	pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
 							// no break
 						case 'insertAfter':
-							console.debug('nd after',selNd,pData.tree.selectedNode)
+//							console.debug('nd after',selNd,pData.tree.selectedNode)
 						//	pData.tree.selectNode( selNd.getNextSibling() ); 
 							pData.tree.selectNode( selNd.getNextNode() )
 					};
-				else
+				} else {
 					// we get here only after creating the first node of a tree:
 					pData.tree.selectFirstNode();
+				};
 				pData.doRefresh({forced:true});
 			};
 		}

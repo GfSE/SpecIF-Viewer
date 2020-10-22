@@ -3214,7 +3214,7 @@ function enumValueOf( dT, val, opts ) {
 	let ct = '',
 		eV,
 	//	st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
-		vL = val.split(',');  // in case of ENUMERATION, val may carry comma-separated value-IDs
+		vL = val.split(',');  // in case of a multi-valued ENUMERATION, val may carry comma-separated value-IDs
 //	console.debug('enumValueOf',dT,val,vL,opts);
 	vL.forEach( (v,i)=>{
 	//	if( !v ) return;

@@ -388,9 +388,12 @@ function LanguageTextsDe() {
 	self.SpecIF_Requirements = 
 	self.IREB_Requirements = "Anforderungen";
 	self.IREB_RequirementType = "Art";
-	self.IREB_RequirementTypeFunction = "Funktion";
-	self.IREB_RequirementTypeQuality = "Qualität";
-	self.IREB_RequirementTypeConstraint = "Randbedingung";
+	self.IREB_RequirementTypeFunction = 
+	self.IREB_FunctionalRequirement = "Funktionsanforderung oder 'User Story'";
+	self.IREB_RequirementTypeQuality =
+	self.IREB_QualityRequirement = "Qualitätsanforderung";
+	self.IREB_RequirementTypeConstraint =
+	self.IREB_Constraint = "Randbedingung";
 	self.SpecIF_BusinessProcess = 'Geschäftsprozess'; 
 	self.SpecIF_BusinessProcesses = 'Geschäftsprozesse';
 	self.SpecIF_Rationale = "Motivation";

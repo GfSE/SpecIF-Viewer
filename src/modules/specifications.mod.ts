@@ -390,7 +390,7 @@ modules.construct({
 	//	self.selectTab(CONFIG.objectList);  // itemClicked can be called from the hitlist ..
 		if( self.tree.selectedNode.ref != rId ) {
 			// different node: select it and open it:
-			console.debug('#1',rId,self.tree.selectedNode);
+//			console.debug('#1',rId,self.tree.selectedNode);
 			self.tree.selectNodeByRef( rId );
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
@@ -398,7 +398,7 @@ modules.construct({
 			// opening a node triggers an event, by which 'self.refresh' will be called.
 		} else {
 			if( self.tree.selectedNode.children.length>0 ) {
-				console.debug('#2',rId,self.tree.selectedNode);
+//				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
 				self.tree.toggleNode( self.tree.selectedNode )
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
@@ -1400,7 +1400,9 @@ function Resource( obj ) {
 		if( !clsPrp.title || !clsPrp.title.value ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf( clsPrp.title.value, opts ).stripHTML();
+		let ti = languageValueOf( clsPrp.title.value, opts );
+		if( opts && opts.lookupTitles )
+			ti = i18n.lookup( ti );
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
