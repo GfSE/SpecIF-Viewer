@@ -1,13 +1,17 @@
 function toXhtml( data, opts ) {
 	"use strict";
 	// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
-	// Copyright: adesso AG (http://adesso.de)
-	// License: Apache 2.0 (http://www.apache.org/licenses/)
+	//
+	// Author: se@enso-managers.de
+	// (C) copyright http://enso-managers.de
+	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	//
 	// Limitations:
 	// - HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
 	// - Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
 	// - Accepts data-sets according to SpecIF v0.10.8 and later.
 	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
+	// - There must only be one revision per resource or statement
 
 	// Reject versions < 0.10.8:
 	if( data.specifVersion ) {
@@ -22,14 +26,7 @@ function toXhtml( data, opts ) {
 	};
 	
 	// Check for missing options:
-	if( typeof(opts)!='object' ) return null;;
-	if( typeof(opts.classifyProperties)!='function') {
-		if (typeof(opts.fail)=='function' )
-			opts.fail({status:904,statusText:"Programming error: function 'opts.classifyProperties' is undefined."})
-		else
-			console.error("Programming error: function 'opts.classifyProperties' is undefined.");
-		return
-	};
+	if( typeof(opts)!='object' ) opts = {};
 	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
 	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
 	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
@@ -55,7 +52,10 @@ function toXhtml( data, opts ) {
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 
-	const nbsp = '&#160;'; // non-breakable space
+	const nbsp = '&#160;', // non-breakable space
+		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
+	//	RE_tag = new RegExp( tagStr, 'g' ),
+		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' );
 
 	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 	// Limitation: the innerHTML may not have any tags.
@@ -106,29 +106,54 @@ function toXhtml( data, opts ) {
 				level: pars.level
 		})
 	}
-	function titleOf( r, pars, opts ) { // resource, resourceClass, parameters, options
-		// render the resource title
-		// designed for use also by statements.
+	function titleOf( itm, pars, opts ) { // resource, resourceClass, parameters, options
+		// render the resource or statement title
 
-		// depending on the context, r['class'] is an class object or a class id:
-		let rC = r['class'].id? r['class'] : itemBy( data.resourceClasses, 'id', r['class'] );
-		let ti = escapeXML( r.title ),
-			ic = rC.icon;
-		if( typeof(ic)!='string' ) ic = '';
-		if( ic ) ic += nbsp; // non-breakable space
-		if( !pars || pars.level<1 ) return (ti?ic+ti:'');
-		if( rC.isHeading ) pushHeading( ti, pars );
-		let l = pars.level==1? 1:rC.isHeading? 2:3;
+		// First, find and set the configured title:
+		let a = titleIdx( itm.properties ), ti;
+		if( a>-1 ) {  // found!
+			// Remove all formatting for the title, as the app's format shall prevail.
+			// Before, remove all marked deletions (as prepared be diffmatchpatch).
+			ti = stripHtml( itm.properties[a].value );
+		} else {
+			// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
+			ti = elTitleOf(itm);
+		};
+		ti = escapeXML( opts.lookup( ti ) );
 		if( !ti ) return '';
-		return '<h'+l+' id="'+pars.nodeId+'">'+(ti?ic+ti:'')+'</h'+l+'>'
+			
+		// If itm has a 'subject', it is a statement:
+		let cL = itm.subject? data.statementClasses : data.resourceClasses,
+			eC = itemBy( cL, 'id', itm['class'] ),
+			ic = eC&&eC.icon? eC.icon+nbsp : '';
+
+		if( !pars || pars.level<1 ) return ic+ti;
+
+		if( eC.isHeading ) pushHeading( ti, pars );
+		let lvl = pars.level==1? 1:eC.isHeading? 2:3;
+		return '<h'+lvl+' id="'+pars.nodeId+'">'+ic+ti+'</h'+lvl+'>';
+				
+		function titleIdx( aL ) {
+			// Find the index of the property to be used as title.
+			// The result depends on the current user - only the properties with read permission are taken into consideration
+			if( Array.isArray( aL ) )
+				for( var a=0,A=aL.length;a<A;a++ ) {
+					// First, check the configured title properties:
+					if( opts.titleProperties.indexOf( prpTitleOf(aL[a]) )>-1 ) return a;
+				};
+			return -1
+		}
 	}
 	function statementsOf( r, hi, opts ) { // resource, options
 		// render the statements (relations) about the resource in a table
 		if( !opts.statementsLabel ) return '';
+		
 		let sts={}, cid, oid, sid, noSts=true;
 		// Collect statements by type:
 		data.statements.forEach( function(st) {
-			cid = st['class'];  // statement class id
+			cid = titleOf( st, undefined, opts );
+		/*	// all statements having the same class are clustered:
+			cid = st['class']; */
 			// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 			sid = st.subject.id || st.subject;
 			oid = st.object.id || st.object;
@@ -144,31 +169,35 @@ function toXhtml( data, opts ) {
 		});
 //		console.debug( 'statements', r.title, sts );
 //		if( Object.keys(sts).length<1 ) return '';
-		if( noSts ) return '';
+		if( noSts ) return '';	// no statements ...
+		
 		// else, there are statements to render:
+		// The heading:
 		let ct = '<p class="metaTitle">'+opts.statementsLabel+'</p>',
 			sTi;
 		ct += '<table class="statementTable"><tbody>';
 		for( cid in sts ) {
-			// we don't have (and don't need) the individual statement, just the class:
-			sTi = opts.lookup( itemBy(data.statementClasses,'id',cid).title );
+			// if we have clustered by title:
+			sTi = opts.lookup( cid );
+		/*	// we don't have (and don't need) the individual statement, just the class:
+			sTi = opts.lookup( itemBy(data.statementClasses,'id',cid).title ); */
 
 			// 3 columns:
 			if( sts[cid].subjects.length>0 ) {
 				ct += '<tr><td>';
 				sts[cid].subjects.forEach( function(s) {
 //					console.debug('s',s,itemBy( data.resourceClasses,'id',s['class']))
-					ct += '<a href="'+anchorOf( s, hi )+'">'+titleOf( s, null, opts )+'</a><br/>'
+					ct += '<a href="'+anchorOf( s, hi )+'">'+titleOf( s, undefined, opts )+'</a><br/>'
 				});
 				ct += '</td><td class="statementTitle">'+sTi;
-				ct += '</td><td>'+titleOf( r, null, opts );
+				ct += '</td><td>'+titleOf( r, undefined, opts );
 				ct += '</td></tr>'
 			};
 			if( sts[cid].objects.length>0 ) {
-				ct += '<tr><td>'+titleOf( r, null, opts );
+				ct += '<tr><td>'+titleOf( r, undefined, opts );
 				ct += '</td><td class="statementTitle">'+sTi+'</td><td>';
 				sts[cid].objects.forEach( function(o) {
-					ct += '<a href="'+anchorOf( o, hi )+'">'+titleOf( o, null, opts )+'</a><br/>'
+					ct += '<a href="'+anchorOf( o, hi )+'">'+titleOf( o, undefined, opts )+'</a><br/>'
 				});
 				ct += '</td></tr>'
 			}
@@ -211,25 +240,42 @@ function toXhtml( data, opts ) {
 		// render the resource's properties with title and value as xhtml:
 		// designed for use also by statements.
 
-		// depending on the context, r['class'] is an class object or a class id:
-		let rC = r['class'].id? r['class'] : itemBy( data.resourceClasses, 'id', r['class'] );
+	//	let rC = itemBy( data.resourceClasses, 'id', r['class'] );
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
-		let c1='', rows='', rt, hPi;
-		r.descriptions.forEach( function(prp) {
-			c1 += '<p>'+propertyValueOf( prp, hi )+'</p>'
-		});
+		let c1='', rows='', rt, hPi,
+			descriptions=[], other=[];
+		
+		if( r.properties ) {
+			r.properties.forEach( (p)=>{
+				if( opts.descriptionProperties.indexOf( prpTitleOf(p) )>-1 ) {
+					descriptions.push(p);
+				} else {
+					// Disregard the title properties, here:
+					if( opts.titleProperties.indexOf( prpTitleOf(p) )<0 )
+						other.push(p);
+				}
+			});
+		};
+
+		if( descriptions.length>0 )
+			descriptions.forEach( (p)=>{
+				c1 += '<p>'+propertyValueOf( p, hi )+'</p>';
+			})
+		else
+			if( r.description ) c1 += '<p>'+propertyValueOf( r.description, hi )+'</p>';
+
 		// Skip the remaining properties, if no label is provided:
 //		console.debug('#1',c1)
-		if( !opts.propertiesLabel || r.isHeading ) return c1;
+		if( !opts.propertiesLabel || other.length<1 ) return c1;
 		
 		// Finally, list the remaining properties with property title (name) and value:
-		r.other.forEach( function(prp) {
+		other.forEach( function(p) {
 			// the property title or it's class's title:
-			if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
-				rt = opts.lookup( prp.title || propertyClassOf( prp['class'] ).title );
-				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValueOf( prp, hi )+'</td></tr>'
+			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
+				rt = opts.lookup( prpTitleOf(p) );
+				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValueOf( p, hi )+'</td></tr>'
 			}
 		});
 		// Add a property 'SpecIF:Type':
@@ -443,10 +489,10 @@ function toXhtml( data, opts ) {
 							else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 						};
 						return escapeXML( ct );
-					case opts.dataTypeXhtml:
-						return titleLinks( fileRef( replaceLt(prp.value), opts ), hi, opts );
 					case opts.dataTypeString:
-						return titleLinks( escapeXML( prp.value ), hi, opts )
+					//	return titleLinks( escapeXML( prp.value ), hi, opts );
+					case opts.dataTypeXhtml:
+						return titleLinks( fileRef( escapeInner(prp.value), opts ), hi, opts );
 				}
 			};
 			// for all other dataTypes or when there no dataType:
@@ -464,7 +510,6 @@ function toXhtml( data, opts ) {
 				level: lvl
 			};
 
-		r = opts.classifyProperties( r, data );
 //		console.debug('renderHierarchy',r);
 		var ch = 	titleOf( r, params, opts )
 				+	propertiesOf( r, hi, opts )
@@ -498,53 +543,80 @@ function toXhtml( data, opts ) {
 			// given the ID of an element in a list, return the element itself:
 		//	s = s.trim();
 			for( var i=L.length-1;i>-1;i-- )
-				if( L[i][p]==s ) return L[i]   // return list item
+				if( L[i][p]==s ) return L[i];   // return list item
 		};
-		return
+		return;
 	}
 	function indexBy( L, p, s ) {
 		if( L && p && s ) {
 			// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 			// hand in property and searchTerm as string !
 			for( var i=L.length-1;i>-1;i-- )
-				if( L[i][p]==s ) return i
+				if( L[i][p]==s ) return i;
 		};
-		return -1
+		return -1;
+	}
+	function prpTitleOf( prp ) {
+		// get the title of a resource/statement property as defined by itself or it's class:
+		return prp.title || itemBy(data.propertyClasses,'id',prp['class']).title
+	}
+	function elTitleOf( el ) {
+		// get the title of a resource or statement as defined by itself or it's class,
+		// where a resource always has a statement of its own, i.e. the second clause never applies:
+		return el.title || itemBy(data.statementClasses,'id',el['class']).title
 	}
 	function hasContent( str ) {
-		// check whether str has content or a reference:
+		// Check whether str has content or a reference:
 		if( !str ) return false;
 		return str.replace(/<[^>]+>/g, '').trim().length>0	// strip HTML and trim
 			|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
 			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
-			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str)
-	}
-	function replaceLt( txt ) {
-		// remove '<' where it does not belong to a tag;
-		// Beware that (as of today) the MS-Edge ePub-Reader is not up to the standards !
-		// Also 'Sigil' issues a wrong error message on opening a document with other special chars
-		// which are permitted according to the specs.
-		return txt.replace( /<([^a-z//]{1})/g, function($0,$1) {return '&lt;'+$1} )
+			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str);
 	}
 	function escapeXML( s ) {
 		if( !s ) return '';
 		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {
 				// 1. Replace &, unless it belongs to an XML entity:
-				if( opts.RE.XMLEntity.test($0) ) {
+				if( opts.RE.XMLEntity.test($0) )
 					// no replacement:
-					return $0
-				} else {
-					// encode the '&' and add the remainder of the pattern:
-					return '&#38;'+$1
-				}
+					return $0;
+				// else, encode the '&' and add the remainder of the pattern:
+				return '&#38;'+$1;
 			})
 			.replace(/[<>"']/g, function($0) {
 				// 2. Replace <, >, " and ':
 				return "&#" + {"<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
-			})
+			});
+	}
+	function escapeInner( str ) {
+		var out = "";
+		str = str.replace( RE_inner_tag, function($0,$1,$2,$3) {
+			// $1: inner text (before the next tag)
+			// $2: start of opening tag '<' or closing tag '</'
+			// $3: rest of the tag
+			// escape the inner text and keep the tag:
+			out += $1.escapeXML() + $2 + $3;
+			return '';
+		});
+		// process the remainder (the text after the last tag or the whole text if there was no tag:
+		out += str.escapeXML();
+		return out;
+	} 
+	/**
+	 * Returns the text from a HTML string
+	 * see: https://ourcodeworld.com/articles/read/376/how-to-strip-html-from-a-string-extract-only-text-content-in-javascript
+	 * 
+	 * @param {html} String The html string to strip
+	 */
+	function stripHtml(html){
+		var temp = document.createElement("div");
+		// Set the HTML content with the providen
+		temp.innerHTML = html;
+		// Retrieve the text property of the element (cross-browser support)
+		return temp.textContent || temp.innerText || "";
 	}
 	function extOf( str ) {
 		// get the file extension without the '.':
-		return str.substring( str.lastIndexOf('.')+1 )
+		return str.substring( str.lastIndexOf('.')+1 );
 	}  
 }

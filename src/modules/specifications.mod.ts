@@ -290,8 +290,8 @@ modules.construct({
 			fNd = self.tree.firstNode(),
 			nd;
 
-		// Select the language options at project level:
-		opts.targetLanguage = browser.language;
+		// Select the language options at project level, also for subordinated views such as filter and reports:
+		self.targetLanguage = opts.targetLanguage = browser.language;
 		opts.lookupTitles = true;
 				
 		// Initialize the tree, unless
@@ -380,7 +380,7 @@ modules.construct({
 */
 	self.itemClicked = ( rId )=>{
 		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].indexOf( self.selectedView() )>-1 ) return;
-		console.debug('#0',rId);
+//		console.debug('#0',rId);
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
 		// If it is a resource with children (folder with content), assure it is open.

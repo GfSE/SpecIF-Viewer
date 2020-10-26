@@ -610,7 +610,7 @@ String.prototype.toJsId = function() {
 // Make an id conforming with ReqIF and SpecIF:
 String.prototype.toSpecifId = function() { 
 	if( this ) return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
-	return
+	return;
 };
 
 // Make a very simple hash code from a string:
@@ -622,7 +622,7 @@ if (!String.prototype.startsWith) {
 	String.prototype.startsWith = function(searchString, position) {
 		position = position || 0;
 		return this.lastIndexOf(searchString, position) === position
-	}
+	};
 };
 /* from https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/String/endsWith */
 if (!String.prototype.endsWith) {
@@ -634,13 +634,13 @@ if (!String.prototype.endsWith) {
       position -= searchString.length;
       let lastIndex = subjectString.indexOf(searchString, position);
       return lastIndex!==-1 && lastIndex===position
-	}
+	};
 };
 String.prototype.truncate = function(l) {
 	var t = this.substring(0,l-1);
 //	if( t.length<this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
 	if( t.length<this.length ) t += '...';  // must work also in non-html fields
-	return t
+	return t;
 };
 /*String.prototype.reduceWhiteSpace = function() {
 // Reduce white space to a single blank:
@@ -652,7 +652,7 @@ String.prototype.log = function(m) {
 }; */
 String.prototype.stripCtrl = function() {
 // Remove js/json control characters from HTML-Text or other:
-	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' )
+	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
 };
 String.prototype.ctrl2HTML = function() {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
@@ -711,6 +711,22 @@ String.prototype.xmlChar2utf8 = function() {
 			return String.fromCharCode(parseInt(numStr, 10))
 		})
 } */
+
+function escapeInner( str ) {
+	var out = "";
+	str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
+		// $1: inner text (before the next tag)
+		// $2: start of opening tag '<' or closing tag '</'
+		// $3: rest of the tag
+		// escape the inner text and keep the tag:
+		out += $1.escapeXML() + $2 + $3;
+		// consume the matched piece of str:
+		return '';
+	});
+	// process the remainder (the text after the last tag or the whole text if there was no tag:
+	out += str.escapeXML();
+	return out;
+} 
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
@@ -719,19 +735,19 @@ String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }
 String.prototype.escapeXML = function() {
 	return this.replace(/["'&<>]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
-	})
+	});
 };
 String.prototype.escapeHTML = function() {
 	return this.replace(/[&<>"'`=\/]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
-	})
+	});
 };
 String.prototype.unescapeHTMLTags = function() {
 //  Unescape known HTML-tags:
 	if( isHTML(this) ) return this;
 	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, ($0,$1,$2,$3)=>{
-		return '<'+$1+$2+$3+'>'
-	}))
+		return '<'+$1+$2+$3+'>';
+	}));
 };
 // see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
 String.prototype.unescapeHTMLEntities = function() {
@@ -739,9 +755,8 @@ String.prototype.unescapeHTMLEntities = function() {
 	var el = document.createElement('div');
 	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
-        return el.innerText
-		
-	})) 
+        return el.innerText;
+	}));
 };
 /*// better: https://stackoverflow.com/a/34064434/5445 but strips HTML tags.
 String.prototype.unescapeHTMLEntities = function() {
@@ -751,9 +766,23 @@ String.prototype.unescapeHTMLEntities = function() {
 if (!String.prototype.stripHTML) {
 	String.prototype.stripHTML = function() {
 		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-		return $("<dummy/>").html( this ).text().trim()
-	}
+		return $("<dummy/>").html( this ).text().trim() || '';
+	};
 };
+/**
+ * Returns the text from a HTML string
+ * see: https://ourcodeworld.com/articles/read/376/how-to-strip-html-from-a-string-extract-only-text-content-in-javascript
+ * 
+ * @param {html} String The html string to strip
+ *
+function stripHtml(html){
+	// Create a new div element
+	var temp = document.createElement("div");
+	// Set the HTML content with the providen
+	temp.innerHTML = html;
+	// Retrieve the text property of the element (cross-browser support)
+	return temp.textContent || temp.innerText || "";
+} */
 
 // Add a link to an isolated URL:
 String.prototype.linkifyURLs = function( opts ) {
@@ -767,8 +796,8 @@ String.prototype.linkifyURLs = function( opts ) {
 			// under the assumption that a decoding a non-encoded URI does not cause a change.
 			// This does not work if a non-encoded URI contains '%'.
 			return $1+'<a href="'+encodeURI(decodeURI($2))+'" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9 */
-			return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9
-		})
+			return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9;
+		});
 };
 
 String.prototype.fileExt = function() {

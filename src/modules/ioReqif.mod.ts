@@ -17,8 +17,7 @@ modules.construct({
 	self.init = function() {
 		mime = null
 	};
-	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
-		RE_tag = /(<\/?)([a-z]{1,10}( [^<>]+)?\/?>)/g;
+	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/;
 		
 /*	self.verify = function( f ) {
 //		console.debug(f.name);
@@ -48,10 +47,10 @@ modules.construct({
 		// - sort properties according to the propertyClasses
 		// - in ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 		
-		console.debug( 'ioReqif.toReqif', simpleClone(pr) );
+//		console.debug( 'ioReqif.toReqif', simpleClone(pr) );
 
 		const date = new Date().toISOString(),
-			ns_xhtml = 'xhtml';
+			ns = 'xhtml';
 
 		// 0. SpecIF has a number of optional items which are required for ReqIF;
 		//    these are complemented in the following.
@@ -70,7 +69,7 @@ modules.construct({
 				let eL = ctg=='statementClass'? 
 							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
 						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
-				console.debug( 'addDescProperty', eC, eL );
+//				console.debug( 'addDescProperty', eC, eL );
 				
 					function descPropertyNeeded(r) {
 						if( r.description && r.description.length>0 ) {
@@ -130,7 +129,7 @@ modules.construct({
 				let eL = ctg=='statementClass'? 
 							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
 						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
-				console.debug( 'addTitleProperty', eC, eL );
+//				console.debug( 'addTitleProperty', eC, eL );
 				
 					function titlePropertyNeeded(r) {
 							if( Array.isArray( r.properties ) )
@@ -236,7 +235,7 @@ modules.construct({
 		// After the preparations, begin with the conversion:
 		var xml = 
 				'<?xml version="1.0" encoding="UTF-8"?>'
-			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns_xhtml+'="http://www.w3.org/1999/xhtml">'
+			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns+'="http://www.w3.org/1999/xhtml">'
 			+	'<THE-HEADER>'
 			+	  '<REQ-IF-HEADER IDENTIFIER="'+pr.id+'">'
 			+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
@@ -295,7 +294,7 @@ modules.construct({
 			+	'<SPEC-TYPES>';
 			
 		// 2. Sort SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs, collect OBJECTS:
-		let req = {
+		let sorted = {
 			objTypes: [],
 			spcTypes: [],
 			objects: []
@@ -305,19 +304,19 @@ modules.construct({
 				let r = itemById(pr.resources,n.resource),
 					rC = itemById(pr.resourceClasses,r['class']);
 				// a) Collect resourceClass without duplication:
-				if( indexById(req.objTypes,rC.id)<0 ) {
+				if( indexById(sorted.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
 						let anc = itemById(pr.resourceClasses,rC['extends']);
 						if( anc.propertyClasses && rC.propertyClasses ) 
 							rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses)
 					};
-					req.objTypes.push( rC )
+					sorted.objTypes.push( rC )
 				};
 				// b) Collect resource without duplication:
-				if( indexById(req.objects,r.id)<0 ) 
+				if( indexById(sorted.objects,r.id)<0 ) 
 					// ToDo: Sort properties according to the propertyClasses
-					req.objects.push( r )
+					sorted.objects.push( r )
 			}
 		// First, collect all resources referenced by the hierarchies,
 		// ignore the hierarchy roots here, they are handled further down:
@@ -327,7 +326,7 @@ modules.construct({
 					iterate( n, prepObj )
 				});
 		});
-		console.debug( 'after collecting referenced resources: ', req );
+		console.debug( 'after collecting referenced resources: ', sorted );
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( function(h) {
 			// The resources referenced at the lowest level of hierarchies 
@@ -337,7 +336,7 @@ modules.construct({
 			let hR = itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
 				hC = itemById( pr.resourceClasses, hR['class'] );	// its class
 			
-			if( indexBy( req.objects, 'class', hC.id )>-1 ) {
+			if( indexBy( sorted.objects, 'class', hC.id )>-1 ) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
 				hC.id = 'HC-'+hC.id
@@ -345,8 +344,8 @@ modules.construct({
 				// we need to update all affected 'extend' properties. There is a minor chance, though.
 			};
 			// Collect hierarchy root's class without duplication:
-			if( indexById(req.spcTypes,hC.id)<0 )
-				req.spcTypes.push( hC );
+			if( indexById(sorted.spcTypes,hC.id)<0 )
+				sorted.spcTypes.push( hC );
 			
 			// prepare the hierarchy root, itself:
 			h.title = hR.title || '';
@@ -354,10 +353,10 @@ modules.construct({
 			h['class'] = hC.id;
 			if( hR.properties ) h.properties = hR.properties
 		});
-//		console.debug( 'reqSort', req );
+//		console.debug( 'reqSort', sorted );
 		
 		// 3. Transform resourceClasses to OBJECT-TYPES:
-		req.objTypes.forEach( function(oT) {
+		sorted.objTypes.forEach( function(oT) {
 			xml += '<SPEC-OBJECT-TYPE '+commonAttsOf( oT )+'>'
 				+		attrTypesOf( oT )
 				+ '</SPEC-OBJECT-TYPE>'
@@ -372,7 +371,7 @@ modules.construct({
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
-		req.spcTypes.forEach( function(sC) {
+		sorted.spcTypes.forEach( function(sC) {
 			xml += '<SPECIFICATION-TYPE '+commonAttsOf( sC )+'>'
 				+		attrTypesOf( sC )
 				+  '</SPECIFICATION-TYPE>';
@@ -381,7 +380,7 @@ modules.construct({
 			+	'<SPEC-OBJECTS>';
 		
 		// 6. Transform resources to OBJECTS:
-		req.objects.forEach( function(sC) {
+		sorted.objects.forEach( function(sC) {
 			xml += '<SPEC-OBJECT '+commonAttsOf( sC )+'>'
 				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+sC['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
 				+		attsOf( sC )
@@ -426,7 +425,7 @@ modules.construct({
 				return e.changedAt || pr.changedAt || date
 			}
 			function commonAttsOf( e ) {
-				return 'IDENTIFIER="'+e.id+'" LONG-NAME="'+(e.title?e.title:'')+'" DESC="'+(e.description?e.description:'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+				return 'IDENTIFIER="'+e.id+'" LONG-NAME="'+(e.title?e.title.stripHTML().escapeXML():'')+'" DESC="'+(e.description?e.description.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
 			function attrTypesOf( eC ) { 
 				// eC: resourceClass or statementClass
@@ -504,7 +503,7 @@ modules.construct({
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.escapeXML()+'">'
+							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.stripHTML().escapeXML()+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
@@ -531,16 +530,15 @@ modules.construct({
 				return ('<object data="'+u+'"'+t+s+' >'+u+'</object>');  
 			} 
 		); */
-							// add a xtml namespace and an enclosing <div> bracket, if needed:
+							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
 							let	hasDiv = RE_hasDiv.test(prp.value),
-								txt = prp.value
-										.escapeXML()
-										.replace( RE_tag, function($0,$1,$2) { 
-											return $1+ns_xhtml+':'+$2
+								txt = 	escapeInner( prp.value )
+										.replace( RE.tag, function($0,$1,$2) { 
+											return $1+ns+':'+$2
 										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
-								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns_xhtml+':div>')+txt+(hasDiv?'':'</'+ns_xhtml+':div>')+'</THE-VALUE>'
+								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns+':div>')+txt+(hasDiv?'':'</'+ns+':div>')+'</THE-VALUE>'
 								+  '</ATTRIBUTE-VALUE-XHTML>'
 							break;
 						case 'xs:enumeration':
@@ -560,9 +558,8 @@ modules.construct({
 								+  '</ATTRIBUTE-VALUE-DATE>'
 							break;
 					};
-
 				});
-				return xml + '</VALUES>'
+				return xml + '</VALUES>';
 			}
 			function childrenOf( el ) {
 				if( !el.nodes || el.nodes.length<1 ) return ''
@@ -573,20 +570,20 @@ modules.construct({
 							+		childrenOf( ch )
 							+ '</SPEC-HIERARCHY>'
 					});
-				return xml + '</CHILDREN>'
+				return xml + '</CHILDREN>';
 			}
 			function iterate( tree, fn ) {
 				fn( tree );
 				if( tree.nodes )
 					tree.nodes.forEach( function(n) {
-						iterate( n, fn )
-					})
+						iterate( n, fn );
+					});
 			}
 	};
 	self.abort = function() {
 //		app.cache.abort();
-//		server.project().cancelImport()
-		self.abortFlag = true
+//		server.project().cancelImport();
+		self.abortFlag = true;
 	};
-	return self
+	return self;
 });

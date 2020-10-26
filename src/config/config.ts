@@ -190,9 +190,9 @@ const CONFIG = {};
 		CONFIG.resClassFolder,	// do not remove
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.ChapterName',	// do not remove
-		// DocBridge Resource Director:
+	/*	// DocBridge Resource Director:
 		'DBRD.ChapterName',
-	/*	// Viacar Glossary:
+		// Viacar Glossary:
 		'Heading.en',
 		'Heading.de',
 		'Heading.fr',
@@ -211,9 +211,9 @@ const CONFIG = {};
 		'DC.title',
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Name',
-		// DocBridge Resource Director:
+/*		// DocBridge Resource Director:
 		'DBRD.Name',
-/*		// ARCWAY Cockpit Copilot:
+		// ARCWAY Cockpit Copilot:
 		'Objekt�berschrift',
 		'Name',
 		// carhs SafetyWissen:
@@ -226,12 +226,12 @@ const CONFIG = {};
 		'Title.en',
 		'Title.de',
 		'Title.fr',
-		'Title.es', */
+		'Title.es', 
 		// Viacar Glossary:
 		'Bezeichnung_DE',
 		'Bezeichnung_FR',
 		// openETCS:
-//		'requirementID',
+		'requirementID', */
 		// Other:
 		'Title',
 		'Titel'
@@ -570,10 +570,13 @@ const RE = {};
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 	RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
 	RE.tagImg = new RegExp( '<img([^>]+)/>', 'g' );
-	let reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
+	const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
 	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;
+	const tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)";
+	RE.tag = new RegExp( tagStr, 'g' );
+	RE.innerTag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' );
 
 /////////////////
 const nbsp = '&#160;'; // non-breakable space

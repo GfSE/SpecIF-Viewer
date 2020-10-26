@@ -174,9 +174,9 @@ modules.construct({
 		pData.showLeft.reset();
 		$('#filterNotice').empty();
 
-		// Language options have been selected at project level:
-		displayOptions.targetLanguage = self.parent.targetLanguage;
-		displayOptions.lookupTitles = self.parent.lookupTitles;
+        displayOptions.targetLanguage = pData.targetLanguage;
+        displayOptions.lookupTitles = true;
+        displayOptions.lookupValues = true;
 
 		// build filterList from the specTypes when executed for the first time:
 		if( self.filterList.length<1 || opts.filters || opts.forced ) 

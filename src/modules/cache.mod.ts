@@ -1834,21 +1834,23 @@ function Project( pr ) {
 				// ToDo: Get the newest data from the server.
 //				console.debug( "publish", opts );
 
-				// take newest revision:
-				opts.revisionDate = new Date().toISOString();
-				// Don't lookup titles now, but within toOxml(), so that that classifyProps() works properly.
-				// But DO reduce to the language desired.
+				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
 				opts.lookupTitles = false;  // applies to specif.toExt()
+				opts.lookupValues = true;  // applies to specif.toExt()
+				// But DO reduce to the language desired.
 				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
+				// take newest revision:
+				opts.revisionDate = new Date().toISOString();
 
 				let data = specif.toExt( self.data, opts ),
 					options = {
-						classifyProperties: classifyProps,
-						lookup: i18n.lookup,
 						// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
+						titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties),
+						descriptionProperties: CONFIG.descProperties,
 						stereotypeProperties: CONFIG.stereotypeProperties,
+						lookup: i18n.lookup,
 						// If a hidden property is defined with value, it is suppressed only if it has this value;
 						// if the value is undefined, the property is suppressed in all cases.
 					//	hiddenProperties: opts.lookupTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
@@ -1908,8 +1910,8 @@ function Project( pr ) {
 							toEpub( data, options );
 							break;
 						case 'oxml':
-							toOxml( data, options )
-					}
+							toOxml( data, options );
+					};
 				}
 			}
 			function storeAs( opts ) {
@@ -1933,8 +1935,10 @@ function Project( pr ) {
 						opts.lookupValues = false;
 						// ReqIF only supports a single Language:
 						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+						opts.makeHTML = true;
+						opts.linkifyURLs = true;
 						// take newest revision:
-						opts.revisionDate = new Date().toISOString()
+						opts.revisionDate = new Date().toISOString();
 				};
 				let zip = new JSZip(),
 					data = specif.toExt( self.data, opts ),
@@ -1945,7 +1949,7 @@ function Project( pr ) {
 					data.files.forEach( (f)=>{
 //						console.debug('zip a file',f);
 						zip.file( f.title, f.blob );
-						delete f.blob // the SpecIF data below shall not contain it ...
+						delete f.blob; // the SpecIF data below shall not contain it ...
 					});
 
 				// Prepare the output data:
@@ -1956,7 +1960,7 @@ function Project( pr ) {
 						break;
 					case 'reqif':
 						fName += ".reqif";
-						data = app.ioReqif.toReqif( data )
+						data = app.ioReqif.toReqif( data );
 				};
 				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
 				// Add the project:
@@ -1979,16 +1983,16 @@ function Project( pr ) {
 							// an error has occurred:
 							console.error("Cannot store ",fName+"z");
 							self.exporting = false;
-							reject()
+							reject();
 						}
-					)
+					);
 			}
-		})
+		});
 	}
 	self.abort = ()=>{
 		console.info('abort specif');
 	//	server.abort();
-		self.abortFlag = true
+		self.abortFlag = true;
 	};
 	self.init();
 	return self;
@@ -2204,7 +2208,7 @@ function Project( pr ) {
 							if( refC.values[idx].title != newC.values[v].title )
 								return {status:955, statusText:"new dataType '"+newC.id+"' of type '"+newC.type+"' is incompatible"}
 						};
-						return {status:0}
+						return {status:0};
 				};
 				return null;	// should never arrive here ... as every branch in every case above has a return.
 			case 'propertyClass':
@@ -2259,9 +2263,9 @@ function Project( pr ) {
 						return {status:965, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"}
 					}
 				};
-				return {status:0}
+				return {status:0};
 		};
-		return null		// should never arrive here ...
+		return null;	// should never arrive here ...
 	}
 /*	function classesAreCompatible( ctg, mode ) {
 		let aL= null, nL= null;
@@ -2303,7 +2307,7 @@ function Project( pr ) {
 			case 'node':				if(Array.isArray(item)) return null;
 //										console.debug('cache',ctg,item);
 										return cacheNode( item );
-			default: return null
+			default: return null;
 		}
 		// all cases have a return statement ..
 
@@ -2349,7 +2353,7 @@ function Project( pr ) {
 			) return true;
 
 			// 4. insert the node as first root element, otherwise:
-			self.data.hierarchies.unshift( e )
+			self.data.hierarchies.unshift( e );
 		}
 		function cacheAtPosition( L, e ) {  // ( list, entry )
 			// add or update the element e in a list L:
@@ -2370,7 +2374,7 @@ function Project( pr ) {
 			};
 			// update the existing otherwise:
 			L[n] = e;
-			return n
+			return n;
 		}
 	}
 	function uncache( ctg, item ) {
@@ -2391,7 +2395,7 @@ function Project( pr ) {
 										else
 											delNodes( self.data.hierarchies, item );
 										return;
-			default: return null // programming error
+			default: return null; // programming error
 		};
 		// all cases have a return statement ..
 
@@ -2403,10 +2407,10 @@ function Project( pr ) {
 			for( var h=L.length-1; h>-1; h-- ) {
 				if( L[h].id==el.id || L[h].resource==el.resource ) {
 					L.splice(h,1);
-					break	// can't delete any children
+					break;	// can't delete any children
 				};
 				// step down, if the node hasn't been deleted:
-				delNodes( L[h].nodes, el )
+				delNodes( L[h].nodes, el );
 			}
 		}
 	}
@@ -2420,7 +2424,7 @@ function Project( pr ) {
 			case 'resource':		return self.data.resources;
 			case 'statement':		return self.data.statements;
 			case 'hierarchy':		return self.data.hierarchies;
-			case 'file':			return self.data.files
+			case 'file':			return self.data.files;
 		}
 	}
 	function readCache( ctg, itm, opts ) {
@@ -2443,9 +2447,9 @@ function Project( pr ) {
 					idx = indexById( cch, itm[i].id||itm[i] );
 					if( idx>-1 ) {
 						rL.push( cch[idx] );
-						i++
+						i++;
 					} else {
-						allFound = false
+						allFound = false;
 					}
 				};
 				// return the cached resources asynchronously:
@@ -2454,11 +2458,11 @@ function Project( pr ) {
 					setTimeout( ()=>{
 						if( allFound ) {
 //							console.debug( 'readCache array - allFound', cch, itm );
-							resolve( rL )
+							resolve( rL );
 						} else {
-							reject( {status:999,statusText:ctg+' with id '+(itm[i].id||itm[i])+' not found.'} )
-						}
-					}, opts.timelag )
+							reject( {status:999,statusText:ctg+' with id '+(itm[i].id||itm[i])+' not found.'} );
+						};
+					}, opts.timelag );
 				})
 			} else {
 				// is a single item:
@@ -2477,7 +2481,7 @@ function Project( pr ) {
 			}
 //			console.debug('readCache - not found', ctg, itm);
 		};
-		return null
+		return null;
 	}
 }  // end of function Project()
 
@@ -2491,7 +2495,7 @@ const specif = {
 			(resolve,reject)=>{
 
 				if( typeof(data)!='object' ) {
-					reject( {status:999,statusText:'No SpecIF data to check'} )
+					reject( {status:999,statusText:'No SpecIF data to check'} );
 				};
 
 				// 1. Validate the data using the SpecIF schema:
