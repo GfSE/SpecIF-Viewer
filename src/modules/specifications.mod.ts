@@ -18,14 +18,14 @@ modules.construct({
 
 	self.selectedView = ()=>{
 //		console.debug('selectedView',self.viewCtl.selected.view)
-		return self.viewCtl.selected.view
+		return self.viewCtl.selected.view;
 	};
 	self.emptyTab = ( view )=>{
 		app.busy.reset();
 		// but show the buttons anyways, so the user can create the first resource:
 		$( '#contentNotice' ).empty();
 		$( '#contentActions' ).empty();
-		$( view ).empty()
+		$( view ).empty();
 	};
 
 	// standard module interface:
@@ -47,7 +47,7 @@ modules.construct({
 			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" ></div>'
 			+	'</div>';
 		if(self.selector)
-			$(self.selector).after( h )
+			$(self.selector).after( h );
 		else
 			$(self.view).prepend( h );
 
@@ -93,7 +93,7 @@ modules.construct({
 										self.tree.numberize();
 //										console.debug( self.tree.selectedNode.name, event.move_info.moved_node.name );
 										document.getElementById(CONFIG.objectList).scrollTop = 0;
-										self.refresh()
+										self.refresh();
 									},
 									stdError 
 								);
@@ -112,7 +112,7 @@ modules.construct({
 									if( ch.length>0 ) nd.nodes = ch;
 									// copy predecessor or parent:
 									if( tgt ) for( var p in tgt ) { nd[p] = tgt[p].id };
-									return nd
+									return nd;
 								}
 							}
 						
@@ -1556,8 +1556,6 @@ function propertyValueOf( prp, opts ) {
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			ct = i18n.lookup( ct );
-		//	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-		//		ct = '&#x00ab;'+ct+'&#x00bb;' 
 			break; */
 		case 'xhtml':
 			ct = languageValueOf( prp.value, opts );
@@ -1578,6 +1576,9 @@ function propertyValueOf( prp, opts ) {
 		default:
 			ct = prp.value
 	};
+	/*	// Add 'double-angle quotation' in case of stereotype values:
+			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
+				ct = '&#x00ab;'+ct+'&#x00bb;'; */
 	return ct
 
 	function titleLinks( str, add ) {
@@ -1588,18 +1589,13 @@ function propertyValueOf( prp, opts ) {
 		// - Titles shorter than 4 characters are ignored
 		// - see: https://www.mediawiki.org/wiki/Help:Links
 
-			function lnk(r,t){ 
-//				console.debug('lnk',r,t,'app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')');
-				return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
-			}				
-		
 		// in certain situations, just remove the dynamic linking pattern from the text:
 		if( !CONFIG.dynLinking || !add )
 			return str.replace( RE.titleLink, ( $0, $1 )=>{ return $1 } );
 			
 	/*	let date1 = new Date();
-		let n1 = date1.getTime(); 
-	*/
+		let n1 = date1.getTime(); */
+
 		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
 		let replaced = false;
 		do {
@@ -1632,12 +1628,16 @@ function propertyValueOf( prp, opts ) {
 				}
 			)
 		} while( replaced );
-		return str
 
 	/*	let date2 = new Date();
 		let n2 = date2.getTime(); 
-		console.info( 'dynamic linking in ', n2-n1,'ms' )
-	*/
+		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
+		return str;
+
+		function lnk(r,t){ 
+//			console.debug('lnk',r,t,'app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')');
+			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
+		}
 	}
 }
 var fileRef = new function() {

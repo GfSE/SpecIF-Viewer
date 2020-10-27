@@ -314,20 +314,22 @@ function toXhtml( data, opts ) {
 					return '../'+opts.epubImgPath+'F-'+u.simpleHash()
 				}
 				function pushReferencedFile( f ) {
-					// avoid duplicate entries:
-					if( indexBy( xhtml.images, 'title', f.title )<0 ) {
-						if( f.blob ) {
+					if( f && f.blob ) {
+						// avoid duplicate entries:
+						if( indexBy( xhtml.images, 'title', f.title )<0 ) {
 							xhtml.images.push({
 								id: 'F-'+f.title.simpleHash(),
-						//		id: f.id,
-						//		title: f.title,  // is the distinguishing/relative part of the URL
+							//	id: f.id,
+							//	title: f.title,  // is the distinguishing/relative part of the URL
 								blob: f.blob,
 								type: f.type
 							})
-						} else {
-							console.warn('No image file found for ',f.title)
-						}
-					}
+						};
+						// file is present in xhtml.images:
+						return true;
+					};
+					// else:
+					return false;
 				}
 
 			// Prepare a file reference for viewing and editing:
@@ -423,9 +425,11 @@ function toXhtml( data, opts ) {
 						if( ( ti.indexOf('svg')>-1 ) && opts.preferPng )
 							ti = fileName(ti)+'.png';
 						
-						pushReferencedFile( itemBy( data.files, 'title', ti ) );
-						return '<img src="'+fileNameWithPath(ti)+'" style="max-width:100%" alt="'+alt+'" />'
+						if( pushReferencedFile( itemBy( data.files, 'title', ti )) )
+							return '<img src="'+fileNameWithPath(ti)+'" style="max-width:100%" alt="'+alt+'" />';
 					};
+					// else:
+					console.warn('No image file found for ',ti);
 					// as a last resort, just show the description:
 					return '<span>'+alt+'</span>'  
 				}

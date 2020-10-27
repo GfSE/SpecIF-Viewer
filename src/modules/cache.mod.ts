@@ -3213,23 +3213,18 @@ function dataTypeOf( prj, pCid ) {
 function enumValueOf( dT, val, opts ) {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
-//	console.debug('enumValueOf',dT,val,opts);
 	if( dT.type!='xs:enumeration' || !val ) return val;
 	let ct = '',
 		eV,
-	//	st = CONFIG.stereotypeProperties.indexOf(prp.title)>-1,
 		vL = val.split(',');  // in case of a multi-valued ENUMERATION, val may carry comma-separated value-IDs
 //	console.debug('enumValueOf',dT,val,vL,opts);
 	vL.forEach( (v,i)=>{
-	//	if( !v ) return;
 		eV = languageValueOf( itemById(dT.values,v).value, opts );
 		if( opts&&opts.lookupValues )
 			eV = i18n.lookup(eV);
 		// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
 		// For example, when an object is from a search hitlist or from a revision list,
 		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
-		// Add 'double-angle quotation' in case of stereotype values.
-	//	if( eV ) ct += (i==0?'':', ')+(st?('&#x00ab;'+eV+'&#x00bb;'):eV)
 		if( eV ) ct += (i==0?'':', ')+eV
 		else ct += (i==0?'':', ')+v
 	});

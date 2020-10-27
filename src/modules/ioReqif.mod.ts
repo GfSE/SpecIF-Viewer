@@ -17,7 +17,9 @@ modules.construct({
 	self.init = function() {
 		mime = null
 	};
-	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/;
+	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
+		RE_class = / class=\"[^\"]+\"/g,
+		RE_target = / target=\"[^\"]+\"/g;
 		
 /*	self.verify = function( f ) {
 //		console.debug(f.name);
@@ -533,8 +535,17 @@ modules.construct({
 							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
 							let	hasDiv = RE_hasDiv.test(prp.value),
 								txt = 	escapeInner( prp.value )
+										// ReqIF does not support the target attribute within the anchor tag <a>:
+										.replace( RE_target, function() { 
+											return '';
+										})
+										// ReqIF does not support the class attribute within the <div> tag:
+										.replace( RE_class, function() { 
+											return '';
+										})
+										// Add the namespace to XHTML-tags:
 										.replace( RE.tag, function($0,$1,$2) { 
-											return $1+ns+':'+$2
+											return $1+ns+':'+$2;
 										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
