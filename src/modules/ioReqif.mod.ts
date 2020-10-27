@@ -1,8 +1,9 @@
-﻿/*!	ReqIF Server: ReqIF import
+﻿/*!	ReqIF import and exprot
 	Dependencies: -
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de  
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution!  
 
 	ToDo: escapeXML the content. See toXHTML.
 */
