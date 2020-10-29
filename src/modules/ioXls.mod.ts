@@ -7,7 +7,7 @@
 */
 
 // Constructor for XLS import:
-// (A module constructor is needed, because there is an access to parent's data via 'self')
+// (A module constructor is needed, because there is an access to parent's data via 'self.parent...')
 modules.construct({
 	name: 'ioXls'
 }, function(self) {

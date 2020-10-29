@@ -24,7 +24,7 @@ modules.construct({
 
 	self.init = ()=>{
 //		console.debug('resourceEdit.init')
-		self.clear()
+		self.clear();
 	};
 	self.clear = ()=>{
 		self.newFiles.length = 0;
@@ -38,7 +38,7 @@ modules.construct({
 			label: i18n.BtnCancel,
 			action: (thisDlg)=>{ 
 //				console.debug('action cancelled');
-				thisDlg.close() 
+				thisDlg.close();
 			}
 		},
 		update: { 	
@@ -47,7 +47,7 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save',
 			action: (thisDlg)=>{
 				save('update');
-				thisDlg.close()
+				thisDlg.close();
 			}  
 		},	
 		insertAfter: {
@@ -56,7 +56,7 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save', 
 			action: (thisDlg)=>{
 				save('insertAfter');
-				thisDlg.close()
+				thisDlg.close();
 			}  
 		},
 		insertBelow: { 	
@@ -65,7 +65,7 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save', 
 			action: (thisDlg)=>{
 				save('insertBelow');
-				thisDlg.close()
+				thisDlg.close();
 			}  
 		}
 	};
@@ -98,7 +98,7 @@ modules.construct({
 								editResource(r,opts)
 							}, 
 							stdError
-						)
+						);
 					},
 					stdError
 				);
@@ -130,7 +130,7 @@ modules.construct({
 						editResource(self.newRes,opts)
 					},
 					stdError
-				)
+				);
 		};
 		return;
 		

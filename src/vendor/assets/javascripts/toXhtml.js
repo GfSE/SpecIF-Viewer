@@ -37,7 +37,9 @@ function toXhtml( data, opts ) {
 	// If a hidden property is defined with value, it is suppressed only if it has this value;
 	// if the value is undefined, the property is suppressed in all cases.
 	if( !opts.hiddenProperties ) opts.hiddenProperties = [];
-	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
+	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
+	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
+	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
 
 	// If no label is provided, the respective properties are skipped:
 	if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
@@ -599,11 +601,11 @@ function toXhtml( data, opts ) {
 			// $2: start of opening tag '<' or closing tag '</'
 			// $3: rest of the tag
 			// escape the inner text and keep the tag:
-			out += $1.escapeXML() + $2 + $3;
+			out += escapeXML($1) + $2 + $3;
 			return '';
 		});
 		// process the remainder (the text after the last tag or the whole text if there was no tag:
-		out += str.escapeXML();
+		out += escapeXML(str);
 		return out;
 	} 
 	/**

@@ -162,7 +162,7 @@ function toOxml( data, opts ) {
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];	
-			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description'];	
+			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
 			// If no label is provided, the respective properties are skipped:
@@ -2589,6 +2589,15 @@ function toOxml( data, opts ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ln ) return L[i];   // return list item
 		return null
+	}
+	function indexById(L,id) {
+		if( L && id ) {
+			// given an ID of an item in a list, return it's index:
+			id = id.trim();
+			for( var i=L.length-1;i>-1;i-- )
+				if( L[i].id==id ) return i   // return list index 
+		};
+		return -1
 	}
 	function forAll( L, fn ) {
 		// return a new list with the results from applying the specified function to all elements of input list L:

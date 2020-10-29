@@ -6,29 +6,30 @@
 	We appreciate any correction, comment or contribution!  
 */
 
-// Constructor for ReqIF import:
-// (A module constructor is needed, because there is an access to parent's data via 'self')
+// Constructor for RDF import and export:
+// (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
 modules.construct({
 	name: 'ioRdf'
 }, function(self) {
 	"use strict";
-    var mime = null;
+    var mime;
 	self.init = function() {
-		mime = null
+		mime = undefined;
+		return true;
 	};
 	self.verify = function( f ) {
 	
 			function rdfFile2mediaType( fname ) {
 				if( fname.endsWith('.rdf') || fname.endsWith('.xml') ) return 'application/rdf+xml';
-				return null
+				return; // undefined
 			}
 				
 		mime = rdfFile2mediaType( f.name );
-		if ( !mime ) {
-			message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
-			return null
-		};
-		return f
+		if ( mime ) 
+			return f;
+		// else:
+		message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
+		return; // undefined
 	};
 	self.toSpecif = function( buf ) {
 	};
@@ -46,5 +47,5 @@ modules.construct({
 //		app.cache.abort();
 		self.abortFlag = true
 	};
-	return self
+	return self;
 });

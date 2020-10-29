@@ -1740,7 +1740,7 @@ function Project( pr ) {
 									[
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
-										{ title: 'RDF', id: 'rdf' },
+					//					{ title: 'RDF', id: 'rdf' },
 										{ title: 'ePub v2', id: 'epub' },
 										{ title: 'MS WORD® (Open XML)', id: 'oxml' }
 									],

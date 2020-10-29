@@ -8,22 +8,23 @@
 	ToDo: escapeXML the content. See toXHTML.
 */
 
-// Constructor for ReqIF import:
-// (A module constructor is needed, because there is an access to parent's data via 'self')
+// Constructor for ReqIF import and export:
+// (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
 modules.construct({
 	name: 'ioReqif'
 }, function(self) {
 	"use strict";
-    var mime = null;
+    var mime;
 	self.init = function() {
-		mime = null
+		mime = undefined;
+		return true;
 	};
 	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
 		RE_class = / class=\"[^\"]+\"/g,
 		RE_target = / target=\"[^\"]+\"/g;
 		
 /*	self.verify = function( f ) {
-//		console.debug(f.name);
+			// Verify the type (and eventually the content) of a ReqIF import file:
 	
 			function reqifFile2mediaType( fname ) {
 				if( fname.endsWith('.reqifz') || fname.endsWith('.zip') ) return 'application/zip';
@@ -32,22 +33,21 @@ modules.construct({
 			}
 				
 		mime = reqifFile2mediaType( f.name );
-		if ( !mime ) {
-			message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
-			return null
-		};
-		return f
+		if ( mime )
+			return f;
+		// else:
+		message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
+		return; // undefined
 	};
 	self.toSpecif = function( buf ) {
+		// Transform ReqIF to SpecIF for import:
 	};   */
 	self.toReqif = function(pr) {
-		// pr is a SpecIF data in JSON format (not the internal cache),
-		// transform pr to ReqIF:
+		// Transform pr to ReqIF,
+		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
 		// - transform any default values
 		// - suppress or replace xhtml-tags not supported by ReqIF, e.g. <img>
-		// - detect a xhtml namespace used and set nsxhtml accordingly
-		// - sort properties according to the propertyClasses
 		// - in ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 		
 //		console.debug( 'ioReqif.toReqif', simpleClone(pr) );
@@ -329,7 +329,7 @@ modules.construct({
 					iterate( n, prepObj )
 				});
 		});
-		console.debug( 'after collecting referenced resources: ', sorted );
+//		console.debug( 'after collecting referenced resources: ', sorted );
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( function(h) {
 			// The resources referenced at the lowest level of hierarchies 
@@ -337,7 +337,7 @@ modules.construct({
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:
 			let hR = itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
-				hC = itemById( pr.resourceClasses, hR['class'] );	// its class
+				hC = itemById( pr.resourceClasses, hR['class'] );	// it's class
 			
 			if( indexBy( sorted.objects, 'class', hC.id )>-1 ) {
 				// The hierarchy root's class is shared by a resource:
@@ -374,42 +374,42 @@ modules.construct({
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
-		sorted.spcTypes.forEach( function(sC) {
-			xml += '<SPECIFICATION-TYPE '+commonAttsOf( sC )+'>'
-				+		attrTypesOf( sC )
+		sorted.spcTypes.forEach( function(hC) {
+			xml += '<SPECIFICATION-TYPE '+commonAttsOf( hC )+'>'
+				+		attrTypesOf( hC )
 				+  '</SPECIFICATION-TYPE>';
 		}); 
 		xml +=  '</SPEC-TYPES>'
 			+	'<SPEC-OBJECTS>';
 		
 		// 6. Transform resources to OBJECTS:
-		sorted.objects.forEach( function(sC) {
-			xml += '<SPEC-OBJECT '+commonAttsOf( sC )+'>'
-				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+sC['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
-				+		attsOf( sC )
+		sorted.objects.forEach( function(r) {
+			xml += '<SPEC-OBJECT '+commonAttsOf( r )+'>'
+				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+r['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
+				+		attsOf( r )
 				+ '</SPEC-OBJECT>'
 		});
 		xml +=  '</SPEC-OBJECTS>'
 			+	'<SPEC-RELATIONS>';
 		
 		// 7. Transform statements to RELATIONs:
-		pr.statements.forEach( function(sC) {
-			xml += '<SPEC-RELATION '+commonAttsOf( sC )+'>'
-				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+sC['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
-				+		attsOf( sC )
-				+		'<SOURCE><SPEC-OBJECT-REF>'+sC.subject+'</SPEC-OBJECT-REF></SOURCE>'
-				+		'<TARGET><SPEC-OBJECT-REF>'+sC.object+'</SPEC-OBJECT-REF></TARGET>'
+		pr.statements.forEach( function(s) {
+			xml += '<SPEC-RELATION '+commonAttsOf( s )+'>'
+				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+s['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
+				+		attsOf( s )
+				+		'<SOURCE><SPEC-OBJECT-REF>'+s.subject+'</SPEC-OBJECT-REF></SOURCE>'
+				+		'<TARGET><SPEC-OBJECT-REF>'+s.object+'</SPEC-OBJECT-REF></TARGET>'
 				+ '</SPEC-RELATION>'
 		});
 		xml +=  '</SPEC-RELATIONS>'
 			+	'<SPECIFICATIONS>';
 		
 		// 8. Transform hierarchies to SPECIFICATIONs:
-		pr.hierarchies.forEach( function(sC) {
-			xml += '<SPECIFICATION '+commonAttsOf( sC )+'>'
-				+		'<TYPE><SPECIFICATION-TYPE-REF>'+sC['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
-				+		attsOf( sC )
-				+   	childrenOf( sC )
+		pr.hierarchies.forEach( function(h) {
+			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
+				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
+				+		attsOf( h )
+				+   	childrenOf( h )
 				+ '</SPECIFICATION>'
 		});
 		xml +=  '</SPECIFICATIONS>'
@@ -422,7 +422,7 @@ modules.construct({
 		// save to file using fileSaver.js:
 		saveAs(blob, "debug.reqif", true);		// true: no_auto_bom, i.e. suppress EF BB BF at the beginning of the file
 		console.debug('reqif',xml);  */
-		return xml
+		return xml;
 
 			function dateTime( e ) {
 				return e.changedAt || pr.changedAt || date
