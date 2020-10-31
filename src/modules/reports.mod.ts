@@ -69,8 +69,9 @@ modules.construct({
 		pData.showLeft.reset();
 
 		// Language options have been selected at project level:
-		opts.targetLanguage = self.parent.targetLanguage;
-		opts.lookupTitles = self.parent.lookupTitles;
+		opts.targetLanguage = pData.targetLanguage;
+		opts.lookupTitles = true;
+		opts.lookupValues = true;
 
 		self.list = [];
 

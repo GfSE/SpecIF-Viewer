@@ -18,19 +18,18 @@ modules.construct({
 
 	self.selectedView = ()=>{
 //		console.debug('selectedView',self.viewCtl.selected.view)
-		return self.viewCtl.selected.view
+		return self.viewCtl.selected.view;
 	};
 	self.emptyTab = ( view )=>{
 		app.busy.reset();
 		// but show the buttons anyways, so the user can create the first resource:
 		$( '#contentNotice' ).empty();
 		$( '#contentActions' ).empty();
-		$( view ).empty()
+		$( view ).empty();
 	};
 
 	// standard module interface:
 	self.init = ()=>{
-	//	if( !opts || ( typeof(opts.callback) != "function" ) ) return false;
 		// initialize the module:
 //		console.debug( 'specs.init', self );
 		
@@ -48,7 +47,7 @@ modules.construct({
 			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" ></div>'
 			+	'</div>';
 		if(self.selector)
-			$(self.selector).after( h )
+			$(self.selector).after( h );
 		else
 			$(self.view).prepend( h );
 
@@ -94,7 +93,7 @@ modules.construct({
 										self.tree.numberize();
 //										console.debug( self.tree.selectedNode.name, event.move_info.moved_node.name );
 										document.getElementById(CONFIG.objectList).scrollTop = 0;
-										self.refresh()
+										self.refresh();
 									},
 									stdError 
 								);
@@ -113,7 +112,7 @@ modules.construct({
 									if( ch.length>0 ) nd.nodes = ch;
 									// copy predecessor or parent:
 									if( tgt ) for( var p in tgt ) { nd[p] = tgt[p].id };
-									return nd
+									return nd;
 								}
 							}
 						
@@ -291,8 +290,8 @@ modules.construct({
 			fNd = self.tree.firstNode(),
 			nd;
 
-		// Select the language options at project level:
-		opts.targetLanguage = browser.language;
+		// Select the language options at project level, also for subordinated views such as filter and reports:
+		self.targetLanguage = opts.targetLanguage = browser.language;
 		opts.lookupTitles = true;
 				
 		// Initialize the tree, unless
@@ -365,7 +364,7 @@ modules.construct({
 	self.doRefresh = ( parms )=>{
 		// Route execution depending on the current state (selected view):
 		// This routine is called in the following situations:
-		// - user clicks in the tree -> update the view only if in a pure view (reading) mode, but not in editing mode.
+		// - user clicks in the tree -> update the view only if in a pure reading mode, but not in editing mode.
 		// - cache update is signalled -> again, refresh only any content in view mode.
 		// --> Don't disturb the user in case of the editing views ('object', 'linker').
 //		console.debug('doRefresh',parms);
@@ -381,7 +380,7 @@ modules.construct({
 */
 	self.itemClicked = ( rId )=>{
 		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].indexOf( self.selectedView() )>-1 ) return;
-		console.debug('#0',rId);
+//		console.debug('#0',rId);
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
 		// If it is a resource with children (folder with content), assure it is open.
@@ -391,7 +390,7 @@ modules.construct({
 	//	self.selectTab(CONFIG.objectList);  // itemClicked can be called from the hitlist ..
 		if( self.tree.selectedNode.ref != rId ) {
 			// different node: select it and open it:
-			console.debug('#1',rId,self.tree.selectedNode);
+//			console.debug('#1',rId,self.tree.selectedNode);
 			self.tree.selectNodeByRef( rId );
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
@@ -399,7 +398,7 @@ modules.construct({
 			// opening a node triggers an event, by which 'self.refresh' will be called.
 		} else {
 			if( self.tree.selectedNode.children.length>0 ) {
-				console.debug('#2',rId,self.tree.selectedNode);
+//				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
 				self.tree.toggleNode( self.tree.selectedNode )
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
@@ -426,15 +425,15 @@ modules.construct({
 		
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
 		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
-			txtAtT = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
-		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtAtT.dataType );
+			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
+		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtPrC.dataType );
 
 		var addC = new BootstrapDialog({
 			title: i18n.phrase( 'LblAddCommentTo', self.tree.selectedNode.name ),
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(textForm( txtLbl, '', 'area' )) );
+				form.append( $(textField( txtLbl, '', 'area' )) );
 				return form 
 			},
 			buttons: [{
@@ -750,7 +749,7 @@ modules.construct({
 							)
 					},
 					stdError 
-				)
+				);
 		}
 		var dlg = new BootstrapDialog({
 			title: i18n.MsgConfirm,
@@ -759,13 +758,13 @@ modules.construct({
 			buttons: [{
 				label: i18n.BtnCancel,
 				action: (thisDlg)=>{ 
-					thisDlg.close() 
+					thisDlg.close();
 				}
 			},{
 				label: i18n.BtnDeleteObjectRef,
 				action: (thisDlg)=>{
 					delNd( pData.tree.selectedNode );
-					thisDlg.close() 
+					thisDlg.close();
 				}
 	/*	//	},{
 		//		label: i18n.BtnDeleteObject,
@@ -781,14 +780,14 @@ modules.construct({
 		//		}  */
 			}]
 		})
-		.open()
+		.open();
 	};
 	self.relatedItemClicked = ( rId )=>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
 		pData.tree.selectNodeByRef( rId );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
-		document.getElementById(CONFIG.objectList).scrollTop = 0
+		document.getElementById(CONFIG.objectList).scrollTop = 0;
 	};
 /*	self.deleteResource = ()=>{
 		// Delete the selected resource, all tree nodes and their children.
@@ -1072,7 +1071,7 @@ modules.construct({
 					// store the classes' ids as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 //					console.debug('staCreClasses',sC,sRes['class']);
 				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
-					if(!sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
+					if( !sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
 						if( !sC.subjectClasses || sC.subjectClasses.indexOf( sRes['class'] )>-1 ) 
 							self.staCreClasses.subjectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
 						if( !sC.objectClasses || sC.objectClasses.indexOf( sRes['class'] )>-1 )
@@ -1085,7 +1084,7 @@ modules.construct({
 		};
 //		console.debug('permissions',sRes,self.staCreClasses,self.staCre)
 	}
-	function renderStatements(net) {
+	function renderStatements( net ) {
 		// net contains resources and statements as a SpecIF data-set for graph rendering,
 		// where the selected resource is the first element in the resources list.
 
@@ -1300,7 +1299,7 @@ function Resource( obj ) {
 
 			opts.dynLinks 
 				= opts.clickableElements
-				= opts. linkifiedURLs
+				= opts. linkifyURLs
 				= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
 			// ToDo: Consider to make it a user option:
 			opts.unescapeHTMLTags = true;
@@ -1350,14 +1349,14 @@ function Resource( obj ) {
 		}; */
 		
 		// 3 Fill a separate column to the right
-		// 3.1 The remaining atts:
+		// 3.1 The remaining properties:
 		self.toShow.other.forEach( ( prp )=>{
 			if( showPrp( prp, opts ) ) {
-				rO += attrV( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' )
+				rO += renderProp( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' )
 			}
 		});
 		// 3.2 The type info:
-	//	rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
+	//	rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
 		// 3.3 The change info depending on selectedView:
 		rO += renderChangeInfo( self.toShow );		
 		rO +=   '</div>'	// end of content-other
@@ -1379,7 +1378,7 @@ function Resource( obj ) {
 				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 						dynLinks: true,
 						clickableElements: true,
-						linkifiedURLs: true
+						linkifyURLs: true
 					};
 				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
 			}
@@ -1387,41 +1386,44 @@ function Resource( obj ) {
 		// 3 The remaining properties:
 		self.toShow.other.forEach( function( prp ) {
 //			console.debug('details.other',prp.value);
-			rO += attrV( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
+			rO += renderProp( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += attrV( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
+		rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
 		// 5 The change info depending on selectedView:
 		rO += renderChangeInfo( self.toShow );
 //		console.debug( 'Resource.details', self.toShow, rO );
 		return rO  // return rendered resource for display
 	};  */
 	function renderTitle( clsPrp, opts ) {
-		if( !clsPrp.title ) return '';
+//		console.debug('renderTitle',simpleClone(clsPrp),opts);
+		if( !clsPrp.title || !clsPrp.title.value ) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = titleOf( clsPrp, opts );
+		let ti = languageValueOf( clsPrp.title.value, opts );
+		if( opts && opts.lookupTitles )
+			ti = i18n.lookup( ti );
 		if( self.toShow['class'].isHeading ) 
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
 		// else: is not a heading:
 		// take title and add icon, if configured:
 //		console.debug('renderTitle',simpleClone(clsPrp),ti);
-		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti)+'</div>'
+		return '<div class="objectTitle" >'+(CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti)+'</div>';
 	}
 	function renderChangeInfo( clsPrp ) {
 		if( !clsPrp || !clsPrp.revision ) return '';  // the view may be faster than the data, so avoid an error
 		var rChI = '';
 		switch( app.specs.selectedView() ) {
 			case '#'+CONFIG.objectRevisions: 
-				rChI = 	attrV( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
+				rChI = 	renderProp( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
 				// no break
 			case '#'+CONFIG.comments: 
-				rChI += attrV( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
-					+	attrV( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' )
+				rChI += renderProp( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
+					+	renderProp( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' );
 		//	default: no change info!			
 		};
-		return rChI
+		return rChI;
 	}
 
 	// initialize:
@@ -1537,7 +1539,7 @@ function propertyValueOf( prp, opts ) {
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
 	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-	if( typeof(opts.linkifiedURLs)!='boolean' ) 	opts.linkifiedURLs = false;
+	if( typeof(opts.linkifyURLs)!='boolean' ) 		opts.linkifyURLs = false;
 	// some environments escape the tags on export, e.g. camunda / in|flux:
 	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
 	// markup to HTML:
@@ -1550,13 +1552,11 @@ function propertyValueOf( prp, opts ) {
 //	console.debug('*',prp,dT);
 	switch( dT.type ) {
 		case 'xs:string':
-			ct = languageValueOf( prp.value, opts ).toHTML();
+		/*	ct = languageValueOf( prp.value, opts ).toHTML();
 			ct = ct.linkifyURLs( opts );
 			ct = titleLinks( ct, opts.dynLinks );
 			ct = i18n.lookup( ct );
-		/*	if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'  */
-			break;
+			break; */
 		case 'xhtml':
 			ct = languageValueOf( prp.value, opts );
 			if( opts.unescapeHTMLTags )
@@ -1576,6 +1576,9 @@ function propertyValueOf( prp, opts ) {
 		default:
 			ct = prp.value
 	};
+	/*	// Add 'double-angle quotation' in case of stereotype values:
+			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
+				ct = '&#x00ab;'+ct+'&#x00bb;'; */
 	return ct
 
 	function titleLinks( str, add ) {
@@ -1586,18 +1589,13 @@ function propertyValueOf( prp, opts ) {
 		// - Titles shorter than 4 characters are ignored
 		// - see: https://www.mediawiki.org/wiki/Help:Links
 
-			function lnk(r,t){ 
-//				console.debug('lnk',r,t,'app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')');
-				return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
-			}				
-		
 		// in certain situations, just remove the dynamic linking pattern from the text:
 		if( !CONFIG.dynLinking || !add )
 			return str.replace( RE.titleLink, ( $0, $1 )=>{ return $1 } );
 			
 	/*	let date1 = new Date();
-		let n1 = date1.getTime(); 
-	*/
+		let n1 = date1.getTime(); */
+
 		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
 		let replaced = false;
 		do {
@@ -1630,12 +1628,16 @@ function propertyValueOf( prp, opts ) {
 				}
 			)
 		} while( replaced );
-		return str
 
 	/*	let date2 = new Date();
 		let n2 = date2.getTime(); 
-		console.info( 'dynamic linking in ', n2-n1,'ms' )
-	*/
+		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
+		return str;
+
+		function lnk(r,t){ 
+//			console.debug('lnk',r,t,'app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')');
+			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
+		}
 	}
 }
 var fileRef = new function() {
@@ -1885,6 +1887,9 @@ var fileRef = new function() {
 	};
 	self.render = (f, opts)=>{
 		if( typeof(opts)!='object' ) opts = {};
+
+		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
 		if( !opts.timelag ) opts.timelag = CONFIG.imageRenderingTimelag;
 
 //		console.debug('render',f,opts);
@@ -1892,7 +1897,6 @@ var fileRef = new function() {
 			Array.from(document.getElementsByClassName(tagId(f.title)), 
 				(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
 			);
-//			document.getElementById(tagId(f.title)).innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>';
 			return
 		};
 		// ToDo: in case of a server, the blob itself must be fetched first ...
@@ -1919,8 +1923,6 @@ var fileRef = new function() {
 
 					
 			function showRaster(f,opts) {
-				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-				// increase the timelag between building the DOM and rendering the images, if necessary.
 				blob2dataURL( f, (r,fTi,fTy)=>{
 					// add image to DOM using an image-tag with data-URI:
 					Array.from( document.getElementsByClassName(tagId(fTi)), 
@@ -1943,8 +1945,6 @@ var fileRef = new function() {
 					rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
 					pend = 0;		// the count of embedded images waiting for transformation
 				
-				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-				// increase the timelag between building the DOM and rendering the images, if necessary.
 //				console.debug('showSvg',f,opts);
 				// Read and render SVG:
 				blob2text( f, (r)=>{
@@ -2053,7 +2053,7 @@ var fileRef = new function() {
 							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 								let eId = this.className.baseVal.split(' ')[1],		// id is second class
 									clsPrp = classifyProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
-									ti = languageValueOf( clsPrp.title ),
+									ti = languageValueOf( clsPrp.title.value ),
 									dsc = '';
 								clsPrp.descriptions.forEach( (d)=>{
 									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
@@ -2132,8 +2132,6 @@ var fileRef = new function() {
 			function showBpmn(f,opts) {
 //				console.debug('showBpmn',f);
 			
-				// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-				// increase the timelag between building the DOM and rendering the images, if necessary.
 				// Read and render BPMN:
 				blob2text( f, (b,fTi)=>{
 					bpmn2svg(b)
@@ -2297,7 +2295,7 @@ var fileRef = new function() {
 		);
 //		console.debug('fromGUI result:', JSON.stringify(txt));
 
-		return txt
-*/	};
+		return txt  */
+	};
 	return self
 };	// end of fileRef()

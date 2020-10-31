@@ -12,9 +12,9 @@ modules.construct({
 	name: 'ioSpecif'
 }, function(self) {
 	"use strict";
-	let zipped = null,
-//		template = null,	// a new Id is given and user is asked to input a project-name
-		opts = null,
+	let zipped,
+//		template,	// a new Id is given and user is asked to input a project-name
+		opts,
 		errNoOptions = { status: 899, statusText: 'No options or no mediaTypes defined.' },
 		errNoSpecif = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
 		errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
@@ -22,7 +22,7 @@ modules.construct({
 	self.init = function(options) {
 		opts = options;
 //		console.debug('iospecif.init',options);
-		return true
+		return true;
 	};
 
 	self.verify = function( f ) {
@@ -144,10 +144,5 @@ modules.construct({
 	self.abort = function() {
 		self.abortFlag = true
 	};
-	return self
-
-	function extOf(str) {
-		// return the file extension without the dot:
-		return str.substring( str.lastIndexOf('.')+1 )
-	}
+	return self;
 });

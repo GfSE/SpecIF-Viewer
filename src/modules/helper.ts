@@ -1,6 +1,5 @@
-///////////////////////////////
-/*	helper functions for Javascript.
-	Dependencies: jQuery 3.0, bootstrap 3.
+/*	helper functions for iLaH.
+	Dependencies: jQuery 3.0
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
@@ -10,31 +9,32 @@
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
-function attrV( lbl, val, cssCl ) {
-	// assemble a label:value pair resp. a wide value field for display:
+function renderProp( lbl, val, cssCl ) {
+	// show a property value:
 	cssCl = cssCl ? ' '+cssCl : '';
 	if( typeof(val)=='string' ) 
-			val = noCode( val ).toHTML()
+			val = noCode( val )
 	else	val = '';
 	
+	// assemble a label:value pair resp. a wide value field for display:
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
-	return '<div class="attribute'+cssCl+'">'+val+'</div>'
+	return '<div class="attribute'+cssCl+'">'+val+'</div>';
 }
-function CheckForm() {
-	// Construct an object performing the key-by-key input checking.
+function DialogForm() {
+	// Construct an object performing the key-by-key input checking on an input form;
+	// check *all* fields on a key-stroke and return the overall result.
 	var self = this;
 	self.list = [];  // the list of parameter-sets, each for checking a certain input field.
 	self.init = function() {
 		self.list.length = 0;
 	};
-	self.add = function( elementId, dataType ) {
+	self.addField = function( elementId, dT ) {
 		// Add a parameter-set for checking an input field;
 		// - 'elementId' is the id of the HTML input element
 		// - 'dataType' is the dataType of the property
-		self.list.push( { label:elementId, type:dataType } );
-//		console.debug( 'checkForms', self.list );
+		self.list.push( { label:elementId, dataType:dT } );
 	};
-	self.do = function() {
+	self.check = function() {
 		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
 		let val, ok, allOk = true;
 		self.list.forEach( (cPs)=>{
@@ -42,41 +42,40 @@ function CheckForm() {
 			// Get the input value:
 			val = textValue( cPs.label );
 			// Perform the test depending on the type:
-			switch( cPs.type.type ) {
+			// In case of a title or description it may happen, that there is no dataType (tutorial "Related Terms":
+            switch ( cPs.dataType? cPs.dataType.type : "xs:string" ) {
 				case 'xs:string':
 				case 'xhtml':
-					ok = cPs.type.maxLength==undefined || val.length<=cPs.type.maxLength;
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					ok = !cPs.dataType || cPs.dataType.maxLength==undefined || val.length<=cPs.dataType.maxLength;
 					break;
 				case 'xs:double':
-					ok = val.length<1 || RE.Real(cPs.type.fractionDigits).test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					ok = val.length<1 || RE.Real(cPs.dataType.fractionDigits).test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
 				case 'xs:integer':
-					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.type.minInclusive&&val<=cPs.type.maxInclusive;
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
+					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
 				case 'xs:dateTime':
 					ok = val.length<1 || RE.IsoDate.test(val);
-					setTextState( cPs.label, ok? 'has-success':'has-error' );
+				// no need to check enumeration
 			};
+			setTextState( cPs.label, ok? 'has-success':'has-error' );
 			allOk = allOk && ok;
-//			console.debug( 'do ', cPs, val );
+//			console.debug( 'DialogForm.check: ', cPs, val );
 		});
-		return allOk
+		return allOk;
 	};
-	return self
+	return self;
 }
-function textForm( lbl, val, typ, fn ) {  
+function textField( lbl, val, typ, fn ) {  
 	// assemble a form for text input:
-//	console.debug('textForm 1',lbl,val,typ,fn);
+//	console.debug('textField 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
 			val = noCode( val )
 	else 	val = '';
 
 	if( typeof(fn)=='string' && fn.length>0 )	
-			fn = ' oninput="'+fn+'"'
+			fn = ' oninput="'+fn+'"';
 	else 	fn = '';
 
 	let sH = lbl.label.simpleHash(), fG, aC;
@@ -84,7 +83,7 @@ function textForm( lbl, val, typ, fn ) {
 			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
 	else	fG = '<div class="attribute" >';				// for display field
 
-//	console.debug('textForm 2',lbl.label,val,typ,fn,fG);
+//	console.debug('textField 2',lbl.label,val,typ,fn,fG);
 	switch( lbl.display ) {
 		case 'none':
 			aC = 'attribute-wide';
@@ -94,13 +93,14 @@ function textForm( lbl, val, typ, fn ) {
 			aC = 'attribute-value';
 			break;
 		default:
-			return null
+			return null; // should never be the case
 	};
 	switch( typ ) {
 		case 'line':
-			fG += 	'<div class="'+aC+'">' +
-						'<input type="text" id="field'+sH+'" class="form-control"'+fn+' value="'+val+'" />' +
-					'</div>'; 
+			fG += 	'<div class="'+aC+'">'
+				+		(val.indexOf('\n')<0? '<input type="text" id="field'+sH+'" class="form-control"'+fn+' value="'+val+'" />'
+						: '<textarea id="field'+sH+'" class="form-control" rows="2"'+fn+'>'+val+'</textarea>')
+				+	'</div>'; 
 			break;
 		case 'area':
 			fG += 	'<div class="'+aC+'">' +
@@ -109,15 +109,15 @@ function textForm( lbl, val, typ, fn ) {
 			break;
 		default:
 			// display the value:
-			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val.toHTML()+'</div>';
+			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val+'</div>';
 	};
 	fG += 	'</div>';
-	return fG
+	return fG;
 }
 function setTextValue( lbl, val ) {
 	let el = document.getElementById('field'+lbl.simpleHash());
 	if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
-	if( el ) el.value = val
+	if( el ) el.value = val;
 }
 function setTextFocus( lbl ) {
 	let el = document.getElementById('field'+lbl.simpleHash());
@@ -130,40 +130,40 @@ function setTextState( lbl, state ) {
 	if( el.hasClass('has-error') ) {
 		if( state=='has-success' ) {
 			el.removeClass('has-error').addClass('has-success');
-			return true
+			return true;
 		} else
-			return false	// no change
+			return false;	// no change
 	};
 	if( el.hasClass('has-success') ) {
 		if( state=='has-error' ) {
 			el.removeClass('has-success').addClass('has-error');
-			return true
+			return true;
 		} else
-			return false	// no change
+			return false;	// no change
 	};
 	// else, has neither class:
 	el.addClass(state);
-	return true
+	return true;
 }
 function textValue( lbl ) {
 	// get the input value:
 	try {
 		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || ''
 	} catch(e) {
-		return ''
+		return '';
 	}
 }
 function getTextLength( lbl ) {
 	// get length the input value:
 	try {
-		return textValue( lbl ).length
+		return textValue( lbl ).length;
 	} catch(e) {
-		return
+		return;
 	}
 }
 				
-function radioForm( lbl, entries, opts ) {
-	// assemble the form for a set of radio buttons:
+function radioField( lbl, entries, opts ) {
+	// assemble an input field for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let rB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
@@ -180,7 +180,7 @@ function radioForm( lbl, entries, opts ) {
 				+		'<div class="attribute-value radio" >';
 			break;
 		default:
-			return null
+			return null; // should never be the case
 	};
 	// zero or one checked entry is allowed:
 	let found = false, temp; 
@@ -188,7 +188,7 @@ function radioForm( lbl, entries, opts ) {
 		temp = found || e.checked;
 		if( found && e.checked )
 			e.checked = false; // only the first check will remain
-		found = temp
+		found = temp;
 	});
 	// render options:
 	let tp, nm=lbl.label.simpleHash();
@@ -201,18 +201,18 @@ function radioForm( lbl, entries, opts ) {
 	});
 	rB +=			'</div>'
 		+		'</div>';
-	return rB
+	return rB;
 }
 function radioValue( lbl ) {
 	// get the selected radio button, it is the index number as string:
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
 }
-function checkboxForm( lbl, entries, opts ) {
-	// assemble the form for a set of checkboxes;
+function checkboxField( lbl, entries, opts ) {
+	// assemble an input field for a set of checkboxes:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let cB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
-			fn = ' onclick="'+opts.handle+'"'
+			fn = ' onclick="'+opts.handle+'"';
 	else 	fn = '';
 	switch( lbl.display ) {
 		case 'none': 
@@ -225,7 +225,7 @@ function checkboxForm( lbl, entries, opts ) {
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
-			return null
+			return null; // should never be the case
 	};
 	// render options:
 	let tp, nm=lbl.label.simpleHash();
@@ -245,12 +245,12 @@ function checkboxValues( lbl ) {
 	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked');
 	var resL = [];
 	for( var i=0, I=chd.length; i<I; i++ ) {	// chd is an object, not an array
-		resL.push( chd[i].value )
+		resL.push( chd[i].value );
 	};
-	return resL
+	return resL;
 }
-function booleanForm( lbl, val, opts ) {
-//	console.debug('booleanForm',lbl,val);
+function booleanField( lbl, val, opts ) {
+//	console.debug('booleanField',lbl,val);
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
@@ -265,7 +265,7 @@ function booleanForm( lbl, val, opts ) {
 }
 function booleanValue( lbl ) {
 	let chd = $('input[name="boolean'+lbl.simpleHash()+'"]:checked');
-	return chd.length>0
+	return chd.length>0;
 }
 
 function tagId(str) {
@@ -274,7 +274,7 @@ function tagId(str) {
 function setStyle( sty ) {
 		let css = document.createElement('style');
 		css.innerHTML = sty;
-		document.head.appendChild(css) // append to head
+		document.head.appendChild(css); // append to head
 }
 
 // standard error handler:
@@ -319,11 +319,11 @@ function stdError( xhr, cb ) {
 		case 996:  // server request queue flushed
 			break;
 		default:
-			message.show( xhrCl )
+			message.show( xhrCl );
 	};
 	// log original values:
 	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
-	if( typeof(cb)=='function' ) cb()
+	if( typeof(cb)=='function' ) cb();
 };
 /*	// standard logger:
 	function stdLog( fS, xhr ) {
@@ -350,17 +350,17 @@ var message = new function() {
 	let pend = 0;
 
 	function init() {
-		$('#app').prepend('<div id="message" ></div>')
+		$('#app').prepend('<div id="message" ></div>');
 	};
 	self.hide = ()=>{
 		$('#message')
 			.empty()
 			.hide();
-		pend = 0  // can be called internally or externally
+		pend = 0;  // can be called internally or externally
 	};
 	function remove() {
 		if( --pend<1 )
-			self.hide()
+			self.hide();
 	}
 	self.show = ( msg, opts )=>{
 		// msg: message string or jqXHR object
@@ -407,7 +407,7 @@ var message = new function() {
 		// else: static message until it is over-written
 	};
 	init();
-	return self
+	return self;
 };
 
 function doResize( opt ) {
@@ -450,7 +450,7 @@ function bindResizer() {
 	$(window).resize( ()=>{
 //		console.debug('resize'); 
 		doResize();
-	})
+	});
 }
 
 function indexById(L,id) {
@@ -460,7 +460,7 @@ function indexById(L,id) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id==id ) return i   // return list index 
 	};
-	return -1
+	return -1;
 }
 function itemById(L,id) {
 //	console.debug('+',L,id,(L && id));
@@ -469,7 +469,7 @@ function itemById(L,id) {
 		id = id.trim();
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id==id ) return L[i]   // return list item
-	}
+	};
 }
 function indexByTitle(L,ti) {
 	if( L && ti ) {
@@ -477,53 +477,53 @@ function indexByTitle(L,ti) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return i   // return list index
 	};
-	return -1
+	return -1;
 }
 function itemByTitle(L,ti) {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].title==ti ) return L[i]   // return list item
-	}
+			if( L[i].title==ti ) return L[i];   // return list item
+	};
 }
 function indexBy( L, p, s ) {
 	if( L && p && s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 		// hand in property and searchTerm as string !
 		for( var i=L.length-1;i>-1;i-- )
-			if( L[i][p]==s ) return i
+			if( L[i][p]==s ) return i;
 	};
-	return -1
+	return -1;
 }
 function itemBy( L, p, s ) {
 	if( L && p && s ) {
 		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
 		for( var i=L.length-1;i>-1;i-- )
-			if( L[i][p]==s ) return L[i]   // return list item
-	}
+			if( L[i][p]==s ) return L[i];   // return list item
+	};
 }
 function containsById( cL, L ) {
 	if(!L) return null;
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
-	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1
-	
+	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
+
 	function containsL( cL, L ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexById( cL, L[i].id )<0 ) return false;
-		return true
+		return true;
 	}
 }
 function containsByTitle( cL, L ) {
 	if(!L) return null;
 	// return true, if all items in L are contained in cL (cachedList):
-	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 )
+	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
 	
 	function containsL( cL, L ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
-		return true
+		return true;
 	}
 }
 function cmp( i, a ) {
@@ -535,27 +535,27 @@ function cmp( i, a ) {
 }
 function sortByTitle( L ) {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
-	)
+		(bim,bam)=>{ return cmp( bim.title, bam.title ) };
+	);
 }
 function sortBy( L, fn ) {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
-	)
+		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) };
+	);
 }
 function forAll( L, fn ) {
 	// return a new list with the results from applying the specified function to all items of input list L:
 	if(!L) return [];
 	var nL = [];
 	L.forEach( (e)=>{ var r=fn(e); if(r) nL.push(r) } );
-	return nL
+	return nL;
 }
 
 function cacheE( L, e ) {  // ( list, entry )
 	// add or update the item e in a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
-	L[n] = e; return n // update otherwise
+	L[n] = e; return n; // update otherwise
 }
 function cacheL( L, es ) {  // ( list, entries )
 	// add or update the items es in a list L:
@@ -565,18 +565,18 @@ function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
-	return n
+	return n;
 }
 function uncacheL( L, es ) {  // ( list, entries )
 	// remove the items es from a list L:
-	es.forEach( (e)=>{ uncacheE( L, e ) } )
+	es.forEach( (e)=>{ uncacheE( L, e ) } );
 }
 	
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
 String.prototype.addIcon = function( ic ) {
 	if( ic ) return ic+'&#xa0;'+this;
-	return this
+	return this;
 };
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
 function genID(pfx) {
@@ -587,7 +587,7 @@ function genID(pfx) {
 	let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 	var result = '';
 	for( var i=CONFIG.genIdLength; i>0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
-	return pfx+result
+	return pfx+result;
 }
 /*	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript:
@@ -610,7 +610,7 @@ String.prototype.toJsId = function() {
 // Make an id conforming with ReqIF and SpecIF:
 String.prototype.toSpecifId = function() { 
 	if( this ) return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
-	return
+	return;
 };
 
 // Make a very simple hash code from a string:
@@ -622,7 +622,7 @@ if (!String.prototype.startsWith) {
 	String.prototype.startsWith = function(searchString, position) {
 		position = position || 0;
 		return this.lastIndexOf(searchString, position) === position
-	}
+	};
 };
 /* from https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/String/endsWith */
 if (!String.prototype.endsWith) {
@@ -634,13 +634,13 @@ if (!String.prototype.endsWith) {
       position -= searchString.length;
       let lastIndex = subjectString.indexOf(searchString, position);
       return lastIndex!==-1 && lastIndex===position
-	}
+	};
 };
 String.prototype.truncate = function(l) {
 	var t = this.substring(0,l-1);
 //	if( t.length<this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
 	if( t.length<this.length ) t += '...';  // must work also in non-html fields
-	return t
+	return t;
 };
 /*String.prototype.reduceWhiteSpace = function() {
 // Reduce white space to a single blank:
@@ -652,7 +652,7 @@ String.prototype.log = function(m) {
 }; */
 String.prototype.stripCtrl = function() {
 // Remove js/json control characters from HTML-Text or other:
-	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' )
+	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
 };
 String.prototype.ctrl2HTML = function() {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
@@ -668,7 +668,7 @@ String.prototype.toHTML = function() {
 };
 // https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
 function isHTML(str) {
-  var doc = new DOMParser().parseFromString(str, "text/html");
+  let doc = new DOMParser().parseFromString(str, "text/html");
   return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
 }
 function makeHTML(str,opts) {
@@ -711,6 +711,22 @@ String.prototype.xmlChar2utf8 = function() {
 			return String.fromCharCode(parseInt(numStr, 10))
 		})
 } */
+
+function escapeInner( str ) {
+	var out = "";
+	str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
+		// $1: inner text (before the next tag)
+		// $2: start of opening tag '<' or closing tag '</'
+		// $3: rest of the tag
+		// escape the inner text and keep the tag:
+		out += $1.escapeXML() + $2 + $3;
+		// consume the matched piece of str:
+		return '';
+	});
+	// process the remainder (the text after the last tag or the whole text if there was no tag:
+	out += str.escapeXML();
+	return out;
+} 
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
@@ -719,19 +735,19 @@ String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }
 String.prototype.escapeXML = function() {
 	return this.replace(/["'&<>]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
-	})
+	});
 };
 String.prototype.escapeHTML = function() {
 	return this.replace(/[&<>"'`=\/]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
-	})
+	});
 };
 String.prototype.unescapeHTMLTags = function() {
 //  Unescape known HTML-tags:
 	if( isHTML(this) ) return this;
 	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, ($0,$1,$2,$3)=>{
-		return '<'+$1+$2+$3+'>'
-	}))
+		return '<'+$1+$2+$3+'>';
+	}));
 };
 // see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
 String.prototype.unescapeHTMLEntities = function() {
@@ -739,9 +755,8 @@ String.prototype.unescapeHTMLEntities = function() {
 	var el = document.createElement('div');
 	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
-        return el.innerText
-		
-	})) 
+        return el.innerText;
+	}));
 };
 /*// better: https://stackoverflow.com/a/34064434/5445 but strips HTML tags.
 String.prototype.unescapeHTMLEntities = function() {
@@ -751,14 +766,28 @@ String.prototype.unescapeHTMLEntities = function() {
 if (!String.prototype.stripHTML) {
 	String.prototype.stripHTML = function() {
 		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-		return $("<dummy/>").html( this ).text().trim()
-	}
+		return $("<dummy/>").html( this ).text().trim() || '';
+	};
 };
+/**
+ * Returns the text from a HTML string
+ * see: https://ourcodeworld.com/articles/read/376/how-to-strip-html-from-a-string-extract-only-text-content-in-javascript
+ * 
+ * @param {html} String The html string to strip
+ *
+function stripHtml(html){
+	// Create a new div element
+	var temp = document.createElement("div");
+	// Set the HTML content with the providen
+	temp.innerHTML = html;
+	// Retrieve the text property of the element (cross-browser support)
+	return temp.textContent || temp.innerText || "";
+} */
 
 // Add a link to an isolated URL:
 String.prototype.linkifyURLs = function( opts ) {
 	// perform the operation, unless specifically disabled:
-	if( typeof(opts)=='object' && !opts.linkifiedURLs ) return this;
+	if( typeof(opts)=='object' && !opts.linkifyURLs ) return this;
 	return this.replace( RE.URI,  
 		( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 )=>{ 
 			// all links which do not start with "http" are considered local by most browsers:
@@ -767,8 +796,8 @@ String.prototype.linkifyURLs = function( opts ) {
 			// under the assumption that a decoding a non-encoded URI does not cause a change.
 			// This does not work if a non-encoded URI contains '%'.
 			return $1+'<a href="'+encodeURI(decodeURI($2))+'" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9 */
-			return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9
-		})
+			return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9;
+		});
 };
 
 String.prototype.fileExt = function() {
@@ -1224,14 +1253,14 @@ function clearUrlParams() {
 //	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1])    // last element is 'appname.html' without url parameters;
 };
-function httpGet(parms) {
+function httpGet(params) {
 	// https://blog.garstasio.com/you-dont-need-jquery/
 	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', parms.url, true);
-	if( parms.withCredentials ) xhr.withCredentials = "true";
+	xhr.open('GET', params.url, true);
+	if( params.withCredentials ) xhr.withCredentials = "true";
 	// https://stackoverflow.com/a/42916772/2214
-	xhr.responseType = parms.responseType;
+	xhr.responseType = params.responseType;
 	xhr.onreadystatechange = function() {
 //		console.debug('xhr',this.readyState,this)
 		if (this.readyState<4 ) return;
@@ -1240,15 +1269,15 @@ function httpGet(parms) {
 				case 200:
 				case 201:
 					// done without error:
-					if( typeof(parms.done)=="function" ) parms.done(this);
+					if( typeof(params.done)=="function" ) params.done(this);
 					break;
 				default:
 					// done with error:
-					if( typeof(parms.fail)=="function" ) parms.fail(this)
+					if( typeof(params.fail)=="function" ) params.fail(this)
 			}
 		};
 		// continue in case of success and error:
-		if( typeof(parms.then)=="function" ) parms.then()	
+		if( typeof(params.then)=="function" ) params.then()	
 	};
 	xhr.send(null)
 }

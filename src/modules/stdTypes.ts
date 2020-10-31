@@ -1,10 +1,126 @@
 /*!	Standard type definitions with methods. 
 	Dependencies: -
 	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
-	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.com, Berlin
 	We appreciate any correction, comment or contribution!
 */
+
+app.standardTypes = new function() {
+	var self = this;
+	self.dataTypes = [{
+		id: "DT-ShortString",
+		title: "String ["+CONFIG.textThreshold+"]",
+		description: "String with length "+CONFIG.textThreshold,
+		type: "xs:string",
+		maxLength: CONFIG.textThreshold,
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{
+		id: "DT-Text",
+		title: "Text",
+	//	title: "Text ["+CONFIG.maxStringLength+"]",
+		type: "xs:string",
+	//	maxLength: CONFIG.maxStringLength,
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{
+		// DEPRECATED for SpecIF, but needed for ReqIF:
+		id: "DT-FormattedText",
+		title: "XHTML-formatted Text",
+	//	title: "XHTML-formatted Text ["+CONFIG.maxStringLength+"]",
+		type: "xhtml",
+	//	maxLength: CONFIG.maxStringLength,
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-DateTime",  
+		title: "Date or Timestamp",
+		description: "Date or Timestamp in ISO-Format",
+		type: "xs:dateTime",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-Boolean",
+		title: "Boolean",
+		description: "The Boolean data type.",
+		type: "xs:boolean",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-Integer",
+		title: "Integer",
+		description: "A numerical integer value from -32768 to 32768.",
+		type: "xs:integer",
+		minInclusive: CONFIG.minInteger,
+		maxInclusive: CONFIG.maxInteger,
+	  changedAt: "2016-05-26T08:59:00+02:00"
+	},{ 
+		id: "DT-Real",
+		title: "Real",
+		description: "A floating point number (double) with 5 fraction digits.",
+		type: "xs:double",
+		fractionDigits: CONFIG.maxAccuracy,
+		minInclusive: CONFIG.minReal,
+		maxInclusive: CONFIG.maxReal,
+		changedAt: "2016-05-26T08:59:00+02:00"
+	}];
+	self.propertyClasses = [{
+		id: "PC-Name",
+		title: CONFIG.propClassTitle,
+		dataType: "DT-ShortString",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	}, {
+		id: "PC-Description",
+		title: CONFIG.propClassDesc,
+	//	dataType: "DT-Text",
+		dataType: "DT-FormattedText",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	}, {
+		id: "PC-Diagram",
+		title: CONFIG.resClassDiagram,
+		dataType: "DT-FormattedText",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{
+		id: "PC-Type",
+		title: CONFIG.propClassType,
+		dataType: "DT-ShortString",
+		changedAt: "2016-05-26T08:59:00+02:00"
+	}];
+	self.resourceClasses = [{
+		id: "RC-Folder",
+		title: CONFIG.resClassFolder,
+		description: "Folder with title and text for chapters or descriptive paragraphs.",
+		isHeading: true,
+		instantiation: ['auto','user'],
+		propertyClasses: ["PC-Description","PC-Type"],
+		changedAt: "2016-05-26T08:59:00+02:00"
+	},{
+		id: "RC-HierarchyRoot",
+		title: CONFIG.resClassOutline,
+		description: "Metadata of a document outline (hierarchy).",
+		instantiation: ['auto'],
+		propertyClasses: ["PC-Name", "PC-Description"],
+		changedAt: "2016-05-26T08:59:00+02:00"
+	}];
+	self.get = (ctg,id,chAt)=>{
+		var item = itemById( listOf(ctg), id );
+		if( item ) {
+			if( chAt ) item.changedAt = chAt;
+			return item
+		}
+	};
+	return self;
+	
+		function listOf( ctg ) {
+			// Return the cache for a given category:
+			switch(ctg) {
+				case 'dataType':		return self.dataTypes;
+				case 'propertyClass':	return self.propertyClasses;
+				case 'resourceClass':	return self.resourceClasses;
+				case 'statementClass':	return self.statementClasses;
+				case 'resource':		return self.resources;
+				case 'statement':		return self.statements;
+				case 'hierarchy':		return self.hierarchies;
+				case 'file':			return self.files
+			}
+		}
+};	
 		
 /*  ToDo: REWORK FOR v0.10.8:
 	// The standard types for comments:
@@ -41,38 +157,38 @@
 //			objectClasses: []		// no objectClasses property means 'all resources are eligible' (like ReqIF standard)
 		}]
 //		console.debug('CommentTypes done')
-	} */
+	} 
 	function GlossaryItems() {
-		var self=this;
+		var _this=this;
 		let dTid = genID('DT-'), rCid = genID('RC-'), sCid = genID('SC-'),
 			pC1id = genID('PC-'), pC3id = genID('PC-'), rId
 			time = new Date().toISOString();
-		self.title = 'Types and a folder instance for a glossary';
-		self.specifVersion = '0.10.8';
-		self.dataTypes = [{
+		_this.title = 'Types and a folder instance for a glossary';
+		_this.specifVersion = '0.10.8';
+		_this.dataTypes = [{
 			id: dTid,
 			title: CONFIG.dataTypeComment,
 			type: "xs:string",
 			maxLength: CONFIG.textThreshold,
 			changedAt: time
 		}];
-		self.propertyClasses = [{
+		_this.propertyClasses = [{
 			id: pC1id,
 			title: CONFIG.attrTypeTitle,
 			dataType: dTid,		// ID of the dataType defined before
 			changedAt: time
-	/*	}, {
-			id: genID('PC-'),
-			title: attrTypeText,
-			dataType: dTid,		
-			changedAt: time */
+	//	}, {
+	//		id: genID('PC-'),
+	//		title: attrTypeText,
+	//		dataType: dTid,		
+	//		changedAt: time 
 		}, { 
 			id: pC3id,
 			title: CONFIG.attrTypeType,
 			dataType: dTid,		// ID of the dataType defined before
 			changedAt: time
 		}];
-		self.resourceClasses = [{
+		_this.resourceClasses = [{
 			id: rCid,
 			title: CONFIG.spcTypeGlossary,
 			description: "Comment referring to a model element ('resource' in general).",
@@ -80,7 +196,7 @@
 			propertyClasses: [pC1id,pC3id],
 			changedAt: time
 		}];
-		self.resources = [{
+		_this.resources = [{
 			id: genID('R-'),
 			title: i18n.lookup(CONFIG.spcTypeGlossary),
 			class: rCid,
@@ -93,7 +209,7 @@
 			}],
 			changedAt: time
 		}];
-		return self
+		return _this
 	}
 
 	// a constructor for standard types:
@@ -103,18 +219,18 @@
 		if( !prj || !types ) return null;
 //		console.debug('StdTypes',prj,types);
 
-		var self = this;
+		var _this = this;
 		
-	/*	ToDo: REWORK
-		self.available = function() {  
-			// Return true if all types are available.
-			// Must compare by unique name, because the id may vary.
-			return containsByTitle( prj.dataTypes, types.dataTypes )
-				&& containsByTitle( prj.resourceClasses, types.resourceClasses )
-				&& containsByTitle( prj.statementClasses, types.statementClasses )
-		};  */
+	//	ToDo: REWORK
+	//	_this.available = function() {  
+	//		// Return true if all types are available.
+	//		// Must compare by unique name, because the id may vary.
+	//		return containsByTitle( prj.dataTypes, types.dataTypes )
+	//			&& containsByTitle( prj.resourceClasses, types.resourceClasses )
+	//			&& containsByTitle( prj.statementClasses, types.statementClasses )
+	//	};
 
-		self.add = function() {
+		_this.add = function() {
 			// add or update the new types to the project.
 			// Update by creating with a new id, because an id may not be reused;
 			// as the server does not allow type updates, yet.
@@ -123,7 +239,8 @@
 				console.error('type update has failed '+st.status)
 			})
 		};
-		self.add();
+		_this.add();
 //		console.debug('StdTypes done')
-		return self
+		return _this
 	}
+*/

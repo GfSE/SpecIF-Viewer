@@ -7,7 +7,7 @@
 */
 
 // Constructor for XLS import:
-// (A module constructor is needed, because there is an access to parent's data via 'self')
+// (A module constructor is needed, because there is an access to parent's data via 'self.parent...')
 modules.construct({
 	name: 'ioXls'
 }, function(self) {
@@ -74,57 +74,14 @@ function xslx2specif( buf, pN, chAt ) {
 	// requires sheetjs
 
 		function BaseTypes() {
-			this.dataTypes = [{
-			  id: "DT-ShortString",
-			  title: "String["+CONFIG.textThreshold+"]",
-			  description: "String with max. length "+CONFIG.textThreshold,
-			  type: "xs:string",
-			  maxLength: CONFIG.textThreshold,
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{
-			  id: "DT-Text",
-			  title: "Plain Text",  // dataType for XLS columns with text content
-			  description: "A text string",
-			  maxLength: CONFIG.maxStringLength,
-			  type: "xs:string",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-		/*	},{
-			  id: "DT-FormattedText",
-			  title: "Formatted Text",
-			  description: "XHTML formatted text.",
-			  maxLength: CONFIG.maxStringLength,
-			  type: "xhtml",
-			  changedAt: "2016-05-26T08:59:00+02:00" */
-			},{ 
-			  id: "DT-DateTime",  
-			  title: "Date or Timestamp",  // dataType for XLS columns with dateTime content
-			  description: "Date or Timestamp in ISO-Format",
-			  type: "xs:dateTime",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-Boolean",
-			  title: "Boolean",  // dataType for XLS columns with boolean content
-			  description: "The Boolean data type.",
-			  type: "xs:boolean",
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-Integer",
-			  title: "Integer",  // dataType for XLS columns with integer content
-			  description: "A numerical integer value from -32768 to 32768.",
-			  type: "xs:integer",
-			  "minInclusive": CONFIG.minInteger,
-			  "maxInclusive": CONFIG.maxInteger,
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			},{ 
-			  id: "DT-Real",
-			  title: "Real",  // dataType for XLS columns with real content
-			  description: "A floating point number (double) with 5 fraction digits.",
-			  type: "xs:double",
-			  "fractionDigits": CONFIG.maxAccuracy,
-			  "minInclusive": CONFIG.minReal,
-			  "maxInclusive": CONFIG.maxReal,
-			  changedAt: "2016-05-26T08:59:00+02:00"
-			}];	
+			this.dataTypes = [
+				app.standardTypes.get("dataType","DT-ShortString"),
+				app.standardTypes.get("dataType","DT-Text"),
+				app.standardTypes.get("dataType","DT-DateTime"),
+				app.standardTypes.get("dataType","DT-Boolean"),
+				app.standardTypes.get("dataType","DT-Integer"),
+				app.standardTypes.get("dataType","DT-Real")
+			];	
 			this.propertyClasses = [];	
 			this.resourceClasses = [{	
 				id: resClassId( CONFIG.resClassFolder ),
@@ -521,7 +478,7 @@ function xslx2specif( buf, pN, chAt ) {
 
 					// the cell value in the first line is the title, either of a property or a statement:
 					let ti = valL[0]?(valL[0].w || valL[0].v):i18n.MsgNoneSpecified,
-						pC,nC,i,maxL=0;
+						pC,nC,i;
 //					console.debug( 'getPropClass 1', ti, valL );
 
 					// Skip, if it is a statement title
@@ -549,13 +506,18 @@ function xslx2specif( buf, pN, chAt ) {
 
 					// Assign a longer text field for columns with cells having a longer text:
 					if( pC=='ShortString' ) {
-						// determine the max length of the column values:
+						let maxL=0, multLines=false;
+						// determine the max length of the column values and if there are multiple lines:
 						for( i=valL.length-1; i>0; i-- ) {
-							maxL = Math.max( maxL, valL[i]&&valL[i].v? valL[i].v.length : 0 )
+							maxL = Math.max( maxL, valL[i]&&valL[i].v? valL[i].v.length : 0 );
+							multLines = multLines || valL[i]&&typeof(valL[i].v)=='string'&&valL[i].v.indexOf('\n')>-1
 						};
-						if( maxL>CONFIG.textThreshold ) pC = 'Text'
+						// if so, choose a text property:
+//						console.debug( 'getPropClass 3',maxL,multLines );
+						if( maxL>CONFIG.textThreshold || multLines ) 
+							pC = 'Text'
 					};
-//					console.debug( 'getPropClass 3',valL[i],pC );
+//					console.debug( 'getPropClass 4',valL[i],pC );
 					return new PropClass( ws.name+cX, ti, pC || defaultC );
 
 						function classOf( cell ) {

@@ -174,9 +174,9 @@ modules.construct({
 		pData.showLeft.reset();
 		$('#filterNotice').empty();
 
-		// Language options have been selected at project level:
-		displayOptions.targetLanguage = self.parent.targetLanguage;
-		displayOptions.lookupTitles = self.parent.lookupTitles;
+        displayOptions.targetLanguage = pData.targetLanguage;
+        displayOptions.lookupTitles = true;
+        displayOptions.lookupValues = true;
 
 		// build filterList from the specTypes when executed for the first time:
 		if( self.filterList.length<1 || opts.filters || opts.forced ) 
@@ -262,10 +262,10 @@ modules.construct({
 	}
 	function match(res) {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
-		// Note that res is not a SpecIF resource, but a Viewer Resource built using classifyProps()!
-		// If an enumerated property is missing, the resource does NOT match.
-		// In case all filers match, the resource is returned with marked values (if appropriate). 
-		// all resources pass, if there is no filter.
+		// Note that res is not a SpecIF resource, but an object prepared for viewing built using classifyProps()!
+		// - If an enumerated property is missing, the resource does NOT match.
+		// - In case all filers match, the resource is returned with marked values (if appropriate). 
+		// - All resources pass, if there is no filter.
 
 			function matchResClass(f) {   
 				// primary filter applying to all resources:
@@ -291,44 +291,42 @@ modules.construct({
 */ 
 				// ToDo: 'schlie' and 'schließ' in 'schließlich' are erroneously considered a whole word (as 'ß' is no regex word-character)
 				if( isChecked( f.options, 'wholeWords' )) {
-					str = '\\b'+str+'\\b'
+					str = '\\b'+str+'\\b';
 				} else {
-					if( isChecked( f.options, 'wordBeginnings' )) {str = '\\b'+str}
+					if( isChecked( f.options, 'wordBeginnings' )) {str = '\\b'+str};
 				};
-
+				
 				let dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
-					dT;
-					
-					function matchStr( prp, dT ) {
-//						console.debug('matchStr',prp,dT.type);
-						switch( dT.type ) {
-							case 'xhtml':
-								if( patt.test( languageValueOf(prp.value,displayOptions).stripHTML() )) return true; // if found return, continue searching, otherwise
-								break;
-							case 'xs:enumeration':
-								// only if enumerated values are included in the search:
-								if( !isChecked( f.options, 'excludeEnums' )) {
-									if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true  // if found return, continue searching, otherwise
-								};
-								break;
-							default:
-								if( patt.test( languageValueOf(prp.value,displayOptions) )) return true; // if found return, continue searching, otherwise
-								break
-						}
-					}
-				
-				var a;
-				if( res.toShow.title && matchStr( {value:res.toShow.title}, {type:'xhtml'} ) ) return true;
+					dT, a;
+				if( matchStr( res.toShow.title, {type:'xs:string'} ) ) return true;
 				for( a=res.toShow.descriptions.length-1; a>-1; a-- )
 					if( matchStr( res.toShow.descriptions[a], {type:'xhtml'} ) ) return true;
-				for( a=res.toShow.other.length-1; a>-1; a-- ){
+				for( a=res.toShow.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
 					dT = dataTypeOf( dta, res.toShow.other[a]['class'] );
 //					console.debug('matchSearchString',f,res.toShow.other[a],dT,f.options);
-					if( matchStr( res.toShow.other[a], dT ) ) return true
+					if( matchStr( res.toShow.other[a], dT ) ) return true;
 				};
-				return false  // not found
+				return false;  // not found
+
+				function matchStr( prp, dT ) {
+//					console.debug('matchStr',prp,dT.type);
+					switch( dT.type ) {
+						case 'xs:enumeration':
+							// only if enumerated values are included in the search:
+							if( !isChecked( f.options, 'excludeEnums' )) {
+								if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true;
+							};
+							break;
+						case 'xhtml':
+						case 'xs:string':
+							if( patt.test( languageValueOf(prp.value,displayOptions).stripHTML() )) return true; 
+							break;
+						default:
+							if( patt.test( languageValueOf(prp.value,displayOptions) )) return true;
+					};
+				}
 			}
 			function matchPropValue(f) {   
 				// secondary filter applying to resources of a certain resourceClass
@@ -376,7 +374,7 @@ modules.construct({
 				//	default:
 				};
 				// no match has been found:
-				return false
+				return false;
 			}
 			function matchAndMark( f ) {
 //				console.debug( 'matchAndMark', f, res.toShow.title );
@@ -424,8 +422,8 @@ modules.construct({
 								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
 								    lE, i;
 								
-								if( res.toShow.title )
-									res.toShow.title = mark( languageValueOf(res.toShow.title,displayOptions), rgxS );
+								lE = res.toShow.title;
+								lE.value = mark( languageValueOf(lE.value,displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
 								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
 									lE = res.toShow.descriptions[i];
@@ -442,9 +440,9 @@ modules.construct({
 											class: lE['class'],
 											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
 									}); 
-//									console.debug('hit resource',res)
-								}
+								};
 							};
+//							console.debug('hit resource',res);
 							return res
 						}; 
 							return // undefined
@@ -634,17 +632,17 @@ modules.construct({
 					]
 				};
 //				console.debug('addTextSearchFilter',flt);
-				self.filterList.push( flt )
+				self.filterList.push( flt );
 			}
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
 			var idx = indexBy( settings.filters, 'category', 'textSearch');
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
-				addTextSearchFilter( settings.filters[idx] )
+				addTextSearchFilter( settings.filters[idx];
 			// do not include a text search filter if there are settings.filters without a respective entry
 		} else {
 			// b) include a default text search if there is no settings.filters
-			addTextSearchFilter()
+			addTextSearchFilter();
 		};
 
 			function addResourceClassFilter( pre ) {
@@ -671,20 +669,20 @@ modules.construct({
 					if( pre && pre.options ) { 
 						box.checked = pre.options.indexOf( rC.id )>-1
 					};
-					oTF.options.push( box )
+					oTF.options.push( box );
 				});
-				self.filterList.push(oTF)
+				self.filterList.push(oTF);
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
 			var idx = indexBy( settings.filters, 'category', 'resourceClass');
 			// a) include the filter modules, if there is a settings.filters:
 			if( idx>-1 ) 
-				addResourceClassFilter( settings.filters[idx] )
+				addResourceClassFilter( settings.filters[idx] );
 			// do not include a text search filter if there is a settings.filters without a respective entry
 		} else {
 			// b) include a default text search if there is no settings.filters
-			addResourceClassFilter()  
+			addResourceClassFilter();
 		};
 
 /*			function addDateTimeFilter() {
@@ -696,9 +694,9 @@ modules.construct({
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
 			settings.filters.forEach( (s)=>{
 				if( s.category == 'enumValue' )
-					addEnumValueFilters( s )
+					addEnumValueFilters( s );
 			})
-		}
+		};
 		// Secondary filters are also added to the list on request via addEnumValueFilters().
 	}
 /*	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
@@ -717,15 +715,15 @@ modules.construct({
 	}; */
 	function renderTextFilterSettings( flt ) {
 		// render a single panel for text search settings:
-		return textForm( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )
-			+	renderEnumFilterSettings( flt )
+		return textField( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )
+			+	renderEnumFilterSettings( flt );
 	}
 	function renderEnumFilterSettings( flt ) {
 		// render a single panel for enum filter settings:
-		return checkboxForm( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} )
+		return checkboxField( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} );
 	}
 	function getTextFilterSettings( flt ) {
-		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) }
+		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };
 	}
 	self.goClicked = ()=>{  // go!
 		self.secondaryFilters = undefined;
@@ -741,16 +739,16 @@ modules.construct({
 				case 'propertyValue':
 					f.options.forEach( (o)=> {
 						o.checked = checkedL.indexOf( o.id )>-1
-					})
-			}	
+					});
+			};
 		});
 //		console.debug( 'goClicked', self.filterList, fL );
-		doFilter()
+		doFilter();
 	};
 	self.resetClicked = ()=>{  
 		// reset filters:
 		self.clear();
-		self.show()
+		self.show();
 	};
 /*	self.secondaryFiltersClicked = ( oT )={
 		// toggle between the hitlist and the secondary filter settings:
@@ -770,5 +768,5 @@ modules.construct({
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 	}; 
 */	
-	return self
+	return self;
 });

@@ -20,15 +20,15 @@ modules.construct({
 		toEdit;					// the classified properties to edit
 //	self.newRes;				// the resource to edit
 	self.newFiles = [];			// collect uploaded files before committing the change
-	self.checkForm = new CheckForm();
+	self.dialogForm = new DialogForm();
 
 	self.init = ()=>{
 //		console.debug('resourceEdit.init')
-		self.clear()
+		self.clear();
 	};
 	self.clear = ()=>{
 		self.newFiles.length = 0;
-		self.checkForm.list.length = 0;
+		self.dialogForm.list.length = 0;
 	};
 
 	// The choice of modal dialog buttons:
@@ -38,7 +38,7 @@ modules.construct({
 			label: i18n.BtnCancel,
 			action: (thisDlg)=>{ 
 //				console.debug('action cancelled');
-				thisDlg.close() 
+				thisDlg.close();
 			}
 		},
 		update: { 	
@@ -47,7 +47,7 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save',
 			action: (thisDlg)=>{
 				save('update');
-				thisDlg.close()
+				thisDlg.close();
 			}  
 		},	
 		insertAfter: {
@@ -56,7 +56,7 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save', 
 			action: (thisDlg)=>{
 				save('insertAfter');
-				thisDlg.close()
+				thisDlg.close();
 			}  
 		},
 		insertBelow: { 	
@@ -65,7 +65,7 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save', 
 			action: (thisDlg)=>{
 				save('insertBelow');
-				thisDlg.close()
+				thisDlg.close();
 			}  
 		}
 	};
@@ -79,8 +79,6 @@ modules.construct({
 		opts.selNodeId = pData.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
-		// Note: Here ES6 promises will be used. 
-		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a 
 		switch( opts.mode ) {
 			case 'create':
 				selectResClass( opts )
@@ -91,7 +89,7 @@ modules.construct({
 							(r)=>{
 //								console.debug( '#', opts.mode, r );
 								self.newRes = simpleClone(r);
-								opts.dialogTitle = i18n.MsgCreateResource;
+								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
 								opts.msgBtns = [
 									msgBtns.cancel,
 									msgBtns.insertAfter,
@@ -100,7 +98,7 @@ modules.construct({
 								editResource(r,opts)
 							}, 
 							stdError
-						)
+						);
 					},
 					stdError
 				);
@@ -132,7 +130,7 @@ modules.construct({
 						editResource(self.newRes,opts)
 					},
 					stdError
-				)
+				);
 		};
 		return;
 		
@@ -153,17 +151,17 @@ modules.construct({
 				message: (thisDlg)=>{
 					var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
 					// field for the title property:
-					form += textForm( ti, languageValueOf(toEdit.title), 'line' ); 
+					form += editP(toEdit.title);
 					// fields for the description properties: 
 					toEdit.descriptions.forEach( (d)=>{
-						form += editP(d)
+						form += editP(d);
 					});
 					// fields for the remaining properties:
 					toEdit.other.forEach( (p)=>{
-						form += editP(p)
+						form += editP(p);
 					});
 					form += '</div>';
-					return $( form )
+					return $( form );
 				},
 				buttons: opts.msgBtns
 			})
@@ -171,47 +169,63 @@ modules.construct({
 			return
 			
 			function editP(p) {
-				// Return a form element for a property:
-				// ToDo: Works only, if all propertyClasses are always cached:
+				// Return a form element for a property;
+				// works only, if all propertyClasses and dataTypes are always cached:
 				let pC = itemById( cData.propertyClasses, p['class'] ),
-					dT = itemById( cData.dataTypes, pC.dataType ),
+					// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
+					dT = pC? itemById( cData.dataTypes, pC.dataType ) : undefined,
 					opts = {
 						lookupTitles: true,
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
 					},
 					ti = titleOf(p,opts);
-				// create an input field depending on the property's dataType:
-				switch( dT.type ) {
+				// create an input field depending on the property's dataType;
+				// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
+				switch( dT? dT.type : "xs:string" ) {
 					case 'xs:string':
 					case 'xhtml':
-						if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
+						if( propTitleOf(p,cData)==CONFIG.propClassDiagram ) {
 							// it is a diagram reference (works only with XHTML-fields):
 							return renderDiagram(p,opts)
 						} else {
 							// add parameters to check this input field:
-							self.checkForm.add( ti, dT );
-							// it is a text (in case of xhtml, it may contain a diagram reference:
-							return textForm( ti, languageValueOf(p.value,opts), (dT.maxLength&&dT.maxLength>CONFIG.textThreshold)? 'area' : 'line', myFullName+'.check()' )
+							self.dialogForm.addField( ti, dT );
+							// it is a text;
+							// in case of xhtml, it may contain a diagram reference, 
+							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
+//							console.debug( 'editP', languageValueOf(p.value,opts) );
+							return textField( 
+								ti, 
+								languageValueOf(p.value,opts), 
+								// - open an input line, if it is a title or has a specified length lower than the threshold
+								// - open an input text-area, otherwise
+								( (dT&&dT.maxLength&&dT.maxLength<CONFIG.textThreshold+1)
+									|| CONFIG.titleProperties.indexOf(ti)>-1 
+									|| CONFIG.headingProperties.indexOf(ti)>-1 )? 'line' : 'area', 
+								myFullName+'.check()' 
+							);
 						};
 					case 'xs:enumeration':
+						// no input checking needed:
 						let separatedValues = p.value.split(','),
-							vals = forAll( dT.values, (v)=>{ return {title:languageValueOf(v.value,opts),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+							vals = forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-							return checkboxForm( ti, vals )
+							return checkboxField( ti, vals )
 						} else {
-							return radioForm( ti, vals )
+							return radioField( ti, vals )
 						};
 					case 'xs:boolean':
+						// no input checking needed:
 //						console.debug('xs:boolean',ti,p,pC);
-						return booleanForm( ti, p.value=='true' );
+						return booleanField( ti, p.value=='true' );
 					case 'xs:dateTime':
 					case 'xs:integer':
 					case 'xs:double':
 						// add parameters to check this input field:
-						self.checkForm.add( ti, dT );
-						return textForm( ti, p.value, 'line', myFullName+'.check()' )
+						self.dialogForm.addField( ti, dT );
+						return textField( ti, p.value, 'line', myFullName+'.check()' )
 				};
 				return
 
@@ -254,41 +268,52 @@ modules.construct({
 				app.cache.selectedProject.readContent( 'resourceClass', forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
 				.then( 
 					(rCL)=>{
-						// store a clone and get the title to display:
-						let resClasses = forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
-						resClasses[0].checked = true;
-//						console.debug('#2',simpleClone(cData.resourceClasses));
-						let dlg = new BootstrapDialog({
-							title: i18n.MsgSelectResClass,
-						//	type: 'type-success',
-							type: 'type-primary',
-						//	size: BootstrapDialog.SIZE_WIDE,
-							message: (thisDlg)=>{
-								var form = '<form id="attrInput" role="form" >'
-										+ radioForm( i18n.LblResourceClass, resClasses )
-										+ '</form>';
-								return $( form ) 
-							},
-							buttons: [{
-									label: i18n.BtnCancel,
-									action: (thisDlg)=>{ 
-										reject({status:0,statusText:'Create Resource cancelled by the user'});
-										thisDlg.close() 
-									}
-								},{ 	
-									label: i18n.LblNextStep,
-									cssClass: 'btn-success', 
-									action: (thisDlg)=>{
-										resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
-										thisDlg.close()
-									}  
-								}]
-						})
-						.open()
+						if( rCL.length>0 ) {
+							// store a clone and get the title to display:
+							let resClasses = forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
+							if( resClasses.length>1 ) {
+								// open a modal dialog to let the user select the class for the resource to create:
+								resClasses[0].checked = true;  // default selection
+//								console.debug('#2',simpleClone(cData.resourceClasses));
+								let dlg = new BootstrapDialog({
+									title: i18n.MsgSelectResClass,
+								//	type: 'type-success',
+									type: 'type-primary',
+								//	size: BootstrapDialog.SIZE_WIDE,
+									message: (thisDlg)=>{
+										var form = '<form id="attrInput" role="form" >'
+												+ radioField( i18n.LblResourceClass, resClasses )
+												+ '</form>';
+										return $( form ) 
+									},
+									buttons: [{
+											label: i18n.BtnCancel,
+											action: (thisDlg)=>{ 
+												reject({status:0,statusText:'Create Resource cancelled by the user'});
+												thisDlg.close() 
+											}
+										},{ 	
+											label: i18n.LblNextStep,
+											cssClass: 'btn-success', 
+											action: (thisDlg)=>{
+												resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
+												thisDlg.close()
+											}  
+										}]
+								})
+								.open();
+							} else {
+								// exactly on class, so we can continue immediately:
+								resolve( resClasses[0] );
+							};
+						} else {
+							// ToDo: Don't enable the 'create resource' button, if there are no eligible resourceClasses ..
+							reject({status:999;statusText:"No resource class defined for manual creation of a resource."});
+						};
 					},
 					reject
-				)
-			})
+				);
+			});
 		}
 	};
 	self.hide = ()=>{
@@ -307,7 +332,7 @@ modules.construct({
 					newFile = { blob:data, id:'F-'+fName.simpleHash(), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
 				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
-				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.render( newFile )+'</div>'
+				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.render( newFile )+'</div>';
 		});
 		return;
 		
@@ -316,7 +341,7 @@ modules.construct({
 			rdr.onload = ()=>{
 				fn( new Blob([rdr.result], { type: f.type }) )
 			};
-			rdr.readAsArrayBuffer( f )
+			rdr.readAsArrayBuffer( f );
 		}
 	};
 	self.removeDiagram = (cId)=>{
@@ -327,44 +352,83 @@ modules.construct({
 	self.check = ()=>{
 		// called on every key-input;
 		// check all input fields:
-		let notOk = !self.checkForm.do();
+		let notOk = !self.dialogForm.check();
 		// enable save buttons, if all input fields have acceptable content:
 		Array.from( document.getElementsByClassName('btn-modal-save'), (btn)=>{
-			btn.disabled = notOk
+			btn.disabled = notOk;
 		})
 	//	console.debug('input made',document.getElementsByClassName('btn-modal-save'));
 	};
 
 	function save(mode) {
 		// Save the new or changed resource:
+		// ToDo: If the original resource had different languages, take care of them;
+		//       The new values must not replace the multi-language property values!
 		let p, 
 			pend=2, // minimally 2 calls with promise
 			// The properties of toEdit are complete (in contrast to self.newRes):
-			allProps = toEdit.descriptions.concat(toEdit.other),
 			chD = new Date().toISOString();  // changedAt
-		for( var a=allProps.length-1;a>-1;a-- ) {
-			p = allProps[a];
-			// Delete any title property, as the resource's native title has been set:
-			if( CONFIG.titleProperties.concat(CONFIG.headingProperties).indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('delete title property',p);
-				allProps.properties.splice(a,1);
-				continue
-			};
-			// Skip the diagrams, as they are directly updated if the user uploads a new file:
+
+		if( Array.isArray(self.newRes.properties) )
+			self.newRes.properties.length = 0;
+
+		toEdit.title.value = getP( toEdit.title );
+		// In any case, update the elements native title:
+		self.newRes.title = toEdit.title.value.stripHTML();
+		// If the title property doesn't have a class, 
+		// it has been added by classifyProps() and there is no need to create it;
+		// in this case the title will only be seen in the element's title:
+		if( toEdit.title['class'] ) {
+			delete toEdit.title.title;  // is redundant, the property's class title applies
+			self.newRes.properties.push( toEdit.title );
+		}
+
+		toEdit.descriptions.forEach( function(p) {
+
+			// In case of a diagram, the value is already updated when the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-//				console.debug('skip diagram property',p);
-				continue
+				self.newRes.properties.push( p );
+				return;
+			};
+
+			// get the new or unchanged input value of the property from the input field:
+			p.value = getP( p );
+			delete p.title;
+
+			let pV = p.value.stripHTML();
+			if( pV ) {
+				// update the elements native title:
+				self.newRes.description = pV
+
+				// If the description property doesn't have a class, 
+				// it has been added by classifyProps() and there is no need to create it;
+				// in this case the description will only be seen in the element's description:
+				if( p['class'] )
+					self.newRes.properties.push( p );
+			} else {
+				// delete it:
+				delete self.newRes.description;
 			};
 //			console.debug( 'save',mode, p, getP( p ) );
-			// get the new or unchanged input value of the other properties:
-			p.value = getP( p )
 		};
-		// set the resource's native title:
-		self.newRes.title = textValue( i18n.lookup(CONFIG.propClassTitle) );
-		// suppress empty properties:
-		self.newRes.properties = forAll( allProps, (p)=>{ if( hasContent(p.value) ) return p });
+
+		toEdit.other.forEach( function(p) {
+			// get the new or unchanged input value of the property from the input field:
+			p.value = getP( p );
+			delete p.title;
+			// a property class must exist, 
+			// because classifyProps() puts only existing properties to 'other':
+			if( p['class'] ) {
+				if( hasContent(p.value) )
+					self.newRes.properties.push( p )
+			} else {
+					console.error('Cannot save edited property',p,' because it has no class');
+			};
+		};
+
 		self.newRes.changedAt = chD;
 //		console.debug( 'save', self.newRes );
+
 		switch( mode ) {
 			case 'update':
 				app.cache.selectedProject.updateContent( 'resource', self.newRes )
@@ -398,26 +462,29 @@ modules.construct({
 				});
 				// get the selected node:
 				let selNd = pData.tree.selectedNode;
+//				console.debug('save.finalize',selNd);
 				// update the node name:
 			//	pData.tree.updateNode( selNd, self.newRes.title );
-				if( selNd )
+				if( selNd ) {
 					switch( mode ) {
-				//		case 'update':
-				//			break;
+				/*		case 'update':
+							break; */
 						case 'insertBelow':
+//							console.debug('nd below',selNd,pData.tree.selectedNode)
 							pData.tree.openNode( selNd );
 						//	pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
 							// no break
 						case 'insertAfter':
-//							console.debug('nd',selNd,pData.tree.selectedNode)
+//							console.debug('nd after',selNd,pData.tree.selectedNode)
 						//	pData.tree.selectNode( selNd.getNextSibling() ); 
 							pData.tree.selectNode( selNd.getNextNode() )
-					}
-				else
+					};
+				} else {
 					// we get here only after creating the first node of a tree:
 					pData.tree.selectFirstNode();
-				pData.doRefresh({forced:true})
-			}
+				};
+				pData.doRefresh({forced:true});
+			};
 		}
 		function getP(p) {
 			// Get the value of a property:
@@ -427,15 +494,16 @@ modules.construct({
 				targetLanguage: browser.language
 			};
 			let pC = itemById( cData.propertyClasses, p['class'] ),
-				dT = itemById( cData.dataTypes, pC.dataType );
-			switch( dT.type ) {
+				// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
+				dT = pC? itemById( cData.dataTypes, pC.dataType ) : undefined;
+			switch( dT? dT.type : "xs:string" ) {
 				case 'xs:integer':
 				case 'xs:double':
 				case 'xs:dateTime':
 				case 'xs:string':
 				case 'xhtml':
 					// The diagrams are skipped in the calling layer above.
-//					console.debug( '*',p,textValue( titleOf(p,opts) ) );
+//					console.debug( 'getP',p,textValue( titleOf(p,opts) ) );
 					return textValue( titleOf(p,opts) );
 				case 'xs:enumeration':
 //					console.debug('xs:enumeration',p,pC,separatedValues,vals);
@@ -451,5 +519,5 @@ modules.construct({
 			}
 		}
 	};
-	return self
+	return self;
 })

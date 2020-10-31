@@ -32,7 +32,7 @@ app = new function() {
 
 	// construct main app:
 	var self = this;
-	self.version = 'v0.99.3';
+	self.version = 'v0.99.5.0';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
@@ -59,7 +59,7 @@ app = new function() {
 			// Let's start at the top level:
 			// no name, thus no additional script file will be loaded at top level
 			view: '#app',
-			selector: '#pageSelector',		// DOM element to choose the view of a child (top level)
+			selector: '#pageSelector',			// DOM element to choose the view of a child (top level)
 			selectorType: 'btns',
 			children: [{
 				name: 'profileAnonymous',
@@ -80,12 +80,15 @@ app = new function() {
 				children: [{
 					name: 'ioSpecif'
 					// no view
-			/*	},{
-					name: 'ioArchimate'
-					// no view  */
 				},{
 					name: 'ioReqif'
 					// no view
+			/*	},{
+					name: 'ioArchimate'
+					// no view  
+				},{
+					name: 'ioRdf'
+					// no view */
 				},{
 					name: 'ioBpmn'
 					// no view
@@ -117,7 +120,7 @@ app = new function() {
 					view: '#'+CONFIG.relations,		// uses implicit action refresh at parent level
 					viewClass: 'content',
 					label: i18n.TabRelations,
-					selectedBy: '#selectStatements',	// DOM element in parent's selector to choose this view
+					selectedBy: '#selectStatements',// DOM element in parent's selector to choose this view
 					children: [{
 						name: 'statementsGraph'
 						// no view
@@ -154,9 +157,9 @@ app = new function() {
 			},{
 				name: 'about',
 				view: '#about',
-				viewClass: 'contentWide',		// whole width under control of the view
+				viewClass: 'contentWide',			// whole width under control of the view
 				label: i18n.IcoAbout,
-				selectedBy: '#selectAbout'		// DOM element in parent's selector to choose this view
+				selectedBy: '#selectAbout'			// DOM element in parent's selector to choose this view
 			}]
 		};
 
@@ -221,7 +224,7 @@ app = new function() {
 		}
 	let pend=2;
 	getScript( 'https://code.jquery.com/jquery-3.5.1.min.js' );
-	getScript( './modules/moduleManager.js?'+self.version ); // with cache-buster
+	getScript( './modules/moduleManager.js?'+self.version ); // with cache-busting on version-change
 
 	return self;
 };

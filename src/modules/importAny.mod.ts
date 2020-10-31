@@ -66,8 +66,14 @@ modules.construct({
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			help: i18n.MsgImportReqif, 
+			help: i18n.MsgImportReqif,
 			opts: {mediaTypeOf: attachment2mediaType}
+    /*    }, {
+            id: 'rdf',
+            name: 'ioRdf',
+            desc: 'Resource Description Format',
+            label: 'RDF',
+            help: 'ToDo' */
 		},{ 
 			id:'xls',
 			name:'ioXls',
@@ -101,20 +107,20 @@ modules.construct({
 				modules.show({ newView: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
 			}, 
 			400 
-		)
+		);
 	}
 	function handleError(xhr) {
 //		console.debug( 'handleError', xhr );
 		self.clear();
 		stdError(xhr);
-		self.show()
+		self.show();
 	}
  
 	self.init = function() {
 		// initialize the module:
 		if ( !browser.supportsFileAPI ) {
 			message.show( i18n.MsgFileApiNotSupported, {severity:'danger'} );
-			return false
+			return false;
 		}; 
 //		console.debug('import.init',self);
 
@@ -167,7 +173,7 @@ modules.construct({
 			+	'</div>'
 		+	'</div>';
 	//	if(self.selector)
-	//		$(self.selector).after( h )
+	//		$(self.selector).after( h );
 	//	else
 			$(self.view).prepend( h );
 
@@ -194,7 +200,7 @@ modules.construct({
 					if( p.indexOf('.'+formats[i].id)>0 && modules.isReady(formats[i].name) ) 
 						return formats[i]
 				};
-				return undefined
+				return; // undefined
 			}
 		urlP = opts.urlParams;
 		if( urlP && urlP[CONFIG.keyImport] ) {
@@ -209,11 +215,11 @@ modules.construct({
 				self.clear();
 				message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
 				self.show();
-				return
+				return;
 			}; 
 			app[self.format.name].init( self.format.opts );
 			// Show the name of the specified import file:
-			let rF = textForm(i18n.LblFileName,self.file.name);
+			let rF = textField(i18n.LblFileName,self.file.name);
 			$("#formNames").html( rF );
 			// Take fileName as project name:
 			self.projectName = self.file.name.fileName();	
@@ -236,7 +242,7 @@ modules.construct({
 				fail: handleError
 			//	then:
 			});
-			return
+			return;
 		};
 		// Case 2: let the user pick an import file.
 //		console.debug('import 2');
@@ -250,22 +256,22 @@ modules.construct({
 //				console.debug('isReady',s.id,self.format);
 				app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' ) {
-					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
+					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				} else {
-					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>'
-				}
-			}
+					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
+				};
+			};
 		});
 		$('#formatSelector').html( str );
 		showFileSelect.set();
 
-		setImporting( false )
+		setImporting( false );
 	};
 	// module exit;
 	// called by the modules view management:
 	self.hide = function() {
 //		console.debug( 'importAny.hide' )
-		app.busy.reset()
+		app.busy.reset();
 	};
 	self.clear = function() {
 		$('input[type=file]').val( null );  // otherwise choosing the same file twice does not create a change event in Chrome
@@ -277,7 +283,7 @@ modules.construct({
 		setProgress('',0);     // reset progress bar
 		setImporting( false );
 		app.busy.reset();
-		self.enableActions()
+		self.enableActions();
 	};
 	
 	self.setFormat = function( fId ) {
@@ -288,18 +294,18 @@ modules.construct({
 			$('#formatSelector-'+self.format.id).removeClass('active');
 		if( typeof(self.format)!='object' || fId!=self.format.id ) {
 			$('#formatSelector-'+fId).addClass('active');
-			self.format = itemById(formats,fId)
+			self.format = itemById(formats,fId);
 		};
 
 		// show the file name:
-		let rF = textForm(i18n.LblFileName,'');
+		let rF = textField(i18n.LblFileName,'');
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textForm(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
+			rF += textField(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
 
 		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
-		self.enableActions()
+		self.enableActions();
 	};
 
 	let importing = false,
@@ -318,9 +324,10 @@ modules.construct({
 			document.getElementById("createBtn").disabled = !allValid || loaded;
 			document.getElementById("updateBtn").disabled = true;
 			document.getElementById("adoptBtn").disabled =
-			document.getElementById("replaceBtn").disabled = !allValid || !loaded
-		} catch(e) {}
-//		console.debug('enableActions',pnl,allValid)
+			document.getElementById("replaceBtn").disabled = !allValid || !loaded;
+		} catch(e) {
+			console.error("importAny: enabling actions has failed ("+e+").");
+		};
 	};
 	function setImporting( st ) {
 		importing = st;
@@ -332,8 +339,10 @@ modules.construct({
 			document.getElementById("updateBtn").disabled = true;
 			document.getElementById("adoptBtn").disabled =
 			document.getElementById("replaceBtn").disabled = st || !allValid || !loaded;
-			document.getElementById("cancelBtn").disabled = !st
-		} catch(e) {}
+			document.getElementById("cancelBtn").disabled = !st;
+		} catch(e) {
+			console.error("importAny: setting state 'importing' has failed ("+e+").");
+		};
 	}
 	self.select = function() {
         let f = document.getElementById("importFile").files[0];
@@ -353,10 +362,10 @@ modules.construct({
 				setTextFocus( i18n.LblProjectName )
 			};
 
-			self.enableActions()
-//			console.debug('select',self.fileName(), self.projectName)
+			self.enableActions();
+//			console.debug('select',self.fileName(), self.projectName);
 		} else {
-			self.clear()
+			self.clear();
 		}
 	};
 	self.importLocally = function(mode) {
@@ -370,7 +379,7 @@ modules.construct({
 //		console.debug( 'importLocally', self.projectName, self.file );
 
 		readFile( self.file, app[self.format.name].toSpecif );
-		return
+		return;
 		
 		function readFile( f, fn ) {
 			let rdr = new FileReader();
@@ -380,7 +389,7 @@ modules.construct({
 					.done( handleResult )
 					.fail( handleError )
 			};
-			rdr.readAsArrayBuffer( f )
+			rdr.readAsArrayBuffer( f );
 		}
 	};
 	function handleResult( data ) {
@@ -388,8 +397,7 @@ modules.construct({
 //		console.debug('handleResult',simpleClone(data));
 
 		return specif.check( data, self.format.opts )
-			.fail( handleError )
-			.done( function(dta) {
+			.then( (dta)=>{
 			/*	// First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
@@ -412,7 +420,7 @@ modules.construct({
 						message: function (thisDlg) {
 							// ToDo: error message, if no specification type is found.
 							let form = $('<form id="attrInput" role="form" class="form-horizontal" ></form>');
-							form.append( radioForm( 'Import Mode', modes ) );
+							form.append( radioField( 'Import Mode', modes ) );
 							return form },
 						buttons: [{
 								label: i18n.BtnCancel,
@@ -479,8 +487,10 @@ modules.construct({
 							.done( terminateWithSuccess )
 							.fail( handleError )
 				};
-				console.info(importMode.id+' project',dta.title||dta.id)
-			})
+				console.info(importMode.id+' project',dta.title||dta.id);
+			},
+			handleError 
+		);
 	}; 
 	function setProgress(msg,perc) {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
@@ -488,7 +498,7 @@ modules.construct({
 	self.abort = function() {
 		console.info('abort pressed');
 		app[self.format.name].abort();
-		app.cache.selectedProject.abort()
+		app.cache.selectedProject.abort();
 	};
-	return self
+	return self;
 });

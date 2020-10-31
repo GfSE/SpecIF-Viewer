@@ -6,7 +6,10 @@ function toOxml( data, opts ) {
 	// or
 	//   https://www.data2type.de/xml-xslt-xslfo/wordml/praxistipps-word-ooxml/
 	//
-	// License: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	// Author: se@enso-managers.de
+	// (C) copyright http://enso-managers.de
+	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	//
 	// Limitations:
 	// - Accepts data-sets according to SpecIF v0.10.8 and later.
 	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
@@ -25,11 +28,11 @@ function toOxml( data, opts ) {
 	};
 	
 	// Check for missing options:
+	if( typeof(opts)!='object' ) opts = {};
 	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
 	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
 	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
 
-	if( typeof(opts)!='object' ) opts = {};
 //	if( !opts.metaFontSize ) opts.metaFontSize = '70%';	
 //	if( !opts.metaFontColor ) opts.metaFontColor = '0071B9';	// adesso blue
 //	if( !opts.linkFontColor ) opts.linkFontColor = '0071B9';
@@ -70,7 +73,7 @@ function toOxml( data, opts ) {
 		data.files.forEach( function(f,i,L) {
 			if( !f.blob ) {
 				console.warn("File '"+f.title+"' content is missing.");
-				return
+				return;
 			};
 
 			// If it is a raster image:
@@ -96,7 +99,7 @@ function toOxml( data, opts ) {
 				reader.readAsDataURL(f.blob);
 		
 				console.info("File '"+f.title+"' made available as Base64");
-				return
+				return;
 			};
 			
 			// If it is a vector image:
@@ -104,9 +107,9 @@ function toOxml( data, opts ) {
 				let pngN = nameOf(f.title)+'.png';
 				// check whether there is already a PNG version of this image:
 				if( itemByTitle( L, pngN ) ) {
-					console.info("File '"+f.title+"' has a sibling of type PNG");
 					// The PNG file has been added to images, before.
-					return
+					console.info("File '"+f.title+"' has a sibling of type PNG");
+					return;
 				};
 				// else, transform SVG to PNG:
 					function storeV(){
@@ -134,7 +137,7 @@ function toOxml( data, opts ) {
 				reader.readAsText(f.blob);
 
 				console.info("File '"+f.title+"' transformed to PNG and made available as Base64");
-				return
+				return;
 			};
 			console.warn("Format of file '"+f.title+"' is not supported by MS Word.")
 		});
@@ -152,19 +155,14 @@ function toOxml( data, opts ) {
 
 			// Check for missing options:
 			if( typeof(opts)!='object' ) opts = {};
-			if( typeof(opts.classifyProperties)!='function') {
-				if (typeof(opts.fail)=='function' )
-					opts.fail({status:904,statusText:"Programming error: function 'opts.classifyProperties' is undefined."})
-				else
-					console.error("Programming error: function 'opts.classifyProperties' is undefined.");
-				return
-			};
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
 			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
+			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];	
+			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
 			// If no label is provided, the respective properties are skipped:
@@ -240,28 +238,45 @@ function toOxml( data, opts ) {
 			
 			// ---------------
 			function titleOf( itm, pars, opts ) { // resource, parameters, options
-				// render the resource title
-				// designed for use also by statements.
+				// render the resource or statement title
+
+				// First, find and set the configured title:
+				let a = titleIdx( itm.properties ), ti;
+				if( a>-1 ) {  // found!
+					// Remove all formatting for the title, as the app's format shall prevail.
+					// Before, remove all marked deletions (as prepared be diffmatchpatch).
+					ti = stripHtml( itm.properties[a].value );
+				} else {
+					// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
+					ti = elTitleOf(itm);
+				};
+				ti = minEscape( opts.lookup( ti ) );
+				if( !ti ) return '';  // no paragraph, if title is empty
 				
-				// depending on the context, itm['class'] is a class object or a class id:
+				// If itm has a 'subject', it is a statement:
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
-					rC = itm['class'].id? itm['class'] : itemById( cL, itm['class'] );
+					eC = itemById( cL, itm['class'] ),
+					ic = eC&&eC.icon? eC.icon+'  ' : '';
 				
-				let ti = minEscape( opts.lookup(itm.title) ),
-					ic = rC&&rC.icon? rC.icon+nbsp : '';
-					
-				// in case of a statement take the class' title by default:
-				if( itm.subject && !ti && rC ) ti = minEscape( rC.title );
-				
-				if( !pars || pars.level<1 ) return  (ti?ic+ti:'');  // return raw text
+//				console.debug('titleOf',itm,ic,ti);
+
+				if( !pars || pars.level<1 ) return  ic+ti;  // return raw text
 
 				// SpecIF headings are chapter level 2, all others level 3:
-				let l = pars.level==1? 1:rC.isHeading? 2:3;
-//				console.debug('titleOf',itm,ic,ti);
-				// no paragraph, if title is empty:
-				if( !ti ) return '';
+				let lvl = pars.level==1? 1 : (eC.isHeading? 2:3);
 				// all titles get a bookmark, so that any titleLink has a target:
-				return wParagraph( {text: (ti?ic+ti:''), heading:l, bookmark:pars.nodeId } )
+				return wParagraph( {text: ic+ti, format:{ heading:lvl, bookmark:pars.nodeId }} );
+				
+				function titleIdx( aL ) {
+					// Find the index of the property to be used as title.
+					// The result depends on the current user - only the properties with read permission are taken into consideration
+					if( Array.isArray( aL ) )
+						for( var a=0,A=aL.length;a<A;a++ ) {
+							// First, check the configured title properties:
+							if( opts.titleProperties.indexOf( prpTitleOf(aL[a]) )>-1 ) return a;
+						};
+					return -1;
+				}
 			}	
 			
 			function statementsOf( r, opts ) {
@@ -289,8 +304,9 @@ function toOxml( data, opts ) {
 //				console.debug( 'statements', r, sts );
 				if( noSts ) return '';	// no statements ...
 
+				// else, there are statements to render:
 				// The heading:
-				let ct = wParagraph( {text: opts.statementsLabel, heading: 4} ),
+				let ct = wParagraph( {text: opts.statementsLabel, format:{heading: 4}} ),
 					sTi, row, cell;
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
@@ -309,10 +325,12 @@ function toOxml( data, opts ) {
 							if( s )
 								cell += wParagraph({
 											text:titleOf( s, undefined, opts ), 
-											font: {color:opts.colorAccent1},
-											hyperlink: {internal:anchorOf( s )}, 
-											noSpacing: true,
-											align: 'end'
+											format:{
+												font: {color:opts.colorAccent1},
+												hyperlink: {internal:anchorOf( s )}, 
+												noSpacing: true,
+												align: 'end'
+											}
 								})
 						});
 						// Create a table row, if there is content:
@@ -326,9 +344,11 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content:wParagraph({
 											text:sTi,
-											font: {color:opts.colorAccent1},
-											align:'center',
-											noSpacing:true
+											format:{
+												font: {color:opts.colorAccent1},
+												align:'center',
+												noSpacing:true
+											}
 									}),
 									border:{type:'single'}
 								});
@@ -336,8 +356,10 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content:wParagraph({ 
 											text:titleOf( r, undefined, opts ), 
-											font: {color:opts.colorAccent1},
-											noSpacing: true
+											format:{
+												font: {color:opts.colorAccent1},
+												noSpacing: true
+											}
 									}),
 									border: {type:'single'}
 								});
@@ -352,10 +374,12 @@ function toOxml( data, opts ) {
 							// it may happen that an element is undefined:
 							if( o )
 								cell += wParagraph({
-											text:titleOf( o, undefined, opts ), 
-											font: {color:opts.colorAccent1},
-											hyperlink:{internal:anchorOf( o )},
-											noSpacing: true
+											text:titleOf( o, undefined, opts ),
+											format:{
+												font: {color:opts.colorAccent1},
+												hyperlink:{internal:anchorOf( o )},
+												noSpacing: true
+											}
 								})
 						});
 						// Create a table row, if there is content:
@@ -364,9 +388,11 @@ function toOxml( data, opts ) {
 							row = wTableCell({
 									content:wParagraph({
 											text:titleOf( r, undefined, opts ),
-											font: {color:opts.colorAccent1},
-											noSpacing: true,
-											align:'end'
+											format:{
+												font: {color:opts.colorAccent1},
+												noSpacing: true,
+												align:'end'
+											}
 									}), 
 									border:{type:'single'}
 								});
@@ -374,9 +400,11 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content:wParagraph({
 											text:sTi,
-											font: {color:opts.colorAccent1},
-											align:'center',
-											noSpacing: true
+											format:{
+												font: {color:opts.colorAccent1},
+												align:'center',
+												noSpacing: true
+											}
 									}),
 									border:{type:'single'}
 								});
@@ -426,39 +454,57 @@ function toOxml( data, opts ) {
 				// designed for use also by statements.
 			//	if( !r.properties || r.properties.length<1 ) return '';
 
-			/*	// depending on the context, r['class'] is a class or just it's id:
-				let rC = r['class'].id? r['class'] : itemById( data.resourceClasses, r['class'] ); 
-			*/
-				// return the content of all properties, sorted by description and other properties:
-				let c1='', rows='', c3, rt;
+			//	let rC = itemById( data.resourceClasses, r['class'] ); 
 
-				r.descriptions.forEach( (prp)=>{
-					propertyValueOf( prp ).forEach( (e)=>{ c1 += generateOxml(e) })
-				});
+				// return the content of all properties, sorted by description and other properties:
+				let c1='', rows='', c3, rt,
+					descriptions=[], other=[];
+
+				if( r.properties ) {
+					r.properties.forEach( (p)=>{
+						if( opts.descriptionProperties.indexOf( prpTitleOf(p) )>-1 ) {
+							descriptions.push(p);
+						} else {
+							// Disregard the title properties, here:
+							if( opts.titleProperties.indexOf( prpTitleOf(p) )<0 )
+								other.push(p);
+						}
+					});
+				};
+
+				if( descriptions.length>0 )
+					descriptions.forEach( (p)=>{
+						propertyValueOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
+					})
+				else
+					if( r.description ) c1 += generateOxml( r.description );
+				
 //				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
-				if( !opts.propertiesLabel || r.isHeading ) return c1;
+				if( !opts.propertiesLabel || other.length<1 ) return c1;
 				
 			/*	// Add a property 'SpecIF:Class':
 				if( rC.title )
 					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
-				r.other.forEach( (prp)=>{
+				other.forEach( (p)=>{
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
-					if( opts.hasContent(prp.value) || opts.showEmptyProperties ) {
-						rt = minEscape( opts.lookup( prp.title || propertyClassOf( prp['class'] ).title ));
+					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
+						rt = minEscape( opts.lookup( prpTitleOf(p) ));
 						c3 = '';
-						propertyValueOf( prp ).forEach( 
+						propertyValueOf( p ).forEach( 
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
 						);
-//						console.debug('other properties',prp,rt,c3);
+//						console.debug('other properties',p,rt,c3);
 						rows += wTableRow( wTableCell( wParagraph({
 														text:rt,
-														font:{style:'italic',color:opts.colorAccent1},
-														noSpacing: true,
-														align:'end'
+														format:{
+															font:{style:'italic',color:opts.colorAccent1},
+															noSpacing: true,
+															align:'end'
+														}
 													})) 
 											+ wTableCell( c3 ))
 					}
@@ -466,11 +512,11 @@ function toOxml( data, opts ) {
 				
 				if( !rows ) return c1;  // no other properties
 				return c1 
-						+ wParagraph( {text: opts.propertiesLabel, heading: 4} )
+						+ wParagraph( {text: opts.propertiesLabel, format:{heading: 4}} )
 						+ wTable( rows );
 
 				// ---------------
-				function parseText( txt, opts ) {
+			/*	function parseText( txt, opts ) {
 					// Parse plain text.
 					// Replace \r, \f, \t:
 					// (Note that in HTML multiple nbsp do not collapse)
@@ -481,7 +527,7 @@ function toOxml( data, opts ) {
 //					console.debug('parseText',txt,arr);
 					// return a list with a paragraph for each of the arr elements:
 					return forAll( arr, function(s) {return {p:{text:s}}} )
-				}
+				} */
 				function parseXhtml( txt, opts ) {
 					// Parse formatted text.
 					
@@ -524,14 +570,14 @@ function toOxml( data, opts ) {
 							// a) <div> enclosed text in the preceding part,
 							//    there could be several ones:
 							$1 = $1.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, function($0,$1) {
-								bL.push( {p:{text:$1}} );
+								bL.push( {p:{ text:$1 }} );
 								return ''
 							});
 							// b) any text preceding the block:
 							//    In fact, if the XHTML is properly built, there shouldn't be any content outside the blocks,
 							//    but we do not want to ignore any content in case there is ...
 							if( opts.hasContent($1) ) 
-								bL.push( {p:{text:$1}} );
+								bL.push( {p:{ text:$1 }} );
 					/*		// c) an empty paragraph:
 							if( /<p *\/>/.test($2) ) {
 								bL.push( {p:{text:''}} );
@@ -539,13 +585,13 @@ function toOxml( data, opts ) {
 							};  */
 							// d) a paragraph:
 							$2 = $2.replace(/<p[^>]*>([\s\S]*?)<\/p>/, function($0,$1) {
-								bL.push( {p:{text:$1.trim()}} );
+								bL.push( {p:{ text:$1.trim() }} );
 								return ''
 							});
 							// e) an unordered list:
 							$2 = $2.replace(/<ul>([\s\S]*?)<\/ul>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{ text:$1. trim(), style:'bulleted' }} );
+									bL.push( {p:{ text:$1.trim(), style:'bulleted' }} );
 									return ''
 								});
 								return ''
@@ -594,7 +640,7 @@ function toOxml( data, opts ) {
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
 											// $1 is undefined in case of <th/>
-											cs.push( {p:{text:($1||nbsp).trim(), font:{weight:'bold'}}, border:{style:'single'}} )
+											cs.push( {p:{text:($1||nbsp).trim(), format:{font:{weight:'bold'}}}, border:{style:'single'}} )
 											// ToDo: Somehow the text is not printed boldly ...
 											return ''
 											});
@@ -665,7 +711,7 @@ function toOxml( data, opts ) {
 
 								// store the preceding text as run with a clone of the current formatting:
 								if( opts.hasContent($1) )
-									p.runs.push({text:$1,font:clone(fmt.font)});
+									p.runs.push({text:$1,format:{font:clone(fmt.font)}});
 
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
@@ -682,41 +728,41 @@ function toOxml( data, opts ) {
 								// assuming that <i> and <em> are not nested:
 								if( /<i>|<em>/.test($2) ) {
 									fmt.font.style = 'italic';
-									return ''
+									return '';
 								};
 								if( /<\/i>|<\/em>/.test($2) ) {
 									delete fmt.font.style;	// simply, since there is only one value so far.
-									return ''
+									return '';
 								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
 								let sp = /<span[^>]+color: ?#([0-9a-fA-F]{6})[^>]*>/.exec($2);
 								if( sp && sp.length>1 ) {
 									fmt.font.color = sp[1].toUpperCase();
-									return ''
+									return '';
 								};
 								if( /<\/span>/.test($2) ) {
 									delete fmt.font.color;	// simply, since there is only one value so far.
-									return ''
+									return '';
 								};
 								// ToDo: Transform '<span style="text-decoration: underline;">'
 								// Similarly: <u>, see https://www.tutorialspoint.com/How-to-underline-a-text-in-HTML
 								// an internal link (hyperlink, "titleLink"):
 								if( reTitleLink.test($2) ) {
 									p.runs.push(titleLink($2,opts));
-									return ''
+									return '';
 								};
 								// A web link:
 								sp = reLink.exec($2);   
 								if( sp && sp.length>2 ) {
 									p.runs.push(parseA( {properties:sp[1],innerHTML:sp[2]} ));
-									return ''
+									return '';
 								};
 								// An image:
 								sp = reImg.exec($2);   
 								if( sp && sp.length>1 ) {
 									p.runs.push(parseImg( {properties:sp[1]} ));
-									return ''
+									return '';
 								};
 						/*		// Two nested objects, where the inner can have a comprehensive tag or a tag pair;
 								// this could be a link to a contained PDF file in the outer and a link to an icon in the inner object ..
@@ -726,9 +772,9 @@ function toOxml( data, opts ) {
 								sp = reNestedObjects.exec($2);   
 //								console.debug('#2O',sp);
 								if( sp && sp.length>2 ) {
-									let u = getPrp('data',sp[1]).replace('\\','/'), // content of 'data' of the outer object"
+									let u = getXhtmlPrp('data',sp[1]).replace('\\','/'), // content of 'data' of the outer object"
 										r = parseObject( {objectProperties:sp[2],innerHTML:sp[4]} );
-									r.hyperlink = {external: u};  // this is a file in the local specif-container... and does not work, here
+									r.format = {hyperlink:{external: u};  // this is a file in the local specif-container... and does not work, here
 									p.runs.push(r);
 									return ''
 								};   */
@@ -744,7 +790,7 @@ function toOxml( data, opts ) {
 							// finally store the remainder:
 							if( opts.hasContent(txt) ) {
 //								console.debug('splitR #',txt,fmt);
-								p.runs.push({text:txt,font:clone(fmt.font)})
+								p.runs.push({text:txt,format:{font:clone(fmt.font)}})
 							};
 							delete p.text;
 							delete p.font;
@@ -795,7 +841,7 @@ function toOxml( data, opts ) {
 						else	
 							run = {text: lnk.innerHTML};
 							
-						run.hyperlink = { external: getPrp( 'href', lnk.properties ).replace('\\','/') };
+						run.format = {hyperlink:{ external: getXhtmlPrp( 'href', lnk.properties ).replace('\\','/') }};
 
 //						console.debug('parseA',run);
 						return run
@@ -805,8 +851,8 @@ function toOxml( data, opts ) {
 						// Todo: Load a linked resource in the <img..> tag and include it in the document?
 //						console.debug('parseImg *1', img);
 
-						let u = getPrp( 'src', img.properties ).replace('\\','/'), 
-							d = getPrp( 'alt', img.properties ) || withoutPath( u ),	// the description
+						let u = getXhtmlPrp( 'src', img.properties ).replace('\\','/'), 
+							d = getXhtmlPrp( 'alt', img.properties ) || withoutPath( u ),	// the description
 							e = extOf(u).toLowerCase();	// the file extension
 						
 						if( opts.imgExtensions.indexOf( e )>-1 ) {  
@@ -820,7 +866,7 @@ function toOxml( data, opts ) {
 							};
 							// At the lowest level, the image is included only if present:
 //							console.debug('parseImg *3',u,d,t1);
-							return { text:d, hyperlink:{ external: u } }
+							return { text:d, format:{hyperlink:{ external: u } }}
 						} else {
 							// in absence of an image, just show the description:
 							return { text:d }
@@ -833,9 +879,9 @@ function toOxml( data, opts ) {
 						// Or only if it is an image?
 //						console.debug('parseObject *1', obj);
 
-						let u = getPrp( 'data', obj.properties ).replace('\\','/'), 
-							t = getPrp( 'type', obj.properties ),
-							d = obj.innerHTML || getPrp( 'name', obj.properties ) || withoutPath( u ),	// the description
+						let u = getXhtmlPrp( 'data', obj.properties ).replace('\\','/'), 
+							t = getXhtmlPrp( 'type', obj.properties ),
+							d = obj.innerHTML || getXhtmlPrp( 'name', obj.properties ) || withoutPath( u ),	// the description
 							e = extOf(u).toLowerCase();	// the file extension
 						
 						if( opts.imgExtensions.indexOf( e )>-1 
@@ -891,7 +937,7 @@ function toOxml( data, opts ) {
 
 								// if the titleLink content equals a resource's title, return a text run with hyperlink:
 								if(m==ti.toLowerCase())
-									return {text:lk[1],hyperlink:{internal:anchorOf(cO)}};
+									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO)}}};
 							};
 							// The dynamic link has NOT been matched/replaced, so mark it:
 							return {text:lk[1],color:"82020"}
@@ -920,15 +966,63 @@ function toOxml( data, opts ) {
 									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
 								return [{p:{text:minEscape(ct)}}];
+							case opts.dataTypeString:
+							//	return parseText( opts.lookup(prp.value), opts );
 							case opts.dataTypeXhtml:
 //								console.debug('propertyValueOf - xhtml',prp.value);
-								return parseXhtml( prp.value, opts );
-							case opts.dataTypeString:
-								return parseText( opts.lookup(prp.value), opts )
+							/*	// The values should have been looked-up by the viewer before delivery:
+								return parseXhtml( prp.value, opts );  */
+								return parseXhtml( opts.lookup(prp.value), opts );
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
 					return [{p:{text:minEscape(prp.value)}}]					
+				}
+				function generateOxml( ct, fmt ) {
+					// In a second step, transform the internal representation to OOXML.
+					return chain( ct,
+						function(ct) {
+							if( ct.p ) {
+								return wParagraph( addFmt( ct.p, fmt ) )
+							};
+							if( ct.table ) {
+								var rs = '';
+								ct.table.rows.forEach( function(r) {
+									var cs = '';
+									r.cells.forEach( function(c) {
+										cs += wTableCell( {content:wParagraph( addFmt( c.p, fmt ) ),border:c.border} )
+									});
+									rs += wTableRow( cs )
+								});
+								return wTable( rs )
+							};
+							return null // should never get here
+						}
+					)
+					
+					function addFmt( p, fmt ) {
+						if( typeof(fmt)=='object' ) {
+							// in fact, some formatting options apply on paragraph level
+							// and others on run level, but we copy all formatting to all levels;
+							// it will be sorted out further down in wParagraph() and wRun():
+							p.format = fmt;
+							if( p.runs ) 
+								p.runs.forEach( (r)=> {
+									r.format = fmt;
+								});
+						};
+						return p;
+					}
+					function chain( ct, fn ) {
+						if( Array.isArray(ct) ) {
+							var bs = '';
+							ct.forEach( function(b) {
+								bs += fn(b) 
+							});
+							return bs
+						};
+						return fn(ct)
+					}
 				}
 			}
 			function renderHierarchy( nd, lvl ) {
@@ -942,7 +1036,6 @@ function toOxml( data, opts ) {
 						nodeId: nd.id
 					};
 					
-				r = opts.classifyProperties( r, data );	
 				var ch = 	titleOf( r, params, opts )
 						+	propertiesOf( r, opts )
 						+	statementsOf( r, opts );
@@ -954,44 +1047,6 @@ function toOxml( data, opts ) {
 				return ch
 			}
 
-			function generateOxml( ct, fmt ) {
-				// In a second step, transform the internal representation to OOXML.
-				return chain( ct,
-					function(ct) {
-						if( ct.p ) {
-							return wParagraph( addFmt( ct.p, fmt ) )
-						};
-						if( ct.table ) {
-							var rs = '';
-							ct.table.rows.forEach( function(r) {
-								var cs = '';
-								r.cells.forEach( function(c) {
-									cs += wTableCell( {content:wParagraph( addFmt( c.p, fmt ) ),border:c.border} )
-								});
-								rs += wTableRow( cs )
-							});
-							return wTable( rs )
-						};
-						return null // should never get here
-					}
-				)
-				
-				function addFmt( p, fmt ) {
-					if( typeof(fmt)=='object' ) 
-						for( var f in fmt ) { p[f] = fmt[f] };
-					return p
-				}
-				function chain( ct, fn ) {
-					if( Array.isArray(ct) ) {
-						var bs = '';
-						ct.forEach( function(b) {
-							bs += fn(b) 
-						});
-						return bs
-					};
-					return fn(ct)
-				}
-			}
 			function wParagraph( ct ) {
 				// Generate a WordML paragraph,
 				// empty paragraphs are allowed.
@@ -1018,17 +1073,17 @@ function toOxml( data, opts ) {
 				if( Array.isArray(ct.runs) ) {
 					// multiple text items with individual formatting options and pictures:
 					ct.runs.forEach( function(r) {
-						p += wRun(r)
+						p += wRun( r )
 					})
 				};
-				if( ct.style=='bulleted' ) {
+				if( ct.format && ct.format.style=='bulleted' ) {
 					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
 							+ p
 							+ '</w:p>'
 				};
-				if( ct.style=='numbered' ) {
+				if( ct.format && ct.format.style=='numbered' ) {
 					// ToDo: use style for ordered lists. with w:val="1" the numbers are shown, but not reset when the next list starts.
-					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+ct.numId+'"/></w:numPr></w:pPr>'
+					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+ct.format.numId+'"/></w:numPr></w:pPr>'
 							+ p
 							+ '</w:p>'
 				};
@@ -1036,15 +1091,20 @@ function toOxml( data, opts ) {
 				
 				function pPr(ct) {
 //					console.debug('pPr',ct);
-					let lvl = ct.heading,
-						pr = '';
-					if( typeof(lvl)=='number' && lvl>0 ) 
-						pr += '<w:pStyle w:val="heading'+Math.min(lvl,maxHeading)+'" />';
-					if( ct.noSpacing )
-						pr += '<w:pStyle w:val="OhneAbstnde"/>';
-					if( ct.align )
-						pr += '<w:jc w:val="'+ct.align+'"/>';
-					return pr?'<w:pPr>'+pr+'</w:pPr>':''
+					if( ct.format ) {
+						let fmt = ct.format,
+							lvl = fmt.heading,
+							pr = '';
+						if( typeof(lvl)=='number' && lvl>0 ) 
+							pr += '<w:pStyle w:val="heading'+Math.min(lvl,maxHeading)+'" />';
+						if( fmt.noSpacing )
+							pr += '<w:pStyle w:val="OhneAbstnde"/>';
+						if( fmt.align )
+							pr += '<w:jc w:val="'+fmt.align+'"/>';
+						return pr?'<w:pPr>'+pr+'</w:pPr>':'';
+					};
+					// default:
+					return '';
 				}
 			}
 			function wRun( ct ) {
@@ -1057,37 +1117,38 @@ function toOxml( data, opts ) {
 					return '';
 //				console.debug('wRun',ct);
 				// assuming that hyperlink or bookmark or none of them are present, but never both:
-				if( ct.hyperlink ) {
-//					console.debug('hyperlink',ct.hyperlink);
-					if( ct.hyperlink.external )
-						var tg = 'r:id="rId'+pushReferencedUrl( ct.hyperlink.external )+'"'
+				if( ct.format && ct.format.hyperlink ) {
+//					console.debug('hyperlink',ct.format.hyperlink);
+					if( ct.format.hyperlink.external )
+						var tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
 					else
-						var tg = 'w:anchor="_'+ct.hyperlink.internal+'"';
+						var tg = 'w:anchor="_'+ct.format.hyperlink.internal+'"';
 					return '<w:hyperlink '+tg+' w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
 				r = '<w:r>'+rPr(ct)+r+'</w:r>';
-				if( ct.bookmark ) {
-					let bmId = 'bm-'+ hashCode(ct.bookmark);
-					return '<w:bookmarkStart w:id="'+bmId+'" w:name="_'+ct.bookmark+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>'
+				if( ct.format && ct.format.bookmark ) {
+					let bmId = 'bm-'+ hashCode(ct.format.bookmark);
+					return '<w:bookmarkStart w:id="'+bmId+'" w:name="_'+ct.format.bookmark+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
 				};
 				// else, just the content:
 				return r;  
 
 				function rPr(ct) {
-					if( ct.font ) {
-						let rPr =	(ct.font.weight=='bold'?'<w:b/>':'')
-							+ 		(ct.font.style=='italic'?'<w:i/>':'')
-							+ 		(ct.font.color?'<w:color w:val="'+ct.font.color+'"/>':'');
+					let fmt = ct.format;
+					if( fmt && fmt.font ) {
+						let rPr =	(fmt.font.weight=='bold'?'<w:b/>':'')
+							+ 		(fmt.font.style=='italic'?'<w:i/>':'')
+							+ 		(fmt.font.color?'<w:color w:val="'+fmt.font.color+'"/>':'');
 						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':''
 					};
 					// default:
-					return ''
+					return '';
 				}
 				function pushReferencedUrl( u ) {
 					// Add the URL to the relationships and return it's index:
 					// avoid duplicate entries:
-					let n = indexBy( oxml.relations, 'id', u );
+					let n = indexById( oxml.relations, u );
 					if( n<0 ) {
 						// Next to external URLs, oxml.relations are pointing to other resources:
 						n = oxml.relations.length;
@@ -1124,7 +1185,7 @@ function toOxml( data, opts ) {
 				if( !ct || !ct.picture ) return // undefined;
 				// inserts an image at 'run' level:
 				// width, height: a string with number and unit, e.g. '100pt' or '160mm' is expected
-				let imgIdx = indexBy( images, 'id', ct.picture.id );
+				let imgIdx = indexById( images, ct.picture.id );
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
 					console.error( et );
@@ -1159,7 +1220,7 @@ function toOxml( data, opts ) {
 				function pushReferencedFile( p ) {
 					// Add the image to the relationships and return it's index:
 					// check, if available:
-					let n = indexBy( oxml.relations, 'id', p.id );
+					let n = indexById( oxml.relations, p.id );
 					// avoid duplicate entries:
 					if( n<0 ) {
 						// New entry:
@@ -1299,7 +1360,7 @@ function toOxml( data, opts ) {
 		var ct = '<pkg:part pkg:name="/word/media/image'+idx+'.'+b64.type+'" pkg:contentType="image/'+b64.type+'" pkg:compression="store">'
 		+			'<pkg:binaryData>'
 		// find the referenced image:
-		let imgIdx = indexBy(images,'id',b64.id);
+		let imgIdx = indexById(images,b64.id);
 		if( imgIdx<0 ) {
 			console.error("File '"+b64.id+"' is referenced, but not available");
 			return null
@@ -2529,11 +2590,13 @@ function toOxml( data, opts ) {
 			if( L[i].title==ln ) return L[i];   // return list item
 		return null
 	}
-	function indexBy( L, p, s ) {
-		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
-		// hand in property and searchTerm as string !
-		for( var i=L.length-1;i>-1;i-- )
-			if(L[i][p] === s) return i;
+	function indexById(L,id) {
+		if( L && id ) {
+			// given an ID of an item in a list, return it's index:
+			id = id.trim();
+			for( var i=L.length-1;i>-1;i-- )
+				if( L[i].id==id ) return i   // return list index 
+		};
 		return -1
 	}
 	function forAll( L, fn ) {
@@ -2547,18 +2610,21 @@ function toOxml( data, opts ) {
 		return str.substring(str.lastIndexOf('/')+1)
 	}
 	function nameOf( str ) {
+		// get file name without extension:
 		return str.substring( 0, str.lastIndexOf('.') )
 	}
 	function extOf( str ) {
 		// get the file extension without the '.':
 		return str.substring( str.lastIndexOf('.')+1 )
 	}
-	function getPrp( pnm, str ) {
-		// get the value of XHTML property 'pnm':
-		let re = new RegExp( pnm+'="([^"]+)"', '' ),
-			l = re.exec(str);
-		if( l == null ) { return }; 
-		return l[1]
+	function prpTitleOf( prp ) {
+		// get the title of a resource/statement property as defined by itself or it's class:
+		return prp.title || itemById(data.propertyClasses,prp['class']).title
+	}
+	function elTitleOf( el ) {
+		// get the title of a resource or statement as defined by itself or it's class,
+		// where a resource always has a statement of its own, i.e. the second clause never applies:
+		return el.title || itemById(data.statementClasses,el['class']).title
 	}
 	function hasContent( str ) {
 		// check whether str has content or a reference:
@@ -2568,9 +2634,29 @@ function toOxml( data, opts ) {
 			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
 			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str)
 	}
+	function getXhtmlPrp( pName, str ) {
+		// get the value of XHTML property 'pName':
+		let re = new RegExp( pName+'="([^"]+)"', '' ),
+			l = re.exec(str);
+		if( l == null ) { return }; 
+		return l[1]
+	}
+	/**
+	 * Returns the text from a HTML string
+	 * see: https://ourcodeworld.com/articles/read/376/how-to-strip-html-from-a-string-extract-only-text-content-in-javascript
+	 * 
+	 * @param {html} String The html string to strip
+	 */
+	function stripHtml(html){
+		var temp = document.createElement("div");
+		// Set the HTML content with the providen
+		temp.innerHTML = html;
+		// Retrieve the text property of the element (cross-browser support)
+		return temp.textContent || temp.innerText || "";
+	}
 	// The incoming XML may have (and often has) many more escaped characters,
 	// than MS WORD would correctly show.
-	// Thus transform all but the necessary ones '&' and '<' to UTF-8.
+	// Thus transform all but the necessary ones '&', '<' and '>' to UTF-8.
 	function minEscape( s ) {
 		if( !s ) return '';
 		let el = document.createElement('div');

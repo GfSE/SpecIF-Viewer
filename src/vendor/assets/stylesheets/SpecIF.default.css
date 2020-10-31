@@ -77,8 +77,9 @@ body {
 	font-style:italic;
 	color: #a94442;
 }
-p {
-	margin: 0 0 8px;
+p, ul, ol {
+	margin-top: 0;
+	margin-bottom: 8px;
 }
 div.noOverflow {
     height: 100%;
@@ -219,6 +220,14 @@ div.attribute {
 div.attribute-condensed {
 	font-size:90%;
 	padding: 0 0 0.4em;
+}
+div.attribute-condensed > div.attribute-value > p {
+	margin-bottom: 0;
+}
+div.attribute-condensed > div.attribute-value > ul,
+div.attribute-condensed > div.attribute-value > ol {
+	margin-bottom: 0;
+	padding-left: 12px;
 }
 /* use total width to display the content: */
 div.attribute-wide {

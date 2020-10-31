@@ -1,27 +1,31 @@
-﻿/*!	ReqIF Server: ReqIF import
+﻿/*!	ReqIF import and exprot
 	Dependencies: -
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de  
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution!  
 
 	ToDo: escapeXML the content. See toXHTML.
 */
 
-// Constructor for ReqIF import:
-// (A module constructor is needed, because there is an access to parent's data via 'self')
+// Constructor for ReqIF import and export:
+// (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
 modules.construct({
 	name: 'ioReqif'
 }, function(self) {
 	"use strict";
-    var mime = null;
+    var mime;
 	self.init = function() {
-		mime = null
+		mime = undefined;
+		return true;
 	};
 	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
-		RE_tag = /(<\/?)([a-z]{1,10}( [^<>]+)?\/?>)/g;
+		RE_class = / class=\"[^\"]+\"/g,
+		RE_name = /(<object[^>]+) name=\"[^\"]+\"/g,
+		RE_target = /(<a[^>]+) target=\"[^\"]+\"/g;
 		
 /*	self.verify = function( f ) {
-//		console.debug(f.name);
+			// Verify the type (and eventually the content) of a ReqIF import file:
 	
 			function reqifFile2mediaType( fname ) {
 				if( fname.endsWith('.reqifz') || fname.endsWith('.zip') ) return 'application/zip';
@@ -30,31 +34,212 @@ modules.construct({
 			}
 				
 		mime = reqifFile2mediaType( f.name );
-		if ( !mime ) {
-			message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
-			return null
-		};
-		return f
+		if ( mime )
+			return f;
+		// else:
+		message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
+		return; // undefined
 	};
 	self.toSpecif = function( buf ) {
-		return server.project().upload( buf, mime )
+		// Transform ReqIF to SpecIF for import:
 	};   */
 	self.toReqif = function(pr) {
-		// pr is a SpecIF data in JSON format (not the internal cache),
-		// transform pr to ReqIF:
+		// Transform pr to ReqIF,
+		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
 		// - transform any default values
 		// - suppress or replace xhtml-tags not supported by ReqIF, e.g. <img>
-		// - detect a xhtml namespace used and set nsxhtml accordingly
-		// - sort properties according to the propertyClasses
 		// - in ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 		
-		const date = new Date().toISOString(),
-			ns_xhtml = 'xhtml';
+//		console.debug( 'ioReqif.toReqif', simpleClone(pr) );
 
+		const date = new Date().toISOString(),
+			ns = 'xhtml';
+
+		// 0. SpecIF has a number of optional items which are required for ReqIF;
+		//    these are complemented in the following.
+		//    - Add title properties of resources and statements
+		//    - Add description properties of resources and statements
+		//    - Add hierarchy root
+
+		// Are there resources with description, but without description property?
+		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/02_Related-Terms.md
+		// In this case, add a description property to hold the description as required by ReqIF:
+			function addDescProperty( ctg, eC ) {
+				// get all instances of this resourceClass:
+			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
+
+				// list of elements, i.e. resources or statements
+				let eL = ctg=='statementClass'? 
+							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
+						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
+//				console.debug( 'addDescProperty', eC, eL );
+				
+					function descPropertyNeeded(r) {
+						if( r.description && r.description.length>0 ) {
+							if( Array.isArray( r.properties ) )
+								for (var i = r.properties.length - 1; i > -1; i--) {
+										if( CONFIG.descProperties.indexOf( propTitleOf(r.properties[i],pr) )>-1 )
+											// SpecIF assumes that any description property *replaces* the resource's description,
+											// so we just look for the case of a resource description and *no* description property.
+											// There is no consideration of the content.
+											// It is expected that descriptions with multiple languages have been reduced, before.
+											return false; // description property is available
+								};
+							return true; // no array or no description property
+						};
+						return false; // no description, thus no property needed
+					}
+				// for every element of the given class:
+				for( var j=eL.length-1; j>-1; j-- ) {
+					if( descPropertyNeeded(eL[j]) ) {
+						
+						// a. add property class, if not yet defined:
+						if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
+						// avoid duplicates:
+						if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
+							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") );
+						
+						// b. add dataType, if not yet defined:
+						if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
+						// avoid duplicates:
+						if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
+							pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") );
+						
+						// c. Add propertyClass to element class:
+						if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
+						// avoid duplicates:
+						if( eC.propertyClasses.indexOf( "PC-Description" )<0 ) 
+							eC.propertyClasses.unshift( "PC-Description" );
+						
+						// d. Add description property to element;
+						let p = {
+								class: "PC-Description",
+								value: eL[j].description
+						};
+						if( !Array.isArray( eL[j].properties ) ) eL[j].properties = [];
+						eL[j].properties.unshift( p );
+					};
+				};
+			};
+		pr.resourceClasses.forEach( (rC)=>{ addDescProperty('resourceClass',rC) });
+		pr.statementClasses.forEach( (sC)=>{ addDescProperty('statementClass',sC) });
+		
+		// If missing, add a title property:
+			function addTitleProperty( ctg, eC ) {
+				// get all instances of this resourceClass:
+
+				// list of elements, i.e. resources or statements
+				let eL = ctg=='statementClass'? 
+							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
+						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
+//				console.debug( 'addTitleProperty', eC, eL );
+				
+					function titlePropertyNeeded(r) {
+							if( Array.isArray( r.properties ) )
+								for ( var i = r.properties.length-1; i>-1; i-- ) {
+										let ti = propTitleOf(r.properties[i],pr);
+										if( CONFIG.titleProperties.indexOf( ti )>-1
+											|| CONFIG.headingProperties.indexOf( ti )>-1 )
+											// SpecIF assumes that any title property *replaces* the element's title,
+											// so we just look for the case of *no* title property.
+											// There is no consideration of the content.
+											// It is expected that titles with multiple languages have been reduced, before.
+											return false; // title property is available
+								};
+							return true;
+					}
+				// for every element of the given class:
+				for( var j=eL.length-1; j>-1; j-- ) {
+					if( titlePropertyNeeded(eL[j]) ) {
+						
+						// a. add property class, if not yet defined:
+						if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
+						// avoid duplicates:
+						if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
+							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") );
+						
+						// b. add dataType, if not yet defined:
+						if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
+						// avoid duplicates:
+						if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
+							pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
+						
+						// c. Add propertyClass to element class:
+						if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
+						// avoid duplicates:
+						if( eC.propertyClasses.indexOf( "PC-Name" )<0 ) 
+							eC.propertyClasses.unshift( "PC-Name" );
+						
+						// d. Add title property to element;
+						let p = {
+								class: "PC-Name",
+								// no title is required in case of statements; it's class' title applies by default:
+								value: eL[j].title || eC.title
+						};
+						if( !Array.isArray( eL[j].properties ) ) eL[j].properties = [];
+						eL[j].properties.unshift( p );
+					};
+				};
+			};
+		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
+		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });
+
+		// ReqIF does not allow media objects other than PNG.
+		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
+		// ToDo!
+
+		// Add a resource as hierarchyRoot, if needed.
+		// It is assumed, 
+		// - that general SpecIF data do not have a hierarchy root with meta-data.
+		// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+		// Therefore, a somewhat complicated solution is chosen, in which hierarchyRoots are added as resources, 
+		// *only when needed* and then, later on, the resources at the root are transformed to SPECIFICATION roots.
+		// ToDo: Design the ReqIF import and export so that a roundtrip works; neither loss nor growth is acceptable.
+		if( indexById( pr.resourceClasses, "RC-HierarchyRoot" )<0 ) 
+			pr.resourceClasses.push( app.standardTypes.get("resourceClass","RC-HierarchyRoot") );
+
+		// ToDo: Get the referenced propertyClass ids from the above
+		if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
+			pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") );
+		if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
+			pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") );
+
+		// ToDo: Get the referenced dataType ids from the above
+		if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
+			pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
+		if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
+			pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") );
+
+		let resId = 'R-'+pr.id.simpleHash(),
+			res = {
+				id: resId,
+				title: pr.title,
+				class: "RC-HierarchyRoot",
+				properties: [{
+					class: "PC-Name",
+					value: pr.title
+				}],
+				changedAt: date
+		};
+		// add a description property only if it has a value:
+		if( pr.description ) 
+			res.properties.push({
+					class: "PC-Description",
+					value: pr.description
+			});
+		pr.resources.push( res );
+		pr.hierarchies = [{
+				id: "H-"+resId,
+				resource: resId,
+				nodes: pr.hierarchies,
+				changedAt: date
+		}];
+
+		// After the preparations, begin with the conversion:
 		var xml = 
 				'<?xml version="1.0" encoding="UTF-8"?>'
-			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns_xhtml+'="http://www.w3.org/1999/xhtml">'
+			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns+'="http://www.w3.org/1999/xhtml">'
 			+	'<THE-HEADER>'
 			+	  '<REQ-IF-HEADER IDENTIFIER="'+pr.id+'">'
 			+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
@@ -71,28 +256,31 @@ modules.construct({
 		
 		// 1. Transform dataTypes:
 		if(pr.dataTypes)	
-			pr.dataTypes.forEach( function(el) {
-				switch( el.type ) {
+			pr.dataTypes.forEach( function(dT) {
+				switch( dT.type ) {
 					case 'xs:boolean':
-						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAtts( el )+'/>';
+						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
 						break;
 					case 'xs:integer':
-						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAtts( el )+' MAX="'+el.maxInclusive+'" MIN="'+el.minInclusive+'" />';
+						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAttsOf( dT )
+									+' MAX="'+(dT.maxInclusive||CONFIG.maxInteger)+'" MIN="'+(dT.minInclusive||CONFIG.minInteger)+'" />';
 						break;
 					case 'xs:double':
-						xml += '<DATATYPE-DEFINITION-REAL '+commonAtts( el )+' MAX="'+el.maxInclusive+'" MIN="'+el.minInclusive+'" ACCURACY="'+el.fragmentDigits+'" />';
+						xml += '<DATATYPE-DEFINITION-REAL '+commonAttsOf( dT )
+									+' MAX="'+(dT.maxInclusive||CONFIG.maxReal)+'" MIN="'+(dT.minInclusive||CONFIG.minReal)
+									+'" ACCURACY="'+(dT.fragmentDigits||CONFIG.maxAccuracy)+'" />';
 						break;
 					case 'xs:string':
-						xml += '<DATATYPE-DEFINITION-STRING '+commonAtts( el )+' MAX-LENGTH="'+el.maxLength+'" />';
+						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
 					case 'xhtml':
-						xml += '<DATATYPE-DEFINITION-XHTML '+commonAtts( el )+'/>';
+						xml += '<DATATYPE-DEFINITION-XHTML '+commonAttsOf( dT )+'/>';
 						break;
 					case 'xs:enumeration':
-						xml += '<DATATYPE-DEFINITION-ENUMERATION '+commonAtts( el )+'>' +
+						xml += '<DATATYPE-DEFINITION-ENUMERATION '+commonAttsOf( dT )+'>' +
 								'<SPECIFIED-VALUES>';
-						el.values.forEach( function(val,i) {
-							xml += '<ENUM-VALUE IDENTIFIER="'+val.id+'" LONG-NAME="'+val.value+'" LAST-CHANGE="'+dateTime(el)+'" >' +
+						dT.values.forEach( function(val,i) {
+							xml += '<ENUM-VALUE IDENTIFIER="'+val.id+'" LONG-NAME="'+val.value+'" LAST-CHANGE="'+dateTime(dT)+'" >' +
 									 '<PROPERTIES><EMBEDDED-VALUE KEY="'+i+'" OTHER-CONTENT="" /></PROPERTIES>' +
 								   '</ENUM-VALUE>';
 						});
@@ -100,17 +288,17 @@ modules.construct({
 								'</DATATYPE-DEFINITION-ENUMERATION>';
 						break;
 					case 'xs:dateTime':
-						xml += '<DATATYPE-DEFINITION-DATE '+commonAtts( el )+'/>';
+						xml += '<DATATYPE-DEFINITION-DATE '+commonAttsOf( dT )+'/>';
 						break;
 					default: 
-						console.error('Error: unknown dataType: ',el.type)
+						console.error('Error: unknown dataType: ',dT.type)
 				}
 			});
 		xml +=  '</DATATYPES>'
 			+	'<SPEC-TYPES>';
 			
 		// 2. Sort SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs, collect OBJECTS:
-		let req = {
+		let sorted = {
 			objTypes: [],
 			spcTypes: [],
 			objects: []
@@ -120,19 +308,19 @@ modules.construct({
 				let r = itemById(pr.resources,n.resource),
 					rC = itemById(pr.resourceClasses,r['class']);
 				// a) Collect resourceClass without duplication:
-				if( indexById(req.objTypes,rC.id)<0 ) {
+				if( indexById(sorted.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
 						let anc = itemById(pr.resourceClasses,rC['extends']);
 						if( anc.propertyClasses && rC.propertyClasses ) 
 							rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses)
 					};
-					req.objTypes.push( rC )
+					sorted.objTypes.push( rC )
 				};
 				// b) Collect resource without duplication:
-				if( indexById(req.objects,r.id)<0 ) 
+				if( indexById(sorted.objects,r.id)<0 ) 
 					// ToDo: Sort properties according to the propertyClasses
-					req.objects.push( r )
+					sorted.objects.push( r )
 			}
 		// First, collect all resources referenced by the hierarchies,
 		// ignore the hierarchy roots here, they are handled further down:
@@ -142,6 +330,7 @@ modules.construct({
 					iterate( n, prepObj )
 				});
 		});
+//		console.debug( 'after collecting referenced resources: ', sorted );
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( function(h) {
 			// The resources referenced at the lowest level of hierarchies 
@@ -149,9 +338,9 @@ modules.construct({
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:
 			let hR = itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
-				hC = itemById( pr.resourceClasses, hR['class'] );	// its class
+				hC = itemById( pr.resourceClasses, hR['class'] );	// it's class
 			
-			if( indexBy( req.objects, 'class', hC.id )>-1 ) {
+			if( indexBy( sorted.objects, 'class', hC.id )>-1 ) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
 				hC.id = 'HC-'+hC.id
@@ -159,8 +348,8 @@ modules.construct({
 				// we need to update all affected 'extend' properties. There is a minor chance, though.
 			};
 			// Collect hierarchy root's class without duplication:
-			if( indexById(req.spcTypes,hC.id)<0 )
-				req.spcTypes.push( hC );
+			if( indexById(sorted.spcTypes,hC.id)<0 )
+				sorted.spcTypes.push( hC );
 			
 			// prepare the hierarchy root, itself:
 			h.title = hR.title || '';
@@ -168,61 +357,61 @@ modules.construct({
 			h['class'] = hC.id;
 			if( hR.properties ) h.properties = hR.properties
 		});
-//		console.debug( 'reqSort', req );
+//		console.debug( 'reqSort', sorted );
 		
-		// 3. Transform resourceClasses to OBJECT-TYPEs:
-		req.objTypes.forEach( function(el) {
-			xml += '<SPEC-OBJECT-TYPE '+commonAtts( el )+'>'
-				+		attrTypes( el )
+		// 3. Transform resourceClasses to OBJECT-TYPES:
+		sorted.objTypes.forEach( function(oT) {
+			xml += '<SPEC-OBJECT-TYPE '+commonAttsOf( oT )+'>'
+				+		attrTypesOf( oT )
 				+ '</SPEC-OBJECT-TYPE>'
 		});
 		
 		// 4. Transform statementClasses to RELATION-TYPES:
 		if(pr.statementClasses)	
-			pr.statementClasses.forEach( function(el) {
-				xml += '<SPEC-RELATION-TYPE '+commonAtts( el )+'>'
-					+		attrTypes( el )
+			pr.statementClasses.forEach( function(sC) {
+				xml += '<SPEC-RELATION-TYPE '+commonAttsOf( sC )+'>'
+					+		attrTypesOf( sC )
 				    +  '</SPEC-RELATION-TYPE>'
 			});
 		
-		// 5. Write SPECIFICATION-TYPEs:
-		req.spcTypes.forEach( function(el) {
-			xml += '<SPECIFICATION-TYPE '+commonAtts( el )+'>'
-				+		attrTypes( el )
+		// 5. Write SPECIFICATION-TYPES:
+		sorted.spcTypes.forEach( function(hC) {
+			xml += '<SPECIFICATION-TYPE '+commonAttsOf( hC )+'>'
+				+		attrTypesOf( hC )
 				+  '</SPECIFICATION-TYPE>';
 		}); 
 		xml +=  '</SPEC-TYPES>'
 			+	'<SPEC-OBJECTS>';
 		
 		// 6. Transform resources to OBJECTS:
-		req.objects.forEach( function(el) {
-			xml += '<SPEC-OBJECT '+commonAtts( el )+'>'
-				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+el['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
-				+		attsOf( el )
+		sorted.objects.forEach( function(r) {
+			xml += '<SPEC-OBJECT '+commonAttsOf( r )+'>'
+				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+r['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
+				+		attsOf( r )
 				+ '</SPEC-OBJECT>'
 		});
 		xml +=  '</SPEC-OBJECTS>'
 			+	'<SPEC-RELATIONS>';
 		
 		// 7. Transform statements to RELATIONs:
-		pr.statements.forEach( function(el) {
-			xml += '<SPEC-RELATION '+commonAtts( el )+'>'
-				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+el['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
-				+		attsOf( el )
-				+		'<SOURCE><SPEC-OBJECT-REF>'+el.subject+'</SPEC-OBJECT-REF></SOURCE>'
-				+		'<TARGET><SPEC-OBJECT-REF>'+el.object+'</SPEC-OBJECT-REF></TARGET>'
+		pr.statements.forEach( function(s) {
+			xml += '<SPEC-RELATION '+commonAttsOf( s )+'>'
+				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+s['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
+				+		attsOf( s )
+				+		'<SOURCE><SPEC-OBJECT-REF>'+s.subject+'</SPEC-OBJECT-REF></SOURCE>'
+				+		'<TARGET><SPEC-OBJECT-REF>'+s.object+'</SPEC-OBJECT-REF></TARGET>'
 				+ '</SPEC-RELATION>'
 		});
 		xml +=  '</SPEC-RELATIONS>'
 			+	'<SPECIFICATIONS>';
 		
 		// 8. Transform hierarchies to SPECIFICATIONs:
-		pr.hierarchies.forEach( function(el) {
-			xml += '<SPECIFICATION '+commonAtts( el )+'>'
-				+		'<TYPE><SPECIFICATION-TYPE-REF>'+el['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
-				+		attsOf( el )
-				+   	childrenOf( el );
-			xml + '</SPECIFICATION>'
+		pr.hierarchies.forEach( function(h) {
+			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
+				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
+				+		attsOf( h )
+				+   	childrenOf( h )
+				+ '</SPECIFICATION>'
 		});
 		xml +=  '</SPECIFICATIONS>'
 			+	'<SPEC-RELATION-GROUPS></SPEC-RELATION-GROUPS>'
@@ -234,59 +423,60 @@ modules.construct({
 		// save to file using fileSaver.js:
 		saveAs(blob, "debug.reqif", true);		// true: no_auto_bom, i.e. suppress EF BB BF at the beginning of the file
 		console.debug('reqif',xml);  */
-		return xml
+		return xml;
 
 			function dateTime( e ) {
 				return e.changedAt || pr.changedAt || date
 			}
-			function commonAtts( e ) {
-				return 'IDENTIFIER="'+e.id+'" LONG-NAME="'+(e.title?e.title:'')+'" DESC="'+(e.description?e.description:'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+			function commonAttsOf( e ) {
+				return 'IDENTIFIER="'+e.id+'" LONG-NAME="'+(e.title?e.title.stripHTML().escapeXML():'')+'" DESC="'+(e.description?e.description.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
-			function attrTypes( ty ) {
-				if( !ty || !ty.propertyClasses || ty.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
+			function attrTypesOf( eC ) { 
+				// eC: resourceClass or statementClass
+				if( !eC || !eC.propertyClasses || eC.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
 				var xml='<SPEC-ATTRIBUTES>';
 				// SpecIF resourceClasses and statementClasses may share propertyClasses,
 				// but in ReqIF every type has its own ATTRIBUTE-DEFINITIONs.
 				// This is taken care of below, but it may not be necessary to extend the id, e.g. if SpecIF has been created from ReqIF, before.
 				// ToDo: Avoid that the id gets longer every time a ReqIF-SpecIF roundtrip is made.
-				ty.propertyClasses.forEach( function(el) {
-					el = itemById( pr.propertyClasses, el );  // replace id by the item itself
-					switch( itemById( pr.dataTypes, el.dataType ).type ) {
+				eC.propertyClasses.forEach( function(pC) {
+					pC = itemById( pr.propertyClasses, pC );  // replace id by the item itself
+					switch( itemById( pr.dataTypes, pC.dataType ).type ) {
 						case 'xs:boolean':
-							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+el.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-BOOLEAN>'
 							break;
 						case 'xs:integer':
-							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+el.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-INTEGER>'
 							break;
 						case 'xs:double':
-							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+el.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-REAL>'
 							break;
 						case 'xs:string':
-							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+el.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-STRING>'
 							break;
 						case 'xhtml':
-							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+el.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+pC.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-XHTML>'
 							break;
 						case 'xs:enumeration':
 							// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
 							// The property 'dataType.multiple' is invisible for the server. 
-							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" MULTI-VALUED="'+multipleChoice(el,pr)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+el.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" MULTI-VALUED="'+multipleChoice(pC,pr)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-ENUMERATION>'
 							break;
 						case 'xs:dateTime':
-							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="'+ty.id+'_'+el.id+'" LONG-NAME="'+vocabulary.property.reqif(el.title)+'" LAST-CHANGE="'+dateTime(el)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+el.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
+							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-DATE>'
 							break;
 					}
@@ -295,28 +485,30 @@ modules.construct({
 			}
 			function attsOf( me ) {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
-				var xml='<VALUES>';
-				me.properties.forEach( function(el) {
-					let dT = itemById( pr.dataTypes, itemById( pr.propertyClasses, el['class'] ).dataType );
+				var xml='<VALUES>',
+					eC = itemById( pr.resourceClasses.concat(pr.statementClasses), me['class'] );
+				me.properties.forEach( function(prp) {
+					let pC = itemById( pr.propertyClasses, prp['class'] ),
+						dT = itemById( pr.dataTypes, pC.dataType );
 					switch( dT.type ) {
 						case 'xs:boolean':
-							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-BOOLEAN>'
 							break;
 						case 'xs:integer':
-							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-INTEGER>'
 							break;
 						case 'xs:double':
-							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+el.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
+							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.stripHTML().escapeXML()+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
 						case 'xhtml':
@@ -342,21 +534,35 @@ modules.construct({
 				return ('<object data="'+u+'"'+t+s+' >'+u+'</object>');  
 			} 
 		); */
-							// add a xtml namespace and an enclosing <div> bracket, if needed:
-							let	hasDiv = RE_hasDiv.test(el.value),
-								txt = el.value.replace( RE_tag, function($0,$1,$2) { 
-									return $1+ns_xhtml+':'+$2
-								});
+							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
+							let	hasDiv = RE_hasDiv.test(prp.value),
+								txt = 	escapeInner( prp.value )
+										// ReqIF does not support the class attribute:
+										.replace( RE_class, function() { 
+											return '';
+										})
+										// ReqIF does not support the target attribute within the anchor tag <a>:
+										.replace( RE_target, function($0,$1) { 
+											return $1;
+										})
+										// ReqIF does not support the name attribute within the <object> tag:
+										.replace( RE_name, function($0,$1) { 
+											return $1;
+										})
+										// Add the namespace to XHTML-tags:
+										.replace( RE.tag, function($0,$1,$2) { 
+											return $1+ns+':'+$2;
+										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
-								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns_xhtml+':div>')+txt+(hasDiv?'':'</'+ns_xhtml+':div>')+'</THE-VALUE>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
+								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns+':div>')+txt+(hasDiv?'':'</'+ns+':div>')+'</THE-VALUE>'
 								+  '</ATTRIBUTE-VALUE-XHTML>'
 							break;
 						case 'xs:enumeration':
 							xml += '<ATTRIBUTE-VALUE-ENUMERATION>'
-								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>'+el['class']+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
+								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
-							let vL = el.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
+							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 							vL.forEach( function(v) {
 								xml += '<ENUM-VALUE-REF>'+v+'</ENUM-VALUE-REF>'
 							});
@@ -364,11 +570,13 @@ modules.construct({
 								+	'</ATTRIBUTE-VALUE-ENUMERATION>'
 							break;
 						case 'xs:dateTime':
+							xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="'+prp.value+'">'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
+								+  '</ATTRIBUTE-VALUE-DATE>'
 							break;
 					};
-
 				});
-				return xml + '</VALUES>'
+				return xml + '</VALUES>';
 			}
 			function childrenOf( el ) {
 				if( !el.nodes || el.nodes.length<1 ) return ''
@@ -379,20 +587,20 @@ modules.construct({
 							+		childrenOf( ch )
 							+ '</SPEC-HIERARCHY>'
 					});
-				return xml + '</CHILDREN>'
+				return xml + '</CHILDREN>';
 			}
 			function iterate( tree, fn ) {
 				fn( tree );
 				if( tree.nodes )
 					tree.nodes.forEach( function(n) {
-						iterate( n, fn )
-					})
+						iterate( n, fn );
+					});
 			}
 	};
 	self.abort = function() {
 //		app.cache.abort();
-//		server.project().cancelImport()
-		self.abortFlag = true
+//		server.project().cancelImport();
+		self.abortFlag = true;
 	};
-	return self
+	return self;
 });

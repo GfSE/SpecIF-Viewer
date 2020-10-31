@@ -387,10 +387,13 @@ function LanguageTextsEn() {
 	self.IREB_Requirement = "Requirement";
 	self.SpecIF_Requirements = 
 	self.IREB_Requirements = "Requirements";
-	self.IREB_RequirementType = 	self.LblType;
-	self.IREB_RequirementTypeFunction = "Function";
-	self.IREB_RequirementTypeQuality = "Quality";
-	self.IREB_RequirementTypeConstraint = "Constraint";
+	self.IREB_RequirementType = self.LblType;
+	self.IREB_RequirementTypeFunction = 
+	self.IREB_FunctionalRequirement = "Function Requirement or User Story";
+	self.IREB_RequirementTypeQuality =
+	self.IREB_QualityRequirement = "Quality Requirement";
+	self.IREB_RequirementTypeConstraint =
+	self.IREB_Constraint = "Constraint";
 	self.SpecIF_BusinessProcess = 'Business Process'; 
 	self.SpecIF_BusinessProcesses = 'Business Processes';
 	self.SpecIF_Rationale = "Rationale";
