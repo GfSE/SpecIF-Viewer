@@ -21,7 +21,8 @@ modules.construct({
 	};
 	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
 		RE_class = / class=\"[^\"]+\"/g,
-		RE_target = / target=\"[^\"]+\"/g;
+		RE_name = /(<object[^>]+) name=\"[^\"]+\"/g,
+		RE_target = /(<a[^>]+) target=\"[^\"]+\"/g;
 		
 /*	self.verify = function( f ) {
 			// Verify the type (and eventually the content) of a ReqIF import file:
@@ -536,13 +537,17 @@ modules.construct({
 							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
 							let	hasDiv = RE_hasDiv.test(prp.value),
 								txt = 	escapeInner( prp.value )
-										// ReqIF does not support the target attribute within the anchor tag <a>:
-										.replace( RE_target, function() { 
-											return '';
-										})
-										// ReqIF does not support the class attribute within the <div> tag:
+										// ReqIF does not support the class attribute:
 										.replace( RE_class, function() { 
 											return '';
+										})
+										// ReqIF does not support the target attribute within the anchor tag <a>:
+										.replace( RE_target, function($0,$1) { 
+											return $1;
+										})
+										// ReqIF does not support the name attribute within the <object> tag:
+										.replace( RE_name, function($0,$1) { 
+											return $1;
 										})
 										// Add the namespace to XHTML-tags:
 										.replace( RE.tag, function($0,$1,$2) { 

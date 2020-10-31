@@ -55,7 +55,7 @@ function DialogForm() {
 					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
 				case 'xs:dateTime':
-					ok = val.length<1 || RE.IsoDate.test(val)
+					ok = val.length<1 || RE.IsoDate.test(val);
 				// no need to check enumeration
 			};
 			setTextState( cPs.label, ok? 'has-success':'has-error' );
@@ -75,7 +75,7 @@ function textField( lbl, val, typ, fn ) {
 	else 	val = '';
 
 	if( typeof(fn)=='string' && fn.length>0 )	
-			fn = ' oninput="'+fn+'"'
+			fn = ' oninput="'+fn+'"';
 	else 	fn = '';
 
 	let sH = lbl.label.simpleHash(), fG, aC;
@@ -93,7 +93,7 @@ function textField( lbl, val, typ, fn ) {
 			aC = 'attribute-value';
 			break;
 		default:
-			return null
+			return null; // should never be the case
 	};
 	switch( typ ) {
 		case 'line':
@@ -112,12 +112,12 @@ function textField( lbl, val, typ, fn ) {
 			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val+'</div>';
 	};
 	fG += 	'</div>';
-	return fG
+	return fG;
 }
 function setTextValue( lbl, val ) {
 	let el = document.getElementById('field'+lbl.simpleHash());
 	if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
-	if( el ) el.value = val
+	if( el ) el.value = val;
 }
 function setTextFocus( lbl ) {
 	let el = document.getElementById('field'+lbl.simpleHash());
@@ -130,35 +130,35 @@ function setTextState( lbl, state ) {
 	if( el.hasClass('has-error') ) {
 		if( state=='has-success' ) {
 			el.removeClass('has-error').addClass('has-success');
-			return true
+			return true;
 		} else
-			return false	// no change
+			return false;	// no change
 	};
 	if( el.hasClass('has-success') ) {
 		if( state=='has-error' ) {
 			el.removeClass('has-success').addClass('has-error');
-			return true
+			return true;
 		} else
-			return false	// no change
+			return false;	// no change
 	};
 	// else, has neither class:
 	el.addClass(state);
-	return true
+	return true;
 }
 function textValue( lbl ) {
 	// get the input value:
 	try {
 		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || ''
 	} catch(e) {
-		return ''
+		return '';
 	}
 }
 function getTextLength( lbl ) {
 	// get length the input value:
 	try {
-		return textValue( lbl ).length
+		return textValue( lbl ).length;
 	} catch(e) {
-		return
+		return;
 	}
 }
 				
@@ -180,7 +180,7 @@ function radioField( lbl, entries, opts ) {
 				+		'<div class="attribute-value radio" >';
 			break;
 		default:
-			return null
+			return null; // should never be the case
 	};
 	// zero or one checked entry is allowed:
 	let found = false, temp; 
@@ -188,7 +188,7 @@ function radioField( lbl, entries, opts ) {
 		temp = found || e.checked;
 		if( found && e.checked )
 			e.checked = false; // only the first check will remain
-		found = temp
+		found = temp;
 	});
 	// render options:
 	let tp, nm=lbl.label.simpleHash();
@@ -201,7 +201,7 @@ function radioField( lbl, entries, opts ) {
 	});
 	rB +=			'</div>'
 		+		'</div>';
-	return rB
+	return rB;
 }
 function radioValue( lbl ) {
 	// get the selected radio button, it is the index number as string:
@@ -212,7 +212,7 @@ function checkboxField( lbl, entries, opts ) {
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let cB, fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
-			fn = ' onclick="'+opts.handle+'"'
+			fn = ' onclick="'+opts.handle+'"';
 	else 	fn = '';
 	switch( lbl.display ) {
 		case 'none': 
@@ -225,7 +225,7 @@ function checkboxField( lbl, entries, opts ) {
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
-			return null
+			return null; // should never be the case
 	};
 	// render options:
 	let tp, nm=lbl.label.simpleHash();
@@ -245,9 +245,9 @@ function checkboxValues( lbl ) {
 	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked');
 	var resL = [];
 	for( var i=0, I=chd.length; i<I; i++ ) {	// chd is an object, not an array
-		resL.push( chd[i].value )
+		resL.push( chd[i].value );
 	};
-	return resL
+	return resL;
 }
 function booleanField( lbl, val, opts ) {
 //	console.debug('booleanField',lbl,val);
@@ -265,7 +265,7 @@ function booleanField( lbl, val, opts ) {
 }
 function booleanValue( lbl ) {
 	let chd = $('input[name="boolean'+lbl.simpleHash()+'"]:checked');
-	return chd.length>0
+	return chd.length>0;
 }
 
 function tagId(str) {
@@ -274,7 +274,7 @@ function tagId(str) {
 function setStyle( sty ) {
 		let css = document.createElement('style');
 		css.innerHTML = sty;
-		document.head.appendChild(css) // append to head
+		document.head.appendChild(css); // append to head
 }
 
 // standard error handler:
@@ -319,11 +319,11 @@ function stdError( xhr, cb ) {
 		case 996:  // server request queue flushed
 			break;
 		default:
-			message.show( xhrCl )
+			message.show( xhrCl );
 	};
 	// log original values:
 	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
-	if( typeof(cb)=='function' ) cb()
+	if( typeof(cb)=='function' ) cb();
 };
 /*	// standard logger:
 	function stdLog( fS, xhr ) {
@@ -350,17 +350,17 @@ var message = new function() {
 	let pend = 0;
 
 	function init() {
-		$('#app').prepend('<div id="message" ></div>')
+		$('#app').prepend('<div id="message" ></div>');
 	};
 	self.hide = ()=>{
 		$('#message')
 			.empty()
 			.hide();
-		pend = 0  // can be called internally or externally
+		pend = 0;  // can be called internally or externally
 	};
 	function remove() {
 		if( --pend<1 )
-			self.hide()
+			self.hide();
 	}
 	self.show = ( msg, opts )=>{
 		// msg: message string or jqXHR object
@@ -407,7 +407,7 @@ var message = new function() {
 		// else: static message until it is over-written
 	};
 	init();
-	return self
+	return self;
 };
 
 function doResize( opt ) {
@@ -450,7 +450,7 @@ function bindResizer() {
 	$(window).resize( ()=>{
 //		console.debug('resize'); 
 		doResize();
-	})
+	});
 }
 
 function indexById(L,id) {
@@ -460,7 +460,7 @@ function indexById(L,id) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id==id ) return i   // return list index 
 	};
-	return -1
+	return -1;
 }
 function itemById(L,id) {
 //	console.debug('+',L,id,(L && id));
@@ -469,7 +469,7 @@ function itemById(L,id) {
 		id = id.trim();
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].id==id ) return L[i]   // return list item
-	}
+	};
 }
 function indexByTitle(L,ti) {
 	if( L && ti ) {
@@ -477,53 +477,53 @@ function indexByTitle(L,ti) {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return i   // return list index
 	};
-	return -1
+	return -1;
 }
 function itemByTitle(L,ti) {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].title==ti ) return L[i]   // return list item
-	}
+			if( L[i].title==ti ) return L[i];   // return list item
+	};
 }
 function indexBy( L, p, s ) {
 	if( L && p && s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 		// hand in property and searchTerm as string !
 		for( var i=L.length-1;i>-1;i-- )
-			if( L[i][p]==s ) return i
+			if( L[i][p]==s ) return i;
 	};
-	return -1
+	return -1;
 }
 function itemBy( L, p, s ) {
 	if( L && p && s ) {
 		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
 		for( var i=L.length-1;i>-1;i-- )
-			if( L[i][p]==s ) return L[i]   // return list item
-	}
+			if( L[i][p]==s ) return L[i];   // return list item
+	};
 }
 function containsById( cL, L ) {
 	if(!L) return null;
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
-	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1
-	
+	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
+
 	function containsL( cL, L ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexById( cL, L[i].id )<0 ) return false;
-		return true
+		return true;
 	}
 }
 function containsByTitle( cL, L ) {
 	if(!L) return null;
 	// return true, if all items in L are contained in cL (cachedList):
-	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 )
+	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
 	
 	function containsL( cL, L ) {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
-		return true
+		return true;
 	}
 }
 function cmp( i, a ) {
@@ -535,27 +535,27 @@ function cmp( i, a ) {
 }
 function sortByTitle( L ) {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
-	)
+		(bim,bam)=>{ return cmp( bim.title, bam.title ) };
+	);
 }
 function sortBy( L, fn ) {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
-	)
+		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) };
+	);
 }
 function forAll( L, fn ) {
 	// return a new list with the results from applying the specified function to all items of input list L:
 	if(!L) return [];
 	var nL = [];
 	L.forEach( (e)=>{ var r=fn(e); if(r) nL.push(r) } );
-	return nL
+	return nL;
 }
 
 function cacheE( L, e ) {  // ( list, entry )
 	// add or update the item e in a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
-	L[n] = e; return n // update otherwise
+	L[n] = e; return n; // update otherwise
 }
 function cacheL( L, es ) {  // ( list, entries )
 	// add or update the items es in a list L:
@@ -565,18 +565,18 @@ function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
-	return n
+	return n;
 }
 function uncacheL( L, es ) {  // ( list, entries )
 	// remove the items es from a list L:
-	es.forEach( (e)=>{ uncacheE( L, e ) } )
+	es.forEach( (e)=>{ uncacheE( L, e ) } );
 }
 	
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
 String.prototype.addIcon = function( ic ) {
 	if( ic ) return ic+'&#xa0;'+this;
-	return this
+	return this;
 };
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
 function genID(pfx) {
@@ -587,7 +587,7 @@ function genID(pfx) {
 	let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 	var result = '';
 	for( var i=CONFIG.genIdLength; i>0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
-	return pfx+result
+	return pfx+result;
 }
 /*	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript:
