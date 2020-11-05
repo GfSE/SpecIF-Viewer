@@ -68,8 +68,8 @@ app.standardTypes = new function() {
 	}, {
 		id: "PC-Description",
 		title: CONFIG.propClassDesc,
-	//	dataType: "DT-Text",
-		dataType: "DT-FormattedText",
+		dataType: "DT-Text",
+	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
 		id: "PC-Diagram",
@@ -99,27 +99,26 @@ app.standardTypes = new function() {
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.get = (ctg,id,chAt)=>{
-		var item = itemById( listOf(ctg), id );
+		var item = itemById( self[self.listOf(ctg)], id );
 		if( item ) {
 			if( chAt ) item.changedAt = chAt;
-			return item
-		}
+			return item;
+		};
+	};
+	self.listOf = (ctg)=>{
+		// Return the cache name for a given category:
+		switch(ctg) {
+			case 'dataType':		return "dataTypes";
+			case 'propertyClass':	return "propertyClasses";
+			case 'resourceClass':	return "resourceClasses";
+			case 'statementClass':	return "statementClasses";
+			case 'resource':		return "resources";
+			case 'statement':		return "statements";
+			case 'hierarchy':		return "hierarchies";
+			case 'file':			return "files";
+		};
 	};
 	return self;
-	
-		function listOf( ctg ) {
-			// Return the cache for a given category:
-			switch(ctg) {
-				case 'dataType':		return self.dataTypes;
-				case 'propertyClass':	return self.propertyClasses;
-				case 'resourceClass':	return self.resourceClasses;
-				case 'statementClass':	return self.statementClasses;
-				case 'resource':		return self.resources;
-				case 'statement':		return self.statements;
-				case 'hierarchy':		return self.hierarchies;
-				case 'file':			return self.files
-			}
-		}
 };	
 		
 /*  ToDo: REWORK FOR v0.10.8:

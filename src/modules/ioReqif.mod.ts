@@ -21,8 +21,9 @@ modules.construct({
 	};
 	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
 		RE_class = / class=\"[^\"]+\"/g,
-		RE_name = /(<object[^>]+) name=\"[^\"]+\"/g,
-		RE_target = /(<a[^>]+) target=\"[^\"]+\"/g;
+		RE_objectName = /(<object[^>]*) name=\"[^\"]+\"/g,
+		RE_objectId = /(<object[^>]*) id=\"[^\"]+\"/g,
+		RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g;
 		
 /*	self.verify = function( f ) {
 			// Verify the type (and eventually the content) of a ReqIF import file:
@@ -62,11 +63,46 @@ modules.construct({
 		//    - Add description properties of resources and statements
 		//    - Add hierarchy root
 
+			function addType( ctg, id ) {
+				// Add the type or class, if not yet defined:
+				
+				// get the name of the list, e.g. 'dataType' -> 'dataTypes':
+				var L = app.standardTypes.listOf(ctg);
+				// create it, if not yet available:
+				if (Array.isArray(pr[L]))
+					L = pr[L];
+				else
+					L = pr[L] = [];
+				// add the type, but avoid duplicates:
+				if( indexById( L, id )<0 ) 
+					L.unshift( app.standardTypes.get(ctg,id) );
+			} 
+			function addPC( eC, id ) {
+				// Add the propertyClass-id to an element class (eC), if not yet defined:
+				var L = 'propertyClasses';
+				if (Array.isArray(eC[L])) {
+					L = eC[L];
+					// Avoid duplicates:
+					if( L.indexOf( id )<0 ) 
+						L.unshift( id );
+				} else {
+					eC[L] = [id];
+				};
+			} 
+			function addP( el, prp ) {
+				// Add the property to an element (el):
+				var L = 'properties';
+				if (Array.isArray(el[L]))
+					el[L].unshift( prp );
+				else
+					el[L] = [prp];
+			} 
 		// Are there resources with description, but without description property?
 		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/02_Related-Terms.md
 		// In this case, add a description property to hold the description as required by ReqIF:
 			function addDescProperty( ctg, eC ) {
-				// get all instances of this resourceClass:
+				// eC is a resourceClass or statementClass;
+				// get all instances of eC:
 			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
 
 				// list of elements, i.e. resources or statements
@@ -95,35 +131,42 @@ modules.construct({
 					if( descPropertyNeeded(eL[j]) ) {
 						
 						// a. add property class, if not yet defined:
-						if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
+						addType("propertyClass","PC-Description");
+					/*	if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
 						// avoid duplicates:
 						if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
-							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") );
+							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") ); */
 						
 						// b. add dataType, if not yet defined:
-						if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
+						addType("dataType","DT-Text");
+					/*	if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
 						// avoid duplicates:
 						if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
-							pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") );
+							pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") ); */
 						
 						// c. Add propertyClass to element class:
-						if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
+						addPC( eC, "PC-Description" );
+					/*	if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
 						// avoid duplicates:
 						if( eC.propertyClasses.indexOf( "PC-Description" )<0 ) 
-							eC.propertyClasses.unshift( "PC-Description" );
+							eC.propertyClasses.unshift( "PC-Description" ); */
 						
 						// d. Add description property to element;
-						let p = {
+						addP( eL[j], {
 								class: "PC-Description",
 								value: eL[j].description
-						};
-						if( !Array.isArray( eL[j].properties ) ) eL[j].properties = [];
-						eL[j].properties.unshift( p );
+						});
+					/*	if( !Array.isArray( eL[j].properties ) ) eL[j].properties = [];
+						eL[j].properties.unshift({
+								class: "PC-Description",
+								value: eL[j].description
+						}); */
 					};
 				};
 			};
 		pr.resourceClasses.forEach( (rC)=>{ addDescProperty('resourceClass',rC) });
 		pr.statementClasses.forEach( (sC)=>{ addDescProperty('statementClass',sC) });
+//		console.debug('pr',simpleClone(pr));
 		
 		// If missing, add a title property:
 			function addTitleProperty( ctg, eC ) {
@@ -154,31 +197,20 @@ modules.construct({
 					if( titlePropertyNeeded(eL[j]) ) {
 						
 						// a. add property class, if not yet defined:
-						if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
-						// avoid duplicates:
-						if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
-							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") );
+						addType("propertyClass","PC-Name");
 						
 						// b. add dataType, if not yet defined:
-						if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
-						// avoid duplicates:
-						if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
-							pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
+						addType("dataType","DT-ShortString");
 						
 						// c. Add propertyClass to element class:
-						if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
-						// avoid duplicates:
-						if( eC.propertyClasses.indexOf( "PC-Name" )<0 ) 
-							eC.propertyClasses.unshift( "PC-Name" );
+						addPC( eC, "PC-Name" );
 						
 						// d. Add title property to element;
-						let p = {
+						addP( eL[j], {
 								class: "PC-Name",
 								// no title is required in case of statements; it's class' title applies by default:
 								value: eL[j].title || eC.title
-						};
-						if( !Array.isArray( eL[j].properties ) ) eL[j].properties = [];
-						eL[j].properties.unshift( p );
+						});
 					};
 				};
 			};
@@ -208,8 +240,8 @@ modules.construct({
 		// ToDo: Get the referenced dataType ids from the above
 		if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
 			pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
-		if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
-			pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") );
+		if( indexById( pr.dataTypes, "DT-Text" )<0 ) 
+			pr.dataTypes.push( app.standardTypes.get("dataType","DT-Text") );
 
 		let resId = 'R-'+pr.id.simpleHash(),
 			res = {
@@ -395,6 +427,8 @@ modules.construct({
 		
 		// 7. Transform statements to RELATIONs:
 		pr.statements.forEach( function(s) {
+			// statements do not require a title, take the class' title by default:
+			if( !s.title ) s.title = itemById( pr.statementClasses, s['class'] ).title;
 			xml += '<SPEC-RELATION '+commonAttsOf( s )+'>'
 				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+s['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
 				+		attsOf( s )
@@ -542,11 +576,15 @@ modules.construct({
 											return '';
 										})
 										// ReqIF does not support the target attribute within the anchor tag <a>:
-										.replace( RE_target, function($0,$1) { 
+										.replace( RE_aTarget, function($0,$1) { 
 											return $1;
 										})
-										// ReqIF does not support the name attribute within the <object> tag:
-										.replace( RE_name, function($0,$1) { 
+										// ReqIF schema: "Only data, type, width and height are allowed as attributes 
+										// for XHTML object element and type must be set to MIME-Type (if one exists)"
+										.replace( RE_objectId, function($0,$1) { 
+											return $1;
+										})
+										.replace( RE_objectName, function($0,$1) { 
 											return $1;
 										})
 										// Add the namespace to XHTML-tags:

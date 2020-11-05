@@ -52,8 +52,8 @@ modules.construct({
 			name:'ioArchimate',	
 			desc:'Archimate Open Exchange',
 			label:'Archimate®',
-//			help: i18n.MsgImportArchmate, 
-			help: '... experimental ... import an Archimate Open Exchange file (*.xml) and add the diagrams using the editor function', 
+//			help: i18n.MsgImportArchimate, 
+			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
 			opts: {mediaTypeOf: attachment2mediaType} 
 		},{
 			id:'bpmn',
@@ -96,7 +96,10 @@ modules.construct({
 	var showFileSelect = undefined,
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
-		urlP;				// the latest URL parameters
+		urlP,				// the latest URL parameters
+		importing = false,
+		cacheLoaded = false,
+		allValid = false;
 
 	function terminateWithSuccess() {
 		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
@@ -116,6 +119,18 @@ modules.construct({
 		self.show();
 	}
  
+	self.clear = function() {
+		$('input[type=file]').val( null );  // otherwise choosing the same file twice does not create a change event in Chrome
+		setTextValue(i18n.LblFileName,'');
+		setTextValue(i18n.LblProjectName,'');
+	//	self.projectL.length = 0;  // list of projects
+		self.file = {name: ''};
+		self.projectName = '';
+		setProgress('',0);     // reset progress bar
+		setImporting( false );
+		app.busy.reset();
+		self.enableActions();
+	};
 	self.init = function() {
 		// initialize the module:
 		if ( !browser.supportsFileAPI ) {
@@ -124,14 +139,6 @@ modules.construct({
 		}; 
 //		console.debug('import.init',self);
 
-		self.clear();
-		self.setFormat('specif');
-		importMode = {id:'replace'};
-		// certain GUI elements will only be shown if the user must select a file:
-		showFileSelect = new State({
-			showWhenSet: ['.fileSelect'],
-			hideWhenSet: []
-		});
 		let h = 
 			'<div style="max-width:768px;">'
 			+	'<div class="fileSelect" style="display:none;" >'
@@ -177,6 +184,14 @@ modules.construct({
 	//	else
 			$(self.view).prepend( h );
 
+		self.clear();
+		self.setFormat('specif');
+		importMode = {id:'replace'};
+		// certain GUI elements will only be shown if the user must select a file:
+		showFileSelect = new State({
+			showWhenSet: ['.fileSelect'],
+			hideWhenSet: []
+		});
 		return true
 	};
 	// The module entry;
@@ -273,18 +288,6 @@ modules.construct({
 //		console.debug( 'importAny.hide' )
 		app.busy.reset();
 	};
-	self.clear = function() {
-		$('input[type=file]').val( null );  // otherwise choosing the same file twice does not create a change event in Chrome
-		setTextValue(i18n.LblFileName,'');
-		setTextValue(i18n.LblProjectName,'');
-	//	self.projectL.length = 0;  // list of projects
-		self.file = {name: ''};
-		self.projectName = '';
-		setProgress('',0);     // reset progress bar
-		setImporting( false );
-		app.busy.reset();
-		self.enableActions();
-	};
 	
 	self.setFormat = function( fId ) {
 		if( importing || !fId ) return;
@@ -308,23 +311,24 @@ modules.construct({
 		self.enableActions();
 	};
 
-	let importing = false,
-		allValid = false;
+	function checkState() {
+		// in this case only the project name must have a length>0:
+		let pnl = getTextLength(i18n.LblProjectName)>0;
+		// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
+		cacheLoaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.loaded();	
+		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
+		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
+	};
 	self.enableActions = function() {
 		// enable/disable the import button depending on the input state of all fields;
-		// in this case only a non-zero length of the project name is required:
-		let pnl = getTextLength(i18n.LblProjectName)>0,
-			// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
-			loaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.loaded();	
-		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
 		
-		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
+		checkState();
 		try {
 		//	document.getElementById("cloneBtn").disabled =
-			document.getElementById("createBtn").disabled = !allValid || loaded;
+			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
 			document.getElementById("updateBtn").disabled = true;
 			document.getElementById("adoptBtn").disabled =
-			document.getElementById("replaceBtn").disabled = !allValid || !loaded;
+			document.getElementById("replaceBtn").disabled = !allValid || !cacheLoaded;
 		} catch(e) {
 			console.error("importAny: enabling actions has failed ("+e+").");
 		};
@@ -332,13 +336,14 @@ modules.construct({
 	function setImporting( st ) {
 		importing = st;
 		app.busy.set( st );
+		checkState();
 		try {
 			document.getElementById("fileSelectBtn").disabled = st;
 		//	document.getElementById("cloneBtn").disabled = 
-			document.getElementById("createBtn").disabled = st || !allValid || loaded;
+			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
 			document.getElementById("updateBtn").disabled = true;
 			document.getElementById("adoptBtn").disabled =
-			document.getElementById("replaceBtn").disabled = st || !allValid || !loaded;
+			document.getElementById("replaceBtn").disabled = st || !allValid || !cacheLoaded;
 			document.getElementById("cancelBtn").disabled = !st;
 		} catch(e) {
 			console.error("importAny: setting state 'importing' has failed ("+e+").");

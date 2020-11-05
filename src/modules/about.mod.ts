@@ -48,6 +48,7 @@ modules.construct({
 		+		'<ul>'
 		+		  "<li>Import 'specif' and 'specifz' file with schema and consistency check</li>"
 		+		  "<li>Import 'reqif' file (planned)</li>"
+		+ (isEditor? "<li>Import Archimate Open-Exchange file (experimental)</li>":"")
 		+		  "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
 		+		  "<li>Import 'BPMN-XML' file</li>"
 		+		  "<li>Import from an URL or the local file system</li>"
@@ -61,6 +62,7 @@ modules.construct({
 		+		  "<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
 		+		  "<li>Export 'specifz' file</li>"
 		+		  "<li>Export 'reqifz' file</li>"
+		+		  "<li>Export 'Turtle' or 'RDF' file (planned)</li>"
 		+		  "<li>Export 'ePub' file</li>"
 		+		  "<li>Export MS-Word OOXML file</li>"
 		+		'</ul>'

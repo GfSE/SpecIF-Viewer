@@ -531,6 +531,17 @@ function LanguageTextsDe() {
 	self.SpecIF_sizeM = "mittelgroß";
 	self.SpecIF_sizeS = "klein";
 	self.SpecIF_sizeXS = "sehr klein";
+	self.SpecIF_rejected = "00_abgelehnt";
+	self.SpecIF_initial = "10_initial";
+	self.SpecIF_drafted = "20_entworfen";
+	self.SpecIF_submitted = "30_vorgelegt";
+	self.SpecIF_approved = "40_genehmigt";
+	self.SpecIF_ready = "50_bereit";
+	self.SpecIF_done = "60_umgesetzt";
+	self.SpecIF_validated = "70_validiert";
+	self.SpecIF_released = "80_freigegeben";
+	self.SpecIF_deprecated = "88_veraltet";
+	self.SpecIF_withdrawn = "90_zurückgezogen";
 
 // Messages:
 	self.MsgConfirm = 'Bitte bestätigen:';

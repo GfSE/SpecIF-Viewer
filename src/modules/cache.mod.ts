@@ -572,7 +572,7 @@ function Project( pr ) {
 											$schema: 'https://specif.de/v1.0/schema.json',
 											dataTypes: [
 												app.standardTypes.get('dataType',"DT-ShortString"),
-												app.standardTypes.get('dataType',"DT-FormattedText")
+												app.standardTypes.get('dataType',"DT-Text")
 											],
 											propertyClasses: [
 												app.standardTypes.get('propertyClass',"PC-Description"),
@@ -662,7 +662,7 @@ function Project( pr ) {
 									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: [
 										app.standardTypes.get('dataType',"DT-ShortString"),
-										app.standardTypes.get('dataType',"DT-FormattedText")
+										app.standardTypes.get('dataType',"DT-Text")
 									],
 									propertyClasses: [
 										app.standardTypes.get('propertyClass',"PC-Description"),
