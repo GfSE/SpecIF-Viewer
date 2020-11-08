@@ -72,6 +72,12 @@ app.standardTypes = new function() {
 	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
+		// DEPRECATED for SpecIF, but needed for ReqIF:
+		id: "PC-FormattedText",
+		title: CONFIG.propClassDesc,
+		dataType: "DT-FormattedText",
+		changedAt: "2020-11-06T08:59:00+02:00"
+	}, {
 		id: "PC-Diagram",
 		title: CONFIG.resClassDiagram,
 		dataType: "DT-FormattedText",

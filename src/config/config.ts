@@ -304,6 +304,14 @@ const CONFIG = {};
 		CONFIG.staClassCommentRefersTo
 	];
 
+	// A list of resourceClasses serving as hierarchyRoot with meta-data:
+	CONFIG.hierarchyRoots = [
+		CONFIG.resClassOutline,
+		'SpecIF:HierarchyRoot',
+		'SpecIF:Hierarchy',
+		'SpecIF:BillOfMaterials'
+	];
+
 	// A list of classes which are excluded from the class filtering, specified by title:
 	// All types for resources which are not referenced in the tree should be listed, here.
 	// Only resources which are referenced in a hierarchy (tree) are included in the filter process.
@@ -489,6 +497,7 @@ const vocabulary = {
 				case 'specif_view':
 				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
 				case 'specif_folder':				oT = CONFIG.resClassFolder; break;
+				case 'specif_hierarchyroot':
 				case 'specif_hierarchy':			oT = CONFIG.resClassOutline; break;
 				default:							oT = iT
 			};

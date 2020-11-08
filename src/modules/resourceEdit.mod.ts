@@ -88,7 +88,7 @@ modules.construct({
 						.then( 
 							(r)=>{
 //								console.debug( '#', opts.mode, r );
-								self.newRes = simpleClone(r);
+								self.newRes = r;
 								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
 								opts.msgBtns = [
 									msgBtns.cancel,
@@ -361,9 +361,13 @@ modules.construct({
 	};
 
 	function save(mode) {
-		// Save the new or changed resource:
+		// Save the new or changed resource;
+		// 'self.newRes' is updated with the input data and then stored; 
+		// it replaces the resource with same id.
+		// It may happen that an existing resource and thus 'self.newRes' does not have 
+		// a 'properties' list yet, even though it's class defines propertyClasses.
 		// ToDo: If the original resource had different languages, take care of them;
-		//       The new values must not replace the multi-language property values!
+		//       The new values must not replace any original multi-language property values!
 		let p, 
 			pend=2, // minimally 2 calls with promise
 			// The properties of toEdit are complete (in contrast to self.newRes):
@@ -380,14 +384,21 @@ modules.construct({
 		// in this case the title will only be seen in the element's title:
 		if( toEdit.title['class'] ) {
 			delete toEdit.title.title;  // is redundant, the property's class title applies
-			self.newRes.properties.push( toEdit.title );
-		}
+			if( Array.isArray( self.newRes.properties )
+				self.newRes.properties.push( toEdit.title );
+			else
+				self.newRes.properties = [ toEdit.title ];
+		};
 
 		toEdit.descriptions.forEach( function(p) {
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-				self.newRes.properties.push( p );
+			//	if( Array.isArray( self.newRes.properties )
+					// in this case, the 'properties' does always exist:
+					self.newRes.properties.push( p );
+			//	else
+			//		self.newRes.properties = [ p ];
 				return;
 			};
 
@@ -403,8 +414,12 @@ modules.construct({
 				// If the description property doesn't have a class, 
 				// it has been added by classifyProps() and there is no need to create it;
 				// in this case the description will only be seen in the element's description:
-				if( p['class'] )
-					self.newRes.properties.push( p );
+				if( p['class'] ) {
+					if( Array.isArray( self.newRes.properties )
+						self.newRes.properties.push( p );
+					else
+						self.newRes.properties = [ p ];
+				};
 			} else {
 				// delete it:
 				delete self.newRes.description;
@@ -419,8 +434,12 @@ modules.construct({
 			// a property class must exist, 
 			// because classifyProps() puts only existing properties to 'other':
 			if( p['class'] ) {
-				if( hasContent(p.value) )
-					self.newRes.properties.push( p )
+				if( hasContent(p.value) ) {
+					if( Array.isArray( self.newRes.properties )
+						self.newRes.properties.push( p );
+					else
+						self.newRes.properties = [ p ];
+				};
 			} else {
 					console.error('Cannot save edited property',p,' because it has no class');
 			};

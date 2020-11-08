@@ -591,7 +591,7 @@ function toOxml( data, opts ) {
 							// e) an unordered list:
 							$2 = $2.replace(/<ul>([\s\S]*?)<\/ul>/, function($0,$1) {
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{ text:$1.trim(), style:'bulleted' }} );
+									bL.push( {p:{ text:$1.trim(), format:{style:'bulleted'} }} );
 									return ''
 								});
 								return ''
@@ -600,7 +600,7 @@ function toOxml( data, opts ) {
 							$2 = $2.replace(/<ol>([\s\S]*?)<\/ol>/, function($0,$1) {
 								olCnt++;
 								$1.replace(/<li>([\s\S]*?)<\/li>/g, function($0,$1) {
-									bL.push( {p:{ text:$1.trim(), style:'numbered', numId:olCnt }} );
+									bL.push( {p:{ text:$1.trim(), format:{style:'numbered', numId:olCnt }}} );
 									return ''
 								});
 								return ''
@@ -640,9 +640,9 @@ function toOxml( data, opts ) {
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
 											// $1 is undefined in case of <th/>
-											cs.push( {p:{text:($1||nbsp).trim(), format:{font:{weight:'bold'}}}, border:{style:'single'}} )
+											cs.push( {p:{text:($1||nbsp).trim(), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
 											// ToDo: Somehow the text is not printed boldly ...
-											return ''
+											return '';
 											});
 									$1 = $1.replace(/<td[^\/>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g, function($0,$1) {
 											// a <td ...>content</td> or empty <td ... /> tag,

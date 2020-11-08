@@ -44,7 +44,7 @@ modules.construct({
 	self.toSpecif = function( buf ) {
 		// Transform ReqIF to SpecIF for import:
 	};   */
-	self.toReqif = function(pr) {
+	self.toReqif = function( pr, opts ) {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
@@ -54,17 +54,24 @@ modules.construct({
 		
 //		console.debug( 'ioReqif.toReqif', simpleClone(pr) );
 
+		// Check for missing options:
+		if( typeof(opts)!='object' ) opts = {};
+		if( !opts.hierarchyRoots ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
+
 		const date = new Date().toISOString(),
 			ns = 'xhtml';
 
-		// 0. SpecIF has a number of optional items which are required for ReqIF;
-		//    these are complemented in the following.
+		// ------------------------------------------------------------------------------
+		// PREPARATION
+		//
+		// SpecIF has a number of optional items which are required for ReqIF;
+		// these are complemented in the following.
 		//    - Add title properties of resources and statements
 		//    - Add description properties of resources and statements
 		//    - Add hierarchy root
 
-			function addType( ctg, id ) {
-				// Add the type or class, if not yet defined:
+			function addEl( ctg, id ) {
+				// Add an element (e.g. class) to it's list, if not yet defined:
 				
 				// get the name of the list, e.g. 'dataType' -> 'dataTypes':
 				var L = app.standardTypes.listOf(ctg);
@@ -126,19 +133,23 @@ modules.construct({
 						};
 						return false; // no description, thus no property needed
 					}
-				// for every element of the given class:
-				for( var j=eL.length-1; j>-1; j-- ) {
-					if( descPropertyNeeded(eL[j]) ) {
+				// for every instance of the given class:
+				eL.forEach( (el)=>{
+					if( descPropertyNeeded(el) ) {
+						// There is an attempt to add the types in every loop ... which is hardly efficient.
+						// However, that way they are only added, if needed.
+
+						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addType("propertyClass","PC-Description");
+						addEl("propertyClass","PC-Description");
 					/*	if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
 						// avoid duplicates:
 						if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
 							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") ); */
 						
 						// b. add dataType, if not yet defined:
-						addType("dataType","DT-Text");
+						addEl("dataType","DT-Text");
 					/*	if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
 						// avoid duplicates:
 						if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
@@ -152,17 +163,17 @@ modules.construct({
 							eC.propertyClasses.unshift( "PC-Description" ); */
 						
 						// d. Add description property to element;
-						addP( eL[j], {
+						addP( el, {
 								class: "PC-Description",
-								value: eL[j].description
+								value: el.description
 						});
-					/*	if( !Array.isArray( eL[j].properties ) ) eL[j].properties = [];
-						eL[j].properties.unshift({
+					/*	if( !Array.isArray( el.properties ) ) el.properties = [];
+						el.properties.unshift({
 								class: "PC-Description",
-								value: eL[j].description
+								value: el.description
 						}); */
 					};
-				};
+				});
 			};
 		pr.resourceClasses.forEach( (rC)=>{ addDescProperty('resourceClass',rC) });
 		pr.statementClasses.forEach( (sC)=>{ addDescProperty('statementClass',sC) });
@@ -192,27 +203,31 @@ modules.construct({
 								};
 							return true;
 					}
-				// for every element of the given class:
-				for( var j=eL.length-1; j>-1; j-- ) {
-					if( titlePropertyNeeded(eL[j]) ) {
+				// for every instance of the given class:
+				eL.forEach( (el)=>{
+					if( titlePropertyNeeded(el) ) {
+						// There is an attempt to add the types in every loop ... which is hardly efficient.
+						// However, that way they are only added, if needed.
+
+						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addType("propertyClass","PC-Name");
+						addEl("propertyClass","PC-Name");
 						
 						// b. add dataType, if not yet defined:
-						addType("dataType","DT-ShortString");
+						addEl("dataType","DT-ShortString");
 						
 						// c. Add propertyClass to element class:
 						addPC( eC, "PC-Name" );
 						
 						// d. Add title property to element;
-						addP( eL[j], {
+						addP( el, {
 								class: "PC-Name",
 								// no title is required in case of statements; it's class' title applies by default:
-								value: eL[j].title || eC.title
+								value: el.title || eC.title
 						});
 					};
-				};
+				});
 			};
 		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
 		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });
@@ -228,47 +243,123 @@ modules.construct({
 		// Therefore, a somewhat complicated solution is chosen, in which hierarchyRoots are added as resources, 
 		// *only when needed* and then, later on, the resources at the root are transformed to SPECIFICATION roots.
 		// ToDo: Design the ReqIF import and export so that a roundtrip works; neither loss nor growth is acceptable.
-		if( indexById( pr.resourceClasses, "RC-HierarchyRoot" )<0 ) 
-			pr.resourceClasses.push( app.standardTypes.get("resourceClass","RC-HierarchyRoot") );
 
-		// ToDo: Get the referenced propertyClass ids from the above
-		if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
-			pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") );
-		if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
-			pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") );
+			function aHierarchyHasNoRoot() {
+				for( var i=pr.hierarchies.length-1;i>-1;i-- ) {
+					let hR = itemById( pr.resources, pr.hierarchies[i].resource ),
+						hC = itemById( pr.resourceClasses, hR['class'] );
+					if( !hR || !hC ) 
+						console.error( "Hierarchy '",pr.hierarchies[i].id,"' is corrupt" )
+					// let's look for the title, but we could perhaps look for a type-property instead:
+					if( opts.hierarchyRoots.indexOf( hC.title )<0 ) 
+						return true
+				};
+				return false;
+			}	
+		if( aHierarchyHasNoRoot() ) {
+			console.info("Adding a hierarchyRoot for ReqIF");
+			addEl("resourceClass","RC-HierarchyRoot");
+		/*	if( indexById( pr.resourceClasses, "RC-HierarchyRoot" )<0 ) 
+				pr.resourceClasses.push( app.standardTypes.get("resourceClass","RC-HierarchyRoot") ); */
 
-		// ToDo: Get the referenced dataType ids from the above
-		if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
-			pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
-		if( indexById( pr.dataTypes, "DT-Text" )<0 ) 
-			pr.dataTypes.push( app.standardTypes.get("dataType","DT-Text") );
+			// ToDo: Get the referenced propertyClass ids from the above
+			addEl("propertyClass","PC-Description");
+			addEl("propertyClass","PC-Name");
+		/*	if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
+				pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") );
+			if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
+				pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") ); */
 
-		let resId = 'R-'+pr.id.simpleHash(),
-			res = {
-				id: resId,
-				title: pr.title,
-				class: "RC-HierarchyRoot",
-				properties: [{
-					class: "PC-Name",
-					value: pr.title
-				}],
-				changedAt: date
-		};
-		// add a description property only if it has a value:
-		if( pr.description ) 
-			res.properties.push({
-					class: "PC-Description",
-					value: pr.description
-			});
-		pr.resources.push( res );
-		pr.hierarchies = [{
-				id: "H-"+resId,
-				resource: resId,
-				nodes: pr.hierarchies,
-				changedAt: date
-		}];
+			// ToDo: Get the referenced dataType ids from the above
+			addEl("dataType","DT-ShortString");
+			addEl("dataType","DT-Text");
+		/*	if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
+				pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
+			if( indexById( pr.dataTypes, "DT-Text" )<0 ) 
+				pr.dataTypes.push( app.standardTypes.get("dataType","DT-Text") ); */
 
-		// After the preparations, begin with the conversion:
+			let resId = 'R-'+pr.id.simpleHash(),
+				res = {
+					id: resId,
+					title: pr.title,
+					class: "RC-HierarchyRoot",
+					properties: [{
+						class: "PC-Name",
+						value: pr.title
+					}],
+					changedAt: date
+			};
+			// add a description property only if it has a value:
+			if( pr.description ) 
+				res.properties.push({
+						class: "PC-Description",
+						value: pr.description
+				});
+			pr.resources.push( res );
+			// create a new root instance:
+			pr.hierarchies = [{
+					id: "H-"+resId,
+					resource: resId,
+					// .. and add the previous hierarchies as children:
+					nodes: pr.hierarchies,
+					changedAt: date
+			}];
+	};
+
+		// Text may be XHTML-formatted, even in a property of dataType 'xs:string'.
+		// So change all propertyClasses of dataType 'xs:string' to 'xhtml', 
+		// if XHTML-formatted text exists in at least one instance.
+			function specializeClassToFormattedText( ctg, eC ) {
+				// eC is a resourceClass or statementClass;
+				// get all instances of eC:
+			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
+
+					function withHtml(L,id) {
+						// for all elements (resources or statements) in list L, 
+						// check whether a property of the given propertyClass id
+						// has HTML content; a single occurrence is sufficient: 
+						let i,j,prp;
+						for( i=L.length-1;i>-1;i-- ) {
+							if( L[i].properties )
+								for( j=L[i].properties.length-1;j>-1;j-- ) {
+									prp = L[i].properties[j];
+									// check only the property with the specified class:
+									if( prp['class']==id && isHTML(prp.value) ) return true;
+								};
+						};
+						return false;
+					}
+
+				if( eC.propertyClasses ) {
+					// list elements, i.e. resources or statements, of a certain class:
+					let eL = ctg=='statementClass'? 
+								pr.statements.filter( function(sta) { return sta['class']==eC.id } )
+							: 	pr.resources.filter( function(res) { return res['class']==eC.id } ),
+						pC;
+//					console.debug( 'specializeClassToFormattedText', eC, eL );
+
+					eC.propertyClasses.forEach( (pCid)=>{
+						pC = itemById( pr.propertyClasses, pCid );
+						// Has any given property value of the listed resources or statements XHTML-content:
+						if( (itemById( pr.dataTypes, pC.dataType ).type=='xs:string') && withHtml(eL,pCid) ) {
+//							console.debug( 'specializeClassToFormattedText', eC, pC );
+							console.info("Specializing propertyClass for formatted text to element with title '"+pCid+"'");
+							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
+							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
+							pC.dataType = "DT-FormattedText";
+							addEl("dataType","DT-FormattedText");
+						};
+					});
+				};
+			}
+		pr.resourceClasses.forEach( (rC)=>{ specializeClassToFormattedText('resourceClass',rC) });
+		pr.statementClasses.forEach( (sC)=>{ specializeClassToFormattedText('statementClass',sC) });
+//		console.debug('pr 3',simpleClone(pr));
+
+		// ------------------------------------------------------------------------------
+		// TRANSFORMATION
+		//
+		// After the preparation, begin to convert:
 		var xml = 
 				'<?xml version="1.0" encoding="UTF-8"?>'
 			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns+'="http://www.w3.org/1999/xhtml">'

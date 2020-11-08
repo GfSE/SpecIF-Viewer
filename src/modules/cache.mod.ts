@@ -286,10 +286,11 @@ function Project( pr ) {
 			case 'xhtml':
 				return r.maxLength==n.maxLength;
 			case 'xs:enumeration':
+				// Perhaps we must also look at the title ..
 				if( r.values.length!=n.values.length ) return false
 				for( var i=n.values.length-1; i>-1; i-- )
 					// assuming that the titles/values don't matter:
-					if( indexById(r.values, n.values[i].id<0 ) ) return false;
+					if( indexById(r.values, n.values[i].id)<0 ) return false;
 				// the list of enumerated values *is* equal:
 				// no break
 			default:
@@ -935,7 +936,7 @@ function Project( pr ) {
 			//    b) if same id and same content, just use it (no action)
 			//    c) if same id and different content, save with new id and update all references
 			let i,I,pend=0,itmL;
-//			console.debug('#1',simpleClone(self.data),simpleClone(nD));
+//			console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
 			types.forEach( (ty)=>{
 				if( Array.isArray(nD[ty.list]) ) {
 					itmL=[];
@@ -1601,8 +1602,8 @@ function Project( pr ) {
 		)
 	};
 
-	self.createResource = ( oT )=>{
-		// Create an empty form (resource instance) for the resource class oT:
+	self.createResource = ( rC )=>{
+		// Create an empty form (resource instance) for the resource class rC:
 		// Note: ES6 promises are used;
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
 		// also https://javascript.info/promise-chaining
@@ -1611,7 +1612,7 @@ function Project( pr ) {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
 				var res;
 
-				self.readContent( 'resourceClass', oT, {reload:true} )
+				self.readContent( 'resourceClass', rC, {reload:true} )
 				.then(
 					(rC)=>{
 //						console.debug('#1',rC);
@@ -2173,7 +2174,7 @@ function Project( pr ) {
 	function classIsCompatible(ctg,refC,newC,mode) {
 	//	if(refC.id!=newC.id) return {status:0};
 		// else: identifiers are equal:
-//		console.debug( 'classIsCompatible', refC, newC );
+		console.debug( 'classIsCompatible', refC, newC );
 		switch( ctg ) {
 			case 'dataType':
 				// A dataType is incompatible, if an existing one has the same id and a smaller value range.
