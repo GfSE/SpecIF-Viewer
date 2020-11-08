@@ -82,15 +82,13 @@ function xslx2specif( buf, pN, chAt ) {
 				app.standardTypes.get("dataType","DT-Integer"),
 				app.standardTypes.get("dataType","DT-Real")
 			];	
-			this.propertyClasses = [];	
-			this.resourceClasses = [{	
-				id: resClassId( CONFIG.resClassFolder ),
-				title: CONFIG.resClassFolder,			// specType for folders (e.g. representing sheets) 
-				isHeading: true,
-				description: 'Resource class for folders',
-				instantiation: ["auto","user"],
-				changedAt: chAt
-			}];
+			this.propertyClasses = [
+				app.standardTypes.get("propertyClass","PC-Description"),
+				app.standardTypes.get("propertyClass","PC-Type")
+			];	
+			this.resourceClasses = [
+				app.standardTypes.get("resourceClass","RC-Folder")
+			];
 			this.statementClasses = []
 		}
 		function dataTypeId( str ) { 
@@ -111,7 +109,7 @@ function xslx2specif( buf, pN, chAt ) {
 			this.id = resClassId( nm );
 			this.title = vocabulary.resource.specif(ti);
 			this.description = 'For resources specified per line of an excel sheet';
-			this.instantiation = ["auto","user"];
+			this.instantiation = ["auto"];  // this class not for editing in SpecIF
 			this.propertyClasses = [];
 			this.changedAt = chAt
 		}
@@ -122,7 +120,7 @@ function xslx2specif( buf, pN, chAt ) {
 			this.id = staClassId( ti );
 			this.title = ti;
 			this.description = 'For statements created by columns whose title is declared as a statement';
-			this.instantiation = ["auto","user"];
+			this.instantiation = ["auto"];  // this class not for editing in SpecIF
 			// No subjectClasses or objectClasses means all are allowed.
 			// Cannot specify any, as we don't know the resourceClasses.
 			this.changedAt = chAt
@@ -278,7 +276,7 @@ function xslx2specif( buf, pN, chAt ) {
 								changedAt: chAt
 							};
 
-						let c, C, cell, val, rC, pC, dT, id, stL=[], ti, obL, oInner;
+						let c, C, cell, val, rC, pC, dT, id, stL=[], pTi, obL, oInner;
 						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {	// an attribute per column ...
 							cell = ws.data[cellName(c,row)];
 //							console.debug('createR',c,cellName(c,row),cell);
@@ -310,13 +308,13 @@ function xslx2specif( buf, pN, chAt ) {
 											value: val
 										})
 								} else {
-									ti = ws.data[cellName(c,ws.firstCell.row)].v;  // column title in the first line of the same column
-									pC = itemByTitle( specif.propertyClasses, ti );
+									pTi = ws.data[cellName(c,ws.firstCell.row)].v;  // column title in the first line
+									pC = itemByTitle( specif.propertyClasses, pTi );
 									if( pC ) {
 										// it is a property with enumerated dataType; only a defined value will be used.
 										// Thus, if a cell contains a value which is not listed in the type, it will be ignored:
 										val = getVal( itemById(specif.dataTypes,pC.dataType), cell );
-//										console.debug( 'enumerated dataType',cell,ti,pC,val,typeof(val) );
+//										console.debug( 'enumerated dataType',cell,pTi,pC,val,typeof(val) );
 										if( val ) 
 											res.properties.push({
 												class: pC.id,
@@ -325,14 +323,14 @@ function xslx2specif( buf, pN, chAt ) {
 									} else {
 										// it is a statement:
 										obL = cell.v.split(",");
-	//									console.debug('createR - statement',ti,obL);
+	//									console.debug('createR - statement',pTi,obL);
 										obL.forEach( (ob)=>{
 											oInner = RE.quote.exec( ob );
 											if( oInner && oInner.length>2 ) {
 												stL.push({
 											//		id: undefined,  	// defined further down, when the resource's id has been determined
-													title: ti,
-													class: staClassId( ti ),	// make id from column title
+													title: pTi,
+													class: staClassId( pTi ),	// make id from column title
 											//		subject: undefined,	// defined further down, when the resource's id has been determined
 													objectToFind: oInner[1] || oInner[2],  // for content in double and single quotes
 													// just a placeholder for passing the schema-check,
@@ -384,30 +382,32 @@ function xslx2specif( buf, pN, chAt ) {
 								res.id = genID('R-')
 							};
 							res.title = titleFromProps( res );
-//							console.debug('xls-resource',res);
-							// add the hierarchy entry to the tree:
-							hTree.nodes.push({ 
-								id: 'N-'+(res.id+hTree.nodes.length).simpleHash(),
-								resource: res.id,
-								changedAt: chAt
-							}); 
-							// add the resource to the list:
-							specif.resources.push(res);
-							// store any statements only if the resource is stored, as well
-							// that's why it is here and not outside the 'if' block:
-							if( stL.length>0 ) {
-								stL.forEach( (st)=>{ st.id = 'S-'+(res.id+st.title+st.objectToFind).simpleHash(); st.subject = res.id } );
-								specif.statements = specif.statements.concat(stL)
-							}
-						}
+							// accept only resources with title:
+							if( res.title ) {
+//								console.debug('xls-resource',res);
+								// add the hierarchy entry to the tree:
+								hTree.nodes.push({ 
+									id: 'N-'+(res.id+hTree.nodes.length).simpleHash(),
+									resource: res.id,
+									changedAt: chAt
+								}); 
+								// add the resource to the list:
+								specif.resources.push(res);
+								// store any statements only if the resource is stored, as well:
+								if( stL.length>0 ) {
+									stL.forEach( (st)=>{ st.id = 'S-'+(res.id+st.title+st.objectToFind).simpleHash(); st.subject = res.id } );
+									specif.statements = specif.statements.concat(stL)
+								};
+							};
+						};
 					}
 		
 				// Processing of createFld:
 				// Create folder resource:
 				var fld = {
-						id: 'F-'+(pN+sh.name+CONFIG.resClassFolder).simpleHash(),
+						id: 'R-'+(pN+sh.name+CONFIG.resClassFolder).simpleHash(),
 						title: sh.name,
-						class: resClassId( CONFIG.resClassFolder ),
+						class: "RC-Folder",
 						changedAt: chAt
 					};
 //				console.debug( 'createFld:', fld );
@@ -436,31 +436,32 @@ function xslx2specif( buf, pN, chAt ) {
 				// a complete propertyClass is added to pCL per column which is not titled with a statement title
 				// and a corresponding list of propertyClass ids is returned for the resourceClass.
 				var pCs=[], // list of propertyClass ids found on this worksheet
-					pC,dT,c,C,cell,ti;
-				for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
+					pC,dT,c,C,cell,pTi;
+				for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
 					// Check whether it is an enumerated dataType:
 					cell = ws.data[ cellName(c,ws.firstCell.row) ];
-					ti = cell?(cell.v):'';
-					if( ti ) {
-						pC = itemByTitle( specif.propertyClasses, ti );
+					pTi = cell?(cell.v):'';
+					// Skip all columns without title:
+					if( pTi ) {
+						pC = itemByTitle( specif.propertyClasses, pTi );
 						if( pC&&pC.id ) {
 							dT = itemById( specif.dataTypes, pC.dataType );
 							if( dT && dT.type=="xs:enumeration" ) {
-//								console.debug( 'enum found: ', cell, ti, pC );
+//								console.debug( 'enum found: ', cell, pTi, pC );
 								// The current column has an enumeration dataType;
 								// use the corresponding propertyClass:
 								pCs.push( pC.id );
-								continue
-							}
-						}
+								continue;
+							};
+						};
+						// It is not an enumerated dataType, 
+						// so we find out which dataType is appropriate:
+						pC = getPropClass( c );
+						if( pC ) { 
+							cacheE( pCL, pC ); // add it to propertyClasses, avoid duplicates
+							pCs.push( pC.id )  // add it to the resourceClass' propertyClasses
+						};
 					};
-					// It is not an enumerated dataType, 
-					// so we find out which dataType is appropriate:
-					pC = getPropClass( c );
-					if( pC ) { 
-						cacheE( pCL, pC ); // add it to propertyClasses, avoid duplicates
-						pCs.push( pC.id )  // add it to the resourceClass' propertyClasses
-					}
 				};
 				return pCs;
 
@@ -473,20 +474,20 @@ function xslx2specif( buf, pN, chAt ) {
 					// add all values of the current column to a list:
 					let valL=[],r,R;
 					for( r=ws.firstCell.row,R=ws.lastCell.row+1;r<R;r++) {		// every line
-						valL.push( ws.data[ cellName(cX,r) ] )							
+						valL.push( ws.data[ cellName(cX,r) ] );
 					};
 
 					// the cell value in the first line is the title, either of a property or a statement:
-					let ti = valL[0]?(valL[0].w || valL[0].v):i18n.MsgNoneSpecified,
+					let pTi = valL[0]?(valL[0].w || valL[0].v):'',
 						pC,nC,i;
-//					console.debug( 'getPropClass 1', ti, valL );
+//					console.debug( 'getPropClass 1', pTi, valL );
 
-					// Skip, if it is a statement title
+					// Skip, if there is no column heading or if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
-					if( CONFIG.statementClasses.indexOf( ti )>-1 ) return;
+					if( !pTi || CONFIG.statementClasses.indexOf( pTi )>-1 ) return;
 
 					// else, it is a property:
-					ti = vocabulary.property.specif( ti );  // translate the title to standard term
+					pTi = vocabulary.property.specif( pTi );  // translate the title to standard term
 					
 					// Cycle through all elements of the column and select the most restrictive type,
 					// start with the last and stop with the second line:
@@ -502,7 +503,7 @@ function xslx2specif( buf, pN, chAt ) {
 						pC = defaultC
 					};
 					// Assign a longer text field for descriptions:
-					if( CONFIG.descProperties.indexOf( ti )>-1 ) pC = 'Text';
+					if( CONFIG.descProperties.indexOf( pTi )>-1 ) pC = 'Text';
 
 					// Assign a longer text field for columns with cells having a longer text:
 					if( pC=='ShortString' ) {
@@ -518,7 +519,7 @@ function xslx2specif( buf, pN, chAt ) {
 							pC = 'Text'
 					};
 //					console.debug( 'getPropClass 4',valL[i],pC );
-					return new PropClass( ws.name+cX, ti, pC || defaultC );
+					return new PropClass( ws.name+cX, pTi, pC || defaultC );
 
 						function classOf( cell ) {
 							if( isBool(cell) ) return 'Boolean';
@@ -533,15 +534,20 @@ function xslx2specif( buf, pN, chAt ) {
 			}
 			function getStaClasses( ws, sCL ) { 
 				// build a list of statementClasses:
-				var ti,sC;
-				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {			// every column
-					ti = ws.data[ cellName(c,ws.firstCell.row) ];  					// value of first line
-					ti = ti.w || ti.v;
-					// Add statementClass, if it is declared as such and if it is not yet listed:
-					if( indexById(sCL,staClassId(ti))<0 && CONFIG.statementClasses.indexOf( ti )>-1 ) {
-						sC = new StaClass( ti );
-//						console.debug( 'getStaClasses', ti, sC );
-						sCL.push( sC )
+				var sTi,sC;
+				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
+					sTi = ws.data[ cellName(c,ws.firstCell.row) ];  					// value of first line
+					// Skip columns without title;
+					// in Excel 'deleted' cells are different from 'empty' cells,
+					// so we need to take a look at the actual values:
+					if( sTi ) {
+						sTi = sTi.w || sTi.v;
+						// Add statementClass, if it is declared as such and if it is not yet listed:
+						if( sTi && indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.indexOf( sTi )>-1 ) {
+							sC = new StaClass( sTi );
+	//						console.debug( 'getStaClasses', sTi, sC );
+							sCL.push( sC )
+						}
 					}
 				}
 			}
@@ -597,7 +603,7 @@ function xslx2specif( buf, pN, chAt ) {
 	specif.resources = [{
 		id: 'R-'+pN.toSpecifId(),
 		title: pN,
-		class: resClassId( CONFIG.resClassFolder ),
+		class: "RC-Folder",
 		changedAt: chAt
 	}];
 	specif.statements = [];

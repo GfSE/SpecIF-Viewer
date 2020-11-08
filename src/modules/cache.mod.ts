@@ -286,10 +286,11 @@ function Project( pr ) {
 			case 'xhtml':
 				return r.maxLength==n.maxLength;
 			case 'xs:enumeration':
+				// Perhaps we must also look at the title ..
 				if( r.values.length!=n.values.length ) return false
 				for( var i=n.values.length-1; i>-1; i-- )
 					// assuming that the titles/values don't matter:
-					if( indexById(r.values, n.values[i].id<0 ) ) return false;
+					if( indexById(r.values, n.values[i].id)<0 ) return false;
 				// the list of enumerated values *is* equal:
 				// no break
 			default:
@@ -572,7 +573,7 @@ function Project( pr ) {
 											$schema: 'https://specif.de/v1.0/schema.json',
 											dataTypes: [
 												app.standardTypes.get('dataType',"DT-ShortString"),
-												app.standardTypes.get('dataType',"DT-FormattedText")
+												app.standardTypes.get('dataType',"DT-Text")
 											],
 											propertyClasses: [
 												app.standardTypes.get('propertyClass',"PC-Description"),
@@ -662,7 +663,7 @@ function Project( pr ) {
 									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: [
 										app.standardTypes.get('dataType',"DT-ShortString"),
-										app.standardTypes.get('dataType',"DT-FormattedText")
+										app.standardTypes.get('dataType',"DT-Text")
 									],
 									propertyClasses: [
 										app.standardTypes.get('propertyClass',"PC-Description"),
@@ -935,7 +936,7 @@ function Project( pr ) {
 			//    b) if same id and same content, just use it (no action)
 			//    c) if same id and different content, save with new id and update all references
 			let i,I,pend=0,itmL;
-//			console.debug('#1',simpleClone(self.data),simpleClone(nD));
+//			console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
 			types.forEach( (ty)=>{
 				if( Array.isArray(nD[ty.list]) ) {
 					itmL=[];
@@ -1601,8 +1602,8 @@ function Project( pr ) {
 		)
 	};
 
-	self.createResource = ( oT )=>{
-		// Create an empty form (resource instance) for the resource class oT:
+	self.createResource = ( rC )=>{
+		// Create an empty form (resource instance) for the resource class rC:
 		// Note: ES6 promises are used;
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
 		// also https://javascript.info/promise-chaining
@@ -1611,7 +1612,7 @@ function Project( pr ) {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
 				var res;
 
-				self.readContent( 'resourceClass', oT, {reload:true} )
+				self.readContent( 'resourceClass', rC, {reload:true} )
 				.then(
 					(rC)=>{
 //						console.debug('#1',rC);
@@ -3255,84 +3256,15 @@ function visibleIdOf( r, prj ) {
 	};
 //	return undefined
 }
-function titleIdx( pL, prj ) {
-	// Find the index of the property to be used as title.
-	// The result depends on the current user - only the properties with read permission are taken into consideration.
-	// This works for title strings and multi-language title objects.
-
-/*	// Note that the logic has been simplified.
-	// Up until revision 0.92.34, the title property which was listed first in CONFIG.XXAttributes was chosen.
-		var idx = -1;
-		for( var c=0, C=CONFIG.headingProperties.length; c<C; c++) {  // iterate configuration list; leading entry has priority
-			idx = indexByTitle( pL, CONFIG.headingProperties[c] );
-			if( idx>-1 ) return idx
-		};
-	// Now, the first property which is found in the respective list is chosen.
-	// ToDo: Check, if the results differ in practice ...
-*/
-	if( pL ) {
-		if( !prj ) prj = app.cache.selectedProject.data;
-		let pt;
-		for( var a=0,A=pL.length;a<A;a++ ) {
-			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
-			// First, check the configured headings:
-			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
-			// If nothing has been found, check the configured titles:
-			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a
-		}
-	};
-	return -1
-}
-function elementTitleOf( el, opts, dta ) {
-	// Get the title of a resource or a statement
-	// ... from the properties or a replacement value in case of default:
-	if( typeof(el)!='object' ) return;
-	let pt = titleFromProperties( el.properties, opts ) || titleOf( el, opts );
-	// if it is a statement and does not have a title of it's own, take the class' title:
-// 	console.debug('elementTitleOf',el,opts,pt);
-
-	// In case of a resource, we never want to lookup a title,
-	// however in case of a statement, we do:
-	if( el.subject ) {
-		// it is a statement
-		if( !pt && dta )
-			pt = staClassTitleOf( el, dta, opts )
-	} else {
-		// it is a resource
-		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && pt )
-			pt = pt.addIcon( itemById( dta.resourceClasses, el['class'] ).icon )
-	};
-//	return opts.targetLanguage? pt.unescapeHTMLEntities() : pt
-	return typeof(pt)=='string'? pt.stripHTML() : pt
-
-	function titleFromProperties( pL, opts ) {
-	//	if( !pL ) return;
-		// look for a property serving as title:
-		let idx = titleIdx( pL );
-		if( idx>-1 ) {  // found!
-			// Remove all formatting for the title, as the app's format shall prevail.
-			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
-			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-		//	if( modules.ready.indexOf( 'diff' )>-1 )
-		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
-			// For now, let's try without replacements; so far this function is called before the filters are applied,
-			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//			console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-			return languageValueOf( pL[idx].value, opts )
-		};
-	//	return undefined
-	}
-}
 function resClassTitleOf( e, prj, opts ) {
-	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts )
+	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts );
 }
 function staClassTitleOf( e, prj, opts ) {
-	return titleOf( itemById( prj.statementClasses, e['class'] ), opts )
+	return titleOf( itemById( prj.statementClasses, e['class'] ), opts );
 }
 function propTitleOf( prp, prj ) {
 	// get the title of a property as defined by itself or it's class:
-	return prp.title || itemById(prj.propertyClasses,prp['class']).title
+	return prp.title || itemById(prj.propertyClasses,prp['class']).title;
 }
 function titleOf( item, opts ) {
 	// Pick up the native title of any item;
@@ -3340,7 +3272,7 @@ function titleOf( item, opts ) {
 	// It can be a title string or a multi-language title object.
 	let ti = languageValueOf( item.title, opts );
 //	console.debug('titleOf',item,opts,ti);
-	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti
+	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 //	return undefined
 }
 function languageValueOf( val, opts ) {
@@ -3353,7 +3285,7 @@ function languageValueOf( val, opts ) {
 	if( !Array.isArray(val) ) {
 		// neither a strring nor an array is a programming error:
 		console.error('Invalid value: ',val);
-		return null
+		return null;
 	};
 
 	let lVs = val.filter( (v)=>{
@@ -3364,13 +3296,13 @@ function languageValueOf( val, opts ) {
 
 	// next try a little less stringently:
 	lVs = val.filter( (v)=>{
-		return opts.targetLanguage.slice(0,2) == v.language.slice(0,2)
+		return opts.targetLanguage.slice(0,2) == v.language.slice(0,2);
 	});
 	// lVs should have none or one elements; any additional ones are simply ignored:
 	if( lVs.length>0 ) return lVs[0].text;
 
 	// As a final resourt take the first element in the original list of values:
-	return val[0].text
+	return val[0].text;
 }
 /* function typeOf( el ) {
 	let tP = itemByTitle(el.properties,CONFIG.propClassType);
@@ -3459,6 +3391,54 @@ function valByTitle(dta,itm,pN) {
 			if( (itm.properties[i].title || itemById( dta.propertyClasses, itm.properties[i]['class'] ).title)==pN )
 				return itm.properties[i].value
 		}
+	};
+//	return undefined
+}
+function titleIdx( pL, prj ) {
+	// Find the index of the property to be used as title.
+	// The result depends on the current user - only the properties with read permission are taken into consideration.
+	// This works for title strings and multi-language title objects.
+
+/*	// Note that the logic has been simplified.
+	// Up until revision 0.92.34, the title property which was listed first in CONFIG.XXAttributes was chosen.
+		var idx = -1;
+		for( var c=0, C=CONFIG.headingProperties.length; c<C; c++) {  // iterate configuration list; leading entry has priority
+			idx = indexByTitle( pL, CONFIG.headingProperties[c] );
+			if( idx>-1 ) return idx
+		};
+	// Now, the first property which is found in the respective list is chosen.
+	// ToDo: Check, if the results differ in practice ...
+*/
+	if( pL ) {
+		if( !prj ) prj = app.cache.selectedProject.data;
+		let pt;
+		for( var a=0,A=pL.length;a<A;a++ ) {
+			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
+			// First, check the configured headings:
+			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
+			// If nothing has been found, check the configured titles:
+			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a
+		}
+	};
+	return -1
+}
+function titleFromProperties( pL, opts ) {
+//	if( !pL ) return;
+	// look for a property serving as title:
+	let idx = titleIdx( pL );
+	if( idx>-1 ) {  // found!
+		// Remove all formatting for the title, as the app's format shall prevail.
+		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+		// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+	//	if( modules.ready.indexOf( 'diff' )>-1 )
+	//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
+		// For now, let's try without replacements; so far this function is called before the filters are applied,
+		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+//		console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
+	//	return languageValueOf( pL[idx].value, opts );
+		let ti = languageValueOf( pL[idx].value, opts );
+		if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 	};
 //	return undefined
 }

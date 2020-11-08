@@ -1401,11 +1401,14 @@ function Resource( obj ) {
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
 		let ti = languageValueOf( clsPrp.title.value, opts );
-		if( opts && opts.lookupTitles )
-			ti = i18n.lookup( ti );
-		if( self.toShow['class'].isHeading ) 
+		if( clsPrp.isHeading ) {
+			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
+			// whereas the individual elements may mean the vocabulary term as such:
+			if( opts && opts.lookupTitles )
+				ti = i18n.lookup( ti );
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
+		};
 		// else: is not a heading:
 		// take title and add icon, if configured:
 //		console.debug('renderTitle',simpleClone(clsPrp),ti);
@@ -1528,6 +1531,44 @@ function Resources() {
 	return self
 }
 
+function elementTitleOf( el, opts, prj ) {
+	// Get the title of a resource or a statement
+	// ... from the properties or a replacement value in case of default.
+	if( typeof(el)!='object' ) return;
+	if( !prj ) prj = app.cache.selectedProject.data;
+	
+	// Lookup titles only in case of a resource serving as heading or in case of a statement:
+	let localOpts;
+	if( el.subject ) {
+		// it is a statement
+		localOpts = opts;
+	} else {
+		// it is a resource
+		localOpts = {
+			targetLanguage: opts.targetLanguage,
+			lookupTitles: opts.lookupTitles && itemById( prj.resourceClasses, el['class'] ).isHeading
+		};
+	};
+	let pt = titleFromProperties( el.properties, localOpts ) || titleOf( el, localOpts );
+
+	// if it is a statement and does not have a title of it's own, take the class' title:
+// 	console.debug('elementTitleOf',el,opts,pt);
+
+	// In case of a resource, we never want to lookup a title,
+	// however in case of a statement, we do:
+	if( el.subject ) {
+		// it is a statement
+		if( !pt && prj )
+			// take the class' title by default:
+			pt = staClassTitleOf( el, prj, opts );
+	} else {
+		// it is a resource
+		if( opts && opts.addIcon && CONFIG.addIconToInstance && prj && pt )
+			pt = pt.addIcon( itemById( prj.resourceClasses, el['class'] ).icon );
+	};
+//	return opts.targetLanguage? pt.unescapeHTMLEntities() : pt;
+	return typeof(pt)=='string'? pt.stripHTML() : pt;
+}
 function desperateTitleOf(r,opts,prj) {
 	// Some elements don't have a title at all; 
 	// and we desperately need a title, for example, for the tree and the statement graph:
