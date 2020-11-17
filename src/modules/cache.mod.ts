@@ -23,7 +23,6 @@
 modules.construct({
 	name: 'cache'
 }, (self)=>{
-	"use strict";
 	// Construct a representative of the selected project with cached data:
 	// ToDo: enforce CONFIG.maxObjToCacheCount
 
@@ -130,7 +129,6 @@ modules.construct({
 });
 
 function Project( pr ) {
-	"use strict";
 	// Constructor for a project containing SpecIF data.
 	var self = this,
 		loading = false,		// true: data is being gathered from the server.
@@ -268,10 +266,10 @@ function Project( pr ) {
 	//	return server.project(self).update()
 	};*/
 	const types = [
-			{ name: 'dataType', 		list: 'dataTypes', 			eqFn: eqDT, 	sbFn: substituteDT },
-			{ name: 'propertyClass', 	list: 'propertyClasses', 	eqFn: eqPC, 	sbFn: substitutePC },
-			{ name: 'resourceClass', 	list: 'resourceClasses', 	eqFn: eqRC, 	sbFn: substituteRC },
-			{ name: 'statementClass', 	list: 'statementClasses', 	eqFn: eqSC, 	sbFn: substituteSC }
+			{ ctg: 'dataType', 			list: 'dataTypes', 			eqFn: eqDT, 	sbFn: substituteDT },
+			{ ctg: 'propertyClass', 	list: 'propertyClasses', 	eqFn: eqPC, 	sbFn: substitutePC },
+			{ ctg: 'resourceClass', 	list: 'resourceClasses', 	eqFn: eqRC, 	sbFn: substituteRC },
+			{ ctg: 'statementClass', 	list: 'statementClasses', 	eqFn: eqSC, 	sbFn: substituteSC }
 		];
 	function eqDT(r,n) {
 		// return true, if reference and new dataType are equal:
@@ -294,19 +292,20 @@ function Project( pr ) {
 				// the list of enumerated values *is* equal:
 				// no break
 			default:
-				return true
+				return true;
 		}
 	}
 	function eqPC(r,n) {
 		// return true, if reference and new propertyClass are equal:
-		return r.dataType==n.dataType && r.title==n.title
+		return r.dataType==n.dataType && r.title==n.title;
 	}
 	function eqRC(r,n) {
 		// return true, if reference and new resourceClass are equal:
 		if( !r.isHeading&&n.isHeading || r.isHeading&&!n.isHeading ) return false;
 		return r.title==n.title
 			&& eqL( r.propertyClasses, n.propertyClasses )
-			&& eqL( r.instantiation, n.instantiation )
+		//	&& eqL( r.instantiation, n.instantiation )
+			// --> the instantiation setting of the reference shall prevail
 	}
 	function eqSC(r,n) {
 		// return true, if reference and new statementClass are equal:
@@ -330,7 +329,7 @@ function Project( pr ) {
 			// the sequence may differ:
 			for( var i=rL.length-1; i>-1; i-- )
 				if( nL.indexOf( rL[i] )<0 ) return false;
-			return true
+			return true;
 		}
 	}
 
@@ -338,7 +337,7 @@ function Project( pr ) {
 		// Return true if both keys are equivalent;
 		// this applies if only an id is given or a key with id and revision:
 		return itemIdOf(r)==itemIdOf(n)
-			&& r.revision==n.revision
+			&& r.revision==n.revision;
 	}
 	function eqR(dta,r,n) {
 //		console.debug('eqR',r,n,resClassTitleOf(r,dta),resClassTitleOf(n,dta));
@@ -346,7 +345,7 @@ function Project( pr ) {
 		// ToDo: Consider, if model-elements are only considered equal, if they have the same type,
 		// i.e. if a property with title CONFIG.propClassType has the same value
 		return r.title==n.title
-				&& resClassTitleOf(r,dta)==resClassTitleOf(n,dta)
+				&& resClassTitleOf(r,dta)==resClassTitleOf(n,dta);
 		// Note that the content of the new resource is lost;
 		// this is no problem, if the new data is a BPMN model, for example,
 		// which usually have a title and do not carry any description.
@@ -357,7 +356,7 @@ function Project( pr ) {
 		// i.e. a property with title CONFIG.propClassType has the same value
 		return r['class']==n['class']
 			&& eqKey(r.subject,n.subject)
-			&& eqKey(r.object,n.object)
+			&& eqKey(r.object,n.object);
 	}
 	function eqL(rL,nL) {
 		// return true, if both lists have equal members:
@@ -371,34 +370,34 @@ function Project( pr ) {
 		// the sequence may differ:
 		for( var i=rL.length-1; i>-1; i-- )
 			if( nL.indexOf( rL[i] )<0 ) return false;
-		return true
+		return true;
 	}
 	function substituteDT(prj,rId,nId) {
 		// For all propertyClasses, substitute new by the original dataType:
-		substituteProp(prj.propertyClasses,'dataType',rId,nId)
+		substituteProp(prj.propertyClasses,'dataType',rId,nId);
 	}
 	function substitutePC(prj,rId,nId) {
 		// For all resourceClasses, substitute new by the original propertyClass:
 		substituteLe(prj.resourceClasses,'propertyClasses',rId,nId);
 		// Also substitute the resource properties' class:
 		prj.resources.forEach( (res)=>{
-			substituteProp(res.properties,'class',rId,nId)
+			substituteProp(res.properties,'class',rId,nId);
 		});
 		// The same with the statementClasses:
 		substituteLe(prj.statementClasses,'propertyClasses',rId,nId);
 		prj.statements.forEach( (sta)=>{
 			substituteProp(sta.properties,'class',rId,nId)
-		})
+		});
 	}
 	function substituteRC(prj,rId,nId) {
 		// Substitute new by original resourceClasses:
 		substituteLe(prj.statementClasses,'subjectClasses',rId,nId);
 		substituteLe(prj.statementClasses,'objectClasses',rId,nId);
-		substituteProp(prj.resources,'class',rId,nId)
+		substituteProp(prj.resources,'class',rId,nId);
 	}
 	function substituteSC(prj,rId,nId) {
 		// Substitute new by original statementClasses:
-		substituteProp(prj.statements,'class',rId,nId)
+		substituteProp(prj.statements,'class',rId,nId);
 	}
 	function substituteR(prj,r,n,opts) {
 		// Substitute resource n by r in all references of n,
@@ -421,10 +420,10 @@ function Project( pr ) {
 					if( !hasContent(valByTitle( self.data, r, pT ))
 						// dataTypes must be compatible:
 						&& classIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ) ) {
-							rP.value = nP.value
-					}
-				}
-			})
+							rP.value = nP.value;
+					};
+				};
+			});
 		};
 		// In the rare case that the ids are identical, there is no need to update the references:
 		if( r.id==n.id ) return;
@@ -440,13 +439,13 @@ function Project( pr ) {
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
 		// 3 Replace the references in all hierarchies:
-		substituteRef(prj.hierarchies,r.id,n.id)
+		substituteRef(prj.hierarchies,r.id,n.id);
 	}
 	function substituteProp(L,propN,rAV,dAV) {
 		// replace ids of the duplicate item by the id of the original one;
 		// this applies to the property 'propN' of each member of the list L:
 		if( Array.isArray(L) )
-			L.forEach( (e)=>{ if(e[propN]==dAV) e[propN] = rAV } )
+			L.forEach( (e)=>{ if(e[propN]==dAV) e[propN] = rAV } );
 	}
 	function substituteLe(L,propN,rAV,dAV) {
 		// Replace the duplicate id by the id of the original item;
@@ -457,8 +456,8 @@ function Project( pr ) {
 			L.forEach( (e)=>{
 				if( !Array.isArray(e[propN]) ) return;
 				idx = e[propN].indexOf(dAV);
-				if( idx>-1 ) e[propN].splice( idx, 1, rAV )
-			})
+				if( idx>-1 ) e[propN].splice( idx, 1, rAV );
+			});
 	}
 	function substituteRef(L,rId,dId) {
 		// For all hierarchies, replace any reference to dId by rId;
@@ -469,7 +468,7 @@ function Project( pr ) {
 				// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
 				// for example it is avoided that the same diagram is shown twice if it has been imported twice:
 				(ndL)=>{ for(var i=ndL.length-1; i>0; i--) { if( indexBy(ndL.slice(0,i),'resource',ndL[i].resource)>-1 ) { ndL.splice(i,1) }}}
-		)
+		);
 		// ToDo: Make it work, if keys are used as a reference.
 	}
 	function hookStatements( dta ) {
@@ -484,7 +483,7 @@ function Project( pr ) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
 				let s, sL = itemsByVisibleId( dta.resources, st.subjectToFind );
 				if( sL.length>0 )
-					s = sL[0]
+					s = sL[0];
 				else
 					// Find the resource with the given title:
 					s = itemByTitle( dta.resources, st.subjectToFind );
@@ -492,14 +491,14 @@ function Project( pr ) {
 				if( s ) {
 					st.subject = s.id;
 					delete st.subjectToFind;
-					return
-				}
+					return;
+				};
 			};
 			if( st.objectToFind ) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
 				let o, oL = itemsByVisibleId( dta.resources, st.objectToFind );
 				if( oL.length>0 )
-					o = oL[0]
+					o = oL[0];
 				else
 					// Find the resource with the given title:
 					o = itemByTitle( dta.resources, st.objectToFind );
@@ -507,16 +506,16 @@ function Project( pr ) {
 				if( o ) {
 					st.object = o.id;
 					delete st.objectToFind;
-					return
-				}
-			}
+					return;
+				};
+			};
 		});
-		return dta
+		return dta;
 
 		function itemsByVisibleId(L,vId) {
 			return forAll( L, (r)=>{
-				if( visibleIdOf(r)==vId ) return r
-			})
+				if( visibleIdOf(r)==vId ) return r;
+			});
 		}
 	}
 	self.collectResourcesByClass = ( dta, opts )=>{
@@ -561,46 +560,46 @@ function Project( pr ) {
 						resolve({status:0});
 						// 2. Delete any existing folders,
 						self.deleteContent( 'node', delL )
-							.then(
-								()=>{
-									// Create a folder with all respective objects (e.g. diagrams):
-									if( prL.length>0 ) {
-										// 3. Sort the list alphabetically by the resources' title:
-										sortBy( prL, (el)=>{ return el.r.title } );
+						.then(
+							()=>{
+								// Create a folder with all respective objects (e.g. diagrams):
+								if( prL.length>0 ) {
+									// 3. Sort the list alphabetically by the resources' title:
+									sortBy( prL, (el)=>{ return el.r.title } );
 
-										// 4. Create a new combined folder:
-										let newD = {
-											$schema: 'https://specif.de/v1.0/schema.json',
-											dataTypes: [
-												app.standardTypes.get('dataType',"DT-ShortString"),
-												app.standardTypes.get('dataType',"DT-Text")
-											],
-											propertyClasses: [
-												app.standardTypes.get('propertyClass',"PC-Description"),
-												app.standardTypes.get('propertyClass',"PC-Type")
-											],
-											resourceClasses: [
-												app.standardTypes.get('resourceClass',"RC-Folder")
-											],
-											resources: Folder( r2c.folderName+apx, CONFIG.resClassProcesses ),
-											hierarchies: [{
-												id: "H"+r2c.folderName+apx,
-												resource: r2c.folderName+apx,
-												// re-use the nodes with their references to the resources:
-												nodes: forAll( prL, (pr)=>{ return pr.n } ),
-												changedAt: tim
-											}]
-										};
-										// use the update function to eliminate duplicate types:
-										self.update( newD, {mode:'adopt'} )
-										.done( resolve )
-										.fail( reject )
-									} else {
-										resolve({status:0})
-									}
-								},
-								reject
-							)
+									// 4. Create a new combined folder:
+									let newD = {
+										$schema: 'https://specif.de/v1.0/schema.json',
+										dataTypes: [
+											app.standardTypes.get('dataType',"DT-ShortString"),
+											app.standardTypes.get('dataType',"DT-Text")
+										],
+										propertyClasses: [
+											app.standardTypes.get('propertyClass',"PC-Description"),
+											app.standardTypes.get('propertyClass',"PC-Type")
+										],
+										resourceClasses: [
+											app.standardTypes.get('resourceClass',"RC-Folder")
+										],
+										resources: Folder( r2c.folderName+apx, CONFIG.resClassProcesses ),
+										hierarchies: [{
+											id: "H"+r2c.folderName+apx,
+											resource: r2c.folderName+apx,
+											// re-use the nodes with their references to the resources:
+											nodes: forAll( prL, (pr)=>{ return pr.n } ),
+											changedAt: tim
+										}]
+									};
+									// use the update function to eliminate duplicate types:
+									self.update( newD, {mode:'adopt'} )
+									.done( resolve )
+									.fail( reject );
+								} else {
+									resolve({status:0});
+								}
+							},
+							reject
+						);
 					}
 				);
 				return;
@@ -616,7 +615,7 @@ function Project( pr ) {
 						}],
 						changedAt: tim
 					}];
-					return fL
+					return fL;
 				}
 			}
 		)
@@ -655,38 +654,38 @@ function Project( pr ) {
 				// 1.2 Delete now:
 //				console.debug('createGlossary',delL,dgL);
 				self.deleteContent( 'node', delL )
-					.then(
-						()=>{
-							// 2. Create a new combined glossary:
-							if( dgL.length>0 ) {
-								let newD = {
-									$schema: 'https://specif.de/v1.0/schema.json',
-									dataTypes: [
-										app.standardTypes.get('dataType',"DT-ShortString"),
-										app.standardTypes.get('dataType',"DT-Text")
-									],
-									propertyClasses: [
-										app.standardTypes.get('propertyClass',"PC-Description"),
-										app.standardTypes.get('propertyClass',"PC-Type")
-									],
-									resourceClasses: [
-										app.standardTypes.get('resourceClass',"RC-Folder")
-									],
-									resources: Folders(),
-									hierarchies: NodeList(self.data.resources)
-								};
-//								console.debug('glossary',newD);
-								// use the update function to eliminate duplicate types;
-								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								self.update( newD, {mode:'adopt'} )
-								.done( resolve )
-								.fail( reject );
-							} else {
-								resolve({status:0});
-							}
-						},
-						reject
-					);
+				.then(
+					()=>{
+						// 2. Create a new combined glossary:
+						if( dgL.length>0 ) {
+							let newD = {
+								$schema: 'https://specif.de/v1.0/schema.json',
+								dataTypes: [
+									app.standardTypes.get('dataType',"DT-ShortString"),
+									app.standardTypes.get('dataType',"DT-Text")
+								],
+								propertyClasses: [
+									app.standardTypes.get('propertyClass',"PC-Description"),
+									app.standardTypes.get('propertyClass',"PC-Type")
+								],
+								resourceClasses: [
+									app.standardTypes.get('resourceClass',"RC-Folder")
+								],
+								resources: Folders(),
+								hierarchies: NodeList(self.data.resources)
+							};
+//							console.debug('glossary',newD);
+							// use the update function to eliminate duplicate types;
+							// 'opts.addGlossary' must not be true to avoid an infinite loop:
+							self.update( newD, {mode:'adopt'} )
+							.done( resolve )
+							.fail( reject );
+						} else {
+							resolve({status:0});
+						}
+					},
+					reject
+				);
 				return;
 
 				function isDiagram( r ) {
@@ -699,7 +698,7 @@ function Project( pr ) {
 								(sta)=>{
 									return staClassTitleOf( sta, dta )==CONFIG.staClassShows && sta.subject==r.id
 								}
-							).length>0
+							).length>0;
 				}
 			/*	function extractByType(fn) {
 					var L=[], el;
@@ -710,18 +709,19 @@ function Project( pr ) {
 									return true  // continue always to the end
 								}
 					);
-					return L
+					return L;
 				}
 				function extractDiagrams() {
 					return extractByType(
 						(nd)=>{
 							// get the referenced resource:
 							var res = itemById( dta.resources, nd.resource );
-							if( isDiagram( res ) ) return res
+							if( isDiagram( res ) ) return res;
 						}
-					)
+					);
 				} */
 				function Folders() {
+					// Create a folder resource for the glossary:
 					var fL = [{
 						id: "FolderGlossary-" + apx,
 						class: "RC-Folder",
@@ -740,9 +740,9 @@ function Project( pr ) {
 							title: mEl+'s',  // just adding the 's' is an ugly quickfix ... that works for now.
 							properties: [],
 							changedAt: tim
-						})
+						});
 					});
-					return fL
+					return fL;
 				}
 				function NodeList(resources) {
 					// a. Add the folders:
@@ -759,7 +759,7 @@ function Project( pr ) {
 							resource: "Folder-" + mEl.toJsId() + "-" + apx,
 							nodes: [],
 							changedAt: tim
-						})
+						});
 					});
 					// Create a list tL of collections per model-element type;
 					// assuming that type adoption/deduplication is not always successful
@@ -809,7 +809,7 @@ function Project( pr ) {
 								})
 						}
 					);
-					return [gl]
+					return [gl];
 				}
 			}
 		)
@@ -837,10 +837,10 @@ function Project( pr ) {
 							// ... and remove the duplicate item:
 							dta[ty.list].splice(n,1);
 							// skip the remaining iterations of the inner loop:
-							break
-						}
-					}
-				}
+							break;
+						};
+					};
+				};
 		});
 //		console.debug( 'deduplicate 1', simpleClone(dta) );
 
@@ -863,9 +863,9 @@ function Project( pr ) {
 					substituteR(dta,rR,nR,{rescueProperties:true});
 					dta.resources.splice(n,1);
 					// skip the remaining iterations of the inner loop:
-					break
-				}
-			}
+					break;
+				};
+			};
 		};
 //		console.debug( 'deduplicate 2', simpleClone(dta) );
 
@@ -878,9 +878,9 @@ function Project( pr ) {
 					// Are equal, so remove the duplicate statement:
 					dta.statements.splice(n,1);
 					// skip the remaining iterations of the inner loop:
-					break
-				}
-			}
+					break;
+				};
+			};
 		};
 //		console.debug( 'deduplicate 3', simpleClone(dta) );
 		return dta
@@ -922,7 +922,7 @@ function Project( pr ) {
 			default:
 				uDO.reject({status:999,statusText:'No update mode specified'});
 		};
-		return uDO
+		return uDO;
 
 		// --------------------------------
 		// The processing per mode:
@@ -961,8 +961,8 @@ function Project( pr ) {
 						}
 					};
 					pend++;
-					self.createContent( ty.name, itmL )
-						.then( finalize, uDO.reject )
+					self.createContent( ty.ctg, itmL )
+						.then( finalize, uDO.reject );
 				}
 			});
 //			console.debug('#2',simpleClone(self.data),simpleClone(nD));
@@ -995,7 +995,7 @@ function Project( pr ) {
 							// There is an item with the same title and type,
 							// adopt it and update all references:
 							substituteR( nD, eR, nR, {rescueProperties:true} );
-							continue
+							continue;
 						}
 				};
 
@@ -1032,7 +1032,7 @@ function Project( pr ) {
 				.then( finalize, uDO.reject );
 			self.createContent( 'file', nD.files )
 				.then( finalize, uDO.reject );
-			return
+			return;
 
 			function finalize() {
 				if(--pend<1) {
@@ -1050,8 +1050,8 @@ function Project( pr ) {
 							.then( ()=>{ uDO.resolve({status:0}) }, uDO.reject )
 						},
 						uDO.reject
-					)
-				}
+					);
+				};
 			}
 		}
 		function updateWithLastChanged( nD, opts ) {
@@ -1477,7 +1477,7 @@ function Project( pr ) {
 				};
 				resolve({status:0})
 			}
-		)
+		);
 	};
 	self.readContent = ( ctg, item, opts )=>{
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
@@ -1525,7 +1525,7 @@ function Project( pr ) {
 				};
 				resolve({status:0})
 			}
-		)
+		);
 	};
 	self.deleteContent = ( ctg, item )=>{
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
@@ -1570,7 +1570,7 @@ function Project( pr ) {
 					case 'statementClass':	return aCIsInUse(ctg,itm);
 					case 'class':			return pCIsInUse(self.data.resources,itm)
 												|| pCIsInUse(self.data.hierarchies,itm)
-												|| pCIsInUse(self.data.statements,itm)
+												|| pCIsInUse(self.data.statements,itm);
 				};
 				return false
 			}  */
@@ -1595,11 +1595,11 @@ function Project( pr ) {
 						if( uncache( ctg, item )<0 ) reject({status:999,statusText:ctg+' '+item.id+' not found and thus not deleted.'});
 						break;
 					default:
-						reject({status:999,statusText:'Category '+ctg+' is unknown; item '+item.id+' could not be deleted.'})
+						reject({status:999,statusText:'Category '+ctg+' is unknown; item '+item.id+' could not be deleted.'});
 				};
 				resolve({status:0})
 			}
-		)
+		);
 	};
 
 	self.createResource = ( rC )=>{
@@ -1634,9 +1634,9 @@ function Project( pr ) {
 						resolve( res )
 					}
 				)
-				.catch(	reject )
+				.catch(	reject );
 			}
-		)
+		);
 	};
 	self.readStatementsOf = ( res, showComments )=>{
 		// Get the statements of a resource ... there are 2 use-cases:
@@ -1677,9 +1677,9 @@ function Project( pr ) {
 						)
 					},
 					reject
-				)
+				);
 			}
-		)
+		);
 	};
 
 	// Select format and options with a modal dialog, then export the data:
@@ -1720,7 +1720,7 @@ function Project( pr ) {
 		};
 		pnl +=		'</div>';
 //		console.debug('exportOptions',fmt,pnl);
-		return pnl
+		return pnl;
 	};
 	self.export = ()=>{
 		if( self.exporting ) return;
@@ -1741,7 +1741,8 @@ function Project( pr ) {
 									[
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
-					//					{ title: 'RDF', id: 'rdf' },
+									//	{ title: 'RDF', id: 'rdf' },
+										{ title: 'Turtle (experimental)', id: 'turtle' },
 										{ title: 'ePub v2', id: 'epub' },
 										{ title: 'MS WORD® (Open XML)', id: 'oxml' }
 									],
@@ -1788,7 +1789,7 @@ function Project( pr ) {
 				}
 			]
 		})
-		.open()
+		.open();
 
 		// ---
 		function handleError(xhr) {
@@ -1814,7 +1815,8 @@ function Project( pr ) {
 				self.exporting = true;
 
 				switch( opts.format ) {
-					case 'rdf':
+				//	case 'rdf':
+					case 'turtle':
 					case 'reqif':
 					case 'specif':
 						storeAs( opts );
@@ -1914,7 +1916,7 @@ function Project( pr ) {
 				}
 			}
 			function storeAs( opts ) {
-				if( !opts || ['specif','reqif','rdf'].indexOf(opts.format)<0 ) return null;
+			//	if( !opts || ['specif','reqif','turtle'].indexOf(opts.format)<0 ) return null;
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
@@ -1928,18 +1930,24 @@ function Project( pr ) {
 						// keep all revisions:
 						opts.revisionDate = undefined;
 						break;
-					case 'rdf':
+				//	case 'rdf':
+					case 'turtle':
 					case 'reqif':
 						// keep vocabulary terms:
 						opts.lookupTitles = false;
 						opts.lookupValues = false;
-						// ReqIF only supports a single Language:
+						// only single language is supported:
 						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString();
+						break;
+					default:
+						return null; // should never arrive here
 				};
+//				console.debug( "storeAs", opts );
 				let zip = new JSZip(),
 					data = specif.toExt( self.data, opts ),
 					fName = (opts.fileName || data.title);
@@ -1960,15 +1968,19 @@ function Project( pr ) {
 						break;
 					case 'reqif':
 						fName += ".reqif";
-						data = app.ioReqif.toReqif( data )
+						data = app.ioReqif.toReqif( data );
 						break;
+					case 'turtle':
+						fName += ".ttl";
+						data = transformSpecifToTTL( "https://specif.de/examples", data );
+				/*		break;
 					case 'rdf':
 						if( !app.ioRdf ) {
 							reject({status:999,statusText:"ioRdf not loaded."});
 							return;
 						};
 						fName += ".rdf";
-						data = app.ioRdf.toRdf( data )
+						data = app.ioRdf.toRdf( data ); */
 				};
 				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
 				// Add the project:
@@ -1985,7 +1997,7 @@ function Project( pr ) {
 //							console.debug("storing ",fName+"z");
 							saveAs(blob, fName+"z");
 							self.exporting = false;
-							resolve()
+							resolve();
 						},
 						(xhr)=>{
 							// an error has occurred:
@@ -2093,7 +2105,7 @@ function Project( pr ) {
 		} else {
 			rDO.resolve([])
 		};
-		return rDO
+		return rDO;
 	}
 	function loadAll( ctg ) {
 		// Cycle through all hierarchies and load the instances of the specified ctg:
@@ -2113,7 +2125,7 @@ function Project( pr ) {
 				.fail( dO.reject )
 		};
 		if( self.data.hierarchies.length<1 ) dO.resolve();
-		return dO
+		return dO;
 	}
 	function autoLoad( aU ) {
 //		console.debug( 'cache.autoLoad', aU );
@@ -2316,7 +2328,7 @@ function Project( pr ) {
 //										console.debug('cache',ctg,item);
 										return cacheNode( item );
 			default: return null;
-		}
+		};
 		// all cases have a return statement ..
 
 		function cacheNode( e ) {
@@ -2419,12 +2431,12 @@ function Project( pr ) {
 				};
 				// step down, if the node hasn't been deleted:
 				delNodes( L[h].nodes, el );
-			}
+			};
 		}
 	}
 	function cacheOf( ctg ) {
-		// Return the cache for a given category:
-		switch(ctg) {
+		// Return the cache for the items of a given category:
+	/*	switch(ctg) {
 			case 'dataType':		return self.data.dataTypes;
 			case 'propertyClass':	return self.data.propertyClasses;
 			case 'resourceClass':	return self.data.resourceClasses;
@@ -2433,7 +2445,8 @@ function Project( pr ) {
 			case 'statement':		return self.data.statements;
 			case 'hierarchy':		return self.data.hierarchies;
 			case 'file':			return self.data.files;
-		}
+		}; */
+		return self.data[ app.standardTypes.listOf( ctg ) ];
 	}
 	function readCache( ctg, itm, opts ) {
 		// Read an item from cache, unless 'reload' is specified.
@@ -2489,7 +2502,7 @@ function Project( pr ) {
 			}
 //			console.debug('readCache - not found', ctg, itm);
 		};
-		return null;
+	//	return undefined;
 	}
 }  // end of function Project()
 
@@ -2522,18 +2535,18 @@ const specif = {
 							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
 								rc.responseType = 'text';
 							reject( rc );
-							return
+							return;
 						};
 
 						// 2. Check further constraints:
 						rc = checkConstraints( data, opts );
 						if( rc.status==0 ) {
 //							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
-							resolve( data, rc )
+							resolve( data, rc );
 						} else {
 //							console.debug('SpecIF Consistency Check:', rc);
-							reject( rc )
-						}
+							reject( rc );
+						};
 					},
 					fail: (xhr)=>{
 						switch( xhr.status ) {
@@ -2541,15 +2554,14 @@ const specif = {
 								let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
 								xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
 							default:
-								reject(xhr)
-						}
+								reject(xhr);
+						};
 					}
-				})
+				});
 			}
-		)
+		);
 	},
 	toInt: ( spD )=>{
-		"use strict";
 		// transform SpecIF to internal data;
 		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.
@@ -2886,7 +2898,6 @@ const specif = {
 			}
 	},
 	toExt: ( iD, opts )=>{
-		"use strict";
 		// transform iD (data in internal data format) to SpecIF:
 	/*	if( opts ) {
 			if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = true;
@@ -3206,7 +3217,7 @@ function collectResourcesByHierarchy( prj, H ) {
 	if( !H ) H = prj.hierarchies;
 	var rL=[];
 	iterateNodes( H, (nd)=>{ cacheE( rL, itemById(prj.resources,itemIdOf(nd.resource)) ); return true } );
-	return rL
+	return rL;
 }
 function dataTypeOf( prj, pCid ) {
 	// given a propertyClass id, return it's dataType:
@@ -3216,7 +3227,7 @@ function dataTypeOf( prj, pCid ) {
 		//	   get dataType
 	// else:
 	// may happen, if a resource does not have any properties and it's title or description is being used:
-	return {type: 'xs:string'} // by default
+	return {type: 'xs:string'}; // by default
 }
 function enumValueOf( dT, val, opts ) {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
@@ -3236,7 +3247,7 @@ function enumValueOf( dT, val, opts ) {
 		if( eV ) ct += (i==0?'':', ')+eV
 		else ct += (i==0?'':', ')+v
 	});
-	return ct
+	return ct;
 }
 function multipleChoice( pC, prj ) {
 	prj = prj || app.cache.selectedProject.data;
@@ -3283,7 +3294,7 @@ function languageValueOf( val, opts ) {
 	// The value may be undefined:
 	if( val==undefined ) return;
 	if( !Array.isArray(val) ) {
-		// neither a strring nor an array is a programming error:
+		// neither a string nor an array is a programming error:
 		console.error('Invalid value: ',val);
 		return null;
 	};
@@ -3304,11 +3315,6 @@ function languageValueOf( val, opts ) {
 	// As a final resourt take the first element in the original list of values:
 	return val[0].text;
 }
-/* function typeOf( el ) {
-	let tP = itemByTitle(el.properties,CONFIG.propClassType);
-	// ToDo: .. or the title of the property class (dcterms:title) if the property title is undefined
-	if( tP ) return tP.value
-} */
 function hasContent( pV ) {
 	// must be a string with the value of the selected language.
 	if( typeof(pV)!="string" ) return false;
@@ -3338,7 +3344,7 @@ function iterateNodes( tree, eFn, lFn ) {
 			cont = !iterateNodes( tree.nodes, eFn, lFn )
 		}
 	};
-	return !cont
+	return !cont;
 }
 function createProp( pC, pCid ) {
 	// Create an empty property from the supplied class;
@@ -3353,7 +3359,7 @@ function createProp( pC, pCid ) {
 		// supply default value if available:
 		value: pC.value||''
 	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
-	}
+	};
 }
 function propByTitle(dta,itm,pN) {
 	// Return the property of itm with title pN.
@@ -3378,7 +3384,7 @@ function propByTitle(dta,itm,pN) {
 				prp = createProp(pC);
 				itm.properties.push(prp);
 				return prp
-		}
+		};
 	};
 //	return undefined
 }
@@ -3443,7 +3449,6 @@ function titleFromProperties( pL, opts ) {
 //	return undefined
 }
 function classifyProps( el, prj ) {
-	"use strict";
 	// add missing (empty) properties and classify properties into title, descriptions and other;
 	// for resources and statements.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.

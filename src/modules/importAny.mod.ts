@@ -242,9 +242,10 @@ modules.construct({
 
 			// Assume it is an absolute or relative URL;
 			// must be either from the same URL or CORS-enabled.
-			// Import the file:
+			// Import the file: 
 			httpGet({
-				url: urlP[CONFIG.keyImport],
+				// force a reload through cache-busting:
+				url: urlP[CONFIG.keyImport]+'?'+Date.now().toString().simpleHash(),
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: function(result) {

@@ -145,24 +145,24 @@ modules.construct({
 			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" ></div>'
 			+	'</div>'
 			+	'<div id="hitlist" class="content" ></div>';
-		$(self.view).html( h )
+		$(self.view).html( h );
 	};
 	self.clear = ()=>{
 		self.secondaryFilters = undefined;
 		$('#filterNotice').empty();
 		self.filterList.length = 0;
-		app.busy.reset()
+		app.busy.reset();
 	};
 	self.hide = ()=>{
 //		console.debug( 'filter.hide' );
 		// don't delete the page with $(self.view).empty(), as the structure is built in init()
 		$( '#hitlist' ).empty();
-		self.clear()
+		self.clear();
 	};
 	function handleError(xhr) {
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		stdError(xhr)
+		stdError(xhr);
 	};
 
 	// standard module entry:
@@ -185,7 +185,7 @@ modules.construct({
 		// Now start the evaluation based on the current filter settings:
 		if( isClogged() ) { 
 			message.show(i18n.phrase('MsgFilterClogged') ); 
-			return
+			return;
 		};
 //		console.debug('filter.show',opts,self.filterList);
 
@@ -207,9 +207,9 @@ modules.construct({
 						fps += renderTextFilterSettings( f );
 						break;
 				case 'xs:enumeration': 
-						fps += renderEnumFilterSettings( f )
+						fps += renderEnumFilterSettings( f );
 			};
-			fps += '</div>'
+			fps += '</div>';
 		});
 		$('#primaryFilters').html( fps );
 		setTextFocus(i18n.LblStringMatch); 
@@ -219,7 +219,7 @@ modules.construct({
 		//	showNotice(i18n.MsgNoReports);
 //			console.debug('filter nothing to do',tr);
 			app.busy.reset();
-			return true  // nothing to do ....
+			return true;  // nothing to do ....
 		};
 //		console.debug('filter something to do',tr);
 		doFilter();
@@ -247,18 +247,18 @@ modules.construct({
 //						console.debug('tree.iterate',self.filterList,pend,rsp,h);
 						if( h )	{
 							hCnt++;
-							$('#hitlist').append( h.listEntry() )
+							$('#hitlist').append( h.listEntry() );
 						};
 						if( --pend<1 ) {  // all done
 							$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hCnt+'</div>' );
-							app.busy.reset()
+							app.busy.reset();
 						}
 					},
 					handleError
 				);
-				return true // descend into deeper levels
+				return true; // descend into deeper levels
 			}
-		)
+		);
 	}
 	function match(res) {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
@@ -273,7 +273,7 @@ modules.construct({
 //					console.debug('matchResClass',f.options[j],res);
 					if( f.options[j].checked && f.options[j].id==res.toShow['class'].id ) return true
 				};
-				return false
+				return false;
 			}
 			function matchSearchString(f) {   // primary filter applying to all resources (unless it has no property with strings or text):
 				if( f.searchString.length==0 ) return true;   // save the time, the regex below would finish just alike .... 
@@ -362,13 +362,13 @@ modules.construct({
 								// - if any selected id in the options list is contained in the property values list:
 								for( z=cL.length-1; z>-1; z-- ) { 
 //										console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
-									if( f.options[j].id==cL[z].trim() ) return true
-								}
+									if( f.options[j].id==cL[z].trim() ) return true;
+								};
 							} else {
 								// the resource property has no value:
 								if( f.options[j].id==CONFIG.notAssigned ) return true;
-								if( f.options[j].id.length<1 ) return true
-							}
+								if( f.options[j].id.length<1 ) return true;
+							};
 						};
 				//		break;
 				//	default:
@@ -408,7 +408,7 @@ modules.construct({
 									}
 								}
 							};
-							return true
+							return true;
 						}; 
 						return false;  */
 					case 'textSearch': 
@@ -431,7 +431,7 @@ modules.construct({
 											title: lE.title,  // for sorting the property into the columns
 											class: lE['class'],
 											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
-									})
+									});
 								}; 
 								for( i= res.toShow.other.length-1; i>-1; i-- ) {
 									lE = res.toShow.other[i];
@@ -443,9 +443,9 @@ modules.construct({
 								};
 							};
 //							console.debug('hit resource',res);
-							return res
+							return res;
 						}; 
-							return // undefined
+							return; // undefined
 				}
 				
 				function mark( txt, re ) {
@@ -484,9 +484,9 @@ modules.construct({
 		// 'res' accumulates all markings without changing the original resource value in the project data (cache).
 		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
 		for( var i=0, I=self.filterList.length; res && i<I; i++) { 
-			res = matchAndMark( self.filterList[i] )
+			res = matchAndMark( self.filterList[i] );
 		};
-		return res
+		return res;
 	}
 	function isClogged() {
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):
@@ -498,9 +498,9 @@ modules.construct({
 				// top-level filter, at least one option must be checked:
 				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
 				f.options.forEach( (o)=>{ 
-					if( o.checked ) rCL.push(o.id)
+					if( o.checked ) rCL.push(o.id);
 				}); 
-				return !rCL.length   // returns true, if no box is checked, i.e. the filter is clogged.
+				return !rCL.length;   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
 			function checkPropertyValue(f) {   // 
 				// 'f' is 'not applicable', if the scope of the specified filter 'f' is not contained in rCL:
@@ -512,9 +512,9 @@ modules.construct({
 						for( var j=f.options.length-1; j>-1; j--){ 
 							if( f.options[j].checked ) return false  // at least one checked -> not clogged
 						};
-						break
+						break;
 				};
-				return true // returns true, if the filter is clogged.
+				return true; // returns true, if the filter is clogged.
 			};
 		
 		// top-level:
@@ -527,9 +527,9 @@ modules.construct({
 			//	case 'statementClass': ....
 				case 'propertyValue': clogged = clogged || checkPropertyValue(self.filterList[i]); 
 			//	'textSearch' cannot contribute to clogging
-			}
+			};
 		};
-		return clogged  // returns false, if hits are possible.
+		return clogged;  // returns false, if hits are possible.
 	}
 	
 	function addEnumValueFilters( def ) { 
@@ -603,10 +603,10 @@ modules.construct({
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
 					|| (!def.pCid && itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration')) {
 					addEnumFilter( rC, pC, def.options )
-				}
-			})
-		}
-	};
+				};
+			});
+		};
+	}
 	// Build the filter list based on the project's data model:
 	function build( settings ) {
 		// settings is a list with filter types and options to build a specific filter list.
@@ -738,7 +738,7 @@ modules.construct({
 				case 'resourceClass':
 				case 'propertyValue':
 					f.options.forEach( (o)=> {
-						o.checked = checkedL.indexOf( o.id )>-1
+						o.checked = checkedL.indexOf( o.id )>-1;
 					});
 			};
 		});
@@ -757,14 +757,14 @@ modules.construct({
 			self.goClicked()
 		} else {
 			addEnumValueFilters({category: 'enumValue', rCid: oT.id});  // rCid: type-id
-			self.secondaryFilters = oT
+			self.secondaryFilters = oT;
 		}
 	};
 	self.itemClicked =  ( itm )=>{
 //		console.debug( 'item clicked', itm );
 		// Jump to the page view of the clicked resource:
 		pData.showTab( CONFIG.objectDetails );  
-		pData.selectNodeByRef( itm.value() )
+		pData.selectNodeByRef( itm.value() );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 	}; 
 */	

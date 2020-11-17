@@ -22,7 +22,8 @@ modules.construct({
 		self.clear()
 	};
 	self.show = function( opts ) {
-		let isEditor = app.title==i18n.LblEditor;
+		const isEditor = app.title==i18n.LblEditor,
+			padding = '16px'; // = margin-right of logo, see css
 
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
@@ -33,14 +34,14 @@ modules.construct({
 
 		$('#pageTitle').html( app.title );
 		$('#about').html(
-			'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'
+			'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
 		+   '<p>An app for your web-browser to view'+(isEditor? ', edit':'')+' and transform system specifications.</p>'
 		+	'<p>SpecIF is the \'Specification Integration Facility\'. It\'s purpose is to combine partial specifications from different tools in a single model to allow</p>'
 		+	'<ul>'
 		+	'<li>to search, navigate and audit partial results in a common context,</li>'
 		+	'<li>to exchange model information between organizations and tools.</li>'
 		+	'</ul>'
-		+	'<p>Please have a look at the <a href="https://specif.de" target="_blank">SpecIF Homepage</a> for further information.</p>'
+		+	'<p>The <a href="https://specif.de" target="_blank">SpecIF Homepage</a> provides further information.</p>'
 		+	'<p>Version: '+app.version+' supporting SpecIF up to version '+app.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
 	//	+	'<p>Please press \'<a href="http://reqif.de/index.php/contact/articles/reqif-message.html" target="_blank">Support</a>\' to file a request for assistance.</p>'
@@ -70,13 +71,13 @@ modules.construct({
 		+		'<ul>'
 		+		  "<li>Mozilla Firefox</li>"
 		+		  "<li>Google Chromium and Chrome</li>"
-		+		  "<li>Apple Safari <em>(beware of performance issues in case of bigger models)</em></li>"
+		+		  "<li>Microsoft Edge</li>"
 		+		  "<li>Opera</li>"
-		+		  "<li>Microsoft Edge <em>(beware of performance issues in case of bigger models)</em></li>"
+		+		  "<li>Apple Safari <em>(beware of performance issues in case of bigger models)</em></li>"
 		+		  "<li>Microsoft Internet Explorer is <em>not</em> supported</li>"
 		+		'</ul>'
 		+	'</div>'
-		+	'<div class="col-md-6" style="padding-right:0.4em; padding-left:0.4em;">'
+		+	'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
 		+	'<h4>Credits and License Information</h4>'
 		+	'<p>The web-apps have been built with the open source components listed below. These are fine pieces of software '
 		+				'and we gratefully thank the contributors for their effort.'

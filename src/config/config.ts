@@ -198,7 +198,7 @@ const CONFIG = {};
 		'Heading.fr',
 		'Heading.es', */
 		// Other:
-		'�berschrift'
+		'Überschrift'
 	];
 
 	// The content of the property with a title in this list will be used for the title when displaying the resource:
@@ -214,7 +214,7 @@ const CONFIG = {};
 /*		// DocBridge Resource Director:
 		'DBRD.Name',
 		// ARCWAY Cockpit Copilot:
-		'Objekt�berschrift',
+		'Objektüberschrift',
 		'Name',
 		// carhs SafetyWissen:
 		'carhs.Title.en',
@@ -393,6 +393,17 @@ const CONFIG = {};
 	CONFIG.eqivalentTypes = [
 	];  */
 
+	CONFIG.icons = new Map([
+		['IREB:Requirement',"&#8623;"],
+		['SpecIF:Feature',"&#10038;"],
+		['FMC:Actor',"&#9632;"],
+		['FMC:State',"&#9679;"],
+		['FMC:Event',"&#9830;"],
+		[CONFIG.resClassDiagram,"&#9635;"],
+	//	['SpecIF:UserStory',"&#9830;"],
+		["IR:Annotation","&#9755;"]
+	]);
+
 const vocabulary = {
 // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
 	property: {
@@ -438,7 +449,7 @@ const vocabulary = {
 	//			case "reqif_chapternumber":			oT = ""; break;
 				default:							oT = iT
 			};
-			return oT
+			return oT;
 		},
 		reqif: function( iT ) {
 			// Target language: ReqIF
@@ -459,7 +470,7 @@ const vocabulary = {
 	//			case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
 				default:							oT = iT
 			};
-			return oT
+			return oT;
 		}
 	},
 	resource: {
@@ -474,7 +485,7 @@ const vocabulary = {
 				case 'akteur':						oT = "FMC:Actor"; break;
 				case 'states':
 				case 'state':
-				case 'zust�nde':
+				case 'zustände':
 				case 'zustand':						oT = "FMC:State"; break;
 				case 'events':
 				case 'event':
@@ -547,7 +558,7 @@ const RE = {};
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
 	RE.Real = function( decimals ) {
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
-		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' )
+		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' );
 	};
 //	RE.CSV = /^[\s\-,_#&$�0-9a-zA-Z]+$/;   // works!
 	RE.CSV = new RegExp( '^[\\s\\-,_#&$�0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values

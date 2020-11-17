@@ -316,7 +316,7 @@ function LanguageTextsEn() {
 	self.DC_description =
 	self.dcterms_description = "Description";
 	self.DC_identifier =
-	self.dcterms_identifier = 	self.LblIdentifier;
+	self.dcterms_identifier = self.LblIdentifier;
 	self.DC_type =
 	self.dcterms_type = "Element Type";
 	self.DC_creator =
@@ -326,7 +326,7 @@ function LanguageTextsEn() {
 	self.DC_subject =
 	self.dcterms_subject = "Subject";
 	self.DC_modified =
-	self.dcterms_modified = 	self.LblModifiedAt;
+	self.dcterms_modified = self.LblModifiedAt;
 //	self.dcterms_contributor = "";
 //	self.dcterms_serviceProvider = "";
 //	self.dcterms_instanceShape = "";
@@ -350,7 +350,8 @@ function LanguageTextsEn() {
 // SpecIF entity, relation and attribute names:
 	self.SpecIF_Heading = "Heading";
 	self.SpecIF_Headings = "Headings";
-	self.SpecIF_Name = 	self.LblName;
+	self.SpecIF_HeadingDescription = "A '"+self.SpecIF_Heading+"' has a title for chapters with optional description.";
+	self.SpecIF_Name = self.LblName;
 //	self.SpecIF_Names = "Names";
 	self.SpecIF_Folder = "Folder";	// deprecated, use SpecIF:Heading
 	self.SpecIF_Folders = "Folders";// deprecated, use SpecIF:Headings
@@ -361,6 +362,7 @@ function LanguageTextsEn() {
 	self.SpecIF_Information = "Information";  // deprecated, use SpecIF:Paragraph
 	self.SpecIF_Diagram = "Schematic";
 	self.SpecIF_Diagrams = "Schematics";
+	self.SpecIF_DiagramDescription = "A '"+self.SpecIF_Diagram+"' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.";
 	self.SpecIF_View = "Schematic";		// deprecated
 	self.SpecIF_Views = "Schematics";	// deprecated
 	self.FMC_Plan = "Schematic";
@@ -381,12 +383,17 @@ function LanguageTextsEn() {
 	self.FMC_States = "States";
 	self.FMC_Event = "Event";
 	self.FMC_Events = "Events";
+	self.FMC_ActorDescription = "An '"+self.FMC_Actor+"' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.";
+	self.FMC_StateDescription = "A '"+self.FMC_State+"' is a fundamental model element type representing a passive entity, be it a value, a document, an information storage or even a physical shape.";
+	self.FMC_EventDescription = "An '"+self.FMC_Event+"' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.";
 	self.SpecIF_Feature = "Feature";
 	self.SpecIF_Features = "Features";
 	self.SpecIF_Requirement =
 	self.IREB_Requirement = "Requirement";
 	self.SpecIF_Requirements = 
 	self.IREB_Requirements = "Requirements";
+	self.SpecIF_FeatureDescription = "A '"+self.SpecIF_Feature+"' is an intentional distinguishing characteristic of a system, often a unique selling proposition.";
+	self.IREB_RequirementDescription = "A '"+self.IREB_Requirement+"' is a singular documented physical and functional need that a particular design, product or process must be able to perform.";
 	self.IREB_RequirementType = self.LblType;
 	self.IREB_RequirementTypeFunction = 
 	self.IREB_FunctionalRequirement = "Function Requirement or User Story";
@@ -403,6 +410,7 @@ function LanguageTextsEn() {
 	self.SpecIF_Comments = "Comments";
 	self.SpecIF_Issue = "Issue";
 	self.SpecIF_Issues = "Issues";
+	self.SpecIF_Issue = "An '"+self.SpecIF_Issue+"' is a question to answer or decision to take which is worth tracking.";
 	self.SpecIF_Outline =
 	self.SpecIF_Hierarchy = "Outline";
 	self.SpecIF_Outlines =
@@ -410,6 +418,7 @@ function LanguageTextsEn() {
 	self.SpecIF_Glossary = "Model-Elements (Glossary)";
 	self.SpecIF_Collection = "Collection or Group";
 	self.SpecIF_Collections = "Collections and Groups";
+	self.SpecIF_CollectionDescription = "A '"+self.SpecIF_Collection+"' is a logical grouping of '"+self.modelElements+"'.";
 	self.SpecIF_Annotations = "Annotations";
 	self.SpecIF_Vote = "Vote";
 	self.SpecIF_Votes = "Votes";
@@ -463,8 +472,9 @@ function LanguageTextsEn() {
 	self.SpecIF_isSpecializationOf =
 	self.SpecIF_isSpecialisationOf = 
 	self.SysML_isSpecialisationOf = "is Specialization of";
-	self.SpecIF_isSynonymOf = "is synonymous with";
-	self.SpecIF_isInverseOf = "is inverse of";
+	self.SpecIF_isSynonymOf = "is synonym of";
+	self.SpecIF_isInverseOf = 						// DEPRECATED
+	self.SpecIF_isAntonymOf = "is antonym of";
 	self.SpecIF_inheritsFrom = "inherits from";
 	self.SpecIF_refersTo = "refers to";
 	self.SpecIF_commentRefersTo = "refers to";
@@ -480,8 +490,8 @@ function LanguageTextsEn() {
 //	self.SpecIF_Stereotype =
 //	self.SpecIF_SubClass = "SubClass";
 	self.SpecIF_Category = 	self.LblCategory;  
+	self.SpecIF_State =								// DEPRECATED
 	self.SpecIF_Status = 	self.LblState;
-	self.SpecIF_State = 	self.LblState;			// DEPRECATED
 	self.SpecIF_Priority = 	self.LblPriority;
 	self.SpecIF_Milestone = "Milestone";
 	self.SpecIF_DueDate = "Due date";
@@ -501,6 +511,7 @@ function LanguageTextsEn() {
 	self.SpecIF_Responsibles = "Responsibles";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
+	self.IR_AnnotationDescription = "An Interaction-Room '"+self.IR_Annotation+"' indicates a point of special interest. Examples are customer or user value, product features with prominent benefit,effort or challenges during development.";
 	self.IR_refersTo = 	self.SpecIF_refersTo;
 	self.IR_approves = "approves";
 	self.IR_opposes = "opposes";
@@ -515,12 +526,12 @@ function LanguageTextsEn() {
 	self.DBRD_Name = 'Title';
 	self.DBRD_Text = 'Text';
 // attribute names used by Atego Exerpt with RIF 1.1a:
-	self.Object_Heading = 	self.ReqIF_Name;
-	self.VALUE_Object_Heading = 	self.ReqIF_Name;
-	self.Object_Text = 	self.ReqIF_Text;
-	self.VALUE_Object_Text = 	self.ReqIF_Text;
-	self.Object_ID = 	self.ReqIF_ForeignID;
-	self.VALUE_Object_ID = 	self.ReqIF_ForeignID;
+	self.VALUE_Object_Heading =
+	self.Object_Heading = self.ReqIF_Name;
+	self.VALUE_Object_Text =
+	self.Object_Text = self.ReqIF_Text;
+	self.VALUE_Object_ID =
+	self.Object_ID = self.ReqIF_ForeignID;
 	self.SpecIF_priorityHigh = "high";
 	self.SpecIF_priorityRatherHigh = "rather high";
 	self.SpecIF_priorityMedium = "medium";
@@ -531,17 +542,28 @@ function LanguageTextsEn() {
 	self.SpecIF_sizeM = "medium";
 	self.SpecIF_sizeS = "small";
 	self.SpecIF_sizeXS = "very small";
-	self.SpecIF_rejected = "00_rejected";
-	self.SpecIF_initial = "10_initial";
-	self.SpecIF_drafted = "20_drafted";
-	self.SpecIF_submitted = "30_submitted";
-	self.SpecIF_approved = "40_approved";
-	self.SpecIF_ready = "50_ready";
-	self.SpecIF_done = "60_done";
-	self.SpecIF_validated = "70_validated";
-	self.SpecIF_released = "80_released";
-	self.SpecIF_deprecated = "88_deprecated";
-	self.SpecIF_withdrawn = "90_withdrawn";
+	self.SpecIF_rejected =
+	self.SpecIF_statusRejected = "00_rejected";
+	self.SpecIF_initial =
+	self.SpecIF_statusInitial = "10_initial";
+	self.SpecIF_drafted =
+	self.SpecIF_statusDrafted = "20_drafted";
+	self.SpecIF_submitted =
+	self.SpecIF_statusSubmitted = "30_submitted";
+	self.SpecIF_approved =
+	self.SpecIF_statusApproved = "40_approved";
+	self.SpecIF_ready =
+	self.SpecIF_statusReady = "50_ready";
+	self.SpecIF_done =
+	self.SpecIF_statusDone = "60_done";
+	self.SpecIF_validated =
+	self.SpecIF_statusValidated = "70_validated";
+	self.SpecIF_released =
+	self.SpecIF_statusReleased = "80_released";
+	self.SpecIF_deprecated =
+	self.SpecIF_statusDeprecated = "88_deprecated";
+	self.SpecIF_withdrawn =
+	self.SpecIF_statusWithdrawn = "90_withdrawn";
 
 // Messages:
 	self.MsgConfirm = 'Please confirm:';

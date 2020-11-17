@@ -95,7 +95,7 @@ modules.construct({
 									msgBtns.insertAfter,
 									msgBtns.insertBelow
 								];
-								editResource(r,opts)
+								editResource(r,opts);
 							}, 
 							stdError
 						);
@@ -141,32 +141,32 @@ modules.construct({
 			toEdit = classifyProps( res, cData );
 			let ti = i18n.lookup(CONFIG.propClassTitle),
 				dlg = new BootstrapDialog({
-				title: opts.dialogTitle,
-			//	type: 'type-success',
-				type: 'type-primary',
-				size: BootstrapDialog.SIZE_WIDE,
-				// initialize the dialog;
-				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
-				onshown: ()=>{ setTextFocus(ti); app[myName].check() },
-				message: (thisDlg)=>{
-					var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
-					// field for the title property:
-					form += editP(toEdit.title);
-					// fields for the description properties: 
-					toEdit.descriptions.forEach( (d)=>{
-						form += editP(d);
-					});
-					// fields for the remaining properties:
-					toEdit.other.forEach( (p)=>{
-						form += editP(p);
-					});
-					form += '</div>';
-					return $( form );
-				},
-				buttons: opts.msgBtns
-			})
-			.open();
-			return
+					title: opts.dialogTitle,
+				//	type: 'type-success',
+					type: 'type-primary',
+					size: BootstrapDialog.SIZE_WIDE,
+					// initialize the dialog;
+					// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
+					onshown: ()=>{ setTextFocus(ti); app[myName].check() },
+					message: (thisDlg)=>{
+						var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
+						// field for the title property:
+						form += editP(toEdit.title);
+						// fields for the description properties: 
+						toEdit.descriptions.forEach( (d)=>{
+							form += editP(d);
+						});
+						// fields for the remaining properties:
+						toEdit.other.forEach( (p)=>{
+							form += editP(p);
+						});
+						form += '</div>';
+						return $( form );
+					},
+					buttons: opts.msgBtns
+				})
+				.open();
+			return;
 			
 			function editP(p) {
 				// Return a form element for a property;
@@ -212,9 +212,9 @@ modules.construct({
 							vals = forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-							return checkboxField( ti, vals )
+							return checkboxField( ti, vals );
 						} else {
-							return radioField( ti, vals )
+							return radioField( ti, vals );
 						};
 					case 'xs:boolean':
 						// no input checking needed:
@@ -225,7 +225,7 @@ modules.construct({
 					case 'xs:double':
 						// add parameters to check this input field:
 						self.dialogForm.addField( ti, dT );
-						return textField( ti, p.value, 'line', myFullName+'.check()' )
+						return textField( ti, p.value, 'line', myFullName+'.check()' );
 				};
 				return
 
@@ -239,7 +239,7 @@ modules.construct({
 									// so that the user can update and delete the diagram later on:
 						+			'<div id="'+tagId(p['class'])+'">'+fileRef.toGUI( p.value, opts )+'</div>'
 						+		'</div>'
-						+ '</div>'
+						+ '</div>';
 					
 					function diagBtns(p) {
 						// p['class'] is used to identify the property; 
@@ -250,14 +250,14 @@ modules.construct({
 							bts +=			'<span class="btn btn-default btn-fileinput">' +
 												'<span>'+i18n.IcoUpdate+'</span>' +
 												'<input id="file'+p['class'].simpleHash()+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
-											'</span>'
+											'</span>';
 						};  
 						if( !p.permissions || p.permissions.del ) {
 							bts +=			'<button class="btn btn-danger" data-toggle="popover" '
-								+ 'onclick="'+myFullName+'.removeDiagram(\''+p['class']+'\')" title="'+i18n.LblDelete+'">'+i18n.IcoDelete+'</button>'
+								+ 'onclick="'+myFullName+'.removeDiagram(\''+p['class']+'\')" title="'+i18n.LblDelete+'">'+i18n.IcoDelete+'</button>';
 						};
 						bts +=			'</div>';
-						return bts
+						return bts;
 					}
 				}
 			}
@@ -284,20 +284,20 @@ modules.construct({
 										var form = '<form id="attrInput" role="form" >'
 												+ radioField( i18n.LblResourceClass, resClasses )
 												+ '</form>';
-										return $( form ) 
+										return $( form );
 									},
 									buttons: [{
 											label: i18n.BtnCancel,
 											action: (thisDlg)=>{ 
 												reject({status:0,statusText:'Create Resource cancelled by the user'});
-												thisDlg.close() 
+												thisDlg.close();
 											}
 										},{ 	
 											label: i18n.LblNextStep,
 											cssClass: 'btn-success', 
 											action: (thisDlg)=>{
 												resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
-												thisDlg.close()
+												thisDlg.close();
 											}  
 										}]
 								})
@@ -339,7 +339,7 @@ modules.construct({
 		function readFile( f, fn ) {
 			const rdr = new FileReader();
 			rdr.onload = ()=>{
-				fn( new Blob([rdr.result], { type: f.type }) )
+				fn( new Blob([rdr.result], { type: f.type }) );
 			};
 			rdr.readAsArrayBuffer( f );
 		}
@@ -394,11 +394,10 @@ modules.construct({
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-			//	if( Array.isArray( self.newRes.properties )
-					// in this case, the 'properties' does always exist:
+				if( Array.isArray( self.newRes.properties )
 					self.newRes.properties.push( p );
-			//	else
-			//		self.newRes.properties = [ p ];
+				else
+					self.newRes.properties = [ p ];
 				return;
 			};
 
@@ -408,7 +407,7 @@ modules.construct({
 
 			let pV = p.value.stripHTML();
 			if( pV ) {
-				// update the elements native title:
+				// update the elements native description:
 				self.newRes.description = pV
 
 				// If the description property doesn't have a class, 
@@ -496,7 +495,7 @@ modules.construct({
 						case 'insertAfter':
 //							console.debug('nd after',selNd,pData.tree.selectedNode)
 						//	pData.tree.selectNode( selNd.getNextSibling() ); 
-							pData.tree.selectNode( selNd.getNextNode() )
+							pData.tree.selectNode( selNd.getNextNode() );
 					};
 				} else {
 					// we get here only after creating the first node of a tree:
@@ -528,13 +527,13 @@ modules.construct({
 //					console.debug('xs:enumeration',p,pC,separatedValues,vals);
 					if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
 //						console.debug( '*',p,checkboxValues( titleOf(p,opts) ).toString() );
-						return checkboxValues( titleOf(p,opts) ).toString()
+						return checkboxValues( titleOf(p,opts) ).toString();
 					} else {
 //						console.debug( '*',p,radioValue( titleOf(p,opts) ) );
-						return radioValue( titleOf(p,opts) )
+						return radioValue( titleOf(p,opts) );
 					};
 				case 'xs:boolean':
-					return booleanValue( titleOf(p,opts) ).toString()
+					return booleanValue( titleOf(p,opts) ).toString();
 			}
 		}
 	};

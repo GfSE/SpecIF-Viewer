@@ -234,7 +234,7 @@ var browser,
 					let c = e.viewClass?'class="'+e.viewClass+'" ':'',
 						d = '<div id="'+e.view.substring(1)+'" '+c+' style="display:none;"></div>';
 //					console.debug('l.view',e,c,d);
-					$(e.parent.view).append(d)
+					$(e.parent.view).append(d);
 				};
 				// load a module in case of elements with a name:
 				// (lazy loading is not yet implemented)
@@ -292,8 +292,8 @@ var browser,
 									default:
 										$(e.selector).append(
 											'<li id="'+id+'" onclick="modules.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
-										)
-								}
+										);
+								};
 							};
 							if( ch.action ) {
 								if( !ch.selectedBy ) {
@@ -312,16 +312,16 @@ var browser,
 										break;
 									default:
 										console.error( "Action'"+lbl+"' needs a parent selector of type 'btns'." );
-								}
-							}
-						})
+								};
+							};
+						});
 					};
 					// finally load all the children, as well:
 					e.children.forEach( (c)=>{
 											c.parent = e;
-											loadH(c)
-										})
-				}
+											loadH(c);
+										});
+				};
 			}
 //		console.debug('loadH',h,opts);
 
@@ -329,30 +329,30 @@ var browser,
 			callWhenReady = opts.done;
 
 		if( Array.isArray(h) )
-			h.forEach( (e)=>{ld(e)} )
+			h.forEach( (e)=>{ld(e)} );
 		else
-			ld(h)
+			ld(h);
 	}
 	function findM( tr, key ) {
 		// find the module with the given key in the module hierarchy 'tr':
 		let m=null;
 		if( Array.isArray(tr) ) {
 			for( var i=tr.length-1; !m&&i>-1; i-- ) {
-				m = find(tr[i])
-			}
+				m = find(tr[i]);
+			};
 		} else {
-			m = find(tr)
+			m = find(tr);
 		};
-		return m
+		return m;
 
 		function find(e) {
 			// by design: name without '#' and view with '#'
 			if( e.name==key || e.view==key ) return e;
 			if( e.children ) {
 				let m = findM(e.children,key);
-				if( m ) return m
+				if( m ) return m;
 			};
-			return false
+			return false;
 		}
 	}
 	function loadM( mod ) {
@@ -414,6 +414,7 @@ var browser,
 				case "toEpub": 				loadM( 'toXhtml' );
 											getScript( './vendor/assets/javascripts/toEpub.js' ); return true;
 				case "toOxml": 				getScript( './vendor/assets/javascripts/toOxml.js' ); return true;
+				case "toTurtle":			getScript( './vendor/assets/javascripts/specif2turtle.js' ); return true;
 				case 'bpmn2specif':			getScript( './vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
 				case 'archimate2specif':	getScript( './vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ); return true;
@@ -465,7 +466,7 @@ var browser,
 				case CONFIG.resourceLink:	getScript( './modules/resourceLink.mod.js' ); return true;
 		//		case CONFIG.files: 			getScript( "./modules/files-0.93.1.js"); return true;
 
-				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false
+				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false;
 			}
 		};
 		return false;
@@ -474,7 +475,7 @@ var browser,
 		// i.e. all those having a relative URL.
 		// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
 		function getCss( url ) {
-			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.version)+'" />' )
+			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.version)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'.
 			// Must be called explicitly, if not in conjunction with 'getScript'.
@@ -490,10 +491,10 @@ var browser,
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )
 				// 'setReady' is called by 'construct':
-				return $.ajax( options )
+				return $.ajax( options );
 			else
 				// call 'setReady' from here:
-				return $.ajax( options ).done( ()=>{setReady(mod)} )
+				return $.ajax( options ).done( ()=>{setReady(mod)} );
 		}
 	}
 	function setReady( mod ) {
@@ -501,19 +502,19 @@ var browser,
 		// Execute 'callWhenReady()', if/when the last registered module is ready.
 		if( self.ready.indexOf(mod)<0 ) {
 			self.ready.push( mod );
-			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" )
+			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" );
 		} else {
 			console.error("Module '"+mod+"' is set 'ready' more than once");
-			return null
+			return null;
 		};
 
 		if( self.registered.length === self.ready.length ) {
 			initH( self.tree );
 			console.info( "All "+self.ready.length+" modules loaded --> ready!" );
 			try {
-				return callWhenReady()  // callback can be null
+				return callWhenReady();  // callback can be null
 			} catch(e) {
-				return false
+				return false;
 			}
 		}
 	}
@@ -525,17 +526,17 @@ var browser,
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
 		self.exists = (v)=>{
-			return indexBy(self.list, 'view', v)>-1
+			return indexBy(self.list, 'view', v)>-1;
 		}
 		self.init = (vL)=>{
 			self.list = vL || [];
 			self.list.forEach( (e)=>{$(e).hide()});
-			self.selected = {}
+			self.selected = {};
 		};
 		self.add = (v)=>{
 			// add the module to the view list of this level:
 			self.list.push(v);
-			$(v.view).hide()
+			$(v.view).hide();
 			// we could add the visual selector, here ... it is now part of loadH.
 		};
 		self.show = ( params )=>{
@@ -571,13 +572,13 @@ var browser,
 					// a) update the content
 					if( typeof(params.content)=='string' ) {
 						v.html(params.content);
-						return
+						return;
 					};
 					// b) initiate the corresponding action implicitly:
 					if( typeof(le.show)=='function' ) {
 						params.forced = true;	// update the view even if the resource hasn't changed
 						le.show( params );
-						return
+						return;
 					}
 				} else {
 //					console.debug('ViewCtl.hide: ',le.view,le.selectedBy,v,s);
@@ -588,19 +589,19 @@ var browser,
 					// initiate the corresponding action implicitly:
 					if( typeof(le.hide)=='function' ) {
 						le.hide();
-						return
-					}
-				}
+						return;
+					};
+				};
 			});
 			if( typeof(doResize)=='function' ) {
-				doResize()
-			}
+				doResize();
+			};
 		};
 		self.hide = (v)=>{
 			if( typeof(v)=='string' && self.exists(v) ) {
 				// hide a specific view:
 				$(v).hide();
-				return
+				return;
 			};
 			// else, hide the selected view:
 			if( self.selected ) {
@@ -609,11 +610,11 @@ var browser,
 				$(self.selected.view).hide();
 				// set status of the parent's view selector:
 				$(self.selected.selectedBy).removeClass('active');
-				self.selected = null
-			}
+				self.selected = null;
+			};
 		};
 		self.init(viewL);
-		return self
+		return self;
 	}
 };
 function State(opt) {
@@ -635,13 +636,13 @@ function State(opt) {
 				state = true;
 				options.hideWhenSet.forEach( (e)=>{
 					try {
-						$(e).hide()
-					} catch(e) {}
+						$(e).hide();
+					} catch(e) {};
 				});
 				options.showWhenSet.forEach( (e)=>{
 					try {
-						$(e).show()
-					} catch(e) {}
+						$(e).show();
+					} catch(e) {};
 				})
 		}
 	},
@@ -650,17 +651,17 @@ function State(opt) {
 				options.showWhenSet.forEach( (e)=>{
 					try {
 						$(e).hide()
-					} catch(e) {}
-				})
+					} catch(e) {};
+				});
 				options.hideWhenSet.forEach( (e)=>{
 					try {
-						$(e).show()
-					} catch(e) {}
-				})
+						$(e).show();
+					} catch(e) {};
+				});
 	},
 	self.get = ()=>{
-		return state
+		return state;
 	};
 	self.reset();
-	return self
+	return self;
 }
