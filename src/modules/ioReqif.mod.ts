@@ -386,12 +386,16 @@ modules.construct({
 						break;
 					case 'xs:integer':
 						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAttsOf( dT )
-									+' MAX="'+(dT.maxInclusive||CONFIG.maxInteger)+'" MIN="'+(dT.minInclusive||CONFIG.minInteger)+'" />';
+									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxInteger)
+									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minInteger)
+								+'" />';
 						break;
 					case 'xs:double':
 						xml += '<DATATYPE-DEFINITION-REAL '+commonAttsOf( dT )
-									+' MAX="'+(dT.maxInclusive||CONFIG.maxReal)+'" MIN="'+(dT.minInclusive||CONFIG.minReal)
-									+'" ACCURACY="'+(dT.fragmentDigits||CONFIG.maxAccuracy)+'" />';
+									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxInteger)
+									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minInteger)
+									+'" ACCURACY="'+(typeof(dT.fractionDigits)=='number'? dT.fractionDigits : CONFIG.maxAccuracy)
+								+'" />';
 						break;
 					case 'xs:string':
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';

@@ -2992,8 +2992,8 @@ const specif = {
 					case "xs:double":
 						if( iE.fractionDigits ) oE[names.frct] = iE.fractionDigits;
 					case "xs:integer":
-						if( iE.minInclusive ) oE[names.minI] = iE.minInclusive;
-						if( iE.maxInclusive ) oE[names.maxI] = iE.maxInclusive;
+						if( typeof(iE.minInclusive)=='number' ) oE[names.minI] = iE.minInclusive;
+						if( typeof(iE.maxInclusive)=='number' ) oE[names.maxI] = iE.maxInclusive;
 						break;
 					case "xhtml":
 					case "xs:string":

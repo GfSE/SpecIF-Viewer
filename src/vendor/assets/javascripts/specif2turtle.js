@@ -77,13 +77,12 @@ transformProjectBaseInformations = (project) => {
 transformDatatypes = (dataTypes) => {
     if (!isArrayWithContent(dataTypes)){
         return '';
-    }
+    };
     
     let dataTypesTtlString = '';
 
     dataTypes.forEach( dataType => {
         let {id , title , type , revision , maxLength , fractionDigits , minInclusive , maxInclusive , changedAt} = dataType;
-        let enumTtlString;
 		dataTypesTtlString += emptyLine()
                     + tier0RdfEntry(`this: meta:containsDataTypeMapping :${id} .`)
                     + tier0RdfEntry(`:${id} a meta:DataTypeMapping , owl:Class ;`)
@@ -101,12 +100,11 @@ transformDatatypes = (dataTypes) => {
 
         if(isArrayWithContent(dataType.values)){
             dataType.values.forEach( enumValue => {
-                enumTtlString = emptyLine()
+                dataTypesTtlString += emptyLine()
                             + tier0RdfEntry(`:${escapeSpecialCharaters(enumValue.id)} a :${escapeSpecialCharaters(dataType.title)} ;`)
                             + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(enumValue.id)}' ;`)
                             + tier1RdfEntry(`rdfs:label '${escapeSpecialCharaters(enumValue.value)}' ;`)
                             + ' .';
-                dataTypesTtlString += enumTtlString;
             });
         };
     });
@@ -118,22 +116,21 @@ transformPropertyClasses = (propertyClasses) => {
     if (!isArrayWithContent(propertyClasses)){
         return '';
     };
+
     let propertyClassesTtlString = '';
     
     propertyClasses.forEach(propertyClass => {     
         let {id , title , dataType , revision , changedAt} = propertyClass;   
-        let propertyClassTtlString = emptyLine();
-        
-        propertyClassTtlString += tier0RdfEntry(`this: meta:containsPropertyClassMapping :${id} .`);
-        propertyClassTtlString += tier0RdfEntry(`:${id} a meta:PropertyClassMapping ;`);
-        propertyClassTtlString += tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`);
-        propertyClassTtlString += title? tier1RdfEntry(`meta:title '${escapeSpecialCharaters(title)}' ; `) : '';
-        //propertyClassTtlString += title ? tier1RdfEntry(`meta:vocabularyElement ${escapeSpecialCharaters(title)} ;`) : '';
-        propertyClassTtlString += tier1RdfEntry(`meta:dataType '${escapeSpecialCharaters(dataType)}' ;`);
-        propertyClassTtlString += revision? tier1RdfEntry(`meta:revision '${escapeSpecialCharaters(revision)}' ;`) : '';
-        propertyClassTtlString += tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`);
-        propertyClassTtlString += ' .'
-        propertyClassesTtlString += propertyClassTtlString
+        propertyClassesTtlString += emptyLine()
+                    + tier0RdfEntry(`this: meta:containsPropertyClassMapping :${id} .`)
+                    + tier0RdfEntry(`:${id} a meta:PropertyClassMapping ;`)
+                    + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
+                    + (title? tier1RdfEntry(`meta:title '${escapeSpecialCharaters(title)}' ; `) : '')
+        //          + (title? tier1RdfEntry(`meta:vocabularyElement ${escapeSpecialCharaters(title)} ;`) : '')
+                    + tier1RdfEntry(`meta:dataType '${escapeSpecialCharaters(dataType)}' ;`)
+                    + (revision? tier1RdfEntry(`meta:revision '${escapeSpecialCharaters(revision)}' ;`) : '')
+                    + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`)
+                    + ' .';
     });
     return propertyClassesTtlString;
 };
@@ -141,28 +138,25 @@ transformPropertyClasses = (propertyClasses) => {
 transformResourceClasses = (resourceClasses) => {
     if (!isArrayWithContent(resourceClasses)){
         return '';
-    }
+    };
 
     let resourceClassesTtlString='';
 
     resourceClasses.forEach( resourceClass => {
         let {id , title , description , icon , instantiation , changedAt , revision , propertyClasses} = resourceClass;
-        let resourceClassTtlString = emptyLine();
-
-        resourceClassTtlString += tier0RdfEntry(`this: meta:containsResourceClassMapping :${id} .`);
-        resourceClassTtlString += tier0RdfEntry(`:${id} a meta:ResourceClassMapping ;`);
-        resourceClassTtlString += tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`);
-        resourceClassTtlString += title? tier1RdfEntry(`meta:title '${escapeSpecialCharaters(title)}';`):'';
-        //resourceClassTtlString += title ? tier1RdfEntry(`meta:vocabularyElement '${escapeSpecialCharaters(title)}' ;`):'';
-        resourceClassTtlString += description ? tier1RdfEntry(`meta:description '${escapeSpecialCharaters(description)}' ;`):'';
-        resourceClassTtlString += icon? tier1RdfEntry(`meta:icon '${escapeSpecialCharaters(icon)}' ;`):'';
-        resourceClassTtlString += tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`);
-        resourceClassTtlString += revision? tier1RdfEntry(`meta:revision '${escapeSpecialCharaters(revision)}' ;`):'';
-        resourceClassTtlString += instantiation? extractRdfFromSpecifDataArray(`meta:instantiation`,instantiation) : '';
-        resourceClassTtlString += propertyClasses? extractRdfFromSpecifDataArray(`meta:propertyClasses`,propertyClasses) : '';
-        resourceClassTtlString+= ' .';
-
-        resourceClassesTtlString+=resourceClassTtlString;
+        resourceClassesTtlString += emptyLine()
+                    + tier0RdfEntry(`this: meta:containsResourceClassMapping :${id} .`)
+                    + tier0RdfEntry(`:${id} a meta:ResourceClassMapping ;`)
+                    + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
+                    + (title? tier1RdfEntry(`meta:title '${escapeSpecialCharaters(title)}';`):'')
+        //          + (title? tier1RdfEntry(`meta:vocabularyElement '${escapeSpecialCharaters(title)}' ;`):'')
+                    + (description? tier1RdfEntry(`meta:description '${escapeSpecialCharaters(description)}' ;`):'')
+                    + (icon? tier1RdfEntry(`meta:icon '${escapeSpecialCharaters(icon)}' ;`):'')
+                    + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`)
+                    + (revision? tier1RdfEntry(`meta:revision '${escapeSpecialCharaters(revision)}' ;`):'')
+                    + (instantiation? extractRdfFromSpecifDataArray(`meta:instantiation`,instantiation) : '')
+                    + (propertyClasses? extractRdfFromSpecifDataArray(`meta:propertyClasses`,propertyClasses) : '')
+                    + ' .';
     });
 
     return resourceClassesTtlString;
@@ -171,27 +165,24 @@ transformResourceClasses = (resourceClasses) => {
 transformStatementClasses = (statementClasses) => {
     if (!isArrayWithContent(statementClasses)){
         return '';
-    }
+    };
 
     let statementClassesTtlString = '';
 
     statementClasses.forEach( statementClass => {
         let {id , title , description , revision , changedAt , instantiation , subjectClasses , objectClasses} = statementClass;
-        let statementClassTtlString = emptyLine();
-        
-        statementClassTtlString += tier0RdfEntry(`:${id} a meta:StatementClassMapping ;`);
-        statementClassTtlString += tier0RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`);
-        statementClassTtlString += title? tier1RdfEntry(`rdfs:label  '${escapeSpecialCharaters(title)}' ;`) : '';
-        //statementClassTtlString += title? tier1RdfEntry(`meta:vocabularyElement '${escapeSpecialCharaters(title)}' ;`) : '';
-        statementClassTtlString += description? tier1RdfEntry(`rdfs:comment '${escapeSpecialCharaters(description)}' ;`) : '';
-        statementClassTtlString += revision? tier1RdfEntry(`meta:revision: '${revision}' ;`) : '';
-        statementClassTtlString += tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`);
-        statementClassTtlString += instantiation? extractRdfFromSpecifDataArray(`meta:instantiation`,instantiation) : '';
-        statementClassTtlString += subjectClasses? extractRdfFromSpecifDataArray(`meta:subjectClasses`,subjectClasses) : '';
-        statementClassTtlString += objectClasses? extractRdfFromSpecifDataArray(`meta:objectClasses `,objectClasses) : '';
-        statementClassTtlString += ' .'
-
-        statementClassesTtlString += statementClassTtlString;
+        statementClassesTtlString += emptyLine()
+                    + tier0RdfEntry(`:${id} a meta:StatementClassMapping ;`)
+                    + tier0RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
+                    + (title? tier1RdfEntry(`rdfs:label  '${escapeSpecialCharaters(title)}' ;`) : '')
+        //          + (title? tier1RdfEntry(`meta:vocabularyElement '${escapeSpecialCharaters(title)}' ;`) : '')
+                    + (description? tier1RdfEntry(`rdfs:comment '${escapeSpecialCharaters(description)}' ;`) : '')
+                    + (revision? tier1RdfEntry(`meta:revision: '${revision}' ;`) : '')
+                    + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`)
+                    + (instantiation? extractRdfFromSpecifDataArray(`meta:instantiation`,instantiation) : '')
+                    + (subjectClasses? extractRdfFromSpecifDataArray(`meta:subjectClasses`,subjectClasses) : '')
+                    + (objectClasses? extractRdfFromSpecifDataArray(`meta:objectClasses `,objectClasses) : '')
+                    + ' .';
         });
     
     return statementClassesTtlString;
@@ -205,23 +196,20 @@ transformResources = (resources) => {
     let resourcesTtlString = ''
     resources.forEach( resource => {
         let {id , title , properties, class : resourceClass, revision , changedAt , changedBy} = resource;
-        let resourceTtlString = emptyLine();
-        
-        resourceTtlString += tier0RdfEntry(`:${id} a IREB:Requirement ;`);
-        resourceTtlString += title? tier1RdfEntry(`rdfs:label '${escapeSpecialCharaters(title)}' ;`) : '';
-        resourceTtlString += tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`);
-        resourceTtlString += resourceClass ? tier1RdfEntry(`meta:PropertyClassMapping '${escapeSpecialCharaters(resourceClass)}' ;`) : '';
+        resourcesTtlString += emptyLine()
+                    + tier0RdfEntry(`:${id} a IREB:Requirement ;`)
+                    + (title? tier1RdfEntry(`rdfs:label '${escapeSpecialCharaters(title)}' ;`) : '')
+                    + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
+                    + (resourceClass? tier1RdfEntry(`meta:PropertyClassMapping '${escapeSpecialCharaters(resourceClass)}' ;`) : '')
+                    + (revision? tier1RdfEntry(`meta:revision '${revision}' ;`) : '')
+                    + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`)
+                    + (changedBy? tier1RdfEntry(`meta:changedBy '${escapeSpecialCharaters(changedBy)}' ;`) : '');
         if(isArrayWithContent(properties)){
             properties.forEach( property => {
-                resourceTtlString += tier1RdfEntry(`:${property.class} '${escapeSpecialCharaters(property.value)}' ;`);
-            })
+                resourcesTtlString += tier1RdfEntry(`:${property.class} '${escapeSpecialCharaters(property.value)}' ;`);
+            });
         };
-        resourceTtlString += revision ? tier1RdfEntry(`meta:revision '${revision}' ;`) : '';
-        resourceTtlString += tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`);
-        resourceTtlString += changedBy? tier1RdfEntry(`meta:changedBy '${escapeSpecialCharaters(changedBy)}' ;`) : '';
-        resourceTtlString += ' .'
-
-        resourcesTtlString += resourceTtlString;
+        resourcesTtlString += ' .';
     });
 
     return resourcesTtlString;
@@ -236,20 +224,17 @@ transformStatements = (statements) => {
     
     statements.forEach( statement => {
         let {id , subject , class : statementClass , object , changedAt , changedBy , revision} = statement;
-        let statementTtlString = emptyLine();
-
-        statementTtlString += tier0RdfEntry(`:${id} a meta:Statement ;`);
-        statementTtlString += tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`);
-        statementTtlString += subject? tier1RdfEntry(`rdf:subject :${subject} ;`) : '';
-        statementTtlString += statementClass ? tier1RdfEntry(`rdf:predicate :${statementClass} ;`) : '';
-        statementTtlString += object? tier1RdfEntry(`rdf:object :${object} ;`) : '';
-        statementTtlString += tier1RdfEntry(`meta:modified '${escapeSpecialCharaters(changedAt)}' ;`);
-        statementTtlString += changedBy? tier1RdfEntry(`meta:changedBy '${escapeSpecialCharaters(changedBy)}' ;`) : '';
-        statementTtlString += revision? tier1RdfEntry(`meta:revision '${revision}' ;`) : '';
-        statementTtlString += ' .'
-
-        statementsTtlString += statementTtlString;
-    })
+        statementsTtlString += emptyLine()
+                    + tier0RdfEntry(`:${id} a meta:Statement ;`)
+                    + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
+                    + (subject? tier1RdfEntry(`rdf:subject :${subject} ;`) : '')
+                    + (statementClass? tier1RdfEntry(`rdf:predicate :${statementClass} ;`) : '')
+                    + (object? tier1RdfEntry(`rdf:object :${object} ;`) : '')
+                    + tier1RdfEntry(`meta:modified '${escapeSpecialCharaters(changedAt)}' ;`)
+                    + (changedBy? tier1RdfEntry(`meta:changedBy '${escapeSpecialCharaters(changedBy)}' ;`) : '')
+                    + (revision? tier1RdfEntry(`meta:revision '${revision}' ;`) : '')
+                    + ' .';
+    });
 
     return statementsTtlString;
 };
@@ -288,12 +273,10 @@ transformNodes = (hierarchyNode) => {
         nodes.forEach( node => {
             hierarchyNodeTtlString += transformNodes(node); 
         });
-        return hierarchyNodeTtlString;
     } else {
         hierarchyNodeTtlString += ` .`;
-        return hierarchyNodeTtlString;
     };
-    
+    return hierarchyNodeTtlString;
 };
 
 transformFiles = (files) => {
