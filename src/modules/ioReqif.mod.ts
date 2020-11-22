@@ -392,8 +392,8 @@ modules.construct({
 						break;
 					case 'xs:double':
 						xml += '<DATATYPE-DEFINITION-REAL '+commonAttsOf( dT )
-									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxInteger)
-									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minInteger)
+									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxReal)
+									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minReal)
 									+'" ACCURACY="'+(typeof(dT.fractionDigits)=='number'? dT.fractionDigits : CONFIG.maxAccuracy)
 								+'" />';
 						break;

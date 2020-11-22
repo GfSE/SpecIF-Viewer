@@ -261,7 +261,8 @@ modules.construct({
 			var oE = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: desperateTitleOf(r,opts,prj), 
+			//	name: desperateTitleOf(r,opts,prj), 
+				name: elementTitleOf(r,opts,prj), 
 				ref: iE.resource.id || iE.resource // for key (with revision) or for id (without revision)
 			};
 			oE.children = forAll( iE.nodes, toChild );
@@ -924,7 +925,8 @@ modules.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
+		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
+			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
@@ -1535,49 +1537,6 @@ function Resources() {
 	return self;
 }
 
-function elementTitleOf( el, opts, prj ) {
-	// Get the title of a resource or a statement
-	// ... from the properties or a replacement value in case of default.
-	if( typeof(el)!='object' ) return;
-	if( !prj ) prj = app.cache.selectedProject.data;
-	
-	// Lookup titles only in case of a resource serving as heading or in case of a statement:
-	let localOpts;
-	if( el.subject ) {
-		// it is a statement
-		localOpts = opts;
-	} else {
-		// it is a resource
-		localOpts = {
-			targetLanguage: opts.targetLanguage,
-			lookupTitles: opts.lookupTitles && itemById( prj.resourceClasses, el['class'] ).isHeading
-		};
-	};
-	let pt = titleFromProperties( el.properties, localOpts ) || titleOf( el, localOpts );
-
-	// if it is a statement and does not have a title of it's own, take the class' title:
-// 	console.debug('elementTitleOf',el,opts,pt);
-
-	// In case of a resource, we never want to lookup a title,
-	// however in case of a statement, we do:
-	if( el.subject ) {
-		// it is a statement
-		if( !pt && prj )
-			// take the class' title by default:
-			pt = staClassTitleOf( el, prj, opts );
-	} else {
-		// it is a resource
-		if( opts && opts.addIcon && CONFIG.addIconToInstance && prj && pt )
-			pt = pt.addIcon( itemById( prj.resourceClasses, el['class'] ).icon );
-	};
-//	return opts.targetLanguage? pt.unescapeHTMLEntities() : pt;
-	return typeof(pt)=='string'? pt.stripHTML() : pt;
-}
-function desperateTitleOf(r,opts,prj) {
-	// Some elements don't have a title at all; 
-	// and we desperately need a title, for example, for the tree and the statement graph:
-	return elementTitleOf(r,opts,prj) || visibleIdOf(r,prj) || r.id;
-}
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
 function propertyValueOf( prp, opts ) {
 	"use strict";
@@ -2076,7 +2035,7 @@ var fileRef = new function() {
 						clkEl.addEventListener("dblclick", 
 							function(evt){ 
 								// ToDo: So far, this only works with ARCWAY generated SVGs.
-								let eId = this.className.baseVal.split(' ')[1];		// second class is element id
+								let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
 								// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
 								eId = correspondingPlan(eId);
 								// delete the details to make sure that images of the click target are shown,
@@ -2120,9 +2079,9 @@ var fileRef = new function() {
 								$("#details").empty();
 								app.specs.showTree.set(true)
 							}
-						) 
+						);
 					});
-					return svg
+					return svg;
 					
 					function correspondingPlan(id) {
 						// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
@@ -2147,14 +2106,16 @@ var fileRef = new function() {
 								};
 							};
 						};
-						return id	// no corresponding diagram found
+						return id;	// no corresponding diagram found
 					}
 					// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+					// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
+					// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
+					// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
 					function addViewBoxIfMissing(svg) {
-						let el=null;
-						// in Case of IE 'forEach' does not work with svg.childNodes
+						let el;
 						for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
-							let el = svg.childNodes[i];
+							el = svg.childNodes[i];
 //							console.debug('svg',svg,el,el.outerHTML);
 							// look for '<svg .. >' tag with its properties, often but not always the first child node:
 							if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {

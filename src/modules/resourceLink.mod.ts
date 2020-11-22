@@ -215,7 +215,8 @@ modules.construct({
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
-							let ti = desperateTitleOf(res,opts,cData);
+					//		let ti = desperateTitleOf(res,opts,cData);
+							let ti = elementTitleOf(res,opts,cData);
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
 								eligibleRs += '<div id="cand-'+i+'" class="candidates" onclick="'+myFullName+'.itemClicked(\''+i+'\')">'+ti+'</div>'
@@ -251,9 +252,12 @@ modules.construct({
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-			btn.setAttribute("title", "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
+		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
-										+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
+										+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" ) */
+			btn.setAttribute("title", "'"+elementTitleOf(self.selRes,opts,cData) +"' "
+										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ elementTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
 		} else {
 			btn.disabled = true
 		}; 
@@ -282,9 +286,12 @@ modules.construct({
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-			btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
+		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
-										+ desperateTitleOf(self.selRes,opts,cData) +"'" )
+										+ desperateTitleOf(self.selRes,opts,cData) +"'" ) */
+			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
+										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ elementTitleOf(self.selRes,opts,cData) +"'" ) 
 		} else {
 			btn.disabled = true
 		}; 

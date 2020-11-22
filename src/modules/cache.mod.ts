@@ -1994,14 +1994,14 @@ function Project( pr ) {
 					.then(
 						(blob)=>{
 							// successfully generated:
-//							console.debug("storing ",fName+"z");
-							saveAs(blob, fName+"z");
+//							console.debug("storing ZIP of '"+fName+"'.");
+							saveAs(blob, ( ["reqif","specif"].indexOf(opts.format)>-1? fName+'z' : fName+'.zip' ));
 							self.exporting = false;
 							resolve();
 						},
 						(xhr)=>{
 							// an error has occurred:
-							console.error("Cannot store ",fName+"z");
+							console.error("Cannot create ZIP of '"+fName+"'.");
 							self.exporting = false;
 							reject();
 						}
@@ -3066,7 +3066,12 @@ const specif = {
 					// no id
 					class:  iE['class']
 				};
-				if( iE.title ) oE.title = titleOf( iE, opts );
+				if( iE.title ) {
+					// skip the property title, if it is equal to the propertyClass' title:
+					let pC = itemById( iD.propertyClasses, iE['class'] ),
+						ti = titleOf( iE, opts );
+					if( ti!=pC.title ) oE.title = ti;
+				};
 				if( iE.description ) oE.description = languageValueOf( iE.description, opts );
 
 				// According to the schema, all property values are represented by a string
@@ -3086,23 +3091,23 @@ const specif = {
 								else
 									// otherwise transform to HTML, if possible;
 									// especially for publication, for example using WORD format:
-									oE.value = makeHTML( languageValueOf( iE.value, opts ), opts )
+									oE.value = makeHTML( languageValueOf( iE.value, opts ), opts );
 								
-	//							console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
-								break
-							}
+//								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
+								break;
+							};
 							// else: no break - return the original value
 						default:
 							//	in case of 'xs:enumeration', 
 							//  an id of the dataType's value is given, so it can be taken directly:
-							oE.value = iE.value
-					}
+							oE.value = iE.value;
+					};
 				} else {
 					// for SpecIF export, keep full data structure:
-					oE.value = iE.value
+					oE.value = iE.value;
 				};
 				// properties do not have their own revision and change info; the parent's apply.
-				return oE
+				return oE;
 			}
 			// common for all instances:
 			function a2ext( iE ) {
@@ -3123,27 +3128,35 @@ const specif = {
 			// a statement:
 			function s2ext( iE ) {
 //				console.debug('statement2ext',iE.title);
-				if( CONFIG.hiddenStatements.indexOf( iE.title )>-1 	 // do not export invisible statements
-					|| !iE.subject || itemIdOf(iE.subject)==CONFIG.placeholder // ... or statements with an open end
-					|| indexById( spD.resources, itemIdOf(iE.subject) )<0    // ... or statements referencing absent resources
+			/*	if( CONFIG.hiddenStatements.indexOf( iE.title )>-1 	 // do not export invisible statements
+					|| !iE.subject || itemIdOf(iE.subject)==CONFIG.placeholder // ... or statements with an open end */
+				if( !iE.subject || itemIdOf(iE.subject)==CONFIG.placeholder // ... or statements with an open end
 					|| !iE.object || itemIdOf(iE.object)==CONFIG.placeholder
+					|| indexById( spD.resources, itemIdOf(iE.subject) )<0    // ... or statements referencing absent resources
 					|| indexById( spD.resources, itemIdOf(iE.object) )<0 ) return;
 
-				var oE = a2ext( iE );
 				// The statements usually do use a vocabulary item (and not have an individual title),
 				// so we lookup, if so desired, e.g. when exporting to ePub:
-				// ToDo: Take the title from statement properties, if provided (similarly to resources).
+				var oE = a2ext( iE );
+
+				// Skip the title, if it is equal to the statementClass' title;
+				// ToDo: remove limitation of single language.
+				if( oE.title && typeof(oE.title)=="string" ) {
+					let sC = itemById( iD.statementClasses, iE['class']);
+					if( typeof(sC.title)=="string" && oE.title==sC.title )
+						delete oE.title;
+				};
 
 				if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 				// for the time being, multiple revisions are not supported:
 				if( opts.revisionDate ) {
 					// supply only the id, but not a key:
 					oE.subject = itemIdOf(iE.subject);
-					oE.object = itemIdOf(iE.object)
+					oE.object = itemIdOf(iE.object);
 				} else {
 					// supply key or id:
 					oE.subject = iE.subject;
-					oE.object = iE.object
+					oE.object = iE.object;
 				};
 				return oE;
 			}
@@ -3405,16 +3418,7 @@ function titleIdx( pL, prj ) {
 	// The result depends on the current user - only the properties with read permission are taken into consideration.
 	// This works for title strings and multi-language title objects.
 
-/*	// Note that the logic has been simplified.
-	// Up until revision 0.92.34, the title property which was listed first in CONFIG.XXAttributes was chosen.
-		var idx = -1;
-		for( var c=0, C=CONFIG.headingProperties.length; c<C; c++) {  // iterate configuration list; leading entry has priority
-			idx = indexByTitle( pL, CONFIG.headingProperties[c] );
-			if( idx>-1 ) return idx
-		};
-	// Now, the first property which is found in the respective list is chosen.
-	// ToDo: Check, if the results differ in practice ...
-*/
+	// The first property which is found in the list of headings or titles is chosen:
 	if( pL ) {
 		if( !prj ) prj = app.cache.selectedProject.data;
 		let pt;
@@ -3423,30 +3427,10 @@ function titleIdx( pL, prj ) {
 			// First, check the configured headings:
 			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
 			// If nothing has been found, check the configured titles:
-			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a
+			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a;
 		}
 	};
 	return -1
-}
-function titleFromProperties( pL, opts ) {
-//	if( !pL ) return;
-	// look for a property serving as title:
-	let idx = titleIdx( pL );
-	if( idx>-1 ) {  // found!
-		// Remove all formatting for the title, as the app's format shall prevail.
-		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
-		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-		// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-	//	if( modules.ready.indexOf( 'diff' )>-1 )
-	//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
-		// For now, let's try without replacements; so far this function is called before the filters are applied,
-		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//		console.debug('titleFromProperties', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-	//	return languageValueOf( pL[idx].value, opts );
-		let ti = languageValueOf( pL[idx].value, opts );
-		if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
-	};
-//	return undefined
 }
 function classifyProps( el, prj ) {
 	// add missing (empty) properties and classify properties into title, descriptions and other;
@@ -3470,11 +3454,11 @@ function classifyProps( el, prj ) {
 	if( el.changedBy ) cP.changedBy = el.changedBy;
 	if( el.createdAt ) cP.createdAt = el.createdAt;
 	if( el.createdBy ) cP.createdBy = el.createdBy;
+//	console.debug( 'classifyProps 1', simpleClone(cP) );
 
 	// Now, all properties are listed in cP.other;
 	// in the following, the properties used as title and description will be identified
 	// and removed from cP.other.
-	// ToDo: Hide hidden properties: CONFIG.hiddenProperties
 
 	// a) Find and set the configured title:
 	let a = titleIdx( cP.other, prj );
@@ -3505,7 +3489,8 @@ function classifyProps( el, prj ) {
 	};
 
 	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export), 
-	//    there is no title or no description property:
+	//    there is no title or no description propertyClass;
+	//    then create a property without class.
 	//    ToDo: If the instance is a statement, a title is optional - don't create if it doesn't exist!
 	if( !cP.title )
 		cP.title = {title: CONFIG.propClassTitle, value: el.title || ''};
@@ -3541,7 +3526,9 @@ function classifyProps( el, prj ) {
 		pCs = pCs.concat( itemById( iCs, el['class'] ).propertyClasses||[] );
 		// add the properties in sequence of the propertyClass identifiers:
 		pCs.forEach( (pCid)=>{
-			// the following matching will fail, if the property classes are not unique:
+			// skip hidden properties:
+			if( CONFIG.hiddenProperties.indexOf(pCid)>-1 ) return; 
+			// the property classes must be unique, otherwise the operation will:
 			p = simpleClone( itemBy( el.properties, 'class', pCid ) )
 				|| createProp(dta.propertyClasses,pCid);
 			if( p ) {
@@ -3550,10 +3537,74 @@ function classifyProps( el, prj ) {
 				// An input data-set may have titles which are not from the SpecIF vocabulary;
 				// replace the result with a current vocabulary term:
 				p.title = vocabulary.property.specif( propTitleOf(p,dta) );
-				nL.push( p )
+				nL.push( p );
 			}
 		});
 //		console.debug('normalizeProps result',simpleClone(nL));
-		return nL // normalized property list
+		return nL; // normalized property list
 	}
 }
+function elementTitleOf( el, opts, prj ) {
+	// Get the title of a resource or a statement;
+	// ... from the properties or a replacement value in case of default.
+	// 'el' is an original element without 'classifyProps()'.
+	if( typeof(el)!='object' ) return;
+	if( !prj ) prj = app.cache.selectedProject.data;
+	
+	// Lookup titles only in case of a resource serving as heading or in case of a statement:
+	let localOpts;
+	if( el.subject ) {
+		// it is a statement
+		localOpts = opts;
+	} else {
+		// it is a resource
+		localOpts = {
+			targetLanguage: opts.targetLanguage,
+			lookupTitles: opts.lookupTitles && itemById( prj.resourceClasses, el['class'] ).isHeading
+		};
+	};
+	// Get the title from the properties or natively by default:
+	let ti = getTitle( el.properties, localOpts ) || titleOf( el, localOpts );
+
+	// In case of a resource, we never want to lookup a title,
+	// however in case of a statement, we do:
+	if( el.subject ) {
+		// it is a statement
+		if( !ti )
+			// take the class' title by default:
+			ti = staClassTitleOf( el, prj, opts );
+	} else {
+		// it is a resource
+		if( opts && opts.addIcon && CONFIG.addIconToInstance && prj && ti )
+			ti = ti.addIcon( itemById( prj.resourceClasses, el['class'] ).icon );
+	};
+
+// 	console.debug('elementTitleOf',el,opts,ti);
+	return typeof(ti)=='string'? ti.stripHTML() : ti;
+
+	function getTitle( pL, opts ) {
+	//	if( !pL ) return;
+		// look for a property serving as title:
+		let idx = titleIdx( pL );
+		if( idx>-1 ) {  // found!
+			// Remove all formatting for the title, as the app's format shall prevail.
+			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+		//	if( modules.ready.indexOf( 'diff' )>-1 )
+		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
+			// For now, let's try without replacements; so far this function is called before the filters are applied,
+			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+//			console.debug('getTitle', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
+		//	return languageValueOf( pL[idx].value, opts );
+			let ti = languageValueOf( pL[idx].value, opts );
+			if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
+		};
+	//	return undefined
+	}
+}
+/* function desperateTitleOf(r,opts,prj) {
+	// Some elements don't have a title at all; 
+	// and we desperately need a title, for example, for the tree and the statement graph:
+	return elementTitleOf(r,opts,prj) || visibleIdOf(r,prj) || r.id;
+} */
