@@ -572,45 +572,45 @@ modules.construct({
 					pC = itemById( pr.propertyClasses, pC );  // replace id by the item itself
 					switch( itemById( pr.dataTypes, pC.dataType ).type ) {
 						case 'xs:boolean':
-							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-BOOLEAN>'
 							break;
 						case 'xs:integer':
-							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-INTEGER>'
 							break;
 						case 'xs:double':
-							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-REAL>'
 							break;
 						case 'xs:string':
-							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-STRING>'
 							break;
 						case 'xhtml':
-							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+pC.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-XHTML>'
 							break;
 						case 'xs:enumeration':
 							// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
 							// The property 'dataType.multiple' is invisible for the server. 
-							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" MULTI-VALUED="'+multipleChoice(pC,pr)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" MULTI-VALUED="'+multipleChoice(pC,pr)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-ENUMERATION>'
 							break;
 						case 'xs:dateTime':
-							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="RC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
+							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-'+(eC.id+pC.id).simpleHash()+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-DATE>'
 							break;
-					}
+					};
 				});
-				return xml + '</SPEC-ATTRIBUTES>'
+				return xml + '</SPEC-ATTRIBUTES>';
 			}
 			function attsOf( me ) {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';

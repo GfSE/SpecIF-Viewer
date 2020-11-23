@@ -279,13 +279,13 @@ function Project( pr ) {
 				if( r.fractionDigits!=n.fractionDigits ) return false;
 				// no break
 			case 'xs:integer':
-				return r.minInclusive==n.minInclusive && r.maxInclusive==n.maxInclusive
+				return r.minInclusive==n.minInclusive && r.maxInclusive==n.maxInclusive;
 			case 'xs:string':
 			case 'xhtml':
 				return r.maxLength==n.maxLength;
 			case 'xs:enumeration':
 				// Perhaps we must also look at the title ..
-				if( r.values.length!=n.values.length ) return false
+				if( r.values.length!=n.values.length ) return false;
 				for( var i=n.values.length-1; i>-1; i-- )
 					// assuming that the titles/values don't matter:
 					if( indexById(r.values, n.values[i].id)<0 ) return false;
@@ -293,7 +293,7 @@ function Project( pr ) {
 				// no break
 			default:
 				return true;
-		}
+		};
 	}
 	function eqPC(r,n) {
 		// return true, if reference and new propertyClass are equal:
@@ -596,7 +596,7 @@ function Project( pr ) {
 									.fail( reject );
 								} else {
 									resolve({status:0});
-								}
+								};
 							},
 							reject
 						);
@@ -770,7 +770,7 @@ function Project( pr ) {
 					self.data.resourceClasses.forEach(
 						(rC)=>{
 							idx = CONFIG.modelElementClasses.indexOf(rC.title);
-							if( idx>-1 ) tL[idx].push(rC.id)
+							if( idx>-1 ) tL[idx].push(rC.id);
 						}
 					);
 //					console.debug('gl tL',gl,tL);
@@ -778,7 +778,7 @@ function Project( pr ) {
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
 					let staL = dta.statements.filter(
 							(s)=>{
-								return staClassTitleOf( s, dta )==CONFIG.staClassShows && indexById( dgL, s.subject )>-1
+								return staClassTitleOf( s, dta )==CONFIG.staClassShows && indexById( dgL, s.subject )>-1;
 							}
 						);
 //					console.debug('gl tL dL',gl,tL,staL);
@@ -806,7 +806,7 @@ function Project( pr ) {
 									id: 'N-' + (r.id + '-gen').simpleHash(),
 									resource: r.id,
 									changedAt: tim
-								})
+								});
 						}
 					);
 					return [gl];
@@ -935,21 +935,22 @@ function Project( pr ) {
 			//    a) if different id, save new one and use it.
 			//    b) if same id and same content, just use it (no action)
 			//    c) if same id and different content, save with new id and update all references
-			let i,I,pend=0,itmL;
+			let pend=0,itmL;
 //			console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
 			types.forEach( (ty)=>{
 				if( Array.isArray(nD[ty.list]) ) {
 					itmL=[];
-					for( i=0,I=nD[ty.list].length; i<I; i++ ) {
-						let nC = nD[ty.list][i],  // nC is a class in the new data
-							// types are compared by id, instances by title:
-							idx = indexById( self.data[ty.list], nC.id );
+					nD[ty.list].forEach( (nC)=>{
+						// nC is a class in new data
+						// types are compared by id, instances by title:
+						let idx = indexById( self.data[ty.list], nC.id );
 						if( idx<0 ) {
-							// there is no item with the same id:
-							itmL.push( nC )
+							// a) there is no item with the same id
+							itmL.push( nC );
 						} else {
-							// there is an item with the same id:
+							// there is an item with the same id.
 							if( !ty.eqFn( self.data[ty.list][idx], nC) ) {
+								// there is an item with the same id and different content.
 								// c) create a new id and update all references:
 								// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 								// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
@@ -957,13 +958,14 @@ function Project( pr ) {
 								nC.id += '-' + new Date().toISOString().simpleHash();
 								ty.sbFn( nD, nC.id, alterId );
 								itmL.push( nC );
-							}
-						}
-					};
+							};
+							// b) no action
+						};
+					});
 					pend++;
 					self.createContent( ty.ctg, itmL )
 						.then( finalize, uDO.reject );
-				}
+				};
 			});
 //			console.debug('#2',simpleClone(self.data),simpleClone(nD));
 
@@ -971,9 +973,8 @@ function Project( pr ) {
 			//    a) if different title or type, save new one and use it.
 			//    b) if same title and type, just use it and update all references
 			itmL=[];
-			for( i=0,I=nD.resources.length; i<I; i++ ) {
-				let nR = nD.resources[i]; // nR is a resource in the new data
-
+			nD.resources.forEach( (nR)=>{  
+				// nR is a resource in the new data
 				// If the resource' class belongs to a collection of class-titles and is not excluded from deduplication.
 				// The folders are not consolidated, because it may happen that there are
 				// multiple folders with the same name but different description in different locations of the hierarchy.
@@ -995,7 +996,7 @@ function Project( pr ) {
 							// There is an item with the same title and type,
 							// adopt it and update all references:
 							substituteR( nD, eR, nR, {rescueProperties:true} );
-							continue;
+							return;
 						}
 				};
 
@@ -1018,7 +1019,7 @@ function Project( pr ) {
 				};
 //				console.debug('+ resource',nR);
 				itmL.push( nR )
-			};
+			});
 			pend++;
 			self.createContent( 'resource', itmL )
 				.then( finalize, uDO.reject );
@@ -1042,7 +1043,6 @@ function Project( pr ) {
 					self.deduplicate();	// deduplicate equal items
 					// ToDo: Save changes from deduplication to the server.
 //					console.debug('#5',simpleClone(self.data),opts);
-				//	uDO.resolve({status:0});
 					self.collectResourcesByClass(self.data,opts)
 					.then(
 						()=>{
