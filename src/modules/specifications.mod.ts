@@ -545,42 +545,65 @@ modules.construct({
 		opts.targetLanguage = browser.language;
 		opts.lookupTitles = true;
 				
-		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
-	//	if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
-//		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
-
 		app.busy.set();
 	/*	if( self.resources.values.length<1 )
 			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' ); */
 
-		var nd = pData.tree.selectedNode,
-			oL = [],  // id list of the resources to view
-			nL = [];  // list of nodes of the hierarchy.
-				
-		getPermissions();
-		
-		// Update browser history, if it is a view change or item selection, 
-		// but not navigation in the browser history:
-		if( nd && !(opts && opts.urlParams) ) 
-			setUrlParams({
-				project: cData.id,
-				view: self.view.substr(1),	// remove leading hash
-				node: nd.id,
-				item: nd.ref
-			}); 
+		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
+	//	if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
+//		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
 
-		// lazy loading: only a few resources are loaded from the server starting with the selected node
-		// only visible tree nodes are collected in oL (excluding those in closed folders ..), 
-		// so the main column corresponds with the tree.
-		for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
-			oL.push({ id: nd.ref });  // nd.ref is the id of a resource to show
-			nL.push( nd );
-			nd = nd.getNextNode()   // get next visible tree node
-		};
+		var nL; // list of nodes of the hierarchy, must survive the promise
 
-		app.cache.selectedProject.readContent( 'resource', oL )
+		getNextResources()
 		.then( 
-			(rL)=>{
+			renderNextResources,
+			(err)=>{
+				if( err.status==744 ) {
+					// A previously selected node is not any more available 
+					// with the latest revision of the project:
+					pData.tree.selectFirstNode();
+					getNextResources()
+					.then(
+						renderNextResources,
+						handleErr
+					);
+				} else {
+					handleErr( err );
+				};
+			}
+		);
+		return;
+		
+		function getNextResources() {
+			var nd = pData.tree.selectedNode,
+				oL = [];  // id list of the resources to view
+			nL = [];  // list of nodes of the hierarchy.
+					
+			getPermissions();
+			
+			// Update browser history, if it is a view change or item selection, 
+			// but not navigation in the browser history:
+			if( nd && !(opts && opts.urlParams) ) 
+				setUrlParams({
+					project: cData.id,
+					view: self.view.substr(1),	// remove leading hash
+					node: nd.id,
+					item: nd.ref
+				}); 
+
+			// lazy loading: only a few resources are loaded from the server starting with the selected node
+			// only visible tree nodes are collected in oL (excluding those in closed folders ..), 
+			// so the main column corresponds with the tree.
+			for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
+				oL.push({ id: nd.ref });  // nd.ref is the id of a resource to show
+				nL.push( nd );
+				nd = nd.getNextNode();   // get next visible tree node
+			};
+
+			return app.cache.selectedProject.readContent( 'resource', oL )
+		}
+		function renderNextResources( rL ) {
 				// Format the titles with numbering:
 				for( var i=rL.length-1; i>-1; i-- )
 					rL[i].order = nL[i].order;
@@ -591,17 +614,17 @@ modules.construct({
 				if( self.resources.update( rL ) || opts && opts.forced ) {
 					// list value has changed in some way:
 				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
-					$( self.view ).html( self.resources.render() )
+					$( self.view ).html( self.resources.render() );
 				};
 				// the currently selected resource:
 				selRes = self.resources.selected();
 				$( '#contentActions' ).html( actionBtns() );
-				app.busy.reset()
-			},
-			stdError
-		);
-		return;
-		
+				app.busy.reset();
+		}
+		function handleErr(err) {
+			stdError( err );
+			app.busy.reset();
+		}
 		function actionBtns() {
 			// rendered buttons:
 			var rB = '<div class="btn-group btn-group-sm" >';
@@ -616,7 +639,8 @@ modules.construct({
 		//	if( self.resCre && cData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
 			if( self.resCre )
-				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
+				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
+						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 				
@@ -628,7 +652,8 @@ modules.construct({
 			// Add the clone button depending on the current user's permissions:
 		//	if( self.resCln && cData.selectedHierarchy.upd )
 			if( self.resCre )
-				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
+				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
+						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
@@ -644,13 +669,15 @@ modules.construct({
 				}  */
 		//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
 			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
-				rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
+				rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" '
+						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
 		//	if( self.cmtCre )
-		//		rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+		//		rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
+						+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		//	else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
@@ -658,7 +685,8 @@ modules.construct({
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
 		//	if( cData.selectedHierarchy.del )
 			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) )
-				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
+				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
+						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
 
@@ -698,7 +726,8 @@ modules.construct({
 		if( !self.selectedView()=='#'+CONFIG.comments || !self.resources.selected().value ) return '';
 		// Show the commenting button, if all needed types are available and if permitted:
 		if( self.cmtCre )
-			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
+			return '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
+					+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
 		else
 			return '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>'
 	}; */
@@ -1046,18 +1075,21 @@ modules.construct({
 
 	function linkBtns() {
 		if( !selRes ) return '';
-		if( modeStaDel ) return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+		if( modeStaDel ) 
+			return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
 
 		var rB = '<div class="btn-group btn-group-sm" >';
 //		console.debug( 'linkBtns', self.staCre );
 
 		if( app.title!=i18n.LblReader && self.staCre )
-			rB += '<button class="btn btn-success" onclick="'+myFullName+'.linkResource()" data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
+			rB += '<button class="btn btn-success" onclick="'+myFullName+'.linkResource()" '
+					+'data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 
 		if( app.title!=i18n.LblReader && net.statements.length>0 && (!selRes.permissions || selRes.permissions.del) )
-			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
+			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" '
+					+'data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
 
@@ -1079,10 +1111,10 @@ modules.construct({
 				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
 					if( !sC.instantiation || sC.instantiation.indexOf('user')>-1 ) {
 						if( !sC.subjectClasses || sC.subjectClasses.indexOf( sRes['class'] )>-1 ) 
-							self.staCreClasses.subjectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
+							self.staCreClasses.subjectClasses.push( sC.id );	// all statementClasses eligible for the currently selected resource
 						if( !sC.objectClasses || sC.objectClasses.indexOf( sRes['class'] )>-1 )
-							self.staCreClasses.objectClasses.push( sC.id )		// all statementClasses eligible for the currently selected resource
-					}
+							self.staCreClasses.objectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
+					};
 				}
 			);
 			// b) set the permissions for the edit buttons:

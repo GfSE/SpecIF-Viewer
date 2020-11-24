@@ -1624,7 +1624,7 @@ function Project( pr ) {
 							permissions: rC.permissions||{cre:true,rea:true,upd:true,del:true},
 							properties: []
 						};
-						return self.readContent( 'propertyClass', rC.propertyClasses )
+						return self.readContent( 'propertyClass', rC.propertyClasses, {reload:true} )
 					}
 				)
 				.then(
@@ -2481,7 +2481,7 @@ function Project( pr ) {
 //							console.debug( 'readCache array - allFound', cch, itm );
 							resolve( rL );
 						} else {
-							reject( {status:999,statusText:ctg+' with id '+(itm[i].id||itm[i])+' not found.'} );
+							reject( {status:744,statusText:ctg+' with id '+(itm[i].id||itm[i])+' not found.'} );
 						};
 					}, opts.timelag );
 				})
@@ -2495,11 +2495,11 @@ function Project( pr ) {
 						if( idx>-1 ) {
 							resolve( cch[idx] )
 						} else {
-							reject( {status:999,statusText:ctg+' with id '+(itm.id||itm)+' not found.'} )
+							reject( {status:744,statusText:ctg+' with id '+(itm.id||itm)+' not found.'} )
 						}
 					}, opts.timelag )
 				})
-			}
+			};
 //			console.debug('readCache - not found', ctg, itm);
 		};
 	//	return undefined;

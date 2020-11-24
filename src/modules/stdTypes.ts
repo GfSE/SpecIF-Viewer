@@ -49,7 +49,7 @@ app.standardTypes = new function() {
 		type: "xs:integer",
 		minInclusive: CONFIG.minInteger,
 		maxInclusive: CONFIG.maxInteger,
-	  changedAt: "2016-05-26T08:59:00+02:00"
+	    changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Real",
 		title: "Real",
@@ -80,7 +80,8 @@ app.standardTypes = new function() {
 	}, {
 		id: "PC-Diagram",
 		title: CONFIG.resClassDiagram,
-		dataType: "DT-FormattedText",
+		dataType: "DT-Text",
+	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "PC-Type",
