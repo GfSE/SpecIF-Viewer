@@ -587,7 +587,7 @@ function LanguageTextsEn() {
 	self.MsgOtherProject = "Late response; another project has been selected meanwhile";
 	self.MsgWaitPermissions = 'Please wait while loading the permissions.';
 	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.';
-	self.MsgImportSpecif = 'Permissible filetypes are *.specifz and *.specif. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
+	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
 	self.MsgImportBpmn = 'Permissible filetype is *.bpmn. The content must conform with the schema BPMN 2.0 XML. The import may take a couple of minutes.';
 	self.MsgImportXls = 'Permissible filetypes are *.xls, *.xlsx and *.csv. The import may take a couple of minutes for very large files.';
 	self.MsgExport = 'A zip-compressed file of the chosen format will be created. The export may take several minutes up for very large files; your browser will save the file according to its settings.';

@@ -36,7 +36,7 @@ modules.construct({
 //			template = false;
 			return f;
 		};
-		if( f.name.endsWith('.specifz') || f.name.endsWith('.zip') ) {
+		if( f.name.endsWith('.specifz') || f.name.endsWith('.specif.zip') ) {
 			zipped = true;
 //			template = false;
 			return f;

@@ -154,7 +154,7 @@ function BPMN2Specif( xmlString, opts ) {
 				if( el.innerHTML.length>opts.descriptionLength ) 
 					console.warn('Documentation of collaboration '+diagramId+' has been truncated because it is too long');
 				diag.properties.push({
-					class: "PC-Description",
+					class: "PC-Text",
 					value: el.innerHTML.slice(0,opts.descriptionLength)
 				})
 			}
@@ -355,7 +355,7 @@ function BPMN2Specif( xmlString, opts ) {
 						// add a property, if there is content:
 						if( desc ) {
 							res.properties.push({
-								class: "PC-Description",
+								class: "PC-Text",
 								value: desc
 							})
 						};
@@ -489,7 +489,7 @@ function BPMN2Specif( xmlString, opts ) {
 						};
 						if( desc ) {
 							r.properties.push({
-								class: "PC-Description",
+								class: "PC-Text",
 								value: desc
 							})
 						};
@@ -531,7 +531,7 @@ function BPMN2Specif( xmlString, opts ) {
 						// only add a property, if there is content:
 						if( desc ) {
 							model.resources[model.resources.length-1].properties.push({
-								class: "PC-Description",
+								class: "PC-Text",
 								value: desc
 							})
 						};
@@ -611,7 +611,7 @@ function BPMN2Specif( xmlString, opts ) {
 							title: title,
 							class: "RC-Actor",
 							properties: [{
-								class: "PC-Description",
+								class: "PC-Text",
 								value: desc
 							}, {
 								class: "PC-Type",
@@ -698,7 +698,7 @@ function BPMN2Specif( xmlString, opts ) {
 			// Add a description to the last element, if there is additional information:
 			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.descriptionLength ) 
 				ev.properties.push({
-					class: "PC-Description",
+					class: "PC-Text",
 					value: seqF.subject.title+' → '+title	// → = &rarr; = &#8594;
 				});
 				
@@ -780,7 +780,7 @@ function BPMN2Specif( xmlString, opts ) {
 					title: title,
 					class: "RC-Note",
 					properties: [{
-						class: "PC-Description",
+						class: "PC-Text",
 						value: txt.innerHTML.slice(0,opts.descriptionLength)
 					}],
 					changedAt: opts.fileDate
@@ -938,7 +938,7 @@ function BPMN2Specif( xmlString, opts ) {
 				dataType: "DT-ShortString",
 				changedAt: "2016-05-26T08:59:00+02:00"
 			},{
-				id: "PC-Description",
+				id: "PC-Text",
 				title: "dcterms:description",
 				dataType: "DT-Text",
 				changedAt: "2016-05-26T08:59:00+02:00"
@@ -967,7 +967,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Description","PC-Diagram","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Diagram","PC-Type"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -975,7 +975,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
@@ -983,7 +983,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
@@ -991,21 +991,21 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			icon: "&#9830;",
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: ["PC-Description"],
+			propertyClasses: ["PC-Text"],
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Collection",
 			title: "SpecIF:Collection",
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Folder",
@@ -1013,7 +1013,7 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ['auto','user'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate
 	/*	},{
 			id: "RC-ProcessModel",
@@ -1021,7 +1021,7 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Root node of a process model (outline).",
 			isHeading: true,
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate  */
 		}]
 	}

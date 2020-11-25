@@ -575,7 +575,7 @@ function Project( pr ) {
 											app.standardTypes.get('dataType',"DT-Text")
 										],
 										propertyClasses: [
-											app.standardTypes.get('propertyClass',"PC-Description"),
+											app.standardTypes.get('propertyClass',"PC-Text"),
 											app.standardTypes.get('propertyClass',"PC-Type")
 										],
 										resourceClasses: [
@@ -665,7 +665,7 @@ function Project( pr ) {
 									app.standardTypes.get('dataType',"DT-Text")
 								],
 								propertyClasses: [
-									app.standardTypes.get('propertyClass',"PC-Description"),
+									app.standardTypes.get('propertyClass',"PC-Text"),
 									app.standardTypes.get('propertyClass',"PC-Type")
 								],
 								resourceClasses: [
@@ -1987,7 +1987,7 @@ function Project( pr ) {
 				zip.file( fName, blob );
 				blob = undefined; // free heap space
 
-				// done, store the specifz:
+				// done, store the specif.zip:
 				zip.generateAsync({
 						type: "blob"
 					})
@@ -1995,7 +1995,7 @@ function Project( pr ) {
 						(blob)=>{
 							// successfully generated:
 //							console.debug("storing ZIP of '"+fName+"'.");
-							saveAs(blob, ( ["reqif","specif"].indexOf(opts.format)>-1? fName+'z' : fName+'.zip' ));
+							saveAs(blob, ( ["reqif"].indexOf(opts.format)>-1? fName+'z' : fName+'.zip' ));
 							self.exporting = false;
 							resolve();
 						},

@@ -61,9 +61,9 @@ modules.construct({
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
-		+		  "<li>Export 'specifz' file</li>"
+		+		  "<li>Export 'specif.zip' file</li>"
 		+		  "<li>Export 'reqifz' file</li>"
-		+		  "<li>Export 'Turtle' or 'RDF' file (planned)</li>"
+		+		  "<li>Export 'Turtle' file <em>(experimental)</em></li>"
 		+		  "<li>Export 'ePub' file</li>"
 		+		  "<li>Export MS-Word OOXML file</li>"
 		+		'</ul>'

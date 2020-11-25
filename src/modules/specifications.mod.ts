@@ -242,7 +242,7 @@ modules.construct({
 		let tr;
 		// Replace the tree:
 		if( Array.isArray( spc ) )
-			tr = forAll( spc, toChild )
+			tr = forAll( spc, toChild );
 		else
 			tr = [toChild(spc)];
 		
@@ -269,7 +269,7 @@ modules.construct({
 		//	if( typeof(iE.upd)=='boolean' ) oE.upd = iE.upd;
 			if( iE.revision ) oE.revision = iE.revision;
 			oE.changedAt = iE.changedAt;
-			return oE
+			return oE;
 		}
 	};
 
@@ -314,7 +314,7 @@ modules.construct({
 				(rsp)=>{
 //					console.debug('load',rsp);
 					// undefined parameters will be replaced by default value:
-					self.updateTree( opts, rsp )
+					self.updateTree( opts, rsp );
 
 					// all hierarchies have been loaded;
 					// try to select the requested node:
@@ -363,17 +363,17 @@ modules.construct({
 		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
 	};
 	self.doRefresh = ( parms )=>{
-		// Route execution depending on the current state (selected view):
-		// This routine is called in the following situations:
-		// - user clicks in the tree -> update the view only if in a pure reading mode, but not in editing mode.
-		// - cache update is signalled -> again, refresh only any content in view mode.
-		// --> Don't disturb the user in case of the editing views ('object', 'linker').
+		// Refresh the view;
+		// this routine is called in the following situations:
+		// - user clicks in the tree
+		// - cache update is signalled
+		// --> Don't disturb the user in case of the editing views ('objectEdit', 'linker').
 //		console.debug('doRefresh',parms);
 
 		$('#contentNotice').empty();
 	
 		// update the current view:
-		self.viewCtl.selected.show( parms )
+		self.viewCtl.selected.show( parms );
 	};
 
 /* ++++++++++++++++++++++++++++++++
@@ -395,18 +395,18 @@ modules.construct({
 			self.tree.selectNodeByRef( rId );
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
-			self.tree.openNode( self.tree.selectedNode )
+			self.tree.openNode( self.tree.selectedNode );
 			// opening a node triggers an event, by which 'self.refresh' will be called.
 		} else {
 			if( self.tree.selectedNode.children.length>0 ) {
 //				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
-				self.tree.toggleNode( self.tree.selectedNode )
+				self.tree.toggleNode( self.tree.selectedNode );
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
 			}
 		};
 		if( self.selectedView() != '#'+CONFIG.objectList ) 
-			modules.show({ newView: '#'+CONFIG.objectList })
+			modules.show({ newView: '#'+CONFIG.objectList });
 	};
 /*	self.addComment = ()=>{
 //		console.debug( 'addComment', self.tree.selectedNode );
@@ -505,7 +505,7 @@ modules.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,				// the cached data
+		cData,				// the cached project data
 		selRes;				// the currently selected resource
 
 	// Permissions for resources:
@@ -553,7 +553,7 @@ modules.construct({
 	//	if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
 //		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
 
-		var nL; // list of nodes of the hierarchy, must survive the promise
+		var nL; // list of hierarchy nodes, must survive the promise
 
 		getNextResources()
 		.then( 
@@ -578,7 +578,7 @@ modules.construct({
 		function getNextResources() {
 			var nd = pData.tree.selectedNode,
 				oL = [];  // id list of the resources to view
-			nL = [];  // list of nodes of the hierarchy.
+			nL = [];  // list of hierarchy nodes
 					
 			getPermissions();
 			
@@ -1083,7 +1083,7 @@ modules.construct({
 
 		if( app.title!=i18n.LblReader && self.staCre )
 			rB += '<button class="btn btn-success" onclick="'+myFullName+'.linkResource()" '
-					+'data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>'
+					+'data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>';
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 
@@ -1093,7 +1093,7 @@ modules.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
 
-		return rB+'</div>'	// return rendered buttons for display
+		return rB+'</div>';	// return rendered buttons for display
 	}
 	function getPermissions( sRes ) {
 		// No permissions beyond read, if it is the viewer:
@@ -1118,9 +1118,9 @@ modules.construct({
 				}
 			);
 			// b) set the permissions for the edit buttons:
-			self.staCre = self.staCreClasses.subjectClasses.length>0 || self.staCreClasses.objectClasses.length>0
+			self.staCre = self.staCreClasses.subjectClasses.length>0 || self.staCreClasses.objectClasses.length>0;
 		};
-//		console.debug('permissions',sRes,self.staCreClasses,self.staCre)
+//		console.debug('permissions',sRes,self.staCreClasses,self.staCre);
 	}
 	function renderStatements( net ) {
 		// net contains resources and statements as a SpecIF data-set for graph rendering,
@@ -1129,10 +1129,10 @@ modules.construct({
 		if( net.statements.length<1 ) {
 			$( self.view ).html( '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>' );
 			modeStaDel = false;
-			return
+			return;
 		};
 		if( modeStaDel ) 
-			$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' )
+			$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' );
 		else
 			$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
 
@@ -1154,7 +1154,7 @@ modules.construct({
 		if( modeStaDel )
 			options.nodeColor = '#ef9a9a';
 //		console.debug('showStaGraph',net,options);
-		app.statementsGraph.show(net,options)
+		app.statementsGraph.show(net,options);
 	}
 /*	function renderStatementsTable( sGL, opts ) {
 		// Render a table with all statements grouped by type:
@@ -1272,7 +1272,7 @@ modules.construct({
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
 //		console.debug( 'toggle delete statement mode:', modeStaDel);
 		$( '#contentActions' ).html( linkBtns() );
-		renderStatements( net )
+		renderStatements( net );
 	};
 	self.relatedItemClicked = ( rId, sId )=>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
@@ -2077,7 +2077,7 @@ var fileRef = new function() {
 								// jump to the click target:
 								app.specs.tree.selectNodeByRef( eId, true );  // true: 'similar'; id must be a substring of nd.ref
 								// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
-								document.getElementById(CONFIG.objectList).scrollTop = 0
+								document.getElementById(CONFIG.objectList).scrollTop = 0;
 							}
 						);
 
@@ -2101,7 +2101,7 @@ var fileRef = new function() {
 														+ (CONFIG.addIconToInstance? ti.addIcon(clsPrp['class'].icon) : ti) 
 														+ '</span>\n'
 														+ dsc );
-									app.specs.showTree.set(false)
+									app.specs.showTree.set(false);
 								}
 							}
 						);
@@ -2109,7 +2109,7 @@ var fileRef = new function() {
 							function(evt) { 
 							//	evt.target.setAttribute("style", "cursor:default;"); 
 								$("#details").empty();
-								app.specs.showTree.set(true)
+								app.specs.showTree.set(true);
 							}
 						);
 					});

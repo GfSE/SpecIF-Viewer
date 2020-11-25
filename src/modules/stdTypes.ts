@@ -66,7 +66,7 @@ app.standardTypes = new function() {
 		dataType: "DT-ShortString",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
-		id: "PC-Description",
+		id: "PC-Text",
 		title: CONFIG.propClassDesc,
 		dataType: "DT-Text",
 	//	dataType: "DT-FormattedText",
@@ -95,14 +95,14 @@ app.standardTypes = new function() {
 		description: "Folder with title and text for chapters or descriptive paragraphs.",
 		isHeading: true,
 		instantiation: ['auto','user'],
-		propertyClasses: ["PC-Description","PC-Type"],
+		propertyClasses: ["PC-Text","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
 		instantiation: ['auto'],
-		propertyClasses: ["PC-Name", "PC-Description"],
+		propertyClasses: ["PC-Name", "PC-Text"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.get = (ctg,id,chAt)=>{

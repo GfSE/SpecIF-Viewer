@@ -82,7 +82,7 @@ function xslx2specif( buf, pN, chAt ) {
 				app.standardTypes.get("dataType","DT-Real")
 			];	
 			this.propertyClasses = [
-				app.standardTypes.get("propertyClass","PC-Description"),
+				app.standardTypes.get("propertyClass","PC-Text"),
 				app.standardTypes.get("propertyClass","PC-Type")
 			];	
 			this.resourceClasses = [
