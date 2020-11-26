@@ -26,12 +26,13 @@ modules.construct({
 		RE_objectId = /(<object[^>]*) id=\"[^\"]+\"/g,
 		RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g;
 		
-/*	self.verify = function( f ) {
+	self.verify = function( f ) {
 			// Verify the type (and eventually the content) of a ReqIF import file:
 	
 			function reqifFile2mediaType( fname ) {
-				if( fname.endsWith('.reqifz') || fname.endsWith('.zip') ) return 'application/zip';
-				if( fname.endsWith('.reqif') || fname.endsWith('.xml') ) return 'application/xml';
+				if( fname.endsWith('.reqifz') || fname.endsWith('.reqif.zip') ) return 'application/zip';
+			//	if( fname.endsWith('.reqif') || fname.endsWith('.xml') ) return 'application/xml';
+				if( fname.endsWith('.reqif') ) return 'application/xml';
 				return null
 			}
 				
@@ -44,7 +45,7 @@ modules.construct({
 	};
 	self.toSpecif = function( buf ) {
 		// Transform ReqIF to SpecIF for import:
-	};   */
+	};
 	self.toReqif = function( pr, opts ) {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):
