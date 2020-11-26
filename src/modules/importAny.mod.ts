@@ -271,7 +271,7 @@ modules.construct({
 			if( modules.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
 				app[s.name].init( self.format.opts );
-				if( typeof(app[s.name].toSpecif)=='function' ) {
+				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
 					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				} else {
 					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
@@ -365,7 +365,7 @@ modules.construct({
 			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
 				setTextValue( i18n.LblProjectName, self.projectName );
-				setTextFocus( i18n.LblProjectName )
+				setTextFocus( i18n.LblProjectName );
 			};
 
 			self.enableActions();

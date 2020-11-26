@@ -1036,26 +1036,25 @@ function buf2str(buf) {
 		var dataView = new DataView(buf);
 		// The TextDecoder interface is documented at http://encoding.spec.whatwg.org/#interface-textdecoder
 		var decoder = new TextDecoder('utf-8');
-		return decoder.decode(dataView)
+		return decoder.decode(dataView);
 	} catch (e) {
 		// see https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
 		// for vintage browsers such as IE
 		// Known problem: Special chars like umlaut are not properly converted.
-		return String.fromCharCode.apply(null, new Uint8Array(buf))
+		return String.fromCharCode.apply(null, new Uint8Array(buf));
 	}
 }
 function str2buf(str) {
 	try {
 		let encoder = new TextEncoder();
-		return encoder.encode(str)		
+		return encoder.encode(str);		
 	} catch (e) {
 		var buf = new ArrayBuffer(str.length);
 		var bufView = new Uint8Array(buf);
-		for (var i=0, I=str.length; i<I; i++) {
-			bufView[i] = str.charCodeAt(i)
-		};
-		return buf
-	}
+		for (var i=0, I=str.length; i<I; i++)
+			bufView[i] = str.charCodeAt(i);
+		return buf;
+	};
 }
 // see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
@@ -1066,9 +1065,9 @@ function blob2dataURL(file,fn,timelag) {
 	if( typeof(timelag)=='number' && timelag>0 )
 		setTimeout( ()=>{
 			reader.readAsDataURL(file.blob)
-		}, timelag )
+		}, timelag );
 	else
-		reader.readAsDataURL(file.blob)
+		reader.readAsDataURL(file.blob);
 } 
 function blob2text(file,fn,timelag) {
 	if( !file || !file.blob ) return;
@@ -1077,9 +1076,9 @@ function blob2text(file,fn,timelag) {
 	if( typeof(timelag)=='number' && timelag>0 )
 		setTimeout( ()=>{
 			reader.readAsText(file.blob)
-		}, timelag )
+		}, timelag );
 	else
-		reader.readAsText(file.blob)
+		reader.readAsText(file.blob);
 } 
 		
 // not good enough, but better than nothing:
@@ -1093,12 +1092,12 @@ function noCode( s ) {
 		if( /<script[^>]*>[\s\S]*<\/script[^>]*>/i.test( s ) ) { log(912); return null };
 		if( /<style[^>]*>[\s\S]*<\/style[^>]*>/i.test( s ) ) { log(913); return null };
 		if( /<embed[^>]*>[\s\S]*<\/embed[^>]*>/i.test( s ) ) { log(914); return null };
-		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null }
+		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null };
 	};
-	return s
+	return s;
 	
 	function log(c) {
-		console.error('Considered harmful ('+c+'):',s)
+		console.error('Considered harmful ('+c+'):',s);
 	}
 }
 function cleanValue( o ) {
@@ -1107,9 +1106,9 @@ function cleanValue( o ) {
 		case 'string': return noCode( o ); 
 		case 'object': 
 			if( Array.isArray( o ) )
-				return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } )
+				return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
 	};
-	return ''  // unexpected input (programming error with all likelihood
+	return '';  // unexpected input (programming error with all likelihood
 }
 
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
@@ -1135,15 +1134,15 @@ function attachment2mediaType( fname ) {
 	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
 	ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.applTypes[ ti ]
-	return
+	if( ti>-1 ) return CONFIG.applTypes[ ti ];
+	return;
 }
 function image2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( !t ) return;
 	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.imgTypes[ ti ]
-	return
+	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
+	return;
 }
 
 function localDateTime(iso) {
@@ -1151,7 +1150,7 @@ function localDateTime(iso) {
 	// ToDo: calculate offset of time-zone ... or use one of the libraries ..
 	if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
 	if( iso.length>9 ) return (iso.substr(0,10));
-	return ''
+	return '';
 }
 
 function simpleClone( o ) { 
@@ -1171,21 +1170,21 @@ function simpleClone( o ) {
 				o[p].forEach( (op)=>{
 					n[p].push( cloneProp(op) )
 				});
-				continue
+				continue;
 			};
 			// else
-			n[p] = cloneProp(o[p])
+			n[p] = cloneProp(o[p]);
 		};
-		return n
+		return n;
 	};
-	return o
+	return o;
 }
 function hasUrlParams() {
 	let p = document.URL.split('#');
 	if( p[1] && p[1].length>0 ) return '#';
 //	p = document.URL.split('?');   no queries, yet
 //	if( p[1] && p[1].length>0 ) return '?';
-	return false
+	return false;
 }
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
@@ -1199,7 +1198,7 @@ function getUrlParams(opts) {
 	if( !p[1] ) return {};
 	p = decodeURI(p[1]);
 	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
-	return parse( p )
+	return parse( p );
 
 	function parse( h ) {
 		if( !h ) return {};
@@ -1211,11 +1210,11 @@ function getUrlParams(opts) {
 			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
 			// look for specific tokens, only:
 			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
-				pO[p[0]] = p[1]
+				pO[p[0]] = p[1];
 			else
-				console.warn("Unknown URL-Parameter '",p[0],"' found.")
+				console.warn("Unknown URL-Parameter '",p[0],"' found.");
 		});
-		return pO
+		return pO;
 	}
 }
 function setUrlParams(actSt) {
@@ -1231,7 +1230,7 @@ function setUrlParams(actSt) {
 			|| !actSt.item 
 			|| quO[CONFIG.keyItem] == actSt.item ) ) {
 //		console.debug('setUrlParams - quit');
-		return
+		return;
 	};
 	
 	let path = window.location.pathname.split('/'),  // get the path in pieces
@@ -1244,14 +1243,14 @@ function setUrlParams(actSt) {
 				+ (actSt.node? sep+CONFIG.keyNode+is+actSt.node : (actSt.item? sep+CONFIG.keyItem+is+actSt.item : ''));
 
 	// update the browser history:
-	history.pushState('','',newParams)
+	history.pushState('','',newParams);
 };
 function clearUrlParams() {
 	if( !browser.supportsHtml5History || !hasUrlParams() ) return;
 	
 	let path = window.location.pathname.split('/');  // get the path in pieces
 //	console.debug( 'clearUrlParams', path );
-	history.pushState('','',path[path.length-1])    // last element is 'appname.html' without url parameters;
+	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
 };
 function httpGet(params) {
 	// https://blog.garstasio.com/you-dont-need-jquery/
@@ -1273,11 +1272,11 @@ function httpGet(params) {
 					break;
 				default:
 					// done with error:
-					if( typeof(params.fail)=="function" ) params.fail(this)
-			}
+					if( typeof(params.fail)=="function" ) params.fail(this);
+			};
 		};
 		// continue in case of success and error:
-		if( typeof(params.then)=="function" ) params.then()	
+		if( typeof(params.then)=="function" ) params.then();
 	};
-	xhr.send(null)
+	xhr.send(null);
 }
