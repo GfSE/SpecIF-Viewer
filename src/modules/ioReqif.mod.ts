@@ -56,7 +56,7 @@ modules.construct({
 
 		// Check for missing options:
 		if( typeof(opts)!='object' ) opts = {};
-		if( !opts.hierarchyRoots ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
+		if( !Array.isArray(opts.hierarchyRoots) ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
 
 		const date = new Date().toISOString(),
 			ns = 'xhtml';

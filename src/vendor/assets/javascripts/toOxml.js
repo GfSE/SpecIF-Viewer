@@ -17,14 +17,15 @@ function toOxml( data, opts ) {
 
 	// Reject versions < 0.10.8:
 	if( data.specifVersion ) {
-		let v = data.specifVersion.split('.');
+		let v = data.specifVersion.split('.'),
+			eTxt = "SpecIF Version < v0.10.8 is not supported.";
 		if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
 			if (typeof(opts.fail)=='function' )
-				opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
+				opts.fail({status:904,statusText:eTxt});
 			else
-				console.error("SpecIF Version < v0.10.8 is not supported.");
-			return
-		}
+				console.error(eTxt);
+			return;
+		};
 	};
 	
 	// Check for missing options:
@@ -176,6 +177,7 @@ function toOxml( data, opts ) {
 			if( opts.addTitleLinks )
 				var reTitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, '' );
 			
+			if( !Array.isArray(opts.hierarchyRoots) ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
 			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
 			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];
 			// if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
@@ -217,24 +219,24 @@ function toOxml( data, opts ) {
 				reRun = new RegExp(reR,'g');
 			// Regex to isolate text fragments within a run:
 			const reT = '(.*?)(<br ?/>)',
-				reText = new RegExp(reT,'g');
+				reText = new RegExp(reT,'g'),
+				nbsp = '&#160;'; // non-breakable space
 			
 			// All required parameters are available, so we can begin:
-			const nbsp = '&#160;'; // non-breakable space
 			var oxml = {
 		//			headings: [],
-					sections: [],		// a xhtml file per SpecIF hierarchy
+					sections: [],		// a series of paragraphs per SpecIF hierarchy
 					relations: []
 				};
 			
-			// For each SpecIF hierarchy a xhtml-file is created and returned as subsequent sections:
+			// For each SpecIF hierarchy, create the paragraphs and add them as subsequent section:
 			data.hierarchies.forEach( function(h) {
 				oxml.sections.push(
-					renderHierarchy( h, 1 )
-				)
+					renderHierarchy( h )
+				);
 			});
 //			console.debug('oxml result',oxml);
-			return oxml
+			return oxml;
 			
 			// ---------------
 			function titleOf( itm, pars, opts ) { // resource, parameters, options
@@ -443,7 +445,7 @@ function toOxml( data, opts ) {
 							ndId = ndByRef( nd.nodes[t] );							
 							if( ndId ) return ndId
 						};
-					return null
+					return null;
 				}
 			}
 			function propertyClassOf( pCid ) {
@@ -468,7 +470,7 @@ function toOxml( data, opts ) {
 							// Disregard the title properties, here:
 							if( opts.titleProperties.indexOf( prpTitleOf(p) )<0 )
 								other.push(p);
-						}
+						};
 					});
 				};
 
@@ -862,14 +864,14 @@ function toOxml( data, opts ) {
 //							console.debug('parseImg *2',u,e,pngF);
 							if( e.indexOf('svg')>-1 && opts.preferPng && pngF ) {
 							//	t1 = pngF.type;
-								u = pngF.id
+								u = pngF.id;
 							};
 							// At the lowest level, the image is included only if present:
 //							console.debug('parseImg *3',u,d,t1);
-							return { text:d, format:{hyperlink:{ external: u } }}
+							return { text:d, format:{hyperlink:{ external: u } }};
 						} else {
 							// in absence of an image, just show the description:
-							return { text:d }
+							return { text:d };
 						}
 					}
 					function parseObject( obj ) {  // details of an XHTML object
@@ -880,28 +882,30 @@ function toOxml( data, opts ) {
 //						console.debug('parseObject *1', obj);
 
 						let u = getXhtmlPrp( 'data', obj.properties ).replace('\\','/'), 
-							t = getXhtmlPrp( 'type', obj.properties ),
-							d = obj.innerHTML || getXhtmlPrp( 'name', obj.properties ) || withoutPath( u ),	// the description
-							e = extOf(u).toLowerCase();	// the file extension
+							e = extOf(u).toLowerCase(),	// the file extension
+							t = getXhtmlPrp( 'type', obj.properties ) || (opts.imgExtensions.indexOf(e)>-1? "image/"+e : undefined),
+							d = obj.innerHTML || getXhtmlPrp( 'name', obj.properties ) || withoutPath( u );	// the description
 						
 						if( opts.imgExtensions.indexOf( e )>-1 
-							|| opts.applExtensions.indexOf( e )>-1 ) {  
+							|| opts.applExtensions.indexOf( e )>-1 
+							|| !t ) {
+
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
 							let pngF = itemById( images, nameOf(u)+'.png' );
 //							console.debug('parseObject *2',u,e,pngF);
 							if( ( t.indexOf('svg')>-1 || t.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
 								t = pngF.type;
-								u = pngF.id
+								u = pngF.id;
 							};
 							// At the lowest level, the image is included only if present:
 //							console.debug('parseObject *3',u,d,t);
 						//	return {picture:{id:u,title:d,type:t,width:'200pt',height:'100pt'}}
-							return {picture:{id:u,title:d,type:t}}
+							return {picture:{id:u,title:d,type:t}};
 						} else {
 							// in absence of an image, just show the description:
-							return {text:d}
-						}
+							return {text:d};
+						};
 					}
 				}
 				
@@ -1025,26 +1029,34 @@ function toOxml( data, opts ) {
 					}
 				}
 			}
-			function renderHierarchy( nd, lvl ) {
-				// Render the specified hierarchy node 'nd' and recursively it's children,
-				// write a paragraph for the referenced resource:
-			//	if( !nd.nodes || nd.nodes.length<1 ) return '';
+			function renderHierarchy( nd ) {
+				// Check whether there is a hierarchy root node with project metadata,
+				// otherwise take the title and description of the project:
+				
+				var xml = '';
+				return xml + renderNode( nd, 1 );
+				
+				function renderNode( nd, lvl ) {
+					// Iterate the specified hierarchy node 'nd' and recursively it's children,
+					// write a paragraph for the referenced resource:
+				//	if( !nd.nodes || nd.nodes.length<1 ) return '';
 
-				let r = itemById( data.resources, nd.resource ), // the referenced resource
-					params={
-						level: lvl,
-						nodeId: nd.id
-					};
-					
-				var ch = 	titleOf( r, params, opts )
-						+	propertiesOf( r, opts )
-						+	statementsOf( r, opts );
+					let r = itemById( data.resources, nd.resource ), // the referenced resource
+						params={
+							level: lvl,
+							nodeId: nd.id
+						};
+						
+					var ch = 	titleOf( r, params, opts )
+							+	propertiesOf( r, opts )
+							+	statementsOf( r, opts );
 
-				if( nd.nodes )
-					nd.nodes.forEach( function(n) {
-						ch += renderHierarchy( n, lvl+1 )		// next level
-					});
-				return ch
+					if( nd.nodes )
+						nd.nodes.forEach( function(n) {
+							ch += renderNode( n, lvl+1 )		// next level
+						});
+					return ch;
+				}
 			}
 
 			function wParagraph( ct ) {
