@@ -635,7 +635,7 @@ function genID() {
 
 // Make a valid js variable/property name; replace disallowed characters by '_':
 String.prototype.toJsId = function() { 
-	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#°%]/g, '_' ); 
+	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#ï¿½%]/g, '_' ); 
 	return
 };
 // Make an id conforming with ReqIF and SpecIF:
@@ -713,11 +713,11 @@ function makeHTML(str,opts) {
 	if( isHTML(str) ) 
 		return newS;
 	if( CONFIG.convertMarkdown && app.markdown ) {
-		// don't interpret the '+' as list item, but do so with '•',
+		// don't interpret the '+' as list item, but do so with 'ï¿½',
 		// transform arrows assembled by characters to special arrow characters:
 		return app.markdown.render( str
 			.replace(/\+ /g,'&#x2b; ') // '+'
-			.replace(/• /g,'* ')
+			.replace(/ï¿½ /g,'* ')
 		)
 		.linkifyURLs( opts )
 	};
@@ -962,7 +962,7 @@ if (!Array.prototype.find) {
       while (k < len) {
         // a. Let Pk be ! ToString(k).
         // b. Let kValue be ? Get(O, Pk).
-        // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
+        // c. Let testResult be ToBoolean(? Call(predicate, T, ï¿½ kValue, k, O ï¿½)).
         // d. If testResult is true, return kValue.
         var kValue = o[k];
         if (predicate.call(thisArg, kValue, k, o)) {
@@ -1039,7 +1039,7 @@ if (!Array.from) {
 
       // 16. Let k be 0.
       var k = 0;
-      // 17. Repeat, while k < len… (also steps a - h)
+      // 17. Repeat, while k < lenï¿½ (also steps a - h)
       var kValue;
       while (k < len) {
         kValue = items[k];
@@ -1078,7 +1078,7 @@ function buf2str(buf) {
 function str2buf(str) {
 	try {
 		let encoder = new TextEncoder();
-		return encoder.encode(str)		
+		return encoder.encode(str);		
 	} catch (e) {
 		var buf = new ArrayBuffer(str.length);
 		var bufView = new Uint8Array(buf);
@@ -1127,7 +1127,6 @@ function noCode( s ) {
 		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null };
 	};
 	return s;
-
 	function log(c) {
 		console.error('Considered harmful ('+c+'):',s);
 	}
@@ -1182,7 +1181,7 @@ function localDateTime(iso) {
 	// ToDo: calculate offset of time-zone ... or use one of the libraries ..
 	if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
 	if( iso.length>9 ) return (iso.substr(0,10));
-	return ''
+	return '';
 }
 
 function simpleClone( o ) { 
@@ -1202,7 +1201,7 @@ function simpleClone( o ) {
 				o[p].forEach( (op)=>{
 					n[p].push( cloneProp(op) );
 				});
-				continue
+				continue;
 			};
 			// else
 			n[p] = cloneProp(o[p]);
@@ -1230,7 +1229,7 @@ function getUrlParams(opts) {
 	if( !p[1] ) return {};
 	p = decodeURI(p[1]);
 	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
-	return parse( p )
+	return parse( p );
 
 	function parse( h ) {
 		if( !h ) return {};

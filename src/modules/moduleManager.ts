@@ -417,6 +417,7 @@ var browser,
 				case "toTurtle":			getScript( './vendor/assets/javascripts/specif2turtle.js' ); return true;
 				case 'bpmn2specif':			getScript( './vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
 				case 'archimate2specif':	getScript( './vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
+				case 'reqif2specif':		getScript( './vendor/assets/javascripts/reqif2specif.js' ); return true;
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( './modules/graph.js' ); return true;
@@ -432,7 +433,8 @@ var browser,
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
 											getScript( './modules/ioSpecif.mod.js' ); return true;
-				case 'ioReqif': 			getScript( './modules/ioReqif.mod.js' ); return true;
+				case 'ioReqif': 			loadM( 'reqif2specif' );
+											getScript( './modules/ioReqif.mod.js' ); return true;
 				case 'ioRdf': 				getScript( './modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( './modules/ioXls.mod.js' ); return true;
