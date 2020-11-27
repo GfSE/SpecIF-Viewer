@@ -66,7 +66,7 @@ modules.construct({
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			help: i18n.MsgImportReqif,
+			help: "Experimental: "+i18n.MsgImportReqif,
 			opts: {mediaTypeOf: attachment2mediaType}
     /*    }, {
             id: 'rdf',
