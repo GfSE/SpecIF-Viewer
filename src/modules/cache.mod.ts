@@ -1842,6 +1842,7 @@ function Project( pr ) {
 				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
+				opts.createHierarchyRootIfNotPresent = true;
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
 
@@ -1941,6 +1942,7 @@ function Project( pr ) {
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
+						opts.createHierarchyRootIfNotPresent = true;
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString();
 						break;
@@ -2898,16 +2900,7 @@ const specif = {
 			}
 	},
 	toExt: ( iD, opts )=>{
-		// transform iD (data in internal data format) to SpecIF:
-	/*	if( opts ) {
-			if( typeof(opts.lookupTitles)!='boolean' ) opts.lookupTitles = true;
-			if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language
-		} else {
-			opts = {
-				lookupTitles: true,
-				targetLanguage: browser.language
-			}
-		};  */
+		// transform iD (data in internal data format) to SpecIF;
 		// if opts.targetLanguage has no value, all available languages are kept.
 
 //		console.debug('toExt', iD, opts );
@@ -2940,7 +2933,7 @@ const specif = {
 				email: {type:"text/html",value:app.me.email}
 			};
 			if( app.me.organization )
-				spD.createdBy.org = {organizationName: app.me.organization}
+				spD.createdBy.org = {organizationName: app.me.organization};
 		} else {
 			if( iD.createdBy && iD.createdBy.email && iD.createdBy.email.value )  {
 				spD.createdBy = {
@@ -2949,10 +2942,12 @@ const specif = {
 					email: {type:"text/html",value:iD.createdBy.email.value}
 				};
 				if( iD.createdBy.org && iD.createdBy.org.organizationName )
-					spD.createdBy.org = iD.createdBy.org
-			}
+					spD.createdBy.org = iD.createdBy.org;
+			};
 			// else: don't add createdBy without data
 		};
+		
+		// Now start to assemble the SpecIF output:
 		if( iD.dataTypes && iD.dataTypes.length>0 )
 			spD.dataTypes = forAll( iD.dataTypes, dT2ext );
 		if( iD.propertyClasses && iD.propertyClasses.length>0 )
@@ -2964,6 +2959,66 @@ const specif = {
 		spD.hierarchies = forAll( iD.hierarchies, h2ext );
 		if( iD.files && iD.files.length>0 )
 			spD.files = forAll( iD.files, f2ext );
+
+		if( opts.createHierarchyRootIfNotPresent ) {
+			// Add a resource as hierarchyRoot, if needed.
+			// It is assumed, 
+			// - that in general SpecIF data do not have a hierarchy root with meta-data.
+			// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+
+				function aHierarchyHasNoRoot() {
+					for( var i=spD.hierarchies.length-1;i>-1;i-- ) {
+						let hR = itemById( spD.resources, spD.hierarchies[i].resource ),
+							hC = itemById( spD.resourceClasses, hR['class'] );
+						if( !hR || !hC ) 
+							console.error( "Hierarchy '",spD.hierarchies[i].id,"' is corrupt" )
+						// let's look for the title, but we could perhaps look for a type-property instead:
+						if( CONFIG.hierarchyRoots.indexOf( hC.title )<0 ) 
+							return true;
+					};
+					return false;
+				}	
+			if( aHierarchyHasNoRoot() ) {
+				console.info("Adding a hierarchyRoot");
+				addE("resourceClass","RC-HierarchyRoot",spD);
+
+				// ToDo: Get the referenced propertyClass ids from the above
+				addE("propertyClass","PC-Text",spD);
+				addE("propertyClass","PC-Name",spD);
+
+				// ToDo: Get the referenced dataType ids from the above
+				addE("dataType","DT-ShortString",spD);
+				addE("dataType","DT-Text",spD);
+
+				let resId = 'R-'+spD.id.simpleHash(),
+					res = {
+						id: resId,
+						title: spD.title,
+						class: "RC-HierarchyRoot",
+						properties: [{
+							class: "PC-Name",
+							value: spD.title
+						}],
+						changedAt: spD.changedAt
+				};
+				// add a description property only if it has a value:
+				if( spD.description ) 
+					res.properties.push({
+							class: "PC-Text",
+							value: spD.description
+					});
+				spD.resources.push( res );
+				// create a new root instance:
+				spD.hierarchies = [{
+						id: "H-"+resId,
+						resource: resId,
+						// .. and add the previous hierarchies as children:
+						nodes: spD.hierarchies,
+						changedAt: spD.changedAt
+				}];
+			};
+		};
+		
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
 //		console.debug('specif.get exit',spD);
 		return spD

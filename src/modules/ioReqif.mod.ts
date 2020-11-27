@@ -6,6 +6,7 @@
 	We appreciate any correction, comment or contribution!  
 
 	ToDo: escapeXML the content. See toXHTML.
+	ToDo: Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
 */
 
 // Constructor for ReqIF import and export:
@@ -70,40 +71,6 @@ modules.construct({
 		//    - Add description properties of resources and statements
 		//    - Add hierarchy root
 
-			function addEl( ctg, id ) {
-				// Add an element (e.g. class) to it's list, if not yet defined:
-				
-				// get the name of the list, e.g. 'dataType' -> 'dataTypes':
-				var L = app.standardTypes.listOf(ctg);
-				// create it, if not yet available:
-				if (Array.isArray(pr[L]))
-					L = pr[L];
-				else
-					L = pr[L] = [];
-				// add the type, but avoid duplicates:
-				if( indexById( L, id )<0 ) 
-					L.unshift( app.standardTypes.get(ctg,id) );
-			} 
-			function addPC( eC, id ) {
-				// Add the propertyClass-id to an element class (eC), if not yet defined:
-				var L = 'propertyClasses';
-				if (Array.isArray(eC[L])) {
-					L = eC[L];
-					// Avoid duplicates:
-					if( L.indexOf( id )<0 ) 
-						L.unshift( id );
-				} else {
-					eC[L] = [id];
-				};
-			} 
-			function addP( el, prp ) {
-				// Add the property to an element (el):
-				var L = 'properties';
-				if (Array.isArray(el[L]))
-					el[L].unshift( prp );
-				else
-					el[L] = [prp];
-			} 
 		// Are there resources with description, but without description property?
 		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/02_Related-Terms.md
 		// In this case, add a description property to hold the description as required by ReqIF:
@@ -142,14 +109,14 @@ modules.construct({
 						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addEl("propertyClass","PC-Text");
+						addE("propertyClass","PC-Text");
 					/*	if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
 						// avoid duplicates:
 						if( indexById( pr.propertyClasses, "PC-Text" )<0 ) 
 							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Text") ); */
 						
 						// b. add dataType, if not yet defined:
-						addEl("dataType","DT-Text");
+						addE("dataType","DT-Text");
 					/*	if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
 						// avoid duplicates:
 						if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
@@ -212,10 +179,10 @@ modules.construct({
 						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addEl("propertyClass","PC-Name");
+						addE("propertyClass","PC-Name");
 						
 						// b. add dataType, if not yet defined:
-						addEl("dataType","DT-ShortString");
+						addE("dataType","DT-ShortString");
 						
 						// c. Add propertyClass to element class:
 						addPC( eC, "PC-Name" );
@@ -235,76 +202,6 @@ modules.construct({
 		// ReqIF does not allow media objects other than PNG.
 		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
 		// ToDo!
-
-		// Add a resource as hierarchyRoot, if needed.
-		// It is assumed, 
-		// - that general SpecIF data do not have a hierarchy root with meta-data.
-		// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-		// Therefore, a somewhat complicated solution is chosen, in which hierarchyRoots are added as resources, 
-		// *only when needed* and then, later on, the resources at the root are transformed to SPECIFICATION roots.
-		// ToDo: Design the ReqIF import and export so that a roundtrip works; neither loss nor growth is acceptable.
-
-			function aHierarchyHasNoRoot() {
-				for( var i=pr.hierarchies.length-1;i>-1;i-- ) {
-					let hR = itemById( pr.resources, pr.hierarchies[i].resource ),
-						hC = itemById( pr.resourceClasses, hR['class'] );
-					if( !hR || !hC ) 
-						console.error( "Hierarchy '",pr.hierarchies[i].id,"' is corrupt" )
-					// let's look for the title, but we could perhaps look for a type-property instead:
-					if( opts.hierarchyRoots.indexOf( hC.title )<0 ) 
-						return true
-				};
-				return false;
-			}	
-		if( aHierarchyHasNoRoot() ) {
-			console.info("Adding a hierarchyRoot for ReqIF");
-			addEl("resourceClass","RC-HierarchyRoot");
-		/*	if( indexById( pr.resourceClasses, "RC-HierarchyRoot" )<0 ) 
-				pr.resourceClasses.push( app.standardTypes.get("resourceClass","RC-HierarchyRoot") ); */
-
-			// ToDo: Get the referenced propertyClass ids from the above
-			addEl("propertyClass","PC-Text");
-			addEl("propertyClass","PC-Name");
-		/*	if( indexById( pr.propertyClasses, "PC-Text" )<0 ) 
-				pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Text") );
-			if( indexById( pr.propertyClasses, "PC-Name" )<0 ) 
-				pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Name") ); */
-
-			// ToDo: Get the referenced dataType ids from the above
-			addEl("dataType","DT-ShortString");
-			addEl("dataType","DT-Text");
-		/*	if( indexById( pr.dataTypes, "DT-ShortString" )<0 ) 
-				pr.dataTypes.push( app.standardTypes.get("dataType","DT-ShortString") );
-			if( indexById( pr.dataTypes, "DT-Text" )<0 ) 
-				pr.dataTypes.push( app.standardTypes.get("dataType","DT-Text") ); */
-
-			let resId = 'R-'+pr.id.simpleHash(),
-				res = {
-					id: resId,
-					title: pr.title,
-					class: "RC-HierarchyRoot",
-					properties: [{
-						class: "PC-Name",
-						value: pr.title
-					}],
-					changedAt: date
-			};
-			// add a description property only if it has a value:
-			if( pr.description ) 
-				res.properties.push({
-						class: "PC-Text",
-						value: pr.description
-				});
-			pr.resources.push( res );
-			// create a new root instance:
-			pr.hierarchies = [{
-					id: "H-"+resId,
-					resource: resId,
-					// .. and add the previous hierarchies as children:
-					nodes: pr.hierarchies,
-					changedAt: date
-			}];
-	};
 
 		// Text may be XHTML-formatted, even in a property of dataType 'xs:string'.
 		// So change all propertyClasses of dataType 'xs:string' to 'xhtml', 
@@ -347,7 +244,7 @@ modules.construct({
 							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = "DT-FormattedText";
-							addEl("dataType","DT-FormattedText");
+							addE("dataType","DT-FormattedText");
 						};
 					});
 				};

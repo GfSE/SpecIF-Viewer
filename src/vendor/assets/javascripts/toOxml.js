@@ -232,7 +232,7 @@ function toOxml( data, opts ) {
 			// For each SpecIF hierarchy, create the paragraphs and add them as subsequent section:
 			data.hierarchies.forEach( function(h) {
 				oxml.sections.push(
-					renderHierarchy( h )
+					renderHierarchy( h, opts )
 				);
 			});
 //			console.debug('oxml result',oxml);
@@ -1029,7 +1029,7 @@ function toOxml( data, opts ) {
 					}
 				}
 			}
-			function renderHierarchy( nd ) {
+			function renderHierarchy( nd, opts ) {
 				// Check whether there is a hierarchy root node with project metadata,
 				// otherwise take the title and description of the project:
 				
@@ -1055,6 +1055,7 @@ function toOxml( data, opts ) {
 						nd.nodes.forEach( function(n) {
 							ch += renderNode( n, lvl+1 )		// next level
 						});
+
 					return ch;
 				}
 			}

@@ -551,9 +551,40 @@ function forAll( L, fn ) {
 	return nL;
 }
 
+function addE( ctg, id, pr ) {
+	// Add an element (e.g. class) to it's list, if not yet defined:
+	if( !pr ) pr = app.cache.selectedProject.data;
+	
+	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
+	let L = app.standardTypes.listOf(ctg);
+	// create it, if not yet available:
+	if (!Array.isArray(pr[L]))
+		pr[L] = [];
+	// add the type, but avoid duplicates:
+	if( indexById( pr[L], id )<0 ) 
+		pr[L].unshift( app.standardTypes.get(ctg,id) );
+} 
+function addPC( eC, id ) {
+	// Add the propertyClass-id to an element class (eC), if not yet defined:
+	let L = 'propertyClasses';
+	if (Array.isArray(eC[L])) {
+		// Avoid duplicates:
+		if( eC[L].indexOf( id )<0 ) 
+			eC[L].unshift( id );
+	} else {
+		eC[L] = [id];
+	};
+} 
+function addP( el, prp ) {
+	// Add the property to an element (el):
+	if (Array.isArray(el['properties']))
+		el['properties'].unshift( prp );
+	else
+		el['properties'] = [prp];
+} 
 function cacheE( L, e ) {  // ( list, entry )
 	// add or update the item e in a list L:
-	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
+	let n = Array.isArray(e)? indexById( L, e.id ) : L.indexOf(e);
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
 	L[n] = e; return n; // update otherwise
 }
@@ -563,7 +594,7 @@ function cacheL( L, es ) {  // ( list, entries )
 }
 function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
-	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
+	let n = Array.isArray(e)? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }
@@ -1036,13 +1067,13 @@ function buf2str(buf) {
 		var dataView = new DataView(buf);
 		// The TextDecoder interface is documented at http://encoding.spec.whatwg.org/#interface-textdecoder
 		var decoder = new TextDecoder('utf-8');
-		return decoder.decode(dataView)
+		return decoder.decode(dataView);
 	} catch (e) {
 		// see https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
 		// for vintage browsers such as IE
 		// Known problem: Special chars like umlaut are not properly converted.
-		return String.fromCharCode.apply(null, new Uint8Array(buf))
-	}
+		return String.fromCharCode.apply(null, new Uint8Array(buf));
+	};
 }
 function str2buf(str) {
 	try {
@@ -1052,10 +1083,10 @@ function str2buf(str) {
 		var buf = new ArrayBuffer(str.length);
 		var bufView = new Uint8Array(buf);
 		for (var i=0, I=str.length; i<I; i++) {
-			bufView[i] = str.charCodeAt(i)
+			bufView[i] = str.charCodeAt(i);
 		};
-		return buf
-	}
+		return buf;
+	};
 }
 // see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
@@ -1065,10 +1096,10 @@ function blob2dataURL(file,fn,timelag) {
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
 	if( typeof(timelag)=='number' && timelag>0 )
 		setTimeout( ()=>{
-			reader.readAsDataURL(file.blob)
+			reader.readAsDataURL(file.blob);
 		}, timelag )
 	else
-		reader.readAsDataURL(file.blob)
+		reader.readAsDataURL(file.blob);
 } 
 function blob2text(file,fn,timelag) {
 	if( !file || !file.blob ) return;
@@ -1076,10 +1107,10 @@ function blob2text(file,fn,timelag) {
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
 	if( typeof(timelag)=='number' && timelag>0 )
 		setTimeout( ()=>{
-			reader.readAsText(file.blob)
-		}, timelag )
+			reader.readAsText(file.blob);
+		}, timelag );
 	else
-		reader.readAsText(file.blob)
+		reader.readAsText(file.blob);
 } 
 		
 // not good enough, but better than nothing:
@@ -1093,12 +1124,12 @@ function noCode( s ) {
 		if( /<script[^>]*>[\s\S]*<\/script[^>]*>/i.test( s ) ) { log(912); return null };
 		if( /<style[^>]*>[\s\S]*<\/style[^>]*>/i.test( s ) ) { log(913); return null };
 		if( /<embed[^>]*>[\s\S]*<\/embed[^>]*>/i.test( s ) ) { log(914); return null };
-		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null }
+		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null };
 	};
-	return s
-	
+	return s;
+
 	function log(c) {
-		console.error('Considered harmful ('+c+'):',s)
+		console.error('Considered harmful ('+c+'):',s);
 	}
 }
 function cleanValue( o ) {
@@ -1107,22 +1138,22 @@ function cleanValue( o ) {
 		case 'string': return noCode( o ); 
 		case 'object': 
 			if( Array.isArray( o ) )
-				return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } )
+				return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
 	};
-	return ''  // unexpected input (programming error with all likelihood
+	return '';  // unexpected input (programming error with all likelihood
 }
 
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
     Array.isArray = (obj)=>{
-        return Object.prototype.toString.call(obj) === "[object Array]"
-    }
-}
+        return Object.prototype.toString.call(obj) === "[object Array]";
+    };
+};
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger
 if (!Number.isInteger) {
 	Number.isInteger = (val)=>{
-		return typeof(val)==='number' && isFinite(val) && Math.floor(val) === val
-	}
+		return typeof(val)==='number' && isFinite(val) && Math.floor(val) === val;
+	};
 };
 // function float2int(val) { return parseInt(val) };
 
@@ -1135,15 +1166,15 @@ function attachment2mediaType( fname ) {
 	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
 	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
 	ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.applTypes[ ti ]
-	return
+	if( ti>-1 ) return CONFIG.applTypes[ ti ];
+//	return; undefined
 }
 function image2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( !t ) return;
 	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.imgTypes[ ti ]
-	return
+	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
+//	return; undefined
 }
 
 function localDateTime(iso) {
@@ -1158,34 +1189,34 @@ function simpleClone( o ) {
 	// "deep" clone;
 	// does only work, if none of the property values are functions:
 		function cloneProp(p) {
-			return ( typeof(p) == 'object' )? simpleClone(p) : p
+			return ( typeof(p) == 'object' )? simpleClone(p) : p;
 		}
 	if( typeof(o)=='object' ) {
 		if( Array.isArray(o) )
-			var n=[]
+			var n=[];
 		else
 			var n={};
 		for( var p in o ) {
 			if( Array.isArray(o[p]) ) {
 				n[p] = [];
 				o[p].forEach( (op)=>{
-					n[p].push( cloneProp(op) )
+					n[p].push( cloneProp(op) );
 				});
 				continue
 			};
 			// else
-			n[p] = cloneProp(o[p])
+			n[p] = cloneProp(o[p]);
 		};
-		return n
+		return n;
 	};
-	return o
+	return o;
 }
 function hasUrlParams() {
 	let p = document.URL.split('#');
 	if( p[1] && p[1].length>0 ) return '#';
 //	p = document.URL.split('?');   no queries, yet
 //	if( p[1] && p[1].length>0 ) return '?';
-	return false
+	return false;
 }
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
@@ -1211,11 +1242,11 @@ function getUrlParams(opts) {
 			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
 			// look for specific tokens, only:
 			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
-				pO[p[0]] = p[1]
+				pO[p[0]] = p[1];
 			else
-				console.warn("Unknown URL-Parameter '",p[0],"' found.")
+				console.warn("Unknown URL-Parameter '",p[0],"' found.");
 		});
-		return pO
+		return pO;
 	}
 }
 function setUrlParams(actSt) {
@@ -1231,7 +1262,7 @@ function setUrlParams(actSt) {
 			|| !actSt.item 
 			|| quO[CONFIG.keyItem] == actSt.item ) ) {
 //		console.debug('setUrlParams - quit');
-		return
+		return;
 	};
 	
 	let path = window.location.pathname.split('/'),  // get the path in pieces
@@ -1244,14 +1275,14 @@ function setUrlParams(actSt) {
 				+ (actSt.node? sep+CONFIG.keyNode+is+actSt.node : (actSt.item? sep+CONFIG.keyItem+is+actSt.item : ''));
 
 	// update the browser history:
-	history.pushState('','',newParams)
+	history.pushState('','',newParams);
 };
 function clearUrlParams() {
 	if( !browser.supportsHtml5History || !hasUrlParams() ) return;
 	
 	let path = window.location.pathname.split('/');  // get the path in pieces
 //	console.debug( 'clearUrlParams', path );
-	history.pushState('','',path[path.length-1])    // last element is 'appname.html' without url parameters;
+	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
 };
 function httpGet(params) {
 	// https://blog.garstasio.com/you-dont-need-jquery/
@@ -1263,21 +1294,21 @@ function httpGet(params) {
 	xhr.responseType = params.responseType;
 	xhr.onreadystatechange = function() {
 //		console.debug('xhr',this.readyState,this)
-		if (this.readyState<4 ) return;
+		if ( this.readyState<4 ) return;
 		if ( this.readyState==4 ) {
 			switch( this.status ) {
 				case 200:
 				case 201:
-					// done without error:
+					// done:
 					if( typeof(params.done)=="function" ) params.done(this);
 					break;
 				default:
 					// done with error:
-					if( typeof(params.fail)=="function" ) params.fail(this)
-			}
+					if( typeof(params.fail)=="function" ) params.fail(this);
+			};
 		};
 		// continue in case of success and error:
-		if( typeof(params.then)=="function" ) params.then()	
+		if( typeof(params.then)=="function" ) params.then();
 	};
-	xhr.send(null)
+	xhr.send(null);
 }

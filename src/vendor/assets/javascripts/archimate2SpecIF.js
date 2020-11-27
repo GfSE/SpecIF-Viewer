@@ -16,20 +16,16 @@ function Archimate2Specif( xmlString, opts ) {
 /*	if( typeof(opts.descriptionLength)!='number' )
 		opts.descriptionLength = 8192;
 	if( !opts.mimeType ) 
-		opts.mimeType = "application/archimate+xml";
-	if( typeof(opts.isIE)!='boolean' )
-		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent ); */
+		opts.mimeType = "application/archimate+xml"; */
 
+	if( !opts.resClassOutline ) 
+		opts.resClassOutline = 'SpecIF:Outline';
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramsType ) 
 		opts.strDiagramsType = "SpecIF:Diagrams";
 	if( !opts.strGlossaryType ) 
 		opts.strGlossaryType = "SpecIF:Glossary";
-	if( !opts.strDiagramsFolder ) 
-		opts.strDiagramsFolder = "Model-Diagrams";
-	if( !opts.strGlossaryFolder ) 
-		opts.strGlossaryFolder = "Model-Elements (Glossary)";
 	if( !opts.strActorFolder ) 
 		opts.strActorFolder = "Actors";
 	if( !opts.strStateFolder ) 
@@ -44,10 +40,6 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strRoleType = "SpecIF:Role";  */
 	if( !opts.strNamespace ) 
 		opts.strNamespace = "Archimate:";
-	if( !opts.strArchimateType ) 
-		opts.strArchimateType = 'SpecIF:Archimate';
-/*	if( !opts.strArchimateFolder ) 
-		opts.strArchimateFolder = "Archimate Enterprise Architecture Models"; */
 	
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -160,7 +152,7 @@ function Archimate2Specif( xmlString, opts ) {
 				default: 
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
 					console.warn('Element: Unknown xsi:type ', ty);
-					r['class'] = "RC-Folder";  // better than nothing!
+					r['class'] = "RC-Paragraph";  // better than nothing!
 			};
 
 			if( r['class'] ) {
@@ -176,7 +168,7 @@ function Archimate2Specif( xmlString, opts ) {
 									class: "PC-Text",
 									value: ch.innerHTML
 								})
-						}
+						};
 					}
 				);
 
@@ -186,8 +178,8 @@ function Archimate2Specif( xmlString, opts ) {
 					value: opts.strNamespace+ty
 				});
 
-				model.resources.push(r)
-			}
+				model.resources.push(r);
+			};
 		}
 	);
 	
@@ -268,8 +260,8 @@ function Archimate2Specif( xmlString, opts ) {
 					}
 				);
 			
-				model.statements.push( s )
-			}
+				model.statements.push( s );
+			};
 		}
 	);
 
@@ -335,7 +327,7 @@ function Archimate2Specif( xmlString, opts ) {
 								object: ch.getAttribute('relationshipRef'),
 								changedAt: opts.fileDate  
 							})  */
-					}
+					};
 				}
 			);
 			
@@ -349,7 +341,7 @@ function Archimate2Specif( xmlString, opts ) {
 					value: vp+' Viewpoint'
 				});
 			
-			model.resources.push(r)
+			model.resources.push(r);
 		}
 	);
 
@@ -363,7 +355,7 @@ function Archimate2Specif( xmlString, opts ) {
 			value: model.description || ''
 		},{
 			class: "PC-Type",
-			value: opts.strArchimateType
+			value: opts.resClassOutline
 		}],
 		changedAt: opts.fileDate
 	});
@@ -567,7 +559,15 @@ function Archimate2Specif( xmlString, opts ) {
 			isHeading: true,
 			instantiation: ['auto','user'],
 			propertyClasses: ["PC-Text","PC-Type"],
-			changedAt: opts.fileDate
+			changedAt: "2016-05-26T08:59:00+02:00"
+		},{
+			id: "RC-Paragraph",
+			title: "SpecIF:Paragraph",
+			description: "Information with title and text for descriptive paragraphs.",
+			instantiation: ["auto","user"],
+			propertyClasses: ["PC-Text"],
+			changedAt: "2019-03-16T18:59:00+01:00"
+    },{
 		}]
 	}
 	// The statement classes:
@@ -717,7 +717,7 @@ function Archimate2Specif( xmlString, opts ) {
 		return [{
 			id: "FolderDiagrams-" + apx,
 			class: "RC-Folder",
-			title: opts.strDiagramsFolder,
+			title: opts.strDiagramsType,
 			properties: [{
 				class: "PC-Type",
 				value: opts.strDiagramsType
@@ -726,7 +726,7 @@ function Archimate2Specif( xmlString, opts ) {
 		}, {
 			id: "FolderGlossary-" + apx,
 			class: "RC-Folder",
-			title: opts.strGlossaryFolder,
+			title: opts.strGlossaryType,
 			properties: [{
 				class: "PC-Type",
 				value: opts.strGlossaryType
