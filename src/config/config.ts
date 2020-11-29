@@ -182,6 +182,14 @@ const CONFIG = {};
 		'Identifier'
 	];
 
+	// A list of resourceClasses serving as hierarchyRoot with meta-data:
+	CONFIG.hierarchyRoots = [
+		CONFIG.resClassOutline, // do not remove
+		'SpecIF:HierarchyRoot',
+		'SpecIF:Hierarchy',
+		'SpecIF:BillOfMaterials'
+	];
+
 	// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
 	// it is considered a heading (chapter title) and will be included in the outline numbering.
 	// Also, this property will be used for the title when displaying the resource.
@@ -302,14 +310,6 @@ const CONFIG = {};
 	// A list of relations not to show in tab named CONFIG.relations, specified by title:
 	CONFIG.hiddenStatements = [
 		CONFIG.staClassCommentRefersTo
-	];
-
-	// A list of resourceClasses serving as hierarchyRoot with meta-data:
-	CONFIG.hierarchyRoots = [
-		CONFIG.resClassOutline,
-		'SpecIF:HierarchyRoot',
-		'SpecIF:Hierarchy',
-		'SpecIF:BillOfMaterials'
 	];
 
 	// A list of classes which are excluded from the class filtering, specified by title:

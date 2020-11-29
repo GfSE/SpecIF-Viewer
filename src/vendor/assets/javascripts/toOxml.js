@@ -161,7 +161,6 @@ function toOxml( data, opts ) {
 			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 			// If a hidden property is defined with value, it is suppressed only if it has this value;
 			// if the value is undefined, the property is suppressed in all cases.
-			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];	
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
@@ -262,7 +261,10 @@ function toOxml( data, opts ) {
 				
 //				console.debug('titleOf',itm,ic,ti);
 
-				if( !pars || pars.level<1 ) return  ic+ti;  // return raw text
+				if( !pars || typeof(pars.level)!='number' ) return  ic+ti;  // return raw text
+
+				if( pars.level==0 )
+					return wParagraph( {text: ic+ti, format:{ title:true }} );
 
 				// SpecIF headings are chapter level 2, all others level 3:
 				let lvl = pars.level==1? 1 : (eC.isHeading? 2:3);
@@ -456,11 +458,8 @@ function toOxml( data, opts ) {
 				// designed for use also by statements.
 			//	if( !r.properties || r.properties.length<1 ) return '';
 
-			//	let rC = itemById( data.resourceClasses, r['class'] ); 
-
 				// return the content of all properties, sorted by description and other properties:
-				let c1='', rows='', c3, rt,
-					descriptions=[], other=[];
+				let c1='', descriptions=[], other=[];
 
 				if( r.properties ) {
 					r.properties.forEach( (p)=>{
@@ -490,6 +489,7 @@ function toOxml( data, opts ) {
 					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
+				let rows='', c3, rt;
 				other.forEach( (p)=>{
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
@@ -1023,9 +1023,9 @@ function toOxml( data, opts ) {
 							ct.forEach( function(b) {
 								bs += fn(b) 
 							});
-							return bs
+							return bs;
 						};
-						return fn(ct)
+						return fn(ct);
 					}
 				}
 			}
@@ -1033,8 +1033,10 @@ function toOxml( data, opts ) {
 				// Check whether there is a hierarchy root node with project metadata,
 				// otherwise take the title and description of the project:
 				
-				var xml = '';
-				return xml + renderNode( nd, 1 );
+				let r = itemById( data.resources, nd.resource ),
+					rC = itemById( data.resourceClasses, r['class'] ),
+					lvl = (rC && CONFIG.hierarchyRoots.indexOf( rC.title )>-1)? 0 : 1;
+				return renderNode( nd, lvl );
 				
 				function renderNode( nd, lvl ) {
 					// Iterate the specified hierarchy node 'nd' and recursively it's children,
@@ -1053,7 +1055,7 @@ function toOxml( data, opts ) {
 
 					if( nd.nodes )
 						nd.nodes.forEach( function(n) {
-							ch += renderNode( n, lvl+1 )		// next level
+							ch += renderNode( n, lvl+1 );		// next level
 						});
 
 					return ch;
@@ -1065,7 +1067,7 @@ function toOxml( data, opts ) {
 				// empty paragraphs are allowed.
 				// a) ct is simple text without any option:
 				if( typeof(ct)=='string' ) {
-					return '<w:p>'+wRun(ct)+'</w:p>'
+					return '<w:p>'+wRun(ct)+'</w:p>';
 				};
 				// b) ct is an object with text content and formatting options.
 				// the following options are implemented:
@@ -1081,26 +1083,26 @@ function toOxml( data, opts ) {
 				let p = '';
 				if( ct.text || ct.picture ) {
 					// ct is an object with property 'text' and individual formatting options ... or a picture.
-					p = wRun( ct )
+					p = wRun( ct );
 				};
 				if( Array.isArray(ct.runs) ) {
 					// multiple text items with individual formatting options and pictures:
 					ct.runs.forEach( function(r) {
-						p += wRun( r )
+						p += wRun( r );
 					})
 				};
 				if( ct.format && ct.format.style=='bulleted' ) {
 					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
 							+ p
-							+ '</w:p>'
+							+ '</w:p>';
 				};
 				if( ct.format && ct.format.style=='numbered' ) {
 					// ToDo: use style for ordered lists. with w:val="1" the numbers are shown, but not reset when the next list starts.
 					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+ct.format.numId+'"/></w:numPr></w:pPr>'
 							+ p
-							+ '</w:p>'
+							+ '</w:p>';
 				};
-				return '<w:p>'+pPr(ct)+p+'</w:p>'
+				return '<w:p>'+pPr(ct)+p+'</w:p>';
 				
 				function pPr(ct) {
 //					console.debug('pPr',ct);
@@ -1108,12 +1110,18 @@ function toOxml( data, opts ) {
 						let fmt = ct.format,
 							lvl = fmt.heading,
 							pr = '';
-						if( typeof(lvl)=='number' && lvl>0 ) 
+
+						if( fmt.title )
+							pr += '<w:pStyle w:val="title"/>';
+						else if( typeof(lvl)=='number' && lvl>0 ) 
 							pr += '<w:pStyle w:val="heading'+Math.min(lvl,maxHeading)+'" />';
+
 						if( fmt.noSpacing )
 							pr += '<w:pStyle w:val="OhneAbstnde"/>';
+
 						if( fmt.align )
 							pr += '<w:jc w:val="'+fmt.align+'"/>';
+
 						return pr?'<w:pPr>'+pr+'</w:pPr>':'';
 					};
 					// default:
@@ -1153,7 +1161,7 @@ function toOxml( data, opts ) {
 						let rPr =	(fmt.font.weight=='bold'?'<w:b/>':'')
 							+ 		(fmt.font.style=='italic'?'<w:i/>':'')
 							+ 		(fmt.font.color?'<w:color w:val="'+fmt.font.color+'"/>':'');
-						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':''
+						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':'';
 					};
 					// default:
 					return '';
@@ -1169,10 +1177,10 @@ function toOxml( data, opts ) {
 							category: 'url',
 							ref: startRID + n,
 							id: u  // is the distinguishing/relative part of the URL
-						})
+						});
 					};
 					// in any case return the reference no (index):
-					return startRID + n
+					return startRID + n;
 				}
 			}
 			function wText( ct ) {
@@ -1188,10 +1196,10 @@ function toOxml( data, opts ) {
 						if( c.str ) str += '<w:t xml:space="preserve">'+c.str+'</w:t>';
 						if( c['break']=='line' ) str += '<w:cr />'
 					});
-					return str
+					return str;
 				};
 				// else, in case of string or 'ct.text' with string:
-				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>'
+				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>';
 			}
 			function wPict( ct ) {
 //				console.debug('wPict',ct,images);
@@ -1202,7 +1210,7 @@ function toOxml( data, opts ) {
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
 					console.error( et );
-					return wText( "### "+et+" ###" )
+					return wText( "### "+et+" ###" );
 				};
 //				console.debug('pushReferencedFile',oxml.relations,n);
 				let rIdx = pushReferencedFile( ct.picture );
@@ -2143,6 +2151,25 @@ function toOxml( data, opts ) {
 		+							'<w:qFormat/>'
 //		+							'<w:rsid w:val="003A0092"/>'
 		+							'<w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>'
+		+						'</w:style>'
+		+						'<w:style w:type="paragraph" w:styleId="title">'
+		+							'<w:name w:val="Titel"/>'
+		+							'<w:basedOn w:val="Standard"/>'
+		+							'<w:next w:val="Standard"/>'
+		+							'<w:link w:val="TitelZchn"/>'
+		+							'<w:uiPriority w:val="10"/>'
+		+							'<w:qFormat/>'
+		+							'<w:pPr>'
+		+								'<w:spacing w:after="0" w:line="240" w:lineRule="auto"/>'
+		+								'<w:contextualSpacing/>'
+		+							'</w:pPr>'
+		+							'<w:rPr>'
+		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
+//		+								'<w:spacing w:val="-10"/>'
+//		+								'<w:kern w:val="28"/>'
+		+								'<w:sz w:val="48"/>'
+		+								'<w:szCs w:val="48"/>'
+		+							'</w:rPr>'
 		+						'</w:style>'
 		+						'<w:style w:type="paragraph" w:styleId="heading1">'
 		+							'<w:name w:val="heading 1"/>'

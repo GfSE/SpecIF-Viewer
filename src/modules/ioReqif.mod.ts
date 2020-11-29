@@ -109,14 +109,14 @@ modules.construct({
 						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Text");
+						addE("propertyClass","PC-Text",pr);
 					/*	if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
 						// avoid duplicates:
 						if( indexById( pr.propertyClasses, "PC-Text" )<0 ) 
 							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Text") ); */
 						
 						// b. add dataType, if not yet defined:
-						addE("dataType","DT-Text");
+						addE("dataType","DT-Text",pr);
 					/*	if( !Array.isArray( pr.dataTypes ) ) pr.dataTypes = [];
 						// avoid duplicates:
 						if( indexById( pr.dataTypes, "DT-FormattedText" )<0 ) 
@@ -179,10 +179,10 @@ modules.construct({
 						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Name");
+						addE("propertyClass","PC-Name",pr);
 						
 						// b. add dataType, if not yet defined:
-						addE("dataType","DT-ShortString");
+						addE("dataType","DT-ShortString",pr);
 						
 						// c. Add propertyClass to element class:
 						addPC( eC, "PC-Name" );
@@ -244,7 +244,7 @@ modules.construct({
 							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = "DT-FormattedText";
-							addE("dataType","DT-FormattedText");
+							addE("dataType","DT-FormattedText",pr);
 						};
 					});
 				};

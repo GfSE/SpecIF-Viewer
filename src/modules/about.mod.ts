@@ -48,8 +48,8 @@ modules.construct({
 		+	'<h4>Features</h4>'
 		+		'<ul>'
 		+		  "<li>Import 'specif' and 'specifz' file with schema and consistency check</li>"
-		+		  "<li>Import 'reqif' file (planned)</li>"
-		+ (isEditor? "<li>Import Archimate Open-Exchange file (experimental)</li>":"")
+		+		  "<li>Import 'reqif' file <em>(planned)</em></li>"
+		+ (isEditor? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
 		+		  "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
 		+		  "<li>Import 'BPMN-XML' file</li>"
 		+		  "<li>Import from an URL or the local file system</li>"

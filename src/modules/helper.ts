@@ -556,7 +556,7 @@ function addE( ctg, id, pr ) {
 	if( !pr ) pr = app.cache.selectedProject.data;
 	
 	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
-	let L = app.standardTypes.listOf(ctg);
+	let L = app.standardTypes.listNameOf(ctg);
 	// create it, if not yet available:
 	if (!Array.isArray(pr[L]))
 		pr[L] = [];

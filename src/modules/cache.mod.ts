@@ -1835,6 +1835,13 @@ function Project( pr ) {
 				// ToDo: Get the newest data from the server.
 //				console.debug( "publish", opts );
 
+				// If a hidden property is defined with value, it is suppressed only if it has this value;
+				// if the value is undefined, the property is suppressed in all cases.
+				opts.hiddenProperties: [
+					{title:CONFIG.propClassType,value:CONFIG.resClassFolder},
+					{title:CONFIG.propClassType,value:CONFIG.resClassOutline}
+				];
+
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
 				opts.lookupTitles = false;  // applies to specif.toExt()
 				opts.lookupValues = true;  // applies to specif.toExt()
@@ -1853,10 +1860,6 @@ function Project( pr ) {
 						descriptionProperties: CONFIG.descProperties,
 						stereotypeProperties: CONFIG.stereotypeProperties,
 						lookup: i18n.lookup,
-						// If a hidden property is defined with value, it is suppressed only if it has this value;
-						// if the value is undefined, the property is suppressed in all cases.
-					//	hiddenProperties: opts.lookupTitles? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'}],
-						hiddenProperties: [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'SpecIF:Heading'}],
 						showEmptyProperties: CONFIG.showEmptyProperties,
 						imgExtensions: CONFIG.imgExtensions,
 						applExtensions: CONFIG.applExtensions,
@@ -2448,7 +2451,7 @@ function Project( pr ) {
 			case 'hierarchy':		return self.data.hierarchies;
 			case 'file':			return self.data.files;
 		}; */
-		return self.data[ app.standardTypes.listOf( ctg ) ];
+		return self.data[ app.standardTypes.listNameOf( ctg ) ];
 	}
 	function readCache( ctg, itm, opts ) {
 		// Read an item from cache, unless 'reload' is specified.
@@ -2960,69 +2963,67 @@ const specif = {
 		if( iD.files && iD.files.length>0 )
 			spD.files = forAll( iD.files, f2ext );
 
-		if( opts.createHierarchyRootIfNotPresent ) {
-			// Add a resource as hierarchyRoot, if needed.
-			// It is assumed, 
-			// - that in general SpecIF data do not have a hierarchy root with meta-data.
-			// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+		// Add a resource as hierarchyRoot, if needed.
+		// It is assumed, 
+		// - that in general SpecIF data do not have a hierarchy root with meta-data.
+		// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+		if( opts.createHierarchyRootIfNotPresent && aHierarchyHasNoRoot() ) {
 
-				function aHierarchyHasNoRoot() {
-					for( var i=spD.hierarchies.length-1;i>-1;i-- ) {
-						let hR = itemById( spD.resources, spD.hierarchies[i].resource ),
-							hC = itemById( spD.resourceClasses, hR['class'] );
-						if( !hR || !hC ) 
-							console.error( "Hierarchy '",spD.hierarchies[i].id,"' is corrupt" )
-						// let's look for the title, but we could perhaps look for a type-property instead:
-						if( CONFIG.hierarchyRoots.indexOf( hC.title )<0 ) 
-							return true;
-					};
-					return false;
-				}	
-			if( aHierarchyHasNoRoot() ) {
-				console.info("Adding a hierarchyRoot");
-				addE("resourceClass","RC-HierarchyRoot",spD);
+			console.info("Adding a hierarchyRoot");
+			addE("resourceClass","RC-HierarchyRoot",spD);
 
-				// ToDo: Get the referenced propertyClass ids from the above
-				addE("propertyClass","PC-Text",spD);
-				addE("propertyClass","PC-Name",spD);
+			// ToDo: Get the referenced propertyClass ids from the above
+			addE("propertyClass","PC-Type",spD);
+			addE("propertyClass","PC-Text",spD);
 
-				// ToDo: Get the referenced dataType ids from the above
-				addE("dataType","DT-ShortString",spD);
-				addE("dataType","DT-Text",spD);
+			// ToDo: Get the referenced dataType ids from the above
+			addE("dataType","DT-ShortString",spD);
+			addE("dataType","DT-Text",spD);
 
-				let resId = 'R-'+spD.id.simpleHash(),
-					res = {
-						id: resId,
-						title: spD.title,
-						class: "RC-HierarchyRoot",
-						properties: [{
-							class: "PC-Name",
-							value: spD.title
-						}],
-						changedAt: spD.changedAt
-				};
-				// add a description property only if it has a value:
-				if( spD.description ) 
-					res.properties.push({
-							class: "PC-Text",
-							value: spD.description
-					});
-				spD.resources.push( res );
-				// create a new root instance:
-				spD.hierarchies = [{
-						id: "H-"+resId,
-						resource: resId,
-						// .. and add the previous hierarchies as children:
-						nodes: spD.hierarchies,
-						changedAt: spD.changedAt
-				}];
+			let rC = itemById( spD.resourceClasses, "RC-HierarchyRoot" );
+			var res = {
+					id: 'R-'+spD.id.simpleHash(),
+					title: spD.title,
+					class: "RC-HierarchyRoot",
+					properties: [{
+						class: "PC-Type",
+						value: rC.title // should be CONFIG.resClassOutline
+					}],
+					changedAt: spD.changedAt
 			};
+			// add a description property only if it has a value:
+			if( spD.description ) 
+				res.properties.push({
+						class: "PC-Text",
+						value: spD.description
+				});
+			spD.resources.push( res );
+			// create a new root instance:
+			spD.hierarchies = [{
+					id: "H-"+res.id,
+					resource: res.id,
+					// .. and add the previous hierarchies as children:
+					nodes: spD.hierarchies,
+					changedAt: spD.changedAt
+			}];
 		};
 		
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
 //		console.debug('specif.get exit',spD);
 		return spD
 
+			function aHierarchyHasNoRoot() {
+				for( var i=spD.hierarchies.length-1;i>-1;i-- ) {
+					let hR = itemById( spD.resources, spD.hierarchies[i].resource ),
+						hC = itemById( spD.resourceClasses, hR['class'] );
+					if( !hR || !hC ) 
+						console.error( "Hierarchy '",spD.hierarchies[i].id,"' is corrupt" )
+					// let's look for the title, but we could perhaps look for a type-property instead:
+					if( CONFIG.hierarchyRoots.indexOf( hC.title )<0 ) 
+						return true;
+				};
+				return false;
+			}	
 			// common for all items:
 			function i2ext( iE ) {
 				var oE = {

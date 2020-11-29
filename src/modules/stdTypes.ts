@@ -109,17 +109,17 @@ app.standardTypes = new function() {
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
 		instantiation: ['auto'],
-		propertyClasses: ["PC-Name", "PC-Text"],
+		propertyClasses: ["PC-Text","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.get = (ctg,id,chAt)=>{
-		var item = itemById( self[self.listOf(ctg)], id );
+		var item = itemById( self[self.listNameOf(ctg)], id );
 		if( item ) {
 			if( chAt ) item.changedAt = chAt;
 			return item;
 		};
 	};
-	self.listOf = (ctg)=>{
+	self.listNameOf = (ctg)=>{
 		// Return the cache name for a given category:
 		switch(ctg) {
 			case 'dataType':		return "dataTypes";
