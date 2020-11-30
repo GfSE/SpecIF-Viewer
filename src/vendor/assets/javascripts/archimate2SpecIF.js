@@ -567,7 +567,6 @@ function Archimate2Specif( xmlString, opts ) {
 			instantiation: ["auto","user"],
 			propertyClasses: ["PC-Text"],
 			changedAt: "2019-03-16T18:59:00+01:00"
-    },{
 		}]
 	}
 	// The statement classes:

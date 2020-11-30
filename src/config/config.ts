@@ -300,7 +300,7 @@ const CONFIG = {};
 	];
 
 	// A list of attributes not to show in the object list (document view), specified by title:
-	// You must enter the titles used by SpecIF.
+	// You must enter the title used by SpecIF (after translation):
 	CONFIG.overviewHiddenProperties = [
 	];
 

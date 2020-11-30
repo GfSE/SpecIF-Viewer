@@ -1837,7 +1837,7 @@ function Project( pr ) {
 
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
 				// if the value is undefined, the property is suppressed in all cases.
-				opts.hiddenProperties: [
+				opts.hiddenProperties = [
 					{title:CONFIG.propClassType,value:CONFIG.resClassFolder},
 					{title:CONFIG.propClassType,value:CONFIG.resClassOutline}
 				];
@@ -2980,20 +2980,32 @@ const specif = {
 			addE("dataType","DT-ShortString",spD);
 			addE("dataType","DT-Text",spD);
 
-			let rC = itemById( spD.resourceClasses, "RC-HierarchyRoot" );
 			var res = {
 					id: 'R-'+spD.id.simpleHash(),
 					title: spD.title,
 					class: "RC-HierarchyRoot",
-					properties: [{
-						class: "PC-Type",
-						value: rC.title // should be CONFIG.resClassOutline
-					}],
 					changedAt: spD.changedAt
 			};
-			// add a description property only if it has a value:
+			// Add the resource type, if it is not hidden:
+			let rC = itemById( spD.resourceClasses, "RC-HierarchyRoot" );
+				function outlineTypeIsNotHidden(hPL) {
+					if( !hPL || hPL.length<1 ) return true;
+					for( var i=hPL.length-1;i>-1;i-- ) {
+						if( hPL[i].title==CONFIG.propClassType
+							&& (typeof(hPL[i].value)!='string' || hPL[i].value==CONFIG.resClassOutline ) )
+								return false;
+					};
+					return true;
+				}
+			if( outlineTypeIsNotHidden( opts.hiddenProperties ) ) {
+				addP( res, {
+						class: "PC-Type",
+						value: rC.title // should be CONFIG.resClassOutline
+				});
+			};
+			// Add a description property only if it has a value:
 			if( spD.description ) 
-				res.properties.push({
+				addP( res, {
 						class: "PC-Text",
 						value: spD.description
 				});
@@ -3009,7 +3021,7 @@ const specif = {
 		};
 		
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
-//		console.debug('specif.get exit',spD);
+//		console.debug('specif.toExt exit',spD);
 		return spD
 
 			function aHierarchyHasNoRoot() {
@@ -3117,15 +3129,27 @@ const specif = {
 			}
 			// a property:
 			function p2ext( iE ) {
-				if( !iE.value ) return;	// skip empty properties
+				// skip empty properties:
+				if( !iE.value ) return;	
+				
+				// skip hidden properties:
+				let pC = itemById( iD.propertyClasses, iE['class'] );
+				if( Array.isArray( opts.hiddenProperties ) {
+				/*	CONFIG.hiddenProperties.forEach( (hP)=>{
+						if( hP.title==(iE.title||pC.title) ) return;
+					}); */
+					opts.hiddenProperties.forEach( (hP)=>{
+						if( hP.title==(iE.title||pC.title) && (hP.value==undefined || hP.value==iE.value ) return;
+					});
+				};
+				
 				var oE = {
 					// no id
 					class:  iE['class']
 				};
 				if( iE.title ) {
 					// skip the property title, if it is equal to the propertyClass' title:
-					let pC = itemById( iD.propertyClasses, iE['class'] ),
-						ti = titleOf( iE, opts );
+					let ti = titleOf( iE, opts );
 					if( ti!=pC.title ) oE.title = ti;
 				};
 				if( iE.description ) oE.description = languageValueOf( iE.description, opts );

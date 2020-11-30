@@ -34,8 +34,6 @@ function toXhtml( data, opts ) {
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
-	// If a hidden property is defined with value, it is suppressed only if it has this value;
-	// if the value is undefined, the property is suppressed in all cases.
 	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
