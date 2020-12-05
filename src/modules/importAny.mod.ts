@@ -479,12 +479,16 @@ modules.construct({
 						// no break
 					case 'create':
 					case 'replace':
-						app.cache.create( dta )
+						opts.deduplicate = true;
+						opts.addGlossary = true;
+						opts.collectProcesses = false;
+						app.cache.create( dta, opts )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
 							.fail( handleError );
 						break;
 					case 'adopt':
+						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = true;
 					case 'update':

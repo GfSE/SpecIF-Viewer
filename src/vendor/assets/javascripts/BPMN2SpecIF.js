@@ -838,7 +838,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.fileDate
 			}],
 			changedAt: opts.fileDate
-		},{
+	/*	},{
 			id: genID("N-"),
 			resource: "FolderGlossary-" + apx,
 			nodes: [{
@@ -857,9 +857,9 @@ function BPMN2Specif( xmlString, opts ) {
 				nodes: [],
 				changedAt: opts.fileDate
 			}],
-			changedAt: opts.fileDate
+			changedAt: opts.fileDate */
 		}];
-		// 9.2 Add Actors, States and Events to the respective folders in alphabetical order:
+	/*	// 9.2 Add Actors, States and Events to the respective folders in alphabetical order:
 		if( res.length>1 )
 			res.sort( (bim, bam)=>{
 						bim = bim.title.toLowerCase();
@@ -876,7 +876,7 @@ function BPMN2Specif( xmlString, opts ) {
 			let idx = ["RC-Actor","RC-State","RC-Event"].indexOf( r['class'] );
 			if( idx>-1 )
 				nL[1].nodes[idx].nodes.push(nd)
-		});
+		}); */
 		// 9.3 Add text annotations to the model diagram:
 		taL.forEach( (a)=>{ 
 			nL[0].nodes[0].nodes.push({
@@ -885,7 +885,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.fileDate
 			})
 		});
-		return nL
+		return nL;
 	};
 /*	// 10. Add the resource for the hierarchy root:
 	model.resources.push({
@@ -1114,7 +1114,7 @@ function BPMN2Specif( xmlString, opts ) {
 				value: opts.strBusinessProcessesType
 			}],
 			changedAt: opts.fileDate
-		}, {
+	/*	}, {
 			id: "FolderGlossary-" + apx,
 			class: "RC-Folder",
 			title: opts.strGlossaryFolder,
@@ -1138,7 +1138,7 @@ function BPMN2Specif( xmlString, opts ) {
 			class: "RC-Folder",
 			title: opts.strEventFolder,
 			changedAt: opts.fileDate
-	/*	}, {
+		}, {
 			id: "FolderNte-" + apx,
 			class: "RC-Folder",
 			title: opts.strAnnotationFolder,

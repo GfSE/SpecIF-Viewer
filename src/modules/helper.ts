@@ -581,10 +581,10 @@ function addP( el, prp ) {
 		el['properties'].unshift( prp );
 	else
 		el['properties'] = [prp];
-} 
+}
 function cacheE( L, e ) {  // ( list, entry )
 	// add or update the item e in a list L:
-	let n = Array.isArray(e)? indexById( L, e.id ) : L.indexOf(e);
+	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
 	L[n] = e; return n; // update otherwise
 }
@@ -594,7 +594,7 @@ function cacheL( L, es ) {  // ( list, entries )
 }
 function uncacheE( L, e ) {  // ( list, entry )
 	// remove the item e from a list L:
-	let n = Array.isArray(e)? indexById( L, e.id ) : L.indexOf(e);
+	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }

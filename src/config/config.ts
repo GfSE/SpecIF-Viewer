@@ -182,9 +182,12 @@ const CONFIG = {};
 		'Identifier'
 	];
 
-	// A list of resourceClasses serving as hierarchyRoot with meta-data:
+	// A list of resourceClasses serving as hierarchyRoot with meta-data;
+	// the value can be specified by a property titled CONFIG.propClassType
+	// or by the title of the resourceClass:
 	CONFIG.hierarchyRoots = [
 		CONFIG.resClassOutline, // do not remove
+		CONFIG.resClassGlossary,
 		'SpecIF:HierarchyRoot',
 		'SpecIF:Hierarchy',
 		'SpecIF:BillOfMaterials'

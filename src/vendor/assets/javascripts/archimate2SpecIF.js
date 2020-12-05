@@ -390,7 +390,7 @@ function Archimate2Specif( xmlString, opts ) {
 				resource: "FolderDiagrams-" + apx,
 				nodes: [],
 				changedAt: opts.fileDate
-			},{
+		/*	},{
 				id: genID("N-"),
 				resource: "FolderGlossary-" + apx,
 				nodes: [{
@@ -414,7 +414,7 @@ function Archimate2Specif( xmlString, opts ) {
 					nodes: [],
 					changedAt: opts.fileDate
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.fileDate */
 			}],
 			changedAt: opts.fileDate
 		}];
@@ -429,7 +429,7 @@ function Archimate2Specif( xmlString, opts ) {
 				nL[0].nodes[0].nodes.push(nd);
 		});
 		
-		// c) Add Actors, States and Events to the respective folders in alphabetical order:
+	/*	// c) Add Actors, States and Events to the respective folders in alphabetical order:
 		if( res.length>1 )
 			res.sort( function(bim, bam) {
 						bim = bim.title.toLowerCase();
@@ -446,7 +446,7 @@ function Archimate2Specif( xmlString, opts ) {
 			let idx = ["RC-Actor","RC-State","RC-Event","RC-Collection"].indexOf( r['class'] );
 			if( idx>-1 )
 				nL[0].nodes[1].nodes[idx].nodes.push(nd)
-		});
+		}); */
 		return nL
 	};
 
@@ -565,8 +565,8 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Paragraph",
 			description: "Information with title and text for descriptive paragraphs.",
 			instantiation: ["auto","user"],
-			propertyClasses: ["PC-Text"],
-			changedAt: "2019-03-16T18:59:00+01:00"
+			propertyClasses: ["PC-Text","PC-Type"],
+			changedAt: "2020-12-04T18:59:00+01:00"
 		}]
 	}
 	// The statement classes:
@@ -722,7 +722,7 @@ function Archimate2Specif( xmlString, opts ) {
 				value: opts.strDiagramsType
 			}],
 			changedAt: opts.fileDate
-		}, {
+	/*	}, {
 			id: "FolderGlossary-" + apx,
 			class: "RC-Folder",
 			title: opts.strGlossaryType,
@@ -749,18 +749,18 @@ function Archimate2Specif( xmlString, opts ) {
 			title: opts.strEventFolder,
 			properties: [],
 			changedAt: opts.fileDate
-	/*	}, {
-			id: "FolderNte-" + apx,
-			class: "RC-Folder",
-			title: opts.strAnnotationFolder,
-			properties: [],
-			changedAt: opts.fileDate */
 		}, {
 			id: "FolderCol-" + apx,
 			class: "RC-Folder",
 			title: opts.strCollectionFolder,
 			properties: [],
 			changedAt: opts.fileDate
+		}, {
+			id: "FolderNte-" + apx,
+			class: "RC-Folder",
+			title: opts.strAnnotationFolder,
+			properties: [],
+			changedAt: opts.fileDate */
 		}]
 	}
 	

@@ -102,8 +102,8 @@ app.standardTypes = new function() {
         title: "SpecIF:Paragraph",
         description: "Information with title and text for descriptive paragraphs.",
         instantiation: ["auto","user"],
-        propertyClasses: ["PC-Text"],
-        changedAt: "2019-03-16T18:59:00+01:00"
+		propertyClasses: ["PC-Text","PC-Type"],
+		changedAt: "2020-12-04T18:59:00+01:00"
     },{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,

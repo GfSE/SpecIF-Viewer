@@ -104,7 +104,6 @@ modules.construct({
 									var nd = {
 										//	id: genID('N-'),
 											id: mNd.id,
-										//	title: movedNd.name,
 											resource: mNd.ref,
 											changedAt: chd
 										},
