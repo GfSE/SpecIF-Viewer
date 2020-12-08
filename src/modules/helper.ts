@@ -851,6 +851,12 @@ String.prototype.trimJSON = function() {
 		li = this.lastIndexOf('}');
 	return this.substring(si,li+1)
 };
+
+String.prototype.trimXML = function() {
+	let si = this.indexOf("<?xml"),
+		li = this.lastIndexOf("</REQ-IF>");
+	return this.substring(si, li+9)
+}
 /*	
 String.prototype.removeBOM = function() {
 	// remove the byte order mask from a UTF-8 coded string
