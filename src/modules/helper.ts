@@ -604,7 +604,7 @@ function genID() {
 
 // Make a valid js variable/property name; replace disallowed characters by '_':
 String.prototype.toJsId = function() { 
-	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#°%]/g, '_' ); 
+	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#ï¿½%]/g, '_' ); 
 	return
 };
 // Make an id conforming with ReqIF and SpecIF:
@@ -682,11 +682,11 @@ function makeHTML(str,opts) {
 	if( isHTML(str) ) 
 		return newS;
 	if( CONFIG.convertMarkdown && app.markdown ) {
-		// don't interpret the '+' as list item, but do so with '•',
+		// don't interpret the '+' as list item, but do so with 'ï¿½',
 		// transform arrows assembled by characters to special arrow characters:
 		return app.markdown.render( str
 			.replace(/\+ /g,'&#x2b; ') // '+'
-			.replace(/• /g,'* ')
+			.replace(/ï¿½ /g,'* ')
 		)
 		.linkifyURLs( opts )
 	};
@@ -820,6 +820,12 @@ String.prototype.trimJSON = function() {
 		li = this.lastIndexOf('}');
 	return this.substring(si,li+1)
 };
+
+String.prototype.trimXML = function() {
+	let si = this.indexOf("<?xml"),
+		li = this.lastIndexOf("</REQ-IF>");
+	return this.substring(si, li+9)
+}
 /*	
 String.prototype.removeBOM = function() {
 	// remove the byte order mask from a UTF-8 coded string
@@ -931,7 +937,7 @@ if (!Array.prototype.find) {
       while (k < len) {
         // a. Let Pk be ! ToString(k).
         // b. Let kValue be ? Get(O, Pk).
-        // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
+        // c. Let testResult be ToBoolean(? Call(predicate, T, ï¿½ kValue, k, O ï¿½)).
         // d. If testResult is true, return kValue.
         var kValue = o[k];
         if (predicate.call(thisArg, kValue, k, o)) {
@@ -1008,7 +1014,7 @@ if (!Array.from) {
 
       // 16. Let k be 0.
       var k = 0;
-      // 17. Repeat, while k < len… (also steps a - h)
+      // 17. Repeat, while k < lenï¿½ (also steps a - h)
       var kValue;
       while (k < len) {
         kValue = items[k];
