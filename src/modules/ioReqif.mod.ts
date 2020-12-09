@@ -110,9 +110,9 @@ modules.construct({
                         if (!validateXML(dta)) {
 							//console.log(dta)
                             zDO.reject( errInvalidXML );
-                            return zDO;
+                            return zDo;
 						}
-						data = testTransformReqIfToSpecIf(dta);
+						data = transformReqIfToSpecIf(dta);
 						data.files = [];
 						// ReqIF data is valid.
 						
