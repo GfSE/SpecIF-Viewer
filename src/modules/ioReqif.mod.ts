@@ -100,7 +100,6 @@ modules.construct({
 				// take the first specif file found, ignore any other so far:
 				zip.file( fileL[0].name ).async("string")
 				.then( function(dta) {
-					console.log(dta)
                     // Check if data is valid XML:
                     // Please note:
 						// - the file may have a UTF-8 BOM
@@ -111,7 +110,8 @@ modules.construct({
 							//console.log(dta)
                             zDO.reject( errInvalidXML );
                             return zDo;
-                        }
+						}
+						data = transformReqIfToSpecIf(dta);
 						data.files = [];
 						// ReqIF data is valid.
 						
@@ -749,22 +749,22 @@ modules.construct({
 					switch( dT.type ) {
 						case 'xs:boolean':
 							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-BOOLEAN>'
 							break;
 						case 'xs:integer':
 							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-INTEGER>'
 							break;
 						case 'xs:double':
 							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
 							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.stripHTML().escapeXML()+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
 						case 'xhtml':
@@ -814,13 +814,13 @@ modules.construct({
 											return $1+ns+':'+$2;
 										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
 								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns+':div>')+txt+(hasDiv?'':'</'+ns+':div>')+'</THE-VALUE>'
 								+  '</ATTRIBUTE-VALUE-XHTML>'
 							break;
 						case 'xs:enumeration':
 							xml += '<ATTRIBUTE-VALUE-ENUMERATION>'
-								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
+								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
 							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 							vL.forEach( function(v) {
@@ -831,7 +831,7 @@ modules.construct({
 							break;
 						case 'xs:dateTime':
 							xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-DATE>'
 							break;
 					};
