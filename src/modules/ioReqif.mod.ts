@@ -101,7 +101,6 @@ modules.construct({
 				// take the first specif file found, ignore any other so far:
 				zip.file( fileL[0].name ).async("string")
 				.then( function(dta) {
-					console.log(dta)
                     // Check if data is valid XML:
                     // Please note:
 						// - the file may have a UTF-8 BOM
@@ -112,7 +111,8 @@ modules.construct({
 							//console.log(dta)
                             zDO.reject( errInvalidXML );
                             return zDo;
-                        }
+						}
+						data = transformReqIfToSpecIf(dta);
 						data.files = [];
 						// ReqIF data is valid.
 						
