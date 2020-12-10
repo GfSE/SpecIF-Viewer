@@ -1,4 +1,4 @@
-﻿/*!	ReqIF import and export
+/*!	ReqIF import and export
 	Dependencies: -
 	Author: se@enso-managers.de, Berlin
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
@@ -109,7 +109,7 @@ modules.construct({
                         if (!validateXML(dta)) {
 							//console.log(dta)
                             zDO.reject( errInvalidXML );
-                            return zDo;
+                            return zDO;
 						}
 						data = transformReqIfToSpecIf(dta);
 						data.files = [];
