@@ -35,7 +35,7 @@ function Tree( options ) {
 		return domE.tree( 'loadData', tr, nd )
 	};
 	self.get = function() {
-		// return the root node with it's children:
+		// return the list of nodes representing the SpecIF root nodes:
 		let tr = domE.tree('getTree');
 //		console.debug('get',tr);
 		return tr? tr.children : undefined
@@ -50,6 +50,15 @@ function Tree( options ) {
 		let tr = domE.tree('getTree');	// first get the root
 //		console.debug('firstNode',tr);
 		return tr? tr.children[0] : undefined	// avoid an exception when there is none ...
+	};
+	self.rootNode = function( nd ) {
+		// return the root node of the given node:
+		if( !nd ) nd = self.selectedNode;
+		// step up until the parent is the jqTree root node; it has no id:
+		while( nd.parent.id ) {
+			nd = nd.parent;
+		};
+		return nd;
 	};
 /*	self.nodesByName = function( ti ) {
 		return domE.tree('getNodesByProperty', 'name', ti)

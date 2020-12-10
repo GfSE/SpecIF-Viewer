@@ -152,7 +152,7 @@ function Archimate2Specif( xmlString, opts ) {
 				default: 
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
 					console.warn('Element: Unknown xsi:type ', ty);
-					r['class'] = "RC-Paragraph";  // better than nothing!
+					r['class'] = "RC-Paragraph";  // better than nothing .. but the element will not appear in the glossary!
 			};
 
 			if( r['class'] ) {
@@ -543,7 +543,7 @@ function Archimate2Specif( xmlString, opts ) {
 /*			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: ["PC-Text"],
+			propertyClasses: ["PC-Text","PC-Type"],
 			changedAt: opts.fileDate  
 		},{  */
 			id: "RC-Collection",

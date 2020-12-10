@@ -260,7 +260,6 @@ modules.construct({
 			var oE = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-			//	name: desperateTitleOf(r,opts,prj), 
 				name: elementTitleOf(r,opts,prj), 
 				ref: iE.resource.id || iE.resource // for key (with revision) or for id (without revision)
 			};
@@ -625,32 +624,40 @@ modules.construct({
 			app.busy.reset();
 		}
 		function actionBtns() {
-			// rendered buttons:
-			var rB = '<div class="btn-group btn-group-sm" >';
-//			console.debug( 'actionBtns', self.resCre );
+			// render buttons:
+			console.debug( 'actionBtns', selRes, self.resCre );
+
+			var nd = pData.tree.selectedNode,
+		//		isUserNode = selRes && CONFIG.modelElementClasses.indexOf(selRes['class'].title)<0,
+				isUserNode = selRes 
+								&& ( !Array.isArray(selRes.toShow['class'].instantiation)
+									|| selRes.toShow['class'].instantiation.indexOf('user')>-1 ),
+		//		rootRes = itemById( 
+		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
+				rB = '<div class="btn-group btn-group-sm" >';
+			console.debug( 'actionBtns', pData.tree.rootNode() );
 
 		/*	if( selRes )
 				// Create a 'direct link' to the resource (the server renders the resource without client app):
-				rB = '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
+				rB += '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
 		*/	
 			// Add the create button depending on the current user's permissions:
 			// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
 		//	if( self.resCre && cData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
-			if( self.resCre )
+			if( self.resCre && isUserNode )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
 						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
-				
 
-			if( !selRes ) 
+			if( !selRes )
 				// just show the create-button (nothing to update or delete):
-				return(rB);  
+				return rB + '</div>';
 
 			// Add the clone button depending on the current user's permissions:
 		//	if( self.resCln && cData.selectedHierarchy.upd )
-			if( self.resCre )
+			if( self.resCre && isUserNode )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
 						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
 			else
@@ -683,7 +690,7 @@ modules.construct({
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
 		//	if( cData.selectedHierarchy.del )
-			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) )
+			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && isUserNode )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else

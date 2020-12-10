@@ -516,10 +516,10 @@ const vocabulary = {
 				default:							oT = iT
 			};
 			return oT
-//		},
-//		reqif: function( iT ) {
-//			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
-//			return iT
+/*		},
+		reqif: function( iT ) {
+			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
+			return iT */
 		}
 	}
 };

@@ -419,9 +419,9 @@ function Project( pr ) {
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
 					let pT = propTitleOf(nP,prj),
-						rP = propByTitle(self.data,r,pT);
-//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( self.data, r, pT )));
-					if( !hasContent(valByTitle( self.data, r, pT ))
+						rP = propByTitle(r,pT,self.data);
+//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( r, pT, self.data )));
+					if( !hasContent(valByTitle( r, pT, self.data ))
 						// dataTypes must be compatible:
 						&& classIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ) ) {
 							rP.value = nP.value;
@@ -556,7 +556,7 @@ function Project( pr ) {
 											// get the referenced resource:
 											res = itemById( dta.resources, nd.resource );
 											// find the property defining the type:
-											pV = valByTitle(dta,res,CONFIG.propClassType);
+											pV = valByTitle(res,CONFIG.propClassType,dta);
 											// collect all nodes to delete, there should be only one:
 											if( pV==r2c.folder ) {
 												delL.push( nd );
@@ -662,7 +662,7 @@ function Project( pr ) {
 								// get the referenced resource:
 								res = itemById( dta.resources, nd.resource );
 								// check, whether it is a glossary:
-								pV = valByTitle(dta,res,CONFIG.propClassType);
+								pV = valByTitle(res,CONFIG.propClassType,dta);
 								// collect all items to delete, there should be only one:
 								if( pV==CONFIG.resClassGlossary ) {
 									delL.push( nd )
@@ -717,7 +717,7 @@ function Project( pr ) {
 					// .. or if it has a property dcterms:type with value 'SpecIF:Diagram':
 					// .. or if it has at least one statement with title 'SpecIF:shows':
 					return resClassTitleOf( r, dta )==CONFIG.resClassDiagram
-						|| valByTitle(dta,r,CONFIG.propClassType)==CONFIG.resClassDiagram
+						|| valByTitle(r,CONFIG.propClassType,dta)==CONFIG.resClassDiagram
 						|| dta.statements.filter(
 								(sta)=>{
 									return staClassTitleOf( sta, dta )==CONFIG.staClassShows && sta.subject==r.id
@@ -879,11 +879,11 @@ function Project( pr ) {
 //				console.debug( 'duplicate resource ?', rR, nR );
 				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf( resClassTitleOf(rR,dta) )>-1
 					&& eqR(dta,rR,nR)
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, nR, CONFIG.propClassType ))<0
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( dta, rR, CONFIG.propClassType ))<0
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( nR, CONFIG.propClassType, dta ))<0
+					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( rR, CONFIG.propClassType, dta ))<0
 				) {
 					// Are equal, so remove the duplicate resource:
-//					console.debug( 'duplicate resource', rR, nR, valByTitle( dta, nR, CONFIG.propClassType ) );
+//					console.debug( 'duplicate resource', rR, nR, valByTitle( nR, CONFIG.propClassType, dta ) );
 					substituteR(dta,rR,nR,{rescueProperties:true});
 					dta.resources.splice(n,1);
 					// skip the remaining iterations of the inner loop:
@@ -999,7 +999,7 @@ function Project( pr ) {
 				// The folders are not consolidated, because it may happen that there are
 				// multiple folders with the same name but different description in different locations of the hierarchy.
 				if( CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf( resClassTitleOf(nR,nD) )>-1
-					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nD,nR,CONFIG.propClassType) )<0
+					&& CONFIG.excludedFromDeduplication.indexOf( valByTitle(nR,CONFIG.propClassType,nD) )<0
 				) {
 						// Check for a resource with the same title:
 						let eR = itemByTitle( self.data.resources, nR.title );  // resource in the existing data
@@ -1008,9 +1008,9 @@ function Project( pr ) {
 						// and is less restrictive than the class ID:
 //						console.debug('~1',nR,eR?eR:'');
 						if( eR
-							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( self.data, eR, CONFIG.propClassType ))<0
+							&& CONFIG.excludedFromDeduplication.indexOf(valByTitle( eR, CONFIG.propClassType, self.data ))<0
 							&& resClassTitleOf(nR,nD)==resClassTitleOf(eR,self.data)
-					//		&& valByTitle(nD,nR,CONFIG.propClassType)==valByTitle(self.data,eR,CONFIG.propClassType)
+					//		&& valByTitle(nR,CONFIG.propClassType,nD)==valByTitle(eR,CONFIG.propClassType,self.data)
 						) {
 //							console.debug('~2',eR,nR);
 							// There is an item with the same title and type,
@@ -3477,7 +3477,7 @@ function createProp( pC, pCid ) {
 	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
 	};
 }
-function propByTitle(dta,itm,pN) {
+function propByTitle(itm,pN,dta) {
 	// Return the property of itm with title pN.
 	// If it doesn't exist, create it,
 	// if there is no property with that title, return undefined.
@@ -3504,7 +3504,7 @@ function propByTitle(dta,itm,pN) {
 	};
 //	return undefined
 }
-function valByTitle(dta,itm,pN) {
+function valByTitle(itm,pN,dta) {
 	// Return the value of a resource's (or statement's) property with title pN:
 	// ToDo: return the class's default value, if available.
 //	console.debug('valByTitle',dta,itm,pN);
