@@ -14,8 +14,10 @@ modules.construct({
 	"use strict";
 	let zipped,
 //		template,	// a new Id is given and user is asked to input a project-name
-		opts,
-		errNoOptions = { status: 899, statusText: 'No options or no mediaTypes defined.' },
+		opts;
+		
+	const 
+		errNoOptions = { status: 899, statusText: 'Programming flaw: No options or no mediaTypes defined.' },
 		errNoSpecif = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
 		errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
 		
@@ -54,7 +56,7 @@ modules.construct({
 		// else:
 		try {
 			message.show( i18n.phrase('ErrInvalidFileSpecif', f.name), {severity:'warning'} );
-		} catch (e) {
+		} catch (err) {
 			alert(f.name+' has invalid file type.');
 		};
 		return null;
@@ -96,20 +98,27 @@ modules.construct({
 //							console.debug('iospecif.toSpecif 2',fileL);
 							if( fileL.length>0 ) {
 								let pend = 0;
-								fileL.forEach( function(e) { 
-												//	let t = e.type || opts.mediaTypeOf(e.name);
-													if( e.dir ) return false;
-													let t = opts.mediaTypeOf(e.name);
-													if( !t ) return false;
+								fileL.forEach( function(aFile) { 
+													if( aFile.dir ) return false;
+												//	let fType = aFile.type || opts.mediaTypeOf(aFile.name);
+													let fType = opts.mediaTypeOf(aFile.name);
+													if( !fType ) return false;
 													// only extract files with known mediaTypes:
-//													console.debug('iospecif.toSpecif 3',t,e.date,e.date.toISOString());
+													
+//													console.debug('iospecif.toSpecif 3',fType,aFile.date,aFile.date.toISOString());
 													pend++;
-													zip.file(e.name).async("blob")
+													zip.file(aFile.name).async("blob")
 													.then( function(f) {
-														data.files.push({ blob:f, id: 'F-'+e.name.simpleHash(), title: e.name, type: t, changedAt: e.date.toISOString() });
-//														console.debug('file',pend-1,e,data.files);
+														data.files.push({ 
+															blob:f, 
+															id: 'F-'+aFile.name.simpleHash(), 
+															title: aFile.name, 
+															type: fType, 
+															changedAt: aFile.date.toISOString() 
+														});
+//														console.debug('file',pend-1,aFile,data.files);
 														if(--pend<1)
-															// now all files are extracted from the ZIP, so we can return the data:
+															// now all files have been extracted from the ZIP, so we can return the data:
 															zDO.resolve( data );  // data is in SpecIF format
 													});
 												});
@@ -120,10 +129,11 @@ modules.construct({
 							}
 						} else {
 							// no function for filtering and mapping the mediaTypes supplied:
-							console.error(errNoOptions.statusText);
+							console.warn(errNoOptions.statusText);
+							// return SpecIF data anyways:
 							zDO.resolve( data );		// data is in SpecIF format
 						};
-					} catch (e) {
+					} catch (err) {
 						zDO.reject( errInvalidJson );
 					};
 				});
@@ -136,7 +146,7 @@ modules.construct({
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
 				var data = JSON.parse( buf2str(buf).trimJSON() );
 				zDO.resolve( data );
-			} catch (e) {
+			} catch (err) {
 				zDO.reject( errInvalidJson );
 			};
 		};
