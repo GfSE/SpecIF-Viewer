@@ -110,7 +110,7 @@ modules.construct({
                         if (!validateXML(dta)) {
 							//console.log(dta)
                             zDO.reject( errInvalidXML );
-                            return zDo;
+                            return zDO;
 						}
 						data = transformReqIfToSpecIf(dta);
 						data.files = [];
