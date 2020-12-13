@@ -23,7 +23,7 @@
         "dataType": "DT-ShortString",
         "changedAt": "2018-05-10T11:54:00+01:00"
     }, {
-        "id": "PC-Text",
+        "id": "PC-Description",
         "title": "dcterms:description",
         "dataType": "DT-FormattedText",
         "changedAt": "2018-05-10T11:54:00+01:00"
@@ -44,7 +44,7 @@
         "description": "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
         "instantiation": ["user"],
         "icon": "&#9635;",
-        "propertyClasses": ["PC-Name","PC-Text","PC-Diagram","PC-Type"],
+        "propertyClasses": ["PC-Name","PC-Description","PC-Diagram","PC-Type"],
         "changedAt": "2018-05-10T11:54:00+01:00"
     }, {
         "id": "RC-Actor",
@@ -52,7 +52,7 @@
         "description": "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
         "instantiation": ["auto"],
         "icon": "&#9632;",
-        "propertyClasses": ["PC-Name","PC-Text","PC-Type"],
+        "propertyClasses": ["PC-Name","PC-Description","PC-Type"],
         "changedAt": "2018-05-10T11:54:00+01:00"
     }, {
         "id": "RC-State",
@@ -60,7 +60,7 @@
         "description": "A 'State' is a fundamental model element type representing a passive entity, be it a value, a document, an information storage or even a physical shape.",
         "instantiation": ["auto"],
         "icon": "&#9679;",
-        "propertyClasses": ["PC-Name","PC-Text","PC-Type"],
+        "propertyClasses": ["PC-Name","PC-Description","PC-Type"],
         "changedAt": "2018-05-10T11:54:00+01:00"
     }, {
         "id": "RC-Event",
@@ -68,7 +68,7 @@
         "description": "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
         "instantiation": ["auto"],
         "icon": "&#9830;",
-        "propertyClasses": ["PC-Name","PC-Text","PC-Type"],
+        "propertyClasses": ["PC-Name","PC-Description","PC-Type"],
         "changedAt": "2018-05-10T11:54:00+01:00"
     }],
     "statementClasses": [{
@@ -119,7 +119,7 @@
             "class": "PC-Name",
             "value": "FiCo-Application"
         }, {
-            "class": "PC-Text",
+            "class": "PC-Description",
             "value": "<div><p>IT-Application for Finance and Controlling.</p></div>"
         }],
         "changedAt": "2020-03-06T09:04:00+01:00"
@@ -131,7 +131,7 @@
             "class": "PC-Name",
             "value": "FiCo-Data"
         }, {
-            "class": "PC-Text",
+            "class": "PC-Description",
             "value": "<div><p>Finance and Controlling Data, such as cost-units per project with budget, accrued cost etc.</p></div>"
         }],
         "changedAt": "2020-03-06T09:03:00+01:00"

@@ -66,7 +66,7 @@ app.standardTypes = new function() {
 		dataType: "DT-ShortString",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
-		id: "PC-Text",
+		id: "PC-Description",
 		title: CONFIG.propClassDesc,
 		dataType: "DT-Text",
 	//	dataType: "DT-FormattedText",
@@ -95,26 +95,28 @@ app.standardTypes = new function() {
 		description: "Folder with title and text for chapters or descriptive paragraphs.",
 		isHeading: true,
 		instantiation: ['auto','user'],
-		propertyClasses: ["PC-Text","PC-Type"],
+		propertyClasses: ["PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
         id: "RC-Paragraph",
         title: "SpecIF:Paragraph",
         description: "Information with title and text for descriptive paragraphs.",
         instantiation: ["auto","user"],
-		propertyClasses: ["PC-Text","PC-Type"],
+		propertyClasses: ["PC-Description","PC-Type"],
 		changedAt: "2020-12-04T18:59:00+01:00"
     },{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
 		instantiation: ['auto'],
-		propertyClasses: ["PC-Text","PC-Type"],
+		propertyClasses: ["PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.get = (ctg,id,chAt)=>{
 		var item = itemById( self[self.listNameOf(ctg)], id );
 		if( item ) {
+			// shield any subsequent change from the templates available here:
+			item = simpleClone(item);
 			if( chAt ) item.changedAt = chAt;
 			return item;
 		};

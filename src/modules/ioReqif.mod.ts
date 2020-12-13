@@ -109,11 +109,11 @@ modules.construct({
 						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Text",pr);
+						addE("propertyClass","PC-Description",pr);
 					/*	if (!Array.isArray(pr.propertyClasses)) pr.propertyClasses = [];
 						// avoid duplicates:
-						if( indexById( pr.propertyClasses, "PC-Text" )<0 ) 
-							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Text") ); */
+						if( indexById( pr.propertyClasses, "PC-Description" )<0 ) 
+							pr.propertyClasses.push( app.standardTypes.get("propertyClass","PC-Description") ); */
 						
 						// b. add dataType, if not yet defined:
 						addE("dataType","DT-Text",pr);
@@ -123,20 +123,20 @@ modules.construct({
 							pr.dataTypes.push( app.standardTypes.get("dataType","DT-FormattedText") ); */
 						
 						// c. Add propertyClass to element class:
-						addPC( eC, "PC-Text" );
+						addPC( eC, "PC-Description" );
 					/*	if( !Array.isArray( eC.propertyClasses ) ) eC.propertyClasses = [];
 						// avoid duplicates:
-						if( eC.propertyClasses.indexOf( "PC-Text" )<0 ) 
-							eC.propertyClasses.unshift( "PC-Text" ); */
+						if( eC.propertyClasses.indexOf( "PC-Description" )<0 ) 
+							eC.propertyClasses.unshift( "PC-Description" ); */
 						
 						// d. Add description property to element;
 						addP( el, {
-								class: "PC-Text",
+								class: "PC-Description",
 								value: el.description
 						});
 					/*	if( !Array.isArray( el.properties ) ) el.properties = [];
 						el.properties.unshift({
-								class: "PC-Text",
+								class: "PC-Description",
 								value: el.description
 						}); */
 					};

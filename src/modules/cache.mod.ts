@@ -270,10 +270,10 @@ function Project( pr ) {
 	//	return server.project(self).update()
 	};*/
 	const types = [
-			{ ctg: 'dataType', 			list: 'dataTypes', 			eqFn: eqDT, 	sbFn: substituteDT },
-			{ ctg: 'propertyClass', 	list: 'propertyClasses', 	eqFn: eqPC, 	sbFn: substitutePC },
-			{ ctg: 'resourceClass', 	list: 'resourceClasses', 	eqFn: eqRC, 	sbFn: substituteRC },
-			{ ctg: 'statementClass', 	list: 'statementClasses', 	eqFn: eqSC, 	sbFn: substituteSC }
+			{ ctg: 'dataType', 			list: 'dataTypes', 			isEq: eqDT, 	subs: substituteDT },
+			{ ctg: 'propertyClass', 	list: 'propertyClasses', 	isEq: eqPC, 	subs: substitutePC },
+			{ ctg: 'resourceClass', 	list: 'resourceClasses', 	isEq: eqRC, 	subs: substituteRC },
+			{ ctg: 'statementClass', 	list: 'statementClasses', 	isEq: eqSC, 	subs: substituteSC }
 		];
 	function eqDT(r,n) {
 		// return true, if reference and new dataType are equal:
@@ -458,6 +458,7 @@ function Project( pr ) {
 		let idx;
 		if( Array.isArray(L) )
 			L.forEach( (e)=>{
+				// e is a resourceClass of statementClass:
 				if( !Array.isArray(e[propN]) ) return;
 				idx = e[propN].indexOf(dAV);
 				if( idx>-1 ) e[propN].splice( idx, 1, rAV );
@@ -588,7 +589,7 @@ function Project( pr ) {
 											app.standardTypes.get('dataType',"DT-Text")
 										],
 										propertyClasses: [
-											app.standardTypes.get('propertyClass',"PC-Text"),
+											app.standardTypes.get('propertyClass',"PC-Description"),
 											app.standardTypes.get('propertyClass',"PC-Type")
 										],
 										resourceClasses: [
@@ -689,7 +690,7 @@ function Project( pr ) {
 									app.standardTypes.get('dataType',"DT-Text")
 								],
 								propertyClasses: [
-									app.standardTypes.get('propertyClass',"PC-Text"),
+									app.standardTypes.get('propertyClass',"PC-Description"),
 									app.standardTypes.get('propertyClass',"PC-Type")
 								],
 								resourceClasses: [
@@ -853,11 +854,11 @@ function Project( pr ) {
 				// skip last loop, as no duplicates can be found:
 				for( n=dta[ty.list].length-1; n>0; n-- ) {
 					for( r=0; r<n; r++ ) {
-//						console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.eqFn(dta[ty.list][r],dta[ty.list][n]) );
+//						console.debug( '##', dta[ty.list][r],dta[ty.list][n],ty.isEq(dta[ty.list][r],dta[ty.list][n]) );
 						// Do it for all types:
-						if( ty.eqFn(dta[ty.list][r],dta[ty.list][n]) ) {
+						if( ty.isEq(dta[ty.list][r],dta[ty.list][n]) ) {
 							// Are equal, so substitute it's ids by the original item:
-							ty.sbFn( dta, dta[ty.list][r].id, dta[ty.list][n].id );
+							ty.subs( dta, dta[ty.list][r].id, dta[ty.list][n].id );
 							// ... and remove the duplicate item:
 							dta[ty.list].splice(n,1);
 							// skip the remaining iterations of the inner loop:
@@ -969,14 +970,14 @@ function Project( pr ) {
 							itmL.push( nC );
 						} else {
 							// there is an item with the same id.
-							if( !ty.eqFn( self.data[ty.list][idx], nC) ) {
+							if( !ty.isEq( self.data[ty.list][idx], nC) ) {
 								// there is an item with the same id and different content.
 								// c) create a new id and update all references:
 								// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 								// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 								let alterId = nC.id;
 								nC.id += '-' + new Date().toISOString().simpleHash();
-								ty.sbFn( nD, nC.id, alterId );
+								ty.subs( nD, nC.id, alterId );
 								itmL.push( nC );
 							};
 							// b) no action
@@ -2994,7 +2995,7 @@ const specif = {
 
 			// ToDo: Get the referenced propertyClass ids from the above
 			addE("propertyClass","PC-Type",spD);
-			addE("propertyClass","PC-Text",spD);
+			addE("propertyClass","PC-Description",spD);
 
 			// ToDo: Get the referenced dataType ids from the above
 			addE("dataType","DT-ShortString",spD);
@@ -3026,7 +3027,7 @@ const specif = {
 			// Add a description property only if it has a value:
 			if( spD.description ) 
 				addP( res, {
-						class: "PC-Text",
+						class: "PC-Description",
 						value: spD.description
 				});
 			spD.resources.push( res );
