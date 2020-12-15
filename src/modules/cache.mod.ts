@@ -2988,7 +2988,7 @@ const specif = {
 		// It is assumed, 
 		// - that in general SpecIF data do not have a hierarchy root with meta-data.
 		// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-		if( opts.createHierarchyRootIfNotPresent && aHierarchyHasNoRoot() ) {
+		if( opts.createHierarchyRootIfNotPresent && aHierarchyHasNoRoot(spD) ) {
 
 			console.info("Adding a hierarchyRoot");
 			addE("resourceClass","RC-HierarchyRoot",spD);
@@ -3030,7 +3030,7 @@ const specif = {
 						class: "PC-Description",
 						value: spD.description
 				});
-			spD.resources.push( res );
+			spD.resources.push( r2ext(res) );
 			// create a new root instance:
 			spD.hierarchies = [{
 					id: "H-"+res.id,
@@ -3045,17 +3045,19 @@ const specif = {
 //		console.debug('specif.toExt exit',spD);
 		return spD
 
-			function aHierarchyHasNoRoot() {
-				for( var i=spD.hierarchies.length-1;i>-1;i-- ) {
-					let hR = itemById( spD.resources, spD.hierarchies[i].resource ),
-						prp = itemByTitle( hR.properties, CONFIG.propClassType ),
-						hC = itemById( spD.resourceClasses, hR['class'] );
-					if( !hR ) 
-						console.error( "Hierarchy '",spD.hierarchies[i].id,"' is corrupt" );
+			function aHierarchyHasNoRoot(dta) {
+				for( var i=dta.hierarchies.length-1;i>-1;i-- ) {
+					let hR = itemById( dta.resources, dta.hierarchies[i].resource );
+					if( !hR ) {
+						console.error( "Hierarchy '",dta.hierarchies[i].id,"' is corrupt" );
+						return null;
+					};
+					let	prpV = valByTitle( hR, CONFIG.propClassType, dta ),
+						hC = itemById( dta.resourceClasses, hR['class'] );
 					// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 					// or by the title of the resourceClass:
-					if( prp && CONFIG.hierarchyRoots.indexOf( prp.value )<0 
-						|| hC && CONFIG.hierarchyRoots.indexOf( hC.title )<0 ) 
+					if( (!prpV || CONFIG.hierarchyRoots.indexOf( prpV )<0) 
+						&& (!hC || CONFIG.hierarchyRoots.indexOf( hC.title )<0) )
 						return true;
 				};
 				return false;
@@ -3188,8 +3190,7 @@ const specif = {
 						case 'xs:string':
 						case 'xhtml':
 							if( opts.targetLanguage ) {
-								if( CONFIG.titleProperties.indexOf( iE.title )>-1
-									|| CONFIG.headingProperties.indexOf( iE.title )>-1 )
+								if( CONFIG.excludedFromFormatting.indexOf( iE.title || pC.title )>-1 )
 									// if it is a title, remove all formatting:
 									oE.value = languageValueOf( iE.value, opts ).stripHTML();
 								else
@@ -3481,7 +3482,7 @@ function createProp( pC, pCid ) {
 function propByTitle(itm,pN,dta) {
 	// Return the property of itm with title pN.
 	// If it doesn't exist, create it,
-	// if there is no property with that title, return undefined.
+	// if there is no propertyClass with that title either, return undefined.
 
 	// Look for the propertyClasses pCs of the item's class iC:
 	// ToDo: Add statementClasses, as soon as needed.

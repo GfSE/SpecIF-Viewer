@@ -1334,7 +1334,7 @@ function Resource( obj ) {
 	self.listEntry = ()=>{
 			function showPrp( prp, opts ) {
 //				console.debug('showPrp',prp);
-				if( CONFIG.overviewHiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
+				if( CONFIG.hiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
 				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value,opts) ))
 			} 
 		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
@@ -1589,7 +1589,8 @@ function propertyValueOf( prp, opts ) {
 	if( typeof(opts.lookupTitles)!='boolean' ) 		opts.lookupTitles = false;
 
 	// Malicious content has been removed upon import ( specif.toInt() ).
-	let dT = dataTypeOf( app.cache.selectedProject.data, prp['class'] ),
+	let prj = app.cache.selectedProject.data,
+		dT = dataTypeOf( prj, prp['class'] ),
 		ct; 
 //	console.debug('*',prp,dT);
 	switch( dT.type ) {
@@ -1603,7 +1604,9 @@ function propertyValueOf( prp, opts ) {
 			ct = languageValueOf( prp.value, opts );
 			if( opts.unescapeHTMLTags )
 				ct = ct.unescapeHTMLTags();
-			ct = makeHTML( ct, opts );
+			// Apply formatting only if not listed:
+			if( CONFIG.excludedFromFormatting.indexOf( propTitleOf(prp,prj) )<0 )
+				ct = makeHTML( ct, opts );
 			ct = fileRef.toGUI( ct, opts );   // show the diagrams
 			ct = titleLinks( ct, opts.dynLinks );
 			break;

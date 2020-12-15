@@ -288,6 +288,9 @@ const CONFIG = {};
 		'UML:Stereotype'
 	];
 
+	// Show or suppress empty properties in the object list (document view):
+	CONFIG.showEmptyProperties = false;
+
 	// A list of properties to suppress generally, specified by title.
 	// Applies to propertyClasses and property values (types and instances).
 	// Properties with a title corresponding to the list entries are hidden,
@@ -302,13 +305,10 @@ const CONFIG = {};
 		'ListNumberText'
 	];
 
-	// A list of attributes not to show in the object list (document view), specified by title:
+/*	// A list of attributes not to show in the object list (document view), specified by title:
 	// You must enter the title used by SpecIF (after translation):
 	CONFIG.overviewHiddenProperties = [
-	];
-
-	// Show or suppress empty properties in the object list (document view):
-	CONFIG.showEmptyProperties = false;
+	]; */
 
 	// A list of relations not to show in tab named CONFIG.relations, specified by title:
 	CONFIG.hiddenStatements = [
@@ -321,6 +321,15 @@ const CONFIG = {};
 	CONFIG.excludedFromTypeFiltering = [
 		CONFIG.resClassComment
 	];
+
+	// A list of classes which are excluded from formatting, specified by title;
+	// Applied only to properties of type "xs:string":
+	CONFIG.excludedFromFormatting = [
+		CONFIG.propClassType
+	]
+	.concat( CONFIG.titleProperties )
+	.concat( CONFIG.idProperties )
+	.concat( CONFIG.hierarchyRoots );
 
 	// A list of model elements to be exluded from deduplication on model import or model integration,
 	// specified by value of a property titled CONFIG.propClassType ...
@@ -340,6 +349,7 @@ const CONFIG = {};
 	];
 
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
+
 /*	// A list of SVG diagram class names. SVGs having a root element with this class will be subject to diagram level events:
 	CONFIG.clickDiagramClasses = [
 		'diagram'

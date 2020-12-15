@@ -559,6 +559,7 @@ function toOxml( data, opts ) {
 						// Identify paragraphs and store them in the block list:
 						// Note that <ul>, <ol> and <table> are block-level elements like <p> and
 						// that none of them may be inside <p>..</p>
+						// see: https://www.w3schools.com/htmL/html_blocks.asp
 						let bL = [];
 						// look for the next block-level construct with any preceding text,
 						// be sure to consume the transformed text in every loop.
