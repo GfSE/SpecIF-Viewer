@@ -10,9 +10,10 @@ testTransformReqIfToSpecIf = (reqIfDocument) => {
     resources.push(extractRootSpecIfObjectsArray(element.getElementsByTagName("SPECIFICATIONS")))
     specIfObject.resources = resources.flat(); //Was bedeutet die Flat methode?
     //specIfObject.resources = resources
-    specIfObject.statements = extractSpecifStatementsFromXmlDoc(element.getElementsByTagName("SPEC-RELATIONS"));
-    specIfObject.hierarchies = extractSpecifHierarchiesFromXmlDoc(element.getElementsByTagName("SPECIFICATIONS"));
+    specIfObject.statements = element.getElementsByTagName("SPEC-RELATIONS")[0] ? extractSpecifStatementsFromXmlDoc(element.getElementsByTagName("SPEC-RELATIONS")) : [];
+    specIfObject.hierarchies = element.getElementsByTagName("SPECIFICATIONS")[0] ? extractSpecifHierarchiesFromXmlDoc(element.getElementsByTagName("SPECIFICATIONS")) : [];
     
+    console.log(specIfObject)
     return specIfObject
 }
 
@@ -20,7 +21,9 @@ extractMainSpecifProperties = (XmlDocReqIfHeader) => {
     const specIfProeprties = {};
     specIfProeprties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
     specIfProeprties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
+    //specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML;
     XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] ? specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML : '';
+
     specIfProeprties.$schema = "https://specif.de/v1.0/schema.json";
     specIfProeprties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 
     
@@ -110,10 +113,11 @@ extractSpecIfResourceClass = (resourceClassDocument) => {
     const specifResourceClass = {};
     specifResourceClass.id = resourceClassDocument.getAttribute("IDENTIFIER");
     specifResourceClass.title = resourceClassDocument.getAttribute("LONG-NAME");
-    specifResourceClass.description = resourceClassDocument.getAttribute("DESC");
-    specifResourceClass.propertyClasses = extractResourceClassProperties(resourceClassDocument.getElementsByTagName("SPEC-ATTRIBUTES"));
+
+    resourceClassDocument.getAttribute("DESC") ? specifResourceClass.description = resourceClassDocument.getAttribute("DESC") : '';
+    resourceClassDocument.getElementsByTagName("SPEC-ATTRIBUTES")[0] ? specifResourceClass.propertyClasses = extractResourceClassProperties(resourceClassDocument.getElementsByTagName("SPEC-ATTRIBUTES")) : '';
     specifResourceClass.changedAt = resourceClassDocument.getAttribute("LAST-CHANGE");
-    specifResourceClass.description = resourceClassDocument.getAttribute("DESC");
+    //specifResourceClass.description = resourceClassDocument.getAttribute("DESC");
    
     return specifResourceClass;
 }
@@ -159,9 +163,12 @@ extractSpecifResourcesFromXmlDoc = (XmlDocResources) => {
 extractSpecIfResource = (resourceDocument) => {
     const specifResource = {};
     resourceDocument.getAttribute("IDENTIFIER") ? specifResource.id = resourceDocument.getAttribute("IDENTIFIER") : '';
-    resourceDocument.getAttribute("LONG-NAME") ? specifResource.title = resourceDocument.getAttribute("LONG-NAME") : '';
+    //resourceDocument.getAttribute("LONG-NAME") ? specifResource.title = resourceDocument.getAttribute("LONG-NAME") : '';
+    specifResource.title = resourceDocument.getAttribute("LONG-NAME") ? resourceDocument.getAttribute("LONG-NAME") : 'Proto title';
     resourceDocument.getElementsByTagName("TYPE")[0] ? specifResource.class = resourceDocument.getElementsByTagName("TYPE")[0].children[0].innerHTML : '';
-    resourceDocument.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractResourceProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
+    //resourceDocument.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractResourceProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
+    resourceDocument.getElementsByTagName("VALUES")[0] ? specifResource.properties = extractResourceProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
+
     //<VALUES>-child <ATTRIBUTE-VALUE-XHTML> --> child <THE-VALUE> -->remove child <xhtml:div>
     resourceDocument.getAttribute("LAST-CHANGE") ? specifResource.changedAt = resourceDocument.getAttribute("LAST-CHANGE") : '';
     
@@ -186,7 +193,7 @@ extractSpecIfProperty = (property) => {
     //specifProperty.value.removeNamespaces()
 
     specifProperty.value = removeNamespaces(specifProperty.value)
-    console.log("Value: " + specifProperty.value)
+    //console.log("Value: " + specifProperty.value)
     return specifProperty;
 }
 
@@ -351,7 +358,7 @@ extractPropertyClassesFromSpecAttributeMap = (specAttributeMap) => {
     const propertyClasses = Object.entries(specAttributeMap).map( entry => { 
         const propertyClass = {};
 
-        propertyClass.id = entry[0];                //Warum entry[0]?
+        propertyClass.id = entry[0];
         propertyClass.title = entry[1].title;
         propertyClass.dataType = entry[1].dataType;
         propertyClass.changedAt = entry[1].changedAt ;
@@ -396,18 +403,18 @@ removeNamespaces = (input) => {
         //string = string.replaceAll(namespace, '')
         const RE_namespace = new RegExp(namespace, 'g' )
         string = string.replace(RE_namespace, '')
-        console.log(string)
+        //console.log(string)
         return string;
 }
 
 getNameSpace = (regEX, string) => {
     let namespace = ''
     string = string.replace(regEX, function($0, $1){
-        console.log("$1:" + $1)
+        //console.log("$1:" + $1)
         namespace = $1 + ":";
         return ''
     })
-    console.log("Namespace: " + namespace)
+    //console.log("Namespace: " + namespace)
     return namespace
 }
 
