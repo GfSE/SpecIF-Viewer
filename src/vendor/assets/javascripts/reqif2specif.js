@@ -21,7 +21,9 @@ extractMainSpecifProperties = (XmlDocReqIfHeader) => {
     const specIfProeprties = {};
     specIfProeprties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
     specIfProeprties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
+    //specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML;
     XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] ? specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML : '';
+
     specIfProeprties.$schema = "https://specif.de/v1.0/schema.json";
     specIfProeprties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 
     
@@ -356,7 +358,7 @@ extractPropertyClassesFromSpecAttributeMap = (specAttributeMap) => {
     const propertyClasses = Object.entries(specAttributeMap).map( entry => { 
         const propertyClass = {};
 
-        propertyClass.id = entry[0];                //Warum entry[0]?
+        propertyClass.id = entry[0];
         propertyClass.title = entry[1].title;
         propertyClass.dataType = entry[1].dataType;
         propertyClass.changedAt = entry[1].changedAt ;
