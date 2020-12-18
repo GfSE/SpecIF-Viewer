@@ -1,13 +1,15 @@
-//name module e.g. "Reqif_Specif_Bridge"
-
-/*export function */transformReqIfToSpecIf = (ReqIfDocument) => {               
-    const element = extractXmlDocFromString(ReqIfDocument);
+testTransformReqIfToSpecIf = (reqIfDocument) => {               
+    const element = extractXmlDocFromString(reqIfDocument);
     const specIfObject = extractMainSpecifProperties(element.getElementsByTagName("REQ-IF-HEADER"));
     specIfObject.dataTypes = extractSpecifDatatypesFromXmlDoc(element.getElementsByTagName("DATATYPES"));
     specIfObject.propertyClasses = extractSpecifPropertyClassesFromXmlDoc(element.getElementsByTagName("SPEC-TYPES"));
     specIfObject.resourceClasses = extractSpecifResourceClassesFromXmlDoc(element.getElementsByTagName("SPEC-TYPES"));
     specIfObject.statementClasses = extractSpecifStatementClassesFromXmlDoc(element.getElementsByTagName("SPEC-TYPES"));
-    specIfObject.resources = extractSpecifResourcesFromXmlDoc(element.getElementsByTagName("SPEC-OBJECTS"));
+    resources = extractSpecifResourcesFromXmlDoc(element.getElementsByTagName("SPEC-OBJECTS"));
+    //resources.concat(extractRootSpecIfObjectsArray(element.getElementsByTagName("SPECIFICATIONS")))
+    resources.push(extractRootSpecIfObjectsArray(element.getElementsByTagName("SPECIFICATIONS")))
+    specIfObject.resources = resources.flat(); //Was bedeutet die Flat methode?
+    //specIfObject.resources = resources
     specIfObject.statements = extractSpecifStatementsFromXmlDoc(element.getElementsByTagName("SPEC-RELATIONS"));
     specIfObject.hierarchies = extractSpecifHierarchiesFromXmlDoc(element.getElementsByTagName("SPECIFICATIONS"));
     
@@ -18,9 +20,9 @@ extractMainSpecifProperties = (XmlDocReqIfHeader) => {
     const specIfProeprties = {};
     specIfProeprties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
     specIfProeprties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
-    specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML;
+    XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] ? specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML : '';
     specIfProeprties.$schema = "https://specif.de/v1.0/schema.json";
-    specIfProeprties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; //Format looks weird, but is like that in reqIf file
+    specIfProeprties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 
     
     return specIfProeprties;
 }
@@ -152,12 +154,15 @@ extractSpecifResourcesFromXmlDoc = (XmlDocResources) => {
     return specifResourcesArray;
 }
 
+// start what i need 
+
 extractSpecIfResource = (resourceDocument) => {
     const specifResource = {};
     resourceDocument.getAttribute("IDENTIFIER") ? specifResource.id = resourceDocument.getAttribute("IDENTIFIER") : '';
     resourceDocument.getAttribute("LONG-NAME") ? specifResource.title = resourceDocument.getAttribute("LONG-NAME") : '';
     resourceDocument.getElementsByTagName("TYPE")[0] ? specifResource.class = resourceDocument.getElementsByTagName("TYPE")[0].children[0].innerHTML : '';
     resourceDocument.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractResourceProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
+    //<VALUES>-child <ATTRIBUTE-VALUE-XHTML> --> child <THE-VALUE> -->remove child <xhtml:div>
     resourceDocument.getAttribute("LAST-CHANGE") ? specifResource.changedAt = resourceDocument.getAttribute("LAST-CHANGE") : '';
     
     return specifResource;
@@ -178,7 +183,17 @@ extractSpecIfProperty = (property) => {
     property.getElementsByTagName("THE-VALUE")[0] ? specifProperty.value = property.getElementsByTagName("THE-VALUE")[0].innerHTML : '';
     property.getElementsByTagName("VALUES")[0] ? specifProperty.value = property.getElementsByTagName("VALUES")[0].children[0].innerHTML : '';
     
+    //specifProperty.value.removeNamespaces()
+
+    specifProperty.value = removeNamespaces(specifProperty.value)
+    console.log("Value: " + specifProperty.value)
     return specifProperty;
+}
+
+//end what i need 
+
+extractRootSpecIfObjectsArray = (specificationsDocument) => {
+    return extractSpecifResourcesFromXmlDoc(specificationsDocument);
 }
 
 extractSpecifStatementsFromXmlDoc = (XmlDocStatements) => {
@@ -201,12 +216,24 @@ extractSpecIfStatement = (statementDocument) => {
     return specifStatement;
 }
 
-extractSpecifHierarchiesFromXmlDoc = (XmlDocHierarchies) => {
-    const hierarchiesArray = extractElementsOutOfHtmlCollection(XmlDocHierarchies[0].children)
-    const rootElement = hierarchiesArray[0]
-    const specifHierarchiesArray = extractSpecIfSubNodes(rootElement)
-    
+extractSpecifHierarchiesFromXmlDoc = (XmlDocSpecifications) => {
+    const specifHierarchiesArray = [];
+    const specifications = extractElementsOutOfHtmlCollection(XmlDocSpecifications[0].getElementsByTagName("SPECIFICATION"))
+    specifications.forEach( specification => {
+        specifHierarchiesArray.push(extractRootNode(specification))
+    })  
     return specifHierarchiesArray;
+}
+
+extractRootNode = (specificationDocument) => {
+    const specIfRootNode = {};
+    //specIfRootNode.id = "R-1"; //TODO: hash-algorhythmus 
+    specIfRootNode.id = "HR-" + specificationDocument.getAttribute("IDENTIFIER").simpleHash().toString()
+    //console.log( specIfRootNode.id)
+    specIfRootNode.resource = specificationDocument.getAttribute("IDENTIFIER");
+    specIfRootNode.changedAt = specificationDocument.getAttribute("LAST-CHANGE");
+    specIfRootNode.nodes = extractSpecIfSubNodes(specificationDocument)
+    return specIfRootNode;
 }
 
 extractSpecIfSubNodes = (rootElement) => {
@@ -233,11 +260,14 @@ extractSpecIfHierarchy = (hierarchyDocument) => {
     return specIfHierarchy;
 }
 
+
 /* 
 ##########################################################################
-########################## Tools #########################################
+########################## Tools #########################################  
 ##########################################################################
 */
+
+//      (xmlns:.*?=)\\".*?\\" Regular Expression to match namespace links (at beginning)
 
 extractXmlDocFromString = (string) => {
     const parser = new DOMParser();
@@ -251,11 +281,11 @@ extractElementsOutOfHtmlCollection = (htmlCollection) => {
 }
 
 isResourceClass = (classDocument) => {
-    return classDocument.getAttribute("IDENTIFIER").toString().startsWith("RC");
+    return classDocument.tagName === 'SPEC-OBJECT-TYPE' || classDocument.tagName === 'SPECIFICATION-TYPE'
 }
 
 isStatementClass = (classDocument) => {
-    return classDocument.getAttribute("IDENTIFIER").toString().startsWith("SC");
+    return classDocument.tagName === 'SPEC-RELATION-TYPE'
 }
 
 getChildNodeswithTag = (parentDocument, tagName) => {
@@ -266,7 +296,11 @@ extractSpecAttributesMap = (specTypesDocument) => {
     const StringsSpecification = extractSpecAttributeStringsMap(specTypesDocument);
     const XHTMLSpecification = extractSpecAttributeXHTMLMap(specTypesDocument);
     const EnumsSpecification = extractSpecAttributeEnumsMap(specTypesDocument);
-    return Object.assign({}, StringsSpecification, XHTMLSpecification, EnumsSpecification);
+    const DateSpecification = extractSpecAttributeDateMap(specTypesDocument);
+    const BooleanSpecification = extractSpecAttributeBooleanMap(specTypesDocument);
+    const IntegerSpecification = extractSpecAttributeIntegerMap(specTypesDocument);
+    const RealSpecification = extractSpecAttributeRealMap(specTypesDocument);
+    return Object.assign({}, StringsSpecification, XHTMLSpecification, EnumsSpecification, DateSpecification, BooleanSpecification, IntegerSpecification, RealSpecification);
 }
 
 extractSpecAttributeStringsMap = (specTypesDocument) => {
@@ -281,6 +315,22 @@ extractSpecAttributeEnumsMap = (specTypesDocument) => {
     return extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-ENUMERATION");
 }
 
+extractSpecAttributeDateMap = (specTypesDocument) => {
+    return extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-DATE");
+}
+
+extractSpecAttributeBooleanMap = (specTypesDocument) => {
+    return extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-BOOLEAN");
+}
+
+extractSpecAttributeIntegerMap = (specTypesDocument) => {
+    return extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-INTEGER");
+}
+
+extractSpecAttributeRealMap = (specTypesDocument) => {
+    return extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-REAL");
+}
+
 extractSpecAttributeTypeMap = (specTypesDocument, tagName) => {
     let attributeDefinition = specTypesDocument.getElementsByTagName(tagName)
     let attributeDefinitionArray = extractElementsOutOfHtmlCollection(attributeDefinition)
@@ -290,17 +340,77 @@ extractSpecAttributeTypeMap = (specTypesDocument, tagName) => {
                                                                         title : definition.getAttribute("LONG-NAME"),
                                                                         dataType : definition.children[0].children[0].innerHTML,
                                                                         changedAt : definition.getAttribute("LAST-CHANGE"),
-
                                                                     } 
-                                                        });
+        // Enumeration have the optional value MULTI-VALUED                                                 
+        definition.getAttribute("MULTI-VALUED")?attributeDefinitionMap[definition.getAttribute("IDENTIFIER")].multipleChoice=true:'';
+                                                                });
     return attributeDefinitionMap;
 }
 
 extractPropertyClassesFromSpecAttributeMap = (specAttributeMap) => {
-    const propertyClasses = Object.entries(specAttributeMap).map( entry => { return {id: entry[0] , title : entry[1].title, dataType : entry[1].dataType, changedAt : entry[1].changedAt } })
+    const propertyClasses = Object.entries(specAttributeMap).map( entry => { 
+        const propertyClass = {};
+
+        propertyClass.id = entry[0];                //Warum entry[0]?
+        propertyClass.title = entry[1].title;
+        propertyClass.dataType = entry[1].dataType;
+        propertyClass.changedAt = entry[1].changedAt ;
+        entry[1].multipleChoice? propertyClass.multipleChoice = entry[1].multipleChoice: '';
+
+        return propertyClass;
+    })
 
     return propertyClasses;
 }
+
+
+
+String.prototype.simpleHash = function(){
+    for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;
+    return r
+};
+
+/*String.prototype.removeNamespaces = function(){
+    if( this ) return this.replace( /(xmlns:.*?=)\\".*?\\"/g, '' ); 
+	return;
+};*/
+
+/*String.prototype.removeNamespaces = function(){
+    console.log("is in remove Namespace method")
+    if( this ) {
+        console.log("in this")
+        const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/
+        let namespace = getNameSpace(RE_NS_LINK, this)
+        let string = this.replace(RE_NS_LINK, '' ); 
+        string = string.replaceAll(namespace, '')
+        console.log(string)
+        return string;
+    }
+	return;
+};*/
+
+removeNamespaces = (input) => {
+    const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/
+        let namespace = getNameSpace(RE_NS_LINK, input)
+        let string = input.replace(RE_NS_LINK, '' ); 
+        //string = string.replaceAll(namespace, '')
+        const RE_namespace = new RegExp(namespace, 'g' )
+        string = string.replace(RE_namespace, '')
+        console.log(string)
+        return string;
+}
+
+getNameSpace = (regEX, string) => {
+    let namespace = ''
+    string = string.replace(regEX, function($0, $1){
+        console.log("$1:" + $1)
+        namespace = $1 + ":";
+        return ''
+    })
+    console.log("Namespace: " + namespace)
+    return namespace
+}
+
 
 /* 
 ############################ UI ###########################################
@@ -311,13 +421,11 @@ getInputValue = () => {
     return element.value;
 }
 
-transform = (requif) => {
-    const specIf = transformReqIfToSpecIf(requif);
+transform = () => {
+    const input = getInputValue();
+    const specIf = testTransformReqIfToSpecIf(input);
     let element = document.getElementById('output');
     element.innerHTML = JSON.stringify(specIf, null, '\t');
 }
-
-
-
 
 
