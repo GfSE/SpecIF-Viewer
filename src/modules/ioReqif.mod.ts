@@ -336,9 +336,14 @@ modules.construct({
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
 						let anc = itemById(pr.resourceClasses,rC['extends']);
-						if( anc.propertyClasses && rC.propertyClasses ) 
-							rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses)
+						if( Array.isArray(anc.propertyClasses) ) {
+							if ( Array.isArray(rC.propertyClasses) ) 
+								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);
+							else
+								rC.propertyClasses = anc.propertyClasses;
+						};
 					};
+					// ToDo: Support multi-level inheritance
 					sorted.objTypes.push( rC )
 				};
 				// b) Collect resource without duplication:
@@ -379,7 +384,9 @@ modules.construct({
 			h.title = hR.title || '';
 			h.description = hR.description || '';
 			h['class'] = hC.id;
-			if( hR.properties ) h.properties = hR.properties
+			if( hR.properties ) h.properties = hR.properties;
+			// further down, only the resources referenced by the children will be included as OBJECT,
+			// so there is no need to delete the resource originally representing the hierarchy root.
 		});
 //		console.debug( 'reqSort', sorted );
 		
@@ -511,30 +518,29 @@ modules.construct({
 			}
 			function attsOf( me ) {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
-				var xml='<VALUES>',
-					eC = itemById( pr.resourceClasses.concat(pr.statementClasses), me['class'] );
+				var xml='<VALUES>';
 				me.properties.forEach( function(prp) {
 					let pC = itemById( pr.propertyClasses, prp['class'] ),
 						dT = itemById( pr.dataTypes, pC.dataType );
 					switch( dT.type ) {
 						case 'xs:boolean':
 							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-BOOLEAN>'
 							break;
 						case 'xs:integer':
 							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-INTEGER>'
 							break;
 						case 'xs:double':
 							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
 							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.stripHTML().escapeXML()+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
 						case 'xhtml':
@@ -584,13 +590,13 @@ modules.construct({
 											return $1+ns+':'+$2;
 										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
 								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns+':div>')+txt+(hasDiv?'':'</'+ns+':div>')+'</THE-VALUE>'
 								+  '</ATTRIBUTE-VALUE-XHTML>'
 							break;
 						case 'xs:enumeration':
 							xml += '<ATTRIBUTE-VALUE-ENUMERATION>'
-								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
+								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
 							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
 							vL.forEach( function(v) {
@@ -601,7 +607,7 @@ modules.construct({
 							break;
 						case 'xs:dateTime':
 							xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>RC-'+(eC.id+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
+								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-'+(me['class']+prp['class']).simpleHash()+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-DATE>'
 							break;
 					};

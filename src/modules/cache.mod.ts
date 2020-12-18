@@ -3107,7 +3107,7 @@ const specif = {
 				var oE = i2ext( iE );
 				if( iE.value ) oE.value = iE.value;  // a default value
 				oE.dataType = iE.dataType;
-				let dT = itemById( iD.dataTypes, iE.dataType );
+				let dT = itemById( spD.dataTypes, iE.dataType );
 				switch( dT.type ) {
 					case 'xs:enumeration':
 						// With SpecIF, he 'multiple' property should be defined at dataType level
@@ -3159,7 +3159,7 @@ const specif = {
 				if( !iE.value ) return;	
 				
 				// skip hidden properties:
-				let pC = itemById( iD.propertyClasses, iE['class'] );
+				let pC = itemById( spD.propertyClasses, iE['class'] );
 				if( Array.isArray( opts.hiddenProperties ) {
 				/*	CONFIG.hiddenProperties.forEach( (hP)=>{
 						if( hP.title==(iE.title||pC.title) ) return;
@@ -3185,7 +3185,7 @@ const specif = {
 				if( opts.targetLanguage ) {
 					// reduce to the selected language; is used for generation of human readable documents
 					// or for formats not supporting multiple languages:
-					let dT = dataTypeOf( iD, iE['class'] );
+					let dT = dataTypeOf( spD, iE['class'] );
 					switch( dT.type ) {
 						case 'xs:string':
 						case 'xhtml':
@@ -3247,7 +3247,7 @@ const specif = {
 				// Skip the title, if it is equal to the statementClass' title;
 				// ToDo: remove limitation of single language.
 				if( oE.title && typeof(oE.title)=="string" ) {
-					let sC = itemById( iD.statementClasses, iE['class']);
+					let sC = itemById( spD.statementClasses, iE['class']);
 					if( typeof(sC.title)=="string" && oE.title==sC.title )
 						delete oE.title;
 				};
