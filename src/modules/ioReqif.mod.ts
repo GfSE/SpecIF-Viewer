@@ -112,7 +112,7 @@ modules.construct({
                             zDO.reject( errInvalidXML );
                             return zDO;
 						}
-						data = transformReqIfToSpecIf(dta);
+						data = testTransformReqIfToSpecIf(dta);
 						data.files = [];
 						// ReqIF data is valid.
 						
