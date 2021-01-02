@@ -992,7 +992,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Text","PC-Type"],
-			icon: "&#9830;",
+			icon: "&#x2B27;",
+//			icon: "&#9830;",
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Note",
@@ -1006,6 +1007,7 @@ function BPMN2Specif( xmlString, opts ) {
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
 			propertyClasses: ["PC-Text","PC-Type"],
+			icon: "&#x2B1A;",
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Folder",
