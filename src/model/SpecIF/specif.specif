@@ -67,7 +67,7 @@
         "title": "FMC:Event",
         "description": "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
         "instantiation": ["auto"],
-        "icon": "&#9830;",
+        "icon": "&#2B27;",
         "propertyClasses": ["PC-Name","PC-Description","PC-Type"],
         "changedAt": "2018-05-10T11:54:00+01:00"
     }],
