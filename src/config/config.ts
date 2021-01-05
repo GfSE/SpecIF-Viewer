@@ -411,8 +411,8 @@ const CONFIG = {};
 		['SpecIF:Feature',"&#10038;"],
 		['FMC:Actor',"&#9632;"],
 		['FMC:State',"&#9679;"],
-		['FMC:Event',"&#2B27;"],
-		['SpecIF:Collection',"&#2B1A;"],
+		['FMC:Event',"&#11047;"],
+		['SpecIF:Collection',"&#11034;"],
 		[CONFIG.resClassDiagram,"&#9635;"],
 	//	['SpecIF:UserStory',"&#9830;"],
 		["IR:Annotation","&#9755;"]

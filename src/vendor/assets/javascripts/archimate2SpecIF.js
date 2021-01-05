@@ -537,7 +537,7 @@ function Archimate2Specif( xmlString, opts ) {
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Description","PC-Type"],
-			icon: "&#2B27;",
+			icon: "&#11047;",
 			changedAt: opts.fileDate
 		},{
 /*			id: "RC-Note",
@@ -551,7 +551,7 @@ function Archimate2Specif( xmlString, opts ) {
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
 			propertyClasses: ["PC-Description","PC-Type"],
-			icon: "&#2B1A;",
+			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Folder",
