@@ -476,7 +476,7 @@ function toOxml( data, opts ) {
 						propertyValueOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
 					})
 				else
-					if( r.description ) c1 += generateOxml( r.description );
+					if( r.description ) c1 += generateOxml( {p:{text:r.description}} );
 				
 //				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
@@ -2590,7 +2590,7 @@ function toOxml( data, opts ) {
 	}
 
 	function store( f ) {
-		let blob = new Blob([f.content],{type: "text/plain; charset=utf-8"});
+		let blob = new Blob([f.content],{type: "text/xml; charset=utf-8"});
 		saveAs(blob, f.name+".xml");
 		if( typeof(opts.done)=="function" ) opts.done()
 	}

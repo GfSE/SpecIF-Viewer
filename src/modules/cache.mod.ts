@@ -1709,7 +1709,7 @@ function Project( pr ) {
 		// In case of ReqIF OOXML and ePub, let the user choose the language, if there are more than one:
 		document.getElementById( "expOptions" ).innerHTML = self.exportOptions( radioValue( i18n.LblFormat ) );
 
-//		console.debug('exportFormatClicked',radioValue( i18n.LblFormat ))
+//		console.debug('exportFormatClicked',radioValue( i18n.LblFormat ));
 	};
 	self.exportOptionsClicked = ()=>{
 		// Obtain selected options:
@@ -1717,7 +1717,7 @@ function Project( pr ) {
 		self.data.title = textValue( '&#x200b;'+i18n.LblProjectName );
 		fileName = textValue( '&#x200b;'+i18n.LblFileName );
 
-//		console.debug('exportOptionsClicked',self.data.title,fileName)
+//		console.debug('exportOptionsClicked',self.data.title,fileName);
 	};
 	self.exportOptions = (fmt)=>{
 		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
@@ -1737,7 +1737,7 @@ function Project( pr ) {
 								{ title: i18n.withStatements, id: 'withStatements', checked: true }
 							],
 							{ handle: exportOptionsClicked }
-						)
+						);
 		};
 		pnl +=		'</div>';
 //		console.debug('exportOptions',fmt,pnl);
@@ -1816,7 +1816,7 @@ function Project( pr ) {
 		function handleError(xhr) {
 			self.exporting = false;
 			app.busy.reset();
-			message.show( xhr )
+			message.show( xhr );
 		}
 	};
 	self.exportAs = (opts)=>{
@@ -1844,12 +1844,12 @@ function Project( pr ) {
 						break;
 					case 'epub':
 					case 'oxml':
-						publish( opts )
-				}
+						publish( opts );
+				};
 			} else {
-				reject({status: 999, statusText: "No permission to export"})
+				reject({status: 999, statusText: "No permission to export"});
 			};
-			return
+			return;
 
 			function publish( opts ) {
 				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
@@ -1920,9 +1920,9 @@ function Project( pr ) {
 										(err)=>{
 											console.error('BPMN-Viewer could not deliver SVG', err)
 										}
-									)
-								}, 0)
-						}
+									);
+								}, 0);
+						};
 					});
 				// In case there is nothing to transform, we start right away:
 				if( pend<1 )
@@ -1976,7 +1976,9 @@ function Project( pr ) {
 //				console.debug( "storeAs", opts );
 				let zip = new JSZip(),
 					data = specif.toExt( self.data, opts ),
-					fName = (opts.fileName || data.title);
+					fName = opts.fileName || data.title,
+					zName, 
+					mimetype = "application/zip";
 
 				// Add the files to the ZIP container:
 				if( data.files )
@@ -1990,14 +1992,18 @@ function Project( pr ) {
 				switch( opts.format ) {
 					case 'specif':
 						fName += ".specif";
+						zName = fName + '.zip';
 						data = JSON.stringify( data );
 						break;
 					case 'reqif':
 						fName += ".reqif";
+						zName = fName + 'z';
+						mimetype = "application/reqif+zip";
 						data = app.ioReqif.toReqif( data );
 						break;
 					case 'turtle':
 						fName += ".ttl";
+						zName = fName + '.zip';
 						data = transformSpecifToTTL( "https://specif.de/examples", data );
 				/*		break;
 					case 'rdf':
@@ -2015,13 +2021,14 @@ function Project( pr ) {
 
 				// done, store the specif.zip:
 				zip.generateAsync({
-						type: "blob"
+						type: "blob",
+						mimeType: mimetype
 					})
 					.then(
 						(blob)=>{
 							// successfully generated:
 //							console.debug("storing ZIP of '"+fName+"'.");
-							saveAs(blob, ( ["reqif"].indexOf(opts.format)>-1? fName+'z' : fName+'.zip' ));
+							saveAs( blob, zName );
 							self.exporting = false;
 							resolve();
 						},

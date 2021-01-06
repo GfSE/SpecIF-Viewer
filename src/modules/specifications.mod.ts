@@ -625,7 +625,7 @@ modules.construct({
 		}
 		function actionBtns() {
 			// render buttons:
-			console.debug( 'actionBtns', selRes, self.resCre );
+//			console.debug( 'actionBtns', selRes, self.resCre );
 
 			var nd = pData.tree.selectedNode,
 		//		isUserNode = selRes && CONFIG.modelElementClasses.indexOf(selRes['class'].title)<0,
@@ -635,7 +635,7 @@ modules.construct({
 		//		rootRes = itemById( 
 		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
 				rB = '<div class="btn-group btn-group-sm" >';
-			console.debug( 'actionBtns', pData.tree.rootNode() );
+//			console.debug( 'actionBtns', pData.tree.rootNode() );
 
 		/*	if( selRes )
 				// Create a 'direct link' to the resource (the server renders the resource without client app):

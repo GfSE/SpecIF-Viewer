@@ -199,12 +199,11 @@ function toEpub( data, opts ) {
 			
 //		console.debug('ePub',ePub);
 		storeZip(ePub);
-		return
+		return;
 
 	////////////////////////////////////
 		function storeZip( ePub ) {
-			let zip = new JSZip(),
-				i=null, I=null;
+			let zip = new JSZip();
 				
 //			console.debug('storeZip',ePub);
 			zip.file( "mimetype", ePub.mimetype );
@@ -218,8 +217,9 @@ function toEpub( data, opts ) {
 			if( ePub.styles ) 
 				zip.file( "OEBPS/Styles/styles.css", ePub.styles );
 			
-			// Add a title page:
-		//	zip.file( "OEBPS/Text/title.xhtml", ePub.title );
+		/*	// Add a title page:
+			zip.file( "OEBPS/Text/title.xhtml", ePub.title ); 
+		*/
 			// Add a XHTML-file per hierarchy:
 			ePub.sections.forEach( function(s,i) {
 				zip.file( "OEBPS/Text/sect"+i+".xhtml", s )
@@ -232,19 +232,20 @@ function toEpub( data, opts ) {
 			});
 			// finally store the ePub file in a zip container:
 			zip.generateAsync({
-					type: "blob"
+					type: "blob",
+					mimeType: ePub.mimetype
 				})
 				.then(
 					function(blob) {
-//						console.debug('storing ',ePub.fileName+".epub");
+//						console.debug('storing ',blob,ePub.fileName+".epub");
 						saveAs(blob, ePub.fileName+".epub");
-						if( typeof(opts.done)=="function" ) opts.done()
+						if( typeof(opts.done)=="function" ) opts.done();
 					}, 
 					function(error) {
 //						console.debug("cannot store ",ePub.fileName+".epub");
-						if( typeof(opts.fail)=="function" ) opts.fail({status:299,statusText:"Cannot store "+ePub.fileName+".epub"})
+						if( typeof(opts.fail)=="function" ) opts.fail({status:299,statusText:"Cannot store "+ePub.fileName+".epub"});
 					}
-				)
+				);
 		}
 	}
 	// ---------- helper -----------

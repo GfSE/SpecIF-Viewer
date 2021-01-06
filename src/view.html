@@ -27,12 +27,12 @@ app = new function() {
 	if( /MSIE |rv:11.0/i.test(navigator.userAgent) ) {
 		console.error('Stopping: The web-browser Internet Explorer is not supported.');
 		alert('Stopping: The web-browser Internet Explorer is not supported.');
-		return
+		return;
 	};
 
 	// construct main app:
 	var self = this;
-	self.version = 'v0.99.6.19';
+	self.version = 'v0.99.6.20';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
@@ -194,19 +194,19 @@ app = new function() {
 				modules.show({newView:v,urlParams:uP});
 			},
 			self.logout
-		)
+		);
 	};
 	self.export = function() {
 		if( !self.cache.selectedProject || !self.cache.selectedProject.data.id )
 			message.show( i18n.MsgNoProjectLoaded, {severity:'warning', duration:CONFIG.messageDisplayTimeShort} );
-		self.cache.selectedProject.export()
+		self.cache.selectedProject.export();
 	};
 /*	self.updateMe = function() {
-		self.me.beginUpdate()
+		self.me.beginUpdate();
 	}; */
 	self.logout = function() {
 		self.me.logout();
-		self.hide()
+		self.hide();
 	};
 	self.hide = function() {
 		// hide the app and show the login dialog:
