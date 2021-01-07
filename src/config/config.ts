@@ -26,8 +26,8 @@ const CONFIG = {};
 	CONFIG.maxReal = 10000000.0;
 	CONFIG.maxAccuracy = 9;		// max decimals of real numbers
 	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
+	CONFIG.maxTitleLength =      // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
 	CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
-	CONFIG.maxTitleLength = CONFIG.textThreshold;  // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
 	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications*.mod.js)
 	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules reqifserver*.js, specifications*.mod.js, objectFilter*.mod.js)
 	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications*.mod.js)
@@ -52,7 +52,6 @@ const CONFIG = {};
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
-//	CONFIG.rasterImgExtensions = [ 'png', 'jpg', 'gif', 'jpeg' ];
 	CONFIG.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg', 'png' ];
 	CONFIG.imgTypes = [ 'image/png', 'image/jpeg', 'image/svg+xml', 'image/gif', 'image/jpeg', 'image/x-png' ];
 	// mime image/x-png does not exist by standard, but it has been seen in real data ...
@@ -99,7 +98,7 @@ const CONFIG = {};
 	CONFIG.reports = 'reports';
 	CONFIG.permissions = 'permissions';
 //	CONFIG.specDialogDefault = CONFIG.objectList;
-	// Projects:
+/*	// Projects:
 //	CONFIG.projectList = CONFIG.projects;
 	CONFIG.projectAbout = 'about';
 	CONFIG.projectUsers = CONFIG.users;
@@ -130,7 +129,7 @@ const CONFIG = {};
 //	CONFIG.rifType = 'rifType';
 //	CONFIG.rifTypes = 'rifTypes';
 //	CONFIG.projectDialogDefault = 'types';
-/*	// Users:
+	// Users:
 	CONFIG.userList = CONFIG.users;
 	CONFIG.userAbout = 'about';
 	CONFIG.userProjects = CONFIG.projects;
@@ -322,14 +321,13 @@ const CONFIG = {};
 		CONFIG.resClassComment
 	];
 
-	// A list of classes which are excluded from formatting, specified by title;
+	// A list of property classes which are excluded from text formatting, specified by title;
 	// Applied only to properties of type "xs:string":
 	CONFIG.excludedFromFormatting = [
 		CONFIG.propClassType
 	]
 	.concat( CONFIG.titleProperties )
-	.concat( CONFIG.idProperties )
-	.concat( CONFIG.hierarchyRoots );
+	.concat( CONFIG.idProperties );
 
 	// A list of model elements to be exluded from deduplication on model import or model integration,
 	// specified by value of a property titled CONFIG.propClassType ...

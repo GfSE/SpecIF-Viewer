@@ -32,7 +32,7 @@ app = new function() {
 
 	// construct main app:
 	var self = this;
-	self.version = 'v0.99.6.20';
+	self.version = 'v0.99.6.21';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
@@ -188,7 +188,7 @@ app = new function() {
 		// Make sure page divs are resized, if the browser window is changed in size:
 		bindResizer();
 
-		modules.load( define, {done: function() { self.show() }} )
+		modules.load( define, {done: function() { self.show() }} );
 	};
 	self.show = function() {
 		console.info( self.title+" started!" );

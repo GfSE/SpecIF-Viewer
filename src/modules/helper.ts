@@ -71,7 +71,7 @@ function textField( lbl, val, typ, fn ) {
 //	console.debug('textField 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
 	if( typeof(val)=='string' ) 
-			val = noCode( val )
+			val = noCode( val );
 	else 	val = '';
 
 	if( typeof(fn)=='string' && fn.length>0 )	
@@ -148,7 +148,7 @@ function setTextState( lbl, state ) {
 function textValue( lbl ) {
 	// get the input value:
 	try {
-		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || ''
+		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || '';
 	} catch(e) {
 		return '';
 	}
