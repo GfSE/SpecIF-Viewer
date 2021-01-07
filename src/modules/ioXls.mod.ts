@@ -230,8 +230,7 @@ function xslx2specif( buf, pN, chAt ) {
 						pC = itemById( specif.propertyClasses, res.properties[a]['class'] );
 						// in many cases, this is perhaps faster than the concatenation of the lists:
 						if( pC
-							&& (CONFIG.headingProperties.indexOf( pC.title )>-1
-								|| CONFIG.titleProperties.indexOf( pC.title )>-1 
+							&& (CONFIG.titleProperties.indexOf( pC.title )>-1 
 								|| CONFIG.idProperties.indexOf( pC.title )>-1 ))
 								return res.properties[a].value.stripHTML();
 					};

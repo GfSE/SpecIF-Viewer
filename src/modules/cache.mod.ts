@@ -3536,13 +3536,11 @@ function titleIdx( pL, prj ) {
 		let pt;
 		for( var a=0,A=pL.length;a<A;a++ ) {
 			pt = vocabulary.property.specif( propTitleOf(pL[a],prj) );
-			// First, check the configured headings:
-			if( CONFIG.headingProperties.indexOf( pt )>-1 ) return a;
-			// If nothing has been found, check the configured titles:
+			// Check the configured headings and titles:
 			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a;
-		}
+		};
 	};
-	return -1
+	return -1;
 }
 function classifyProps( el, prj ) {
 	// add missing (empty) properties and classify properties into title, descriptions and other;

@@ -143,8 +143,7 @@ modules.construct({
 							if( Array.isArray( r.properties ) )
 								for ( var i = r.properties.length-1; i>-1; i-- ) {
 										let ti = propTitleOf(r.properties[i],pr);
-										if( CONFIG.titleProperties.indexOf( ti )>-1
-											|| CONFIG.headingProperties.indexOf( ti )>-1 )
+										if( CONFIG.titleProperties.indexOf( ti )>-1 )
 											// SpecIF assumes that any title property *replaces* the element's title,
 											// so we just look for the case of *no* title property.
 											// There is no consideration of the content.

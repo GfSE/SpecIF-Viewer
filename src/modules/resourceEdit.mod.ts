@@ -201,8 +201,7 @@ modules.construct({
 								// - open an input line, if it is a title or has a specified length lower than the threshold
 								// - open an input text-area, otherwise
 								( (dT&&dT.maxLength&&dT.maxLength<CONFIG.textThreshold+1)
-									|| CONFIG.titleProperties.indexOf(ti)>-1 
-									|| CONFIG.headingProperties.indexOf(ti)>-1 )? 'line' : 'area', 
+									|| CONFIG.titleProperties.indexOf(ti)>-1 )? 'line' : 'area', 
 								myFullName+'.check()' 
 							);
 						};

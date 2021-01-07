@@ -215,7 +215,9 @@ const CONFIG = {};
 	// The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
 	// For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name',
 	// the value of the latter will be the title of the resource.
-	CONFIG.titleProperties = [
+	CONFIG.titleProperties = 
+		CONFIG.headingProperties
+		.concat([
 		// Dublin core:
 		CONFIG.propClassTitle,
 		'DC.title',
@@ -245,7 +247,7 @@ const CONFIG = {};
 		// Other:
 		'Title',
 		'Titel'
-	];
+	]);
 
 	// The content of all properties with a title in this list will be concatenated to form the description in the 'document' view:
 	CONFIG.descProperties = [
@@ -343,7 +345,9 @@ const CONFIG = {};
 		'BPMN:boundaryEvent',
 		'BPMN:intermediateThrowEvent',
 		'BPMN:intermediateCatchEvent',
-		'BPMN:callActivity'
+		'BPMN:callActivity',
+		"Archimate:OrJunction",
+		"Archimate:AndJunction"
 	];
 
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
