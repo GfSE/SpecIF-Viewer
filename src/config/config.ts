@@ -249,7 +249,7 @@ const CONFIG = {};
 		'Titel'
 	]);
 
-	// The content of all properties with a title in this list will be concatenated to form the description in the 'document' view:
+	// The content of all properties with a title in this list will be concatenated to form the description when displaying the resource:
 	CONFIG.descProperties = [
 		// Dublin core:
 		CONFIG.propClassDesc,
@@ -257,20 +257,19 @@ const CONFIG = {};
 		CONFIG.resClassDiagram,
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Text',
-		// DocBridge Resource Director:
-		'DBRD.Text',
-		'Preview',
 /*		// ARCWAY Cockpit Copilot:
 		'Beschreibung',
 		'Description',
 		'Diagramm',
 		// DocBride Resource Director:
+		'DBRD.Text',
+		'Preview',
 		// carhs SafetyWissen:
 		'carhs.Text.en',
 		'carhs.Text.de',
 		'carhs.Image',
 		'Dokument',
-*/		// RIF 1.1a Atego Exerpt:
+		// RIF 1.1a Atego Exerpt:
 		'Object Text',
 //		'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning
 		// Glossary:
@@ -280,7 +279,7 @@ const CONFIG = {};
 		'Text.es',
 		// Viacar Glossary:
 		'Definition_DE',
-		'Definition_FR',
+		'Definition_FR', */
 		// openETCS:
 		'RichText'
 	];

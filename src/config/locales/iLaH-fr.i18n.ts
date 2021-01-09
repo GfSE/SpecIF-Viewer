@@ -587,7 +587,7 @@ function LanguageTextsFr() {
 	self.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
 	self.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
 	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
-	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip and *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
+	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip et *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
 	self.MsgImportBpmn = "Type de fichier valide est *.bpmn. Le contenu doit correspondre au schéma BPMN 2.0 XML. Le téléchargement peut durer quelques minutes.";
 	self.MsgImportXls = "Types de fichiers valides: *.xls, *.xlsx et *.csv. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
 	self.MsgExport = "Un fichier zip-comprimé au format choisi sera créé. Le téléchargement peut durer quelques minutes dans le cas de très gros projets; le navigateur va enregistrer le fichier comme configuré.";
@@ -659,7 +659,7 @@ function LanguageTextsFr() {
 	self.ErrInvalidFileType = "Type de fichier '~A' non valide.";
 	self.ErrInvalidAttachment = "Type de fichier non valide. Choisissez entre ~A.";
 	self.ErrInvalidFileReqif = "Type de fichier '~A' non valide. Choisissez '*.reqifz', '*.reqif', '*.zip' ou '*.xml'.";
-	self.ErrInvalidFileSpecif = "Type de fichier '~A' non valide. Choisissez '*.specifz' ou '*.specif'.";
+	self.ErrInvalidFileSpecif = "Type de fichier '~A' non valide. Choisissez '*.specif.zip', '*.specifz' ou '*.specif'.";
 	self.ErrInvalidFileBpmn = "Type de fichier '~A' non valide. Choisissez '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "Type de fichier '~A' non valide. Choisissez '*.xml'.";
 	self.ErrInvalidFileXls = "Type de fichier '~A' non valide. Choisissez '*.xlsx', '*.xls', ou '*.csv'.";

@@ -2586,6 +2586,7 @@ const specif = {
 							case 404:
 								let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
 								xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
+								// no break
 							default:
 								reject(xhr);
 						};

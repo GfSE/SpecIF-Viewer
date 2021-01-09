@@ -659,7 +659,7 @@ function LanguageTextsEn() {
 	self.ErrInvalidFileType = "Invalid file type of '~A'.";
 	self.ErrInvalidAttachment = "Invalid file type. Please select one of ~A.";
 	self.ErrInvalidFileReqif = "Invalid file type of '~A'. Please select '*.reqifz', '*.reqif', '*.zip' or '*.xml'.";
-	self.ErrInvalidFileSpecif = "Invalid file type of '~A'. Please select '*.specifz' or '*.specif'.";
+	self.ErrInvalidFileSpecif = "Invalid file type of '~A'. Please select '*.specif.zip', '*.specifz' or '*.specif'.";
 	self.ErrInvalidFileBpmn = "Invalid file type of '~A'. Please select '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "Invalid file type of '~A'. Please select '*.xml'.";
 	self.ErrInvalidFileXls = "Invalid file type of '~A'. Please select '*.xlsx', '*.xls', or '*.csv'.";
