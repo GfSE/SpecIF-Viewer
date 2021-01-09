@@ -22,8 +22,9 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Delete selected resources and statements*
 - Filter using text fragments ('full text search'), resource types or enumerated property values
 - Report some model-based statistics, such as used resource types or used property enumerated values
-- Export 'specifz' file
+- Export 'specif.zip' file
 - Export 'reqifz' file (Requirements Interchange Format)
+- Export 'Turtle' file (experimental)
 - Export 'ePub' file
 - Export MS-Word OOXML file
 
