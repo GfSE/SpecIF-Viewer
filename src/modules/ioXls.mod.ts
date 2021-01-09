@@ -14,8 +14,7 @@ modules.construct({
 	"use strict";
 	// the mode for creating a new project:
 	var	fDate,		// the file modification date
-		data,		// the SpecIF data structure for xls content
-		xDO;
+		data;		// the SpecIF data structure for xls content
 		
 	self.init = function() {
 		self.resourceClass = '';
@@ -54,7 +53,7 @@ modules.construct({
 	self.toSpecif = function( buf ) {
 		// import an Excel file from a buffer:
 		self.abortFlag = false;
-		xDO = $.Deferred();
+		var xDO = $.Deferred();
 		
 		xDO.notify('Transforming Excel to SpecIF',10); 
 		// Transform the XLSX-data to SpecIF:
@@ -67,7 +66,7 @@ modules.construct({
 		app.cache.abort();
 		self.abortFlag = true
 	};
-	return self
+	return self;
 
 function xslx2specif( buf, pN, chAt ) {
 	"use strict";
@@ -89,32 +88,36 @@ function xslx2specif( buf, pN, chAt ) {
 			this.resourceClasses = [
 				app.standardTypes.get("resourceClass","RC-Folder")
 			];
-			this.statementClasses = []
+			this.resourceClasses[0].instantiation = ["auto"];
+			this.statementClasses = [];
 		}
 		function dataTypeId( str ) { 
 			// must be able to find it just knowing the ws-name and the column index:
-			return 'DT-'+str.simpleHash()
+			return 'DT-'+str.simpleHash();
 		}
 		function PropClass( str, ti, dT ) { 
 			this.id = propClassId( str );
 			this.title = ti;
 			this.dataType = 'DT-'+dT;		// like baseTypes[i].id
-			this.changedAt = chAt
+			this.changedAt = chAt;
 		}
 		function propClassId( str ) { 
 			// must be able to find it just knowing the ws-name and the column index:
-			return 'PC-'+str.simpleHash()
+			return 'PC-'+str.simpleHash();
 		}
 		function ResClass( nm, ti ) { 
+			ti = vocabulary.resource.specif(ti);
+			let ic = CONFIG.icons.get(ti);
 			this.id = resClassId( nm );
-			this.title = vocabulary.resource.specif(ti);
+			this.title = ti;
+			if( ic ) this.icon = ic;
 			this.description = 'For resources specified per line of an excel sheet';
 			this.instantiation = ["auto"];  // this class not for editing in SpecIF
 			this.propertyClasses = [];
-			this.changedAt = chAt
+			this.changedAt = chAt;
 		}
 		function resClassId( ti ) { 
-			return 'RC-'+ti.toSpecifId()
+			return 'RC-'+ti.toSpecifId();
 		}
 		function StaClass( ti ) { 
 			this.id = staClassId( ti );
@@ -123,19 +126,19 @@ function xslx2specif( buf, pN, chAt ) {
 			this.instantiation = ["auto"];  // this class not for editing in SpecIF
 			// No subjectClasses or objectClasses means all are allowed.
 			// Cannot specify any, as we don't know the resourceClasses.
-			this.changedAt = chAt
+			this.changedAt = chAt;
 		}
 		function staClassId( ti ) { 
-			return 'SC-'+ti.toSpecifId()
+			return 'SC-'+ti.toSpecifId();
 		}
 		function colIdx( colN ) {
 			// transform column name to column index, e.g. 'C'->3 or 'AB'->28
 			let idx=0,f=1;
 			for( var i=colN.length-1; i>-1; i-- ) {
 				idx += f*(colN.charCodeAt(i)-64);
-				f *= 26
+				f *= 26;
 			};
-			return idx
+			return idx;
 		}
 		function colName( colI ) {
 			// get the column name from an index: 4->'D', 27->'AA'
@@ -146,15 +149,15 @@ function xslx2specif( buf, pN, chAt ) {
 				res = String.fromCharCode(r+64) + res;
 				return cName( f, res )
 			}
-			return cName(colI,'')
+			return cName(colI,'');
 		}
 		function coord( addr ) {
 			// create a coordinate from a cell name: 'C4' becomes {col:3,row:4}
 			let res = addr.match(/([A-Z]+)([0-9]+)/);  // res[1] is column name, res[2] is line index
-			return {col:colIdx(res[1]),row:parseInt(res[2])}
+			return {col:colIdx(res[1]),row:parseInt(res[2])};
 		}
 		function cellName( col, row ) {
-			return colName(col)+row
+			return colName(col)+row;
 		}
 
 	function collectMetaData(ws) {
@@ -180,16 +183,16 @@ function xslx2specif( buf, pN, chAt ) {
 								dT.values.push({
 									id: dT.id+'-'+r,
 									value: cell.v
-								})
-						}
+								});
+						};
 					};
 					// Add dataType and propertyClass, if title and values are defined:
 					if( dT.title && dT.values.length>0 ) {
 						specif.dataTypes.push( dT );
 						specif.propertyClasses.push( pC )
-					}
-				}
-		}
+					};
+				};
+		};
 	}
 
 	function transformData(ws) {
@@ -197,23 +200,23 @@ function xslx2specif( buf, pN, chAt ) {
 
 			function isDateTime( cell ) {
 //				console.debug('isDateTime:',cell);
-				return cell && cell.t=='d' 
+				return cell && cell.t=='d';
 			}
 			function isNumber( cell ) {
-				return cell && cell.t=='n'
+				return cell && cell.t=='n';
 			}
 			function isInt( cell ) {
-				return isNumber( cell ) && Number.isInteger( parseFloat(cell.v) )
+				return isNumber( cell ) && Number.isInteger( parseFloat(cell.v) );
 			}
 			function isReal( cell ) {
-				return isNumber( cell ) && !Number.isInteger( parseFloat(cell.v) )
+				return isNumber( cell ) && !Number.isInteger( parseFloat(cell.v) );
 			}
 			function isBool( cell ) {
 //				console.debug('isBool',cell);
-				return cell && ( cell.t=='b' || typeof(cell.v)=='string' && ( cell.v.isTrue() || cell.v.isFalse() ) )
+				return cell && ( cell.t=='b' || typeof(cell.v)=='string' && ( cell.v.isTrue() || cell.v.isFalse() ) );
 			}
 			function isStr( cell ) {
-				return cell && cell.t=='s'
+				return cell && cell.t=='s';
 			}
 		/*	function isXHTML( cell ) {
 				return cell && cell.t=='s' && ....
@@ -227,12 +230,12 @@ function xslx2specif( buf, pN, chAt ) {
 						pC = itemById( specif.propertyClasses, res.properties[a]['class'] );
 						// in many cases, this is perhaps faster than the concatenation of the lists:
 						if( pC
-						&& (CONFIG.headingProperties.indexOf( pC.title )>-1
-							|| CONFIG.titleProperties.indexOf( pC.title )>-1 
-							|| CONFIG.idProperties.indexOf( pC.title )>-1 )) return res.properties[a].value.stripHTML()
-					}
+							&& (CONFIG.titleProperties.indexOf( pC.title )>-1 
+								|| CONFIG.idProperties.indexOf( pC.title )>-1 ))
+								return res.properties[a].value.stripHTML();
+					};
 				};
-				return ''
+				return '';
 			}
 			function createFld( sh ) {
 				if( sh.lastCell.row-sh.firstCell.row<1 ) return;   // skip, if there are no resources
@@ -265,7 +268,7 @@ function xslx2specif( buf, pN, chAt ) {
 															let eV = itemBy( dT.values, 'value', cell.v );
 															return (eV? eV.id : undefined )
 									};
-								return ''
+								return '';
 							}
 
 						var res = {
@@ -306,7 +309,7 @@ function xslx2specif( buf, pN, chAt ) {
 											title: pC.title,	// needed for titleFromProps()
 											class: pC.id,
 											value: val
-										})
+										});
 								} else {
 									pTi = ws.data[cellName(c,ws.firstCell.row)].v;  // column title in the first line
 									pC = itemByTitle( specif.propertyClasses, pTi );
@@ -319,7 +322,7 @@ function xslx2specif( buf, pN, chAt ) {
 											res.properties.push({
 												class: pC.id,
 												value: val
-											})
+											});
 									} else {
 										// it is a statement:
 										obL = cell.v.split(",");
@@ -338,12 +341,12 @@ function xslx2specif( buf, pN, chAt ) {
 													// Remember that the constraint-check on the statement.object must be disabled.
 													object: CONFIG.placeholder, 
 													changedAt: chAt
-												})
-											}
-										})
-									}
-								}
-							}
+												});
+											};
+										});
+									};
+								};
+							};
 						};
 						if( res.properties.length>0 ) {
 						/*	// Check and warn, if the property classes are not unique:
@@ -374,12 +377,12 @@ function xslx2specif( buf, pN, chAt ) {
 //									console.debug('dupId',id,simpleClone(dupIdL),counts[id]);
 									// modify the id of any duplicate specified user-assigned id,
 									// as an id must be unique, of course:
-									res.id = 'R-'+(ws.name+id+counts[id]).simpleHash()
-								}
+									res.id = 'R-'+(ws.name+id+counts[id]).simpleHash();
+								};
 							} else {
 								// No id specified, so a random value must be generated. 
 								// No chance to update the element later on!
-								res.id = genID('R-')
+								res.id = genID('R-');
 							};
 							res.title = titleFromProps( res );
 							// accept only resources with title:
@@ -396,7 +399,7 @@ function xslx2specif( buf, pN, chAt ) {
 								// store any statements only if the resource is stored, as well:
 								if( stL.length>0 ) {
 									stL.forEach( (st)=>{ st.id = 'S-'+(res.id+st.title+st.objectToFind).simpleHash(); st.subject = res.id } );
-									specif.statements = specif.statements.concat(stL)
+									specif.statements = specif.statements.concat(stL);
 								};
 							};
 						};
@@ -428,7 +431,7 @@ function xslx2specif( buf, pN, chAt ) {
 					createR( sh, l )
 				};
 				// add the hierarchy tree:
-				specif.hierarchies[0].nodes.push( hTree )
+				specif.hierarchies[0].nodes.push( hTree );
 			}
 
 			function getPropClasses( ws, pCL ) { 
@@ -630,7 +633,7 @@ function xslx2specif( buf, pN, chAt ) {
 
 //	console.info('SpecIF created from '+pN+' (Excel)');
 	console.debug('SpecIF',specif);
-	return specif
+	return specif;
 
 		function worksheet(wsN) {
 			var ws = {

@@ -14,8 +14,10 @@ modules.construct({
 	"use strict";
 	let zipped,
 //		template,	// a new Id is given and user is asked to input a project-name
-		opts,
-		errNoOptions = { status: 899, statusText: 'No options or no mediaTypes defined.' },
+		opts;
+		
+	const 
+		errNoOptions = { status: 899, statusText: 'Programming flaw: No options or no mediaTypes defined.' },
 		errNoSpecif = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
 		errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
 		
@@ -34,30 +36,30 @@ modules.construct({
 		if( f.name.endsWith('.specif') ) {
 			zipped = false;
 //			template = false;
-			return f
+			return f;
 		};
-		if( f.name.endsWith('.specifz') || f.name.endsWith('.zip') ) {
+		if( f.name.endsWith('.specifz') || f.name.endsWith('.specif.zip') ) {
 			zipped = true;
 //			template = false;
-			return f
+			return f;
 		};
-/*		if( f.name.endsWith('.specift') ) {
+	/*	if( f.name.endsWith('.specift') ) {
 			zipped = false;
 			template = true;
-			return f
+			return f;
 		};
 		if( f.name.endsWith('.speciftz') ) {
 			zipped = true;
 			template = true;
-			return f
+			return f;
 		}; */
 		// else:
 		try {
 			message.show( i18n.phrase('ErrInvalidFileSpecif', f.name), {severity:'warning'} );
-		} catch (e) {
-			alert(f.name+' has invalid file type.')
+		} catch (err) {
+			alert(f.name+' has invalid file type.');
 		};
-		return null
+		return null;
 	};
 	self.toSpecif = function( buf ) {
 		// import a read file buffer containing specif data:
@@ -67,13 +69,14 @@ modules.construct({
 		var zDO = $.Deferred();
 		if( zipped ) {
 			let zip = new JSZip();
-			zip.loadAsync(buf).then( function(zip) {
+			zip.loadAsync(buf)
+			.then( function(zip) {
 				let fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.specif')}),
 					data = {};
 
 				if( fileL.length<1 ) {
 					zDO.reject( errNoSpecif );
-					return zDO
+					return zDO;
 				};
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
 				// take the first specif file found, ignore any other so far:
@@ -95,38 +98,46 @@ modules.construct({
 //							console.debug('iospecif.toSpecif 2',fileL);
 							if( fileL.length>0 ) {
 								let pend = 0;
-								fileL.forEach( function(e) { 
-												//	let t = e.type || opts.mediaTypeOf(e.name);
-													if( e.dir ) return false;
-													let t = opts.mediaTypeOf(e.name);
-													if( !t ) return false;
+								fileL.forEach( function(aFile) { 
+													if( aFile.dir ) return false;
+												//	let fType = aFile.type || opts.mediaTypeOf(aFile.name);
+													let fType = opts.mediaTypeOf(aFile.name);
+													if( !fType ) return false;
 													// only extract files with known mediaTypes:
-//													console.debug('iospecif.toSpecif 3',t,e.date,e.date.toISOString());
+													
+//													console.debug('iospecif.toSpecif 3',fType,aFile.date,aFile.date.toISOString());
 													pend++;
-													zip.file(e.name).async("blob")
+													zip.file(aFile.name).async("blob")
 													.then( function(f) {
-														data.files.push({ blob:f, id: 'F-'+e.name.simpleHash(), title: e.name, type: t, changedAt: e.date.toISOString() });
-//														console.debug('file',pend-1,e,data.files);
+														data.files.push({ 
+															blob:f, 
+															id: 'F-'+aFile.name.simpleHash(), 
+															title: aFile.name, 
+															type: fType, 
+															changedAt: aFile.date.toISOString() 
+														});
+//														console.debug('file',pend-1,aFile,data.files);
 														if(--pend<1)
-															// now all files are extracted from the ZIP, so we can return the data:
-															zDO.resolve( data )		// data is in SpecIF format
-													}) 
+															// now all files have been extracted from the ZIP, so we can return the data:
+															zDO.resolve( data );  // data is in SpecIF format
+													});
 												});
-								if( pend<1 ) zDO.resolve( data )	// no suitable file found, continue anyways
+								if( pend<1 ) zDO.resolve( data );	// no suitable file found, continue anyways
 							} else {
 								// no files with permissible types are supplied:
-								zDO.resolve( data )		// data is in SpecIF format
+								zDO.resolve( data );		// data is in SpecIF format
 							}
 						} else {
 							// no function for filtering and mapping the mediaTypes supplied:
-							console.error(errNoOptions.statusText);
-							zDO.resolve( data )		// data is in SpecIF format
-						}
-					} catch (e) {
-						zDO.reject( errInvalidJson )
-					}
-				})
-			})
+							console.warn(errNoOptions.statusText);
+							// return SpecIF data anyways:
+							zDO.resolve( data );		// data is in SpecIF format
+						};
+					} catch (err) {
+						zDO.reject( errInvalidJson );
+					};
+				});
+			});
 		} else {
 			// Selected file is not zipped - it is expected to be SpecIF data in JSON format.
 			// Check if data is valid JSON:
@@ -134,15 +145,15 @@ modules.construct({
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present.
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
 				var data = JSON.parse( buf2str(buf).trimJSON() );
-				zDO.resolve( data )
-			} catch (e) {
-				zDO.reject( errInvalidJson )
+				zDO.resolve( data );
+			} catch (err) {
+				zDO.reject( errInvalidJson );
 			};
 		};
-		return zDO
+		return zDO;
 	};
 	self.abort = function() {
-		self.abortFlag = true
+		self.abortFlag = true;
 	};
 	return self;
 });

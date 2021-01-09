@@ -49,7 +49,7 @@ app.standardTypes = new function() {
 		type: "xs:integer",
 		minInclusive: CONFIG.minInteger,
 		maxInclusive: CONFIG.maxInteger,
-	  changedAt: "2016-05-26T08:59:00+02:00"
+	    changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Real",
 		title: "Real",
@@ -80,7 +80,8 @@ app.standardTypes = new function() {
 	}, {
 		id: "PC-Diagram",
 		title: CONFIG.resClassDiagram,
-		dataType: "DT-FormattedText",
+		dataType: "DT-Text",
+	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "PC-Type",
@@ -97,21 +98,30 @@ app.standardTypes = new function() {
 		propertyClasses: ["PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
+        id: "RC-Paragraph",
+        title: "SpecIF:Paragraph",
+        description: "Information with title and text for descriptive paragraphs.",
+        instantiation: ["auto","user"],
+		propertyClasses: ["PC-Description","PC-Type"],
+		changedAt: "2020-12-04T18:59:00+01:00"
+    },{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
 		instantiation: ['auto'],
-		propertyClasses: ["PC-Name", "PC-Description"],
+		propertyClasses: ["PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
 	self.get = (ctg,id,chAt)=>{
-		var item = itemById( self[self.listOf(ctg)], id );
+		var item = itemById( self[self.listNameOf(ctg)], id );
 		if( item ) {
+			// shield any subsequent change from the templates available here:
+			item = simpleClone(item);
 			if( chAt ) item.changedAt = chAt;
 			return item;
 		};
 	};
-	self.listOf = (ctg)=>{
+	self.listNameOf = (ctg)=>{
 		// Return the cache name for a given category:
 		switch(ctg) {
 			case 'dataType':		return "dataTypes";

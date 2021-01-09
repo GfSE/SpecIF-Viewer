@@ -316,7 +316,7 @@ function LanguageTextsDe() {
 	self.DC_description =
 	self.dcterms_description = "Beschreibung";
 	self.DC_identifier =
-	self.dcterms_identifier = 	self.LblIdentifier;
+	self.dcterms_identifier = self.LblIdentifier;
 	self.DC_type =
 	self.dcterms_type = "Element-Typ";
 	self.DC_creator =
@@ -326,7 +326,7 @@ function LanguageTextsDe() {
 	self.DC_subject =
 	self.dcterms_subject = "Stichworte";
 	self.DC_modified =
-	self.dcterms_modified = 	self.LblModifiedAt;
+	self.dcterms_modified = self.LblModifiedAt;
 //	self.dcterms_contributor = "";
 //	self.dcterms_serviceProvider = "";
 //	self.dcterms_instanceShape = "";
@@ -350,7 +350,8 @@ function LanguageTextsDe() {
 // SpecIF entity, relation and attribute names
 	self.SpecIF_Heading = "Überschrift";
 	self.SpecIF_Headings = "Überschriften";
-	self.SpecIF_Name = 	self.LblName;
+	self.SpecIF_HeadingDescription = self.SpecIF_Heading+"' hat einen Titel für Kapitel mit optionaler Beschreibung.";
+	self.SpecIF_Name = self.LblName;
 //	self.SpecIF_Names = "Namen";
 	self.SpecIF_Folder = "Ordner";	// deprecated, use SpecIF:Heading
 	self.SpecIF_Folders = "Ordner";	// deprecated, use SpecIF:Headings
@@ -361,6 +362,7 @@ function LanguageTextsDe() {
 	self.SpecIF_Information = "Information";// deprecated, use SpecIF:Paragraph
 	self.SpecIF_Diagram = "Diagramm";
 	self.SpecIF_Diagrams = "Diagramme";
+	self.SpecIF_DiagramDescription = "Ein '"+self.SpecIF_Diagram+"' ist eine graphische Modellsicht zur Vermittlung eines bestimmten Sachverhalts, z.B. ein Geschäftsprozess oder Systemaufbau.";
 	self.SpecIF_View = "Diagramm";		// deprecated
 	self.SpecIF_Views = "Diagramme";	// deprecated
 	self.FMC_Plan = "Plan";
@@ -381,11 +383,16 @@ function LanguageTextsDe() {
 	self.FMC_States = "Zustände";
 	self.FMC_Event = "Ereignis";
 	self.FMC_Events = "Ereignisse";
+	self.FMC_ActorDescription = "Ein '"+self.FMC_Actor+"' ist ein fundamentaler Modellelement-Typ für ein aktives Objekt, z.B. eine Aktivität, ein Prozess-Schritt, eine Funktion, eine Systemkomponente oder eine Rolle.";
+	self.FMC_StateDescription = "Ein '"+self.FMC_State+"' ist ein fundamentaler Modellelement-Typ für ein passives Objekt, z.B. ein Wert, ein Dokument, ein Informationsspeicher oder eine physische Beschaffenheit.";
+	self.FMC_EventDescription = "Ein '"+self.FMC_Event+"' ist ein fundamentaler Modellelement-Typ für eine zeitliche Referenz, eine Änderung einer Bedingung bzw. eines Zustandes oder generell ein Synchronisations-Mittel.";
 	self.SpecIF_Feature = "Merkmal";
 	self.SpecIF_Features = "Merkmale";
 	self.SpecIF_Requirement =
 	self.IREB_Requirement = "Anforderung";
 	self.SpecIF_Requirements = 
+	self.SpecIF_FeatureDescription = "Ein '"+self.SpecIF_Feature+"' ist eine beabsichtigte differenzierende Eigenschaft eines Systems, oft ein Alleinstellungsmerkmal.";
+	self.IREB_RequirementDescription = "Eine '"+self.IREB_Requirement+"' ist ein einzelnes dokumentiertes physisches oder funktionales Bedürfnis, das der betreffende Entwurf, das Produkt oder der Prozess erfüllen muss.";
 	self.IREB_Requirements = "Anforderungen";
 	self.IREB_RequirementType = "Art";
 	self.IREB_RequirementTypeFunction = 
@@ -403,6 +410,7 @@ function LanguageTextsDe() {
 	self.SpecIF_Comments = "Kommentare";
 	self.SpecIF_Issue = "Offener Punkt";
 	self.SpecIF_Issues = "Offene Punkte";
+	self.SpecIF_IssueDescription = "Ein '"+self.SpecIF_Issue+"' ist eine zu beantwortende Frage oder eine zu treffende Entscheidung.";
 	self.SpecIF_Outline =
 	self.SpecIF_Hierarchy = "Gliederung";
 	self.SpecIF_Outlines =
@@ -410,6 +418,7 @@ function LanguageTextsDe() {
 	self.SpecIF_Glossary = "Modellelemente (Glossar)";
 	self.SpecIF_Collection = "Kollektion oder Gruppe";
 	self.SpecIF_Collections = "Kollektionen und Gruppen";
+	self.SpecIF_CollectionDescription = "Eine '"+self.SpecIF_Collection+"' ist eine logische Gruppierung von '"+self.modelElements+"'.";
 	self.SpecIF_Annotations = "Annotationen";
 	self.SpecIF_Vote = "Wertung";
 	self.SpecIF_Votes = "Wertungen";
@@ -464,6 +473,7 @@ function LanguageTextsDe() {
 	self.SpecIF_isSpecialisationOf = 
 	self.SysML_isSpecialisationOf = "ist spezialisiert von";
 	self.SpecIF_isSynonymOf = "ist Synonym von";
+	self.SpecIF_isInverseOf = 						// DEPRECATED
 	self.SpecIF_isAntonymOf = "ist Antonym von";
 	self.SpecIF_inheritsFrom = "erbt von";
 	self.SpecIF_refersTo = "bezieht sich auf";
@@ -480,8 +490,8 @@ function LanguageTextsDe() {
 //	self.SpecIF_Stereotype = 
 //	self.SpecIF_SubClass = "Unterklasse";
 	self.SpecIF_Category = 	self.LblCategory;
+	self.SpecIF_State =								// DEPRECATED
 	self.SpecIF_Status = 	self.LblState;
-	self.SpecIF_State = 	self.LblState;			// DEPRECATED
 	self.SpecIF_Priority = 	self.LblPriority;
 	self.SpecIF_Milestone = "Meilenstein";
 	self.SpecIF_DueDate = "Termin";
@@ -492,8 +502,8 @@ function LanguageTextsDe() {
 //	self.SpecIF_Creation = "";
 	self.SpecIF_Instantiation = "Instanziierung";
 	self.SpecIF_Origin = "Quelle";		// oder "Herkunft"
-	self.SpecIF_Source = 	self.LblSource;
-	self.SpecIF_Target = 	self.LblTarget;
+	self.SpecIF_Source = self.LblSource;
+	self.SpecIF_Target = self.LblTarget;
 //	self.SpecIF_Author = "Autor";
 //	self.SpecIF_Authors = "Autoren";
 	self.IREB_Stakeholder = "Stakeholder";
@@ -501,7 +511,8 @@ function LanguageTextsDe() {
 	self.SpecIF_Responsibles = "Verantwortliche";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
-	self.IR_refersTo = 	self.SpecIF_refersTo;
+	self.IR_AnnotationDescription = "Eine Interaction-Room '"+self.IR_Annotation+"' weist auf einen Punkt besonderen Interesses hin. Hierzu gehören Werte, die Kundenbedürfnisse widerspiegeln oder positiven Effekt auf die Ziele der Organisation haben, Produkteigenschaften, deren Umsetzung Nutzen/Aufwand verursacht, und Herausforderungen, die während der Entwicklung zu berücksichtigen sind.";
+	self.IR_refersTo = self.SpecIF_refersTo;
 	self.IR_approves = "unterstützt";
 	self.IR_opposes = "lehnt ab";
 	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
@@ -515,12 +526,12 @@ function LanguageTextsDe() {
 	self.DBRD_Name = 'Titel';
 	self.DBRD_Text = 'Text';
 // attribute names used by Atego Exerpt with RIF 1.1a:
-	self.Object_Heading = 	self.ReqIF_Name;
-	self.VALUE_Object_Heading = 	self.ReqIF_Name;
-	self.Object_Text = 	self.ReqIF_Text;
-	self.VALUE_Object_Text = 	self.ReqIF_Text;
-	self.Object_ID = 	self.ReqIF_ForeignID;
-	self.VALUE_Object_ID = 	self.ReqIF_ForeignID;
+	self.VALUE_Object_Heading =
+	self.Object_Heading = self.ReqIF_Name;
+	self.VALUE_Object_Text =
+	self.Object_Text = self.ReqIF_Text;
+	self.VALUE_Object_ID =
+	self.Object_ID = self.ReqIF_ForeignID;
 	self.SpecIF_priorityHigh = "hoch";
 	self.SpecIF_priorityRatherHigh = "eher hoch";
 	self.SpecIF_priorityMedium = "mittel";
@@ -531,17 +542,28 @@ function LanguageTextsDe() {
 	self.SpecIF_sizeM = "mittelgroß";
 	self.SpecIF_sizeS = "klein";
 	self.SpecIF_sizeXS = "sehr klein";
-	self.SpecIF_rejected = "00_abgelehnt";
-	self.SpecIF_initial = "10_initial";
-	self.SpecIF_drafted = "20_entworfen";
-	self.SpecIF_submitted = "30_vorgelegt";
-	self.SpecIF_approved = "40_genehmigt";
-	self.SpecIF_ready = "50_bereit";
-	self.SpecIF_done = "60_umgesetzt";
-	self.SpecIF_validated = "70_validiert";
-	self.SpecIF_released = "80_freigegeben";
-	self.SpecIF_deprecated = "88_veraltet";
-	self.SpecIF_withdrawn = "90_zurückgezogen";
+	self.SpecIF_rejected =
+	self.SpecIF_statusRejected = "00_abgelehnt";
+	self.SpecIF_initial =
+	self.SpecIF_statusInitial = "10_initial";
+	self.SpecIF_drafted =
+	self.SpecIF_statusDrafted = "20_entworfen";
+	self.SpecIF_submitted =
+	self.SpecIF_statusSubmitted = "30_vorgelegt";
+	self.SpecIF_approved =
+	self.SpecIF_statusApproved = "40_genehmigt";
+	self.SpecIF_ready =
+	self.SpecIF_statusReady = "50_bereit";
+	self.SpecIF_done =
+	self.SpecIF_statusDone = "60_umgesetzt";
+	self.SpecIF_validated =
+	self.SpecIF_statusValidated = "70_validiert";
+	self.SpecIF_released =
+	self.SpecIF_statusReleased = "80_freigegeben";
+	self.SpecIF_deprecated =
+	self.SpecIF_statusDeprecated = "88_veraltet";
+	self.SpecIF_withdrawn =
+	self.SpecIF_statusWithdrawn = "90_zurückgezogen";
 
 // Messages:
 	self.MsgConfirm = 'Bitte bestätigen:';
@@ -565,7 +587,7 @@ function LanguageTextsDe() {
 	self.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 	self.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
 	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
-	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specifz und *.specif. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';
+	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';
 	self.MsgImportBpmn = 'Zulässiger Dateityp *.bpmn. Inhalte müssen den Schemata für BPMN 2.0 XML entsprechen. Der Import kann bis zu einigen Minuten dauern.';
 	self.MsgImportXls = 'Zulässige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import kann bei sehr großen Dateien mehrere Minuten dauern.';
 	self.MsgExport = 'Es wird eine zip-gepackte Datei im gewählten Format erzeugt. Der Export dauert meist einige Sekunden und im Falle sehr großer Dateien mehrere Minuten; Ihr Browser wird die Datei gemäß Voreinstellungen speichern.';
@@ -637,7 +659,7 @@ function LanguageTextsDe() {
 	self.ErrInvalidFileType = "'~A' hat einen unzulässigen Dateityp.";
 	self.ErrInvalidAttachment = "Unzulässiger Dateityp. Wählen Sie bitte unter ~A.";
 	self.ErrInvalidFileReqif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.reqifz', '*.reqif', '*.zip' oder '*.xml'.";
-	self.ErrInvalidFileSpecif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.specifz' oder '*.specif'.";
+	self.ErrInvalidFileSpecif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.specif.zip', '*.specifz' oder '*.specif'.";
 	self.ErrInvalidFileBpmn = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.xml'.";
 	self.ErrInvalidFileXls = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.xlsx', '*.xls', oder '*.csv'.";

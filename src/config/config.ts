@@ -26,8 +26,8 @@ const CONFIG = {};
 	CONFIG.maxReal = 10000000.0;
 	CONFIG.maxAccuracy = 9;		// max decimals of real numbers
 	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
+	CONFIG.maxTitleLength =      // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
 	CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
-	CONFIG.maxTitleLength = CONFIG.textThreshold;  // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
 	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications*.mod.js)
 	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules reqifserver*.js, specifications*.mod.js, objectFilter*.mod.js)
 	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications*.mod.js)
@@ -52,7 +52,6 @@ const CONFIG = {};
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
-//	CONFIG.rasterImgExtensions = [ 'png', 'jpg', 'gif', 'jpeg' ];
 	CONFIG.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg', 'png' ];
 	CONFIG.imgTypes = [ 'image/png', 'image/jpeg', 'image/svg+xml', 'image/gif', 'image/jpeg', 'image/x-png' ];
 	// mime image/x-png does not exist by standard, but it has been seen in real data ...
@@ -99,7 +98,7 @@ const CONFIG = {};
 	CONFIG.reports = 'reports';
 	CONFIG.permissions = 'permissions';
 //	CONFIG.specDialogDefault = CONFIG.objectList;
-	// Projects:
+/*	// Projects:
 //	CONFIG.projectList = CONFIG.projects;
 	CONFIG.projectAbout = 'about';
 	CONFIG.projectUsers = CONFIG.users;
@@ -130,7 +129,7 @@ const CONFIG = {};
 //	CONFIG.rifType = 'rifType';
 //	CONFIG.rifTypes = 'rifTypes';
 //	CONFIG.projectDialogDefault = 'types';
-/*	// Users:
+	// Users:
 	CONFIG.userList = CONFIG.users;
 	CONFIG.userAbout = 'about';
 	CONFIG.userProjects = CONFIG.projects;
@@ -182,6 +181,17 @@ const CONFIG = {};
 		'Identifier'
 	];
 
+	// A list of resourceClasses serving as hierarchyRoot with meta-data;
+	// the value can be specified by a property titled CONFIG.propClassType
+	// or by the title of the resourceClass:
+	CONFIG.hierarchyRoots = [
+		CONFIG.resClassOutline, // do not remove
+		CONFIG.resClassGlossary,
+		'SpecIF:HierarchyRoot',
+		'SpecIF:Hierarchy',
+		'SpecIF:BillOfMaterials'
+	];
+
 	// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
 	// it is considered a heading (chapter title) and will be included in the outline numbering.
 	// Also, this property will be used for the title when displaying the resource.
@@ -198,14 +208,16 @@ const CONFIG = {};
 		'Heading.fr',
 		'Heading.es', */
 		// Other:
-		'�berschrift'
+		'Überschrift'
 	];
 
 	// The content of the property with a title in this list will be used for the title when displaying the resource:
 	// The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
 	// For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name',
 	// the value of the latter will be the title of the resource.
-	CONFIG.titleProperties = [
+	CONFIG.titleProperties = 
+		CONFIG.headingProperties
+		.concat([
 		// Dublin core:
 		CONFIG.propClassTitle,
 		'DC.title',
@@ -214,7 +226,7 @@ const CONFIG = {};
 /*		// DocBridge Resource Director:
 		'DBRD.Name',
 		// ARCWAY Cockpit Copilot:
-		'Objekt�berschrift',
+		'Objektüberschrift',
 		'Name',
 		// carhs SafetyWissen:
 		'carhs.Title.en',
@@ -235,9 +247,9 @@ const CONFIG = {};
 		// Other:
 		'Title',
 		'Titel'
-	];
+	]);
 
-	// The content of all properties with a title in this list will be concatenated to form the description in the 'document' view:
+	// The content of all properties with a title in this list will be concatenated to form the description when displaying the resource:
 	CONFIG.descProperties = [
 		// Dublin core:
 		CONFIG.propClassDesc,
@@ -245,20 +257,19 @@ const CONFIG = {};
 		CONFIG.resClassDiagram,
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Text',
-		// DocBridge Resource Director:
-		'DBRD.Text',
-		'Preview',
 /*		// ARCWAY Cockpit Copilot:
 		'Beschreibung',
 		'Description',
 		'Diagramm',
 		// DocBride Resource Director:
+		'DBRD.Text',
+		'Preview',
 		// carhs SafetyWissen:
 		'carhs.Text.en',
 		'carhs.Text.de',
 		'carhs.Image',
 		'Dokument',
-*/		// RIF 1.1a Atego Exerpt:
+		// RIF 1.1a Atego Exerpt:
 		'Object Text',
 //		'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning
 		// Glossary:
@@ -268,7 +279,7 @@ const CONFIG = {};
 		'Text.es',
 		// Viacar Glossary:
 		'Definition_DE',
-		'Definition_FR',
+		'Definition_FR', */
 		// openETCS:
 		'RichText'
 	];
@@ -276,6 +287,9 @@ const CONFIG = {};
 	CONFIG.stereotypeProperties = [
 		'UML:Stereotype'
 	];
+
+	// Show or suppress empty properties in the object list (document view):
+	CONFIG.showEmptyProperties = false;
 
 	// A list of properties to suppress generally, specified by title.
 	// Applies to propertyClasses and property values (types and instances).
@@ -291,25 +305,14 @@ const CONFIG = {};
 		'ListNumberText'
 	];
 
-	// A list of attributes not to show in the object list (document view), specified by title:
-	// You must enter the titles used by SpecIF.
+/*	// A list of attributes not to show in the object list (document view), specified by title:
+	// You must enter the title used by SpecIF (after translation):
 	CONFIG.overviewHiddenProperties = [
-	];
-
-	// Show or suppress empty properties in the object list (document view):
-	CONFIG.showEmptyProperties = false;
+	]; */
 
 	// A list of relations not to show in tab named CONFIG.relations, specified by title:
 	CONFIG.hiddenStatements = [
 		CONFIG.staClassCommentRefersTo
-	];
-
-	// A list of resourceClasses serving as hierarchyRoot with meta-data:
-	CONFIG.hierarchyRoots = [
-		CONFIG.resClassOutline,
-		'SpecIF:HierarchyRoot',
-		'SpecIF:Hierarchy',
-		'SpecIF:BillOfMaterials'
 	];
 
 	// A list of classes which are excluded from the class filtering, specified by title:
@@ -318,6 +321,14 @@ const CONFIG = {};
 	CONFIG.excludedFromTypeFiltering = [
 		CONFIG.resClassComment
 	];
+
+	// A list of property classes which are excluded from text formatting, specified by title;
+	// Applied only to properties of type "xs:string":
+	CONFIG.excludedFromFormatting = [
+		CONFIG.propClassType
+	]
+	.concat( CONFIG.titleProperties )
+	.concat( CONFIG.idProperties );
 
 	// A list of model elements to be exluded from deduplication on model import or model integration,
 	// specified by value of a property titled CONFIG.propClassType ...
@@ -333,10 +344,13 @@ const CONFIG = {};
 		'BPMN:boundaryEvent',
 		'BPMN:intermediateThrowEvent',
 		'BPMN:intermediateCatchEvent',
-		'BPMN:callActivity'
+		'BPMN:callActivity',
+		"Archimate:OrJunction",
+		"Archimate:AndJunction"
 	];
 
 	CONFIG.clickableModelElements = true;		// diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
+
 /*	// A list of SVG diagram class names. SVGs having a root element with this class will be subject to diagram level events:
 	CONFIG.clickDiagramClasses = [
 		'diagram'
@@ -393,6 +407,18 @@ const CONFIG = {};
 	CONFIG.eqivalentTypes = [
 	];  */
 
+	CONFIG.icons = new Map([
+		['IREB:Requirement',"&#8623;"],
+		['SpecIF:Feature',"&#10038;"],
+		['FMC:Actor',"&#9632;"],
+		['FMC:State',"&#9679;"],
+		['FMC:Event',"&#11047;"],
+		['SpecIF:Collection',"&#11034;"],
+		[CONFIG.resClassDiagram,"&#9635;"],
+	//	['SpecIF:UserStory',"&#9830;"],
+		["IR:Annotation","&#9755;"]
+	]);
+
 const vocabulary = {
 // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
 	property: {
@@ -438,7 +464,7 @@ const vocabulary = {
 	//			case "reqif_chapternumber":			oT = ""; break;
 				default:							oT = iT
 			};
-			return oT
+			return oT;
 		},
 		reqif: function( iT ) {
 			// Target language: ReqIF
@@ -459,7 +485,7 @@ const vocabulary = {
 	//			case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
 				default:							oT = iT
 			};
-			return oT
+			return oT;
 		}
 	},
 	resource: {
@@ -474,7 +500,7 @@ const vocabulary = {
 				case 'akteur':						oT = "FMC:Actor"; break;
 				case 'states':
 				case 'state':
-				case 'zust�nde':
+				case 'zustände':
 				case 'zustand':						oT = "FMC:State"; break;
 				case 'events':
 				case 'event':
@@ -502,10 +528,10 @@ const vocabulary = {
 				default:							oT = iT
 			};
 			return oT
-//		},
-//		reqif: function( iT ) {
-//			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
-//			return iT
+/*		},
+		reqif: function( iT ) {
+			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
+			return iT */
 		}
 	}
 };
@@ -547,7 +573,7 @@ const RE = {};
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
 	RE.Real = function( decimals ) {
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
-		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' )
+		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' );
 	};
 //	RE.CSV = /^[\s\-,_#&$�0-9a-zA-Z]+$/;   // works!
 	RE.CSV = new RegExp( '^[\\s\\-,_#&$�0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values

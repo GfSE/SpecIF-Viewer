@@ -13,23 +13,19 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.title = opts.fileName.split(".")[0];
 	if( typeof(opts.titleLength)!='number' )
 		opts.titleLength = 96;
-	if( typeof(opts.descriptionLength)!='number' )
+/*	if( typeof(opts.descriptionLength)!='number' )
 		opts.descriptionLength = 8192;
-/*	if( !opts.mimeType ) 
-		opts.mimeType = "application/archimate+xml";
-	if( typeof(opts.isIE)!='boolean' )
-		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent ); */
+	if( !opts.mimeType ) 
+		opts.mimeType = "application/archimate+xml"; */
 
+	if( !opts.resClassOutline ) 
+		opts.resClassOutline = 'SpecIF:Outline';
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramsType ) 
 		opts.strDiagramsType = "SpecIF:Diagrams";
 	if( !opts.strGlossaryType ) 
 		opts.strGlossaryType = "SpecIF:Glossary";
-	if( !opts.strDiagramsFolder ) 
-		opts.strDiagramsFolder = "Model-Diagrams";
-	if( !opts.strGlossaryFolder ) 
-		opts.strGlossaryFolder = "Model-Elements (Glossary)";
 	if( !opts.strActorFolder ) 
 		opts.strActorFolder = "Actors";
 	if( !opts.strStateFolder ) 
@@ -44,10 +40,6 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strRoleType = "SpecIF:Role";  */
 	if( !opts.strNamespace ) 
 		opts.strNamespace = "Archimate:";
-	if( !opts.strArchimateType ) 
-		opts.strArchimateType = 'SpecIF:Archimate';
-/*	if( !opts.strArchimateFolder ) 
-		opts.strArchimateFolder = "Archimate Enterprise Architecture Models"; */
 	
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -137,6 +129,8 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'TechnologyProcess':
 				case 'TechnologyInteraction':
 				case 'TechnologyService':
+				case "OrJunction":
+				case "AndJunction":
 					r['class'] = "RC-Actor"
 					break;
 				case 'Capability':
@@ -160,7 +154,7 @@ function Archimate2Specif( xmlString, opts ) {
 				default: 
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
 					console.warn('Element: Unknown xsi:type ', ty);
-					r['class'] = "RC-Folder";  // better than nothing!
+					r['class'] = "RC-Paragraph";  // better than nothing .. but the element will not appear in the glossary!
 			};
 
 			if( r['class'] ) {
@@ -173,10 +167,10 @@ function Archimate2Specif( xmlString, opts ) {
 								break;
 							case 'documentation':
 								r.properties.push({
-									class: "PC-Text",
+									class: "PC-Description",
 									value: ch.innerHTML
 								})
-						}
+						};
 					}
 				);
 
@@ -186,8 +180,8 @@ function Archimate2Specif( xmlString, opts ) {
 					value: opts.strNamespace+ty
 				});
 
-				model.resources.push(r)
-			}
+				model.resources.push(r);
+			};
 		}
 	);
 	
@@ -268,8 +262,8 @@ function Archimate2Specif( xmlString, opts ) {
 					}
 				);
 			
-				model.statements.push( s )
-			}
+				model.statements.push( s );
+			};
 		}
 	);
 
@@ -319,7 +313,7 @@ function Archimate2Specif( xmlString, opts ) {
 							break;
 						case 'documentation':
 							r.properties.push({
-								class: "PC-Text",
+								class: "PC-Description",
 								value: ch.innerHTML
 							});
 							break;
@@ -335,7 +329,7 @@ function Archimate2Specif( xmlString, opts ) {
 								object: ch.getAttribute('relationshipRef'),
 								changedAt: opts.fileDate  
 							})  */
-					}
+					};
 				}
 			);
 			
@@ -349,7 +343,7 @@ function Archimate2Specif( xmlString, opts ) {
 					value: vp+' Viewpoint'
 				});
 			
-			model.resources.push(r)
+			model.resources.push(r);
 		}
 	);
 
@@ -359,11 +353,11 @@ function Archimate2Specif( xmlString, opts ) {
 		title: model.title,
 		class: "RC-Folder",
 		properties: [{
-			class: "PC-Text",
+			class: "PC-Description",
 			value: model.description || ''
 		},{
 			class: "PC-Type",
-			value: opts.strArchimateType
+			value: opts.resClassOutline
 		}],
 		changedAt: opts.fileDate
 	});
@@ -398,7 +392,7 @@ function Archimate2Specif( xmlString, opts ) {
 				resource: "FolderDiagrams-" + apx,
 				nodes: [],
 				changedAt: opts.fileDate
-			},{
+		/*	},{
 				id: genID("N-"),
 				resource: "FolderGlossary-" + apx,
 				nodes: [{
@@ -422,7 +416,7 @@ function Archimate2Specif( xmlString, opts ) {
 					nodes: [],
 					changedAt: opts.fileDate
 				}],
-				changedAt: opts.fileDate
+				changedAt: opts.fileDate */
 			}],
 			changedAt: opts.fileDate
 		}];
@@ -437,7 +431,7 @@ function Archimate2Specif( xmlString, opts ) {
 				nL[0].nodes[0].nodes.push(nd);
 		});
 		
-		// c) Add Actors, States and Events to the respective folders in alphabetical order:
+	/*	// c) Add Actors, States and Events to the respective folders in alphabetical order:
 		if( res.length>1 )
 			res.sort( function(bim, bam) {
 						bim = bim.title.toLowerCase();
@@ -454,7 +448,7 @@ function Archimate2Specif( xmlString, opts ) {
 			let idx = ["RC-Actor","RC-State","RC-Event","RC-Collection"].indexOf( r['class'] );
 			if( idx>-1 )
 				nL[0].nodes[1].nodes[idx].nodes.push(nd)
-		});
+		}); */
 		return nL
 	};
 
@@ -470,16 +464,15 @@ function Archimate2Specif( xmlString, opts ) {
 		},{  */
 			id: "DT-ShortString",
 			title: "String ["+opts.titleLength+"]",
-			description: "String with length "+opts.titleLength,
 			type: "xs:string",
 			maxLength: opts.titleLength,
 			changedAt: opts.fileDate
 		},{
-			id: "DT-FormattedText",
-			title: "XHTML ["+opts.descriptionLength+"]",
-			description: "Formatted String with length "+opts.descriptionLength,
-			type: "xhtml",
-			maxLength: opts.descriptionLength,
+			id: "DT-Text",
+			title: "Text",
+		//	title: "String ["+opts.descriptionLength+"]",
+			type: "xs:string",
+		//	maxLength: opts.descriptionLength,
 			changedAt: opts.fileDate
 		}]
 	}
@@ -492,14 +485,14 @@ function Archimate2Specif( xmlString, opts ) {
 				dataType: "DT-ShortString",
 				changedAt: opts.fileDate
 			},{
-				id: "PC-Text",
+				id: "PC-Description",
 				title: "dcterms:description",
-				dataType: "DT-FormattedText",
+				dataType: "DT-Text",
 				changedAt: opts.fileDate
 			},{
 				id: "PC-Diagram",
 				title: "SpecIF:Diagram",
-				dataType: "DT-FormattedText",
+				dataType: "DT-Text",
 				changedAt: opts.fileDate
 		/*	},{
 				id: "PC-Notation",
@@ -521,7 +514,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Text","PC-Diagram","PC-Type"],
+			propertyClasses: ["PC-Description","PC-Diagram","PC-Type"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -529,7 +522,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Text","PC-Type"],
+			propertyClasses: ["PC-Description","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
@@ -537,7 +530,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Text","PC-Type"],
+			propertyClasses: ["PC-Description","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
@@ -545,21 +538,22 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Text","PC-Type"],
-			icon: "&#9830;",
+			propertyClasses: ["PC-Description","PC-Type"],
+			icon: "&#11047;",
 			changedAt: opts.fileDate
 		},{
 /*			id: "RC-Note",
 			title: "SpecIF:Note",
 			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: ["PC-Text"],
+			propertyClasses: ["PC-Description","PC-Type"],
 			changedAt: opts.fileDate  
 		},{  */
 			id: "RC-Collection",
 			title: "SpecIF:Collection",
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: ["PC-Text","PC-Type"],
+			propertyClasses: ["PC-Description","PC-Type"],
+			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Folder",
@@ -567,8 +561,15 @@ function Archimate2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ['auto','user'],
-			propertyClasses: ["PC-Text","PC-Type"],
-			changedAt: opts.fileDate
+			propertyClasses: ["PC-Description","PC-Type"],
+			changedAt: "2016-05-26T08:59:00+02:00"
+		},{
+			id: "RC-Paragraph",
+			title: "SpecIF:Paragraph",
+			description: "Information with title and text for descriptive paragraphs.",
+			instantiation: ["auto","user"],
+			propertyClasses: ["PC-Description","PC-Type"],
+			changedAt: "2020-12-04T18:59:00+01:00"
 		}]
 	}
 	// The statement classes:
@@ -718,16 +719,16 @@ function Archimate2Specif( xmlString, opts ) {
 		return [{
 			id: "FolderDiagrams-" + apx,
 			class: "RC-Folder",
-			title: opts.strDiagramsFolder,
+			title: opts.strDiagramsType,
 			properties: [{
 				class: "PC-Type",
 				value: opts.strDiagramsType
 			}],
 			changedAt: opts.fileDate
-		}, {
+	/*	}, {
 			id: "FolderGlossary-" + apx,
 			class: "RC-Folder",
-			title: opts.strGlossaryFolder,
+			title: opts.strGlossaryType,
 			properties: [{
 				class: "PC-Type",
 				value: opts.strGlossaryType
@@ -751,18 +752,18 @@ function Archimate2Specif( xmlString, opts ) {
 			title: opts.strEventFolder,
 			properties: [],
 			changedAt: opts.fileDate
-	/*	}, {
-			id: "FolderNte-" + apx,
-			class: "RC-Folder",
-			title: opts.strAnnotationFolder,
-			properties: [],
-			changedAt: opts.fileDate */
 		}, {
 			id: "FolderCol-" + apx,
 			class: "RC-Folder",
 			title: opts.strCollectionFolder,
 			properties: [],
 			changedAt: opts.fileDate
+		}, {
+			id: "FolderNte-" + apx,
+			class: "RC-Folder",
+			title: opts.strAnnotationFolder,
+			properties: [],
+			changedAt: opts.fileDate */
 		}]
 	}
 	

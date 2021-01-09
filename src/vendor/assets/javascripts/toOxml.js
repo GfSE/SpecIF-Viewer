@@ -17,14 +17,15 @@ function toOxml( data, opts ) {
 
 	// Reject versions < 0.10.8:
 	if( data.specifVersion ) {
-		let v = data.specifVersion.split('.');
+		let v = data.specifVersion.split('.'),
+			eTxt = "SpecIF Version < v0.10.8 is not supported.";
 		if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
 			if (typeof(opts.fail)=='function' )
-				opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
+				opts.fail({status:904,statusText:eTxt});
 			else
-				console.error("SpecIF Version < v0.10.8 is not supported.");
-			return
-		}
+				console.error(eTxt);
+			return;
+		};
 	};
 	
 	// Check for missing options:
@@ -158,9 +159,6 @@ function toOxml( data, opts ) {
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
-			// If a hidden property is defined with value, it is suppressed only if it has this value;
-			// if the value is undefined, the property is suppressed in all cases.
-			if( !opts.hiddenProperties ) opts.hiddenProperties = [];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];	
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
@@ -176,6 +174,7 @@ function toOxml( data, opts ) {
 			if( opts.addTitleLinks )
 				var reTitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, '' );
 			
+			if( !Array.isArray(opts.hierarchyRoots) ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
 			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
 			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];
 			// if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
@@ -217,24 +216,24 @@ function toOxml( data, opts ) {
 				reRun = new RegExp(reR,'g');
 			// Regex to isolate text fragments within a run:
 			const reT = '(.*?)(<br ?/>)',
-				reText = new RegExp(reT,'g');
+				reText = new RegExp(reT,'g'),
+				nbsp = '&#160;'; // non-breakable space
 			
 			// All required parameters are available, so we can begin:
-			const nbsp = '&#160;'; // non-breakable space
 			var oxml = {
 		//			headings: [],
-					sections: [],		// a xhtml file per SpecIF hierarchy
+					sections: [],		// a series of paragraphs per SpecIF hierarchy
 					relations: []
 				};
 			
-			// For each SpecIF hierarchy a xhtml-file is created and returned as subsequent sections:
+			// For each SpecIF hierarchy, create the paragraphs and add them as subsequent section:
 			data.hierarchies.forEach( function(h) {
 				oxml.sections.push(
-					renderHierarchy( h, 1 )
-				)
+					renderHierarchy( h, opts )
+				);
 			});
 //			console.debug('oxml result',oxml);
-			return oxml
+			return oxml;
 			
 			// ---------------
 			function titleOf( itm, pars, opts ) { // resource, parameters, options
@@ -260,7 +259,10 @@ function toOxml( data, opts ) {
 				
 //				console.debug('titleOf',itm,ic,ti);
 
-				if( !pars || pars.level<1 ) return  ic+ti;  // return raw text
+				if( !pars || typeof(pars.level)!='number' ) return  ic+ti;  // return raw text
+
+				if( pars.level==0 )
+					return wParagraph( {text: ic+ti, format:{ title:true }} );
 
 				// SpecIF headings are chapter level 2, all others level 3:
 				let lvl = pars.level==1? 1 : (eC.isHeading? 2:3);
@@ -443,7 +445,7 @@ function toOxml( data, opts ) {
 							ndId = ndByRef( nd.nodes[t] );							
 							if( ndId ) return ndId
 						};
-					return null
+					return null;
 				}
 			}
 			function propertyClassOf( pCid ) {
@@ -454,11 +456,8 @@ function toOxml( data, opts ) {
 				// designed for use also by statements.
 			//	if( !r.properties || r.properties.length<1 ) return '';
 
-			//	let rC = itemById( data.resourceClasses, r['class'] ); 
-
 				// return the content of all properties, sorted by description and other properties:
-				let c1='', rows='', c3, rt,
-					descriptions=[], other=[];
+				let c1='', descriptions=[], other=[];
 
 				if( r.properties ) {
 					r.properties.forEach( (p)=>{
@@ -468,7 +467,7 @@ function toOxml( data, opts ) {
 							// Disregard the title properties, here:
 							if( opts.titleProperties.indexOf( prpTitleOf(p) )<0 )
 								other.push(p);
-						}
+						};
 					});
 				};
 
@@ -477,7 +476,7 @@ function toOxml( data, opts ) {
 						propertyValueOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
 					})
 				else
-					if( r.description ) c1 += generateOxml( r.description );
+					if( r.description ) c1 += generateOxml( {p:{text:r.description}} );
 				
 //				console.debug('properties',r,c1);
 				// Skip the remaining properties, if no label is provided:
@@ -488,6 +487,7 @@ function toOxml( data, opts ) {
 					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
+				let rows='', c3, rt;
 				other.forEach( (p)=>{
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
@@ -559,6 +559,7 @@ function toOxml( data, opts ) {
 						// Identify paragraphs and store them in the block list:
 						// Note that <ul>, <ol> and <table> are block-level elements like <p> and
 						// that none of them may be inside <p>..</p>
+						// see: https://www.w3schools.com/htmL/html_blocks.asp
 						let bL = [];
 						// look for the next block-level construct with any preceding text,
 						// be sure to consume the transformed text in every loop.
@@ -862,14 +863,14 @@ function toOxml( data, opts ) {
 //							console.debug('parseImg *2',u,e,pngF);
 							if( e.indexOf('svg')>-1 && opts.preferPng && pngF ) {
 							//	t1 = pngF.type;
-								u = pngF.id
+								u = pngF.id;
 							};
 							// At the lowest level, the image is included only if present:
 //							console.debug('parseImg *3',u,d,t1);
-							return { text:d, format:{hyperlink:{ external: u } }}
+							return { text:d, format:{hyperlink:{ external: u } }};
 						} else {
 							// in absence of an image, just show the description:
-							return { text:d }
+							return { text:d };
 						}
 					}
 					function parseObject( obj ) {  // details of an XHTML object
@@ -880,28 +881,30 @@ function toOxml( data, opts ) {
 //						console.debug('parseObject *1', obj);
 
 						let u = getXhtmlPrp( 'data', obj.properties ).replace('\\','/'), 
-							t = getXhtmlPrp( 'type', obj.properties ),
-							d = obj.innerHTML || getXhtmlPrp( 'name', obj.properties ) || withoutPath( u ),	// the description
-							e = extOf(u).toLowerCase();	// the file extension
+							e = extOf(u).toLowerCase(),	// the file extension
+							t = getXhtmlPrp( 'type', obj.properties ) || (opts.imgExtensions.indexOf(e)>-1? "image/"+e : undefined),
+							d = obj.innerHTML || getXhtmlPrp( 'name', obj.properties ) || withoutPath( u );	// the description
 						
 						if( opts.imgExtensions.indexOf( e )>-1 
-							|| opts.applExtensions.indexOf( e )>-1 ) {  
+							|| opts.applExtensions.indexOf( e )>-1 
+							|| !t ) {
+
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
 							let pngF = itemById( images, nameOf(u)+'.png' );
 //							console.debug('parseObject *2',u,e,pngF);
 							if( ( t.indexOf('svg')>-1 || t.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
 								t = pngF.type;
-								u = pngF.id
+								u = pngF.id;
 							};
 							// At the lowest level, the image is included only if present:
 //							console.debug('parseObject *3',u,d,t);
 						//	return {picture:{id:u,title:d,type:t,width:'200pt',height:'100pt'}}
-							return {picture:{id:u,title:d,type:t}}
+							return {picture:{id:u,title:d,type:t}};
 						} else {
 							// in absence of an image, just show the description:
-							return {text:d}
-						}
+							return {text:d};
+						};
 					}
 				}
 				
@@ -1019,32 +1022,43 @@ function toOxml( data, opts ) {
 							ct.forEach( function(b) {
 								bs += fn(b) 
 							});
-							return bs
+							return bs;
 						};
-						return fn(ct)
+						return fn(ct);
 					}
 				}
 			}
-			function renderHierarchy( nd, lvl ) {
-				// Render the specified hierarchy node 'nd' and recursively it's children,
-				// write a paragraph for the referenced resource:
-			//	if( !nd.nodes || nd.nodes.length<1 ) return '';
+			function renderHierarchy( nd, opts ) {
+				// Check whether there is a hierarchy root node with project metadata,
+				// otherwise take the title and description of the project:
+				
+				let r = itemById( data.resources, nd.resource ),
+					rC = itemById( data.resourceClasses, r['class'] ),
+					lvl = (rC && CONFIG.hierarchyRoots.indexOf( rC.title )>-1)? 0 : 1;
+				return renderNode( nd, lvl );
+				
+				function renderNode( nd, lvl ) {
+					// Iterate the specified hierarchy node 'nd' and recursively it's children,
+					// write a paragraph for the referenced resource:
+				//	if( !nd.nodes || nd.nodes.length<1 ) return '';
 
-				let r = itemById( data.resources, nd.resource ), // the referenced resource
-					params={
-						level: lvl,
-						nodeId: nd.id
-					};
-					
-				var ch = 	titleOf( r, params, opts )
-						+	propertiesOf( r, opts )
-						+	statementsOf( r, opts );
+					let r = itemById( data.resources, nd.resource ), // the referenced resource
+						params={
+							level: lvl,
+							nodeId: nd.id
+						};
+						
+					var ch = 	titleOf( r, params, opts )
+							+	propertiesOf( r, opts )
+							+	statementsOf( r, opts );
 
-				if( nd.nodes )
-					nd.nodes.forEach( function(n) {
-						ch += renderHierarchy( n, lvl+1 )		// next level
-					});
-				return ch
+					if( nd.nodes )
+						nd.nodes.forEach( function(n) {
+							ch += renderNode( n, lvl+1 );		// next level
+						});
+
+					return ch;
+				}
 			}
 
 			function wParagraph( ct ) {
@@ -1052,7 +1066,7 @@ function toOxml( data, opts ) {
 				// empty paragraphs are allowed.
 				// a) ct is simple text without any option:
 				if( typeof(ct)=='string' ) {
-					return '<w:p>'+wRun(ct)+'</w:p>'
+					return '<w:p>'+wRun(ct)+'</w:p>';
 				};
 				// b) ct is an object with text content and formatting options.
 				// the following options are implemented:
@@ -1068,26 +1082,26 @@ function toOxml( data, opts ) {
 				let p = '';
 				if( ct.text || ct.picture ) {
 					// ct is an object with property 'text' and individual formatting options ... or a picture.
-					p = wRun( ct )
+					p = wRun( ct );
 				};
 				if( Array.isArray(ct.runs) ) {
 					// multiple text items with individual formatting options and pictures:
 					ct.runs.forEach( function(r) {
-						p += wRun( r )
+						p += wRun( r );
 					})
 				};
 				if( ct.format && ct.format.style=='bulleted' ) {
 					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
 							+ p
-							+ '</w:p>'
+							+ '</w:p>';
 				};
 				if( ct.format && ct.format.style=='numbered' ) {
 					// ToDo: use style for ordered lists. with w:val="1" the numbers are shown, but not reset when the next list starts.
 					return '<w:p><w:pPr><w:pStyle w:val="Listenabsatz"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="'+ct.format.numId+'"/></w:numPr></w:pPr>'
 							+ p
-							+ '</w:p>'
+							+ '</w:p>';
 				};
-				return '<w:p>'+pPr(ct)+p+'</w:p>'
+				return '<w:p>'+pPr(ct)+p+'</w:p>';
 				
 				function pPr(ct) {
 //					console.debug('pPr',ct);
@@ -1095,12 +1109,18 @@ function toOxml( data, opts ) {
 						let fmt = ct.format,
 							lvl = fmt.heading,
 							pr = '';
-						if( typeof(lvl)=='number' && lvl>0 ) 
+
+						if( fmt.title )
+							pr += '<w:pStyle w:val="title"/>';
+						else if( typeof(lvl)=='number' && lvl>0 ) 
 							pr += '<w:pStyle w:val="heading'+Math.min(lvl,maxHeading)+'" />';
+
 						if( fmt.noSpacing )
 							pr += '<w:pStyle w:val="OhneAbstnde"/>';
+
 						if( fmt.align )
 							pr += '<w:jc w:val="'+fmt.align+'"/>';
+
 						return pr?'<w:pPr>'+pr+'</w:pPr>':'';
 					};
 					// default:
@@ -1140,7 +1160,7 @@ function toOxml( data, opts ) {
 						let rPr =	(fmt.font.weight=='bold'?'<w:b/>':'')
 							+ 		(fmt.font.style=='italic'?'<w:i/>':'')
 							+ 		(fmt.font.color?'<w:color w:val="'+fmt.font.color+'"/>':'');
-						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':''
+						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':'';
 					};
 					// default:
 					return '';
@@ -1156,10 +1176,10 @@ function toOxml( data, opts ) {
 							category: 'url',
 							ref: startRID + n,
 							id: u  // is the distinguishing/relative part of the URL
-						})
+						});
 					};
 					// in any case return the reference no (index):
-					return startRID + n
+					return startRID + n;
 				}
 			}
 			function wText( ct ) {
@@ -1175,10 +1195,10 @@ function toOxml( data, opts ) {
 						if( c.str ) str += '<w:t xml:space="preserve">'+c.str+'</w:t>';
 						if( c['break']=='line' ) str += '<w:cr />'
 					});
-					return str
+					return str;
 				};
 				// else, in case of string or 'ct.text' with string:
-				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>'
+				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>';
 			}
 			function wPict( ct ) {
 //				console.debug('wPict',ct,images);
@@ -1189,7 +1209,7 @@ function toOxml( data, opts ) {
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
 					console.error( et );
-					return wText( "### "+et+" ###" )
+					return wText( "### "+et+" ###" );
 				};
 //				console.debug('pushReferencedFile',oxml.relations,n);
 				let rIdx = pushReferencedFile( ct.picture );
@@ -2131,6 +2151,25 @@ function toOxml( data, opts ) {
 //		+							'<w:rsid w:val="003A0092"/>'
 		+							'<w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>'
 		+						'</w:style>'
+		+						'<w:style w:type="paragraph" w:styleId="title">'
+		+							'<w:name w:val="Titel"/>'
+		+							'<w:basedOn w:val="Standard"/>'
+		+							'<w:next w:val="Standard"/>'
+		+							'<w:link w:val="TitelZchn"/>'
+		+							'<w:uiPriority w:val="10"/>'
+		+							'<w:qFormat/>'
+		+							'<w:pPr>'
+		+								'<w:spacing w:after="0" w:line="240" w:lineRule="auto"/>'
+		+								'<w:contextualSpacing/>'
+		+							'</w:pPr>'
+		+							'<w:rPr>'
+		+								'<w:rFonts w:asciiTheme="majorHAnsi" w:eastAsiaTheme="majorEastAsia" w:hAnsiTheme="majorHAnsi" w:cstheme="majorBidi"/>'
+//		+								'<w:spacing w:val="-10"/>'
+//		+								'<w:kern w:val="28"/>'
+		+								'<w:sz w:val="48"/>'
+		+								'<w:szCs w:val="48"/>'
+		+							'</w:rPr>'
+		+						'</w:style>'
 		+						'<w:style w:type="paragraph" w:styleId="heading1">'
 		+							'<w:name w:val="heading 1"/>'
 		+							'<w:basedOn w:val="Standard"/>'
@@ -2551,7 +2590,7 @@ function toOxml( data, opts ) {
 	}
 
 	function store( f ) {
-		let blob = new Blob([f.content],{type: "text/plain; charset=utf-8"});
+		let blob = new Blob([f.content],{type: "text/xml; charset=utf-8"});
 		saveAs(blob, f.name+".xml");
 		if( typeof(opts.done)=="function" ) opts.done()
 	}

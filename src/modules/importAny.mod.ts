@@ -242,9 +242,10 @@ modules.construct({
 
 			// Assume it is an absolute or relative URL;
 			// must be either from the same URL or CORS-enabled.
-			// Import the file:
+			// Import the file: 
 			httpGet({
-				url: urlP[CONFIG.keyImport],
+				// force a reload through cache-busting:
+				url: urlP[CONFIG.keyImport]+'?'+Date.now().toString().simpleHash(),
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: function(result) {
@@ -478,12 +479,16 @@ modules.construct({
 						// no break
 					case 'create':
 					case 'replace':
-						app.cache.create( dta )
+						opts.deduplicate = true;
+						opts.addGlossary = true;
+						opts.collectProcesses = false;
+						app.cache.create( dta, opts )
 							.progress( setProgress )
 							.done( terminateWithSuccess )
 							.fail( handleError );
 						break;
 					case 'adopt':
+						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = true;
 					case 'update':
