@@ -638,7 +638,7 @@ modules.construct({
 			var idx = indexBy( settings.filters, 'category', 'textSearch');
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
-				addTextSearchFilter( settings.filters[idx];
+				addTextSearchFilter( settings.filters[idx]);
 			// do not include a text search filter if there are settings.filters without a respective entry
 		} else {
 			// b) include a default text search if there is no settings.filters

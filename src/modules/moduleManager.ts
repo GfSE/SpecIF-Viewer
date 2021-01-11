@@ -392,11 +392,11 @@ var browser,
 				case "config": 				getScript( './config/config.js' ); return true;
 				case "i18n": 				switch( browser.language.slice(0,2) ) {
 												case 'de':  getScript( './config/locales/iLaH-de.i18n.js' )
-															.done( ()=>{ i18n = new LanguageTextsDe() }; break;
+															.done( ()=>{ i18n = new LanguageTextsDe() } ); break;
 												case 'fr':  getScript( './config/locales/iLaH-fr.i18n.js' )
-															.done( ()=>{ i18n = new LanguageTextsFr() }; break;
+															.done( ()=>{ i18n = new LanguageTextsFr() } ); break;
 												default:	getScript( './config/locales/iLaH-en.i18n.js' )
-															.done( ()=>{ i18n = new LanguageTextsEn() }
+															.done( ()=>{ i18n = new LanguageTextsEn() } )
 											};
 											return true;
 				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
