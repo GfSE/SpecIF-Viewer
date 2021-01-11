@@ -164,7 +164,7 @@ extractSpecIfResource = (resourceDocument) => {
     const specifResource = {};
     resourceDocument.getAttribute("IDENTIFIER") ? specifResource.id = resourceDocument.getAttribute("IDENTIFIER") : '';
     //resourceDocument.getAttribute("LONG-NAME") ? specifResource.title = resourceDocument.getAttribute("LONG-NAME") : '';
-    specifResource.title = resourceDocument.getAttribute("LONG-NAME") ? resourceDocument.getAttribute("LONG-NAME") : 'Proto title';
+    specifResource.title = resourceDocument.getAttribute("LONG-NAME") ? resourceDocument.getAttribute("LONG-NAME") : resourceDocument.getAttribute("IDENTIFIER");
     resourceDocument.getElementsByTagName("TYPE")[0] ? specifResource.class = resourceDocument.getElementsByTagName("TYPE")[0].children[0].innerHTML : '';
     //resourceDocument.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractResourceProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
     resourceDocument.getElementsByTagName("VALUES")[0] ? specifResource.properties = extractResourceProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
