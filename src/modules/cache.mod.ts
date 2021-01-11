@@ -3444,7 +3444,7 @@ function classifyProps( el, prj ) {
 			revision: el.revision,
 			descriptions: [],
 			// create a new list by copying the elements (do not copy the list ;-):
-			other: normalizeProps( el, prj );
+			other: normalizeProps( el, prj )
 		};
 	cP.isHeading = cP['class'].isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
 	if( el.order ) cP.order = el.order;
