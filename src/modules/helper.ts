@@ -535,7 +535,7 @@ function cmp( i, a ) {
 }
 function sortByTitle( L ) {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( bim.title, bam.title ) };
+		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
 function sortBy( L, fn ) {
