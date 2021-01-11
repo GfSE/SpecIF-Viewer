@@ -341,6 +341,7 @@ const CONFIG = {};
 		'BPMN:parallelGateway',
 		'BPMN:exclusiveGateway',
 		'BPMN:inclusiveGateway',
+		"BPMN:eventBasedGateway",
 		'BPMN:boundaryEvent',
 		'BPMN:intermediateThrowEvent',
 		'BPMN:intermediateCatchEvent',
