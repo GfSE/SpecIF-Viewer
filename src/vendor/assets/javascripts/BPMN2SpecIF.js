@@ -80,6 +80,8 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strForkIncGatewayDesc = "<p>Evaluate all condiditions and signal the respective events.</p>";
 	if( !opts.strTextAnnotation ) 
 		opts.strTextAnnotation = "Text Annotation";
+	if( !opts.strNamespace ) 
+		opts.strNamespace = "bpmn:";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -122,7 +124,7 @@ function BPMN2Specif( xmlString, opts ) {
 		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
 		hId = 'BPMN-outline-' + apx,
-		diagRef = "<object data=\""+opts.fileName+"\" type=\"application/bpmn+xml\" >"+opts.fileName+"</object>";
+		diagRef = '<object data="'+opts.fileName+'" type="'+opts.mimeType+'" >'+opts.fileName+'</object>';
 
 	// 1. Add the folders:
 	model.resources = Folders();
@@ -178,7 +180,7 @@ function BPMN2Specif( xmlString, opts ) {
 				class: 'RC-Actor',
 				properties: [{
 					class: "PC-Type",
-					value: "bpmn:"+tag
+					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
 			})
@@ -198,7 +200,7 @@ function BPMN2Specif( xmlString, opts ) {
 				class: 'RC-State',
 				properties: [{
 					class: "PC-Type",
-					value: "bpmn:"+tag
+					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
 			});
@@ -212,7 +214,7 @@ function BPMN2Specif( xmlString, opts ) {
 				object: oId,
 				properties: [{
 					class: "PC-Type",
-					value: "bpmn:dataOutputAssociation"
+					value: opts.strNamespace+"dataOutputAssociation"
 				}],
 				changedAt: opts.fileDate
 			});
@@ -226,7 +228,7 @@ function BPMN2Specif( xmlString, opts ) {
 				object: oId,
 				properties: [{
 					class: "PC-Type",
-					value: "bpmn:dataInputAssociation"
+					value: opts.strNamespace+"dataInputAssociation"
 				}],
 				changedAt: opts.fileDate
 			})
@@ -360,7 +362,7 @@ function BPMN2Specif( xmlString, opts ) {
 								class: "RC-State",
 								properties: [{
 									class: "PC-Type",
-									value: 'bpmn:'+tag
+									value: opts.strNamespace+tag
 								}],
 								changedAt: opts.fileDate
 							};
@@ -411,7 +413,7 @@ function BPMN2Specif( xmlString, opts ) {
 											object: dS.id,
 											properties: [{
 												class: "PC-Type",
-												value: "bpmn:dataInputAssociation"
+												value: opts.strNamespace+"dataInputAssociation"
 											}],
 											changedAt: opts.fileDate
 										})
@@ -444,7 +446,7 @@ function BPMN2Specif( xmlString, opts ) {
 											object: dS.id,
 											properties: [{
 												class: "PC-Type",
-												value: "bpmn:dataOutputAssociation"
+												value: opts.strNamespace+"dataOutputAssociation"
 											}],
 											changedAt: opts.fileDate
 										})
@@ -493,6 +495,7 @@ function BPMN2Specif( xmlString, opts ) {
 					case 'sendTask':
 					case 'receiveTask':
 					case 'callActivity':
+					case "transaction":
 					case 'subProcess':
 						// store the model-element as FMC:Actor:
 						// Note that a dataInputAssociation may specify a property in lieu of the subprocess.
@@ -503,7 +506,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "RC-Actor",
 							properties: [{
 								class: "PC-Type",
-								value: 'bpmn:'+tag
+								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						};
@@ -544,7 +547,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "RC-Event",
 							properties: [{
 								class: "PC-Type",
-								value: 'bpmn:'+tag
+								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						});
@@ -641,7 +644,7 @@ function BPMN2Specif( xmlString, opts ) {
 								value: desc
 							}, {
 								class: "PC-Type",
-								value: 'bpmn:'+tag
+								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						});
@@ -773,7 +776,7 @@ function BPMN2Specif( xmlString, opts ) {
 				object: seqF.object.id,
 				properties: [{
 					class: "PC-Type",
-					value: 'bpmn:'+tag
+					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
 			});
@@ -788,7 +791,7 @@ function BPMN2Specif( xmlString, opts ) {
 				object: seqF.object.id,
 				properties: [{
 					class: "PC-Type",
-					value: 'bpmn:'+tag
+					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
 			});
@@ -803,7 +806,7 @@ function BPMN2Specif( xmlString, opts ) {
 			object: seqF.object.id,
 				properties: [{
 					class: "PC-Type",
-					value: 'bpmn:'+tag
+					value: opts.strNamespace+tag
 				}],
 			changedAt: opts.fileDate
 		});

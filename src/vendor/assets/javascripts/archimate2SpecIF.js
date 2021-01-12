@@ -133,6 +133,7 @@ function Archimate2Specif( xmlString, opts ) {
 				case "AndJunction":
 					r['class'] = "RC-Actor"
 					break;
+				case "Goal":
 				case 'Capability':
 				case 'BusinessObject':
 				case 'Contract':
