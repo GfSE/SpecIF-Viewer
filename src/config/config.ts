@@ -223,6 +223,9 @@ const CONFIG = {};
 		'DC.title',
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Name',
+		// RIF 1.1a Atego Exerpt:
+		'Object Heading',
+//		'VALUE-Object Heading',   // 'VALUE-' is now removed right at the beginning
 /*		// DocBridge Resource Director:
 		'DBRD.Name',
 		// ARCWAY Cockpit Copilot:
@@ -230,11 +233,8 @@ const CONFIG = {};
 		'Name',
 		// carhs SafetyWissen:
 		'carhs.Title.en',
-		'carhs.Title.de',  */
-		// RIF 1.1a Atego Exerpt:
-		'Object Heading',
-//		'VALUE-Object Heading',   // 'VALUE-' is now removed right at the beginning
-/*		// Glossary:
+		'carhs.Title.de',
+		// Glossary:
 		'Title.en',
 		'Title.de',
 		'Title.fr',
