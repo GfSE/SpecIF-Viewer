@@ -62,6 +62,10 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strJoinIncGateway = "Joining Inclusive Gateway";
 	if( !opts.strJoinIncGatewayDesc ) 
 		opts.strJoinIncGatewayDesc = "<p>Wait for <em>all active</em> incoming branches to continue.</p>";
+	if( !opts.strForkEvtGateway ) 
+		opts.strForkEvtGateway = "Forking (exclusive) Event Gateway";
+	if( !opts.strForkEvtGatewayDesc ) 
+		opts.strForkEvtGatewayDesc = "<p>The first of the following events to occur will prevail.</p>";
 	if( !opts.strForkExcGateway ) 
 		opts.strForkExcGateway = "Forking Exclusive Gateway";
 	if( !opts.strForkExcGatewayDesc ) 
@@ -76,6 +80,8 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strForkIncGatewayDesc = "<p>Evaluate all condiditions and signal the respective events.</p>";
 	if( !opts.strTextAnnotation ) 
 		opts.strTextAnnotation = "Text Annotation";
+	if( !opts.strNamespace ) 
+		opts.strNamespace = "bpmn:";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -118,7 +124,7 @@ function BPMN2Specif( xmlString, opts ) {
 		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
 		hId = 'BPMN-outline-' + apx,
-		diagRef = "<object data=\""+opts.fileName+"\" type=\"application/bpmn+xml\" >"+opts.fileName+"</object>";
+		diagRef = '<object data="'+opts.fileName+'" type="'+opts.mimeType+'" >'+opts.fileName+'</object>';
 
 	// 1. Add the folders:
 	model.resources = Folders();
@@ -174,7 +180,7 @@ function BPMN2Specif( xmlString, opts ) {
 				class: 'RC-Actor',
 				properties: [{
 					class: "PC-Type",
-					value: "BPMN:"+tag
+					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
 			})
@@ -194,7 +200,7 @@ function BPMN2Specif( xmlString, opts ) {
 				class: 'RC-State',
 				properties: [{
 					class: "PC-Type",
-					value: "BPMN:"+tag
+					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
 			});
@@ -206,6 +212,10 @@ function BPMN2Specif( xmlString, opts ) {
 				class: 'SC-writes',
 				subject: sRef,
 				object: oId,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strNamespace+"dataOutputAssociation"
+				}],
 				changedAt: opts.fileDate
 			});
 			// d. The reading relation (statement):
@@ -216,6 +226,10 @@ function BPMN2Specif( xmlString, opts ) {
 				class: 'SC-reads',
 				subject: tRef,
 				object: oId,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strNamespace+"dataInputAssociation"
+				}],
 				changedAt: opts.fileDate
 			})
 		}
@@ -348,7 +362,7 @@ function BPMN2Specif( xmlString, opts ) {
 								class: "RC-State",
 								properties: [{
 									class: "PC-Type",
-									value: 'BPMN:'+tag
+									value: opts.strNamespace+tag
 								}],
 								changedAt: opts.fileDate
 							};
@@ -397,6 +411,10 @@ function BPMN2Specif( xmlString, opts ) {
 											class: 'SC-reads',
 											subject: id,
 											object: dS.id,
+											properties: [{
+												class: "PC-Type",
+												value: opts.strNamespace+"dataInputAssociation"
+											}],
 											changedAt: opts.fileDate
 										})
 									} else {
@@ -426,6 +444,10 @@ function BPMN2Specif( xmlString, opts ) {
 											class: 'SC-writes',
 											subject: id,
 											object: dS.id,
+											properties: [{
+												class: "PC-Type",
+												value: opts.strNamespace+"dataOutputAssociation"
+											}],
 											changedAt: opts.fileDate
 										})
 									} else {
@@ -473,6 +495,7 @@ function BPMN2Specif( xmlString, opts ) {
 					case 'sendTask':
 					case 'receiveTask':
 					case 'callActivity':
+					case "transaction":
 					case 'subProcess':
 						// store the model-element as FMC:Actor:
 						// Note that a dataInputAssociation may specify a property in lieu of the subprocess.
@@ -483,7 +506,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "RC-Actor",
 							properties: [{
 								class: "PC-Type",
-								value: 'BPMN:'+tag
+								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						};
@@ -524,7 +547,7 @@ function BPMN2Specif( xmlString, opts ) {
 							class: "RC-Event",
 							properties: [{
 								class: "PC-Type",
-								value: 'BPMN:'+tag
+								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						});
@@ -544,6 +567,7 @@ function BPMN2Specif( xmlString, opts ) {
 					case 'parallelGateway':
 					case 'exclusiveGateway':
 					case 'inclusiveGateway':
+					case "eventBasedGateway":
 						gw = {id:id,class:tag,incoming:[],outgoing:[]};
 						Array.from(el.childNodes, (ch)=>{
 							if( !ch.tagName ) return;
@@ -589,6 +613,11 @@ function BPMN2Specif( xmlString, opts ) {
 									desc = opts.strForkParGatewayDesc;
 									// no events per branch in this case, as there is no decision 
 									break;
+								case "eventBasedGateway":
+									title = opts.strForkEvtGateway;
+									desc = opts.strForkEvtGatewayDesc;
+									// no events per branch in this case, as there is no decision 
+									break;
 								case 'exclusiveGateway':
 									// Add the title (condition), if specified:
 									title = (opts.strForkExcGateway+(title? ': '+title : '')).slice(0,opts.titleLength);
@@ -615,7 +644,7 @@ function BPMN2Specif( xmlString, opts ) {
 								value: desc
 							}, {
 								class: "PC-Type",
-								value: 'BPMN:'+tag
+								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						});
@@ -669,6 +698,7 @@ function BPMN2Specif( xmlString, opts ) {
 		// That's why the sequenceFlows are parsed separately after collecting all resouces.
 		let	id = el.getAttribute("id"),
 			title = el.getAttribute("name"),
+			tag = el.tagName.split(':').pop(),	// tag without namespace
 			feG = itemBy(gwL,'id',el.getAttribute('sourceRef')), 
 			seqF;
 //		console.debug('#3',gwL,el,id,title);
@@ -710,6 +740,10 @@ function BPMN2Specif( xmlString, opts ) {
 				class: "SC-signals",
 				subject: seqF.subject.id,
 				object: id,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strConditionType
+				}],
 				changedAt: opts.fileDate
 			});
 			// c. store the trigger relation:
@@ -719,6 +753,10 @@ function BPMN2Specif( xmlString, opts ) {
 				class: "SC-triggers",
 				subject: id,
 				object: seqF.object.id,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strConditionType
+				}],
 				changedAt: opts.fileDate
 			});
 			return
@@ -736,6 +774,10 @@ function BPMN2Specif( xmlString, opts ) {
 				class: "SC-precedes",
 				subject: seqF.subject.id,
 				object: seqF.object.id,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strNamespace+tag
+				}],
 				changedAt: opts.fileDate
 			});
 			return
@@ -747,6 +789,10 @@ function BPMN2Specif( xmlString, opts ) {
 				class: "SC-signals",
 				subject: seqF.subject.id,
 				object: seqF.object.id,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strNamespace+tag
+				}],
 				changedAt: opts.fileDate
 			});
 			return
@@ -758,6 +804,10 @@ function BPMN2Specif( xmlString, opts ) {
 			class: "SC-triggers",
 			subject: seqF.subject.id,
 			object: seqF.object.id,
+				properties: [{
+					class: "PC-Type",
+					value: opts.strNamespace+tag
+				}],
 			changedAt: opts.fileDate
 		});
 	});
@@ -1033,6 +1083,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:shows",
 			description: "Statement: Plan shows Model-Element",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Diagram"],
 			objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate
@@ -1041,6 +1092,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:contains",
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate
@@ -1049,6 +1101,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:stores",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Actor"],
 			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
@@ -1057,6 +1110,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:writes",
 			description: "Statement: Actor (Role, Function) writes State (Information)",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Actor"],
 			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
@@ -1065,6 +1119,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:reads",
 			description: "Statement: Actor (Role, Function) reads State (Information)",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Actor"],
 			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
@@ -1073,6 +1128,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:precedes",
 			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Actor"],
 			objectClasses: ["RC-Actor"],
 			changedAt: opts.fileDate
@@ -1081,6 +1137,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:signals",
 			description: "A FMC:Actor 'signals' a FMC:Event.",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Actor", "RC-Event"],
 			objectClasses: ["RC-Event"],
 			changedAt: opts.fileDate
@@ -1089,6 +1146,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:triggers",
 			description: "A FMC:Event 'triggers' a FMC:Actor.",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Event"],
 			objectClasses: ["RC-Actor"],
 			changedAt: opts.fileDate
@@ -1097,6 +1155,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:refersTo",
 			description: "A SpecIF:Comment, SpecIF:Note or SpecIF:Issue 'refers to' any other resource.",
 			instantiation: ['auto'],
+			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Note"],
 			objectClasses: ["RC-Diagram", "RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
 			changedAt: opts.fileDate

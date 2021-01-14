@@ -225,15 +225,19 @@ function xslx2specif( buf, pN, chAt ) {
 //				console.debug( 'titleFromProps', res );
 				// get the title from the properties:
 				if( res.properties ) {
-					let a,A,pC;
-					for( a=0,A=res.properties.length;a<A;a++ ) {
-						pC = itemById( specif.propertyClasses, res.properties[a]['class'] );
-						// in many cases, this is perhaps faster than the concatenation of the lists:
-						if( pC
-							&& (CONFIG.titleProperties.indexOf( pC.title )>-1 
-								|| CONFIG.idProperties.indexOf( pC.title )>-1 ))
-								return res.properties[a].value.stripHTML();
-					};
+					let a,pC;
+					// first try to find a property with title listed in CONFIG.titleProperties:
+                    for ( a=res.properties.length-1; a>-1; a--) {
+                        pC = itemById(specif.propertyClasses, res.properties[a]['class']);
+                        if ( pC && CONFIG.titleProperties.indexOf(pC.title) > -1 )
+                            return res.properties[a].value.stripHTML();
+                    };
+					// then try to find a property with title listed in CONFIG.idProperties:
+                    for ( a=res.properties.length-1; a>-1; a--) {
+                        pC = itemById(specif.propertyClasses, res.properties[a]['class']);
+                        if (pC && CONFIG.idProperties.indexOf(pC.title) > -1 )
+                            return res.properties[a].value.stripHTML();
+                    };
 				};
 				return '';
 			}
@@ -306,7 +310,7 @@ function xslx2specif( buf, pN, chAt ) {
 									// Inclule the property only if it has a significant value:
 									if( val ) 
 										res.properties.push({
-											title: pC.title,	// needed for titleFromProps()
+										//	title: pC.title,
 											class: pC.id,
 											value: val
 										});

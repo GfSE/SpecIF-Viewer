@@ -467,11 +467,10 @@ function LanguageTextsEn() {
 	self.SysML_isComposedOf = "is composed of";
 	self.SpecIF_isAggregatedBy =
 	self.SysML_isAggregatedBy = "is aggregated by";
-	self.SpecIF_isGeneralisationOf = 
-	self.SysML_isGeneralisationOf = "is Generalization of";
+	self.SpecIF_isGeneralizationOf = 
+	self.SysML_isGeneralizationOf = "is Generalization of";
 	self.SpecIF_isSpecializationOf =
-	self.SpecIF_isSpecialisationOf = 
-	self.SysML_isSpecialisationOf = "is Specialization of";
+	self.SysML_isSpecializationOf = "is Specialization of";
 	self.SpecIF_isSynonymOf = "is synonym of";
 	self.SpecIF_isInverseOf = 						// DEPRECATED
 	self.SpecIF_isAntonymOf = "is antonym of";
