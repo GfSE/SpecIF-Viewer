@@ -491,6 +491,7 @@ modules.construct({
 						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = true;
+						// no break;
 					case 'update':
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )

@@ -518,6 +518,9 @@ function Project( pr ) {
 		return dta;
 
 		function itemsByVisibleId(L,vId) {
+			// return a list with all elements in L having a property 
+			// containing a visible id with value vId;
+			// should only be one resulting element:
 			return forAll( L, (r)=>{
 				if( visibleIdOf(r)==vId ) return r;
 			});
@@ -528,14 +531,15 @@ function Project( pr ) {
 		const resourcesToCollect = [
 			{type: "SpecIF:BusinessProcess", flag:"collectProcesses", folder:CONFIG.resClassProcesses, folderNamePrefix:"FolderProcesses-"}
 		];
-		var r = itemById( dta.resources, dta.hierarchies[0].resource),
+		var r = itemById( dta.resources, dta.hierarchies[0].resource ),
 			rC = itemById( dta.resourceClasses, r['class'] ),
 		//	singleHierarchyRoot = dta.hierarchies.length==1 && rC && CONFIG.hierarchyRoots.indexOf(rC.title)>-1;
 			prp = itemByTitle( r.properties, CONFIG.propClassType ),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 			// or by the title of the resourceClass:
-			singleHierarchyRoot = dta.hierarchies.length==1 && (prp && CONFIG.hierarchyRoots.indexOf(prp.value)>-1
-																|| rC && CONFIG.hierarchyRoots.indexOf(rC.title)>-1);
+			singleHierarchyRoot = dta.hierarchies.length==1 
+									&& (prp && CONFIG.hierarchyRoots.indexOf(prp.value)>-1
+										|| rC && CONFIG.hierarchyRoots.indexOf(rC.title)>-1);
 		return new Promise(
 			(resolve,reject)=>{
 				if( typeof(opts)!='object' ) { resolve({status:0}); return; };
@@ -570,7 +574,7 @@ function Project( pr ) {
 										}
 						);
 //						console.debug('collectResourcesByType',delL,prL);
-						resolve({status:0});
+
 						// 2. Delete any existing folders:
 						//    (Alternative: Keep folder and delete only the children.)
 						self.deleteContent( 'node', delL )
@@ -1022,7 +1026,7 @@ function Project( pr ) {
 				};
 
 				// Execution gets here, unless a substitution has taken place;
-				// keep separate instances:
+				// thus add the new resource as separate instance:
 
 				// Note that in theory, there shouldn't be any conflicting ids, but in reality there are;
 				// for example it has been observed with BPMN/influx which is based on bpmn.io like cawemo.
@@ -1483,7 +1487,7 @@ function Project( pr ) {
 		return new Promise(
 			(resolve,reject)=>{
 //				console.debug('createContent', ctg, item );
-				switch( ctg ) {
+			/*	switch( ctg ) {
 				//	case 'resource':
 				//	case 'statement':
 				//	case 'hierarchy':
@@ -1493,9 +1497,9 @@ function Project( pr ) {
 						// if current user can create an item, he has the other permissions, as well:
 				//		addPermissions( item );
 				//		item.createdAt = new Date().toISOString();
-				//		item.createdBy = item.changedBy;
+				//		item.createdBy = item.changedBy; */
 						cache( ctg, item )
-				};
+			//	};
 				resolve({status:0})
 			}
 		);
