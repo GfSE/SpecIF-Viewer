@@ -520,6 +520,7 @@ function LanguageTextsDe() {
 	self.HIS_OemComment = 'Kommentar Hersteller';
 	self.HIS_SupplierStatus = 'Status Lieferant';
 	self.HIS_SupplierComment = 'Kommentar Lieferant';
+/*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Titel';
 	self.DBRD_Name = 'Titel';
@@ -530,7 +531,7 @@ function LanguageTextsDe() {
 	self.VALUE_Object_Text =
 	self.Object_Text = self.ReqIF_Text;
 	self.VALUE_Object_ID =
-	self.Object_ID = self.ReqIF_ForeignID;
+	self.Object_ID = self.ReqIF_ForeignID; */
 	self.SpecIF_priorityHigh = "hoch";
 	self.SpecIF_priorityRatherHigh = "eher hoch";
 	self.SpecIF_priorityMedium = "mittel";
@@ -585,7 +586,8 @@ function LanguageTextsDe() {
 	self.MsgCreateStatement = "Aussage anlegen";
 	self.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 	self.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
-	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
+/*	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.'; */
+	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
 	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';
 	self.MsgImportBpmn = 'Zulässiger Dateityp *.bpmn. Inhalte müssen den Schemata für BPMN 2.0 XML entsprechen. Der Import kann bis zu einigen Minuten dauern.';
 	self.MsgImportXls = 'Zulässige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import kann bei sehr großen Dateien mehrere Minuten dauern.';
