@@ -710,16 +710,17 @@ function makeHTML(str,opts) {
 			.linkifyURLs( opts )
 			.replace(/--(?:&gt;|>)/g,'&#8594;')  // &rarr;
 			.replace(/(?:&lt;|<)--/g,'&#8592;')  // &larr;
-	if( isHTML(str) ) 
+	if( /^\s*<.+>\s*$/.test(str) )
 		return newS;
 	if( CONFIG.convertMarkdown && app.markdown ) {
-		// don't interpret the '+' as list item, but do so with '�',
+		// don't interpret the '+' as list item, but do so with '�' and '•',
 		// transform arrows assembled by characters to special arrow characters:
 		return app.markdown.render( str
 			.replace(/\+ /g,'&#x2b; ') // '+'
 			.replace(/� /g,'* ')
+			.replace(/• /g,'* ')
 		)
-		.linkifyURLs( opts )
+//		.linkifyURLs( opts )
 	};
 	return '<div>'+newS+'</div>'
 } 
@@ -761,7 +762,7 @@ function escapeInner( str ) {
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
-String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
+//String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
 // escape HTML characters:
 String.prototype.escapeXML = function() {
 	return this.replace(/["'&<>]/g, ($0)=>{
@@ -1063,39 +1064,43 @@ if (!Array.from) {
     };
   }());
 };*/
-// Convert arrayBuffer from and to string:
-function buf2str(buf) {
+
+function ab2str(buf) {
+	// Convert arrayBuffer to string:
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
 	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
-	try {
+//	try {
 		// see https://developers.google.com/web/updates/2014/08/Easier-ArrayBuffer-String-conversion-with-the-Encoding-API
 		// DataView is a wrapper on top of the ArrayBuffer.
-		var dataView = new DataView(buf);
+		let dataView = new DataView(buf),
 		// The TextDecoder interface is documented at http://encoding.spec.whatwg.org/#interface-textdecoder
-		var decoder = new TextDecoder('utf-8');
+			decoder = new TextDecoder('utf-8');
 		return decoder.decode(dataView);
-	} catch (e) {
+/*	} catch (e) {
 		// see https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
 		// for vintage browsers such as IE
 		// Known problem: Special chars like umlaut are not properly converted.
 		return String.fromCharCode.apply(null, new Uint8Array(buf));
-	};
+	}; */
 }
-function str2buf(str) {
-	try {
+function str2ab(str) {
+	// Convert string to arrayBuffer:
+//	try {
 		let encoder = new TextEncoder();
-		return encoder.encode(str);		
-	} catch (e) {
+		return encoder.encode(str).buffer;		
+/*	} catch (e) {
+		// for vintage browsers such as IE
 		var buf = new ArrayBuffer(str.length);
 		var bufView = new Uint8Array(buf);
 		for (var i=0, I=str.length; i<I; i++) {
 			bufView[i] = str.charCodeAt(i);
 		};
 		return buf;
-	};
+	}; */
 }
-// see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
-// see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
 function blob2dataURL(file,fn,timelag) {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
@@ -1117,7 +1122,18 @@ function blob2text(file,fn,timelag) {
 		}, timelag );
 	else
 		reader.readAsText(file.blob);
-} 
+}
+function uriBack2slash(str) {
+    return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
+		($0, $1)=>{
+			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
+				($0)=>{
+					return $0.replace(/\\/g, '/');
+				}
+			);
+		}
+	);
+}
 		
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet

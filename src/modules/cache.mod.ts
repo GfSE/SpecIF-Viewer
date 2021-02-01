@@ -1765,6 +1765,7 @@ function Project( pr ) {
 									i18n.LblFormat,
 									[
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
+										{ title: 'HTML with embedded SpecIF v'+app.specifVersion, id: 'html' },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
 									//	{ title: 'RDF', id: 'rdf' },
 										{ title: 'Turtle (experimental)', id: 'turtle' },
@@ -1824,7 +1825,7 @@ function Project( pr ) {
 		}
 	};
 	self.exportAs = (opts)=>{
-		if( self.exporting ) return;
+		if( self.exporting ) return; // prohibit multiple entry
 
 		if( !opts ) opts = {};
 		if( !opts.format ) opts.format = 'specif';
@@ -1836,13 +1837,14 @@ function Project( pr ) {
 
 		return new Promise( (resolve, reject)=>{
 
-			if( self.data.exp ) {
-				self.exporting = true;
+			if( self.data.exp ) { // check permission
+				self.exporting = true; // set status to prohibit multiple entry
 
 				switch( opts.format ) {
 				//	case 'rdf':
 					case 'turtle':
 					case 'reqif':
+					case 'html':
 					case 'specif':
 						storeAs( opts );
 						break;
@@ -1856,7 +1858,12 @@ function Project( pr ) {
 			return;
 
 			function publish( opts ) {
-				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 ) return null; // programming error
+				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 )  {
+					// programming error!
+					reject();
+					return null;
+				};
+
 				// ToDo: Get the newest data from the server.
 //				console.debug( "publish", opts );
 
@@ -1867,6 +1874,7 @@ function Project( pr ) {
 					{title:CONFIG.propClassType,value:CONFIG.resClassOutline}
 				];
 
+				opts.allResources = false; // only resources referenced by a hierarchy.
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
 				opts.lookupTitles = false;  // applies to specif.toExt()
 				opts.lookupValues = true;  // applies to specif.toExt()
@@ -1910,7 +1918,7 @@ function Project( pr ) {
 										(result)=>{
 											// replace BPMN by SVG:
 											L.splice(i,1,{
-												blob: new Blob([result.svg],{type: "text/plain; charset=utf-8"}),
+												blob: new Blob([result.svg],{type: "application/svg+xml; charset=utf-8"}),
 												id: 'F-'+f.title.simpleHash(),
 												title: f.title.fileName()+'.svg',
 												type: 'image/svg+xml',
@@ -1922,7 +1930,8 @@ function Project( pr ) {
 												pub();
 										},
 										(err)=>{
-											console.error('BPMN-Viewer could not deliver SVG', err)
+											console.error('BPMN-Viewer could not deliver SVG', err);
+											reject();
 										}
 									);
 								}, 0);
@@ -1942,18 +1951,28 @@ function Project( pr ) {
 						case 'oxml':
 							toOxml( data, options );
 					};
+					// resolve() is called in the call-backs defined by opts
 				}
 			}
 			function storeAs( opts ) {
-			//	if( !opts || ['specif','reqif','turtle'].indexOf(opts.format)<0 ) return null;
+				if( !opts || ['specif','html','reqif','turtle'].indexOf(opts.format)<0 ) {
+					// programming error!
+					reject();
+					return null;
+				};
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
+				opts.allResources = false;  // only resources referenced by a hierarchy.
+				// keep vocabulary terms:
+				opts.lookupTitles = false;
+				opts.lookupValues = false;
+
 				switch( opts.format ) {
 					case 'specif':
-						// keep vocabulary terms:
-						opts.lookupTitles = false;
-						opts.lookupValues = false;
+						opts.allResources = true;  // even, if not referenced by a hierarchy.
+						// no break
+					case 'html':
 						// export all languages:
 						opts.targetLanguage = undefined;
 						// keep all revisions:
@@ -1962,9 +1981,6 @@ function Project( pr ) {
 				//	case 'rdf':
 					case 'turtle':
 					case 'reqif':
-						// keep vocabulary terms:
-						opts.lookupTitles = false;
-						opts.lookupValues = false;
 						// only single language is supported:
 						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 						// XHTML is supported:
@@ -1975,15 +1991,41 @@ function Project( pr ) {
 						opts.revisionDate = new Date().toISOString();
 						break;
 					default:
+						reject();
 						return null; // should never arrive here
 				};
 //				console.debug( "storeAs", opts );
+				let data = specif.toExt( self.data, opts ),
+					fName = opts.fileName || data.title;
+
+				// A) Processing for 'html':
+				if( opts.format=='html' ) {
+				//	opts.cdn = "https://specif.de/apps/";
+					// find the fully qualified path of the content delivery server to fetch the viewer modules:
+					opts.cdn = window.location.href.substr(0,window.location.href.lastIndexOf("/")+1);
+					data = toHtml( data, opts )
+						.then(
+							function(dta) {
+								let blob = new Blob([dta], {type: "text/html; charset=utf-8"});
+								saveAs( blob, fName+'.html' );
+								self.exporting = false;
+								resolve();
+							}
+						)
+						.catch(
+							function(xhr) {
+								self.exporting = false;
+								reject(xhr);
+							}
+						);
+					return;
+				};
+				
+				// B) Processing for all formats except 'html':
 				let zip = new JSZip(),
-					data = specif.toExt( self.data, opts ),
-					fName = opts.fileName || data.title,
 					zName, 
 					mimetype = "application/zip";
-
+				
 				// Add the files to the ZIP container:
 				if( data.files )
 					data.files.forEach( (f)=>{
@@ -2026,6 +2068,8 @@ function Project( pr ) {
 				// done, store the specif.zip:
 				zip.generateAsync({
 						type: "blob",
+						compression: "DEFLATE",
+						compressionOptions: { level: 7 },
 						mimeType: mimetype
 					})
 					.then(
@@ -2566,7 +2610,7 @@ const specif = {
 					done: (xhr)=>{
 //						console.debug('schema', xhr);
 						// 1. check data against schema:
-						let rc = checkSchema( data, {schema: JSON.parse( buf2str(xhr.response) )} );
+						let rc = checkSchema( data, {schema: JSON.parse( ab2str(xhr.response) )} );
 						if( rc.status!=0 ) {
 							// older versions of the checking routine don't set the responseType:
 							if( typeof(rc.responseText)=='string' && rc.responseText.length>0 )
@@ -2836,17 +2880,25 @@ const specif = {
 			}
 			// a property:
 			function p2int( iE ) {
-				var	oE = {
+				var dT = dataTypeOf(iD, iE[names.pClass]), 
+					oE = {
 						// no id
 						class: iE[names.pClass]
 					};
 				if( iE.title ) oE.title = cleanValue(iE.title);
 				if( iE.description ) oE.description = cleanValue(iE.description);
 
-				// According to the schema, all property values are represented by a string
-				// and internally they are stored as string as well to avoid inaccuracies
-				// by multiple transformations:
-				oE.value = cleanValue(iE.value);
+				switch( dT.type ) {
+					case 'xs:string':
+					case 'xhtml':
+						oE.value = uriBack2slash( cleanValue(iE.value) );
+						break;
+					default:
+						// According to the schema, all property values are represented by a string
+						// and internally they are stored as string as well to avoid inaccuracies
+						// by multiple transformations:
+						oE.value = cleanValue(iE.value);
+				};
 				// properties do not have their own revision and change info
 //				console.debug('propValue 2int',iE,pT,oE);
 				return oE
@@ -2926,12 +2978,18 @@ const specif = {
 			// a file:
 			function f2int( iF ) {
 				var oF = i2int( iF );
-				oF.title = iF.title? iF.title.replace('\\','/') : iF.id;
+				oF.title = iF.title? iF.title.replace(/\\/g,'/') : iF.id;
 				// store the blob and it's type:
 				if( iF.blob ) {
 					oF.type = iF.blob.type || iF.type || attachment2mediaType( iF.title );
-					oF.blob = iF.blob
-				};
+					oF.blob = iF.blob;
+				}
+				else if( iF.dataURL ) {
+					oF.type = iF.type || attachment2mediaType( iF.title );
+					oF.dataURL = iF.dataURL;
+				}
+				else
+					oF.type = iF.type;
 				return oF
 			}
 	},
@@ -3203,7 +3261,7 @@ const specif = {
 						case 'xhtml':
 							if( opts.targetLanguage ) {
 								if( CONFIG.excludedFromFormatting.indexOf( iE.title || pC.title )>-1 )
-									// if it is a title, remove all formatting:
+									// if it is e.g. a title, remove all formatting:
 									oE.value = languageValueOf( iE.value, opts ).stripHTML();
 								else
 									// otherwise transform to HTML, if possible;
@@ -3295,7 +3353,8 @@ const specif = {
 				};
 				if( iN.nodes && iN.nodes.length>0 )
 					eN.nodes = forAll(iN.nodes,n2ext);
-				if( iN.revision ) eN.revision = iN.revision;
+				if( iN.revision ) 
+					eN.revision = iN.revision;
 				return eN
 			}
 			// a hierarchy:

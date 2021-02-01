@@ -89,7 +89,7 @@ function toEpub( data, opts ) {
 				console.info("File '"+f.title+"' transformed to PNG");
 				return
 			};
-			console.warn("Format of file '"+f.title+"' is not supported by MS Word.")
+			console.warn("Format of file '"+f.title+"' is not supported by ePub.")
 		})
 	};
 	if( pend<1 ) {

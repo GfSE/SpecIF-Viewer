@@ -12,6 +12,7 @@ modules.construct({
 	name: 'ioSpecif'
 }, function(self) {
 	"use strict";
+	
 	let zipped,
 //		template,	// a new Id is given and user is asked to input a project-name
 		opts;
@@ -146,7 +147,7 @@ modules.construct({
 			try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present.
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
-				var data = JSON.parse( buf2str(buf).trimJSON() );
+				var data = JSON.parse( ab2str(buf).trimJSON() );
 				zDO.resolve( data );
 			} catch (err) {
 				zDO.reject( errInvalidJson );

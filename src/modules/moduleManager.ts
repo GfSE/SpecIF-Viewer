@@ -27,12 +27,14 @@ var browser,
 				- 'show()' selects the view of the specified module and hides all others.  */
 
 	const self = this;
-	let callWhenReady = null;
+	let callWhenReady = null,
+		loadPath = './';
 
-	self.init = ( initDone, initFail )=>{
+	self.init = ( initDone, initFail, opts )=>{
 
 		self.registered = [];
 		self.ready = [];
+		if( opts && opts.path ) loadPath = opts.path;
 
 		// Identify browser type and load language file:
 		browser = new function() {
@@ -376,10 +378,10 @@ var browser,
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
 		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
-		//		case "dataTable": 			getCss( "./vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" );
-		//									getScript('./vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
-		//		case "xhtmlEditor": 		getCss( "./vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" );
-		//									getScript('./vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ); return true;
+		//		case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
+		//									getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
+		//		case "xhtmlEditor": 		getCss( loadPath+'vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css' );
+		//									getScript( loadPath+'vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true;
 		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' )
 											.then( (m)=>{ app.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
@@ -389,62 +391,63 @@ var browser,
 											return true;
 
 				// libraries:
-				case "config": 				getScript( './config/config.js' ); return true;
+				case "config": 				getScript( loadPath+'config/config.js' ); return true;
 				case "i18n": 				switch( browser.language.slice(0,2) ) {
-												case 'de':  getScript( './config/locales/iLaH-de.i18n.js' )
+												case 'de':  getScript( loadPath+'config/locales/iLaH-de.i18n.js' )
 															.done( ()=>{ i18n = new LanguageTextsDe() } ); break;
-												case 'fr':  getScript( './config/locales/iLaH-fr.i18n.js' )
+												case 'fr':  getScript( loadPath+'config/locales/iLaH-fr.i18n.js' )
 															.done( ()=>{ i18n = new LanguageTextsFr() } ); break;
-												default:	getScript( './config/locales/iLaH-en.i18n.js' )
+												default:	getScript( loadPath+'config/locales/iLaH-en.i18n.js' )
 															.done( ()=>{ i18n = new LanguageTextsEn() } )
 											};
 											return true;
-				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
-				case "stdTypes":			getScript( './modules/stdTypes.js' ); return true;
-				case "helper": 				getScript( './modules/helper.js' ); return true;
-				case "helperTree": 			getScript( './modules/helperTree.js' ); return true;
+				case "mainCSS":				getCss( loadPath+'vendor/assets/stylesheets/SpecIF.default.css' ); setReady(mod); return true;
+				case "stdTypes":			getScript( loadPath+'modules/stdTypes.js' ); return true;
+				case "helper": 				getScript( loadPath+'modules/helper.js' ); return true;
+				case "helperTree": 			getScript( loadPath+'modules/helperTree.js' ); return true;
 				case "cache": 				loadM( 'fileSaver' );
-											getScript( './modules/cache.mod.js' ); return true;
-				case "profileAnonymous":	getScript( './modules/profileAnonymous.mod.js' ); return true;
-		/*		case "profileMe":			$('#'+mod).load( "./modules/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
-				case "user":				$('#'+mod ).load( "./modules/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+											getScript( loadPath+'modules/cache.mod.js' ); return true;
+				case "profileAnonymous":	getScript( loadPath+'modules/profileAnonymous.mod.js' ); return true;
+		/*		case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
+				case "user":				$('#'+mod ).load( loadPath+'modules/user-0.92.44.mod.html', function() {setReady(mod)} ); return true;
 				case "projects":			loadM( 'toEpub' );
-											$('#'+mod).load( "./modules/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true; */
-				case "toXhtml": 			getScript( './vendor/assets/javascripts/toXhtml.js' ); return true;
+											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
+				case 'toHtml': 				getScript( loadPath+'modules/toHtml.js' ); return true;
+				case "toXhtml": 			getScript( loadPath+'vendor/assets/javascripts/toXhtml.js' ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
-											getScript( './vendor/assets/javascripts/toEpub.js' ); return true;
-				case "toOxml": 				getScript( './vendor/assets/javascripts/toOxml.js' ); return true;
-				case "toTurtle":			getScript( './vendor/assets/javascripts/specif2turtle.js' ); return true;
-				case 'bpmn2specif':			getScript( './vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
-				case 'archimate2specif':	getScript( './vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
-				case 'reqif2specif':		getScript( './vendor/assets/javascripts/reqif2specif.js' ); return true;
+											getScript( loadPath+'vendor/assets/javascripts/toEpub.js' ); return true;
+				case "toOxml": 				getScript( loadPath+'vendor/assets/javascripts/toOxml.js' ); return true;
+				case "toTurtle":			getScript( loadPath+'vendor/assets/javascripts/specif2turtle.js' ); return true;
+				case 'bpmn2specif':			getScript( loadPath+'vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
+				case 'archimate2specif':	getScript( loadPath+'vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
+				case 'reqif2specif':		getScript( loadPath+'vendor/assets/javascripts/reqif2specif.js' ); return true;
 				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript( './modules/graph.js' ); return true;
+											getScript( loadPath+'modules/graph.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 										//	loadM( 'dataTableButtons' );
 										//	loadM( 'zip' );  // needed for Excel export
-											getScript( "./modules/objectTable-0.93.1.js"); return true; */
+											getScript( loadPath+'modules/objectTable-0.93.1.js' ); return true; */
 
 				// constructors/modules:
-				case "about":				getScript( './modules/about.mod.js' ); return true;
+				case "about":				getScript( loadPath+'modules/about.mod.js' ); return true;
 				case 'importAny':			loadM( 'zip' );
-											getScript( './modules/importAny.mod.js' ); return true;
+											getScript( loadPath+'modules/importAny.mod.js' ); return true;
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
-											getScript( './modules/ioSpecif.mod.js' ); return true;
+											getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			loadM( 'reqif2specif' );
-											getScript( './modules/ioReqif.mod.js' ); return true;
-				case 'ioRdf': 				getScript( './modules/ioRdf.mod.js' ); return true;
+											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;
+				case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
-											getScript( './modules/ioXls.mod.js' ); return true;
+											getScript( loadPath+'modules/ioXls.mod.js' ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript( './modules/ioBpmn.mod.js' ); return true;
+											getScript( loadPath+'modules/ioBpmn.mod.js' ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
-											getScript( './modules/ioArchimate.mod.js' ); return true;
+											getScript( loadPath+'modules/ioArchimate.mod.js' ); return true;
 				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript( './modules/serverPouch.mod.js' ); return true;
+											getScript( loadPath+'modules/serverPouch.mod.js' ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.users:		//	loadM( 'mainCSS' );
@@ -458,15 +461,15 @@ var browser,
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 										//	loadM( 'stdTypes' );
 										//	loadM( 'diff' );
-											getScript( './modules/specifications.mod.js' ); return true;
+											getScript( loadPath+'modules/specifications.mod.js' ); return true;
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript( './modules/reports.mod.js' ); return true;
-				case CONFIG.objectFilter:  	getScript( './modules/filter.mod.js' ); return true;
+				case CONFIG.reports: 		getScript( loadPath+'modules/reports.mod.js' ); return true;
+				case CONFIG.objectFilter:  	getScript( loadPath+'modules/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
-											getScript( './modules/resourceEdit.mod.js' ); return true;
-				case CONFIG.resourceLink:	getScript( './modules/resourceLink.mod.js' ); return true;
-		//		case CONFIG.files: 			getScript( "./modules/files-0.93.1.js"); return true;
+											getScript( loadPath+'modules/resourceEdit.mod.js' ); return true;
+				case CONFIG.resourceLink:	getScript( loadPath+'modules/resourceLink.mod.js' ); return true;
+		//		case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false;
 			}

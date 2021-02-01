@@ -161,8 +161,9 @@ modules.construct({
                 // Selected file is not zipped - it is expected to be ReqIF data in XML format.
 			    // Check if data is valid XML:
                 
-                if (validateXML(buf2str(buf))) {
-					var data = testTransformReqIfToSpecIf( buf2str(buf) );
+				let str = ab2str(buf);
+                if( validateXML(str) ) {
+					var data = testTransformReqIfToSpecIf(str);
 					// transformReqIfToSpecIf gibt string zurück
                     zDO.resolve( data );
                 } else {

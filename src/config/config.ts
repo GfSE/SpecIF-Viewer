@@ -20,6 +20,7 @@ const CONFIG = {};
 	CONFIG.messageDisplayTimeLong = 12000;
 	CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms). The faster the browser and processor, the shorter the time may be chosen.
 	CONFIG.imageRenderingTimelag = 160;  // timelag between building the DOM and inserting the images
+	CONFIG.showTimelag = 400;
 	CONFIG.minInteger = -32768;
 	CONFIG.maxInteger = 32767;
 	CONFIG.minReal = -10000000.0;
@@ -325,7 +326,8 @@ const CONFIG = {};
 	// A list of property classes which are excluded from text formatting, specified by title;
 	// Applied only to properties of type "xs:string":
 	CONFIG.excludedFromFormatting = [
-		CONFIG.propClassType
+		CONFIG.propClassType,
+		"SpecIF:Notation"
 	]
 	.concat( CONFIG.titleProperties )
 	.concat( CONFIG.idProperties );
@@ -474,8 +476,7 @@ const vocabulary = {
 				case "reqif_revision":				oT = "SpecIF:Revision"; break;
 				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
 				case "specif_subclass":			// deprecated, for compatibility
-				case "reqif_category":
-				case "specif_notation":				oT = CONFIG.propClassType; break;
+				case "reqif_category":				oT = CONFIG.propClassType; break;
 				case 'specif_id':				// deprecated, for compatibility
 				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
 				case "specif_state":			// deprecated, for compatibility
@@ -637,7 +638,7 @@ const RE = {};
 	RE.tagImg = new RegExp( '<img ([^>]+)/>', 'g' );
 	const reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
-	RE.tagNestedObjects = new RegExp( '<object ([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
+	RE.tagNestedObjects = new RegExp( '<object ([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;
 	const tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)";
 	RE.tag = new RegExp( tagStr, 'g' );

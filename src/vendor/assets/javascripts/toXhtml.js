@@ -63,7 +63,7 @@ function toXhtml( data, opts ) {
 		reSingleObject = new RegExp( reSO, 'g' );
 	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 	// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>',
 		reNestedObjects = new RegExp( reNO, 'g' );
 
 	// All required parameters are available, so we can begin.

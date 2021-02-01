@@ -109,7 +109,7 @@ modules.construct({
 				// change view to browse the content:
 				modules.show({ newView: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
 			}, 
-			400 
+			CONFIG.showTimelag
 		);
 	}
 	function handleError(xhr) {
@@ -253,7 +253,7 @@ modules.construct({
 					app[self.format.name].toSpecif(result.response)
 						.progress( setProgress )
 						.done( handleResult )
-						.fail( handleError )
+						.fail( handleError );
 				},
 				fail: handleError
 			//	then:
