@@ -681,10 +681,10 @@ modules.construct({
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
-		//	if( self.cmtCre )
-		//		rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
+		/*	if( self.cmtCre )
+				rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
 						+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
-		//	else
+			else */
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
@@ -961,7 +961,7 @@ modules.construct({
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
 		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
-			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
+			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cData )});
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
@@ -987,55 +987,58 @@ modules.construct({
 				cacheMinRes( net.resources, s.subject );
 			}
 		}
-		function getMentionsRels(res,opts) {
+		function getMentionsRels(selR,opts) {
+			// selR is the currently selected resource.
+			
 			return new Promise( (resolve,reject)=>{	
-				// Search all resource text properties and detect where other resource's titles are referenced.
+				// Search all resource text properties and detect where another resource's title is referenced.
 				// Only findings with marks for dynamic linking are taken.
 				// Add a statement for each finding for display; do not save any of these statements in the server.
-				if( !CONFIG.findMentionedObjects || !res ) 
+				if( !CONFIG.findMentionedObjects || !selR ) 
 					resolve([]);
-//				console.debug('getMentionsRels',res,opts);
-			/*	// There is no need to have a statementClass .... at least currently:
+//				console.debug('getMentionsRels',selR,opts);
+			/*	// There is no need to have a statementClass ... at least currently:
 				var rT = itemByName( cData.statementClasses, CONFIG.staClassMentions );
 				if( !rT ) return;  */
 				
-				let ti = elementTitleOf( res, opts ),
-					staL = [],	// a list of artificial statements; these are not stored in the server
+				let staL = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
-					rPatt,
+					localOpts = $.extend({},opts,{addIcon:false}),  // no icons when searching titles
+					selTi = elementTitleOf( selR, localOpts ),
+					refPatt,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
-					sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
+					selPatt = new RegExp( (CONFIG.dynLinkBegin+selTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
 				pData.tree.iterate( (nd)=>{
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
-					// so there is no need to check it, here:
+					// so there is no need to check permissions, here:
 					pend++;
 					app.cache.selectedProject.readContent( 'resource', {id: nd.ref} )
 					.then( 
 						(refR)=>{   
 							// refR is a resource referenced in a hierarchy
-							let ti = elementTitleOf( refR, opts );
-//							console.debug('pData.tree.iterate',refR,ti,pend);
-							if( ti && ti.length>CONFIG.dynLinkMinLength-1 && refR.id!=res.id ) {
+							let refTi = elementTitleOf( refR, localOpts );
+//							console.debug('pData.tree.iterate',refR,refTi,pend);
+							if( refTi && refTi.length>CONFIG.dynLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
 
 								// 1. The titles of other resource's found in the selected resource's texts 
 								//    result in a 'this mentions other' statement (selected resource is subject):
-								rPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
-								if( res.properties )
-									res.properties.forEach( (p)=>{
+								refPatt = new RegExp( (CONFIG.dynLinkBegin+refTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
+								if( selR.properties )
+									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cData, p['class'] ).type ) {
 											case 'xs:string':
 											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if( rPatt.test( p.value ) && notListed( staL,res,refR ) ) {
+												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
-														subject:	res,
+														subject:	selR,
 														object:		refR
 													})
 												}
@@ -1051,12 +1054,12 @@ modules.construct({
 											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
-												if( sPatt.test( p.value ) && notListed( staL,refR,res ) ) {
+												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
 														subject:	refR,
-														object:		res
+														object:		selR
 													})
 												}
 										}
@@ -1743,7 +1746,7 @@ var fileRef = new function() {
 			
 		// 1. transform two nested objects to link+object resp. link+image:
 		txt = txt.replace( RE.tagNestedObjects,   
-			( $0, $1, $2, $3, $4 )=>{       // description is $4
+			( $0, $1, $2, $3, $4 )=>{       // description is $4, $3 is not used
 				var u1 = getUrl( $1 ),  	// the primary file
 					t1 = getType( $1 ), 
 					w1 = getPrpVal("width", $1 ),
@@ -1754,7 +1757,7 @@ var fileRef = new function() {
 					h2 = getPrpVal("height", $2 ),
 					d = $4 || u1;			// If there is no description, use the name of the link object
 
-				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
+//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
 				if( !u1 ) console.warn('no file found in',$0);
 				if( !u2 ) console.warn('no image found in',$0);
 //				u1 = addFilePath(u1);
@@ -1774,7 +1777,7 @@ var fileRef = new function() {
 						// now add the image as innerHTML:
 						self.renderDownloadLink( f1, '<span class="'+opts.imgClass+' '+tagId(u2)+'"></span>', opts );
 						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
-						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} );
+						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} ) );
 					} 
 					else {
 						// nothing to display, so ignore f2:
@@ -1817,8 +1820,16 @@ var fileRef = new function() {
 //				u1 = addFilePath(u1);
 				if( !u1 ) console.info('no image found');
 				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
+				// sometimes the application files (BPMN or other) have been replaced by images;
+				// this is for example the case for *.specif.html files:
+				if( !f1 && CONFIG.applExtensions.indexOf( e )>-1 ) {
+					for( var i=0,I=CONFIG.imgExtensions.length; !f1&&i<I; i++ ) {
+						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
+						f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
+					};
+				};
 					
-				if( CONFIG.imgExtensions.indexOf( e )>-1 || e=='bpmn' ) {  
+				if( CONFIG.imgExtensions.indexOf( e )>-1 || CONFIG.applExtensions.indexOf( e )>-1 ) {  
 					// it is an image, show it:
 					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
 //					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
@@ -1960,11 +1971,10 @@ var fileRef = new function() {
 			setTimeout( ()=>{
 				// add image to DOM using an image-tag with data-URI:
 				Array.from( document.getElementsByClassName(tagId(f.title)), 
-					(el)=>{el.innerHTML = '<object data="'+f.dataURL+'" type="'+f.type+'" >'+f.title+'</object>'}
-				);
-			/*	Array.from( document.getElementsByClassName(tagId(f.title)), 
-					(el)=>{el.innerHTML = '<img src="'+f.dataURL+'" type="'+f.type+'" alt="'+f.title+'" />'}
-				); */
+					(el)=>{ 
+						let ty = /data:([^;]+);/.exec(f.dataURL);
+						el.innerHTML = '<object data="' + f.dataURL + '" type="' + (ty[1]||f.type) + '" >' + f.title + '</object>'; 
+					});
 			}, opts.timelag );
 			return;
 		};

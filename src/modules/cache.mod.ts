@@ -1765,7 +1765,7 @@ function Project( pr ) {
 									i18n.LblFormat,
 									[
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
-										{ title: 'HTML with embedded SpecIF v'+app.specifVersion, id: 'html' },
+										{ title: 'HTML with embedded SpecIF v'+app.specifVersion+' (experimental)', id: 'html' },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
 									//	{ title: 'RDF', id: 'rdf' },
 										{ title: 'Turtle (experimental)', id: 'turtle' },
@@ -1857,6 +1857,45 @@ function Project( pr ) {
 			};
 			return;
 
+			function transform2image( fileL, fn ) {
+				let pend=0;
+				if( fileL )
+					// Transform any special file format to an image:
+					fileL.forEach( (f,i,L)=>{
+						switch( f.type ) {
+							case 'application/bpmn+xml':
+								pend++;
+								// Read and render BPMN as SVG:
+								blob2text(f, (b)=>{
+									bpmn2svg(b)
+									.then(
+										(result)=>{
+											// replace BPMN by SVG:
+											L.splice(i,1,{
+												blob: new Blob([result.svg],{type: "image/svg+xml; charset=utf-8"}),
+												id: 'F-'+f.title.simpleHash(),
+												title: f.title.fileName()+'.svg',
+												type: 'image/svg+xml',
+												changedAt: f.changedAt
+											});
+//											console.debug('SVG',result.svg,L);
+											if( --pend<1 )
+												// Finally publish in the desired format:
+												fn();
+										},
+										(err)=>{
+											console.error('BPMN-Viewer could not deliver SVG', err);
+											reject();
+										}
+									);
+								}, 0);
+						};
+					});
+				// In case there is nothing to transform, we start right away:
+				if( pend<1 )
+					// publish in the desired format:
+					fn();
+			}
 			function publish( opts ) {
 				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 )  {
 					// programming error!
@@ -1887,7 +1926,7 @@ function Project( pr ) {
 				opts.revisionDate = new Date().toISOString();
 
 				let data = specif.toExt( self.data, opts ),
-					options = {
+					localOpts = {
 						// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 						titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties),
 						descriptionProperties: CONFIG.descProperties,
@@ -1902,57 +1941,20 @@ function Project( pr ) {
 						fileName: opts.fileName,
 						done: ()=>{ app.cache.selectedProject.exporting=false; resolve() },
 						fail: (xhr)=>{ app.cache.selectedProject.exporting=false; reject(xhr) }
-					},
-					pend=0;
-
-				if( data.files )
-					// Transform any special format:
-					data.files.forEach( (f,i,L)=>{
-						switch( f.type ) {
-							case 'application/bpmn+xml':
-								pend++;
-								// Read and render BPMN as SVG:
-								blob2text(f, (b)=>{
-									bpmn2svg(b)
-									.then(
-										(result)=>{
-											// replace BPMN by SVG:
-											L.splice(i,1,{
-												blob: new Blob([result.svg],{type: "application/svg+xml; charset=utf-8"}),
-												id: 'F-'+f.title.simpleHash(),
-												title: f.title.fileName()+'.svg',
-												type: 'image/svg+xml',
-												changedAt: f.changedAt
-											});
-//											console.debug('SVG',result.svg,L);
-											if( --pend<1 )
-												// Finally publish in the desired format:
-												pub();
-										},
-										(err)=>{
-											console.error('BPMN-Viewer could not deliver SVG', err);
-											reject();
-										}
-									);
-								}, 0);
-						};
-					});
-				// In case there is nothing to transform, we start right away:
-				if( pend<1 )
-					// publish in the desired format:
-					pub();
-				return;
-
-				function pub() {
-					switch( opts.format ) {
-						case 'epub':
-							toEpub( data, options );
-							break;
-						case 'oxml':
-							toOxml( data, options );
 					};
-					// resolve() is called in the call-backs defined by opts
-				}
+
+				transform2image( data.files,
+					function() {
+						switch( opts.format ) {
+							case 'epub':
+								toEpub( data, localOpts );
+								break;
+							case 'oxml':
+								toOxml( data, localOpts );
+						};
+						// resolve() is called in the call-backs defined by opts
+					}
+				);
 			}
 			function storeAs( opts ) {
 				if( !opts || ['specif','html','reqif','turtle'].indexOf(opts.format)<0 ) {
@@ -2003,21 +2005,25 @@ function Project( pr ) {
 				//	opts.cdn = "https://specif.de/apps/";
 					// find the fully qualified path of the content delivery server to fetch the viewer modules:
 					opts.cdn = window.location.href.substr(0,window.location.href.lastIndexOf("/")+1);
-					data = toHtml( data, opts )
-						.then(
-							function(dta) {
-								let blob = new Blob([dta], {type: "text/html; charset=utf-8"});
-								saveAs( blob, fName+'.html' );
-								self.exporting = false;
-								resolve();
-							}
-						)
-						.catch(
-							function(xhr) {
-								self.exporting = false;
-								reject(xhr);
-							}
-						);
+
+					transform2image( data.files,
+						()=>{ toHtml( data, opts )
+								.then(
+									function(dta) {
+										let blob = new Blob([dta], {type: "text/html; charset=utf-8"});
+										saveAs( blob, fName+'.specif.html' );
+										self.exporting = false;
+										resolve();
+									}
+								)
+								.catch(
+									function(xhr) {
+										self.exporting = false;
+										reject(xhr);
+									}
+								);
+						}
+					);
 					return;
 				};
 				
@@ -3230,12 +3236,12 @@ const specif = {
 				
 				// skip hidden properties:
 				let pC = itemById( spD.propertyClasses, iE['class'] );
-				if( Array.isArray( opts.hiddenProperties ) {
+				if( Array.isArray( opts.hiddenProperties ) ) {
 				/*	CONFIG.hiddenProperties.forEach( (hP)=>{
 						if( hP.title==(iE.title||pC.title) ) return;
 					}); */
 					opts.hiddenProperties.forEach( (hP)=>{
-						if( hP.title==(iE.title||pC.title) && (hP.value==undefined || hP.value==iE.value ) return;
+						if( hP.title==(iE.title||pC.title) && (hP.value==undefined || hP.value==iE.value ) ) return;
 					});
 				};
 				

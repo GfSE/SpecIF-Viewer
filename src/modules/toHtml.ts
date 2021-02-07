@@ -12,6 +12,8 @@ function toHtml( pr, pars ) {
 	// Attention: The SpecIF data as JSON may not contain any apostrophes 
 	// (must be replaced by &apos; for example).
 
+	// consider to use: https://gist.github.com/loilo/92220c23567d6ed085a28f2c3e84e311
+
 	return new Promise( (resolve, reject)=>{
 		var pend = 0;
 		if( pr.files )

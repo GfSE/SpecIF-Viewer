@@ -853,11 +853,6 @@ String.prototype.trimJSON = function() {
 	return this.substring(si,li+1)
 };
 
-String.prototype.trimXML = function() {
-	let si = this.indexOf("<?xml"),
-		li = this.lastIndexOf("</REQ-IF>");
-	return this.substring(si, li+9)
-}
 /*	
 String.prototype.removeBOM = function() {
 	// remove the byte order mask from a UTF-8 coded string
@@ -865,7 +860,7 @@ String.prototype.removeBOM = function() {
 	// ToDo: The BOM may be "FE FF" in certain representations.
 	return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, ($0,$1,$2)=>{return $2} )
 };
-*/
+
 function toHex(str) {
 	var hex='', nV='';
 	for(var i=0;i<str.length;i++) {
@@ -874,7 +869,7 @@ function toHex(str) {
 	};
 	return hex
 }
-/*
+
 if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) {
     'use strict';
@@ -1163,7 +1158,7 @@ function cleanValue( o ) {
 	};
 	return '';  // unexpected input (programming error with all likelihood
 }
-
+/*
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
     Array.isArray = (obj)=>{
@@ -1177,7 +1172,7 @@ if (!Number.isInteger) {
 	};
 };
 // function float2int(val) { return parseInt(val) };
-
+*/
 function attachment2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( !t ) return;
@@ -1190,6 +1185,7 @@ function attachment2mediaType( fname ) {
 	if( ti>-1 ) return CONFIG.applTypes[ ti ];
 //	return; undefined
 }
+/*
 function image2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( !t ) return;
@@ -1197,7 +1193,7 @@ function image2mediaType( fname ) {
 	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
 //	return; undefined
 }
-
+*/
 function localDateTime(iso) {
 	if( !iso ) return '';
 	// ToDo: calculate offset of time-zone ... or use one of the libraries ..

@@ -428,7 +428,7 @@ modules.construct({
 								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
 									lE = res.toShow.descriptions[i];
 									res.toShow.descriptions.splice( i, 1, {
-											title: lE.title,  // for sorting the property into the columns
+											title: lE.title,
 											class: lE['class'],
 											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
 									});
@@ -436,7 +436,7 @@ modules.construct({
 								for( i= res.toShow.other.length-1; i>-1; i-- ) {
 									lE = res.toShow.other[i];
 									res.toShow.other.splice( i, 1, {
-											title: lE.title,  // for sorting the property into the columns
+											title: lE.title,
 											class: lE['class'],
 											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
 									}); 
