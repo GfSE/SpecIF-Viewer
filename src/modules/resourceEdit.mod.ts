@@ -307,7 +307,7 @@ modules.construct({
 							};
 						} else {
 							// ToDo: Don't enable the 'create resource' button, if there are no eligible resourceClasses ..
-							reject({status:999;statusText:"No resource class defined for manual creation of a resource."});
+							reject({status:999,statusText:"No resource class defined for manual creation of a resource."});
 						};
 					},
 					reject
@@ -331,7 +331,7 @@ modules.construct({
 					newFile = { blob:data, id:'F-'+fName.simpleHash(), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
 				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
-				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.render( newFile )+'</div>';
+				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.renderImage( newFile )+'</div>';
 		});
 		return;
 		
@@ -383,7 +383,7 @@ modules.construct({
 		// in this case the title will only be seen in the element's title:
 		if( toEdit.title['class'] ) {
 			delete toEdit.title.title;  // is redundant, the property's class title applies
-			if( Array.isArray( self.newRes.properties )
+			if( Array.isArray( self.newRes.properties ) )
 				self.newRes.properties.push( toEdit.title );
 			else
 				self.newRes.properties = [ toEdit.title ];
@@ -393,7 +393,7 @@ modules.construct({
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-				if( Array.isArray( self.newRes.properties )
+				if( Array.isArray( self.newRes.properties ) )
 					self.newRes.properties.push( p );
 				else
 					self.newRes.properties = [ p ];
@@ -413,7 +413,7 @@ modules.construct({
 				// it has been added by classifyProps() and there is no need to create it;
 				// in this case the description will only be seen in the element's description:
 				if( p['class'] ) {
-					if( Array.isArray( self.newRes.properties )
+					if( Array.isArray( self.newRes.properties ) )
 						self.newRes.properties.push( p );
 					else
 						self.newRes.properties = [ p ];
@@ -423,7 +423,7 @@ modules.construct({
 				delete self.newRes.description;
 			};
 //			console.debug( 'save',mode, p, getP( p ) );
-		};
+		});
 
 		toEdit.other.forEach( function(p) {
 			// get the new or unchanged input value of the property from the input field:
@@ -433,7 +433,7 @@ modules.construct({
 			// because classifyProps() puts only existing properties to 'other':
 			if( p['class'] ) {
 				if( hasContent(p.value) ) {
-					if( Array.isArray( self.newRes.properties )
+					if( Array.isArray( self.newRes.properties ) )
 						self.newRes.properties.push( p );
 					else
 						self.newRes.properties = [ p ];
@@ -441,7 +441,7 @@ modules.construct({
 			} else {
 					console.error('Cannot save edited property',p,' because it has no class');
 			};
-		};
+		});
 
 		self.newRes.changedAt = chD;
 //		console.debug( 'save', self.newRes );

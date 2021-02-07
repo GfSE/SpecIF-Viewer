@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta http-equiv="expires" content="0" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>SpecIF Edit</title>
 	<link rel="shortcut icon" href="./vendor/assets/icons/favicon.ico" type="image/x-icon">
 	<link rel="icon" href="./vendor/assets/icons/favicon.ico" type="image/x-icon">
-	<meta charset="utf-8" />
-	<meta http-equiv="expires" content="0" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body>
 
@@ -32,7 +32,7 @@ app = new function() {
 
 	// construct main app:
 	var self = this;
-	self.version = 'v0.99.6.b';
+	self.version = 'v0.99.7.9';
 	self.specifVersion = '1.0';
 	// IE does not support ()=>{..} --> "syntax error" at load time.
 	self.init = function() {
@@ -160,6 +160,9 @@ app = new function() {
 				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
 				// no selector: the children don't have views
 				children: [{
+					name: 'toHtml'
+					// no view
+				},{
 					name: 'toEpub'
 					// no view
 				},{
@@ -236,7 +239,7 @@ app = new function() {
 			var el = document.createElement('script');
 			el.onload = function() {
 							if( --pend<1 )
-								modules.init( self.init, function(xhr) { alert( xhr.statusText ) } )
+								modules.init( self.init, function(xhr) { alert( xhr.statusText ) } );
 						};
 			el.src = url;
 			document.body.appendChild(el);

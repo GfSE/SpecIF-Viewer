@@ -82,6 +82,8 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strTextAnnotation = "Text Annotation";
 	if( !opts.strNamespace ) 
 		opts.strNamespace = "bpmn:";
+	if( !opts.strNotation ) 
+		opts.strNotation = "BPMN 2.0 Process Diagram";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -140,6 +142,9 @@ function BPMN2Specif( xmlString, opts ) {
 		}, {
 			class: "PC-Type",
 			value: opts.strBusinessProcessType
+		}, {
+			class: "PC-Notation",
+			value: opts.strNotation
 		}],
 		changedAt: opts.fileDate
 	});
@@ -863,11 +868,11 @@ function BPMN2Specif( xmlString, opts ) {
 	// 8. Add the 'diagram shows model-element' statements:
 	model.resources.forEach( (r)=>{
 		// only certain resources are model-elements:
-		if( ['RC-Actor','RC-State','RC-Event'].indexOf(r['class'])>-1 ) {
+		if( ["RC-Actor","RC-State","RC-Event","RC-Collection"].indexOf(r['class'])>-1 ) {
 			model.statements.push({
 				id: model.id+'-shows-'+r.id,
-				title: 'SpecIF:shows',
-				class: 'SC-shows',
+				title: "SpecIF:shows",
+				class: "SC-shows",
 				subject: diagramId,
 				object: r.id,
 				changedAt: opts.fileDate
@@ -997,11 +1002,11 @@ function BPMN2Specif( xmlString, opts ) {
 				title: "SpecIF:Diagram",
 				dataType: "DT-Text",
 				changedAt: "2016-05-26T08:59:00+02:00"
-		/*	},{
+			},{
 				id: "PC-Notation",
 				title: "SpecIF:Notation",
 				dataType: "DT-ShortString",
-				changedAt: "2016-05-26T08:59:00+02:00" */
+				changedAt: "2016-05-26T08:59:00+02:00"
 			},{
 				id: "PC-Type",
 				title: "dcterms:type",
@@ -1017,7 +1022,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Description","PC-Diagram","PC-Type"],
+			propertyClasses: ["PC-Description","PC-Diagram","PC-Type","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{

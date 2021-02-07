@@ -520,6 +520,7 @@ function LanguageTextsEn() {
 	self.HIS_OemComment = 'OEM-Comment';
 	self.HIS_SupplierStatus = 'Supplier-Status';
 	self.HIS_SupplierComment = 'Supplier-Comment';
+/*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Title';
 	self.DBRD_Name = 'Title';
@@ -530,7 +531,7 @@ function LanguageTextsEn() {
 	self.VALUE_Object_Text =
 	self.Object_Text = self.ReqIF_Text;
 	self.VALUE_Object_ID =
-	self.Object_ID = self.ReqIF_ForeignID;
+	self.Object_ID = self.ReqIF_ForeignID; */
 	self.SpecIF_priorityHigh = "high";
 	self.SpecIF_priorityRatherHigh = "rather high";
 	self.SpecIF_priorityMedium = "medium";
@@ -585,7 +586,8 @@ function LanguageTextsEn() {
 	self.MsgCreateStatement = "Create a statement";
 	self.MsgOtherProject = "Late response; another project has been selected meanwhile";
 	self.MsgWaitPermissions = 'Please wait while loading the permissions.';
-	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.';
+/*	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.'; */
+	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
 	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
 	self.MsgImportBpmn = 'Permissible filetype is *.bpmn. The content must conform with the schema BPMN 2.0 XML. The import may take a couple of minutes.';
 	self.MsgImportXls = 'Permissible filetypes are *.xls, *.xlsx and *.csv. The import may take a couple of minutes for very large files.';

@@ -200,7 +200,7 @@ function toOxml( data, opts ) {
 				reSingleObject = new RegExp( reSO, '' );
 		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-			const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+			const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>',
 				reNestedObjects = new RegExp( reNO, '' ); */
 		
 			// Regex to isolate text runs constituting a paragraph:
@@ -2576,7 +2576,7 @@ function toOxml( data, opts ) {
 		+								'<vt:lpstr/>'
 		+							'</vt:vector>'
 		+						'</TitlesOfParts>'
-		+						'<Company>adesso AG</Company>'
+		+						'<Company>Gesellschaft für Systems Engineering e.V. (GfSE)</Company>'
 		+						'<LinksUpToDate>false</LinksUpToDate>'
 		+						'<CharactersWithSpaces>108636</CharactersWithSpaces>'
 		+						'<SharedDoc>false</SharedDoc>'
@@ -2590,6 +2590,7 @@ function toOxml( data, opts ) {
 	}
 
 	function store( f ) {
+//		let blob = new Blob([f.content],{type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document; charset=utf-8"});
 		let blob = new Blob([f.content],{type: "text/xml; charset=utf-8"});
 		saveAs(blob, f.name+".xml");
 		if( typeof(opts.done)=="function" ) opts.done()

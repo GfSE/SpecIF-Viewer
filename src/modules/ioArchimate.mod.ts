@@ -58,7 +58,7 @@ modules.construct({
 		bDO = $.Deferred();
 
 		bDO.notify('Transforming Archimate Open Exchange to SpecIF',10); 
-		data = Archimate2Specif( buf2str(buf), 
+		data = Archimate2Specif( ab2str(buf), 
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 

@@ -334,15 +334,23 @@ function Archimate2Specif( xmlString, opts ) {
 				}
 			);
 			
-			// ToDo: Add diagram reference (but we need the diagram, first).
+			// ToDo: Add diagram reference (but we need to get or find the diagram, first).
 			
-			// Store the Archimate viewpoint:
 			let vp = vi.getAttribute('viewpoint');
-			if( vp )
-				r.properties.push({
-					class: "PC-Type", 
-					value: vp+' Viewpoint'
-				});
+			// Classify the diagram depending on the viewpoint:
+		/*	switch( vp ) {
+				default:
+					r.properties.push({
+						class: "PC-Type", 
+						value: ""
+					});
+			}; */
+			// Store the Archimate viewpoint:
+			if( vp ) 
+					r.properties.push({
+						class: "PC-Notation", 
+						value: vp+" Viewpoint"
+					});
 			
 			model.resources.push(r);
 		}
@@ -495,11 +503,11 @@ function Archimate2Specif( xmlString, opts ) {
 				title: "SpecIF:Diagram",
 				dataType: "DT-Text",
 				changedAt: opts.fileDate
-		/*	},{
+			},{
 				id: "PC-Notation",
 				title: "SpecIF:Notation",
 				dataType: "DT-ShortString",
-				changedAt: opts.fileDate  */
+				changedAt: opts.fileDate
 			},{
 				id: "PC-Type",
 				title: "dcterms:type",
@@ -515,7 +523,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Description","PC-Diagram","PC-Type"],
+			propertyClasses: ["PC-Description","PC-Diagram","PC-Type","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{

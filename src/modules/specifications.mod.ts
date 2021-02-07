@@ -681,10 +681,10 @@ modules.construct({
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
-		//	if( self.cmtCre )
-		//		rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
+		/*	if( self.cmtCre )
+				rB += '<button class="btn btn-default" onclick="'+myFullName+'.addComment()" '
 						+'data-toggle="popover" title="'+i18n.LblAddCommentToObject+'" >'+i18n.IcoComment+'</button>';
-		//	else
+			else */
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
@@ -961,7 +961,7 @@ modules.construct({
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
 		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
-			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
+			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cData )});
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
@@ -987,55 +987,58 @@ modules.construct({
 				cacheMinRes( net.resources, s.subject );
 			}
 		}
-		function getMentionsRels(res,opts) {
+		function getMentionsRels(selR,opts) {
+			// selR is the currently selected resource.
+			
 			return new Promise( (resolve,reject)=>{	
-				// Search all resource text properties and detect where other resource's titles are referenced.
+				// Search all resource text properties and detect where another resource's title is referenced.
 				// Only findings with marks for dynamic linking are taken.
 				// Add a statement for each finding for display; do not save any of these statements in the server.
-				if( !CONFIG.findMentionedObjects || !res ) 
+				if( !CONFIG.findMentionedObjects || !selR ) 
 					resolve([]);
-//				console.debug('getMentionsRels',res,opts);
-			/*	// There is no need to have a statementClass .... at least currently:
+//				console.debug('getMentionsRels',selR,opts);
+			/*	// There is no need to have a statementClass ... at least currently:
 				var rT = itemByName( cData.statementClasses, CONFIG.staClassMentions );
 				if( !rT ) return;  */
 				
-				let ti = elementTitleOf( res, opts ),
-					staL = [],	// a list of artificial statements; these are not stored in the server
+				let staL = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
-					rPatt,
+					localOpts = $.extend({},opts,{addIcon:false}),  // no icons when searching titles
+					selTi = elementTitleOf( selR, localOpts ),
+					refPatt,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
-					sPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
+					selPatt = new RegExp( (CONFIG.dynLinkBegin+selTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
 				pData.tree.iterate( (nd)=>{
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
-					// so there is no need to check it, here:
+					// so there is no need to check permissions, here:
 					pend++;
 					app.cache.selectedProject.readContent( 'resource', {id: nd.ref} )
 					.then( 
 						(refR)=>{   
 							// refR is a resource referenced in a hierarchy
-							let ti = elementTitleOf( refR, opts );
-//							console.debug('pData.tree.iterate',refR,ti,pend);
-							if( ti && ti.length>CONFIG.dynLinkMinLength-1 && refR.id!=res.id ) {
+							let refTi = elementTitleOf( refR, localOpts );
+//							console.debug('pData.tree.iterate',refR,refTi,pend);
+							if( refTi && refTi.length>CONFIG.dynLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
 
 								// 1. The titles of other resource's found in the selected resource's texts 
 								//    result in a 'this mentions other' statement (selected resource is subject):
-								rPatt = new RegExp( (CONFIG.dynLinkBegin+ti+CONFIG.dynLinkEnd).escapeRE(), "i" );
-								if( res.properties )
-									res.properties.forEach( (p)=>{
+								refPatt = new RegExp( (CONFIG.dynLinkBegin+refTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
+								if( selR.properties )
+									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cData, p['class'] ).type ) {
 											case 'xs:string':
 											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if( rPatt.test( p.value ) && notListed( staL,res,refR ) ) {
+												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
-														subject:	res,
+														subject:	selR,
 														object:		refR
 													})
 												}
@@ -1051,12 +1054,12 @@ modules.construct({
 											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
-												if( sPatt.test( p.value ) && notListed( staL,refR,res ) ) {
+												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
 														subject:	refR,
-														object:		res
+														object:		selR
 													})
 												}
 										}
@@ -1586,7 +1589,7 @@ function propertyValueOf( prp, opts ) {
 	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
 	// markup to HTML:
 	if( typeof(opts.makeHTML)!='boolean' ) 			opts.makeHTML = false;
-	if( typeof(opts.lookupTitles)!='boolean' ) 		opts.lookupTitles = false;
+	if( typeof(opts.lookupValues)!='boolean' ) 		opts.lookupValues = false;
 
 	// Malicious content has been removed upon import ( specif.toInt() ).
 	let prj = app.cache.selectedProject.data,
@@ -1602,6 +1605,8 @@ function propertyValueOf( prp, opts ) {
 			break; */
 		case 'xhtml':
 			ct = languageValueOf( prp.value, opts );
+			if( opts.lookupValues )
+				ct = i18n.lookup( ct );
 			if( opts.unescapeHTMLTags )
 				ct = ct.unescapeHTMLTags();
 			// Apply formatting only if not listed:
@@ -1614,9 +1619,11 @@ function propertyValueOf( prp, opts ) {
 			ct = localDateTime( prp.value );
 			break;
 		case 'xs:enumeration':
-			// usually value has a comma-separated list of value-IDs,
+			// Usually 'value' has a comma-separated list of value-IDs,
 			// but the filter module delivers potentially marked titles in content.
-			ct = enumValueOf( dT, prp.value, opts );		// translate IDs to values, if appropriate
+
+			// Translate IDs to values, if appropriate (i1lookup() is included):
+			ct = enumValueOf( dT, prp.value, opts );
 			break;
 		default:
 			ct = prp.value
@@ -1689,36 +1696,16 @@ var fileRef = new function() {
 	"use strict";
 	var self = this;
 
-/*	All sample data (except ProSTEP) taken from a JSON response of the ReqIF Server.
-
-	Attention: The html-sanitizing in the xhtml-Editor (SCEditor) 
-	- removes resources, which have only properties and do not have a value:
-		<object data=\"path/filename.ext\" type=\"...\">
-			<object data=\"path/filename.ext\" type=\"..\">Content</object>
-		</object>	
-	- renames any 'name'-property in resources to an 'id'-property
-	
-	Known limitation: if there are two references of the same image on a page, only the first is shown,
-	because the id of the image container is made from the image file name.
-*/
 	self.toGUI = ( txt, opts )=>{
 /*		Properly handle file references in XHTML-Text. 
 		- An image is to be displayed 
 		- a file is to be downloaded
 		- an external hyperlink is to be included
 */
-		if( opts ) {
-			if( opts.projId==undefined ) opts.projId = app.cache.selectedProject.data.id;
-			if( opts.rev==undefined ) opts.rev = 0;
-			if( opts.imgClass==undefined ) opts.imgClass = 'forImage'	// regular size
-		} else {
-			var opts = {
-				projId: app.cache.selectedProject.data.id,
-				rev: 0,
-				clickableElements: false,
-				imgClass: 'forImage'	// regular size
-			};
-		};
+		if( typeof(opts)!='object' ) opts = {};
+		if( opts.projId==undefined ) opts.projId = app.cache.selectedProject.data.id;
+	//	if( opts.rev==undefined ) opts.rev = 0;
+		if( opts.imgClass==undefined ) opts.imgClass = 'forImage'	// regular size
 		
 	/*		function addFilePath( u ) {
 				if( /^https?:\/\/|^mailto:/i.test( u ) ) {
@@ -1735,72 +1722,77 @@ var fileRef = new function() {
 				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
 				return '';
 			}
-			function getStyle( str ) {
-				let s = /(style="[^"]+")/.exec( str );
-				if( Array.isArray(s)&&s.length>0 ) return (' '+s[1]);
-				return '';
-			}
 			function getUrl( str ) {
 				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
 				// return null, because an URL is expected in any case:
-				if( Array.isArray(l)&&l.length>0 ) return l[1].replace('\\','/');
+				if( Array.isArray(l)&&l.length>0 ) return l[1]
+			//						.replace(/\\/g,'/'); // is now handled during import
 			//	return undefined
 			}
-			function getPrp( pnm, str ) {
+			function getPrpVal( pnm, str ) {
 				// get the value of XHTML property 'pnm':
 				let re = new RegExp( pnm+'="([^"]+)"', '' ),
 					l = re.exec(str);
 				if( Array.isArray(l)&&l.length>0 ) return l[1];
 			//	return undefined
 			}
+			function hasContent( f ) {
+				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 )
+			}
 
 		// Prepare a file reference for viewing and editing:
 //		console.debug('toGUI 0: ', txt);
-		var repSts = [];   // a temporary store for replacement strings
+		var repStrings = [];   // a temporary store for replacement strings
 			
 		// 1. transform two nested objects to link+object resp. link+image:
 		txt = txt.replace( RE.tagNestedObjects,   
-			( $0, $1, $2, $3, $4 )=>{        // description is $4
-				var u1 = getUrl( $1 ),  			// the primary file
-					t1 = getType( $1 ); 
-				var u2 = getUrl( $2 ), 				// the preview image
-					t2 = getType( $2 ), 
-					s2 = getStyle( $2 ); 
+			( $0, $1, $2, $3, $4 )=>{       // description is $4, $3 is not used
+				var u1 = getUrl( $1 ),  	// the primary file
+					t1 = getType( $1 ), 
+					w1 = getPrpVal("width", $1 ),
+					h1 = getPrpVal("height", $1 ),
+					u2 = getUrl( $2 ), 		// the preview image
+					t2 = getType( $2 ),
+					w2 = getPrpVal("width", $2 ),
+					h2 = getPrpVal("height", $2 ),
+					d = $4 || u1;			// If there is no description, use the name of the link object
 
-				// If there is no description, use the name of the link object:
-				if( !$4 ) {
-					$4 = u1   // $4 is now the description between object tags
-				};
-//				console.debug('fileRef.toGUI 1 found: ', $0, $4, u1, t1, u2, t2 );
+//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
+				if( !u1 ) console.warn('no file found in',$0);
+				if( !u2 ) console.warn('no image found in',$0);
 //				u1 = addFilePath(u1);
 //				u2 = addFilePath(u2);
-				if( !u2 ) console.info('no image found');
 
-/*				// all of the following work to a certain extent:
-				//   <a></a> for downloading the OLE, 
-				//   <object>text</object> allows to obtain the text as part of value after HTMLstrip (e.g. in search of a somewhat meaningful title)
-				//   Note that IE displays the object tag only in case of SVG and PNG; the latter is used with DOORS OLE-Objects.
+				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1),
+					f2 = itemByTitle(app.cache.selectedProject.data.files,u2);
 
-				if( opts.clickableElements )
-					repSts.push( '<div class="'+opts.imgClass+'"><a href="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' >'+$4+'</object></a></div>' )
-				else
-					repSts.push( '<div class="'+opts.imgClass+'"><a href="'+u1+'"'+t1+' ><img src="'+u2+'"'+t2+s2+' alt="'+$4+'" /></a></div>' );
-				// avoid that a pattern is processed twice: insert a placeholder and replace it with the prepared string at the end ...
+				if( hasContent(f1) ) {
 
-				repSts.push( '<div class="'+opts.imgClass+'"><a href="'+u1+'"'+t1+' ><img src="'+u2+'"'+t2+s2+' alt="'+$4+'" /></a></div>' );  // works.
-*/ 
-				let f = itemByTitle(app.cache.selectedProject.data.files,u2);
-//				console.debug('fileRef.toGUI 1a found: ', f );
-				if( f && f.blob ) {
-//					console.debug('tagId',tagId(u2));
-					// first add the element to which the image will be added:
-					repSts.push( '<div class="'+opts.imgClass+' '+tagId(u2)+'"></div>' );
-					// now add the image as innerHTML:
-					self.render( f, opts );
-					return 'aBra§kadabra'+(repSts.length-1)+'§';
-				} else {
-					return '<div class="notice-danger" >Image missing: '+u2+'</div>';
+					if( hasContent(f2) ) {
+						// take f1 to download and f2 to display:
+
+//						console.debug('tagId',tagId(u2));
+						// first add the element to which the file to download will be added:
+						repStrings.push( '<span id="'+tagId(u1)+'"></span>' );
+						// now add the image as innerHTML:
+						self.renderDownloadLink( f1, '<span class="'+opts.imgClass+' '+tagId(u2)+'"></span>', opts );
+						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
+						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} ) );
+					} 
+					else {
+						// nothing to display, so ignore f2:
+						
+						// first add the element to which the attachment will be added:
+						repStrings.push( '<span class="'+tagId(u1)+'"></span>' );
+						// now add the download link with file as data-URL:
+						self.renderDownloadLink(f1,d,opts);
+					};
+					return 'aBra§kadabra'+(repStrings.length-1)+'§';
+					
 				}
+				else {
+					return '<div class="notice-danger" >File missing: '+d+'</div>'
+				};
 			}
 		);
 //		console.debug('fileRef.toGUI 1: ', txt);
@@ -1814,8 +1806,7 @@ var fileRef = new function() {
 //				};
 
 				let u1 = getUrl( $1 ), 
-					t1 = getType( $1 ), 
-					s1 = getStyle( $1 );
+					t1 = getType( $1 ); 
 
 				let e = u1.fileExt();
 				if( e==null ) return $0;
@@ -1824,44 +1815,49 @@ var fileRef = new function() {
 				let d = $3 || u1,
 					hasImg = false;
 				e = e.toLowerCase();
-//				console.debug('fileRef.toGUI 2 found: ', $0, u1, t1, s1, d, e );
+//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
+
 //				u1 = addFilePath(u1);
 				if( !u1 ) console.info('no image found');
-				let f = itemByTitle(app.cache.selectedProject.data.files,u1);
+				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
+				// sometimes the application files (BPMN or other) have been replaced by images;
+				// this is for example the case for *.specif.html files:
+				if( !f1 && CONFIG.applExtensions.indexOf( e )>-1 ) {
+					for( var i=0,I=CONFIG.imgExtensions.length; !f1&&i<I; i++ ) {
+						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
+						f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
+					};
+				};
 					
-				if( CONFIG.imgExtensions.indexOf( e )>-1 || e=='bpmn' ) {  
+				if( CONFIG.imgExtensions.indexOf( e )>-1 || CONFIG.applExtensions.indexOf( e )>-1 ) {  
 					// it is an image, show it:
 					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('fileRef.toGUI 2a found: ', f, u1 );
-					if( f && f.blob ) {
+//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
+					if( hasContent(f1) ) {
 						hasImg = true;
 						// first add the element to which the image will be added:
-						d= '<div class="'+opts.imgClass+' '+tagId(u1)+'"></div>';
+						d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
 						// now add the image as innerHTML:
-						self.render( f, opts );
-					} else {
-						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
+						self.renderImage( f1, opts );
 					}
-				} else if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
+					else {
+						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
+					};
+				}
+				else if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
 					// it is an office file, show an icon plus filename:
-					if( f && f.blob ) {
+					if( hasContent(f1) ) {
 						hasImg = true;
 						// first add the element to which the attachment will be added:
-						d= '<div id="'+tagId(u1)+'"></div>';
-						// now add the download link of the attachment as innerHTML:
-						// see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
-						// see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
-						blob2dataURL( f, (r,fTi,fTy)=>{
-							// add link with icon to DOM using an a-tag with data-URI:
-							document.getElementById(tagId(fTi)).innerHTML = 
-								'<a href="'+r+'" type="'+fTy+'" download="'+fTi+'" >'
-							+		'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />'
-							+	'</a>'
-						},opts.timelag)
-					} else {
-						d = '<div class="notice-danger" >File missing: '+d+'</div>'
+						d= '<span id="'+tagId(u1)+'"></span>';
+						// now add the download link with file as data-URL:
+						self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />',opts);
 					}
-				} else {
+					else {
+						d = '<div class="notice-danger" >File missing: '+d+'</div>'
+					};
+				}
+				else {
 					switch( e ) { 
 						case 'ole': 
 							// It is an ole-file, so add a preview image;
@@ -1876,7 +1872,7 @@ var fileRef = new function() {
 							break;
 						default:
 							// last resort is to take the filename:
-							d = '<span>'+d+'</span>'  
+							d = '<span>'+d+'</span>';
 							// ToDo: Offer a link for downloading the file
 					};
 				};
@@ -1886,26 +1882,31 @@ var fileRef = new function() {
 
 				// insert a placeholder and replace it with the prepared string at the end ...
 				if( hasImg )
-					repSts.push( d )
+					repStrings.push( d )
 				else
-					repSts.push( '<a href="'+u1+'"'+t1+' >'+d+'</a>' );
+					repStrings.push( '<a href="'+u1+'"'+t1+' >'+d+'</a>' );
 				
-				return 'aBra§kadabra'+(repSts.length-1)+'§';
+				return 'aBra§kadabra'+(repStrings.length-1)+'§';
 			}
 		);	
 //		console.debug('fileRef.toGUI 2: ', txt);
 				
 		// 3. process a single link:
-		// add an icon to known office files.
 		txt = txt.replace( RE.tagA,  
 			( $0, $1, $2 )=>{ 
-				var u1 = getPrp( 'href', $1 ),
+				var u1 = getPrpVal( 'href', $1 ),
 					e = u1.fileExt();
 //				console.debug( $1, $2, u1, e );
-				if( e==null ) return $0     // no change, if no extension found
-			//	if( /(<object|<img)/g.test( $2 ) ) return $0;		// no change, if an embedded object or image
-				if( CONFIG.officeExtensions.indexOf( e.toLowerCase() )<0 ) return $0;	// no change, if not an office file
+				if( e==null ) 
+					return $0     // no change, if no extension found
+					
+			/*	if( /(<object|<img)/g.test( $2 ) ) 
+					return $0;		// no change, if an embedded object or image */
+					
+				if( CONFIG.officeExtensions.indexOf( e.toLowerCase() )<0 ) 
+					return $0;	// no change, if not an office file
 
+				// it is an office file, add an icon:
 				var t1 = getType( $1 ); 
 				if( !$2 ) {
 					var d = u1.split('/');  // the last element is a filename with extension
@@ -1913,10 +1914,10 @@ var fileRef = new function() {
 				};
 //				u1 = addFilePath(u1);
 
-				// it is an office file, add an icon:
+				// add an icon:
 				e = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />'
 					
-				// finally add the link and an enclosing div for the formatting:
+				// finally returned the enhanced link:
 				return ('<a href="'+u1+'" '+t1+' target="_blank" >'+e+'</a>')
 			}
 		);	
@@ -1925,27 +1926,60 @@ var fileRef = new function() {
 		// Now, at the end, replace the placeholders with the respective strings,
 		txt = txt.replace( /aBra§kadabra([0-9]+)§/g,  
 			( $0, $1 )=>{ 
-				return repSts[$1]
+				return repStrings[$1]
 			});
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	};
-	self.render = (f, opts)=>{
-		if( typeof(opts)!='object' ) opts = {};
+	self.renderDownloadLink = (f,inner,opts)=>{
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
-		if( !opts.timelag ) opts.timelag = CONFIG.imageRenderingTimelag;
+		if( typeof(opts)!='object' ) opts = {};
+		if( typeof(opts.timelag)!='number' ) opts.timelag = CONFIG.imageRenderingTimelag;
 
-//		console.debug('render',f,opts);
-		if( !f || !f.blob ) {
-			Array.from(document.getElementsByClassName(tagId(f.title)), 
-				(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
-			);
-			return
+		// Add the download link of the attachment as innerHTML:
+		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+		blob2dataURL( f, (r,fTi,fTy)=>{
+			// add link with icon to DOM using an a-tag with data-URI:
+			document.getElementById(tagId(fTi)).innerHTML = 
+				'<a href="'+r+'" type="'+fTy+'" download="'+fTi+'" >'
+			+		inner
+			+	'</a>'
+		},opts.timelag);
+	};
+	self.renderImage = (f, opts)=>{
+
+		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
+		if( typeof(opts)!='object' ) opts = {};
+		if( typeof(opts.timelag)!='number' ) opts.timelag = CONFIG.imageRenderingTimelag;
+
+//		console.debug('renderImage',f,opts);
+        if (!f.blob && !f.dataURL) {
+			setTimeout( ()=>{
+				Array.from(document.getElementsByClassName(tagId(f.title)), 
+					(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
+				);
+			}, opts.timelag )
+            return;
 		};
 		// ToDo: in case of a server, the blob itself must be fetched first ...
 		
+		if( f.dataURL ) {
+			setTimeout( ()=>{
+				// add image to DOM using an image-tag with data-URI:
+				Array.from( document.getElementsByClassName(tagId(f.title)), 
+					(el)=>{ 
+						let ty = /data:([^;]+);/.exec(f.dataURL);
+						el.innerHTML = '<object data="' + f.dataURL + '" type="' + (ty[1]||f.type) + '" >' + f.title + '</object>'; 
+					});
+			}, opts.timelag );
+			return;
+		};
+		// else: the data is a blob
+
 		switch( f.type ) {
 			case 'image/png':
 			case 'image/x-png':
@@ -1962,46 +1996,69 @@ var fileRef = new function() {
 				showBpmn( f, opts );
 				break;
 			default:
-				console.warn('Cannot show unknown diagram type: ',f.type);
+				console.warn('Cannot show diagram '+f.title+' of unknown type: ',f.type);
 		};
 		return;
 
 					
 			function showRaster(f,opts) {
-				blob2dataURL( f, (r,fTi,fTy)=>{
-					// add image to DOM using an image-tag with data-URI:
-					Array.from( document.getElementsByClassName(tagId(fTi)), 
-						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" />'}
-					/*	// set a grey background color for images with transparency:
-						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
-					)
-				},opts.timelag);
+			/*	if( f.dataURL ) {
+					// this works:
+					setTimeout( ()=>{
+						// add image to DOM using an image-tag with data-URI:
+						Array.from( document.getElementsByClassName(tagId(f.title)), 
+							(el)=>{el.innerHTML = '<img src="'+f.dataURL+'" type="'+f.type+'" alt="'+f.title+'" />'}
+						);
+					}, opts.timelag )
+				} 
+				else { */
+					blob2dataURL( f, (r,fTi,fTy)=>{
+						// add image to DOM using an image-tag with data-URI:
+						Array.from( document.getElementsByClassName(tagId(fTi)), 
+							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" />'}
+						/*	// set a grey background color for images with transparency:
+							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
+						);
+					}, opts.timelag );
+			//	};
 			}
 			function showSvg(f,opts) {
 				// Show a SVG image.
 				
-				// Load pixel images embedded in SVG,
-				// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
-				// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
-				let svg = {},		// the SVG image with or without embedded images
-					dataURLs = [],	// list of embedded images
-					// RegExp for embedded images,
-					// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
-					rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
-					pend = 0;		// the count of embedded images waiting for transformation
-				
 //				console.debug('showSvg',f,opts);
 				// Read and render SVG:
-				blob2text( f, (r)=>{
-					let ef = null,
-						mL = null;
-					svg = {
-						locs: document.getElementsByClassName(tagId(f.title)),
-						img: r
-					};
+			/*	if( f.dataURL ) {
+					// this does not work, yet;
+					// here we need the SVG as XML-string, not as data-URL:
+					setTimeout( displaySVGeverywhere( .. ), opts.timelag )
+				}
+				else { */
+					blob2text( f, displaySVGeverywhere, opts.timelag )
+			//	};
+				return;
+
+				function displaySVGeverywhere(r,fTi,fTy) {
+					// Load pixel images embedded in SVG,
+					// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
+					// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
+					// see: https://css-tricks.com/probably-dont-base64-svg/
+					// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
+					let svg = {
+							// the locations where the svg shall be added:
+							locs: document.getElementsByClassName(tagId(fTi)),
+							// the SVG image with or without embedded images:
+							img: r
+						},
+						dataURLs = [],	// temporary list of embedded images
+						// RegExp for embedded images,
+						// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
+						rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
+						ef, mL,
+						pend = 0;		// the count of embedded images waiting for transformation
+
 					// process all image references within the SVG image one by one:
 					// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-					while((mL=rE.exec(r)) != null ) {
+					while( (mL=rE.exec(r)) != null ) {
 						// skip all images already provided as data-URLs:
 						if( mL[2].startsWith('data:') ) continue;
 						// avoid transformation of redundant images:
@@ -2026,28 +2083,26 @@ var fileRef = new function() {
 																if( dURL ) return $1+dURL.val+$3
 																else return '';
 															});
-									Array.from( svg.locs, 
-										(loc)=>{
-											loc.innerHTML = svg.img;
-											if( opts && opts.clickableElements ) registerClickEls(loc)
-										}
-									)
-								}
-							})
-						}
+									displayAll( svg );
+								};
+							});
+						};
 					};
 					if( pend<1 ) {
 						// there are no embedded images, so display right away:
+						displayAll( svg );
+					};
+					return;
+					
+					function displayAll( svg ) {
 						Array.from( svg.locs, 
 							(loc)=>{
 								loc.innerHTML = svg.img;
 								if( opts && opts.clickableElements ) registerClickEls(loc)
 							}
-						)
+						);
 					}
-				}, opts.timelag);
-				return;
-
+				}
 				// see http://tutorials.jenkov.com/svg/scripting.html
 				function registerClickEls(svg) {
 					if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
@@ -2209,7 +2264,7 @@ var fileRef = new function() {
 					if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
 			//	return undefined
 			}
-	// end of self.render()
+	// end of self.renderImage()
 	};
 /*	// Prepare a file reference to be compatible with ReqIF spec and conventions:
 	self.fromGUI = function( txt ) {
@@ -2247,7 +2302,7 @@ var fileRef = new function() {
 
 		// 1. In case of two nested objects, make the URLs relative to the project
 		//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
-		txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^>]*<\/object>/g,  // description is $4 
+		txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^>]*<\/object>/g, 
 			function( $0, $1, $2, $3, $4 ) { 
 				var u1 = getUrl( $1, 'data' ),  			// the primary information
 					t1 = getType( $1 ); 

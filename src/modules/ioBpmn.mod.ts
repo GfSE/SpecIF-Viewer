@@ -63,7 +63,7 @@ modules.construct({
 		bDO = $.Deferred();
 
 		bDO.notify('Transforming BPMN to SpecIF',10); 
-		data = BPMN2Specif( buf2str(buf), 
+		data = BPMN2Specif( ab2str(buf), 
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 

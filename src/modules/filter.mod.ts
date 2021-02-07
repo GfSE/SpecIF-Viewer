@@ -428,7 +428,7 @@ modules.construct({
 								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
 									lE = res.toShow.descriptions[i];
 									res.toShow.descriptions.splice( i, 1, {
-											title: lE.title,  // for sorting the property into the columns
+											title: lE.title,
 											class: lE['class'],
 											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
 									});
@@ -436,7 +436,7 @@ modules.construct({
 								for( i= res.toShow.other.length-1; i>-1; i-- ) {
 									lE = res.toShow.other[i];
 									res.toShow.other.splice( i, 1, {
-											title: lE.title,  // for sorting the property into the columns
+											title: lE.title,
 											class: lE['class'],
 											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
 									}); 
@@ -638,7 +638,7 @@ modules.construct({
 			var idx = indexBy( settings.filters, 'category', 'textSearch');
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
-				addTextSearchFilter( settings.filters[idx];
+				addTextSearchFilter( settings.filters[idx]);
 			// do not include a text search filter if there are settings.filters without a respective entry
 		} else {
 			// b) include a default text search if there is no settings.filters

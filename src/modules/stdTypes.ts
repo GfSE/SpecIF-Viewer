@@ -19,6 +19,7 @@ app.standardTypes = new function() {
 		id: "DT-Text",
 		title: "Text",
 	//	title: "Text ["+CONFIG.maxStringLength+"]",
+		description: "Any text, formatted or not",
 		type: "xs:string",
 	//	maxLength: CONFIG.maxStringLength,
 		changedAt: "2016-05-26T08:59:00+02:00"

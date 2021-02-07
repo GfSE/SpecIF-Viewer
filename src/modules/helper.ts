@@ -535,7 +535,7 @@ function cmp( i, a ) {
 }
 function sortByTitle( L ) {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( bim.title, bam.title ) };
+		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
 function sortBy( L, fn ) {
@@ -635,7 +635,7 @@ function genID() {
 
 // Make a valid js variable/property name; replace disallowed characters by '_':
 String.prototype.toJsId = function() { 
-	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#°%]/g, '_' ); 
+	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#ï¿½%]/g, '_' ); 
 	return
 };
 // Make an id conforming with ReqIF and SpecIF:
@@ -710,16 +710,17 @@ function makeHTML(str,opts) {
 			.linkifyURLs( opts )
 			.replace(/--(?:&gt;|>)/g,'&#8594;')  // &rarr;
 			.replace(/(?:&lt;|<)--/g,'&#8592;')  // &larr;
-	if( isHTML(str) ) 
+	if( /^\s*<.+>\s*$/.test(str) )
 		return newS;
 	if( CONFIG.convertMarkdown && app.markdown ) {
-		// don't interpret the '+' as list item, but do so with '•',
+		// don't interpret the '+' as list item, but do so with 'ï¿½' and 'â€¢',
 		// transform arrows assembled by characters to special arrow characters:
 		return app.markdown.render( str
 			.replace(/\+ /g,'&#x2b; ') // '+'
-			.replace(/• /g,'* ')
+			.replace(/ï¿½ /g,'* ')
+			.replace(/â€¢ /g,'* ')
 		)
-		.linkifyURLs( opts )
+//		.linkifyURLs( opts )
 	};
 	return '<div>'+newS+'</div>'
 } 
@@ -761,7 +762,7 @@ function escapeInner( str ) {
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
-String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
+//String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
 // escape HTML characters:
 String.prototype.escapeXML = function() {
 	return this.replace(/["'&<>]/g, ($0)=>{
@@ -851,6 +852,7 @@ String.prototype.trimJSON = function() {
 		li = this.lastIndexOf('}');
 	return this.substring(si,li+1)
 };
+
 /*	
 String.prototype.removeBOM = function() {
 	// remove the byte order mask from a UTF-8 coded string
@@ -858,7 +860,7 @@ String.prototype.removeBOM = function() {
 	// ToDo: The BOM may be "FE FF" in certain representations.
 	return this.replace( /^(\xEF\xBB\xBF)?({[\s\S]*})/, ($0,$1,$2)=>{return $2} )
 };
-*/
+
 function toHex(str) {
 	var hex='', nV='';
 	for(var i=0;i<str.length;i++) {
@@ -867,7 +869,7 @@ function toHex(str) {
 	};
 	return hex
 }
-/*
+
 if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) {
     'use strict';
@@ -962,7 +964,7 @@ if (!Array.prototype.find) {
       while (k < len) {
         // a. Let Pk be ! ToString(k).
         // b. Let kValue be ? Get(O, Pk).
-        // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
+        // c. Let testResult be ToBoolean(? Call(predicate, T, ï¿½ kValue, k, O ï¿½)).
         // d. If testResult is true, return kValue.
         var kValue = o[k];
         if (predicate.call(thisArg, kValue, k, o)) {
@@ -1039,7 +1041,7 @@ if (!Array.from) {
 
       // 16. Let k be 0.
       var k = 0;
-      // 17. Repeat, while k < len… (also steps a - h)
+      // 17. Repeat, while k < lenï¿½ (also steps a - h)
       var kValue;
       while (k < len) {
         kValue = items[k];
@@ -1057,39 +1059,43 @@ if (!Array.from) {
     };
   }());
 };*/
-// Convert arrayBuffer from and to string:
-function buf2str(buf) {
+
+function ab2str(buf) {
+	// Convert arrayBuffer to string:
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
 	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
-	try {
+//	try {
 		// see https://developers.google.com/web/updates/2014/08/Easier-ArrayBuffer-String-conversion-with-the-Encoding-API
 		// DataView is a wrapper on top of the ArrayBuffer.
-		var dataView = new DataView(buf);
+		let dataView = new DataView(buf),
 		// The TextDecoder interface is documented at http://encoding.spec.whatwg.org/#interface-textdecoder
-		var decoder = new TextDecoder('utf-8');
+			decoder = new TextDecoder('utf-8');
 		return decoder.decode(dataView);
-	} catch (e) {
+/*	} catch (e) {
 		// see https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
 		// for vintage browsers such as IE
 		// Known problem: Special chars like umlaut are not properly converted.
 		return String.fromCharCode.apply(null, new Uint8Array(buf));
-	};
+	}; */
 }
-function str2buf(str) {
-	try {
+function str2ab(str) {
+	// Convert string to arrayBuffer:
+//	try {
 		let encoder = new TextEncoder();
-		return encoder.encode(str)		
-	} catch (e) {
+		return encoder.encode(str).buffer;		
+/*	} catch (e) {
+		// for vintage browsers such as IE
 		var buf = new ArrayBuffer(str.length);
 		var bufView = new Uint8Array(buf);
 		for (var i=0, I=str.length; i<I; i++) {
 			bufView[i] = str.charCodeAt(i);
 		};
 		return buf;
-	};
+	}; */
 }
-// see also: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
-// see also: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
 function blob2dataURL(file,fn,timelag) {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
@@ -1111,7 +1117,18 @@ function blob2text(file,fn,timelag) {
 		}, timelag );
 	else
 		reader.readAsText(file.blob);
-} 
+}
+function uriBack2slash(str) {
+    return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
+		($0, $1)=>{
+			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
+				($0)=>{
+					return $0.replace(/\\/g, '/');
+				}
+			);
+		}
+	);
+}
 		
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
@@ -1127,7 +1144,6 @@ function noCode( s ) {
 		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null };
 	};
 	return s;
-
 	function log(c) {
 		console.error('Considered harmful ('+c+'):',s);
 	}
@@ -1142,7 +1158,7 @@ function cleanValue( o ) {
 	};
 	return '';  // unexpected input (programming error with all likelihood
 }
-
+/*
 // Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 if (!Array.isArray) {
     Array.isArray = (obj)=>{
@@ -1156,7 +1172,7 @@ if (!Number.isInteger) {
 	};
 };
 // function float2int(val) { return parseInt(val) };
-
+*/
 function attachment2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( !t ) return;
@@ -1169,6 +1185,7 @@ function attachment2mediaType( fname ) {
 	if( ti>-1 ) return CONFIG.applTypes[ ti ];
 //	return; undefined
 }
+/*
 function image2mediaType( fname ) {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( !t ) return;
@@ -1176,13 +1193,13 @@ function image2mediaType( fname ) {
 	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
 //	return; undefined
 }
-
+*/
 function localDateTime(iso) {
 	if( !iso ) return '';
 	// ToDo: calculate offset of time-zone ... or use one of the libraries ..
 	if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
 	if( iso.length>9 ) return (iso.substr(0,10));
-	return ''
+	return '';
 }
 
 function simpleClone( o ) { 
@@ -1202,7 +1219,7 @@ function simpleClone( o ) {
 				o[p].forEach( (op)=>{
 					n[p].push( cloneProp(op) );
 				});
-				continue
+				continue;
 			};
 			// else
 			n[p] = cloneProp(o[p]);
@@ -1230,7 +1247,7 @@ function getUrlParams(opts) {
 	if( !p[1] ) return {};
 	p = decodeURI(p[1]);
 	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
-	return parse( p )
+	return parse( p );
 
 	function parse( h ) {
 		if( !h ) return {};

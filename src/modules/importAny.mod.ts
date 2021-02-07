@@ -66,7 +66,7 @@ modules.construct({
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			help: i18n.MsgImportReqif,
+			help: "Experimental: "+i18n.MsgImportReqif,
 			opts: {mediaTypeOf: attachment2mediaType}
     /*    }, {
             id: 'rdf',
@@ -109,7 +109,7 @@ modules.construct({
 				// change view to browse the content:
 				modules.show({ newView: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
 			}, 
-			400 
+			CONFIG.showTimelag
 		);
 	}
 	function handleError(xhr) {
@@ -253,7 +253,7 @@ modules.construct({
 					app[self.format.name].toSpecif(result.response)
 						.progress( setProgress )
 						.done( handleResult )
-						.fail( handleError )
+						.fail( handleError );
 				},
 				fail: handleError
 			//	then:
@@ -271,7 +271,7 @@ modules.construct({
 			if( modules.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
 				app[s.name].init( self.format.opts );
-				if( typeof(app[s.name].toSpecif)=='function' ) {
+				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
 					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				} else {
 					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
@@ -365,7 +365,7 @@ modules.construct({
 			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
 				setTextValue( i18n.LblProjectName, self.projectName );
-				setTextFocus( i18n.LblProjectName )
+				setTextFocus( i18n.LblProjectName );
 			};
 
 			self.enableActions();

@@ -15,23 +15,40 @@ modules.construct({
 	name: 'ioReqif'
 }, function(self) {
 	"use strict";
-    var mime;
-	self.init = function() {
+	var mime;
+	let zipped,
+//		template,	// a new Id is given and user is asked to input a project-name
+		opts,
+		errNoOptions = { status: 899, statusText: 'No options or no mediaTypes defined.' },
+		errNoReqif = { status: 901, statusText: 'No ReqIF file in the reqifz container.' },
+        //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
+		errInvalidXML = { status: 900, statusText: 'ReqIF data is not valid XML.' };
+		
+	self.init = function(options) {
 		mime = undefined;
+		opts = options;
 		return true;
 	};
+
 	const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
 		RE_class = / class=\"[^\"]+\"/g,
 		RE_objectName = /(<object[^>]*) name=\"[^\"]+\"/g,
 		RE_objectId = /(<object[^>]*) id=\"[^\"]+\"/g,
 		RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g;
 		
-/*	self.verify = function( f ) {
+	self.verify = function( f ) {
 			// Verify the type (and eventually the content) of a ReqIF import file:
 	
 			function reqifFile2mediaType( fname ) {
-				if( fname.endsWith('.reqifz') || fname.endsWith('.zip') ) return 'application/zip';
-				if( fname.endsWith('.reqif') || fname.endsWith('.xml') ) return 'application/xml';
+				if( fname.endsWith('.reqifz') || fname.endsWith('.reqif.zip') ) {
+					zipped = true;
+					return 'application/zip';
+				}
+			//	if( fname.endsWith('.reqif') || fname.endsWith('.xml') ) return 'application/xml';
+				if( fname.endsWith('.reqif') ) {
+					zipped = false;
+					return 'application/xml';
+				}
 				return null
 			}
 				
@@ -42,9 +59,120 @@ modules.construct({
 		message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
 		return; // undefined
 	};
-	self.toSpecif = function( buf ) {
+	/*self.toSpecif = function( buf ) {
 		// Transform ReqIF to SpecIF for import:
-	};   */
+	};*/
+
+
+	function validateXML(xml_data) {
+		let xml_data_clean = xml_data;
+        let valid;
+
+        if (window.DOMParser) {
+            let parser = new DOMParser();
+            let xmlDoc = parser.parseFromString(xml_data_clean,"text/xml");
+			valid = (xmlDoc.getElementsByTagName('parsererror').length > 0) ? false : true;
+        } else { 
+            let xmlDoc = new ActiveXObject("Microsoft.XMLDOM");          //compatability for older IE versions
+            xmlDoc.async = false;
+            valid = (xmlDoc.loadXML(xml_data_clean)) ? true : false;
+        } 
+		return valid;
+		//return true;
+	}
+
+	self.toSpecif = function( buf ) {
+		// import a read file buffer containing specif data:
+		// a button to upload the file appears at <object id="file-object"></object>
+//		console.debug('iospecif.toSpecif');
+		//self.abortFlag = false;
+		var zDO = $.Deferred();
+		if( zipped ) {
+			let zip = new JSZip();
+			zip.loadAsync(buf).then( function(zip) {
+				let fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.reqif')}),
+					data = {};
+
+				if( fileL.length < 1 ) {
+					zDO.reject( errNoReqif );
+					return zDO
+				};
+//				console.debug('iospecif.toSpecif 1',fileL[0].name);
+				// take the first specif file found, ignore any other so far:
+				zip.file( fileL[0].name ).async("string")
+				.then( function(dta) {
+                    // Check if data is valid XML:
+                    // Please note:
+						// - the file may have a UTF-8 BOM
+						// - all property values are encoded as string, even if boolean, integer or double.
+
+                        //data = JSON.parse( dta.trimJSON() );
+                        if (!validateXML(dta)) {
+							//console.log(dta)
+                            zDO.reject( errInvalidXML );
+                            return zDO;
+						}
+						data = testTransformReqIfToSpecIf(dta);
+						data.files = [];
+						// ReqIF data is valid.
+						
+						if( opts && typeof( opts.mediaTypeOf ) == 'function' ) {
+							// First load the files, so that they get a lower revision number as the referencing resources.
+							// Create a list of all attachments:
+							fileL = zip.filter(function (relPath, file) {return !file.name.endsWith('.reqif')});
+//							console.debug('iospecif.toSpecif 2',fileL);
+							if( fileL.length > 0 ) {
+								let pend = 0;
+								fileL.forEach( function(each_file) { 
+												//	let t = e.type || opts.mediaTypeOf(e.name);
+													if( each_file.dir ) return false;
+													let type = opts.mediaTypeOf(each_file.name);
+													if( !type ) return false;
+                                                    // only extract files with known mediaTypes:
+                                                    
+//													console.debug('iospecif.toSpecif 3',t,e.date,e.date.toISOString());
+													pend++;
+													zip.file(each_file.name).async("blob")
+													.then( function(f) {
+														data.files.push({ blob: f, id: 'F-' + each_file.name.simpleHash(), title: each_file.name, type: type, changedAt: each_file.date.toISOString() });
+//														console.debug('file',pend-1,e,data.files);
+														if(--pend < 1)
+															// now all files are extracted from the ZIP, so we can return the data:
+															zDO.resolve( data )		// data is in SpecIF format
+													}) 
+												});
+								if( pend < 1 ) zDO.resolve( data )	// no suitable file found, continue anyways
+							} else {
+								// no files with permissible types are supplied:
+								zDO.resolve( data )		// data is in SpecIF format
+							}
+						} else {
+							// no function for filtering and mapping the mediaTypes supplied:
+							console.error(errNoOptions.statusText);
+							zDO.resolve( data )		// data is in SpecIF format
+                        }	
+				})
+			})
+		} else {
+			//try {
+				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
+				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
+
+                // Selected file is not zipped - it is expected to be ReqIF data in XML format.
+			    // Check if data is valid XML:
+                
+				let str = ab2str(buf);
+                if( validateXML(str) ) {
+					var data = testTransformReqIfToSpecIf(str);
+					// transformReqIfToSpecIf gibt string zurück
+                    zDO.resolve( data );
+                } else {
+                    zDO.reject( errInvalidXML );
+                }
+		};
+		return zDO
+	};
+
 	self.toReqif = function( pr, opts ) {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):

@@ -20,6 +20,7 @@ const CONFIG = {};
 	CONFIG.messageDisplayTimeLong = 12000;
 	CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms). The faster the browser and processor, the shorter the time may be chosen.
 	CONFIG.imageRenderingTimelag = 160;  // timelag between building the DOM and inserting the images
+	CONFIG.showTimelag = 400;
 	CONFIG.minInteger = -32768;
 	CONFIG.maxInteger = 32767;
 	CONFIG.minReal = -10000000.0;
@@ -52,8 +53,8 @@ const CONFIG = {};
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
-	CONFIG.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg', 'png' ];
-	CONFIG.imgTypes = [ 'image/png', 'image/jpeg', 'image/svg+xml', 'image/gif', 'image/jpeg', 'image/x-png' ];
+	CONFIG.imgExtensions = [ 'svg', 'png', 'jpg', 'gif', 'jpeg', 'png' ];
+	CONFIG.imgTypes = [ 'image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/jpeg', 'image/x-png' ];
 	// mime image/x-png does not exist by standard, but it has been seen in real data ...
 	CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
 	CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
@@ -325,7 +326,8 @@ const CONFIG = {};
 	// A list of property classes which are excluded from text formatting, specified by title;
 	// Applied only to properties of type "xs:string":
 	CONFIG.excludedFromFormatting = [
-		CONFIG.propClassType
+		CONFIG.propClassType,
+		"SpecIF:Notation"
 	]
 	.concat( CONFIG.titleProperties )
 	.concat( CONFIG.idProperties );
@@ -474,8 +476,7 @@ const vocabulary = {
 				case "reqif_revision":				oT = "SpecIF:Revision"; break;
 				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
 				case "specif_subclass":			// deprecated, for compatibility
-				case "reqif_category":
-				case "specif_notation":				oT = CONFIG.propClassType; break;
+				case "reqif_category":				oT = CONFIG.propClassType; break;
 				case 'specif_id':				// deprecated, for compatibility
 				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
 				case "specif_state":			// deprecated, for compatibility
@@ -633,11 +634,11 @@ const RE = {};
 // c) A single object to link+object resp. link+image:
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
-	RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
-	RE.tagImg = new RegExp( '<img([^>]+)/>', 'g' );
-	const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
+	RE.tagA = new RegExp( '<a ([^>]+)>([\\s\\S]*?)</a>', 'g' );
+	RE.tagImg = new RegExp( '<img ([^>]+)/>', 'g' );
+	const reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
-	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
+	RE.tagNestedObjects = new RegExp( '<object ([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;
 	const tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)";
 	RE.tag = new RegExp( tagStr, 'g' );
