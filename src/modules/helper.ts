@@ -410,7 +410,7 @@ var message = new function() {
 	return self;
 };
 
-function doResize( opt ) {
+function doResize() {
 	// Resizes DOM-tree elements to fit in the current browser window.
 	// In effect it is assured that correct vertical sliders are shown.
 
@@ -438,9 +438,6 @@ function doResize( opt ) {
 	$('.contentCtrl').css( "top", hH );
 	return
 	
-	function getCssVal(str) {
-		return parseInt(str,10)  // cut off unit at the end and transform to integer value
-	}
 /*	function getNavbarHeight() {
 		return $('#navbar').css("height")
 	} */
@@ -538,7 +535,7 @@ function sortByTitle( L ) {
 		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
-function sortBy( L, fn:(object)=>number ):void {
+function sortBy( L, fn:(object)=>string ):void {
 	return L.sort( 
 		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
 	);
