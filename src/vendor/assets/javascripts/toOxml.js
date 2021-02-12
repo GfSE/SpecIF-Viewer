@@ -246,7 +246,7 @@ function toOxml( data, opts ) {
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
 					ti = stripHtml( itm.properties[a].value );
 				} else {
-					// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
+					// In certain cases (SpecIF hierarchy root or comment), there is no title property. 
 					ti = elTitleOf(itm);
 				};
 				ti = minEscape( opts.lookup( ti ) );
@@ -288,10 +288,11 @@ function toOxml( data, opts ) {
 				let sts={}, cid, oid, sid, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
-					// all statements having the same title are clustered:
+					// for clustering all statements by title:
 					cid = titleOf( st, undefined, opts );
-				/*	// all statements having the same class are clustered:
+				/*	// for clustering all statements by class:
 					cid = st['class']; */
+					
 					// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
@@ -309,7 +310,8 @@ function toOxml( data, opts ) {
 				// else, there are statements to render:
 				// The heading:
 				let ct = wParagraph( {text: opts.statementsLabel, format:{heading: 4}} ),
-					sTi, row, cell;
+					sTi, row, cell, resL;
+
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
 					// if we have clustered by title:
@@ -320,20 +322,24 @@ function toOxml( data, opts ) {
 
 					// 3 columns:
 					if( sts[cid].subjects.length>0 ) {
-						cell = '';
+
 						// collect all related resources (here subjects):
-						sts[cid].subjects.forEach( function(s) {
+						resL = forAll( sts[cid].subjects, (s)=>{ return { id:s.id, ti:titleOf( s, undefined, opts ) }; });
+						
+						cell = '';
+						resL
+						.sort( (a,b)=>{ return a<b? -1:1 } )
+						.forEach( (s)=>{
 							// it may happen that an element is undefined:
-							if( s )
-								cell += wParagraph({
-											text:titleOf( s, undefined, opts ), 
-											format:{
-												font: {color:opts.colorAccent1},
-												hyperlink: {internal:anchorOf( s )}, 
-												noSpacing: true,
-												align: 'end'
-											}
-								})
+							cell += wParagraph({
+										text: s.ti, 
+										format:{
+											font: {color:opts.colorAccent1},
+											hyperlink: {internal:anchorOf( s.id )}, 
+											noSpacing: true,
+											align: 'end'
+										}
+							});
 						});
 						// Create a table row, if there is content:
 						if( cell ) {
@@ -370,20 +376,26 @@ function toOxml( data, opts ) {
 					};
 					
 					if( sts[cid].objects.length>0 ) {
-						cell = '';
+
 						// collect all related resources (here objects):
-						sts[cid].objects.forEach( function(o) {
+						resL = forAll( sts[cid].objects, (o)=>{ return { id:o.id, ti:titleOf( o, undefined, opts ) }; });
+						
+						cell = '';
+						resL
+						.sort( (a,b)=>{ return a<b? -1:1 } )
+						.forEach( (o)=>{
 							// it may happen that an element is undefined:
-							if( o )
-								cell += wParagraph({
-											text:titleOf( o, undefined, opts ),
-											format:{
-												font: {color:opts.colorAccent1},
-												hyperlink:{internal:anchorOf( o )},
-												noSpacing: true
-											}
-								})
+							cell += wParagraph({
+										text: o.ti, 
+										format:{
+											font: {color:opts.colorAccent1},
+											hyperlink: {internal:anchorOf( o.id )}, 
+											noSpacing: true,
+											align: 'end'
+										}
+							});
 						});
+
 						// Create a table row, if there is content:
 						if( cell ) {
 							// The subject:
@@ -422,10 +434,10 @@ function toOxml( data, opts ) {
 //				console.debug('statementsOf',ct);
 				return wTable( {content:ct,width:'full'} )
 			}
-			function anchorOf( res ) {
+			function anchorOf( resId ) {
 				// Find the hierarchy node id for a given resource;
 				// the first occurrence is returned:
-				let m=null, M=null, n=null, N=null, ndId=null;
+				let m, M, n, N, ndId=null;
  				for( m=0, M=data.hierarchies.length; m<M; m++ ) {
 //					console.debug( 'nodes', m, data.hierarchies );
 					if( data.hierarchies[m].nodes )
@@ -438,7 +450,7 @@ function toOxml( data, opts ) {
 				return null;	// not found
 				
 				function ndByRef( nd ) {
-					if( nd.resource==res.id ) return nd.id;
+					if( nd.resource==resId ) return nd.id;
 					let ndId=null;
 					if( nd.nodes )
 						for( var t=0, T=nd.nodes.length; t<T; t++ ) {
@@ -940,7 +952,7 @@ function toOxml( data, opts ) {
 
 								// if the titleLink content equals a resource's title, return a text run with hyperlink:
 								if(m==ti.toLowerCase())
-									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO)}}};
+									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO.id)}}};
 							};
 							// The dynamic link has NOT been matched/replaced, so mark it:
 							return {text:lk[1],color:"82020"}
@@ -1137,19 +1149,53 @@ function toOxml( data, opts ) {
 					return '';
 //				console.debug('wRun',ct);
 				// assuming that hyperlink or bookmark or none of them are present, but never both:
+				
 				if( ct.format && ct.format.hyperlink ) {
 //					console.debug('hyperlink',ct.format.hyperlink);
 					if( ct.format.hyperlink.external )
 						var tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
 					else
-						var tg = 'w:anchor="_'+ct.format.hyperlink.internal+'"';
-					return '<w:hyperlink '+tg+' w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+						// Interestingly enough, Word only supports internal links up to 40 chars:
+						var tg = 'w:anchor="'+limit(ct.format.hyperlink.internal)+'"';
+					return '<w:hyperlink '+tg+'><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
+				
+			/*	This works also nicely, except for the hyperlink formatting:
+				// When manually creating an internal hyperlink, the following pattern is used:
+				// see: http://officeopenxml.com/WPfields.php
+				if( ct.format && ct.format.hyperlink ) {
+//					console.debug('hyperlink',ct.format.hyperlink);
+					if( ct.format.hyperlink.external ) {
+						let tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
+						return '<w:hyperlink '+tg+'><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+					};
+					// else, assuming that it is an internal hyperlink:
+					// Interestingly enough, Word only supports internal links up to 20 chars:
+					let lnk = ct.format.hyperlink.internal.substr(0,20);
+					return	'<w:r>'
+						+		'<w:fldChar w:fldCharType="begin"/>'
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:instrText xml:space="preserve"> REF '+lnk+' \\h </w:instrText>'
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:fldChar w:fldCharType="separate"/>'
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'
+						+		r
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:fldChar w:fldCharType="end"/>'
+						+	'</w:r>'
+				}; */
+				
 				r = '<w:r>'+rPr(ct)+r+'</w:r>';
 				if( ct.format && ct.format.bookmark ) {
 					let bmId = 'bm-'+ hashCode(ct.format.bookmark);
-					return '<w:bookmarkStart w:id="'+bmId+'" w:name="_'+ct.format.bookmark+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
+					// MS-Word supports internal links only up to 40 chars:
+					return '<w:bookmarkStart w:id="'+bmId+'" w:name="'+limit(ct.format.bookmark)+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
 				};
 				// else, just the content:
 				return r;  
@@ -1164,6 +1210,10 @@ function toOxml( data, opts ) {
 					};
 					// default:
 					return '';
+				}
+				function limit(e) {
+					// it is unique for length<41, so don't change it:
+					return e.length<41? e : 'h'+hashCode(e)
 				}
 				function pushReferencedUrl( u ) {
 					// Add the URL to the relationships and return it's index:

@@ -761,7 +761,7 @@ modules.construct({
 		// Delete the selected node and its children.
 		// The resources are just dereferenced, but not deleted, themselves.
 		function delNd( nd ) {
-//			console.info( "Deleting tree object '"+nd.name+"'." );
+			console.info( "Deleting tree object '"+nd.name+"'." );
 //			console.debug('deleteNode',nd,nd.getNextSibling());
 
 			// 1. Step away from tbe node to delete to the next:
@@ -804,18 +804,18 @@ modules.construct({
 					delNd( pData.tree.selectedNode );
 					thisDlg.close();
 				}
-	/*	//	},{
-		//		label: i18n.BtnDeleteObject,
-		//		// This button is enabled, if the user has permission to delete the referenced resource,
-		//		// and if the resource has no further references in any tree:
-		//		cssClass: 'btn-danger'+(self.resources.selected().value.del?'':' disabled'), 
-		//		action: function (thisDlg) {
+	/*		},{
+				label: i18n.BtnDeleteObject,
+				// This button is enabled, if the user has permission to delete the referenced resource,
+				// and if the resource has no further references in any tree:
+				cssClass: 'btn-danger'+(self.resources.selected().value.del?'':' disabled'), 
+				action: function (thisDlg) {
 //					console.debug( "Deleting resource '"+pData.tree.selectedNode.name+"'." );
-		//			delNd( pData.tree.selectedNode );
+					delNd( pData.tree.selectedNode );
 					// ToDo: Delete the resource itself
 					// ToDo: Delete all other references
-		//			thisDlg.close() 
-		//		}  */
+					thisDlg.close() 
+				}  */
 			}]
 		})
 		.open();
@@ -874,7 +874,8 @@ modules.construct({
 	
 		// The tree knows the selected resource; if not take the first:
 		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
-		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
+		// quit, because the tree is empty:
+		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };
 
 		// else: the tree has entries:
 		app.busy.set();
@@ -888,7 +889,7 @@ modules.construct({
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
 				project: cData.id,
-				view: self.view.substr(1),	// remove leading hash
+				view: self.view.substr(1),	// without leading hash
 				node: nd.id,
 				item: nd.ref
 			}); 

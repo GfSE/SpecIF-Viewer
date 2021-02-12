@@ -1765,7 +1765,7 @@ function Project( pr ) {
 									i18n.LblFormat,
 									[
 										{ title: 'SpecIF v'+app.specifVersion, id: 'specif', checked: true },
-										{ title: 'HTML with embedded SpecIF v'+app.specifVersion+' (experimental)', id: 'html' },
+										{ title: 'HTML with embedded SpecIF v'+app.specifVersion, id: 'html' },
 										{ title: 'ReqIF v1.2', id: 'reqif' },
 									//	{ title: 'RDF', id: 'rdf' },
 										{ title: 'Turtle (experimental)', id: 'turtle' },

@@ -526,21 +526,21 @@ function containsByTitle( cL, L ) {
 		return true;
 	}
 }
-function cmp( i, a ) {
+function cmp( i:string, a:string ):number {
 	if( !i ) return -1;
 	if( !a ) return 1;
-	i = i.toLowerCase(),
+	i = i.toLowerCase();
 	a = a.toLowerCase();
-	return i==a? 0 : (i<a? -1 : 1) 
+	return i==a? 0 : (i<a? -1 : 1);
 }
 function sortByTitle( L ) {
 	return L.sort( 
 		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
-function sortBy( L, fn ) {
+function sortBy( L, fn:(object)=>number ):void {
 	return L.sort( 
-		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) };
+		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
 	);
 }
 function forAll( L, fn ) {
@@ -691,7 +691,7 @@ String.prototype.ctrl2HTML = function() {
 				.replace( /&#x0{0,3}a;/gi, '' )
 				.replace( /\t/g, '&nbsp;&nbsp;&nbsp;' )
 				.replace( /\n/g, '<br />' )
-				.replace( /&#x0{0,3}d;/gi, '<br />' )
+				.replace( /&#x0{0,3}d;/gi, '<br />' );
 };
 String.prototype.toHTML = function() {
 // Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
@@ -709,9 +709,10 @@ function makeHTML(str,opts) {
 	let newS = str.ctrl2HTML()
 			.linkifyURLs( opts )
 			.replace(/--(?:&gt;|>)/g,'&#8594;')  // &rarr;
-			.replace(/(?:&lt;|<)--/g,'&#8592;')  // &larr;
+			.replace(/(?:&lt;|<)--/g,'&#8592;');  // &larr;
+/*	// Dont't convert markdown, if the text begins and ends with a XHTML tag:
 	if( /^\s*<.+>\s*$/.test(str) )
-		return newS;
+		return newS; */
 	if( CONFIG.convertMarkdown && app.markdown ) {
 		// don't interpret the '+' as list item, but do so with '�' and '•',
 		// transform arrows assembled by characters to special arrow characters:
@@ -719,10 +720,10 @@ function makeHTML(str,opts) {
 			.replace(/\+ /g,'&#x2b; ') // '+'
 			.replace(/� /g,'* ')
 			.replace(/• /g,'* ')
-		)
+		);
 //		.linkifyURLs( opts )
 	};
-	return '<div>'+newS+'</div>'
+	return '<div>'+newS+'</div>';
 } 
 
 /* String.prototype.utf8ToXmlChar = function() {

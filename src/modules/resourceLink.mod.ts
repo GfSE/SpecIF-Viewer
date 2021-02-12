@@ -105,7 +105,6 @@ modules.construct({
 							list, 
 							(el)=>{ return elementTitleOf(el,opts,cData) } 
 					);
-				//	self.allResources = sortBy( simpleClone( list ), (el)=>{ return elementTitleOf(el,opts,cData) } );
 					// now self.allResources contains the full resources
 					chooseResourceToLink()
 				}, 

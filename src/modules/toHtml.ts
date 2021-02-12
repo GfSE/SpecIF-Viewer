@@ -22,43 +22,38 @@ function toHtml( pr, pars ) {
 				if( f.blob ) {
 
 					pend++;
-
 					switch( f.type ) {
+						case 'image/svg+xml':
+						/*	// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
+							//see: https://css-tricks.com/probably-dont-base64-svg/
+							blob2text( f, 
+								(r)=>{ 
+									f.dataURL = "data:image/svg+xml;utf8,"+r;
+									delete f.blob;
+									if( --pend<1 ) resolve( make( pr ) );
+								}
+							);
+							break; */
 						case 'image/png':
 						case 'image/x-png':
 						case 'image/jpeg':
 						case 'image/jpg':
 						case 'image/gif':
-				/*			blob2dataURL( f, (r)=>{
-								// store dataURL:
-								f.dataURL = r;
-								delete f.blob;
-								if( --pend<1 ) resolve( make( pr ) );
-							},0); // no timelag
-							break;
-						case 'image/svg+xml':
-							// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-							blob2text( f, (r)=>{ 
-								f.dataURL = "data:image/svg+xml;utf8,"+r;
-                                delete f.blob;
-								if( --pend<1 ) resolve( make( pr ) );
-							});
-							break; */
-						case 'image/svg+xml':
-							//see: https://css-tricks.com/probably-dont-base64-svg/
-                            blob2dataURL(f, function (r) {
-								// perhaps there is a more elegant way to apply the type to the dataURL,
-								// but it works:
-                                f.dataURL = r.replace(/application\/octet-stream/,f.type);
-                                delete f.blob;
-                                if (--pend < 1)
-                                    resolve(make(pr));
-                            }, 0);
+                            blob2dataURL( f, 
+								(r)=>{
+									// perhaps there is a more elegant way to apply the type to the dataURL,
+									// but it works:
+									f.dataURL = r.replace(/application\/octet-stream/,f.type);
+									delete f.blob;
+									if (--pend < 1) resolve(make(pr));
+								}, 
+								0
+							);
                             break;
 						case 'application/bpmn+xml':
-                                delete f.blob;
-                                if (--pend < 1)
-                                    resolve(make(pr));
+							delete f.blob;
+							console.warn( "BPMN file '"+f.title+"'has arrived, but should not arrive at toHTML(); it has been deleted." );
+							if (--pend < 1) resolve(make(pr));
 							break;
 						default:
 							let errT = 'Cannot transform diagram '+f.title+' of unknown type: '+f.type;

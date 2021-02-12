@@ -380,8 +380,6 @@ var browser,
 		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
 		//		case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 		//									getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
-		//		case "xhtmlEditor": 		getCss( loadPath+'vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css' );
-		//									getScript( loadPath+'vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true;
 		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' )
 											.then( (m)=>{ app.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
