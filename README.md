@@ -8,8 +8,8 @@ SpecIF is the 'Specification Integration Facility'. It's purpose is to combine p
 Please have a look at the [SpecIF Homepage](https://specif.de) for further information.
 
 ## Features
-- Import 'specif' and 'specifz' file with schema and consistency check
-- Import 'reqif' file (planned)
+- Import 'specif' and 'specif.zip' file with schema and consistency check
+- Import 'reqif' file (experimental)
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
 - Import Archimate Open-Exchange (experimental)
@@ -22,7 +22,8 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Delete selected resources and statements*
 - Filter using text fragments ('full text search'), resource types or enumerated property values
 - Report some model-based statistics, such as used resource types or used property enumerated values
-- Export 'specifz' file
+- Export 'html' file with embedded SpecIF data
+- Export 'specif.zip' file
 - Export 'reqifz' file (Requirements Interchange Format)
 - Export 'ePub' file
 - Export MS-Word OOXML file

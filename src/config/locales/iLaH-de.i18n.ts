@@ -6,20 +6,19 @@
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsDe() {
-	var self = this;
-	self.phrase = function( ms, pA ) { 
+    var self:any = {};
+	self.phrase = function( ms:string, pA:string ):string { 
 		// replace a variable '~A' with pA, if available:
-		// for use in HTML fields.
-		if( ms ) {
-			if( pA ) return self[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-			return self[ms] 
+        if (ms) {
+            if (pA) return self[ms].replace(/~A/, pA);
+            return self[ms];
 		};
-		return ''
+		return '';
 	};
-	self.lookup = function( lb ) { 
+	self.lookup = function( lb:string ):string { 
 		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
 		// for use in regular text fields.
-		return self[lb.toJsId()] || lb
+		return self[lb.toJsId()] || lb;
 	};
 
 	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
@@ -713,4 +712,5 @@ function LanguageTextsDe() {
 	self.AppImport = 	self.IcoImport+'&#160;Import';
 	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
 	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+	return self;
 };

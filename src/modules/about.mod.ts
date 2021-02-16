@@ -12,7 +12,7 @@ modules.construct({
 	"use strict";
 
 	self.init = function( opts ) {
-//		console.debug('me.init',opt);
+//		console.debug('me.init',opts);
 		return true
 	};
 	self.clear = function() {
@@ -47,8 +47,8 @@ modules.construct({
 	//	+	'<p>Please press \'<a href="http://reqif.de/index.php/contact/articles/reqif-message.html" target="_blank">Support</a>\' to file a request for assistance.</p>'
 		+	'<h4>Features</h4>'
 		+		'<ul>'
-		+		  "<li>Import 'specif' and 'specifz' file with schema and consistency check</li>"
-		+		  "<li>Import 'reqif' file <em>(planned)</em></li>"
+		+		  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
+		+		  "<li>Import 'reqif' file <em>(experimental)</em></li>"
 		+ (isEditor? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
 		+		  "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
 		+		  "<li>Import 'BPMN-XML' file</li>"
@@ -61,6 +61,7 @@ modules.construct({
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
+		+		  "<li>Export 'html' file with embedded SpecIF data</li>"
 		+		  "<li>Export 'specif.zip' file</li>"
 		+		  "<li>Export 'reqifz' file</li>"
 		+		  "<li>Export 'Turtle' file <em>(experimental)</em></li>"

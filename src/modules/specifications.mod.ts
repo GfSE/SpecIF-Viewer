@@ -427,7 +427,7 @@ modules.construct({
 			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
 		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtPrC.dataType );
 
-		var addC = new BootstrapDialog({
+		new BootstrapDialog({
 			title: i18n.phrase( 'LblAddCommentTo', self.tree.selectedNode.name ),
 			type: 'type-success',
 			message: function (thisDlg) {
@@ -473,7 +473,7 @@ modules.construct({
 //		console.debug('delComment',id);
 		app.busy.set();
 		var pend=2;
-		app.cache.selectedProject.readStatementsOf({id:el})
+		app.cache.selectedProject.readStatementsOf({id:el}) // {showComments:true} ?
 			.done( function(rL) {
 				// delete all statements of the comment - should just be one, currently:
 //				console.debug('deleteComment',rL.statements,el);
@@ -503,7 +503,7 @@ modules.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,				// the cached project data
+		cacheData,				// the cached project data
 		selRes;				// the currently selected resource
 
 	// Permissions for resources:
@@ -518,6 +518,11 @@ modules.construct({
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
+	function selResIsUserControlled() {
+		return selRes 
+				&& ( !Array.isArray(selRes.toShow['class'].instantiation)
+					|| selRes.toShow['class'].instantiation.indexOf('user')>-1 )
+	}
 	self.init = ()=>{
 	};
 	self.clear = ()=>{
@@ -536,7 +541,7 @@ modules.construct({
 
 		pData.showLeft.set();
 		pData.showTree.set();
-		cData = app.cache.selectedProject.data;
+		cacheData = app.cache.selectedProject.data;
 		
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -584,7 +589,7 @@ modules.construct({
 			// but not navigation in the browser history:
 			if( nd && !(opts && opts.urlParams) ) 
 				setUrlParams({
-					project: cData.id,
+					project: cacheData.id,
 					view: self.view.substr(1),	// remove leading hash
 					node: nd.id,
 					item: nd.ref
@@ -627,11 +632,7 @@ modules.construct({
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
-			var nd = pData.tree.selectedNode,
-		//		isUserNode = selRes && CONFIG.modelElementClasses.indexOf(selRes['class'].title)<0,
-				isUserNode = selRes 
-								&& ( !Array.isArray(selRes.toShow['class'].instantiation)
-									|| selRes.toShow['class'].instantiation.indexOf('user')>-1 ),
+			var isUserNode = selResIsUserControlled(),
 		//		rootRes = itemById( 
 		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
 				rB = '<div class="btn-group btn-group-sm" >';
@@ -639,11 +640,11 @@ modules.construct({
 
 		/*	if( selRes )
 				// Create a 'direct link' to the resource (the server renders the resource without client app):
-				rB += '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
+				rB += '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cacheData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
 		*/	
 			// Add the create button depending on the current user's permissions:
 			// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
-		//	if( self.resCre && cData.selectedHierarchy.upd )
+		//	if( self.resCre && cacheData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
 			if( self.resCre && isUserNode )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
@@ -656,7 +657,7 @@ modules.construct({
 				return rB + '</div>';
 
 			// Add the clone button depending on the current user's permissions:
-		//	if( self.resCln && cData.selectedHierarchy.upd )
+		//	if( self.resCln && cacheData.selectedHierarchy.upd )
 			if( self.resCre && isUserNode )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
 						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
@@ -689,7 +690,7 @@ modules.construct({
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-		//	if( cData.selectedHierarchy.del )
+		//	if( cacheData.selectedHierarchy.del )
 			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && isUserNode )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
@@ -742,38 +743,104 @@ modules.construct({
 	Functions called by GUI events 
 */
 	self.editResource = ( mode )=>{
-		// enter edit mode: load the edit template:
-		// The button to which this function is bound is enabled only if the current user has edit permission.
+		// Enter edit mode: load the edit template:
+		// The button for this function is enabled only if the current user has edit permission.
 
 		if( app[CONFIG.resourceEdit] ) {
 //			console.debug('#',mode);
 			// the resource editor has no 'official' view and is thus not controlled by viewCtl,
 			// therefore we call show() directly:
-			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} )
+			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} );
 		} else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
 			
-			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.")
-		}
+			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
+		};
 	}; 
 	self.deleteNode = ()=>{
 		// Delete the selected node and its children.
-		// The resources are just dereferenced, but not deleted, themselves.
+		// The resources are dereferenced, or optionally deleted, themselves.
+		new BootstrapDialog({
+			title: i18n.MsgConfirm,
+			type: BootstrapDialog.TYPE_DANGER,
+			message: i18n.phrase( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
+			buttons: [{
+				label: i18n.BtnCancel,
+				action: (thisDlg)=>{ 
+					thisDlg.close();
+				}
+			},{
+				label: i18n.BtnDeleteObjectRef,
+				action: (thisDlg)=>{
+					delNd( pData.tree.selectedNode );
+					thisDlg.close();
+				}
+		/*	},{
+				label: i18n.BtnDeleteObject,
+				// This button is enabled, if the user has permission to delete the referenced resource,
+				// ?? and if the resource has no further references in any tree:
+				cssClass: 'btn-danger' +(enableDel(pData.tree.selectedNode.ref)?'':' disabled'), 
+				action: function (thisDlg) {
+					// the selected resource's instantiation must be "user" 
+//					console.debug( "Deleting resource '"+pData.tree.selectedNode.name+"'." );
+					delNd( pData.tree.selectedNode );
+			//		delRes( pData.tree.selectedNode.ref );
+					thisDlg.close();
+				} */
+			}]
+		})
+		.open();
+		return;
+		
+		function enableDel( resId ) {
+		// Check, if the specified resource can be deleted.
+		// ToDo: also check permission via self.resources.selected().value.del
+//			console.debug('enableDel',selRes.toShow,resId,selResIsUserControlled());
+            return selRes.toShow.id == resId  // should always be the case ..
+				// only resources under "user" control can be deleted:
+                && selResIsUserControlled();
+		}
+	/*	function delRes( resId ) {
+			// Delete the resource 
+			// - only if it is not referenced by another hierarchy node as well.
+			// - and if it is under "user" control
+			// In addition, if it is a diagram, 
+			// - identify all it's "shows" relations
+			// - delete all resources and statements shown by the diagram, 
+			//   -- only if they are not shown by another diagram as well
+			//   -- if they are *not* under "user" control.
+			// - delete all it's "shows" relations
+			// Note that older data sets do not use "shows" relations for statements and in this case the statements are left untouched;
+			// in other words: If a user wants to potentially delete statements which are shown by a diagram to be deleted,
+			// it is necessary to provide "shows" statements also for statements.
+			// ?? ToDo: delete the resource with all other references ...
+			app.cache.selectedProject.deleteContent( "resource", {id:resId} )
+				.catch( stdError );
+			// Delete all statements related to this resource:
+			app.cache.selectedProject.readStatementsOf( {id:resId} )
+				.then( 
+					(staL)=>{
+						console.debug( 'delRes statements', staL);
+					},
+					stdError 
+				);
+		} */
 		function delNd( nd ) {
+			// Delete the hierarchy node and all it's children. 
 			console.info( "Deleting tree object '"+nd.name+"'." );
-//			console.debug('deleteNode',nd,nd.getNextSibling());
 
-			// 1. Step away from tbe node to delete to the next:
+			// 1. Step away from tbe node to delete:
+//			console.debug('deleteNode',nd,nd.getNextSibling());
 			pData.tree.selectNode( nd.getNextSibling() ); 
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
 			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
 				.then( 
 					()=>{
-						// If it was a diagram, build a new glossary with elements 
-						// which are still shown by any of the remaining diagrams:
-						app.cache.selectedProject.createGlossary( cData, {addGlossary:true} )
+						// If a diagram has been deleted, build a new glossary with elements 
+						// which are shown by any of the remaining diagrams:
+						app.cache.selectedProject.createGlossary( cacheData, {addGlossary:true} )
 							.then( 
 								()=>{  
 									// undefined parameters will be replaced by default value:
@@ -789,37 +856,11 @@ modules.construct({
 					stdError 
 				);
 		}
-		var dlg = new BootstrapDialog({
-			title: i18n.MsgConfirm,
-			type: BootstrapDialog.TYPE_DANGER,
-			message: i18n.phrase( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
-			buttons: [{
-				label: i18n.BtnCancel,
-				action: (thisDlg)=>{ 
-					thisDlg.close();
-				}
-			},{
-				label: i18n.BtnDeleteObjectRef,
-				action: (thisDlg)=>{
-					delNd( pData.tree.selectedNode );
-					thisDlg.close();
-				}
-	/*		},{
-				label: i18n.BtnDeleteObject,
-				// This button is enabled, if the user has permission to delete the referenced resource,
-				// and if the resource has no further references in any tree:
-				cssClass: 'btn-danger'+(self.resources.selected().value.del?'':' disabled'), 
-				action: function (thisDlg) {
-//					console.debug( "Deleting resource '"+pData.tree.selectedNode.name+"'." );
-					delNd( pData.tree.selectedNode );
-					// ToDo: Delete the resource itself
-					// ToDo: Delete all other references
-					thisDlg.close() 
-				}  */
-			}]
-		})
-		.open();
 	};
+/*	self.deleteResource = ()=>{
+		// Delete the selected resource, all tree nodes and their children.
+		// very dangerous ....
+	};  */
 	self.relatedItemClicked = ( rId )=>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
@@ -827,11 +868,7 @@ modules.construct({
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 		document.getElementById(CONFIG.objectList).scrollTop = 0;
 	};
-/*	self.deleteResource = ()=>{
-		// Delete the selected resource, all tree nodes and their children.
-		// very dangerous ....
-	};  */
-	return self
+	return self;
 });
 // Construct the controller for displaying the statements ('Statement View'):
 modules.construct({
@@ -842,7 +879,7 @@ modules.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,				// the cached data
+		cacheData,				// the cached data
 		selRes,				// the currently selected resource
 		net,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
@@ -862,7 +899,7 @@ modules.construct({
 //		console.debug(CONFIG.relations, 'show');
 		pData.showLeft.set();
 		pData.showTree.set();
-		cData = app.cache.selectedProject.data;
+		cacheData = app.cache.selectedProject.data;
 
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -888,7 +925,7 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: cData.id,
+				project: cacheData.id,
 				view: self.view.substr(1),	// without leading hash
 				node: nd.id,
 				item: nd.ref
@@ -961,13 +998,13 @@ modules.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
-			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cData )});
+		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cacheData )});
+			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			cacheE( L, { id: s.id, title: elementTitleOf(s,opts,cData), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} );
+			cacheE( L, { id: s.id, title: elementTitleOf(s,opts,cacheData), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} );
 		}
 		function cacheNet(s) {
 			// skip hidden statements:
@@ -999,7 +1036,7 @@ modules.construct({
 					resolve([]);
 //				console.debug('getMentionsRels',selR,opts);
 			/*	// There is no need to have a statementClass ... at least currently:
-				var rT = itemByName( cData.statementClasses, CONFIG.staClassMentions );
+				var rT = itemByName( cacheData.statementClasses, CONFIG.staClassMentions );
 				if( !rT ) return;  */
 				
 				let staL = [],	// a list of artificial statements; these are not stored in the server
@@ -1030,7 +1067,7 @@ modules.construct({
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cData, p['class'] ).type ) {
+										switch( dataTypeOf( cacheData, p['class'] ).type ) {
 											case 'xs:string':
 											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
@@ -1050,7 +1087,7 @@ modules.construct({
 								if( refR.properties )
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cData, p['class'] ).type ) {
+										switch( dataTypeOf( cacheData, p['class'] ).type ) {
 											case 'xs:string':
 											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
@@ -1211,7 +1248,7 @@ modules.construct({
 						if( opts.fnDel && sc.computed )
 							rT += sc.sT+'<br />'
 						else
-							rT += '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
+							rT += '<a onclick="app['+CONFIG.objectList+'].relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
 					});
 					// Title and object are the same for all statements in this list:
 					rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0],opts)+'</i></td>';
@@ -1243,7 +1280,7 @@ modules.construct({
 						if( opts.fnDel && tg.computed )
 							rT += tg.tT+'<br />'
 						else
-							rT += '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
+							rT += '<a onclick="app['+CONFIG.objectList+'].relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
 					});
 					rT += '</td></tr>'
 				}
@@ -1688,8 +1725,8 @@ function propertyValueOf( prp, opts ) {
 		return str;
 
 		function lnk(r,t){ 
-//			console.debug('lnk',r,t,'app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')');
-			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
+//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
+			return '<a onclick="app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
 		}
 	}
 }
@@ -2185,21 +2222,21 @@ var fileRef = new function() {
 						// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 						if( CONFIG.selectCorrespondingDiagramFirst ) {
 							// replace the id of a resource by the id of a diagram carrying the same title:
-							let cData = app.cache.selectedProject.data,
-								ti = elementTitleOf(itemBySimilarId(cData.resources,id),opts),
+							let cacheData = app.cache.selectedProject.data,
+								ti = elementTitleOf(itemBySimilarId(cacheData.resources,id),opts),
 								rT = null;
-							for( var i=cData.resources.length-1;i>-1;i-- ) {
-								rT = itemById(cData.resourceClasses,cData.resources[i]['class']);
+							for( var i=cacheData.resources.length-1;i>-1;i-- ) {
+								rT = itemById(cacheData.resourceClasses,cacheData.resources[i]['class']);
 								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( elementTitleOf(cData.resources[i],opts)==ti ) {
+								if( elementTitleOf(cacheData.resources[i],opts)==ti ) {
 									// found: the diagram carries the same title 
 									if( app[CONFIG.objectList].resources.selected().toShow 
-										&& app[CONFIG.objectList].resources.selected().toShow.id==cData.resources[i].id )
+										&& app[CONFIG.objectList].resources.selected().toShow.id==cacheData.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 
 										return id;
 									else
-										return cData.resources[i].id;	// the corresponding diagram's id
+										return cacheData.resources[i].id;	// the corresponding diagram's id
 								};
 							};
 						};

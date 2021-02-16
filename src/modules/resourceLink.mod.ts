@@ -93,7 +93,7 @@ modules.construct({
 				(nd)=>{
 					cacheE( self.allResources, nd.resource );
 					// self.allResources contains the resource ids
-					return true // continue until the end
+					return true // iterate the whole tree
 				}
 			);
 			app.cache.selectedProject.readContent( 'resource', self.allResources )

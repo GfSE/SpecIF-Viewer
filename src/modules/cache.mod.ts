@@ -40,7 +40,7 @@ modules.construct({
 
 		return true
 	};
-	self.create = ( p, opts )=>{
+	self.create = ( p, opts:object )=>{
 		// in this implementation, delete existing projects to save memory space:
 //		console.debug( 'cache.create', self );
 		self.projects.length = 0;
@@ -128,10 +128,10 @@ modules.construct({
 	return self
 });
 
-function Project( pr ) {
+function Project() {
 	// Constructor for a project containing SpecIF data.
 	var self = this,
-		loading = false,		// true: data is being gathered from the server.
+	//	loading = false,		// true: data is being gathered from the server.
 		fileName = undefined;
 	self.init = ()=>{
 		// initialize/clear all variables:
@@ -159,7 +159,7 @@ function Project( pr ) {
 			hierarchies: [],    	// listed specifications (aka hierarchies, outlines) of the project.
 			files: []
 		};
-		loading = false;
+	//	loading = false;
 		self.exporting = false;		// prevent concurrent exports
 		self.abortFlag = false
 	};
@@ -175,10 +175,11 @@ function Project( pr ) {
 		var sDO = $.Deferred();
 
 		// Create the specified project:
+		let ti = newD.title;
 		newD = specif.toInt(newD);	// transform to internal data structure
 		if( !newD ) {
-			sDO.reject({ status: 995, statusText: i18n.MsgImportFailed }); // ToDo: this message may specify a file or similar.
-			return sDO
+			sDO.reject({ status: 995, statusText: i18n.phrase( 'MsgImportFailed', ti ) });
+			return sDO;
 		};
 //		console.debug('app.cache.selectedProject.data.create',newD);
 
@@ -476,7 +477,7 @@ function Project( pr ) {
 		);
 		// ToDo: Make it work, if keys are used as a reference.
 	}
-	function hookStatements( dta ) {
+	function hookStatements( dta? ) {
 		if( typeof(dta)!='object' || !dta.id ) dta = self.data;
 //		console.debug('hookStatements',dta);
 		// For all statements with a loose end, hook the resource
@@ -819,6 +820,7 @@ function Project( pr ) {
 					let resL = resources.filter( (r)=>{ return indexBy( staL, 'object', r.id )>-1 } );
 					// in alphanumeric order:
 					sortByTitle( resL );
+					// ToDo: consider to sort by the title property via elementTitleOf()
 
 					// Categorize resources:
 					resL.forEach(
@@ -1614,8 +1616,9 @@ function Project( pr ) {
 												return dDO
 											};
 											// no break;  */
-					case 'statement':
-					case 'node':
+					case "resource":
+					case "statement":
+					case "node":
 //						console.debug('deleteContent',ctg,item);
 						if( uncache( ctg, item )<0 ) reject({status:999,statusText:ctg+' '+item.id+' not found and thus not deleted.'});
 						break;
@@ -1663,7 +1666,7 @@ function Project( pr ) {
 			}
 		);
 	};
-	self.readStatementsOf = ( res, showComments )=>{
+	self.readStatementsOf = ( res, opts )=>{
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
 		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
@@ -1671,7 +1674,7 @@ function Project( pr ) {
 		// - All comments referring to the selected resource shall be shown;
 		//   the resource is found in the cache, but the comment is not.
 		//   --> set 'showComments' to true
-
+		
 		return new Promise(
 			(resolve, reject) => {
 				self.readContent( 'statement', 'all' )
@@ -1686,14 +1689,14 @@ function Project( pr ) {
 										&&  (
 												// related subject and object must be referenced in the tree to be navigable,
 												// also, the statement must not be declared 'hidden':
-												!showComments
+												(!opts || !opts.showComments)
 													// cheap tests first:
 													&&	s.title!=CONFIG.staClassCommentRefersTo
 													&& 	CONFIG.hiddenStatements.indexOf( s.title )<0
 													&&	isReferencedByHierarchy( itemIdOf(s.subject) )
 													&&	isReferencedByHierarchy( itemIdOf(s.object) )
 												// In case of a comment, the comment itself is not referenced in the tree:
-											||	showComments
+											||	opts.showComments
 													&&	s.title==CONFIG.staClassCommentRefersTo
 													&&	isReferencedByHierarchy( itemIdOf(s.object) )
 											)
@@ -2270,7 +2273,7 @@ function Project( pr ) {
 			addPerms(item)
 	}
 */
-	function classIsCompatible(ctg,refC,newC,mode) {
+	function classIsCompatible( ctg, refC, newC, mode? ) {
 	//	if(refC.id!=newC.id) return {status:0};
 		// else: identifiers are equal:
 //		console.debug( 'classIsCompatible', refC, newC );
@@ -2342,7 +2345,7 @@ function Project( pr ) {
 				// else: The new type has at least one property.
 				if( mode=='match' && (!refC.propertyClasses || !refC.propertyClasses.length) )
 							return {status:963, statusText:"new "+ctg+" '"+newC.id+"' is incompatible"};
-				var idx=null, pc=null;
+				var idx, npc;
 				for( var a=newC.propertyClasses.length-1; a>-1; a-- ) {
 					npc = newC.propertyClasses[a];
 					if( npc.id ) {
@@ -2508,13 +2511,13 @@ function Project( pr ) {
 
 		function delNodes( L, el ) {
 			// Delete all nodes specified by the element;
-			// if el is the node, 'id' will be used to identify it (obviously at most one node),
-			// and if el is the referenced resource, 'resource' will be used to identify all referencing nodes.
-			if( !Array.isArray( L ) ) return;
+			// - if el is the node, 'id' is used to identify it (obviously at most one node),
+			// - if el is the referenced resource, 'resource' is used to identify all referencing nodes.
+			if( !Array.isArray( L ) ) return null;
 			for( var h=L.length-1; h>-1; h-- ) {
 				if( L[h].id==el.id || L[h].resource==el.resource ) {
-					L.splice(h,1);
-					break;	// can't delete any children
+					L.splice(h,1); // delete node with it's children
+					break;	
 				};
 				// step down, if the node hasn't been deleted:
 				delNodes( L[h].nodes, el );
@@ -2544,7 +2547,7 @@ function Project( pr ) {
 				idx=null;
 			if( itm=='all' ) {
 				// return all cached items asynchronously:
-				return new Promise(( resolve, reject)=>{
+				return new Promise(( resolve, reject )=>{
 					resolve( [].concat(cch) );	// return a new list with the original elements
 				})
 			};
@@ -2714,8 +2717,7 @@ const specif = {
 			iD.files =				forAll( spD.files, f2int )
 		} catch (e) {
 			console.error( "Error when importing the project '"+spD.title+"'" );
-			message.show( i18n.phrase( 'MsgImportFailed', spD.title ), {severity:'danger'} );
-			return
+			return; // undefined 
 		};
 
 		// header information provided only in case of project creation, but not in case of project update:
@@ -2897,7 +2899,16 @@ const specif = {
 				switch( dT.type ) {
 					case 'xs:string':
 					case 'xhtml':
-						oE.value = uriBack2slash( cleanValue(iE.value) );
+						oE.value = cleanValue( iE.value );
+						oE.value = Array.isArray(oE.value)?
+							// multiple languages:
+							forAll( oE.value, 
+								( val )=>{ 
+									val.text = uriBack2slash( val.text ); 
+									return val;  
+								})
+							// single language:
+							: uriBack2slash( oE.value );
 						break;
 					default:
 						// According to the schema, all property values are represented by a string
@@ -3060,6 +3071,15 @@ const specif = {
 		if( iD.files && iD.files.length>0 )
 			spD.files = forAll( iD.files, f2ext );
 
+			function outlineTypeIsNotHidden(hPL) {
+				if( !hPL || hPL.length<1 ) return true;
+				for( var i=hPL.length-1;i>-1;i-- ) {
+					if( hPL[i].title==CONFIG.propClassType
+						&& (typeof(hPL[i].value)!='string' || hPL[i].value==CONFIG.resClassOutline ) )
+							return false;
+				};
+				return true;
+			}
 		// Add a resource as hierarchyRoot, if needed.
 		// It is assumed, 
 		// - that in general SpecIF data do not have a hierarchy root with meta-data.
@@ -3085,15 +3105,6 @@ const specif = {
 			};
 			// Add the resource type, if it is not hidden:
 			let rC = itemById( spD.resourceClasses, "RC-HierarchyRoot" );
-				function outlineTypeIsNotHidden(hPL) {
-					if( !hPL || hPL.length<1 ) return true;
-					for( var i=hPL.length-1;i>-1;i-- ) {
-						if( hPL[i].title==CONFIG.propClassType
-							&& (typeof(hPL[i].value)!='string' || hPL[i].value==CONFIG.resClassOutline ) )
-								return false;
-					};
-					return true;
-				}
 			if( outlineTypeIsNotHidden( opts.hiddenProperties ) ) {
 				addP( res, {
 						class: "PC-Type",
@@ -3390,23 +3401,21 @@ const specif = {
 		// - an pbject with id and a revision
 		return key.id || key
 	}
-/*
-	function keyOf( item ) {
+/*	function keyOf( item ) {
 		// Normalize the identification including revision:
 		switch( typeof(item) ) {
 			case "object": return item;
 			case "string": return {id: item, revision: "0"};
 			default: return null // programming error
 		}
-	}
-*/
-function isReferencedByHierarchy( rId, H ) {
+	}*/
+function isReferencedByHierarchy( rId:string, H? ):boolean {
 	// checks whether a resource is referenced by the hierarchy:
 	// ToDo: make it work with revisions.
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
 	return iterateNodes( H, (nd)=>{ return nd.resource!=rId } )
 }
-function collectResourcesByHierarchy( prj, H ) {
+function collectResourcesByHierarchy( prj, H? ) {
 	// collect all resources referenced by the given hierarchy:
 	if( !prj ) prj = app.cache.selectedProject.data;
 	if( !H ) H = prj.hierarchies;
@@ -3414,7 +3423,7 @@ function collectResourcesByHierarchy( prj, H ) {
 	iterateNodes( H, (nd)=>{ cacheE( rL, itemById(prj.resources,itemIdOf(nd.resource)) ); return true } );
 	return rL;
 }
-function dataTypeOf( prj, pCid ) {
+function dataTypeOf( prj, pCid ):string {
 	// given a propertyClass id, return it's dataType:
 	if( typeof(pCid)=='string' && pCid.length>0 )
 		return itemById( prj.dataTypes, itemById( prj.propertyClasses, pCid ).dataType )
@@ -3424,7 +3433,7 @@ function dataTypeOf( prj, pCid ) {
 	// may happen, if a resource does not have any properties and it's title or description is being used:
 	return {type: 'xs:string'}; // by default
 }
-function enumValueOf( dT, val, opts ) {
+function enumValueOf( dT, val:string, opts? ):string {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
 	if( dT.type!='xs:enumeration' || !val ) return val;
@@ -3444,14 +3453,14 @@ function enumValueOf( dT, val, opts ) {
 	});
 	return ct;
 }
-function multipleChoice( pC, prj ) {
-	prj = prj || app.cache.selectedProject.data;
+function multipleChoice( pC, prj? ) {
+	if( !prj ) prj = app.cache.selectedProject.data;
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
 	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
 	// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 }
-function visibleIdOf( r, prj ) {
+function visibleIdOf( r, prj? ) {
 	if( r && r.properties ) {
 		if( !prj ) prj = app.cache.selectedProject.data;
 		for( var a=0,A=r.properties.length;a<A;a++ ) {
@@ -3462,17 +3471,17 @@ function visibleIdOf( r, prj ) {
 	};
 //	return undefined
 }
-function resClassTitleOf( e, prj, opts ) {
+function resClassTitleOf( e, prj, opts? ) {
 	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts );
 }
-function staClassTitleOf( e, prj, opts ) {
+function staClassTitleOf( e, prj, opts? ) {
 	return titleOf( itemById( prj.statementClasses, e['class'] ), opts );
 }
 function propTitleOf( prp, prj ) {
 	// get the title of a property as defined by itself or it's class:
 	return prp.title || itemById(prj.propertyClasses,prp['class']).title;
 }
-function titleOf( item, opts ) {
+function titleOf( item, opts? ) {
 	// Pick up the native title of any item;
 	// look for a translation, take it as is or take the id by default.
 	// It can be a title string or a multi-language title object.
@@ -3481,7 +3490,7 @@ function titleOf( item, opts ) {
 	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 //	return undefined
 }
-function languageValueOf( val, opts ) {
+function languageValueOf( val, opts? ) {
 	// Get the value according to a specified target language .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object;
 	// if targetLanguage is not defined, keep all language options:
@@ -3518,7 +3527,7 @@ function hasContent( pV ) {
 		|| RE.tagImg.test(pV)
 		|| RE.tagA.test(pV)
 }
-function iterateNodes( tree, eFn, lFn ) {
+function iterateNodes( tree, eFn, lFn? ):boolean {
 	// Iterate a SpecIF hierarchy or a branch of a hierarchy.
 	// Do NOT use with a tree for display (jqTree).
 	// 1. Execute eFn for every node of the tree as long as eFn returns true;
@@ -3530,18 +3539,18 @@ function iterateNodes( tree, eFn, lFn ) {
 	let cont=true;
 	if( Array.isArray( tree ) ) {
 		for( var i=tree.length-1; cont&&(i>-1); i-- ) {
-			cont = !iterateNodes( tree[i], eFn, lFn )
+			cont = !iterateNodes( tree[i], eFn, lFn );
 		};
-		if( typeof(lFn)=='function' ) lFn( tree )
+		if( typeof(lFn)=='function' ) lFn( tree );
 	} else {
 		cont = eFn( tree );
 		if( cont && tree.nodes ) {
-			cont = !iterateNodes( tree.nodes, eFn, lFn )
-		}
+			cont = !iterateNodes( tree.nodes, eFn, lFn );
+		};
 	};
 	return !cont;
 }
-function createProp( pC, pCid ) {
+function createProp( pC, pCid:string ):object {
 	// Create an empty property from the supplied class;
 	// the propertyClass may be supplied by the first parameter
 	// or will be selected from the propertyClasses list using the supplied propertyClass id pCid:
@@ -3564,7 +3573,6 @@ function propByTitle(itm,pN,dta) {
 	// Look for the propertyClasses pCs of the item's class iC:
 	// ToDo: Add statementClasses, as soon as needed.
 	var iC = itemById( dta.resourceClasses, itm['class'] ),
-	//	pCs = dta.propertyClasses.filter( (pC)=>{ return iC.propertyClasses.indexOf(pC.id)>-1 } ),
 		pC,prp;
 //	console.debug('propByTitle',dta,itm,pN,iC);
 	for( var i=dta.propertyClasses.length-1;i>-1;i-- ) {
@@ -3583,19 +3591,19 @@ function propByTitle(itm,pN,dta) {
 	};
 //	return undefined
 }
-function valByTitle(itm,pN,dta) {
+function valByTitle(itm,pN,prj) {
 	// Return the value of a resource's (or statement's) property with title pN:
 	// ToDo: return the class's default value, if available.
-//	console.debug('valByTitle',dta,itm,pN);
+//	console.debug('valByTitle',prj,itm,pN);
 	if( itm.properties ) {
 		for( var i=itm.properties.length-1;i>-1;i-- ) {
-			if( (itm.properties[i].title || itemById( dta.propertyClasses, itm.properties[i]['class'] ).title)==pN )
+			if( (itm.properties[i].title || itemById( prj.propertyClasses, itm.properties[i]['class'] ).title)==pN )
 				return itm.properties[i].value
 		}
 	};
 //	return undefined
 }
-function titleIdx( pL, prj ) {
+function titleIdx( pL, prj? ):number {
 	// Find the index of the property to be used as title.
 	// The result depends on the current user - only the properties with read permission are taken into consideration.
 	// This works for title strings and multi-language title objects.
@@ -3612,7 +3620,7 @@ function titleIdx( pL, prj ) {
 	};
 	return -1;
 }
-function classifyProps( el, prj ) {
+function classifyProps( el, prj? ) {
 	// add missing (empty) properties and classify properties into title, descriptions and other;
 	// for resources and statements.
 	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
@@ -3661,10 +3669,10 @@ function classifyProps( el, prj ) {
 	// We must iterate backwards, because we alter the list of other.
 	// ToDo: use cP.other.filter()
 	for( a=cP.other.length-1;a>-1;a-- ) {
-		if( CONFIG.descProperties.indexOf( propTitleOf(cP.other[a]), prj )>-1 ) {
+		if( CONFIG.descProperties.indexOf( propTitleOf( cP.other[a], prj ))>-1 ) {
 			// To keep the original order of the properties, the unshift() method is used.
 			cP.descriptions.unshift( cP.other[a] );
-			cP.other.splice(a,1)
+			cP.other.splice(a,1);
 		};
 	};
 
@@ -3724,7 +3732,7 @@ function classifyProps( el, prj ) {
 		return nL; // normalized property list
 	}
 }
-function elementTitleOf( el, opts, prj ) {
+function elementTitleOf( el, opts, prj? ) {
 	// Get the title of a resource or a statement;
 	// ... from the properties or a replacement value in case of default.
 	// 'el' is an original element without 'classifyProps()'.

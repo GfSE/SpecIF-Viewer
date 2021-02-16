@@ -7,8 +7,8 @@
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
 */
-const CONFIG = {};
-	CONFIG.imgURL = './'+app.productVersion+'./../vendor/assets/images';
+const CONFIG:any = {};
+	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
@@ -455,7 +455,7 @@ const vocabulary = {
 // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
 	property: {
 		// for properyTypes and properties:
-		specif: function( iT ) {
+		specif: function( iT:string ) {
 			// Target language: SpecIF
 			var oT = '';
 			switch( iT.toSpecifId().toLowerCase() ) {
@@ -497,7 +497,7 @@ const vocabulary = {
 			};
 			return oT;
 		},
-		reqif: function( iT ) {
+		reqif: function( iT:string ) {
 			// Target language: ReqIF
 			var oT = '';
 			switch( iT.toSpecifId().toLowerCase() ) {
@@ -521,7 +521,7 @@ const vocabulary = {
 	},
 	resource: {
 		// for resource types, such as dataType, resourceType, ...:
-		specif: function( iT ) {
+		specif: function( iT:string ) {
 			// Target language: SpecIF
 			var oT = '';
 			switch( iT.toSpecifId().toLowerCase() ) {
@@ -569,7 +569,7 @@ const vocabulary = {
 
 /////////////////////////////////////////////////
 // Regular expressions:
-const RE = {};
+const RE:any = {};
 	RE.Id = /^[_a-zA-Z]{1}[_a-zA-Z0-9.-]*$/;	// compliant with ReqIF and SpecIF
 //	RE.Email = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
 //	RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
@@ -602,7 +602,7 @@ const RE = {};
 	// see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
 	// /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
-	RE.Real = function( decimals ) {
+	RE.Real = function( decimals:number ) {
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
 		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' );
 	};

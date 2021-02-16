@@ -170,10 +170,11 @@ function toHtml( pr, pars ) {
 			+				'modules.load( define, {done: function() { self.show() }} );'
 			+			'};'
 			+			'self.show = function() {'
-			+				'app.ioSpecif.init( {mediaTypeOf: attachment2mediaType} );'
-			+				'app.ioSpecif.verify( {name:"pr.specif"} );' // only '.specif' is of importance
+			+				'self.ioSpecif.init( {mediaTypeOf: attachment2mediaType} );'
+			+				'self.ioSpecif.verify( {name:"pr.specif"} );' // only '.specif' is of importance
 	//		+				'console.debug("*",data);'
-			+				'app.ioSpecif.toSpecif( str2ab(data) )'
+			+				'self.busy.set();'
+			+				'self.ioSpecif.toSpecif( str2ab(data) )'
 			+				'.done( function(res) {'
 	//		+					'console.debug("show",res);'
 			+					'specif.check( res )'
@@ -188,6 +189,7 @@ function toHtml( pr, pars ) {
 			+									'message.show( i18n.phrase( "MsgImportSuccessful", dta.title ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );'
 			+									'setTimeout( function() {'
 			+											'modules.show({ newView: "#"+CONFIG.specifications })'
+			+											'self.busy.reset();'
 			+										'},'
 			+										'CONFIG.showTimelag'
 			+									');'
