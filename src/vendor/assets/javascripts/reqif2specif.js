@@ -19,6 +19,7 @@ testTransformReqIfToSpecIf = (reqIfDocument) => {
 
 extractMainSpecifProperties = (XmlDocReqIfHeader) => {
     const specIfProeprties = {};
+    if (!XmlDocReqIfHeader.length) return specIfProeprties;
     specIfProeprties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
     specIfProeprties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
     //specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML;
@@ -29,9 +30,10 @@ extractMainSpecifProperties = (XmlDocReqIfHeader) => {
     
     return specIfProeprties;
 }
-
+var test;
 extractSpecifDatatypesFromXmlDoc = (XmlDocDatatypes) => {
     const specIfDatatypes = [];
+    if (!XmlDocDatatypes.length) return specIfDatatypes;
     const datatypesArray = extractElementsOutOfHtmlCollection(XmlDocDatatypes[0].children)                  
     datatypesArray.forEach( datatype => {
         specIfDatatypes.push(extractSpecifDatatype(datatype))
@@ -75,8 +77,8 @@ getTypeOfDatatype = (datatype) => {
 
 extractDataTypeValues = (DataTypeValuesHtmlCollection) => {
     const specIfValuesArray = [];
-    const specifiedValues = DataTypeValuesHtmlCollection[0];                                      
-    const valuesArray = extractElementsOutOfHtmlCollection(specifiedValues.children);
+    if (!DataTypeValuesHtmlCollection.length) return specIfValuesArray;                                
+    const valuesArray = extractElementsOutOfHtmlCollection(DataTypeValuesHtmlCollection[0].children);
     valuesArray.forEach( value => {specIfValuesArray.push(extractSpecIfValue(value))});
     
     return specIfValuesArray;
@@ -101,6 +103,7 @@ extractSpecifPropertyClassesFromXmlDoc = (XmlSpecTypeDocument) => {
 
 extractSpecifResourceClassesFromXmlDoc = (XmlSpecTypeDocument) => {
     const specifResourceClassesArray = [];
+    if (!XmlSpecTypeDocument.length) return specifResourceClassesArray;
     const specificationArray = extractElementsOutOfHtmlCollection(XmlSpecTypeDocument[0].children)              
     const resourceClassArray = specificationArray.filter(specType => isResourceClass(specType))                 
     resourceClassArray.forEach( resourceClassDocument => {
@@ -131,6 +134,7 @@ extractResourceClassProperties = (propertyClassesDocument) => {
 
 extractSpecifStatementClassesFromXmlDoc = (XmlSpecTypeDocument) => {
     const specifStatementClassesArray = [];
+    if (!XmlSpecTypeDocument.length) return specifStatementClassesArray;
     const specificationArray = extractElementsOutOfHtmlCollection(XmlSpecTypeDocument[0].children)          
     const statementClassArray = specificationArray.filter(specType => isStatementClass(specType))           
     statementClassArray.forEach( statementClassDocument => {
@@ -142,8 +146,8 @@ extractSpecifStatementClassesFromXmlDoc = (XmlSpecTypeDocument) => {
 extractSpecIfStatementClass = (statementClassDocument) => {
     const specifStatementClass = {};
     specifStatementClass.id = statementClassDocument.getAttribute("IDENTIFIER")
-    specifStatementClass.title = statementClassDocument.getAttribute("LONG-NAME")
-    specifStatementClass.description = statementClassDocument.getAttribute("DESC")
+    specifStatementClass.title = statementClassDocument.getAttribute("LONG-NAME") ? statementClassDocument.getAttribute("LONG-NAME") : statementClassDocument.getAttribute("IDENTIFIER");
+    specifStatementClass.description = statementClassDocument.getAttribute("DESC") ? statementClassDocument.getAttribute("DESC") : '';
     specifStatementClass.changedAt = statementClassDocument.getAttribute("LAST-CHANGE")
 
     return specifStatementClass;
@@ -151,6 +155,7 @@ extractSpecIfStatementClass = (statementClassDocument) => {
 
 extractSpecifResourcesFromXmlDoc = (XmlDocResources) => {
     const specifResourcesArray = [];
+    if (!XmlDocResources.length) return specifResourcesArray;
     const resourcesArray = extractElementsOutOfHtmlCollection(XmlDocResources[0].children)                  
     resourcesArray.forEach( resourceDocument => {
         specifResourcesArray.push(extractSpecIfResource(resourceDocument))
@@ -205,6 +210,7 @@ extractRootSpecIfObjectsArray = (specificationsDocument) => {
 
 extractSpecifStatementsFromXmlDoc = (XmlDocStatements) => {
     const specifStatementsArray = [];
+    if (!XmlDocStatements.length) return specifStatementsArray;
     const statementsArray = extractElementsOutOfHtmlCollection(XmlDocStatements[0].children)                
     statementsArray.forEach( statementDocument => {
         specifStatementsArray.push(extractSpecIfStatement(statementDocument));
@@ -225,6 +231,7 @@ extractSpecIfStatement = (statementDocument) => {
 
 extractSpecifHierarchiesFromXmlDoc = (XmlDocSpecifications) => {
     const specifHierarchiesArray = [];
+    if (!XmlDocSpecifications.length) return specifHierarchiesArray;
     const specifications = extractElementsOutOfHtmlCollection(XmlDocSpecifications[0].getElementsByTagName("SPECIFICATION"))
     specifications.forEach( specification => {
         specifHierarchiesArray.push(extractRootNode(specification))
@@ -292,7 +299,7 @@ isResourceClass = (classDocument) => {
 }
 
 isStatementClass = (classDocument) => {
-    return classDocument.tagName === 'SPEC-RELATION-TYPE'
+    return classDocument.tagName === 'SPEC-RELATION-TYPE' || classDocument.tagName === 'RELATION-GROUP-TYPE'
 }
 
 getChildNodeswithTag = (parentDocument, tagName) => {

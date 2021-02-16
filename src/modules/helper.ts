@@ -251,6 +251,7 @@ function checkboxValues( lbl ) {
 }
 function booleanField( lbl, val, opts ) {
 //	console.debug('booleanField',lbl,val);
+	let fn;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
