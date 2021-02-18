@@ -162,7 +162,7 @@ function getTextLength( lbl:string ):number {
 	}
 }
 				
-function radioField( lbl, entries, opts? ):string|null {
+function radioField( lbl:string|object, entries:Array<object>, opts?:object ):string|null {
 	// assemble an input field for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let rB:string, fn:string;
@@ -207,7 +207,7 @@ function radioValue( lbl:string ):string {
 	// get the selected radio button, it is the index number as string:
 	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
 }
-function checkboxField( lbl:string, entries, opts? ):string {
+function checkboxField( lbl:string|object, entries:Array<object>, opts?:object ):string {
 	// assemble an input field for a set of checkboxes:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let cB:string, fn:string;

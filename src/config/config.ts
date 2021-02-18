@@ -39,6 +39,7 @@ const CONFIG:any = {};
 	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
+	CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
 	CONFIG.findMentionedObjects = true;	// looks for object titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
 	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >

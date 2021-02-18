@@ -3248,9 +3248,7 @@ const specif = {
 				// skip hidden properties:
 				let pC = itemById( spD.propertyClasses, iE['class'] );
 				if( Array.isArray( opts.hiddenProperties ) ) {
-				/*	CONFIG.hiddenProperties.forEach( (hP)=>{
-						if( hP.title==(iE.title||pC.title) ) return;
-					}); */
+				//	CONFIG.hiddenProperties.forEach( (hP)=>{
 					opts.hiddenProperties.forEach( (hP)=>{
 						if( hP.title==(iE.title||pC.title) && (hP.value==undefined || hP.value==iE.value ) ) return;
 					});
@@ -3279,12 +3277,20 @@ const specif = {
 							if( opts.targetLanguage ) {
 								if( CONFIG.excludedFromFormatting.indexOf( iE.title || pC.title )>-1 )
 									// if it is e.g. a title, remove all formatting:
-									oE.value = languageValueOf( iE.value, opts ).stripHTML();
+									oE.value = languageValueOf( iE.value, opts )
+													.replace( /^\s+/, "" )
+													.stripHTML();
 								else
 									// otherwise transform to HTML, if possible;
 									// especially for publication, for example using WORD format:
-									oE.value = makeHTML( languageValueOf( iE.value, opts ), opts );
+									oE.value = makeHTML( 
+													languageValueOf( iE.value, opts )
+														.replace( /^\s+/, "" ), 
+													opts 
+												);
 								
+								// remove any leading whiteSpace:
+								oE.value = oE.value.replace( /^\s+/, "" );
 //								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
 								break;
 							};

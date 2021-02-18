@@ -1248,7 +1248,7 @@ modules.construct({
 						if( opts.fnDel && sc.computed )
 							rT += sc.sT+'<br />'
 						else
-							rT += '<a onclick="app['+CONFIG.objectList+'].relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
+							rT += '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
 					});
 					// Title and object are the same for all statements in this list:
 					rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0],opts)+'</i></td>';
@@ -1280,7 +1280,7 @@ modules.construct({
 						if( opts.fnDel && tg.computed )
 							rT += tg.tT+'<br />'
 						else
-							rT += '<a onclick="app['+CONFIG.objectList+'].relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
+							rT += '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+tg.tId+'\', \''+tg.id+'\')">'+tg.tT+'</a><br />'
 					});
 					rT += '</td></tr>'
 				}
@@ -1617,7 +1617,7 @@ function Resources() {
 }
 
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function propertyValueOf( prp, opts ) {
+function propertyValueOf( prp:object, opts?:object ):string {
 	"use strict";
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
@@ -1632,7 +1632,7 @@ function propertyValueOf( prp, opts ) {
 	// Malicious content has been removed upon import ( specif.toInt() ).
 	let prj = app.cache.selectedProject.data,
 		dT = dataTypeOf( prj, prp['class'] ),
-		ct; 
+		ct:string; 
 //	console.debug('*',prp,dT);
 	switch( dT.type ) {
 		case 'xs:string':
@@ -1642,7 +1642,8 @@ function propertyValueOf( prp, opts ) {
 			ct = i18n.lookup( ct );
 			break; */
 		case 'xhtml':
-			ct = languageValueOf( prp.value, opts );
+			// remove any leading whiteSpace:
+			ct = languageValueOf( prp.value, opts ).replace( /^\s+/, "" );
 			if( opts.lookupValues )
 				ct = i18n.lookup( ct );
 			if( opts.unescapeHTMLTags )
@@ -1664,7 +1665,7 @@ function propertyValueOf( prp, opts ) {
 			ct = enumValueOf( dT, prp.value, opts );
 			break;
 		default:
-			ct = prp.value
+			ct = prp.value;
 	};
 	/*	// Add 'double-angle quotation' in case of stereotype values:
 			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
@@ -1726,15 +1727,15 @@ function propertyValueOf( prp, opts ) {
 
 		function lnk(r,t){ 
 //			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
-			return '<a onclick="app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
+			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
 		}
 	}
 }
 var fileRef = new function() {
 	"use strict";
-	var self = this;
+	var self = {};
 
-	self.toGUI = ( txt, opts )=>{
+	self.toGUI = ( txt:string, opts:object ):string =>{
 /*		Properly handle file references in XHTML-Text. 
 		- An image is to be displayed 
 		- a file is to be downloaded
@@ -1767,15 +1768,27 @@ var fileRef = new function() {
 			//						.replace(/\\/g,'/'); // is now handled during import
 			//	return undefined
 			}
-			function getPrpVal( pnm, str ) {
+		/*	function getPrp( pnm:string, str:string ):string|undefined {
+				// get the value of XHTML property 'pnm':
+				let re = new RegExp( pnm+'="([^"]+)"', '' ),
+					l = re.exec(str);
+				if( Array.isArray(l)&&l.length>0 ) return l[0];
+			//	return undefined
+			} */
+			function getPrpVal( pnm:string, str:string ):string|undefined {
 				// get the value of XHTML property 'pnm':
 				let re = new RegExp( pnm+'="([^"]+)"', '' ),
 					l = re.exec(str);
 				if( Array.isArray(l)&&l.length>0 ) return l[1];
 			//	return undefined
 			}
-			function hasContent( f ) {
-				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 )
+			function makeStyle( w:string,h:string ):string {
+				// compose a style property, if there are such parameters,
+				// return empty string, otherwise:
+				return (h||w)? ' style="'+(h?'height:'+h+'; ':'')+(w?'width:'+w+'; ':'')+'"' : '';
+			}
+			function hasContent( f:object ):boolean {
+				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 );
 			}
 
 		// Prepare a file reference for viewing and editing:
@@ -1785,15 +1798,15 @@ var fileRef = new function() {
 		// 1. transform two nested objects to link+object resp. link+image:
 		txt = txt.replace( RE.tagNestedObjects,   
 			( $0, $1, $2, $3, $4 )=>{       // description is $4, $3 is not used
-				var u1 = getUrl( $1 ),  	// the primary file
+				let u1 = getUrl( $1 ),  	// the primary file
 					t1 = getType( $1 ), 
-					w1 = getPrpVal("width", $1 ),
-					h1 = getPrpVal("height", $1 ),
+				//	w1 = getPrp("width", $1 ),
+				//	h1 = getPrp("height", $1 ),
 					u2 = getUrl( $2 ), 		// the preview image
 					t2 = getType( $2 ),
 					w2 = getPrpVal("width", $2 ),
 					h2 = getPrpVal("height", $2 ),
-					d = $4 || u1;			// If there is no description, use the name of the link object
+					d = $4 || u1;		// If there is no description, use the name of the link object
 
 //				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
 				if( !u1 ) console.warn('no file found in',$0);
@@ -1811,9 +1824,14 @@ var fileRef = new function() {
 
 //						console.debug('tagId',tagId(u2));
 						// first add the element to which the file to download will be added:
-						repStrings.push( '<span id="'+tagId(u1)+'"></span>' );
+						repStrings.push( '<div id="'+tagId(u1)+'"></div>' );
 						// now add the image as innerHTML:
-						self.renderDownloadLink( f1, '<span class="'+opts.imgClass+' '+tagId(u2)+'"></span>', opts );
+						self.renderDownloadLink( f1, 
+							'<div class="'+opts.imgClass+' '+tagId(u2)+'"'
+								+ makeStyle( w2, h2 )
+								+'></div>', 
+							opts 
+						);
 						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
 						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} ) );
 					} 
@@ -1844,7 +1862,9 @@ var fileRef = new function() {
 //				};
 
 				let u1 = getUrl( $1 ), 
-					t1 = getType( $1 ); 
+					t1 = getType( $1 ),
+					w1 = getPrpVal("width", $1 ),
+					h1 = getPrpVal("height", $1 );
 
 				let e = u1.fileExt();
 				if( e==null ) return $0;
@@ -1874,7 +1894,11 @@ var fileRef = new function() {
 					if( hasContent(f1) ) {
 						hasImg = true;
 						// first add the element to which the image will be added:
-						d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
+					//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
+						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
+								+ makeStyle( w1, h1 )
+								+ '></div>';
+						console.debug('img opts',f1,opts);
 						// now add the image as innerHTML:
 						self.renderImage( f1, opts );
 					}
@@ -1887,9 +1911,9 @@ var fileRef = new function() {
 					if( hasContent(f1) ) {
 						hasImg = true;
 						// first add the element to which the attachment will be added:
-						d= '<span id="'+tagId(u1)+'"></span>';
-						// now add the download link with file as data-URL:
-						self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />',opts);
+						d= '<div id="'+tagId(u1)+'" '+CONFIG.fileIconStyle+'></div>';
+						// now add the download link with file icon:
+					self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="[ '+e+' ]" />',opts);
 					}
 					else {
 						d = '<div class="notice-danger" >File missing: '+d+'</div>'
@@ -1969,7 +1993,7 @@ var fileRef = new function() {
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	};
-	self.renderDownloadLink = (f,inner,opts)=>{
+	self.renderDownloadLink = (f,inner,opts):void=>{
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
@@ -1987,7 +2011,7 @@ var fileRef = new function() {
 			+	'</a>'
 		},opts.timelag);
 	};
-	self.renderImage = (f, opts)=>{
+	self.renderImage = (f, opts):void=>{
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
@@ -2011,7 +2035,11 @@ var fileRef = new function() {
 				Array.from( document.getElementsByClassName(tagId(f.title)), 
 					(el)=>{ 
 						let ty = /data:([^;]+);/.exec(f.dataURL);
-						el.innerHTML = '<object data="' + f.dataURL + '" type="' + (ty[1]||f.type) + '" >' + f.title + '</object>'; 
+						el.innerHTML = '<object data="' + f.dataURL 
+											+ '" type="' + (ty[1] || f.type) + '"'
+									/*		+ (opts.w ? ' ' + opts.w : '')
+											+ (opts.h ? ' ' + opts.h : '') */
+											+ ' >' + f.title + '</object>';
 					});
 			}, opts.timelag );
 			return;
@@ -2037,7 +2065,6 @@ var fileRef = new function() {
 				console.warn('Cannot show diagram '+f.title+' of unknown type: ',f.type);
 		};
 		return;
-
 					
 			function showRaster(f,opts) {
 			/*	if( f.dataURL ) {
@@ -2053,7 +2080,11 @@ var fileRef = new function() {
 					blob2dataURL( f, (r,fTi,fTy)=>{
 						// add image to DOM using an image-tag with data-URI:
 						Array.from( document.getElementsByClassName(tagId(fTi)), 
-							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" />'}
+							(el)=>{el.innerHTML = '<img src="'+r
+													+ '" type="' + fTy + '"'
+											/*		+ (opts.w ? ' ' + opts.w : '')
+													+ (opts.h ? ' ' + opts.h : '') */
+													+ ' alt="' + fTi + '" />';
 						/*	// set a grey background color for images with transparency:
 							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
 						);
@@ -2256,12 +2287,12 @@ var fileRef = new function() {
 								if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
 
 								// no viewbox property, so add it:
-								let w = el.getAttribute('width'),
-									h = el.getAttribute('height');
-								// get rid of 'px':
+								let w = el.getAttribute('width').replace(/px$/,''),
+									h = el.getAttribute('height').replace(/px$/,'');
+							/*	// get rid of 'px':
 								// ToDo: perhaps this is a little too simple ...
 								if( w.endsWith('px') ) w = w.slice(0,-2);
-								if( h.endsWith('px') ) h = h.slice(0,-2);
+								if( h.endsWith('px') ) h = h.slice(0,-2); */
 								el.setAttribute("viewBox", '0 0 '+w+' '+h );
 								return;
 							};
