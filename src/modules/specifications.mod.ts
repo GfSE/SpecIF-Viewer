@@ -2087,6 +2087,7 @@ var fileRef = new function() {
 													+ ' alt="' + fTi + '" />';
 						/*	// set a grey background color for images with transparency:
 							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
+							}
 						);
 					}, opts.timelag );
 			//	};

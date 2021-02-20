@@ -1754,7 +1754,7 @@ function Project() {
 		if( self.exporting ) return;
 
 		const exportFormatClicked = 'app.cache.selectedProject.exportFormatClicked()';
-		let dlg = new BootstrapDialog({
+		new BootstrapDialog({
 			title: i18n.LblExport+": '"+self.data.title+"'",
 			type: 'type-primary',
 			size: BootstrapDialog.SIZE_WIDE,

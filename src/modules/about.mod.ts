@@ -8,20 +8,20 @@
 
 modules.construct({
 	name: 'about'
-}, function(self) {
+}, function(self:any) {
 	"use strict";
 
-	self.init = function( opts ) {
+	self.init = function( opts:object ):boolean {
 //		console.debug('me.init',opts);
 		return true
 	};
-	self.clear = function() {
+	self.clear = function():void {
 		$('#about').empty()
 	};
-	self.hide = function() {
+	self.hide = function():void {
 		self.clear()
 	};
-	self.show = function( opts ) {
+	self.show = function( opts:object ):void {
 		const isEditor = app.title==i18n.LblEditor,
 			padding = '16px'; // = margin-right of logo, see css
 
@@ -48,10 +48,11 @@ modules.construct({
 		+	'<h4>Features</h4>'
 		+		'<ul>'
 		+		  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
-		+		  "<li>Import 'reqif' file <em>(experimental)</em></li>"
-		+ (isEditor? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
-		+		  "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>"
-		+		  "<li>Import 'BPMN-XML' file</li>"
+		+ (modules.isReady('ioReqif')? "<li>Import 'reqif' file <em>(experimental)</em></li>":"")
+	// So far, editing is needed in case of Achimate for manually adding the diagrams ..
+		+ (isEditor&&modules.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
+		+ (modules.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
+		+ (modules.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
 		+		  "<li>Import from an URL or the local file system</li>"
 		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
 		+ (isEditor? "<li>Create, clone and update resources with an input form derived from the respective resource class</li>":"")
@@ -61,12 +62,12 @@ modules.construct({
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
-		+		  "<li>Export 'html' file with embedded SpecIF data</li>"
+		+ (modules.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
 		+		  "<li>Export 'specif.zip' file</li>"
-		+		  "<li>Export 'reqifz' file</li>"
-		+		  "<li>Export 'Turtle' file <em>(experimental)</em></li>"
-		+		  "<li>Export 'ePub' file</li>"
-		+		  "<li>Export MS-Word OOXML file</li>"
+		+ (modules.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
+		+ (modules.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
+		+ (modules.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
+		+ (modules.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
 		+		'</ul>'
 		+	'<h4>Compatibility</h4>'
 		+		'<ul>'

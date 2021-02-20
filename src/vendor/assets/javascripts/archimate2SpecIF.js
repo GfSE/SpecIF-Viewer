@@ -45,9 +45,6 @@ function Archimate2Specif( xmlString, opts ) {
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
 //	console.debug('xml',xmlDoc);
 		
-	// ToDo: Choose carefully between using tagName or nodeName,
-	// see: https://stackoverflow.com/questions/4878484/difference-between-tagname-and-nodename
-	
 	// Get the model metadata:
 	let L = Array.from(xmlDoc.querySelectorAll("model"));
 /*	// There should be exactly one model per Open Exchange file:
@@ -71,13 +68,14 @@ function Archimate2Specif( xmlString, opts ) {
 	model.propertyClasses = PropertyClasses();
 	model.resourceClasses = ResourceClasses();
 	model.statementClasses = StatementClasses();
-	model.resources = Folders();
+//	model.resources = Folders();
+	model.resources = [];
 	model.statements = [];
 
 	// 1. Additional attributes such as title and description:
 	Array.from( L[0].children, 
 		(ch)=>{
-			switch( ch.tagName ) {
+			switch( ch.nodeName ) {
 				case 'name': 
 					model.title = ch.innerHTML;
 					break;
@@ -162,7 +160,7 @@ function Archimate2Specif( xmlString, opts ) {
 				// Additional attributes such as title and description:
 				Array.from( el.children, 
 					(ch)=>{
-						switch( ch.tagName ) {
+						switch( ch.nodeName ) {
 							case 'name': 
 								r.title = ch.innerHTML;
 								break;
@@ -253,7 +251,7 @@ function Archimate2Specif( xmlString, opts ) {
 				Array.from( rs.children, 
 					// if a relation does not have a name, the statementClass' title acts as default value.
 					(ch)=>{
-						switch( ch.tagName ) {
+						switch( ch.nodeName ) {
 							case 'name': 
 								s.title = ch.innerHTML;
 								break;
@@ -299,7 +297,7 @@ function Archimate2Specif( xmlString, opts ) {
 						});
 					Array.from( nd.children, 
 						(ch)=>{
-							if( ch.tagName=='node' )
+							if( ch.nodeName=='node' )
 								getNode(ch)
 						}
 					)
@@ -308,7 +306,7 @@ function Archimate2Specif( xmlString, opts ) {
 			// Additional attributes such as title and description:
 			Array.from( vi.children, 
 				(ch)=>{
-					switch( ch.tagName ) {
+					switch( ch.nodeName ) {
 						case 'name': 
 							r.title = ch.innerHTML;
 							break;
@@ -391,17 +389,17 @@ function Archimate2Specif( xmlString, opts ) {
 // called functions:	
 
 	// The hierarchy with pointers to all resources:
-	function NodeList(res) {
+	function NodeList(resL) {
 		// a) first add the folders:
-		let nL =  [{
+		let nodeL =  [{
 			id: "H-"+hId,
 			resource: hId,
 			nodes: [{
-				id: genID("N-"),
+				id: "N-"+simpleHash("FolderDiagrams-" + apx),
 				resource: "FolderDiagrams-" + apx,
 				nodes: [],
 				changedAt: opts.fileDate
-		/*	},{
+	/*		},{
 				id: genID("N-"),
 				resource: "FolderGlossary-" + apx,
 				nodes: [{
@@ -429,25 +427,102 @@ function Archimate2Specif( xmlString, opts ) {
 			}],
 			changedAt: opts.fileDate
 		}];
-		// b) Add diagrams to it's folder in original order:
-		res.forEach( function(r) { 
-			let nd = {
-				id: genID("N-"),
-				resource: r.id,
-				changedAt: opts.fileDate
-			};
-			if( r['class']=="RC-Diagram" )
-				nL[0].nodes[0].nodes.push(nd);
-		});
+
+		// b) Add the folders and the diagrams to the hierarchy:
+
+			function parseItem(ch,resL,ndL) {
+				if(ch.nodeName=="item") {
+					let idRef = ch.getAttribute("identifierRef");
+					if( idRef ) {
+//						console.debug('#5a', ch );
+						// It is a diagram reference, 
+						// it should have been transformed before,
+						// so no resource needs to be crated.
+						// However, create hierarchy node:
+						ndL.push({
+							id: "N-"+simpleHash(idRef),
+							resource: idRef,
+							nodes: [],
+							changedAt: opts.fileDate
+						});
+					}
+					else {
+//						console.debug('#5b', ch );
+						// It is another folder,
+						// create the resource:
+						let ti = getChildsInnerByTag(ch,"label");
+						idRef = "N-"+simpleHash( ti+apx );
+						resL.push({
+							id: idRef,
+							class: "RC-Folder",
+							title: ti,
+							description: getChildsInnerByTag(ch,"documentation"),
+							properties: [],
+							changedAt: opts.fileDate
+						});
+						// create the node:
+						ndL.push({
+							id: "N-"+simpleHash(idRef),
+							resource: idRef,
+							nodes: [],
+							changedAt: opts.fileDate
+						});
+						// step down to get children:
+						Array.from(ch.children, 
+							(ch)=>{parseItem( ch, resL, ndL[ndL.length-1].nodes )}
+						);
+					};
+				};
+			}
+
+		Array.from(xmlDoc.querySelectorAll("organizations"), 
+			(org)=>{
+				Array.from(org.children,
+					(ch)=>{
+						if(ch.nodeName=="item")
+							switch(	getChildsInnerByTag(ch,"label")) {
+							/*	case "Business":
+								case "Application":
+								case "Technology &amp; Physical":
+								case "Other":
+								case "Relations":
+									break; */
+								case "Views":
+									// We've got the 'Views' folder.
+									// a) create the folder resource:
+									resL.push({
+										id: "FolderDiagrams-" + apx,
+										class: "RC-Folder",
+										title: opts.strDiagramsType,
+										description: getChildsInnerByTag(ch,"documentation"),
+										properties: [{
+											class: "PC-Type",
+											value: opts.strDiagramsType
+										}],
+										changedAt: opts.fileDate
+									});
+									console.debug('Views',ch,resL[resL.length-1]);
+									
+									// b) the hierarchy node has been created before: nodeL[0].nodes[0]
+
+									// c) get the <item> subfolders:
+									Array.from(ch.children, 
+										(ch)=>{parseItem( ch, resL, nodeL[0].nodes[0].nodes )}
+									);
+							}
+					}
+				);
+			}
+		);
 		
 	/*	// c) Add Actors, States and Events to the respective folders in alphabetical order:
-		if( res.length>1 )
-			res.sort( function(bim, bam) {
+		if( resL.length>1 )
+			resL.sort( function(bim, bam) {
 						bim = bim.title.toLowerCase();
 						bam = bam.title.toLowerCase();
 						return bim==bam ? 0 : (bim<bam ? -1 : 1) 
 			});
-		res.forEach( function(r) { 
+		resL.forEach( function(r) { 
 			let nd = {
 				id: genID("N-"),
 				resource: r.id,
@@ -456,9 +531,9 @@ function Archimate2Specif( xmlString, opts ) {
 			// sort resources according to their type:
 			let idx = ["RC-Actor","RC-State","RC-Event","RC-Collection"].indexOf( r['class'] );
 			if( idx>-1 )
-				nL[0].nodes[1].nodes[idx].nodes.push(nd)
+				nodeL[0].nodes[1].nodes[idx].nodes.push(nd)
 		}); */
-		return nL
+		return nodeL
 	};
 
 	// The dataTypes:
@@ -723,18 +798,9 @@ function Archimate2Specif( xmlString, opts ) {
 		}]
 	}
 
-	// The folder resources within a hierarchy:
-	function Folders() {
+	// The folder resources for the glossary:
+/*	function Folders() {
 		return [{
-			id: "FolderDiagrams-" + apx,
-			class: "RC-Folder",
-			title: opts.strDiagramsType,
-			properties: [{
-				class: "PC-Type",
-				value: opts.strDiagramsType
-			}],
-			changedAt: opts.fileDate
-	/*	}, {
 			id: "FolderGlossary-" + apx,
 			class: "RC-Folder",
 			title: opts.strGlossaryType,
@@ -772,9 +838,9 @@ function Archimate2Specif( xmlString, opts ) {
 			class: "RC-Folder",
 			title: opts.strAnnotationFolder,
 			properties: [],
-			changedAt: opts.fileDate */
+			changedAt: opts.fileDate 
 		}]
-	}
+	} */
 	
 // =======================================
 // some helper functions:	
@@ -792,5 +858,15 @@ function Archimate2Specif( xmlString, opts ) {
 		let result = '';
 		for( var i=27; i>0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
 		return pfx+result
+	}
+	function getChildsInnerByTag(itm,tag) {
+		// Get innerHTML of the child with the given nodeName:
+		let lst = Array.from(itm.children);
+	//	console.debug('#',itm,lst);
+		for( var i=0,I=lst.length; i<I; i++ ) {
+	//		console.debug('#'+i,lst[i].nodeName,lst[i].innerHTML);
+			if( lst[i].nodeName==tag ) return lst[i].innerHTML;
+		};
+		return "";
 	}
 }

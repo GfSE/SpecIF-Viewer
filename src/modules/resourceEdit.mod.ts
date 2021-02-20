@@ -139,8 +139,8 @@ modules.construct({
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
 			toEdit = classifyProps( res, cData );
-			let ti = i18n.lookup(CONFIG.propClassTitle),
-				dlg = new BootstrapDialog({
+			let ti = i18n.lookup(CONFIG.propClassTitle);
+			new BootstrapDialog({
 					title: opts.dialogTitle,
 				//	type: 'type-success',
 					type: 'type-primary',
@@ -274,7 +274,7 @@ modules.construct({
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
 //								console.debug('#2',simpleClone(cData.resourceClasses));
-								let dlg = new BootstrapDialog({
+								new BootstrapDialog({
 									title: i18n.MsgSelectResClass,
 								//	type: 'type-success',
 									type: 'type-primary',

@@ -205,7 +205,7 @@ function radioField( lbl:string|object, entries:Array<object>, opts?:object ):st
 }
 function radioValue( lbl:string ):string {
 	// get the selected radio button, it is the index number as string:
-	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
+	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value') || '';	// works even if none is checked
 }
 function checkboxField( lbl:string|object, entries:Array<object>, opts?:object ):string {
 	// assemble an input field for a set of checkboxes:
@@ -225,7 +225,7 @@ function checkboxField( lbl:string|object, entries:Array<object>, opts?:object )
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
-			return null; // should never be the case
+			return ''; // should never be the case 
 	};
 	// render options:
 	let tp:string, nm=lbl.label.simpleHash();
@@ -344,7 +344,7 @@ function stdError( xhr, cb? ):void {
 	};
 */
 // standard message box:
-var message = new function() {
+var message = function() {
 	"use strict";
 	// constructor for message-box:
 	var self:any = {};
@@ -409,7 +409,7 @@ var message = new function() {
 	};
 	init();
 	return self;
-};
+}();
 
 function doResize():void {
 	// Resizes DOM-tree elements to fit in the current browser window.
@@ -642,7 +642,7 @@ String.prototype.toSpecifId = function():string {
 
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-String.prototype.simpleHash = function(){for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
+String.prototype.simpleHash = function():string {for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
 	
 /* from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith */	
 if (!String.prototype.startsWith) {
@@ -1166,16 +1166,17 @@ if (!Number.isInteger) {
 };
 // function float2int(val) { return parseInt(val) };
 */
-function attachment2mediaType( fname:string ):string {
+function attachment2mediaType( fname:string ):string|undefined {
 	let t = fname.fileExt();  // get the extension excluding '.'
-	if( !t ) return;
-	// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
-	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
-	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
-	ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.applTypes[ ti ];
+	if( t ) {
+		// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
+		let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
+		if( ti>-1 ) return CONFIG.imgTypes[ ti ];
+		ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
+		if( ti>-1 ) return CONFIG.officeTypes[ ti ];
+		ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
+		if( ti>-1 ) return CONFIG.applTypes[ ti ];
+	};
 //	return; undefined
 }
 /*
