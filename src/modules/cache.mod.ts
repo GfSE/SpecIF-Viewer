@@ -1696,7 +1696,7 @@ function Project() {
 													&&	isReferencedByHierarchy( itemIdOf(s.subject) )
 													&&	isReferencedByHierarchy( itemIdOf(s.object) )
 												// In case of a comment, the comment itself is not referenced in the tree:
-											||	opts.showComments
+											||	opts && opts.showComments
 													&&	s.title==CONFIG.staClassCommentRefersTo
 													&&	isReferencedByHierarchy( itemIdOf(s.object) )
 											)
