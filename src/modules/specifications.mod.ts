@@ -1345,7 +1345,7 @@ modules.construct({
 function Resource( obj ) {
 	"use strict";
 	// for the list view, where title and text are shown in the main column and the others to the right.
-	var self = this;
+	var self = {};
 	const noRes = {descriptions:[],other:[]},
 		opts = {
 				lookupTitles: true,
@@ -1548,7 +1548,7 @@ function Resource( obj ) {
 }
 function Resources() {
 	"use strict";
-	var self = this;
+	var self = {};
 
 	self.init = ()=>{ 
 		self.values = [];
@@ -1731,7 +1731,7 @@ function propertyValueOf( prp:object, opts?:object ):string {
 		}
 	}
 }
-var fileRef = new function() {
+var fileRef = function() {
 	"use strict";
 	var self = {};
 
@@ -2468,4 +2468,4 @@ var fileRef = new function() {
 		return txt;
 	}; */
 	return self;
-};	// end of fileRef()
+}();	// end of fileRef()

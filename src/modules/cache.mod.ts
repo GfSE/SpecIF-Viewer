@@ -130,7 +130,7 @@ modules.construct({
 
 function Project() {
 	// Constructor for a project containing SpecIF data.
-	var self = this,
+	var self = {},
 	//	loading = false,		// true: data is being gathered from the server.
 		fileName = undefined;
 	self.init = ()=>{

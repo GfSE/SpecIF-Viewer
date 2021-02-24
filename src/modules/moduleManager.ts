@@ -10,7 +10,7 @@
 
 var browser,
 	i18n,
-	modules = new function() {
+	modules = function() {
 		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
@@ -26,7 +26,7 @@ var browser,
 				- the specified callback function is executed as soon as all modules are ready.
 				- 'show()' selects the view of the specified module and hides all others.  */
 
-	const self = this;
+	const self = {};
 	let callWhenReady = null,
 		loadPath = './';
 
@@ -37,8 +37,8 @@ var browser,
 		if( opts && opts.path ) loadPath = opts.path;
 
 		// Identify browser type and load language file:
-		browser = new function() {
-			var self = this;
+		browser = function() {
+			var self = {};
 
 			self.language = navigator.language; // || navigator.userLanguage;
 			console.info( "Browser Language is '"+self.language+"'." );
@@ -50,18 +50,18 @@ var browser,
 			if( self.supportsCORS ) console.info( "Browser supports CORS" );
 
 			self.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
-		/*	self.supportsHtml5Storage = new function() {
+		/*	self.supportsHtml5Storage = function() {
 				// see: http://diveintohtml5.info/storage.html
 				try {
 					return 'sessionStorage' in window && window['sessionStorage'] !== null;
 				} catch(e) {
 					return false
 				}
-			};
+			}();
 			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" ); */
 
 			return self
-		};
+		}();
 		// init phase 1: Load the javascript routines common to all apps:
 		loadH( ['config','bootstrap','i18n'], {done:init2} );
 		return
@@ -525,7 +525,7 @@ var browser,
 		// Constructor for an object to control the visibility of the DOM-tree elements listed in 'list';
 		// the selected view is shown, all others are hidden.
 		// ViewCtl can switch pages or tabs, depending on the navigation level:
-		var self = this;
+		var self = {};
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
 		self.exists = (v)=>{
@@ -619,12 +619,12 @@ var browser,
 		self.init(viewL);
 		return self;
 	}
-};
+}();
 function State(opt) {
 	"use strict";
 	// sets and resets some binary state (e.g. 'busy'),
 	// hides resp. shows certain DOM elements according to the lists specified.
-	var self = this,
+	var self = {},
 		options = opt || {},
 		state = false;
 	if( !Array.isArray(options.showWhenSet) ) options.showWhenSet = [];

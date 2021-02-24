@@ -126,6 +126,8 @@ function Archimate2Specif( xmlString, opts ) {
 					};
 					
 					function storeContainsElement(chId,pId) {
+						// temporarily store all containment relations derived from the node hierarchy,
+						// which corresponds to the graphical nesting of model elements:
 						let stId = "S-"+simpleHash( "SC-contains"+chId+pId );
 						if( indexById( model.statements, stId )<0 )
 							containsL.push({
@@ -134,7 +136,7 @@ function Archimate2Specif( xmlString, opts ) {
 								subject: pId,
 								object: chId,
 								changedAt: opts.fileDate
-							})
+							});
 					}
 					// The view's nodes are hierarchically ordered: 
 					function storeShowsElement(nd,parentId) {
@@ -154,18 +156,20 @@ function Archimate2Specif( xmlString, opts ) {
 								object: refId,
 								changedAt: opts.fileDate
 							});
+							// do it only for contained elements, but not the top-level elements:
 							if( parentId ) 
-								storeContainsElement(refId,parentId)
+								storeContainsElement(refId,parentId);
 						};
 						// step down:
 						Array.from( nd.children, 
 							(ch)=>{
 								if( ch.nodeName=='node' )
-									storeShowsElement(ch,refId)
+									// the current element becomes parent on the next level:
+									storeShowsElement(ch,refId);
 							}
-						)
+						);
 					}
-				
+
 				// Additional attributes such as title and description:
 				Array.from( vi.children, 
 					(ch)=>{
@@ -199,8 +203,6 @@ function Archimate2Specif( xmlString, opts ) {
 					}
 				);
 				
-				// ToDo: Add diagram reference (but we need to get or find the diagram, first).
-				
 				let vp = vi.getAttribute('viewpoint');
 				// Classify the diagram depending on the viewpoint:
 			/*	switch( vp ) {
@@ -217,6 +219,9 @@ function Archimate2Specif( xmlString, opts ) {
 							value: vp+" Viewpoint"
 						});
 				
+				// ToDo: Add image reference to the diagram resource (but we need to export/find the image, first);
+				//       so far, we must add them manually after import. 
+
 				model.resources.push(r);
 			};
 		}
@@ -329,6 +334,7 @@ function Archimate2Specif( xmlString, opts ) {
 					id: rs.getAttribute('identifier'),
 					subject: rs.getAttribute('source'),
 					object: rs.getAttribute('target'),
+					properties: [],
 					changedAt: opts.fileDate
 				},
 				ty = rs.getAttribute('xsi:type');
@@ -359,10 +365,18 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'Composition':
 			//		s['class'] = "SC-isComposedOf";
 					s['class'] = "SC-contains";
+					s.properties.push({
+						class: "PC-Type", 
+						value: "UML:Composition"
+					});
 					break;
 				case 'Aggregation':
 			//		s['class'] = "SC-isAggregatedBy";
 					s['class'] = "SC-contains";
+					s.properties.push({
+						class: "PC-Type", 
+						value: "UML:Aggregation"
+					});
 					break;
 				case 'Realization':
 					s['class'] = "SC-realizes";
@@ -415,18 +429,34 @@ function Archimate2Specif( xmlString, opts ) {
 			};
 		}
 	);
-	// Now add all implicit contains statements, unless explicit:
-	containsL.forEach( (st)=>{ addStaIfNotListed(st) } );
+	// Now add all implicit contains statements derived from graphical nesting,
+	// unless an equivalent statement has already been created from an explicit composition or aggregation:
+	containsL.forEach( 
+		(st)=>{ 
+			if( addStaIfNotListed(st) )
+				console.info( 'Added an implicit \'contains\' statement with subject="'+st.subject
+					+'" and object="'+st.object+'".' );
+		} 
+	);
+		
 	// Check the relations:
 	for( var i=model.statements.length-1;i>-1;i-- ) 
-		if( indexById( model.resources, model.statements[i].object )<0
-			&& indexById( model.statements, model.statements[i].object )<0 ) {
+		// Check the statement consistency. 
+		// So far only problems with "shows" statements have been encountered, and so it is sufficient to check the objects.
+		// However, the subjects are checked, as well, to be on the 'safe side':
+	/*	if( indexById( model.resources, model.statements[i].object )<0
+			&& indexById( model.statements, model.statements[i].object )<0 ) { */
+		if( indexById( model.resources, model.statements[i].subject )<0
+		//		&& indexById( model.statements, model.statements[i].subject )<0 .. never used, here
+			|| indexById( model.resources, model.statements[i].object )<0
+				&& indexById( model.statements, model.statements[i].object )<0 ) {
 				console.info('Skipping statement '
 					+(model.statements[i].title? "with title '"+model.statements[i].title+"' ":"")
 					+'of class="'+model.statements[i]["class"]
 					+'" with subject="'+model.statements[i].subject
 					+'" and object="'+model.statements[i].object
 					+'", because subject or object are not listed - probably it has been suppressed as duplicate.');
+				// remove any statement which is not consistent:
 				model.statements.splice(i,1);
 		};
 
@@ -476,25 +506,25 @@ function Archimate2Specif( xmlString, opts ) {
 				nodes: [],
 				changedAt: opts.fileDate
 	/*		},{
-				id: genID("N-"),
+				id: simpleHash("N-FolderGlossary-" + apx),
 				resource: "FolderGlossary-" + apx,
 				nodes: [{
-					id: genID("N-"),
+					id: simpleHash("N-FolderAct-" + apx),
 					resource: "FolderAct-" + apx,
 					nodes: [],
 					changedAt: opts.fileDate
 				},{
-					id: genID("N-"),
+					id: simpleHash("N-FolderSta-" + apx),
 					resource: "FolderSta-" + apx,
 					nodes: [],
 					changedAt: opts.fileDate
 				},{
-					id: genID("N-"),
+					id: simpleHash("N-FolderEvt-" + apx),
 					resource: "FolderEvt-" + apx,
 					nodes: [],
 					changedAt: opts.fileDate
 				},{
-					id: genID("N-"),
+					id: simpleHash("N-FolderCol-" + apx),
 					resource: "FolderCol-" + apx,
 					nodes: [],
 					changedAt: opts.fileDate
@@ -603,7 +633,7 @@ function Archimate2Specif( xmlString, opts ) {
 			});
 		resL.forEach( function(r) { 
 			let nd = {
-				id: genID("N-"),
+				id: simpleHash("N-"+r.id),
 				resource: r.id,
 				changedAt: opts.fileDate
 			};
@@ -750,9 +780,26 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:contains",
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ["auto"],
+			propertyClasses: ["PC-Type"], // may hold sub-type UML:Composition or UML:Aggregation
 			subjectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate
+/*		},{
+			id: "SC-isComposedOf",
+			title: "UML:Composition",
+			description: "Statement: A state (data-object) is composed of a state",
+			instantiation: ["auto"],
+			subjectClasses: ["RC-State"],
+			objectClasses: ["RC-State"],
+			changedAt: opts.fileDate
+		},{
+			id: "SC-isAggregatedBy",
+			title: "UML:Aggregation",
+			description: "Statement: A state (data-object) is aggregated by a state",
+			instantiation: ["auto"],
+			subjectClasses: ["RC-State"],
+			objectClasses: ["RC-State"],
+			changedAt: opts.fileDate */
 		},{
 			// ToDo: Make more specific with respect to subjectClasses and objectClasses, if possible
 			id: "SC-isAssignedTo",
@@ -762,23 +809,7 @@ function Archimate2Specif( xmlString, opts ) {
 			subjectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate
-		},{
-			id: "SC-isComposedOf",
-			title: "SpecIF:isComposedOf",
-			description: "Statement: A state (data-object) is composed of a state",
-			instantiation: ["auto"],
-			subjectClasses: ["RC-State"],
-			objectClasses: ["RC-State"],
-			changedAt: opts.fileDate
-		},{
-			id: "SC-isAggregatedBy",
-			title: "SpecIF:isAggregatedBy",
-			description: "Statement: A state (data-object) is aggregated by a state",
-			instantiation: ["auto"],
-			subjectClasses: ["RC-State"],
-			objectClasses: ["RC-State"],
-			changedAt: opts.fileDate
-		},{
+		},{ 
 			id: "SC-isSpecializationOf",
 			title: "SpecIF:isSpecializationOf",
 			description: "Statement: A state (data-object) is a specialization of a state",
@@ -927,17 +958,6 @@ function Archimate2Specif( xmlString, opts ) {
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 	function simpleHash(str) {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};
-/*	// http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
-	function genID(pfx) {
-		if( !pfx || pfx.length<1 )
-			pfx = 'ID_'
-		else
-			if( !/^[A-Za-z_]/.test(pfx) ) pfx = '_'+pfx;   // prefix must begin with a letter or '_'
-		const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-		let result = '';
-		for( var i=27; i>0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
-		return pfx+result
-	} */
 	function indexById(L,id) {
 		if( L && id ) {
 			// given an ID of an item in a list, return it's index:
@@ -950,9 +970,7 @@ function Archimate2Specif( xmlString, opts ) {
 	function getChildsInnerByTag(itm,tag) {
 		// Get innerHTML of the child with the given nodeName:
 		let lst = Array.from(itm.children);
-	//	console.debug('#',itm,lst);
 		for( var i=0,I=lst.length; i<I; i++ ) {
-	//		console.debug('#'+i,lst[i].nodeName,lst[i].innerHTML);
 			if( lst[i].nodeName==tag ) return lst[i].innerHTML;
 		};
 		return "";
@@ -967,8 +985,9 @@ function Archimate2Specif( xmlString, opts ) {
 		for( var i=model.statements.length-1;i>-1;i-- ) 
 			if( model.statements[i]["class"] == st["class"]
 				&& model.statements[i].subject == st.subject
-				&& model.statements[i].object == st.object ) return;
+				&& model.statements[i].object == st.object ) return false;
 		// not found, so add:
 		model.statements.push( st );
+		return true; // statement has been added
 	}
 }

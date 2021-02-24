@@ -6,8 +6,8 @@
 	We appreciate any correction, comment or contribution!
 */
 
-app.standardTypes = new function() {
-	var self = this;
+app.standardTypes = function() {
+	var self = {};
 	self.dataTypes = [{
 		id: "DT-ShortString",
 		title: "String ["+CONFIG.textThreshold+"]",
@@ -136,7 +136,7 @@ app.standardTypes = new function() {
 		};
 	};
 	return self;
-};	
+}();
 		
 /*  ToDo: REWORK FOR v0.10.8:
 	// The standard types for comments:

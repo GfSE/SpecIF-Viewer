@@ -9,7 +9,7 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 
 ## Features
 - Import 'specif' and 'specif.zip' file with schema and consistency check
-- Import 'reqif' file (experimental)
+- Import 'reqif' an 'reqifz' file (experimental)
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
 - Import Archimate Open-Exchange (experimental)
@@ -40,9 +40,9 @@ The app has been installed for demonstration
 ## Compatibility
 - Mozilla Firefox
 - Google Chromium and Chrome
+- Microsoft Edge
 - Apple Safari _(beware of performance issues in case of bigger models)_
 - Opera
-- Microsoft Edge _(beware of performance issues in case of bigger models)_
 - Microsoft Internet Explorer is _not any more_ supported
 
 ## Installation
