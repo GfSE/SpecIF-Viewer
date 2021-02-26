@@ -40,6 +40,8 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strRoleType = "SpecIF:Role";  */
 	if( !opts.strNamespace ) 
 		opts.strNamespace = "Archimate:";
+	if( !Array.isArray(opts.hiddenDiagramProperties) )
+		opts.hiddenDiagramProperties = [];
 	
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -85,26 +87,40 @@ function Archimate2Specif( xmlString, opts ) {
 		}
 	);
 
-		function findPropertyValueByName(v,propN) {
-			var pL = Array.from(v.children).filter( 
+	// 2. List the defined user-properties in a map:
+	let userProperties = [];
+	Array.from(xmlDoc.querySelectorAll("propertyDefinition"), 
+		(pD)=>{
+			if( pD.getAttribute("type")=="string" )
+				userProperties.push([
+					pD.getAttribute("identifier"),
+					getChildsInnerByTag(pD,"name")
+				]);
+		}
+	);
+	userProperties = new Map( userProperties );
+
+	// 3. Transform the diagrams:
+	let containsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
+
+		function isNotHidden(view) {
+			var pL = Array.from(view.children).filter( 
 				(ch)=>{return ch.nodeName=='properties'} 
 			);
 			if( pL[0] )
 				pL = Array.from(pL[0].children).filter(
-					(p)=>{
-						return p.nodeName=="property" && p.getAttribute("propertyDefinitionRef")==propN} 
+					(p)=>{ return p.nodeName=="property" } 
 				);
 //			console.debug( 'pL', pL );
-			if( pL[0] ) {
-				let val = getChildsInnerByTag(pL[0],"value");
-//				console.debug( 'val', val );
-				if( val ) return val;
+			for( var i=pL.length-1;i>-1;i-- ) {
+				if( opts.hiddenDiagramProperties.indexOf( userProperties.get(pL[i].getAttribute("propertyDefinitionRef")) )>-1
+					&& getChildsInnerByTag(pL[i],"value")=="true" ) return false;
 			};
-			// return undefined
+			// none of the view's properties is listed;
+			// show the diagram, it is not hidden:
+			return true
 		}
 
-	// 2. Transform the diagrams:
-	let containsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
 	Array.from(xmlDoc.querySelectorAll("view"), 
 		(vi)=>{
 //			console.debug('view',vi);
@@ -114,7 +130,7 @@ function Archimate2Specif( xmlString, opts ) {
 			// ToDo: Parse the propertydefinitions and generalize.
 			
 			// skip, if there is a propety indicating that the view is hidden:
-			if(  findPropertyValueByName(vi,"propid-1")!="true" ) {
+			if(  isNotHidden(vi) ) {
 			
 				let dId = vi.getAttribute('identifier'),
 					r = {
@@ -189,7 +205,8 @@ function Archimate2Specif( xmlString, opts ) {
 							case 'connection':
 								// This connection is contained in the diagram's outer loop;
 								// they have xsi:type=relationship.
-								// ignore connections with xsi:type="line" used for annotations.
+								// ignore connections with xsi:type="line" used for annotations;
+								// only Relationships have an attribute 'relationshipRef'.
 								let refId = ch.getAttribute('relationshipRef');
 								if(refId )
 									addStaIfNotListed({
@@ -227,7 +244,7 @@ function Archimate2Specif( xmlString, opts ) {
 		}
 	);
 
-	// 3. Transform the model elements:
+	// 4.ransform the model elements:
 	Array.from(xmlDoc.querySelectorAll("element"), 
 		(el)=>{
 			let r = {
@@ -327,7 +344,7 @@ function Archimate2Specif( xmlString, opts ) {
 		}
 	);
 	
-	// 4. Transform the relations:
+	// 5. Transform the relations:
 	Array.from(xmlDoc.querySelectorAll("relationship"), 
 		(rs)=>{
 			let s = {
@@ -460,7 +477,7 @@ function Archimate2Specif( xmlString, opts ) {
 				model.statements.splice(i,1);
 		};
 
-	// 5. Add the resource for the hierarchy root:
+	// 6. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
 		title: model.title,

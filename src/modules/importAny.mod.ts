@@ -46,7 +46,7 @@ modules.construct({
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
 			help: i18n.MsgImportSpecif,	
-			opts: {mediaTypeOf: attachment2mediaType}
+			opts: { mediaTypeOf: attachment2mediaType }
 		},{
 			id:'archimate',	
 			name:'ioArchimate',	
@@ -54,7 +54,7 @@ modules.construct({
 			label:'Archimate®',
 //			help: i18n.MsgImportArchimate, 
 			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
-			opts: {mediaTypeOf: attachment2mediaType} 
+			opts: { mediaTypeOf: attachment2mediaType } 
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
@@ -67,7 +67,7 @@ modules.construct({
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
 			help: "Experimental: "+i18n.MsgImportReqif,
-			opts: {mediaTypeOf: attachment2mediaType}
+			opts: { mediaTypeOf: attachment2mediaType }
     /*    }, {
             id: 'rdf',
             name: 'ioRdf',
@@ -80,7 +80,7 @@ modules.construct({
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
 			help: i18n.MsgImportXls,
-			opts: {dontCheck:['statement.object']}
+			opts: { dontCheck: ["statement.object"] }
 		},{
 			id:'mm',
 			name:'ioMm',
@@ -232,7 +232,6 @@ modules.construct({
 				self.show();
 				return;
 			}; 
-			app[self.format.name].init( self.format.opts );
 			// Show the name of the specified import file:
 			let rF = textField(i18n.LblFileName,self.file.name);
 			$("#formNames").html( rF );
@@ -270,7 +269,7 @@ modules.construct({
 		formats.forEach( function(s) {
 			if( modules.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
-				app[s.name].init( self.format.opts );
+			//	app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
 					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				} else {
@@ -300,6 +299,9 @@ modules.construct({
 			$('#formatSelector-'+fId).addClass('active');
 			self.format = itemById(formats,fId);
 		};
+
+		// initialize the importer:
+		app[self.format.name].init( self.format.opts );
 
 		// show the file name:
 		let rF = textField(i18n.LblFileName,'');

@@ -15,18 +15,31 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Import Archimate Open-Exchange (experimental)
 - Import from an URL or the local file system
 - Browse the content ('resources') along the supplied hierarchy
+- Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)
 - Create, clone and update resources with an input form derived from the respective resource class*
 - Move single nodes and subtrees in the hierarchy by drag'n'drop*
 - Inspect the semantic net ('statements')
 - Create statements according to the options defined in the statement classes*
 - Delete selected resources and statements*
-- Filter using text fragments ('full text search'), resource types or enumerated property values
-- Report some model-based statistics, such as used resource types or used property enumerated values
+- Filter using text fragments ('full text search'), resource classes or enumerated property values
+- Report some model-based statistics, such as used resource classes or used property enumerated values
 - Export 'html' file with embedded SpecIF data
 - Export 'specif.zip' file
 - Export 'reqifz' file (Requirements Interchange Format)
 - Export 'ePub' file
 - Export MS-Word OOXML file
+
+## Compatibility
+- Mozilla Firefox
+- Google Chromium and Chrome
+- Microsoft Edge
+- Apple Safari _(beware of performance issues in case of bigger models)_
+- Opera
+- Microsoft Internet Explorer is _not any more_ supported
+
+## Maturity
+The software code is a reference implementation and has not been designed for high data volume and other production requirements. 
+Any contribution to this collaborative effort is highly welcome!
 
 ## Demonstration
 The app has been installed for demonstration
@@ -37,19 +50,16 @@ The app has been installed for demonstration
 - Start the [viewer](https://specif.de/apps/view) to load and view your own files.
 - Start the [editor](https://specif.de/apps/edit) to load and edit your own files.
 
-## Compatibility
-- Mozilla Firefox
-- Google Chromium and Chrome
-- Microsoft Edge
-- Apple Safari _(beware of performance issues in case of bigger models)_
-- Opera
-- Microsoft Internet Explorer is _not any more_ supported
+The installation provided for your convenience is neither intended to be highly available nor scalable.
+You may use the [latest release](https://github.com/GfSE/SpecIF-Viewer/releases) of the software for 
+your own installation, see below.
 
 ## Installation
-For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) on a web server of your choice. Just unpack the files and load 'yourPath/view' or 'yourPath/edit' with a web-browser.
+For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) 
+on a web server of your choice. Just unpack the files and load 'yourPath/view' or 'yourPath/edit' with a web-browser.
 
 ## Running the App Locally
-First, make sure, that you have NodeJS and NPM installed.
+First, make sure you have NodeJS and NPM installed.
 
 Then, install all dependencies:
 ```bash
@@ -63,7 +73,7 @@ After installing all dependencies, run the build script:
 
 ### On Windows
 
-After creating the build directory, you may start the local web-server:
+After creating the build directory with the executables, you may start the local web-server:
 ```
   http-server
 ```
@@ -73,4 +83,4 @@ After creating the build directory, you may start the local web-server:
 Make sure to re-activate these settings, later.
 
 ## Acknowledgements
-This work has been sponsored by [enso-managers gmbh](http://enso-managers.de) and [adesso SE](http://adesso.de), both Berlin
+This work has been sponsored by [enso-managers gmbh](http://enso-managers.de) and [adesso SE](http://adesso.de), both Berlin.

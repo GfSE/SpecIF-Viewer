@@ -43,7 +43,7 @@ modules.construct({
 		+	'</ul>'
 		+	'<p>The <a href="https://specif.de" target="_blank">SpecIF Homepage</a> provides further information.</p>'
 		+	'<p>The software code published on <a href="https://github.com/GfSE/SpecIF-Viewer" target="_blank">github.com</a>'
-		+		' is a reference implementation and has not been designed for high volume data and other production requirements.' 
+		+		' is a reference implementation and has not been designed for high data volume and other production requirements.' 
 		+		' The installation provided for your convenience at <a href="https://specif.de/apps/'+(isEditor? 'edit':'view')+'" target="_blank">https://specif.de/apps/'+(isEditor? 'edit':'view')+'</a>'
 		+		' is neither intended to be highly available nor scalable.'
 		+		' You may use the <a href="https://github.com/GfSE/SpecIF-Viewer/releases" target="_blank">latest release</a> of the software for your own installation.'
@@ -61,13 +61,14 @@ modules.construct({
 		+ (modules.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
 		+		  "<li>Import from an URL or the local file system</li>"
 		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
+		+		  "<li>Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)</li>"
 		+ (isEditor? "<li>Create, clone and update resources with an input form derived from the respective resource class</li>":"")
 		+ (isEditor? "<li>Move single nodes and subtrees in the hierarchy by drag'n'drop</li>":"")
 		+		  "<li>Inspect the semantic net ('statements')</li>"
 		+ (isEditor? "<li>Create statements according to the options defined in the statement classes</li>":"")
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
-		+		  "<li>Filter using text fragments ('full text search'), resource types or enumerated property values</li>"
-		+		  "<li>Report some model-based statistics, such as used resource types or used property enumerated values</li>"
+		+		  "<li>Filter using text fragments ('full text search'), resource classes or enumerated property values</li>"
+		+		  "<li>Report some model-based statistics, such as used resource classes or used property enumerated values</li>"
 		+ (modules.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
 		+		  "<li>Export 'specif.zip' file</li>"
 		+ (modules.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
