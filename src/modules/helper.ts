@@ -562,7 +562,7 @@ function addE( ctg:string, id:string, pr? ):void {
 	if( indexById( pr[lN], id )<0 ) 
 		pr[lN].unshift( app.standardTypes.get(ctg,id) );
 } 
-function addPC( eC:Array<object>, id:string ):void {
+function addPC( eC:object, id:string ):void {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
 	let lN = 'propertyClasses';
 	if (Array.isArray(eC[lN])) {

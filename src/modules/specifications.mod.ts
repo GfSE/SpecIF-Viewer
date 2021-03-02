@@ -518,7 +518,7 @@ modules.construct({
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
-	function selResIsUserControlled() {
+	function selResIsUserInstantiated() {
 		return selRes 
 				&& ( !Array.isArray(selRes.toShow['class'].instantiation)
 					|| selRes.toShow['class'].instantiation.indexOf('user')>-1 )
@@ -632,7 +632,7 @@ modules.construct({
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
-			var isUserNode = selResIsUserControlled(),
+			var isUserNode = selResIsUserInstantiated(),
 		//		rootRes = itemById( 
 		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
 				rB = '<div class="btn-group btn-group-sm" >';
@@ -646,7 +646,7 @@ modules.construct({
 			// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
 		//	if( self.resCre && cacheData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
-			if( self.resCre && isUserNode )
+			if( self.resCre )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
 						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 			else
@@ -658,7 +658,7 @@ modules.construct({
 
 			// Add the clone button depending on the current user's permissions:
 		//	if( self.resCln && cacheData.selectedHierarchy.upd )
-			if( self.resCre && isUserNode )
+			if( self.resCre )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
 						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
 			else
@@ -796,10 +796,10 @@ modules.construct({
 		function enableDel( resId ) {
 		// Check, if the specified resource can be deleted.
 		// ToDo: also check permission via self.resources.selected().value.del
-//			console.debug('enableDel',selRes.toShow,resId,selResIsUserControlled());
+//			console.debug('enableDel',selRes.toShow,resId,selResIsUserInstantiated());
             return selRes.toShow.id == resId  // should always be the case ..
 				// only resources under "user" control can be deleted:
-                && selResIsUserControlled();
+                && selResIsUserInstantiated();
 		}
 	/*	function delRes( resId ) {
 			// Delete the resource 

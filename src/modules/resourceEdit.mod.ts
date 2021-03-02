@@ -50,6 +50,15 @@ modules.construct({
 				thisDlg.close();
 			}  
 		},	
+		insert: {
+			id: 'btn-modal-insert',
+			label: i18n.BtnInsert,
+			cssClass: 'btn-success btn-modal-save', 
+			action: (thisDlg)=>{
+				save('insert');
+				thisDlg.close();
+			}  
+		},	
 		insertAfter: {
 			id: 'btn-modal-insertAfter',
 			label: i18n.BtnInsertSuccessor,
@@ -76,7 +85,8 @@ modules.construct({
 		self.clear();
 		cData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
-		opts.selNodeId = pData.tree.selectedNode.id;
+		if( pData.tree.selectedNode )
+			opts.selNodeId = pData.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
 		switch( opts.mode ) {
@@ -90,11 +100,17 @@ modules.construct({
 //								console.debug( '#', opts.mode, r );
 								self.newRes = r;
 								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
-								opts.msgBtns = [
-									msgBtns.cancel,
-									msgBtns.insertAfter,
-									msgBtns.insertBelow
-								];
+								if( opts.selNodeId )
+									opts.msgBtns = [
+										msgBtns.cancel,
+										msgBtns.insertAfter,
+										msgBtns.insertBelow
+									]
+								else
+									opts.msgBtns = [
+										msgBtns.cancel,
+										msgBtns.insert
+									];
 								editResource(r,opts);
 							}, 
 							stdError
@@ -449,6 +465,13 @@ modules.construct({
 		switch( mode ) {
 			case 'update':
 				app.cache.selectedProject.updateContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				break;
+			case 'insert':
+				app.cache.selectedProject.createContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				pend++;
+				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD} )
 					.then( finalize, stdError );
 				break;
 			case 'insertAfter':

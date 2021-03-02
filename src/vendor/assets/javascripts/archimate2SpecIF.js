@@ -88,17 +88,16 @@ function Archimate2Specif( xmlString, opts ) {
 	);
 
 	// 2. List the defined user-properties in a map:
-	let userProperties = [];
+	let userProperties = new Map();
 	Array.from(xmlDoc.querySelectorAll("propertyDefinition"), 
 		(pD)=>{
 			if( pD.getAttribute("type")=="string" )
-				userProperties.push([
+				userProperties.set(
 					pD.getAttribute("identifier"),
 					getChildsInnerByTag(pD,"name")
-				]);
+				);
 		}
 	);
-	userProperties = new Map( userProperties );
 
 	// 3. Transform the diagrams:
 	let containsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
@@ -107,18 +106,24 @@ function Archimate2Specif( xmlString, opts ) {
 			var pL = Array.from(view.children).filter( 
 				(ch)=>{return ch.nodeName=='properties'} 
 			);
-			if( pL[0] )
+			if( pL[0] ) {
 				pL = Array.from(pL[0].children).filter(
 					(p)=>{ return p.nodeName=="property" } 
 				);
-//			console.debug( 'pL', pL );
-			for( var i=pL.length-1;i>-1;i-- ) {
-				if( opts.hiddenDiagramProperties.indexOf( userProperties.get(pL[i].getAttribute("propertyDefinitionRef")) )>-1
-					&& getChildsInnerByTag(pL[i],"value")=="true" ) return false;
+				// pL is the list of the view's properties.
+//				console.debug( 'pL', pL );
+				for( var i=pL.length-1;i>-1;i-- ) {
+					// look up the name of the referenced propertyDefinition,
+					// if the name is listed in opts.hiddenDiagramProperties
+					// and the property's value is "true",
+					// then the diagram shall be hidden:
+					if( opts.hiddenDiagramProperties.indexOf( userProperties.get(pL[i].getAttribute("propertyDefinitionRef")) )>-1
+						&& getChildsInnerByTag(pL[i],"value")=="true" ) return false;
+				};
 			};
 			// none of the view's properties is listed;
 			// show the diagram, it is not hidden:
-			return true
+			return true;
 		}
 
 	Array.from(xmlDoc.querySelectorAll("view"), 
@@ -665,56 +670,52 @@ function Archimate2Specif( xmlString, opts ) {
 	// The dataTypes:
 	function DataTypes() {
 		return [{
-	/*		id: "DT-Integer",
-			title: "Integer",
-			type: "xs:integer",
-			minInclusive: -32768,
-			maxInclusive: 32767,
-			changedAt: opts.fileDate
-		},{  */
 			id: "DT-ShortString",
 			title: "String ["+opts.titleLength+"]",
+			description: "String with max. length "+opts.titleLength,
+			revision: "1",
 			type: "xs:string",
 			maxLength: opts.titleLength,
-			changedAt: opts.fileDate
+			changedAt: "2016-05-26T08:59:00+02:00"
 		},{
 			id: "DT-Text",
-			title: "Text",
-		//	title: "String ["+opts.descriptionLength+"]",
+			title: "Plain or formatted Text",
+			description: "A text string, plain, or formatted with XHTML or markdown",
+			revision: "1.1",
+			replaces: ["1"],
 			type: "xs:string",
-		//	maxLength: opts.descriptionLength,
-			changedAt: opts.fileDate
+			changedAt: "2021-02-14T08:59:00+02:00"
 		}]
 	}
 	
 	// The property classes:
 	function PropertyClasses() {
 		return [{
-				id: "PC-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: opts.fileDate
-			},{
-				id: "PC-Description",
-				title: "dcterms:description",
-				dataType: "DT-Text",
-				changedAt: opts.fileDate
-			},{
-				id: "PC-Diagram",
-				title: "SpecIF:Diagram",
-				dataType: "DT-Text",
-				changedAt: opts.fileDate
-			},{
-				id: "PC-Notation",
-				title: "SpecIF:Notation",
-				dataType: "DT-ShortString",
-				changedAt: opts.fileDate
-			},{
-				id: "PC-Type",
-				title: "dcterms:type",
-				dataType: "DT-ShortString",
-				changedAt: opts.fileDate
-			}]
+			id: "PC-Name",
+			title: "dcterms:title",
+			dataType: "DT-ShortString",
+			changedAt: opts.fileDate
+		},{
+			id: "PC-Description",
+			title: "dcterms:description",
+			dataType: "DT-Text",
+			changedAt: opts.fileDate
+		},{
+			id: "PC-Diagram",
+			title: "SpecIF:Diagram",
+			dataType: "DT-Text",
+			changedAt: opts.fileDate
+		},{
+			id: "PC-Notation",
+			title: "SpecIF:Notation",
+			dataType: "DT-ShortString",
+			changedAt: opts.fileDate
+		},{
+			id: "PC-Type",
+			title: "dcterms:type",
+			dataType: "DT-ShortString",
+			changedAt: opts.fileDate
+		}]
 	}
 	
 	// The resource classes:

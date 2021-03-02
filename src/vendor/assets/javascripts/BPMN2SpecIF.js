@@ -962,57 +962,52 @@ function BPMN2Specif( xmlString, opts ) {
 	// The dataTypes should correspond to stdTypes.ts:
 	function DataTypes() {
 		return [{
-		/*	id: "DT-Integer",
-			title: "Integer",
-			type: "xs:integer",
-			minInclusive: -32768,
-			maxInclusive: 32767,
-			changedAt: "2016-05-26T08:59:00+02:00"
-		},{ */
 			id: "DT-ShortString",
 			title: "String ["+opts.titleLength+"]",
-			description: "String with length "+opts.titleLength,
+			description: "String with max. length "+opts.titleLength,
+			revision: "1",
 			type: "xs:string",
 			maxLength: opts.titleLength,
 			changedAt: "2016-05-26T08:59:00+02:00"
 		},{
 			id: "DT-Text",
-			title: "Text",
-		//	title: "String ["+opts.descriptionLength+"]",
+			title: "Plain or formatted Text",
+			description: "A text string, plain, or formatted with XHTML or markdown",
+			revision: "1.1",
+			replaces: ["1"],
 			type: "xs:string",
-		//	maxLength: opts.descriptionLength,
-			changedAt: "2016-05-26T08:59:00+02:00"
+			changedAt: "2021-02-14T08:59:00+02:00"
 		}]
 	}
 	
 	// The property classes should correspond to stdTypes.ts:
 	function PropertyClasses() {
 		return [{
-				id: "PC-Name",
-				title: "dcterms:title",
-				dataType: "DT-ShortString",
-				changedAt: "2016-05-26T08:59:00+02:00"
-			},{
-				id: "PC-Description",
-				title: "dcterms:description",
-				dataType: "DT-Text",
-				changedAt: "2016-05-26T08:59:00+02:00"
-			},{
-				id: "PC-Diagram",
-				title: "SpecIF:Diagram",
-				dataType: "DT-Text",
-				changedAt: "2016-05-26T08:59:00+02:00"
-			},{
-				id: "PC-Notation",
-				title: "SpecIF:Notation",
-				dataType: "DT-ShortString",
-				changedAt: "2016-05-26T08:59:00+02:00"
-			},{
-				id: "PC-Type",
-				title: "dcterms:type",
-				dataType: "DT-ShortString",
-				changedAt: "2016-05-26T08:59:00+02:00"
-			}]
+			id: "PC-Name",
+			title: "dcterms:title",
+			dataType: "DT-ShortString",
+			changedAt: "2016-05-26T08:59:00+02:00"
+		},{
+			id: "PC-Description",
+			title: "dcterms:description",
+			dataType: "DT-Text",
+			changedAt: "2016-05-26T08:59:00+02:00"
+		},{
+			id: "PC-Diagram",
+			title: "SpecIF:Diagram",
+			dataType: "DT-Text",
+			changedAt: "2016-05-26T08:59:00+02:00"
+		},{
+			id: "PC-Notation",
+			title: "SpecIF:Notation",
+			dataType: "DT-ShortString",
+			changedAt: "2016-05-26T08:59:00+02:00"
+		},{
+			id: "PC-Type",
+			title: "dcterms:type",
+			dataType: "DT-ShortString",
+			changedAt: "2016-05-26T08:59:00+02:00"
+		}]
 	}
 	
 	// The resource classes:

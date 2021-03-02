@@ -83,11 +83,11 @@ modules.construct({
 		else
 			bDO.reject({ status:999, statusText:'Input file could not be transformed to SpecIF'});
 
-		return bDO
+		return bDO;
 	};
 	self.abort = function() {
 		app.cache.abort();
-		self.abortFlag = true
+		self.abortFlag = true;
 	};
-	return self
+	return self;
 });

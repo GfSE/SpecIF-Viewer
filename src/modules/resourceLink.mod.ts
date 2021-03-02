@@ -123,7 +123,7 @@ modules.construct({
 						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
-					let dlg = new BootstrapDialog({
+					new BootstrapDialog({
 						title: i18n.MsgCreateStatement,
 						type: 'type-primary',
 						size: BootstrapDialog.SIZE_WIDE,
@@ -252,10 +252,10 @@ modules.construct({
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
-										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" ) */
 			btn.setAttribute("title", "'"+elementTitleOf(self.selRes,opts,cData) +"' "
-										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
 		} else {
 			btn.disabled = true
@@ -272,7 +272,7 @@ modules.construct({
 				placement:"top"
 				html: true,
 				content: "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
-							+ '<i>'+titleOf(self.selectedStatementClass,opts,cData) +"</i> '"
+							+ '<i>'+titleOf(self.selectedStatementClass,opts) +"</i> '"
 							+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" 
 			})
 		} else {
@@ -286,10 +286,10 @@ modules.construct({
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
-										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(self.selRes,opts,cData) +"'" ) */
 			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
-										+ titleOf(self.selectedStatementClass,opts,cData) +" '"
+										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selRes,opts,cData) +"'" ) 
 		} else {
 			btn.disabled = true
@@ -306,7 +306,7 @@ modules.construct({
 				placement:"top",
 				html: true,
 				content: "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
-							+ '<i>'+titleOf(self.selectedStatementClass,opts,cData) +"</i> '"
+							+ '<i>'+titleOf(self.selectedStatementClass,opts) +"</i> '"
 							+ desperateTitleOf(self.selRes,opts,cData) +"'"
 			})
 		} else {
