@@ -42,8 +42,8 @@ modules.construct({
 	};
 	self.create = ( p, opts:object )=>{
 		// in this implementation, delete existing projects to save memory space:
-//		console.debug( 'cache.create', self );
 		self.projects.length = 0;
+
 		// append a project to the list:
 		self.projects.push( new Project() );
 		self.selectedProject = self.projects[self.projects.length-1];
@@ -404,7 +404,7 @@ function Project() {
 		// Substitute new by original statementClasses:
 		substituteProp(prj.statements,'class',rId,nId);
 	}
-	function substituteR(prj,r,n,opts) {
+	function substituteR(prj,r,n,opts?) {
 		// Substitute resource n by r in all references of n,
 		// where r is always an element of self.data.
 		// But: Rescue any property of n, if undefined for r.
@@ -2632,7 +2632,7 @@ const specif = {
 						rc = checkConstraints( data, opts );
 						if( rc.status==0 ) {
 //							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
-							resolve( data, rc );
+							resolve( data );
 						} else {
 //							console.debug('SpecIF Consistency Check:', rc);
 							reject( rc );

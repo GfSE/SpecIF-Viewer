@@ -17,7 +17,7 @@ modules.construct({
 		myFullName = 'app.'+myName;
 
 	self.selectedView = ()=>{
-//		console.debug('selectedView',self.viewCtl.selected.view)
+//		console.debug('selectedView',self.viewCtl.selected.view);
 		return self.viewCtl.selected.view;
 	};
 	self.emptyTab = ( view )=>{
@@ -97,7 +97,7 @@ modules.construct({
 									},
 									stdError 
 								);
-								return
+								return;
 
 								function toSpecIF(mNd,tgt) {
 									// transform from jqTree node to SpecIF node:
@@ -186,13 +186,13 @@ modules.construct({
 			case 201:
 				return; // some calls end up in the fail trail, even though all went well.
 			default:
-				stdError(xhr)
+				stdError(xhr);
 		}
 	} 
 	function setPermissions( nd ) {
 			function noPerms() {
 				self.resCln = false;
-				self.staCre = false
+				self.staCre = false;
 			}
 		if( !nd ) { noPerms(); return };
 		
@@ -1898,7 +1898,7 @@ var fileRef = function() {
 						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
 								+ makeStyle( w1, h1 )
 								+ '></div>';
-						console.debug('img opts',f1,opts);
+//						console.debug('img opts',f1,opts);
 						// now add the image as innerHTML:
 						self.renderImage( f1, opts );
 					}

@@ -208,7 +208,7 @@ modules.construct({
 		
 		$('#pageTitle').html( i18n.LblImport );
 		
-			function getFormat(p) {
+			function getFormat(p:string):object|undefined {
 				// filename without extension must have at least a length of 1:
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
@@ -221,42 +221,48 @@ modules.construct({
 		if( urlP && urlP[CONFIG.keyImport] ) {
 			// Case 1: A file name for import has been specified in the URL:
 //			console.debug('import 1',urlP);
+			// replace project with same id, unless a different import mode is specified:
 			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
-			// check the format:
+			// check the file format:
 			self.format = getFormat( urlP[CONFIG.keyImport] );
 //			console.debug('filename:',self.file.name,self.format);
-			if( !app[self.format.name] || !app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} )) {
-				self.clear();
-				message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
-				self.show();
-				return;
-			}; 
-			// Show the name of the specified import file:
-			let rF = textField(i18n.LblFileName,self.file.name);
-			$("#formNames").html( rF );
-			// Take fileName as project name:
-			self.projectName = self.file.name.fileName();	
-			setImporting( true );
+			if( self.format && app[self.format.name] ) {
+				// initialize the import module:
+				app[self.format.name].init( self.format.opts );
+				
+				if( app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} ) ) {
+					// Show the name of the specified import file:
+					let rF = textField(i18n.LblFileName,self.file.name);
+					$("#formNames").html( rF );
+					// Take fileName as project name:
+					self.projectName = self.file.name.fileName();	
+					setImporting( true );
 
-			// Assume it is an absolute or relative URL;
-			// must be either from the same URL or CORS-enabled.
-			// Import the file: 
-			httpGet({
-				// force a reload through cache-busting:
-				url: urlP[CONFIG.keyImport]+'?'+Date.now().toString().simpleHash(),
-				responseType: 'arraybuffer',
-				withCredentials: false,
-				done: function(result) {
-//					console.debug('httpGet done',result.response);
-					app[self.format.name].toSpecif(result.response)
-						.progress( setProgress )
-						.done( handleResult )
-						.fail( handleError );
-				},
-				fail: handleError
-			//	then:
-			});
+					// Assume it is an absolute or relative URL;
+					// must be either from the same URL or CORS-enabled.
+					// Import the file: 
+					httpGet({
+						// force a reload through cache-busting:
+						url: urlP[CONFIG.keyImport]+'?'+Date.now().toString().simpleHash(),
+						responseType: 'arraybuffer',
+						withCredentials: false,
+						done: function(result) {
+//							console.debug('httpGet done',result.response);
+							app[self.format.name].toSpecif(result.response)
+								.progress( setProgress )
+								.done( handleResult )
+								.fail( handleError );
+						},
+						fail: handleError
+					});
+					return;
+				};
+			};
+			// otherwise:
+			self.clear();
+			message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
+			self.show();
 			return;
 		};
 		// Case 2: let the user pick an import file.

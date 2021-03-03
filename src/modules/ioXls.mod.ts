@@ -636,7 +636,7 @@ function xslx2specif( buf, pN, chAt ) {
 		transformData( worksheet( wb.SheetNames[idx] ) );
 
 //	console.info('SpecIF created from '+pN+' (Excel)');
-	console.debug('SpecIF',specif);
+//	console.debug('SpecIF',specif);
 	return specif;
 
 		function worksheet(wsN) {
