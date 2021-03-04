@@ -9,7 +9,7 @@
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
-function renderProp( lbl, val, cssCl ) {
+function renderProp( lbl:string, val:string, cssCl:string ):string {
 	// show a property value:
 	cssCl = cssCl ? ' '+cssCl : '';
 	if( typeof(val)=='string' ) 
@@ -20,23 +20,23 @@ function renderProp( lbl, val, cssCl ) {
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>';
 }
-function DialogForm() {
+function DialogForm():object {
 	// Construct an object performing the key-by-key input checking on an input form;
 	// check *all* fields on a key-stroke and return the overall result.
-	var self = this;
+	var self:any = {};
 	self.list = [];  // the list of parameter-sets, each for checking a certain input field.
-	self.init = function() {
+	self.init = function():void {
 		self.list.length = 0;
 	};
-	self.addField = function( elementId, dT ) {
+	self.addField = function( elementId:string, dT ):void {
 		// Add a parameter-set for checking an input field;
 		// - 'elementId' is the id of the HTML input element
 		// - 'dataType' is the dataType of the property
 		self.list.push( { label:elementId, dataType:dT } );
 	};
-	self.check = function() {
+	self.check = function():boolean {
 		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
-		let val, ok, allOk = true;
+		let val:string, ok:boolean, allOk = true;
 		self.list.forEach( (cPs)=>{
 			// cPs holds the parameters for checking a single property resp. input field.
 			// Get the input value:
@@ -66,7 +66,7 @@ function DialogForm() {
 	};
 	return self;
 }
-function textField( lbl, val, typ, fn ) {  
+function textField( lbl, val:string, typ:string, fn:string ):string|null {  
 	// assemble a form for text input:
 //	console.debug('textField 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
@@ -78,7 +78,7 @@ function textField( lbl, val, typ, fn ) {
 			fn = ' oninput="'+fn+'"';
 	else 	fn = '';
 
-	let sH = lbl.label.simpleHash(), fG, aC;
+	let sH = lbl.label.simpleHash(), fG:string, aC:string;
 	if( typeof(typ)=='string' && ['line','area'].indexOf(typ)>-1 ) 	
 			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
 	else	fG = '<div class="attribute" >';				// for display field
@@ -114,16 +114,16 @@ function textField( lbl, val, typ, fn ) {
 	fG += 	'</div>';
 	return fG;
 }
-function setTextValue( lbl, val ) {
+function setTextValue( lbl:string, val:string ):void {
 	let el = document.getElementById('field'+lbl.simpleHash());
 	if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
 	if( el ) el.value = val;
 }
-function setTextFocus( lbl ) {
+function setTextFocus( lbl:string ):void {
 	let el = document.getElementById('field'+lbl.simpleHash());
 	if( el ) el.focus()
 }
-function setTextState( lbl, state ) {
+function setTextState( lbl:string, state:string ):boolean {
 	if( ['has-success','has-error'].indexOf(state)<0 ) return null;
 	let el = $('#'+lbl.simpleHash());
 	if( !el ) return false;
@@ -145,7 +145,7 @@ function setTextState( lbl, state ) {
 	el.addClass(state);
 	return true;
 }
-function textValue( lbl ) {
+function textValue( lbl:string ):string {
 	// get the input value:
 	try {
 		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || '';
@@ -153,19 +153,19 @@ function textValue( lbl ) {
 		return '';
 	}
 }
-function getTextLength( lbl ) {
+function getTextLength( lbl:string ):number {
 	// get length the input value:
 	try {
 		return textValue( lbl ).length;
 	} catch(e) {
-		return;
+		return -1;
 	}
 }
 				
-function radioField( lbl, entries, opts ) {
+function radioField( lbl:string|object, entries:Array<object>, opts?:object ):string|null {
 	// assemble an input field for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
-	let rB, fn;
+	let rB:string, fn:string;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
@@ -183,7 +183,7 @@ function radioField( lbl, entries, opts ) {
 			return null; // should never be the case
 	};
 	// zero or one checked entry is allowed:
-	let found = false, temp; 
+	let found = false, temp:boolean; 
 	entries.forEach( (e)=>{
 		temp = found || e.checked;
 		if( found && e.checked )
@@ -203,14 +203,14 @@ function radioField( lbl, entries, opts ) {
 		+		'</div>';
 	return rB;
 }
-function radioValue( lbl ) {
+function radioValue( lbl:string ):string {
 	// get the selected radio button, it is the index number as string:
-	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value')	// works even if none is checked
+	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value') || '';	// works even if none is checked
 }
-function checkboxField( lbl, entries, opts ) {
+function checkboxField( lbl:string|object, entries:Array<object>, opts?:object ):string {
 	// assemble an input field for a set of checkboxes:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
-	let cB, fn;
+	let cB:string, fn:string;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"';
 	else 	fn = '';
@@ -225,10 +225,10 @@ function checkboxField( lbl, entries, opts ) {
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
-			return null; // should never be the case
+			return ''; // should never be the case 
 	};
 	// render options:
-	let tp, nm=lbl.label.simpleHash();
+	let tp:string, nm=lbl.label.simpleHash();
 	entries.forEach( (e,i)=>{
 		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		cB +=			'<label>'
@@ -240,7 +240,7 @@ function checkboxField( lbl, entries, opts ) {
 			+	'</div>';
 	return cB
 }
-function checkboxValues( lbl ) {
+function checkboxValues( lbl:string ) {
 	// get the selected check boxes as array with indices:
 	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked');
 	var resL = [];
@@ -249,9 +249,9 @@ function checkboxValues( lbl ) {
 	};
 	return resL;
 }
-function booleanField( lbl, val, opts ) {
+function booleanField( lbl:string, val, opts? ):string {
 //	console.debug('booleanField',lbl,val);
-	let fn;
+	let fn:string;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
@@ -264,22 +264,22 @@ function booleanField( lbl, val, opts ) {
 		+		'</div>'
 		+	'</div>'
 }
-function booleanValue( lbl ) {
+function booleanValue( lbl:string ):boolean {
 	let chd = $('input[name="boolean'+lbl.simpleHash()+'"]:checked');
 	return chd.length>0;
 }
 
-function tagId(str) {
+function tagId(str:string):string {
 	return 'X-'+str.simpleHash()
 }
-function setStyle( sty ) {
+function setStyle( sty:string ):void {
 		let css = document.createElement('style');
 		css.innerHTML = sty;
 		document.head.appendChild(css); // append to head
 }
 
 // standard error handler:
-function stdError( xhr, cb ) {
+function stdError( xhr, cb? ):void {
 	"use strict";
 //	console.debug('stdError',xhr);
 	// clone, as xhr.responseText ist read-only:
@@ -344,26 +344,26 @@ function stdError( xhr, cb ) {
 	};
 */
 // standard message box:
-var message = new function() {
+var message = function() {
 	"use strict";
 	// constructor for message-box:
-	var self = this;
+	var self:any = {};
 	let pend = 0;
 
-	function init() {
+	function init():void {
 		$('#app').prepend('<div id="message" ></div>');
 	};
-	self.hide = ()=>{
+	self.hide = ():void=>{
 		$('#message')
 			.empty()
 			.hide();
 		pend = 0;  // can be called internally or externally
 	};
-	function remove() {
+	function remove():void {
 		if( --pend<1 )
 			self.hide();
 	}
-	self.show = ( msg, opts )=>{
+	self.show = ( msg, opts ):void=>{
 		// msg: message string or jqXHR object
 		// opts.severity: severity with a value listed below 
 		// opts.duration: time in ms before fading out
@@ -409,9 +409,9 @@ var message = new function() {
 	};
 	init();
 	return self;
-};
+}();
 
-function doResize() {
+function doResize():void {
 	// Resizes DOM-tree elements to fit in the current browser window.
 	// In effect it is assured that correct vertical sliders are shown.
 
@@ -437,13 +437,13 @@ function doResize() {
 
 	// adjust the vertical position of the contentActions:
 	$('.contentCtrl').css( "top", hH );
-	return
+/*	return
 	
-/*	function getNavbarHeight() {
+	function getNavbarHeight() {
 		return $('#navbar').css("height")
 	} */
 }
-function bindResizer() {
+function bindResizer():void {
 	// adapt the display in case the window is being resized:
 	$(window).resize( ()=>{
 //		console.debug('resize'); 
@@ -451,7 +451,7 @@ function bindResizer() {
 	});
 }
 
-function indexById(L,id) {
+function indexById(L:Array<object>,id:string):number {
 	if( L && id ) {
 		// given an ID of an item in a list, return it's index:
 		id = id.trim();
@@ -460,7 +460,7 @@ function indexById(L,id) {
 	};
 	return -1;
 }
-function itemById(L,id) {
+function itemById(L:Array<object>,id:string):object|undefined {
 //	console.debug('+',L,id,(L && id));
 	if( L && id ) {
 		// given the ID of an item in a list, return the item itself:
@@ -469,7 +469,7 @@ function itemById(L,id) {
 			if( L[i].id==id ) return L[i]   // return list item
 	};
 }
-function indexByTitle(L,ti) {
+function indexByTitle(L:Array<object>,ti:string):number {
 	if( L && ti ) {
 		// given a title of an item in a list, return it's index:
 		for( var i=L.length-1;i>-1;i-- )
@@ -477,14 +477,14 @@ function indexByTitle(L,ti) {
 	};
 	return -1;
 }
-function itemByTitle(L,ti) {
+function itemByTitle(L:Array<object>,ti:string):object|undefined {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
 }
-function indexBy( L, p, s ) {
+function indexBy( L:Array<object>, p:string, s:string ):number {
 	if( L && p && s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 		// hand in property and searchTerm as string !
@@ -493,7 +493,7 @@ function indexBy( L, p, s ) {
 	};
 	return -1;
 }
-function itemBy( L, p, s ) {
+function itemBy( L:Array<object>, p:string, s:string ):object|undefined {
 	if( L && p && s ) {
 		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
@@ -501,19 +501,19 @@ function itemBy( L, p, s ) {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
-function containsById( cL, L ) {
+function containsById( cL, L ):boolean|null {
 	if(!L) return null;
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
 	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
 
-	function containsL( cL, L ) {
+	function containsL( cL, L ):boolean {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexById( cL, L[i].id )<0 ) return false;
 		return true;
 	}
 }
-function containsByTitle( cL, L ) {
+function containsByTitle( cL, L ):boolean|null {
 	if(!L) return null;
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
@@ -531,17 +531,17 @@ function cmp( i:string, a:string ):number {
 	a = a.toLowerCase();
 	return i==a? 0 : (i<a? -1 : 1);
 }
-function sortByTitle( L ) {
+function sortByTitle( L:Array<object> ) {
 	return L.sort( 
 		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
-function sortBy( L, fn:(object)=>string ):void {
+function sortBy( L:Array<object>, fn:(object)=>string ):void {
 	return L.sort( 
 		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
 	);
 }
-function forAll( L, fn ) {
+function forAll( L:Array<object>, fn ) {
 	// return a new list with the results from applying the specified function to all items of input list L:
 	if(!L) return [];
 	var nL = [];
@@ -549,66 +549,66 @@ function forAll( L, fn ) {
 	return nL;
 }
 
-function addE( ctg, id, pr ) {
+function addE( ctg:string, id:string, pr? ):void {
 	// Add an element (e.g. class) to it's list, if not yet defined:
 	if( !pr ) pr = app.cache.selectedProject.data;
 	
 	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
-	let L = app.standardTypes.listNameOf(ctg);
+	let lN:string = app.standardTypes.listNameOf(ctg);
 	// create it, if not yet available:
-	if (!Array.isArray(pr[L]))
-		pr[L] = [];
+	if (!Array.isArray(pr[lN]))
+		pr[lN] = [];
 	// add the type, but avoid duplicates:
-	if( indexById( pr[L], id )<0 ) 
-		pr[L].unshift( app.standardTypes.get(ctg,id) );
+	if( indexById( pr[lN], id )<0 ) 
+		pr[lN].unshift( app.standardTypes.get(ctg,id) );
 } 
-function addPC( eC, id ) {
+function addPC( eC:object, id:string ):void {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
-	let L = 'propertyClasses';
-	if (Array.isArray(eC[L])) {
+	let lN = 'propertyClasses';
+	if (Array.isArray(eC[lN])) {
 		// Avoid duplicates:
-		if( eC[L].indexOf( id )<0 ) 
-			eC[L].unshift( id );
+		if( eC[lN].indexOf( id )<0 ) 
+			eC[lN].unshift( id );
 	} else {
-		eC[L] = [id];
+		eC[lN] = [id];
 	};
 } 
-function addP( el, prp ) {
+function addP( el:object, prp:object ):void {
 	// Add the property to an element (el):
 	if (Array.isArray(el['properties']))
 		el['properties'].unshift( prp );
 	else
 		el['properties'] = [prp];
 }
-function cacheE( L, e ) {  // ( list, entry )
+function cacheE( L:Array<object>, e:object ):number {  // ( list, entry )
 	// add or update the item e in a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
 	L[n] = e; return n; // update otherwise
 }
-function cacheL( L, es ) {  // ( list, entries )
+function cacheL( L:Array<object>, es:Array<object> ):void {  // ( list, entries )
 	// add or update the items es in a list L:
 	es.forEach( (e)=>{ cacheE( L, e ) } )
 }
-function uncacheE( L, e ) {  // ( list, entry )
+function uncacheE( L:Array<object>, e:object ):number {  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }
-function uncacheL( L, es ) {  // ( list, entries )
+function uncacheL( L:Array<object>, es:Array<object> ):void {  // ( list, entries )
 	// remove the items es from a list L:
 	es.forEach( (e)=>{ uncacheE( L, e ) } );
 }
 	
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
-String.prototype.addIcon = function( ic ) {
+String.prototype.addIcon = function( ic:string ):string {
 	if( ic ) return ic+'&#xa0;'+this;
 	return this;
 };
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
-function genID(pfx) {
+function genID(pfx:string):string {
 	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
 	let re = /^[A-Za-z_]/;
 	if( !re.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
@@ -632,58 +632,56 @@ function genID() {
 */
 
 // Make a valid js variable/property name; replace disallowed characters by '_':
-String.prototype.toJsId = function() { 
-	if( this ) return this.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' ); 
-	return
+String.prototype.toJsId = function():string { 
+	return this.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' ); 
 };
 // Make an id conforming with ReqIF and SpecIF:
-String.prototype.toSpecifId = function() { 
-	if( this ) return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
-	return;
+String.prototype.toSpecifId = function():string { 
+	return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
 };
 
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-String.prototype.simpleHash = function(){for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
+String.prototype.simpleHash = function():string {for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
 	
 /* from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith */	
 if (!String.prototype.startsWith) {
-	String.prototype.startsWith = function(searchString, position) {
-		position = position || 0;
-		return this.lastIndexOf(searchString, position) === position
+	String.prototype.startsWith = function(searchString:string, pos?:number):boolean {
+		pos = pos || 0;
+		return this.lastIndexOf(searchString, pos) === pos
 	};
 };
 /* from https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/String/endsWith */
 if (!String.prototype.endsWith) {
-	String.prototype.endsWith = function(searchString, position) {
+	String.prototype.endsWith = function(searchString:string, pos?:number):boolean {
       let subjectString = this.toString();
-      if (position===undefined || position > subjectString.length) {
-        position = subjectString.length
+      if (pos===undefined || pos > subjectString.length) {
+        pos = subjectString.length
       };
-      position -= searchString.length;
-      let lastIndex = subjectString.indexOf(searchString, position);
-      return lastIndex!==-1 && lastIndex===position
+      pos -= searchString.length;
+      let lastIndex = subjectString.indexOf(searchString, pos);
+      return lastIndex!==-1 && lastIndex===pos
 	};
 };
-String.prototype.truncate = function(l) {
+String.prototype.truncate = function(l:number):string {
 	var t = this.substring(0,l-1);
 //	if( t.length<this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
 	if( t.length<this.length ) t += '...';  // must work also in non-html fields
 	return t;
 };
-/*String.prototype.reduceWhiteSpace = function() {
+/*String.prototype.reduceWhiteSpace = function():string {
 // Reduce white space to a single blank:
 	return this.replace( /[\s]{2,}/g, ' ' )
 }; 
-String.prototype.log = function(m) {
+String.prototype.log = function(m:string):string {
 	console.debug( m, this );
 	return this
 }; */
-String.prototype.stripCtrl = function() {
+String.prototype.stripCtrl = function():string {
 // Remove js/json control characters from HTML-Text or other:
 	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
 };
-String.prototype.ctrl2HTML = function() {
+String.prototype.ctrl2HTML = function():string {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
 	return this.replace( /\r|\f/g, '' )
 				.replace( /&#x0{0,3}a;/gi, '' )
@@ -691,16 +689,16 @@ String.prototype.ctrl2HTML = function() {
 				.replace( /\n/g, '<br />' )
 				.replace( /&#x0{0,3}d;/gi, '<br />' );
 };
-String.prototype.toHTML = function() {
+String.prototype.toHTML = function():string {
 // Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
 	return this.escapeHTML().ctrl2HTML()
 };
 // https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
-function isHTML(str) {
+function isHTML(str:string):boolean {
   let doc = new DOMParser().parseFromString(str, "text/html");
   return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
 }
-function makeHTML(str,opts) {
+function makeHTML(str:string,opts?):string {
 	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
 	if( typeof(opts)=='object' && !opts.makeHTML ) 
 		return str;
@@ -724,7 +722,7 @@ function makeHTML(str,opts) {
 	return '<div>'+newS+'</div>';
 } 
 
-/* String.prototype.utf8ToXmlChar = function() {
+/* String.prototype.utf8ToXmlChar = function():string {
 	let i = this.length,
 		aRet = [];
 	while (i--) {
@@ -734,7 +732,7 @@ function makeHTML(str,opts) {
 	};
 	return aRet.join('');
 }
-String.prototype.xmlChar2utf8 = function() {
+String.prototype.xmlChar2utf8 = function():string {
 		this = this.replace(/&#x([0-9a-fA-F]+);/g, function(match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 16))
 		});
@@ -743,7 +741,7 @@ String.prototype.xmlChar2utf8 = function() {
 		})
 } */
 
-function escapeInner( str ) {
+function escapeInner( str:string ):string {
 	var out = "";
 	str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
 		// $1: inner text (before the next tag)
@@ -759,21 +757,21 @@ function escapeInner( str ) {
 	return out;
 } 
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
-String.prototype.escapeRE = function() { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
+String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
 //String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
 // escape HTML characters:
-String.prototype.escapeXML = function() {
+String.prototype.escapeXML = function():string {
 	return this.replace(/["'&<>]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 	});
 };
-String.prototype.escapeHTML = function() {
+String.prototype.escapeHTML = function():string {
 	return this.replace(/[&<>"'`=\/]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	});
 };
-String.prototype.unescapeHTMLTags = function() {
+String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
 	if( isHTML(this) ) return this;
 	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, ($0,$1,$2,$3)=>{
@@ -781,7 +779,7 @@ String.prototype.unescapeHTMLTags = function() {
 	}));
 };
 // see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
-String.prototype.unescapeHTMLEntities = function() {
+String.prototype.unescapeHTMLEntities = function():string {
 	// unescape HTML encoded entities (characters):
 	var el = document.createElement('div');
 	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
@@ -795,7 +793,7 @@ String.prototype.unescapeHTMLEntities = function() {
     return noCode( doc.documentElement.textContent )
 };*/
 if (!String.prototype.stripHTML) {
-	String.prototype.stripHTML = function() {
+	String.prototype.stripHTML = function():string {
 		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
 		return $("<dummy/>").html( this ).text().trim() || '';
 	};
@@ -816,7 +814,7 @@ function stripHtml(html){
 } */
 
 // Add a link to an isolated URL:
-String.prototype.linkifyURLs = function( opts ) {
+String.prototype.linkifyURLs = function( opts?:object ):string {
 	// perform the operation, unless specifically disabled:
 	if( typeof(opts)=='object' && !opts.linkifyURLs ) return this;
 	return this.replace( RE.URI,  
@@ -831,21 +829,21 @@ String.prototype.linkifyURLs = function( opts ) {
 		});
 };
 
-String.prototype.fileExt = function() {
+String.prototype.fileExt = function():string {
 	// return the file extension only:
 	return this.substring( this.lastIndexOf('.')+1 )
 };
-String.prototype.fileName = function() {
+String.prototype.fileName = function():string {
 	// return the filename without extension:
 	return this.substring( 0, this.lastIndexOf('.') )
 };
-String.prototype.isTrue = function() {
+String.prototype.isTrue = function():boolean {
 	return CONFIG.valuesTrue.indexOf( this.toLowerCase().trim() )>-1
 };
-String.prototype.isFalse = function() {
+String.prototype.isFalse = function():boolean {
 	return CONFIG.valuesFalse.indexOf( this.toLowerCase().trim() )>-1
 };
-String.prototype.trimJSON = function() {
+String.prototype.trimJSON = function():string {
 	// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
 	let si = this.indexOf('{'),
 		li = this.lastIndexOf('}');
@@ -853,7 +851,7 @@ String.prototype.trimJSON = function() {
 };
 
 /*	
-String.prototype.removeBOM = function() {
+String.prototype.removeBOM = function():string {
 	// remove the byte order mask from a UTF-8 coded string
 	// ToDo: Any whitespace between BOM and JSON is not taken care of.
 	// ToDo: The BOM may be "FE FF" in certain representations.
@@ -1059,7 +1057,7 @@ if (!Array.from) {
   }());
 };*/
 
-function ab2str(buf) {
+function ab2str(buf):string {
 	// Convert arrayBuffer to string:
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
 	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
@@ -1077,7 +1075,7 @@ function ab2str(buf) {
 		return String.fromCharCode.apply(null, new Uint8Array(buf));
 	}; */
 }
-function str2ab(str) {
+function str2ab(str:string) {
 	// Convert string to arrayBuffer:
 //	try {
 		let encoder = new TextEncoder();
@@ -1095,7 +1093,7 @@ function str2ab(str) {
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-function blob2dataURL(file,fn,timelag) {
+function blob2dataURL(file,fn,timelag?):void {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
@@ -1106,7 +1104,7 @@ function blob2dataURL(file,fn,timelag) {
 	else
 		reader.readAsDataURL(file.blob);
 } 
-function blob2text(file,fn,timelag) {
+function blob2text(file,fn,timelag?):void {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
@@ -1117,7 +1115,7 @@ function blob2text(file,fn,timelag) {
 	else
 		reader.readAsText(file.blob);
 }
-function uriBack2slash(str) {
+function uriBack2slash(str:string):string {
     return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
 		($0, $1)=>{
 			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
@@ -1132,7 +1130,7 @@ function uriBack2slash(str) {
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
 // do not implement as chainable function, because a string object is created. 
-function noCode( s ) {
+function noCode( s:string ):string {
 	if( s ) {
 		// just suppress the whole content, if there are inacceptable/evil tags or properties, do NOT try to repair it.
 		// <img src="bogus" onerror=alert('4711') />
@@ -1143,18 +1141,14 @@ function noCode( s ) {
 		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null };
 	};
 	return s;
-	function log(c) {
+	function log(c:string) {
 		console.error('Considered harmful ('+c+'):',s);
 	}
 }
-function cleanValue( o ) {
+function cleanValue( o:string|Array<object> ):string|Array<object> {
 	// remove potential malicious code from a value which may be supplied in several languages:
-	switch( typeof(o) ) {
-		case 'string': return noCode( o ); 
-		case 'object': 
-			if( Array.isArray( o ) )
-				return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
-	};
+	if( typeof(o)=='string' ) return noCode( o ); 
+	if( Array.isArray(o) ) return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
 	return '';  // unexpected input (programming error with all likelihood
 }
 /*
@@ -1172,16 +1166,17 @@ if (!Number.isInteger) {
 };
 // function float2int(val) { return parseInt(val) };
 */
-function attachment2mediaType( fname ) {
+function attachment2mediaType( fname:string ):string|undefined {
 	let t = fname.fileExt();  // get the extension excluding '.'
-	if( !t ) return;
-	// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
-	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
-	ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.officeTypes[ ti ];
-	ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.applTypes[ ti ];
+	if( t ) {
+		// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
+		let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
+		if( ti>-1 ) return CONFIG.imgTypes[ ti ];
+		ti = CONFIG.officeExtensions.indexOf( t.toLowerCase() );
+		if( ti>-1 ) return CONFIG.officeTypes[ ti ];
+		ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
+		if( ti>-1 ) return CONFIG.applTypes[ ti ];
+	};
 //	return; undefined
 }
 /*
@@ -1193,11 +1188,12 @@ function image2mediaType( fname ) {
 //	return; undefined
 }
 */
-function localDateTime(iso) {
-	if( !iso ) return '';
-	// ToDo: calculate offset of time-zone ... or use one of the libraries ..
-	if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
-	if( iso.length>9 ) return (iso.substr(0,10));
+function localDateTime(iso:string):string {
+	if( typeof(iso)=='string' ) {
+		// ToDo: calculate offset of time-zone ... or use one of the libraries ..
+		if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
+		if( iso.length>9 ) return (iso.substr(0,10));
+	};
 	return '';
 }
 
@@ -1227,16 +1223,17 @@ function simpleClone( o ) {
 	};
 	return o;
 }
-function hasUrlParams() {
+function hasUrlParams():boolean {
 	let p = document.URL.split('#');
-	if( p[1] && p[1].length>0 ) return '#';
-//	p = document.URL.split('?');   no queries, yet
-//	if( p[1] && p[1].length>0 ) return '?';
-	return false;
+	return ( p[1] && p[1].length>0 );
+/*	( p[1] && p[1].length>0 ) return '#';
+	p = document.URL.split('?');   no queries, yet
+	if( p[1] && p[1].length>0 ) return '?';
+	return false; */
 }
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
-function getUrlParams(opts) {
+function getUrlParams(opts?:object):object {
 	// Get the url parameters contained in the 'fragment' according to RFC2396:
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.start)!='string' ) opts.start = '#';
@@ -1248,7 +1245,7 @@ function getUrlParams(opts) {
 	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
 	return parse( p );
 
-	function parse( h ) {
+	function parse( h:string ):object {
 		if( !h ) return {};
 		var pO = {};
 		h = h.split(opts.separator);
@@ -1265,7 +1262,7 @@ function getUrlParams(opts) {
 		return pO;
 	}
 }
-function setUrlParams(actSt) {
+function setUrlParams(actSt:object):void {
 	// update browser history, if changed:
 	if( !browser.supportsHtml5History || !actSt ) return;
 
@@ -1292,15 +1289,15 @@ function setUrlParams(actSt) {
 
 	// update the browser history:
 	history.pushState('','',newParams);
-};
-function clearUrlParams() {
+}
+function clearUrlParams():void {
 	if( !browser.supportsHtml5History || !hasUrlParams() ) return;
 	
 	let path = window.location.pathname.split('/');  // get the path in pieces
 //	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
-};
-function httpGet(params) {
+}
+function httpGet(params:object):void {
 	// https://blog.garstasio.com/you-dont-need-jquery/
 	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
 	var xhr = new XMLHttpRequest();

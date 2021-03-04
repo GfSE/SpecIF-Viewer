@@ -614,7 +614,7 @@ modules.construct({
 
 		self.filterList.length = 0;
 
-			function addTextSearchFilter( pre ) {
+			function addTextSearchFilter( pre? ) {
 				// pre is a resource with filter settings like {category: 'textSearch', searchString: 'string'}
 				var flt = {
 					title: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
@@ -645,7 +645,7 @@ modules.construct({
 			addTextSearchFilter();
 		};
 
-			function addResourceClassFilter( pre ) {
+			function addResourceClassFilter( pre? ) {
 				// Add a filter with a checkbox for each 'resourceClass',
 				// pre is a resource with filter settings like {category: 'resourceClass', options: ['title1','title2']}
 //				console.debug( 'addResourceClassFilter', pre );

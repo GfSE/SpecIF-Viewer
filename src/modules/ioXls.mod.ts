@@ -283,12 +283,12 @@ function xslx2specif( buf, pN, chAt ) {
 								changedAt: chAt
 							};
 
-						let c, C, cell, val, rC, pC, dT, id, stL=[], pTi, obL, oInner;
+						let c, C, cell, val, /*rC,*/ pC, dT, id, stL=[], pTi, obL, oInner;
 						for( c=ws.firstCell.col,C=ws.lastCell.col+1; c<C; c++ ) {	// an attribute per column ...
 							cell = ws.data[cellName(c,row)];
 //							console.debug('createR',c,cellName(c,row),cell);
 							if( cell && cell.v!=undefined ) {									// ... if it has content
-								rC = itemById( specif.resourceClasses, resClassId(ws.resClassName) );
+						//		rC = itemById( specif.resourceClasses, resClassId(ws.resClassName) );
 
 								pC = itemById( specif.propertyClasses, propClassId(ws.name+c) );
 //								console.debug('create p',c,cellName(c,row),cell,rC,pC);
@@ -636,7 +636,7 @@ function xslx2specif( buf, pN, chAt ) {
 		transformData( worksheet( wb.SheetNames[idx] ) );
 
 //	console.info('SpecIF created from '+pN+' (Excel)');
-	console.debug('SpecIF',specif);
+//	console.debug('SpecIF',specif);
 	return specif;
 
 		function worksheet(wsN) {

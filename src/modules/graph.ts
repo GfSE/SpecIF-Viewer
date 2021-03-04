@@ -10,7 +10,7 @@ function Graph() {
 	// All statements of the same type are grouped to make the reading easier.
 	// Incoming relations (where the selected resource is object of the statement) are positioned at the upper left half,
 	// outgoing relations (where the selected resource is subject of the statement) are positioned at the lower right half
-	var self = this;
+	var self = {};
 	self.init = function() {
 	};
 	self.clear = function() {
@@ -223,10 +223,10 @@ function Graph() {
          * @param x the given char as string
          * @returns {boolean}
          */
-        function testWhite(x) {
+    /*    function testWhite(x) {
             let white = new RegExp(/^\s$/);
             return white.test(x.charAt(0))
-        }
+        } */
 
         /**
          * Returns a calculated Position for a given node
@@ -436,18 +436,18 @@ function Graph() {
                 if (specifData.resources[i].id === id) return specifData.resources[i];
 			return // undefined
         }
-        function statementById(id) {
+    /*    function statementById(id) {
             for(var i = specifData.statements.length-1; i>-1; i--)
                 if (specifData.statements[i].id === id) return specifData.statements[i];
 			return // undefined
-        }
+        } */
 
         /**
          * converts all forbidden chars to html unicode
          * @param str String to be checked
          * @returns {string} cleaned string
          */
-/*		function cleanStringFromForbiddenChars(str) {
+	/*	function cleanStringFromForbiddenChars(str) {
             str = xmlChar2utf8(str);
             let i = str.length,
                 aRet = [];
@@ -457,8 +457,8 @@ function Graph() {
                 else aRet[i] = str[i]
             };
             return aRet.join('')
-        }
-*/
+        } */
+
         /**
          * Converts html numeric character encoding to utf8
          * @param str String to be checked

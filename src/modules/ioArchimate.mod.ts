@@ -15,9 +15,11 @@ modules.construct({
 	var	fDate = null,		// the file modification date
 		fName = null,
 		data = null,		// the SpecIF data structure for xls content
-		bDO = null;
+		bDO = null,
+		opts;
 
-	self.init = function() {
+	self.init = function(options):boolean {
+		opts = options;
 		return true
 	};
 
@@ -69,9 +71,11 @@ modules.construct({
 								strActorFolder: "FMC:Actors",
 								strStateFolder: "FMC:States",
 								strEventFolder: "FMC:Events",
-								strCollectionFolder: "SpecIF:Collections"
+								strCollectionFolder: "SpecIF:Collections",
 						//		strAnnotationFolder: "SpecIF:Annotations",
-						//		strRoleType: "SpecIF:Role"
+						//		strRoleType: "SpecIF:Role",
+								// the property names to hide a document as used at Vattenfall:
+								hiddenDiagramProperties: ["Report:View:Hide","Report:View:Hide:Diagram"]
 							}); 
 //		console.debug('ioArchimate.toSpecif', self.parent.projectName, data );
 		if( typeof(data)=='object' && data.id )
@@ -79,11 +83,11 @@ modules.construct({
 		else
 			bDO.reject({ status:999, statusText:'Input file could not be transformed to SpecIF'});
 
-		return bDO
+		return bDO;
 	};
 	self.abort = function() {
 		app.cache.abort();
-		self.abortFlag = true
+		self.abortFlag = true;
 	};
-	return self
+	return self;
 });

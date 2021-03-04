@@ -1,22 +1,22 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'English' (en).
 	The result can be obtained by reference of:
-	- 	self.MsgText
-	- phrase('MsgText')
-	- phrase('MsgText', 'param')
+	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
+	- yourVarName.lookup('MsgName')
+	- yourVarName.phrase('MsgName')
+	- yourVarName.phrase('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsEn() {
-	var self = this;
-	self.phrase = function( ms, pA ) { 
+    var self:any = {};
+	self.phrase = function( ms:string, pA:string ):string { 
 		// replace a variable '~A' with pA, if available:
-		// for use in HTML fields.
-		if( ms ) {
-			if( pA ) return self[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-			return self[ms] 
+        if (ms) {
+            if (pA) return self[ms].replace(/~A/, pA);
+            return self[ms];
 		};
-		return ''
+		return '';
 	};
-	self.lookup = function( lb ) { 
+	self.lookup = function( lb:string ):string { 
 		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
 		// for use in regular text fields.
 		return self[lb.toJsId()] || lb
@@ -401,6 +401,27 @@ function LanguageTextsEn() {
 	self.IREB_QualityRequirement = "Quality Requirement";
 	self.IREB_RequirementTypeConstraint =
 	self.IREB_Constraint = "Constraint";
+	self.IREB_PerspectiveBusiness = "Business";
+	self.IREB_PerspectiveStakeholder = "Stakeholder";
+	self.IREB_PerspectiveUser = "User";
+	self.IREB_PerspectiveOperator = "Operator";
+	self.IREB_PerspectiveSystem = "System";
+	self.SpecIF_LifecycleStatusDeprecated = "deprecated";
+	self.SpecIF_LifecycleStatusRejected = "rejected";
+	self.SpecIF_LifecycleStatusInitial = "initial";
+	self.SpecIF_LifecycleStatusDrafted = "drafted";
+	self.SpecIF_LifecycleStatusSubmitted = "submitted";
+	self.SpecIF_LifecycleStatusApproved = "approved";
+	self.SpecIF_LifecycleStatusReady = "ready";
+	self.SpecIF_LifecycleStatusDone = "done";
+	self.SpecIF_LifecycleStatusValidated = "validated";
+	self.SpecIF_LifecycleStatusReleased = "released";
+	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
+	self.SpecIF_DisciplineSystem = "System";
+	self.SpecIF_DisciplineMechanics = "Mechanics";
+	self.SpecIF_DisciplineElectronics = "Electronics";
+	self.SpecIF_DisciplineSoftware = "Software";
+	self.SpecIF_DisciplineSafety = "Safety";
 	self.SpecIF_BusinessProcess = 'Business Process'; 
 	self.SpecIF_BusinessProcesses = 'Business Processes';
 	self.SpecIF_Rationale = "Rationale";
@@ -713,4 +734,5 @@ function LanguageTextsEn() {
 	self.AppImport = 	self.IcoImport+'&#160;Import';
 	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
 	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+	return self;
 };

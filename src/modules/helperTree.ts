@@ -9,7 +9,7 @@
 function Tree( options ) {
 	"use strict";
 	// options.loc is the id of a DOM element to which the tree is attached.
-	let self = this,
+	let self = {},
 		domE = $(options.loc);
 	domE.tree({
 		data: [],

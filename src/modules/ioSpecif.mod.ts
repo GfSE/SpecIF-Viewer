@@ -22,7 +22,7 @@ modules.construct({
 		errNoSpecif = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
 		errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
 		
-	self.init = function(options) {
+	self.init = function(options):boolean {
 		opts = options;
 //		console.debug('iospecif.init',options);
 		return true;

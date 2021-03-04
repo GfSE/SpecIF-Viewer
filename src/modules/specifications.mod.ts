@@ -17,7 +17,7 @@ modules.construct({
 		myFullName = 'app.'+myName;
 
 	self.selectedView = ()=>{
-//		console.debug('selectedView',self.viewCtl.selected.view)
+//		console.debug('selectedView',self.viewCtl.selected.view);
 		return self.viewCtl.selected.view;
 	};
 	self.emptyTab = ( view )=>{
@@ -97,7 +97,7 @@ modules.construct({
 									},
 									stdError 
 								);
-								return
+								return;
 
 								function toSpecIF(mNd,tgt) {
 									// transform from jqTree node to SpecIF node:
@@ -186,13 +186,13 @@ modules.construct({
 			case 201:
 				return; // some calls end up in the fail trail, even though all went well.
 			default:
-				stdError(xhr)
+				stdError(xhr);
 		}
 	} 
 	function setPermissions( nd ) {
 			function noPerms() {
 				self.resCln = false;
-				self.staCre = false
+				self.staCre = false;
 			}
 		if( !nd ) { noPerms(); return };
 		
@@ -427,7 +427,7 @@ modules.construct({
 			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
 		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtPrC.dataType );
 
-		var addC = new BootstrapDialog({
+		new BootstrapDialog({
 			title: i18n.phrase( 'LblAddCommentTo', self.tree.selectedNode.name ),
 			type: 'type-success',
 			message: function (thisDlg) {
@@ -473,7 +473,7 @@ modules.construct({
 //		console.debug('delComment',id);
 		app.busy.set();
 		var pend=2;
-		app.cache.selectedProject.readStatementsOf({id:el})
+		app.cache.selectedProject.readStatementsOf({id:el}) // {showComments:true} ?
 			.done( function(rL) {
 				// delete all statements of the comment - should just be one, currently:
 //				console.debug('deleteComment',rL.statements,el);
@@ -503,7 +503,7 @@ modules.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,				// the cached project data
+		cacheData,				// the cached project data
 		selRes;				// the currently selected resource
 
 	// Permissions for resources:
@@ -518,6 +518,11 @@ modules.construct({
 //	self.comments = new Resources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
+	function selResIsUserInstantiated() {
+		return selRes 
+				&& ( !Array.isArray(selRes.toShow['class'].instantiation)
+					|| selRes.toShow['class'].instantiation.indexOf('user')>-1 )
+	}
 	self.init = ()=>{
 	};
 	self.clear = ()=>{
@@ -536,7 +541,7 @@ modules.construct({
 
 		pData.showLeft.set();
 		pData.showTree.set();
-		cData = app.cache.selectedProject.data;
+		cacheData = app.cache.selectedProject.data;
 		
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -584,7 +589,7 @@ modules.construct({
 			// but not navigation in the browser history:
 			if( nd && !(opts && opts.urlParams) ) 
 				setUrlParams({
-					project: cData.id,
+					project: cacheData.id,
 					view: self.view.substr(1),	// remove leading hash
 					node: nd.id,
 					item: nd.ref
@@ -627,11 +632,7 @@ modules.construct({
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
-			var nd = pData.tree.selectedNode,
-		//		isUserNode = selRes && CONFIG.modelElementClasses.indexOf(selRes['class'].title)<0,
-				isUserNode = selRes 
-								&& ( !Array.isArray(selRes.toShow['class'].instantiation)
-									|| selRes.toShow['class'].instantiation.indexOf('user')>-1 ),
+			var isUserNode = selResIsUserInstantiated(),
 		//		rootRes = itemById( 
 		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
 				rB = '<div class="btn-group btn-group-sm" >';
@@ -639,13 +640,13 @@ modules.construct({
 
 		/*	if( selRes )
 				// Create a 'direct link' to the resource (the server renders the resource without client app):
-				rB += '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
+				rB += '<a class="btn btn-link" href="'+CONFIG.serverURL+'/projects/'+cacheData.id+'/specObjects/'+self.resources.selected().value.id+'">'+i18n.LblDirectLink+'</a>';  
 		*/	
 			// Add the create button depending on the current user's permissions:
 			// In order to create a resource, the user needs permission to create one or more resource types PLUS a permission to update the hierarchy:
-		//	if( self.resCre && cData.selectedHierarchy.upd )
+		//	if( self.resCre && cacheData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
-			if( self.resCre && isUserNode )
+			if( self.resCre )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
 						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 			else
@@ -656,8 +657,8 @@ modules.construct({
 				return rB + '</div>';
 
 			// Add the clone button depending on the current user's permissions:
-		//	if( self.resCln && cData.selectedHierarchy.upd )
-			if( self.resCre && isUserNode )
+		//	if( self.resCln && cacheData.selectedHierarchy.upd )
+			if( self.resCre )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
 						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
 			else
@@ -689,7 +690,7 @@ modules.construct({
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-		//	if( cData.selectedHierarchy.del )
+		//	if( cacheData.selectedHierarchy.del )
 			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && isUserNode )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
@@ -742,38 +743,104 @@ modules.construct({
 	Functions called by GUI events 
 */
 	self.editResource = ( mode )=>{
-		// enter edit mode: load the edit template:
-		// The button to which this function is bound is enabled only if the current user has edit permission.
+		// Enter edit mode: load the edit template:
+		// The button for this function is enabled only if the current user has edit permission.
 
 		if( app[CONFIG.resourceEdit] ) {
 //			console.debug('#',mode);
 			// the resource editor has no 'official' view and is thus not controlled by viewCtl,
 			// therefore we call show() directly:
-			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} )
+			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} );
 		} else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
 			
-			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.")
-		}
+			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
+		};
 	}; 
 	self.deleteNode = ()=>{
 		// Delete the selected node and its children.
-		// The resources are just dereferenced, but not deleted, themselves.
+		// The resources are dereferenced, or optionally deleted, themselves.
+		new BootstrapDialog({
+			title: i18n.MsgConfirm,
+			type: BootstrapDialog.TYPE_DANGER,
+			message: i18n.phrase( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
+			buttons: [{
+				label: i18n.BtnCancel,
+				action: (thisDlg)=>{ 
+					thisDlg.close();
+				}
+			},{
+				label: i18n.BtnDeleteObjectRef,
+				action: (thisDlg)=>{
+					delNd( pData.tree.selectedNode );
+					thisDlg.close();
+				}
+		/*	},{
+				label: i18n.BtnDeleteObject,
+				// This button is enabled, if the user has permission to delete the referenced resource,
+				// ?? and if the resource has no further references in any tree:
+				cssClass: 'btn-danger' +(enableDel(pData.tree.selectedNode.ref)?'':' disabled'), 
+				action: function (thisDlg) {
+					// the selected resource's instantiation must be "user" 
+//					console.debug( "Deleting resource '"+pData.tree.selectedNode.name+"'." );
+					delNd( pData.tree.selectedNode );
+			//		delRes( pData.tree.selectedNode.ref );
+					thisDlg.close();
+				} */
+			}]
+		})
+		.open();
+		return;
+		
+		function enableDel( resId ) {
+		// Check, if the specified resource can be deleted.
+		// ToDo: also check permission via self.resources.selected().value.del
+//			console.debug('enableDel',selRes.toShow,resId,selResIsUserInstantiated());
+            return selRes.toShow.id == resId  // should always be the case ..
+				// only resources under "user" control can be deleted:
+                && selResIsUserInstantiated();
+		}
+	/*	function delRes( resId ) {
+			// Delete the resource 
+			// - only if it is not referenced by another hierarchy node as well.
+			// - and if it is under "user" control
+			// In addition, if it is a diagram, 
+			// - identify all it's "shows" relations
+			// - delete all resources and statements shown by the diagram, 
+			//   -- only if they are not shown by another diagram as well
+			//   -- if they are *not* under "user" control.
+			// - delete all it's "shows" relations
+			// Note that older data sets do not use "shows" relations for statements and in this case the statements are left untouched;
+			// in other words: If a user wants to potentially delete statements which are shown by a diagram to be deleted,
+			// it is necessary to provide "shows" statements also for statements.
+			// ?? ToDo: delete the resource with all other references ...
+			app.cache.selectedProject.deleteContent( "resource", {id:resId} )
+				.catch( stdError );
+			// Delete all statements related to this resource:
+			app.cache.selectedProject.readStatementsOf( {id:resId} )
+				.then( 
+					(staL)=>{
+						console.debug( 'delRes statements', staL);
+					},
+					stdError 
+				);
+		} */
 		function delNd( nd ) {
+			// Delete the hierarchy node and all it's children. 
 			console.info( "Deleting tree object '"+nd.name+"'." );
-//			console.debug('deleteNode',nd,nd.getNextSibling());
 
-			// 1. Step away from tbe node to delete to the next:
+			// 1. Step away from tbe node to delete:
+//			console.debug('deleteNode',nd,nd.getNextSibling());
 			pData.tree.selectNode( nd.getNextSibling() ); 
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
 			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
 				.then( 
 					()=>{
-						// If it was a diagram, build a new glossary with elements 
-						// which are still shown by any of the remaining diagrams:
-						app.cache.selectedProject.createGlossary( cData, {addGlossary:true} )
+						// If a diagram has been deleted, build a new glossary with elements 
+						// which are shown by any of the remaining diagrams:
+						app.cache.selectedProject.createGlossary( cacheData, {addGlossary:true} )
 							.then( 
 								()=>{  
 									// undefined parameters will be replaced by default value:
@@ -789,37 +856,11 @@ modules.construct({
 					stdError 
 				);
 		}
-		var dlg = new BootstrapDialog({
-			title: i18n.MsgConfirm,
-			type: BootstrapDialog.TYPE_DANGER,
-			message: i18n.phrase( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
-			buttons: [{
-				label: i18n.BtnCancel,
-				action: (thisDlg)=>{ 
-					thisDlg.close();
-				}
-			},{
-				label: i18n.BtnDeleteObjectRef,
-				action: (thisDlg)=>{
-					delNd( pData.tree.selectedNode );
-					thisDlg.close();
-				}
-	/*		},{
-				label: i18n.BtnDeleteObject,
-				// This button is enabled, if the user has permission to delete the referenced resource,
-				// and if the resource has no further references in any tree:
-				cssClass: 'btn-danger'+(self.resources.selected().value.del?'':' disabled'), 
-				action: function (thisDlg) {
-//					console.debug( "Deleting resource '"+pData.tree.selectedNode.name+"'." );
-					delNd( pData.tree.selectedNode );
-					// ToDo: Delete the resource itself
-					// ToDo: Delete all other references
-					thisDlg.close() 
-				}  */
-			}]
-		})
-		.open();
 	};
+/*	self.deleteResource = ()=>{
+		// Delete the selected resource, all tree nodes and their children.
+		// very dangerous ....
+	};  */
 	self.relatedItemClicked = ( rId )=>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
@@ -827,11 +868,7 @@ modules.construct({
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 		document.getElementById(CONFIG.objectList).scrollTop = 0;
 	};
-/*	self.deleteResource = ()=>{
-		// Delete the selected resource, all tree nodes and their children.
-		// very dangerous ....
-	};  */
-	return self
+	return self;
 });
 // Construct the controller for displaying the statements ('Statement View'):
 modules.construct({
@@ -842,7 +879,7 @@ modules.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,				// the cached data
+		cacheData,				// the cached data
 		selRes,				// the currently selected resource
 		net,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
@@ -862,7 +899,7 @@ modules.construct({
 //		console.debug(CONFIG.relations, 'show');
 		pData.showLeft.set();
 		pData.showTree.set();
-		cData = app.cache.selectedProject.data;
+		cacheData = app.cache.selectedProject.data;
 
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -888,7 +925,7 @@ modules.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: cData.id,
+				project: cacheData.id,
 				view: self.view.substr(1),	// without leading hash
 				node: nd.id,
 				item: nd.ref
@@ -961,13 +998,13 @@ modules.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cData )});
-			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cData )});
+		//	cacheE( L, { id: itemIdOf(r), title: desperateTitleOf( r, $.extend(opts,{addIcon:true}), cacheData )});
+			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L,s) {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			cacheE( L, { id: s.id, title: elementTitleOf(s,opts,cData), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} );
+			cacheE( L, { id: s.id, title: elementTitleOf(s,opts,cacheData), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} );
 		}
 		function cacheNet(s) {
 			// skip hidden statements:
@@ -999,7 +1036,7 @@ modules.construct({
 					resolve([]);
 //				console.debug('getMentionsRels',selR,opts);
 			/*	// There is no need to have a statementClass ... at least currently:
-				var rT = itemByName( cData.statementClasses, CONFIG.staClassMentions );
+				var rT = itemByName( cacheData.statementClasses, CONFIG.staClassMentions );
 				if( !rT ) return;  */
 				
 				let staL = [],	// a list of artificial statements; these are not stored in the server
@@ -1030,7 +1067,7 @@ modules.construct({
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cData, p['class'] ).type ) {
+										switch( dataTypeOf( cacheData, p['class'] ).type ) {
 											case 'xs:string':
 											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
@@ -1050,7 +1087,7 @@ modules.construct({
 								if( refR.properties )
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cData, p['class'] ).type ) {
+										switch( dataTypeOf( cacheData, p['class'] ).type ) {
 											case 'xs:string':
 											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
@@ -1308,7 +1345,7 @@ modules.construct({
 function Resource( obj ) {
 	"use strict";
 	// for the list view, where title and text are shown in the main column and the others to the right.
-	var self = this;
+	var self = {};
 	const noRes = {descriptions:[],other:[]},
 		opts = {
 				lookupTitles: true,
@@ -1511,7 +1548,7 @@ function Resource( obj ) {
 }
 function Resources() {
 	"use strict";
-	var self = this;
+	var self = {};
 
 	self.init = ()=>{ 
 		self.values = [];
@@ -1580,7 +1617,7 @@ function Resources() {
 }
 
 RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function propertyValueOf( prp, opts ) {
+function propertyValueOf( prp:object, opts?:object ):string {
 	"use strict";
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
@@ -1595,7 +1632,7 @@ function propertyValueOf( prp, opts ) {
 	// Malicious content has been removed upon import ( specif.toInt() ).
 	let prj = app.cache.selectedProject.data,
 		dT = dataTypeOf( prj, prp['class'] ),
-		ct; 
+		ct:string; 
 //	console.debug('*',prp,dT);
 	switch( dT.type ) {
 		case 'xs:string':
@@ -1605,7 +1642,8 @@ function propertyValueOf( prp, opts ) {
 			ct = i18n.lookup( ct );
 			break; */
 		case 'xhtml':
-			ct = languageValueOf( prp.value, opts );
+			// remove any leading whiteSpace:
+			ct = languageValueOf( prp.value, opts ).replace( /^\s+/, "" );
 			if( opts.lookupValues )
 				ct = i18n.lookup( ct );
 			if( opts.unescapeHTMLTags )
@@ -1627,7 +1665,7 @@ function propertyValueOf( prp, opts ) {
 			ct = enumValueOf( dT, prp.value, opts );
 			break;
 		default:
-			ct = prp.value
+			ct = prp.value;
 	};
 	/*	// Add 'double-angle quotation' in case of stereotype values:
 			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
@@ -1688,16 +1726,16 @@ function propertyValueOf( prp, opts ) {
 		return str;
 
 		function lnk(r,t){ 
-//			console.debug('lnk',r,t,'app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')');
+//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
 			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
 		}
 	}
 }
-var fileRef = new function() {
+var fileRef = function() {
 	"use strict";
-	var self = this;
+	var self = {};
 
-	self.toGUI = ( txt, opts )=>{
+	self.toGUI = ( txt:string, opts:object ):string =>{
 /*		Properly handle file references in XHTML-Text. 
 		- An image is to be displayed 
 		- a file is to be downloaded
@@ -1730,15 +1768,27 @@ var fileRef = new function() {
 			//						.replace(/\\/g,'/'); // is now handled during import
 			//	return undefined
 			}
-			function getPrpVal( pnm, str ) {
+		/*	function getPrp( pnm:string, str:string ):string|undefined {
+				// get the value of XHTML property 'pnm':
+				let re = new RegExp( pnm+'="([^"]+)"', '' ),
+					l = re.exec(str);
+				if( Array.isArray(l)&&l.length>0 ) return l[0];
+			//	return undefined
+			} */
+			function getPrpVal( pnm:string, str:string ):string|undefined {
 				// get the value of XHTML property 'pnm':
 				let re = new RegExp( pnm+'="([^"]+)"', '' ),
 					l = re.exec(str);
 				if( Array.isArray(l)&&l.length>0 ) return l[1];
 			//	return undefined
 			}
-			function hasContent( f ) {
-				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 )
+			function makeStyle( w:string,h:string ):string {
+				// compose a style property, if there are such parameters,
+				// return empty string, otherwise:
+				return (h||w)? ' style="'+(h?'height:'+h+'; ':'')+(w?'width:'+w+'; ':'')+'"' : '';
+			}
+			function hasContent( f:object ):boolean {
+				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 );
 			}
 
 		// Prepare a file reference for viewing and editing:
@@ -1748,15 +1798,15 @@ var fileRef = new function() {
 		// 1. transform two nested objects to link+object resp. link+image:
 		txt = txt.replace( RE.tagNestedObjects,   
 			( $0, $1, $2, $3, $4 )=>{       // description is $4, $3 is not used
-				var u1 = getUrl( $1 ),  	// the primary file
+				let u1 = getUrl( $1 ),  	// the primary file
 					t1 = getType( $1 ), 
-					w1 = getPrpVal("width", $1 ),
-					h1 = getPrpVal("height", $1 ),
+				//	w1 = getPrp("width", $1 ),
+				//	h1 = getPrp("height", $1 ),
 					u2 = getUrl( $2 ), 		// the preview image
 					t2 = getType( $2 ),
 					w2 = getPrpVal("width", $2 ),
 					h2 = getPrpVal("height", $2 ),
-					d = $4 || u1;			// If there is no description, use the name of the link object
+					d = $4 || u1;		// If there is no description, use the name of the link object
 
 //				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
 				if( !u1 ) console.warn('no file found in',$0);
@@ -1774,9 +1824,14 @@ var fileRef = new function() {
 
 //						console.debug('tagId',tagId(u2));
 						// first add the element to which the file to download will be added:
-						repStrings.push( '<span id="'+tagId(u1)+'"></span>' );
+						repStrings.push( '<div id="'+tagId(u1)+'"></div>' );
 						// now add the image as innerHTML:
-						self.renderDownloadLink( f1, '<span class="'+opts.imgClass+' '+tagId(u2)+'"></span>', opts );
+						self.renderDownloadLink( f1, 
+							'<div class="'+opts.imgClass+' '+tagId(u2)+'"'
+								+ makeStyle( w2, h2 )
+								+'></div>', 
+							opts 
+						);
 						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
 						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} ) );
 					} 
@@ -1807,7 +1862,9 @@ var fileRef = new function() {
 //				};
 
 				let u1 = getUrl( $1 ), 
-					t1 = getType( $1 ); 
+					t1 = getType( $1 ),
+					w1 = getPrpVal("width", $1 ),
+					h1 = getPrpVal("height", $1 );
 
 				let e = u1.fileExt();
 				if( e==null ) return $0;
@@ -1837,7 +1894,11 @@ var fileRef = new function() {
 					if( hasContent(f1) ) {
 						hasImg = true;
 						// first add the element to which the image will be added:
-						d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
+					//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
+						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
+								+ makeStyle( w1, h1 )
+								+ '></div>';
+//						console.debug('img opts',f1,opts);
 						// now add the image as innerHTML:
 						self.renderImage( f1, opts );
 					}
@@ -1850,9 +1911,9 @@ var fileRef = new function() {
 					if( hasContent(f1) ) {
 						hasImg = true;
 						// first add the element to which the attachment will be added:
-						d= '<span id="'+tagId(u1)+'"></span>';
-						// now add the download link with file as data-URL:
-						self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />',opts);
+						d= '<div id="'+tagId(u1)+'" '+CONFIG.fileIconStyle+'></div>';
+						// now add the download link with file icon:
+					self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="[ '+e+' ]" />',opts);
 					}
 					else {
 						d = '<div class="notice-danger" >File missing: '+d+'</div>'
@@ -1932,7 +1993,7 @@ var fileRef = new function() {
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	};
-	self.renderDownloadLink = (f,inner,opts)=>{
+	self.renderDownloadLink = (f,inner,opts):void=>{
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
@@ -1950,7 +2011,7 @@ var fileRef = new function() {
 			+	'</a>'
 		},opts.timelag);
 	};
-	self.renderImage = (f, opts)=>{
+	self.renderImage = (f, opts):void=>{
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
@@ -1974,7 +2035,11 @@ var fileRef = new function() {
 				Array.from( document.getElementsByClassName(tagId(f.title)), 
 					(el)=>{ 
 						let ty = /data:([^;]+);/.exec(f.dataURL);
-						el.innerHTML = '<object data="' + f.dataURL + '" type="' + (ty[1]||f.type) + '" >' + f.title + '</object>'; 
+						el.innerHTML = '<object data="' + f.dataURL 
+											+ '" type="' + (ty[1] || f.type) + '"'
+									/*		+ (opts.w ? ' ' + opts.w : '')
+											+ (opts.h ? ' ' + opts.h : '') */
+											+ ' >' + f.title + '</object>';
 					});
 			}, opts.timelag );
 			return;
@@ -2000,7 +2065,6 @@ var fileRef = new function() {
 				console.warn('Cannot show diagram '+f.title+' of unknown type: ',f.type);
 		};
 		return;
-
 					
 			function showRaster(f,opts) {
 			/*	if( f.dataURL ) {
@@ -2016,9 +2080,14 @@ var fileRef = new function() {
 					blob2dataURL( f, (r,fTi,fTy)=>{
 						// add image to DOM using an image-tag with data-URI:
 						Array.from( document.getElementsByClassName(tagId(fTi)), 
-							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" />'}
+							(el)=>{el.innerHTML = '<img src="'+r
+													+ '" type="' + fTy + '"'
+											/*		+ (opts.w ? ' ' + opts.w : '')
+													+ (opts.h ? ' ' + opts.h : '') */
+													+ ' alt="' + fTi + '" />';
 						/*	// set a grey background color for images with transparency:
 							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
+							}
 						);
 					}, opts.timelag );
 			//	};
@@ -2185,21 +2254,21 @@ var fileRef = new function() {
 						// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 						if( CONFIG.selectCorrespondingDiagramFirst ) {
 							// replace the id of a resource by the id of a diagram carrying the same title:
-							let cData = app.cache.selectedProject.data,
-								ti = elementTitleOf(itemBySimilarId(cData.resources,id),opts),
+							let cacheData = app.cache.selectedProject.data,
+								ti = elementTitleOf(itemBySimilarId(cacheData.resources,id),opts),
 								rT = null;
-							for( var i=cData.resources.length-1;i>-1;i-- ) {
-								rT = itemById(cData.resourceClasses,cData.resources[i]['class']);
+							for( var i=cacheData.resources.length-1;i>-1;i-- ) {
+								rT = itemById(cacheData.resourceClasses,cacheData.resources[i]['class']);
 								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
 								// else, it is a resource representing a diagram:
-								if( elementTitleOf(cData.resources[i],opts)==ti ) {
+								if( elementTitleOf(cacheData.resources[i],opts)==ti ) {
 									// found: the diagram carries the same title 
 									if( app[CONFIG.objectList].resources.selected().toShow 
-										&& app[CONFIG.objectList].resources.selected().toShow.id==cData.resources[i].id )
+										&& app[CONFIG.objectList].resources.selected().toShow.id==cacheData.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 
 										return id;
 									else
-										return cData.resources[i].id;	// the corresponding diagram's id
+										return cacheData.resources[i].id;	// the corresponding diagram's id
 								};
 							};
 						};
@@ -2219,12 +2288,12 @@ var fileRef = new function() {
 								if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
 
 								// no viewbox property, so add it:
-								let w = el.getAttribute('width'),
-									h = el.getAttribute('height');
-								// get rid of 'px':
+								let w = el.getAttribute('width').replace(/px$/,''),
+									h = el.getAttribute('height').replace(/px$/,'');
+							/*	// get rid of 'px':
 								// ToDo: perhaps this is a little too simple ...
 								if( w.endsWith('px') ) w = w.slice(0,-2);
-								if( h.endsWith('px') ) h = h.slice(0,-2);
+								if( h.endsWith('px') ) h = h.slice(0,-2); */
 								el.setAttribute("viewBox", '0 0 '+w+' '+h );
 								return;
 							};
@@ -2399,4 +2468,4 @@ var fileRef = new function() {
 		return txt;
 	}; */
 	return self;
-};	// end of fileRef()
+}();	// end of fileRef()

@@ -10,7 +10,7 @@
 
 var browser,
 	i18n,
-	modules = new function() {
+	modules = function() {
 		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
@@ -26,7 +26,7 @@ var browser,
 				- the specified callback function is executed as soon as all modules are ready.
 				- 'show()' selects the view of the specified module and hides all others.  */
 
-	const self = this;
+	const self = {};
 	let callWhenReady = null,
 		loadPath = './';
 
@@ -37,10 +37,10 @@ var browser,
 		if( opts && opts.path ) loadPath = opts.path;
 
 		// Identify browser type and load language file:
-		browser = new function() {
-			var self = this;
+		browser = function() {
+			var self = {};
 
-			self.language = navigator.language || navigator.userLanguage;
+			self.language = navigator.language; // || navigator.userLanguage;
 			console.info( "Browser Language is '"+self.language+"'." );
 
 			self.supportsHtml5History = Boolean(window.history && window.history.pushState);
@@ -50,18 +50,18 @@ var browser,
 			if( self.supportsCORS ) console.info( "Browser supports CORS" );
 
 			self.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
-		/*	self.supportsHtml5Storage = new function() {
+		/*	self.supportsHtml5Storage = function() {
 				// see: http://diveintohtml5.info/storage.html
 				try {
 					return 'sessionStorage' in window && window['sessionStorage'] !== null;
 				} catch(e) {
 					return false
 				}
-			};
+			}();
 			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" ); */
 
 			return self
-		};
+		}();
 		// init phase 1: Load the javascript routines common to all apps:
 		loadH( ['config','bootstrap','i18n'], {done:init2} );
 		return
@@ -74,7 +74,7 @@ var browser,
 			loadH( loadL, {done:initDone} )
 		}
 	};
-	function register( mod ) {
+	function register( mod:string ) {
 		// return true, if mod has been successfully registered and is ready to load
 		// return false, if mod is already registered and there is no need to load it
 		if( self.registered.indexOf(mod)>-1 ) {
@@ -196,7 +196,7 @@ var browser,
 		// hide all views of the top level:
 		self.tree.viewCtl.hide()
 	};
-	self.isReady = ( mod )=>{
+	self.isReady = ( mod:string )=>{
 		return self.ready.indexOf( mod ) >-1
 	};
 	return self
@@ -219,7 +219,7 @@ var browser,
 				it(h)
 		}
 	}
-	function loadH(h,opts) {
+	function loadH(h,opts?) {
 		// load the modules in hierarchy h
 		// specified by a name string or an object with property 'name';
 		// h can be a single element, a list or a tree.
@@ -335,8 +335,8 @@ var browser,
 		else
 			ld(h);
 	}
-	function findM( tr, key ) {
-		// find the module with the given key in the module hierarchy 'tr':
+	function findM( tr, token:string ) {
+		// find the module with the given token in the module hierarchy 'tr':
 		let m=null;
 		if( Array.isArray(tr) ) {
 			for( var i=tr.length-1; !m&&i>-1; i-- ) {
@@ -349,15 +349,15 @@ var browser,
 
 		function find(e) {
 			// by design: name without '#' and view with '#'
-			if( e.name==key || e.view==key ) return e;
+			if( e.name==token || e.view==token ) return e;
 			if( e.children ) {
-				let m = findM(e.children,key);
+				let m = findM(e.children,token);
 				if( m ) return m;
 			};
 			return false;
 		}
 	}
-	function loadM( mod ) {
+	function loadM( mod:string ) {
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before):
 //			console.debug('loadM',mod);
@@ -477,13 +477,13 @@ var browser,
 		// Add cache-busting on version-change to all files from this development project,
 		// i.e. all those having a relative URL.
 		// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
-		function getCss( url ) {
+		function getCss( url:string ) {
 			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.version)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'.
 			// Must be called explicitly, if not in conjunction with 'getScript'.
 		}
-		function getScript( url, options ) {
+		function getScript( url:string, options? ) {
 			// see http://api.jquery.com/jQuery.getScript/
 			// Any option may be set by the caller except for dataType and cache:
 			options = $.extend( options || {}, {
@@ -500,7 +500,7 @@ var browser,
 				return $.ajax( options ).done( ()=>{setReady(mod)} );
 		}
 	}
-	function setReady( mod ) {
+	function setReady( mod:string ) {
 		// Include mod in the 'ready' list, once successfully loaded;
 		// Execute 'callWhenReady()', if/when the last registered module is ready.
 		if( self.ready.indexOf(mod)<0 ) {
@@ -525,7 +525,7 @@ var browser,
 		// Constructor for an object to control the visibility of the DOM-tree elements listed in 'list';
 		// the selected view is shown, all others are hidden.
 		// ViewCtl can switch pages or tabs, depending on the navigation level:
-		var self = this;
+		var self = {};
 		self.selected = {};	// the currently selected view
 		self.list = null;	// the list of alternative views under control of the respective object
 		self.exists = (v)=>{
@@ -619,12 +619,12 @@ var browser,
 		self.init(viewL);
 		return self;
 	}
-};
+}();
 function State(opt) {
 	"use strict";
 	// sets and resets some binary state (e.g. 'busy'),
 	// hides resp. shows certain DOM elements according to the lists specified.
-	var self = this,
+	var self = {},
 		options = opt || {},
 		state = false;
 	if( !Array.isArray(options.showWhenSet) ) options.showWhenSet = [];

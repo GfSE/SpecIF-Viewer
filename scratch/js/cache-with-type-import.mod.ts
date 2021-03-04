@@ -19,6 +19,7 @@
 	Note:
 	- No error handling - it is left to the calling layers
 */
+import * as types from "../types/specif.v1-0.types";
 
 modules.construct({
 	name: 'cache'
@@ -42,8 +43,8 @@ modules.construct({
 	};
 	self.create = ( p, opts:object )=>{
 		// in this implementation, delete existing projects to save memory space:
+//		console.debug( 'cache.create', self );
 		self.projects.length = 0;
-
 		// append a project to the list:
 		self.projects.push( new Project() );
 		self.selectedProject = self.projects[self.projects.length-1];
@@ -404,7 +405,7 @@ function Project() {
 		// Substitute new by original statementClasses:
 		substituteProp(prj.statements,'class',rId,nId);
 	}
-	function substituteR(prj,r,n,opts?) {
+	function substituteR(prj,r,n,opts) {
 		// Substitute resource n by r in all references of n,
 		// where r is always an element of self.data.
 		// But: Rescue any property of n, if undefined for r.
@@ -2599,7 +2600,7 @@ function Project() {
 //////////////////////////
 // global helper functions:
 const specif = {
-	check: ( data, opts )=>{
+	check: function( data, opts ) {
 		// Check the SpecIF data for schema compliance and consistency;
 		// no data of app.cache is modified:
 		return new Promise(
@@ -2632,7 +2633,7 @@ const specif = {
 						rc = checkConstraints( data, opts );
 						if( rc.status==0 ) {
 //							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
-							resolve( data );
+							resolve( data, rc );
 						} else {
 //							console.debug('SpecIF Consistency Check:', rc);
 							reject( rc );
@@ -2652,15 +2653,15 @@ const specif = {
 			}
 		);
 	},
-	toInt: ( spD )=>{
+	toInt: ( spD ):types.SpecIF|undefined =>{
 		// transform SpecIF to internal data;
 		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.
 //		console.debug('set',simpleClone(spD));
-		let names = {};
+		let names:any = {};
 		switch( spD.specifVersion ) {
 			case '0.10.7':
-				return null;
+				return;
 			case '0.10.2':
 			case '0.10.3':
 				names.rClasses = 'resourceTypes';
@@ -2703,7 +2704,7 @@ const specif = {
 				names.maxI = 'maxInclusive'
 		};
 
-		let iD = {};
+		let iD:types.SpecIF = {};
 		try {
 			iD.dataTypes = 			forAll( spD.dataTypes, dT2int )
 			iD.propertyClasses = 	forAll( spD.propertyClasses, pC2int );	// starting v0.10.6
@@ -2757,8 +2758,8 @@ const specif = {
 				return oE
 			}
 			// a data type:
-			function dT2int( iE ) {
-				var oE = i2int( iE );
+			function dT2int( iE ):types.DataType {
+				var oE:types.DataType = i2int( iE );
 				oE.title = cleanValue(iE.title);
 				oE.type = iE.type;
 				switch( iE.type ) {
@@ -3010,7 +3011,7 @@ const specif = {
 				return oF
 			}
 	},
-	toExt: ( iD, opts )=>{
+	toExt: ( iD:types.SpecIF, opts ) =>{
 		// transform iD (data in internal data format) to SpecIF;
 		// if opts.targetLanguage has no value, all available languages are kept.
 
@@ -3130,9 +3131,9 @@ const specif = {
 		
 		// ToDo: schema and consistency check (if we want to detect any programming errors)
 //		console.debug('specif.toExt exit',spD);
-		return spD
+		return spD;
 
-			function aHierarchyHasNoRoot(dta) {
+			function aHierarchyHasNoRoot(dta):boolean|null {
 				for( var i=dta.hierarchies.length-1;i>-1;i-- ) {
 					let hR = itemById( dta.resources, dta.hierarchies[i].resource );
 					if( !hR ) {

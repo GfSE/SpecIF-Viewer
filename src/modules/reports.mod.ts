@@ -292,7 +292,7 @@ modules.construct({
 				},
 				handleError
 			);
-		//	prj.readStatementsOf( {id: nd.ref}, false )
+		//	prj.readStatementsOf( {id: nd.ref} )
 		//		.done(function(rsp) {
 		//		})
 		//		.fail( handleError ); 

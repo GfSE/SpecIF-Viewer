@@ -1,22 +1,22 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'Français' (fr).
 	The result can be obtained by reference of:
-	- 	self.MsgText
-	- phrase('MsgText')
-	- phrase('MsgText', 'param')
+	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
+	- yourVarName.lookup('MsgName')
+	- yourVarName.phrase('MsgName')
+	- yourVarName.phrase('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsFr() {
-	var self = this;
-	self.phrase = function( ms, pA ) { 
+    var self:any = {};
+	self.phrase = function( ms:string, pA:string ):string { 
 		// replace a variable '~A' with pA, if available:
-		// for use in HTML fields.
-		if( ms ) {
-			if( pA ) return self[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-			return self[ms] 
+        if (ms) {
+            if (pA) return self[ms].replace(/~A/, pA);
+            return self[ms];
 		};
-		return ''
+		return '';
 	};
-	self.lookup = function( lb ) { 
+	self.lookup = function( lb:string ):string { 
 		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
 		// for use in regular text fields.
 		return self[lb.toJsId()] || lb
@@ -180,8 +180,8 @@ function LanguageTextsFr() {
 	self.LblTarget = "Objet";
 	self.LblEligibleSources = "Ressources éligible comme "+	self.LblSource;
 	self.LblEligibleTargets = "Ressources éligible comme "+	self.LblTarget;
-	self.LblSaveRelationAsSource = 'Relier ressource comme '+LblSource;
-	self.LblSaveRelationAsTarget = 'Relier ressource comme '+LblTarget;
+	self.LblSaveRelationAsSource = 'Relier ressource comme '+self.LblSource;
+	self.LblSaveRelationAsTarget = 'Relier ressource comme '+self.LblTarget;
 	self.LblIcon = 'Symbole';
 	self.LblCreation = 'Création';
 	self.LblCreateLink1 = "&#x2776;&#160;Affirmation désirée";
@@ -401,6 +401,27 @@ function LanguageTextsFr() {
 	self.IREB_QualityRequirement = "Exigence de Qualité";
 	self.IREB_RequirementTypeConstraint =
 	self.IREB_Constraint = "Contrainte";
+	self.IREB_PerspectiveBusiness = "Business";
+	self.IREB_PerspectiveStakeholder = "Stakeholder";
+	self.IREB_PerspectiveUser = "Utisateur";
+	self.IREB_PerspectiveOperator = "Operateur";
+	self.IREB_PerspectiveSystem = "Système";
+	self.SpecIF_LifecycleStatusDeprecated = "deprecated";
+	self.SpecIF_LifecycleStatusRejected = "rejected";
+	self.SpecIF_LifecycleStatusInitial = "initial";
+	self.SpecIF_LifecycleStatusDrafted = "drafted";
+	self.SpecIF_LifecycleStatusSubmitted = "submitted";
+	self.SpecIF_LifecycleStatusApproved = "approved";
+	self.SpecIF_LifecycleStatusReady = "ready";
+	self.SpecIF_LifecycleStatusDone = "done";
+	self.SpecIF_LifecycleStatusValidated = "validated";
+	self.SpecIF_LifecycleStatusReleased = "released";
+	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
+	self.SpecIF_DisciplineSystem = "Système";
+	self.SpecIF_DisciplineMechanics = "Méchanique";
+	self.SpecIF_DisciplineElectronics = "Éléctronique";
+	self.SpecIF_DisciplineSoftware = "Logiciel";
+	self.SpecIF_DisciplineSafety = "Sécurité";
 	self.SpecIF_BusinessProcess = 'Processus'; 
 	self.SpecIF_BusinessProcesses = 'Processus';
 	self.SpecIF_Rationale = "Motivation";
@@ -713,4 +734,5 @@ function LanguageTextsFr() {
 	self.AppImport = 	self.IcoImport+'&#160;Import';
 	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
 	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+	return self;
 };
