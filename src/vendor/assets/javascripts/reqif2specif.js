@@ -1,4 +1,4 @@
-testTransformReqIfToSpecIf = (reqIfDocument) => {               
+transformReqif2Specif = (reqIfDocument) => {               
     const element = extractXmlDocFromString(reqIfDocument);
     const specIfObject = extractMainSpecifProperties(element.getElementsByTagName("REQ-IF-HEADER"));
     specIfObject.dataTypes = extractSpecifDatatypesFromXmlDoc(element.getElementsByTagName("DATATYPES"));
@@ -18,17 +18,17 @@ testTransformReqIfToSpecIf = (reqIfDocument) => {
 }
 
 extractMainSpecifProperties = (XmlDocReqIfHeader) => {
-    const specIfProeprties = {};
-    if (!XmlDocReqIfHeader.length) return specIfProeprties;
-    specIfProeprties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
-    specIfProeprties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
-    //specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML;
-    XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] ? specIfProeprties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML : '';
+    const specIfProperties = {};
+    if (!XmlDocReqIfHeader.length) return specIfProperties;
+    specIfProperties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
+    specIfProperties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
+    //specIfProperties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML;
+    XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] ? specIfProperties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML : '';
 
-    specIfProeprties.$schema = "https://specif.de/v1.0/schema.json";
-    specIfProeprties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 
+    specIfProperties.$schema = "https://specif.de/v1.0/schema.json";
+    specIfProperties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 
     
-    return specIfProeprties;
+    return specIfProperties;
 }
 var test;
 extractSpecifDatatypesFromXmlDoc = (XmlDocDatatypes) => {

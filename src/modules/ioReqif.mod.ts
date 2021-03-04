@@ -112,7 +112,7 @@ modules.construct({
                             zDO.reject( errInvalidXML );
                             return zDO;
 						}
-						data = testTransformReqIfToSpecIf(dta);
+						data = transformReqif2Specif(dta);
 						data.files = [];
 						// ReqIF data is valid.
 						
@@ -163,8 +163,8 @@ modules.construct({
                 
 				let str = ab2str(buf);
                 if( validateXML(str) ) {
-					var data = testTransformReqIfToSpecIf(str);
-					// transformReqIfToSpecIf gibt string zurück
+					var data = transformReqif2Specif(str);
+					// transformReqif2Specif gibt string zurück
                     zDO.resolve( data );
                 } else {
                     zDO.reject( errInvalidXML );
