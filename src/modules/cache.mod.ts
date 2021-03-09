@@ -941,8 +941,8 @@ function Project() {
 
 		switch( opts.mode ) {
 			case 'update':
-				updateWithLastChanged( newD, opts );
-				break;
+			//	updateWithLastChanged( newD, opts );
+			//	break;
 			case 'adopt':
 				adopt( newD, opts );
 				break;
@@ -2613,7 +2613,8 @@ const specif = {
 
 				// Get the specified schema file from the server:
 				httpGet({
-					url: data['$schema'] || 'https://specif.de/v'+data.specifVersion+'/schema',
+					// force a reload through cache-busting:
+					url: (data['$schema'] || 'https://specif.de/v'+data.specifVersion+'/schema')+'?'+Date.now().toString().simpleHash(),
 					responseType: 'arraybuffer',
 					withCredentials: false,
 					done: (xhr)=>{
@@ -2757,8 +2758,8 @@ const specif = {
 				return oE
 			}
 			// a data type:
-			function dT2int( iE ) {
-				var oE = i2int( iE );
+			function dT2int( iE ):DataType {
+				var oE:any = i2int( iE );
 				oE.title = cleanValue(iE.title);
 				oE.type = iE.type;
 				switch( iE.type ) {
@@ -2778,7 +2779,7 @@ const specif = {
 						break;
 					case "xs:enumeration":
 						if( iE.values )
-							oE.values = forAll( iE.values, (v)=>{
+							oE.values = forAll( iE.values, (v):EnumeratedValue =>{
 								// 'v.title' until v0.10.6, 'v.value' thereafter;
 								// 'v.value' can be a string or a multilanguage object.
 								return {
@@ -2791,8 +2792,8 @@ const specif = {
 				return oE
 			}
 			// a property class:
-			function pC2int( iE ) {
-				var oE = i2int( iE );
+			function pC2int( iE ):PropertyClass {
+				var oE:any = i2int( iE );
 				oE.title = cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
 				if( iE.description ) oE.description = cleanValue(iE.description);
 				if( iE.value ) oE.value = cleanValue(iE.value);

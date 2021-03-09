@@ -24,38 +24,36 @@ modules.construct({
 		return true
 	};
 
-	self.verify = function( f ) {
+	self.verify = function( f ):boolean {
 
-			function isBpmn( fname ) {
+			function isBpmn( fname ):boolean {
 				return fname.endsWith('.bpmn') 
 			}
 				
 		if ( !isBpmn(f.name) ) {
 			message.show( i18n.phrase('ErrInvalidFileBpmn', f.name) );
-			return null
+			return false;
 		};
 //		console.debug( 'file', f );
 		// remove directory path:
 		// see https://stackoverflow.com/questions/423376/how-to-get-the-file-name-from-a-full-path-using-javascript
 		fName = f.name.split('\\').pop().split('/').pop();
+		
+		// Remember the file modification date:
 		if( f.lastModified ) {
-			fDate = new Date(f.lastModified);
-			fDate = fDate.toISOString();
-//			console.debug( 'file.lastModified', fDate )
-			return f
+			fDate = new Date(f.lastModified).toISOString()
+		} else {
+			if( f.lastModifiedDate )
+				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
+				fDate = new Date(f.lastModifiedDate).toISOString()
+			else
+				// Take the actual date as a final fall back.
+				// Date() must get *no* parameter here; 
+				// an undefined value causes an error and a null value brings the UNIX start date:
+				fDate = new Date().toISOString()
 		};
-		if( f.lastModifiedDate ) {
-			// this is deprecated, but at the time of coding, Edge does not support the above, yet:
-			fDate = new Date(f.lastModifiedDate);
-			fDate = fDate.toISOString();
-//			console.debug( 'file.lastModifiedDate', fDate )
-			return f
-		};
-		// take the actual date as a final fall back
-		fDate = new Date();
-		fDate = fDate.toISOString();
-//		console.debug( 'date', fDate );
-		return f
+//		console.debug( 'file', f, fDate );
+		return true;
 	},
 	self.toSpecif = function( buf ) {
 		// import a BPMN file from a buffer:

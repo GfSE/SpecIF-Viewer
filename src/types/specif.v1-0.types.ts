@@ -8,7 +8,7 @@
  * This file has been generated from the specif.de/v1.0/schema.json
  * with https://app.quicktype.io/
  */
-export interface SpecIF {
+interface SpecIF {
     /**
      * An absolute URL pointing to this SpecIF schema.
      */
@@ -81,23 +81,23 @@ export interface SpecIF {
  * The creator of the SpecIF data-set (file). If specified, at least an e-mail address must
  * be given.
  */
-export interface CreatedBy {
+interface CreatedBy {
     email:       Email;
     familyName?: string;
     givenName?:  string;
     org?:        Org;
 }
 
-export interface Email {
+interface Email {
     type?: string;
     value: string;
 }
 
-export interface Org {
+interface Org {
     organizationName: string;
 }
 
-export interface DataType {
+interface DataType {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -144,7 +144,7 @@ export interface DataType {
  * A list of items with text and language properties. Thus, the information can be given in
  * multiple languages.
  */
-export interface ValueElement {
+interface ValueElement {
     /**
      * An IETF language tag such as 'en', 'en-US, 'fr' or 'de'.
      */
@@ -161,7 +161,7 @@ export interface ValueElement {
  * The corresponding definition in https://www.w3.org/TR/xmlschema-2/ resp.
  * https://www.w3.org/TR/xhtml1/ applies.
  */
-export enum TypeEnum {
+enum TypeEnum {
     XHTML = "xhtml",
     XsBoolean = "xs:boolean",
     XsDateTime = "xs:dateTime",
@@ -171,12 +171,12 @@ export enum TypeEnum {
     XsString = "xs:string",
 }
 
-export interface EnumeratedValue {
+interface EnumeratedValue {
     id:    string;
     value: ValueElement[] | string;
 }
 
-export interface File {
+interface File {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -194,7 +194,7 @@ export interface File {
     type: string;
 }
 
-export interface Hierarchy {
+interface Hierarchy {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -221,7 +221,7 @@ export interface Hierarchy {
  * A list of pointers to resources; may be nested to build a tree, i.e. a hierarchy of
  * pointers.
  */
-export interface Node {
+interface Node {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -246,12 +246,12 @@ export interface Node {
  * A key consisting of a globally unique identifier and a revision. No or an undefined
  * revision means the latest revision of the identified item.
  */
-export interface KeyObject {
+interface KeyObject {
     id:        string;
     revision?: string;
 }
 
-export interface PropertyClass {
+interface PropertyClass {
     changedAt:  string;
     changedBy?: string;
     /**
@@ -276,7 +276,7 @@ export interface PropertyClass {
     value?: ValueElement[] | string;
 }
 
-export interface ResourceClass {
+interface ResourceClass {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -302,12 +302,12 @@ export interface ResourceClass {
  * All is allowed, if the property is omitted. The class is abstract and cannot be
  * instantiated, if the property list is present, but empty.
  */
-export enum Instantiation {
+enum Instantiation {
     Auto = "auto",
     User = "user",
 }
 
-export interface Resource {
+interface Resource {
     alternativeIds?: Array<AlternativeIDObject | string>;
     changedAt:       string;
     changedBy?:      string;
@@ -328,7 +328,7 @@ export interface Resource {
     title:       ValueElement[] | string;
 }
 
-export interface AlternativeIDObject {
+interface AlternativeIDObject {
     /**
      * A string with a valid identifier of a model-element
      */
@@ -343,7 +343,7 @@ export interface AlternativeIDObject {
 /**
  * A list of properties of a resource or statement.
  */
-export interface Property {
+interface Property {
     /**
      * Without change information, the parent's change information applies.
      */
@@ -368,13 +368,13 @@ export interface Property {
     value: ValueElement[] | string;
 }
 
-export interface Rights {
+interface Rights {
     title: string;
     type:  string;
     url:   string;
 }
 
-export interface StatementClass {
+interface StatementClass {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -404,7 +404,7 @@ export interface StatementClass {
     title:           ValueElement[] | string;
 }
 
-export interface Statement {
+interface Statement {
     alternativeIds?: Array<AlternativeIDObject | string>;
     changedAt:       string;
     changedBy?:      string;

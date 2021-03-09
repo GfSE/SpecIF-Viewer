@@ -28,7 +28,7 @@ modules.construct({
 		return true;
 	};
 
-	self.verify = function( f ) {
+	self.verify = function( f ):boolean {
 		// return f if file-type is eligible, null otherwise.
 		// 'specifz' is a specif file with optional images/attachments in a zipped file.
 		// 'specif' is a plain text file with specif data.
@@ -37,22 +37,22 @@ modules.construct({
 		if( f.name.endsWith('.specif') ) {
 			zipped = false;
 //			template = false;
-			return f;
+			return true;
 		};
 		if( f.name.endsWith('.specifz') || f.name.endsWith('.specif.zip') ) {
 			zipped = true;
 //			template = false;
-			return f;
+			return true;
 		};
 	/*	if( f.name.endsWith('.specift') ) {
 			zipped = false;
 			template = true;
-			return f;
+			return true;
 		};
 		if( f.name.endsWith('.speciftz') ) {
 			zipped = true;
 			template = true;
-			return f;
+			return true;
 		}; */
 		// else:
 		try {
@@ -60,7 +60,7 @@ modules.construct({
 		} catch (err) {
 			alert(f.name+' has invalid file type.');
 		};
-		return null;
+		return false;
 	};
 
 
@@ -71,8 +71,7 @@ modules.construct({
 		self.abortFlag = false;
 		var zDO = $.Deferred();
 		if( zipped ) {
-			let zip = new JSZip();
-			zip.loadAsync(buf)
+			new JSZip().loadAsync(buf)
 			.then( function(zip) {
 				let fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.specif')}),
 					data = {};
@@ -102,11 +101,12 @@ modules.construct({
 							if( fileL.length>0 ) {
 								let pend = 0;
 								fileL.forEach( function(aFile) { 
+													// skip directories:
 													if( aFile.dir ) return false;
-												//	let fType = aFile.type || opts.mediaTypeOf(aFile.name);
+
 													let fType = opts.mediaTypeOf(aFile.name);
+												   // skip files with unknown mediaTypes:
 													if( !fType ) return false;
-													// only extract files with known mediaTypes:
 													
 //													console.debug('iospecif.toSpecif 3',fType,aFile.date,aFile.date.toISOString());
 													pend++;

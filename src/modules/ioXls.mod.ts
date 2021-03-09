@@ -21,16 +21,16 @@ modules.construct({
 		return true
 	};
 
-	self.verify = function( f ) {
+	self.verify = function( f ):boolean {
 //		console.debug( 'file', f );
 
-			function isXls( fname ) {
+			function isXls( fname ):boolean {
 				return fname.endsWith('.xlsx') || fname.endsWith('.xls') || fname.endsWith('.csv') 
 			}
 				
 		if ( !isXls(f.name) ) {
 			message.show( i18n.phrase('ErrInvalidFileXls', f.name) );
-			return
+			return false;
 		};
 //		console.debug( 'file', f );
 
@@ -48,7 +48,7 @@ modules.construct({
 				fDate = new Date().toISOString()
 		};
 //		console.debug( 'file', f, fDate );
-		return f
+		return true;
 	};
 	self.toSpecif = function( buf ) {
 		// import an Excel file from a buffer:

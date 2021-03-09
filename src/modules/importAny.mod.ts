@@ -67,8 +67,8 @@ modules.construct({
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
 			help: "Experimental: "+i18n.MsgImportReqif,
-			opts: { dontCheck: ["statement.subject","statement.object"], mediaTypeOf: attachment2mediaType }
-    /*    }, {
+			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"update", mediaTypeOf: attachment2mediaType } 
+	/*	},{
             id: 'rdf',
             name: 'ioRdf',
             desc: 'Resource Description Format',
@@ -101,7 +101,7 @@ modules.construct({
 		cacheLoaded = false,
 		allValid = false;
 
-	function terminateWithSuccess() {
+	function terminateWithSuccess():void {
 		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
 		setTimeout( function() {
 				self.clear();
@@ -148,7 +148,7 @@ modules.construct({
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput btn-sm" style="margin: 0 0 0.8em 0" >'
 				+			'<span>'+i18n.BtnFileSelect+'</span>'
-				+			'<input id="importFile" type="file" onchange="'+myFullName+'.select()" />'
+				+			'<input id="importFile" type="file" onchange="'+myFullName+'.pickFiles()" />'
 				+		'</div>'
 				+   '</div>'
 			+	'</div>'
@@ -187,7 +187,7 @@ modules.construct({
 		self.clear();
 		self.setFormat('specif');
 		importMode = {id:'replace'};
-		// certain GUI elements will only be shown if the user must select a file:
+		// certain GUI elements will only be shown if the user must pick a file:
 		showFileSelect = new State({
 			showWhenSet: ['.fileSelect'],
 			hideWhenSet: []
@@ -358,13 +358,12 @@ modules.construct({
 			console.error("importAny: setting state 'importing' has failed ("+e+").");
 		};
 	}
-	self.select = function() {
+	self.pickFiles = function() {
         let f = document.getElementById("importFile").files[0];
 		// check if file-type is eligible:
-//		console.debug('select',f.name,self.format);
+//		console.debug('pickFiles',f.name,self.format);
 
-		f = app[self.format.name].verify( f );
-		if( f ) {
+		if( app[self.format.name].verify( f ) ) {
 			self.file = f;
 		//	self.projectL.length = 0;  // https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 
@@ -377,7 +376,7 @@ modules.construct({
 			};
 
 			self.enableActions();
-//			console.debug('select',self.fileName(), self.projectName);
+//			console.debug('pickFiles',self.fileName(), self.projectName);
 		} else {
 			self.clear();
 		}
@@ -406,13 +405,38 @@ modules.construct({
 			rdr.readAsArrayBuffer( f );
 		}
 	};
-	function handleResult( data ) {
+	// ToDo: construct an object ...
+	var resQ = [],
+		resIdx = 0;
+	function handleResult( data ):void {
 		// import specif data as JSON:
-//		console.debug('handleResult',simpleClone(data));
-
-		return specif.check( data, self.format.opts )
+		if( Array.isArray( data ) ) {
+			// The first object shall be imported as selected by the user;
+			// all subsequent ones according to self.format.opts.multipleMode:
+			// (use-case: ioReqif imports a reqifz with multiple reqif files)
+			resQ = data;
+			resIdx = 0;
+			handle( resQ.shift(), resIdx );
+		}
+		else {
+			resQ.length = 0;
+			resIdx = 0;
+			handle( data, resIdx );
+		};
+		return;
+	
+		function handleNext():void {
+			if( resQ.length>0 )
+				handle( resQ.shift(), ++resIdx )
+			else
+				terminateWithSuccess();
+		}
+		function handle( dta, idx ):void {
+//			console.debug('handleResult',simpleClone(dta),idx);
+			specif.check( dta, self.format.opts )
+	//		specif.check( data, self.format.opts )
 			.then( (dta)=>{
-			/*	// First check if there is a project with the same id:
+			/*	//  First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
 //							console.debug(dta.id,self.projectL[p].id);
@@ -480,8 +504,14 @@ modules.construct({
 					.open()
 				} else {   */
 				setProgress(importMode.id+' project',20); 
-				let opts = {mode:importMode.id};
-				switch( importMode.id ) {
+
+				// The first object shall be imported as selected by the user --> importMode.id;
+				// all subsequent ones according to self.format.opts.multipleMode:
+				let opts:any = {};
+				if( idx>0 ) opts.mode = self.format.opts.multipleMode
+				else opts.mode = importMode.id;
+
+				switch( opts.mode ) {
 					case 'clone': 	
 						dta.id = genID('P-');
 						// no break
@@ -492,7 +522,7 @@ modules.construct({
 						opts.collectProcesses = false;
 						app.cache.create( dta, opts )
 							.progress( setProgress )
-							.done( terminateWithSuccess )
+							.done( handleNext )
 							.fail( handleError );
 						break;
 					case 'adopt':
@@ -503,13 +533,14 @@ modules.construct({
 					case 'update':
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )
-							.done( terminateWithSuccess )
+							.done( handleNext )
 							.fail( handleError )
 				};
 				console.info(importMode.id+' project',dta.title||dta.id);
 			},
 			handleError 
 		);
+		};
 	}; 
 	function setProgress(msg,perc) {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)

@@ -1145,7 +1145,7 @@ function noCode( s:string ):string {
 		console.error('Considered harmful ('+c+'):',s);
 	}
 }
-function cleanValue( o:string|Array<object> ):string|Array<object> {
+function cleanValue( o:string|Array<object> ):string|ValueElement[] {
 	// remove potential malicious code from a value which may be supplied in several languages:
 	if( typeof(o)=='string' ) return noCode( o ); 
 	if( Array.isArray(o) ) return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
