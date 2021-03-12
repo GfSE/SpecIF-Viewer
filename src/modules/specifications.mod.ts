@@ -3,7 +3,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!          
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 
 // Construct the specifications controller:
@@ -1110,7 +1110,7 @@ modules.construct({
 				})
 			})
 			
-			function notListed( L,s,t ) {
+			function notListed( L,s,t ):boolean {
 				for( var i=L.length-1;i>-1;i--  ) {
 					if( itemIdOf(L[i].subject)==s.id && itemIdOf(L[i].object)==t.id ) return false;
 				};
@@ -1119,7 +1119,7 @@ modules.construct({
 		};
 	}; 
 
-	function linkBtns() {
+	function linkBtns():string {
 		if( !selRes ) return '';
 		if( modeStaDel ) 
 			return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
@@ -1141,7 +1141,7 @@ modules.construct({
 
 		return rB+'</div>';	// return rendered buttons for display
 	}
-	function getPermissions( sRes ) {
+	function getPermissions( sRes ):void {
 		// No permissions beyond read, if it is the viewer:
 		if( app.title!=i18n.LblReader && sRes ) {
 			self.staCreClasses.subjectClasses.length = 0;
@@ -1184,10 +1184,9 @@ modules.construct({
 
 //		console.debug('renderStatements',net);
 		
-		$( self.view ).html( '<div id="statementGraph" style="width:100%; height: 600px;" ></div>' );
 		let options = {
 			index: 0,
-			canvas:'statementGraph',
+			canvas: self.view.substr(1),	// without leading hash
 			titleProperties: CONFIG.titleProperties,
 			onDoubleClick: ( evt )=>{
 //				console.debug('Double Click on:',evt);
@@ -1195,7 +1194,7 @@ modules.construct({
 					app[myName].relatedItemClicked(evt.target.resource,evt.target.statement);
 					// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			},
-			focusColor: '#1690D8'
+			focusColor: CONFIG.focusColor
 		};
 		if( modeStaDel )
 			options.nodeColor = '#ef9a9a';

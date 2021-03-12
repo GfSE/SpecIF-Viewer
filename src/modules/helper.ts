@@ -3,7 +3,7 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!     
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 
  	Attention: 
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
@@ -556,11 +556,14 @@ function addE( ctg:string, id:string, pr? ):void {
 	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
 	let lN:string = app.standardTypes.listNameOf(ctg);
 	// create it, if not yet available:
-	if (!Array.isArray(pr[lN]))
-		pr[lN] = [];
-	// add the type, but avoid duplicates:
-	if( indexById( pr[lN], id )<0 ) 
-		pr[lN].unshift( app.standardTypes.get(ctg,id) );
+	if (Array.isArray(pr[lN])) {
+		// add the type, but avoid duplicates:
+		if( indexById( pr[lN], id )<0 ) 
+			pr[lN].unshift( app.standardTypes.get(ctg,id) );
+	}
+	else {
+		pr[lN] = [ app.standardTypes.get(ctg,id) ];
+	};
 } 
 function addPC( eC:object, id:string ):void {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
@@ -569,7 +572,8 @@ function addPC( eC:object, id:string ):void {
 		// Avoid duplicates:
 		if( eC[lN].indexOf( id )<0 ) 
 			eC[lN].unshift( id );
-	} else {
+	} 
+	else {
 		eC[lN] = [id];
 	};
 } 
@@ -631,6 +635,16 @@ function genID() {
 }
 */
 
+/*
+// Make a valid js variable/property name; replace disallowed characters by '_':
+function jsIdOf(str:string):string {
+	return str.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' );
+};
+// Make an id conforming with ReqIF and SpecIF:
+function specifIdOf(str:string):string {
+	return str.replace( /[^_0-9a-zA-Z]/g, '_' );
+};
+*/
 // Make a valid js variable/property name; replace disallowed characters by '_':
 String.prototype.toJsId = function():string { 
 	return this.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' ); 

@@ -386,7 +386,7 @@ modules.construct({
 //						console.debug( 'matchAndMark', f, res.toShow.title );
 						if( matchPropValue(f) ) return res; // don't mark in this case, either
 						return; // undefined
-				/*		if( matchPropValue(f) ) {
+					/*	if( matchPropValue(f) ) {
 							console.debug( 'attValueMatched' );
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
@@ -418,35 +418,40 @@ modules.construct({
 							// ToDo: correct error: with option 'wholeWord', all findings are marked no matter it is a whole word or not. 
 							//   (The hitlist is correct, but also matches within a word are marked).
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
-							if( f.searchString.length>1 ) {  // don't mark single characters
+							if( f.searchString.length>2 ) {  // don't mark very short substrings
 								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
-								    lE, i;
+								    lE;
 								
 								lE = res.toShow.title;
 								lE.value = mark( languageValueOf(lE.value,displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
-								for( i= res.toShow.descriptions.length-1; i>-1; i-- ) {
-									lE = res.toShow.descriptions[i];
-									res.toShow.descriptions.splice( i, 1, {
-											title: lE.title,
-											class: lE['class'],
-											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
-									});
-								}; 
-								for( i= res.toShow.other.length-1; i>-1; i-- ) {
-									lE = res.toShow.other[i];
-									res.toShow.other.splice( i, 1, {
-											title: lE.title,
-											class: lE['class'],
-											value: mark( languageValueOf(lE.value,displayOptions), rgxS )
-									}); 
-								};
+								res.toShow.descriptions = res.toShow.descriptions.map( (prp)=>{
+									return 	{
+												title: prp.title,
+												class: prp['class'],
+												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
+											};
+								});
+								res.toShow.other = res.toShow.other.map( (prp)=>{
+									let dT = dataTypeOf( dta, prp['class'] );
+									return (dT && dT.type=="xs:enumeration")?
+											{
+												title: prp.title,
+												// default dataType is "xs:string"
+												value: mark( enumValueOf(dT,prp.value,displayOptions), rgxS )
+											}
+										:	{
+												title: prp.title,
+												class: prp['class'],
+												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
+											};
+								});
 							};
 //							console.debug('hit resource',res);
 							return res;
 						}; 
-							return; // undefined
-				}
+				};
+				return; // undefined
 				
 				function mark( txt, re ) {
 					// Mark the txt, but spare XHTML-tags.
@@ -512,7 +517,7 @@ modules.construct({
 						for( var j=f.options.length-1; j>-1; j--){ 
 							if( f.options[j].checked ) return false  // at least one checked -> not clogged
 						};
-						break;
+					//	break;
 				};
 				return true; // returns true, if the filter is clogged.
 			};

@@ -28,7 +28,7 @@ modules.construct({
 		if ( mime ) 
 			return true;
 		// else:
-		message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
+		message.show( i18n.phrase('ErrInvalidFileReqif', f.name) );
 		return false;
 	};
 	self.toSpecif = function( buf ) {

@@ -3,7 +3,7 @@
 	Author: se@enso-managers.de, Berlin
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!  
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 
 	ToDo: escapeXML the content. See toXHTML.
 	ToDo: Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
@@ -30,6 +30,28 @@ modules.construct({
 		return true;
 	};
 
+	self.verify = function( f ):boolean {
+			// Verify the type (and eventually the content) of a ReqIF import file:
+	
+			function reqifFile2mediaType( fname ):string|undefined {
+				if( fname.endsWith('.reqifz') || fname.endsWith('.reqif.zip') ) {
+					zipped = true;
+					return 'application/zip';
+				};
+				if( fname.endsWith('.reqif') ) {
+					zipped = false;
+					return 'application/xml';
+				};
+				return; // undefined
+			}
+				
+		mime = reqifFile2mediaType( f.name );
+		if ( mime )
+			return true;
+		// else:
+		message.show( i18n.phrase('ErrInvalidFileReqif', f.name) );
+		return false;
+	};
 	self.toSpecif = function( buf ) {
 		// Transform ReqIF to SpecIF for import:
 		// buf is an array-buffer containing reqif data:
@@ -51,6 +73,7 @@ modules.construct({
 				};
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
 
+				// transform all reqif files found:
 				pend = fileL.length;
 				for( var i=fileL.length-1;i>-1;i-- ) {
 					zip.file( fileL[i].name ).async("string")
@@ -66,7 +89,7 @@ modules.construct({
 							return zDO;
 						};
 						// ReqIF data is valid:
-						resL.unshift( transformReqif2Specif(dta) );
+						resL.unshift( transformReqif2Specif( dta, {translateTitle2Specif:vocabulary.property.specif} ) );
 
 						// add all other files (than reqif) to the last specif data set:
 						if( --pend<1 )
@@ -129,7 +152,7 @@ modules.construct({
                 
 				let str = ab2str(buf);
                 if( validateXML(str) ) {
-					var data = transformReqif2Specif(str);
+					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
 					// transformReqif2Specif gibt string zurück
                     zDO.resolve( data );
                 } else {
@@ -151,28 +174,6 @@ modules.construct({
 		}
 	};
 		
-	self.verify = function( f ):boolean {
-			// Verify the type (and eventually the content) of a ReqIF import file:
-	
-			function reqifFile2mediaType( fname ):string|undefined {
-				if( fname.endsWith('.reqifz') || fname.endsWith('.reqif.zip') ) {
-					zipped = true;
-					return 'application/zip';
-				};
-				if( fname.endsWith('.reqif') ) {
-					zipped = false;
-					return 'application/xml';
-				};
-				return; // undefined
-			}
-				
-		mime = reqifFile2mediaType( f.name );
-		if ( mime )
-			return true;
-		// else:
-		message.show( i18n.phrase('ErrInvalidFileReqif', f.name), 'warning', CONFIG.messageDisplayTimeNormal );
-		return false;
-	};
 	self.toReqif = function( pr, opts ) {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):

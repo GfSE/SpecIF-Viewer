@@ -5,7 +5,7 @@
 		all minor versions j.n.p of this library work with all ReqIF Server minor versions j.n.q
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
 	CONFIG.imgURL = './vendor/assets/images';
@@ -45,6 +45,7 @@ const CONFIG:any = {};
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
+	CONFIG.focusColor = '#1690D8';
 
 	// values for boolean 'true' and 'false':
 	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];

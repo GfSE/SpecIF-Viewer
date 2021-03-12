@@ -3,7 +3,7 @@
 	Copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 
 modules.construct({

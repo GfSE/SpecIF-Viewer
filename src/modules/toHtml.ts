@@ -25,7 +25,7 @@ function toHtml( pr, pars ) {
 					switch( f.type ) {
 						case 'image/svg+xml':
 						/*	// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-							//see: https://css-tricks.com/probably-dont-base64-svg/
+							// see: https://css-tricks.com/probably-dont-base64-svg/
 							blob2text( f, 
 								(r)=>{ 
 									f.dataURL = "data:image/svg+xml;utf8,"+r;

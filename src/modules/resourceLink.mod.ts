@@ -238,7 +238,7 @@ modules.construct({
 
 		// set focus to new candidate:
 		let el = document.getElementById("cand-"+idx);
-		el.style.background = '#1690D8';
+		el.style.background = CONFIG.focusColor;
 		el.style.color = 'white';
 
 		// remember new candidate, both the resource and the GUI-element:

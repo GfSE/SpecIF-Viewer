@@ -10,7 +10,7 @@
 			scaleMin: 0,
 			scaleMax: 120,
 			datasets: [
-				{ label: 'low', count: 80, color: '#1690d8' } ,	
+				{ label: 'low', count: 80, color: CONFIG.focusColor } ,	
 				{ label: 'medium', count: 120, color: '#1f72c3' },	
 				{ label: 'high', count: 40, color: '#1a48aa' }
 			]
@@ -20,7 +20,7 @@
 			scaleMin: 0,
 			scaleMax: 1000,
 			datasets: [
-				{ label: '30_vorgelegt', count: 245, color: '#1690d8' } ,	
+				{ label: '30_vorgelegt', count: 245, color: CONFIG.focusColor } ,	
 				{ label: '40_genehmigt', count: 12, color: '#1f72c3' },	
 				{ label: '60_fertig', count: 890, color: '#1a48aa' },
 				{ label: '80_freigegeben', count: 180, color: '#000000' }
@@ -116,7 +116,7 @@ modules.construct({
 									label: titleOf(rC,opts),
 									id: rC.id,
 									count: 0,
-									color: '#1690d8' 
+									color: CONFIG.focusColor 
 								})
 				});
 				self.list.push(rCR)
@@ -140,7 +140,7 @@ modules.construct({
 									label: titleOf(sC,opts),
 									id: sC.id,
 									count: 0,
-									color: '#1690d8' 
+									color: CONFIG.focusColor 
 								})
 				});
 				self.list.push(sCR)

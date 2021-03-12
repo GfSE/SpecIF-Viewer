@@ -1,6 +1,8 @@
-/* 	Transform an Open Group Archimate Open Exchange File to SpecIF
+/*!	Transform an Open Group Archimate Open Exchange File to SpecIF
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de
-	License: Apache 2.0
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 
 // Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format

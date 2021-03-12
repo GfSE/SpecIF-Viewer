@@ -1,19 +1,22 @@
+/*!	Create and save a MS WORD OpenXML document using SpecIF data.
+	OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
+	  http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
+	or
+	  https://www.data2type.de/xml-xslt-xslfo/wordml/praxistipps-word-ooxml/
+
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de
+	License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+	
+	Limitations:
+	- Accepts data-sets according to SpecIF v0.10.8 and later.
+	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
+	- There must only be one revision per resource or statement
+*/
+
 function toOxml( data, opts ) {
 	"use strict";
-	// Create and save a MS WORD OpenXML document using SpecIF data.
-	// OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
-	//   http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
-	// or
-	//   https://www.data2type.de/xml-xslt-xslfo/wordml/praxistipps-word-ooxml/
-	//
-	// Author: se@enso-managers.de
-	// (C) copyright http://enso-managers.de
-	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
-	//
-	// Limitations:
-	// - Accepts data-sets according to SpecIF v0.10.8 and later.
-	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
-	// - There must only be one revision per resource or statement
 
 	// Reject versions < 0.10.8:
 	if( data.specifVersion ) {
@@ -65,7 +68,7 @@ function toOxml( data, opts ) {
 	// - Otherwise transform SVG to PNG, as MS Word does not (yet) support SVG.
 	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
 	const olId = 1;	// the first numId for bulleted lists; '0' does not work
-	var images = [],
+	var imageL = [],
 		pend = 0,	// the number of pending operations
 		olCnt = olId;	// the count of numbered lists, when used as id, every one will start at olId+1
 
@@ -84,7 +87,7 @@ function toOxml( data, opts ) {
 					function storeR(ev) {
 //						console.debug('raster',pend);
 						// please note the different use of 'id' and 'title' in file and images!
-						images.push( {id:f.title,type:f.type,h:ev.target.height,w:ev.target.width,b64:ev.target.src} );
+						imageL.push( {id:f.title,type:f.type,h:ev.target.height,w:ev.target.width,b64:ev.target.src} );
 						if( --pend<1 ) {
 							// all images have been converted, continue processing:
 							createOxml()
@@ -119,7 +122,7 @@ function toOxml( data, opts ) {
 						can.height = img.height;
 						ctx.drawImage( img, 0, 0 );
 						// please note the different use of 'id' and 'title' in specif.files and images!
-						images.push( {id:pngN,type:'image/png',h:img.height,w:img.width,b64:can.toDataURL()} );
+						imageL.push( {id:pngN,type:'image/png',h:img.height,w:img.width,b64:can.toDataURL()} );
 						if( --pend<1 ) {
 							// all images have been converted, continue processing:
 							createOxml()
@@ -871,7 +874,7 @@ function toOxml( data, opts ) {
 						if( opts.imgExtensions.indexOf( e )>-1 ) {  
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( images, nameOf(u)+'.png' );
+							let pngF = itemById( imageL, nameOf(u)+'.png' );
 //							console.debug('parseImg *2',u,e,pngF);
 							if( e.indexOf('svg')>-1 && opts.preferPng && pngF ) {
 							//	t1 = pngF.type;
@@ -903,7 +906,7 @@ function toOxml( data, opts ) {
 
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( images, nameOf(u)+'.png' );
+							let pngF = itemById( imageL, nameOf(u)+'.png' );
 //							console.debug('parseObject *2',u,e,pngF);
 							if( ( t.indexOf('svg')>-1 || t.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
 								t = pngF.type;
@@ -1251,11 +1254,11 @@ function toOxml( data, opts ) {
 				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>';
 			}
 			function wPict( ct ) {
-//				console.debug('wPict',ct,images);
+//				console.debug('wPict',ct,imageL);
 				if( !ct || !ct.picture ) return // undefined;
 				// inserts an image at 'run' level:
 				// width, height: a string with number and unit, e.g. '100pt' or '160mm' is expected
-				let imgIdx = indexById( images, ct.picture.id );
+				let imgIdx = indexById( imageL, ct.picture.id );
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
 					console.error( et );
@@ -1264,7 +1267,7 @@ function toOxml( data, opts ) {
 //				console.debug('pushReferencedFile',oxml.relations,n);
 				let rIdx = pushReferencedFile( ct.picture );
 				// else, all is fine:
-				let img = images[imgIdx];
+				let img = imageL[imgIdx];
 				if( img.w<1 || img.h<1 )
 					return '';
 				
@@ -1430,17 +1433,17 @@ function toOxml( data, opts ) {
 		var ct = '<pkg:part pkg:name="/word/media/image'+idx+'.'+b64.type+'" pkg:contentType="image/'+b64.type+'" pkg:compression="store">'
 		+			'<pkg:binaryData>'
 		// find the referenced image:
-		let imgIdx = indexById(images,b64.id);
+		let imgIdx = indexById(imageL,b64.id);
 		if( imgIdx<0 ) {
 			console.error("File '"+b64.id+"' is referenced, but not available");
 			return null
 		};
 		
-		let startIdx = images[imgIdx].b64.indexOf(',')+1;	// image data starts after the ','
+		let startIdx = imageL[imgIdx].b64.indexOf(',')+1;	// image data starts after the ','
 
 		// add the image line by line:
-		for (var k=startIdx, K=images[imgIdx].b64.length; k<K; k+=lineLength) {
-			ct += images[imgIdx].b64.slice(k,k+lineLength) + String.fromCharCode(13)+String.fromCharCode(10) 
+		for (var k=startIdx, K=imageL[imgIdx].b64.length; k<K; k+=lineLength) {
+			ct += imageL[imgIdx].b64.slice(k,k+lineLength) + String.fromCharCode(13)+String.fromCharCode(10) 
 		};
 		ct +=		'</pkg:binaryData>'
 			+'</pkg:part>';

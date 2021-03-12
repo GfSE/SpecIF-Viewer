@@ -2,9 +2,9 @@
 /*!	Cache Library for SpecIF data.
 	Dependencies: jQuery
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
-	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution!
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 /*	Naming:
 	- 'item' is any SpecIF object including classes and instances
@@ -2005,22 +2005,22 @@ function Project() {
 
 				// A) Processing for 'html':
 				if( opts.format=='html' ) {
-				//	opts.cdn = "https://specif.de/apps/";
 					// find the fully qualified path of the content delivery server to fetch the viewer modules:
 					opts.cdn = window.location.href.substr(0,window.location.href.lastIndexOf("/")+1);
 
 					transform2image( data.files,
 						()=>{ toHtml( data, opts )
 								.then(
-									function(dta) {
+									function(dta):void {
 										let blob = new Blob([dta], {type: "text/html; charset=utf-8"});
+									//	let blob = new Blob([dta], {type: "application/xhtml+xml; charset=utf-8"});
 										saveAs( blob, fName+'.specif.html' );
 										self.exporting = false;
 										resolve();
 									}
 								)
 								.catch(
-									function(xhr) {
+									function(xhr):void {
 										self.exporting = false;
 										reject(xhr);
 									}
@@ -3777,7 +3777,7 @@ function elementTitleOf( el, opts, prj? ) {
 // 	console.debug('elementTitleOf',el,opts,ti);
 	return typeof(ti)=='string'? ti.stripHTML() : ti;
 
-	function getTitle( pL, opts ) {
+	function getTitle( pL, opts ):string {
 	//	if( !pL ) return;
 		// look for a property serving as title:
 		let idx = titleIdx( pL );
@@ -3786,20 +3786,14 @@ function elementTitleOf( el, opts, prj? ) {
 			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
 			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
 			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-		//	if( modules.ready.indexOf( 'diff' )>-1 )
-		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
+		/*	if( modules.ready.indexOf( 'diff' )>-1 )
+				return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //			console.debug('getTitle', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-		//	return languageValueOf( pL[idx].value, opts );
 			let ti = languageValueOf( pL[idx].value, opts );
 			if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 		};
-	//	return undefined
+		return '';
 	}
 }
-/* function desperateTitleOf(r,opts,prj) {
-	// Some elements don't have a title at all; 
-	// and we desperately need a title, for example, for the tree and the statement graph:
-	return elementTitleOf(r,opts,prj) || visibleIdOf(r,prj) || r.id;
-} */
