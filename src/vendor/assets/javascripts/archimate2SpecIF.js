@@ -199,6 +199,10 @@ function Archimate2Specif( xmlString, opts ) {
 						switch( ch.nodeName ) {
 							case 'name': 
 								r.title = ch.innerHTML;
+								r.properties.push({
+									class: "PC-Name",
+									value: ch.innerHTML
+								});
 								break;
 							case 'documentation':
 								r.properties.push({
@@ -330,6 +334,10 @@ function Archimate2Specif( xmlString, opts ) {
 						switch( ch.nodeName ) {
 							case 'name': 
 								r.title = ch.innerHTML;
+								r.properties.push({
+									class: "PC-Name",
+									value: ch.innerHTML
+								})
 								break;
 							case 'documentation':
 								r.properties.push({
@@ -490,6 +498,9 @@ function Archimate2Specif( xmlString, opts ) {
 		title: model.title,
 		class: "RC-Folder",
 		properties: [{
+			class: "PC-Name",
+			value: model.title
+		},{
 			class: "PC-Description",
 			value: model.description || ''
 		},{
@@ -589,8 +600,13 @@ function Archimate2Specif( xmlString, opts ) {
 							id: idRef,
 							class: "RC-Folder",
 							title: ti,
-							description: getChildsInnerByTag(ch,"documentation"),
-							properties: [],
+							properties: [{
+								class: "PC-Name",
+								value: ti
+							},{
+								class: "PC-Description",
+								value: getChildsInnerByTag(ch,"documentation") || ''
+							}],
 							changedAt: opts.fileDate
 						});
 						// create the node:
@@ -627,8 +643,13 @@ function Archimate2Specif( xmlString, opts ) {
 										id: "FolderDiagrams-" + apx,
 										class: "RC-Folder",
 										title: opts.strDiagramsType,
-										description: getChildsInnerByTag(ch,"documentation"),
 										properties: [{
+											class: "PC-Name",
+											value: opts.strDiagramsType
+										},{
+											class: "PC-Description",
+											value: getChildsInnerByTag(ch,"documentation") || ''
+										},{
 											class: "PC-Type",
 											value: opts.strDiagramsType
 										}],
@@ -727,7 +748,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ["user"],
-			propertyClasses: ["PC-Description","PC-Diagram","PC-Type","PC-Notation"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Diagram","PC-Type","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -735,7 +756,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ["auto"],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
@@ -743,7 +764,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ["auto"],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
@@ -751,7 +772,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ["auto"],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11047;",
 			changedAt: opts.fileDate
 		},{
@@ -765,7 +786,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Collection",
 			instantiation: ["auto"],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
@@ -774,14 +795,14 @@ function Archimate2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ["auto","user"],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: "2016-05-26T08:59:00+02:00"
 		},{
 			id: "RC-Paragraph",
 			title: "SpecIF:Paragraph",
 			description: "Information with title and text for descriptive paragraphs.",
 			instantiation: ["auto","user"],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: "2020-12-04T18:59:00+01:00"
 		}]
 	}
