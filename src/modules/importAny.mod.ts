@@ -102,7 +102,7 @@ modules.construct({
 		allValid = false;
 
 	function terminateWithSuccess():void {
-		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
+		message.show( i18n.lookup( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
 		setTimeout( function() {
 				self.clear();
 				if( urlP ) delete urlP[CONFIG.keyImport];
@@ -120,7 +120,7 @@ modules.construct({
 	}
  
 	self.clear = function() {
-		$('input[type=file]').val( null );  // otherwise choosing the same file twice does not create a change event in Chrome
+		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
 		setTextValue(i18n.LblFileName,'');
 		setTextValue(i18n.LblProjectName,'');
 	//	self.projectL.length = 0;  // list of projects
@@ -213,9 +213,8 @@ modules.construct({
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
 					if( p.indexOf('.'+formats[i].id)>0 && modules.isReady(formats[i].name) ) 
-						return formats[i]
+						return formats[i];
 				};
-				return; // undefined
 			}
 		urlP = opts.urlParams;
 		if( urlP && urlP[CONFIG.keyImport] ) {
@@ -244,7 +243,7 @@ modules.construct({
 					// Import the file: 
 					httpGet({
 						// force a reload through cache-busting:
-						url: urlP[CONFIG.keyImport]+'?'+Date.now().toString().simpleHash(),
+						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
 						responseType: 'arraybuffer',
 						withCredentials: false,
 						done: function(result) {
@@ -261,7 +260,7 @@ modules.construct({
 			};
 			// otherwise:
 			self.clear();
-			message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
+			message.show( i18n.lookup('ErrInvalidFileType',self.file.name), {severity:'error'} );
 			self.show();
 			return;
 		};
@@ -334,9 +333,13 @@ modules.construct({
 		checkState();
 		try {
 		//	document.getElementById("cloneBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("replaceBtn").disabled = !allValid || !cacheLoaded;
 		} catch(e) {
 			console.error("importAny: enabling actions has failed ("+e+").");
@@ -347,18 +350,25 @@ modules.construct({
 		app.busy.set( st );
 		checkState();
 		try {
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("fileSelectBtn").disabled = st;
 		//	document.getElementById("cloneBtn").disabled = 
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("replaceBtn").disabled = st || !allValid || !cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("cancelBtn").disabled = !st;
 		} catch(e) {
 			console.error("importAny: setting state 'importing' has failed ("+e+").");
 		};
 	}
 	self.pickFiles = function() {
+		// @ts-ignore - .files is in fact accessible
         let f = document.getElementById("importFile").files[0];
 		// check if file-type is eligible:
 //		console.debug('pickFiles',f.name,self.format);

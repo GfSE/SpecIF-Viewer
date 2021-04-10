@@ -3,9 +3,9 @@
     "",
     "\\src",
     "\\src\\config",
-    "\\src\\config\\locales",
-    "\\src\\modules"
+    "\\src\\modules",
+    "\\src\\types"
   ],
-  "SelectedNode": "\\src\\config\\locales\\iLaH-de.i18n.ts",
+  "SelectedNode": "\\src\\check.ts",
   "PreviewInSolutionExplorer": false
 }

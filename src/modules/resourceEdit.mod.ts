@@ -264,7 +264,7 @@ modules.construct({
 						if( !p.permissions || p.permissions.upd ) {
 							bts +=			'<span class="btn btn-default btn-fileinput">' +
 												'<span>'+i18n.IcoUpdate+'</span>' +
-												'<input id="file'+p['class'].simpleHash()+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
+								'<input id="file' + simpleHash(p['class'])+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
 											'</span>';
 						};  
 						if( !p.permissions || p.permissions.del ) {
@@ -338,13 +338,14 @@ modules.construct({
 	Functions called by GUI events 
 */
 	self.updateDiagram = (cId)=>{
-        let f = document.getElementById("file"+cId.simpleHash()).files[0];
+		// @ts-ignore - .files is in fact accessible
+		let f = document.getElementById("file" + simpleHash(cId)).files[0];
 //		console.debug('updateDiagram',cId,f.name);
 		readFile( f, (data)=>{
 				// "<div><p class=\"inline-label\">Plan:</p><p><object type=\"image/svg+xml\" data=\"files_and_images\\50f2e49a0029b1a8016ea6a5f78ff594.svg\">Arbeitsumgebung</object></p></div>"
 				let fType = f.type||opts.mediaTypeOf(f.name),
 					fName = 'files_and_images/'+f.name,
-					newFile = { blob:data, id:'F-'+fName.simpleHash(), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
+					newFile = { blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
 				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
 				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.renderImage( newFile )+'</div>';
@@ -383,8 +384,7 @@ modules.construct({
 		// a 'properties' list yet, even though it's class defines propertyClasses.
 		// ToDo: If the original resource had different languages, take care of them;
 		//       The new values must not replace any original multi-language property values!
-		let p, 
-			pend=2, // minimally 2 calls with promise
+		let pend=2, // minimally 2 calls with promise
 			// The properties of toEdit are complete (in contrast to self.newRes):
 			chD = new Date().toISOString();  // changedAt
 
@@ -393,7 +393,7 @@ modules.construct({
 
 		toEdit.title.value = getP( toEdit.title );
 		// In any case, update the elements native title:
-		self.newRes.title = toEdit.title.value.stripHTML();
+		self.newRes.title = stripHTML(toEdit.title.value);
 		// If the title property doesn't have a class, 
 		// it has been added by classifyProps() and there is no need to create it;
 		// in this case the title will only be seen in the element's title:
@@ -420,7 +420,7 @@ modules.construct({
 			p.value = getP( p );
 			delete p.title;
 
-			let pV = p.value.stripHTML();
+			let pV = stripHTML(p.value);
 			if( pV ) {
 				// update the elements native description:
 				self.newRes.description = pV

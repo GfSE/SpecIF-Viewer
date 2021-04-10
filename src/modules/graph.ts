@@ -10,7 +10,7 @@ function Graph() {
 	// All statements of the same type are grouped to make the reading easier.
 	// Incoming relations (where the selected resource is object of the statement) are positioned at the upper left half,
 	// outgoing relations (where the selected resource is subject of the statement) are positioned at the lower right half
-	var self = {};
+	var self:any = {};
 	self.init = function() {
 	};
 	self.clear = function() {

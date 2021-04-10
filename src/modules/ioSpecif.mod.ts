@@ -13,14 +13,14 @@ modules.construct({
 }, function(self) {
 	"use strict";
 	
-	let zipped,
+	let zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
-		opts;
+		opts:any;
 		
 	const 
-		errNoOptions = { status: 899, statusText: 'Programming flaw: No options or no mediaTypes defined.' },
-		errNoSpecif = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
-		errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
+		errNoOptions:xhrMessage = { status: 899, statusText: 'Programming flaw: No options or no mediaTypes defined.' },
+		errNoSpecif:xhrMessage = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
+		errInvalidJson:xhrMessage = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
 		
 	self.init = function(options):boolean {
 		opts = options;
@@ -56,7 +56,7 @@ modules.construct({
 		}; */
 		// else:
 		try {
-			message.show( i18n.phrase('ErrInvalidFileSpecif', f.name), {severity:'warning'} );
+			message.show( i18n.lookup('ErrInvalidFileSpecif', f.name), {severity:'warning'} );
 		} catch (err) {
 			alert(f.name+' has invalid file type.');
 		};
@@ -64,7 +64,7 @@ modules.construct({
 	};
 
 
-	self.toSpecif = function( buf ) {
+		self.toSpecif = function (buf: ArrayBuffer) {
 		// import a read file buffer containing specif data:
 		// a button to upload the file appears at <object id="file-object"></object>
 //		console.debug('iospecif.toSpecif');
@@ -114,7 +114,7 @@ modules.construct({
 													.then( function(f) {
 														data.files.push({ 
 															blob:f, 
-															id: 'F-'+aFile.name.simpleHash(), 
+															id: 'F-' + simpleHash(aFile.name), 
 															title: aFile.name, 
 															type: fType, 
 															changedAt: aFile.date.toISOString() 
@@ -155,7 +155,7 @@ modules.construct({
 		};
 		return zDO;
 	};
-	self.abort = function() {
+	self.abort = function():void {
 		self.abortFlag = true;
 	};
 	return self;

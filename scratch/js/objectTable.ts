@@ -154,7 +154,7 @@ function ObjectTable() {
 							if( clAtts.specType.isHeading )
 								obj.titleAndDescr = '<div class="chapterTitle">'+clAtts.title+'</div>'
 							else
-								obj.titleAndDescr = '<div class="objectTitle">'+(CONFIG.addIconToInstance?clAtts.title.addIcon( clAtts.specType.icon ):clAtts.title)+'</div>'
+								obj.titleAndDescr = '<div class="objectTitle">' + (CONFIG.addIconToInstance ? addIcon(clAtts.title, clAtts.specType.icon ):clAtts.title)+'</div>'
 						};
 
 						for( var d=0,D=clAtts.descriptions.length; d<D; d++ ) {
@@ -248,7 +248,7 @@ function ObjectTable() {
 			},
 			// the sorting routines for the column 'title and description' (type 'title'):
 			"title-pre": function ( a ) {
-				return a.stripHTML().substr(0,20)
+				return stripHTML(a).substr(0,20)
 			},
 			"title-asc": function ( a, b ) {
 				return ((a < b) ? -1 : ((a > b) ? 1 : 0))

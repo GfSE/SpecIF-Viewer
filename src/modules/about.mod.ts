@@ -49,7 +49,7 @@ modules.construct({
 		+		' You may use the <a href="https://github.com/GfSE/SpecIF-Viewer/releases" target="_blank">latest release</a> of the software for your own installation.'
 		+		' Any contribution to this collaborative effort is highly welcome!'
 		+	'</p>'
-		+	'<p>Version: '+app.version+' supporting SpecIF up to version '+app.specifVersion+'.</p>'
+		+	'<p>Version: '+CONFIG.appVersion+' supporting SpecIF up to version '+CONFIG.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
 		+	'<h4>Features</h4>'
 		+		'<ul>'

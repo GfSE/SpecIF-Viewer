@@ -8,18 +8,15 @@
 */
 function LanguageTextsFr() {
     var self:any = {};
-	self.phrase = function( ms:string, pA:string ):string { 
+	self.lookup = function (lb: string, pA: string): string {
 		// replace a variable '~A' with pA, if available:
-        if (ms) {
-            if (pA) return self[ms].replace(/~A/, pA);
-            return self[ms];
+		if (lb) {
+			// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
+			let res = self[jsIdOf(lb)] || lb;
+			if (pA) return res.replace(/~A/, pA);
+			return res;
 		};
 		return '';
-	};
-	self.lookup = function( lb:string ):string { 
-		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-		// for use in regular text fields.
-		return self[lb.toJsId()] || lb
 	};
 
 	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
@@ -173,7 +170,6 @@ function LanguageTextsFr() {
 	self.LblPreviousStep = 'Au précédent';
 	self.LblNextStep = 'Au suivant';
 	self.LblGo = 'Démarrer';
-	self.LblAll = 'Tous';
 	self.LblHitCount = 'Score';
 	self.LblRelateAs = "Relier comme";
 	self.LblSource = "Sujet";

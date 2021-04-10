@@ -101,10 +101,11 @@ modules.construct({
 				(list)=>{
 					
 					// Sort the resources:
-					self.allResources = sortBy( 
+					sortBy( 
 							list, 
 							(el)=>{ return elementTitleOf(el,opts,cData) } 
 					);
+					self.allResources = list;
 					// now self.allResources contains the full resources
 					chooseResourceToLink()
 				}, 
@@ -224,7 +225,9 @@ modules.construct({
 		);
 		document.getElementById("resCandidates").innerHTML = eligibleRs || "<em>"+i18n.MsgNoMatchingObjects+"</em>";
 		// disable the 'save' buttons:
+		// @ts-ignore - .disabled is an accessible attribute
 		document.getElementById("btn-modal-saveResourceAsObject").disabled = true;
+		// @ts-ignore - .disabled is an accessible attribute
 		document.getElementById("btn-modal-saveResourceAsSubject").disabled = true
 	};
 	self.itemClicked = (idx)=>{
@@ -248,6 +251,7 @@ modules.construct({
 		// (a) the selected candidate may be a object:
 		let btn = document.getElementById("btn-modal-saveResourceAsObject");
 		if( candidateMayBeObject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
+			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
@@ -258,6 +262,7 @@ modules.construct({
 										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
 		} else {
+			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = true
 		}; 
 	/*	unfortunately the popup content keeps the first text and is not updated on selecting another candidate:
@@ -282,6 +287,7 @@ modules.construct({
 		// (b) the selected candidate may be an subject:
 		btn = document.getElementById("btn-modal-saveResourceAsSubject");
 		if( candidateMayBeSubject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
+			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
@@ -292,6 +298,7 @@ modules.construct({
 										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selRes,opts,cData) +"'" ) 
 		} else {
+			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = true
 		}; 
 	/*	unfortunately the popup content keeps the first text and is not updated on selecting another candidate:

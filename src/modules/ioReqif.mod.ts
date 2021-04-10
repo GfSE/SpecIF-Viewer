@@ -16,15 +16,15 @@ modules.construct({
 }, function(self) {
 	"use strict";
 	let mime,
-		zipped,
+		zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
-		opts,
-		errNoOptions = { status: 899, statusText: 'No options or no mediaTypes defined.' },
-		errNoReqif = { status: 901, statusText: 'No ReqIF file in the reqifz container.' },
+		opts:any,
+		errNoOptions: xhrMessage = { status: 899, statusText: 'No options or no mediaTypes defined.' },
+		errNoReqif: xhrMessage = { status: 901, statusText: 'No ReqIF file in the reqifz container.' },
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
-		errInvalidXML = { status: 900, statusText: 'ReqIF data is not valid XML.' };
+		errInvalidXML: xhrMessage = { status: 900, statusText: 'ReqIF data is not valid XML.' };
 		
-	self.init = function(options) {
+	self.init = function(options):boolean {
 		mime = undefined;
 		opts = options;
 		return true;
@@ -49,10 +49,10 @@ modules.construct({
 		if ( mime )
 			return true;
 		// else:
-		message.show( i18n.phrase('ErrInvalidFileReqif', f.name) );
+		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
 		return false;
 	};
-	self.toSpecif = function( buf ) {
+	self.toSpecif = function (buf: ArrayBuffer): JQueryPromise<SpecIF> {
 		// Transform ReqIF to SpecIF for import:
 		// buf is an array-buffer containing reqif data:
 //		console.debug('ioReqif.toSpecif');
@@ -115,7 +115,7 @@ modules.construct({
 													.then( function(f) {
 														resL[0].files.push({ 
 															blob: f, 
-															id: 'F-' + aFile.name.simpleHash(), 
+															id: 'F-' + simpleHash(aFile.name), 
 															title: aFile.name, 
 															type: type, 
 															changedAt: aFile.date.toISOString() 
@@ -161,7 +161,7 @@ modules.construct({
 		};
 		return zDO;
 
-		function validateXML(xml_data):boolean {
+		function validateXML(xml_data:string):boolean {
 			if (window.DOMParser) {
 				let parser = new DOMParser();
 				let xmlDoc = parser.parseFromString(xml_data,"text/xml");
@@ -174,7 +174,7 @@ modules.construct({
 		}
 	};
 		
-	self.toReqif = function( pr, opts ) {
+	self.toReqif = function( pr:SpecIF, opts? ):string {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
@@ -446,7 +446,7 @@ modules.construct({
 			objects: []
 		};
 
-			function prepObj( n ) {
+			function prepObj( n:Node ):void {
 				let r = itemById(pr.resources,n.resource),
 					rC = itemById(pr.resourceClasses,r['class']);
 				// a) Collect resourceClass without duplication:
@@ -577,13 +577,13 @@ modules.construct({
 		console.debug('reqif',xml);  */
 		return xml;
 
-			function dateTime( e ) {
+			function dateTime( e ):string {
 				return e.changedAt || pr.changedAt || date
 			}
-			function commonAttsOf( e ) {
-				return 'IDENTIFIER="'+e.id+'" LONG-NAME="'+(e.title?e.title.stripHTML().escapeXML():'')+'" DESC="'+(e.description?e.description.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+			function commonAttsOf( e ):string {
+				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? stripHTML(e.title).escapeXML() : '') + '" DESC="' + (e.description ? stripHTML(e.description).escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
-			function attrTypesOf( eC ) { 
+			function attrTypesOf( eC ):string { 
 				// eC: resourceClass or statementClass
 				if( !eC || !eC.propertyClasses || eC.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
 				var xml='<SPEC-ATTRIBUTES>';
@@ -595,7 +595,7 @@ modules.construct({
 					// If this is inacceptable, any propertyClass derived from a ReqIF ATTRIBUTE-DEFINITION must be excluded from deduplication 
 					// - and here the original id must be taken, if the propertyClass is exclusively used by the respective resourceClass (OBJECT-TYPE) or statementClass (RELATION-TYPE).
 					// - If it is changed here, it must be changed for the ATTRIBUTE-DEFINITION-REFs further down, as well.
-					let adId = (eC.id+pC.id).simpleHash();
+					let adId = simpleHash(eC.id+pC.id);
 					switch( itemById( pr.dataTypes, pC.dataType ).type ) {
 						case 'xs:boolean':
 							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
@@ -638,13 +638,13 @@ modules.construct({
 				});
 				return xml + '</SPEC-ATTRIBUTES>';
 			}
-			function attsOf( me ) {
+			function attsOf( me ):string {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
 				var xml='<VALUES>';
 				me.properties.forEach( function(prp) {
 					let pC = itemById( pr.propertyClasses, prp['class'] ),
 						dT = itemById( pr.dataTypes, pC.dataType ),
-						adId = (me['class']+prp['class']).simpleHash();
+						adId = simpleHash(me['class']+prp['class']);
 					switch( dT.type ) {
 						case 'xs:boolean':
 							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
@@ -662,7 +662,7 @@ modules.construct({
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="'+prp.value.stripHTML().escapeXML()+'">'
+							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + stripHTML(prp.value).escapeXML()+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
@@ -737,7 +737,7 @@ modules.construct({
 				});
 				return xml + '</VALUES>';
 			}
-			function childrenOf( el ) {
+			function childrenOf( el ):string {
 				if( !el.nodes || el.nodes.length<1 ) return ''
 				var xml = '<CHILDREN>'
 					el.nodes.forEach( function(ch) {
@@ -756,7 +756,7 @@ modules.construct({
 					});
 			}
 	};
-	self.abort = function() {
+	self.abort = function():void {
 //		app.cache.abort();
 //		server.project().cancelImport();
 		self.abortFlag = true;

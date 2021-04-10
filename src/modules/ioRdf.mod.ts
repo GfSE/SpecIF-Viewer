@@ -28,11 +28,11 @@ modules.construct({
 		if ( mime ) 
 			return true;
 		// else:
-		message.show( i18n.phrase('ErrInvalidFileReqif', f.name) );
+		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
 		return false;
 	};
-	self.toSpecif = function( buf ) {
-	};
+/*	self.toSpecif = function( buf ) {
+	}; */
 	self.toRdf = function(pr) {
 		// pr is SpecIF data in JSON format (not the internal cache),
 		// transform pr to RDF:

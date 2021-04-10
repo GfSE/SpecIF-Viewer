@@ -6,7 +6,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 
  	Attention: 
-	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
+	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in jsIdOf() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
 function renderProp( lbl:string, val:string, cssCl:string ):string {
@@ -28,7 +28,7 @@ function DialogForm():object {
 	self.init = function():void {
 		self.list.length = 0;
 	};
-	self.addField = function( elementId:string, dT ):void {
+	self.addField = function (elementId: string, dT: DataType): void {
 		// Add a parameter-set for checking an input field;
 		// - 'elementId' is the id of the HTML input element
 		// - 'dataType' is the dataType of the property
@@ -66,7 +66,7 @@ function DialogForm():object {
 	};
 	return self;
 }
-function textField( lbl, val:string, typ:string, fn:string ):string|null {  
+function textField(lbl:string|object, val:string, typ?:string, fn?:string ):string {  
 	// assemble a form for text input:
 //	console.debug('textField 1',lbl,val,typ,fn);
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left'};
@@ -78,7 +78,7 @@ function textField( lbl, val:string, typ:string, fn:string ):string|null {
 			fn = ' oninput="'+fn+'"';
 	else 	fn = '';
 
-	let sH = lbl.label.simpleHash(), fG:string, aC:string;
+	let sH = simpleHash(lbl.label), fG:string, aC:string;
 	if( typeof(typ)=='string' && ['line','area'].indexOf(typ)>-1 ) 	
 			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
 	else	fG = '<div class="attribute" >';				// for display field
@@ -93,7 +93,8 @@ function textField( lbl, val:string, typ:string, fn:string ):string|null {
 			aC = 'attribute-value';
 			break;
 		default:
-			return null; // should never be the case
+			console.error("Invalid display option '"+lbl.display+"' when showing a textField");
+			return ''; // should never be the case
 	};
 	switch( typ ) {
 		case 'line':
@@ -115,17 +116,18 @@ function textField( lbl, val:string, typ:string, fn:string ):string|null {
 	return fG;
 }
 function setTextValue( lbl:string, val:string ):void {
-	let el = document.getElementById('field'+lbl.simpleHash());
+	let el = document.getElementById('field' + simpleHash(lbl));
 	if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
+	// @ts-ignore - .value is in fact accessible
 	if( el ) el.value = val;
 }
 function setTextFocus( lbl:string ):void {
-	let el = document.getElementById('field'+lbl.simpleHash());
+	let el = document.getElementById('field' + simpleHash(lbl));
 	if( el ) el.focus()
 }
 function setTextState( lbl:string, state:string ):boolean {
-	if( ['has-success','has-error'].indexOf(state)<0 ) return null;
-	let el = $('#'+lbl.simpleHash());
+	if( ['has-success','has-error'].indexOf(state)<0 ) throw "Programming Error: Invalid state '"+state+"'";
+	let el = $('#' + simpleHash(lbl));
 	if( !el ) return false;
 	if( el.hasClass('has-error') ) {
 		if( state=='has-success' ) {
@@ -148,7 +150,8 @@ function setTextState( lbl:string, state:string ):boolean {
 function textValue( lbl:string ):string {
 	// get the input value:
 	try {
-		return noCode(document.getElementById('field'+lbl.simpleHash()).value) || '';
+		// @ts-ignore - .value is in fact accessible
+		return noCode(document.getElementById('field' + simpleHash(lbl)).value) || '';
 	} catch(e) {
 		return '';
 	}
@@ -162,7 +165,7 @@ function getTextLength( lbl:string ):number {
 	}
 }
 				
-function radioField( lbl:string|object, entries:Array<object>, opts?:object ):string|null {
+function radioField( lbl:string|object, entries:Array<object>, opts?:object ):string {
 	// assemble an input field for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let rB:string, fn:string;
@@ -180,7 +183,8 @@ function radioField( lbl:string|object, entries:Array<object>, opts?:object ):st
 				+		'<div class="attribute-value radio" >';
 			break;
 		default:
-			return null; // should never be the case
+			console.error("Invalid display option '" + lbl.display + "' when showing a radioField");
+			return ''; // should never be the case
 	};
 	// zero or one checked entry is allowed:
 	let found = false, temp:boolean; 
@@ -191,7 +195,7 @@ function radioField( lbl:string|object, entries:Array<object>, opts?:object ):st
 		found = temp;
 	});
 	// render options:
-	let tp, nm=lbl.label.simpleHash();
+	let tp, nm = simpleHash(lbl.label);
 	entries.forEach( (e,i)=>{
 		tp = ( e.type )?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		rB +=			'<label>'
@@ -205,7 +209,7 @@ function radioField( lbl:string|object, entries:Array<object>, opts?:object ):st
 }
 function radioValue( lbl:string ):string {
 	// get the selected radio button, it is the index number as string:
-	return 	$('input[name="radio'+lbl.simpleHash()+'"]:checked').attr('value') || '';	// works even if none is checked
+	return $('input[name="radio' + simpleHash(lbl)+'"]:checked').attr('value') || '';	// works even if none is checked
 }
 function checkboxField( lbl:string|object, entries:Array<object>, opts?:object ):string {
 	// assemble an input field for a set of checkboxes:
@@ -225,10 +229,11 @@ function checkboxField( lbl:string|object, entries:Array<object>, opts?:object )
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
+			console.error("Invalid display option '" + lbl.display + "' when showing a checkboxField");
 			return ''; // should never be the case 
 	};
 	// render options:
-	let tp:string, nm=lbl.label.simpleHash();
+	let tp: string, nm = simpleHash(lbl.label);
 	entries.forEach( (e,i)=>{
 		tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		cB +=			'<label>'
@@ -238,18 +243,19 @@ function checkboxField( lbl:string|object, entries:Array<object>, opts?:object )
 	});
 	cB +=			'</div>'
 			+	'</div>';
-	return cB
+	return cB;
 }
 function checkboxValues( lbl:string ) {
 	// get the selected check boxes as array with indices:
-	let chd = $('input[name="checkbox'+lbl.simpleHash()+'"]:checked');
+	let chd = $('input[name="checkbox' + simpleHash(lbl)+'"]:checked');
 	var resL = [];
 	for( var i=0, I=chd.length; i<I; i++ ) {	// chd is an object, not an array
+		// @ts-ignore - .value is in fact accessible
 		resL.push( chd[i].value );
 	};
 	return resL;
 }
-function booleanField( lbl:string, val, opts? ):string {
+function booleanField( lbl:string, val:boolean, opts? ):string {
 //	console.debug('booleanField',lbl,val);
 	let fn:string;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
@@ -259,18 +265,18 @@ function booleanField( lbl:string, val, opts? ):string {
 		+		'<div class="attribute-label" >'+lbl+'</div>'
 		+		'<div class="attribute-value checkbox" >'
 		+			'<label>'
-		+				'<input type="checkbox" name="boolean'+lbl.simpleHash()+'"'+(val?' checked':'')+fn+' />'
+		+ '<input type="checkbox" name="boolean' + simpleHash(lbl)+'"'+(val?' checked':'')+fn+' />'
 		+			'</label><br />'
 		+		'</div>'
 		+	'</div>'
 }
 function booleanValue( lbl:string ):boolean {
-	let chd = $('input[name="boolean'+lbl.simpleHash()+'"]:checked');
+	let chd = $('input[name="boolean' + simpleHash(lbl)+'"]:checked');
 	return chd.length>0;
 }
 
 function tagId(str:string):string {
-	return 'X-'+str.simpleHash()
+	return 'X-' + simpleHash(str)
 }
 function setStyle( sty:string ):void {
 		let css = document.createElement('style');
@@ -326,24 +332,20 @@ function stdError( xhr, cb? ):void {
 	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
 	if( typeof(cb)=='function' ) cb();
 };
-/*	// standard logger:
-	function stdLog( fS, xhr ) {
-		if( xhr ) {
-			switch (xhr.status) {
-				case 200:
-				case 201:
-				case 401:
-					console.debug( fS+"/"+ (xhr.statusText||i18n.Error) + " (" + xhr.status + ")" );
-					break;
-				default:
-					console.debug( fS+"/"+ (xhr.statusText||i18n.Error) + " (" + xhr.status + (xhr.responseText?"): "+xhr.responseText:")") )
-			};
-		} else {
-					console.debug( fS );			
-		};
-	};
-*/
 // standard message box:
+class xhrMessage {
+	status: number;
+	statusText: string;
+	responseType?: string;
+	responseText?: string;
+	constructor(st: number, sTxt: string, rTyp?:string, rTxt?:string) {
+		this.status = st;
+		this.statusText = sTxt;
+		this.responseType = rTyp;
+		this.responseText = rTxt;
+	}
+}
+
 var message = function() {
 	"use strict";
 	// constructor for message-box:
@@ -451,7 +453,9 @@ function bindResizer():void {
 	});
 }
 
-function indexById(L:Array<object>,id:string):number {
+type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | Node | undefined;
+type Instance = Resource | Statement | Node | undefined;
+function indexById(L:Item[],id:string):number {
 	if( L && id ) {
 		// given an ID of an item in a list, return it's index:
 		id = id.trim();
@@ -460,7 +464,7 @@ function indexById(L:Array<object>,id:string):number {
 	};
 	return -1;
 }
-function itemById(L:Array<object>,id:string):object|undefined {
+function itemById(L: Item[],id:string):Item {
 //	console.debug('+',L,id,(L && id));
 	if( L && id ) {
 		// given the ID of an item in a list, return the item itself:
@@ -469,7 +473,7 @@ function itemById(L:Array<object>,id:string):object|undefined {
 			if( L[i].id==id ) return L[i]   // return list item
 	};
 }
-function indexByTitle(L:Array<object>,ti:string):number {
+function indexByTitle(L: Item[],ti:string):number {
 	if( L && ti ) {
 		// given a title of an item in a list, return it's index:
 		for( var i=L.length-1;i>-1;i-- )
@@ -477,14 +481,14 @@ function indexByTitle(L:Array<object>,ti:string):number {
 	};
 	return -1;
 }
-function itemByTitle(L:Array<object>,ti:string):object|undefined {
+function itemByTitle(L: Item[],ti:string):Item {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
 }
-function indexBy( L:Array<object>, p:string, s:string ):number {
+function indexBy(L: Item[], p:string, s:string ):number {
 	if( L && p && s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 		// hand in property and searchTerm as string !
@@ -493,7 +497,7 @@ function indexBy( L:Array<object>, p:string, s:string ):number {
 	};
 	return -1;
 }
-function itemBy( L:Array<object>, p:string, s:string ):object|undefined {
+function itemBy(L: Item[], p:string, s:string ):Item {
 	if( L && p && s ) {
 		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
@@ -501,24 +505,24 @@ function itemBy( L:Array<object>, p:string, s:string ):object|undefined {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
-function containsById( cL, L ):boolean|null {
-	if(!L) return null;
+function containsById(cL: Item[], L: Item[] ):boolean {
+	if (!cL || !L) throw "Programming Error: Missing Array";
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
 	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
 
-	function containsL( cL, L ):boolean {
+	function containsL(cL: Item[], L: Item[] ):boolean {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexById( cL, L[i].id )<0 ) return false;
 		return true;
 	}
 }
-function containsByTitle( cL, L ):boolean|null {
-	if(!L) return null;
+function containsByTitle(cL: Item[], L: Item[] ):boolean {
+	if (!cL || !L) throw "Programming Error: Missing Array";
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
 	
-	function containsL( cL, L ) {
+	function containsL(cL: Item[], L: Item[] ):boolean {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
 		return true;
@@ -531,17 +535,17 @@ function cmp( i:string, a:string ):number {
 	a = a.toLowerCase();
 	return i==a? 0 : (i<a? -1 : 1);
 }
-function sortByTitle( L:Array<object> ) {
-	return L.sort( 
+function sortByTitle( L:Array<object> ):void {
+	L.sort( 
 		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
-function sortBy( L:Array<object>, fn:(object)=>string ):void {
-	return L.sort( 
+function sortBy( L:Array<object>, fn:(arg0:object)=>string ):void {
+	L.sort( 
 		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
 	);
 }
-function forAll( L:Array<object>, fn ) {
+function forAll( L:Array<object>, fn:(arg0:any)=>any ):Array<any> {
 	// return a new list with the results from applying the specified function to all items of input list L:
 	if(!L) return [];
 	var nL = [];
@@ -554,15 +558,15 @@ function addE( ctg:string, id:string, pr? ):void {
 	if( !pr ) pr = app.cache.selectedProject.data;
 	
 	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
-	let lN:string = app.standardTypes.listNameOf(ctg);
+	let lN:string = standardTypes.listNameOf(ctg);
 	// create it, if not yet available:
 	if (Array.isArray(pr[lN])) {
 		// add the type, but avoid duplicates:
 		if( indexById( pr[lN], id )<0 ) 
-			pr[lN].unshift( app.standardTypes.get(ctg,id) );
+			pr[lN].unshift( standardTypes.get(ctg,id) );
 	}
 	else {
-		pr[lN] = [ app.standardTypes.get(ctg,id) ];
+		pr[lN] = [ standardTypes.get(ctg,id) ];
 	};
 } 
 function addPC( eC:object, id:string ):void {
@@ -607,10 +611,10 @@ function uncacheL( L:Array<object>, es:Array<object> ):void {  // ( list, entrie
 	
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
-String.prototype.addIcon = function( ic:string ):string {
-	if( ic ) return ic+'&#xa0;'+this;
-	return this;
-};
+function addIcon( str:string, ic:string ):string {
+	if( ic ) return ic+'&#xa0;'+str;
+	return str;
+}
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
 function genID(pfx:string):string {
 	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
@@ -635,7 +639,6 @@ function genID() {
 }
 */
 
-/*
 // Make a valid js variable/property name; replace disallowed characters by '_':
 function jsIdOf(str:string):string {
 	return str.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' );
@@ -644,28 +647,18 @@ function jsIdOf(str:string):string {
 function specifIdOf(str:string):string {
 	return str.replace( /[^_0-9a-zA-Z]/g, '_' );
 };
-*/
-// Make a valid js variable/property name; replace disallowed characters by '_':
-String.prototype.toJsId = function():string { 
-	return this.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' ); 
-};
-// Make an id conforming with ReqIF and SpecIF:
-String.prototype.toSpecifId = function():string { 
-	return this.replace( /[^_0-9a-zA-Z]/g, '_' ); 
-};
-
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-String.prototype.simpleHash = function():string {for(var r=0,i=0;i<this.length;i++)r=(r<<5)-r+this.charCodeAt(i),r&=r;return r};
-	
-/* from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith */	
+function simpleHash(str:string):string {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};
+/*
+// from: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith
 if (!String.prototype.startsWith) {
 	String.prototype.startsWith = function(searchString:string, pos?:number):boolean {
 		pos = pos || 0;
 		return this.lastIndexOf(searchString, pos) === pos
 	};
 };
-/* from https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/String/endsWith */
+// from https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/String/endsWith
 if (!String.prototype.endsWith) {
 	String.prototype.endsWith = function(searchString:string, pos?:number):boolean {
       let subjectString = this.toString();
@@ -677,12 +670,13 @@ if (!String.prototype.endsWith) {
       return lastIndex!==-1 && lastIndex===pos
 	};
 };
-String.prototype.truncate = function(l:number):string {
+*/
+function truncate(l:number):string {
 	var t = this.substring(0,l-1);
 //	if( t.length<this.length ) t += '&#8230;'; // &hellip;, i.e.three dots
 	if( t.length<this.length ) t += '...';  // must work also in non-html fields
 	return t;
-};
+}
 /*String.prototype.reduceWhiteSpace = function():string {
 // Reduce white space to a single blank:
 	return this.replace( /[\s]{2,}/g, ' ' )
@@ -691,22 +685,22 @@ String.prototype.log = function(m:string):string {
 	console.debug( m, this );
 	return this
 }; */
-String.prototype.stripCtrl = function():string {
+function stripCtrl(str:string):string {
 // Remove js/json control characters from HTML-Text or other:
-	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
-};
-String.prototype.ctrl2HTML = function():string {
+	return str.replace( /\b|\f|\n|\r|\t|\v/g, '' );
+}
+function ctrl2HTML(str:string):string {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
-	return this.replace( /\r|\f/g, '' )
+	return str.replace( /\r|\f/g, '' )
 				.replace( /&#x0{0,3}a;/gi, '' )
 				.replace( /\t/g, '&nbsp;&nbsp;&nbsp;' )
 				.replace( /\n/g, '<br />' )
 				.replace( /&#x0{0,3}d;/gi, '<br />' );
 };
-String.prototype.toHTML = function():string {
+function toHTML(str:string):string {
 // Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
-	return this.escapeHTML().ctrl2HTML()
-};
+	return ctrl2HTML(str.escapeHTML())
+}
 // https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
 function isHTML(str:string):boolean {
   let doc = new DOMParser().parseFromString(str, "text/html");
@@ -716,17 +710,17 @@ function makeHTML(str:string,opts?):string {
 	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
 	if( typeof(opts)=='object' && !opts.makeHTML ) 
 		return str;
-	let newS = str.ctrl2HTML()
+	let newS = ctrl2HTML(str)
 			.linkifyURLs( opts )
 			.replace(/--(?:&gt;|>)/g,'&#8594;')  // &rarr;
 			.replace(/(?:&lt;|<)--/g,'&#8592;');  // &larr;
 /*	// Dont't convert markdown, if the text begins and ends with a XHTML tag:
 	if( /^\s*<.+>\s*$/.test(str) )
 		return newS; */
-	if( CONFIG.convertMarkdown && app.markdown ) {
+	if( CONFIG.convertMarkdown && window.markdown ) {
 		// don't interpret the '+' as list item, but do so with '�' and '•',
 		// transform arrows assembled by characters to special arrow characters:
-		return app.markdown.render( str
+		return window.markdown.render( str
 			.replace(/\+ /g,'&#x2b; ') // '+'
 			.replace(/� /g,'* ')
 			.replace(/• /g,'* ')
@@ -806,11 +800,9 @@ String.prototype.unescapeHTMLEntities = function() {
 	var doc = new DOMParser().parseFromString(input, "text/html");
     return noCode( doc.documentElement.textContent )
 };*/
-if (!String.prototype.stripHTML) {
-	String.prototype.stripHTML = function():string {
-		// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-		return $("<dummy/>").html( this ).text().trim() || '';
-	};
+function stripHTML(str:string):string {
+	// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
+	return $("<dummy/>").html( str ).text().trim() || '';
 };
 /**
  * Returns the text from a HTML string
@@ -1107,7 +1099,7 @@ function str2ab(str:string) {
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-function blob2dataURL(file,fn,timelag?):void {
+function blob2dataURL(file, fn: Function, timelag?: number): void {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
@@ -1118,7 +1110,7 @@ function blob2dataURL(file,fn,timelag?):void {
 	else
 		reader.readAsDataURL(file.blob);
 } 
-function blob2text(file,fn,timelag?):void {
+function blob2text(file,fn:Function,timelag?:number):void {
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
@@ -1148,18 +1140,18 @@ function noCode( s:string ):string {
 	if( s ) {
 		// just suppress the whole content, if there are inacceptable/evil tags or properties, do NOT try to repair it.
 		// <img src="bogus" onerror=alert('4711') />
-		if( /<[^>]+\son[a-z]+=[^>]+>/i.test( s ) ) { log(911); return null };   // all event callbacks within HTML tags
-		if( /<script[^>]*>[\s\S]*<\/script[^>]*>/i.test( s ) ) { log(912); return null };
-		if( /<style[^>]*>[\s\S]*<\/style[^>]*>/i.test( s ) ) { log(913); return null };
-		if( /<embed[^>]*>[\s\S]*<\/embed[^>]*>/i.test( s ) ) { log(914); return null };
-		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return null };
+		if( /<[^>]+\son[a-z]+=[^>]+>/i.test( s ) ) { log(911); return '' };   // all event callbacks within HTML tags
+		if( /<script[^>]*>[\s\S]*<\/script[^>]*>/i.test( s ) ) { log(912); return '' };
+		if( /<style[^>]*>[\s\S]*<\/style[^>]*>/i.test( s ) ) { log(913); return '' };
+		if( /<embed[^>]*>[\s\S]*<\/embed[^>]*>/i.test( s ) ) { log(914); return '' };
+		if( /<iframe[^>]*>[\s\S]*<\/iframe[^>]*>/i.test( s ) ) { log(915); return '' };
 	};
 	return s;
-	function log(c:string) {
+	function log(c:number):void {
 		console.error('Considered harmful ('+c+'):',s);
 	}
 }
-function cleanValue( o:string|Array<object> ):string|ValueElement[] {
+function cleanValue(o: string | ValueElement[] ):string|ValueElement[] {
 	// remove potential malicious code from a value which may be supplied in several languages:
 	if( typeof(o)=='string' ) return noCode( o ); 
 	if( Array.isArray(o) ) return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
@@ -1265,7 +1257,7 @@ function getUrlParams(opts?:object):object {
 		h = h.split(opts.separator);
 		h.forEach( (p)=>{
 			p = p.split('=');
-			// remove enclosures from the value part:
+			// remove enclosing quotes from the value part:
 			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
 			// look for specific tokens, only:
 			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )

@@ -1,25 +1,20 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'Deutsch' (de).
 	The result can be obtained by reference of:
 	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
-	- yourVarName.lookup('MsgName')
-	- yourVarName.phrase('MsgName')
-	- yourVarName.phrase('MsgName', 'param')
+	- yourVarName.lookup('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsDe() {
     var self:any = {};
-	self.phrase = function( ms:string, pA:string ):string { 
+	self.lookup = function( lb:string, pA:string ):string { 
 		// replace a variable '~A' with pA, if available:
-        if (ms) {
-            if (pA) return self[ms].replace(/~A/, pA);
-            return self[ms];
+		if (lb) {
+			// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
+			let res = self[jsIdOf(lb)] || lb;
+            if (pA) return res.replace(/~A/, pA);
+            return res;
 		};
 		return '';
-	};
-	self.lookup = function( lb:string ):string { 
-		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-		// for use in regular text fields.
-		return self[lb.toJsId()] || lb;
 	};
 
 	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
@@ -173,7 +168,6 @@ function LanguageTextsDe() {
 	self.LblPreviousStep = 'Zurück';
 	self.LblNextStep = 'Weiter';
 	self.LblGo = 'Los!';
-	self.LblAll = 'Alle';
 	self.LblHitCount = 'Trefferzahl';
 	self.LblRelateAs = 'Verknüpfen als';
 	self.LblSource = 'Subjekt';

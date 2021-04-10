@@ -12,50 +12,51 @@ modules.construct({
 	name: 'ioBpmn'
 }, function(self) {
 	"use strict";
-	var	fDate = null,		// the file modification date
-		fName = null,
-		data = null,		// the SpecIF data structure for xls content
+	var	fDate:string,		// the file modification date
+		fName:string,
+		data,		// the SpecIF data structure for xls content
 		bDO = null;
 
 	// Create a DOM element for the bpmnViewer outside of the visible area:
 	$('#app').after('<div id="bpmnView"></div>');
 		
-	self.init = function() {
+	self.init = function():boolean {
 		return true
 	};
 
-	self.verify = function( f ):boolean {
+	self.verify = function (f): boolean {
 
-			function isBpmn( fname ):boolean {
-				return fname.endsWith('.bpmn') 
-			}
-				
-		if ( !isBpmn(f.name) ) {
-			message.show( i18n.phrase('ErrInvalidFileBpmn', f.name) );
+		function isBpmn(fname): boolean {
+			return fname.endsWith('.bpmn')
+		}
+
+		if (!isBpmn(f.name)) {
+			message.show(i18n.lookup('ErrInvalidFileBpmn', f.name));
 			return false;
 		};
-//		console.debug( 'file', f );
+		//		console.debug( 'file', f );
 		// remove directory path:
 		// see https://stackoverflow.com/questions/423376/how-to-get-the-file-name-from-a-full-path-using-javascript
 		fName = f.name.split('\\').pop().split('/').pop();
-		
+
 		// Remember the file modification date:
-		if( f.lastModified ) {
-			fDate = new Date(f.lastModified).toISOString()
-		} else {
-			if( f.lastModifiedDate )
+		if (f.lastModified) {
+			fDate = new Date(f.lastModified).toISOString();
+		}
+		else {
+			if (f.lastModifiedDate)
 				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
-				fDate = new Date(f.lastModifiedDate).toISOString()
+				fDate = new Date(f.lastModifiedDate).toISOString();
 			else
 				// Take the actual date as a final fall back.
 				// Date() must get *no* parameter here; 
 				// an undefined value causes an error and a null value brings the UNIX start date:
-				fDate = new Date().toISOString()
+				fDate = new Date().toISOString();
 		};
-//		console.debug( 'file', f, fDate );
+		//		console.debug( 'file', f, fDate );
 		return true;
-	},
-	self.toSpecif = function( buf ) {
+	};
+	self.toSpecif = function (buf: ArrayBuffer): JQueryPromise<SpecIF> {
 		// import a BPMN file from a buffer:
 		self.abortFlag = false;
 		bDO = $.Deferred();
@@ -92,7 +93,7 @@ modules.construct({
 		app.cache.abort();
 		self.abortFlag = true
 	};
-	return self
+		return self;
 });
 // For displaying BPMN, see:
 // https://github.com/bpmn-io/bpmn-js-examples/tree/master/pre-packaged
@@ -101,7 +102,7 @@ modules.construct({
 // https://forum.bpmn.io/t/saving-bpmn-and-svg-to-a-website-rather-than-download/210
 // https://github.com/bpmn-io/bpmn-js-callbacks-to-promises
 // https://www.pleus.net/blog/?p=2142
-function bpmn2svg(xml) {
+function bpmn2svg(xml:string):Promise<string> {
 	// transform the BPMN-XML and render the diagram,
 	return new Promise( (resolve,reject)=>{
 		// create viewer instance:

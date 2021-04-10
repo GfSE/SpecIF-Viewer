@@ -13,20 +13,20 @@
 
 modules.construct({
 	name: 'profileAnonymous'
-}, function(self) {
+}, function(self:any) {
 	"use strict";
-	
-	self.init = function( opt ) {
+
+	self.init = function():boolean {
 //		console.debug('me.init',opt);
 		self.clear();
 		return true
 	};
-	self.clear = function() {
+	self.clear = function():void {
 		self.loggedin = false;
 		self.generalAdmin = false; 	// current user is global admin?
 		self.projectRoles = []  	// list with projects and roles of the current user.
 	};
-	self.login = function() {
+	self.login = function():Promise<void> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
 		if( app.server ) 
 			return app.erver.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
@@ -40,7 +40,7 @@ modules.construct({
 				})  
 		// else: */
 		return new Promise( 
-			(resolve,reject)=>{
+			(resolve)=>{
 				self.loggedin = true;
 				resolve();
 			}
@@ -76,7 +76,7 @@ modules.construct({
 		// The current user is generalAdmin:
 		return self.generalAdmin
 	};
-	self.isAdmin = function(prj) { 
+	self.isAdmin = function() { 
 		// The current user is projectAdmin for the specified project or generalAdmin:
 		return self.generalAdmin
 	};

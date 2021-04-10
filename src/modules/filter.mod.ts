@@ -184,7 +184,7 @@ modules.construct({
 
 		// Now start the evaluation based on the current filter settings:
 		if( isClogged() ) { 
-			message.show(i18n.phrase('MsgFilterClogged') ); 
+			message.show(i18n.lookup('MsgFilterClogged') ); 
 			return;
 		};
 //		console.debug('filter.show',opts,self.filterList);
@@ -243,7 +243,7 @@ modules.construct({
 				prj.readContent( 'resource', {id: nd.ref} )
 				.then(
 					(rsp)=>{
-						h = match( new Resource(rsp) );
+						h = match( new CResource(rsp) );
 //						console.debug('tree.iterate',self.filterList,pend,rsp,h);
 						if( h )	{
 							hCnt++;
@@ -321,7 +321,7 @@ modules.construct({
 							break;
 						case 'xhtml':
 						case 'xs:string':
-							if( patt.test( languageValueOf(prp.value,displayOptions).stripHTML() )) return true; 
+							if (patt.test( stripHTML(languageValueOf(prp.value,displayOptions)) )) return true; 
 							break;
 						default:
 							if( patt.test( languageValueOf(prp.value,displayOptions) )) return true;
@@ -465,14 +465,14 @@ modules.construct({
 
 //							console.debug( '$0,$1,$2',$0,$1,$2 );
 							// 1. mark the preceding text:
-							if( $1.stripHTML().length>0 )
+							if( stripHTML($1).length>0 )
 								$1 = $1.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
 							markedText += $1+$2;
 							// consume txt:
 							return ''  
 						});
 					// 2. finally mark the remainder (the rest of the txt not consumed before):
-					if( txt.stripHTML().length>0 )
+					if ( stripHTML(txt).length>0 )
 						markedText += txt.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
 					return markedText
 				}
@@ -542,7 +542,7 @@ modules.construct({
 //		console.debug( 'addEnumValueFilters', def );
 		
 			function allEnumValues(pC, vL) {
-				var boxes = [], v, V;
+				var boxes = [];
 				// Look up the baseType and include all possible enumerated values:
 				for( var d=0, D=dta.dataTypes.length; d<D; d++ ) {
 					if( dta.dataTypes[d].id === pC.dataType ) {
@@ -727,9 +727,9 @@ modules.construct({
 		// render a single panel for enum filter settings:
 		return checkboxField( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} );
 	}
-	function getTextFilterSettings( flt ) {
+/*	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };
-	}
+	} */
 	self.goClicked = ()=>{  // go!
 		self.secondaryFilters = undefined;
 

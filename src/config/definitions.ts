@@ -8,6 +8,8 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
+	CONFIG.appVersion = "0.99.9.9",
+	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
@@ -145,16 +147,17 @@ const CONFIG:any = {};
 
 	// The following can have an i18n label in the translation files:
 	CONFIG.dataTypeComment = 'Datatype for comment text';
-	CONFIG.propClassId = 'dcterms:identifier';
-	CONFIG.propClassTitle = 'dcterms:title';
-	CONFIG.propClassDesc = 'dcterms:description';
-	CONFIG.propClassType = 'dcterms:type';
+	CONFIG.propClassId = "dcterms:identifier";
+	CONFIG.propClassTitle = "dcterms:title";
+	CONFIG.propClassDesc = "dcterms:description";
+	CONFIG.propClassType = "dcterms:type";
 	CONFIG.propClassDiagram = 
 	CONFIG.resClassDiagram = 'SpecIF:Diagram';
 //	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';
 	CONFIG.resClassOutline = 'SpecIF:Outline';
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
+	CONFIG.resClassProcess = 'SpecIF:BusinessProcess';
 	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
 	CONFIG.resClassFolder = 'SpecIF:Heading';
 	CONFIG.resClassParagraph = "SpecIF:Paragraph";
@@ -341,6 +344,7 @@ const CONFIG:any = {};
 	CONFIG.excludedFromDeduplication = [
 		CONFIG.resClassFolder,
 		CONFIG.resClassParagraph,
+		CONFIG.resClassDiagram,
 		'SpecIF:Condition',
 		'bpmn:parallelGateway',
 		'bpmn:exclusiveGateway',
@@ -372,11 +376,19 @@ const CONFIG:any = {};
 	CONFIG.diagramPropertyClasses = [
 		CONFIG.propClassDiagram
 	]; */
-	// A list of resources representing Model Diagrams, specified by resource title:
+
+	// A list of resources representing model diagram types, specified by a property with title CONFIG.propClassType,
+	// where all relations themselves have a "SpecIF:shows" relation.
+	// The (older) diagrams from ARCWAY don't have, but the BPMN and Archimate diagrams have:
+	CONFIG.diagramTypesHavingShowsStatementsForEdges = [
+		CONFIG.resClassProcess,
+		"Archimate:Viewpoint"
+	];
+	// A list of resourceClasses representing Model Diagrams, specified by resourceClass title:
 	CONFIG.diagramClasses = [
 		CONFIG.resClassDiagram,
-		'FMC:Plan',			// equivalent
-		'SpecIF:View'		// deprecated
+		"FMC:Plan",			// equivalent
+		"SpecIF:View"		// deprecated
 	];
 	CONFIG.folderClasses = [
 		CONFIG.resClassOutline,
@@ -452,122 +464,6 @@ const CONFIG:any = {};
 	//	['SpecIF:UserStory',"&#9830;"],
 		["IR:Annotation","&#9755;"]
 	]);
-
-const vocabulary = {
-// Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
-	property: {
-		// for properyTypes and properties:
-		specif: function( iT:string ) {
-			// Target language: SpecIF
-			var oT = '';
-			switch( iT.toSpecifId().toLowerCase() ) {
-				case "_berschrift":
-				case "title":
-				case "titel":
-				case "dc_title":
-				case "specif_heading":			//  'SpecIF:Heading' has been used falsely as property title
-				case "reqif_chaptername":
-				case "reqif_name": 					oT = CONFIG.propClassTitle; break;
-				case "description":
-				case "beschreibung":
-				case "text":
-				case "dc_description":
-	//			case "reqif_changedescription":
-				case "reqif_description":
-				case "reqif_text":					oT = CONFIG.propClassDesc; break;
-				case "reqif_revision":				oT = "SpecIF:Revision"; break;
-				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
-				case "specif_subclass":			// deprecated, for compatibility
-				case "reqif_category":				oT = CONFIG.propClassType; break;
-				case 'specif_id':				// deprecated, for compatibility
-				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
-				case "specif_state":			// deprecated, for compatibility
-				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
-				case "dc_author":
-				case "dcterms_author":			// deprecated, for compatibility
-				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
-				case "specif_createdat":			oT = "dcterms:modified"; break;
-	//			case "reqif_foreignmodifiedby":		oT = ""; break;
-	//			case "reqif_foreigncreatedon":		oT = ""; break;
-	//			case "reqif_foreigncreatedthru":	oT = ""; break;
-	//			case "reqif_fitcriteria":			oT = ""; break;
-	//			case "reqif_prefix":				oT = ""; break;
-	//			case "reqif_associatedfiles":		oT = ""; break;
-	//			case "reqif_project":				oT = ""; break;
-	//			case "reqif_chapternumber":			oT = ""; break;
-				default:							oT = iT
-			};
-			return oT;
-		},
-		reqif: function( iT:string ) {
-			// Target language: ReqIF
-			var oT = '';
-			switch( iT.toSpecifId().toLowerCase() ) {
-				case "dcterms_title": 				oT = "ReqIF.Name"; break;
-				case "dcterms_description": 		oT = "ReqIF.Text"; break;
-				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
-				case "specif_heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
-				case "specif_category":
-				case "dcterms_type":				oT = "ReqIF.Category"; break;
-				case "specif_revision":				oT = "ReqIF.Revision"; break;
-				case "specif_state":			// deprecated, for compatibility
-				case "specif_status":				oT = "ReqIF.ForeignState"; break;
-				case "dcterms_author":			// deprecated, for compatibility
-				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
-	//			case "specif_createdat":
-	//			case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
-				default:							oT = iT
-			};
-			return oT;
-		}
-	},
-	resource: {
-		// for resource types, such as dataType, resourceType, ...:
-		specif: function( iT:string ) {
-			// Target language: SpecIF
-			var oT = '';
-			switch( iT.toSpecifId().toLowerCase() ) {
-				case 'actors':
-				case 'actor':
-				case 'akteure':
-				case 'akteur':						oT = "FMC:Actor"; break;
-				case 'states':
-				case 'state':
-				case 'zustände':
-				case 'zustand':						oT = "FMC:State"; break;
-				case 'events':
-				case 'event':
-				case 'ereignisse':
-				case 'ereignis':					oT = "FMC:Event"; break;
-				case 'anforderungen':
-				case 'anforderung':
-				case 'requirements':
-				case 'requirement':
-				case 'specif_requirement':			oT = "IREB:Requirement"; break;
-				case 'merkmale':
-				case 'merkmal':
-				case 'features':
-				case 'feature':						oT = "SpecIF:Feature"; break;
-				case 'annotations':
-				case 'annotationen':
-				case 'annotation':					oT = "IR:Annotation"; break;
-				case 'user_stories':
-				case 'user_story':					oT = 'SpecIF:UserStory'; break;
-				case 'specif_view':
-				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
-				case 'specif_folder':				oT = CONFIG.resClassFolder; break;
-				case 'specif_hierarchyroot':
-				case 'specif_hierarchy':			oT = CONFIG.resClassOutline; break;
-				default:							oT = iT
-			};
-			return oT
-/*		},
-		reqif: function( iT ) {
-			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
-			return iT */
-		}
-	}
-};
 
 /////////////////////////////////////////////////
 // Regular expressions:

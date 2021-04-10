@@ -36,7 +36,7 @@ interface SpecIF {
      * A list of hierarchies with pointers to resources; may be nested to build a tree, i.e. a
      * hierarchy of pointers.
      */
-    hierarchies: Hierarchy[];
+    hierarchies: Node[];
     id:          string;
     /**
      * Indicates that the project is not schema-compliant on its own; by default the value is
@@ -194,32 +194,10 @@ interface File {
     type: string;
 }
 
-interface Hierarchy {
-    changedAt:    string;
-    changedBy?:   string;
-    description?: ValueElement[] | string;
-    id:           string;
-    /**
-     * The next hierarchy level.
-     */
-    nodes?:    Node[];
-    replaces?: string[];
-    /**
-     * The pointer to the resource to be displayed at this position.
-     */
-    resource:  KeyObject | string;
-    revision?: string;
-    /**
-     * The node's label; if missing, the title of the referenced resource is applied.
-     */
-    title?: ValueElement[] | string;
-}
-
 /**
  * The next hierarchy level.
  *
- * A list of pointers to resources; may be nested to build a tree, i.e. a hierarchy of
- * pointers.
+ * A list of pointers to resources; may be nested to build a tree, i.e. a hierarchy of pointers.
  */
 interface Node {
     changedAt:    string;

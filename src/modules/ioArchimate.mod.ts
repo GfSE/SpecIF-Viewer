@@ -31,7 +31,7 @@ modules.construct({
 			}
 				
 		if ( !isArchimate(f.name) ) {
-			message.show( i18n.phrase('ErrInvalidFileTogaf', f.name) );
+			message.show( i18n.lookup('ErrInvalidFileTogaf', f.name) );
 			return false;
 		};
 //		console.debug( 'file', f );
@@ -56,7 +56,7 @@ modules.construct({
 		return true;
 	},
 
-	self.toSpecif = function( buf ) {
+	self.toSpecif = function (buf: ArrayBuffer): JQueryPromise<SpecIF> {
 		// import an Archimate Open-Exchange file (XML) from a buffer:
 		self.abortFlag = false;
 		bDO = $.Deferred();

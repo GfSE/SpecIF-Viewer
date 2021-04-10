@@ -6,44 +6,43 @@
 	We appreciate any correction, comment or contribution!
 */
 
-app.standardTypes = function() {
-	var self:any = {};
-	self.dataTypes = [{
+class StandardTypes {
+	dataTypes:DataType[] = [{
 		id: "DT-ShortString",
 		title: "String ["+CONFIG.textThreshold+"]",
 		description: "String with length "+CONFIG.textThreshold,
-		type: "xs:string",
+		type: TypeEnum.XsString,
 		maxLength: CONFIG.textThreshold,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "DT-Text",
 		title: "Plain or formatted Text",
 		description: "A text string, plain, or formatted with XHTML or markdown",
-		type: "xs:string",
+		type: TypeEnum.XsString,
 		changedAt: "2021-02-14T08:59:00+02:00"
 	},{
 		// DEPRECATED for SpecIF, but needed for ReqIF:
 		id: "DT-FormattedText",
 		title: "XHTML-formatted Text",
-		type: "xhtml",
+		type: TypeEnum.XHTML,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-DateTime",  
 		title: "Date or Timestamp",
 		description: "Date or Timestamp in ISO-Format",
-		type: "xs:dateTime",
+		type: TypeEnum.XsDateTime,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Boolean",
 		title: "Boolean",
 		description: "The Boolean data type.",
-		type: "xs:boolean",
+		type: TypeEnum.XsBoolean,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Integer",
 		title: "Integer",
 		description: "A numerical integer value from -32768 to 32768.",
-		type: "xs:integer",
+		type: TypeEnum.XsInteger,
 		minInclusive: CONFIG.minInteger,
 		maxInclusive: CONFIG.maxInteger,
 	    changedAt: "2016-05-26T08:59:00+02:00"
@@ -51,13 +50,13 @@ app.standardTypes = function() {
 		id: "DT-Real",
 		title: "Real",
 		description: "A floating point number (double).",
-		type: "xs:double",
+		type: TypeEnum.XsDouble,
 		fractionDigits: CONFIG.maxAccuracy,
 		minInclusive: CONFIG.minReal,
 		maxInclusive: CONFIG.maxReal,
 		changedAt: "2021-02-14T08:59:00+02:00"
 	}];
-	self.propertyClasses = [{
+	propertyClasses:PropertyClass[] = [{
 		id: "PC-Name",
 		title: CONFIG.propClassTitle,
 		dataType: "DT-ShortString",
@@ -85,40 +84,40 @@ app.standardTypes = function() {
 		dataType: "DT-ShortString",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
-	self.resourceClasses = [{
+	resourceClasses:ResourceClass[] = [{
 		id: "RC-Folder",
 		title: CONFIG.resClassFolder,
 		description: "Folder with title and text for chapters or descriptive paragraphs.",
 		isHeading: true,
-		instantiation: ['auto','user'],
-		propertyClasses: ["PC-Description","PC-Type"],
+		instantiation: [Instantiation.Auto, Instantiation.User],
+		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
         id: "RC-Paragraph",
         title: "SpecIF:Paragraph",
         description: "Information with title and text for descriptive paragraphs.",
-        instantiation: ["auto","user"],
-		propertyClasses: ["PC-Description","PC-Type"],
+		instantiation: [Instantiation.Auto, Instantiation.User],
+		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2020-12-04T18:59:00+01:00"
     },{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
-		instantiation: ['auto'],
-		propertyClasses: ["PC-Description","PC-Type"],
+		instantiation: [Instantiation.Auto],
+		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
-	self.get = function(ctg:string,id:string,chAt:string):object|undefined {
-		var item:any = itemById( self[self.listNameOf(ctg)], id );
+
+	get(ctg:string,id:string,chAt?:string):Item {
+		var item:Item = itemById( this[this.listNameOf(ctg)], id );
 		if( item ) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
 			if( chAt ) item.changedAt = chAt;
 			return item;
 		};
-		return undefined
-	};
-	self.listNameOf = function(ctg:string):string|undefined {
+	}
+	listNameOf(ctg:string):string {
 		// Return the cache name for a given category:
 		switch(ctg) {
 			case 'dataType':		return "dataTypes";
@@ -130,11 +129,10 @@ app.standardTypes = function() {
 			case 'hierarchy':		return "hierarchies";
 			case 'file':			return "files";
 		};
-		return undefined
-	};
-	return self;
-}();
-		
+		throw "Programming Error: Invalid category '"+ctg+"'";
+	}
+};
+	
 /*  ToDo: REWORK FOR v0.10.8:
 	// The standard types for comments:
 	// 	A list with all data-, object- and relation-types needed for the comments according to specif schema.

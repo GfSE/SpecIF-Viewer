@@ -179,7 +179,7 @@ function Project() {
 		let ti = newD.title;
 		newD = specif.toInt(newD);	// transform to internal data structure
 		if( !newD ) {
-			sDO.reject({ status: 995, statusText: i18n.phrase( 'MsgImportFailed', ti ) });
+			sDO.reject({ status: 995, statusText: i18n.lookup( 'MsgImportFailed', ti ) });
 			return sDO;
 		};
 //		console.debug('app.cache.selectedProject.data.create',newD);
@@ -591,15 +591,15 @@ function Project() {
 									let newD = {
 										$schema: 'https://specif.de/v1.0/schema.json',
 										dataTypes: [
-											app.standardTypes.get('dataType',"DT-ShortString"),
-											app.standardTypes.get('dataType',"DT-Text")
+											standardTypes.get('dataType',"DT-ShortString"),
+											standardTypes.get('dataType',"DT-Text")
 										],
 										propertyClasses: [
-											app.standardTypes.get('propertyClass',"PC-Description"),
-											app.standardTypes.get('propertyClass',"PC-Type")
+											standardTypes.get('propertyClass',"PC-Description"),
+											standardTypes.get('propertyClass',"PC-Type")
 										],
 										resourceClasses: [
-											app.standardTypes.get('resourceClass',"RC-Folder")
+											standardTypes.get('resourceClass',"RC-Folder")
 										],
 										resources: Folder( r2c.folderNamePrefix+apx, CONFIG.resClassProcesses ),
 										hierarchies: []
@@ -692,15 +692,15 @@ function Project() {
 							let newD = {
 								$schema: 'https://specif.de/v1.0/schema.json',
 								dataTypes: [
-									app.standardTypes.get('dataType',"DT-ShortString"),
-									app.standardTypes.get('dataType',"DT-Text")
+									standardTypes.get('dataType',"DT-ShortString"),
+									standardTypes.get('dataType',"DT-Text")
 								],
 								propertyClasses: [
-									app.standardTypes.get('propertyClass',"PC-Description"),
-									app.standardTypes.get('propertyClass',"PC-Type")
+									standardTypes.get('propertyClass',"PC-Description"),
+									standardTypes.get('propertyClass',"PC-Type")
 								],
 								resourceClasses: [
-									app.standardTypes.get('resourceClass',"RC-Folder")
+									standardTypes.get('resourceClass',"RC-Folder")
 								],
 								resources: Folders(),
 								hierarchies: NodeList(self.data.resources)
@@ -2537,7 +2537,7 @@ function Project() {
 			case 'hierarchy':		return self.data.hierarchies;
 			case 'file':			return self.data.files;
 		}; */
-		return self.data[ app.standardTypes.listNameOf( ctg ) ];
+		return self.data[ standardTypes.listNameOf( ctg ) ];
 	}
 	function readCache( ctg, itm, opts ) {
 		// Read an item from cache, unless 'reload' is specified.

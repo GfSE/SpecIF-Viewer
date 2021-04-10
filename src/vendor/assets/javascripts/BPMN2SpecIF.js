@@ -38,6 +38,10 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strGlossaryType = "SpecIF:Glossary";
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
+	if( !opts.strDiagramType ) 
+		opts.strDiagramType = "SpecIF:Diagram";
+/*	if( !opts.strDiagramFolderType ) 
+		opts.strDiagramFolderType = "SpecIF:Diagrams"; */
 	if( !opts.strBusinessProcessFolder ) 
 		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
 	if( !opts.strGlossaryFolder ) 
@@ -136,7 +140,7 @@ function BPMN2Specif( xmlString, opts ) {
 	model.resources.push({
 		id: diagramId,
 		title: model.title.slice(0,opts.titleLength),
-		class: 'RC-Diagram',
+		class: "RC-Diagram",
 		properties: [{
 			class: "PC-Diagram",
 			value: "<div><p class=\"inline-label\">Model View:</p><p>"+diagRef+"</p></div>"
@@ -214,7 +218,6 @@ function BPMN2Specif( xmlString, opts ) {
 			// c. The writing relation (statement):
 			model.statements.push({
 				id: 'S-'+simpleHash(sRef+oId+'SpecIF:writes'),
-				title: 'SpecIF:writes',
 				class: 'SC-writes',
 				subject: sRef,
 				object: oId,
@@ -228,7 +231,6 @@ function BPMN2Specif( xmlString, opts ) {
 			// ToDo: Is the signalling characteristic well covered? It is not just reading!
 			model.statements.push({
 				id: 'S-'+simpleHash(tRef+oId+'SpecIF:reads'),
-				title: 'SpecIF:reads',
 				class: 'SC-reads',
 				subject: tRef,
 				object: oId,
@@ -305,7 +307,6 @@ function BPMN2Specif( xmlString, opts ) {
 								// store the containment relation for the lane:
 								model.statements.push({
 									id: pId + '-contains-' + ndId,
-									title: 'SpecIF:contains',
 									class: 'SC-contains',
 									subject: pId,	// the process
 									object: ndId,		// the lane
@@ -367,6 +368,9 @@ function BPMN2Specif( xmlString, opts ) {
 								title: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength),
 								class: "RC-State",
 								properties: [{
+									class: "PC-Name",
+									value: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength)
+								},{
 									class: "PC-Type",
 									value: opts.strNamespace+tag
 								}],
@@ -413,7 +417,6 @@ function BPMN2Specif( xmlString, opts ) {
 										// store reading association:
 										model.statements.push({
 											id: ch.getAttribute("id"),
-											title: 'SpecIF:reads',
 											class: 'SC-reads',
 											subject: id,
 											object: dS.id,
@@ -446,7 +449,6 @@ function BPMN2Specif( xmlString, opts ) {
 										// store writing association:
 										model.statements.push({
 											id: ch.getAttribute("id"),
-											title: 'SpecIF:writes',
 											class: 'SC-writes',
 											subject: id,
 											object: dS.id,
@@ -511,6 +513,9 @@ function BPMN2Specif( xmlString, opts ) {
 							title: (title || tag+'_'+simpleHash(id)).slice(0,opts.titleLength),
 							class: "RC-Actor",
 							properties: [{
+								class: "PC-Name",
+								value: (title || tag+'_'+simpleHash(id)).slice(0,opts.titleLength)
+							},{
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
@@ -552,6 +557,9 @@ function BPMN2Specif( xmlString, opts ) {
 							title: (title || tag).slice(0,opts.titleLength),
 							class: "RC-Event",
 							properties: [{
+								class: "PC-Name",
+								value: (title || tag).slice(0,opts.titleLength)
+							},{
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
@@ -646,6 +654,9 @@ function BPMN2Specif( xmlString, opts ) {
 							title: title,
 							class: "RC-Actor",
 							properties: [{
+								class: "PC-Name",
+								value: title
+							},{
 								class: "PC-Description",
 								value: desc
 							}, {
@@ -673,7 +684,6 @@ function BPMN2Specif( xmlString, opts ) {
 							// store the containment relation:
 							model.statements.push({
 								id: cId+'-contains-'+id,
-								title: 'SpecIF:contains',
 								class: 'SC-contains',
 								subject: cId,
 								object: id,
@@ -686,7 +696,6 @@ function BPMN2Specif( xmlString, opts ) {
 					if( cL.length<1 && pa ) 
 							model.statements.push({
 								id: pa.id+'-contains-'+id,
-								title: 'SpecIF:contains',
 								class: 'SC-contains',
 								subject: pa.id,
 								object: id,
@@ -726,6 +735,9 @@ function BPMN2Specif( xmlString, opts ) {
 				title: title,
 				class: "RC-Event",
 				properties: [{
+					class: "PC-Name",
+					value: title
+				},{
 					class: "PC-Type",
 					value: opts.strConditionType
 				}],
@@ -742,8 +754,8 @@ function BPMN2Specif( xmlString, opts ) {
 			// b. store the signal relation:
 			model.statements.push({
 				id: id+'-s',
-				title: "SpecIF:signals",
-				class: "SC-signals",
+			//	class: "SC-signals",
+				class: "SC-precedes",
 				subject: seqF.subject.id,
 				object: id,
 				properties: [{
@@ -755,8 +767,8 @@ function BPMN2Specif( xmlString, opts ) {
 			// c. store the trigger relation:
 			model.statements.push({
 				id: id+'-t',
-				title: "SpecIF:triggers",
-				class: "SC-triggers",
+			//	class: "SC-triggers",
+				class: "SC-precedes",
 				subject: id,
 				object: seqF.object.id,
 				properties: [{
@@ -776,7 +788,6 @@ function BPMN2Specif( xmlString, opts ) {
 		if( seqF.subject['class']=='RC-Actor' && seqF.object['class']=='RC-Actor' ) {
 			model.statements.push({
 				id: id,
-				title: "SpecIF:precedes",
 				class: "SC-precedes",
 				subject: seqF.subject.id,
 				object: seqF.object.id,
@@ -791,8 +802,8 @@ function BPMN2Specif( xmlString, opts ) {
 		if ((["RC-Actor","RC-Event"].indexOf(seqF.subject['class'])>-1) && seqF.object['class']=="RC-Event") {
 			model.statements.push({
 				id: id,
-				title: "SpecIF:signals",
-				class: "SC-signals",
+			//	class: "SC-signals",
+				class: "SC-precedes",
 				subject: seqF.subject.id,
 				object: seqF.object.id,
 				properties: [{
@@ -805,16 +816,16 @@ function BPMN2Specif( xmlString, opts ) {
 		};
 		// else: seqF.subject['class']=="RC-Event" && seqF.object['class']=="RC-Actor"
 		model.statements.push({
-			id: id,
-			title: "SpecIF:triggers",
-			class: "SC-triggers",
-			subject: seqF.subject.id,
-			object: seqF.object.id,
-				properties: [{
-					class: "PC-Type",
-					value: opts.strNamespace+tag
-				}],
-			changedAt: opts.fileDate
+				id: id,
+			//	class: "SC-triggers",
+				class: "SC-precedes",
+				subject: seqF.subject.id,
+				object: seqF.object.id,
+					properties: [{
+						class: "PC-Type",
+						value: opts.strNamespace+tag
+					}],
+				changedAt: opts.fileDate
 		});
 	});
 
@@ -836,6 +847,9 @@ function BPMN2Specif( xmlString, opts ) {
 					title: title,
 					class: "RC-Note",
 					properties: [{
+						class: "PC-Name",
+						value: title
+					},{
 						class: "PC-Description",
 						value: txt.innerHTML.slice(0,opts.descriptionLength)
 					}],
@@ -856,7 +870,6 @@ function BPMN2Specif( xmlString, opts ) {
 		if( su && ob )
 			model.statements.push({
 				id: id,
-				title: "SpecIF:refersTo",
 				class: "SC-refersTo",
 				subject: su.id,
 				object: ob.id,
@@ -867,12 +880,21 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 
 	// 8. Add the 'diagram shows model-element' statements:
+	let tempL=[];
+	model.statements.forEach( (s)=>{
+			tempL.push({
+				id: model.id+'-shows-'+s.id,
+				class: "SC-shows",
+				subject: diagramId,
+				object: s.id,
+				changedAt: opts.fileDate
+			})
+	});
 	model.resources.forEach( (r)=>{
 		// only certain resources are model-elements:
 		if( ["RC-Actor","RC-State","RC-Event","RC-Collection"].indexOf(r['class'])>-1 ) {
 			model.statements.push({
 				id: model.id+'-shows-'+r.id,
-				title: "SpecIF:shows",
 				class: "SC-shows",
 				subject: diagramId,
 				object: r.id,
@@ -880,6 +902,8 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		}
 	});
+	model.statements = model.statements.concat(tempL);
+	tempL.length = 0;
 	
 	// 9. The hierarchy with pointers to all resources:
 	function NodeList(res) {
@@ -1015,10 +1039,10 @@ function BPMN2Specif( xmlString, opts ) {
 	function ResourceClasses() {
 		return [{
 			id: "RC-Diagram",
-			title: "SpecIF:Diagram",
+			title: opts.strDiagramType,
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Description","PC-Diagram","PC-Type","PC-Notation"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Diagram","PC-Type","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -1026,7 +1050,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
@@ -1034,7 +1058,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
@@ -1042,21 +1066,15 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11047;",
-			changedAt: opts.fileDate
-		},{
-			id: "RC-Note",
-			title: "SpecIF:Note",
-			description: "A 'Note' is additional information by the author referring to any resource.",
-			propertyClasses: ["PC-Description"],
 			changedAt: opts.fileDate
 		},{
 			id: "RC-Collection",
 			title: "SpecIF:Collection",
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
@@ -1065,7 +1083,13 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
 			instantiation: ['auto','user'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+			changedAt: opts.fileDate
+		},{
+			id: "RC-Note",
+			title: "SpecIF:Note",
+			description: "A 'Note' is additional information by the author referring to any resource.",
+			propertyClasses: ["PC-Name","PC-Description"],
 			changedAt: opts.fileDate
 	/*	},{
 			id: "RC-ProcessModel",
@@ -1073,7 +1097,7 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Root node of a process model (outline).",
 			isHeading: true,
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: opts.fileDate  */
 		}]
 	}
@@ -1086,23 +1110,23 @@ function BPMN2Specif( xmlString, opts ) {
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Description","PC-Type"],
 			subjectClasses: ["RC-Diagram"],
-			objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
+		//	objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-contains",
 			title: "SpecIF:contains",
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
-			subjectClasses: ["RC-Actor", "RC-State", "RC-Event"],
-			objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
+			objectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-stores",
 			title: "SpecIF:stores",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Actor"],
 			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
@@ -1111,8 +1135,8 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:writes",
 			description: "Statement: Actor (Role, Function) writes State (Information)",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
-			subjectClasses: ["RC-Actor"],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: ["RC-Actor", "RC-Event"],
 			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
 		},{
@@ -1120,8 +1144,8 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:reads",
 			description: "Statement: Actor (Role, Function) reads State (Information)",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
-			subjectClasses: ["RC-Actor"],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: ["RC-Actor", "RC-Event"],
 			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
 		},{
@@ -1129,16 +1153,16 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:precedes",
 			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
-			subjectClasses: ["RC-Actor"],
-			objectClasses: ["RC-Actor"],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: ["RC-Actor", "RC-Event"],
+			objectClasses: ["RC-Actor", "RC-Event"],
 			changedAt: opts.fileDate
-		},{
+	/*	},{
 			id: "SC-signals",
 			title: "SpecIF:signals",
 			description: "A FMC:Actor 'signals' a FMC:Event.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Actor", "RC-Event"],
 			objectClasses: ["RC-Event"],
 			changedAt: opts.fileDate
@@ -1147,16 +1171,16 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:triggers",
 			description: "A FMC:Event 'triggers' a FMC:Actor.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Event"],
-			objectClasses: ["RC-Actor"],
-			changedAt: opts.fileDate
-		},{
+			objectClasses: ["RC-Actor", "RC-Event"],
+			changedAt: opts.fileDate */
+		},{ 
 			id: "SC-refersTo",
 			title: "SpecIF:refersTo",
 			description: "A SpecIF:Comment, SpecIF:Note or SpecIF:Issue 'refers to' any other resource.",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Note"],
 			objectClasses: ["RC-Diagram", "RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
 			changedAt: opts.fileDate
@@ -1171,6 +1195,9 @@ function BPMN2Specif( xmlString, opts ) {
 			class: "RC-Folder",
 			title: opts.strBusinessProcessFolder,
 			properties: [{
+				class: "PC-Name",
+				value: opts.strBusinessProcessFolder
+			},{
 				class: "PC-Type",
 				value: opts.strBusinessProcessesType
 			}],
