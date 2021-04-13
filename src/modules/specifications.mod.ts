@@ -20,12 +20,12 @@ modules.construct({
 //		console.debug('selectedView',self.ViewControl.selected.view);
 		return self.ViewControl.selected.view;
 	};
-	self.emptyTab = ( view )=>{
+	self.emptyTab = ( tab:string ):void =>{
 		app.busy.reset();
 		// but show the buttons anyways, so the user can create the first resource:
 		$( '#contentNotice' ).empty();
 		$( '#contentActions' ).empty();
-		$( view ).empty();
+		$( tab ).empty();
 	};
 
 	// standard module interface:
@@ -59,7 +59,7 @@ modules.construct({
 			eventHandlers: {
 				'select':  
 					// when a node is clicked or traversed by up/down keys
-					(event)=>{  // The clicked node is 'event.node'
+					(event): void=>{  // The clicked node is 'event.node'
 						// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree ;-):
 //						console.debug('tree.select',event);
 						self.tree.selectedNode = event.node;
@@ -68,23 +68,23 @@ modules.construct({
 					},
 				'open':
 					// when a node is opened, but not when an opened node receives an open command
-					(event)=>{  // The clicked node is 'event.node', but we don't care
+					(event): void=>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 //						console.debug('tree.open',event);
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'close':
 					// when a node is closed, but not when a closed node receives a close command
-					(event)=>{  // The clicked node is 'event.node', but we don't care
+					(event): void=>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
 //						console.debug('tree.close',event);
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'move':
-					(event)=>{
+					(event):void=>{
 						// event: A node, potentially with children, has been moved by drag'n'drop.
 						
-							function moveNode( movedNd, target ) {
+							function moveNode( movedNd, target ):void {
 //								console.debug( 'move: ', movedNd.name, target );
 								let chd = new Date().toISOString();
 								app.cache.selectedProject.createContent( 'node', toSpecIF(movedNd,target) )
@@ -162,7 +162,7 @@ modules.construct({
 		
 		return true;
 	};
-	self.clear = ()=>{
+	self.clear = ():void =>{
 		self.tree.init();
 		refreshReqCnt = 0;
 		app.cache.clear();
@@ -171,7 +171,7 @@ modules.construct({
 	// module entry 'self.show()' see further down
 	// module exit;
 	// called by the parent's view controller:
-	self.hide = ()=>{
+	self.hide = ():void =>{
 //		console.debug( 'specs.hide' );
 		// don't delete the page with $(self.view).empty(), as the structure is built in init()
 		app.busy.reset();
@@ -229,7 +229,7 @@ modules.construct({
 		}
 	}  */
 
-	self.updateTree = function ( opts, spc, prj ):void {
+	self.updateTree = function ( opts, spc, prj:SpecIF ):void {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
@@ -350,16 +350,16 @@ modules.construct({
 	// for example if the user quickly traverses the tree. 
 	// Do finally refresh, if there has been no further request in a certain time period.
 	var refreshReqCnt = 0;
-	self.refresh = ( params )=>{
+	self.refresh = ( params ):void =>{
 		// refresh the content, only;
 		// primarily provided for showing changes made by this client:
-			function tryRefresh() {
+			function tryRefresh():void {
 				if( --refreshReqCnt<1 ) self.doRefresh( params )
 			}
 		refreshReqCnt++;
 		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
 	};
-	self.doRefresh = ( parms )=>{
+	self.doRefresh = ( parms ):void =>{
 		// Refresh the view;
 		// this routine is called in the following situations:
 		// - user clicks in the tree
@@ -376,7 +376,7 @@ modules.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.itemClicked = ( rId )=>{
+	self.itemClicked = ( rId ):void =>{
 		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].indexOf( self.selectedView() )>-1 ) return;
 //		console.debug('#0',rId);
 
@@ -517,24 +517,25 @@ modules.construct({
 //	self.comments = new CResources();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
-	function selResIsUserInstantiated() {
+	function selResIsUserInstantiated():boolean {
 		return selRes 
 				&& ( !Array.isArray(selRes.toShow['class'].instantiation)
 					|| selRes.toShow['class'].instantiation.indexOf('user')>-1 )
 	}
-	self.init = ()=>{
+	self.init = (): boolean => {
+			return true;
 	};
-	self.clear = ()=>{
+	self.clear = ():void =>{
 	//	selectResource(null);
 		self.resources.init();
 	//	self.comments.init();
 	//	self.modeCmtDel = false;
 	};
-	self.hide = ()=>{
+	self.hide = ():void =>{
 //		console.debug(CONFIG.objectList, 'hide');
 		$( self.view ).empty()
 	};
-	self.show = ( opts )=>{
+	self.show = ( opts ):void =>{
 		// Show the next resources starting with the selected one:
 //		console.debug(CONFIG.objectList, 'show', opts);
 
@@ -577,7 +578,7 @@ modules.construct({
 		);
 		return;
 		
-		function getNextResources() {
+		function getNextResources():Promise<Resource[]> {
 			var nd = pData.tree.selectedNode,
 				oL = [];  // id list of the resources to view
 			nL = [];  // list of hierarchy nodes
@@ -605,7 +606,7 @@ modules.construct({
 
 			return app.cache.selectedProject.readContent( 'resource', oL )
 		}
-		function renderNextResources( rL ) {
+		function renderNextResources( rL ):void {
 				// Format the titles with numbering:
 				for( var i=rL.length-1; i>-1; i-- )
 					rL[i].order = nL[i].order;
@@ -623,11 +624,11 @@ modules.construct({
 				$( '#contentActions' ).html( actionBtns() );
 				app.busy.reset();
 		}
-		function handleErr(err) {
+		function handleErr(err):void {
 			stdError( err );
 			app.busy.reset();
 		}
-		function actionBtns() {
+		function actionBtns():string {
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
@@ -699,7 +700,7 @@ modules.construct({
 //			console.debug('actionBtns',rB+'</div>');
 			return rB+'</div>'	// return rendered buttons for display
 		};
-		function getPermissions() {
+		function getPermissions():void {
 			// No permissions beyond read, if it is the viewer:
 			if( app.title!=i18n.LblReader ) {
 				self.resCreClasses.length = 0;
@@ -741,7 +742,7 @@ modules.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.editResource = ( mode )=>{
+	self.editResource = ( mode ):void =>{
 		// Enter edit mode: load the edit template:
 		// The button for this function is enabled only if the current user has edit permission.
 
@@ -750,14 +751,14 @@ modules.construct({
 			// the resource editor has no 'official' view and is thus not controlled by ViewControl,
 			// therefore we call show() directly:
 			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} );
-		} else {
+		}
+		else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
-			
 			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
 		};
 	}; 
-	self.deleteNode = ()=>{
+	self.deleteNode = ():void =>{
 		// Delete the selected node and its children.
 		// The resources are dereferenced, or optionally deleted, themselves.
 		new BootstrapDialog({
@@ -825,7 +826,7 @@ modules.construct({
 					stdError 
 				);
 		} */
-		function delNd( nd ) {
+		function delNd( nd ):void {
 			// Delete the hierarchy node and all it's children. 
 			console.info( "Deleting tree object '"+nd.name+"'." );
 
@@ -860,7 +861,7 @@ modules.construct({
 		// Delete the selected resource, all tree nodes and their children.
 		// very dangerous ....
 	};  */
-	self.relatedItemClicked = ( rId )=>{
+	self.relatedItemClicked = ( rId ):void =>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
 		pData.tree.selectNodeByRef( rId );
@@ -888,8 +889,9 @@ modules.construct({
 	self.staCre = false;
 	self.staDel = false;
 		
-	self.init = function(): void {
-	};
+	self.init = function (): boolean {
+		return true;
+	}
 	self.hide = function():void {
 //		console.debug(CONFIG.relations, 'hide');
 		$( self.view ).empty()
@@ -1024,10 +1026,10 @@ modules.construct({
 				cacheMinRes( net.resources, s.subject );
 			}
 		}
-		function getMentionsRels(selR,opts) {
+		function getMentionsRels(selR:Resource,opts):Promise<Statement[]> {
 			// selR is the currently selected resource.
 			
-			return new Promise( (resolve,reject)=>{	
+			return new Promise( (resolve,reject):void =>{	
 				// Search all resource text properties and detect where another resource's title is referenced.
 				// Only findings with marks for dynamic linking are taken.
 				// Add a statement for each finding for display; do not save any of these statements in the server.
@@ -1340,6 +1342,118 @@ modules.construct({
 	return self;
 });
 
+function classifyProps( el:Resource|Statement, prj?:SpecIF ) {
+	// add missing (empty) properties and classify properties into title, descriptions and other;
+	// for resources and statements.
+	// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
+	if( !prj ) prj = app.cache.selectedProject.data;
+	var cP = {
+			id: el.id,
+		//	title: undefined,  .. assigned further down
+			class: itemById( prj.resourceClasses, el['class']),  // the object, not the id !
+			revision: el.revision,
+			descriptions: [],
+			// create a new list by copying the elements (do not copy the list ;-):
+			other: normalizeProps( el, prj )
+		};
+	cP.isHeading = cP['class'].isHeading || CONFIG.headingProperties.indexOf(cP.title)>-1;
+	if( el.order ) cP.order = el.order;
+	cP.changedAt = el.changedAt;
+	if( el.revision ) cP.revision = el.revision;
+	if( el.replaces ) cP.replaces = el.replaces;
+	if( el.changedBy ) cP.changedBy = el.changedBy;
+	if( el.createdAt ) cP.createdAt = el.createdAt;
+	if( el.createdBy ) cP.createdBy = el.createdBy;
+//	console.debug( 'classifyProps 1', simpleClone(cP) );
+
+	// Now, all properties are listed in cP.other;
+	// in the following, the properties used as title and description will be identified
+	// and removed from cP.other.
+
+	// a) Find and set the configured title:
+	let a = titleIdx( cP.other, prj );
+	if( a>-1 ) {  // found!
+		cP.title = cP.other[a];
+		// remove title from other:
+		cP.other.splice(a,1);
+		
+		// Special case:
+		// - if the current instance does not have a title property
+		// - but it's class defines one,
+		// the title would get lost.
+		// Thus, the instance title is copied to the title property,
+		// which has been newly created by normalizeProps():
+		if( !cP.title.value && el.title )
+			cP.title.value = el.title;
+	};
+
+	// b) Check the configured descriptions:
+	// We must iterate backwards, because we alter the list of other.
+	// ToDo: use cP.other.filter()
+	for( a=cP.other.length-1;a>-1;a-- ) {
+		if( CONFIG.descProperties.indexOf( propTitleOf( cP.other[a], prj ))>-1 ) {
+			// To keep the original order of the properties, the unshift() method is used.
+			cP.descriptions.unshift( cP.other[a] );
+			cP.other.splice(a,1);
+		};
+	};
+
+	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export), 
+	//    there is no title or no description propertyClass;
+	//    then create a property without class.
+	//    ToDo: If the instance is a statement, a title is optional - don't create if it doesn't exist!
+	if( !cP.title )
+		cP.title = {title: CONFIG.propClassTitle, value: el.title || ''};
+	if( cP.descriptions.length<1 )
+		cP.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
+//	console.debug( 'classifyProps 2', simpleClone(cP) );
+	return cP;
+
+	function normalizeProps(el: Resource | Statement, dta: SpecIF): Property[] {
+		// el: instance (resource or statement)
+		// Create a list of properties in the sequence of propertyClasses of the respective class.
+		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+		// Assumption: Property classes are unique!
+
+		// check uniqueness of property classes:
+		if( el.properties ) {
+			let cL=[], pC;
+			el.properties.forEach( (p)=>{
+				pC = p['class'];
+				if( cL.indexOf(pC)>-1 )
+					console.warn('The property class '+pC+' of element '+el.id+' is occurring more than once.');
+				cL.push( pC )
+			})
+		};
+
+		let p:Property,pCs,nL:Property[]=[],
+			// iCs: instance class list (resourceClasses or statementClasses),
+			// the existence of subject (or object) let's us recognize that it is a statement:
+			iCs = el.subject? dta.statementClasses : dta.resourceClasses,
+			iC = itemById(iCs,el['class']);
+		// build a list of propertyClass identifiers including the extended class':
+		pCs = iC._extends? itemById( iCs, iC._extends ).propertyClasses||[] : [];
+		pCs = pCs.concat( itemById( iCs, el['class'] ).propertyClasses||[] );
+		// add the properties in sequence of the propertyClass identifiers:
+		pCs.forEach( (pCid)=>{
+			// skip hidden properties:
+			if( CONFIG.hiddenProperties.indexOf(pCid)>-1 ) return; 
+			// the property classes must be unique, otherwise the operation will:
+			p = simpleClone( itemBy( el.properties, 'class', pCid ) )
+				|| createProp(dta.propertyClasses,pCid);
+			if( p ) {
+				// by default, use the propertyClass' title:
+				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
+				// An input data-set may have titles which are not from the SpecIF vocabulary;
+				// replace the result with a current vocabulary term:
+				p.title = vocabulary.property.specif( propTitleOf(p,dta) );
+				nL.push( p );
+			}
+		});
+//		console.debug('normalizeProps result',simpleClone(nL));
+		return nL; // normalized property list
+	}
+}
 function CResource( obj:Resource ) {
 	"use strict";
 	// for the list view, where title and text are shown in the main column and the others to the right.
@@ -1371,7 +1485,7 @@ function CResource( obj:Resource ) {
 	};
 
 	self.listEntry = ():string =>{
-			function showPrp( prp, opts ) {
+			function showPrp( prp:Property, opts ):boolean {
 //				console.debug('showPrp',prp);
 				if( CONFIG.hiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
 				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value,opts) ))
@@ -1767,12 +1881,12 @@ var fileRef = function() {
 //				console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
 				return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
 			}  */
-			function getType( str ) {
+			function getType( str:string ):string {
 				let t = /(type="[^"]+")/.exec( str );
 				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
 				return '';
 			}
-			function getUrl( str ) {
+			function getUrl( str:string ):string|undefined {
 				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
 				// return null, because an URL is expected in any case:
 				if( Array.isArray(l)&&l.length>0 ) return l[1]
@@ -2003,7 +2117,7 @@ var fileRef = function() {
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	};
-	self.renderDownloadLink = (f,inner,opts):void=>{
+	self.renderDownloadLink = (f,inner,opts):void =>{
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
@@ -2174,7 +2288,7 @@ var fileRef = function() {
 					};
 					return;
 					
-					function displayAll( svg ) {
+					function displayAll( svg ):void {
 						Array.from( svg.locs, 
 							(loc)=>{
 								loc.innerHTML = svg.img;
@@ -2184,7 +2298,7 @@ var fileRef = function() {
 					}
 				}
 				// see http://tutorials.jenkov.com/svg/scripting.html
-				function registerClickEls(svg) {
+				function registerClickEls(svg):void {
 					if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
 //					console.debug('registerClickEls',svg);
 					addViewBoxIfMissing(svg);
@@ -2258,7 +2372,7 @@ var fileRef = function() {
 					});
 					return svg;
 					
-					function correspondingPlan(id) {
+					function correspondingPlan(id:string):string {
 						// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
 						// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 						if( CONFIG.selectCorrespondingDiagramFirst ) {
@@ -2287,7 +2401,7 @@ var fileRef = function() {
 					// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
 					// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
 					// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
-					function addViewBoxIfMissing(svg) {
+					function addViewBoxIfMissing(svg):void {
 						let el;
 						for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
 							el = svg.childNodes[i];
@@ -2327,7 +2441,7 @@ var fileRef = function() {
 					);
 				}, opts.timelag);
 			}
-			function itemBySimilarId(L,id) {
+			function itemBySimilarId(L,id:string) {
 				// return the list element having an id similar to the specified one:
 				id = id.trim();
 				for( var i=L.length-1;i>-1;i-- )
@@ -2335,7 +2449,7 @@ var fileRef = function() {
 					if( L[i].id.indexOf(id)>-1 ) return L[i];   // return list item
 			//	return undefined
 			}
-			function itemBySimilarTitle(L,ti) {
+			function itemBySimilarTitle(L,ti:string) {
 				// return the list element having a title similar to the specified one:
 				ti = ti.trim();
 				for( var i=L.length-1;i>-1;i-- )

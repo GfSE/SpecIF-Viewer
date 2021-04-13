@@ -178,7 +178,7 @@ const specif = {
 			}
 		);
 	},
-	toInt: (spD) => {
+	toInt: (spD):SpecIF => {
 		// transform SpecIF to internal data;
 		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.

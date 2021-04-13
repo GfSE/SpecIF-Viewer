@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "0.99.9.9",
+	CONFIG.appVersion = "0.99.9.10",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server

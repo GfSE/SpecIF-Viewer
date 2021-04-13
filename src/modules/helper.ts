@@ -453,8 +453,8 @@ function bindResizer():void {
 	});
 }
 
-type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | Node | undefined;
-type Instance = Resource | Statement | Node | undefined;
+type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | Node | File | undefined;
+type Instance = Resource | Statement | undefined;
 function indexById(L:Item[],id:string):number {
 	if( L && id ) {
 		// given an ID of an item in a list, return it's index:

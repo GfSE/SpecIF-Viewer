@@ -12,15 +12,15 @@ modules.construct({
 	name: 'ioArchimate'
 }, function(self) {
 	"use strict";
-	var	fDate = null,		// the file modification date
-		fName = null,
-		data = null,		// the SpecIF data structure for xls content
-		bDO = null,
+	var	fDate:string,		// the file modification date
+		fName:string,
+		data:SpecIF,		// the SpecIF data structure for xls content
+		bDO,
 		opts;
 
 	self.init = function(options):boolean {
 		opts = options;
-		return true
+		return true;
 	};
 
 	self.verify = function( f ):boolean {
@@ -87,7 +87,7 @@ modules.construct({
 
 		return bDO;
 	};
-	self.abort = function() {
+	self.abort = function():void {
 		app.cache.abort();
 		self.abortFlag = true;
 	};

@@ -33,10 +33,10 @@ class ViewControl {
 		// - simple case: params is a string with the name of the new view.
 		// - more powerful: params is an object with the new target view plus optionally content or other parameters
 		switch (typeof (params)) {
-			case 'undefined': return;	// should never be the case.
+			case 'undefined': throw "Programming Error: moduleManager.show() nees a parameter.";
 			case 'string': params = { newView: params };
 		};
-//				console.debug('ViewControl.show',this.list,this.selected,params);
+//		console.debug('ViewControl.show',this.list,this.selected,params);
 
 		/*	if( self.selected && params.newView==self.selected.view ) {
 				// just update the current view:
@@ -44,7 +44,7 @@ class ViewControl {
 					return
 			};  */
 		// else: show params.newView and hide all others:
-		let v, s;
+		let v:JQuery, s:JQuery;
 		this.list.forEach((le) => {
 //					console.debug('ViewControl.show le',le);
 			v = $(le.view);			// the view

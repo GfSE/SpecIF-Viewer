@@ -3,9 +3,12 @@
     "",
     "\\src",
     "\\src\\config",
+    "\\src\\config\\locales",
     "\\src\\modules",
-    "\\src\\types"
+    "\\src\\types",
+    "\\src\\vendor\\assets",
+    "\\src\\vendor\\assets\\javascripts"
   ],
-  "SelectedNode": "\\src\\check.ts",
+  "SelectedNode": "\\src\\modules\\profileAnonymous.mod.ts",
   "PreviewInSolutionExplorer": false
 }
