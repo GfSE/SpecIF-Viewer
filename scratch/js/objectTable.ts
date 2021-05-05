@@ -112,7 +112,7 @@ function ObjectTable() {
 		returnView();
 	};
 */	// This is a sub-module to specs, so use its return method
-	function handleError(xhr) {
+	function handleError(xhr: xhrMessage): void {
 		self.hide();
 		self.clear();
 		stdError(xhr,specs.returnToCaller)
@@ -145,7 +145,7 @@ function ObjectTable() {
 							titleAndDescr: ''
 						};
 
-						let clAtts = classifyProps(rsp),
+						let clAtts = new CResourceWithClassifiedProps(rsp),
 							att=null;
 //						console.debug('clAtts',rsp,clAtts);
 						// In case there is no explicit value in a title attribute, don't show anything in the table.
@@ -154,7 +154,7 @@ function ObjectTable() {
 							if( clAtts.specType.isHeading )
 								obj.titleAndDescr = '<div class="chapterTitle">'+clAtts.title+'</div>'
 							else
-								obj.titleAndDescr = '<div class="objectTitle">'+(CONFIG.addIconToInstance?clAtts.title.addIcon( clAtts.specType.icon ):clAtts.title)+'</div>'
+								obj.titleAndDescr = '<div class="objectTitle">' + (CONFIG.addIconToInstance ? addIcon(clAtts.title, clAtts.specType.icon ):clAtts.title)+'</div>'
 						};
 
 						for( var d=0,D=clAtts.descriptions.length; d<D; d++ ) {
@@ -248,7 +248,7 @@ function ObjectTable() {
 			},
 			// the sorting routines for the column 'title and description' (type 'title'):
 			"title-pre": function ( a ) {
-				return a.stripHTML().substr(0,20)
+				return stripHTML(a).substr(0,20)
 			},
 			"title-asc": function ( a, b ) {
 				return ((a < b) ? -1 : ((a > b) ? 1 : 0))

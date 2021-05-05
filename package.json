@@ -1,6 +1,6 @@
 {
   "name": "specif-viewer",
-  "version": "0.99.6",
+  "version": "0.99.9",
   "description": "An app for your web-browser to view, edit and transform system specifications.",
   "main": "src/views/view.html",
   "scripts": {
@@ -11,7 +11,7 @@
     "open_browser_macos": "shx open ./build/views/view.html || echo 'Could not open Safari browser. Please open ./build/view.html manually.'",
     "open_browser_linux": "shx xdg-open ./build/views/view.html || echo 'Could not open XDG browser. Please open ./build/view.html manually.'",
     "open_browser_win": "explorer 'build\\views\\view.html' || echo 'Could not open default browser. Please open ./build/view.html manually.'",
-    "_postbuild": "npm run _copy_assets_folder & npm run _copy_config_folder & npm run _copy_apps",
+    "_postbuild": "npm run _copy_assets_folder & npm run _copy_apps",
     "_copy_assets_folder": "shx mkdir ./build/vendor/ & shx mkdir ./build/vendor/assets/ & shx cp -R ./src/vendor/assets ./build/vendor/",
     "_copy_config_folder": "shx mkdir ./build/config/ & shx cp -R ./src/config/*/**.json ./build/config/locales/",
     "_copy_views_folder": "shx mkdir ./build/views/ & shx cp -R ./src/views/* ./build/views/",

@@ -7,9 +7,9 @@
 */
 
 // Construct the resource editor:
-modules.construct({
+moduleManager.construct({
 	name: CONFIG.resourceEdit
-}, (self)=>{
+}, (self:IModule)=>{
 	"use strict";
 
 	let myName = self.loadAs,
@@ -22,11 +22,12 @@ modules.construct({
 	self.newFiles = [];			// collect uploaded files before committing the change
 	self.dialogForm = new DialogForm();
 
-	self.init = ()=>{
+	self.init = ():boolean =>{
 //		console.debug('resourceEdit.init')
 		self.clear();
+		return true;
 	};
-	self.clear = ()=>{
+	self.clear = ():void =>{
 		self.newFiles.length = 0;
 		self.dialogForm.list.length = 0;
 	};
@@ -47,6 +48,15 @@ modules.construct({
 			cssClass: 'btn-success btn-modal-save',
 			action: (thisDlg)=>{
 				save('update');
+				thisDlg.close();
+			}  
+		},	
+		insert: {
+			id: 'btn-modal-insert',
+			label: i18n.BtnInsert,
+			cssClass: 'btn-success btn-modal-save', 
+			action: (thisDlg)=>{
+				save('insert');
 				thisDlg.close();
 			}  
 		},	
@@ -76,25 +86,32 @@ modules.construct({
 		self.clear();
 		cData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
-		opts.selNodeId = pData.tree.selectedNode.id;
+		if( pData.tree.selectedNode )
+			opts.selNodeId = pData.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
 		switch( opts.mode ) {
 			case 'create':
 				selectResClass( opts )
 				.then(
-					(rC)=>{ 
+					(rC:ResourceClass)=>{ 
 						app.cache.selectedProject.createResource(rC)
 						.then( 
-							(r)=>{
+							(r:Resource)=>{
 //								console.debug( '#', opts.mode, r );
 								self.newRes = r;
 								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
-								opts.msgBtns = [
-									msgBtns.cancel,
-									msgBtns.insertAfter,
-									msgBtns.insertBelow
-								];
+								if( opts.selNodeId )
+									opts.msgBtns = [
+										msgBtns.cancel,
+										msgBtns.insertAfter,
+										msgBtns.insertBelow
+									]
+								else
+									opts.msgBtns = [
+										msgBtns.cancel,
+										msgBtns.insert
+									];
 								editResource(r,opts);
 							}, 
 							stdError
@@ -109,9 +126,9 @@ modules.construct({
 				// get the selected resource:
 				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 				.then( 
-					(r)=>{
+					(rL:Resource[])=>{
 						// create a clone to collect the changed values before committing:
-						self.newRes = simpleClone(r);
+						self.newRes = simpleClone(rL[0]);
 						if( opts.mode=='clone' ) {
 							self.newRes.id = genID('R-');
 							opts.dialogTitle = i18n.MsgCloneResource,
@@ -138,17 +155,20 @@ modules.construct({
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
-			toEdit = classifyProps( res, cData );
-			let ti = i18n.lookup(CONFIG.propClassTitle),
-				dlg = new BootstrapDialog({
+			toEdit = new CResourceWithClassifiedProps( res, cData );
+			let ti = i18n.lookup(CONFIG.propClassTitle);
+			// @ts-ignore - BootstrapDialog() is loaded at runtime
+			new BootstrapDialog({
 					title: opts.dialogTitle,
 				//	type: 'type-success',
 					type: 'type-primary',
+					// @ts-ignore - BootstrapDialog() is loaded at runtime
 					size: BootstrapDialog.SIZE_WIDE,
 					// initialize the dialog;
 					// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
 					onshown: ()=>{ setTextFocus(ti); app[myName].check() },
-					message: (thisDlg)=>{
+				//	message: (thisDlg)=>{
+					message: () => {
 						var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
 						// field for the title property:
 						form += editP(toEdit.title);
@@ -248,7 +268,7 @@ modules.construct({
 						if( !p.permissions || p.permissions.upd ) {
 							bts +=			'<span class="btn btn-default btn-fileinput">' +
 												'<span>'+i18n.IcoUpdate+'</span>' +
-												'<input id="file'+p['class'].simpleHash()+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
+								'<input id="file' + simpleHash(p['class'])+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
 											'</span>';
 						};  
 						if( !p.permissions || p.permissions.del ) {
@@ -274,12 +294,14 @@ modules.construct({
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
 //								console.debug('#2',simpleClone(cData.resourceClasses));
-								let dlg = new BootstrapDialog({
+								// @ts-ignore - BootstrapDialog() is loaded at runtime
+								new BootstrapDialog({
 									title: i18n.MsgSelectResClass,
 								//	type: 'type-success',
 									type: 'type-primary',
 								//	size: BootstrapDialog.SIZE_WIDE,
-									message: (thisDlg)=>{
+								//	message: (thisDlg)=>{
+									message: () => {
 										var form = '<form id="attrInput" role="form" >'
 												+ radioField( i18n.LblResourceClass, resClasses )
 												+ '</form>';
@@ -307,7 +329,7 @@ modules.construct({
 							};
 						} else {
 							// ToDo: Don't enable the 'create resource' button, if there are no eligible resourceClasses ..
-							reject({status:999;statusText:"No resource class defined for manual creation of a resource."});
+							reject({status:999,statusText:"No resource class defined for manual creation of a resource."});
 						};
 					},
 					reject
@@ -322,16 +344,17 @@ modules.construct({
 	Functions called by GUI events 
 */
 	self.updateDiagram = (cId)=>{
-        let f = document.getElementById("file"+cId.simpleHash()).files[0];
+		// @ts-ignore - .files is in fact accessible
+		let f = document.getElementById("file" + simpleHash(cId)).files[0];
 //		console.debug('updateDiagram',cId,f.name);
 		readFile( f, (data)=>{
 				// "<div><p class=\"inline-label\">Plan:</p><p><object type=\"image/svg+xml\" data=\"files_and_images\\50f2e49a0029b1a8016ea6a5f78ff594.svg\">Arbeitsumgebung</object></p></div>"
 				let fType = f.type||opts.mediaTypeOf(f.name),
 					fName = 'files_and_images/'+f.name,
-					newFile = { blob:data, id:'F-'+fName.simpleHash(), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
+					newFile = { blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
 				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
-				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.render( newFile )+'</div>';
+				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.renderImage( newFile )+'</div>';
 		});
 		return;
 		
@@ -367,8 +390,7 @@ modules.construct({
 		// a 'properties' list yet, even though it's class defines propertyClasses.
 		// ToDo: If the original resource had different languages, take care of them;
 		//       The new values must not replace any original multi-language property values!
-		let p, 
-			pend=2, // minimally 2 calls with promise
+		let pend=2, // minimally 2 calls with promise
 			// The properties of toEdit are complete (in contrast to self.newRes):
 			chD = new Date().toISOString();  // changedAt
 
@@ -377,13 +399,13 @@ modules.construct({
 
 		toEdit.title.value = getP( toEdit.title );
 		// In any case, update the elements native title:
-		self.newRes.title = toEdit.title.value.stripHTML();
+		self.newRes.title = stripHTML(toEdit.title.value);
 		// If the title property doesn't have a class, 
-		// it has been added by classifyProps() and there is no need to create it;
+		// it has been added by new CResourceWithClassifiedProps() and there is no need to create it;
 		// in this case the title will only be seen in the element's title:
 		if( toEdit.title['class'] ) {
 			delete toEdit.title.title;  // is redundant, the property's class title applies
-			if( Array.isArray( self.newRes.properties )
+			if( Array.isArray( self.newRes.properties ) )
 				self.newRes.properties.push( toEdit.title );
 			else
 				self.newRes.properties = [ toEdit.title ];
@@ -393,7 +415,7 @@ modules.construct({
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
 			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
-				if( Array.isArray( self.newRes.properties )
+				if( Array.isArray( self.newRes.properties ) )
 					self.newRes.properties.push( p );
 				else
 					self.newRes.properties = [ p ];
@@ -404,16 +426,16 @@ modules.construct({
 			p.value = getP( p );
 			delete p.title;
 
-			let pV = p.value.stripHTML();
+			let pV = stripHTML(p.value);
 			if( pV ) {
 				// update the elements native description:
 				self.newRes.description = pV
 
 				// If the description property doesn't have a class, 
-				// it has been added by classifyProps() and there is no need to create it;
+				// it has been added by new CResourceWithClassifiedProps() and there is no need to create it;
 				// in this case the description will only be seen in the element's description:
 				if( p['class'] ) {
-					if( Array.isArray( self.newRes.properties )
+					if( Array.isArray( self.newRes.properties ) )
 						self.newRes.properties.push( p );
 					else
 						self.newRes.properties = [ p ];
@@ -423,17 +445,17 @@ modules.construct({
 				delete self.newRes.description;
 			};
 //			console.debug( 'save',mode, p, getP( p ) );
-		};
+		});
 
 		toEdit.other.forEach( function(p) {
 			// get the new or unchanged input value of the property from the input field:
 			p.value = getP( p );
 			delete p.title;
 			// a property class must exist, 
-			// because classifyProps() puts only existing properties to 'other':
+			// because new CResourceWithClassifiedProps() puts only existing properties to 'other':
 			if( p['class'] ) {
 				if( hasContent(p.value) ) {
-					if( Array.isArray( self.newRes.properties )
+					if( Array.isArray( self.newRes.properties ) )
 						self.newRes.properties.push( p );
 					else
 						self.newRes.properties = [ p ];
@@ -441,7 +463,7 @@ modules.construct({
 			} else {
 					console.error('Cannot save edited property',p,' because it has no class');
 			};
-		};
+		});
 
 		self.newRes.changedAt = chD;
 //		console.debug( 'save', self.newRes );
@@ -449,6 +471,13 @@ modules.construct({
 		switch( mode ) {
 			case 'update':
 				app.cache.selectedProject.updateContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				break;
+			case 'insert':
+				app.cache.selectedProject.createContent( 'resource', self.newRes )
+					.then( finalize, stdError );
+				pend++;
+				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD} )
 					.then( finalize, stdError );
 				break;
 			case 'insertAfter':

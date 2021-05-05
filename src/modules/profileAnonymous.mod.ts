@@ -11,22 +11,31 @@
 	Derived from profileUser.xxxx.mod.js - it serves the same API calls and is supposed to replace it when appropriate.
 */
 
-modules.construct({
+// This will be merged with the basic declaration of IModule in moduleManager.ts:
+// interface IModule {
+interface IMe extends IModule {
+	login(): Promise<void>;
+	logout(): void;
+	read(): Promise<void>;
+	isAdmin(): boolean;
+	isGeneralAdmin(): boolean;
+}
+moduleManager.construct({
 	name: 'profileAnonymous'
-}, function(self) {
+}, function(self:IMe):IMe {
 	"use strict";
-	
-	self.init = function( opt ) {
+
+	self.init = function():boolean {
 //		console.debug('me.init',opt);
 		self.clear();
-		return true
+		return true;
 	};
-	self.clear = function() {
+	self.clear = function():void {
 		self.loggedin = false;
 		self.generalAdmin = false; 	// current user is global admin?
-		self.projectRoles = []  	// list with projects and roles of the current user.
+		self.projectRoles = []; 	// list with projects and roles of the current user.
 	};
-	self.login = function() {
+	self.login = function():Promise<void> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
 		if( app.server ) 
 			return app.erver.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
@@ -40,17 +49,17 @@ modules.construct({
 				})  
 		// else: */
 		return new Promise( 
-			(resolve,reject)=>{
+			(resolve)=>{
 				self.loggedin = true;
 				resolve();
 			}
 		)
 	};
-	self.logout = function() {
+	self.logout = function():void {
 		self.loggedin = false;
 //		server.logout()
 	};
-	self.read = function() {
+	self.read = function (): Promise<void> {
 //		console.debug('me.read');
 		return self.login()
 /*		-- originally: --
@@ -72,11 +81,11 @@ modules.construct({
 			}
 		})  */
 	};
-	self.isGeneralAdmin = function() {
+	self.isGeneralAdmin = function():boolean {
 		// The current user is generalAdmin:
 		return self.generalAdmin
 	};
-	self.isAdmin = function(prj) { 
+	self.isAdmin = function():boolean { 
 		// The current user is projectAdmin for the specified project or generalAdmin:
 		return self.generalAdmin
 	};

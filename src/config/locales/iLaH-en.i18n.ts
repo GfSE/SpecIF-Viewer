@@ -1,25 +1,20 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'English' (en).
 	The result can be obtained by reference of:
-	- 	self.MsgText
-	- phrase('MsgText')
-	- phrase('MsgText', 'param')
+	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
+	- yourVarName.lookup('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsEn() {
-	var self = this;
-	self.phrase = function( ms, pA ) { 
+    var self:any = {};
+	self.lookup = function (lb: string, pA: string): string {
 		// replace a variable '~A' with pA, if available:
-		// for use in HTML fields.
-		if( ms ) {
-			if( pA ) return self[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-			return self[ms] 
+		if (lb) {
+			// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
+			let res = self[jsIdOf(lb)] || lb;
+			if (pA) return res.replace(/~A/, pA);
+			return res;
 		};
-		return ''
-	};
-	self.lookup = function( lb ) { 
-		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-		// for use in regular text fields.
-		return self[lb.toJsId()] || lb
+		return '';
 	};
 
 	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
@@ -173,7 +168,6 @@ function LanguageTextsEn() {
 	self.LblPreviousStep = 'Backward';
 	self.LblNextStep = 'Forward';
 	self.LblGo = 'Go!';
-	self.LblAll = 'All';
 	self.LblHitCount = 'Hit Count';
 	self.LblRelateAs = 'Relate as';
 	self.LblSource = 'Subject';
@@ -401,6 +395,27 @@ function LanguageTextsEn() {
 	self.IREB_QualityRequirement = "Quality Requirement";
 	self.IREB_RequirementTypeConstraint =
 	self.IREB_Constraint = "Constraint";
+	self.IREB_PerspectiveBusiness = "Business";
+	self.IREB_PerspectiveStakeholder = "Stakeholder";
+	self.IREB_PerspectiveUser = "User";
+	self.IREB_PerspectiveOperator = "Operator";
+	self.IREB_PerspectiveSystem = "System";
+	self.SpecIF_LifecycleStatusDeprecated = "deprecated";
+	self.SpecIF_LifecycleStatusRejected = "rejected";
+	self.SpecIF_LifecycleStatusInitial = "initial";
+	self.SpecIF_LifecycleStatusDrafted = "drafted";
+	self.SpecIF_LifecycleStatusSubmitted = "submitted";
+	self.SpecIF_LifecycleStatusApproved = "approved";
+	self.SpecIF_LifecycleStatusReady = "ready";
+	self.SpecIF_LifecycleStatusDone = "done";
+	self.SpecIF_LifecycleStatusValidated = "validated";
+	self.SpecIF_LifecycleStatusReleased = "released";
+	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
+	self.SpecIF_DisciplineSystem = "System";
+	self.SpecIF_DisciplineMechanics = "Mechanics";
+	self.SpecIF_DisciplineElectronics = "Electronics";
+	self.SpecIF_DisciplineSoftware = "Software";
+	self.SpecIF_DisciplineSafety = "Safety";
 	self.SpecIF_BusinessProcess = 'Business Process'; 
 	self.SpecIF_BusinessProcesses = 'Business Processes';
 	self.SpecIF_Rationale = "Rationale";
@@ -520,6 +535,7 @@ function LanguageTextsEn() {
 	self.HIS_OemComment = 'OEM-Comment';
 	self.HIS_SupplierStatus = 'Supplier-Status';
 	self.HIS_SupplierComment = 'Supplier-Comment';
+/*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Title';
 	self.DBRD_Name = 'Title';
@@ -530,7 +546,7 @@ function LanguageTextsEn() {
 	self.VALUE_Object_Text =
 	self.Object_Text = self.ReqIF_Text;
 	self.VALUE_Object_ID =
-	self.Object_ID = self.ReqIF_ForeignID;
+	self.Object_ID = self.ReqIF_ForeignID; */
 	self.SpecIF_priorityHigh = "high";
 	self.SpecIF_priorityRatherHigh = "rather high";
 	self.SpecIF_priorityMedium = "medium";
@@ -585,7 +601,8 @@ function LanguageTextsEn() {
 	self.MsgCreateStatement = "Create a statement";
 	self.MsgOtherProject = "Late response; another project has been selected meanwhile";
 	self.MsgWaitPermissions = 'Please wait while loading the permissions.';
-	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.';
+/*	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.'; */
+	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
 	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
 	self.MsgImportBpmn = 'Permissible filetype is *.bpmn. The content must conform with the schema BPMN 2.0 XML. The import may take a couple of minutes.';
 	self.MsgImportXls = 'Permissible filetypes are *.xls, *.xlsx and *.csv. The import may take a couple of minutes for very large files.';
@@ -711,4 +728,5 @@ function LanguageTextsEn() {
 	self.AppImport = 	self.IcoImport+'&#160;Import';
 	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
 	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+	return self;
 };

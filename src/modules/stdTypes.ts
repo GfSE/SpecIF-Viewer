@@ -6,61 +6,57 @@
 	We appreciate any correction, comment or contribution!
 */
 
-app.standardTypes = new function() {
-	var self = this;
-	self.dataTypes = [{
+class StandardTypes {
+	dataTypes:DataType[] = [{
 		id: "DT-ShortString",
 		title: "String ["+CONFIG.textThreshold+"]",
 		description: "String with length "+CONFIG.textThreshold,
-		type: "xs:string",
+		type: TypeEnum.XsString,
 		maxLength: CONFIG.textThreshold,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "DT-Text",
-		title: "Text",
-	//	title: "Text ["+CONFIG.maxStringLength+"]",
-		type: "xs:string",
-	//	maxLength: CONFIG.maxStringLength,
-		changedAt: "2016-05-26T08:59:00+02:00"
+		title: "Plain or formatted Text",
+		description: "A text string, plain, or formatted with XHTML or markdown",
+		type: TypeEnum.XsString,
+		changedAt: "2021-02-14T08:59:00+02:00"
 	},{
 		// DEPRECATED for SpecIF, but needed for ReqIF:
 		id: "DT-FormattedText",
 		title: "XHTML-formatted Text",
-	//	title: "XHTML-formatted Text ["+CONFIG.maxStringLength+"]",
-		type: "xhtml",
-	//	maxLength: CONFIG.maxStringLength,
+		type: TypeEnum.XHTML,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-DateTime",  
 		title: "Date or Timestamp",
 		description: "Date or Timestamp in ISO-Format",
-		type: "xs:dateTime",
+		type: TypeEnum.XsDateTime,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Boolean",
 		title: "Boolean",
 		description: "The Boolean data type.",
-		type: "xs:boolean",
+		type: TypeEnum.XsBoolean,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Integer",
 		title: "Integer",
 		description: "A numerical integer value from -32768 to 32768.",
-		type: "xs:integer",
+		type: TypeEnum.XsInteger,
 		minInclusive: CONFIG.minInteger,
 		maxInclusive: CONFIG.maxInteger,
 	    changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Real",
 		title: "Real",
-		description: "A floating point number (double) with 5 fraction digits.",
-		type: "xs:double",
+		description: "A floating point number (double).",
+		type: TypeEnum.XsDouble,
 		fractionDigits: CONFIG.maxAccuracy,
 		minInclusive: CONFIG.minReal,
 		maxInclusive: CONFIG.maxReal,
-		changedAt: "2016-05-26T08:59:00+02:00"
+		changedAt: "2021-02-14T08:59:00+02:00"
 	}];
-	self.propertyClasses = [{
+	propertyClasses:PropertyClass[] = [{
 		id: "PC-Name",
 		title: CONFIG.propClassTitle,
 		dataType: "DT-ShortString",
@@ -69,7 +65,6 @@ app.standardTypes = new function() {
 		id: "PC-Description",
 		title: CONFIG.propClassDesc,
 		dataType: "DT-Text",
-	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
 		// DEPRECATED for SpecIF, but needed for ReqIF:
@@ -89,39 +84,40 @@ app.standardTypes = new function() {
 		dataType: "DT-ShortString",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
-	self.resourceClasses = [{
+	resourceClasses:ResourceClass[] = [{
 		id: "RC-Folder",
 		title: CONFIG.resClassFolder,
 		description: "Folder with title and text for chapters or descriptive paragraphs.",
 		isHeading: true,
-		instantiation: ['auto','user'],
-		propertyClasses: ["PC-Description","PC-Type"],
+		instantiation: [Instantiation.Auto, Instantiation.User],
+		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
         id: "RC-Paragraph",
         title: "SpecIF:Paragraph",
         description: "Information with title and text for descriptive paragraphs.",
-        instantiation: ["auto","user"],
-		propertyClasses: ["PC-Description","PC-Type"],
+		instantiation: [Instantiation.Auto, Instantiation.User],
+		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2020-12-04T18:59:00+01:00"
     },{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
-		instantiation: ['auto'],
-		propertyClasses: ["PC-Description","PC-Type"],
+		instantiation: [Instantiation.Auto],
+		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
-	self.get = (ctg,id,chAt)=>{
-		var item = itemById( self[self.listNameOf(ctg)], id );
+
+	get(ctg:string,id:string,chAt?:string):Item {
+		var item:Item = itemById( this[this.listNameOf(ctg)], id );
 		if( item ) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
 			if( chAt ) item.changedAt = chAt;
 			return item;
 		};
-	};
-	self.listNameOf = (ctg)=>{
+	}
+	listNameOf(ctg:string):string {
 		// Return the cache name for a given category:
 		switch(ctg) {
 			case 'dataType':		return "dataTypes";
@@ -133,10 +129,10 @@ app.standardTypes = new function() {
 			case 'hierarchy':		return "hierarchies";
 			case 'file':			return "files";
 		};
-	};
-	return self;
-};	
-		
+		throw Error("Invalid category '"+ctg+"'");
+	}
+};
+	
 /*  ToDo: REWORK FOR v0.10.8:
 	// The standard types for comments:
 	// 	A list with all data-, object- and relation-types needed for the comments according to specif schema.
@@ -174,20 +170,20 @@ app.standardTypes = new function() {
 //		console.debug('CommentTypes done')
 	} 
 	function GlossaryItems() {
-		var _this=this;
+		var self=this;
 		let dTid = genID('DT-'), rCid = genID('RC-'), sCid = genID('SC-'),
 			pC1id = genID('PC-'), pC3id = genID('PC-'), rId
 			time = new Date().toISOString();
-		_this.title = 'Types and a folder instance for a glossary';
-		_this.specifVersion = '0.10.8';
-		_this.dataTypes = [{
+		self.title = 'Types and a folder instance for a glossary';
+		self.specifVersion = '0.10.8';
+		self.dataTypes = [{
 			id: dTid,
 			title: CONFIG.dataTypeComment,
 			type: "xs:string",
 			maxLength: CONFIG.textThreshold,
 			changedAt: time
 		}];
-		_this.propertyClasses = [{
+		self.propertyClasses = [{
 			id: pC1id,
 			title: CONFIG.attrTypeTitle,
 			dataType: dTid,		// ID of the dataType defined before
@@ -203,7 +199,7 @@ app.standardTypes = new function() {
 			dataType: dTid,		// ID of the dataType defined before
 			changedAt: time
 		}];
-		_this.resourceClasses = [{
+		self.resourceClasses = [{
 			id: rCid,
 			title: CONFIG.spcTypeGlossary,
 			description: "Comment referring to a model element ('resource' in general).",
@@ -211,7 +207,7 @@ app.standardTypes = new function() {
 			propertyClasses: [pC1id,pC3id],
 			changedAt: time
 		}];
-		_this.resources = [{
+		self.resources = [{
 			id: genID('R-'),
 			title: i18n.lookup(CONFIG.spcTypeGlossary),
 			class: rCid,
@@ -224,7 +220,7 @@ app.standardTypes = new function() {
 			}],
 			changedAt: time
 		}];
-		return _this
+		return self
 	}
 
 	// a constructor for standard types:
@@ -234,10 +230,10 @@ app.standardTypes = new function() {
 		if( !prj || !types ) return null;
 //		console.debug('StdTypes',prj,types);
 
-		var _this = this;
+		var self = this;
 		
 	//	ToDo: REWORK
-	//	_this.available = function() {  
+	//	self.available = function() {  
 	//		// Return true if all types are available.
 	//		// Must compare by unique name, because the id may vary.
 	//		return containsByTitle( prj.dataTypes, types.dataTypes )
@@ -245,7 +241,7 @@ app.standardTypes = new function() {
 	//			&& containsByTitle( prj.statementClasses, types.statementClasses )
 	//	};
 
-		_this.add = function() {
+		self.add = function() {
 			// add or update the new types to the project.
 			// Update by creating with a new id, because an id may not be reused;
 			// as the server does not allow type updates, yet.
@@ -254,8 +250,8 @@ app.standardTypes = new function() {
 				console.error('type update has failed '+st.status)
 			})
 		};
-		_this.add();
+		self.add();
 //		console.debug('StdTypes done')
-		return _this
+		return self
 	}
 */

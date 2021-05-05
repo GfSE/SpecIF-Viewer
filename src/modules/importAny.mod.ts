@@ -1,14 +1,14 @@
-/*!	GUI and control for SpecIF, ReqIF and XLS import
+/*!	GUI and control for all importers
 	Dependencies: jQuery 3.1+, bootstrap 3.1
 	Copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 
-modules.construct({
+moduleManager.construct({
 	name: 'importAny'
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
 
 	// The modes for selection when an import is encountered which is already loaded:
@@ -46,7 +46,7 @@ modules.construct({
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
 			help: i18n.MsgImportSpecif,	
-			opts: {mediaTypeOf: attachment2mediaType}
+			opts: { mediaTypeOf: attachment2mediaType }
 		},{
 			id:'archimate',	
 			name:'ioArchimate',	
@@ -54,7 +54,7 @@ modules.construct({
 			label:'Archimate®',
 //			help: i18n.MsgImportArchimate, 
 			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
-			opts: {mediaTypeOf: attachment2mediaType} 
+			opts: { mediaTypeOf: attachment2mediaType } 
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
@@ -66,9 +66,9 @@ modules.construct({
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			help: i18n.MsgImportReqif,
-			opts: {mediaTypeOf: attachment2mediaType}
-    /*    }, {
+			help: "Experimental: "+i18n.MsgImportReqif,
+			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"update", mediaTypeOf: attachment2mediaType } 
+	/*	},{
             id: 'rdf',
             name: 'ioRdf',
             desc: 'Resource Description Format',
@@ -80,7 +80,7 @@ modules.construct({
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
 			help: i18n.MsgImportXls,
-			opts: {dontCheck:['statement.object']}
+			opts: { dontCheck: ["statement.object"] }
 		},{
 			id:'mm',
 			name:'ioMm',
@@ -93,7 +93,7 @@ modules.construct({
 //	self.projectL = [];  	// list of the projects already available
 	self.projectName = '';  // user input for project name
 	self.format = undefined;
-	var showFileSelect = undefined,
+	var showFileSelect:State,
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
 		urlP,				// the latest URL parameters
@@ -101,26 +101,26 @@ modules.construct({
 		cacheLoaded = false,
 		allValid = false;
 
-	function terminateWithSuccess() {
-		message.show( i18n.phrase( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
+	function terminateWithSuccess():void {
+		message.show( i18n.lookup( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
 		setTimeout( function() {
 				self.clear();
 				if( urlP ) delete urlP[CONFIG.keyImport];
 				// change view to browse the content:
-				modules.show({ newView: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
+				moduleManager.show({ view: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
 			}, 
-			400 
+			CONFIG.showTimelag
 		);
 	}
-	function handleError(xhr) {
+	function handleError(xhr:xhrMessage):void {
 //		console.debug( 'handleError', xhr );
 		self.clear();
 		stdError(xhr);
 		self.show();
 	}
  
-	self.clear = function() {
-		$('input[type=file]').val( null );  // otherwise choosing the same file twice does not create a change event in Chrome
+	self.clear = function():void {
+		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
 		setTextValue(i18n.LblFileName,'');
 		setTextValue(i18n.LblProjectName,'');
 	//	self.projectL.length = 0;  // list of projects
@@ -131,7 +131,7 @@ modules.construct({
 		app.busy.reset();
 		self.enableActions();
 	};
-	self.init = function() {
+	self.init = function():boolean {
 		// initialize the module:
 		if ( !browser.supportsFileAPI ) {
 			message.show( i18n.MsgFileApiNotSupported, {severity:'danger'} );
@@ -148,7 +148,7 @@ modules.construct({
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput btn-sm" style="margin: 0 0 0.8em 0" >'
 				+			'<span>'+i18n.BtnFileSelect+'</span>'
-				+			'<input id="importFile" type="file" onchange="'+myFullName+'.select()" />'
+				+			'<input id="importFile" type="file" onchange="'+myFullName+'.pickFiles()" />'
 				+		'</div>'
 				+   '</div>'
 			+	'</div>'
@@ -187,16 +187,16 @@ modules.construct({
 		self.clear();
 		self.setFormat('specif');
 		importMode = {id:'replace'};
-		// certain GUI elements will only be shown if the user must select a file:
+		// certain GUI elements will only be shown if the user must pick a file:
 		showFileSelect = new State({
 			showWhenSet: ['.fileSelect'],
 			hideWhenSet: []
 		});
-		return true
+		return true;
 	};
 	// The module entry;
 	// called by the modules view management:
-	self.show = function( opts ) {
+	self.show = function( opts:any ):void {
 		if( !opts ) opts = {};
 //		console.debug( 'import.show', opts );
 	/*	if( me.userName == CONFIG.userNameAnonymous ) {
@@ -208,56 +208,60 @@ modules.construct({
 		
 		$('#pageTitle').html( i18n.LblImport );
 		
-			function getFormat(p) {
+			function getFormat(p:string):object|undefined {
 				// filename without extension must have at least a length of 1:
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
-					if( p.indexOf('.'+formats[i].id)>0 && modules.isReady(formats[i].name) ) 
-						return formats[i]
+					if( p.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
+						return formats[i];
 				};
-				return; // undefined
 			}
 		urlP = opts.urlParams;
 		if( urlP && urlP[CONFIG.keyImport] ) {
 			// Case 1: A file name for import has been specified in the URL:
 //			console.debug('import 1',urlP);
+			// replace project with same id, unless a different import mode is specified:
 			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
-			// check the format:
+			// check the file format:
 			self.format = getFormat( urlP[CONFIG.keyImport] );
 //			console.debug('filename:',self.file.name,self.format);
-			if( !app[self.format.name] || !app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} )) {
-				self.clear();
-				message.show( i18n.phrase('ErrInvalidFileType',self.file.name), {severity:'error'} );
-				self.show();
-				return;
-			}; 
-			app[self.format.name].init( self.format.opts );
-			// Show the name of the specified import file:
-			let rF = textField(i18n.LblFileName,self.file.name);
-			$("#formNames").html( rF );
-			// Take fileName as project name:
-			self.projectName = self.file.name.fileName();	
-			setImporting( true );
+			if( self.format && app[self.format.name] ) {
+				// initialize the import module:
+				app[self.format.name].init( self.format.opts );
+				
+				if( app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} ) ) {
+					// Show the name of the specified import file:
+					let rF = textField(i18n.LblFileName,self.file.name);
+					$("#formNames").html( rF );
+					// Take fileName as project name:
+					self.projectName = self.file.name.fileName();	
+					setImporting( true );
 
-			// Assume it is an absolute or relative URL;
-			// must be either from the same URL or CORS-enabled.
-			// Import the file: 
-			httpGet({
-				// force a reload through cache-busting:
-				url: urlP[CONFIG.keyImport]+'?'+Date.now().toString().simpleHash(),
-				responseType: 'arraybuffer',
-				withCredentials: false,
-				done: function(result) {
-//					console.debug('httpGet done',result.response);
-					app[self.format.name].toSpecif(result.response)
-						.progress( setProgress )
-						.done( handleResult )
-						.fail( handleError )
-				},
-				fail: handleError
-			//	then:
-			});
+					// Assume it is an absolute or relative URL;
+					// must be either from the same URL or CORS-enabled.
+					// Import the file: 
+					httpGet({
+						// force a reload through cache-busting:
+						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
+						responseType: 'arraybuffer',
+						withCredentials: false,
+						done: function (result: XMLHttpRequest) {
+//							console.debug('httpGet done',result.response);
+							app[self.format.name].toSpecif(result.response)
+								.progress( setProgress )
+								.done( handleResult )
+								.fail( handleError );
+						},
+						fail: handleError
+					});
+					return;
+				};
+			};
+			// otherwise:
+			self.clear();
+			message.show( i18n.lookup('ErrInvalidFileType',self.file.name), {severity:'error'} );
+			self.show();
 			return;
 		};
 		// Case 2: let the user pick an import file.
@@ -268,10 +272,10 @@ modules.construct({
 		// only at this point of time it is known which modules are loaded and initialized:
 		let str = '';
 		formats.forEach( function(s) {
-			if( modules.isReady(s.name) ) {
+			if( moduleManager.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
-				app[s.name].init( self.format.opts );
-				if( typeof(app[s.name].toSpecif)=='function' ) {
+			//	app[s.name].init( self.format.opts );
+				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
 					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				} else {
 					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
@@ -285,12 +289,12 @@ modules.construct({
 	};
 	// module exit;
 	// called by the modules view management:
-	self.hide = function() {
+	self.hide = function():void {
 //		console.debug( 'importAny.hide' )
 		app.busy.reset();
 	};
 	
-	self.setFormat = function( fId ) {
+	self.setFormat = function ( fId:string ):void {
 		if( importing || !fId ) return;
 //		console.debug('setFormat',self.format,fId);
 
@@ -300,6 +304,9 @@ modules.construct({
 			$('#formatSelector-'+fId).addClass('active');
 			self.format = itemById(formats,fId);
 		};
+
+		// initialize the importer:
+		app[self.format.name].init( self.format.opts );
 
 		// show the file name:
 		let rF = textField(i18n.LblFileName,'');
@@ -312,51 +319,61 @@ modules.construct({
 		self.enableActions();
 	};
 
-	function checkState() {
+	function checkState():void {
 		// in this case only the project name must have a length>0:
 		let pnl = getTextLength(i18n.LblProjectName)>0;
 		// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
-		cacheLoaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.loaded();	
+		cacheLoaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.isLoaded();	
 		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
 		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
 	};
-	self.enableActions = function() {
+	self.enableActions = function():void {
 		// enable/disable the import button depending on the input state of all fields;
 		
 		checkState();
 		try {
 		//	document.getElementById("cloneBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("replaceBtn").disabled = !allValid || !cacheLoaded;
 		} catch(e) {
 			console.error("importAny: enabling actions has failed ("+e+").");
 		};
 	};
-	function setImporting( st ) {
+	function setImporting( st:boolean ):void {
 		importing = st;
 		app.busy.set( st );
 		checkState();
 		try {
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("fileSelectBtn").disabled = st;
 		//	document.getElementById("cloneBtn").disabled = 
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("replaceBtn").disabled = st || !allValid || !cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("cancelBtn").disabled = !st;
 		} catch(e) {
 			console.error("importAny: setting state 'importing' has failed ("+e+").");
 		};
 	}
-	self.select = function() {
+	self.pickFiles = function():void {
+		// @ts-ignore - .files is in fact accessible
         let f = document.getElementById("importFile").files[0];
 		// check if file-type is eligible:
-//		console.debug('select',f.name,self.format);
+//		console.debug('pickFiles',f.name,self.format);
 
-		f = app[self.format.name].verify( f );
-		if( f ) {
+		if( app[self.format.name].verify( f ) ) {
 			self.file = f;
 		//	self.projectL.length = 0;  // https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 
@@ -365,16 +382,16 @@ modules.construct({
 			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
 				setTextValue( i18n.LblProjectName, self.projectName );
-				setTextFocus( i18n.LblProjectName )
+				setTextFocus( i18n.LblProjectName );
 			};
 
 			self.enableActions();
-//			console.debug('select',self.fileName(), self.projectName);
+//			console.debug('pickFiles',self.fileName(), self.projectName);
 		} else {
 			self.clear();
 		}
 	};
-	self.importLocally = function(mode) {
+	self.importLocally = function(mode:string):void {
 		if( importing || !mode ) return;   // ignore further clicks while working
 		
 		setImporting( true );
@@ -386,8 +403,8 @@ modules.construct({
 
 		readFile( self.file, app[self.format.name].toSpecif );
 		return;
-		
-		function readFile( f, fn ) {
+
+		function readFile( f, fn:Function ):void {
 			let rdr = new FileReader();
 			rdr.onload = function(evt) {
 				fn( evt.target.result )		// process the buffer
@@ -398,13 +415,38 @@ modules.construct({
 			rdr.readAsArrayBuffer( f );
 		}
 	};
-	function handleResult( data ) {
+	// ToDo: construct an object ...
+	var resQ:SpecIF[] = [],
+		resIdx = 0;
+	function handleResult( data:SpecIF|SpecIF[] ):void {
 		// import specif data as JSON:
-//		console.debug('handleResult',simpleClone(data));
-
-		return specif.check( data, self.format.opts )
-			.then( (dta)=>{
-			/*	// First check if there is a project with the same id:
+		if( Array.isArray( data ) ) {
+			// The first object shall be imported as selected by the user;
+			// all subsequent ones according to self.format.opts.multipleMode:
+			// (use-case: ioReqif imports a reqifz with multiple reqif files)
+			resQ = data;
+			resIdx = 0;
+			handle( resQ.shift(), resIdx );
+		}
+		else {
+			resQ.length = 0;
+			resIdx = 0;
+			handle( data, resIdx );
+		};
+		return;
+	
+		function handleNext():void {
+			if( resQ.length>0 )
+				handle( resQ.shift(), ++resIdx )
+			else
+				terminateWithSuccess();
+		}
+		function handle( dta:SpecIF, idx:number ):void {
+//			console.debug('handleResult',simpleClone(dta),idx);
+			specif.check( dta, self.format.opts )
+	//		specif.check( data, self.format.opts )
+			.then( (dta:SpecIF)=>{
+			/*	//  First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
 //							console.debug(dta.id,self.projectL[p].id);
@@ -472,8 +514,14 @@ modules.construct({
 					.open()
 				} else {   */
 				setProgress(importMode.id+' project',20); 
-				let opts = {mode:importMode.id};
-				switch( importMode.id ) {
+
+				// The first object shall be imported as selected by the user --> importMode.id;
+				// all subsequent ones according to self.format.opts.multipleMode:
+				let opts:any = {};
+				if( idx>0 ) opts.mode = self.format.opts.multipleMode
+				else opts.mode = importMode.id;
+
+				switch( opts.mode ) {
 					case 'clone': 	
 						dta.id = genID('P-');
 						// no break
@@ -484,7 +532,7 @@ modules.construct({
 						opts.collectProcesses = false;
 						app.cache.create( dta, opts )
 							.progress( setProgress )
-							.done( terminateWithSuccess )
+							.done( handleNext )
 							.fail( handleError );
 						break;
 					case 'adopt':
@@ -495,18 +543,19 @@ modules.construct({
 					case 'update':
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )
-							.done( terminateWithSuccess )
+							.done( handleNext )
 							.fail( handleError )
 				};
 				console.info(importMode.id+' project',dta.title||dta.id);
 			},
 			handleError 
 		);
+		};
 	}; 
-	function setProgress(msg,perc) {
+	function setProgress(msg:string,perc:number):void {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
 	}
-	self.abort = function() {
+	self.abort = function():void {
 		console.info('abort pressed');
 		app[self.format.name].abort();
 		app.cache.selectedProject.abort();

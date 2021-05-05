@@ -5,10 +5,12 @@
 		all minor versions j.n.p of this library work with all ReqIF Server minor versions j.n.q
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
-const CONFIG = {};
-	CONFIG.imgURL = './'+app.productVersion+'./../vendor/assets/images';
+const CONFIG:any = {};
+	CONFIG.appVersion = "0.99.9",
+	CONFIG.specifVersion = "1.0";
+	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
@@ -20,6 +22,7 @@ const CONFIG = {};
 	CONFIG.messageDisplayTimeLong = 12000;
 	CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms). The faster the browser and processor, the shorter the time may be chosen.
 	CONFIG.imageRenderingTimelag = 160;  // timelag between building the DOM and inserting the images
+	CONFIG.showTimelag = 400;
 	CONFIG.minInteger = -32768;
 	CONFIG.maxInteger = 32767;
 	CONFIG.minReal = -10000000.0;
@@ -38,11 +41,13 @@ const CONFIG = {};
 	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
+	CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
 	CONFIG.findMentionedObjects = true;	// looks for object titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
 	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
+	CONFIG.focusColor = '#1690D8';
 
 	// values for boolean 'true' and 'false':
 	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];
@@ -52,8 +57,8 @@ const CONFIG = {};
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
 	// ToDo: Change to a map.
 	// ToDo: use https://github.com/jshttp/mime-types
-	CONFIG.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg', 'png' ];
-	CONFIG.imgTypes = [ 'image/png', 'image/jpeg', 'image/svg+xml', 'image/gif', 'image/jpeg', 'image/x-png' ];
+	CONFIG.imgExtensions = [ 'svg', 'png', 'jpg', 'gif', 'jpeg', 'png' ];
+	CONFIG.imgTypes = [ 'image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/jpeg', 'image/x-png' ];
 	// mime image/x-png does not exist by standard, but it has been seen in real data ...
 	CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
 	CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
@@ -142,17 +147,20 @@ const CONFIG = {};
 
 	// The following can have an i18n label in the translation files:
 	CONFIG.dataTypeComment = 'Datatype for comment text';
-	CONFIG.propClassId = 'dcterms:identifier';
-	CONFIG.propClassTitle = 'dcterms:title';
-	CONFIG.propClassDesc = 'dcterms:description';
-	CONFIG.propClassType = 'dcterms:type';
+	CONFIG.propClassId = "dcterms:identifier";
+	CONFIG.propClassTitle = "dcterms:title";
+	CONFIG.propClassDesc = "dcterms:description";
+	CONFIG.propClassType = "dcterms:type";
 	CONFIG.propClassDiagram = 
 	CONFIG.resClassDiagram = 'SpecIF:Diagram';
 //	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';
 	CONFIG.resClassOutline = 'SpecIF:Outline';
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
+	CONFIG.resClassProcess = 'SpecIF:BusinessProcess';
 	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
+	CONFIG.resClassCondition = "SpecIF:Condition";
+	CONFIG.resClassRole = "SpecIF:Role";
 	CONFIG.resClassFolder = 'SpecIF:Heading';
 	CONFIG.resClassParagraph = "SpecIF:Paragraph";
 	CONFIG.resClassComment = 'SpecIF:Comment';
@@ -254,14 +262,14 @@ const CONFIG = {};
 		// Dublin core:
 		CONFIG.propClassDesc,
 		'DC.description',
-		CONFIG.resClassDiagram,
+		CONFIG.propClassDiagram,
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Text',
-/*		// ARCWAY Cockpit Copilot:
+		// General:
 		'Beschreibung',
 		'Description',
 		'Diagramm',
-		// DocBride Resource Director:
+/*		// DocBride Resource Director:
 		'DBRD.Text',
 		'Preview',
 		// carhs SafetyWissen:
@@ -325,7 +333,8 @@ const CONFIG = {};
 	// A list of property classes which are excluded from text formatting, specified by title;
 	// Applied only to properties of type "xs:string":
 	CONFIG.excludedFromFormatting = [
-		CONFIG.propClassType
+		CONFIG.propClassType,
+		"SpecIF:Notation"
 	]
 	.concat( CONFIG.titleProperties )
 	.concat( CONFIG.idProperties );
@@ -337,7 +346,8 @@ const CONFIG = {};
 	CONFIG.excludedFromDeduplication = [
 		CONFIG.resClassFolder,
 		CONFIG.resClassParagraph,
-		'SpecIF:Condition',
+		CONFIG.resClassDiagram,
+		CONFIG.resClassCondition,
 		'bpmn:parallelGateway',
 		'bpmn:exclusiveGateway',
 		'bpmn:inclusiveGateway',
@@ -368,11 +378,19 @@ const CONFIG = {};
 	CONFIG.diagramPropertyClasses = [
 		CONFIG.propClassDiagram
 	]; */
-	// A list of resources representing Model Diagrams, specified by resource title:
+
+	// A list of resources representing model diagram types, specified by a property with title CONFIG.propClassType,
+	// where all relations themselves have a "SpecIF:shows" relation.
+	// The (older) diagrams from ARCWAY don't have, but the BPMN and Archimate diagrams have:
+	CONFIG.diagramTypesHavingShowsStatementsForEdges = [
+		CONFIG.resClassProcess,
+		"Archimate:Viewpoint"
+	];
+	// A list of resourceClasses representing Model Diagrams, specified by resourceClass title:
 	CONFIG.diagramClasses = [
 		CONFIG.resClassDiagram,
-		'FMC:Plan',			// equivalent
-		'SpecIF:View'		// deprecated
+		"FMC:Plan",			// equivalent
+		"SpecIF:View"		// deprecated
 	];
 	CONFIG.folderClasses = [
 		CONFIG.resClassOutline,
@@ -438,137 +456,21 @@ const CONFIG = {};
 	];  */
 
 	CONFIG.icons = new Map([
-		['IREB:Requirement',"&#8623;"],
-		['SpecIF:Feature',"&#10038;"],
 		['FMC:Actor',"&#9632;"],
 		['FMC:State',"&#9679;"],
 		['FMC:Event',"&#11047;"],
 		['SpecIF:Collection',"&#11034;"],
+		['IREB:Requirement', "&#8623;"],
+		['SpecIF:Feature', "&#10038;"],
+		['SpecIF:Diagram', "&#9635;"],
 		[CONFIG.resClassDiagram,"&#9635;"],
 	//	['SpecIF:UserStory',"&#9830;"],
 		["IR:Annotation","&#9755;"]
 	]);
 
-const vocabulary = {
-// Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
-	property: {
-		// for properyTypes and properties:
-		specif: function( iT ) {
-			// Target language: SpecIF
-			var oT = '';
-			switch( iT.toSpecifId().toLowerCase() ) {
-				case "_berschrift":
-				case "title":
-				case "titel":
-				case "dc_title":
-				case "specif_heading":			//  'SpecIF:Heading' has been used falsely as property title
-				case "reqif_chaptername":
-				case "reqif_name": 					oT = CONFIG.propClassTitle; break;
-				case "description":
-				case "beschreibung":
-				case "text":
-				case "dc_description":
-	//			case "reqif_changedescription":
-				case "reqif_description":
-				case "reqif_text":					oT = CONFIG.propClassDesc; break;
-				case "reqif_revision":				oT = "SpecIF:Revision"; break;
-				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
-				case "specif_subclass":			// deprecated, for compatibility
-				case "reqif_category":
-				case "specif_notation":				oT = CONFIG.propClassType; break;
-				case 'specif_id':				// deprecated, for compatibility
-				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
-				case "specif_state":			// deprecated, for compatibility
-				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
-				case "dc_author":
-				case "dcterms_author":			// deprecated, for compatibility
-				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
-				case "specif_createdat":			oT = "dcterms:modified"; break;
-	//			case "reqif_foreignmodifiedby":		oT = ""; break;
-	//			case "reqif_foreigncreatedon":		oT = ""; break;
-	//			case "reqif_foreigncreatedthru":	oT = ""; break;
-	//			case "reqif_fitcriteria":			oT = ""; break;
-	//			case "reqif_prefix":				oT = ""; break;
-	//			case "reqif_associatedfiles":		oT = ""; break;
-	//			case "reqif_project":				oT = ""; break;
-	//			case "reqif_chapternumber":			oT = ""; break;
-				default:							oT = iT
-			};
-			return oT;
-		},
-		reqif: function( iT ) {
-			// Target language: ReqIF
-			var oT = '';
-			switch( iT.toSpecifId().toLowerCase() ) {
-				case "dcterms_title": 				oT = "ReqIF.Name"; break;
-				case "dcterms_description": 		oT = "ReqIF.Text"; break;
-				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
-				case "specif_heading": 				oT = "ReqIF.ChapterName"; break;	// for compatibility
-				case "specif_category":
-				case "dcterms_type":				oT = "ReqIF.Category"; break;
-				case "specif_revision":				oT = "ReqIF.Revision"; break;
-				case "specif_state":			// deprecated, for compatibility
-				case "specif_status":				oT = "ReqIF.ForeignState"; break;
-				case "dcterms_author":			// deprecated, for compatibility
-				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
-	//			case "specif_createdat":
-	//			case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
-				default:							oT = iT
-			};
-			return oT;
-		}
-	},
-	resource: {
-		// for resource types, such as dataType, resourceType, ...:
-		specif: function( iT ) {
-			// Target language: SpecIF
-			var oT = '';
-			switch( iT.toSpecifId().toLowerCase() ) {
-				case 'actors':
-				case 'actor':
-				case 'akteure':
-				case 'akteur':						oT = "FMC:Actor"; break;
-				case 'states':
-				case 'state':
-				case 'zustände':
-				case 'zustand':						oT = "FMC:State"; break;
-				case 'events':
-				case 'event':
-				case 'ereignisse':
-				case 'ereignis':					oT = "FMC:Event"; break;
-				case 'anforderungen':
-				case 'anforderung':
-				case 'requirements':
-				case 'requirement':
-				case 'specif_requirement':			oT = "IREB:Requirement"; break;
-				case 'merkmale':
-				case 'merkmal':
-				case 'features':
-				case 'feature':						oT = "SpecIF:Feature"; break;
-				case 'annotations':
-				case 'annotationen':
-				case 'annotation':					oT = "IR:Annotation"; break;
-				case 'user_stories':
-				case 'user_story':					oT = 'SpecIF:UserStory'; break;
-				case 'specif_view':
-				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
-				case 'specif_folder':				oT = CONFIG.resClassFolder; break;
-				case 'specif_hierarchyroot':
-				case 'specif_hierarchy':			oT = CONFIG.resClassOutline; break;
-				default:							oT = iT
-			};
-			return oT
-/*		},
-		reqif: function( iT ) {
-			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
-			return iT */
-		}
-	}
-};
-
 /////////////////////////////////////////////////
 // Regular expressions:
-const RE = {};
+const RE:any = {};
 	RE.Id = /^[_a-zA-Z]{1}[_a-zA-Z0-9.-]*$/;	// compliant with ReqIF and SpecIF
 //	RE.Email = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
 //	RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
@@ -601,7 +503,7 @@ const RE = {};
 	// see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
 	// /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
-	RE.Real = function( decimals ) {
+	RE.Real = function( decimals:number ) {
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
 		return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' );
 	};
@@ -633,11 +535,11 @@ const RE = {};
 // c) A single object to link+object resp. link+image:
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
-	RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)</a>', 'g' );
-	RE.tagImg = new RegExp( '<img([^>]+)/>', 'g' );
-	const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)';
+	RE.tagA = new RegExp( '<a ([^>]+)>([\\s\\S]*?)</a>', 'g' );
+	RE.tagImg = new RegExp( '<img ([^>]+)/>', 'g' );
+	const reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
-	RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>', 'g' );
+	RE.tagNestedObjects = new RegExp( '<object ([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;
 	const tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)";
 	RE.tag = new RegExp( tagStr, 'g' );

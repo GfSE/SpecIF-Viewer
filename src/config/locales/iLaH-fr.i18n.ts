@@ -1,25 +1,20 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'Français' (fr).
 	The result can be obtained by reference of:
-	- 	self.MsgText
-	- phrase('MsgText')
-	- phrase('MsgText', 'param')
+	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
+	- yourVarName.lookup('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsFr() {
-	var self = this;
-	self.phrase = function( ms, pA ) { 
+    var self:any = {};
+	self.lookup = function (lb: string, pA: string): string {
 		// replace a variable '~A' with pA, if available:
-		// for use in HTML fields.
-		if( ms ) {
-			if( pA ) return self[ms].replace( /(.*)~A(.*)/g, function( $0, $1, $2 ){ return $1+pA+$2 } ); 
-			return self[ms] 
+		if (lb) {
+			// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
+			let res = self[jsIdOf(lb)] || lb;
+			if (pA) return res.replace(/~A/, pA);
+			return res;
 		};
-		return ''
-	};
-	self.lookup = function( lb ) { 
-		// toJsId: first replace '.' '-' '(' ')' and white-space by '_'
-		// for use in regular text fields.
-		return self[lb.toJsId()] || lb
+		return '';
 	};
 
 	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
@@ -173,15 +168,14 @@ function LanguageTextsFr() {
 	self.LblPreviousStep = 'Au précédent';
 	self.LblNextStep = 'Au suivant';
 	self.LblGo = 'Démarrer';
-	self.LblAll = 'Tous';
 	self.LblHitCount = 'Score';
 	self.LblRelateAs = "Relier comme";
 	self.LblSource = "Sujet";
 	self.LblTarget = "Objet";
 	self.LblEligibleSources = "Ressources éligible comme "+	self.LblSource;
 	self.LblEligibleTargets = "Ressources éligible comme "+	self.LblTarget;
-	self.LblSaveRelationAsSource = 'Relier ressource comme '+LblSource;
-	self.LblSaveRelationAsTarget = 'Relier ressource comme '+LblTarget;
+	self.LblSaveRelationAsSource = 'Relier ressource comme '+self.LblSource;
+	self.LblSaveRelationAsTarget = 'Relier ressource comme '+self.LblTarget;
 	self.LblIcon = 'Symbole';
 	self.LblCreation = 'Création';
 	self.LblCreateLink1 = "&#x2776;&#160;Affirmation désirée";
@@ -401,6 +395,27 @@ function LanguageTextsFr() {
 	self.IREB_QualityRequirement = "Exigence de Qualité";
 	self.IREB_RequirementTypeConstraint =
 	self.IREB_Constraint = "Contrainte";
+	self.IREB_PerspectiveBusiness = "Business";
+	self.IREB_PerspectiveStakeholder = "Stakeholder";
+	self.IREB_PerspectiveUser = "Utisateur";
+	self.IREB_PerspectiveOperator = "Operateur";
+	self.IREB_PerspectiveSystem = "Système";
+	self.SpecIF_LifecycleStatusDeprecated = "deprecated";
+	self.SpecIF_LifecycleStatusRejected = "rejected";
+	self.SpecIF_LifecycleStatusInitial = "initial";
+	self.SpecIF_LifecycleStatusDrafted = "drafted";
+	self.SpecIF_LifecycleStatusSubmitted = "submitted";
+	self.SpecIF_LifecycleStatusApproved = "approved";
+	self.SpecIF_LifecycleStatusReady = "ready";
+	self.SpecIF_LifecycleStatusDone = "done";
+	self.SpecIF_LifecycleStatusValidated = "validated";
+	self.SpecIF_LifecycleStatusReleased = "released";
+	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
+	self.SpecIF_DisciplineSystem = "Système";
+	self.SpecIF_DisciplineMechanics = "Méchanique";
+	self.SpecIF_DisciplineElectronics = "Éléctronique";
+	self.SpecIF_DisciplineSoftware = "Logiciel";
+	self.SpecIF_DisciplineSafety = "Sécurité";
 	self.SpecIF_BusinessProcess = 'Processus'; 
 	self.SpecIF_BusinessProcesses = 'Processus';
 	self.SpecIF_Rationale = "Motivation";
@@ -520,6 +535,7 @@ function LanguageTextsFr() {
 	self.HIS_OemComment = 'OEM-Comment';
 	self.HIS_SupplierStatus = 'Supplier-Status';
 	self.HIS_SupplierComment = 'Supplier-Comment';
+/*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Titre';
 	self.DBRD_Name = 'Titre';
@@ -530,7 +546,7 @@ function LanguageTextsFr() {
 	self.VALUE_Object_Text =
 	self.Object_Text = self.ReqIF_Text;
 	self.VALUE_Object_ID =
-	self.Object_ID = self.ReqIF_ForeignID;
+	self.Object_ID = self.ReqIF_ForeignID; */
 	self.SpecIF_priorityHigh = "haut";
 	self.SpecIF_priorityRatherHigh = "plutôt haut";
 	self.SpecIF_priorityMedium = "moyen";
@@ -585,7 +601,8 @@ function LanguageTextsFr() {
 	self.MsgCreateStatement = "Créer une affirmation";
 	self.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
 	self.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
-	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
+/*	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers."; */
+	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
 	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip et *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
 	self.MsgImportBpmn = "Type de fichier valide est *.bpmn. Le contenu doit correspondre au schéma BPMN 2.0 XML. Le téléchargement peut durer quelques minutes.";
 	self.MsgImportXls = "Types de fichiers valides: *.xls, *.xlsx et *.csv. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
@@ -711,4 +728,5 @@ function LanguageTextsFr() {
 	self.AppImport = 	self.IcoImport+'&#160;Import';
 	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
 	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+	return self;
 };

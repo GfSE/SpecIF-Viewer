@@ -6,7 +6,7 @@
     We appreciate any correction, comment or contribution!
 */
 
-modules.construct({
+moduleManager.construct({
     name: "serverPouch"
 }, (self)=>{
     "use strict";

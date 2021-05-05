@@ -63,7 +63,7 @@ function toXhtml( data, opts ) {
 		reSingleObject = new RegExp( reSO, 'g' );
 	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 	// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>',
 		reNestedObjects = new RegExp( reNO, 'g' );
 
 	// All required parameters are available, so we can begin.
@@ -310,14 +310,14 @@ function toXhtml( data, opts ) {
 				function fileNameWithPath( u ) {
 					// Unfortunately some (or even most) ePub-Readers do not support subfolders for images,
 					// so we need to generate a GUID and to store all files in a single folder.
-					return '../'+opts.epubImgPath+'F-'+u.simpleHash()
+					return '../' + opts.epubImgPath + 'F-' + simpleHash(u)
 				}
 				function pushReferencedFile( f ) {
 					if( f && f.blob ) {
 						// avoid duplicate entries:
 						if( indexBy( xhtml.images, 'title', f.title )<0 ) {
 							xhtml.images.push({
-								id: 'F-'+f.title.simpleHash(),
+								id: 'F-' + simpleHash(f.title),
 							//	id: f.id,
 							//	title: f.title,  // is the distinguishing/relative part of the URL
 								blob: f.blob,
@@ -618,6 +618,9 @@ function toXhtml( data, opts ) {
 		// Retrieve the text property of the element (cross-browser support)
 		return temp.textContent || temp.innerText || "";
 	}
+	// Make a very simple hash code from a string:
+	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+	function simpleHash(str) { for (var r = 0, i = 0; i < str.length; i++)r = (r << 5) - r + str.charCodeAt(i), r &= r; return r }
 	function extOf( str ) {
 		// get the file extension without the '.':
 		return str.substring( str.lastIndexOf('.')+1 );

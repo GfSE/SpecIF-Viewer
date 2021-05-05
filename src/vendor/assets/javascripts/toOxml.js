@@ -1,19 +1,22 @@
+/*!	Create and save a MS WORD OpenXML document using SpecIF data.
+	OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
+	  http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
+	or
+	  https://www.data2type.de/xml-xslt-xslfo/wordml/praxistipps-word-ooxml/
+
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de
+	License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+	
+	Limitations:
+	- Accepts data-sets according to SpecIF v0.10.8 and later.
+	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
+	- There must only be one revision per resource or statement
+*/
+
 function toOxml( data, opts ) {
 	"use strict";
-	// Create and save a MS WORD OpenXML document using SpecIF data.
-	// OpenXML can be opened by MS-Office, see "OpenXML Explained" by Wouter van Vugt: 
-	//   http://openxmldeveloper.org/cfs-filesystemfile.ashx/__key/communityserver-components-postattachments/00-00-00-19-70/Open-XML-Explained.pdf
-	// or
-	//   https://www.data2type.de/xml-xslt-xslfo/wordml/praxistipps-word-ooxml/
-	//
-	// Author: se@enso-managers.de
-	// (C) copyright http://enso-managers.de
-	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
-	//
-	// Limitations:
-	// - Accepts data-sets according to SpecIF v0.10.8 and later.
-	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
-	// - There must only be one revision per resource or statement
 
 	// Reject versions < 0.10.8:
 	if( data.specifVersion ) {
@@ -65,7 +68,7 @@ function toOxml( data, opts ) {
 	// - Otherwise transform SVG to PNG, as MS Word does not (yet) support SVG.
 	// To get the image size, see: https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
 	const olId = 1;	// the first numId for bulleted lists; '0' does not work
-	var images = [],
+	var imageL = [],
 		pend = 0,	// the number of pending operations
 		olCnt = olId;	// the count of numbered lists, when used as id, every one will start at olId+1
 
@@ -84,7 +87,7 @@ function toOxml( data, opts ) {
 					function storeR(ev) {
 //						console.debug('raster',pend);
 						// please note the different use of 'id' and 'title' in file and images!
-						images.push( {id:f.title,type:f.type,h:ev.target.height,w:ev.target.width,b64:ev.target.src} );
+						imageL.push( {id:f.title,type:f.type,h:ev.target.height,w:ev.target.width,b64:ev.target.src} );
 						if( --pend<1 ) {
 							// all images have been converted, continue processing:
 							createOxml()
@@ -119,7 +122,7 @@ function toOxml( data, opts ) {
 						can.height = img.height;
 						ctx.drawImage( img, 0, 0 );
 						// please note the different use of 'id' and 'title' in specif.files and images!
-						images.push( {id:pngN,type:'image/png',h:img.height,w:img.width,b64:can.toDataURL()} );
+						imageL.push( {id:pngN,type:'image/png',h:img.height,w:img.width,b64:can.toDataURL()} );
 						if( --pend<1 ) {
 							// all images have been converted, continue processing:
 							createOxml()
@@ -200,7 +203,7 @@ function toOxml( data, opts ) {
 				reSingleObject = new RegExp( reSO, '' );
 		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-			const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+			const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>',
 				reNestedObjects = new RegExp( reNO, '' ); */
 		
 			// Regex to isolate text runs constituting a paragraph:
@@ -246,7 +249,7 @@ function toOxml( data, opts ) {
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
 					ti = stripHtml( itm.properties[a].value );
 				} else {
-					// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
+					// In certain cases (SpecIF hierarchy root or comment), there is no title property. 
 					ti = elTitleOf(itm);
 				};
 				ti = minEscape( opts.lookup( ti ) );
@@ -288,10 +291,11 @@ function toOxml( data, opts ) {
 				let sts={}, cid, oid, sid, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
-					// all statements having the same title are clustered:
+					// for clustering all statements by title:
 					cid = titleOf( st, undefined, opts );
-				/*	// all statements having the same class are clustered:
+				/*	// for clustering all statements by class:
 					cid = st['class']; */
+					
 					// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
@@ -309,7 +313,8 @@ function toOxml( data, opts ) {
 				// else, there are statements to render:
 				// The heading:
 				let ct = wParagraph( {text: opts.statementsLabel, format:{heading: 4}} ),
-					sTi, row, cell;
+					sTi, row, cell, resL;
+
 				// build a table of the statements/relations by type:
 				for( cid in sts ) {
 					// if we have clustered by title:
@@ -320,20 +325,24 @@ function toOxml( data, opts ) {
 
 					// 3 columns:
 					if( sts[cid].subjects.length>0 ) {
-						cell = '';
+
 						// collect all related resources (here subjects):
-						sts[cid].subjects.forEach( function(s) {
+						resL = forAll( sts[cid].subjects, (s)=>{ return { id:s.id, ti:titleOf( s, undefined, opts ) }; });
+						
+						cell = '';
+						resL
+						.sort( (a,b)=>{ return a<b? -1:1 } )
+						.forEach( (s)=>{
 							// it may happen that an element is undefined:
-							if( s )
-								cell += wParagraph({
-											text:titleOf( s, undefined, opts ), 
-											format:{
-												font: {color:opts.colorAccent1},
-												hyperlink: {internal:anchorOf( s )}, 
-												noSpacing: true,
-												align: 'end'
-											}
-								})
+							cell += wParagraph({
+										text: s.ti, 
+										format:{
+											font: {color:opts.colorAccent1},
+											hyperlink: {internal:anchorOf( s.id )}, 
+											noSpacing: true,
+											align: 'end'
+										}
+							});
 						});
 						// Create a table row, if there is content:
 						if( cell ) {
@@ -370,20 +379,26 @@ function toOxml( data, opts ) {
 					};
 					
 					if( sts[cid].objects.length>0 ) {
-						cell = '';
+
 						// collect all related resources (here objects):
-						sts[cid].objects.forEach( function(o) {
+						resL = forAll( sts[cid].objects, (o)=>{ return { id:o.id, ti:titleOf( o, undefined, opts ) }; });
+						
+						cell = '';
+						resL
+						.sort( (a,b)=>{ return a<b? -1:1 } )
+						.forEach( (o)=>{
 							// it may happen that an element is undefined:
-							if( o )
-								cell += wParagraph({
-											text:titleOf( o, undefined, opts ),
-											format:{
-												font: {color:opts.colorAccent1},
-												hyperlink:{internal:anchorOf( o )},
-												noSpacing: true
-											}
-								})
+							cell += wParagraph({
+										text: o.ti, 
+										format:{
+											font: {color:opts.colorAccent1},
+											hyperlink: {internal:anchorOf( o.id )}, 
+											noSpacing: true,
+											align: 'end'
+										}
+							});
 						});
+
 						// Create a table row, if there is content:
 						if( cell ) {
 							// The subject:
@@ -422,10 +437,10 @@ function toOxml( data, opts ) {
 //				console.debug('statementsOf',ct);
 				return wTable( {content:ct,width:'full'} )
 			}
-			function anchorOf( res ) {
+			function anchorOf( resId ) {
 				// Find the hierarchy node id for a given resource;
 				// the first occurrence is returned:
-				let m=null, M=null, n=null, N=null, ndId=null;
+				let m, M, n, N, ndId=null;
  				for( m=0, M=data.hierarchies.length; m<M; m++ ) {
 //					console.debug( 'nodes', m, data.hierarchies );
 					if( data.hierarchies[m].nodes )
@@ -438,7 +453,7 @@ function toOxml( data, opts ) {
 				return null;	// not found
 				
 				function ndByRef( nd ) {
-					if( nd.resource==res.id ) return nd.id;
+					if( nd.resource==resId ) return nd.id;
 					let ndId=null;
 					if( nd.nodes )
 						for( var t=0, T=nd.nodes.length; t<T; t++ ) {
@@ -859,7 +874,7 @@ function toOxml( data, opts ) {
 						if( opts.imgExtensions.indexOf( e )>-1 ) {  
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( images, nameOf(u)+'.png' );
+							let pngF = itemById( imageL, nameOf(u)+'.png' );
 //							console.debug('parseImg *2',u,e,pngF);
 							if( e.indexOf('svg')>-1 && opts.preferPng && pngF ) {
 							//	t1 = pngF.type;
@@ -891,7 +906,7 @@ function toOxml( data, opts ) {
 
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
-							let pngF = itemById( images, nameOf(u)+'.png' );
+							let pngF = itemById( imageL, nameOf(u)+'.png' );
 //							console.debug('parseObject *2',u,e,pngF);
 							if( ( t.indexOf('svg')>-1 || t.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
 								t = pngF.type;
@@ -940,7 +955,7 @@ function toOxml( data, opts ) {
 
 								// if the titleLink content equals a resource's title, return a text run with hyperlink:
 								if(m==ti.toLowerCase())
-									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO)}}};
+									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO.id)}}};
 							};
 							// The dynamic link has NOT been matched/replaced, so mark it:
 							return {text:lk[1],color:"82020"}
@@ -1137,19 +1152,53 @@ function toOxml( data, opts ) {
 					return '';
 //				console.debug('wRun',ct);
 				// assuming that hyperlink or bookmark or none of them are present, but never both:
+				
 				if( ct.format && ct.format.hyperlink ) {
 //					console.debug('hyperlink',ct.format.hyperlink);
 					if( ct.format.hyperlink.external )
 						var tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
 					else
-						var tg = 'w:anchor="_'+ct.format.hyperlink.internal+'"';
-					return '<w:hyperlink '+tg+' w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+						// Interestingly enough, Word only supports internal links up to 40 chars:
+						var tg = 'w:anchor="'+limit(ct.format.hyperlink.internal)+'"';
+					return '<w:hyperlink '+tg+'><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
+				
+			/*	This works also nicely, except for the hyperlink formatting:
+				// When manually creating an internal hyperlink, the following pattern is used:
+				// see: http://officeopenxml.com/WPfields.php
+				if( ct.format && ct.format.hyperlink ) {
+//					console.debug('hyperlink',ct.format.hyperlink);
+					if( ct.format.hyperlink.external ) {
+						let tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
+						return '<w:hyperlink '+tg+'><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+					};
+					// else, assuming that it is an internal hyperlink:
+					// Interestingly enough, Word only supports internal links up to 20 chars:
+					let lnk = ct.format.hyperlink.internal.substr(0,20);
+					return	'<w:r>'
+						+		'<w:fldChar w:fldCharType="begin"/>'
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:instrText xml:space="preserve"> REF '+lnk+' \\h </w:instrText>'
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:fldChar w:fldCharType="separate"/>'
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'
+						+		r
+						+	'</w:r>'
+						+	'<w:r>'
+						+		'<w:fldChar w:fldCharType="end"/>'
+						+	'</w:r>'
+				}; */
+				
 				r = '<w:r>'+rPr(ct)+r+'</w:r>';
 				if( ct.format && ct.format.bookmark ) {
 					let bmId = 'bm-'+ hashCode(ct.format.bookmark);
-					return '<w:bookmarkStart w:id="'+bmId+'" w:name="_'+ct.format.bookmark+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
+					// MS-Word supports internal links only up to 40 chars:
+					return '<w:bookmarkStart w:id="'+bmId+'" w:name="'+limit(ct.format.bookmark)+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
 				};
 				// else, just the content:
 				return r;  
@@ -1164,6 +1213,10 @@ function toOxml( data, opts ) {
 					};
 					// default:
 					return '';
+				}
+				function limit(e) {
+					// it is unique for length<41, so don't change it:
+					return e.length<41? e : 'h'+hashCode(e)
 				}
 				function pushReferencedUrl( u ) {
 					// Add the URL to the relationships and return it's index:
@@ -1201,11 +1254,11 @@ function toOxml( data, opts ) {
 				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>';
 			}
 			function wPict( ct ) {
-//				console.debug('wPict',ct,images);
+//				console.debug('wPict',ct,imageL);
 				if( !ct || !ct.picture ) return // undefined;
 				// inserts an image at 'run' level:
 				// width, height: a string with number and unit, e.g. '100pt' or '160mm' is expected
-				let imgIdx = indexById( images, ct.picture.id );
+				let imgIdx = indexById( imageL, ct.picture.id );
 				if( imgIdx<0 ) {
 					let et = "Image '"+ct.picture.id+"' is missing";
 					console.error( et );
@@ -1214,7 +1267,7 @@ function toOxml( data, opts ) {
 //				console.debug('pushReferencedFile',oxml.relations,n);
 				let rIdx = pushReferencedFile( ct.picture );
 				// else, all is fine:
-				let img = images[imgIdx];
+				let img = imageL[imgIdx];
 				if( img.w<1 || img.h<1 )
 					return '';
 				
@@ -1380,17 +1433,17 @@ function toOxml( data, opts ) {
 		var ct = '<pkg:part pkg:name="/word/media/image'+idx+'.'+b64.type+'" pkg:contentType="image/'+b64.type+'" pkg:compression="store">'
 		+			'<pkg:binaryData>'
 		// find the referenced image:
-		let imgIdx = indexById(images,b64.id);
+		let imgIdx = indexById(imageL,b64.id);
 		if( imgIdx<0 ) {
 			console.error("File '"+b64.id+"' is referenced, but not available");
 			return null
 		};
 		
-		let startIdx = images[imgIdx].b64.indexOf(',')+1;	// image data starts after the ','
+		let startIdx = imageL[imgIdx].b64.indexOf(',')+1;	// image data starts after the ','
 
 		// add the image line by line:
-		for (var k=startIdx, K=images[imgIdx].b64.length; k<K; k+=lineLength) {
-			ct += images[imgIdx].b64.slice(k,k+lineLength) + String.fromCharCode(13)+String.fromCharCode(10) 
+		for (var k=startIdx, K=imageL[imgIdx].b64.length; k<K; k+=lineLength) {
+			ct += imageL[imgIdx].b64.slice(k,k+lineLength) + String.fromCharCode(13)+String.fromCharCode(10) 
 		};
 		ct +=		'</pkg:binaryData>'
 			+'</pkg:part>';
@@ -2576,7 +2629,7 @@ function toOxml( data, opts ) {
 		+								'<vt:lpstr/>'
 		+							'</vt:vector>'
 		+						'</TitlesOfParts>'
-		+						'<Company>adesso AG</Company>'
+		+						'<Company>Gesellschaft für Systems Engineering e.V. (GfSE)</Company>'
 		+						'<LinksUpToDate>false</LinksUpToDate>'
 		+						'<CharactersWithSpaces>108636</CharactersWithSpaces>'
 		+						'<SharedDoc>false</SharedDoc>'
@@ -2590,6 +2643,7 @@ function toOxml( data, opts ) {
 	}
 
 	function store( f ) {
+//		let blob = new Blob([f.content],{type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document; charset=utf-8"});
 		let blob = new Blob([f.content],{type: "text/xml; charset=utf-8"});
 		saveAs(blob, f.name+".xml");
 		if( typeof(opts.done)=="function" ) opts.done()

@@ -1,4 +1,3 @@
-///////////////////////////////
 /*!	A simple module loader and object (singleton) factory.
 	When all registered modules are ready, a callback function is executed to start or continue the application.
 	Dependencies: jQuery 3.1 and later.
@@ -8,9 +7,134 @@
 	We appreciate any correction, comment or contribution!
 */
 
+class ViewControl {
+	// Constructs an object to control the visibility of the DOM-tree elements listed in 'list';
+	// the selected view is shown, all others are hidden.
+	// ViewControl can switch pages or tabs, depending on the navigation level:
+	list;			// the list of alternative views under control of the respective object
+	selected: any;	// the currently selected view
+
+	constructor() {
+		this.list = [];
+		this.selected = undefined;
+	}
+	exists(v): boolean {
+		return indexBy(this.list, 'view', v) > -1;
+	}
+	add(v): void {
+		// add the module to the view list of this level:
+		this.list.push(v);
+		$(v.view).hide();
+		// we could add the visual selector, here ... it is now part of loadH.
+	}
+	show(params): void {
+		// Select a new view
+		// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
+		// - simple case: params is a string with the name of the new view.
+		// - more powerful: params is an object with the new target view plus optionally content or other parameters
+		switch (typeof (params)) {
+			case 'undefined': return;	// should never be the case.
+			case 'string': params = { newView: params };
+		};
+//				console.debug('ViewControl.show',this.list,this.selected,params);
+
+		/*	if( self.selected && params.newView==self.selected.view ) {
+				// just update the current view:
+				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content);
+					return
+			};  */
+		// else: show params.newView and hide all others:
+		let v, s;
+		this.list.forEach((le) => {
+//					console.debug('ViewControl.show le',le);
+			v = $(le.view);			// the view
+			s = $(le.selectedBy); 	// the visual selector
+			if (params.newView == le.view) {
+				//					console.debug('ViewControl.show: ',le.view,le.selectedBy,v,s);
+				this.selected = le;
+				// set status of the parent's view selector:
+				s.addClass('active');
+				// control visibility:
+				v.show();
+				// usually none or one of the following options are used:
+				// a) update the content
+				if (typeof (params.content) == 'string') {
+					v.html(params.content);
+					return;
+				};
+				// b) initiate the corresponding action implicitly:
+				if (typeof (le.show) == 'function') {
+					params.forced = true;	// update the view even if the resource hasn't changed
+					le.show(params);
+					return;
+				}
+			}
+			else {
+//						console.debug('ViewCtl.hide: ',le.view,le.selectedBy,v,s);
+				// set status of the parent's view selector:
+				s.removeClass('active');
+				// control visibility:
+				v.hide();
+				// initiate the corresponding action implicitly:
+				if (typeof (le.hide) == 'function') {
+					le.hide();
+					return;
+				};
+			};
+		});
+		if (typeof (doResize) == 'function') {
+			doResize();
+		};
+	}
+	hide(v): void {
+		if (typeof (v) == 'string' && this.exists(v)) {
+			// hide a specific view:
+			$(v).hide();
+			return;
+		};
+		// else, hide the selected view:
+		if (this.selected) {
+//					console.debug( 'hide', self.selected );
+			// initiate the corresponding (implicit) action:
+			$(this.selected.view).hide();
+			// set status of the parent's view selector:
+			$(this.selected.selectedBy).removeClass('active');
+			this.selected = undefined;
+		};
+	}
+}
+class Browser {
+	constructor() {
+		this.language = navigator.language; // || navigator.userLanguage;
+		console.info("Browser Language is '" + this.language + "'.");
+
+		this.supportsHtml5History = Boolean(window.history && window.history.pushState);
+		if (!this.supportsHtml5History) console.info("Browser does not support HTML5 History");
+
+		this.supportsCORS = $.support.cors;
+		if (!this.supportsCORS) console.info("Browser does not support CORS");
+
+		this.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
+/*		this.supportsHtml5Storage = function() {
+			// see: http://diveintohtml5.info/storage.html
+			try {
+				return 'sessionStorage' in window && window['sessionStorage'] !== null;
+			} catch(e) {
+				return false
+			}
+		}();
+		if( !this.supportsHtml5Storage ) console.info( "Browser does not support HTML5 Storage" ); */
+	}
+	isIE():boolean {
+		return /MSIE |rv:11.0/i.test(navigator.userAgent);
+	}
+}
+
 var browser,
 	i18n,
-	modules = new function() {
+	standardTypes,
+	app,
+	modules = function() {
 		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
@@ -26,53 +150,39 @@ var browser,
 				- the specified callback function is executed as soon as all modules are ready.
 				- 'show()' selects the view of the specified module and hides all others.  */
 
-	const self = this;
-	let callWhenReady = null;
+	var self = {};
+	let callWhenReady,
+		loadPath = './';
 
-	self.init = ( initDone, initFail )=>{
+	self.init = ( appName )=>{
+
+		// Identify browser type:
+		browser = new Browser();
+
+		// Check the browser type, the first test is true for IE <= 10, the second for IE 11.
+		if( browser.isIE() ) {
+			let txt = 'Stopping: The web-browser Internet Explorer is not supported.';
+			console.error(txt);
+			alert(txt);
+			return;
+		};
 
 		self.registered = [];
 		self.ready = [];
 
-		// Identify browser type and load language file:
-		browser = new function() {
-			var self = this;
-
-			self.language = navigator.language || navigator.userLanguage;
-			console.info( "Browser Language is '"+self.language+"'." );
-
-			self.supportsHtml5History = Boolean(window.history && window.history.pushState);
-			if( self.supportsHtml5History ) console.info( "Browser supports HTML5 History" );
-
-			self.supportsCORS = $.support.cors;
-			if( self.supportsCORS ) console.info( "Browser supports CORS" );
-
-			self.supportsFileAPI = Boolean(window.File && window.FileReader && window.FileList && window.Blob);
-		/*	self.supportsHtml5Storage = new function() {
-				// see: http://diveintohtml5.info/storage.html
-				try {
-					return 'sessionStorage' in window && window['sessionStorage'] !== null;
-				} catch(e) {
-					return false
-				}
-			};
-			if( self.supportsHtml5Storage ) console.info( "Browser supports HTML5 Storage" ); */
-
-			return self
-		};
 		// init phase 1: Load the javascript routines common to all apps:
-		loadH( ['config','bootstrap','i18n'], {done:init2} );
+		loadH(['bootstrap','types','i18n'], {done:init2} );
 		return
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2() {
 //			console.debug('init2',opts);
-			let loadL = ['helper','helperTree','tree','stdTypes','bootstrapDialog','mainCSS'];
+			let loadL = ['helper','helperTree','tree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) loadL.push('markdown');
-			loadH( loadL, {done:initDone} )
+			loadH(loadL, { done: function () { window.app = new App(); window.app.init() } });
 		}
 	};
-	function register( mod ) {
+	function register( mod:string ):boolean {
 		// return true, if mod has been successfully registered and is ready to load
 		// return false, if mod is already registered and there is no need to load it
 		if( self.registered.indexOf(mod)>-1 ) {
@@ -92,11 +202,11 @@ var browser,
 		if( i>-1 ) self.registered.splice(i,1);
 //		console.info( "Deregister: "+mod+" ("+self.registered.length+")" );
 	};  */
-	self.load = ( tr, opts )=>{
+	self.load = ( tr )=>{
 		// tr is a hierarchy of modules, where the top element represents the application itself;
 		// only modules with a specified name will be loaded:
 		self.tree = tr;
-		return loadH( tr, opts )
+		return loadH(tr, { done: ()=>{ window.app.show() } } )
 	};
 	self.construct = ( defs, constructorFn )=>{
 		// Construct controller and view of a module.
@@ -146,7 +256,7 @@ var browser,
 			case 'undefined': return null;
 			case 'string': params = {newView: params}
 		};
-//		console.debug('modules.show',params);
+//		console.debug('moduleManager.show',params);
 		let mo = findM( self.tree, params.newView );
 		if( !mo || !mo.parent.viewCtl ) {
 			console.error("'"+params.newView+"' is not a defined view");
@@ -190,11 +300,11 @@ var browser,
 			}
 		}
 	};
-	self.hide = ()=>{
+	self.hide = ():void =>{
 		// hide all views of the top level:
 		self.tree.viewCtl.hide()
 	};
-	self.isReady = ( mod )=>{
+	self.isReady = ( mod:string ):boolean =>{
 		return self.ready.indexOf( mod ) >-1
 	};
 	return self
@@ -210,18 +320,19 @@ var browser,
 					// initialize all the children:
 					e.children.forEach( (c)=>{ initH(c) })
 			}
+
 		if( h ) {
 			if( Array.isArray(h) )
 				h.forEach( (e)=>{it(e)} )
 			else
 				it(h)
-		}
+		};
 	}
-	function loadH(h,opts) {
+	function loadH(h,opts?):void {
 		// load the modules in hierarchy h
 		// specified by a name string or an object with property 'name';
 		// h can be a single element, a list or a tree.
-			function ld(e) {
+			function ld(e):void {
 				// load a module named 'e':
 				if( typeof(e)=='string' ) {
 					loadM( e );
@@ -285,13 +396,13 @@ var browser,
 								switch( e.selectorType ) {
 									case 'btns':
 										$(e.selector).append(
-					'<button id="'+id+'" type="button" class="btn btn-default" onclick="modules.show(\''+ch.view+'\')" >'+lbl+'</button>'
+					'<button id="'+id+'" type="button" class="btn btn-default" onclick="moduleManager.show(\''+ch.view+'\')" >'+lbl+'</button>'
 										);
 										break;
 								//	case 'tabs':
 									default:
 										$(e.selector).append(
-											'<li id="'+id+'" onclick="modules.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
+											'<li id="'+id+'" onclick="moduleManager.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
 										);
 								};
 							};
@@ -333,8 +444,8 @@ var browser,
 		else
 			ld(h);
 	}
-	function findM( tr, key ) {
-		// find the module with the given key in the module hierarchy 'tr':
+	function findM( tr, token:string ) {
+		// find the module with the given token in the module hierarchy 'tr':
 		let m=null;
 		if( Array.isArray(tr) ) {
 			for( var i=tr.length-1; !m&&i>-1; i-- ) {
@@ -347,15 +458,15 @@ var browser,
 
 		function find(e) {
 			// by design: name without '#' and view with '#'
-			if( e.name==key || e.view==key ) return e;
+			if( e.name==token || e.view==token ) return e;
 			if( e.children ) {
-				let m = findM(e.children,key);
+				let m = findM(e.children,token);
 				if( m ) return m;
 			};
 			return false;
 		}
 	}
-	function loadM( mod ) {
+	function loadM( mod:string ) {
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before):
 //			console.debug('loadM',mod);
@@ -366,8 +477,8 @@ var browser,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
 				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
-				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.4.12/tree.jquery.js' ); return true;
+				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/jqtree.css" );
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/tree.jquery.js' ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
@@ -376,73 +487,78 @@ var browser,
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
 		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
-		//		case "dataTable": 			getCss( "./vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css" );
-		//									getScript('./vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
-		//		case "xhtmlEditor": 		getCss( "./vendor/assets/stylesheets/sceditor-1.5.2.modern.min.css" );
-		//									getScript('./vendor/assets/javascripts/jquery.sceditor-1.5.2.xhtml.min.js' ); return true;
+		//		case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
+		//									getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true;
 		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' )
 											.then( (m)=>{ app.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
 											return true;  */
-				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@11/dist/markdown-it.min.js' )
-											.done( ()=>{ app.markdown = window.markdownit({xhtmlOut:true,breaks:true,linkify:false}) });
+				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@12/dist/markdown-it.min.js' )
+											.done( ()=>{ app.markdown = window.markdownit({html:true,xhtmlOut:true,breaks:true,linkify:false}) });
 											return true;
 
 				// libraries:
-				case "config": 				getScript( './config/config.js' ); return true;
+		//		case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
+				case "types":				getScript( loadPath+'types/specif.types.js'); return true;
 				case "i18n": 				switch( browser.language.slice(0,2) ) {
-												case 'de':  getScript( './config/locales/iLaH-de.i18n.js' )
-															.done( ()=>{ i18n = new LanguageTextsDe() }; break;
-												case 'fr':  getScript( './config/locales/iLaH-fr.i18n.js' )
-															.done( ()=>{ i18n = new LanguageTextsFr() }; break;
-												default:	getScript( './config/locales/iLaH-en.i18n.js' )
-															.done( ()=>{ i18n = new LanguageTextsEn() }
+												case 'de':  getScript( loadPath+'config/locales/iLaH-de.i18n.js' )
+															.done( ()=>{ i18n = new LanguageTextsDe() } ); break;
+												case 'fr':  getScript( loadPath+'config/locales/iLaH-fr.i18n.js' )
+															.done( ()=>{ i18n = new LanguageTextsFr() } ); break;
+												default:	getScript( loadPath+'config/locales/iLaH-en.i18n.js' )
+															.done( ()=>{ i18n = new LanguageTextsEn() } )
 											};
 											return true;
-				case "mainCSS":				getCss( "./vendor/assets/stylesheets/SpecIF.default.css"  ); setReady(mod); return true;
-				case "stdTypes":			getScript( './modules/stdTypes.js' ); return true;
-				case "helper": 				getScript( './modules/helper.js' ); return true;
-				case "helperTree": 			getScript( './modules/helperTree.js' ); return true;
+				case "mainCSS":				getCss( loadPath+'vendor/assets/stylesheets/SpecIF.default.css' ); setReady(mod); return true;
+				case "stdTypes":			getScript(loadPath + 'modules/stdTypes.js')
+											.done(() => { standardTypes = new StandardTypes(); });
+											return true;
+				case "helper": 				getScript( loadPath+'modules/helper.js' ); return true;
+				case "helperTree": 			getScript( loadPath+'modules/helperTree.js' ); return true;
+				case "xSpecif":				getScript( loadPath+'modules/xSpecif.js' ); return true;
 				case "cache": 				loadM( 'fileSaver' );
-											getScript( './modules/cache.mod.js' ); return true;
-				case "profileAnonymous":	getScript( './modules/profileAnonymous.mod.js' ); return true;
-		/*		case "profileMe":			$('#'+mod).load( "./modules/profileMe-0.93.1.mod.html", function() {setReady(mod)} ); return true;
-				case "user":				$('#'+mod ).load( "./modules/user-0.92.44.mod.html", function() {setReady(mod)} ); return true;
+											getScript( loadPath+'modules/cache.mod.js' ); return true;
+				case "profileAnonymous":	getScript( loadPath+'modules/profileAnonymous.mod.js' ); return true;
+		/*		case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
+				case "user":				$('#'+mod ).load( loadPath+'modules/user-0.92.44.mod.html', function() {setReady(mod)} ); return true;
 				case "projects":			loadM( 'toEpub' );
-											$('#'+mod).load( "./modules/projects-0.93.1.mod.html", function() {setReady(mod)} ); return true; */
-				case "toXhtml": 			getScript( './vendor/assets/javascripts/toXhtml.js' ); return true;
+											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
+				case 'toHtml': 				getScript( loadPath+'modules/toHtml.js' ); return true;
+				case "toXhtml": 			getScript( loadPath+'vendor/assets/javascripts/toXhtml.js' ); return true;
 				case "toEpub": 				loadM( 'toXhtml' );
-											getScript( './vendor/assets/javascripts/toEpub.js' ); return true;
-				case "toOxml": 				getScript( './vendor/assets/javascripts/toOxml.js' ); return true;
-				case "toTurtle":			getScript( './vendor/assets/javascripts/specif2turtle.js' ); return true;
-				case 'bpmn2specif':			getScript( './vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
-				case 'archimate2specif':	getScript( './vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
-				case 'checkSpecif':			getScript( 'https://specif.de/v'+app.specifVersion+'/check.js' ); return true;
+											getScript( loadPath+'vendor/assets/javascripts/toEpub.js' ); return true;
+				case "toOxml": 				getScript( loadPath+'vendor/assets/javascripts/toOxml.js' ); return true;
+				case "toTurtle":			getScript( loadPath+'vendor/assets/javascripts/specif2turtle.js' ); return true;
+				case 'bpmn2specif':			getScript( loadPath+'vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
+				case 'archimate2specif':	getScript( loadPath+'vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
+				case 'reqif2specif':		getScript( loadPath+'vendor/assets/javascripts/reqif2specif.js' ); return true;
+				case 'checkSpecif':			getScript( 'https://specif.de/v'+CONFIG.specifVersion+'/check.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
-											getScript( './modules/graph.js' ); return true;
+											getScript( loadPath+'modules/graph.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 										//	loadM( 'dataTableButtons' );
 										//	loadM( 'zip' );  // needed for Excel export
-											getScript( "./modules/objectTable-0.93.1.js"); return true; */
+											getScript( loadPath+'modules/objectTable-0.93.1.js' ); return true;
+				case "serverPouch": loadM('pouchDB');
+					getScript(loadPath + 'modules/serverPouch.mod.js'); return true; */
 
 				// constructors/modules:
-				case "about":				getScript( './modules/about.mod.js' ); return true;
+				case "about":				getScript( loadPath+'modules/about.mod.js' ); return true;
 				case 'importAny':			loadM( 'zip' );
-											getScript( './modules/importAny.mod.js' ); return true;
+											getScript( loadPath+'modules/importAny.mod.js' ); return true;
 				case 'ioSpecif':			loadM( 'jsonSchema' );
 											loadM( 'checkSpecif' );
-											getScript( './modules/ioSpecif.mod.js' ); return true;
-				case 'ioReqif': 			getScript( './modules/ioReqif.mod.js' ); return true;
-				case 'ioRdf': 				getScript( './modules/ioRdf.mod.js' ); return true;
+											getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
+				case 'ioReqif': 			loadM( 'reqif2specif' );
+											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;
+				case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
-											getScript( './modules/ioXls.mod.js' ); return true;
+											getScript( loadPath+'modules/ioXls.mod.js' ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
 											loadM( 'bpmnViewer' );
-											getScript( './modules/ioBpmn.mod.js' ); return true;
+											getScript( loadPath+'modules/ioBpmn.mod.js' ); return true;
 				case 'ioArchimate':			loadM( 'archimate2specif' );
-											getScript( './modules/ioArchimate.mod.js' ); return true;
-				case "serverPouch": 		loadM( 'pouchDB' );
-											getScript( './modules/serverPouch.mod.js' ); return true;
+											getScript( loadPath+'modules/ioArchimate.mod.js' ); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 		/*		case CONFIG.users:		//	loadM( 'mainCSS' );
@@ -456,15 +572,15 @@ var browser,
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 										//	loadM( 'stdTypes' );
 										//	loadM( 'diff' );
-											getScript( './modules/specifications.mod.js' ); return true;
+											getScript( loadPath+'modules/specifications.mod.js' ); return true;
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript( './modules/reports.mod.js' ); return true;
-				case CONFIG.objectFilter:  	getScript( './modules/filter.mod.js' ); return true;
+				case CONFIG.reports: 		getScript( loadPath+'modules/reports.mod.js' ); return true;
+				case CONFIG.objectFilter:  	getScript( loadPath+'modules/filter.mod.js' ); return true;
 				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
-											getScript( './modules/resourceEdit.mod.js' ); return true;
-				case CONFIG.resourceLink:	getScript( './modules/resourceLink.mod.js' ); return true;
-		//		case CONFIG.files: 			getScript( "./modules/files-0.93.1.js"); return true;
+											getScript( loadPath+'modules/resourceEdit.mod.js' ); return true;
+				case CONFIG.resourceLink:	getScript( loadPath+'modules/resourceLink.mod.js' ); return true;
+		//		case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false;
 			}
@@ -474,19 +590,19 @@ var browser,
 		// Add cache-busting on version-change to all files from this development project,
 		// i.e. all those having a relative URL.
 		// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
-		function getCss( url ) {
-			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+app.version)+'" />' );
+		function getCss( url:string ):void {
+			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+CONFIG.appVersion)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'.
 			// Must be called explicitly, if not in conjunction with 'getScript'.
 		}
-		function getScript( url, options ) {
+		function getScript( url:string, options? ) {
 			// see http://api.jquery.com/jQuery.getScript/
 			// Any option may be set by the caller except for dataType and cache:
 			options = $.extend( options || {}, {
 				dataType: "script",
 				cache: true,
-				url: url + (url.slice(0,4)=='http'? "" : "?"+app.version)
+				url: url + (url.slice(0,4)=='http'? "" : "?"+CONFIG.appVersion)
 			});
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )
@@ -497,7 +613,7 @@ var browser,
 				return $.ajax( options ).done( ()=>{setReady(mod)} );
 		}
 	}
-	function setReady( mod ) {
+	function setReady( mod:string ) {
 		// Include mod in the 'ready' list, once successfully loaded;
 		// Execute 'callWhenReady()', if/when the last registered module is ready.
 		if( self.ready.indexOf(mod)<0 ) {
@@ -518,150 +634,46 @@ var browser,
 			}
 		}
 	}
-	function ViewCtl( viewL ) {
-		// Constructor for an object to control the visibility of the DOM-tree elements listed in 'list';
-		// the selected view is shown, all others are hidden.
-		// ViewCtl can switch pages or tabs, depending on the navigation level:
-		var self = this;
-		self.selected = {};	// the currently selected view
-		self.list = null;	// the list of alternative views under control of the respective object
-		self.exists = (v)=>{
-			return indexBy(self.list, 'view', v)>-1;
-		}
-		self.init = (vL)=>{
-			self.list = vL || [];
-			self.list.forEach( (e)=>{$(e).hide()});
-			self.selected = {};
-		};
-		self.add = (v)=>{
-			// add the module to the view list of this level:
-			self.list.push(v);
-			$(v.view).hide();
-			// we could add the visual selector, here ... it is now part of loadH.
-		};
-		self.show = ( params )=>{
-			// Select a new view
-			// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
-			// - simple case: params is a string with the name of the new view.
-			// - more powerful: params is an object with the new target view plus optionally content or other parameters
-			switch( typeof(params) ) {
-				case 'undefined': return null;	// should never be the case.
-				case 'string': params = {newView: params}
-			};
-//			console.debug('ViewCtl.show',self.list,self.selected,params);
-
-		/*	if( self.selected && params.newView==self.selected.view ) {
-				// just update the current view:
-				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content);
-				return
-			};  */
-			// else: show params.newView and hide all others:
-			let v, s;
-			self.list.forEach( (le)=>{
-//				console.debug('ViewCtl.show le',le);
-				v = $(le.view);			// the view
-				s = $(le.selectedBy); 	// the visual selector
-				if( params.newView==le.view ) {
-//					console.debug('ViewCtl.show: ',le.view,le.selectedBy,v,s);
-					self.selected = le;
-					// set status of the parent's view selector:
-					s.addClass('active');
-					// control visibility:
-					v.show();
-					// usually none or one of the following options are used:
-					// a) update the content
-					if( typeof(params.content)=='string' ) {
-						v.html(params.content);
-						return;
-					};
-					// b) initiate the corresponding action implicitly:
-					if( typeof(le.show)=='function' ) {
-						params.forced = true;	// update the view even if the resource hasn't changed
-						le.show( params );
-						return;
-					}
-				} else {
-//					console.debug('ViewCtl.hide: ',le.view,le.selectedBy,v,s);
-					// set status of the parent's view selector:
-					s.removeClass('active');
-					// control visibility:
-					v.hide();
-					// initiate the corresponding action implicitly:
-					if( typeof(le.hide)=='function' ) {
-						le.hide();
-						return;
-					};
-				};
-			});
-			if( typeof(doResize)=='function' ) {
-				doResize();
-			};
-		};
-		self.hide = (v)=>{
-			if( typeof(v)=='string' && self.exists(v) ) {
-				// hide a specific view:
-				$(v).hide();
-				return;
-			};
-			// else, hide the selected view:
-			if( self.selected ) {
-//				console.debug( 'hide', self.selected );
-				// initiate the corresponding (implicit) action:
-				$(self.selected.view).hide();
-				// set status of the parent's view selector:
-				$(self.selected.selectedBy).removeClass('active');
-				self.selected = null;
-			};
-		};
-		self.init(viewL);
-		return self;
-	}
-};
-function State(opt) {
-	"use strict";
+}();
+class State {
 	// sets and resets some binary state (e.g. 'busy'),
 	// hides resp. shows certain DOM elements according to the lists specified.
-	var self = this,
-		options = opt || {},
-		state = false;
-	if( !Array.isArray(options.showWhenSet) ) options.showWhenSet = [];
-	if( !Array.isArray(options.hideWhenSet) ) options.hideWhenSet = [];
-	self.set = ( flag )=>{
+	state = false;
+	showWhenSet = [];
+	hideWhenSet = [];
+
+	constructor(opts:any) {
+		if (Array.isArray(opts.showWhenSet))
+			this.showWhenSet = opts.showWhenSet;
+		if (Array.isArray(opts.hideWhenSet))
+			this.hideWhenSet = opts.hideWhenSet;
+	}
+	set ( flag:boolean|undefined ):void {
 		switch( flag ) {
 			case false:
-				self.reset();
-				return;
+				this.reset();
+				break;
 			case undefined:
 			case true:
-				state = true;
-				options.hideWhenSet.forEach( (e)=>{
-					try {
-						$(e).hide();
-					} catch(e) {};
+				this.state = true;
+				this.hideWhenSet.forEach( (v):void =>{
+					$(v).hide();
 				});
-				options.showWhenSet.forEach( (e)=>{
-					try {
-						$(e).show();
-					} catch(e) {};
+				this.showWhenSet.forEach((v):void =>{
+					$(v).show();
 				})
 		}
-	},
-	self.reset = ()=>{
-				state = false;
-				options.showWhenSet.forEach( (e)=>{
-					try {
-						$(e).hide()
-					} catch(e) {};
+	}
+	reset ():void {
+				this.state = false;
+				this.showWhenSet.forEach( (v):void =>{
+					$(v).hide()
 				});
-				options.hideWhenSet.forEach( (e)=>{
-					try {
-						$(e).show();
-					} catch(e) {};
+				this.hideWhenSet.forEach((v):void =>{
+					$(v).show();
 				});
-	},
-	self.get = ()=>{
-		return state;
-	};
-	self.reset();
-	return self;
+	}
+	get():boolean {
+		return this.state;
+	}
 }

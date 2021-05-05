@@ -10,7 +10,7 @@
 			scaleMin: 0,
 			scaleMax: 120,
 			datasets: [
-				{ label: 'low', count: 80, color: '#1690d8' } ,	
+				{ label: 'low', count: 80, color: CONFIG.focusColor } ,	
 				{ label: 'medium', count: 120, color: '#1f72c3' },	
 				{ label: 'high', count: 40, color: '#1a48aa' }
 			]
@@ -20,7 +20,7 @@
 			scaleMin: 0,
 			scaleMax: 1000,
 			datasets: [
-				{ label: '30_vorgelegt', count: 245, color: '#1690d8' } ,	
+				{ label: '30_vorgelegt', count: 245, color: CONFIG.focusColor } ,	
 				{ label: '40_genehmigt', count: 12, color: '#1f72c3' },	
 				{ label: '60_fertig', count: 890, color: '#1a48aa' },
 				{ label: '80_freigegeben', count: 180, color: '#000000' }
@@ -29,9 +29,9 @@
 
 	The server or the server interface lib is responsible for analysing the project and for collecting the data.
 */		
-modules.construct({
+moduleManager.construct({
 	name: CONFIG.reports
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
 	var pData,prj,dta;
 	self.list = [];  // the list of report panels
@@ -50,7 +50,7 @@ modules.construct({
 		$(self.view).empty();
 		self.clear()
 	};
-	function handleError(xhr) {
+	function handleError(xhr: xhrMessage): void {
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
@@ -116,7 +116,7 @@ modules.construct({
 									label: titleOf(rC,opts),
 									id: rC.id,
 									count: 0,
-									color: '#1690d8' 
+									color: CONFIG.focusColor 
 								})
 				});
 				self.list.push(rCR)
@@ -140,7 +140,7 @@ modules.construct({
 									label: titleOf(sC,opts),
 									id: sC.id,
 									count: 0,
-									color: '#1690d8' 
+									color: CONFIG.focusColor 
 								})
 				});
 				self.list.push(sCR)
@@ -279,7 +279,7 @@ modules.construct({
 			prj.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
 			.then(
 				(rsp)=>{
-					evalResource( rsp );
+					evalResource( rsp[0] );
 					if( --pend<1 ) {  // all done:
 						self.list = removeEmptyReports( self.list );
 //						console.debug('self-list',self.list);
@@ -292,7 +292,7 @@ modules.construct({
 				},
 				handleError
 			);
-		//	prj.readStatementsOf( {id: nd.ref}, false )
+		//	prj.readStatementsOf( {id: nd.ref} )
 		//		.done(function(rsp) {
 		//		})
 		//		.fail( handleError ); 
@@ -372,7 +372,7 @@ modules.construct({
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
-		modules.show( { newView:'#'+CONFIG.objectFilter, filters:fL } )
+		moduleManager.show( { view:'#'+CONFIG.objectFilter, filters:fL } )
 		// ToDo: query the filter view, don't just assemble it.
 	};
 
