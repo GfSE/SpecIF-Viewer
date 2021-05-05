@@ -26,6 +26,7 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Export 'html' file with embedded SpecIF data
 - Export 'specif.zip' file
 - Export 'reqifz' file (Requirements Interchange Format)
+- Export 'Turtle' file (experimental)
 - Export 'ePub' file
 - Export MS-Word OOXML file
 
@@ -53,6 +54,14 @@ The app has been installed for demonstration
 The installation provided for your convenience is neither intended to be highly available nor scalable.
 You may use the [latest release](https://github.com/GfSE/SpecIF-Viewer/releases) of the software for 
 your own installation, see below.
+
+## Compatibility
+- Mozilla Firefox
+- Google Chromium and Chrome
+- Microsoft Edge
+- Opera
+- Apple Safari _(beware of performance issues in case of bigger models)_
+- Microsoft Internet Explorer is _not any more_ supported
 
 ## Installation
 For any purpose other than demonstration please install the latest [release](https://github.com/GfSE/SpecIF-Viewer/releases) 
