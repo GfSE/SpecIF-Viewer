@@ -7,33 +7,34 @@
 */
 
 // Construct the resource editor:
-modules.construct({
+moduleManager.construct({
 	name: CONFIG.resourceLink
-}, (self)=>{
+}, (self:IModule)=>{
 	"use strict";
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,					// the cached data
-		opts;					// the processing options
+		cData: SpecIF,			// the cached data
+		opts:any;					// the processing options
 	//	toEdit;					// the classified properties to edit
 
 	self.eligibleSCL=[];		// all eligible statementClasses
 	self.selResStatements=[];	// all statements of the selected resource
 	self.allResources=[];		// all resources referenced in the tree
 
-	self.init = ()=>{
+	self.init = ():boolean =>{
 //		console.debug('resourceEdit.init')
-		self.clear()
+		self.clear();
+		return true;
 	};
-	self.clear = ()=>{
+	self.clear = ():void =>{
 		self.eligibleSCL.length=0;
 		self.selResStatements.length=0;
 		self.allResources.length=0;
 	};
 	// The module entry;
-	self.show = ( options )=>{
+	self.show = ( options:any ):void =>{
 
 		self.clear();
 		cData = app.cache.selectedProject.data;
@@ -45,8 +46,8 @@ modules.construct({
 
 		app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 		.then( 
-			(res)=>{
-				self.selRes = res;
+			(rL:Resource[])=>{
+				self.selRes = rL[0];
 				createStatement( opts )
 			},
 			stdError
@@ -58,7 +59,7 @@ modules.construct({
 
 		return;
 		
-		function createStatement( opts ) {		
+		function createStatement( opts ):void {		
 			// Let the user choose the class of the resource to be created later on:
 //			console.debug('createStatement',opts);
 			let pend = 3;  // the number of parallel requests
@@ -70,7 +71,7 @@ modules.construct({
 			});
 			app.cache.selectedProject.readContent( 'statementClass', self.eligibleSCL )
 			.then( 
-				(list)=>{
+				(list:StatementClass[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
 					chooseResourceToLink()
 				}, 
@@ -80,7 +81,7 @@ modules.construct({
 			// 2. collect all statements of the originally selected resource to exclude them from selection:
 			app.cache.selectedProject.readStatementsOf( {id: self.selRes.id} )
 			.then(
-				(list)=>{
+				(list:Statement[])=>{
 					self.selResStatements = list;
 					chooseResourceToLink()
 				},
@@ -113,7 +114,7 @@ modules.construct({
 			);
 			return
 
-			function chooseResourceToLink() {
+			function chooseResourceToLink():void {
 //				console.debug('sCL, rL',self.eligibleSCL, self.allResources, pend );
 				if( --pend<1 ) {
 					// all parallel requests are done,
@@ -124,13 +125,16 @@ modules.construct({
 						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
+					// @ts-ignore - BootstrapDialog() is loaded at runtime
 					new BootstrapDialog({
 						title: i18n.MsgCreateStatement,
 						type: 'type-primary',
+						// @ts-ignore - BootstrapDialog() is loaded at runtime
 						size: BootstrapDialog.SIZE_WIDE,
 						// initialize the dialog:
 						onshown: ()=>{ app[myName].filterClicked() },
-						message: (thisDlg)=>{
+					//	message: (thisDlg)=>{
+						message: () =>{
 							var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//		var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
@@ -187,14 +191,14 @@ modules.construct({
 			}
 		}
 	};
-	self.hide = ()=>{
+	self.hide = ():void =>{
 		self.clear()
 	};
 
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.filterClicked = ()=>{
+	self.filterClicked = ():void =>{
 //		console.debug('click!', radioValue( i18n.LblStatementClass ));
 		self.selectedStatementClass = self.eligibleSCL[ radioValue( i18n.LblStatementClass ) ];
 		setTextFocus(i18n.TabFind); 
@@ -205,7 +209,7 @@ modules.construct({
 		// among all statements of the originally selected resource (selRes), filter all those of the given class:
 		let sL = self.selResStatements.filter( (s)=>{ return s['class']==self.selectedStatementClass.id } );
 		self.allResources.forEach( 
-			(res,i)=>{
+			(res:Resource,i:number)=>{
 				if( 
 					// no reflexive statements are allowed:
 					res.id!=self.selRes.id
@@ -230,7 +234,7 @@ modules.construct({
 		// @ts-ignore - .disabled is an accessible attribute
 		document.getElementById("btn-modal-saveResourceAsSubject").disabled = true
 	};
-	self.itemClicked = (idx)=>{
+	self.itemClicked = (idx:number):void =>{
 //		console.debug('click!',idx);
 
 		// remove focus from previously selected candidate:
@@ -320,7 +324,7 @@ modules.construct({
 			btn.prop('disabled',true)
 		}  */
 	};
-	self.saveStatement = (dir)=>{
+	self.saveStatement = (dir):void =>{
 //		console.debug('saveStatement',self.selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
 		return app.cache.selectedProject.createContent( 'statement', {
 									id:genID('S-'),
@@ -331,12 +335,12 @@ modules.construct({
 								}
 		)
 	};
-	function candidateMayBeObject( sC, res ) {
+	function candidateMayBeObject( sC:StatementClass, res:Resource ):boolean {
 		// no *bjectClasses means all resourceClasses are permissible as *bject:
 		return ( !sC.subjectClasses || sC.subjectClasses.indexOf( self.selRes['class'] )>-1 )
 			&& ( !sC.objectClasses || sC.objectClasses.indexOf(res['class'])>-1 )
 	}
-	function candidateMayBeSubject( sC, res ) {
+	function candidateMayBeSubject(sC: StatementClass, res: Resource): boolean {
 		// no *bjectClasses means all resourceClasses are permissible as *bject:
 		return ( !sC.objectClasses || sC.objectClasses.indexOf( self.selRes['class'] )>-1 )
 			&& ( !sC.subjectClasses || sC.subjectClasses.indexOf(res['class'])>-1 )

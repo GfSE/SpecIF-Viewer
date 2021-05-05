@@ -1,9 +1,7 @@
 /* 	Provide i18ns and messages in a certain language, in this case 'English' (en).
 	The result can be obtained by reference of:
 	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
-	- yourVarName.lookup('MsgName')
-	- yourVarName.phrase('MsgName')
-	- yourVarName.phrase('MsgName', 'param')
+	- yourVarName.lookup('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
 */
 function LanguageTextsEn() {

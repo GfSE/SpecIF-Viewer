@@ -129,7 +129,7 @@ class StandardTypes {
 			case 'hierarchy':		return "hierarchies";
 			case 'file':			return "files";
 		};
-		throw "Programming Error: Invalid category '"+ctg+"'";
+		throw Error("Invalid category '"+ctg+"'");
 	}
 };
 	

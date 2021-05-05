@@ -6,10 +6,10 @@
 	We appreciate any correction, comment or contribution!
 */
 // a constructor for the tree object:
-function Tree( options ) {
+function Tree( options:any ) {
 	"use strict";
 	// options.loc is the id of a DOM element to which the tree is attached.
-	let self = {},
+	let self:any = {},
 		domE = $(options.loc);
 	domE.tree({
 		data: [],
@@ -23,7 +23,7 @@ function Tree( options ) {
 		)
 	};
 
-	self.init = function() {
+	self.init = function():void {
 		self.set([]);
 		self.savedState = undefined;
 		self.selectedNode = undefined
@@ -142,15 +142,15 @@ function Tree( options ) {
 		// else:
 		return self.selectNode( self.nodeByRef( oId, similar ) )
 	};
-	self.openNode = function( nd ) {
+	self.openNode = function( nd ):void {
 		if( !nd ) nd = self.selectedNode;
 		if( nd ) domE.tree('openNode', nd)
 	};
-	self.toggleNode = function( nd ) {
+	self.toggleNode = function( nd ):void {
 		if( !nd ) nd = self.selectedNode;
 		if( nd ) domE.tree('toggleNode', nd)
 	};
-	self.closeNode = function( nd ) {
+	self.closeNode = function( nd ):void {
 		if( !nd ) nd = self.selectedNode;
 		if( nd ) domE.tree('closeNode', nd)
 	};
@@ -163,16 +163,16 @@ function Tree( options ) {
 	self.addNodeAfter = function( nd, val ) {
 		if( nd ) domE.tree( 'addNodeAfter', val, nd )
 	};  */
-	self.updateNode = function( nd, val ) {
+	self.updateNode = function( nd, val ):void {
 		// update node nd with the properties specified in {val},
 		// where val may be a title string or an object with all attributes:
 		if( nd ) domE.tree('updateNode', nd, val )
 	};
-	self.removeNode = function( nd ) {
+	self.removeNode = function( nd ):void {
 		if( !nd ) nd = self.tree.selectedNode;
 		if( nd ) domE.tree('removeNode', nd)
 	};
-	self.moveUp = function() {
+	self.moveUp = function():void {
 		let cur=self.selectedNode;  // save the current position
 		if( !cur ) return selectFirstNode();
 		
@@ -202,7 +202,7 @@ function Tree( options ) {
 			}
 		}
 	};
-	self.moveDown = function() {
+	self.moveDown = function():void {
 		let cur=self.selectedNode;  // save the current position
 		if( !cur ) { self.selectFirstNode(); return };
 
@@ -230,11 +230,11 @@ function Tree( options ) {
 				domE.tree('openNode', self.selectedNode)
 		}
 	};
-	self.numberize = function() {
+	self.numberize = function():void {
 		// set the order numbers (such as 1.3.2):
 		let oNo='';  	// tree outline number
 
-			function setONo( nd, oNoP ) {
+			function setONo( nd, oNoP ):void {
 				for( var k=0, K=nd.children.length; k<K; k++ ) {
 					oNo = oNoP.length? oNoP+'.'+(k+1) : (k+1).toString();	// deeper levels : first level
 					self.updateNode( nd.children[k], {order: oNo} );
@@ -258,14 +258,14 @@ function Tree( options ) {
 		};
 		return rt
 	}; */
-	self.saveState = function() {
+	self.saveState = function():void {
 		self.savedState = domE.tree('getState')
 	};
-	self.restoreState = function() {
+	self.restoreState = function():void {
 		domE.tree('setState', self.savedState);
 		self.selectedNode = domE.tree('getSelectedNode')
 	};
-	self.destroy = function() {
+	self.destroy = function():void {
 		// Destroy the tree. This removes the dom elements and event bindings:
 		domE.tree('destroy')
 	};

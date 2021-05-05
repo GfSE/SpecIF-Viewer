@@ -29,9 +29,9 @@
 
 	The server or the server interface lib is responsible for analysing the project and for collecting the data.
 */		
-modules.construct({
+moduleManager.construct({
 	name: CONFIG.reports
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
 	var pData,prj,dta;
 	self.list = [];  // the list of report panels
@@ -50,7 +50,7 @@ modules.construct({
 		$(self.view).empty();
 		self.clear()
 	};
-	function handleError(xhr) {
+	function handleError(xhr: xhrMessage): void {
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
@@ -279,7 +279,7 @@ modules.construct({
 			prj.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
 			.then(
 				(rsp)=>{
-					evalResource( rsp );
+					evalResource( rsp[0] );
 					if( --pend<1 ) {  // all done:
 						self.list = removeEmptyReports( self.list );
 //						console.debug('self-list',self.list);
@@ -372,7 +372,7 @@ modules.construct({
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
-		modules.show( { newView:'#'+CONFIG.objectFilter, filters:fL } )
+		moduleManager.show( { view:'#'+CONFIG.objectFilter, filters:fL } )
 		// ToDo: query the filter view, don't just assemble it.
 	};
 

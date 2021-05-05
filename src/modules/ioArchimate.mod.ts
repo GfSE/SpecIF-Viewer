@@ -8,24 +8,22 @@
 
 // Constructor for Archimate Open-Exchange import:
 // (A module constructor is needed, because there is an access to parent's data via 'self')
-modules.construct({
+moduleManager.construct({
 	name: 'ioArchimate'
-}, function(self) {
+}, function(self:IModule):IModule {
 	"use strict";
-	var	fDate:string,		// the file modification date
-		fName:string,
-		data:SpecIF,		// the SpecIF data structure for xls content
-		bDO,
-		opts;
+	var fDate: string,		// the file modification date
+		fName: string,
+		data: SpecIF,		// the SpecIF data structure for xls content
+		bDO;
 
-	self.init = function(options):boolean {
-		opts = options;
-		return true;
+	self.init = function (): boolean {
+		return true
 	};
 
 	self.verify = function( f ):boolean {
 
-			function isArchimate( fname ):boolean {
+			function isArchimate( fname:string ):boolean {
 				// ToDo: Briefly check for Archimate content
 				return fname.endsWith('.xml') 
 			}
@@ -56,13 +54,14 @@ modules.construct({
 		return true;
 	},
 
-	self.toSpecif = function (buf: ArrayBuffer): JQueryPromise<SpecIF> {
+	self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
 		// import an Archimate Open-Exchange file (XML) from a buffer:
 		self.abortFlag = false;
 		bDO = $.Deferred();
 
 		bDO.notify('Transforming Archimate Open Exchange to SpecIF',10); 
-		data = Archimate2Specif( ab2str(buf), 
+		// @ts-ignore - Archimate2Specif() is loaded at runtime
+		data = Archimate2Specif( ab2str(buf),
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 

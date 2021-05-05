@@ -1,5 +1,5 @@
 
-function editSpecif() {
+function editSpecif():IApp {
 	"use strict";
 
 	// construct main app:
@@ -21,7 +21,7 @@ function editSpecif() {
 		// Define the module hierarchy; it will be used to load the modules and to control the views later on:
 		let define = {
 			// Define
-			// - name: the modules to load as specified in 'modules.js'
+			// - name: the modules to load as specified in 'moduleManager.js'
 			// - loadAs: name for execution (addressable javascript object)
 			// - the hierarchy of views using implicit actions hide/show or refresh
 			// - the explicit actions independent of any view
@@ -152,16 +152,16 @@ function editSpecif() {
 		// Make sure page divs are resized, if the browser window is changed in size:
 		bindResizer();
 
-		modules.load( define, {done: self.show } );
+		moduleManager.load( define, {done: self.show } );
 	};
 	self.show = function() {
 		console.info( self.title+" started!" );
 		self.me.read()
 		.then(
 			function() {
-				var uP = getUrlParams(), v;
+				var uP = getUrlParams(), v:string;
 				if( !self.cache.selectedProject
-					|| !self.cache.selectedProject.loaded()
+					|| !self.cache.selectedProject.isLoaded()
 					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=self.cache.selectedProject.data.id
 					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
 					// - no project is loaded
@@ -171,7 +171,7 @@ function editSpecif() {
 				else
 					v = '#'+ (uP[CONFIG.keyView] || CONFIG.specifications);
 //				console.debug( 'app.view', uP, v );
-				modules.show({newView:v,urlParams:uP});
+				moduleManager.show({view:v,urlParams:uP});
 			},
 			self.logout
 		);
@@ -179,7 +179,7 @@ function editSpecif() {
 	self.export = function() {
 		if( !self.cache.selectedProject || !self.cache.selectedProject.data.id )
 			message.show( i18n.MsgNoProjectLoaded, {severity:'warning', duration:CONFIG.messageDisplayTimeShort} );
-		self.cache.selectedProject.export();
+		self.cache.selectedProject.chooseFormatAndExport();
 	};
 /*	self.updateMe = function() {
 		self.me.beginUpdate();

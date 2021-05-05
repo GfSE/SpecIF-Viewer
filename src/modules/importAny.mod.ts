@@ -1,4 +1,4 @@
-/*!	GUI and control for SpecIF, ReqIF and XLS import
+/*!	GUI and control for all importers
 	Dependencies: jQuery 3.1+, bootstrap 3.1
 	Copyright enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
@@ -6,9 +6,9 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 
-modules.construct({
+moduleManager.construct({
 	name: 'importAny'
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
 
 	// The modes for selection when an import is encountered which is already loaded:
@@ -93,7 +93,7 @@ modules.construct({
 //	self.projectL = [];  	// list of the projects already available
 	self.projectName = '';  // user input for project name
 	self.format = undefined;
-	var showFileSelect = undefined,
+	var showFileSelect:State,
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
 		urlP,				// the latest URL parameters
@@ -107,19 +107,19 @@ modules.construct({
 				self.clear();
 				if( urlP ) delete urlP[CONFIG.keyImport];
 				// change view to browse the content:
-				modules.show({ newView: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
+				moduleManager.show({ view: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
 			}, 
 			CONFIG.showTimelag
 		);
 	}
-	function handleError(xhr) {
+	function handleError(xhr:xhrMessage):void {
 //		console.debug( 'handleError', xhr );
 		self.clear();
 		stdError(xhr);
 		self.show();
 	}
  
-	self.clear = function() {
+	self.clear = function():void {
 		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
 		setTextValue(i18n.LblFileName,'');
 		setTextValue(i18n.LblProjectName,'');
@@ -131,7 +131,7 @@ modules.construct({
 		app.busy.reset();
 		self.enableActions();
 	};
-	self.init = function() {
+	self.init = function():boolean {
 		// initialize the module:
 		if ( !browser.supportsFileAPI ) {
 			message.show( i18n.MsgFileApiNotSupported, {severity:'danger'} );
@@ -192,11 +192,11 @@ modules.construct({
 			showWhenSet: ['.fileSelect'],
 			hideWhenSet: []
 		});
-		return true
+		return true;
 	};
 	// The module entry;
 	// called by the modules view management:
-	self.show = function( opts ) {
+	self.show = function( opts:any ):void {
 		if( !opts ) opts = {};
 //		console.debug( 'import.show', opts );
 	/*	if( me.userName == CONFIG.userNameAnonymous ) {
@@ -212,7 +212,7 @@ modules.construct({
 				// filename without extension must have at least a length of 1:
 //				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
-					if( p.indexOf('.'+formats[i].id)>0 && modules.isReady(formats[i].name) ) 
+					if( p.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
 						return formats[i];
 				};
 			}
@@ -246,7 +246,7 @@ modules.construct({
 						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
 						responseType: 'arraybuffer',
 						withCredentials: false,
-						done: function(result) {
+						done: function (result: XMLHttpRequest) {
 //							console.debug('httpGet done',result.response);
 							app[self.format.name].toSpecif(result.response)
 								.progress( setProgress )
@@ -272,7 +272,7 @@ modules.construct({
 		// only at this point of time it is known which modules are loaded and initialized:
 		let str = '';
 		formats.forEach( function(s) {
-			if( modules.isReady(s.name) ) {
+			if( moduleManager.isReady(s.name) ) {
 //				console.debug('isReady',s.id,self.format);
 			//	app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
@@ -289,12 +289,12 @@ modules.construct({
 	};
 	// module exit;
 	// called by the modules view management:
-	self.hide = function() {
+	self.hide = function():void {
 //		console.debug( 'importAny.hide' )
 		app.busy.reset();
 	};
 	
-	self.setFormat = function( fId ) {
+	self.setFormat = function ( fId:string ):void {
 		if( importing || !fId ) return;
 //		console.debug('setFormat',self.format,fId);
 
@@ -319,15 +319,15 @@ modules.construct({
 		self.enableActions();
 	};
 
-	function checkState() {
+	function checkState():void {
 		// in this case only the project name must have a length>0:
 		let pnl = getTextLength(i18n.LblProjectName)>0;
 		// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
-		cacheLoaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.loaded();	
+		cacheLoaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.isLoaded();	
 		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
 		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
 	};
-	self.enableActions = function() {
+	self.enableActions = function():void {
 		// enable/disable the import button depending on the input state of all fields;
 		
 		checkState();
@@ -345,7 +345,7 @@ modules.construct({
 			console.error("importAny: enabling actions has failed ("+e+").");
 		};
 	};
-	function setImporting( st ) {
+	function setImporting( st:boolean ):void {
 		importing = st;
 		app.busy.set( st );
 		checkState();
@@ -367,7 +367,7 @@ modules.construct({
 			console.error("importAny: setting state 'importing' has failed ("+e+").");
 		};
 	}
-	self.pickFiles = function() {
+	self.pickFiles = function():void {
 		// @ts-ignore - .files is in fact accessible
         let f = document.getElementById("importFile").files[0];
 		// check if file-type is eligible:
@@ -391,7 +391,7 @@ modules.construct({
 			self.clear();
 		}
 	};
-	self.importLocally = function(mode) {
+	self.importLocally = function(mode:string):void {
 		if( importing || !mode ) return;   // ignore further clicks while working
 		
 		setImporting( true );
@@ -403,8 +403,8 @@ modules.construct({
 
 		readFile( self.file, app[self.format.name].toSpecif );
 		return;
-		
-		function readFile( f, fn ) {
+
+		function readFile( f, fn:Function ):void {
 			let rdr = new FileReader();
 			rdr.onload = function(evt) {
 				fn( evt.target.result )		// process the buffer
@@ -416,9 +416,9 @@ modules.construct({
 		}
 	};
 	// ToDo: construct an object ...
-	var resQ = [],
+	var resQ:SpecIF[] = [],
 		resIdx = 0;
-	function handleResult( data ):void {
+	function handleResult( data:SpecIF|SpecIF[] ):void {
 		// import specif data as JSON:
 		if( Array.isArray( data ) ) {
 			// The first object shall be imported as selected by the user;
@@ -441,11 +441,11 @@ modules.construct({
 			else
 				terminateWithSuccess();
 		}
-		function handle( dta, idx ):void {
+		function handle( dta:SpecIF, idx:number ):void {
 //			console.debug('handleResult',simpleClone(dta),idx);
 			specif.check( dta, self.format.opts )
 	//		specif.check( data, self.format.opts )
-			.then( (dta)=>{
+			.then( (dta:SpecIF)=>{
 			/*	//  First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
@@ -552,10 +552,10 @@ modules.construct({
 		);
 		};
 	}; 
-	function setProgress(msg,perc) {
+	function setProgress(msg:string,perc:number):void {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
 	}
-	self.abort = function() {
+	self.abort = function():void {
 		console.info('abort pressed');
 		app[self.format.name].abort();
 		app.cache.selectedProject.abort();

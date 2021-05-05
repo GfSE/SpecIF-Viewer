@@ -30,12 +30,12 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strDiagramFolderType = "SpecIF:Diagrams";
 	if( !opts.strGlossaryType ) 
 		opts.strGlossaryType = "SpecIF:Glossary";
-	if( !opts.strActorFolder ) 
-		opts.strActorFolder = "Actors";
-	if( !opts.strStateFolder ) 
-		opts.strStateFolder = "States";
-	if( !opts.strEventFolder ) 
-		opts.strEventFolder = "Events";
+	if (!opts.strActorFolder)
+		opts.strActorFolder = "FMC:Actors";
+	if (!opts.strStateFolder)
+		opts.strStateFolder = "FMC:States";
+	if (!opts.strEventFolder)
+		opts.strEventFolder = "FMC:Events";
 	if( !opts.strCollectionFolder ) 
 		opts.strCollectionFolder = "Collections and Groups";
 /*	if( !opts.strAnnotationFolder ) 

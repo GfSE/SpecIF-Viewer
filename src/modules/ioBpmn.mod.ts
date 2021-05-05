@@ -8,14 +8,14 @@
 
 // Constructor for BPMN import:
 // (A module constructor is needed, because there is an access to parent's data via 'self')
-modules.construct({
+moduleManager.construct({
 	name: 'ioBpmn'
-}, function(self) {
+}, function(self:IModule):IModule {
 	"use strict";
 	var	fDate:string,		// the file modification date
 		fName:string,
 		data,		// the SpecIF data structure for xls content
-		bDO = null;
+		bDO;
 
 	// Create a DOM element for the bpmnViewer outside of the visible area:
 	$('#app').after('<div id="bpmnView"></div>');
@@ -26,7 +26,7 @@ modules.construct({
 
 	self.verify = function (f): boolean {
 
-		function isBpmn(fname): boolean {
+		function isBpmn(fname:string): boolean {
 			return fname.endsWith('.bpmn')
 		}
 
@@ -56,13 +56,14 @@ modules.construct({
 		//		console.debug( 'file', f, fDate );
 		return true;
 	};
-	self.toSpecif = function (buf: ArrayBuffer): JQueryPromise<SpecIF> {
+	self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
 		// import a BPMN file from a buffer:
 		self.abortFlag = false;
 		bDO = $.Deferred();
 
 		bDO.notify('Transforming BPMN to SpecIF',10); 
-		data = BPMN2Specif( ab2str(buf), 
+		// @ts-ignore - BPMN2Specif() is loaded at runtime
+		data = BPMN2Specif( ab2str(buf),
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 
@@ -73,10 +74,11 @@ modules.construct({
 								strActorFolder: "FMC:Actors",
 								strStateFolder: "FMC:States",
 								strEventFolder: "FMC:Events",
+							//	strCollectionFolder: "SpecIF:Collections",
 							//	strAnnotationFolder: "SpecIF:Annotations",
-								strRoleType: "SpecIF:Role",
-								strConditionType: "SpecIF:Condition",
-								strBusinessProcessType: "SpecIF:BusinessProcess",
+								strRoleType: CONFIG.resClassRole,
+								strConditionType: CONFIG.resClassCondition,
+								strBusinessProcessType: CONFIG.resClassProcess,
 								strBusinessProcessesType: CONFIG.resClassProcesses,
 								strBusinessProcessFolder: CONFIG.resClassProcesses,
 								isIE: false
@@ -106,6 +108,7 @@ function bpmn2svg(xml:string):Promise<string> {
 	// transform the BPMN-XML and render the diagram,
 	return new Promise( (resolve,reject)=>{
 		// create viewer instance:
+		// @ts-ignore - BpmnJS() is loaded at runtime
 		var bpmnViewer = new BpmnJS({container: '#bpmnView'});
 		
 		bpmnViewer.importXML( xml )

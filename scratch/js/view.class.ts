@@ -22,7 +22,7 @@ class App {
 		// Define the module hierarchy; it will be used to load the modules and to control the views later on:
 		this.define = {
 			// Define
-			// - name: the modules to load as specified in 'modules.js'
+			// - name: the modules to load as specified in 'moduleManager.js'
 			// - loadAs: name for execution (addressable javascript object)
 			// - the hierarchy of views using implicit actions hide/show or refresh
 			// - the explicit actions independent of any view
@@ -137,7 +137,7 @@ class App {
 		// Make sure page divs are resized, if the browser window is changed in size:
 		bindResizer();
 
-		modules.load( this.define );
+		moduleManager.load( this.define );
 	}
 	show() {
 		console.info( this.title+" started!" );
@@ -147,7 +147,7 @@ class App {
 				function thisCache() { return this.cache } // closure
 				var uP = getUrlParams(), v;
 				if (!thisCache.selectedProject
-					|| !thisCache.selectedProject.loaded()
+					|| !thisCache.selectedProject.isLoaded()
 					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != thisCache.selectedProject.data.id
 					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
 					// - no project is loaded
@@ -157,7 +157,7 @@ class App {
 				else
 					v = '#'+ (uP[CONFIG.keyView] || CONFIG.specifications);
 //				console.debug( 'app.view', uP, v );
-				modules.show({newView:v,urlParams:uP});
+				moduleManager.show({newView:v,urlParams:uP});
 			},
 			function() { return this.logout }
 		);

@@ -4,7 +4,7 @@
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution
 */
-function Graph() {
+app.statementsGraph = function Graph() {
 	"use strict";
 	// For a selected SpecIF resorce, draw a graph of all statements and related resources.
 	// All statements of the same type are grouped to make the reading easier.
@@ -59,7 +59,9 @@ function Graph() {
 					idx = pushChildNodesAndEdges(idx, relations[entry].targets, relProp, false)
 		};
 //		console.debug('rawData',nodesData,edgeData);
+		// @ts-ignore - 'vis' is loaded at runtime
 		let nodes = new vis.DataSet(nodesData),
+		// @ts-ignore - 'vis' is loaded at runtime
 			edges = new vis.DataSet(edgeData),
 			container = document.getElementById( opts.canvas );
 
@@ -92,6 +94,7 @@ function Graph() {
 			}
 		};
 
+		// @ts-ignore - 'vis' is loaded at runtime
 		let network = new vis.Network(container, data, options);
 		// Collapse/close a 'large' sub-network:
 		// see https://github.com/GfSE/SpecIF-Graph/blob/master/src/modules/graph.js
@@ -172,6 +175,7 @@ function Graph() {
                 })
             };
             let options = {
+				// @ts-ignore - nodeOptions is not used, but must me declared anyhow.
                 joinCondition: function (nodeOptions, childNode) {
                     return childNode.id !== 0
                 },
@@ -465,9 +469,11 @@ function Graph() {
          * @returns {string} cleaned string
          */
         function xmlChar2utf8 (str) {
+			// @ts-ignore - match is not used, but must me declared anyhow.
 			str = str.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
                 return String.fromCharCode(parseInt(numStr, 16))
             });
+			// @ts-ignore - match is not used, but must me declared anyhow.
             return str.replace(/&#([0-9]+);/g, function (match, numStr) {
                 return String.fromCharCode(parseInt(numStr, 10))
             })
@@ -537,5 +543,4 @@ function Graph() {
     };
 	self.init();
 	return self
-};
-app.statementsGraph = new Graph();
+}();

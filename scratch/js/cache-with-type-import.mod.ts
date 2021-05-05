@@ -21,7 +21,7 @@
 */
 import * as types from "../types/specif.v1-0.types";
 
-modules.construct({
+moduleManager.construct({
 	name: 'cache'
 }, (self)=>{
 	// Construct a representative of the selected project with cached data:
@@ -221,7 +221,7 @@ function Project() {
 			.then( finalize, sDO.reject );
 		if( opts.addGlossary ) {
 			pend++;
-			self.createGlossary(self.data,opts)
+			self.createFolderWithGlossary(self.data,opts)
 				.then( finalize, sDO.reject );
 		};
 		return sDO;
@@ -528,7 +528,7 @@ function Project() {
 			});
 		}
 	}
-	self.collectResourcesByType = ( dta, opts )=>{
+	self.createFolderWithResourcesByType = ( dta, opts )=>{
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
 		const resourcesToCollect = [
 			{type: "SpecIF:BusinessProcess", flag:"collectProcesses", folder:CONFIG.resClassProcesses, folderNamePrefix:"FolderProcesses-"}
@@ -557,7 +557,7 @@ function Project() {
 
 						// 1 Find all resp. folders (e.g. process folder):
 						let delL = [], prL = [], res, pV;
-//						console.debug('collectResourcesByType',dta.hierarchies,opts);
+//						console.debug('createFolderWithResourcesByType',dta.hierarchies,opts);
 						iterateNodes( dta.hierarchies,
 										(nd)=>{
 											// get the referenced resource:
@@ -575,7 +575,7 @@ function Project() {
 											return true;  // continue always to the end
 										}
 						);
-//						console.debug('collectResourcesByType',delL,prL);
+//						console.debug('createFolderWithResourcesByType',delL,prL);
 
 						// 2. Delete any existing folders:
 						//    (Alternative: Keep folder and delete only the children.)
@@ -651,7 +651,7 @@ function Project() {
 			}
 		)
 	};
-	self.createGlossary = ( dta, opts )=>{
+	self.createFolderWithGlossary = ( dta, opts )=>{
 		return new Promise(
 			(resolve,reject)=>{
 				if( typeof(opts)!='object' || !opts.addGlossary ) { resolve({status:0}); return };
@@ -663,7 +663,7 @@ function Project() {
 				let delL=[], dgL=[], res, pV,
 					apx = self.data.id.simpleHash(),
 					tim = new Date().toISOString();
-//				console.debug('createGlossary',dta.hierarchies);
+//				console.debug('createFolderWithGlossary',dta.hierarchies);
 				iterateNodes( dta.hierarchies,
 							(nd)=>{
 								// get the referenced resource:
@@ -683,7 +683,7 @@ function Project() {
 							}
 				);
 				// 1.2 Delete now:
-//				console.debug('createGlossary',delL,dgL);
+//				console.debug('createFolderWithGlossary',delL,dgL);
 				self.deleteContent( 'node', delL )
 				.then(
 					()=>{
@@ -1071,10 +1071,10 @@ function Project() {
 					self.deduplicate();	// deduplicate equal items
 					// ToDo: Save changes from deduplication to the server.
 //					console.debug('#5',simpleClone(self.data),opts);
-					self.collectResourcesByType(self.data,opts)
+					self.createFolderWithResourcesByType(self.data,opts)
 					.then(
 						()=>{
-							self.createGlossary(self.data,opts)
+							self.createFolderWithGlossary(self.data,opts)
 							.then( ()=>{ uDO.resolve({status:0}) }, uDO.reject )
 						},
 						uDO.reject
@@ -3786,7 +3786,7 @@ function elementTitleOf( el, opts, prj? ) {
 			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
 			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
 			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-		//	if( modules.ready.indexOf( 'diff' )>-1 )
+		//	if( moduleManager.ready.indexOf( 'diff' )>-1 )
 		//		return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML()
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:

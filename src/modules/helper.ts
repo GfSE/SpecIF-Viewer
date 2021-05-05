@@ -20,7 +20,7 @@ function renderProp( lbl:string, val:string, cssCl:string ):string {
 	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
 	return '<div class="attribute'+cssCl+'">'+val+'</div>';
 }
-function DialogForm():object {
+function DialogForm():any {
 	// Construct an object performing the key-by-key input checking on an input form;
 	// check *all* fields on a key-stroke and return the overall result.
 	var self:any = {};
@@ -43,18 +43,18 @@ function DialogForm():object {
 			val = textValue( cPs.label );
 			// Perform the test depending on the type:
 			// In case of a title or description it may happen, that there is no dataType (tutorial "Related Terms":
-            switch ( cPs.dataType? cPs.dataType.type : "xs:string" ) {
-				case 'xs:string':
-				case 'xhtml':
+			switch (cPs.dataType ? cPs.dataType.type : "xs:string") {
+				case TypeEnum.XsString:
+				case TypeEnum.XHTML:
 					ok = !cPs.dataType || cPs.dataType.maxLength==undefined || val.length<=cPs.dataType.maxLength;
 					break;
-				case 'xs:double':
+				case TypeEnum.XsDouble:
 					ok = val.length<1 || RE.Real(cPs.dataType.fractionDigits).test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
-				case 'xs:integer':
+				case TypeEnum.XsInteger:
 					ok = val.length<1 || RE.Integer.test(val)&&val>=cPs.dataType.minInclusive&&val<=cPs.dataType.maxInclusive;
 					break;
-				case 'xs:dateTime':
+				case TypeEnum.XsDateTime:
 					ok = val.length<1 || RE.IsoDate.test(val);
 				// no need to check enumeration
 			};
@@ -126,7 +126,7 @@ function setTextFocus( lbl:string ):void {
 	if( el ) el.focus()
 }
 function setTextState( lbl:string, state:string ):boolean {
-	if( ['has-success','has-error'].indexOf(state)<0 ) throw "Programming Error: Invalid state '"+state+"'";
+	if( ['has-success','has-error'].indexOf(state)<0 ) throw Error("Invalid state '"+state+"'");
 	let el = $('#' + simpleHash(lbl));
 	if( !el ) return false;
 	if( el.hasClass('has-error') ) {
@@ -165,7 +165,7 @@ function getTextLength( lbl:string ):number {
 	}
 }
 				
-function radioField( lbl:string|object, entries:Array<object>, opts?:object ):string {
+function radioField( lbl:string|object, entries:Array<object>, opts?:any ):string {
 	// assemble an input field for a set of radio buttons:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let rB:string, fn:string;
@@ -211,7 +211,7 @@ function radioValue( lbl:string ):string {
 	// get the selected radio button, it is the index number as string:
 	return $('input[name="radio' + simpleHash(lbl)+'"]:checked').attr('value') || '';	// works even if none is checked
 }
-function checkboxField( lbl:string|object, entries:Array<object>, opts?:object ):string {
+function checkboxField( lbl:string|object, entries:Array<object>, opts?:any ):string {
 	// assemble an input field for a set of checkboxes:
 	if( typeof(lbl)=='string' ) lbl = {label:lbl,display:'left',classes:'form-active'}; // for compatibility
 	let cB:string, fn:string;
@@ -284,68 +284,62 @@ function setStyle( sty:string ):void {
 		document.head.appendChild(css); // append to head
 }
 
-// standard error handler:
-function stdError( xhr, cb? ):void {
-	"use strict";
-//	console.debug('stdError',xhr);
-	// clone, as xhr.responseText ist read-only:
-	let xhrCl = {
-		status: xhr.status,
-		statusText: xhr.statusText,
-		responseType: xhr.responseType,
-		responseText: xhr.responseType=='text'? xhr.responseText : ''
-	};	
-	switch( xhr.status ) {
-		case 0:
-		case 200:
-		case 201:
-			return; // some server calls end up in the fail trail, even though all went well.
-		case 401:  // unauthorized
-			userProfile.logout();
-			break;
-		case 402:  // payment required - insufficient license
-			xhrCl.responseText = i18n.Err402InsufficientLicense;
-			message.show( xhrCl );
-			break;
-		case 403:  // forbidden
-			xhrCl.responseText = i18n.Err403Forbidden;
-			message.show( xhrCl );
-			break;
-		case 404:  // not found
-			xhrCl.responseText = i18n.Err404NotFound;
-			message.show( xhrCl );
-			break;
-		case 500:
-			xhrCl.statusText = i18n.ErrInvalidData;
-			xhrCl.responseText = '';
-			message.show( xhrCl, {severity:'danger'} );
-			break;
-		case 995:  // server request timeout
-			message.show( xhrCl );
-			break;
-		case 996:  // server request queue flushed
-			break;
-		default:
-			message.show( xhrCl );
-	};
-	// log original values:
-	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
-	if( typeof(cb)=='function' ) cb();
-};
-// standard message box:
 class xhrMessage {
 	status: number;
-	statusText: string;
+	statusText?: string;
 	responseType?: string;
 	responseText?: string;
-	constructor(st: number, sTxt: string, rTyp?:string, rTxt?:string) {
+	constructor(st: number, sTxt: string, rTyp?: string, rTxt?: string) {
 		this.status = st;
 		this.statusText = sTxt;
 		this.responseType = rTyp;
 		this.responseText = rTxt;
 	}
 }
-
+// standard error handler:
+function stdError(xhr: xhrMessage, cb?:Function): void {
+	"use strict";
+//	console.debug('stdError',xhr);
+	// clone, as xhr.responseText ist read-only:
+//	let xhrCl = new xhrMessage ( xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : ''	);	
+	switch( xhr.status ) {
+		case 0:
+		case 200:
+		case 201:
+			return; // some server calls end up in the fail trail, even though all went well.
+		case 401:  // unauthorized
+			app.me.logout();
+			break;
+		case 402:  // payment required - insufficient license
+			xhr.responseText = i18n.Err402InsufficientLicense;
+			message.show( xhr );
+			break;
+		case 403:  // forbidden
+			xhr.responseText = i18n.Err403Forbidden;
+			message.show( xhr );
+			break;
+		case 404:  // not found
+			xhr.responseText = i18n.Err404NotFound;
+			message.show( xhr );
+			break;
+		case 500:
+			xhr.statusText = i18n.ErrInvalidData;
+			xhr.responseText = '';
+			message.show( xhr, {severity:'danger'} );
+			break;
+		case 995:  // server request timeout
+			message.show( xhr );
+			break;
+		case 996:  // server request queue flushed
+			break;
+		default:
+			message.show( xhr );
+	};
+	// log original values:
+	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
+	if( typeof(cb)=='function' ) cb();
+};
+// standard message box:
 var message = function() {
 	"use strict";
 	// constructor for message-box:
@@ -365,7 +359,7 @@ var message = function() {
 		if( --pend<1 )
 			self.hide();
 	}
-	self.show = ( msg, opts ):void=>{
+	self.show = ( msg:xhrMessage|string, opts?:any ):void =>{
 		// msg: message string or jqXHR object
 		// opts.severity: severity with a value listed below 
 		// opts.duration: time in ms before fading out
@@ -384,7 +378,7 @@ var message = function() {
 					// msg is an jqXHR object:
 					msg = (msg.statusText||i18n.Error) + " (" + msg.status + (msg.responseType=='text'?"): "+msg.responseText : ")");
 					if( !opts.severity ) opts.severity = msg.status<202? 'success' : 'danger';
-					break
+					break;
 				};
 			default:
 				console.error(msg,'is an invalid message.');
@@ -453,7 +447,7 @@ function bindResizer():void {
 	});
 }
 
-type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | Node | File | undefined;
+type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | SpecifNode | SpecifFile | undefined;
 type Instance = Resource | Statement | undefined;
 function indexById(L:Item[],id:string):number {
 	if( L && id ) {
@@ -464,7 +458,7 @@ function indexById(L:Item[],id:string):number {
 	};
 	return -1;
 }
-function itemById(L: Item[],id:string):Item {
+function itemById(L: Item[],id:string):any {
 //	console.debug('+',L,id,(L && id));
 	if( L && id ) {
 		// given the ID of an item in a list, return the item itself:
@@ -481,14 +475,14 @@ function indexByTitle(L: Item[],ti:string):number {
 	};
 	return -1;
 }
-function itemByTitle(L: Item[],ti:string):Item {
+function itemByTitle(L: Item[],ti:string):any {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
 }
-function indexBy(L: Item[], p:string, s:string ):number {
+function indexBy(L: object[], p:string, s:string ):number {
 	if( L && p && s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 		// hand in property and searchTerm as string !
@@ -497,7 +491,7 @@ function indexBy(L: Item[], p:string, s:string ):number {
 	};
 	return -1;
 }
-function itemBy(L: Item[], p:string, s:string ):Item {
+function itemBy(L: Item[], p:string, s:string ):any {
 	if( L && p && s ) {
 		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
@@ -506,7 +500,7 @@ function itemBy(L: Item[], p:string, s:string ):Item {
 	};
 }
 function containsById(cL: Item[], L: Item[] ):boolean {
-	if (!cL || !L) throw "Programming Error: Missing Array";
+	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
 	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
@@ -518,7 +512,7 @@ function containsById(cL: Item[], L: Item[] ):boolean {
 	}
 }
 function containsByTitle(cL: Item[], L: Item[] ):boolean {
-	if (!cL || !L) throw "Programming Error: Missing Array";
+	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
 	
@@ -751,6 +745,7 @@ String.prototype.xmlChar2utf8 = function():string {
 
 function escapeInner( str:string ):string {
 	var out = "";
+	// @ts-ignore - $0 is never read, but must be specified anyways
 	str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
 		// $1: inner text (before the next tag)
 		// $2: start of opening tag '<' or closing tag '</'
@@ -782,6 +777,7 @@ String.prototype.escapeHTML = function():string {
 String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
 	if( isHTML(this) ) return this;
+	// @ts-ignore - $0 is never read, but must be specified anyways
 	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, ($0,$1,$2,$3)=>{
 		return '<'+$1+$2+$3+'>';
 	}));
@@ -820,11 +816,12 @@ function stripHtml(html){
 } */
 
 // Add a link to an isolated URL:
-String.prototype.linkifyURLs = function( opts?:object ):string {
+String.prototype.linkifyURLs = function( opts?:any ):string {
 	// perform the operation, unless specifically disabled:
 	if( typeof(opts)=='object' && !opts.linkifyURLs ) return this;
 	return this.replace( RE.URI,  
-		( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 )=>{ 
+		// @ts-ignore - $6, $7, $8 are never read, but must be specified anyways
+		( $0, $1, $2, $3, $4, $5, $6, $7, $8, $9 )=>{
 			// all links which do not start with "http" are considered local by most browsers:
 			if( !$2.startsWith('http') ) $2 = 'https://'+$2;  // starts with "www." then according to RE.URI
 		/*	// we must encode the URI, but to avoid that an already encoded URI is corrupted, we first decode it
@@ -837,23 +834,17 @@ String.prototype.linkifyURLs = function( opts?:object ):string {
 
 String.prototype.fileExt = function():string {
 	// return the file extension only:
-	return this.substring( this.lastIndexOf('.')+1 )
+	return this.substring(this.lastIndexOf('.') + 1);
+/*	// see https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/12900504#12900504
+	return fname.slice((fname.lastIndexOf(".") - 1 >>> 0) + 2); */
 };
 String.prototype.fileName = function():string {
 	// return the filename without extension:
 	return this.substring( 0, this.lastIndexOf('.') )
 };
-String.prototype.isTrue = function():boolean {
-	return CONFIG.valuesTrue.indexOf( this.toLowerCase().trim() )>-1
-};
-String.prototype.isFalse = function():boolean {
-	return CONFIG.valuesFalse.indexOf( this.toLowerCase().trim() )>-1
-};
-String.prototype.trimJSON = function():string {
+function trimJson(str:string):string {
 	// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
-	let si = this.indexOf('{'),
-		li = this.lastIndexOf('}');
-	return this.substring(si,li+1)
+	return str.substring( str.indexOf('{'), str.lastIndexOf('}')+1 )
 };
 
 /*	
@@ -1123,7 +1114,7 @@ function blob2text(file,fn:Function,timelag?:number):void {
 }
 function uriBack2slash(str:string):string {
     return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
-		($0, $1)=>{
+		($0)=>{
 			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
 				($0)=>{
 					return $0.replace(/\\/g, '/');
@@ -1157,21 +1148,6 @@ function cleanValue(o: string | ValueElement[] ):string|ValueElement[] {
 	if( Array.isArray(o) ) return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
 	return '';  // unexpected input (programming error with all likelihood
 }
-/*
-// Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
-if (!Array.isArray) {
-    Array.isArray = (obj)=>{
-        return Object.prototype.toString.call(obj) === "[object Array]";
-    };
-};
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger
-if (!Number.isInteger) {
-	Number.isInteger = (val)=>{
-		return typeof(val)==='number' && isFinite(val) && Math.floor(val) === val;
-	};
-};
-// function float2int(val) { return parseInt(val) };
-*/
 function attachment2mediaType( fname:string ):string|undefined {
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( t ) {
@@ -1183,17 +1159,8 @@ function attachment2mediaType( fname:string ):string|undefined {
 		ti = CONFIG.applExtensions.indexOf( t.toLowerCase() );
 		if( ti>-1 ) return CONFIG.applTypes[ ti ];
 	};
-//	return; undefined
+//	return undefined;
 }
-/*
-function image2mediaType( fname ) {
-	let t = fname.fileExt();  // get the extension excluding '.'
-	if( !t ) return;
-	let ti = CONFIG.imgExtensions.indexOf( t.toLowerCase() );
-	if( ti>-1 ) return CONFIG.imgTypes[ ti ];
-//	return; undefined
-}
-*/
 function localDateTime(iso:string):string {
 	if( typeof(iso)=='string' ) {
 		// ToDo: calculate offset of time-zone ... or use one of the libraries ..
@@ -1237,9 +1204,29 @@ function hasUrlParams():boolean {
 	if( p[1] && p[1].length>0 ) return '?';
 	return false; */
 }
+/*
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
-function getUrlParams(opts?:object):object {
+class IUrlParams {
+//	uid?: string;
+	import?: string;
+	mode?: string;
+	project?: string;
+	item?: string;
+	node?: string;
+	view?: string;
+}
+	// Keys for the query parameters - if changed, existing links will end up in default view:
+//	CONFIG.keyUId = 'uid';	// userId
+	CONFIG.keyImport = 'import';
+	CONFIG.keyMode = 'mode';
+	CONFIG.keyProject = 'project';	// projectId
+	CONFIG.keyItem = 'item';
+	CONFIG.keyNode = 'node';
+	CONFIG.keyView = 'view';	// dialog
+	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyMode,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
+
+function getUrlParams(opts?: any): IUrlParams {
 	// Get the url parameters contained in the 'fragment' according to RFC2396:
 	if( typeof(opts)!='object' ) opts = {};
 	if( typeof(opts.start)!='string' ) opts.start = '#';
@@ -1253,6 +1240,37 @@ function getUrlParams(opts?:object):object {
 
 	function parse( h:string ):object {
 		if( !h ) return {};
+		var pO = new IUrlParams;
+		h = h.split(opts.separator);
+		h.forEach( (p)=>{
+			p = p.split('=');
+			// remove enclosing quotes from the value part:
+			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
+			// look for specific tokens, only:
+			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
+				pO[p[0]] = p[1];
+			else
+				console.warn("Unknown URL-Parameter '",p[0],"' found.");
+		});
+		return pO;
+	}
+}
+*/
+// ToDo: try prms = location.hash
+// see: https://www.w3schools.com/jsref/prop_loc_hash.asp
+function getUrlParams(opts?:any):any {
+	// Get the url parameters contained in the 'fragment' according to RFC2396:
+	if( typeof(opts)!='object' ) opts = {};
+	if( typeof(opts.start)!='string' ) opts.start = '#';
+	if( typeof(opts.separator)!='string' ) opts.separator = ';'
+
+	let p = document.URL.split(opts.start);
+	if( !p[1] ) return {};
+	return parse( decodeURI(p[1]) );
+
+	function parse( h:any ):any {
+		if( !h ) return {};
+		if ( h.charAt(0) == '/') h = h.substr(1);	// remove leading slash
 		var pO = {};
 		h = h.split(opts.separator);
 		h.forEach( (p)=>{
@@ -1268,7 +1286,7 @@ function getUrlParams(opts?:object):object {
 		return pO;
 	}
 }
-function setUrlParams(actSt:object):void {
+function setUrlParams(actSt:any):void {
 	// update browser history, if changed:
 	if( !browser.supportsHtml5History || !actSt ) return;
 
@@ -1303,12 +1321,12 @@ function clearUrlParams():void {
 //	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
 }
-function httpGet(params:object):void {
+function httpGet(params:any):void {
 	// https://blog.garstasio.com/you-dont-need-jquery/
 	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', params.url, true);
-	if( params.withCredentials ) xhr.withCredentials = "true";
+	if( params.withCredentials ) xhr.withCredentials = true;
 	// https://stackoverflow.com/a/42916772/2214
 	xhr.responseType = params.responseType;
 	xhr.onreadystatechange = function() {

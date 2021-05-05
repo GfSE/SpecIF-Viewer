@@ -239,7 +239,7 @@ class ModuleManager {
 			case 'undefined': throw "Programming Error: Undefined target view.";
 			case 'string': params = { newView: params };
 		};
-//		console.debug('modules.show',params);
+//		console.debug('moduleManager.show',params);
 		let mo = this.findM( this.tree, params.newView );
 		if( !mo || !mo.parent.ViewControl ) {
 			console.error("'"+params.newView+"' is not a defined view");
@@ -549,13 +549,13 @@ class ModuleManager {
 							switch (e.selectorType) {
 								case 'btns':
 									$(e.selector).append(
-										'<button id="' + id + '" type="button" class="btn btn-default" onclick="modules.show(\'' + ch.view + '\')" >' + lbl + '</button>'
+										'<button id="' + id + '" type="button" class="btn btn-default" onclick="moduleManager.show(\'' + ch.view + '\')" >' + lbl + '</button>'
 									);
 									break;
 								//	case 'tabs':
 								default:
 									$(e.selector).append(
-										'<li id="' + id + '" onclick="modules.show(\'' + ch.view + '\')"><a>' + lbl + '</a></li>'
+										'<li id="' + id + '" onclick="moduleManager.show(\'' + ch.view + '\')"><a>' + lbl + '</a></li>'
 									);
 							};
 						};

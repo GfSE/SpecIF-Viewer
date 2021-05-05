@@ -6,7 +6,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
 */
 
-function toHtmlDoc( pr, pars ) {
+function toHtmlDoc(pr: SpecIF, pars:any) {
 	// Transform pr to HTML with embedded SpecIF transformation,
 	// where pr is a SpecIF data in JSON format (not the internal cache).
 	// Attention: The SpecIF data as JSON may not contain any apostrophes 
@@ -16,8 +16,8 @@ function toHtmlDoc( pr, pars ) {
 
 	return new Promise( (resolve, reject)=>{
 		var pend = 0;
-		if( pr.files )
-			pr.files.forEach( (f)=>{
+		if (pr.files)
+			pr.files.forEach((f: IFileWithContent) => {
 //				console.debug('zip a file',f);
 				if( f.blob ) {
 
@@ -40,7 +40,7 @@ function toHtmlDoc( pr, pars ) {
 						case 'image/jpg':
 						case 'image/gif':
                             blob2dataURL( f, 
-								(r)=>{
+								(r:string)=>{
 									// perhaps there is a more elegant way to apply the type to the dataURL,
 									// but it works:
 									f.dataURL = r.replace(/application\/octet-stream/,f.type);
@@ -68,7 +68,7 @@ function toHtmlDoc( pr, pars ) {
 		};
 	});
 
-	function make(pr): String {
+	function make(pr:any): String {
 		pr = JSON.stringify( pr )
 		.replace(/\\/g,"\\\\")
 		.replace(/'/g,"&apos;")
@@ -93,13 +93,13 @@ function toHtmlDoc( pr, pars ) {
 			+	'<script type="text/javascript">'
 			+		'var cdn = \''+pars.cdn+'\','
 			+ 			'data = \''+pr+'\';'
-					// Get four fundamental libraries in parallel, then initialize the moduleManager using 'modules.init' ..
+					// Get four fundamental libraries in parallel, then initialize the moduleManager using 'moduleManager.init' ..
 					// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
 			+			'function getScript(url) {'
 			+				'var el = document.createElement("script");'
 			+				'el.onload = function () {'
 			+					'if (--pend < 1)'
-			+						'modules.init("embeddedSpecif", {path:cdn});' 	
+			+						'moduleManager.init("embeddedSpecif", {path:cdn});' 	
 			+				'};'
 			+				'el.src = url;'
 			+				'document.body.appendChild(el)'

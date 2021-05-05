@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "0.99.9.10",
+	CONFIG.appVersion = "0.99.9",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -159,6 +159,8 @@ const CONFIG:any = {};
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
 	CONFIG.resClassProcess = 'SpecIF:BusinessProcess';
 	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
+	CONFIG.resClassCondition = "SpecIF:Condition";
+	CONFIG.resClassRole = "SpecIF:Role";
 	CONFIG.resClassFolder = 'SpecIF:Heading';
 	CONFIG.resClassParagraph = "SpecIF:Paragraph";
 	CONFIG.resClassComment = 'SpecIF:Comment';
@@ -260,14 +262,14 @@ const CONFIG:any = {};
 		// Dublin core:
 		CONFIG.propClassDesc,
 		'DC.description',
-		CONFIG.resClassDiagram,
+		CONFIG.propClassDiagram,
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.Text',
-/*		// ARCWAY Cockpit Copilot:
+		// General:
 		'Beschreibung',
 		'Description',
 		'Diagramm',
-		// DocBride Resource Director:
+/*		// DocBride Resource Director:
 		'DBRD.Text',
 		'Preview',
 		// carhs SafetyWissen:
@@ -345,7 +347,7 @@ const CONFIG:any = {};
 		CONFIG.resClassFolder,
 		CONFIG.resClassParagraph,
 		CONFIG.resClassDiagram,
-		'SpecIF:Condition',
+		CONFIG.resClassCondition,
 		'bpmn:parallelGateway',
 		'bpmn:exclusiveGateway',
 		'bpmn:inclusiveGateway',
@@ -454,12 +456,13 @@ const CONFIG:any = {};
 	];  */
 
 	CONFIG.icons = new Map([
-		['IREB:Requirement',"&#8623;"],
-		['SpecIF:Feature',"&#10038;"],
 		['FMC:Actor',"&#9632;"],
 		['FMC:State',"&#9679;"],
 		['FMC:Event',"&#11047;"],
 		['SpecIF:Collection',"&#11034;"],
+		['IREB:Requirement', "&#8623;"],
+		['SpecIF:Feature', "&#10038;"],
+		['SpecIF:Diagram', "&#9635;"],
 		[CONFIG.resClassDiagram,"&#9635;"],
 	//	['SpecIF:UserStory',"&#9830;"],
 		["IR:Annotation","&#9755;"]

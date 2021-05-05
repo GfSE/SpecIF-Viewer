@@ -7,49 +7,103 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
 */
 
+interface IModule {
+	name: string;
+	label: string;
+	loadAs: string;
+	view: string;
+	viewClass: string;
+	selector: string;
+	selectorType: string;
+	selectedBy: string;
+	children: IModule[];
+	parent: IModule;
+	viewControl: ViewControl;
+	init: Function;
+	clear: Function;
+	show: Function;
+	hide: Function;
+	// additional properties and methods are possible,
+	// see: https://stackoverflow.com/questions/33836671/typescript-interface-that-allows-other-properties
+	[x: string]: any;  
+}
+interface IModuleManager {
+	init: Function;
+	load: Function;			// load a hierarchy of modules to construct
+	construct: Function;	// construct a single executable module
+	show: Function;			// select a new module for operation
+//	hide: Function;
+	isReady: Function;		// check, if a module is loaded and ready for operation
+}
+interface IApp {
+	title: string;
+	busy: State;
+	cache: IProjects;
+	init(): boolean;
+	show(): void;
+	export(): void;
+	hide():void;
+	logout():void;
+	about: IModule;
+	me: IMe;
+	specs: IModule;
+	doc: IModule;
+	statements: IModule;
+	filter: IModule;
+	reports: IModule; 
+	statementsGraph?: IModule;
+	importAny: IModule;
+	ioSpecif: IModule;
+	ioReqif?: IModule;
+	ioBpmn?: IModule;
+	ioArchimate?: IModule;
+	ioXls?: IModule;
+	// additional properties and methods are possible,
+	// see: https://stackoverflow.com/questions/33836671/typescript-interface-that-allows-other-properties
+	[x: string]: any;  
+}
+
 class ViewControl {
 	// Constructs an object to control the visibility of the DOM-tree elements listed in 'list';
 	// the selected view is shown, all others are hidden.
 	// ViewControl can switch pages or tabs, depending on the navigation level:
-	list;			// the list of alternative views under control of the respective object
-	selected: any;	// the currently selected view
+	list:IModule[];		// the list of alternative views under control of the respective object
+	selected:IModule|undefined;	// the currently selected view
 
 	constructor() {
 		this.list = [];
-		this.selected = undefined;
+//		this.selected = undefined;
 	}
-	exists(v): boolean {
+	exists(v:string): boolean {
 		return indexBy(this.list, 'view', v) > -1;
 	}
-	add(v): void {
+	add(v:IModule): void {
 		// add the module to the view list of this level:
 		this.list.push(v);
 		$(v.view).hide();
 		// we could add the visual selector, here ... it is now part of loadH.
 	}
-	show(params): void {
+	show(params:any): void {
 		// Select a new view
 		// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
 		// - simple case: params is a string with the name of the new view.
 		// - more powerful: params is an object with the new target view plus optionally content or other parameters
-		switch (typeof (params)) {
-			case 'undefined': throw "Programming Error: moduleManager.show() nees a parameter.";
-			case 'string': params = { newView: params };
-		};
+		if (typeof (params)!='object') 
+			throw Error("moduleManager.show() needs a parameter.");
 //		console.debug('ViewControl.show',this.list,this.selected,params);
 
-		/*	if( self.selected && params.newView==self.selected.view ) {
+		/*	if( self.selected && params.view==self.selected.view ) {
 				// just update the current view:
 				if( typeof(params.content)=='string' ) $(self.selected.view).html(params.content);
 					return
 			};  */
-		// else: show params.newView and hide all others:
+		// else: show params.view and hide all others:
 		let v:JQuery, s:JQuery;
-		this.list.forEach((le) => {
+		this.list.forEach((le:IModule) => {
 //					console.debug('ViewControl.show le',le);
 			v = $(le.view);			// the view
 			s = $(le.selectedBy); 	// the visual selector
-			if (params.newView == le.view) {
+			if (params.view == le.view) {
 				//					console.debug('ViewControl.show: ',le.view,le.selectedBy,v,s);
 				this.selected = le;
 				// set status of the parent's view selector:
@@ -70,7 +124,7 @@ class ViewControl {
 				}
 			}
 			else {
-//						console.debug('ViewControl.hide: ',le.view,le.selectedBy,v,s);
+//				console.debug('ViewControl.hide: ',le.view,le.selectedBy,v,s);
 				// set status of the parent's view selector:
 				s.removeClass('active');
 				// control visibility:
@@ -86,7 +140,7 @@ class ViewControl {
 			doResize();
 		};
 	}
-	hide(v): void {
+	hide(v:string):void {
 		if (typeof (v) == 'string' && this.exists(v)) {
 			// hide a specific view:
 			$(v).hide();
@@ -133,20 +187,12 @@ class Browser {
 		return /MSIE |rv:11.0/i.test(navigator.userAgent);
 	}
 }
-/*interface Modules {
-	init: Function;
-	construct: Function;
-	load: Function;
-	show: Function;
-	hide: Function;
-	isReady: Function;
-}*/
 
-var app,
-	browser,
-	i18n,
-	standardTypes,
-	modules = function() {
+var app:IApp,
+	browser:Browser,
+	i18n:any,
+	standardTypes:StandardTypes,
+	moduleManager:IModuleManager = function() {
 		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
@@ -166,9 +212,9 @@ var app,
 	let callWhenReady:Function,
 		loadPath = './';
 
-	self.init = ( appName, opts? )=>{
+	self.init = ( appName:string, opts?:any ):void =>{
 
-		// Identify browser type:
+		// identify browser capabilities:
 		browser = new Browser();
 
 		// Check the browser type, the first test is true for IE <= 10, the second for IE 11.
@@ -186,15 +232,25 @@ var app,
 		self.ready = [];
 
 		// init phase 1: Load the javascript routines common to all apps:
-		loadH(['bootstrap','types','i18n'], {done:init2} );
-		return
+		loadL(['bootstrap','types','i18n'], {done:init2} );
+		return;
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
-		function init2() {
+		function init2():void {
 //			console.debug('init2',opts);
-			let loadL = ['helper','helperTree','tree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
-			if( CONFIG.convertMarkdown ) loadL.push('markdown');
-			loadH(loadL, { done: function () { window.app = window[appName](); window.app.init() } });
+			let modL = ['helper','helperTree','tree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
+			if( CONFIG.convertMarkdown ) modL.push('markdown');
+			loadL( modL, { done: function () { window.app = window[appName](); window.app.init() } });
+		}
+		function loadL(L: string[], opts?: any): void {
+			// load the modules in hierarchy h
+			// specified by a name string or an object with property 'name';
+			// h can be a single element, a list or a tree.
+
+			if (opts && typeof (opts.done) == "function")
+				callWhenReady = opts.done;
+
+			L.forEach((e) => { loadM(e) });
 		}
 	};
 	function register( mod:string ):boolean {
@@ -202,7 +258,7 @@ var app,
 		// return false, if mod is already registered and there is no need to load it
 		if( self.registered.indexOf(mod)>-1 ) {
 			console.warn( "WARNING: Did not reload module '"+mod+"'." );
-			return false
+			return false;
 		};
 
 		self.registered.push( mod );
@@ -217,14 +273,119 @@ var app,
 		if( i>-1 ) self.registered.splice(i,1);
 //		console.info( "Deregister: "+mod+" ("+self.registered.length+")" );
 	};  */
-	self.load = ( tr, opts )=>{
+	self.load = ( tr:IModule, opts:any ):void =>{
 		// tr is a hierarchy of modules, where the top element represents the application itself;
-		// only modules with a specified name will be loaded:
+		// only modules with a specified 'name' will be loaded:
+			// load the modules in hierarchy tr
+			// specified by a name string or an object with property 'name';
+			// tr can be a single element, a list or a tree.
 		self.tree = tr;
-		return loadH(tr, opts )
-	//	return loadH(tr, { done: ()=>{ window.app.show() } } )
+		//		console.debug('loadH',h,opts);
+		if (opts && typeof (opts.done) == "function")
+			callWhenReady = opts.done;
+		ld(tr);
+		return;
+
+			function ld(e: IModule): void {
+				// else, the module is described by an object with a property 'name':
+				// append the view to the parent view, where
+				// - the visibility of the view shall be controlled by the parent's ViewControl
+				if (e.view && e.parent) {
+					let c = e.viewClass ? 'class="' + e.viewClass + '" ' : '',
+						d = '<div id="' + e.view.substring(1) + '" ' + c + ' style="display:none;"></div>';
+					//					console.debug('l.view',e,c,d);
+					$(e.parent.view).append(d);
+				};
+				// load a module in case of elements with a name:
+				// (lazy loading is not yet implemented)
+				if (e.name && !e.lazy)
+					loadM(e.name);
+				if (e.children) {
+					// in certain cases prepare for controlling the children's views:
+					if (e.selector) {
+						//						console.debug('l.selector',e);
+						// The element has children and a selector, so add the view controller:
+						e.ViewControl = new ViewControl();
+
+						// ... and create a corresponding visual selector for the children's views,
+						// if it has not been defined manually:
+						//						console.debug('s',e.selector,$(e.selector),$(e.selector).length);
+						if ($(e.selector).length < 1) {
+							let s = '';
+							switch (e.selectorType) {
+								case 'btns':
+									s = '<div id="' + e.selector.substring(1) + '" class="btn-group btn-group-md" ></div>';
+									break;
+								//	case 'tabs':
+								default:
+									s = '<ul id="' + e.selector.substring(1) + '" role="tablist" class="nav nav-tabs"></ul>'
+							};
+							$(e.view).append(s);
+						};
+
+						// Then care for the entries in the view controller and in the visual selector:
+						let id = null, lbl = null;
+						e.children.forEach(function (ch) {
+							if (ch.view) {
+								if (!ch.selectedBy) {
+									// only one of them is present:
+									console.error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
+									return
+								};
+								// else, both 'view' and 'selectedBy' are present:
+
+								// Add the child's view to the view controller;
+								// the elements of ViewControl are a subset of the elements of children, namely those with a view:
+								e.ViewControl.add(ch);
+
+								// Add a view selector element for the child (button resp. tab):
+								id = ch.selectedBy.substring(1);	// without '#'
+								lbl = ch.label || id;
+								//								console.debug('e',e,ch,id,lbl);
+								switch (e.selectorType) {
+									case 'btns':
+										$(e.selector).append(
+											'<button id="' + id + '" type="button" class="btn btn-default" onclick="moduleManager.show({view:\'' + ch.view + '\'})" >' + lbl + '</button>'
+										);
+										break;
+									//	case 'tabs':
+									default:
+										$(e.selector).append(
+											'<li id="' + id + '" onclick="moduleManager.show({view:\'' + ch.view + '\'})"><a>' + lbl + '</a></li>'
+										);
+								};
+							};
+							if (ch.action) {
+								if (!ch.selectedBy) {
+									// only one of them is present:
+									console.error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
+									return
+								};
+								// Add a view selector element for the child (only button is implemented):
+								id = ch.selectedBy.substring(1);	// without '#'
+								lbl = ch.label || id;
+								switch (e.selectorType) {
+									case 'btns':
+										$(e.selector).append(
+											'<button id="' + id + '" type="button" class="btn btn-default" onclick="' + ch.action + '" >' + lbl + '</button>'
+										);
+										break;
+									default:
+										console.error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
+								};
+							};
+						});
+					};
+					// finally load all the children, as well:
+					e.children.forEach((c) => {
+						c.parent = e;
+						ld(c);
+					});
+				};
+			}
+
 	};
-	self.construct = ( defs, constructorFn:Function ):void =>{
+	self.construct = ( defs:IModule, constructorFn:Function ):void =>{
 		// Construct controller and view of a module.
 		// This routine is called by the respective module in the code file, once loaded with 'loadH'/'loadM',
 		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
@@ -232,10 +393,10 @@ var app,
 
 		// find module by name or by view somewhere in the complete module tree of the app:
 		let mo = findM(self.tree,defs.name||defs.view);
-		if(!mo) {
-			throw defs.name? "'"+defs.name+"' is not a defined module name" : "'"+defs.view+"' is not a defined view";
-		};
-		$.extend( mo, defs );
+		if(!mo)
+			throw Error(defs.name? "'"+defs.name+"' is not a defined module name" : "'"+defs.view+"' is not a defined view");
+
+		$.extend(mo, defs);
 //		console.debug('construct', defs, mo);
 
 		// An execution name ('loadAs') may be specified when different modules (with diffent names)
@@ -264,19 +425,17 @@ var app,
 
 		// the module will be initialized within setReady() once all modules are loaded.
 	};
-	self.show = ( params ):void =>{
+	self.show = ( params:any ):void =>{
 		// Show the specified view, which may be located somewhere in the hierarchy;
 		// Assuming that it's parent has a ViewControl:
-		switch( typeof(params) ) {
-			case 'undefined': throw "Programming Error: Undefined target view.";
-			case 'string': params = { newView: params };
-		};
-//		console.debug('modules.show',params);
-		let mo = findM( self.tree, params.newView );
-		if( !mo || !mo.parent.ViewControl ) {
-			console.error("'"+params.newView+"' is not a defined view");
-			return // undefined
-		};
+		if ( typeof(params)!='object' )
+			throw Error("Undefined target view.");
+//		console.debug('moduleManager.show',params);
+
+		let mo = findM(self.tree, params.view);
+		if( !mo || !mo.parent.ViewControl )
+			throw Error("'"+params.view+"' is not a defined view");
+
 		// Set the view from the top-level to the lowest level,
 		// so that it is possible to jump from any branch to another at any level.
 		// Begin from the top:
@@ -286,20 +445,20 @@ var app,
 		setViewToLeaf( mo, params );
 		return;
 
-		function setViewFromRoot( le, pL ):void {
+		function setViewFromRoot( le:IModule, pL ):void {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
-				// all levels get access to the parameters besides newView, if needed:
+				// all levels get access to the parameters besides view, if needed:
 				let nPL = simpleClone( pL );
-				nPL.newView = le.parent.view;
+				nPL.view = le.parent.view;
 				setViewFromRoot( le.parent, nPL )
 			};
 			// set this level's view controller to choose the desired view:
 			le.parent.ViewControl.show( pL )
 		}
-		function setViewToLeaf( le, pL ):void {
+		function setViewToLeaf(le: IModule, pL ):void {
 			// step down, if there is a child view:
-				function findDefault( vL ) {
+				function findDefault(vL: IModule[]): IModule {
 					for( var i=vL.length-1; i>-1; i-- ) {
 						if( vL[i].isDefault ) return vL[i]
 					};
@@ -309,159 +468,40 @@ var app,
 			if( le.ViewControl && le.ViewControl.list.length>0 ) {
 				let ch = findDefault( le.ViewControl.list ),
 					nPL = simpleClone( pL );
-				nPL.newView = ch.view;
+				nPL.view = ch.view;
 				le.ViewControl.show( nPL );
 				setViewToLeaf( ch, pL )
 			}
 		}
 	};
-	self.hide = ():void =>{
+/*	self.hide = ():void =>{
 		// hide all views of the top level:
 		self.tree.ViewControl.hide()
-	};
+	}; */
 	self.isReady = ( mod:string ):boolean =>{
 		return self.ready.indexOf( mod ) >-1
 	};
-	return self
+	return self;
 
-	function initH( h ) {
+	function initH( h: IModule ): void {
 		// initialize the hierarchy of modules;
 		// where h can be a module or an array of modules
 		// ... and a module can have children:
-			function it(e) {
+		function it(e: IModule) {
 				if( typeof(e.init)=='function' )
 					e.init();
-				if( e.children )
+				if (e.children)
 					// initialize all the children:
-					e.children.forEach( (c)=>{ initH(c) })
+					e.children.forEach((c) => { it(c) });
 			}
 
 		if( h ) {
-			if( Array.isArray(h) )
-				h.forEach( (e)=>{it(e)} )
-			else
-				it(h)
+			it(h);
 		};
 	}
-	function loadH(h,opts?):void {
-		// load the modules in hierarchy h
-		// specified by a name string or an object with property 'name';
-		// h can be a single element, a list or a tree.
-			function ld(e):void {
-				// load a module named 'e':
-				if( typeof(e)=='string' ) {
-					loadM( e );
-					return
-				};
-				// else, the module is described by an object with a property 'name':
-				// append the view to the parent view, where
-				// - the visibility of the view shall be controlled by the parent's ViewControl
-				if( e.view && e.parent ) {
-					let c = e.viewClass?'class="'+e.viewClass+'" ':'',
-						d = '<div id="'+e.view.substring(1)+'" '+c+' style="display:none;"></div>';
-//					console.debug('l.view',e,c,d);
-					$(e.parent.view).append(d);
-				};
-				// load a module in case of elements with a name:
-				// (lazy loading is not yet implemented)
-				if( e.name && !e.lazy )
-					loadM( e.name );
-				if( e.children ) {
-					// in certain cases prepare for controlling the children's views:
-					if( e.selector ) {
-//						console.debug('l.selector',e);
-						// The element has children and a selector, so add the view controller:
-						e.ViewControl = new ViewControl();
-
-						// ... and create a corresponding visual selector for the children's views,
-						// if it has not been defined manually:
-//						console.debug('s',e.selector,$(e.selector),$(e.selector).length);
-						if( $(e.selector).length<1 ) {
-							let s = '';
-							switch(e.selectorType) {
-								case 'btns':
-									s = '<div id="'+e.selector.substring(1)+'" class="btn-group btn-group-md" ></div>';
-									break;
-							//	case 'tabs':
-								default:
-									s = '<ul id="'+e.selector.substring(1)+'" role="tablist" class="nav nav-tabs"></ul>'
-							};
-							$(e.view).append(s);
-						};
-
-						// Then care for the entries in the view controller and in the visual selector:
-						let id=null, lbl=null;
-						e.children.forEach( function(ch) {
-							if( ch.view ) {
-								if( !ch.selectedBy ) {
-									// only one of them is present:
-									console.error( "Module '"+ch.name+"' must have both properties 'view' and 'selectedBy' or none." );
-									return
-								};
-								// else, both 'view' and 'selectedBy' are present:
-
-								// Add the child's view to the view controller;
-								// the elements of ViewControl are a subset of the elements of children, namely those with a view:
-								e.ViewControl.add( ch );
-
-								// Add a view selector element for the child (button resp. tab):
-								id = ch.selectedBy.substring(1);	// without '#'
-								lbl = ch.label || id;
-//								console.debug('e',e,ch,id,lbl);
-								switch( e.selectorType ) {
-									case 'btns':
-										$(e.selector).append(
-					'<button id="'+id+'" type="button" class="btn btn-default" onclick="modules.show(\''+ch.view+'\')" >'+lbl+'</button>'
-										);
-										break;
-								//	case 'tabs':
-									default:
-										$(e.selector).append(
-											'<li id="'+id+'" onclick="modules.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
-										);
-								};
-							};
-							if( ch.action ) {
-								if( !ch.selectedBy ) {
-									// only one of them is present:
-									console.error( "Module '"+ch.name+"' must have both properties 'action' and 'selectedBy' or none." );
-									return
-								};
-								// Add a view selector element for the child (only button is implemented):
-								id = ch.selectedBy.substring(1);	// without '#'
-								lbl = ch.label || id;
-								switch( e.selectorType ) {
-									case 'btns':
-										$(e.selector).append(
-					'<button id="'+id+'" type="button" class="btn btn-default" onclick="'+ch.action+'" >'+lbl+'</button>'
-										);
-										break;
-									default:
-										console.error( "Action'"+lbl+"' needs a parent selector of type 'btns'." );
-								};
-							};
-						});
-					};
-					// finally load all the children, as well:
-					e.children.forEach( (c)=>{
-											c.parent = e;
-											loadH(c);
-										});
-				};
-			}
-//		console.debug('loadH',h,opts);
-
-		if( opts&&typeof(opts.done)=="function" )
-			callWhenReady = opts.done;
-
-		if( Array.isArray(h) )
-			h.forEach( (e)=>{ld(e)} );
-		else
-			ld(h);
-	}
-	function findM( tr, token:string ) {
+	function findM( tr:IModule[]|IModule, token:string ):IModule|undefined {
 		// find the module with the given token in the module hierarchy 'tr':
-		let m=null;
+		let m:IModule|undefined = undefined;
 		if( Array.isArray(tr) ) {
 			for( var i=tr.length-1; !m&&i>-1; i-- ) {
 				m = find(tr[i]);
@@ -471,17 +511,17 @@ var app,
 		};
 		return m;
 
-		function find(e) {
+		function find(e:IModule):IModule|undefined {
 			// by design: name without '#' and view with '#'
 			if( e.name==token || e.view==token ) return e;
 			if( e.children ) {
 				let m = findM(e.children,token);
 				if( m ) return m;
 			};
-			return false;
+		//	return undefined;
 		}
 	}
-	function loadM( mod:string ) {
+	function loadM( mod:string ):boolean {
 		if( register( mod ) ) {
 			// Load the module, if registration went well (if it hadn't been registered before):
 //			console.debug('loadM',mod);
@@ -494,10 +534,10 @@ var app,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
 				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/jqtree.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/tree.jquery.js' ); return true;
-				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js' ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js' ); return true;
+				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.4/FileSaver.min.js' ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.7/xlsx.full.min.js' ); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.8/xlsx.full.min.js' ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
@@ -567,7 +607,7 @@ var app,
 											getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			loadM( 'reqif2specif' );
 											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;
-				case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
+		//		case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': 				loadM( 'excel' );
 											getScript( loadPath+'modules/ioXls.mod.js' ); return true;
 				case 'ioBpmn':				loadM( 'bpmn2specif' );
@@ -612,7 +652,7 @@ var app,
 			// with 'getScript' which is taking care of 'setReady'.
 			// Must be called explicitly, if not in conjunction with 'getScript'.
 		}
-		function getScript( url:string, options? ):JQueryPromise<any> {
+		function getScript( url:string, options?:any ):JQueryXHR {
 			// see http://api.jquery.com/jQuery.getScript/
 			// Any option may be set by the caller except for dataType and cache:
 			options = $.extend( options || {}, {
@@ -636,7 +676,7 @@ var app,
 			self.ready.push( mod );
 			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" );
 		} else {
-			throw "Programming Error: Module '"+mod+"' is set 'ready' more than once";
+			throw Error("Module '"+mod+"' is set 'ready' more than once");
 		};
 
 		if( self.registered.length === self.ready.length ) {
@@ -645,7 +685,7 @@ var app,
 			if (typeof (callWhenReady) == 'function')
 				callWhenReady()
 			else
-				throw "Programming Error: No callback provided to continue after module loading.";
+				throw Error("No callback provided to continue after module loading.");
 		}
 	}
 }();
@@ -653,16 +693,14 @@ class State {
 	// sets and resets some binary state (e.g. 'busy'),
 	// hides resp. shows certain DOM elements according to the lists specified.
 	state = false;
-	showWhenSet = [];
-	hideWhenSet = [];
+	showWhenSet:string[];
+	hideWhenSet:string[];
 
 	constructor(opts:any) {
-		if (Array.isArray(opts.showWhenSet))
-			this.showWhenSet = opts.showWhenSet;
-		if (Array.isArray(opts.hideWhenSet))
-			this.hideWhenSet = opts.hideWhenSet;
+		this.showWhenSet = Array.isArray(opts.showWhenSet) ? opts.showWhenSet : [];
+		this.hideWhenSet = Array.isArray(opts.hideWhenSet) ? opts.hideWhenSet : [];
 	}
-	set ( flag:boolean|undefined ):void {
+	set ( flag?:boolean ):void {
 		switch( flag ) {
 			case false:
 				this.reset();
@@ -670,20 +708,20 @@ class State {
 			case undefined:
 			case true:
 				this.state = true;
-				this.hideWhenSet.forEach( (v):void =>{
+				this.hideWhenSet.forEach((v:string):void =>{
 					$(v).hide();
 				});
-				this.showWhenSet.forEach((v):void =>{
+				this.showWhenSet.forEach((v:string):void =>{
 					$(v).show();
 				})
 		}
 	}
 	reset ():void {
 				this.state = false;
-				this.showWhenSet.forEach( (v):void =>{
+				this.showWhenSet.forEach((v:string):void =>{
 					$(v).hide()
 				});
-				this.hideWhenSet.forEach((v):void =>{
+				this.hideWhenSet.forEach((v:string):void =>{
 					$(v).show();
 				});
 	}

@@ -112,7 +112,7 @@ function ObjectTable() {
 		returnView();
 	};
 */	// This is a sub-module to specs, so use its return method
-	function handleError(xhr) {
+	function handleError(xhr: xhrMessage): void {
 		self.hide();
 		self.clear();
 		stdError(xhr,specs.returnToCaller)
@@ -145,7 +145,7 @@ function ObjectTable() {
 							titleAndDescr: ''
 						};
 
-						let clAtts = classifyProps(rsp),
+						let clAtts = new CResourceWithClassifiedProps(rsp),
 							att=null;
 //						console.debug('clAtts',rsp,clAtts);
 						// In case there is no explicit value in a title attribute, don't show anything in the table.

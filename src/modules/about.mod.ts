@@ -6,12 +6,12 @@
 	We appreciate any correction, comment or contribution!
 */
 
-modules.construct({
+moduleManager.construct({
 	name: 'about'
-}, function(self:any) {
+}, function(self:IModule) {
 	"use strict";
 
-	self.init = function( opts:object ):boolean {
+	self.init = function():boolean {
 //		console.debug('me.init',opts);
 		return true
 	};
@@ -21,7 +21,7 @@ modules.construct({
 	self.hide = function():void {
 		self.clear()
 	};
-	self.show = function( opts:object ):void {
+	self.show = function( opts?:any ):void {
 		const isEditor = app.title==i18n.LblEditor,
 			padding = '16px'; // = margin-right of logo, see css
 
@@ -54,11 +54,11 @@ modules.construct({
 		+	'<h4>Features</h4>'
 		+		'<ul>'
 		+		  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
-		+ (modules.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
+		+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
 	// So far, editing is needed in case of Achimate for manually adding the diagrams ..
-		+ (isEditor&&modules.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
-		+ (modules.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
-		+ (modules.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
+		+ (isEditor&&moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
+		+ (moduleManager.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
+		+ (moduleManager.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
 		+		  "<li>Import from an URL or the local file system</li>"
 		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
 		+		  "<li>Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)</li>"
@@ -69,12 +69,12 @@ modules.construct({
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource classes or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource classes or used property enumerated values</li>"
-		+ (modules.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
+		+ (moduleManager.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
 		+		  "<li>Export 'specif.zip' file</li>"
-		+ (modules.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
-		+ (modules.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
-		+ (modules.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
-		+ (modules.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
+		+ (moduleManager.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
+		+ (moduleManager.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
+		+ (moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
+		+ (moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
 		+		'</ul>'
 		+	'<h4>Compatibility</h4>'
 		+		'<ul>'
@@ -120,7 +120,7 @@ modules.construct({
 		+				'for rearranging chapters and paragraphs ... <a href="http://mbraak.github.io/jqTree/" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/mbraak/jqTree/blob/master/LICENSE" target="_blank">Apache 2.0</a></td>'
 		+		'</tr>'
-		+ (modules.isReady('markdown')?
+		+ (moduleManager.isReady('markdown')?
 	/*			'<tr>'
 			+		'<td>remarkable</td>'
 			+		'<td><a href="https://github.com/jonschlinkert" target="_blank">Jon Schlinkert</a></td>'
@@ -187,7 +187,7 @@ modules.construct({
 		+				'<a href="http://getbootstrap.com/" target="_blank">more</a></td>'
 		+			'<td><a href="https://github.com/twbs/bootstrap/blob/master/LICENSE" target="_blank">MIT</a></td>'
 		+		'</tr>'
-		+ (modules.isReady('diff')?
+		+ (moduleManager.isReady('diff')?
 				'<tr>'
 			+		'<td>diff-match-patch</td>'
 			+		'<td></td>'

@@ -1,14 +1,16 @@
 {
   "ExpandedNodes": [
     "",
+    "\\scratch\\model\\SpecIF",
     "\\src",
     "\\src\\config",
     "\\src\\config\\locales",
     "\\src\\modules",
     "\\src\\types",
+    "\\src\\vendor",
     "\\src\\vendor\\assets",
     "\\src\\vendor\\assets\\javascripts"
   ],
-  "SelectedNode": "\\src\\modules\\profileAnonymous.mod.ts",
+  "SelectedNode": "\\src\\config\\definitions.ts",
   "PreviewInSolutionExplorer": false
 }

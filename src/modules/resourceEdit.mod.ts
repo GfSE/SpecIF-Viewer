@@ -7,9 +7,9 @@
 */
 
 // Construct the resource editor:
-modules.construct({
+moduleManager.construct({
 	name: CONFIG.resourceEdit
-}, (self)=>{
+}, (self:IModule)=>{
 	"use strict";
 
 	let myName = self.loadAs,
@@ -22,11 +22,12 @@ modules.construct({
 	self.newFiles = [];			// collect uploaded files before committing the change
 	self.dialogForm = new DialogForm();
 
-	self.init = ()=>{
+	self.init = ():boolean =>{
 //		console.debug('resourceEdit.init')
 		self.clear();
+		return true;
 	};
-	self.clear = ()=>{
+	self.clear = ():void =>{
 		self.newFiles.length = 0;
 		self.dialogForm.list.length = 0;
 	};
@@ -93,10 +94,10 @@ modules.construct({
 			case 'create':
 				selectResClass( opts )
 				.then(
-					(rC)=>{ 
+					(rC:ResourceClass)=>{ 
 						app.cache.selectedProject.createResource(rC)
 						.then( 
-							(r)=>{
+							(r:Resource)=>{
 //								console.debug( '#', opts.mode, r );
 								self.newRes = r;
 								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
@@ -125,9 +126,9 @@ modules.construct({
 				// get the selected resource:
 				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 				.then( 
-					(r)=>{
+					(rL:Resource[])=>{
 						// create a clone to collect the changed values before committing:
-						self.newRes = simpleClone(r);
+						self.newRes = simpleClone(rL[0]);
 						if( opts.mode=='clone' ) {
 							self.newRes.id = genID('R-');
 							opts.dialogTitle = i18n.MsgCloneResource,
@@ -154,17 +155,20 @@ modules.construct({
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
-			toEdit = classifyProps( res, cData );
+			toEdit = new CResourceWithClassifiedProps( res, cData );
 			let ti = i18n.lookup(CONFIG.propClassTitle);
+			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			new BootstrapDialog({
 					title: opts.dialogTitle,
 				//	type: 'type-success',
 					type: 'type-primary',
+					// @ts-ignore - BootstrapDialog() is loaded at runtime
 					size: BootstrapDialog.SIZE_WIDE,
 					// initialize the dialog;
 					// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
 					onshown: ()=>{ setTextFocus(ti); app[myName].check() },
-					message: (thisDlg)=>{
+				//	message: (thisDlg)=>{
+					message: () => {
 						var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
 						// field for the title property:
 						form += editP(toEdit.title);
@@ -290,12 +294,14 @@ modules.construct({
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
 //								console.debug('#2',simpleClone(cData.resourceClasses));
+								// @ts-ignore - BootstrapDialog() is loaded at runtime
 								new BootstrapDialog({
 									title: i18n.MsgSelectResClass,
 								//	type: 'type-success',
 									type: 'type-primary',
 								//	size: BootstrapDialog.SIZE_WIDE,
-									message: (thisDlg)=>{
+								//	message: (thisDlg)=>{
+									message: () => {
 										var form = '<form id="attrInput" role="form" >'
 												+ radioField( i18n.LblResourceClass, resClasses )
 												+ '</form>';
@@ -395,7 +401,7 @@ modules.construct({
 		// In any case, update the elements native title:
 		self.newRes.title = stripHTML(toEdit.title.value);
 		// If the title property doesn't have a class, 
-		// it has been added by classifyProps() and there is no need to create it;
+		// it has been added by new CResourceWithClassifiedProps() and there is no need to create it;
 		// in this case the title will only be seen in the element's title:
 		if( toEdit.title['class'] ) {
 			delete toEdit.title.title;  // is redundant, the property's class title applies
@@ -426,7 +432,7 @@ modules.construct({
 				self.newRes.description = pV
 
 				// If the description property doesn't have a class, 
-				// it has been added by classifyProps() and there is no need to create it;
+				// it has been added by new CResourceWithClassifiedProps() and there is no need to create it;
 				// in this case the description will only be seen in the element's description:
 				if( p['class'] ) {
 					if( Array.isArray( self.newRes.properties ) )
@@ -446,7 +452,7 @@ modules.construct({
 			p.value = getP( p );
 			delete p.title;
 			// a property class must exist, 
-			// because classifyProps() puts only existing properties to 'other':
+			// because new CResourceWithClassifiedProps() puts only existing properties to 'other':
 			if( p['class'] ) {
 				if( hasContent(p.value) ) {
 					if( Array.isArray( self.newRes.properties ) )

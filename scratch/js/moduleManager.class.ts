@@ -256,7 +256,7 @@ var browser,
 			case 'undefined': return null;
 			case 'string': params = {newView: params}
 		};
-//		console.debug('modules.show',params);
+//		console.debug('moduleManager.show',params);
 		let mo = findM( self.tree, params.newView );
 		if( !mo || !mo.parent.viewCtl ) {
 			console.error("'"+params.newView+"' is not a defined view");
@@ -396,13 +396,13 @@ var browser,
 								switch( e.selectorType ) {
 									case 'btns':
 										$(e.selector).append(
-					'<button id="'+id+'" type="button" class="btn btn-default" onclick="modules.show(\''+ch.view+'\')" >'+lbl+'</button>'
+					'<button id="'+id+'" type="button" class="btn btn-default" onclick="moduleManager.show(\''+ch.view+'\')" >'+lbl+'</button>'
 										);
 										break;
 								//	case 'tabs':
 									default:
 										$(e.selector).append(
-											'<li id="'+id+'" onclick="modules.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
+											'<li id="'+id+'" onclick="moduleManager.show(\''+ch.view+'\')"><a>'+lbl+'</a></li>'
 										);
 								};
 							};

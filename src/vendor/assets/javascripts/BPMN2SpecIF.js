@@ -52,7 +52,9 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strStateFolder = "FMC:States";
 	if( !opts.strEventFolder ) 
 		opts.strEventFolder = "FMC:Events";
-/*	if( !opts.strAnnotationFolder ) 
+/*	if (!opts.strCollectionFolder)
+		opts.strCollectionFolder = "Collections and Groups";
+	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
 	if( !opts.strJoinExcGateway ) 

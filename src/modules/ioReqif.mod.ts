@@ -11,9 +11,9 @@
 
 // Constructor for ReqIF import and export:
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
-modules.construct({
+moduleManager.construct({
 	name: 'ioReqif'
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
 	let mime,
 		zipped:boolean,
@@ -24,7 +24,7 @@ modules.construct({
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
 		errInvalidXML: xhrMessage = { status: 900, statusText: 'ReqIF data is not valid XML.' };
 		
-	self.init = function(options):boolean {
+	self.init = function(options:any):boolean {
 		mime = undefined;
 		opts = options;
 		return true;
@@ -33,7 +33,7 @@ modules.construct({
 	self.verify = function( f ):boolean {
 			// Verify the type (and eventually the content) of a ReqIF import file:
 	
-			function reqifFile2mediaType( fname ):string|undefined {
+			function reqifFile2mediaType( fname:string ):string|undefined {
 				if( fname.endsWith('.reqifz') || fname.endsWith('.reqif.zip') ) {
 					zipped = true;
 					return 'application/zip';
@@ -52,19 +52,21 @@ modules.construct({
 		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
 		return false;
 	};
-	self.toSpecif = function (buf: ArrayBuffer): JQueryPromise<SpecIF> {
+	self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
 		// Transform ReqIF to SpecIF for import:
 		// buf is an array-buffer containing reqif data:
 //		console.debug('ioReqif.toSpecif');
 		//self.abortFlag = false;
 		let zDO = $.Deferred(),
 			fileL = [],
-			resL = [],
+			resL:SpecIF[] = [],
 			pend = 0;
 
 		if( zipped ) {
+			// @ts-ignore - JSZIP is loaded at runtime
 			new JSZip().loadAsync(buf)
-			.then( function(zip) {
+			.then( function(zip:any) {
+				// @ts-ignore - all's fine, no need to re-declare the zip interface.
 				fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.reqif')});
 
 				if( fileL.length < 1 ) {
@@ -77,7 +79,7 @@ modules.construct({
 				pend = fileL.length;
 				for( var i=fileL.length-1;i>-1;i-- ) {
 					zip.file( fileL[i].name ).async("string")
-					.then( function(dta) {
+					.then( function(dta:any) {
 						// Check if data is valid XML:
 						// Please note:
 						// - the file may have a UTF-8 BOM
@@ -89,6 +91,7 @@ modules.construct({
 							return zDO;
 						};
 						// ReqIF data is valid:
+						// @ts-ignore - transformReqif2Specif() is loaded at runtime
 						resL.unshift( transformReqif2Specif( dta, {translateTitle2Specif:vocabulary.property.specif} ) );
 
 						// add all other files (than reqif) to the last specif data set:
@@ -96,6 +99,7 @@ modules.construct({
 							if( opts && typeof( opts.mediaTypeOf ) == 'function' ) {
 								// First load the files, so that they get a lower revision number as the referencing resources.
 								// Create a list of all attachments:
+								// @ts-ignore - relPath is never read, but must be specified anyways
 								fileL = zip.filter(function (relPath, file) {return !file.name.endsWith('.reqif')});
 //								console.debug('iospecif.toSpecif 2',fileL);
 								if( fileL.length > 0 ) {
@@ -152,6 +156,7 @@ modules.construct({
                 
 				let str = ab2str(buf);
                 if( validateXML(str) ) {
+					// @ts-ignore - transformReqif2Specif() is loaded at runtime
 					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
 					// transformReqif2Specif gibt string zurück
                     zDO.resolve( data );
@@ -210,7 +215,7 @@ modules.construct({
 		// Are there resources with description, but without description property?
 		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/02_Related-Terms.md
 		// In this case, add a description property to hold the description as required by ReqIF:
-			function addDescProperty( ctg, eC ) {
+			function addDescProperty( ctg:string, eC ):void {
 				// eC is a resourceClass or statementClass;
 				// get all instances of eC:
 			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
@@ -266,7 +271,7 @@ modules.construct({
 //		console.debug('pr',simpleClone(pr));
 		
 		// If missing, add a title property:
-			function addTitleProperty( ctg, eC ) {
+			function addTitleProperty( ctg:string, eC ):void {
 				// get all instances of this resourceClass:
 
 				// list of elements, i.e. resources or statements
@@ -275,7 +280,7 @@ modules.construct({
 						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
 //				console.debug( 'addTitleProperty', eC, eL );
 				
-					function titlePropertyNeeded(r) {
+					function titlePropertyNeeded(r):boolean {
 							if( Array.isArray( r.properties ) )
 								for ( var i = r.properties.length-1; i>-1; i-- ) {
 										let ti = propTitleOf(r.properties[i],pr);
@@ -324,12 +329,12 @@ modules.construct({
 		// Text may be XHTML-formatted, even in a property of dataType 'xs:string'.
 		// So change all propertyClasses of dataType 'xs:string' to 'xhtml', 
 		// if XHTML-formatted text exists in at least one instance.
-			function specializeClassToFormattedText( ctg, eC ) {
+			function specializeClassToFormattedText( ctg:string, eC ):void {
 				// eC is a resourceClass or statementClass;
 				// get all instances of eC:
 			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
 
-					function withHtml(L,id) {
+					function withHtml(L,id:string):boolean {
 						// for all elements (resources or statements) in list L, 
 						// check whether a property of the given propertyClass id
 						// has HTML content; a single occurrence is sufficient: 
@@ -393,8 +398,8 @@ modules.construct({
 			+		'<DATATYPES>';
 		
 		// 1. Transform dataTypes:
-		if(pr.dataTypes)	
-			pr.dataTypes.forEach( function(dT) {
+		if (pr.dataTypes)
+			pr.dataTypes.forEach(function (dT: DataType) {
 				switch( dT.type ) {
 					case 'xs:boolean':
 						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
@@ -446,7 +451,7 @@ modules.construct({
 			objects: []
 		};
 
-			function prepObj( n:Node ):void {
+			function prepObj( n ):void {
 				let r = itemById(pr.resources,n.resource),
 					rC = itemById(pr.resourceClasses,r['class']);
 				// a) Collect resourceClass without duplication:
@@ -697,19 +702,23 @@ modules.construct({
 											return '';
 										})
 										// ReqIF does not support the target attribute within the anchor tag <a>:
-										.replace( RE_aTarget, function($0,$1) { 
+										// @ts-ignore - $0 is never read, but must be specified anyways
+										.replace( RE_aTarget, function($0,$1) {
 											return $1;
 										})
 										// ReqIF schema: "Only data, type, width and height are allowed as attributes 
 										// for XHTML object element and type must be set to MIME-Type (if one exists)"
-										.replace( RE_objectId, function($0,$1) { 
+										// @ts-ignore - $0 is never read, but must be specified anyways
+										.replace( RE_objectId, function($0,$1) {
 											return $1;
 										})
-										.replace( RE_objectName, function($0,$1) { 
+										// @ts-ignore - $0 is never read, but must be specified anyways
+										.replace( RE_objectName, function($0,$1) {
 											return $1;
 										})
 										// Add the namespace to XHTML-tags:
-										.replace( RE.tag, function($0,$1,$2) { 
+										// @ts-ignore - $0 is never read, but must be specified anyways
+										.replace( RE.tag, function($0,$1,$2) {
 											return $1+ns+':'+$2;
 										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'

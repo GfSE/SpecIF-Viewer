@@ -8,9 +8,9 @@
 
 // constructor for SpecIF import:
 // (A module constructor is needed, because there is an access to parent's data via 'self')
-modules.construct({
+moduleManager.construct({
 	name: 'ioSpecif'
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
 	
 	let zipped:boolean,
@@ -22,7 +22,7 @@ modules.construct({
 		errNoSpecif:xhrMessage = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
 		errInvalidJson:xhrMessage = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
 		
-	self.init = function(options):boolean {
+	self.init = function(options:any):boolean {
 		opts = options;
 //		console.debug('iospecif.init',options);
 		return true;
@@ -64,17 +64,19 @@ modules.construct({
 	};
 
 
-		self.toSpecif = function (buf: ArrayBuffer) {
+		self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
 		// import a read file buffer containing specif data:
 		// a button to upload the file appears at <object id="file-object"></object>
 //		console.debug('iospecif.toSpecif');
 		self.abortFlag = false;
 		var zDO = $.Deferred();
 		if( zipped ) {
+			// @ts-ignore - JSZIP is loaded at runtime
 			new JSZip().loadAsync(buf)
-			.then( function(zip) {
+			.then( function(zip:any) {
+				// @ts-ignore - relPath is never read, but must be specified anyways
 				let fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.specif')}),
-					data = {};
+					data:SpecIF = {};
 
 				if( fileL.length<1 ) {
 					zDO.reject( errNoSpecif );
@@ -83,19 +85,20 @@ modules.construct({
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
 				// take the first specif file found, ignore any other so far:
 				zip.file( fileL[0].name ).async("string")
-				.then( function(dta) {
+				.then( function(dta:string) {
 					// Check if data is valid JSON:
 					try {
 						// Please note:
 						// - the file may have a UTF-8 BOM
 						// - all property values are encoded as string, even if boolean, integer or double.
-						data = JSON.parse( dta.trimJSON() );
+						data = JSON.parse( trimJson(dta) );
 						data.files = [];
 						// SpecIF data is valid.
 						
 						if( opts && typeof(opts.mediaTypeOf)=='function' ) {
 							// First load the files, so that they get a lower revision number as the referencing resources.
 							// Create a list of all attachments:
+							// @ts-ignore - relPath is never read, but must be specified anyways
 							fileL = zip.filter(function (relPath, file) {return !file.name.endsWith('.specif')});
 //							console.debug('iospecif.toSpecif 2',fileL);
 							if( fileL.length>0 ) {
@@ -147,7 +150,7 @@ modules.construct({
 			try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present.
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
-				var data = JSON.parse( ab2str(buf).trimJSON() );
+				var data = JSON.parse( trimJson(ab2str(buf)) );
 				zDO.resolve( data );
 			} catch (err) {
 				zDO.reject( errInvalidJson );

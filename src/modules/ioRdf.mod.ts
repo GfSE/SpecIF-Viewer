@@ -8,18 +8,18 @@
 
 // Constructor for RDF import and export:
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
-modules.construct({
+moduleManager.construct({
 	name: 'ioRdf'
-}, function(self) {
+}, function(self:IModule) {
 	"use strict";
-    var mime;
-	self.init = function() {
+    var mime:string;
+	self.init = function():boolean {
 		mime = undefined;
 		return true;
 	};
 	self.verify = function( f ):boolean {
 	
-			function rdfFile2mediaType( fname ):string|undefined {
+			function rdfFile2mediaType( fname:string ):string|undefined {
 				if( fname.endsWith('.rdf') || fname.endsWith('.xml') ) return 'application/rdf+xml';
 				return; // undefined
 			}
@@ -33,7 +33,7 @@ modules.construct({
 	};
 /*	self.toSpecif = function( buf ) {
 	}; */
-	self.toRdf = function(pr) {
+	self.toRdf = function(pr:SpecIF):string {
 		// pr is SpecIF data in JSON format (not the internal cache),
 		// transform pr to RDF:
 		
@@ -43,7 +43,7 @@ modules.construct({
 
 		return xml;
 	};
-	self.abort = function() {
+	self.abort = function():void {
 //		app.cache.abort();
 		self.abortFlag = true
 	};

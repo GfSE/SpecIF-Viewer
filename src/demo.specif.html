@@ -23,13 +23,13 @@
 		var cdn = "./",
 			data = '{"$schema": "https://specif.de/v1.0/schema.json","id": "P-Related-Terms","title": "Project \'Related Terms\'","resourceClasses": [{"id": "RC-ResourceTerm","title": "Resource Term","changedAt": "2020-03-01T07:59:00+01:00"}],"statementClasses": [{"id": "SC-isSpecialisationOf","title": "is a specialisation of","description": "Signifies that a term is a specialization of another, such as \'Passenger Car\' and \'Vehicle\'.","subjectClasses": ["RC-ResourceTerm"],"objectClasses": ["RC-ResourceTerm"],"changedAt": "2018-03-21T18:06:20+01:00"}],"resources": [{"id": "R-9876","title": "Vehicle","description": "Any means in or by which someone travels or something is carried or conveyed; a means of conveyance or transport. (Source: dictionary.com)","class": "RC-ResourceTerm","changedAt": "2020-03-01T07:59:00+01:00"},{"id": "R-1234","title": "Lorry","description": "Any of various conveyances running on rails, as for transporting material in a mine or factory. (Source: dictionary.com)","class": "RC-ResourceTerm","changedAt": "2020-03-01T07:59:00+01:00"}],"statements": [{"id": "S-X0lXi7lJP9DQs","class": "SC-isSpecialisationOf","subject": "R-1234","object": "R-9876","changedAt": "2020-03-01T07:59:00+01:00"}],"hierarchies": [{"id": "N-78cf736b276","resource": "R-1234","changedAt": "2020-03-01T07:59:00+01:00"},{"id": "N-78cf736b277","resource": "R-9876","changedAt": "2020-03-01T07:59:00+01:00"}]}';
 
-		// Get four fundamental libraries in parallel, then initialize the moduleManager using 'modules.init' ..
+		// Get four fundamental libraries in parallel, then initialize the moduleManager using 'moduleManager.init' ..
 		// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
 		function getScript(url) {
 			var el = document.createElement("script");
 			el.onload = function () {
 				if (--pend < 1)
-					modules.init("embeddedSpecif"); 	// convention followed within 'fileName.js'
+					moduleManager.init("embeddedSpecif"); 	// convention followed within 'fileName.js'
 			};
 			el.src = url;
 			document.body.appendChild(el)

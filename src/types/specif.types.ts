@@ -29,14 +29,14 @@ interface SpecIF {
      * XHTML using an <object> tag. A file should have a media type as defined by IANA (see
      * below).
      */
-    files?:            File[];
+    files?:            SpecifFile[];
     generator?:        string;
     generatorVersion?: string;
     /**
      * A list of hierarchies with pointers to resources; may be nested to build a tree, i.e. a
      * hierarchy of pointers.
      */
-    hierarchies: Node[];
+    hierarchies: SpecifNode[];
     id:          string;
     /**
      * Indicates that the project is not schema-compliant on its own; by default the value is
@@ -176,7 +176,7 @@ interface EnumeratedValue {
     value: ValueElement[] | string;
 }
 
-interface File {
+interface SpecifFile {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -199,7 +199,7 @@ interface File {
  *
  * A list of pointers to resources; may be nested to build a tree, i.e. a hierarchy of pointers.
  */
-interface Node {
+interface SpecifNode {
     changedAt:    string;
     changedBy?:   string;
     description?: ValueElement[] | string;
@@ -207,7 +207,7 @@ interface Node {
     /**
      * The next hierarchy level.
      */
-    nodes?:    Node[];
+    nodes?:    SpecifNode[];
     replaces?: string[];
     /**
      * The pointer to the resource to be displayed at this position.
@@ -363,6 +363,7 @@ interface StatementClass {
     icon?:          string;
     id:             string;
     instantiation?: Instantiation[];
+    isUndirected?: boolean;
     /**
      * A collection of id's of eligible resource and statement classes; if 'objectClasses' is
      * missing, all resource or statement classes are eligible.

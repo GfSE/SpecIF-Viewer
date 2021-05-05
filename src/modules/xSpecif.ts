@@ -17,7 +17,6 @@ const vocabulary = {
 				case "_berschrift":
 				case "title":
 				case "titel":
-				case "name":
 				case "dc_title":
 				case "specif_heading":			//  'SpecIF:Heading' has been used falsely as property title
 				case "reqif_chaptername":
@@ -26,7 +25,7 @@ const vocabulary = {
 				case "beschreibung":
 				case "text":
 				case "dc_description":
-	//			case "reqif_changedescription":
+			//	case "reqif_changedescription":
 				case "reqif_description":
 				case "reqif_text":					oT = CONFIG.propClassDesc; break;
 				case "reqif_revision":				oT = "SpecIF:Revision"; break;
@@ -76,7 +75,7 @@ const vocabulary = {
 		}
 	},
 	resource: {
-		// for resource types, such as dataType, resourceType, ...:
+		// for resourceClasses and resources:
 		specif: function( iT:string ):string {
 			// Target language: SpecIF
 			var oT = '';
@@ -120,10 +119,21 @@ const vocabulary = {
 			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
 			return iT */
 		}
+	},
+	statement: {
+		// for statementClasses and statements:
+		specif: function (iT: string): string {
+			// Target language: SpecIF
+			var oT = '';
+			switch (specifIdOf(iT).toLowerCase()) {
+				default: oT = iT
+			};
+			return oT
+		}
 	}
 };
 const specif = {
-	check: ( data:SpecIF, opts?:any ):Promise<SpecIF> =>{
+	check: (data: SpecIF, opts?: any): Promise<SpecIF> => {
 		// Check the SpecIF data for schema compliance and consistency;
 		// no data of app.cache is modified:
 		return new Promise(
@@ -138,12 +148,14 @@ const specif = {
 				// Get the specified schema file from the server:
 				httpGet({
 					// force a reload through cache-busting:
+					// @ts-ignore - 'specifVersion' is defined for versions <1.0
 					url: (data['$schema'] || 'https://specif.de/v' + data.specifVersion + '/schema') + '?' + simpleHash(Date.now().toString()),
 					responseType: 'arraybuffer',
 					withCredentials: false,
-					done: (xhr)=>{
+					done: (xhr:XMLHttpRequest)=>{
 //						console.debug('schema', xhr);
 						// 1. check data against schema:
+						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
 						let rc = checkSchema( data, {schema: JSON.parse( ab2str(xhr.response) )} );
 						if( rc.status!=0 ) {
 							// older versions of the checking routine don't set the responseType:
@@ -154,6 +166,7 @@ const specif = {
 						};
 
 						// 2. Check further constraints:
+						// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
 						rc = checkConstraints( data, opts );
 						if( rc.status==0 ) {
 //							console.debug('SpecIF Consistency Check:', rc, simpleClone(data));
@@ -164,9 +177,10 @@ const specif = {
 							reject( rc );
 						};
 					},
-					fail: (xhr)=>{
+					fail: (xhr:xhrMessage)=>{
 						switch( xhr.status ) {
 							case 404:
+								// @ts-ignore - 'specifVersion' is defined for versions <1.0
 								let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
 								xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
 								// no break
@@ -178,7 +192,7 @@ const specif = {
 			}
 		);
 	},
-	toInt: (spD):SpecIF => {
+	toInt: (spD:any):SpecIF|undefined => {
 		// transform SpecIF to internal data;
 		// no data of app.cache is modified.
 		// It is assumed that spD has passed the schema and consistency check.
@@ -200,7 +214,7 @@ const specif = {
 			constructor(ver:string) {
 				switch (ver) {
 					case '0.10.7':
-						throw "Version " + ver + " is not supported.";
+						throw Error("Version " + ver + " is not supported.");
 					case '0.10.2':
 					case '0.10.3':
 						this.rClasses = 'resourceTypes';
@@ -247,7 +261,7 @@ const specif = {
 		}
 		let names = new ItemNames(spD.specifVersion);
 
-		let iD:SpecIF = {};
+		let iD:any = {};
 		try {
 			iD.dataTypes = 			forAll( spD.dataTypes, dT2int )
 			iD.propertyClasses = 	forAll( spD.propertyClasses, pC2int );	// starting v0.10.6
@@ -260,7 +274,9 @@ const specif = {
 			iD.hierarchies =		forAll( spD.hierarchies, h2int );
 			iD.files =				forAll( spD.files, f2int )
 		} catch (e) {
-			console.error( "Error when importing the project '"+spD.title+"'" );
+			let txt = "Error when importing the project '" + spD.title + "'";
+			console.error(txt);
+			message.show(txt, { severity: 'danger' });
 			return; // undefined 
 		};
 
@@ -278,15 +294,13 @@ const specif = {
 
 			// common for all items:
 			function i2int( iE ) {
-				var oE = {
+				var oE:any = {
 					id: iE.id,
 					changedAt: iE.changedAt
 				};
 				if( iE.description ) oE.description = cleanValue(iE.description);
 				// revision is a number up until v0.10.6 and a string thereafter:
 				switch( typeof(iE.revision) ) {
-				/*	case 'undefined':
-						break; */
 					case 'number':
 						oE.revision = iE.revision.toString();	// for <v0.10.8
 						break;
@@ -335,7 +349,7 @@ const specif = {
 				return oE
 			}
 			// a property class:
-			function pC2int( iE ):PropertyClass {
+			function pC2int( iE:PropertyClass ):PropertyClass {
 				var oE:any = i2int( iE );
 				oE.title = cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
 				if( iE.description ) oE.description = cleanValue(iE.description);
@@ -345,7 +359,7 @@ const specif = {
 //				console.debug('pC2int',iE,dT);
 				switch( dT.type ) {
 					case 'xs:enumeration':
-						// include the property only, if is different from the dataType's:
+						// include the property only, if it is different from the dataType's:
 						if( iE.multiple && !dT.multiple ) oE.multiple = true
 						else if( iE.multiple==false && dT.multiple ) oE.multiple = false
 				};
@@ -354,7 +368,7 @@ const specif = {
 			}
 			// common for all instance classes:
 			function aC2int( iE ) {
-				var oE = i2int( iE );
+				var oE:any = i2int( iE );
 				oE.title = cleanValue(iE.title);
 				if( iE['extends'] ) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5
 				if( iE.icon ) oE.icon = iE.icon;
@@ -372,7 +386,7 @@ const specif = {
 					else {
 						// internally, the pClasses are stored like in v0.10.6.
 						oE.propertyClasses = [];
-						iE[names.pClasses].forEach( (e)=>{
+						iE[names.pClasses].forEach((e: PropertyClass) => {
 							// Store the pClasses at the top level:
 							iD.propertyClasses.push(pC2int(e));
 							// Add to a list with pClass' ids, here:
@@ -385,8 +399,8 @@ const specif = {
 				return oE
 			}
 			// a resource class:
-			function rC2int( iE ):ResourceClass {
-				var oE = aC2int( iE );
+			function rC2int(iE: ResourceClass ):ResourceClass {
+				var oE:any = aC2int( iE );
 
 				// If "iE.isHeading" is defined, use it:
 				if( typeof(iE.isHeading)=='boolean' ) {
@@ -412,9 +426,9 @@ const specif = {
 //				console.debug('resourceClass 2int',iE,oE);
 				return oE
 			}
-		// a statementClass:
-		function sC2int(iE): StatementClass {
-				var oE = aC2int( iE );
+			// a statementClass:
+			function sC2int(iE): StatementClass {
+				var oE:StatementClass = aC2int( iE );
 				if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 				if( iE[names.subClasses] ) oE.subjectClasses = iE[names.subClasses];
 				if( iE[names.objClasses] ) oE.objectClasses = iE[names.objClasses];
@@ -431,9 +445,9 @@ const specif = {
 				return oE
 			}
 			// a property:
-			function p2int( iE ) {
-				var dT:DataType = dataTypeOf(iD, iE[names.pClass]), 
-					oE = {
+			function p2int( iE ):Property {
+				var dT:DataType = dataTypeOf(iD, iE[names.pClass]),
+					oE:Property = {
 						// no id
 						class: iE[names.pClass]
 					};
@@ -465,7 +479,7 @@ const specif = {
 				return oE
 			}
 			// common for all instances:
-			function a2int( iE ) {
+			function a2int( iE ):Instance {
 				var oE = i2int( iE );
 				// resources must have a title, but statements may come without:
 				if( iE.title )
@@ -477,7 +491,7 @@ const specif = {
 			}
 			// a resource:
 			function r2int( iE ):Resource {
-				var oE = a2int( iE );
+				var oE:Resource = a2int( iE );
 				oE['class'] = iE[names.rClass];
 //				console.debug('resource 2int',iE,simpleClone(oE));
 				return oE
@@ -488,7 +502,7 @@ const specif = {
 				oE['class'] = iE[names.sClass];
 				// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 				// keep original and normalize to id+revision for display:
-				if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
+			//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 				oE.subject = iE.subject;
 				oE.object = iE.object;
 
@@ -528,7 +542,7 @@ const specif = {
 				return iH
 
 				// a hierarchy node:
-				function n2int( eN ):Node {
+				function n2int( eN ) {
 					switch( typeof(eN.revision) ) {
 						case 'number':
 							eN.revision = eN.revision.toString()
@@ -555,7 +569,7 @@ const specif = {
 				return oF
 			}
 	},
-	toExt: ( iD:SpecIF, opts ):SpecIF =>{
+	toExt: ( iD:SpecIF, opts?:any ):SpecIF =>{
 		// transform iD (data in internal data format) to SpecIF;
 		// if opts.targetLanguage has no value, all available languages are kept.
 
@@ -704,11 +718,11 @@ const specif = {
 //		console.debug('specif.toExt exit',spD);
 		return spD
 
-			function aHierarchyHasNoRoot(dta):boolean {
+			function aHierarchyHasNoRoot(dta:SpecIF):boolean {
 				for( var i=dta.hierarchies.length-1;i>-1;i-- ) {
 					let hR = itemById( dta.resources, dta.hierarchies[i].resource );
 					if( !hR ) {
-						throw "Hierarchy '",dta.hierarchies[i].id,"' is corrupt";
+						throw Error("Hierarchy '",dta.hierarchies[i].id,"' is corrupt");
 					};
 					let	prpV = valByTitle( hR, CONFIG.propClassType, dta ),
 						hC = itemById( dta.resourceClasses, hR['class'] );
@@ -915,7 +929,7 @@ const specif = {
 						delete oE.title;
 				};
 
-				if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
+			//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 				// for the time being, multiple revisions are not supported:
 				if( opts.revisionDate ) {
 					// supply only the id, but not a key:
@@ -933,7 +947,7 @@ const specif = {
 			function n2ext( iN ) {
 //				console.debug( 'n2ext', iN );
 				// just take the non-redundant properties (omit 'title', for example):
-				let eN:Node = {
+				let eN = {
 					id: iN.id,
 					changedAt: iN.changedAt
 				};
@@ -953,7 +967,7 @@ const specif = {
 				return eN
 			}
 			// a hierarchy:
-			function h2ext( iH ):Node {
+			function h2ext( iH ) {
 				return n2ext(iH)
 			}
 			// a file:
