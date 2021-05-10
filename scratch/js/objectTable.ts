@@ -145,7 +145,7 @@ function ObjectTable() {
 							titleAndDescr: ''
 						};
 
-						let clAtts = new CResourceWithClassifiedProps(rsp),
+						let clAtts = new CResourceToShow(rsp),
 							att=null;
 //						console.debug('clAtts',rsp,clAtts);
 						// In case there is no explicit value in a title attribute, don't show anything in the table.

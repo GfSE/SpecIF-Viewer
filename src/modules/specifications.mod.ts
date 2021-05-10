@@ -14,6 +14,513 @@ interface ISpecs extends IModule {
 	doRefresh: Function;
 	itemClicked: Function;
 }
+
+RE.titleLink = new RegExp(CONFIG.dynLinkBegin.escapeRE() + '(.+?)' + CONFIG.dynLinkEnd.escapeRE(), 'g');
+function propertyValueOf(prp: object, opts?: any): string {
+	"use strict";
+	if (typeof (opts) != 'object') opts = {};
+	if (typeof (opts.dynLinks) != 'boolean') opts.dynLinks = false;
+	if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
+	if (typeof (opts.linkifyURLs) != 'boolean') opts.linkifyURLs = false;
+	// some environments escape the tags on export, e.g. camunda / in|flux:
+	if (typeof (opts.unescapeHTMLTags) != 'boolean') opts.unescapeHTMLTags = false;
+	// markup to HTML:
+	if (typeof (opts.makeHTML) != 'boolean') opts.makeHTML = false;
+	if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false;
+
+	// Malicious content has been removed upon import ( specif.toInt() ).
+	let pData = app.cache.selectedProject.data,
+		dT = dataTypeOf(pData, prp['class']),
+		ct: string;
+	//	console.debug('*',prp,dT);
+	switch (dT.type) {
+		case 'xs:string':
+		/*	ct = toHTML(languageValueOf( prp.value, opts ));
+			ct = ct.linkifyURLs( opts );
+			ct = titleLinks( ct, opts.dynLinks );
+			ct = i18n.lookup( ct );
+			break; */
+		case 'xhtml':
+			// remove any leading whiteSpace:
+			ct = languageValueOf(prp.value, opts).replace(/^\s+/, "");
+			if (opts.lookupValues)
+				ct = i18n.lookup(ct);
+			if (opts.unescapeHTMLTags)
+				ct = ct.unescapeHTMLTags();
+			// Apply formatting only if not listed:
+			if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(prp, pData)) < 0)
+				ct = makeHTML(ct, opts);
+			ct = fileRef.toGUI(ct, opts);   // show the diagrams
+			ct = titleLinks(ct, opts.dynLinks);
+			break;
+		case 'xs:dateTime':
+			ct = localDateTime(prp.value);
+			break;
+		case 'xs:enumeration':
+			// Usually 'value' has a comma-separated list of value-IDs,
+			// but the filter module delivers potentially marked titles in content.
+
+			// Translate IDs to values, if appropriate (i1lookup() is included):
+			ct = enumValueOf(dT, prp.value, opts);
+			break;
+		default:
+			ct = prp.value;
+	};
+	/*	// Add 'double-angle quotation' in case of stereotype values:
+			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
+				ct = '&#x00ab;'+ct+'&#x00bb;'; */
+	return ct;
+
+	function titleLinks(str: string, add: boolean): string {
+		// Transform sub-strings with dynamic linking pattern to internal links.
+		// Syntax:
+		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
+		// - Icons in front of titles are ignored
+		// - Titles shorter than 4 characters are ignored
+		// - see: https://www.mediawiki.org/wiki/Help:Links
+
+		// in certain situations, just remove the dynamic linking pattern from the text:
+		if (!CONFIG.dynLinking || !add)
+			// @ts-ignore - $0 is never read, but must be specified anyways
+			return str.replace(RE.titleLink, ($0, $1) => { return $1 });
+
+		/*	let date1 = new Date();
+			let n1 = date1.getTime(); */
+
+		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
+		let replaced = false;
+		do {
+			replaced = false;
+			str = str.replace(RE.titleLink,
+				// @ts-ignore - $0 is never read, but must be specified anyways
+				($0, $1) => {
+					replaced = true;
+					// disregard links being too short:
+					if ($1.length < CONFIG.dynLinkMinLength) return $1;
+					let m = $1.toLowerCase(), cO = null, ti: string, target = null, notFound = true;
+					// is ti a title of any resource?
+					app.specs.tree.iterate((nd) => {
+						cO = itemById(app.cache.selectedProject.data.resources, nd.ref);
+						// avoid self-reflection:
+						//	if(ob.id==cO.id) return true;
+						ti = elementTitleOf(cO, opts);
+						// if the dynLink content equals a resource's title, remember the first occurrence:
+						if (notFound && ti && m == ti.toLowerCase()) {
+							notFound = false;
+							target = cO;
+						};
+						return notFound // go into depth (return true) only if not yet found
+					});
+					// replace it with a link in case of a match:
+					if (target)
+						return lnk(target, $1);
+					// The dynamic link has NOT been matched/replaced, so mark it:
+					return '<span style="color:#D82020">' + $1 + '</span>'
+				}
+			)
+		} while (replaced);
+
+		/*	let date2 = new Date();
+			let n2 = date2.getTime(); 
+			console.info( 'dynamic linking in ', n2-n1,'ms' ) */
+		return str;
+
+		function lnk(r: Resource, t: string): string {
+			//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
+			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
+		}
+	}
+}
+class CResourceToShow {
+	id: string;
+	class: ResourceClass;
+	isHeading: boolean;
+	order: string;
+	revision: string;
+	replaces: string[];
+	title: Property;
+	descriptions: Property[];
+	other: Property[];
+	changedAt: string;
+	changedBy: string;
+	constructor(el: Resource, pData?: CSpecIF) {
+		// add missing (empty) properties and classify properties into title, descriptions and other;
+		// for resources.
+		// ToDo: Basically it can also be used for Statements ... 
+		// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
+		if (!pData) pData = app.cache.selectedProject.data;
+		this.id = el.id;
+		this['class'] = itemById(pData.resourceClasses, el['class']) as ResourceClass;
+		this.isHeading = false; // will be set further down if appropriate
+		this.revision = el.revision;
+		this.order = el.order;
+		this.revision = el.revision;
+		this.replaces = el.replaces;
+		this.changedAt = el.changedAt;
+		this.changedBy = el.changedBy;
+		this.descriptions = [];
+		// create a new list by copying the elements (do not copy the list ;-):
+		this.other = normalizeProps(el, pData);
+
+		// Now, all properties are listed in this.other;
+		// in the following, the properties used as title and description will be identified
+		// and removed from this.other.
+
+		// a) Find and set the configured title:
+		let a = titleIdx(this.other, pData);
+		if (a > -1) {  // found!
+			this.title = this.other[a];
+			// remove title from other:
+			this.other.splice(a, 1);
+
+			// Special case:
+			// - if the current instance does not have a title property
+			// - but it's class defines one,
+			// the title would get lost.
+			// Thus, the instance title is copied to the title property,
+			// which has been newly created by normalizeProps():
+			if (!this.title.value && el.title)
+				this.title.value = el.title;
+			this.isHeading = this['class'].isHeading || CONFIG.headingProperties.indexOf(this.title.value) > -1;
+		};
+
+		// b) Check the configured descriptions:
+		// We must iterate backwards, because we alter the list of other.
+		// ToDo: use this.other.filter()
+		for (a = this.other.length - 1; a > -1; a--) {
+			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], pData)) > -1) {
+				// To keep the original order of the properties, the unshift() method is used.
+				this.descriptions.unshift(this.other[a]);
+				this.other.splice(a, 1);
+			};
+		};
+
+		// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+		//    there is no title or no description propertyClass;
+		//    then create a property without class.
+		//    If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+		if (!this.title)
+			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' };
+		//  Why create a description, if there is none ?? What is the use-case?
+		//	if (this.descriptions.length < 1)
+		//		this.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
+		//	console.debug( 'classifyProps 2', simpleClone(this) );
+		return;
+
+		function normalizeProps(el: Resource, dta: CSpecIF): Property[] {
+			// el: instance (resource or statement)
+			// Create a list of properties in the sequence of propertyClasses of the respective class.
+			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+			// Assumption: Property classes are unique!
+
+			// check uniqueness of property classes:
+			if (el.properties) {
+				let cL: string[] = [],
+					pC: string;
+				el.properties.forEach((p: Property) => {
+					pC = p['class'];
+					if (cL.indexOf(pC)<0)
+						cL.push(pC);
+					else
+						console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
+				});
+			};
+
+			let p: Property,
+				pCs: string[],
+				nL: Property[] = [],
+				// iCs: instance class list (resourceClasses or statementClasses),
+				// the existence of subject (or object) let's us recognize that it is a statement:
+			//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
+				iCs = dta.resourceClasses,
+				iC = itemById(iCs, el['class']);
+			// build a list of propertyClass identifiers including the extended class':
+			pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
+			pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
+			// add the properties in sequence of the propertyClass identifiers:
+			pCs.forEach((pCid: string) => {
+				// skip hidden properties:
+				if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
+				// the property classes must be unique, otherwise the operation will:
+				p = simpleClone(itemBy(el.properties, 'class', pCid))
+					|| createProp(dta.propertyClasses, pCid);
+				if (p) {
+					// by default, use the propertyClass' title:
+					// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
+					// An input data-set may have titles which are not from the SpecIF vocabulary;
+					// replace the result with a current vocabulary term:
+					p.title = vocabulary.property.specif(propTitleOf(p, dta));
+					nL.push(p);
+				}
+			});
+			//		console.debug('normalizeProps result',simpleClone(nL));
+			return nL; // normalized property list
+		}
+	}
+	isEqual(res: Resource): boolean {
+		return res && this.id == res.id && this.changedAt == res.changedAt;
+    }
+	private renderProp(lbl: string, val: string, cssCl: string): string {
+		// show a property value:
+		cssCl = cssCl ? ' ' + cssCl : '';
+		if (typeof (val) == 'string')
+			val = noCode(val)
+		else val = '';
+
+		// assemble a label:value pair resp. a wide value field for display:
+		val = (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >' : '<div class="attribute-wide" >') + val + '</div>';
+		return '<div class="attribute' + cssCl + '">' + val + '</div>';
+	}
+	renderTitle(opts?: any): string {
+		//	console.debug('renderTitle',simpleClone(clsPrp),opts);
+		if (!this.title || !this.title.value) return '';
+		// Remove all formatting for the title, as the app's format shall prevail.
+		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
+		let ti = languageValueOf(this.title.value, opts);
+		if (this.isHeading) {
+			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
+			// whereas the individual elements may mean the vocabulary term as such:
+			if (opts && opts.lookupTitles)
+				ti = i18n.lookup(ti);
+			// it is assumed that a heading never has an icon:
+			return '<div class="chapterTitle" >' + (this.order ? this.order + nbsp : '') + ti + '</div>';
+		};
+		// else: is not a heading:
+		// take title and add icon, if configured:
+		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? addIcon(ti, this['class'].icon) : ti) + '</div>';
+	}
+	renderChangeInfo(): string {
+		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
+		var rChI = '';
+		switch (app.specs.selectedView()) {
+			case '#' + CONFIG.objectRevisions:
+				rChI = this.renderProp(i18n.LblRevision, this.revision, 'attribute-condensed');
+			// no break
+			case '#' + CONFIG.comments:
+				rChI += this.renderProp(i18n.LblModifiedAt, localDateTime(this.changedAt), 'attribute-condensed')
+					+ this.renderProp(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
+			//	default: no change info!			
+		};
+		return rChI;
+	}
+	listEntry(options?: any): string {
+		function showPrp(prp: Property, opts): boolean {
+			//				console.debug('showPrp',prp);
+			if (CONFIG.hiddenProperties.indexOf(prp.title) > -1) return false;  // hide, if it is configured in the list
+			return (CONFIG.showEmptyProperties || hasContent(languageValueOf(prp.value, opts)))
+		}
+		if (!this.id) return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
+		// Create HTML for a list entry:
+
+		var opts = options ? simpleClone(options) : {};
+		opts.dynLinks
+			= opts.clickableElements
+			= opts.linkifyURLs
+			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].indexOf(app.specs.selectedView()) > -1;
+		// ToDo: Consider to make it a user option:
+		opts.unescapeHTMLTags = true;
+		// ToDo: Make it a user option:
+		opts.makeHTML = true;
+		opts.lookupValues = true;
+		opts.rev = this.revision;
+
+		var rO = '<div class="listEntry">'
+			+ '<div class="content-main">';
+
+		// 1 Fill the main column:
+		// 1.1 The title:
+		switch (app.specs.selectedView()) {
+			case '#' + CONFIG.objectFilter:
+			case '#' + CONFIG.objectList:
+				// move item to the top, if the title is clicked:
+				rO += '<div onclick="app.specs.itemClicked(\'' + this.id + '\')">'
+					+ this.renderTitle(opts)
+					+ '</div>';
+				break;
+			default:
+				rO += this.renderTitle(opts);
+		};
+
+		// 1.2 The description properties:
+		this.descriptions.forEach((prp: Property): void => {
+			if (showPrp(prp, opts)) {
+				rO += '<div class="attribute attribute-wide">' + propertyValueOf(prp, opts) + '</div>'
+			}
+		});
+		rO += '</div>'  // end of content-main
+			+ '<div class="content-other">';
+
+		/*	// 2 Add elementActions:
+			switch( app.specs.selectedView() ) {
+				case '#'+CONFIG.comments:
+					rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
+					if( this.del )
+						rO +=	'<button onclick="app.specs.delComment(\''+this.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
+					else
+						rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
+					rO +=	'</div>'
+			//		break;
+			//	default:
+					// nothing, so far
+			}; */
+
+		// 3 Fill a separate column to the right
+		// 3.1 The remaining properties:
+		this.other.forEach((prp: Property): void => {
+			if (showPrp(prp, opts)) {
+				rO += this.renderProp(titleOf(prp, opts), propertyValueOf(prp, opts), 'attribute-condensed');
+			};
+		});
+		// 3.2 The type info:
+		//	rO += this.renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
+		// 3.3 The change info depending on selectedView:
+		rO += this.renderChangeInfo();
+		rO += '</div>'	// end of content-other
+			+ '</div>';  // end of listEntry
+
+		return rO;  // return rendered resource for display
+	}
+/*	self.details = function() {
+		// for the list view, where title and text are shown in the main column and the others to the right.
+		if( !this.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+	
+		// Create HTML for a detail view:
+		// 1 The title:
+		var rO = this.renderTitle( opts );
+		// 2 The description properties:
+		this.descriptions.forEach( function(prp) {
+//			console.debug('details.descr',prp.value);
+			if( hasContent(prp.value) ) {
+				var opts = {
+				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
+						dynLinks: true,
+						clickableElements: true,
+						linkifyURLs: true
+					};
+				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
+			}
+		});
+		// 3 The remaining properties:
+		this.other.forEach( function( prp ) {
+//			console.debug('details.other',prp.value);
+			rO += this.renderProp( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
+		});
+		// 4 The type info:
+		rO += this.renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
+		// 5 The change info depending on selectedView:
+		rO += this.renderChangeInfo();
+//		console.debug( 'CResource.details', self.toShow, rO );
+		return rO  // return rendered resource for display
+	};  */
+}
+
+/*	function deformat( txt ) {
+		// Remove all HTML-tags from 'txt',
+		// but keep all marked deletions and insertions (as prepared be diffmatchpatch):
+		// ToDo: consider to use this function only in the context of showing revisions and filter results,
+		// 		 ... and to use a similar implementation which does not save the deletions and insertions, otherwise.
+		let mL = [], dL = [], iL = [];
+		txt = txt.replace(/<del[^<]+<\/del>/g, function($0) {
+										dL.push($0);
+										return 'hoKu§pokus'+(dL.length-1)+'#'
+									});
+		txt = txt.replace(/<ins[^<]+<\/ins>/g, function($0) {
+										iL.push($0);
+										return 'siM§alabim'+(iL.length-1)+'#'
+									});
+		txt = txt.replace(/<mark[^<]+<\/mark>/g, function($0) {
+										mL.push($0);
+										return 'abRakad@bra'+(mL.length-1)+'#'
+									});
+		// Remove all formatting for the title, as the app's format shall prevail:
+		txt = stripHTML(txt);
+		// Finally re-insert the deletions and insertions with their tags:
+		// ToDo: Remove any HTML-tags within insertions and deletions
+		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
+		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
+		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
+		return txt
+	}  */
+class CResourcesToShow {
+	private opts = {
+		lookupTitles: true,
+		targetLanguage: browser.language
+	};
+	values: any[];
+
+	constructor() {
+		this.values = [];
+	}
+	push(r: Resource): boolean {
+		// append a resource to the list:
+		this.values.push(new CResourceToShow(r));
+		return true;  // a change has been effected
+	}
+	append(rL: Resource[]): void {
+		// append a list of resources:
+		rL.forEach((r) => {
+			this.push(r);
+		});
+		return true;  // a change has been effected
+	}
+	set(idx:number, r: Resource): boolean {
+		if (this.values[idx].isEqual(r)) {
+			// assume that no change has happened:
+//			console.debug('object.set: no change');
+			return false;  // no change
+		};
+		this.values[idx] = new CResourceToShow(r);
+//		console.debug( 'CResource.set', nRes, simpleClone(self.toShow) );
+		return true;		// has changed
+	}
+	update(rL: Resource[]): boolean {
+		// update this.values with rL and return 'true' if a change has been effected:
+		if (rL.length == this.values.length) {
+			// there is a chance no change is necessary:
+			var chg = false;
+			for (var i = rL.length - 1; i > -1; i--)
+				// set() must be on the left, so that it is executed for every list item:
+				chg = this.set(i,rL[i]) || chg;
+			return chg;
+		}
+		else {
+			// there will be a change anyways:
+			this.values.length = 0;
+			this.append(rL);
+			return true;
+		};
+	}
+	updateSelected(r: Resource): boolean {
+		// update the first item (= selected resource), if it exists, or create it;
+		// return 'true' if a change has been effected:
+		if (this.values.length > 0)
+			return this.set(0,r);
+		else
+			return this.push(r);
+	}
+	selected(): CResourceToShow {
+		// return the selected resource; it is the first in the list by design:
+		return this.values[0];
+	}
+	exists(rId: string): boolean {
+		for (var i = this.values.length - 1; i > -1; i--)
+			if (this.values[i].toShow.id == rId) return true;
+		return false;
+	}
+	render(): string {
+		// generate HTML representing the resource list:
+		if (this.values.length < 1)
+			return '<div class="notice-default" >' + i18n.MsgNoMatchingObjects + '</div>';
+		// else:
+		var rL = '';
+		// render list of resources
+		this.values.forEach((v: CResourceToShow) => {
+			rL += v ? v.listEntry(this.opts) : '';
+		});
+		return rL;	// return rendered resource list
+	}
+}
 // Construct the specifications controller:
 moduleManager.construct({
 	name: CONFIG.specifications
@@ -526,14 +1033,14 @@ moduleManager.construct({
 //	self.cmtCre = false;
 //	self.cmtDel = false;
 
-	self.resources = new CResources(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
-//	self.comments = new CResources();  	// flat-listed comments for display
+	self.resources = new CResourcesToShow(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
+//	self.comments = new CResourcesToShow();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
 	function selResIsUserInstantiated():boolean {
 		return selRes 
-				&& ( !Array.isArray(selRes.toShow['class'].instantiation)
-					|| selRes.toShow['class'].instantiation.indexOf('user')>-1 )
+				&& ( !Array.isArray(selRes['class'].instantiation)
+					|| selRes['class'].instantiation.indexOf('user')>-1 )
 	}
 	self.init = (): boolean => {
 			return true;
@@ -813,8 +1320,8 @@ moduleManager.construct({
 	/*	function enableDel( resId ) {
 		// Check, if the specified resource can be deleted.
 		// ToDo: also check permission via self.resources.selected().value.del
-//			console.debug('enableDel',selRes.toShow,resId,selResIsUserInstantiated());
-            return selRes.toShow.id == resId  // should always be the case ..
+//			console.debug('enableDel',selRes,resId,selResIsUserInstantiated());
+            return selRes.id == resId  // should always be the case ..
 				// only resources under "user" control can be deleted:
                 && selResIsUserInstantiated();
 		}
@@ -1254,7 +1761,7 @@ moduleManager.construct({
 			var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
 		else
 			var rT = '<div>';  // render table with the resource's statements in display mode
-		rT += renderTitle( self.toShow, opts );	// rendered statements
+		rT += self.toShow.renderTitle( opts );	// rendered statements
 		if( sGL.length>0 ) {
 //			console.debug( sGL.length, sGL );
 			if( opts.fnDel ) 
@@ -1384,525 +1891,7 @@ moduleManager.construct({
 	return self;
 });
 
-class CResourceWithClassifiedProps {
-	id: string;
-	title: Property;
-	class: ResourceClass;
-	isHeading: boolean;
-	order: string;
-	revision: string;
-	replaces: string[];
-	descriptions: Property[];
-	other: Property[];
-	createdAt: string;
-	createdBy: string;
-	changedAt: string;
-	changedBy: string;
-	constructor(el: Resource, pData?: CSpecIF) {
-		// add missing (empty) properties and classify properties into title, descriptions and other;
-		// for resources.
-		// ToDo: Basically it can also be used for Statements ... 
-		// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
-		if (!pData) pData = app.cache.selectedProject.data;
-		this.id = el.id;
-		this['class'] = itemById(pData.resourceClasses, el['class']) as ResourceClass;
-		this.revision = el.revision;
-		this.order = el.order;
-		this.changedAt = el.changedAt;
-		this.revision = el.revision;
-		this.replaces = el.replaces;
-		this.changedBy = el.changedBy;
-		this.createdAt = el.createdAt;
-		this.createdBy = el.createdBy;
-		this.descriptions = [];
-		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = normalizeProps(el, pData);
 
-		// Now, all properties are listed in this.other;
-		// in the following, the properties used as title and description will be identified
-		// and removed from this.other.
-
-		// a) Find and set the configured title:
-		let a = titleIdx(this.other, pData);
-		if (a > -1) {  // found!
-			this.title = this.other[a];
-			// remove title from other:
-			this.other.splice(a, 1);
-
-			// Special case:
-			// - if the current instance does not have a title property
-			// - but it's class defines one,
-			// the title would get lost.
-			// Thus, the instance title is copied to the title property,
-			// which has been newly created by normalizeProps():
-			if (!this.title.value && el.title)
-				this.title.value = el.title;
-			this.isHeading = this['class'].isHeading || CONFIG.headingProperties.indexOf(this.title.value) > -1;
-		};
-
-		// b) Check the configured descriptions:
-		// We must iterate backwards, because we alter the list of other.
-		// ToDo: use this.other.filter()
-		for (a = this.other.length - 1; a > -1; a--) {
-			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], pData)) > -1) {
-				// To keep the original order of the properties, the unshift() method is used.
-				this.descriptions.unshift(this.other[a]);
-				this.other.splice(a, 1);
-			};
-		};
-
-		// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-		//    there is no title or no description propertyClass;
-		//    then create a property without class.
-		//    If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-		if (!this.title)
-			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' };
-	//  Why create a description, if there is none ?? What is the use-case?
-	//	if (this.descriptions.length < 1)
-	//		this.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
-	//	console.debug( 'classifyProps 2', simpleClone(this) );
-		return;
-
-		function normalizeProps(el: Resource, dta: CSpecIF): Property[] {
-			// el: instance (resource or statement)
-			// Create a list of properties in the sequence of propertyClasses of the respective class.
-			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-			// Assumption: Property classes are unique!
-
-			// check uniqueness of property classes:
-			if (el.properties) {
-				let cL: PropertyClass[] = [], pC: PropertyClass;
-				el.properties.forEach((p) => {
-					pC = p['class'];
-					if (cL.indexOf(pC) > -1)
-						console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
-					cL.push(pC)
-				})
-			};
-
-			let p: Property,
-				pCs: PropertyClass[],
-				nL: Property[] = [],
-				// iCs: instance class list (resourceClasses or statementClasses),
-				// the existence of subject (or object) let's us recognize that it is a statement:
-				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-				iC = itemById(iCs, el['class']);
-			// build a list of propertyClass identifiers including the extended class':
-			pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
-			pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
-			// add the properties in sequence of the propertyClass identifiers:
-			pCs.forEach((pCid: string) => {
-				// skip hidden properties:
-				if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
-				// the property classes must be unique, otherwise the operation will:
-				p = simpleClone(itemBy(el.properties, 'class', pCid))
-					|| createProp(dta.propertyClasses, pCid);
-				if (p) {
-					// by default, use the propertyClass' title:
-					// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
-					// An input data-set may have titles which are not from the SpecIF vocabulary;
-					// replace the result with a current vocabulary term:
-					p.title = vocabulary.property.specif(propTitleOf(p, dta));
-					nL.push(p);
-				}
-			});
-			//		console.debug('normalizeProps result',simpleClone(nL));
-			return nL; // normalized property list
-		}
-	}
-}
-function CResource( obj:Resource ) {
-	"use strict";
-	// for the list view, where title and text are shown in the main column and the others to the right.
-	var self:any = {};
-	const noRes = {descriptions:[],other:[]},
-		opts = {
-				lookupTitles: true,
-				targetLanguage: browser.language
-			};
-	self.toShow = noRes;
-	self.staGroups = [];
-
-	self.set = ( res: Resource ): boolean =>{ 
-		if( res ) {
-			if( self.toShow.id==res.id && self.toShow.changedAt==res.changedAt ) {
-				// assume that no change has happened:
-//				console.debug('object.set: no change');
-				return false;  // no change
-			};
-			self.toShow = new CResourceWithClassifiedProps( res, app.cache.selectedProject.data );
-//			console.debug( 'CResource.set', res, simpleClone(self.toShow) );
-			return true;		// has changed
-		}
-		else {
-			if( !self.toShow.id ) return false;	// no change
-			self.toShow = noRes;
-//			console.debug('set new',self.toShow);
-			return true;		// has changed
-		};
-	};
-
-	self.listEntry = ():string =>{
-			function showPrp( prp:Property, opts ):boolean {
-//				console.debug('showPrp',prp);
-				if( CONFIG.hiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value,opts) ))
-			} 
-		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-		// Create HTML for a list entry:
-//		console.debug( 'CResource.listEntry', self.toShow );
-
-		opts.dynLinks 
-			= opts.clickableElements
-			= opts. linkifyURLs
-			= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
-		// ToDo: Consider to make it a user option:
-		opts.unescapeHTMLTags = true;
-		// ToDo: Make it a user option:
-		opts.makeHTML = true; 
-		opts.lookupValues = true;
-		opts.rev = self.toShow.revision;
-
-		var rO = '<div class="listEntry">'
-			+		'<div class="content-main">';
-		
-		// 1 Fill the main column:
-		// 1.1 The title:
-		switch( app.specs.selectedView() ) {
-			case '#'+CONFIG.objectFilter:
-			case '#'+CONFIG.objectList:
-				// move item to the top, if the title is clicked:
-				rO += '<div onclick="app.specs.itemClicked(\''+self.toShow.id+'\')">'
-					+	renderTitle( self.toShow, opts )
-					+ '</div>';
-				break;
-			default:
-				rO += renderTitle( self.toShow, opts );
-		};
-		
-		// 1.2 The description properties:
-		self.toShow.descriptions.forEach((prp: Property):void => {
-			if( showPrp( prp, opts ) ) {
-				rO += '<div class="attribute attribute-wide">'+propertyValueOf(prp,opts)+'</div>'
-			}
-		});
-		rO += 	'</div>'  // end of content-main
-			+	'<div class="content-other">';
-			
-	/*	// 2 Add elementActions:
-		switch( app.specs.selectedView() ) {
-			case '#'+CONFIG.comments:
-				rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
-				if( self.toShow.del )
-					rO +=	'<button onclick="app.specs.delComment(\''+self.toShow.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
-				else
-					rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
-				rO +=	'</div>'
-		//		break;
-		//	default:
-				// nothing, so far
-		}; */
-		
-		// 3 Fill a separate column to the right
-		// 3.1 The remaining properties:
-		self.toShow.other.forEach((prp: Property):void => {
-			if( showPrp( prp, opts ) ) {
-				rO += renderProp( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' );
-			};
-		});
-		// 3.2 The type info:
-	//	rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
-		// 3.3 The change info depending on selectedView:
-		rO += renderChangeInfo( self.toShow );		
-		rO +=   '</div>'	// end of content-other
-		+	'</div>';  // end of listEntry
-		
-		return rO;  // return rendered resource for display
-	};
-/*	self.details = function() {
-		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-
-		// Create HTML for a detail view:
-		// 1 The title:
-		var rO = renderTitle( self.toShow, opts );	
-		// 2 The description properties:
-		self.toShow.descriptions.forEach( function(prp) {
-//			console.debug('details.descr',prp.value);
-			if( hasContent(prp.value) ) {
-				var opts = {
-				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
-						dynLinks: true,
-						clickableElements: true,
-						linkifyURLs: true
-					};
-				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
-			}
-		});
-		// 3 The remaining properties:
-		self.toShow.other.forEach( function( prp ) {
-//			console.debug('details.other',prp.value);
-			rO += renderProp( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
-		});
-		// 4 The type info:
-		rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
-		// 5 The change info depending on selectedView:
-		rO += renderChangeInfo( self.toShow );
-//		console.debug( 'CResource.details', self.toShow, rO );
-		return rO  // return rendered resource for display
-	};  */
-	function renderTitle( clsPrp, opts?:any ):string {
-//		console.debug('renderTitle',simpleClone(clsPrp),opts);
-		if( !clsPrp.title || !clsPrp.title.value ) return '';
-		// Remove all formatting for the title, as the app's format shall prevail.
-		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf( clsPrp.title.value, opts );
-		if( clsPrp.isHeading ) {
-			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
-			// whereas the individual elements may mean the vocabulary term as such:
-			if( opts && opts.lookupTitles )
-				ti = i18n.lookup( ti );
-			// it is assumed that a heading never has an icon:
-			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
-		};
-		// else: is not a heading:
-		// take title and add icon, if configured:
-//		console.debug('renderTitle',simpleClone(clsPrp),ti);
-		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? addIcon(ti,clsPrp['class'].icon) : ti)+'</div>';
-	}
-	function renderChangeInfo(clsPrp): string {
-		if( !clsPrp || !clsPrp.revision ) return '';  // the view may be faster than the data, so avoid an error
-		var rChI = '';
-		switch( app.specs.selectedView() ) {
-			case '#'+CONFIG.objectRevisions: 
-				rChI = 	renderProp( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
-				// no break
-			case '#'+CONFIG.comments: 
-				rChI += renderProp( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
-					+	renderProp( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' );
-		//	default: no change info!			
-		};
-		return rChI;
-	}
-
-	// initialize:
-	self.set( obj );
-	return self;
-
-/*	function deformat( txt ) {
-		// Remove all HTML-tags from 'txt',
-		// but keep all marked deletions and insertions (as prepared be diffmatchpatch):
-		// ToDo: consider to use this function only in the context of showing revisions and filter results,
-		// 		 ... and to use a similar implementation which does not save the deletions and insertions, otherwise.
-		let mL = [], dL = [], iL = [];
-		txt = txt.replace(/<del[^<]+<\/del>/g, function($0) {
-										dL.push($0);
-										return 'hoKu§pokus'+(dL.length-1)+'#'
-									});
-		txt = txt.replace(/<ins[^<]+<\/ins>/g, function($0) {
-										iL.push($0);
-										return 'siM§alabim'+(iL.length-1)+'#'
-									});
-		txt = txt.replace(/<mark[^<]+<\/mark>/g, function($0) {
-										mL.push($0);
-										return 'abRakad@bra'+(mL.length-1)+'#'
-									});
-		// Remove all formatting for the title, as the app's format shall prevail:
-		txt = stripHTML(txt);
-		// Finally re-insert the deletions and insertions with their tags:
-		// ToDo: Remove any HTML-tags within insertions and deletions
-		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
-		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
-		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
-		return txt
-	}  */
-}
-function CResources() {
-	"use strict";
-	var self:any = {};
-
-	self.init = ():void =>{ 
-		self.values = [];
-	};
-	self.push = ( r:Resource ):boolean =>{
-		// append a resource to the list:
-		self.values.push( new CResource( r ) );
-		return true;  // a change has been effected
-	};
-	self.append = ( rL:Array<Resource> ):void =>{
-		// append a list of resources:
-		rL.forEach( (r)=>{ 
-			self.values.push( new CResource( r ) );
-		});
-	};
-	self.update = (rL: Array<Resource> ):boolean =>{
-		// update self.values with rL and return 'true' if a change has been effected:
-		if( rL.length==self.values.length ) {
-			// there is a chance no change is necessary:
-			var chg=false;
-			for( var i=rL.length-1;i>-1;i-- ) 
-				// set() must be on the left, so that it is executed for every list item:
-				chg = self.values[i].set( rL[i] ) || chg;
-			return chg;
-		} else {
-			// there will be a change anyways:
-			self.init();
-			self.append( rL );
-			return true;
-		};
-	};
-	self.updateSelected = ( r:Resource ):boolean =>{
-		// update the first item (= selected resource), if it exists, or create it;
-		// return 'true' if a change has been effected:
-		if( self.values.length>0 )
-			return self.values[0].set( r );
-		else
-			return self.push( r );
-	};
-	self.selected = function():Resource {
-		// return the selected resource; it is the first in the list by design:
-		return self.values[0];
-	};
-	self.exists = ( rId:string ):boolean =>{
-		for( var i=self.values.length-1; i>-1; i-- )
-			if( self.values[i].toShow.id==rId ) return true;
-		return false;
-	};
-	self.render = (resL:Resource[]): string => {
-		if( !Array.isArray(resL) ) resL = self.values;
-		// generate HTML representing the resource list:
-		if( resL.length<1 )
-			return '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>';
-		// else:
-		var rL = '';	
-		// render list of resources
-		resL.forEach( (v)=>{
-			rL += v? v.listEntry() : '';
-		});
-		return rL;	// return rendered resource list
-	};
-
-	// initialize:
-	self.init();
-	return self;
-}
-
-RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function propertyValueOf( prp:object, opts?:any ):string {
-	"use strict";
-	if( typeof(opts)!='object' ) opts = {};
-	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
-	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-	if( typeof(opts.linkifyURLs)!='boolean' ) 		opts.linkifyURLs = false;
-	// some environments escape the tags on export, e.g. camunda / in|flux:
-	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
-	// markup to HTML:
-	if( typeof(opts.makeHTML)!='boolean' ) 			opts.makeHTML = false;
-	if( typeof(opts.lookupValues)!='boolean' ) 		opts.lookupValues = false;
-
-	// Malicious content has been removed upon import ( specif.toInt() ).
-	let pData = app.cache.selectedProject.data,
-		dT = dataTypeOf( pData, prp['class'] ),
-		ct:string; 
-//	console.debug('*',prp,dT);
-	switch( dT.type ) {
-		case 'xs:string':
-		/*	ct = toHTML(languageValueOf( prp.value, opts ));
-			ct = ct.linkifyURLs( opts );
-			ct = titleLinks( ct, opts.dynLinks );
-			ct = i18n.lookup( ct );
-			break; */
-		case 'xhtml':
-			// remove any leading whiteSpace:
-			ct = languageValueOf( prp.value, opts ).replace( /^\s+/, "" );
-			if( opts.lookupValues )
-				ct = i18n.lookup( ct );
-			if( opts.unescapeHTMLTags )
-				ct = ct.unescapeHTMLTags();
-			// Apply formatting only if not listed:
-			if( CONFIG.excludedFromFormatting.indexOf( propTitleOf(prp,pData) )<0 )
-				ct = makeHTML( ct, opts );
-			ct = fileRef.toGUI( ct, opts );   // show the diagrams
-			ct = titleLinks( ct, opts.dynLinks );
-			break;
-		case 'xs:dateTime':
-			ct = localDateTime( prp.value );
-			break;
-		case 'xs:enumeration':
-			// Usually 'value' has a comma-separated list of value-IDs,
-			// but the filter module delivers potentially marked titles in content.
-
-			// Translate IDs to values, if appropriate (i1lookup() is included):
-			ct = enumValueOf( dT, prp.value, opts );
-			break;
-		default:
-			ct = prp.value;
-	};
-	/*	// Add 'double-angle quotation' in case of stereotype values:
-			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'; */
-	return ct;
-
-	function titleLinks( str:string, add:boolean ):string {
-		// Transform sub-strings with dynamic linking pattern to internal links.
-		// Syntax:
-		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
-		// - Icons in front of titles are ignored
-		// - Titles shorter than 4 characters are ignored
-		// - see: https://www.mediawiki.org/wiki/Help:Links
-
-		// in certain situations, just remove the dynamic linking pattern from the text:
-		if( !CONFIG.dynLinking || !add )
-			// @ts-ignore - $0 is never read, but must be specified anyways
-			return str.replace( RE.titleLink, ( $0, $1 )=>{ return $1 } );
-			
-	/*	let date1 = new Date();
-		let n1 = date1.getTime(); */
-
-		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
-		let replaced = false;
-		do {
-			replaced = false;
-			str = str.replace( RE.titleLink, 
-				// @ts-ignore - $0 is never read, but must be specified anyways
-				( $0, $1 )=>{
-					replaced = true;
-					// disregard links being too short:
-					if( $1.length<CONFIG.dynLinkMinLength ) return $1;
-					let m=$1.toLowerCase(), cO=null, ti:string, target=null, notFound=true;
-					// is ti a title of any resource?
-					app.specs.tree.iterate( (nd)=>{
-						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
-						// avoid self-reflection:
-					//	if(ob.id==cO.id) return true;
-						ti = elementTitleOf( cO, opts );
-						// if the dynLink content equals a resource's title, remember the first occurrence:
-						if( notFound && ti && m==ti.toLowerCase() ) {
-							notFound = false;
-							target = cO;
-						};
-						return notFound // go into depth (return true) only if not yet found
-					});
-					// replace it with a link in case of a match:
-					if( target )
-						return lnk(target,$1); 
-					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">'+$1+'</span>'
-				}
-			)
-		} while( replaced );
-
-	/*	let date2 = new Date();
-		let n2 = date2.getTime(); 
-		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
-		return str;
-
-		function lnk(r:Resource,t:string):string { 
-//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
-			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
-		}
-	}
-}
 var fileRef = function() {
 	"use strict";
 	var self:any = {};
@@ -2396,14 +2385,14 @@ var fileRef = function() {
 								// ToDo: So far, this only works with ARCWAY generated SVGs.
 							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 								let eId = this.className.baseVal.split(' ')[1],		// id is second class
-									clsPrp = new CResourceWithClassifiedProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
+									clsPrp = new CResourceToShow( itemBySimilarId(app.cache.selectedProject.data.resources,eId) ),
 									ti = languageValueOf( clsPrp.title.value ),
 									dsc = '';
 								clsPrp.descriptions.forEach( (d)=>{
 									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
 									dsc += propertyValueOf( d, {unescapeHTMLTags:true,makeHTML:true} )
 								});
-								if (stripHTML(stripCtrl(dsc)) ) {
+								if( stripHTML(stripCtrl(dsc)) ) {
 									// Remove the dynamic linking pattern from the text:
 									$("#details").html( '<span style="font-size:120%">' 
 														+ (CONFIG.addIconToInstance? addIcon(ti,clsPrp['class'].icon) : ti) 

@@ -9,17 +9,6 @@
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in jsIdOf() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
-function renderProp( lbl:string, val:string, cssCl:string ):string {
-	// show a property value:
-	cssCl = cssCl ? ' '+cssCl : '';
-	if( typeof(val)=='string' ) 
-			val = noCode( val )
-	else	val = '';
-	
-	// assemble a label:value pair resp. a wide value field for display:
-	val = (lbl?'<div class="attribute-label" >'+lbl+'</div><div class="attribute-value" >':'<div class="attribute-wide" >')+val+'</div>';
-	return '<div class="attribute'+cssCl+'">'+val+'</div>';
-}
 function DialogForm():any {
 	// Construct an object performing the key-by-key input checking on an input form;
 	// check *all* fields on a key-stroke and return the overall result.

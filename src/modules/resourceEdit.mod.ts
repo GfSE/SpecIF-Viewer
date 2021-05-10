@@ -155,7 +155,7 @@ moduleManager.construct({
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
-			toEdit = new CResourceWithClassifiedProps( res, cData );
+			toEdit = new CResourceToShow( res, cData );
 			let ti = i18n.lookup(CONFIG.propClassTitle);
 			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			new BootstrapDialog({
@@ -401,7 +401,7 @@ moduleManager.construct({
 		// In any case, update the elements native title:
 		self.newRes.title = stripHTML(toEdit.title.value);
 		// If the title property doesn't have a class, 
-		// it has been added by new CResourceWithClassifiedProps() and there is no need to create it;
+		// it has been added by new CResourceToShow() and there is no need to create it;
 		// in this case the title will only be seen in the element's title:
 		if( toEdit.title['class'] ) {
 			delete toEdit.title.title;  // is redundant, the property's class title applies
@@ -432,7 +432,7 @@ moduleManager.construct({
 				self.newRes.description = pV
 
 				// If the description property doesn't have a class, 
-				// it has been added by new CResourceWithClassifiedProps() and there is no need to create it;
+				// it has been added by new CResourceToShow() and there is no need to create it;
 				// in this case the description will only be seen in the element's description:
 				if( p['class'] ) {
 					if( Array.isArray( self.newRes.properties ) )
@@ -452,7 +452,7 @@ moduleManager.construct({
 			p.value = getP( p );
 			delete p.title;
 			// a property class must exist, 
-			// because new CResourceWithClassifiedProps() puts only existing properties to 'other':
+			// because new CResourceToShow() puts only existing properties to 'other':
 			if( p['class'] ) {
 				if( hasContent(p.value) ) {
 					if( Array.isArray( self.newRes.properties ) )

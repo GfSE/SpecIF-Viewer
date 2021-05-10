@@ -1,7 +1,6 @@
 {
   "ExpandedNodes": [
     "",
-    "\\scratch\\model\\SpecIF",
     "\\src",
     "\\src\\config",
     "\\src\\config\\locales",
@@ -11,6 +10,6 @@
     "\\src\\vendor\\assets",
     "\\src\\vendor\\assets\\javascripts"
   ],
-  "SelectedNode": "\\src\\config\\definitions.ts",
+  "SelectedNode": "\\src\\modules\\resourceLink.mod.ts",
   "PreviewInSolutionExplorer": false
 }

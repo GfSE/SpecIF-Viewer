@@ -235,8 +235,8 @@ moduleManager.construct({
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend=0, h, hCnt=0;
-		pData.tree.iterate( 
-			(nd)=>{
+		pData.tree.iterate(
+			(nd) => {
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
@@ -245,7 +245,7 @@ moduleManager.construct({
 				prj.readContent( 'resource', {id: nd.ref} )
 				.then(
 					(rL:Resource[])=>{
-						h = match( new CResource(rL[0]) );
+						h = match( new CResourceToShow(rL[0]) );
 //						console.debug('tree.iterate',self.filterList,pend,rsp[0],h);
 						if( h )	{
 							hCnt++;
@@ -262,7 +262,7 @@ moduleManager.construct({
 			}
 		);
 	}
-	function match(res:Resource):boolean {
+	function match(res:Resource):Resource {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
 		// Note that res is not a SpecIF resource, but an object prepared for viewing built using classifyProps()!
 		// - If an enumerated property is missing, the resource does NOT match.
@@ -273,7 +273,7 @@ moduleManager.construct({
 				// primary filter applying to all resources:
 				for( var j=f.options.length-1; j>-1; j--){ 
 //					console.debug('matchResClass',f.options[j],res);
-					if( f.options[j].checked && f.options[j].id==res.toShow['class'].id ) return true
+					if( f.options[j].checked && f.options[j].id==res['class'].id ) return true
 				};
 				return false;
 			}
@@ -301,14 +301,14 @@ moduleManager.construct({
 				let // dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
 					dT:DataType, a:number;
-				if( matchStr( res.toShow.title, {type:'xs:string'} ) ) return true;
-				for( a=res.toShow.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.toShow.descriptions[a], {type:'xhtml'} ) ) return true;
-				for( a=res.toShow.other.length-1; a>-1; a-- ) {
+				if( matchStr( res.title, {type:'xs:string'} ) ) return true;
+				for( a=res.descriptions.length-1; a>-1; a-- )
+					if( matchStr( res.descriptions[a], {type:'xhtml'} ) ) return true;
+				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
-					dT = dataTypeOf( dta, res.toShow.other[a]['class'] );
-//					console.debug('matchSearchString',f,res.toShow.other[a],dT,f.options);
-					if( matchStr( res.toShow.other[a], dT ) ) return true;
+					dT = dataTypeOf( dta, res.other[a]['class'] );
+//					console.debug('matchSearchString',f,res.other[a],dT,f.options);
+					if( matchStr( res.other[a], dT ) ) return true;
 				};
 				return false;  // not found
 
@@ -334,7 +334,7 @@ moduleManager.construct({
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
-				if( f.scope && f.scope!=res.toShow['class'].id ) return true;
+				if( f.scope && f.scope!=res['class'].id ) return true;
 				
 //				console.debug( 'matchPropValue', f, res );
 
@@ -345,7 +345,7 @@ moduleManager.construct({
 					case 'xs:enumeration':
 						// Assuming that there is max. one property per resource with the class specified by the filter,
 						// and also assuming that any property with enumerated value will only be found in the 'other' list:
-						let oa = itemBy( res.toShow.other, 'class', f.propClass ), // select the concerned property by class
+						let oa = itemBy( res.other, 'class', f.propClass ), // select the concerned property by class
 							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id==CONFIG.notAssigned;
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies CONFIG.notAssigned:
@@ -379,13 +379,13 @@ moduleManager.construct({
 				return false;
 			}
 			function matchAndMark( f ) {
-//				console.debug( 'matchAndMark', f, res.toShow.title );
+//				console.debug( 'matchAndMark', f, res.title );
 				switch( f.category ) {
 					case 'resourceClass': 
 						if( matchResClass(f) ) return res; // don't mark in this case
 						return; // undefined
 					case 'propertyValue': 
-//						console.debug( 'matchAndMark', f, res.toShow.title );
+//						console.debug( 'matchAndMark', f, res.title );
 						if( matchPropValue(f) ) return res; // don't mark in this case, either
 						return; // undefined
 					/*	if( matchPropValue(f) ) {
@@ -397,15 +397,15 @@ moduleManager.construct({
 							//     --> Don't mark within XHTML tags and property titles, mark only property values.
 							//     --> Only mark property values which are EQUAL to the filter title.
 							//     Preliminary solution: title must be longer than 4 characters, otherwise the property will not be marked.
-							if( f.scope == res.toShow['class'] ) { 
+							if( f.scope == res['class'] ) { 
 								var rgxA;
 								for( var o=0, O=f.options.length; o<O; o++ ) {
 									if( f.options[o].checked && f.options[o].title.length>4 ) {
 										rgxA = RegExp( '('+f.options[o].title+')', 'g' );
 
-										for( var a=0, A=res.toShow.other.length; a<A; a++ ){
-											if( f.dataType == res.toShow.other[a].dataType )
-												mO.properties[a].value = res.toShow.other[a].value.replace( rgxA, ( $0, $1 )=>{ return '<mark>'+$1+'</mark>' } )
+										for( var a=0, A=res.other.length; a<A; a++ ){
+											if( f.dataType == res.other[a].dataType )
+												mO.properties[a].value = res.other[a].value.replace( rgxA, ( $0, $1 )=>{ return '<mark>'+$1+'</mark>' } )
 										}
 									}
 								}
@@ -424,17 +424,17 @@ moduleManager.construct({
 								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
 								    lE;
 								
-								lE = res.toShow.title;
+								lE = res.title;
 								lE.value = mark( languageValueOf(lE.value,displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
-								res.toShow.descriptions = res.toShow.descriptions.map( (prp)=>{
+								res.descriptions = res.descriptions.map( (prp)=>{
 									return 	{
 												title: prp.title,
 												class: prp['class'],
 												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
 											};
 								});
-								res.toShow.other = res.toShow.other.map( (prp)=>{
+								res.other = res.other.map( (prp)=>{
 									let dT = dataTypeOf( dta, prp['class'] );
 									return (dT && dT.type=="xs:enumeration")?
 											{

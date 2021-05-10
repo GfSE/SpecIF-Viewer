@@ -117,8 +117,8 @@ class CSpecIF implements SpecIF {
 				let i = indexById(ndL as Item[], e.predecessor);
 				if (i > -1) ndL.splice(i + 1, 0, e);
 			}
-		)
-		) return true;
+		))
+			return true;
 
 		// 3. Insert the node, if the parent exists somewhere:
 		if (iterateNodes(this.hierarchies,
@@ -2962,7 +2962,8 @@ function iterateNodes(tree: SpecifNode[]|SpecifNode, eFn:Function, lFn?:Function
 			cont = !iterateNodes( tree[i], eFn, lFn );
 		};
 		if( typeof(lFn)=='function' ) lFn( tree );
-	} else {
+	}
+	else {
 		cont = eFn( tree );
 		if( cont && tree.nodes ) {
 			cont = !iterateNodes( tree.nodes, eFn, lFn );
@@ -3053,7 +3054,8 @@ function elementTitleOf(el: Resource | Statement, opts?:any, prj?:SpecIF): strin
 	if( el.subject ) {
 		// it is a statement
 		localOpts = opts;
-	} else {
+	}
+	else {
 		// it is a resource
 		localOpts = {
 			targetLanguage: opts.targetLanguage,

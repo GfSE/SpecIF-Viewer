@@ -91,7 +91,7 @@ moduleManager.construct({
 			// 3. collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
 			iterateNodes( cData.hierarchies, 
-				(nd)=>{
+				(nd:SpecifNode)=>{
 					cacheE( self.allResources, nd.resource );
 					// self.allResources contains the resource ids
 					return true // iterate the whole tree
@@ -99,7 +99,7 @@ moduleManager.construct({
 			);
 			app.cache.selectedProject.readContent( 'resource', self.allResources )
 			.then( 
-				(list)=>{
+				(list:Resource[])=>{
 					
 					// Sort the resources:
 					sortBy( 
@@ -265,7 +265,8 @@ moduleManager.construct({
 			btn.setAttribute("title", "'"+elementTitleOf(self.selRes,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
-		} else {
+		}
+		else {
 			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = true
 		}; 
@@ -301,7 +302,8 @@ moduleManager.construct({
 			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selRes,opts,cData) +"'" ) 
-		} else {
+		}
+		else {
 			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = true
 		}; 
