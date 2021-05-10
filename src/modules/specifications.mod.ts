@@ -16,118 +16,134 @@ interface ISpecs extends IModule {
 }
 
 RE.titleLink = new RegExp(CONFIG.dynLinkBegin.escapeRE() + '(.+?)' + CONFIG.dynLinkEnd.escapeRE(), 'g');
-function propertyValueOf(prp: object, opts?: any): string {
-	"use strict";
-	if (typeof (opts) != 'object') opts = {};
-	if (typeof (opts.dynLinks) != 'boolean') opts.dynLinks = false;
-	if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
-	if (typeof (opts.linkifyURLs) != 'boolean') opts.linkifyURLs = false;
-	// some environments escape the tags on export, e.g. camunda / in|flux:
-	if (typeof (opts.unescapeHTMLTags) != 'boolean') opts.unescapeHTMLTags = false;
-	// markup to HTML:
-	if (typeof (opts.makeHTML) != 'boolean') opts.makeHTML = false;
-	if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false;
+class CPropertyToShow implements Property {
+	id?: string;
+	title?: ValueElement[] | string;
+	description?: ValueElement[] | string;
+	// @ts-ignore - presence of 'class' is checked by the schema on import
+	class: KeyObject | string;
+	replaces?: string[];
+	revision?: string;
+	changedAt?: string;
+	changedBy?: string;
+	// @ts-ignore - presence of 'value' is checked by the schema on import
+	value: ValueElement[] | string;
+	constructor(prp: Property) {
+		for (var a in prp) this[a] = prp[a];
+    }
+	get( opts?: any): string {
+		"use strict";
+		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts.dynLinks) != 'boolean') opts.dynLinks = false;
+		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
+		if (typeof (opts.linkifyURLs) != 'boolean') opts.linkifyURLs = false;
+		// some environments escape the tags on export, e.g. camunda / in|flux:
+		if (typeof (opts.unescapeHTMLTags) != 'boolean') opts.unescapeHTMLTags = false;
+		// markup to HTML:
+		if (typeof (opts.makeHTML) != 'boolean') opts.makeHTML = false;
+		if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false;
 
-	// Malicious content has been removed upon import ( specif.toInt() ).
-	let pData = app.cache.selectedProject.data,
-		dT = dataTypeOf(pData, prp['class']),
-		ct: string;
-	//	console.debug('*',prp,dT);
-	switch (dT.type) {
-		case 'xs:string':
-		/*	ct = toHTML(languageValueOf( prp.value, opts ));
-			ct = ct.linkifyURLs( opts );
-			ct = titleLinks( ct, opts.dynLinks );
-			ct = i18n.lookup( ct );
-			break; */
-		case 'xhtml':
-			// remove any leading whiteSpace:
-			ct = languageValueOf(prp.value, opts).replace(/^\s+/, "");
-			if (opts.lookupValues)
-				ct = i18n.lookup(ct);
-			if (opts.unescapeHTMLTags)
-				ct = ct.unescapeHTMLTags();
-			// Apply formatting only if not listed:
-			if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(prp, pData)) < 0)
-				ct = makeHTML(ct, opts);
-			ct = fileRef.toGUI(ct, opts);   // show the diagrams
-			ct = titleLinks(ct, opts.dynLinks);
-			break;
-		case 'xs:dateTime':
-			ct = localDateTime(prp.value);
-			break;
-		case 'xs:enumeration':
-			// Usually 'value' has a comma-separated list of value-IDs,
-			// but the filter module delivers potentially marked titles in content.
+		// Malicious content has been removed upon import ( specif.toInt() ).
+		let pData = app.cache.selectedProject.data,
+			dT = dataTypeOf(pData, this['class']),
+			ct: string;
+		//	console.debug('*',this,dT);
+		switch (dT.type) {
+			case 'xs:string':
+			/*	ct = toHTML(languageValueOf( this.value, opts ));
+				ct = ct.linkifyURLs( opts );
+				ct = titleLinks( ct, opts.dynLinks );
+				ct = i18n.lookup( ct );
+				break; */
+			case 'xhtml':
+				// remove any leading whiteSpace:
+				ct = languageValueOf(this.value, opts).replace(/^\s+/, "");
+				if (opts.lookupValues)
+					ct = i18n.lookup(ct);
+				if (opts.unescapeHTMLTags)
+					ct = ct.unescapeHTMLTags();
+				// Apply formatting only if not listed:
+				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, pData)) < 0)
+					ct = makeHTML(ct, opts);
+				ct = fileRef.toGUI(ct, opts);   // show the diagrams
+				ct = titleLinks(ct, opts.dynLinks);
+				break;
+			case 'xs:dateTime':
+				ct = localDateTime(this.value);
+				break;
+			case 'xs:enumeration':
+				// Usually 'value' has a comma-separated list of value-IDs,
+				// but the filter module delivers potentially marked titles in content.
 
-			// Translate IDs to values, if appropriate (i1lookup() is included):
-			ct = enumValueOf(dT, prp.value, opts);
-			break;
-		default:
-			ct = prp.value;
-	};
-	/*	// Add 'double-angle quotation' in case of stereotype values:
-			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'; */
-	return ct;
+				// Translate IDs to values, if appropriate (i1lookup() is included):
+				ct = enumValueOf(dT, this.value, opts);
+				break;
+			default:
+				ct = this.value;
+		};
+		/*	// Add 'double-angle quotation' in case of stereotype values:
+				if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
+					ct = '&#x00ab;'+ct+'&#x00bb;'; */
+		return ct;
 
-	function titleLinks(str: string, add: boolean): string {
-		// Transform sub-strings with dynamic linking pattern to internal links.
-		// Syntax:
-		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
-		// - Icons in front of titles are ignored
-		// - Titles shorter than 4 characters are ignored
-		// - see: https://www.mediawiki.org/wiki/Help:Links
+		function titleLinks(str: string, add: boolean): string {
+			// Transform sub-strings with dynamic linking pattern to internal links.
+			// Syntax:
+			// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
+			// - Icons in front of titles are ignored
+			// - Titles shorter than 4 characters are ignored
+			// - see: https://www.mediawiki.org/wiki/Help:Links
 
-		// in certain situations, just remove the dynamic linking pattern from the text:
-		if (!CONFIG.dynLinking || !add)
-			// @ts-ignore - $0 is never read, but must be specified anyways
-			return str.replace(RE.titleLink, ($0, $1) => { return $1 });
-
-		/*	let date1 = new Date();
-			let n1 = date1.getTime(); */
-
-		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
-		let replaced = false;
-		do {
-			replaced = false;
-			str = str.replace(RE.titleLink,
+			// in certain situations, just remove the dynamic linking pattern from the text:
+			if (!CONFIG.dynLinking || !add)
 				// @ts-ignore - $0 is never read, but must be specified anyways
-				($0, $1) => {
-					replaced = true;
-					// disregard links being too short:
-					if ($1.length < CONFIG.dynLinkMinLength) return $1;
-					let m = $1.toLowerCase(), cO = null, ti: string, target = null, notFound = true;
-					// is ti a title of any resource?
-					app.specs.tree.iterate((nd) => {
-						cO = itemById(app.cache.selectedProject.data.resources, nd.ref);
-						// avoid self-reflection:
-						//	if(ob.id==cO.id) return true;
-						ti = elementTitleOf(cO, opts);
-						// if the dynLink content equals a resource's title, remember the first occurrence:
-						if (notFound && ti && m == ti.toLowerCase()) {
-							notFound = false;
-							target = cO;
-						};
-						return notFound // go into depth (return true) only if not yet found
-					});
-					// replace it with a link in case of a match:
-					if (target)
-						return lnk(target, $1);
-					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">' + $1 + '</span>'
-				}
-			)
-		} while (replaced);
+				return str.replace(RE.titleLink, ($0, $1) => { return $1 });
 
-		/*	let date2 = new Date();
-			let n2 = date2.getTime(); 
-			console.info( 'dynamic linking in ', n2-n1,'ms' ) */
-		return str;
+			/*	let date1 = new Date();
+				let n1 = date1.getTime(); */
 
-		function lnk(r: Resource, t: string): string {
-			//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
-			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
+			// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
+			let replaced = false;
+			do {
+				replaced = false;
+				str = str.replace(RE.titleLink,
+					// @ts-ignore - $0 is never read, but must be specified anyways
+					($0, $1) => {
+						replaced = true;
+						// disregard links being too short:
+						if ($1.length < CONFIG.dynLinkMinLength) return $1;
+						let m = $1.toLowerCase(), cO = null, ti: string, target = null, notFound = true;
+						// is ti a title of any resource?
+						app.specs.tree.iterate((nd) => {
+							cO = itemById(app.cache.selectedProject.data.resources, nd.ref);
+							// avoid self-reflection:
+							//	if(ob.id==cO.id) return true;
+							ti = elementTitleOf(cO, opts);
+							// if the dynLink content equals a resource's title, remember the first occurrence:
+							if (notFound && ti && m == ti.toLowerCase()) {
+								notFound = false;
+								target = cO;
+							};
+							return notFound // go into depth (return true) only if not yet found
+						});
+						// replace it with a link in case of a match:
+						if (target)
+							return lnk(target, $1);
+						// The dynamic link has NOT been matched/replaced, so mark it:
+						return '<span style="color:#D82020">' + $1 + '</span>'
+					}
+				)
+			} while (replaced);
+
+			/*	let date2 = new Date();
+				let n2 = date2.getTime(); 
+				console.info( 'dynamic linking in ', n2-n1,'ms' ) */
+			return str;
+
+			function lnk(r: Resource, t: string): string {
+				//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
+				return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
+			}
 		}
 	}
 }
@@ -136,13 +152,13 @@ class CResourceToShow {
 	class: ResourceClass;
 	isHeading: boolean;
 	order: string;
-	revision: string;
-	replaces: string[];
-	title: Property;
-	descriptions: Property[];
-	other: Property[];
+	revision?: string;
+	replaces?: string[];
+	title: CPropertyToShow;
+	descriptions: CPropertyToShow[];
+	other: CPropertyToShow[];
 	changedAt: string;
-	changedBy: string;
+	changedBy?: string;
 	constructor(el: Resource, pData?: CSpecIF) {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
@@ -208,7 +224,7 @@ class CResourceToShow {
 		//	console.debug( 'classifyProps 2', simpleClone(this) );
 		return;
 
-		function normalizeProps(el: Resource, dta: CSpecIF): Property[] {
+		function normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
 			// el: instance (resource or statement)
 			// Create a list of properties in the sequence of propertyClasses of the respective class.
 			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
@@ -229,7 +245,7 @@ class CResourceToShow {
 
 			let p: Property,
 				pCs: string[],
-				nL: Property[] = [],
+				nL: CPropertyToShow[] = [],
 				// iCs: instance class list (resourceClasses or statementClasses),
 				// the existence of subject (or object) let's us recognize that it is a statement:
 			//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
@@ -242,8 +258,8 @@ class CResourceToShow {
 			pCs.forEach((pCid: string) => {
 				// skip hidden properties:
 				if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
-				// the property classes must be unique, otherwise the operation will:
-				p = simpleClone(itemBy(el.properties, 'class', pCid))
+				// assuming that the property classes are unique:
+				p = itemBy(el.properties, 'class', pCid)
 					|| createProp(dta.propertyClasses, pCid);
 				if (p) {
 					// by default, use the propertyClass' title:
@@ -251,7 +267,7 @@ class CResourceToShow {
 					// An input data-set may have titles which are not from the SpecIF vocabulary;
 					// replace the result with a current vocabulary term:
 					p.title = vocabulary.property.specif(propTitleOf(p, dta));
-					nL.push(p);
+					nL.push(new CPropertyToShow(p));
 				}
 			});
 			//		console.debug('normalizeProps result',simpleClone(nL));
@@ -343,9 +359,9 @@ class CResourceToShow {
 		};
 
 		// 1.2 The description properties:
-		this.descriptions.forEach((prp: Property): void => {
+		this.descriptions.forEach((prp: CPropertyToShow): void => {
 			if (showPrp(prp, opts)) {
-				rO += '<div class="attribute attribute-wide">' + propertyValueOf(prp, opts) + '</div>'
+				rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
 			}
 		});
 		rO += '</div>'  // end of content-main
@@ -367,13 +383,12 @@ class CResourceToShow {
 
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining properties:
-		this.other.forEach((prp: Property): void => {
+		this.other.forEach((prp: CPropertyToShow): void => {
 			if (showPrp(prp, opts)) {
-				rO += this.renderProp(titleOf(prp, opts), propertyValueOf(prp, opts), 'attribute-condensed');
+				rO += this.renderProp(titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
 			};
 		});
 		// 3.2 The type info:
-		//	rO += this.renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
 		// 3.3 The change info depending on selectedView:
 		rO += this.renderChangeInfo();
 		rO += '</div>'	// end of content-other
@@ -471,7 +486,6 @@ class CResourcesToShow {
 			return false;  // no change
 		};
 		this.values[idx] = new CResourceToShow(r);
-//		console.debug( 'CResource.set', nRes, simpleClone(self.toShow) );
 		return true;		// has changed
 	}
 	update(rL: Resource[]): boolean {
@@ -505,7 +519,7 @@ class CResourcesToShow {
 	}
 	exists(rId: string): boolean {
 		for (var i = this.values.length - 1; i > -1; i--)
-			if (this.values[i].toShow.id == rId) return true;
+			if (this.values[i].id == rId) return true;
 		return false;
 	}
 	render(): string {
@@ -520,6 +534,25 @@ class CResourcesToShow {
 		});
 		return rL;	// return rendered resource list
 	}
+}
+class CFileWithContent implements IFileWithContent {
+	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
+	changedAt: string;
+	changedBy?: string;
+	description?: ValueElement[] | string;
+	// @ts-ignore - presence of 'id' is checked by the schema on import
+	id: string;
+	replaces?: string[];
+	revision?: string;
+	// @ts-ignore - presence of 'title' is checked by the schema on import
+	title: ValueElement[] | string;
+	// @ts-ignore - presence of 'type' is checked by the schema on import
+	type: string;
+	blob?: Blob;
+	dataURL?: string;
+	constructor(f: IFileWithContent) {
+		for (var a in f) this[a] = f[a];
+    }
 }
 // Construct the specifications controller:
 moduleManager.construct({
@@ -1127,22 +1160,22 @@ moduleManager.construct({
 			return app.cache.selectedProject.readContent( 'resource', oL )
 		}
 		function renderNextResources( rL ):void {
-				// Format the titles with numbering:
-				for( var i=rL.length-1; i>-1; i-- )
-					rL[i].order = nL[i].order;
+			// Format the titles with numbering:
+			for( var i=rL.length-1; i>-1; i-- )
+				rL[i].order = nL[i].order;
 	
-				// Update the view list, if changed:
-				// Note that the list is always changed, when execution gets here,
-				// unless in a multi-user configuration with server and auto-update enabled.
-				if( self.resources.update( rL ) || opts && opts.forced ) {
-					// list value has changed in some way:
-				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
-					$( self.view ).html( self.resources.render() );
-				};
-				// the currently selected resource:
-				selRes = self.resources.selected();
-				$( '#contentActions' ).html( actionBtns() );
-				app.busy.reset();
+			// Update the view list, if changed:
+			// Note that the list is always changed, when execution gets here,
+			// unless in a multi-user configuration with server and auto-update enabled.
+			if( self.resources.update( rL ) || opts && opts.forced ) {
+				// list value has changed in some way:
+			//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
+				$( self.view ).html( self.resources.render() );
+			};
+			// the currently selected resource:
+			selRes = self.resources.selected();
+			$( '#contentActions' ).html( actionBtns() );
+			app.busy.reset();
 		}
 		function handleErr(err):void {
 			stdError( err );
@@ -2389,8 +2422,8 @@ var fileRef = function() {
 									ti = languageValueOf( clsPrp.title.value ),
 									dsc = '';
 								clsPrp.descriptions.forEach( (d)=>{
-									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
-									dsc += propertyValueOf( d, {unescapeHTMLTags:true,makeHTML:true} )
+									// to avoid an endless recursive call, the property shall neither have dynLinks nor clickableElements
+									dsc += d.get( {unescapeHTMLTags:true,makeHTML:true} )
 								});
 								if( stripHTML(stripCtrl(dsc)) ) {
 									// Remove the dynamic linking pattern from the text:
@@ -2426,8 +2459,8 @@ var fileRef = function() {
 								// else, it is a resource representing a diagram:
 								if( elementTitleOf(cacheData.resources[i],opts)==ti ) {
 									// found: the diagram carries the same title 
-									if( app[CONFIG.objectList].resources.selected().toShow 
-										&& app[CONFIG.objectList].resources.selected().toShow.id==cacheData.resources[i].id )
+									if( app[CONFIG.objectList].resources.selected() 
+										&& app[CONFIG.objectList].resources.selected().id==cacheData.resources[i].id )
 										// the searched plan is already selected, thus jump to the element: 
 										return id;
 									else
