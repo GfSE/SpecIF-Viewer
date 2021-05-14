@@ -181,7 +181,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			}
 		}
 		function resClassId( ti:string ):string { 
-			return 'RC-' + specifIdOf(ti);
+			return 'RC-' + ti.specifIdOf();
 		}
 		class StaClass {
 			id: string;
@@ -201,7 +201,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			}
 		}
 		function staClassId( ti:string ):string { 
-			return 'SC-'+specifIdOf(ti);
+			return 'SC-' + ti.specifIdOf();
 		}
 		function colName( colI:number ):string {
 			// get the column name from an index: 4->'D', 27->'AA'
@@ -725,13 +725,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	// 1. Create the project:
 	// @ts-ignore - Basetypes() has not all required attributes of SpecIF; they are added later on
 	var specifData:SpecIF = new BaseTypes();
-	specifData.id = 'XLS-'+specifIdOf(pN);
+	specifData.id = 'XLS-' + pN.specifIdOf();
 	specifData.title = pN;
 	specifData.generator = "xslx2specif";
 	specifData.$schema = 'https://specif.de/v1.0/schema.json'
 	// the root folder resource:
 	specifData.resources = [{
-		id: 'R-' + specifIdOf(pN),
+		id: 'R-' + pN.specifIdOf(),
 		title: pN,
 		class: "RC-Folder",
 		properties: [{
@@ -744,8 +744,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	// 2. Create the specification (hierarchy root) for the file:
 	specifData.hierarchies = [{
-		id: 'H-' + specifIdOf(pN),
-		resource: 'R-' + specifIdOf(pN),
+		id: 'H-' + pN.specifIdOf(),
+		resource: 'R-' + pN.specifIdOf(),
 		nodes: [],
 		changedAt: chAt
 	}];

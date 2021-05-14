@@ -50,11 +50,6 @@ class CPropertyToShow implements Property {
 		//	console.debug('*',this,dT);
 		switch (dT.type) {
 			case 'xs:string':
-			/*	ct = toHTML(languageValueOf( this.value, opts ));
-				ct = ct.linkifyURLs( opts );
-				ct = titleLinks( ct, opts.dynLinks );
-				ct = i18n.lookup( ct );
-				break; */
 			case 'xhtml':
 				// remove any leading whiteSpace:
 				ct = languageValueOf(this.value, opts).replace(/^\s+/, "");
@@ -64,9 +59,9 @@ class CPropertyToShow implements Property {
 					ct = ct.unescapeHTMLTags();
 				// Apply formatting only if not listed:
 				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, pData)) < 0)
-					ct = makeHTML(ct, opts);
-				ct = fileRef.toGUI(ct, opts);   // show the diagrams
-				ct = titleLinks(ct, opts.dynLinks);
+					ct = ct.makeHTML(opts);
+				ct = this.renderFile(ct, opts);   // show the diagrams
+				ct = this.titleLinks(ct, opts);
 				break;
 			case 'xs:dateTime':
 				ct = localDateTime(this.value);
@@ -85,66 +80,324 @@ class CPropertyToShow implements Property {
 				if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
 					ct = '&#x00ab;'+ct+'&#x00bb;'; */
 		return ct;
+	}
 
-		function titleLinks(str: string, add: boolean): string {
-			// Transform sub-strings with dynamic linking pattern to internal links.
-			// Syntax:
-			// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
-			// - Icons in front of titles are ignored
-			// - Titles shorter than 4 characters are ignored
-			// - see: https://www.mediawiki.org/wiki/Help:Links
+	private titleLinks(str: string, opts: any): string {
+		// Transform sub-strings with dynamic linking pattern to internal links.
+		// Syntax:
+		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
+		// - Icons in front of titles are ignored
+		// - Titles shorter than 4 characters are ignored
+		// - see: https://www.mediawiki.org/wiki/Help:Links
 
-			// in certain situations, just remove the dynamic linking pattern from the text:
-			if (!CONFIG.dynLinking || !add)
+		// in certain situations, just remove the dynamic linking pattern from the text:
+		if (!CONFIG.dynLinking || !opts.dynLinks)
+			// @ts-ignore - $0 is never read, but must be specified anyways
+			return str.replace(RE.titleLink, ($0, $1) => { return $1 });
+
+		/*	let date1 = new Date();
+			let n1 = date1.getTime(); */
+
+		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
+		let replaced = false;
+		do {
+			replaced = false;
+			str = str.replace(RE.titleLink,
 				// @ts-ignore - $0 is never read, but must be specified anyways
-				return str.replace(RE.titleLink, ($0, $1) => { return $1 });
+				($0, $1) => {
+					replaced = true;
+					// disregard links being too short:
+					if ($1.length < CONFIG.dynLinkMinLength) return $1;
+					let m = $1.toLowerCase(), cO = null, ti: string, target = null, notFound = true;
+					// is ti a title of any resource?
+					app.specs.tree.iterate((nd: jqTreeNode) => {
+						cO = itemById(app.cache.selectedProject.data.resources, nd.ref);
+						// avoid self-reflection:
+						//	if(ob.id==cO.id) return true;
+						ti = elementTitleOf(cO, opts);
+						// if the dynLink content equals a resource's title, remember the first occurrence:
+						if (notFound && ti && m == ti.toLowerCase()) {
+							notFound = false;
+							target = cO;
+						};
+						return notFound // go into depth (return true) only if not yet found
+					});
+					// replace it with a link in case of a match:
+					if (target)
+						return lnk(target, $1);
+					// The dynamic link has NOT been matched/replaced, so mark it:
+					return '<span style="color:#D82020">' + $1 + '</span>'
+				}
+			)
+		} while (replaced);
 
-			/*	let date1 = new Date();
-				let n1 = date1.getTime(); */
+		/*	let date2 = new Date();
+			let n2 = date2.getTime(); 
+			console.info( 'dynamic linking in ', n2-n1,'ms' ) */
+		return str;
 
-			// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
-			let replaced = false;
-			do {
-				replaced = false;
-				str = str.replace(RE.titleLink,
-					// @ts-ignore - $0 is never read, but must be specified anyways
-					($0, $1) => {
-						replaced = true;
-						// disregard links being too short:
-						if ($1.length < CONFIG.dynLinkMinLength) return $1;
-						let m = $1.toLowerCase(), cO = null, ti: string, target = null, notFound = true;
-						// is ti a title of any resource?
-						app.specs.tree.iterate((nd) => {
-							cO = itemById(app.cache.selectedProject.data.resources, nd.ref);
-							// avoid self-reflection:
-							//	if(ob.id==cO.id) return true;
-							ti = elementTitleOf(cO, opts);
-							// if the dynLink content equals a resource's title, remember the first occurrence:
-							if (notFound && ti && m == ti.toLowerCase()) {
-								notFound = false;
-								target = cO;
-							};
-							return notFound // go into depth (return true) only if not yet found
-						});
-						// replace it with a link in case of a match:
-						if (target)
-							return lnk(target, $1);
-						// The dynamic link has NOT been matched/replaced, so mark it:
-						return '<span style="color:#D82020">' + $1 + '</span>'
-					}
-				)
-			} while (replaced);
-
-			/*	let date2 = new Date();
-				let n2 = date2.getTime(); 
-				console.info( 'dynamic linking in ', n2-n1,'ms' ) */
-			return str;
-
-			function lnk(r: Resource, t: string): string {
-				//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
-				return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
-			}
+		function lnk(r: Resource, t: string): string {
+			//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
+			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
 		}
+	}
+	renderFile(txt: string, opts?: any): string {
+	/*	Formerly fileRef.toGUI()
+		Properly handle file references in XHTML-Text. 
+		- An image is to be displayed 
+		- a file is to be downloaded
+		- an external hyperlink is to be included
+	*/
+		if (typeof (opts) != 'object') opts = {};
+		if (opts.projId == undefined) opts.projId = app.cache.selectedProject.data.id;
+		//	if( opts.rev==undefined ) opts.rev = 0;
+		if (opts.imgClass == undefined) opts.imgClass = 'forImage'	// regular size
+
+	/*	function addFilePath( u ) {
+			if( /^https?:\/\/|^mailto:/i.test( u ) ) {
+				// don't change an external link starting with 'http://', 'https://' or 'mailto:'
+//				console.debug('addFilePath no change',u);
+				return u;
+			};
+			// else, add relative path:
+//			console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
+			return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
+		}  */
+		function getType(str: string): string {
+			let t = /(type="[^"]+")/.exec(str);
+			if (Array.isArray(t) && t.length > 0) return (' ' + t[1]);
+			return '';
+		}
+		function getUrl(str: string): string | undefined {
+			let l = /data="([^"]+)"/.exec(str);  // url in l[1]
+			// return null, because an URL is expected in any case:
+			if (Array.isArray(l) && l.length > 0) return l[1]
+			//						.replace(/\\/g,'/'); // is now handled during import
+			//	return undefined
+		}
+	/*	function getPrp( pnm:string, str:string ):string|undefined {
+			// get the value of XHTML property 'pnm':
+			let re = new RegExp( pnm+'="([^"]+)"', '' ),
+				l = re.exec(str);
+			if( Array.isArray(l)&&l.length>0 ) return l[0];
+		//	return undefined
+		} */
+		function getPrpVal(pnm: string, str: string): string | undefined {
+			// get the value of XHTML property 'pnm':
+			let re = new RegExp(pnm + '="([^"]+)"', ''),
+				l = re.exec(str);
+			if (Array.isArray(l) && l.length > 0) return l[1];
+			//	return undefined
+		}
+		function makeStyle(w: string, h: string): string {
+			// compose a style property, if there are such parameters,
+			// return empty string, otherwise:
+			return (h || w) ? ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + '"' : '';
+		}
+
+		// Prepare a file reference for viewing and editing:
+		//		console.debug('toGUI 0: ', txt);
+		var repStrings = [];   // a temporary store for replacement strings
+
+		// 1. transform two nested objects to link+object resp. link+image:
+		txt = txt.replace(RE.tagNestedObjects,
+			// @ts-ignore - $3 is never read, but must be specified anyways
+			($0, $1, $2, $3, $4) => {       // description is $4, $3 is not used
+				let u1 = getUrl($1),  	// the primary file
+					//	t1 = getType( $1 ), 
+					//	w1 = getPrp("width", $1 ),
+					//	h1 = getPrp("height", $1 ),
+					u2 = getUrl($2), 		// the preview image
+					//	t2 = getType( $2 ),
+					w2 = getPrpVal("width", $2),
+					h2 = getPrpVal("height", $2),
+					d = $4 || u1;		// If there is no description, use the name of the link object
+
+				//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
+				if (!u1) console.warn('no file found in', $0);
+				if (!u2) console.warn('no image found in', $0);
+				//				u1 = addFilePath(u1);
+				//				u2 = addFilePath(u2);
+
+				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1)),
+					f2 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u2));
+
+				if (f1.hasContent()) {
+
+					if (f2.hasContent()) {
+						// take f1 to download and f2 to display:
+
+						//						console.debug('tagId',tagId(u2));
+						// first add the element to which the file to download will be added:
+						repStrings.push('<div id="' + tagId(u1) + '"></div>');
+						// now add the image as innerHTML:
+						f1.renderDownloadLink(
+							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
+							+ makeStyle(w2, h2)
+							+ '></div>',
+							opts
+						);
+						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
+						f2.renderImage($.extend({}, opts, { timelag: opts.timelag * 1.2 }));
+					}
+					else {
+						// nothing to display, so ignore f2:
+
+						// first add the element to which the attachment will be added:
+						repStrings.push('<span class="' + tagId(u1) + '"></span>');
+						// now add the download link with file as data-URL:
+						f1.renderDownloadLink(d, opts);
+					};
+					return 'aBra§kadabra' + (repStrings.length - 1) + '§';
+
+				}
+				else {
+					return '<div class="notice-danger" >File missing: ' + d + '</div>'
+				};
+			}
+		);
+		//		console.debug('fileRef.toGUI 1: ', txt);
+
+		// 2. transform a single object to link+object resp. link+image:
+		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
+			// @ts-ignore - $2 is never read, but must be specified anyways
+			($0, $1, $2, $3) => {
+				//				var pairedImgExists = ( url )=>{
+				//					// ToDo: check actually ...
+				//					return true
+				//				};
+
+				let u1 = getUrl($1),
+					t1 = getType($1),
+					w1 = getPrpVal("width", $1),
+					h1 = getPrpVal("height", $1);
+
+				let e = u1.fileExt();
+				if (!e) return $0     // no change, if no extension found
+
+				// $3 is the description between the tags <object></object>:
+				let d = $3 || u1,
+					hasImg = false;
+				e = e.toLowerCase();
+				//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
+
+				//				u1 = addFilePath(u1);
+				if (!u1) console.info('no image found');
+				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
+				// sometimes the application files (BPMN or other) have been replaced by images;
+				// this is for example the case for *.specif.html files:
+				if (!f1.hasContent() && CONFIG.applExtensions.indexOf(e) > -1) {
+					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
+						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
+						f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
+					};
+				};
+
+				if (CONFIG.imgExtensions.indexOf(e) > -1 || CONFIG.applExtensions.indexOf(e) > -1) {
+					// it is an image, show it:
+					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
+					//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
+					if (f1.hasContent()) {
+						hasImg = true;
+						// first add the element to which the image will be added:
+						//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
+						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
+							+ makeStyle(w1, h1)
+							+ '></div>';
+						//						console.debug('img opts',f1,opts);
+						// now add the image as innerHTML:
+						f1.renderImage(opts);
+					}
+					else {
+						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
+					};
+				}
+				else if (CONFIG.officeExtensions.indexOf(e) > -1) {
+					// it is an office file, show an icon plus filename:
+					if (f1.hasContent()) {
+						hasImg = true;
+						// first add the element to which the attachment will be added:
+						d = '<div id="' + tagId(u1) + '" ' + CONFIG.fileIconStyle + '></div>';
+						// now add the download link with file icon:
+						f1.renderDownloadLink('<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" alt="[ ' + e + ' ]" />', opts);
+					}
+					else {
+						d = '<div class="notice-danger" >File missing: ' + d + '</div>'
+					};
+				}
+				else {
+					switch (e) {
+						case 'ole':
+							// It is an ole-file, so add a preview image;
+							// in case there is no preview image, the browser will display d holding the description
+							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
+							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
+							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
+							hasImg = true;
+							//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
+							d = '<img src="' + u1.fileName() + '.png" type="image/png" alt="' + d + '" />';
+							// ToDo: Offer a link for downloading the file
+							break;
+						default:
+							// last resort is to take the filename:
+							d = '<span>' + d + '</span>';
+						// ToDo: Offer a link for downloading the file
+					};
+				};
+
+				// finally add the link and an enclosing div for the formatting:
+				// avoid that a pattern is processed twice.
+
+				// insert a placeholder and replace it with the prepared string at the end ...
+				if (hasImg)
+					repStrings.push(d)
+				else
+					repStrings.push('<a href="' + u1 + '"' + t1 + ' >' + d + '</a>');
+
+				return 'aBra§kadabra' + (repStrings.length - 1) + '§';
+			}
+		);
+		//		console.debug('fileRef.toGUI 2: ', txt);
+
+		// 3. process a single link:
+		txt = txt.replace(RE.tagA,
+			($0, $1, $2) => {
+				var u1 = getPrpVal('href', $1),
+					e = u1.fileExt();
+				//				console.debug( $1, $2, u1, e );
+				if (!e) return $0     // no change, if no extension found
+
+				/*	if( /(<object|<img)/g.test( $2 ) ) 
+						return $0;		// no change, if an embedded object or image */
+
+				if (CONFIG.officeExtensions.indexOf(e.toLowerCase()) < 0)
+					return $0;	// no change, if not an office file
+
+				// it is an office file, add an icon:
+				var t1 = getType($1);
+				if (!$2) {
+					var d = u1.split('/');  // the last element is a filename with extension
+					$2 = d[d.length - 1]   // $2 is now the filename with extension
+				};
+				//				u1 = addFilePath(u1);
+
+				// add an icon:
+				e = '<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" />'
+
+				// finally returned the enhanced link:
+				return ('<a href="' + u1 + '" ' + t1 + ' target="_blank" >' + e + '</a>')
+			}
+		);
+		//		console.debug('fileRef.toGUI 3: ', txt);
+
+		// Now, at the end, replace the placeholders with the respective strings,
+		txt = txt.replace(/aBra§kadabra([0-9]+)§/g,
+			// @ts-ignore - $0 is never read, but must be specified anyways
+			($0, $1) => {
+				return repStrings[$1]
+			});
+		//		console.debug('fileRef.toGUI result: ', txt);
+		return txt
 	}
 }
 class CResourceToShow {
@@ -176,7 +429,7 @@ class CResourceToShow {
 		this.changedBy = el.changedBy;
 		this.descriptions = [];
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = normalizeProps(el, pData);
+		this.other = this.normalizeProps(el, pData);
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
@@ -197,8 +450,18 @@ class CResourceToShow {
 			// which has been newly created by normalizeProps():
 			if (!this.title.value && el.title)
 				this.title.value = el.title;
-			this.isHeading = this['class'].isHeading || CONFIG.headingProperties.indexOf(this.title.value) > -1;
+		}
+		else {
+			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+			// there is no title propertyClass;
+			// then create a property without class.
+			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' };
 		};
+		this.isHeading = this['class'].isHeading
+			|| CONFIG.headingProperties.indexOf(this['class'].title) > -1
+			|| CONFIG.headingProperties.indexOf(this.title.title) > -1;
 
 		// b) Check the configured descriptions:
 		// We must iterate backwards, because we alter the list of other.
@@ -212,67 +475,61 @@ class CResourceToShow {
 		};
 
 		// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-		//    there is no title or no description propertyClass;
-		//    then create a property without class.
-		//    If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-		if (!this.title)
-			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' };
-		//  Why create a description, if there is none ?? What is the use-case?
+		//    there is no description propertyClass;
+		//    Why create a description, if there is none ?? What is the use-case?
 		//	if (this.descriptions.length < 1)
 		//		this.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
 		//	console.debug( 'classifyProps 2', simpleClone(this) );
-		return;
+	//	return;
+	}
+	private normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
+		// el: original instance (resource or statement)
+		// Create a list of properties in the sequence of propertyClasses of the respective class.
+		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+		// Assumption: Property classes are unique!
 
-		function normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
-			// el: instance (resource or statement)
-			// Create a list of properties in the sequence of propertyClasses of the respective class.
-			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-			// Assumption: Property classes are unique!
-
-			// check uniqueness of property classes:
-			if (el.properties) {
-				let cL: string[] = [],
-					pC: string;
-				el.properties.forEach((p: Property) => {
-					pC = p['class'];
-					if (cL.indexOf(pC)<0)
-						cL.push(pC);
-					else
-						console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
-				});
-			};
-
-			let p: Property,
-				pCs: string[],
-				nL: CPropertyToShow[] = [],
-				// iCs: instance class list (resourceClasses or statementClasses),
-				// the existence of subject (or object) let's us recognize that it is a statement:
-			//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-				iCs = dta.resourceClasses,
-				iC = itemById(iCs, el['class']);
-			// build a list of propertyClass identifiers including the extended class':
-			pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
-			pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
-			// add the properties in sequence of the propertyClass identifiers:
-			pCs.forEach((pCid: string) => {
-				// skip hidden properties:
-				if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
-				// assuming that the property classes are unique:
-				p = itemBy(el.properties, 'class', pCid)
-					|| createProp(dta.propertyClasses, pCid);
-				if (p) {
-					// by default, use the propertyClass' title:
-					// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
-					// An input data-set may have titles which are not from the SpecIF vocabulary;
-					// replace the result with a current vocabulary term:
-					p.title = vocabulary.property.specif(propTitleOf(p, dta));
-					nL.push(new CPropertyToShow(p));
-				}
+		// check uniqueness of property classes:
+		if (el.properties) {
+			let cL: string[] = [],
+				pC: string;
+			el.properties.forEach((p: Property) => {
+				pC = p['class'];
+				if (cL.indexOf(pC)<0)
+					cL.push(pC);
+				else
+					console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
 			});
-			//		console.debug('normalizeProps result',simpleClone(nL));
-			return nL; // normalized property list
-		}
+		};
+
+		let p: Property,
+			pCs: string[],
+			nL: CPropertyToShow[] = [],
+			// iCs: instance class list (resourceClasses or statementClasses),
+			// the existence of subject (or object) let's us recognize that it is a statement:
+		//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
+			iCs = dta.resourceClasses,
+			iC = itemById(iCs, el['class']);
+		// build a list of propertyClass identifiers including the extended class':
+		pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
+		pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
+		// add the properties in sequence of the propertyClass identifiers:
+		pCs.forEach((pCid: string) => {
+			// skip hidden properties:
+			if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
+			// assuming that the property classes are unique:
+			p = itemBy(el.properties, 'class', pCid)
+				|| createProp(dta.propertyClasses, pCid);
+			if (p) {
+				// by default, use the propertyClass' title:
+				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
+				// An input data-set may have titles which are not from the SpecIF vocabulary;
+				// replace the result with a current vocabulary term:
+				p.title = vocabulary.property.specif(propTitleOf(p, dta));
+				nL.push(new CPropertyToShow(p));
+			}
+		});
+		//		console.debug('normalizeProps result',simpleClone(nL));
+		return nL; // normalized property list
 	}
 	isEqual(res: Resource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
@@ -553,6 +810,352 @@ class CFileWithContent implements IFileWithContent {
 	constructor(f: IFileWithContent) {
 		for (var a in f) this[a] = f[a];
     }
+	hasContent(): boolean {
+		return (this.blob && this.blob.size > 0 || this.dataURL && this.dataURL.length > 0);
+	}
+	renderDownloadLink(txt: string, opts?: any): void {
+
+		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
+		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts.timelag) != 'number') opts.timelag = CONFIG.imageRenderingTimelag;
+
+		// Add the download link of the attachment as innerHTML:
+		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+		blob2dataURL(this, (r:string, fTi:string, fTy:string):void => {
+			// add link with icon to DOM using an a-tag with data-URI:
+			document.getElementById(tagId(fTi)).innerHTML =
+				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + txt + '</a>';
+		}, opts.timelag);
+	}
+	renderImage(opts?: any): void {
+
+		// Attention: the element with id 'this.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
+		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts.timelag) != 'number') opts.timelag = CONFIG.imageRenderingTimelag;
+
+		if (!this.blob && !this.dataURL) {
+			setTimeout(() => {
+				Array.from(document.getElementsByClassName(tagId(this.title)),
+					(el) => { el.innerHTML = '<div class="notice-danger" >Image missing: ' + this.title + '</div>' }
+				);
+			}, opts.timelag)
+			return;
+		};
+		// ToDo: in case of a server, the blob itself must be fetched first ...
+
+		if (this.dataURL) {
+			setTimeout(() => {
+				// add image to DOM using an image-tag with data-URI:
+				Array.from(document.getElementsByClassName(tagId(this.title)),
+					(el) => {
+						let ty = /data:([^;]+);/.exec(this.dataURL);
+						el.innerHTML = '<object data="' + this.dataURL
+							+ '" type="' + (ty[1] || this.type) + '"'
+							/*		+ (opts.w ? ' ' + opts.w : '')
+									+ (opts.h ? ' ' + opts.h : '') */
+							+ ' >' + this.title + '</object>';
+					});
+			}, opts.timelag);
+			return;
+		};
+		// else: the data is a blob
+
+		switch (this.type) {
+			case 'image/png':
+			case 'image/x-png':
+			case 'image/jpeg':
+			case 'image/jpg':
+			case 'image/gif':
+				// reference the original list item, which has the blob and other properties:
+				this.showRaster(opts);
+				break;
+			case 'image/svg+xml':
+				this.showSvg(opts);
+				break;
+			case 'application/bpmn+xml':
+				this.showBpmn(opts);
+				break;
+			default:
+				console.warn('Cannot show diagram ' + this.title + ' of unknown type: ', this.type);
+		};
+	//	return undefined;
+	// end of renderImage()
+	};
+	private showRaster(opts: any): void {
+		/*	if( this.dataURL ) {
+				// this works:
+				setTimeout( ()=>{
+					// add image to DOM using an image-tag with data-URI:
+					Array.from( document.getElementsByClassName(tagId(this.title)), 
+						(el)=>{el.innerHTML = '<img src="'+this.dataURL+'" type="'+this.type+'" alt="'+this.title+'" />'}
+					);
+				}, opts.timelag )
+			} 
+			else { */
+		blob2dataURL(this, (r: string, fTi: string, fTy: string): void => {
+			// add image to DOM using an image-tag with data-URI:
+			Array.from(document.getElementsByClassName(tagId(fTi)),
+				(el) => {
+					el.innerHTML = '<img src="' + r
+						+ '" type="' + fTy + '"'
+						/*		+ (opts.w ? ' ' + opts.w : '')
+								+ (opts.h ? ' ' + opts.h : '') */
+						+ ' alt="' + fTi + '" />';
+					/*	// set a grey background color for images with transparency:
+						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
+				}
+			);
+		}, opts.timelag);
+		//	};
+	}
+	private showSvg(opts: any): void {
+		// Show a SVG image.
+
+		// Read and render SVG:
+		/*	if( this.dataURL ) {
+				// this does not work, yet;
+				// here we need the SVG as XML-string, not as data-URL:
+				setTimeout( displaySVGeverywhere( .. ), opts.timelag )
+			}
+			else { */
+		blob2text(this, displaySVGeverywhere, opts.timelag)
+		//	};
+		return;
+
+		function itemBySimilarId(L: Item[], id: string): Item {
+			// return the list element having an id similar to the specified one:
+			id = id.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				// is id a substring of L[i].id?
+				// @ts-ignore - L[i] does exist, if execution gets here
+				if (L[i].id.indexOf(id) > -1) return L[i];   // return list item
+			//	return undefined
+		}
+		function itemBySimilarTitle(L: Item[], ti: string): Item {
+			// return the list element having a title similar to the specified one:
+			ti = ti.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				// is ti a substring of L[i].title?
+				// @ts-ignore - L[i] does exist, if execution gets here
+				if (L[i].title.indexOf(ti) > -1) return L[i];   // return list item
+			//	return undefined
+		}
+		//	function displaySVGeverywhere(r,fTi,fTy) {
+		function displaySVGeverywhere(r: string, fTi: string): void {
+			// Load pixel images embedded in SVG,
+			// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
+			// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
+			// see: https://css-tricks.com/probably-dont-base64-svg/
+			// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
+			let svg = {
+					// the locations where the svg shall be added:
+					locs: document.getElementsByClassName(tagId(fTi)),
+					// the SVG image with or without embedded images:
+					img: r
+				},
+				dataURLs:string[] = [],	// temporary list of embedded images
+				// RegExp for embedded images,
+				// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
+				rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
+				ef: CFileWithContent,
+				mL:string[],
+				pend = 0;		// the count of embedded images waiting for transformation
+
+			// process all image references within the SVG image one by one:
+			// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+			while ((mL = rE.exec(r)) != null) {
+				// skip all images already provided as data-URLs:
+				if (mL[2].startsWith('data:')) continue;
+				// avoid transformation of redundant images:
+				if (indexById(dataURLs, mL[2]) > -1) continue;
+				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
+				if (ef && ef.blob) {
+					pend++;
+					//							console.debug('SVG embedded file',mL[2],ef,pend);
+					// transform file to data-URL and display, when done:
+					blob2dataURL(ef, (r: string, fTi: string): void => {
+						dataURLs.push({
+							id: fTi,
+							val: r
+						});
+						//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
+						if (--pend < 1) {
+							// all embedded images have been transformed,
+							// replace references by dataURLs and add complete image to DOM:
+							// @ts-ignore - $0 is never read, but must be specified anyways
+							svg.img = svg.img.replace(rE, ($0, $1, $2, $3) => {
+								let dURL = itemBySimilarId(dataURLs, $2);
+								// replace only if dataURL is available:
+								if (dURL) return $1 + dURL.val + $3
+								else return '';
+							});
+							displayAll(svg);
+						};
+					});
+				};
+			};
+			if (pend < 1) {
+				// there are no embedded images, so display right away:
+				displayAll(svg);
+			};
+			return;
+
+			function displayAll(svg): void {
+				Array.from(svg.locs,
+					(loc) => {
+						loc.innerHTML = svg.img;
+						if (opts && opts.clickableElements) registerClickEls(loc)
+					}
+				);
+			}
+		}
+		// see http://tutorials.jenkov.com/svg/scripting.html
+		function registerClickEls(svg): void {
+			if (!CONFIG.clickableModelElements || CONFIG.clickElementClasses.length < 1) return;
+			//					console.debug('registerClickEls',svg);
+			addViewBoxIfMissing(svg);
+
+			// now collect all clickable elements:
+			svg.clkEls = [];
+			// For all elements in CONFIG.clickElementClasses:
+			// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
+			// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
+			//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
+			// 	Array.from() converts the HTMLCollection to a regular array, 
+			//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
+			CONFIG.clickElementClasses.forEach((cl:string) => {
+				svg.clkEls = svg.clkEls.concat(Array.from(svg.getElementsByClassName(cl)));
+			});
+			//					console.debug(svg.clkEls, typeof(svg.clkEls))
+			svg.clkEls.forEach((clkEl) => {
+				// set cursor for clickable elements:
+				clkEl.setAttribute("style", "cursor:pointer;");
+
+				// see https://www.quirksmode.org/js/events_mouse.html
+				// see https://www.quirksmode.org/dom/events/
+				clkEl.addEventListener("dblclick",
+					function () {
+						// ToDo: So far, this only works with ARCWAY generated SVGs.
+						let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
+						// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
+						eId = correspondingPlan(eId);
+						// delete the details to make sure that images of the click target are shown,
+						// otherwise there will be more than one image container with the same id:
+						$("#details").empty();
+						app.specs.showTree.set(true);
+						// jump to the click target:
+						app.specs.tree.selectNodeByRef(eId, true);  // true: 'similar'; id must be a substring of nd.ref
+						// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
+						document.getElementById(CONFIG.objectList).scrollTop = 0;
+					}
+				);
+
+				// Show the description of the element under the cursor to the left:
+				clkEl.addEventListener("mouseover",
+					function () {
+						//								console.debug(evt,this,$(this));
+						// ToDo: So far, this only works with ARCWAY generated SVGs.
+						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
+						let eId = this.className.baseVal.split(' ')[1],		// id is second class
+							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
+							ti = languageValueOf(clsPrp.title.value),
+							dsc = '';
+						clsPrp.descriptions.forEach((d) => {
+							// to avoid an endless recursive call, the property shall neither have dynLinks nor clickableElements
+							dsc += d.get({ unescapeHTMLTags: true, makeHTML: true })
+						});
+						if (stripHTML(stripCtrl(dsc))) {
+							// Remove the dynamic linking pattern from the text:
+							$("#details").html('<span style="font-size:120%">'
+								+ (CONFIG.addIconToInstance ? addIcon(ti, clsPrp['class'].icon) : ti)
+								+ '</span>\n'
+								+ dsc);
+							app.specs.showTree.set(false);
+						}
+					}
+				);
+				clkEl.addEventListener("mouseout",
+					function () {
+						//	evt.target.setAttribute("style", "cursor:default;"); 
+						$("#details").empty();
+						app.specs.showTree.set(true);
+					}
+				);
+			});
+			return svg;
+
+			function correspondingPlan(id: string): string {
+				// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
+				// This routine checks whether there is a plan with the same name to show that plan instead of the element.
+				if (CONFIG.selectCorrespondingDiagramFirst) {
+					// replace the id of a resource by the id of a diagram carrying the same title:
+					let cacheData = app.cache.selectedProject.data,
+						ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
+						rT: ResourceClass;
+					for (var i = cacheData.resources.length - 1; i > -1; i--) {
+						rT = itemById(cacheData.resourceClasses, cacheData.resources[i]['class']);
+						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
+						// else, it is a resource representing a diagram:
+						if (elementTitleOf(cacheData.resources[i], opts) == ti) {
+							// found: the diagram carries the same title 
+							if (app[CONFIG.objectList].resources.selected()
+								&& app[CONFIG.objectList].resources.selected().id == cacheData.resources[i].id)
+								// the searched plan is already selected, thus jump to the element: 
+								return id;
+							else
+								return cacheData.resources[i].id;	// the corresponding diagram's id
+						};
+					};
+				};
+				return id;	// no corresponding diagram found
+			}
+			// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+			// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
+			// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
+			// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
+			function addViewBoxIfMissing(svg): void {
+				let el;
+				for (var i = 0, I = svg.childNodes.length; i < I; i++) {
+					el = svg.childNodes[i];
+					//							console.debug('svg',svg,el,el.outerHTML);
+					// look for '<svg .. >' tag with its properties, often but not always the first child node:
+					if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
+						if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
+
+						// no viewbox property, so add it:
+						let w = el.getAttribute('width').replace(/px$/, ''),
+							h = el.getAttribute('height').replace(/px$/, '');
+						/*	// get rid of 'px':
+							// ToDo: perhaps this is a little too simple ...
+							if( w.endsWith('px') ) w = w.slice(0,-2);
+							if( h.endsWith('px') ) h = h.slice(0,-2); */
+						el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
+						return;
+					};
+				};
+			}
+		}
+	}
+	private showBpmn(opts: any): void {
+		// Read and render BPMN:
+		blob2text(this, (t: string, fTi: string) => {
+			bpmn2svg(t)
+				.then(
+					(result) => {
+						//							console.debug('SVG',result);
+						Array.from(document.getElementsByClassName(tagId(fTi)),
+							(el) => { el.innerHTML = result.svg }
+						);
+					},
+					(err) => {
+						console.error('BPMN-Viewer could not deliver SVG', err);
+					}
+				);
+		}, opts.timelag);
+	}
 }
 // Construct the specifications controller:
 moduleManager.construct({
@@ -601,7 +1204,7 @@ moduleManager.construct({
 
 		// Construct jqTree,
 		// holds the hierarchy tree (or outline):
-		self.tree = Tree({
+		self.tree = new Tree({
 			loc: '#hierarchy',
 			dragAndDrop: app.title!=i18n.LblReader,
 			eventHandlers: {
@@ -632,8 +1235,12 @@ moduleManager.construct({
 				'move':
 					(event):void =>{
 						// event: A node, potentially with children, has been moved by drag'n'drop.
-						
-							function moveNode( movedNd, target:string ):void {
+
+						interface ITargetNode {
+							parent?: string;
+							predecessor?: string;
+                        }
+						function moveNode(movedNd, target: ITargetNode ):void {
 //								console.debug( 'move: ', movedNd.name, target );
 								let chd = new Date().toISOString();
 								app.cache.selectedProject.createContent( 'node', toSpecIF(movedNd,target) )
@@ -649,15 +1256,15 @@ moduleManager.construct({
 								);
 								return;
 
-								function toSpecIF(mNd, tgt): INodeWithPosition {
+								function toSpecIF(mNd: jqTreeNode, tgt: ITargetNode): INodeWithPosition {
 									// transform from jqTree node to SpecIF node:
-									var nd = {
+									var nd: INodeWithPosition = {
 										//	id: genID('N-'),
 											id: mNd.id,
 											resource: mNd.ref,
 											changedAt: chd
 										},
-										ch = forAll( mNd.children, toSpecIF );
+										ch = mNd.children.map( toSpecIF );
 									if( ch.length>0 ) nd.nodes = ch;
 									// copy predecessor or parent:
 									if( tgt ) for( var p in tgt ) { nd[p] = tgt[p].id };
@@ -836,7 +1443,7 @@ moduleManager.construct({
 
  		let uP = opts.urlParams,
 			fNd = self.tree.firstNode(),
-			nd;
+			nd: jqTreeNode;
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
 		self.targetLanguage = opts.targetLanguage = browser.language;
@@ -982,7 +1589,7 @@ moduleManager.construct({
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(textField( txtLbl, '', 'area' )) );
+				form.append( $(textField( txtLbl, '', {typ:'area'} )) );
 				return form 
 			},
 			buttons: [{
@@ -1055,8 +1662,8 @@ moduleManager.construct({
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cacheData,				// the cached project data
-		selRes;				// the currently selected resource
+		cacheData: CSpecIF,		// the cached project data
+		selRes:Resource;		// the currently selected resource
 
 	// Permissions for resources:
 	self.resCreClasses = [];  // all resource classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -1159,7 +1766,7 @@ moduleManager.construct({
 
 			return app.cache.selectedProject.readContent( 'resource', oL )
 		}
-		function renderNextResources( rL ):void {
+		function renderNextResources(rL: Resource[]): void {
 			// Format the titles with numbering:
 			for( var i=rL.length-1; i>-1; i-- )
 				rL[i].order = nL[i].order;
@@ -1310,7 +1917,7 @@ moduleManager.construct({
 		else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
-			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
+			throw Error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
 		};
 	}; 
 	self.deleteNode = ():void =>{
@@ -1383,7 +1990,7 @@ moduleManager.construct({
 					stdError 
 				);
 		} */
-		function delNd( nd ):void {
+		function delNd(nd: jqTreeNode): void {
 			// Delete the hierarchy node and all it's children. 
 			console.info( "Deleting tree object '"+nd.name+"'." );
 
@@ -1418,7 +2025,7 @@ moduleManager.construct({
 		// Delete the selected resource, all tree nodes and their children.
 		// very dangerous ....
 	};  */
-	self.relatedItemClicked = ( rId ):void =>{
+	self.relatedItemClicked = ( rId:string ):void =>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
 		pData.tree.selectNodeByRef( rId );
@@ -1492,7 +2099,7 @@ moduleManager.construct({
 
 		app.cache.selectedProject.readStatementsOf({ id: nd.ref }, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
 		.then( 
-			(sL)=>{
+			(sL:Statement[])=>{
 				// sL is the list of statements involving the selected resource.
 
 				// First, initialize the list and add the selected resource:
@@ -1890,8 +2497,7 @@ moduleManager.construct({
 		else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
-			
-			console.error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.");
+			throw Error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.");
 		};
 	}; 
 	self.toggleModeStaDel = function():void {
@@ -1923,747 +2529,3 @@ moduleManager.construct({
 	};
 	return self;
 });
-
-
-var fileRef = function() {
-	"use strict";
-	var self:any = {};
-
-	self.toGUI = ( txt:string, opts?:any ):string =>{
-/*		Properly handle file references in XHTML-Text. 
-		- An image is to be displayed 
-		- a file is to be downloaded
-		- an external hyperlink is to be included
-*/
-		if( typeof(opts)!='object' ) opts = {};
-		if( opts.projId==undefined ) opts.projId = app.cache.selectedProject.data.id;
-	//	if( opts.rev==undefined ) opts.rev = 0;
-		if( opts.imgClass==undefined ) opts.imgClass = 'forImage'	// regular size
-		
-	/*		function addFilePath( u ) {
-				if( /^https?:\/\/|^mailto:/i.test( u ) ) {
-					// don't change an external link starting with 'http://', 'https://' or 'mailto:'
-//					console.debug('addFilePath no change',u);
-					return u;
-				};
-				// else, add relative path:
-//				console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
-				return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
-			}  */
-			function getType( str:string ):string {
-				let t = /(type="[^"]+")/.exec( str );
-				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
-				return '';
-			}
-			function getUrl( str:string ):string|undefined {
-				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
-				// return null, because an URL is expected in any case:
-				if( Array.isArray(l)&&l.length>0 ) return l[1]
-			//						.replace(/\\/g,'/'); // is now handled during import
-			//	return undefined
-			}
-		/*	function getPrp( pnm:string, str:string ):string|undefined {
-				// get the value of XHTML property 'pnm':
-				let re = new RegExp( pnm+'="([^"]+)"', '' ),
-					l = re.exec(str);
-				if( Array.isArray(l)&&l.length>0 ) return l[0];
-			//	return undefined
-			} */
-			function getPrpVal( pnm:string, str:string ):string|undefined {
-				// get the value of XHTML property 'pnm':
-				let re = new RegExp( pnm+'="([^"]+)"', '' ),
-					l = re.exec(str);
-				if( Array.isArray(l)&&l.length>0 ) return l[1];
-			//	return undefined
-			}
-			function makeStyle( w:string,h:string ):string {
-				// compose a style property, if there are such parameters,
-				// return empty string, otherwise:
-				return (h||w)? ' style="'+(h?'height:'+h+'; ':'')+(w?'width:'+w+'; ':'')+'"' : '';
-			}
-			function hasContent( f:object ):boolean {
-				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 );
-			}
-
-		// Prepare a file reference for viewing and editing:
-//		console.debug('toGUI 0: ', txt);
-		var repStrings = [];   // a temporary store for replacement strings
-			
-		// 1. transform two nested objects to link+object resp. link+image:
-		txt = txt.replace( RE.tagNestedObjects,   
-			// @ts-ignore - $3 is never read, but must be specified anyways
-			( $0, $1, $2, $3, $4 )=>{       // description is $4, $3 is not used
-				let u1 = getUrl( $1 ),  	// the primary file
-				//	t1 = getType( $1 ), 
-				//	w1 = getPrp("width", $1 ),
-				//	h1 = getPrp("height", $1 ),
-					u2 = getUrl( $2 ), 		// the preview image
-				//	t2 = getType( $2 ),
-					w2 = getPrpVal("width", $2 ),
-					h2 = getPrpVal("height", $2 ),
-					d = $4 || u1;		// If there is no description, use the name of the link object
-
-//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
-				if( !u1 ) console.warn('no file found in',$0);
-				if( !u2 ) console.warn('no image found in',$0);
-//				u1 = addFilePath(u1);
-//				u2 = addFilePath(u2);
-
-				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1),
-					f2 = itemByTitle(app.cache.selectedProject.data.files,u2);
-
-				if( hasContent(f1) ) {
-
-					if( hasContent(f2) ) {
-						// take f1 to download and f2 to display:
-
-//						console.debug('tagId',tagId(u2));
-						// first add the element to which the file to download will be added:
-						repStrings.push( '<div id="'+tagId(u1)+'"></div>' );
-						// now add the image as innerHTML:
-						self.renderDownloadLink( f1, 
-							'<div class="'+opts.imgClass+' '+tagId(u2)+'"'
-								+ makeStyle( w2, h2 )
-								+'></div>', 
-							opts 
-						);
-						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
-						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} ) );
-					} 
-					else {
-						// nothing to display, so ignore f2:
-						
-						// first add the element to which the attachment will be added:
-						repStrings.push( '<span class="'+tagId(u1)+'"></span>' );
-						// now add the download link with file as data-URL:
-						self.renderDownloadLink(f1,d,opts);
-					};
-					return 'aBra§kadabra'+(repStrings.length-1)+'§';
-					
-				}
-				else {
-					return '<div class="notice-danger" >File missing: '+d+'</div>'
-				};
-			}
-		);
-//		console.debug('fileRef.toGUI 1: ', txt);
-			
-		// 2. transform a single object to link+object resp. link+image:
-		txt = txt.replace( RE.tagSingleObject,   //  comprehensive tag or tag pair
-			// @ts-ignore - $2 is never read, but must be specified anyways
-			( $0, $1, $2, $3 )=>{
-//				var pairedImgExists = ( url )=>{
-//					// ToDo: check actually ...
-//					return true
-//				};
-
-				let u1 = getUrl( $1 ), 
-					t1 = getType( $1 ),
-					w1 = getPrpVal("width", $1 ),
-					h1 = getPrpVal("height", $1 );
-
-				let e = u1.fileExt();
-				if (!e) return $0     // no change, if no extension found
-
-				// $3 is the description between the tags <object></object>:
-				let d = $3 || u1,
-					hasImg = false;
-				e = e.toLowerCase();
-//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
-
-//				u1 = addFilePath(u1);
-				if( !u1 ) console.info('no image found');
-				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
-				// sometimes the application files (BPMN or other) have been replaced by images;
-				// this is for example the case for *.specif.html files:
-				if( !f1 && CONFIG.applExtensions.indexOf( e )>-1 ) {
-					for( var i=0,I=CONFIG.imgExtensions.length; !f1&&i<I; i++ ) {
-						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
-						f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
-					};
-				};
-					
-				if( CONFIG.imgExtensions.indexOf( e )>-1 || CONFIG.applExtensions.indexOf( e )>-1 ) {  
-					// it is an image, show it:
-					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
-					if( hasContent(f1) ) {
-						hasImg = true;
-						// first add the element to which the image will be added:
-					//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
-						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
-								+ makeStyle( w1, h1 )
-								+ '></div>';
-//						console.debug('img opts',f1,opts);
-						// now add the image as innerHTML:
-						self.renderImage( f1, opts );
-					}
-					else {
-						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
-					};
-				}
-				else if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
-					// it is an office file, show an icon plus filename:
-					if( hasContent(f1) ) {
-						hasImg = true;
-						// first add the element to which the attachment will be added:
-						d= '<div id="'+tagId(u1)+'" '+CONFIG.fileIconStyle+'></div>';
-						// now add the download link with file icon:
-					self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="[ '+e+' ]" />',opts);
-					}
-					else {
-						d = '<div class="notice-danger" >File missing: '+d+'</div>'
-					};
-				}
-				else {
-					switch( e ) { 
-						case 'ole': 
-							// It is an ole-file, so add a preview image;
-							// in case there is no preview image, the browser will display d holding the description
-							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
-							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
-							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
-							hasImg = true;
-						//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
-							d = '<img src="'+u1.fileName()+'.png" type="image/png" alt="'+d+'" />';
-							// ToDo: Offer a link for downloading the file
-							break;
-						default:
-							// last resort is to take the filename:
-							d = '<span>'+d+'</span>';
-							// ToDo: Offer a link for downloading the file
-					};
-				};
-					
-				// finally add the link and an enclosing div for the formatting:
-				// avoid that a pattern is processed twice.
-
-				// insert a placeholder and replace it with the prepared string at the end ...
-				if( hasImg )
-					repStrings.push( d )
-				else
-					repStrings.push( '<a href="'+u1+'"'+t1+' >'+d+'</a>' );
-				
-				return 'aBra§kadabra'+(repStrings.length-1)+'§';
-			}
-		);	
-//		console.debug('fileRef.toGUI 2: ', txt);
-				
-		// 3. process a single link:
-		txt = txt.replace( RE.tagA,  
-			( $0, $1, $2 )=>{ 
-				var u1 = getPrpVal( 'href', $1 ),
-					e = u1.fileExt();
-//				console.debug( $1, $2, u1, e );
-				if( !e ) return $0     // no change, if no extension found
-					
-			/*	if( /(<object|<img)/g.test( $2 ) ) 
-					return $0;		// no change, if an embedded object or image */
-					
-				if( CONFIG.officeExtensions.indexOf( e.toLowerCase() )<0 ) 
-					return $0;	// no change, if not an office file
-
-				// it is an office file, add an icon:
-				var t1 = getType( $1 ); 
-				if( !$2 ) {
-					var d = u1.split('/');  // the last element is a filename with extension
-					$2 = d[d.length-1]   // $2 is now the filename with extension
-				};
-//				u1 = addFilePath(u1);
-
-				// add an icon:
-				e = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />'
-					
-				// finally returned the enhanced link:
-				return ('<a href="'+u1+'" '+t1+' target="_blank" >'+e+'</a>')
-			}
-		);	
-//		console.debug('fileRef.toGUI 3: ', txt);
-
-		// Now, at the end, replace the placeholders with the respective strings,
-		txt = txt.replace( /aBra§kadabra([0-9]+)§/g,  
-			// @ts-ignore - $0 is never read, but must be specified anyways
-			( $0, $1 )=>{
-				return repStrings[$1]
-			});
-//		console.debug('fileRef.toGUI result: ', txt);
-		return txt
-	};
-	self.renderDownloadLink = (f: IFileWithContent, inner: string, opts?: any): void => {
-
-		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-		// increase the timelag between building the DOM and rendering the images, if necessary.
-		if( typeof(opts)!='object' ) opts = {};
-		if( typeof(opts.timelag)!='number' ) opts.timelag = CONFIG.imageRenderingTimelag;
-
-		// Add the download link of the attachment as innerHTML:
-		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
-		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
-		blob2dataURL( f, (r,fTi,fTy)=>{
-			// add link with icon to DOM using an a-tag with data-URI:
-			document.getElementById(tagId(fTi)).innerHTML =
-				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + inner + '</a>';
-		},opts.timelag);
-	};
-	self.renderImage = (f: IFileWithContent, opts?: any): void => {
-
-		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-		// increase the timelag between building the DOM and rendering the images, if necessary.
-		if( typeof(opts)!='object' ) opts = {};
-		if( typeof(opts.timelag)!='number' ) opts.timelag = CONFIG.imageRenderingTimelag;
-
-//		console.debug('renderImage',f,opts);
-        if (!f.blob && !f.dataURL) {
-			setTimeout( ()=>{
-				Array.from(document.getElementsByClassName(tagId(f.title)), 
-					(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
-				);
-			}, opts.timelag )
-            return;
-		};
-		// ToDo: in case of a server, the blob itself must be fetched first ...
-		
-		if( f.dataURL ) {
-			setTimeout( ()=>{
-				// add image to DOM using an image-tag with data-URI:
-				Array.from( document.getElementsByClassName(tagId(f.title)), 
-					(el)=>{ 
-						let ty = /data:([^;]+);/.exec(f.dataURL);
-						el.innerHTML = '<object data="' + f.dataURL 
-											+ '" type="' + (ty[1] || f.type) + '"'
-									/*		+ (opts.w ? ' ' + opts.w : '')
-											+ (opts.h ? ' ' + opts.h : '') */
-											+ ' >' + f.title + '</object>';
-					});
-			}, opts.timelag );
-			return;
-		};
-		// else: the data is a blob
-
-		switch( f.type ) {
-			case 'image/png':
-			case 'image/x-png':
-			case 'image/jpeg':
-			case 'image/jpg':
-			case 'image/gif':
-				// reference the original list item, which has the blob and other properties:
-				showRaster( f, opts );
-				break;
-			case 'image/svg+xml':
-				showSvg( f, opts );
-				break;
-			case 'application/bpmn+xml':
-				showBpmn( f, opts );
-				break;
-			default:
-				console.warn('Cannot show diagram '+f.title+' of unknown type: ',f.type);
-		};
-		return;
-					
-		function showRaster(f: IFileWithContent, opts: any):void {
-			/*	if( f.dataURL ) {
-					// this works:
-					setTimeout( ()=>{
-						// add image to DOM using an image-tag with data-URI:
-						Array.from( document.getElementsByClassName(tagId(f.title)), 
-							(el)=>{el.innerHTML = '<img src="'+f.dataURL+'" type="'+f.type+'" alt="'+f.title+'" />'}
-						);
-					}, opts.timelag )
-				} 
-				else { */
-					blob2dataURL( f, (r,fTi,fTy)=>{
-						// add image to DOM using an image-tag with data-URI:
-						Array.from( document.getElementsByClassName(tagId(fTi)), 
-							(el)=>{el.innerHTML = '<img src="'+r
-													+ '" type="' + fTy + '"'
-											/*		+ (opts.w ? ' ' + opts.w : '')
-													+ (opts.h ? ' ' + opts.h : '') */
-													+ ' alt="' + fTi + '" />';
-						/*	// set a grey background color for images with transparency:
-							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
-							}
-						);
-					}, opts.timelag );
-			//	};
-			}
-		function showSvg(f: IFileWithContent, opts: any):void {
-				// Show a SVG image.
-				
-//				console.debug('showSvg',f,opts);
-				// Read and render SVG:
-			/*	if( f.dataURL ) {
-					// this does not work, yet;
-					// here we need the SVG as XML-string, not as data-URL:
-					setTimeout( displaySVGeverywhere( .. ), opts.timelag )
-				}
-				else { */
-					blob2text( f, displaySVGeverywhere, opts.timelag )
-			//	};
-				return;
-
-			//	function displaySVGeverywhere(r,fTi,fTy) {
-				function displaySVGeverywhere(r, fTi) {
-					// Load pixel images embedded in SVG,
-					// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
-					// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-					// see: https://css-tricks.com/probably-dont-base64-svg/
-					// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
-					let svg = {
-							// the locations where the svg shall be added:
-							locs: document.getElementsByClassName(tagId(fTi)),
-							// the SVG image with or without embedded images:
-							img: r
-						},
-						dataURLs = [],	// temporary list of embedded images
-						// RegExp for embedded images,
-						// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
-						rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
-						ef: Item,
-						mL,
-						pend = 0;		// the count of embedded images waiting for transformation
-
-					// process all image references within the SVG image one by one:
-					// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-					while( (mL=rE.exec(r)) != null ) {
-						// skip all images already provided as data-URLs:
-						if( mL[2].startsWith('data:') ) continue;
-						// avoid transformation of redundant images:
-						if( indexById(dataURLs,mL[2])>-1 ) continue;
-						ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
-						if( ef && ef.blob ) {
-							pend++;
-//							console.debug('SVG embedded file',mL[2],ef,pend);
-							// transform file to data-URL and display, when done:
-							blob2dataURL( ef, (r,fTi)=>{
-								dataURLs.push({
-									id: fTi,
-									val: r
-								});
-//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
-								if( --pend<1 ) {
-									// all embedded images have been transformed,
-									// replace references by dataURLs and add complete image to DOM:
-									// @ts-ignore - $0 is never read, but must be specified anyways
-									svg.img = svg.img.replace( rE, ($0,$1,$2,$3)=>{
-																let dURL=itemBySimilarId(dataURLs,$2);
-																// replace only if dataURL is available:
-																if( dURL ) return $1+dURL.val+$3
-																else return '';
-															});
-									displayAll( svg );
-								};
-							});
-						};
-					};
-					if( pend<1 ) {
-						// there are no embedded images, so display right away:
-						displayAll( svg );
-					};
-					return;
-					
-					function displayAll( svg ):void {
-						Array.from( svg.locs, 
-							(loc)=>{
-								loc.innerHTML = svg.img;
-								if( opts && opts.clickableElements ) registerClickEls(loc)
-							}
-						);
-					}
-				}
-				// see http://tutorials.jenkov.com/svg/scripting.html
-				function registerClickEls(svg):void {
-					if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
-//					console.debug('registerClickEls',svg);
-					addViewBoxIfMissing(svg);
-					
-					// now collect all clickable elements:
-					svg.clkEls = [];
-					// For all elements in CONFIG.clickElementClasses:
-					// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
-					// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
-					//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
-					// 	Array.from() converts the HTMLCollection to a regular array, 
-					//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
-					CONFIG.clickElementClasses.forEach( (cl)=>{
-						svg.clkEls = svg.clkEls.concat(Array.from( svg.getElementsByClassName( cl )));
-					});
-//					console.debug(svg.clkEls, typeof(svg.clkEls))
-					svg.clkEls.forEach( (clkEl)=>{
-						// set cursor for clickable elements:
-						clkEl.setAttribute("style", "cursor:pointer;");
-
-						// see https://www.quirksmode.org/js/events_mouse.html
-						// see https://www.quirksmode.org/dom/events/
-						clkEl.addEventListener("dblclick", 
-							function () { 
-								// ToDo: So far, this only works with ARCWAY generated SVGs.
-								let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
-								// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
-								eId = correspondingPlan(eId);
-								// delete the details to make sure that images of the click target are shown,
-								// otherwise there will be more than one image container with the same id:
-								$("#details").empty();
-								app.specs.showTree.set(true);
-								// jump to the click target:
-								app.specs.tree.selectNodeByRef( eId, true );  // true: 'similar'; id must be a substring of nd.ref
-								// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
-								document.getElementById(CONFIG.objectList).scrollTop = 0;
-							}
-						);
-
-						// Show the description of the element under the cursor to the left:
-						clkEl.addEventListener("mouseover", 
-							function() { 
-//								console.debug(evt,this,$(this));
-								// ToDo: So far, this only works with ARCWAY generated SVGs.
-							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
-								let eId = this.className.baseVal.split(' ')[1],		// id is second class
-									clsPrp = new CResourceToShow( itemBySimilarId(app.cache.selectedProject.data.resources,eId) ),
-									ti = languageValueOf( clsPrp.title.value ),
-									dsc = '';
-								clsPrp.descriptions.forEach( (d)=>{
-									// to avoid an endless recursive call, the property shall neither have dynLinks nor clickableElements
-									dsc += d.get( {unescapeHTMLTags:true,makeHTML:true} )
-								});
-								if( stripHTML(stripCtrl(dsc)) ) {
-									// Remove the dynamic linking pattern from the text:
-									$("#details").html( '<span style="font-size:120%">' 
-														+ (CONFIG.addIconToInstance? addIcon(ti,clsPrp['class'].icon) : ti) 
-														+ '</span>\n'
-														+ dsc );
-									app.specs.showTree.set(false);
-								}
-							}
-						);
-						clkEl.addEventListener("mouseout", 
-							function() { 
-							//	evt.target.setAttribute("style", "cursor:default;"); 
-								$("#details").empty();
-								app.specs.showTree.set(true);
-							}
-						);
-					});
-					return svg;
-					
-					function correspondingPlan(id:string):string {
-						// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
-						// This routine checks whether there is a plan with the same name to show that plan instead of the element.
-						if( CONFIG.selectCorrespondingDiagramFirst ) {
-							// replace the id of a resource by the id of a diagram carrying the same title:
-							let cacheData = app.cache.selectedProject.data,
-								ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
-								rT: ResourceClass;
-							for( var i=cacheData.resources.length-1;i>-1;i-- ) {
-								rT = itemById(cacheData.resourceClasses,cacheData.resources[i]['class']);
-								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
-								// else, it is a resource representing a diagram:
-								if( elementTitleOf(cacheData.resources[i],opts)==ti ) {
-									// found: the diagram carries the same title 
-									if( app[CONFIG.objectList].resources.selected() 
-										&& app[CONFIG.objectList].resources.selected().id==cacheData.resources[i].id )
-										// the searched plan is already selected, thus jump to the element: 
-										return id;
-									else
-										return cacheData.resources[i].id;	// the corresponding diagram's id
-								};
-							};
-						};
-						return id;	// no corresponding diagram found
-					}
-					// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
-					// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
-					// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
-					// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
-					function addViewBoxIfMissing(svg):void {
-						let el;
-						for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
-							el = svg.childNodes[i];
-//							console.debug('svg',svg,el,el.outerHTML);
-							// look for '<svg .. >' tag with its properties, often but not always the first child node:
-							if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {
-								if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
-
-								// no viewbox property, so add it:
-								let w = el.getAttribute('width').replace(/px$/,''),
-									h = el.getAttribute('height').replace(/px$/,'');
-							/*	// get rid of 'px':
-								// ToDo: perhaps this is a little too simple ...
-								if( w.endsWith('px') ) w = w.slice(0,-2);
-								if( h.endsWith('px') ) h = h.slice(0,-2); */
-								el.setAttribute("viewBox", '0 0 '+w+' '+h );
-								return;
-							};
-						};
-					}
-				}
-			}
-			function showBpmn(f: IFileWithContent, opts:any): void {
-				// Read and render BPMN:
-				blob2text( f, (b,fTi)=>{
-					bpmn2svg(b)
-					.then(
-						(result)=>{
-//							console.debug('SVG',result);
-							Array.from( document.getElementsByClassName(tagId(fTi)), 
-								(el)=>{ el.innerHTML = result.svg }
-							);
-						},
-						(err)=>{
-							console.error('BPMN-Viewer could not deliver SVG', err);
-						}
-					);
-				}, opts.timelag);
-			}
-			function itemBySimilarId(L:Item[],id:string):Item {
-				// return the list element having an id similar to the specified one:
-				id = id.trim();
-				for( var i=L.length-1;i>-1;i-- )
-					// is id a substring of L[i].id?
-					// @ts-ignore - L[i] does exist, if execution gets here
-					if( L[i].id.indexOf(id)>-1 ) return L[i];   // return list item
-			//	return undefined
-			}
-			function itemBySimilarTitle(L:Item[],ti:string):Item {
-				// return the list element having a title similar to the specified one:
-				ti = ti.trim();
-				for( var i=L.length-1;i>-1;i-- )
-					// is ti a substring of L[i].title?
-					// @ts-ignore - L[i] does exist, if execution gets here
-					if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
-			//	return undefined
-			}
-	// end of self.renderImage()
-	};
-/*	// Prepare a file reference to be compatible with ReqIF spec and conventions:
-	self.fromGUI = function( txt ) {
-			function getType( str ) {
-				let t = /(type="[^"]+")/.exec( str );
-				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
-				return ''
-			}
-			function getStyle( str ) {
-				let s = /(style="[^"]+")/.exec( str );
-				if( Array.isArray(s)&&s.length>0 ) return (' '+s[1]);
-				return ''
-			}
-			function getUrl( str, prp ) {
-				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
-				// return null, because an URL is expected in any case:
-				if( Array.isArray(l)&&l.length>0 ) {
-					// ToDo: More greediness!?
-					let loc = /[^"]*\/projects\/[^"]*\/files\/([^"]+)/i.exec( l[1] );    // ...projects/.../files/..
-					// If matching, it is a local path, otherwise an external:
-					// ToDo: If the path is pointing to a specific revision of a file, the revision is ignored/removed.
-					if( Array.isArray(loc)&&loc.length>0 ) return loc[1];	// local link: take path following '.../files/'
-					return l[1];  											// external link: keep full path
-				};
-				return // undefined
-			}
-//		console.debug('fromGUI 0: ', JSON.stringify(txt));
-
-		// Remove the div which has been added for formatting:
-		// ToDo: This does not work in all cases. Observed with <a>..<object ...>text</object></a> used with an OLE object.
-		txt = txt.replace( /<div class="'+opts.imgClass+'">([\s\S]+?<\/a>)[\s]*<\/div>/g,  // note the 'lazy plus' !
-			function( $0, $1 ){ return $1 }
-		);	
-//		console.debug('fromGUI 1: ', JSON.stringify(txt));
-
-		// 1. In case of two nested objects, make the URLs relative to the project
-		//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
-		txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^>]*<\/object>/g, 
-			function( $0, $1, $2, $3, $4 ) { 
-				var u1 = getUrl( $1, 'data' ),  			// the primary information
-					t1 = getType( $1 ); 
-				var u2 = getUrl( $2, 'data' ), 
-					t2 = getType( $2 ), 
-					s2 = getStyle( $2 ); 
-
-				// If there is no description, use the name of the link object:
-				if( !$4 ) $4 = u1;   // $4 is now the description between object tags
-				
-				return '<object data="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' />'+$4+'</object>'
-			}
-		);	
-//		console.debug('fromGUI 2: ', JSON.stringify(txt));
-			
-		// 2. Transform link and image to nested XHTML object(s) or a single XHTML object:
-		//    (Img is not allowed in RIF/ReqIF and it is proposed by the ReqIF Implementor Forum to use nested objects)
-		txt = txt.replace( /<a([^>]+)>[^<]*<img([^>]+)(\/>|>[^<]*<\/img>)([^<]*)<\/a>/g,  
-			function( $0, $1, $2, $3, $4 ) { 
-				var u1 = getUrl( $1, 'href' );  			// the primary information
-				if( u1==null ) return '';					// suppress it, if incomplete
-				var t1 = getType( $1 ); 					
-
-				var u2 = getUrl( $2, 'src' ); 				// the image
-				if( u2==null ) return '';					// suppress it, if incomplete
-				var t2 = getType( $2 );						
-				var s2 = getStyle( $2 );
-
-				// If there is no description, use the name of the link object:
-				if( !$4 ) $4 = u1;   // $4 is now the filename with extension
-					
-				if( u1==u2 )   
-					// Create a single object, if objectClasses of link and image are equal:
-					return ('<object data="'+u2+'"'+t2+s2+' >'+$4+'</object>');
-						
-				if( /\.\/im[^-]+-icon\.png/i.test( u2 ) )  // self-supplied icons: "./im*-icon.png"
-					// Create a single object, if the image is a locally provided icon:
-					// It is assumed that the self-supplied icons are found in a folder starting with '/im' (for 'img' or 'image')
-					// ... and that the path does not contain any dash '-'.
-					return ('<object data="'+u1+'"'+t1+' >'+$4+'</object>');
-						
-				// If objectClasses of link and image are different, create a nested pair of objects to keep the preview.
-				return '<object data="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' >'+$4+'</object></object>'
-			}
-		);
-//		console.debug('fromGUI 3: ', JSON.stringify(txt));
-
-		// 3. Transform a link plus object (in case of svg) to nested XHTML object(s):
-		txt = txt.replace( /<a([^>]+)>[^<]*<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^<]*<\/a>/g,  
-			function( $0, $1, $2, $3, $4 ) { 
-				// parse the primary information:
-				var u1 = getUrl( $1, 'href' ); 				
-				if( u1==null ) return '';
-				var t1 = getType( $1 ); 					
-
-				// Parse the image information: 
-				var u2 = getUrl( $2, 'data' ); 				
-				if( u2==null ) return '';
-				var t2 = getType( $2 );
-				var s2 = getStyle( $2 );
-					
-				// If there is no description, use the name of the link object:
-				if( !$4 ) $4 = u2;   // $4 is now the filename with extension
-					
-				if( u1==u2 ) {
-					// If objectClasses of link and image are equal or the image is locally provided icon, create a single object.
-					// Any locally provided icon is removed; it will be added again when reading.
-					return ('<object data="'+u2+'"'+t2+s2+' >'+$4+'</object>')
-				} else {
-					// If objectClasses of link and image are different, create a nested pair of objects to keep the preview.
-					return '<object data="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' >'+$4+'</object></object>'
-				}
-			}
-		);
-//		console.debug('fromGUI 4: ', JSON.stringify(txt));
-
-		// 4. Transformation of <img> to <object> has been moved to SpecIF->ReqIF, because it is a restriction of ReqIF.
-
-		// 5. If there is just a link, make the URLs relative to the project:
-		txt = txt.replace( /<a([^>]+)(\/>|>([^>]+)<\/a>)/g,
-			function( $0, $1, $2, $3 ){
-				var u = getUrl( $1, 'href' );
-				if( u==null ) return '';
-
-				// If there is no description, use the name of the link object:
-				if( !$3 ) $3 = u;   
-
-				return ('<a href="'+u+'" >'+$3+'</a>');  
-			} 
-		);
-//		console.debug('fromGUI result:', JSON.stringify(txt));
-
-		return txt;
-	}; */
-	return self;
-}();	// end of fileRef()

@@ -104,7 +104,7 @@ moduleManager.construct({
 // https://forum.bpmn.io/t/saving-bpmn-and-svg-to-a-website-rather-than-download/210
 // https://github.com/bpmn-io/bpmn-js-callbacks-to-promises
 // https://www.pleus.net/blog/?p=2142
-function bpmn2svg(xml:string):Promise<string> {
+function bpmn2svg(xml:string):Promise<any> {
 	// transform the BPMN-XML and render the diagram,
 	return new Promise( (resolve,reject)=>{
 		// create viewer instance:
@@ -120,10 +120,9 @@ function bpmn2svg(xml:string):Promise<string> {
 				// zoom to fit full viewport:
 				canvas.zoom('fit-viewport')  */
 		
-				return bpmnViewer.saveSVG()
+				resolve( bpmnViewer.saveSVG() )
 			}
 		)
-		.then( resolve )
 		.catch( reject )
 		.finally(
 			()=>{

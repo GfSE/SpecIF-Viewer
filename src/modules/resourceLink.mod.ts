@@ -9,21 +9,32 @@
 // Construct the resource editor:
 moduleManager.construct({
 	name: CONFIG.resourceLink
-}, (self:IModule)=>{
+}, (self:IModule):IModule =>{
 	"use strict";
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData: SpecIF,			// the cached data
-		opts:any;					// the processing options
-	//	toEdit;					// the classified properties to edit
+		cData: CSpecIF,			// the cached data
+		selRes:Resource,		// the currently selected resource
+		opts:any;				// the processing options
 
-	self.eligibleSCL=[];		// all eligible statementClasses
+	self.eligibleSCL =[];		// all eligible statementClasses
 	self.selResStatements=[];	// all statements of the selected resource
 	self.allResources=[];		// all resources referenced in the tree
 
-	self.init = ():boolean =>{
+	function candidateMayBeObject(sC: StatementClass, res: Resource): boolean {
+		// no *bjectClasses means all resourceClasses are permissible as *bject:
+		return (!sC.subjectClasses || sC.subjectClasses.indexOf(selRes['class']) > -1)
+			&& (!sC.objectClasses || sC.objectClasses.indexOf(res['class']) > -1)
+	}
+	function candidateMayBeSubject(sC: StatementClass, res: Resource): boolean {
+		// no *bjectClasses means all resourceClasses are permissible as *bject:
+		return (!sC.objectClasses || sC.objectClasses.indexOf(selRes['class']) > -1)
+			&& (!sC.subjectClasses || sC.subjectClasses.indexOf(res['class']) > -1)
+	}
+
+	self.init = (): boolean => {
 //		console.debug('resourceEdit.init')
 		self.clear();
 		return true;
@@ -39,7 +50,6 @@ moduleManager.construct({
 		self.clear();
 		cData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
-	//	opts.selNodeId = self.parent.tree.selectedNode.id;
 		opts.lookupTitles = true;
 		opts.targetLanguage = browser.language;
 		opts.addIcon = true;
@@ -47,7 +57,7 @@ moduleManager.construct({
 		app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 		.then( 
 			(rL:Resource[])=>{
-				self.selRes = rL[0];
+				selRes = rL[0];
 				createStatement( opts )
 			},
 			stdError
@@ -79,7 +89,7 @@ moduleManager.construct({
 			);
 
 			// 2. collect all statements of the originally selected resource to exclude them from selection:
-			app.cache.selectedProject.readStatementsOf( {id: self.selRes.id} )
+			app.cache.selectedProject.readStatementsOf( {id: selRes.id} )
 			.then(
 				(list:Statement[])=>{
 					self.selResStatements = list;
@@ -139,8 +149,7 @@ moduleManager.construct({
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//		var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
 									+ radioField( i18n.LblStatementClass, staClasses, {handle:myFullName+'.filterClicked()'} )
-								//	+ textField( i18n.LblStringMatch,'','line' )
-									+ textField( i18n.TabFind,'','line',myFullName+'.filterClicked()' )
+									+ textField( i18n.TabFind,'',{typ:'line', handle:myFullName+'.filterClicked()'} )
 									+	'</div></div>'
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//				+ '</td><td style="padding-left:0.4em">'
@@ -212,7 +221,7 @@ moduleManager.construct({
 			(res:Resource,i:number)=>{
 				if( 
 					// no reflexive statements are allowed:
-					res.id!=self.selRes.id
+					res.id!=selRes.id
 					// res is not eligible, if it is already related with selRes by a statement of the same class:
 					&& indexBy( sL, 'subject', res.id )<0
 					&& indexBy( sL, 'object', res.id )<0
@@ -259,10 +268,10 @@ moduleManager.construct({
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
+		/*	btn.setAttribute("title", "'"+desperateTitleOf(selRes,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" ) */
-			btn.setAttribute("title", "'"+elementTitleOf(self.selRes,opts,cData) +"' "
+			btn.setAttribute("title", "'"+elementTitleOf(selRes,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
 		}
@@ -270,24 +279,6 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = true
 		}; 
-	/*	unfortunately the popup content keeps the first text and is not updated on selecting another candidate:
-		let btn = $("#btn-modal-saveResourceAsObject");
-		if( candidateMayBeObject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
-			console.debug( 'candidateMayBeSubject', self.selectedCandidate.resource );
-			btn.prop('disabled',false);
-			// show the statement to create in a popup:
-			btn.attr("data-toggle","popover");
-			btn.popover({
-				trigger:"hover",
-				placement:"top"
-				html: true,
-				content: "'"+desperateTitleOf(self.selRes,opts,cData) +"' "
-							+ '<i>'+titleOf(self.selectedStatementClass,opts) +"</i> '"
-							+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" 
-			})
-		} else {
-			btn.prop('disabled',true)
-		}; */
 
 		// (b) the selected candidate may be an subject:
 		btn = document.getElementById("btn-modal-saveResourceAsSubject");
@@ -298,10 +289,10 @@ moduleManager.construct({
 			btn.setAttribute("data-toggle","popover");
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
-										+ desperateTitleOf(self.selRes,opts,cData) +"'" ) */
+										+ desperateTitleOf(selRes,opts,cData) +"'" ) */
 			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
-										+ elementTitleOf(self.selRes,opts,cData) +"'" ) 
+										+ elementTitleOf(selRes,opts,cData) +"'" ) 
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
@@ -320,32 +311,22 @@ moduleManager.construct({
 				html: true,
 				content: "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
 							+ '<i>'+titleOf(self.selectedStatementClass,opts) +"</i> '"
-							+ desperateTitleOf(self.selRes,opts,cData) +"'"
+							+ desperateTitleOf(selRes,opts,cData) +"'"
 			})
 		} else {
 			btn.prop('disabled',true)
 		}  */
 	};
 	self.saveStatement = (dir):void =>{
-//		console.debug('saveStatement',self.selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
+//		console.debug('saveStatement',selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
 		return app.cache.selectedProject.createContent( 'statement', {
 									id:genID('S-'),
 									class: self.selectedStatementClass.id,
-									subject: ( dir.secondAs=='object'? self.selRes.id : self.selectedCandidate.resource.id ),
-									object: ( dir.secondAs=='object'? self.selectedCandidate.resource.id : self.selRes.id ),
+									subject: ( dir.secondAs=='object'? selRes.id : self.selectedCandidate.resource.id ),
+									object: ( dir.secondAs=='object'? self.selectedCandidate.resource.id : selRes.id ),
 									changedAt: new Date().toISOString()
 								}
 		)
 	};
-	function candidateMayBeObject( sC:StatementClass, res:Resource ):boolean {
-		// no *bjectClasses means all resourceClasses are permissible as *bject:
-		return ( !sC.subjectClasses || sC.subjectClasses.indexOf( self.selRes['class'] )>-1 )
-			&& ( !sC.objectClasses || sC.objectClasses.indexOf(res['class'])>-1 )
-	}
-	function candidateMayBeSubject(sC: StatementClass, res: Resource): boolean {
-		// no *bjectClasses means all resourceClasses are permissible as *bject:
-		return ( !sC.objectClasses || sC.objectClasses.indexOf( self.selRes['class'] )>-1 )
-			&& ( !sC.subjectClasses || sC.subjectClasses.indexOf(res['class'])>-1 )
-	}
 	return self
 })

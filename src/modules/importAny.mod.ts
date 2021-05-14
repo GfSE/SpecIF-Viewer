@@ -312,7 +312,7 @@ moduleManager.construct({
 		let rF = textField(i18n.LblFileName,'');
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textField(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
+			rF += textField(i18n.LblProjectName, self.projectName, { typ:'line', handle:myFullName + '.enableActions()' });
 
 		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );

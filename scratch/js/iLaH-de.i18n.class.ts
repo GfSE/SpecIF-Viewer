@@ -730,6 +730,6 @@ class LanguageTextsDe {
 	lookup( lb:string ):string { 
 		// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
 		// for use in regular text fields.
-		return this[jsIdOf(lb)] || lb;
+		return this[lb.jsIdOf()] || lb;
 	}
 };

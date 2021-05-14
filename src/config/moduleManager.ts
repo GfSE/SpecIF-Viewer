@@ -190,7 +190,8 @@ class Browser {
 
 var app:IApp,
 	browser:Browser,
-	i18n:any,
+	i18n: any,
+	message: any,
 	standardTypes:StandardTypes,
 	moduleManager:IModuleManager = function() {
 		"use strict";
@@ -240,7 +241,7 @@ var app:IApp,
 //			console.debug('init2',opts);
 			let modL = ['helper','helperTree','tree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
-			loadL( modL, { done: function () { window.app = window[appName](); window.app.init() } });
+			loadL( modL, { done: ()=>{ window.app = window[appName]() } });
 		}
 		function loadL(L: string[], opts?: any): void {
 			// load the modules in hierarchy h
@@ -329,8 +330,7 @@ var app:IApp,
 							if (ch.view) {
 								if (!ch.selectedBy) {
 									// only one of them is present:
-									console.error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
-									return
+									throw Error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
 								};
 								// else, both 'view' and 'selectedBy' are present:
 
@@ -358,8 +358,7 @@ var app:IApp,
 							if (ch.action) {
 								if (!ch.selectedBy) {
 									// only one of them is present:
-									console.error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
-									return
+									throw Error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
 								};
 								// Add a view selector element for the child (only button is implemented):
 								id = ch.selectedBy.substring(1);	// without '#'
@@ -371,7 +370,7 @@ var app:IApp,
 										);
 										break;
 									default:
-										console.error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
+										throw Error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
 								};
 							};
 						});
@@ -549,6 +548,7 @@ var app:IApp,
 											.then( (m)=>{ window.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
 											return true;  */
 				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@12/dist/markdown-it.min.js' )
+											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done( ()=>{ window.markdown = window.markdownit({html:true,xhtmlOut:true,breaks:true,linkify:false}) });
 											return true;
 
@@ -568,7 +568,9 @@ var app:IApp,
 				case "stdTypes":			getScript(loadPath + 'modules/stdTypes.js')
 											.done(() => { standardTypes = new StandardTypes(); });
 											return true;
-				case "helper": 				getScript( loadPath+'modules/helper.js' ); return true;
+				case "helper": 				getScript( loadPath+'modules/helper.js' )
+											.done(() => { message = new Message(); });
+											return true;
 				case "helperTree": 			getScript( loadPath+'modules/helperTree.js' ); return true;
 				case "xSpecif":				getScript( loadPath+'modules/xSpecif.js' ); return true;
 				case "cache": 				getScript( loadPath+'modules/cache.mod.js' ); return true;

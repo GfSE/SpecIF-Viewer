@@ -13,7 +13,7 @@ const vocabulary = {
 		specif: function( iT:string ):string {
 			// Target language: SpecIF
 			var oT = '';
-			switch( specifIdOf(iT).toLowerCase() ) {
+			switch ( iT.specifIdOf().toLowerCase() ) {
 				case "_berschrift":
 				case "title":
 				case "titel":
@@ -55,7 +55,7 @@ const vocabulary = {
 		reqif: function( iT:string ):string {
 			// Target language: ReqIF
 			var oT = '';
-			switch( specifIdOf(iT).toLowerCase() ) {
+			switch ( iT.specifIdOf().toLowerCase() ) {
 				case "dcterms_title": 				oT = "ReqIF.Name"; break;
 				case "dcterms_description": 		oT = "ReqIF.Text"; break;
 				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
@@ -79,7 +79,7 @@ const vocabulary = {
 		specif: function( iT:string ):string {
 			// Target language: SpecIF
 			var oT = '';
-			switch( specifIdOf(iT).toLowerCase() ) {
+			switch ( iT.specifIdOf().toLowerCase() ) {
 				case 'actors':
 				case 'actor':
 				case 'akteure':
@@ -125,7 +125,7 @@ const vocabulary = {
 		specif: function (iT: string): string {
 			// Target language: SpecIF
 			var oT = '';
-			switch (specifIdOf(iT).toLowerCase()) {
+			switch ( iT.specifIdOf().toLowerCase()) {
 				default: oT = iT
 			};
 			return oT
@@ -276,7 +276,7 @@ const specif = {
 		} catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
 			console.error(txt);
-			message.show(txt, { severity: 'danger' });
+			message.show({ status: 999, statusText: txt }, { severity: 'danger' });
 			return; // undefined 
 		};
 
@@ -863,18 +863,16 @@ const specif = {
 								if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) > -1)
 									// if it is e.g. a title, remove all formatting:
 									oE.value = stripHTML(languageValueOf(iE.value, opts)
-													.replace(/^\s+/, ""));
+												.replace(/^\s+/, ""));
 								else
 									// otherwise transform to HTML, if possible;
 									// especially for publication, for example using WORD format:
-									oE.value = makeHTML( 
-													languageValueOf( iE.value, opts )
-														.replace( /^\s+/, "" ), 
-													opts 
-												);
+									oE.value = languageValueOf( iE.value, opts )
+												.replace(/^\s+/, "")
+												.makeHTML(opts);
 								
 								// remove any leading whiteSpace:
-								oE.value = oE.value.replace( /^\s+/, "" );
+							//	oE.value = oE.value.replace( /^\s+/, "" );
 //								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
 								break;
 							};

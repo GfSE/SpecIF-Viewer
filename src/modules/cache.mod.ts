@@ -668,7 +668,7 @@ function Project(): IProject {
 			if( nL.indexOf( rL[i] )<0 ) return false;
 		return true;
 	}
-	function typeIsCompatible(ctg: string, refC, newC, mode?: string): xhrMessage {
+	function typeIsCompatible(ctg: string, refC:any, newC:any, mode?: string): xhrMessage {
 		//	if(refC.id!=newC.id) return {status:0};
 		// else: identifiers are equal:
 		//		console.debug( 'typeIsCompatible', refC, newC );
@@ -1195,7 +1195,7 @@ function Project(): IProject {
 					// Create a folder resource for every model-element type:
 					CONFIG.modelElementClasses.forEach( (mEl:string)=>{
 						fL.push({
-							id: "Folder-" + jsIdOf(mEl) + "-" + apx,
+							id: "Folder-" + mEl.jsIdOf() + "-" + apx,
 							class: "RC-Folder",
 							title: mEl+'s',  // just adding the 's' is an ugly quickfix ... that works for now.
 							properties: [],
@@ -1215,8 +1215,8 @@ function Project(): IProject {
 					// Create a hierarchy node for each folder per model-element type
 					CONFIG.modelElementClasses.forEach( function (mEl:string) {
 						gl.nodes.push({
-							id: "N-Folder-" + jsIdOf(mEl) + "-" + apx,
-							resource: "Folder-" + jsIdOf(mEl) + "-" + apx,
+							id: "N-Folder-" + mEl.jsIdOf() + "-" + apx,
+							resource: "Folder-" + mEl.jsIdOf() + "-" + apx,
 							nodes: [],
 							changedAt: tim
 						});
@@ -1490,7 +1490,7 @@ function Project(): IProject {
 					if (duplicateId(self.data, nR.id)) {
 						let newId = genID('R-');
 						// first assign new ID to all references:
-						substituteR(nD, { id: newId }, nR);
+						substituteR(nD, { id: newId } as Resource, nR);
 						// and then to the resource itself:
 						nR.id = newId
 					};
@@ -2255,8 +2255,8 @@ function Project(): IProject {
 		var pnl =  '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 						// add 'zero with space' (&#x200b;) to make the label = div-id unique:
-				+ 		textField( '&#x200b;'+i18n.LblProjectName, self.data.title, 'line', exportOptionsClicked )
-				+ 		textField( '&#x200b;'+i18n.LblFileName, self.data.title, 'line', exportOptionsClicked );
+				+ 		textField( '&#x200b;'+i18n.LblProjectName, self.data.title, {typ:'line', handle:exportOptionsClicked} )
+				+ 		textField( '&#x200b;'+i18n.LblFileName, self.data.title, {typ:'line', handle:exportOptionsClicked} );
 		switch( fmt ) {
 			case 'epub':
 			case 'oxml':
@@ -2355,8 +2355,6 @@ function Project(): IProject {
 		}
 	};
 	self.exportAs = (opts?:any):Promise<void> =>{
-		if( self.exporting ) return; // prohibit multiple entry
-
 		if( !opts ) opts = {};
 		if( !opts.format ) opts.format = 'specif';
 		// in certain cases, try to export files with the same name in PNG format, as well.
@@ -2367,23 +2365,30 @@ function Project(): IProject {
 
 		return new Promise( (resolve, reject)=>{
 
-			if( self.data.exp ) { // check permission
-				self.exporting = true; // set status to prohibit multiple entry
+			if (self.exporting) {
+				// prohibit multiple entry
+				reject({ status: 999, statusText: "Export in process, please wait a little while" });
+			}
+			else {
+				if (self.data.exp) { // check permission
+					self.exporting = true; // set status to prohibit multiple entry
 
-				switch( opts.format ) {
-				//	case 'rdf':
-					case 'turtle':
-					case 'reqif':
-					case 'html':
-					case 'specif':
-						storeAs( opts );
-						break;
-					case 'epub':
-					case 'oxml':
-						publish( opts );
+					switch (opts.format) {
+						//	case 'rdf':
+						case 'turtle':
+						case 'reqif':
+						case 'html':
+						case 'specif':
+							storeAs(opts);
+							break;
+						case 'epub':
+						case 'oxml':
+							publish(opts);
+					};
+				}
+				else {
+					reject({ status: 999, statusText: "No permission to export" });
 				};
-			} else {
-				reject({status: 999, statusText: "No permission to export"});
 			};
 			return;
 
@@ -2396,7 +2401,7 @@ function Project(): IProject {
 							case 'application/bpmn+xml':
 								pend++;
 								// Read and render BPMN as SVG:
-								blob2text(f, (b)=>{
+								blob2text(f, (b:string) => {
 									bpmn2svg(b)
 									.then(
 										(result)=>{
@@ -2919,8 +2924,7 @@ function languageValueOf( val, opts?:any ):string|undefined {
 	if( val==undefined ) return;
 	if( !Array.isArray(val) ) {
 		// neither a string nor an array is a programming error:
-		console.error('Invalid value: ',val);
-		return;
+		throw Error('Invalid value: ',val);
 	};
 
 	let lVs = val.filter( (v):boolean =>{

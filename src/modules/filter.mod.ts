@@ -93,7 +93,7 @@ moduleManager.construct({
 		pData = self.parent,
 		prj:any,
 		dta:SpecIF,
-		displayOptions = {};
+		displayOptions:any = {};
 		
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
@@ -221,7 +221,7 @@ moduleManager.construct({
 		//	showNotice(i18n.MsgNoReports);
 //			console.debug('filter nothing to do',tr);
 			app.busy.reset();
-			return true;  // nothing to do ....
+			return;  // nothing to do ...
 		};
 //		console.debug('filter something to do',tr);
 		doFilter();
@@ -236,7 +236,7 @@ moduleManager.construct({
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend=0, h, hCnt=0;
 		pData.tree.iterate(
-			(nd) => {
+			(nd: jqTreeNode) => {
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
@@ -262,7 +262,7 @@ moduleManager.construct({
 			}
 		);
 	}
-	function match(res:Resource):Resource {
+	function match(res: CResourceToShow): CResourceToShow {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
 		// Note that res is not a SpecIF resource, but an object prepared for viewing built using classifyProps()!
 		// - If an enumerated property is missing, the resource does NOT match.
@@ -300,10 +300,10 @@ moduleManager.construct({
 				
 				let // dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
-					dT:DataType, a:number;
-				if( matchStr( res.title, {type:'xs:string'} ) ) return true;
+					dT: DataType, a: number;
+				if (matchStr(res.title, { type: TypeEnum.XsString } as DataType )) return true;
 				for( a=res.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.descriptions[a], {type:'xhtml'} ) ) return true;
+					if( matchStr( res.descriptions[a], {type:TypeEnum.XHTML} as DataType ) ) return true;
 				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
 					dT = dataTypeOf( dta, res.other[a]['class'] );
@@ -312,7 +312,7 @@ moduleManager.construct({
 				};
 				return false;  // not found
 
-				function matchStr(prp, dT: DataType): boolean {
+				function matchStr(prp: CPropertyToShow, dT: DataType): boolean {
 //					console.debug('matchStr',prp,dT.type);
 					switch( dT.type ) {
 						case 'xs:enumeration':
@@ -328,6 +328,7 @@ moduleManager.construct({
 						default:
 							if( patt.test( languageValueOf(prp.value,displayOptions) )) return true;
 					};
+					return false;
 				}
 			}
 			function matchPropValue(f):boolean {   
@@ -427,26 +428,26 @@ moduleManager.construct({
 								lE = res.title;
 								lE.value = mark( languageValueOf(lE.value,displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
-								res.descriptions = res.descriptions.map( (prp)=>{
-									return 	{
+								res.descriptions = res.descriptions.map((prp: CPropertyToShow) => {
+									return	new CPropertyToShow({
 												title: prp.title,
 												class: prp['class'],
 												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
-											};
+											});
 								});
-								res.other = res.other.map( (prp)=>{
+								res.other = res.other.map((prp: CPropertyToShow) => {
 									let dT = dataTypeOf( dta, prp['class'] );
 									return (dT && dT.type=="xs:enumeration")?
-											{
+											new CPropertyToShow({
 												title: prp.title,
 												// default dataType is "xs:string"
 												value: mark( enumValueOf(dT,prp.value,displayOptions), rgxS )
-											}
-										:	{
+											})
+										:	new CPropertyToShow({
 												title: prp.title,
 												class: prp['class'],
 												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
-											};
+											});
 								});
 							};
 //							console.debug('hit resource',res);
@@ -722,12 +723,12 @@ moduleManager.construct({
 	}; */
 	function renderTextFilterSettings( flt ):void {
 		// render a single panel for text search settings:
-		return textField( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )
+		return textField(flt.title, flt.searchString, { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
 			+	renderEnumFilterSettings( flt );
 	}
 	function renderEnumFilterSettings( flt ):void {
 		// render a single panel for enum filter settings:
-		return checkboxField( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} );
+		return checkboxField(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
 	}
 /*	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };

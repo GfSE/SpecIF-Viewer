@@ -10,7 +10,7 @@ function LanguageTextsEn() {
 		// replace a variable '~A' with pA, if available:
 		if (lb) {
 			// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
-			let res = self[jsIdOf(lb)] || lb;
+			let res = self[lb.jsIdOf()] || lb;
 			if (pA) return res.replace(/~A/, pA);
 			return res;
 		};

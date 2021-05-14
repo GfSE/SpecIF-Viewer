@@ -6,19 +6,68 @@
 	We appreciate any correction, comment or contribution!
 */
 
+interface IDialogField {
+	label: string;
+	dataType: DataType;
+}
+class DialogForm {
+	// Construct an object performing the key-by-key input checking on an input form;
+	// on a key-stroke check *all* fields and return the overall result.
+
+	list: IDialogField[];  // the list of parameter-sets, each for checking a certain input field.
+	constructor() {
+		this.list = [];
+	}
+	addField(elementId: string, dT: DataType): void {
+		// Add a parameter-set for checking an input field;
+		// - 'elementId' is the id of the HTML input element
+		// - 'dataType' is the dataType of the property
+		this.list.push({ label: elementId, dataType: dT });
+	};
+	check(): boolean {
+		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
+		let val: string, ok: boolean, allOk = true;
+		this.list.forEach((cPs) => {
+			// cPs holds the parameters for checking a single property resp. input field.
+			// Get the input value:
+			val = textValue(cPs.label);
+			// Perform the test depending on the type:
+			// In case of a title or description it may happen, that there is no dataType (tutorial "Related Terms":
+			switch (cPs.dataType ? cPs.dataType.type : "xs:string") {
+				case TypeEnum.XsString:
+				case TypeEnum.XHTML:
+					ok = !cPs.dataType || cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
+					break;
+				case TypeEnum.XsDouble:
+					ok = val.length < 1 || RE.Real(cPs.dataType.fractionDigits).test(val) && parseFloat(val) >= cPs.dataType.minInclusive && parseFloat(val) <= cPs.dataType.maxInclusive;
+					break;
+				case TypeEnum.XsInteger:
+					ok = val.length < 1 || RE.Integer.test(val) && parseFloat(val) >= cPs.dataType.minInclusive && parseFloat(val) <= cPs.dataType.maxInclusive;
+					break;
+				case TypeEnum.XsDateTime:
+					ok = val.length < 1 || RE.IsoDate.test(val);
+				// no need to check enumeration
+			};
+			setTextState(cPs.label, ok ? 'has-success' : 'has-error');
+			allOk = allOk && ok;
+			//			console.debug( 'DialogForm.check: ', cPs, val );
+		});
+		return allOk;
+	}
+}
 // Construct the resource editor:
 moduleManager.construct({
 	name: CONFIG.resourceEdit
-}, (self:IModule)=>{
+}, (self:IModule):IModule =>{
 	"use strict";
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData,					// the cached data
-		opts,					// the processing options
-		toEdit;					// the classified properties to edit
-//	self.newRes;				// the resource to edit
+		cData:CSpecIF,			// the cached data
+		opts:any,				// the processing options
+		toEdit:CResourceToShow;	// the resource with classified properties to edit
+
 	self.newFiles = [];			// collect uploaded files before committing the change
 	self.dialogForm = new DialogForm();
 
@@ -29,7 +78,7 @@ moduleManager.construct({
 	};
 	self.clear = ():void =>{
 		self.newFiles.length = 0;
-		self.dialogForm.list.length = 0;
+		self.dialogForm = new DialogForm();
 	};
 
 	// The choice of modal dialog buttons:
@@ -202,27 +251,28 @@ moduleManager.construct({
 					ti = titleOf(p,opts);
 				// create an input field depending on the property's dataType;
 				// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
-				switch( dT? dT.type : "xs:string" ) {
+				switch (dT ? dT.type : "xs:string") {
 					case 'xs:string':
 					case 'xhtml':
-						if( propTitleOf(p,cData)==CONFIG.propClassDiagram ) {
+						if (propTitleOf(p, cData) == CONFIG.propClassDiagram) {
 							// it is a diagram reference (works only with XHTML-fields):
-							return renderDiagram(p,opts)
+							return renderDiagram(p, opts)
 						} else {
 							// add parameters to check this input field:
-							self.dialogForm.addField( ti, dT );
+							self.dialogForm.addField(ti, dT);
 							// it is a text;
 							// in case of xhtml, it may contain a diagram reference, 
 							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//							console.debug( 'editP', languageValueOf(p.value,opts) );
-							return textField( 
-								ti, 
-								languageValueOf(p.value,opts), 
+							//							console.debug( 'editP', languageValueOf(p.value,opts) );
+							return textField(
+								ti,
+								languageValueOf(p.value, opts),
 								// - open an input line, if it is a title or has a specified length lower than the threshold
 								// - open an input text-area, otherwise
-								( (dT&&dT.maxLength&&dT.maxLength<CONFIG.textThreshold+1)
-									|| CONFIG.titleProperties.indexOf(ti)>-1 )? 'line' : 'area', 
-								myFullName+'.check()' 
+								{
+									typ: ((dT && dT.maxLength && dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+									handle: myFullName + '.check()'
+								} 
 							);
 						};
 					case 'xs:enumeration':
@@ -244,7 +294,7 @@ moduleManager.construct({
 					case 'xs:double':
 						// add parameters to check this input field:
 						self.dialogForm.addField( ti, dT );
-						return textField( ti, p.value, 'line', myFullName+'.check()' );
+						return textField(ti, p.value, { typ: 'line', handle: myFullName + '.check()' } );
 				};
 				return
 
@@ -256,7 +306,7 @@ moduleManager.construct({
 						+			diagBtns(p)
 									// Add a container based on the propertyClass (which should be unique and since there is usually no property-id), 
 									// so that the user can update and delete the diagram later on:
-						+			'<div id="'+tagId(p['class'])+'">'+fileRef.toGUI( p.value, opts )+'</div>'
+						+			'<div id="'+tagId(p['class'])+'">'+p.renderFile( p.value, opts )+'</div>'
 						+		'</div>'
 						+ '</div>';
 					
@@ -351,10 +401,10 @@ moduleManager.construct({
 				// "<div><p class=\"inline-label\">Plan:</p><p><object type=\"image/svg+xml\" data=\"files_and_images\\50f2e49a0029b1a8016ea6a5f78ff594.svg\">Arbeitsumgebung</object></p></div>"
 				let fType = f.type||opts.mediaTypeOf(f.name),
 					fName = 'files_and_images/'+f.name,
-					newFile = { blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() };
+					newFile = new CFileWithContent({ blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() });
 				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
-				document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview '+tagId(fName)+'">'+fileRef.renderImage( newFile )+'</div>';
+			document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview ' + tagId(fName) + '">' + newFile.renderImage()+'</div>';
 		});
 		return;
 		
