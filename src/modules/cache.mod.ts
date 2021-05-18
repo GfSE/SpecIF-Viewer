@@ -545,16 +545,16 @@ function Project(): IProject {
 	function equalDT(r: DataType, n: DataType): boolean {
 		// return true, if reference and new dataType are equal:
 		if( r.type!=n.type ) return false;
-		switch( r.type ) {
-			case 'xs:double':
+		switch (r.type) {
+			case TypeEnum.XsDouble:
 				if( r.fractionDigits!=n.fractionDigits ) return false;
 				// no break
-			case 'xs:integer':
-				return r.minInclusive==n.minInclusive && r.maxInclusive==n.maxInclusive;
-			case 'xs:string':
-			case 'xhtml':
-				return r.maxLength==n.maxLength;
-			case 'xs:enumeration':
+			case TypeEnum.XsInteger:
+				return r.minInclusive == n.minInclusive && r.maxInclusive == n.maxInclusive;
+			case TypeEnum.XsString:
+			case TypeEnum.XHTML:
+				return r.maxLength == n.maxLength;
+			case TypeEnum.XsEnumeration:
 				// Perhaps we must also look at the title ..
 				// @ts-ignore - values is optional for a dataType, but not for an enumerated dataType
 				if( r.values.length!=n.values.length ) return false;
@@ -677,30 +677,30 @@ function Project(): IProject {
 				// A dataType is incompatible, if an existing one has the same id and a smaller value range.
 				// A dataType is compatible, if an existing one has the same id and an equal or larger value range.
 				switch (refC.type) {
-					case 'xs:boolean':
-					case 'xs:dateTime':
+					case TypeEnum.XsBoolean:
+					case TypeEnum.XsDateTime:
 						return { status: 0 };
-					case 'xhtml':
-					case 'xs:string':
+					case TypeEnum.XHTML:
+					case TypeEnum.XsString:
 						//						console.debug( refC.maxLength>newC.maxLength-1 );
 						if (refC.maxLength == undefined)
 							return { status: 0 };
 						if (newC.maxLength == undefined || refC.maxLength < newC.maxLength)
 							return { status: 951, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" };
 						return { status: 0 };
-					case 'xs:double':
+					case TypeEnum.XsDouble:
 						// to be compatible, the new 'fractionDigits' must be lower or equal:
 						if (refC.fractionDigits < newC.fractionDigits)
 							return { status: 952, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" };
-					// else: go on ...
-					case 'xs:integer':
+						// else: go on ...
+					case TypeEnum.XsInteger:
 						// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 						//						console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
 						if (refC.maxInclusive < newC.maxInclusive || refC.minInclusive > newC.minInclusive)
 							return { status: 953, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" }
 						else
 							return { status: 0 };
-					case 'xs:enumeration':
+					case TypeEnum.XsEnumeration:
 						// to be compatible, every value of the new 'enumeration' must be present in the present one:
 						// ToDo: Add a new enum value to an existing enum dataType.
 						var idx: number;
@@ -2852,12 +2852,12 @@ function dataTypeOf(prj: SpecIF, pCid:string ):DataType {
 		//	   get dataType
 	// else:
 	// may happen, if a resource does not have any properties and it's title or description is being used:
-	return {type: 'xs:string'}; // by default
+	return { type: TypeEnum.XsString}; // by default
 }
 function enumValueOf(dT: DataType, val: string, opts?: any): string {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
-	if( dT.type!='xs:enumeration' || !val ) return val;
+	if (dT.type != TypeEnum.XsEnumeration || !val) return val;
 	let ct = '',
 		eV,
 		vL = val.split(',');  // in case of a multi-valued ENUMERATION, val may carry comma-separated value-IDs

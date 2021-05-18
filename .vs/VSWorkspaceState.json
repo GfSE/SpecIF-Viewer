@@ -10,6 +10,6 @@
     "\\src\\vendor\\assets",
     "\\src\\vendor\\assets\\javascripts"
   ],
-  "SelectedNode": "\\src\\config\\moduleManager.ts",
+  "SelectedNode": "\\src\\modules\\filter.mod.ts",
   "PreviewInSolutionExplorer": false
 }

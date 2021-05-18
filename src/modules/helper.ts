@@ -253,7 +253,8 @@ function stdError(xhr: xhrMessage, cb?:Function): void {
 	"use strict";
 //	console.debug('stdError',xhr);
 	// clone, as xhr.responseText ist read-only:
-//	let xhrCl = new xhrMessage ( xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : ''	);	
+	let xhrCl = new xhrMessage(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : '');
+	
 	switch( xhr.status ) {
 		case 0:
 		case 200:
@@ -263,27 +264,35 @@ function stdError(xhr: xhrMessage, cb?:Function): void {
 			app.me.logout();
 			break;
 		case 402:  // payment required - insufficient license
-			xhr.responseText = i18n.Err402InsufficientLicense;
-			message.show( xhr );
+			// avoid TypeError: setting getter-only property "responseText" 
+			// ('Object.assign({},..) does not work properly for some reason)
+			xhrCl.responseType = 'text';
+			xhrCl.responseText = i18n.Err402InsufficientLicense;
+			message.show(xhrCl);
 			break;
 		case 403:  // forbidden
-			xhr.responseText = i18n.Err403Forbidden;
-			message.show( xhr );
+			// avoid TypeError: setting getter-only property "responseText"
+			xhrCl.responseType = 'text';
+			xhrCl.responseText = i18n.Err403Forbidden;
+			message.show(xhrCl);
 			break;
 		case 404:  // not found
-			xhr.responseText = i18n.Err404NotFound;
-			message.show( xhr );
+			// avoid TypeError: setting getter-only property "responseText"
+			xhrCl.responseType = 'text';
+			xhrCl.responseText = i18n.Err404NotFound;
+			message.show(xhrCl);
 			break;
-		case 500:
-			xhr.statusText = i18n.ErrInvalidData;
-			xhr.responseText = '';
-			message.show( xhr, {severity:'danger'} );
-			break;
-		case 995:  // server request timeout
-			message.show( xhr );
+	/*	case 500:
+			// avoid TypeError: setting getter-only property "responseText"
+			message.show( Object.assign({}, xhr, { statusText = i18n.ErrInvalidData, responseText: '' }), {severity:'danger'});
+		//	x.statusText = i18n.ErrInvalidData;
+		//	x.responseText = '';
+		//	message.show( x, {severity:'danger'} );
 			break;
 		case 996:  // server request queue flushed
-			break;
+			break;  
+		case 995:  // server request timeout  
+			// no break  */
 		default:
 			message.show( xhr );
 	};
@@ -327,7 +336,11 @@ function stdError(xhr: xhrMessage, cb?:Function): void {
 			case 'object': 
 				if( msg.status ) {
 					// msg is an jqXHR object:
-					msg = (msg.statusText||i18n.Error) + " (" + msg.status + (msg.responseType=='text'?"): "+msg.responseText : ")");
+					msg = (msg.statusText || i18n.Error)
+						+ " (" + msg.status
+						+ ((msg.responseType == 'text' || typeof (msg.responseText) == 'string') && msg.responseText.length>0 ? 
+							"): " + msg.responseText : ")");
+
 					if( !opts.severity ) opts.severity = msg.status<202? 'success' : 'danger';
 					break;
 				};
@@ -371,7 +384,9 @@ function doResize():void {
 			|| document.documentElement.clientHeight
 			|| document.body.clientHeight,
 
+			// @ts-ignore . in this case it is defined
 		hH = $('#pageHeader').outerHeight(true)
+			// @ts-ignore . in this case it is defined
 			+ $('.nav-tabs').outerHeight(true),
 		pH = wH-hH;
 //	console.debug( 'doResize', hH, pH, vP );

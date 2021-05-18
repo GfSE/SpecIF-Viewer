@@ -49,8 +49,8 @@ class CPropertyToShow implements Property {
 			ct: string;
 		//	console.debug('*',this,dT);
 		switch (dT.type) {
-			case 'xs:string':
-			case 'xhtml':
+			case TypeEnum.XsString:
+			case TypeEnum.XHTML:
 				// remove any leading whiteSpace:
 				ct = languageValueOf(this.value, opts).replace(/^\s+/, "");
 				if (opts.lookupValues)
@@ -63,10 +63,10 @@ class CPropertyToShow implements Property {
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
 				break;
-			case 'xs:dateTime':
+			case TypeEnum.XsDateTime:
 				ct = localDateTime(this.value);
 				break;
-			case 'xs:enumeration':
+			case TypeEnum.XsEnumeration:
 				// Usually 'value' has a comma-separated list of value-IDs,
 				// but the filter module delivers potentially marked titles in content.
 
@@ -2234,9 +2234,9 @@ moduleManager.construct({
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cacheData, p['class'] ).type ) {
-											case 'xs:string':
-											case 'xhtml':	
+										switch (dataTypeOf(cacheData, p['class']).type) {
+											case TypeEnum.XsString:
+											case TypeEnum.XHTML:	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
 												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
@@ -2255,8 +2255,8 @@ moduleManager.construct({
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cacheData, p['class'] ).type ) {
-											case 'xs:string':
-											case 'xhtml':	
+											case TypeEnum.XsString:
+											case TypeEnum.XHTML:	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
 												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {

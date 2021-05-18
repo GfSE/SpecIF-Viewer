@@ -63,7 +63,7 @@
 			category: 'propertyValue',
 			primary: false,
 			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type OT-Req
-			propClass: 'PC-Req-Status,
+			propClass: 'PC-Req-Status',
 			dataType: 'DT-Status',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
@@ -83,9 +83,21 @@
 			]
 		}];
 */		
+interface IFilter {
+	title: string,
+	category: string,  // 'textSearch', 'resourceClass' or enumerated 'propertyValue'
+	primary: boolean,
+	scope: string,     
+	propClass: string,
+	dataType: string,
+	baseType: string,
+	searchString?: string;
+	options?: IBox[]
+}
+
 moduleManager.construct({
 	name: CONFIG.objectFilter
-}, (self:IModule)=>{
+}, (self: IModule): IModule =>{
 	"use strict";
 
 	let myName = self.loadAs,
@@ -129,7 +141,7 @@ moduleManager.construct({
 		// Standard module interface methods:
 		self.init = (): boolean =>{
 //		console.debug( 'filters.init' );
-		self.filterList = []
+		self.filterList = [];
 		self.secondaryFilters = undefined;
 
 		// The left panel on this page (only for this view):
@@ -201,15 +213,15 @@ moduleManager.construct({
 
 		// Show the panels with filter settings to the left:
 		let fps = '';
-		self.filterList.forEach( (f)=>{
+		self.filterList.forEach((f: IFilter)=>{
 			fps += '<div class="panel panel-default panel-filter" >'
 				+	'<h4>'+f.title+'</h4>';
-			switch( f.baseType ) {
-				case 'xs:string': 
-						fps += renderTextFilterSettings( f );
-						break;
-				case 'xs:enumeration': 
-						fps += renderEnumFilterSettings( f );
+			switch (f.baseType) {
+				case TypeEnum.XsString: 
+					fps += renderTextFilterSettings( f );
+					break;
+				case TypeEnum.XsEnumeration: 
+					fps += renderEnumFilterSettings( f );
 			};
 			fps += '</div>';
 		});
@@ -269,18 +281,22 @@ moduleManager.construct({
 		// - In case all filers match, the resource is returned with marked values (if appropriate). 
 		// - All resources pass, if there is no filter.
 
-			function matchResClass(f):boolean {   
+			function matchResClass(f:IFilter): boolean {   
 				// primary filter applying to all resources:
+				// @ts-ignore . in this case it is defined
 				for( var j=f.options.length-1; j>-1; j--){ 
 //					console.debug('matchResClass',f.options[j],res);
+					// @ts-ignore . in this case it is defined
 					if( f.options[j].checked && f.options[j].id==res['class'].id ) return true
 				};
 				return false;
 			}
-			function matchSearchString(f):boolean {   // primary filter applying to all resources (unless it has no property with strings or text):
-				if( f.searchString.length==0 ) return true;   // save the time, the regex below would finish just alike .... 
+			function matchSearchString(f: IFilter):boolean {   // primary filter applying to all resources (unless it has no property with strings or text):
+				// @ts-ignore . in this case it is defined
+				if( f.searchString.length==0 ) return true;   // save the time, the regex below would finish just alike ....
 
 				// ToDo: Parse the search string, separate terms and run the RegEX for each ....
+				// @ts-ignore . in this case it is defined
 				let str = f.searchString.escapeRE();
 				
 /*				// ToDo: escape other special characters in f.searchString:
@@ -315,14 +331,14 @@ moduleManager.construct({
 				function matchStr(prp: CPropertyToShow, dT: DataType): boolean {
 //					console.debug('matchStr',prp,dT.type);
 					switch( dT.type ) {
-						case 'xs:enumeration':
+						case TypeEnum.XsEnumeration:
 							// only if enumerated values are included in the search:
 							if( !isChecked( f.options, 'excludeEnums' )) {
 								if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true;
 							};
 							break;
-						case 'xhtml':
-						case 'xs:string':
+						case TypeEnum.XHTML:
+						case TypeEnum.XsString:
 							if (patt.test( stripHTML(languageValueOf(prp.value,displayOptions)) )) return true; 
 							break;
 						default:
@@ -331,7 +347,7 @@ moduleManager.construct({
 					return false;
 				}
 			}
-			function matchPropValue(f):boolean {   
+			function matchPropValue(f:IFilter):boolean {   
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
@@ -343,10 +359,11 @@ moduleManager.construct({
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
 				// 
 				switch ( f.baseType ) {
-					case 'xs:enumeration':
+					case TypeEnum.XsEnumeration:
 						// Assuming that there is max. one property per resource with the class specified by the filter,
 						// and also assuming that any property with enumerated value will only be found in the 'other' list:
-						let oa = itemBy( res.other, 'class', f.propClass ), // select the concerned property by class
+						let oa = itemBy( res.other as Item[], 'class', f.propClass ), // select the concerned property by class
+							// @ts-ignore . in this case it is defined
 							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id==CONFIG.notAssigned;
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies CONFIG.notAssigned:
@@ -357,7 +374,9 @@ moduleManager.construct({
 						let ct = oa.value.trim(),
 							cL, z, j;
 						// works with single-valued and multiple-valued ENUMERATIONs:
-						for( j=f.options.length-1; j>-1; j--) { 
+						// @ts-ignore . in this case it is defined
+						for( j=f.options.length-1; j>-1; j--) {
+							// @ts-ignore . in this case it is defined
 							if( !f.options[j].checked ) continue;
 							// try to match for every checked option (logical OR):
 							if( ct.length>0 ) {
@@ -365,11 +384,14 @@ moduleManager.construct({
 								// - if any selected id in the options list is contained in the property values list:
 								for( z=cL.length-1; z>-1; z-- ) { 
 //										console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
+									// @ts-ignore . in this case it is defined
 									if( f.options[j].id==cL[z].trim() ) return true;
 								};
 							} else {
 								// the resource property has no value:
+								// @ts-ignore . in this case it is defined
 								if( f.options[j].id==CONFIG.notAssigned ) return true;
+								// @ts-ignore . in this case it is defined
 								if( f.options[j].id.length<1 ) return true;
 							};
 						};
@@ -379,7 +401,7 @@ moduleManager.construct({
 				// no match has been found:
 				return false;
 			}
-			function matchAndMark( f ) {
+			function matchAndMark( f:IFilter ) {
 //				console.debug( 'matchAndMark', f, res.title );
 				switch( f.category ) {
 					case 'resourceClass': 
@@ -421,7 +443,9 @@ moduleManager.construct({
 							// ToDo: correct error: with option 'wholeWord', all findings are marked no matter it is a whole word or not. 
 							//   (The hitlist is correct, but also matches within a word are marked).
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
+							// @ts-ignore . in this case it is defined
 							if( f.searchString.length>2 ) {  // don't mark very short substrings
+								// @ts-ignore . in this case it is defined
 								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
 								    lE;
 								
@@ -436,8 +460,8 @@ moduleManager.construct({
 											});
 								});
 								res.other = res.other.map((prp: CPropertyToShow) => {
-									let dT = dataTypeOf( dta, prp['class'] );
-									return (dT && dT.type=="xs:enumeration")?
+									let dT = dataTypeOf(dta, prp['class']);
+									return (dT && dT.type == TypeEnum.XsEnumeration) ?
 											new CPropertyToShow({
 												title: prp.title,
 												// default dataType is "xs:string"
@@ -481,7 +505,7 @@ moduleManager.construct({
 					return markedText
 				}
 			}
-			function isChecked( opts, id:string ):boolean {
+			function isChecked( opts:any, id:string ):boolean {
 				let opt = itemById( opts, id );
 				return( opt && opt.checked )
 			}
@@ -501,24 +525,27 @@ moduleManager.construct({
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):
 		// All top level filters must allow results plus all secondary filters per selected resourceClass
 		if( !self.filterList.length ) return false;   // all resources pass, if there is no filter.
-		let rCL = [];  // all resource classes included in the search
+		let rCL:string[] = [];  // all resource classes included in the search
 
-			function checkResourceClass(f):boolean {   // project scope applies to all resources:
+			function checkResourceClass(f:IFilter):boolean {   // project scope applies to all resources:
 				// top-level filter, at least one option must be checked:
 				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
-				f.options.forEach( (o)=>{ 
+				// @ts-ignore . in this case it is defined
+				f.options.forEach( (o)=>{
 					if( o.checked ) rCL.push(o.id);
 				}); 
 				return !rCL.length;   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
-			function checkPropertyValue(f):boolean {   // 
+			function checkPropertyValue(f:IFilter):boolean {   // 
 				// 'f' is 'not applicable', if the scope of the specified filter 'f' is not contained in rCL:
 //				console.debug( f.scope, simpleClone(rCL), rCL.indexOf(f.scope) );
 				if( f.scope && rCL.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
 
-				switch( f.baseType ) {
-					case 'xs:enumeration':
-						for( var j=f.options.length-1; j>-1; j--){ 
+				switch (f.baseType) {
+					case TypeEnum.XsEnumeration:
+						// @ts-ignore . in this case it is defined
+						for( var j=f.options.length-1; j>-1; j--){
+							// @ts-ignore . in this case it is defined
 							if( f.options[j].checked ) return false  // at least one checked -> not clogged
 						};
 					//	break;
@@ -545,7 +572,7 @@ moduleManager.construct({
 		// def is like {category: 'enumValue', rCid: 'resourceClass.title', pCid: 'propertyClass.title', values: ['title1','title2']}
 //		console.debug( 'addEnumValueFilters', def );
 
-			function allEnumValues(pC: PropertyClass, vL) {
+			function allEnumValues(pC: PropertyClass, vL):IBox[] {
 				var boxes = [],
 					dT = itemById(dta.dataTypes, pC.dataType);
 				// Look up the baseType and include all possible enumerated values:
@@ -588,7 +615,7 @@ moduleManager.construct({
 					scope: rC.id, 
 					propClass: pC.id,
 					dataType: pC.dataType,
-					baseType: 'xs:enumeration',
+					baseType: TypeEnum.XsEnumeration,
 					options: allEnumValues( pC, vals )
 				};
 //				console.debug( 'eVF', eVF );
@@ -602,14 +629,14 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC = itemById( dta.resourceClasses, def.rCid ),
-				pC;
+			var rC: ResourceClass = itemById(dta.resourceClasses, def.rCid),
+				pC: PropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pcid)=>{
 				pC = itemById( dta.propertyClasses, pcid );
 //				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration')) {
+					|| (!def.pCid && itemById( dta.dataTypes, pC.dataType ).type==TypeEnum.XsEnumeration)) {
 					addEnumFilter( rC, pC, def.options )
 				};
 			});
@@ -629,7 +656,7 @@ moduleManager.construct({
 					category: 'textSearch',
 					primary: true,
 					scope: dta.id,
-					baseType: 'xs:string',
+					baseType: TypeEnum.XsString,
 			//		baseType: ['xs:string','xhtml'],
 					searchString: pre&&pre.searchString? pre.searchString : '',
 					options: [
@@ -662,7 +689,7 @@ moduleManager.construct({
 						category: 'resourceClass',
 						primary: true,
 						scope: dta.id,
-						baseType: 'xs:enumeration',
+						baseType: TypeEnum.XsEnumeration,
 						options: [] 
 					};
 				dta.resourceClasses.forEach( ( rC )=>{
@@ -721,12 +748,12 @@ moduleManager.construct({
 		};
 		return false
 	}; */
-	function renderTextFilterSettings( flt ):void {
+	function renderTextFilterSettings( flt:IFilter ):string {
 		// render a single panel for text search settings:
 		return textField(flt.title, flt.searchString, { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
 			+	renderEnumFilterSettings( flt );
 	}
-	function renderEnumFilterSettings( flt ):void {
+	function renderEnumFilterSettings( flt:IFilter ):string {
 		// render a single panel for enum filter settings:
 		return checkboxField(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
 	}

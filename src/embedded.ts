@@ -147,5 +147,6 @@ function embeddedSpecif() {
 		// hide the app and show the login dialog:
 		// ToDo
 	};
+	self.init();
 	return self;
 }
