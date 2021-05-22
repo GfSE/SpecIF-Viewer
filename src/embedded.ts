@@ -1,5 +1,5 @@
 
-function embeddedSpecif() {
+function embeddedSpecif():IApp {
 	"use strict";
 
 	// construct main app:
@@ -9,6 +9,7 @@ function embeddedSpecif() {
 
 		// must set it here, because the language files must be read first:
 		document.title = self.title = i18n.LblReader;
+		self.embedded = true;
 		// Add a global spinner with state control;
 		// all actions are deactivated as long as the app is busy.
 		// - 'pageActions' are at the top of the page and can be initiated independently of the app's state

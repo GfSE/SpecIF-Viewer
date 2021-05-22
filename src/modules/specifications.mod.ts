@@ -299,13 +299,13 @@ class CPropertyToShow implements Property {
 					//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
 					if (f1.hasContent()) {
 						hasImg = true;
-						// first add the element to which the image will be added:
+						// Create the DOM element to which the image will be added:
 						//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
 						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
 							+ makeStyle(w1, h1)
 							+ '></div>';
-						//						console.debug('img opts',f1,opts);
-						// now add the image as innerHTML:
+//						console.debug('img opts',f1,opts);
+						// Add the image as innerHTML:
 						f1.renderImage(opts);
 					}
 					else {
@@ -316,10 +316,17 @@ class CPropertyToShow implements Property {
 					// it is an office file, show an icon plus filename:
 					if (f1.hasContent()) {
 						hasImg = true;
-						// first add the element to which the attachment will be added:
+
+						// Add the download link:
+						if (app.embedded)
+							// In case of *.specif.html the icons are not available:
+							f1.renderDownloadLink(d, opts);
+						else
+							// download link with icon indicating the file-type:
+							f1.renderDownloadLink('<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" alt="[ ' + e + ' ]" />', opts);
+
+						// Create the DOM element to which the attachment will be added:
 						d = '<div id="' + tagId(u1) + '" ' + CONFIG.fileIconStyle + '></div>';
-						// now add the download link with file icon:
-						f1.renderDownloadLink('<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" alt="[ ' + e + ' ]" />', opts);
 					}
 					else {
 						d = '<div class="notice-danger" >File missing: ' + d + '</div>'
@@ -810,10 +817,21 @@ class CFileWithContent implements IFileWithContent {
 	constructor(f: IFileWithContent) {
 		for (var a in f) this[a] = f[a];
     }
+	hasBlob(): boolean {
+		return this.blob && this.blob.size > 0;
+	}
+	hasDataURL(): boolean {
+		return this.dataURL && this.dataURL.length > 0;
+	}
 	hasContent(): boolean {
-		return (this.blob && this.blob.size > 0 || this.dataURL && this.dataURL.length > 0);
+		return this.hasBlob() || this.hasDataURL();
 	}
 	renderDownloadLink(txt: string, opts?: any): void {
+		function addL(r: string, fTi: string, fTy: string): void {
+			// add link with icon to DOM using an a-tag with data-URL:
+			document.getElementById(tagId(fTi)).innerHTML =
+				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + txt + '</a>';
+		}
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
 		// increase the timelag between building the DOM and rendering the images, if necessary.
@@ -823,11 +841,11 @@ class CFileWithContent implements IFileWithContent {
 		// Add the download link of the attachment as innerHTML:
 		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
-		blob2dataURL(this, (r:string, fTi:string, fTy:string):void => {
-			// add link with icon to DOM using an a-tag with data-URI:
-			document.getElementById(tagId(fTi)).innerHTML =
-				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + txt + '</a>';
-		}, opts.timelag);
+		if (this.hasBlob())
+			blob2dataURL(this, addL, opts.timelag);
+		else
+			// assuming that dataURL has content:
+			setTimeout(() => { addL(this.dataURL,this.title,this.type) }, opts.timelag);
 	}
 	renderImage(opts?: any): void {
 

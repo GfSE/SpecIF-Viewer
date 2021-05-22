@@ -179,7 +179,7 @@ moduleManager.construct({
 		}
 	};
 		
-	self.toReqif = function( pr:SpecIF, opts? ):string {
+	self.toReqif = function( pr:SpecIF, opts?:any ):string {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
@@ -385,7 +385,9 @@ moduleManager.construct({
 			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns+'="http://www.w3.org/1999/xhtml">'
 			+	'<THE-HEADER>'
 			+	  '<REQ-IF-HEADER IDENTIFIER="'+pr.id+'">'
-			+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
+		//	+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
+					// the project description is made available in the resource referenced by first hierarchy root:
+			+		'<COMMENT></COMMENT>'
 			+		'<CREATION-TIME>'+date+'</CREATION-TIME>'
 			+		'<REQ-IF-TOOL-ID></REQ-IF-TOOL-ID>'
 			+		'<REQ-IF-VERSION>1.0</REQ-IF-VERSION>'
@@ -523,10 +525,20 @@ moduleManager.construct({
 		
 		// 4. Transform statementClasses to RELATION-TYPES:
 		if(pr.statementClasses)	
-			pr.statementClasses.forEach( function(sC) {
-				xml += '<SPEC-RELATION-TYPE '+commonAttsOf( sC )+'>'
-					+		attrTypesOf( sC )
-				    +  '</SPEC-RELATION-TYPE>';
+			pr.statementClasses.forEach(function (sC) {
+			/*	// ToDo: transform only the statementClasses
+				// - having at least one resourceClass in each subjectClasses and objectClasses
+				//   ... unless subjectClasses or objectClasses are missing.
+				// Note that both subjectClasses or objectClasses are not transformed, themselves.
+				// However, currently (2021), 
+				// - Only the "shows" statement is used to relate diagrams and resources plus statements,
+				//   this means that the statementClass titled 'SpecIF:shows' must be transformed.
+				// - There are *no* statementClasses allowing only statements as subject or object,
+				//   so there is no known statementClass which should be excluded from transformation.
+				// Therefore we do not implement the check at this point in time.  */
+				xml += '<SPEC-RELATION-TYPE ' + commonAttsOf(sC) + '>'
+					+ attrTypesOf(sC)
+					+ '</SPEC-RELATION-TYPE>';
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
@@ -549,15 +561,19 @@ moduleManager.construct({
 			+	'<SPEC-RELATIONS>';
 		
 		// 7. Transform statements to RELATIONs:
-		pr.statements.forEach( function(s) {
-			// statements do not require a title, take the class' title by default:
-			if( !s.title ) s.title = itemById( pr.statementClasses, s['class'] ).title;
-			xml += '<SPEC-RELATION '+commonAttsOf( s )+'>'
-				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+s['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
-				+		attsOf( s )
-				+		'<SOURCE><SPEC-OBJECT-REF>'+s.subject+'</SPEC-OBJECT-REF></SOURCE>'
-				+		'<TARGET><SPEC-OBJECT-REF>'+s.object+'</SPEC-OBJECT-REF></TARGET>'
-				+ '</SPEC-RELATION>'
+		pr.statements.forEach(function (s) {
+			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema,
+			// or transform only statements whose subject and object relating to resources:
+			if( indexById(pr.resources, s.object)>-1 && indexById(pr.resources, s.subject)>-1 ) {
+				// SpecIF statements do not require a title, take the class' title by default:
+				if (!s.title) s.title = itemById(pr.statementClasses, s['class']).title;
+				xml += '<SPEC-RELATION ' + commonAttsOf(s) + '>'
+					+ '<TYPE><SPEC-RELATION-TYPE-REF>' + s['class'] + '</SPEC-RELATION-TYPE-REF></TYPE>'
+					+ attsOf(s)
+					+ '<SOURCE><SPEC-OBJECT-REF>' + s.subject + '</SPEC-OBJECT-REF></SOURCE>'
+					+ '<TARGET><SPEC-OBJECT-REF>' + s.object + '</SPEC-OBJECT-REF></TARGET>'
+					+ '</SPEC-RELATION>'
+			};
 		});
 		xml +=  '</SPEC-RELATIONS>'
 			+	'<SPECIFICATIONS>';
@@ -695,8 +711,11 @@ moduleManager.construct({
 			} 
 		); */
 							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
+							// ToDo: HTML-characters in markup links (label)[http://...] such as '&' are falsely escaped
 							let	hasDiv = RE_hasDiv.test(prp.value),
-								txt = 	escapeInner( prp.value )
+								txt =
+										// escape text except for HTML tags:
+										escapeInnerHtml(prp.value)
 										// ReqIF does not support the class attribute:
 										.replace( RE_class, function() { 
 											return '';
@@ -731,7 +750,7 @@ moduleManager.construct({
 								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
 							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
-							vL.forEach( function(v) {
+							vL.forEach( function(v:string) {
 								xml += '<ENUM-VALUE-REF>'+v+'</ENUM-VALUE-REF>'
 							});
 							xml += 			'</VALUES>'

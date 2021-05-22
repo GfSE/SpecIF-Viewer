@@ -288,7 +288,7 @@ function toOxml( data, opts ) {
 				// get the statements of the resource as table:
 				if( !opts.statementsLabel ) return '';
 				
-				let sts={}, cid, oid, sid, noSts=true;
+				let sts={}, cid, oid, sid, relatedR, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
 					// for clustering all statements by title:
@@ -300,12 +300,25 @@ function toOxml( data, opts ) {
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
 //					console.debug(st,cid,sid,oid);
-					if( sid==r.id || oid==r.id ) {    // only statements with Resource r
-						noSts = false;
-						if( !sts[cid] ) sts[cid] = {subjects:[],objects:[]};
-						if( sid==r.id ) sts[cid].objects.push( itemById(data.resources,oid) )
-						else sts[cid].subjects.push( itemById(data.resources,sid) )
-					}
+					if (sid == r.id || oid == r.id) {    // only statements with Resource r
+						// create a list of statements with that type, unless it exists already:
+						if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+						// add the resource to the list, knowing that it can be either subject or object, but not both:
+						if (sid == r.id) {
+							relatedR = itemById(data.resources, oid);
+							if (relatedR) {
+								sts[cid].objects.push(relatedR);
+								noSts = false;
+							};
+						}
+						else {
+							relatedR = itemById(data.resources, sid);
+							if (relatedR) {
+								sts[cid].subjects.push(relatedR);
+								noSts = false;
+							};
+						};
+					};
 				});
 //				console.debug( 'statements', r, sts );
 				if( noSts ) return '';	// no statements ...

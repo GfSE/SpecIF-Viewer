@@ -147,7 +147,7 @@ function toXhtml( data, opts ) {
 		// render the statements (relations) about the resource in a table
 		if( !opts.statementsLabel ) return '';
 		
-		let sts={}, cid, oid, sid, noSts=true;
+		let sts={}, cid, oid, sid, relatedR, noSts=true;
 		// Collect statements by type:
 		data.statements.forEach( function(st) {
 			cid = titleOf( st, undefined, opts );
@@ -156,15 +156,25 @@ function toXhtml( data, opts ) {
 			// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 			sid = st.subject.id || st.subject;
 			oid = st.object.id || st.object;
-			if( sid==r.id || oid==r.id ) {
-				// the statement us about the resource:
-				noSts = false;
+			if (sid == r.id || oid == r.id) {    // only statements with Resource r
 				// create a list of statements with that type, unless it exists already:
-				if( !sts[cid] ) sts[cid] = {subjects:[],objects:[]};
-				// add the resource to the list, assuming that it can be either subject or object, but not both:
-				if( sid==r.id ) sts[cid].objects.push( itemBy(data.resources,'id',oid) )
-				else sts[cid].subjects.push( itemBy(data.resources,'id',sid) )
-			}
+				if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+				// add the resource to the list, knowing that it can be either subject or object, but not both:
+				if (sid == r.id) {
+					relatedR = itemById(data.resources, oid);
+					if (relatedR) {
+						sts[cid].objects.push(relatedR);
+						noSts = false;
+					};
+				}
+				else {
+					relatedR = itemById(data.resources, sid);
+					if (relatedR) {
+						sts[cid].subjects.push(relatedR);
+						noSts = false;
+					};
+				};
+			};
 		});
 //		console.debug( 'statements', r.title, sts );
 //		if( Object.keys(sts).length<1 ) return '';

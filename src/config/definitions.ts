@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.4",
+	CONFIG.appVersion = "1.0.6",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -537,13 +537,27 @@ const RE:any = {};
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 	RE.tagA = new RegExp( '<a ([^>]+)>([\\s\\S]*?)</a>', 'g' );
 	RE.tagImg = new RegExp( '<img ([^>]+)/>', 'g' );
-	const reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)';
+
+const reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object ([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.quote = /"([a-z0-9_].*?)"|'([a-z0-9_].*?)'/i;
-	const tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)";
+
+const tagStr = "(<\\/?)([a-z]{1,10}(?: [^<>]+)?\\/?>)";
 	RE.tag = new RegExp( tagStr, 'g' );
-	RE.innerTag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' );
+	RE.innerTag = new RegExp("([\\s\\S]*?)" + tagStr, 'g');
+		// $1: inner text (before the next tag)
+		// $2: start of opening tag '<' or closing tag '</'
+		// $3: rest of the tag including '>' or '/>'
+
+const tokenGroup = "(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)";
+	RE.escapedHtmlTag = new RegExp("&(?:lt|#60);(\\/?)" + tokenGroup + "(.*?\\/?)&(?:gt|#62);", "g");
+//	RE.htmlTag = new RegExp("(<\\/?)" + tokenGroup + "(.*?\\/?)>", "g");
+	RE.innerHtmlTag = new RegExp("([\\s\\S]*?)(<\\/?)" + tokenGroup + "((?: [^<>]+)?\\/?>)", 'g');
+		// $1: inner text (before the next tag)
+		// $2: start of opening tag '<' or closing tag '</'
+		// $3: any of the tokens listed in tokenGroup 
+		// $4: the rest of the tag including '>' or '/>'
 
 /////////////////
 const nbsp = '&#160;'; // non-breakable space

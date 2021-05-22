@@ -863,16 +863,16 @@ const specif = {
 								if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) > -1)
 									// if it is e.g. a title, remove all formatting:
 									oE.value = stripHTML(languageValueOf(iE.value, opts)
+												// remove any leading whiteSpace:
 												.replace(/^\s+/, ""));
 								else
 									// otherwise transform to HTML, if possible;
 									// especially for publication, for example using WORD format:
 									oE.value = languageValueOf( iE.value, opts )
+												// remove any leading whiteSpace:
 												.replace(/^\s+/, "")
 												.makeHTML(opts);
 								
-								// remove any leading whiteSpace:
-							//	oE.value = oE.value.replace( /^\s+/, "" );
 //								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
 								break;
 							};

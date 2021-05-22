@@ -14,7 +14,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 
 	// consider to use: https://gist.github.com/loilo/92220c23567d6ed085a28f2c3e84e311
 
-	return new Promise( (resolve, reject)=>{
+	return new Promise( (resolve)=>{
 		var pend = 0;
 		if (pr.files)
 			pr.files.forEach((f: IFileWithContent) => {
@@ -22,9 +22,9 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 				if( f.blob ) {
 
 					pend++;
-					switch( f.type ) {
+				/*	switch( f.type ) {
 						case 'image/svg+xml':
-						/*	// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
+							// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
 							// see: https://css-tricks.com/probably-dont-base64-svg/
 							blob2text( f, 
 								(r)=>{ 
@@ -33,12 +33,13 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 									if( --pend<1 ) resolve( make( pr ) );
 								}
 							);
-							break; */
+							break; 
 						case 'image/png':
 						case 'image/x-png':
 						case 'image/jpeg':
 						case 'image/jpg':
 						case 'image/gif':
+						case 'application/pdf':
                             blob2dataURL( f, 
 								(r:string)=>{
 									// perhaps there is a more elegant way to apply the type to the dataURL,
@@ -49,17 +50,28 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 								}, 
 								0
 							);
-                            break;
+                            break; 
 						case 'application/bpmn+xml':
 							delete f.blob;
 							console.warn( "BPMN file '"+f.title+"'has arrived, but should not arrive at toHTML(); it has been deleted." );
 							if (--pend < 1) resolve(make(pr));
-							break;
+							break; 
 						default:
-							let errT = 'Cannot transform diagram '+f.title+' of unknown type: '+f.type;
-							console.warn( errT );
-							reject({status:999,statusText:errT});
-					};
+						//	let errT = 'Cannot transform diagram ' + f.title + ' of unknown type: ' + f.type;
+						//	console.warn(errT);
+						//	reject({ status: 999, statusText: errT }); */
+
+							blob2dataURL(f,
+								(r: string) => {
+									// perhaps there is a more elegant way to apply the type to the dataURL,
+									// but it works:
+									f.dataURL = r.replace(/application\/octet-stream/, f.type);
+									delete f.blob;
+									if (--pend < 1) resolve(make(pr));
+								},
+								0
+							);
+				//	};
 				};
 			}); 
 		if( pend<1 ) {

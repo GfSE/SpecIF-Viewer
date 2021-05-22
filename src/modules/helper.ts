@@ -515,6 +515,12 @@ function forAll( L:Array<object>, fn:(arg0:any)=>any ):Array<any> {
 	return nL;
 }
 
+// Add a leading icon to a title:
+// use only for display, don't add to stored variables.
+function addIcon(str: string, ic: string): string {
+	if (ic) return ic + '&#xa0;' + str;
+	return str;
+}
 function addE( ctg:string, id:string, pr? ):void {
 	// Add an element (e.g. class) to it's list, if not yet defined:
 	if( !pr ) pr = app.cache.selectedProject.data;
@@ -648,12 +654,6 @@ String.prototype.ctrl2HTML = function():string {
 				.replace( /\n/g, '<br />' )
 				.replace( /&#x0{0,3}d;/gi, '<br />' );
 };
-// Add a leading icon to a title:
-// use only for display, don't add to stored variables.
-function addIcon(str: string, ic: string): string {
-	if (ic) return ic + '&#xa0;' + str;
-	return str;
-}
 function toHTML(str:string):string {
 // Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
 	return str.escapeHTML().ctrl2HTML()
@@ -708,19 +708,34 @@ String.prototype.xmlChar2utf8 = function():string {
 		})
 } */
 
-function escapeInner( str:string ):string {
+function escapeInnerHtml( str:string ):string {
+	// escape text except for HTML tags:
 	var out = "";
+
 	// @ts-ignore - $0 is never read, but must be specified anyways
-	str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
+	str = str.replace(RE.innerHtmlTag, function ($0, $1, $2, $3, $4) {
 		// $1: inner text (before the next tag)
 		// $2: start of opening tag '<' or closing tag '</'
-		// $3: rest of the tag
+		// $3: any of the tokens listed in tokenGroup (see definitions.ts)
+		// $4: the rest of the tag including '>' or '/>'
+//		console.debug('escapeInner', $0, $1, $2, $3, $4);
+
 		// escape the inner text and keep the tag:
-		out += $1.escapeXML() + $2 + $3;
+		out += $1.escapeXML() + $2 + $3 + $4; 
+
+	/*	// @ts-ignore - $0 is never read, but must be specified anyways
+		str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
+			// $1: inner text (before the next tag)
+			// $2: start of opening tag '<' or closing tag '</'
+			// $3: rest of the tag including '>' or '/>'
+
+		// escape the inner text and keep the tag:
+		out += $1.escapeXML() + $2 + $3; */
+
 		// consume the matched piece of str:
 		return '';
 	});
-	// process the remainder (the text after the last tag or the whole text if there was no tag:
+	// process the remainder (the text after the last tag) or the whole text if there was no tag:
 	out += str.escapeXML();
 	return out;
 } 
@@ -728,13 +743,15 @@ function escapeInner( str:string ):string {
 String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
 //String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
-// escape HTML characters:
+
 String.prototype.escapeXML = function():string {
+// escape XML characters:
 	return this.replace(/["'&<>]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
 	});
 };
 String.prototype.escapeHTML = function():string {
+// escape HTML characters:
 	return this.replace(/[&<>"'`=\/]/g, ($0)=>{
 		return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
 	});
@@ -743,7 +760,7 @@ String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
 	if( isHTML(this as string) ) return this as string;
 	// @ts-ignore - $0 is never read, but must be specified anyways
-	return noCode(this.replace(/&lt;(\/?)(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)(.*?\/?)&gt;/g, ($0,$1,$2,$3)=>{
+	return noCode(this.replace(RE.escapedHtmlTag, ($0,$1,$2,$3)=>{
 		return '<'+$1+$2+$3+'>';
 	}));
 };
