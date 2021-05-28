@@ -9,7 +9,6 @@
 moduleManager.construct({
 	name: 'importAny'
 }, function(self:IModule) {
-	"use strict";
 
 	// The modes for selection when an import is encountered which is already loaded:
 	const importModes = [{
@@ -444,7 +443,6 @@ moduleManager.construct({
 		function handle( dta:SpecIF, idx:number ):void {
 //			console.debug('handleResult',simpleClone(dta),idx);
 			specif.check( dta, self.format.opts )
-	//		specif.check( data, self.format.opts )
 			.then( (dta:SpecIF)=>{
 			/*	//  First check if there is a project with the same id:
 					function sameId() {

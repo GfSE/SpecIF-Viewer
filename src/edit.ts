@@ -1,6 +1,5 @@
 
 function editSpecif():IApp {
-	"use strict";
 
 	// construct main app:
 	var self:any = {};

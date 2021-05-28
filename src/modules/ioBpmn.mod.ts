@@ -11,8 +11,8 @@
 moduleManager.construct({
 	name: 'ioBpmn'
 }, function(self:IModule):IModule {
-	"use strict";
-	var	fDate:string,		// the file modification date
+
+	var fDate:string,		// the file modification date
 		fName:string,
 		data,		// the SpecIF data structure for xls content
 		bDO;

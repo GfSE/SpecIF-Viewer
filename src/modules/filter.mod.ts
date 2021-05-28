@@ -98,7 +98,6 @@ interface IFilter {
 moduleManager.construct({
 	name: CONFIG.objectFilter
 }, (self: IModule): IModule =>{
-	"use strict";
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
@@ -246,7 +245,7 @@ moduleManager.construct({
 		$('#hitlist').empty();
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
-		let pend=0, h, hCnt=0;
+		let pend = 0, h:CResourceToShow, hitCnt=0;
 		pData.tree.iterate(
 			(nd: jqTreeNode) => {
 				pend++;
@@ -260,11 +259,11 @@ moduleManager.construct({
 						h = match( new CResourceToShow(rL[0]) );
 //						console.debug('tree.iterate',self.filterList,pend,rsp[0],h);
 						if( h )	{
-							hCnt++;
+							hitCnt++;
 							$('#hitlist').append( h.listEntry() );
 						};
 						if( --pend<1 ) {  // all done
-							$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hCnt+'</div>' );
+							$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hitCnt+'</div>' );
 							app.busy.reset();
 						}
 					},

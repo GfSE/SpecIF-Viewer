@@ -1,6 +1,5 @@
 
 function checkSpecif():IApp {
-	"use strict";
 
 	// construct main app:
 	var self:any = {};

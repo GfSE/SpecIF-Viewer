@@ -9,7 +9,6 @@
 moduleManager.construct({
 	name: 'about'
 }, function(self:IModule) {
-	"use strict";
 
 	self.init = function():boolean {
 //		console.debug('me.init',opts);

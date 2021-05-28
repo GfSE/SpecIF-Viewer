@@ -194,7 +194,6 @@ var app:IApp,
 	message: any,
 	standardTypes:StandardTypes,
 	moduleManager:IModuleManager = function() {
-		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
 				- 'load()' registers and loads a file or a list of files with named javascript functions

@@ -5,7 +5,6 @@
 	We appreciate any correction, comment or contribution
 */
 app.statementsGraph = function Graph() {
-	"use strict";
 	// For a selected SpecIF resorce, draw a graph of all statements and related resources.
 	// All statements of the same type are grouped to make the reading easier.
 	// Incoming relations (where the selected resource is object of the statement) are positioned at the upper left half,

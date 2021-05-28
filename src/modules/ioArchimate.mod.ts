@@ -11,7 +11,7 @@
 moduleManager.construct({
 	name: 'ioArchimate'
 }, function(self:IModule):IModule {
-	"use strict";
+
 	var fDate: string,		// the file modification date
 		fName: string,
 		data: SpecIF,		// the SpecIF data structure for xls content

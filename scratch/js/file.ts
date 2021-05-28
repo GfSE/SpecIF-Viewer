@@ -7,7 +7,6 @@
 */
 
 function File( fi ) {
-	"use strict";
 	var self = this;
 
 	self.set = (f)=>{

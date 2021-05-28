@@ -34,234 +34,6 @@ interface IFileWithContent extends SpecifFile {
 	blob?: Blob;
 	dataURL?: string;
 }
-class CSpecIF implements SpecIF {
-	id: string;
-	$schema: string;
-	title: string;
-	description: string;
-	generator: string;
-	generatorVersion: string;
-	myRole: RoleEnum;
-	cre: boolean;
-	upd: boolean;
-	del: boolean;
-	exp: boolean;
-	locked: boolean;		// the server has locked the project ( readOnly )
-	createdAt: string;
-	createdBy: CreatedBy;
-
-	dataTypes: DataType[];
-	propertyClasses: PropertyClass[];
-	resourceClasses: ResourceClass[];
-	statementClasses: StatementClass[];
-	resources: Resource[];   	// list of resources as referenced by the hierarchies
-	statements: Statement[];
-	hierarchies: SpecifNode[];    	// listed specifications (aka hierarchies, outlines) of the project.
-	files: IFileWithContent[];
-	constructor() {
-		this.id = '';
-		this.$schema = '';
-		this.title = '';
-		this.description = '';
-		this.generator = '';
-		this.generatorVersion = '';
-		this.myRole = RoleEnum.Reader;
-		this.cre = false;
-		this.upd = false;
-		this.del = false;
-		this.exp = false;
-		this.locked = false;		// the server has locked the project ( readOnly )
-		this.createdAt = '';
-		this.createdBy = undefined;
-
-		this.dataTypes = [];
-		this.propertyClasses = [];
-		this.resourceClasses = [];
-		this.statementClasses = [];
-		this.resources = [];   		// list of resources as referenced by the hierarchies
-		this.statements = [];
-		this.hierarchies = [];    	// listed specifications (aka hierarchies, outlines) of the project.
-		this.files = [];
-	}
-	setMeta(dta: SpecIF): void {
-		this.id = dta.id;
-		this.title = dta.title;
-		this.description = dta.description;
-		this.generator = dta.generator;
-		this.generatorVersion = dta.generatorVersion;
-		this.myRole = i18n.LblRoleProjectAdmin;
-		//	this.cre = this.upd = this.del = this.exp = app.title!=i18n.LblReader;
-		this.cre = this.upd = this.del = app.title != i18n.LblReader;
-		this.exp = true;
-		this.locked = app.title == i18n.LblReader;
-		this.createdAt = dta.createdAt;
-		this.createdBy = dta.createdBy;
-    }
-	private cacheNode(e: INodeWithPosition): boolean {
-		// add or replace a node in a hierarchy;
-		// e may specify a predecessor or parent, the former prevails if both are specified
-		// - if there is no predecessor or it isn't found, insert as first element
-		// - if no parent is specified or the parent isn't found, insert at root level
-
-		// 1. Delete the node, if it exists somewhere to prevent
-		//    that there are multiple nodes with the same id;
-		//    Thus, 'cacheNode' is in fact a 'move':
-		this.uncache('node', { id: e.id });
-
-		// 2. Insert the node, if the predecessor exists somewhere:
-		if (iterateNodes(this.hierarchies,
-			// continue searching until found:
-			(nd: SpecifNode) => { return nd.id != e.predecessor },
-			// insert the node after the predecessor:
-			(ndL: SpecifNode[]) => {
-				let i = indexById(ndL as Item[], e.predecessor);
-				if (i > -1) ndL.splice(i + 1, 0, e);
-			}
-		))
-			return true;
-
-		// 3. Insert the node, if the parent exists somewhere:
-		if (iterateNodes(this.hierarchies,
-			// continue searching until found:
-			(nd: SpecifNode) => {
-				if (nd.id == e['parent']) {
-					if (!Array.isArray(nd.nodes)) nd.nodes = [];
-					// we will not find a predecessor at this point any more,
-					// so insert as first element of the children:
-					nd.nodes.unshift(e);
-					return false; // stop searching
-				};
-				return true;  // continue searching
-			}
-			// no list function
-		)
-		) return true;
-
-		// 4. insert the node as first root element, otherwise:
-		this.hierarchies.unshift(e);
-		return false;
-	}
-	cache( ctg:string, item:Item[]|Item ):void {
-		if (!item || Array.isArray(item) && item.length < 1)
-			return;
-		// If item is a list, all elements must have the same category.
-		let fn = Array.isArray(item)?cacheL:cacheE;
-		switch(ctg) {
-			case 'hierarchy':
-			case 'dataType':
-			case 'propertyClass':
-			case 'resourceClass':
-			case 'statementClass':
-				// @ts-ignore - addressing is perfectly ok
-				fn(this[standardTypes.listNameOf(ctg)], item);
-				return;
-			case 'resource':
-			case 'statement':
-			case 'file':
-				if (app.cache.cacheInstances) {
-					// @ts-ignore - addressing is perfectly ok
-					fn(this[standardTypes.listNameOf(ctg)], item);
-				};
-				return;
-			case 'node':
-				if (Array.isArray(item))
-					throw Error("No list of nodes supported.");
-				//				console.debug('cache',ctg,item);
-				this.cacheNode(item as INodeWithPosition);
-				return
-			default:
-				throw Error("Invalid category '" + ctg + "'.");
-		};
-		// all cases have a return statement ..
-
-	}
-	readCache(ctg: string, itm: Item[] | Item | string ): Item[] {
-		// Read an item from cache, unless 'reload' is specified.
-		// - itm can be single or a list,
-		// - each element can be an object with attribute id or an id string
-		// @ts-ignore - addressing is perfectly ok
-		let cch:Item[] = this[standardTypes.listNameOf(ctg)],
-			idx: number;
-
-		if (itm == 'all') {
-			// return all cached items asynchronously:
-			return simpleClone(cch);	// return a new list with the original elements
-		};
-
-		if (Array.isArray(itm)) {
-			let allFound = true, i = 0, I = itm.length;
-			var rL: Item[] = [];
-			while (allFound && i < I) {
-				idx = indexById(cch, itm[i].id || itm[i]);
-				if (idx > -1) {
-					rL.push(cch[idx]);
-					i++;
-				} else {
-					allFound = false;
-				}
-			};
-			if (allFound) {
-//				console.debug( 'readCache array - allFound', cch, itm );
-				return rL;
-			} else {
-				return [];
-			};
-		}
-		else {
-			// is a single item:
-			idx = indexById(cch, itm.id || itm);
-			if (idx > -1) {
-				return [cch[idx]]
-			} else {
-				return [];
-			}
-		};
-//		console.debug('readCache - not found', ctg, itm);
-	}
-	uncache(ctg: string, item: Item): boolean | undefined {
-		if (!item) return;
-		let fn = Array.isArray(item) ? uncacheL : uncacheE;
-		switch (ctg) {
-			case 'hierarchy':
-			case 'dataType':
-			case 'propertyClass':
-			case 'resourceClass':
-			case 'statementClass':
-				// @ts-ignore - addressing is perfectly ok
-				return fn(this[standardTypes.listNameOf(ctg)], item);
-			case 'resource':
-			case 'statement':
-			case 'file':
-				if (app.cache.cacheInstances)
-					// @ts-ignore - addressing is perfectly ok
-					return fn(this[standardTypes.listNameOf(ctg)], item);
-				return;
-			case 'node':
-				if (Array.isArray(item))
-					item.forEach((el: SpecifNode) => { delNodes(this.hierarchies, el) })
-				else
-					delNodes(this.hierarchies, item as SpecifNode);
-				return;
-			/*	default: return; // programming error */
-		};
-		// all cases have a return statement ..
-
-		function delNodes(L: SpecifNode[], el: SpecifNode): void {
-			// Delete all nodes specified by the element;
-			// if el is the node, 'id' will be used to identify it (obviously at most one node),
-			// and if el is the referenced resource, 'resource' will be used to identify all referencing nodes.
-			if (Array.isArray(L))
-				for (var h = L.length - 1; h > -1; h--) {
-					if (L[h].id == el.id || L[h].resource == el.resource) {
-						L.splice(h, 1);
-						break;	// can't delete any children
-					};
-					// step down, if the node hasn't been deleted:
-					delNodes(L[h].nodes as SpecifNode[], el);
-				};
-		}
-	}	
-}
 interface IProject {
 	data: CSpecIF;
 	exporting: boolean;
@@ -299,7 +71,7 @@ moduleManager.construct({
 	name: 'cache'
 }, (self: IProjects):IProjects => {
 	// Construct a representative of the selected project with cached data:
-	// ToDo: enforce CONFIG.maxObjToCacheCount
+	// ToDo: enforce CONFIG.maxItemsToCache
 
 /*	var autoLoadId,				// max 1 autoLoad chain
 		autoLoadCb;				// callback function when the cache has been updated  */
@@ -421,7 +193,7 @@ function Project(): IProject {
 		return typeof (self.data.id) == 'string' && self.data.id.length > 0
 	};
 
-	self.create = (newD: SpecIF, opts: any): JQueryDeferred<void> => {
+	self.create = (newD: any, opts: any): JQueryDeferred<void> => {
 		// create a project, if there is no project with the given id, or replace a project with the same id.
 		// (The roles/permissions and the role assignment to users are preserved, when import via ReqIF-file is made)
 		// If there is no newD.id, it will be generated by the server.
@@ -430,8 +202,10 @@ function Project(): IProject {
 
 		// Create the specified project:
 		let ti = newD.title;
-		newD = specif.toInt(newD);	// transform to internal data structure
-		if (!newD) {
+
+		newD = new CSpecIF(newD); // transform to internal data structure
+
+		if (!newD.exists) {
 			sDO.reject({ status: 995, statusText: i18n.lookup('MsgImportFailed', ti) });
 			return sDO;
 		};
@@ -1373,7 +1147,7 @@ function Project(): IProject {
 		// Use jQuery instead of ECMA Promises for the time being, because of progress notification.
 		var uDO = $.Deferred();
 
-		newD = specif.toInt(newD);	// transform to internal data structure
+		newD = new CSpecIF(newD); // transform to internal data structure
 
 		switch( opts.mode ) {
 			case 'update':
@@ -2450,8 +2224,8 @@ function Project(): IProject {
 
 				opts.allResources = false; // only resources referenced by a hierarchy.
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
-				opts.lookupTitles = false;  // applies to specif.toExt()
-				opts.lookupValues = true;  // applies to specif.toExt()
+				opts.lookupTitles = false;  // applies to self.data.toExt()
+				opts.lookupValues = true;  // applies to self.data.toExt()
 				// But DO reduce to the language desired.
 				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
@@ -2460,7 +2234,7 @@ function Project(): IProject {
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
 
-				let data = specif.toExt( self.data, opts ),
+				let data = self.data.toExt( opts ),
 					localOpts = {
 						// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 						titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties),
@@ -2534,7 +2308,7 @@ function Project(): IProject {
 						return; // should never arrive here
 				};
 //				console.debug( "storeAs", opts );
-				let data = specif.toExt( self.data, opts ),
+				let data = self.data.toExt(opts),
 					fName = opts.fileName || data.title;
 
 				// A) Processing for 'html':
@@ -2916,7 +2690,7 @@ function titleOf( item, opts?:any ):string {
 //	return undefined
 }
 function languageValueOf( val, opts?:any ):string|undefined {
-	// Get the value according to a specified target language .. or the first value in the list by default.
+	// Return the value in the specified target language .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object;
 	// if targetLanguage is not defined, keep all language options:
 	if( typeof(val)=='string' || !(opts&&opts.targetLanguage) ) return val;

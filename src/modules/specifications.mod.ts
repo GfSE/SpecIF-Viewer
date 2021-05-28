@@ -31,8 +31,11 @@ class CPropertyToShow implements Property {
 	constructor(prp: Property) {
 		for (var a in prp) this[a] = prp[a];
     }
+	isVisible(opts: any): boolean {
+		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
+			&& (CONFIG.showEmptyProperties || hasContent(languageValueOf(this.value, opts))))
+	}
 	get( opts?: any): string {
-		"use strict";
 		if (typeof (opts) != 'object') opts = {};
 		if (typeof (opts.dynLinks) != 'boolean') opts.dynLinks = false;
 		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
@@ -487,7 +490,6 @@ class CResourceToShow {
 		//	if (this.descriptions.length < 1)
 		//		this.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
 		//	console.debug( 'classifyProps 2', simpleClone(this) );
-	//	return;
 	}
 	private normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
 		// el: original instance (resource or statement)
@@ -541,8 +543,8 @@ class CResourceToShow {
 	isEqual(res: Resource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
-	private renderProp(lbl: string, val: string, cssCl: string): string {
-		// show a property value:
+	private renderAttr(lbl: string, val: string, cssCl: string): string {
+		// show a string value with or without label:
 		cssCl = cssCl ? ' ' + cssCl : '';
 		if (typeof (val) == 'string')
 			val = noCode(val)
@@ -575,21 +577,16 @@ class CResourceToShow {
 		var rChI = '';
 		switch (app.specs.selectedView()) {
 			case '#' + CONFIG.objectRevisions:
-				rChI = this.renderProp(i18n.LblRevision, this.revision, 'attribute-condensed');
+				rChI = this.renderAttr(i18n.LblRevision, this.revision, 'attribute-condensed');
 			// no break
 			case '#' + CONFIG.comments:
-				rChI += this.renderProp(i18n.LblModifiedAt, localDateTime(this.changedAt), 'attribute-condensed')
-					+ this.renderProp(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
+				rChI += this.renderAttr(i18n.LblModifiedAt, localDateTime(this.changedAt), 'attribute-condensed')
+					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
 			//	default: no change info!			
 		};
 		return rChI;
 	}
 	listEntry(options?: any): string {
-		function showPrp(prp: Property, opts): boolean {
-			//				console.debug('showPrp',prp);
-			if (CONFIG.hiddenProperties.indexOf(prp.title) > -1) return false;  // hide, if it is configured in the list
-			return (CONFIG.showEmptyProperties || hasContent(languageValueOf(prp.value, opts)))
-		}
 		if (!this.id) return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
 		// Create HTML for a list entry:
 
@@ -603,6 +600,7 @@ class CResourceToShow {
 		// ToDo: Make it a user option:
 		opts.makeHTML = true;
 		opts.lookupValues = true;
+		opts.lookupTitles = true;
 		opts.rev = this.revision;
 
 		var rO = '<div class="listEntry">'
@@ -624,7 +622,7 @@ class CResourceToShow {
 
 		// 1.2 The description properties:
 		this.descriptions.forEach((prp: CPropertyToShow): void => {
-			if (showPrp(prp, opts)) {
+			if (prp.isVisible(opts)) {
 				rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
 			}
 		});
@@ -648,8 +646,8 @@ class CResourceToShow {
 		// 3 Fill a separate column to the right
 		// 3.1 The remaining properties:
 		this.other.forEach((prp: CPropertyToShow): void => {
-			if (showPrp(prp, opts)) {
-				rO += this.renderProp(titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
+			if (prp.isVisible(opts)) {
+				rO += this.renderAttr(titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
 			};
 		});
 		// 3.2 The type info:
@@ -683,10 +681,10 @@ class CResourceToShow {
 		// 3 The remaining properties:
 		this.other.forEach( function( prp ) {
 //			console.debug('details.other',prp.value);
-			rO += this.renderProp( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
+			rO += this.renderAttr( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += this.renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
+		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
 		// 5 The change info depending on selectedView:
 		rO += this.renderChangeInfo();
 //		console.debug( 'CResource.details', self.toShow, rO );
@@ -1179,7 +1177,6 @@ class CFileWithContent implements IFileWithContent {
 moduleManager.construct({
 	name: CONFIG.specifications
 }, (self: ISpecs):ISpecs =>{
-	"use strict";
 	// This module and view is responsible for the selection tabs and the navigation tree which are shared by several sub-views.
 	
 	let myName = self.loadAs,

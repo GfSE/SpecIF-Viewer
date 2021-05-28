@@ -11,8 +11,8 @@
 moduleManager.construct({
 	name: 'ioRdf'
 }, function(self:IModule) {
-	"use strict";
-    var mime:string;
+
+	var mime: string;
 	self.init = function():boolean {
 		mime = undefined;
 		return true;

@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.6",
+	CONFIG.appVersion = "1.0.7",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -35,12 +35,12 @@ const CONFIG:any = {};
 	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules reqifserver*.js, specifications*.mod.js, objectFilter*.mod.js)
 	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications*.mod.js)
 	CONFIG.genIdLength = 27;  // length of generated GUIDs, any prefix comes in addition (but it does not add significantly to the probability of collision)
-	CONFIG.maxObjToCacheCount = 2000; // 0: object cache is disabled; null: object cache is enabled with no limit
+//	CONFIG.maxItemsToCache = 2000; // 0: object cache is disabled; undefined: object cache is enabled without limit
 //	CONFIG.cacheAutoLoadPeriod = 90000; // in ms ... should be at least 60000ms
 //	CONFIG.cacheAutoLoadReader = false; // load the cache for the reader app
 	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
-	CONFIG.addIconToInstance = true;	// applies to objects, relations, outlines
+	CONFIG.addIconToInstance = true;	// applies to resources, statements and hierarchies/outlines
 	CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
 	CONFIG.findMentionedObjects = true;	// looks for object titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
 	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles

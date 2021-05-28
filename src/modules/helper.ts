@@ -250,7 +250,6 @@ class xhrMessage {
 }
 // standard error handler:
 function stdError(xhr: xhrMessage, cb?:Function): void {
-	"use strict";
 //	console.debug('stdError',xhr);
 	// clone, as xhr.responseText ist read-only:
 	let xhrCl = new xhrMessage(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : '');
