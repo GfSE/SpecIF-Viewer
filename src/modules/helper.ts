@@ -507,7 +507,10 @@ function sortBy( L:Array<object>, fn:(arg0:object)=>string ):void {
 	);
 }
 function forAll( L:Array<object>, fn:(arg0:any)=>any ):Array<any> {
-	// return a new list with the results from applying the specified function to all items of input list L:
+	// return a new list with the results from applying the specified function to all items of input list L;
+	// differences when compared to Array.map():
+	// - tolerates missing L
+	// - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
 	if(!L) return [];
 	var nL = [];
 	L.forEach( (e)=>{ var r=fn(e); if(r) nL.push(r) } );

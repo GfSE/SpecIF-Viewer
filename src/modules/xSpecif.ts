@@ -258,7 +258,7 @@ class CSpecIF implements SpecIF {
 			this.files = [];
 		};
 	}
-	exists(): boolean {
+	isValid(): boolean {
 		return typeof(this.id)=='string' && this.id.length > 0;
     }
 	setMeta(dta: SpecIF): void {
@@ -282,17 +282,20 @@ class CSpecIF implements SpecIF {
 //		console.debug('set',simpleClone(spD));
 		this.names = new CSpecifItemNames(spD.specifVersion);
 
+		// Differences when using forAll() instead of Array.map():
+		// - tolerates missing input list (not all are mandatory for SpecIF)
+		// - suppresses undefined list items in the result, so in effect forAll() is a combination of .map() and .filter().
 		try {
-			this.dataTypes = spD.dataTypes.map((e: any) => { return this.dT2int(e) })
-			this.propertyClasses = spD.propertyClasses.map((e: any) => { return this.pC2int(e) });	// starting v0.10.6
-			this.resourceClasses = spD[this.names.rClasses].map((e: any) => { return this.rC2int(e) });
-			this.statementClasses = spD[this.names.sClasses].map((e: any) => { return this.sC2int(e) });
+			this.dataTypes = forAll( spD.dataTypes, (e: any) => { return this.dT2int(e) });
+			this.propertyClasses = forAll( spD.propertyClasses, (e: any) => { return this.pC2int(e) });	// starting v0.10.6
+			this.resourceClasses = forAll( spD[this.names.rClasses], (e: any) => { return this.rC2int(e) });
+			this.statementClasses = forAll( spD[this.names.sClasses], (e: any) => { return this.sC2int(e) });
 			if (this.names.hClasses)
-				this.resourceClasses = this.resourceClasses.concat(spD[this.names.hClasses].map((e: any) => { return this.hC2int(e) }));
-			this.resources = spD.resources.map((e: any) => { return this.r2int(e) });
-			this.statements = spD.statements.map((e: any) => { return this.s2int(e) });
-			this.hierarchies = spD.hierarchies.map((e: any) => { return this.h2int(e) });
-			this.files = spD.files.map((e: any) => { return this.f2int(e) })
+				this.resourceClasses = this.resourceClasses.concat( forAll( spD[this.names.hClasses], (e: any) => { return this.hC2int(e) }));
+			this.resources = forAll( spD.resources, (e: any) => { return this.r2int(e) });
+			this.statements = forAll( spD.statements, (e: any) => { return this.s2int(e) });
+			this.hierarchies = forAll( spD.hierarchies, (e: any) => { return this.h2int(e) });
+			this.files = forAll( spD.files, (e: any) => { return this.f2int(e) })
 		} catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
 			console.error(txt);
@@ -504,7 +507,7 @@ class CSpecIF implements SpecIF {
 		if (iE.title)
 			oE.title = cleanValue(iE.title);
 		if (iE.properties && iE.properties.length > 0)
-			oE.properties = iE.properties.map((e: any): Property => { return this.p2int(e) });
+			oE.properties = forAll( iE.properties, (e: any): Property => { return this.p2int(e) });
 //		console.debug('a2int',iE,simpleClone(oE));
 		return oE
 	}

@@ -203,42 +203,42 @@ function Project(): IProject {
 		// Create the specified project:
 		let ti = newD.title;
 
-		newD = new CSpecIF(newD); // transform to internal data structure
-
-		if (!newD.exists) {
-			sDO.reject({ status: 995, statusText: i18n.lookup('MsgImportFailed', ti) });
-			return sDO;
-		};
-		//		console.debug('app.cache.selectedProject.data.create',newD);
-
 		self.abortFlag = false;
-		self.data.setMeta(newD);
+		newD = new CSpecIF(newD); // transform to internal data structure
+//		console.debug('app.cache.selectedProject.data.create',newD);
 
-		// Create the project
-		// The project meta-data and each item are created as a separate document in a document database;
-		// at the same time the cache is updated.
-		sDO.notify(i18n.MsgLoadingTypes, 30);
-		let pend = 8;
-		self.createContent('dataType', newD.dataTypes)
-			.then(finalize, sDO.reject);
-		self.createContent('propertyClass', newD.propertyClasses)
-			.then(finalize, sDO.reject);
-		self.createContent('resourceClass', newD.resourceClasses)
-			.then(finalize, sDO.reject);
-		self.createContent('statementClass', newD.statementClasses)
-			.then(finalize, sDO.reject);
-		self.createContent('file', newD.files)
-			.then(finalize, sDO.reject);
-		self.createContent('resource', newD.resources)
-			.then(finalize, sDO.reject);
-		self.createContent('statement', newD.statements)
-			.then(finalize, sDO.reject);
-		self.createContent('hierarchy', newD.hierarchies)
-			.then(finalize, sDO.reject);
-		if (opts.addGlossary) {
-			pend++;
-			self.createFolderWithGlossary(self.data, opts)
+		if (newD.isValid) {
+			self.data.setMeta(newD);
+
+			// Create the project
+			// The project meta-data and each item are created as a separate document in a document database;
+			// at the same time the cache is updated.
+			sDO.notify(i18n.MsgLoadingTypes, 30);
+			let pend = 8;
+			self.createContent('dataType', newD.dataTypes)
 				.then(finalize, sDO.reject);
+			self.createContent('propertyClass', newD.propertyClasses)
+				.then(finalize, sDO.reject);
+			self.createContent('resourceClass', newD.resourceClasses)
+				.then(finalize, sDO.reject);
+			self.createContent('statementClass', newD.statementClasses)
+				.then(finalize, sDO.reject);
+			self.createContent('file', newD.files)
+				.then(finalize, sDO.reject);
+			self.createContent('resource', newD.resources)
+				.then(finalize, sDO.reject);
+			self.createContent('statement', newD.statements)
+				.then(finalize, sDO.reject);
+			self.createContent('hierarchy', newD.hierarchies)
+				.then(finalize, sDO.reject);
+			if (opts.addGlossary) {
+				pend++;
+				self.createFolderWithGlossary(self.data, opts)
+					.then(finalize, sDO.reject);
+			};
+		}
+		else {
+			sDO.reject({ status: 995, statusText: i18n.lookup('MsgImportFailed', ti) });
 		};
 		return sDO;
 
