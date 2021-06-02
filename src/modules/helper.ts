@@ -414,7 +414,7 @@ function bindResizer():void {
 
 type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | SpecifNode | SpecifFile;
 type Instance = Resource | Statement;
-function indexById(L:Item[],id:string):number {
+function indexById(L:any[],id:string):number {
 	if( L && id ) {
 		// given an ID of an item in a list, return it's index:
 		id = id.trim();
@@ -423,7 +423,7 @@ function indexById(L:Item[],id:string):number {
 	};
 	return -1;
 }
-function itemById(L: Item[],id:string):any {
+function itemById(L:any[],id:string):any {
 //	console.debug('+',L,id,(L && id));
 	if( L && id ) {
 		// given the ID of an item in a list, return the item itself:
@@ -432,7 +432,7 @@ function itemById(L: Item[],id:string):any {
 			if( L[i].id==id ) return L[i]   // return list item
 	};
 }
-function indexByTitle(L: Item[],ti:string):number {
+function indexByTitle(L:any[],ti:string):number {
 	if( L && ti ) {
 		// given a title of an item in a list, return it's index:
 		for( var i=L.length-1;i>-1;i-- )
@@ -440,14 +440,14 @@ function indexByTitle(L: Item[],ti:string):number {
 	};
 	return -1;
 }
-function itemByTitle(L: Item[],ti:string):any {
+function itemByTitle(L:any[],ti:string):any {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
 }
-function indexBy(L: Item[], p:string, s:string ):number {
+function indexBy(L:any[], p:string, s:string ):number {
 	if( L && p && s ) {
 		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 		// hand in property and searchTerm as string !
@@ -457,7 +457,7 @@ function indexBy(L: Item[], p:string, s:string ):number {
 	};
 	return -1;
 }
-function itemBy(L: Item[], p:string, s:string ):any {
+function itemBy(L:any[], p:string, s:string ):any {
 	if( L && p && s ) {
 		// Return the element in list 'L' whose property 'p' equals searchterm 's':
 	//	s = s.trim();
@@ -466,19 +466,19 @@ function itemBy(L: Item[], p:string, s:string ):any {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
-function containsById(cL: Item[], L: Item[] ):boolean {
+function containsById(cL:any[], L: Item[] ):boolean {
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
 	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
 
-	function containsL(cL: Item[], L: Item[] ):boolean {
+	function containsL(cL:any[], L: Item[] ):boolean {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexById( cL, L[i].id )<0 ) return false;
 		return true;
 	}
 }
-function containsByTitle(cL: Item[], L: Item[] ):boolean {
+function containsByTitle(cL:any[], L: Item[] ):boolean {
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
@@ -496,17 +496,17 @@ function cmp( i:string, a:string ):number {
 	a = a.toLowerCase();
 	return i==a? 0 : (i<a? -1 : 1);
 }
-function sortByTitle( L:Array<object> ):void {
+function sortByTitle( L:any ):void {
 	L.sort( 
 		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
 	);
 }
-function sortBy( L:Array<object>, fn:(arg0:object)=>string ):void {
+function sortBy( L:any[], fn:(arg0:object)=>string ):void {
 	L.sort( 
 		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
 	);
 }
-function forAll( L:Array<object>, fn:(arg0:any)=>any ):Array<any> {
+function forAll( L:any[], fn:(arg0:any)=>any ):Array<any> {
 	// return a new list with the results from applying the specified function to all items of input list L;
 	// differences when compared to Array.map():
 	// - tolerates missing L

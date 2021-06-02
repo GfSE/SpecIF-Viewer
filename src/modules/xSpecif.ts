@@ -649,7 +649,7 @@ class CSpecIF implements SpecIF {
 		spD.statementClasses = forAll(this.statementClasses, sC2ext);
 		spD.resources = forAll((opts.allResources ? this.resources : collectResourcesByHierarchy(this)), r2ext);
 		spD.statements = forAll(this.statements, s2ext);
-		spD.hierarchies = forAll(this.hierarchies, h2ext);
+		spD.hierarchies = forAll(this.hierarchies, n2ext);
 		if (this.files && this.files.length > 0)
 			spD.files = forAll(this.files, f2ext);
 
@@ -767,7 +767,7 @@ class CSpecIF implements SpecIF {
 			return oE;
 		}
 		// a data type:
-		function dT2ext(iE) {
+		function dT2ext(iE: DataType) {
 			var oE: DataType = i2ext(iE);
 			oE.type = iE.type;
 			switch (iE.type) {
@@ -791,7 +791,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a property class:
-		function pC2ext(iE) {
+		function pC2ext(iE: PropertyClass) {
 			var oE: PropertyClass = i2ext(iE);
 			if (iE.value) oE.value = iE.value;  // a default value
 			oE.dataType = iE.dataType;
@@ -827,14 +827,14 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a resource class:
-		function rC2ext(iE) {
+		function rC2ext(iE: ResourceClass) {
 			var oE: ResourceClass = aC2ext(iE);
 			// Include "isHeading" in SpecIF only if true:
 			if (iE.isHeading) oE.isHeading = true;
 			return oE
 		}
 		// a statement class:
-		function sC2ext(iE) {
+		function sC2ext(iE: StatementClass) {
 			var oE: StatementClass = aC2ext(iE);
 			if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
 			if (iE.subjectClasses && iE.subjectClasses.length > 0) oE.subjectClasses = iE.subjectClasses;
@@ -842,7 +842,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a property:
-		function p2ext(iE) {
+		function p2ext(iE: Property) {
 			// skip empty properties:
 			if (!iE.value) return;
 
@@ -917,13 +917,13 @@ class CSpecIF implements SpecIF {
 			return oE;
 		}
 		// a resource:
-		function r2ext(iE) {
+		function r2ext(iE: Resource) {
 			var oE: Resource = a2ext(iE);
 			//				console.debug('resource 2int',iE,oE);
 			return oE;
 		}
 		// a statement:
-		function s2ext(iE) {
+		function s2ext(iE: Statement) {
 			//				console.debug('statement2ext',iE.title);
 			// Skip statements with an open end;
 			// At the end it will be checked, wether all referenced resources resp. statements are listed:
@@ -958,10 +958,10 @@ class CSpecIF implements SpecIF {
 			return oE;
 		}
 		// a hierarchy node:
-		function n2ext(iN) {
+		function n2ext(iN: SpecifNode) {
 			//				console.debug( 'n2ext', iN );
 			// just take the non-redundant properties (omit 'title', for example):
-			let eN = {
+			let eN: SpecifNode = {
 				id: iN.id,
 				changedAt: iN.changedAt
 			};
@@ -980,13 +980,9 @@ class CSpecIF implements SpecIF {
 				eN.revision = iN.revision;
 			return eN
 		}
-		// a hierarchy:
-		function h2ext(iH) {
-			return n2ext(iH)
-		}
 		// a file:
-		function f2ext(iF) {
-			var eF = {
+		function f2ext(iF: IFileWithContent) {
+			var eF:SpecifFile = {
 				id: iF.id,  // is the distinguishing/relative part of the URL
 				title: iF.title,
 				type: iF.type
