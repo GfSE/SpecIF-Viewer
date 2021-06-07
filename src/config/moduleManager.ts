@@ -232,13 +232,13 @@ var app:IApp,
 		self.ready = [];
 
 		// init phase 1: Load the javascript routines common to all apps:
-		loadL(['bootstrap','types','i18n'], {done:init2} );
+		loadL(['bootstrap','types','i18n','tree'], {done:init2} );
 		return;
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper','helperTree','tree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
+			let modL = ['helper','helperTree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL( modL, { done: ()=>{ window.app = window[appName]() } });
 		}

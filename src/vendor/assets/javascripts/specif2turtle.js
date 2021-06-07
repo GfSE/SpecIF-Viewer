@@ -260,7 +260,7 @@ transformNodes = (hierarchyNode) => {
                 + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
                 + (resource? tier1RdfEntry(`meta:resource '${escapeSpecialCharaters(resource)}' ;`) : '')
                 + (revision? tier1RdfEntry(`meta:revision '${revision}' ;`) : '')
-                + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`);
+                + (changedAt? tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`) : '');
     
     if(isArrayWithContent(nodes)){
         let NodeTtlString = tier1RdfEntry(`meta:nodes`);

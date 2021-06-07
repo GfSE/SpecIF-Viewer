@@ -79,9 +79,9 @@ class CPropertyToShow implements Property {
 			default:
 				ct = this.value;
 		};
-		/*	// Add 'double-angle quotation' in case of stereotype values:
-				if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
-					ct = '&#x00ab;'+ct+'&#x00bb;'; */
+	/*	// Add 'double-angle quotation' in case of stereotype values:
+		if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
+			ct = '&#x00ab;'+ct+'&#x00bb;'; */
 		return ct;
 	}
 

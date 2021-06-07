@@ -578,57 +578,64 @@ function Project(): IProject {
 		});
 	}
 	function substituteRC(prj: SpecIF, rId: string, nId: string):void {
-		// Substitute new by original resourceClasses:
+		// Substitute new by original resourceClass:
 		substituteLe(prj.statementClasses,'subjectClasses',rId,nId);
 		substituteLe(prj.statementClasses,'objectClasses',rId,nId);
 		substituteProp(prj.resources,'class',rId,nId);
 	}
 	function substituteSC(prj: SpecIF, rId: string, nId: string):void {
-		// Substitute new by original statementClasses:
-		substituteProp(prj.statements,'class',rId,nId);
+		// Substitute new by original statementClass:
+		substituteProp(prj.statements, 'class', rId, nId);
 	}
-	function substituteR(prj:SpecIF,r:Resource,n:Resource,opts?:any):void {
+	function substituteR(prj: SpecIF, r: Resource, n: Resource, opts?: any): void {
 		// Substitute resource n by r in all references of n,
 		// where r is always an element of self.data.
 		// But: Rescue any property of n, if undefined for r.
-//		console.debug('substituteR',r,n,prj.statements);
+		//		console.debug('substituteR',r,n,prj.statements);
 
-		if( opts && opts.rescueProperties ) {
+		if (opts && opts.rescueProperties) {
 			// Rescue any property value of n,
 			// if the corresponding property of the adopted resource r is undefined or empty;
 			// looking at the property types, which ones are in common:
-			n.properties.forEach( (nP)=>{
-				if( hasContent(nP.value) ) {
+			n.properties.forEach((nP) => {
+				if (hasContent(nP.value)) {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let pT = propTitleOf(nP,prj),
-						rP = propByTitle(r,pT,self.data);
-//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( r, pT, self.data )));
-					if( !hasContent(valByTitle( r, pT, self.data ))
+					let pT = propTitleOf(nP, prj),
+						rP = propByTitle(r, pT, self.data);
+					//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( r, pT, self.data )));
+					if (!hasContent(valByTitle(r, pT, self.data))
 						// dataTypes must be compatible:
-						&& compatibleDT( dataTypeOf(self.data, rP['class']), dataTypeOf(prj, nP['class'])) ) {
-					//	&& typeIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ).status==0 ) {
-							rP.value = nP.value;
+						&& compatibleDT(dataTypeOf(self.data, rP['class']), dataTypeOf(prj, nP['class']))) {
+						//	&& typeIsCompatible( 'dataType', dataTypeOf(self.data,rP['class']), dataTypeOf(prj,nP['class']) ).status==0 ) {
+						rP.value = nP.value;
 					};
 				};
 			});
 		};
 		// In the rare case that the ids are identical, there is no need to update the references:
-		if( r.id==n.id ) return;
+		if (r.id == n.id) return;
 
-		// memorize the replaced id, if not yet listed:
-		if( !Array.isArray(r.alternativeIds) ) r.alternativeIds = [];
-		cacheE( r.alternativeIds, n.id );
+		// 1. Memorize the replaced id, if not yet listed:
+		if (!Array.isArray(r.alternativeIds)) r.alternativeIds = [];
+		cacheE(r.alternativeIds, n.id);
 
 		// 2 Replace the references in all statements:
-		prj.statements.forEach( (st:Statement):void =>{
-			if( equalKey(st.object,n) ) { if( st.object.id ) {st.object.id=itemIdOf(r)} else {st.object=itemIdOf(r)} };
-			if( equalKey(st.subject,n) ) { if( st.subject.id ) {st.subject.id=itemIdOf(r)} else {st.subject=itemIdOf(r)} }
+		prj.statements.forEach((st: Statement) => {
+			if (equalKey(st.object, n)) { if (st.object.id) { st.object.id = itemIdOf(r) } else { st.object = itemIdOf(r) } };
+			if (equalKey(st.subject, n)) { if (st.subject.id) { st.subject.id = itemIdOf(r) } else { st.subject = itemIdOf(r) } }
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
+
 		// 3 Replace the references in all hierarchies:
-		substituteRef(prj.hierarchies,r.id,n.id);
+		substituteRef(prj.hierarchies, r.id, n.id);
+
+		// 4 Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
+		prj.statementClasses.forEach((sC: StatementClass) => {
+			if (Array.isArray(sC.subjectClasses) && sC.subjectClasses.indexOf(n['class']) > -1) cacheE(sC.subjectClasses, r['class']);
+			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(n['class']) > -1) cacheE(sC.objectClasses, r['class']);
+		});
 	}
 	function substituteProp(L,propN:string,rAV:string,dAV:string):void {
 		// replace ids of the duplicate item by the id of the original one;
@@ -639,7 +646,7 @@ function Project(): IProject {
 	function substituteLe(L,propN:string,rAV:string,dAV:string):void {
 		// Replace the duplicate id by the id of the original item;
 		// so replace dAV by rAV in the list named 'propN'
-		// (for example: in L[i].propN (which is a list as well), replace dAV by rAV):
+		// (for example: in L[i][propN] (which is a list as well), replace dAV by rAV):
 		let idx:number;
 		if( Array.isArray(L) )
 			L.forEach( (e)=>{
