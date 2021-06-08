@@ -1173,50 +1173,63 @@ const specif = {
 					reject( {status:999,statusText:'No SpecIF data to check'} );
 				};
 
-				// 1. Validate the data using the SpecIF schema:
+			/*	// Get the "official" routines for checking schema and constraints:
+				// Use $.ajax() with options since it is more flexible than $.getScript:
+				$.ajax({
+					dataType: "script",
+					cache: true,
+					url: url + (url.slice(0, 4) == 'http' ? "" : "?" + CONFIG.appVersion)
+				})
+				.done(...)
+				.fail(handleError);  
+				.. currently this is loaded at initialization */
 
-				// Get the specified schema file from the server:
+				// Get the specified schema file:
 				httpGet({
 					// force a reload through cache-busting:
 					// @ts-ignore - 'specifVersion' is defined for versions <1.0
 					url: (data['$schema'] || 'https://specif.de/v' + data.specifVersion + '/schema') + '?' + simpleHash(Date.now().toString()),
 					responseType: 'arraybuffer',
 					withCredentials: false,
-					done: (xhr:XMLHttpRequest)=>{
-//						console.debug('schema', xhr);
-						// 1. check data against schema:
-						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
-						let rc:xhrMessage = checkSchema(data, { schema: JSON.parse(ab2str(xhr.response)) });
-						if( rc.status==0 ) {
-							// 2. Check further constraints:
-							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
-							rc = checkConstraints(data, opts);
-							if( rc.status==0 ) {
-								resolve( data );
-							} 
-							else {
-								reject( rc );
-							};
+					done: handleResult,
+					fail: handleError
+				});
+				return;
+
+				function handleResult(xhr: XMLHttpRequest) {
+//					console.debug('schema', xhr);
+					// 1. check data against schema:
+					// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
+					let rc: xhrMessage = checkSchema(data, { schema: JSON.parse(ab2str(xhr.response)) });
+					if (rc.status == 0) {
+						// 2. Check further constraints:
+						// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
+						rc = checkConstraints(data, opts);
+						if (rc.status == 0) {
+							resolve(data);
 						}
 						else {
-							// older versions of the checking routine don't set the responseType:
-							if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
-								rc.responseType = 'text';
 							reject(rc);
 						};
-					},
-					fail: (xhr:xhrMessage)=>{
-						switch( xhr.status ) {
-							case 404:
-								// @ts-ignore - 'specifVersion' is defined for versions <1.0
-								let v = data.specifVersion? 'version '+data.specifVersion : 'with Schema '+data['$schema'];
-								xhr = { status: 903, statusText: 'SpecIF '+v+' is not supported by the program!' };
-								// no break
-							default:
-								reject(xhr);
-						};
 					}
-				});
+					else {
+						// older versions of the checking routine don't set the responseType:
+						if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
+							rc.responseType = 'text';
+						reject(rc);
+					};
+				}
+				function handleError(xhr: xhrMessage) {
+					switch (xhr.status) {
+						case 404:
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
+							let v = data.specifVersion ? 'version ' + data.specifVersion : 'with Schema ' + data['$schema'];
+							xhr = { status: 903, statusText: 'SpecIF ' + v + ' is not supported by the program!' };
+						// no break
+						default:
+							reject(xhr);
+					};
+				}
 			}
 		);
 	}

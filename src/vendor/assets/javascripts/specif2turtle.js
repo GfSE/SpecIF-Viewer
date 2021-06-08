@@ -265,7 +265,7 @@ transformNodes = (hierarchyNode) => {
     if(isArrayWithContent(nodes)){
         let NodeTtlString = tier1RdfEntry(`meta:nodes`);
         nodes.forEach( node => {
-            NodeTtlString += tier2RdfEntry(`:${node.id} ,` );
+            NodeTtlString += tier2RdfEntry(`:${node.id} ,`);
         });
         hierarchyNodeTtlString += NodeTtlString.replace(/,([^,]*)$/, ';')
                     + ` .`;  

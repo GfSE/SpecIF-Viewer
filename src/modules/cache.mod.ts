@@ -201,7 +201,8 @@ function Project(): IProject {
 		var sDO = $.Deferred();
 
 		// Create the specified project:
-		let ti = newD.title;
+		let ti = newD.title,
+			pend: number;
 
 		self.abortFlag = false;
 		newD = new CSpecIF(newD); // transform to internal data structure
@@ -214,7 +215,7 @@ function Project(): IProject {
 			// The project meta-data and each item are created as a separate document in a document database;
 			// at the same time the cache is updated.
 			sDO.notify(i18n.MsgLoadingTypes, 30);
-			let pend = 8;
+			pend = 8;
 			self.createContent('dataType', newD.dataTypes)
 				.then(finalize, sDO.reject);
 			self.createContent('propertyClass', newD.propertyClasses)
@@ -256,38 +257,38 @@ function Project(): IProject {
 		}
 	};
 	/*	self.read = ( prj, opts )=>{
-			// Assemble the data of the project from all documents in a document database:
-			switch( typeof(opts) ) {
-				case 'boolean':
-					// for backward compatibility:
-					opts = {reload: opts, loadAllSpecs: false, loadObjects: false, loadRelations: false};
-					break;
-				case 'object':
-					// normal case (as designed):
-				//	if( typeof opts.reload!='boolean' ) opts.reload = false;
-					break;
-				default:
-					opts = {reload: false}
-			};
-	//		console.debug( 'cache.read', opts, self.data.id, prj );
-	
-			var pDO = $.Deferred();
-			// Read from cache in certain cases:
-			if( self.data.isLoaded && !opts.reload && ( !prj || prj.id==self.data.id ) ) {
-				// return the loaded project:
-				pDO.resolve( self );
-				return pDO
-			};
-			// else
-			return null
+		// Assemble the data of the project from all documents in a document database:
+		switch( typeof(opts) ) {
+			case 'boolean':
+				// for backward compatibility:
+				opts = {reload: opts, loadAllSpecs: false, loadObjects: false, loadRelations: false};
+				break;
+			case 'object':
+				// normal case (as designed):
+			//	if( typeof opts.reload!='boolean' ) opts.reload = false;
+				break;
+			default:
+				opts = {reload: false}
 		};
-		self.updateMeta = ( prj )=>{
-			if( !prj ) return;
-			// update only the provided properties:
-			for( var p in prj ) self[p] = prj[p];			
-			// Update the meta-data (header):
-		//	return server.project(self).update()
-		};*/
+//		console.debug( 'cache.read', opts, self.data.id, prj );
+	
+		var pDO = $.Deferred();
+		// Read from cache in certain cases:
+		if( self.data.isLoaded && !opts.reload && ( !prj || prj.id==self.data.id ) ) {
+			// return the loaded project:
+			pDO.resolve( self );
+			return pDO
+		};
+		// else
+		return null
+	};
+	self.updateMeta = ( prj )=>{
+		if( !prj ) return;
+		// update only the provided properties:
+		for( var p in prj ) self[p] = prj[p];			
+		// Update the meta-data (header):
+	//	return server.project(self).update()
+	}; */
 	class CType {
 		ctg: string;
 		list: string;
@@ -302,13 +303,7 @@ function Project(): IProject {
 			this.substitute = subsF;
 		}
 	}
-/*	Create a table of types and relevant attributes:	
-	const types = [
-		{ ctg: 'dataType', 			list: 'dataTypes', 			isEqual: equalDT, 	isCompatible: compatibleDT,		substitute: substituteDT },
-		{ ctg: 'propertyClass', 	list: 'propertyClasses', 	isEqual: equalPC, 	isCompatible: compatiblePC,		substitute: substitutePC },
-		{ ctg: 'resourceClass', 	list: 'resourceClasses', 	isEqual: equalRC, 	isCompatible: compatibleRC,		substitute: substituteRC },
-		{ ctg: 'statementClass', 	list: 'statementClasses', 	isEqual: equalSC, 	isCompatible: compatibleSC,		substitute: substituteSC }
-	]; */
+//	Create a table of types and relevant attributes:	
 	const types = [
 		new CType('dataType', equalDT, compatibleDT, substituteDT),
 		new CType('propertyClass', equalPC, compatiblePC, substitutePC),
@@ -621,17 +616,17 @@ function Project(): IProject {
 		if (!Array.isArray(r.alternativeIds)) r.alternativeIds = [];
 		cacheE(r.alternativeIds, n.id);
 
-		// 2 Replace the references in all statements:
+		// 2. Replace the references in all statements:
 		prj.statements.forEach((st: Statement) => {
 			if (equalKey(st.object, n)) { if (st.object.id) { st.object.id = itemIdOf(r) } else { st.object = itemIdOf(r) } };
 			if (equalKey(st.subject, n)) { if (st.subject.id) { st.subject.id = itemIdOf(r) } else { st.subject = itemIdOf(r) } }
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
 
-		// 3 Replace the references in all hierarchies:
+		// 3. Replace the references in all hierarchies:
 		substituteRef(prj.hierarchies, r.id, n.id);
 
-		// 4 Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
+		// 4. Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
 		prj.statementClasses.forEach((sC: StatementClass) => {
 			if (Array.isArray(sC.subjectClasses) && sC.subjectClasses.indexOf(n['class']) > -1) cacheE(sC.subjectClasses, r['class']);
 			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(n['class']) > -1) cacheE(sC.objectClasses, r['class']);

@@ -467,7 +467,7 @@ function BPMN2Specif( xmlString, opts ) {
 							})
 						}
 					})
-				};
+				}
 			chNs.forEach( (el)=>{
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
@@ -968,7 +968,7 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		});
 		return nL;
-	};
+	}
 /*	// 10. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
