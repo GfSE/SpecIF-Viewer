@@ -2058,11 +2058,12 @@ function Project(): IProject {
 		new BootstrapDialog({
 			title: i18n.LblExport+": '"+self.data.title+"'",
 			type: 'type-primary',
-			// @ts-ignore - BootstrapDialog() is loaded at runtime
-			size: BootstrapDialog.SIZE_WIDE,
+		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
+			size: BootstrapDialog.SIZE_WIDE,  */
 			message: ()=>{
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-						+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+					//	+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+						+	'<div class="col-sm-12" style="padding: 0 4px 0 4px">'
 						+     '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
 					//	+		"<h4>"+i18n.LblFormat+"</h4>"
 						+		"<p>"+i18n.MsgExport+"</p>"
@@ -2081,7 +2082,8 @@ function Project(): IProject {
 								)
 						+	  '</div>'
 						+   '</div>'
-						+	'<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+					//	+	'<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+						+	'<div id="expOptions" class="col-sm-12" style="padding: 0 4px 0 4px">'
 						+     self.exportOptions( 'specif' )   // parameter must correspond to the checked option above
 						+   '</div>'
 						+  '</div>';

@@ -265,10 +265,10 @@ class CPropertyToShow implements Property {
 		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
 			// @ts-ignore - $2 is never read, but must be specified anyways
 			($0, $1, $2, $3) => {
-				//				var pairedImgExists = ( url )=>{
-				//					// ToDo: check actually ...
-				//					return true
-				//				};
+			//	var pairedImgExists = ( url )=>{
+			//		// ToDo: check actually ...
+			//		return true
+			//	};
 
 				let u1 = getUrl($1),
 					t1 = getType($1),
@@ -282,9 +282,9 @@ class CPropertyToShow implements Property {
 				let d = $3 || u1,
 					hasImg = false;
 				e = e.toLowerCase();
-				//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
+//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
 
-				//				u1 = addFilePath(u1);
+			//	u1 = addFilePath(u1);
 				if (!u1) console.info('no image found');
 				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
 				// sometimes the application files (BPMN or other) have been replaced by images;
@@ -885,7 +885,6 @@ class CFileWithContent implements IFileWithContent {
 			case 'image/jpeg':
 			case 'image/jpg':
 			case 'image/gif':
-				// reference the original list item, which has the blob and other properties:
 				this.showRaster(opts);
 				break;
 			case 'image/svg+xml':
@@ -901,16 +900,6 @@ class CFileWithContent implements IFileWithContent {
 	// end of renderImage()
 	};
 	private showRaster(opts: any): void {
-		/*	if( this.dataURL ) {
-				// this works:
-				setTimeout( ()=>{
-					// add image to DOM using an image-tag with data-URI:
-					Array.from( document.getElementsByClassName(tagId(this.title)), 
-						(el)=>{el.innerHTML = '<img src="'+this.dataURL+'" type="'+this.type+'" alt="'+this.title+'" />'}
-					);
-				}, opts.timelag )
-			} 
-			else { */
 		blob2dataURL(this, (r: string, fTi: string, fTy: string): void => {
 			// add image to DOM using an image-tag with data-URI:
 			Array.from(document.getElementsByClassName(tagId(fTi)),
@@ -925,20 +914,10 @@ class CFileWithContent implements IFileWithContent {
 				}
 			);
 		}, opts.timelag);
-		//	};
 	}
 	private showSvg(opts: any): void {
-		// Show a SVG image.
-
 		// Read and render SVG:
-		/*	if( this.dataURL ) {
-				// this does not work, yet;
-				// here we need the SVG as XML-string, not as data-URL:
-				setTimeout( displaySVGeverywhere( .. ), opts.timelag )
-			}
-			else { */
 		blob2text(this, displaySVGeverywhere, opts.timelag)
-		//	};
 		return;
 
 		function itemBySimilarId(L: Item[], id: string): Item {
@@ -1837,7 +1816,7 @@ moduleManager.construct({
 		//	if( self.resCln && cacheData.selectedHierarchy.upd )
 			if( self.resCre )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
-						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
+						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>'
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
@@ -1854,7 +1833,7 @@ moduleManager.construct({
 		//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
 			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
 				rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" '
-						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
+						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>'
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
 

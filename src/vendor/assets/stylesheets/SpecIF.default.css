@@ -2,7 +2,7 @@
 	Defines own CSS classes and overrides certain classes of Bootstrap and other libs.
 	Intended to be replaced with a custom file;
 	it is recommended to use a different name and to change path and name in config-XX.js.
-	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright 2010-2018 enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
 
@@ -416,5 +416,3 @@ ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
   font-size: 100%;
   cursor: pointer;
 }
-
-
