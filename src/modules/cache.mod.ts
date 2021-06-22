@@ -69,7 +69,7 @@ interface IProjects extends IModule {
 
 moduleManager.construct({
 	name: 'cache'
-}, (self: IProjects):IProjects => {
+}, (self: IProjects) => {
 	// Construct a representative of the selected project with cached data:
 	// ToDo: enforce CONFIG.maxItemsToCache
 
@@ -2040,8 +2040,8 @@ function Project(): IProject {
 						//	i18n.LblOptions,
 							i18n.modelElements,
 							[
-								{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: true },
-								{ title: i18n.withStatements, id: 'withStatements', checked: true }
+								{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
+								{ title: i18n.withStatements, id: 'withStatements', checked: false }
 							],
 							{ handle: exportOptionsClicked }
 						);

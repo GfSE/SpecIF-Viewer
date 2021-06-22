@@ -8,8 +8,8 @@
     "\\src\\types",
     "\\src\\vendor",
     "\\src\\vendor\\assets",
-    "\\src\\vendor\\assets\\javascripts"
+    "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\vendor\\assets\\javascripts\\specif2turtle.js",
+  "SelectedNode": "\\src\\modules\\helper.ts",
   "PreviewInSolutionExplorer": false
 }

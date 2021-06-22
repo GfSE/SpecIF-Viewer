@@ -196,6 +196,7 @@ class CPropertyToShow implements Property {
 			// compose a style property, if there are such parameters,
 			// return empty string, otherwise:
 			return (h || w) ? ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + '"' : '';
+		//	return ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + ' position:relative;"';
 		}
 
 		// Prepare a file reference for viewing and editing:
@@ -230,7 +231,7 @@ class CPropertyToShow implements Property {
 					if (f2.hasContent()) {
 						// take f1 to download and f2 to display:
 
-						//						console.debug('tagId',tagId(u2));
+//						console.debug('tagId',tagId(u2));
 						// first add the element to which the file to download will be added:
 						repStrings.push('<div id="' + tagId(u1) + '"></div>');
 						// now add the image as innerHTML:
@@ -238,9 +239,14 @@ class CPropertyToShow implements Property {
 							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
 							+ makeStyle(w2, h2)
 							+ '></div>',
+					/*		// add a button to enlarge the diagram in the top-right corner:
+							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
+							+ makeStyle(w2, h2)
+							+ '></div>',
+					 										*/
 							opts
 						);
-						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
+						// Because an image must be added after the enclosing link, for example, the timelag is increased a little:
 						f2.renderImage($.extend({}, opts, { timelag: opts.timelag * 1.2 }));
 					}
 					else {
@@ -307,6 +313,10 @@ class CPropertyToShow implements Property {
 						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
 							+ makeStyle(w1, h1)
 							+ '></div>';
+				/*		// add a button to enlarge the diagram in the top-right corner:
+				 		d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
+							+ makeStyle(w1, h1)
+							+ '><button class="btn btn-success" style="position:absolute;right:0;z-index:900;" >N</button></div>'; */
 //						console.debug('img opts',f1,opts);
 						// Add the image as innerHTML:
 						f1.renderImage(opts);
@@ -412,7 +422,7 @@ class CPropertyToShow implements Property {
 }
 class CResourceToShow {
 	id: string;
-	class: ResourceClass;
+	class: ResourceClass; // in contrast to the SpecIF schema, this is the class itself and not it's id
 	isHeading: boolean;
 	order: string;
 	revision?: string;
@@ -426,7 +436,6 @@ class CResourceToShow {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
 		// ToDo: Basically it can also be used for Statements ... 
-		// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
 		if (!pData) pData = app.cache.selectedProject.data;
 		this.id = el.id;
 		this['class'] = itemById(pData.resourceClasses, el['class']) as ResourceClass;
@@ -543,8 +552,13 @@ class CResourceToShow {
 	isEqual(res: Resource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
+	isUserInstantiated(): boolean {
+		return (!Array.isArray(this['class'].instantiation)
+			|| this['class'].instantiation.indexOf(Instantiation.User) > -1)
+	}
 	private renderAttr(lbl: string, val: string, cssCl: string): string {
 		// show a string value with or without label:
+		// ToDo: Create a class for attributes ..
 		cssCl = cssCl ? ' ' + cssCl : '';
 		if (typeof (val) == 'string')
 			val = noCode(val)
@@ -1040,7 +1054,7 @@ class CFileWithContent implements IFileWithContent {
 						// delete the details to make sure that images of the click target are shown,
 						// otherwise there will be more than one image container with the same id:
 						$("#details").empty();
-						app.specs.showTree.set(true);
+						app.specs.showTree.set();
 						// jump to the click target:
 						app.specs.tree.selectNodeByRef(eId, true);  // true: 'similar'; id must be a substring of nd.ref
 						// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
@@ -1076,7 +1090,7 @@ class CFileWithContent implements IFileWithContent {
 					function () {
 						//	evt.target.setAttribute("style", "cursor:default;"); 
 						$("#details").empty();
-						app.specs.showTree.set(true);
+						app.specs.showTree.set();
 					}
 				);
 			});
@@ -1155,7 +1169,7 @@ class CFileWithContent implements IFileWithContent {
 // Construct the specifications controller:
 moduleManager.construct({
 	name: CONFIG.specifications
-}, (self: ISpecs):ISpecs =>{
+}, (self: ISpecs) =>{
 	// This module and view is responsible for the selection tabs and the navigation tree which are shared by several sub-views.
 	
 	let myName = self.loadAs,
@@ -1167,9 +1181,9 @@ moduleManager.construct({
 	};
 	self.emptyTab = ( tab:string ):void =>{
 		app.busy.reset();
+	//	$( '#specNotice' ).empty();
 		// but show the buttons anyways, so the user can create the first resource:
-		$( '#contentNotice' ).empty();
-		$( '#contentActions' ).empty();
+	//	$( '#specActions' ).empty();
 		$( tab ).empty();
 	};
 
@@ -1179,22 +1193,22 @@ moduleManager.construct({
 //		console.debug( 'specs.init', self );
 		
 		//  Add the left panel for tree or details and the up/down buttons to the DOM:
-		let h = '<div id="specLeft" class="paneLeft">'
-			+		'<div id="hierarchy" class="pane-tree" ></div>'
-			+		'<div id="details" class="pane-details" ></div>'
-			+	'</div>'
-			+	'<div id="specCtrl" class="contentCtrl" >'
-			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
-			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
-			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
-			+		'</div>'
-			+		'<div id="contentNotice" class="contentNotice" ></div>'
-			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" ></div>'
-			+	'</div>';
-		if(self.selector)
-			$(self.selector).after( h );
+		let h = '<div id="specLeft" class="paneLeft" style="position:relative">'
+			+ '<div id="navBtns" class="btn-group-vertical btn-group-sm" style="position:absolute;top:4px;right:12px;z-index:900">'
+			+ '<button class="btn btn-default" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
+			+ '<button class="btn btn-default" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
+			+ '</div>'
+			+	'<div id="hierarchy" class="pane-tree" ></div>'
+			+	'<div id="details" class="pane-details" ></div>'
+			+ '</div>';
+		/*	+ '<div id="specCtrl" class="contentCtrl" >'
+		//	+	'<div id="specNotice" class="contentNotice" ></div>'
+		//	+	'<div id="specActions" class="btn-group contentActions" ></div>'
+		//	+ '</div>'; */
+		if (self.selector)
+			$(self.selector).after(h);
 		else
-			$(self.view).prepend( h );
+			$(self.view).prepend(h);
 
 		// Construct jqTree,
 		// holds the hierarchy tree (or outline):
@@ -1298,12 +1312,12 @@ moduleManager.construct({
 		});
 		// controls whether the left panel with the tree or details is shown or not:
 		self.showLeft = new State({
-			showWhenSet: ['#specLeft','#specCtrl'],
+			showWhenSet: ['#specLeft'],
 			hideWhenSet: []
 		});
 		// controls whether the left panel shows tree or details (when showLeft is true):
 		self.showTree = new State({
-			showWhenSet: ['#hierarchy'],
+			showWhenSet: ['#hierarchy','#navBtns'],
 			hideWhenSet: ['#details']
 		});
 	//	self.typesComment = null;
@@ -1432,8 +1446,8 @@ moduleManager.construct({
 		
 		$('#pageTitle').html( app.cache.selectedProject.data.title );
 		app.busy.set();
-	//	$('#contentNotice').html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
-		$('#contentNotice').empty();
+	//	$( self.view ).html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
+	//	$('#specNotice').empty();
 
  		let uP = opts.urlParams,
 			fNd = self.tree.firstNode(),
@@ -1491,7 +1505,7 @@ moduleManager.construct({
 			);
 		} else {
 			// the project has no spec:
-			$('#contentNotice').html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
+			$( self.view ).html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
 			app.busy.reset();
 		};
 	};
@@ -1518,7 +1532,7 @@ moduleManager.construct({
 		// --> Don't disturb the user in case of the editing views ('objectEdit', 'linker').
 //		console.debug('doRefresh',parms);
 
-		$('#contentNotice').empty();
+	//	$('#specNotice').empty();
 	
 		// update the current view:
 		self.ViewControl.selected.show( parms );
@@ -1650,14 +1664,14 @@ moduleManager.construct({
 // Construct the controller for resource listing ('Document View'):
 moduleManager.construct({
 	view:'#'+CONFIG.objectList
-}, (self:IModule):IModule =>{
+}, (self:IModule) =>{
 	// Construct an object for displaying a hierarchy of resources:
 
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
 		cacheData: CSpecIF,		// the cached project data
-		selRes:Resource;		// the currently selected resource
+		selRes: CResourceToShow;	// the currently selected resource
 
 	// Permissions for resources:
 	self.resCreClasses = [];  // all resource classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -1671,13 +1685,8 @@ moduleManager.construct({
 //	self.comments = new CResourcesToShow();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
-	function selResIsUserInstantiated():boolean {
-		return selRes 
-				&& ( !Array.isArray(selRes['class'].instantiation)
-					|| selRes['class'].instantiation.indexOf('user')>-1 )
-	}
 	self.init = (): boolean => {
-			return true;
+		return true;
 	};
 	self.clear = ():void =>{
 	//	selectResource(null);
@@ -1775,7 +1784,7 @@ moduleManager.construct({
 			};
 			// the currently selected resource:
 			selRes = self.resources.selected();
-			$( '#contentActions' ).html( actionBtns() );
+			$( self.view ).prepend( actionBtns() );
 			app.busy.reset();
 		}
 		function handleErr(err):void {
@@ -1786,10 +1795,7 @@ moduleManager.construct({
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
-			var isUserNode = selResIsUserInstantiated(),
-		//		rootRes = itemById( 
-		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
-				rB = '<div class="btn-group btn-group-sm" >';
+			var rB = '<div class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
 //			console.debug( 'actionBtns', pData.tree.rootNode() );
 
 		/*	if( selRes )
@@ -1831,11 +1837,11 @@ moduleManager.construct({
 					return false
 				}  */
 		//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
-				rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" '
-						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>'
+			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.upd))
+				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
+						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoEdit+'</button>'
 			else
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
+				rB += '<button disabled class="btn btn-default" >'+i18n.IcoEdit+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
 		/*	if( self.cmtCre )
@@ -1847,7 +1853,7 @@ moduleManager.construct({
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
 		//	if( cacheData.selectedHierarchy.del )
-			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && isUserNode )
+			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
@@ -2032,7 +2038,7 @@ moduleManager.construct({
 // Construct the controller for displaying the statements ('Statement View'):
 moduleManager.construct({
 	view:'#'+CONFIG.relations
-}, (self:IModule):IModule =>{
+}, (self:IModule) =>{
 	// Render the statements of a selected resource:
 
 	var myName = self.loadAs,
@@ -2128,7 +2134,7 @@ moduleManager.construct({
 								stL.forEach( cacheNet );
 //								console.debug('local net',stL,net);
 								renderStatements( net );
-								$( '#contentActions' ).html( linkBtns() ); 
+								$( self.view ).prepend( linkBtns() ); 
 								app.busy.reset();
 							},
 							handleErr
@@ -2303,10 +2309,11 @@ moduleManager.construct({
 
 	function linkBtns():string {
 		if( !selRes ) return '';
-		if( modeStaDel ) 
-			return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+		var rB = '<div id="linkBtns" class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
 
-		var rB = '<div class="btn-group btn-group-sm" >';
+		if (modeStaDel) 
+			return rB+'<button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+
 //		console.debug( 'linkBtns', self.staCre );
 
 		if( app.title!=i18n.LblReader && self.staCre )
@@ -2359,10 +2366,6 @@ moduleManager.construct({
 			modeStaDel = false;
 			return;
 		};
-		if( modeStaDel ) 
-			$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' );
-		else
-			$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
 
 //		console.debug('renderStatements',net);
 		
@@ -2382,6 +2385,12 @@ moduleManager.construct({
 			graphOptions.nodeColor = '#ef9a9a';
 //		console.debug('showStaGraph',net,graphOptions);
 		app.statementsGraph.show(net, graphOptions);
+
+		let info = '<div style="position:absolute;top:4px;left:4px;z-index:900">';
+		if (modeStaDel)
+			$(self.view).prepend(info+'<span class="notice-danger" >' + i18n.MsgClickToDeleteRel + '</span></div>');
+		else
+			$(self.view).prepend(info +'<span class="notice-default" >' + i18n.MsgClickToNavigate + '</span></div>');
 	}
 /*	function renderStatementsTable( sGL, opts ) {
 		// Render a table with all statements grouped by type:
@@ -2498,8 +2507,9 @@ moduleManager.construct({
 		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
 //		console.debug( 'toggle delete statement mode:', modeStaDel);
-		$( '#contentActions' ).html( linkBtns() );
+		$( '#linkBtns' ).remove();
 		renderStatements( net );
+		$(self.view).prepend(linkBtns());
 	};
 	self.relatedItemClicked = function( rId:string, sId:string ):void {
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.

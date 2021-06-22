@@ -8,11 +8,11 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.i",
+	CONFIG.appVersion = "1.0.k",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
-	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
-	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
+//	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
+//	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
 	CONFIG.notAssigned = 'notAssigned';
 //	CONFIG.loginTimeout = 3000;
@@ -32,9 +32,9 @@ const CONFIG:any = {};
 	CONFIG.maxTitleLength =      // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
 	CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
 	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications*.mod.js)
-	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules reqifserver*.js, specifications*.mod.js, objectFilter*.mod.js)
+	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules specifications*.mod.js, objectFilter*.mod.js)
 	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications*.mod.js)
-	CONFIG.genIdLength = 27;  // length of generated GUIDs, any prefix comes in addition (but it does not add significantly to the probability of collision)
+	CONFIG.genIdLength = 27;  // length of generated GUIDs, any prefix comes in addition (but does not add significantly to the probability of collision)
 //	CONFIG.maxItemsToCache = 2000; // 0: object cache is disabled; undefined: object cache is enabled without limit
 //	CONFIG.cacheAutoLoadPeriod = 90000; // in ms ... should be at least 60000ms
 //	CONFIG.cacheAutoLoadReader = false; // load the cache for the reader app
@@ -269,7 +269,7 @@ const CONFIG:any = {};
 		'Beschreibung',
 		'Description',
 		'Diagramm',
-/*		// DocBride Resource Director:
+	/*	// DocBride Resource Director:
 		'DBRD.Text',
 		'Preview',
 		// carhs SafetyWissen:
@@ -279,7 +279,7 @@ const CONFIG:any = {};
 		'Dokument',
 		// RIF 1.1a Atego Exerpt:
 		'Object Text',
-//		'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning
+	//	'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning
 		// Glossary:
 		'Text.en',
 		'Text.de',

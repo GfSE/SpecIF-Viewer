@@ -9,7 +9,7 @@
 // Construct the resource editor:
 moduleManager.construct({
 	name: CONFIG.resourceLink
-}, (self:IModule):IModule =>{
+}, (self:IModule) =>{
 	"use strict";
 
 	let myName = self.loadAs,
@@ -149,7 +149,7 @@ moduleManager.construct({
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//		var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
 									+ radioField( i18n.LblStatementClass, staClasses, {handle:myFullName+'.filterClicked()'} )
-									+ textField( i18n.TabFind,'',{typ:'line', handle:myFullName+'.filterClicked()'} )
+									+ textField( i18n.TabFilter,'',{typ:'line', handle:myFullName+'.filterClicked()'} )
 									+	'</div></div>'
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//				+ '</td><td style="padding-left:0.4em">'
@@ -160,40 +160,39 @@ moduleManager.construct({
 							return $( form ) 
 						},
 						buttons: [{
-								label: i18n.BtnCancel,
-								action: (thisDlg)=>{ 
-//									console.debug('action cancelled');
-									thisDlg.close() 
-								}
-							},{ 	
-								id: 'btn-modal-saveResourceAsSubject',
-								label: i18n.LblSaveRelationAsSource,
-								cssClass: 'btn-success', 
-								action: (thisDlg)=>{
-									self.saveStatement({secondAs:'subject'})
-									.then(
-										()=>{
-											pData.doRefresh({forced:true})
-										},
-										stdError
-									);
-									thisDlg.close()
-								}  
-							},{ 	
-								id: 'btn-modal-saveResourceAsObject',
-								label: i18n.LblSaveRelationAsTarget,
-								cssClass: 'btn-success', 
-								action: (thisDlg)=>{
-									self.saveStatement({secondAs:'object'})
-									.then(
-										()=>{
-											pData.doRefresh({forced:true})
-										},
-										stdError
-									);
-									thisDlg.close()
-								}  
-							}]
+							label: i18n.BtnCancel,
+							action: (thisDlg)=>{ 
+								thisDlg.close() 
+							}
+						}, {
+							id: 'btn-modal-saveResourceAsSubject',
+							label: i18n.IcoAdd +'&#160;'+i18n.LblSaveRelationAsSource,
+							cssClass: 'btn-success', 
+							action: (thisDlg)=>{
+								self.saveStatement({secondAs:'subject'})
+								.then(
+									()=>{
+										pData.doRefresh({forced:true})
+									},
+									stdError
+								);
+								thisDlg.close()
+							}  
+						},{ 	
+							id: 'btn-modal-saveResourceAsObject',
+							label: i18n.IcoAdd +'&#160;'+i18n.LblSaveRelationAsTarget,
+							cssClass: 'btn-success', 
+							action: (thisDlg)=>{
+								self.saveStatement({secondAs:'object'})
+								.then(
+									()=>{
+										pData.doRefresh({forced:true})
+									},
+									stdError
+								);
+								thisDlg.close()
+							}  
+						}]
 					})
 					.open()	
 				}
@@ -210,9 +209,9 @@ moduleManager.construct({
 	self.filterClicked = ():void =>{
 //		console.debug('click!', radioValue( i18n.LblStatementClass ));
 		self.selectedStatementClass = self.eligibleSCL[ radioValue( i18n.LblStatementClass ) ];
-		setTextFocus(i18n.TabFind); 
+		setTextFocus(i18n.TabFilter); 
 		let	eligibleRs = '',
-			searchStr = textValue(i18n.TabFind),
+			searchStr = textValue(i18n.TabFilter),
 			reTi = new RegExp( searchStr.escapeRE(), 'i' );  // don't use 'gi' - works only every other time.
 
 		// among all statements of the originally selected resource (selRes), filter all those of the given class:

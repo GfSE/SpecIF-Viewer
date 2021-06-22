@@ -3,6 +3,8 @@
 	- yourVarName.MsgText (in most cases, when there are only characters allowed for js variable names)
 	- yourVarName.lookup('MsgName', 'param')
 	- In the messages defined below, '~A' can be inserted at the location where a call parameter shall be placed.
+
+	Search Icons: https://fontawesome.com/v4.7/icons/
 */
 function LanguageTextsDe() {
     var self:any = {};
@@ -17,26 +19,30 @@ function LanguageTextsDe() {
 		return '';
 	};
 
-	self.IcoUser = '<span class="glyphicon glyphicon-user"></span>';
-	self.IcoSpecification = '<span class="glyphicon glyphicon-book"></span>';
-//	self.IcoReadSpecification = '<span class="glyphicon glyphicon-eye-open"></span>';
-//	self.IcoUpdateSpecification = '<span class="glyphicon glyphicon-pencil"></span>';
-//	self.IcoRead = '<span class="glyphicon glyphicon-eye-open"></span>';
-	self.IcoImport = '<span class="glyphicon glyphicon-import"></span>';
-	self.IcoExport = '<span class="glyphicon glyphicon-export"></span>';
-	self.IcoAdminister = '<span class="glyphicon glyphicon-wrench"></span>';
-	self.IcoUpdate = '<span class="glyphicon glyphicon-pencil"></span>';
-	self.IcoDelete = '<span class="glyphicon glyphicon-remove"></span>';
-	self.IcoAdd = '<span class="glyphicon glyphicon-plus"></span>';
-	self.IcoClone = '<span class="glyphicon glyphicon-duplicate"></span>';
-	self.IcoPrevious = '<span class="glyphicon glyphicon-chevron-up"></span>';
-	self.IcoNext = '<span class="glyphicon glyphicon-chevron-down"></span>';
-	self.IcoGo = '<span class="glyphicon glyphicon-search"></span>';
-	self.IcoFilter = '<span class="glyphicon glyphicon-filter"></span>';
-	self.IcoComment = '<span class="glyphicon glyphicon-comment"></span>';
-	self.IcoURL = '<span class="glyphicon glyphicon-map-marker"></span>';
-	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
-	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
+//	self.IcoUser = '<i class="fa fa-user"></i>';
+	self.IcoSpecification = '<i class="fa fa-book"></i>';
+	self.IcoRead = '<i class="fa fa-eye"></i>';
+	self.IcoImport = '<i class="fa fa-download fa-rotate-270"></i>';
+	self.IcoExport = '<i class="fa fa-upload fa-rotate-90"></i>';
+	self.IcoAdminister = '<i class="fa fa-wrench"></i>';
+//	self.IcoUpdateSpecification =
+	self.IcoEdit = '<i class="fa fa-pencil"></i>';
+	self.IcoDelete = '<i class="fa fa-minus"></i>';
+	self.IcoAdd = '<i class="fa fa-plus"></i>';
+	self.IcoClone = '<i class="fa fa-clone"></i>';
+	self.IcoSave = '<i class="fa fa-floppy-o"></i>';
+//	self.IcoReadSpecification = self.IcoRead;
+	self.IcoPrevious = '<i class="fa fa-chevron-up"></i>';
+	self.IcoNext = '<i class="fa fa-chevron-down"></i>';
+	self.IcoFilter = '<i class="fa fa-filter"></i>';
+	self.IcoType = '<i class="fa fa-cog"></i>';
+//	self.IcoGo =
+//	self.IcoFind = '<i class="fa fa-search"></i>';
+	self.IcoComment = '<i class="fa fa-comment"></i>';
+//	self.IcoURL = '<span class="glyphicon glyphicon-map-marker"></span>';
+//	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
+//	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
+	self.IcoAbout = '<i class="fa fa-copyright"></i>';
 
 // Buttons:
 //	self.LblImportReqif = 'ReqIF Import';
@@ -123,10 +129,10 @@ function LanguageTextsDe() {
 	self.LblModifiedAt = 'Geändert am';
 	self.LblModifiedBy = 'Geändert von';
 	self.LblProjectDetails = 'Eigenschaften';
-	self.LblProjectUsers = '<span class="glyphicon glyphicon-user"></span>&#160;Nutzer dieses Projekts';
-	self.LblOtherUsers = 'Andere Nutzer';
-	self.LblUserProjects = '<span class="glyphicon glyphicon-book"></span>&#160;Projekte dieses Nutzers';
-	self.LblOtherProjects = 'Andere Projekte';
+//	self.LblProjectUsers = self.IcoUser+'&#160;Nutzer dieses Projekts';
+//	self.LblOtherUsers = 'Andere Nutzer';
+//	self.LblUserProjects = self.IcoSpecification+'&#160;Projekte dieses Nutzers';
+//	self.LblOtherProjects = 'Andere Projekte';
 	self.LblType = 'Typ';
 	self.LblTypes = 'Typen';
 	self.LblDataTypes = 'Datentypen';
@@ -148,7 +154,7 @@ function LanguageTextsDe() {
 //	self.LblRifType = 'Typ';
 	self.LblSpecTypeTitle = 'Name';
 	self.LblAttributeTitle = 'Attribut-Name';
-	self.LblSecondaryFiltersForObjects = 	self.IcoFilter+"&#160;Facetten-Filter für '~A'";
+	self.LblSecondaryFiltersForObjects = self.IcoFilter+"&#160;Facetten-Filter für '~A'";
 	self.LblPermissions = 'Rechte';
 	self.LblRoles = 'Rollen';
 	self.LblFormat = 'Format';
@@ -157,25 +163,25 @@ function LanguageTextsDe() {
 	self.modelElements = 'Modell-Elemente';
 	self.withOtherProperties = 'mit weiteren Eigenschaften';
 	self.withStatements = 'mit Aussagen';
-	self.LblStringMatch = '<span class="glyphicon glyphicon-text-background" ></span>&#160;Textsuche';
+	self.LblStringMatch = 'Text<mark>such</mark>e';
 	self.LblWordBeginnings = 'Nur Wortanfänge berücksichtigen';
 	self.LblWholeWords = 'Nur ganze Worte berücksichtigen';
 	self.LblCaseSensitive = 'Groß/Kleinschreibung beachten';
-	self.LblExcludeEnums = 'Auswahlwerte übergehen';
+	self.LblExcludeEnums = 'Nur Textfelder durchsuchen';
 	self.LblNotAssigned = '(ohne zugewiesenen Wert)';
 	self.LblPrevious = 'Voriges';
 	self.LblNext = 'Nächstes';
 	self.LblPreviousStep = 'Zurück';
 	self.LblNextStep = 'Weiter';
-	self.LblGo = 'Los!';
+//	self.LblGo = 'Los!';
 	self.LblHitCount = 'Trefferzahl';
 	self.LblRelateAs = 'Verknüpfen als';
 	self.LblSource = 'Subjekt';
 	self.LblTarget = 'Objekt';
-	self.LblEligibleSources = "Zulässige Ressourcen als "+	self.LblSource;
-	self.LblEligibleTargets = "Zulässige Ressourcen als "+	self.LblTarget;
-	self.LblSaveRelationAsSource = 'Ressource als '+	self.LblSource+' verknüpfen';
-	self.LblSaveRelationAsTarget = 'Ressource als '+	self.LblTarget+' verknüpfen';
+	self.LblEligibleSources = "Zulässige Ressourcen als "+ self.LblSource;
+	self.LblEligibleTargets = "Zulässige Ressourcen als "+ self.LblTarget;
+	self.LblSaveRelationAsSource = 'Ressource als '+ self.LblSource+' verknüpfen';
+	self.LblSaveRelationAsTarget = 'Ressource als '+ self.LblTarget+' verknüpfen';
 	self.LblIcon = 'Symbol';
 	self.LblCreation = 'Anzulegen';
 	self.LblCreateLink1 = "&#x2776;&#160;Gewünschter Aussage-Typ";
@@ -191,98 +197,98 @@ function LanguageTextsDe() {
 	self.LblMultipleChoice = "Mehrfach-Auswahl";
 	self.LblDirectLink = "Direktverweis";
 
-	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"></span>&#160;Anmelden';
-	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"></span>&#160;Abmelden';
+//	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"></span>&#160;Anmelden';
+//	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"></span>&#160;Abmelden';
 	self.BtnProfile = 'Profil';
 	self.BtnBack = 'Zurück';
 	self.BtnCancel = 'Abbrechen';
 	self.BtnCancelImport = 'Abbrechen';
 	self.BtnApply = 'Anwenden';
-	self.BtnDelete = '<span class="glyphicon glyphicon-remove"></span>&#160;Löschen';
-	self.BtnDeleteObject = '<span class="glyphicon glyphicon-remove"></span>&#160;Ressource mit Referenzen löschen';
-	self.BtnDeleteObjectRef = '<span class="glyphicon glyphicon-remove"></span>&#160;Diesen Verweis löschen';
-	self.BtnImport = '<span class="glyphicon glyphicon-import"></span>&#160;Import';
-	self.BtnCreate = '<span class="glyphicon glyphicon-import"></span>&#160;Anlegen';
-	self.BtnReplace = '<span class="glyphicon glyphicon-import"></span>&#160;Ersetzen';
-	self.BtnAdopt = '<span class="glyphicon glyphicon-import"></span>&#160;Adoptieren'; //Aneignen
-	self.BtnUpdate = '<span class="glyphicon glyphicon-import"></span>&#160;'+	self.LblUpdate;
-//	self.BtnImportSpecif = '<span class="glyphicon glyphicon-import"></span>&#160;SpecIF';
-//	self.BtnImportReqif = '<span class="glyphicon glyphicon-import"></span>&#160;ReqIF';
-//	self.BtnImportXls = '<span class="glyphicon glyphicon-import"></span>&#160;xlsx';
+	self.BtnDelete = self.IcoDelete+'&#160;Löschen';
+	self.BtnDeleteObject = self.IcoDelete+'&#160;Ressource mit Referenzen löschen';
+	self.BtnDeleteObjectRef = self.IcoDelete+'&#160;Diesen Verweis löschen';
+	self.BtnImport = self.IcoImport+'&#160;Import';
+	self.BtnCreate = self.IcoImport +'&#160;Anlegen';
+	self.BtnReplace = self.IcoImport +'&#160;Ersetzen';
+	self.BtnAdopt = self.IcoImport +'&#160;Adoptieren'; //Aneignen
+	self.BtnUpdate = self.IcoImport +'&#160;'+	self.LblUpdate;
+//	self.BtnImportSpecif = self.IcoImport+'&#160;SpecIF';
+//	self.BtnImportReqif = self.IcoImport+'&#160;ReqIF';
+//	self.BtnImportXls = self.IcoImport+'&#160;xlsx';
 //	self.BtnProjectFromTemplate = "Projekt mit ReqIF-Vorlage anlegen";
-	self.BtnRead = '<span class="glyphicon glyphicon-eye-open"></span>&#160;Lesen';
-	self.BtnExport = '<span class="glyphicon glyphicon-export"></span>&#160;Export';
-//	self.BtnExportSpecif = '<span class="glyphicon glyphicon-export"></span>&#160;SpecIF';
-//	self.BtnExportReqif = '<span class="glyphicon glyphicon-export"></span>&#160;ReqIF';
-	self.BtnAdd = '<span class="glyphicon glyphicon-plus"></span>&#160;Neu';
-	self.BtnAddUser = '<span class="glyphicon glyphicon-plus"></span>&#160;Nutzer';
-	self.BtnAddProject = '<span class="glyphicon glyphicon-plus"></span>&#160;'+	self.LblProject;
-	self.BtnAddSpec = '<span class="glyphicon glyphicon-plus"></span>&#160;Gliederung';
-	self.BtnAddFolder = '<span class="glyphicon glyphicon-plus"></span>&#160;Ordner';
-	self.BtnAddAttribute = '<span class="glyphicon glyphicon-plus"></span>&#160;Attribut';
-	self.BtnAddTypeComment = '<span class="glyphicon glyphicon-plus"></span>&#160;Klassen für Kommentare';
-	self.BtnClone = '<span class="glyphicon glyphicon-duplicate"></span>&#160;Klonen';
-	self.BtnEdit = '<span class="glyphicon glyphicon-pencil"></span>&#160;Bearbeiten';
-	self.BtnSave = '<span class="glyphicon glyphicon-save"></span>&#160;Speichern';
-	self.BtnSaveRole = '<span class="glyphicon glyphicon-save"></span>&#160;Rolle anlegen';
-	self.BtnSaveAttr = '<span class="glyphicon glyphicon-save"></span>&#160;Attribut anlegen';
-	self.BtnInsert = '<span class="glyphicon glyphicon-save"></span>&#160;Einfügen';
-	self.BtnInsertSuccessor = '<span class="glyphicon glyphicon-save"></span>&#160;Einfügen hinter';
-	self.BtnInsertChild = '<span class="glyphicon glyphicon-save"></span>&#160;Einfügen unter';
-	self.BtnSaveRelation = '<span class="glyphicon glyphicon-save"></span>&#160;Aussage anlegen';
-	self.BtnSaveItem = '<span class="glyphicon glyphicon-save"></span>&#160;~A anlegen';
+	self.BtnRead = self.IcoRead+'&#160;Lesen';
+	self.BtnExport = self.IcoExport+'&#160;Export';
+//	self.BtnExportSpecif = self.IcoExport+'&#160;SpecIF';
+//	self.BtnExportReqif = self.IcoExport+'&#160;ReqIF';
+	self.BtnAdd = self.IcoAdd+'&#160;Neu';
+	self.BtnAddUser = self.IcoAdd+'&#160;Nutzer';
+	self.BtnAddProject = self.IcoAdd+'&#160;'+	self.LblProject;
+	self.BtnAddSpec = self.IcoAdd+'&#160;Gliederung';
+	self.BtnAddFolder = self.IcoAdd+'&#160;Ordner';
+	self.BtnAddAttribute = self.IcoAdd+'&#160;Attribut';
+	self.BtnAddTypeComment = self.IcoAdd+'&#160;Klassen für Kommentare';
+	self.BtnClone = self.IcoClone+'&#160;Klonen';
+	self.BtnEdit = self.IcoEdit +'&#160;Bearbeiten';
+	self.BtnSave = self.IcoSave+'&#160;Speichern';
+	self.BtnSaveRole = self.IcoSave+'&#160;Rolle anlegen';
+	self.BtnSaveAttr = self.IcoSave+'&#160;Attribut anlegen';
+	self.BtnInsert = self.IcoAdd+'&#160;Einfügen';
+	self.BtnInsertSuccessor = self.IcoAdd+'&#160;Einfügen hinter';
+	self.BtnInsertChild = self.IcoAdd+'&#160;Einfügen unter';
+	self.BtnSaveRelation = self.IcoSave+'&#160;Aussage anlegen';
+	self.BtnSaveItem = self.IcoSave+'&#160;~A anlegen';
 	self.BtnDetails = 'Details';
-	self.BtnAddRole = '<span class="glyphicon glyphicon-plus" ></span>&#160;Rolle';
-	self.BtnFileSelect = '<span class="glyphicon glyphicon-plus" ></span>&#160;Datei auswählen ...';
-	self.BtnPrevious = '<span class="glyphicon glyphicon-chevron-up"></span>&#160;'+	self.LblPrevious;
-	self.BtnNext = '<span class="glyphicon glyphicon-chevron-down"></span>&#160;'+	self.LblNext;
-	self.BtnGo = 	self.IcoGo+'&#160;'+	self.LblGo;
+	self.BtnAddRole = self.IcoAdd +'&#160;Rolle';
+	self.BtnFileSelect = self.IcoAdd+'&#160;Datei auswählen ...';
+//	self.BtnPrevious = '<i class="fa fa-chevron-up"></i>&#160;' + self.LblPrevious;
+//	self.BtnNext = '<i class="fa fa-chevron-down"></i>&#160;' + self.LblNext;
+//	self.BtnGo = self.IcoGo+'&#160;'+self.LblGo;
 	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neu';
 	self.BtnSelectHierarchy = "Gliederung auswählen";
 
 // Tabs:
-	self.TabAll = '<span class="glyphicon glyphicon-list"></span>';
+/*	self.TabAll = '<span class="glyphicon glyphicon-list"></span>';
 	self.TabUserList = '<span class="glyphicon glyphicon-list"></span>&#160;Nutzer';
 	self.TabProjectList = '<span class="glyphicon glyphicon-list"></span>&#160;Projekte';
-//	self.TabProjectDetails = '<span class="glyphicon glyphicon-pencil"></span>&#160;Meta';
-	self.TabUserDetails = '<span class="glyphicon glyphicon-pencil"></span>&#160;Meta';
-	self.TabProjectUsers = '<span class="glyphicon glyphicon-user"></span>&#160;Nutzer';
-	self.TabUserProjects = '<span class="glyphicon glyphicon-book"></span>&#160;Projekte';
+//	self.TabProjectDetails = self.IcoEdit+'&#160;Meta';
+	self.TabUserDetails = self.IcoEdit +'&#160;Meta';
+	self.TabProjectUsers = self.IcoUser+'&#160;Nutzer';
+	self.TabUserProjects = self.IcoSpecification+'&#160;Projekte';
 	self.TabPermissions = '<span class="glyphicon glyphicon-lock"></span>&#160;Rechte';
-	self.TabTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblTypes;
-	self.TabDataTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblDataTypes;
-	self.TabSpecTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblResourceClasses;
-	self.TabObjectTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblResourceClasses;
-	self.TabRelationTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblRelationTypes;
-//	self.TabRelGroupTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblRelGroupTypes;
-	self.TabSpecificationTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblSpecificationTypes;
-//	self.TabRifTypes = '<span class="glyphicon glyphicon-cog"></span>&#160;'+	self.LblRifTypes;
-	self.TabTable = '<span class="glyphicon glyphicon-th"></span>&#160;Tabelle';
-	self.TabDocument = '<span class="glyphicon glyphicon-book"></span>&#160;Dokument';
-	self.TabFind = '<span class="glyphicon glyphicon-search"></span>&#160;Suche';
-	self.TabFilter = 	self.IcoFilter+'&#160;Filter';
-	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Seite';
-	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Revisionen';
-	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Zeitleiste';
-	self.TabRelations = '<span class="glyphicon glyphicon-link"></span>&#160;Aussagen';
-	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Sortieren';
-	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Bilder und Dateien';
-	self.TabComments = '<span class="glyphicon glyphicon-comment"></span>&#160;Kommentare';
-	self.TabReports = '<span class="glyphicon glyphicon-stats"></span>&#160;Berichte';
+	self.TabTypes = self.IcoType+'&#160;'+	self.LblTypes;
+	self.TabDataTypes = self.IcoType+'&#160;'+	self.LblDataTypes; */
+	self.TabSpecTypes = self.IcoType+'&#160;'+	self.LblResourceClasses;
+/*	self.TabObjectTypes = self.IcoType+'&#160;'+	self.LblResourceClasses;
+	self.TabRelationTypes = self.IcoType+'&#160;'+	self.LblRelationTypes;
+//	self.TabRelGroupTypes = self.IcoType+'&#160;'+	self.LblRelGroupTypes;
+	self.TabSpecificationTypes = self.IcoType+'&#160;'+	self.LblSpecificationTypes;
+//	self.TabRifTypes = self.IcoType+'&#160;'+	self.LblRifTypes;
+	self.TabTable = '<span class="glyphicon glyphicon-th"></span>&#160;Tabelle'; */
+	self.TabDocument = self.IcoSpecification+'&#160;Dokument';
+//	self.TabFind = self.IcoFind + '&#160;Suche';
+	self.TabFilter = self.IcoFilter+'&#160;Filter';
+//	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Seite';
+//	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Revisionen';
+//	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Zeitleiste';
+	self.TabRelations = '<i class="fa fa-link"></i>&#160;Relationen';
+//	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Sortieren';
+//	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Bilder und Dateien';
+//	self.TabComments = self.IcoComment+'&#160;Kommentare';
+	self.TabReports = '<i class="fa fa-bar-chart"></i>&#160;Berichte';
 
 // Functions:
-	self.FnProjectCreate = '<span class="glyphicon glyphicon-plus"></span>&#160;Projekt';
-	self.FnProjectImport = '<span class="glyphicon glyphicon-import"></span>&#160;Projekt importieren';
-//	self.FnImportReqif = '<span class="glyphicon glyphicon-import"></span>&#160;ReqIF importieren';
-//	self.FnImportCsv = '<span class="glyphicon glyphicon-import"></span>&#160;CSV importieren';
-//	self.FnImportXls = '<span class="glyphicon glyphicon-import"></span>&#160;XLS importieren';
-//	self.FnProjectFromTemplate = '<span class="glyphicon glyphicon-plus"></span>&#160;Neues Projekt von Vorlage erstellen';
-	self.FnRefresh = '<span class="glyphicon glyphicon-refresh"></span>&#160;Aktualisieren';
-	self.FnRead = '<span class="glyphicon glyphicon-eye-open"></span>';
-	self.FnOpen = 	self.FnRead;
-	self.FnUpdate = '<span class="glyphicon glyphicon-wrench"></span>';
-	self.FnDelete = '<span class="glyphicon glyphicon-remove"></span>';
-	self.FnRemove = 	self.FnDelete;
+//	self.FnProjectCreate = self.IcoAdd+'&#160;Projekt';
+//	self.FnProjectImport = self.IcoImport +'&#160;Projekt importieren';
+//	self.FnImportReqif = self.IcoImport+'&#160;ReqIF importieren';
+//	self.FnImportCsv = self.IcoImport+'&#160;CSV importieren';
+//	self.FnImportXls = self.IcoImport+'&#160;XLS importieren';
+//	self.FnProjectFromTemplate = self.IcoImport+'&#160;Neues Projekt von Vorlage erstellen';
+//	self.FnRefresh = '<span class="glyphicon glyphicon-refresh"></span>&#160;Aktualisieren';
+	self.FnOpen =
+	self.FnRead = self.IcoRead;
+	self.FnUpdate = self.IcoAdminister;
+//	self.FnRemove =
+	self.FnDelete = self.IcoDelete;
 
 // ReqIF attribute names (replace any '.' by '_', so 'ReqIF.Text' becomes 'ReqIF_Text ):
 	self.ReqIF_ForeignID = 'ID';
@@ -697,36 +703,36 @@ function LanguageTextsDe() {
 //	self.monthAbbrs = ['Jan', 'Feb', 'Mrz', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dez' ];
 
 // App icons:
-	self.IcoHome = '<span class="glyphicon glyphicon-home"></span>';
-	self.IcoSystemAdministration = '<span class="glyphicon glyphicon-wrench"></span>';
-	self.IcoUserAdministration = '<span class="glyphicon glyphicon-user"></span>';
-	self.IcoProjectAdministration = '<span class="glyphicon glyphicon-cog"></span>';
+//	self.IcoHome = '<span class="glyphicon glyphicon-home"></span>';
+//	self.IcoSystemAdministration = self.IcoAdminister;
+//	self.IcoUserAdministration = self.IcoUser;
+//	self.IcoProjectAdministration = self.IcoType;
 //	self.IcoProjectAdministration = '<span style="font-size:130%">&#9881;</span>';
-	self.IcoSpecifications = '<span class="glyphicon glyphicon-book"></span>';
-	self.IcoReader = '<span class="glyphicon glyphicon-eye-open"></span>';
-//	self.IcoImportReqif = '<span class="glyphicon glyphicon-import"></span>';
-//	self.IcoImportCsv = '<span class="glyphicon glyphicon-import"></span>';
-//	self.IcoImportXls = '<span class="glyphicon glyphicon-import"></span>';
-	self.IcoSupport = '<span class="glyphicon glyphicon-question-sign"></span>';
+//	self.IcoSpecifications = self.IcoSpecification;
+//	self.IcoReader = self.IcoRead;
+//	self.IcoImportReqif = self.IcoImport;
+//	self.IcoImportCsv = self.IcoImport;
+//	self.IcoImportXls = self.IcoImport;
+//	self.IcoSupport = '<span class="glyphicon glyphicon-question-sign"></span>';
 
 // App names:
-	self.LblHome = 'Willkommen!';
-	self.LblProjects = 'Projekte';
-	self.LblSystemAdministration = 'Konfiguration';
-	self.LblUserAdministration = 'Nutzer';
-	self.LblProjectAdministration = 'Typen & Rechte';   // for the browser tabs - no HTML!
-	self.LblSpecifications = 'Inhalte';
+//	self.LblHome = 'Willkommen!';
+//	self.LblProjects = 'Projekte';
+//	self.LblSystemAdministration = 'Konfiguration';
+//	self.LblUserAdministration = 'Nutzer';
+//	self.LblProjectAdministration = 'Typen & Rechte';   // for the browser tabs - no HTML!
+//	self.LblSpecifications = 'Inhalte';
 	self.LblReader = 'SpecIF Leser';
 	self.LblEditor = 'SpecIF Editor';
-	self.LblSupport = 'Unterstützung';
-	self.AppHome = 	self.IcoHome+'&#160;'+	self.LblHome;
-	self.AppSystemAdministration = 	self.IcoSystemAdministration+'&#160;Interaktives Lastenheft: '+	self.LblSystemAdministration;
-	self.AppUserAdministration = 	self.IcoUserAdministration+'&#160;Interaktives Lastenheft: '+	self.LblUserAdministration;
-	self.AppProjectAdministration = 	self.IcoProjectAdministration+'&#160;Interaktives Lastenheft: '+	self.LblProjectAdministration;
-	self.AppSpecifications = 	self.IcoSpecifications+'&#160;Interaktives Lastenheft: '+	self.LblSpecifications;
-	self.AppReader = 	self.IcoReader+'&#160;'+	self.LblReader;
-	self.AppImport = 	self.IcoImport+'&#160;Import';
-	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
-	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
+//	self.LblSupport = 'Unterstützung';
+//	self.AppHome = self.IcoHome+'&#160;'+self.LblHome;
+//	self.AppSystemAdministration = 	self.IcoSystemAdministration+'&#160;Interaktives Lastenheft: '+	self.LblSystemAdministration;
+//	self.AppUserAdministration = self.IcoUserAdministration+'&#160;Interaktives Lastenheft: '+self.LblUserAdministration;
+//	self.AppProjectAdministration = self.IcoProjectAdministration+'&#160;Interaktives Lastenheft: '+self.LblProjectAdministration;
+//	self.AppSpecifications = self.IcoSpecifications+'&#160;Interaktives Lastenheft: '+	self.LblSpecifications;
+//	self.AppReader = 	self.IcoReader+'&#160;'+	self.LblReader;
+//	self.AppImport = 	self.IcoImport+'&#160;Import';
+//	self.AppLocal = 	self.IcoSpecifications+'&#160;'+	self.LblEditor;
+//	self.AppSupport = 	self.IcoSupport+'&#160;'+	self.LblSupport;
 	return self;
 };

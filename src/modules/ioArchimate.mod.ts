@@ -10,7 +10,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self')
 moduleManager.construct({
 	name: 'ioArchimate'
-}, function(self:IModule):IModule {
+}, function(self:IModule) {
 
 	var fDate: string,		// the file modification date
 		fName: string,

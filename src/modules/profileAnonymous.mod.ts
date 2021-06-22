@@ -22,7 +22,7 @@ interface IMe extends IModule {
 }
 moduleManager.construct({
 	name: 'profileAnonymous'
-}, function(self:IMe):IMe {
+}, function(self:IMe) {
 	"use strict";
 
 	self.init = function():boolean {
@@ -38,7 +38,7 @@ moduleManager.construct({
 	self.login = function():Promise<void> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
 		if( app.server ) 
-			return app.erver.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
+			return app.server.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
 				.done(function(rsp) {
 					self.loggedin = true
 				})

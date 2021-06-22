@@ -97,7 +97,7 @@ interface IFilter {
 
 moduleManager.construct({
 	name: CONFIG.objectFilter
-}, (self: IModule): IModule =>{
+}, (self: IModule) =>{
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
@@ -138,7 +138,7 @@ moduleManager.construct({
 		reRun = new RegExp(reR,'g');
 		
 		// Standard module interface methods:
-		self.init = (): boolean =>{
+	self.init = (): boolean =>{
 //		console.debug( 'filters.init' );
 		self.filterList = [];
 		self.secondaryFilters = undefined;
@@ -149,14 +149,13 @@ moduleManager.construct({
 			+		'<div id="primaryFilters" class="pane-filter" ></div>'
 			+	'</div>'
 			+	'<div id="filterCtrl" class="contentCtrl" >'
-			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
+			+		'<div class="btn-group" >'
 			+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
-	//		+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.goClicked()" >'+i18n.BtnGo+'</button>'
 			+		'</div>'
 			+		'<div id="filterNotice" class="notice-default contentNotice" ></div>'
-			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" ></div>'
+	//		+		'<div id="filterActions" class="btn-group contentActions" ></div>'
 			+	'</div>'
-			+	'<div id="hitlist" class="content" ></div>';
+			+	'<div id="hitlist" class="content" style="padding-top:44px"></div>';
 		$(self.view).html(h);
 		return true;
 	};

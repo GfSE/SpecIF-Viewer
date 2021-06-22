@@ -143,9 +143,9 @@ moduleManager.construct({
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="formatSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" ></div>'
+				+		'<div id="formatSelector" class="btn-group" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
-				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput btn-sm" style="margin: 0 0 0.8em 0" >'
+				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput" style="margin: 0 0 0.8em 0" >'
 				+			'<span>'+i18n.BtnFileSelect+'</span>'
 				+			'<input id="importFile" type="file" onchange="'+myFullName+'.pickFiles()" />'
 				+		'</div>'
@@ -155,7 +155,7 @@ moduleManager.construct({
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="modeSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" >'
+				+		'<div id="modeSelector" class="btn-group" style="margin: 0 0 0.4em 0" >'
 				+	function() {
 						let btns = '';
 						importModes.forEach( function(b) { 

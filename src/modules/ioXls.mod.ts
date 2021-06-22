@@ -10,7 +10,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent...')
 moduleManager.construct({
 	name: 'ioXls'
-}, function (self: IModule): IModule {
+}, function (self: IModule) {
 	"use strict";
 	// the mode for creating a new project:
 	var fDate:string,		// the file modification date

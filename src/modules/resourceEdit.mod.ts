@@ -58,7 +58,7 @@ class DialogForm {
 // Construct the resource editor:
 moduleManager.construct({
 	name: CONFIG.resourceEdit
-}, (self:IModule):IModule =>{
+}, (self: IModule) =>{
 	"use strict";
 
 	let myName = self.loadAs,
@@ -317,7 +317,7 @@ moduleManager.construct({
 						var bts = 	'<div class="btn-group btn-group-sm pull-right" >';
 						if( !p.permissions || p.permissions.upd ) {
 							bts +=			'<span class="btn btn-default btn-fileinput">' +
-												'<span>'+i18n.IcoUpdate+'</span>' +
+												'<span>'+i18n.IcoEdit+'</span>' +
 								'<input id="file' + simpleHash(p['class'])+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
 											'</span>';
 						};  

@@ -173,6 +173,13 @@ moduleManager.construct({
 		+			'<td><a href="http://www.datatables.net/license/mit" target="_blank">MIT</a></td>'
 		+		'</tr>'  */
 		+		'<tr>'
+		+			'<td>Font Awesome</td>'
+		+			'<td></td>'
+		+			'<td>Font Awesome gives you scalable vector icons that can instantly be customized — size, color, drop shadow, '
+		+				'and anything that can be done with the power of CSS ... <a href="https://fontawesome.com/v4.7/" target="_blank">more</a></td>'
+		+			'<td><a href="https://fontawesome.com/v4.7/license/" target="_blank">SIL OFL 1.1</a></td>'
+		+		'</tr>'
+		+		'<tr>'
 		+			'<td>jQuery</td>'
 		+			'<td></td>'
 		+			'<td>jQuery makes things like HTML document traversal and manipulation, event handling, animation, and Ajax '
