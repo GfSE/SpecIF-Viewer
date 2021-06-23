@@ -274,6 +274,7 @@ function Archimate2Specif( xmlString, opts ) {
 
 			// Determine the resourceClass:
 			switch( ty ) {
+				case "Stakeholder":
 				case 'BusinessActor':
 				case 'BusinessRole':
 				case 'BusinessCollaboration':
@@ -292,13 +293,13 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'Node':
 				case 'Equipment':
 				case 'Facility':
-				case 'DistributionNetwork':
 				case 'Device':
 				case 'SystemSoftware':
-				case 'TechnologyCollaboration':
-				case 'TechnologyInterface':
 				case 'Path':
 				case 'CommunicationNetwork':
+				case "DistributionNetwork":
+				case 'TechnologyCollaboration':
+				case 'TechnologyInterface':
 				case 'TechnologyFunction':
 				case 'TechnologyProcess':
 				case 'TechnologyInteraction':
@@ -307,19 +308,28 @@ function Archimate2Specif( xmlString, opts ) {
 				case "AndJunction":
 					r['class'] = "RC-Actor"
 					break;
+				case "Assessment":
 				case "Goal":
 				case 'Capability':
 				case 'BusinessObject':
 				case 'Contract':
 				case 'Representation':
+				case "Material":
 				case 'Product':
 				case 'DataObject':
 				case 'Artifact':
+				case "WorkPackage":
+				case "Deliverable":
+				case "Outcome":
+				case "Principle":
+				case "Meaning":
+				case "Value":
 					r['class'] = "RC-State";
 					break;
 				case 'BusinessEvent':
 				case 'ApplicationEvent':
 				case 'TechnologyEvent':
+				case 'ImplementationEvent':
 					r['class'] = "RC-Event";
 					break;
 				case 'Location':

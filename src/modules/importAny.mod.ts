@@ -547,7 +547,7 @@ moduleManager.construct({
 				console.info(importMode.id+' project',dta.title||dta.id);
 			},
 			handleError 
-		);
+			);
 		};
 	}; 
 	function setProgress(msg:string,perc:number):void {

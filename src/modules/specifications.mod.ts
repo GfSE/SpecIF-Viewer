@@ -1808,6 +1808,7 @@ moduleManager.construct({
 			// a permission to update the hierarchy:
 		//	if( self.resCre && cacheData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
+			// ToDo: Don't allow creation of elements in automatically created branches like the glossary
 			if( self.resCre )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
 						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
@@ -1852,7 +1853,6 @@ moduleManager.construct({
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-		//	if( cacheData.selectedHierarchy.del )
 			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
@@ -2045,7 +2045,7 @@ moduleManager.construct({
 		myFullName = 'app.' + myName,
 		pData: IModule = self.parent,	// the parent's data
 		cacheData: CSpecIF,		// the cached data
-		selRes:Resource,		// the currently selected resource
+		selRes:CResourceToShow,		// the currently selected resource
 		net,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
