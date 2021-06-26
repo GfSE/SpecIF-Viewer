@@ -628,7 +628,10 @@ String.prototype.specifIdOf = function():string {
 };
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-function simpleHash(str:string):string {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};
+function simpleHash(str: string): string {
+	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
+	return r
+};
 /*
 function truncate(l:number):string {
 	var t = this.substring(0,l-1);

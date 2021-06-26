@@ -336,6 +336,10 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'Grouping':
 					r['class'] = "RC-Collection";
 					break;
+				case 'Requirement':
+				case 'Constraint':
+					r['class'] = "RC-Requirement";
+					break;
 				default: 
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
 					console.warn("Skipping element with unknown xsi:type '"+ ty +"'.");
@@ -807,6 +811,14 @@ function Archimate2Specif( xmlString, opts ) {
 			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
+			id: "RC-Requirement",
+			title: "IREB:Requirement",
+			description: "A 'Requirement' is a singular documented physical and functional need that a particular design, product or process must be able to perform.",
+			icon: "&#8623;",
+			instantiation: ["auto","user"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+			changedAt: "2021-02-22T08:59:00+02:00"
+		},{
 			id: "RC-Folder",
 			title: opts.strFolderType,
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
@@ -1034,7 +1046,10 @@ function Archimate2Specif( xmlString, opts ) {
 
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-	function simpleHash(str) {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};
+	function simpleHash(str) {
+		for (var r = 0, i = 0; i < str.length; i++)r = (r << 5) - r + str.charCodeAt(i), r &= r;
+		return r;
+	};
 	function indexById(L,id) {
 		if( L && id ) {
 			// given an ID of an item in a list, return it's index:

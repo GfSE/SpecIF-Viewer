@@ -612,7 +612,7 @@ function LanguageTextsEn() {
 	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
 	self.MsgImportBpmn = 'Permissible filetype is *.bpmn. The content must conform with the schema BPMN 2.0 XML. The import may take a couple of minutes.';
 	self.MsgImportXls = 'Permissible filetypes are *.xls, *.xlsx and *.csv. The import may take a couple of minutes for very large files.';
-	self.MsgExport = 'A zip-compressed file of the chosen format will be created. The export may take several minutes up for very large files; your browser will save the file according to its settings.';
+	self.MsgExport = 'A zip-compressed file of the chosen format will be created. The export may take several minutes up for very large files; your web-browser will save the file according to its settings.';
 	self.MsgLoading = 'Still loading ...';
 	self.MsgSearching = 'Still searching ...';
 	self.MsgObjectsProcessed = '~A resources analyzed. ';
@@ -638,13 +638,13 @@ function LanguageTextsEn() {
 	self.MsgIdConflict = "Could not create item '~A', as it already exists.";
 	self.MsgRoleNameConflict = "Could not create role '~A', as it already exists.";
 	self.MsgUserNameConflict = "Could not create user '~A', as it already exists.";
-	self.MsgFileApiNotSupported = 'This browser does not fully support the file API. Please choose a current browser.';
+	self.MsgFileApiNotSupported = 'This web-browser does not fully support the file API. Please choose a current browser.';
 	self.MsgDoNotLoadAllObjects = 'Loading all resources in a single call is not recommended.';
 	self.MsgReading = 'Reading';
 	self.MsgCreating = "Creating";
 	self.MsgUploading = "Uploading";
 	self.MsgImporting = "Importing";
-	self.MsgBrowserSaving = "Your browser saves the file according to its settings.";
+	self.MsgBrowserSaving = "Your web-browser saves the file according to its settings.";
 	self.MsgSuccess = "Successful!";
 	self.MsgSelectImg = "Select or upload an image:";
 	self.MsgImgWidth = "Image width [px]";

@@ -660,7 +660,10 @@ var app:IApp,
 			options = $.extend( options || {}, {
 				dataType: "script",
 				cache: true,
-				url: url + (url.slice(0,4)=='http'? "" : "?"+CONFIG.appVersion)
+				// append appVersion to all files of this particular app
+				// (third party libraries delivered by CDN have a version in the path);
+				// it must work for the regular app and the embedded app:
+				url: url + (url.startsWith(loadPath)? "?"+CONFIG.appVersion : "")
 			});
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )

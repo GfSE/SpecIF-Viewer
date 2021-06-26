@@ -68,7 +68,7 @@ function LanguageTextsFr() {
 	self.LblDeleteType = 'Effacer ce type';
 	self.LblDeleteObject = 'Effacer cette ressource';
 	self.LblDeleteAttribute = 'Effacer cet attribut';
-	self.LblDeleteRelation = 'Effacer cette affirmation';
+	self.LblDeleteRelation = 'Effacer affirmation';
 	self.LblDeleteRole = 'Effacer ce rôle';
 	self.LblAdd = 'Créer';
 	self.LblAddItem = 'Créer ~A';
