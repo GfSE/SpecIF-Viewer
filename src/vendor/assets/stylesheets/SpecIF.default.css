@@ -22,11 +22,11 @@ body {
 	padding: 0.3em 0 0 0;
 }
 #logo {
-	width: 132px;
+	width: 122px;
 	height: 36px;
 	float: right;
 	margin-right: 16px;
-	background-image: url("../images/logo-navbar-right.png");
+	background-image: url("../images/logo-navbar-right.svg");
 	background-repeat: no-repeat;
 	background-size: 121px;
 }
