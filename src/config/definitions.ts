@@ -8,7 +8,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.n",
+	CONFIG.appVersion = "1.0.p",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -143,8 +143,8 @@ const CONFIG:any = {};
 //	CONFIG.userDialogDefault = CONFIG.userAbout;
 	// these are not externally visible:
 //	CONFIG.object = 'object';
-//	CONFIG.linker = 'linker';  */
-
+//	CONFIG.linker = 'linker';
+*/
 	// The following can have an i18n label in the translation files:
 	CONFIG.dataTypeComment = 'Datatype for comment text';
 	CONFIG.propClassId = "dcterms:identifier";
@@ -316,8 +316,8 @@ const CONFIG:any = {};
 /*	// A list of attributes not to show in the object list (document view), specified by title:
 	// You must enter the title used by SpecIF (after translation):
 	CONFIG.overviewHiddenProperties = [
-	]; */
-
+	];
+*/
 	// A list of relations not to show in tab named CONFIG.relations, specified by title:
 	CONFIG.hiddenStatements = [
 		CONFIG.staClassCommentRefersTo
@@ -377,8 +377,8 @@ const CONFIG:any = {};
 /*	// A list of property titles denoting the property containing a diagram:
 	CONFIG.diagramPropertyClasses = [
 		CONFIG.propClassDiagram
-	]; */
-
+	];
+*/
 	// A list of resources representing model diagram types, specified by a property with title CONFIG.propClassType,
 	// where all relations themselves have a "SpecIF:shows" relation.
 	// The (older) diagrams from ARCWAY don't have, but the BPMN and Archimate diagrams have:
@@ -453,8 +453,8 @@ const CONFIG:any = {};
 	// The term appearing in the first position of an equivalence list is the preferred one:
 	// ToDo: Very similar purpose as the vocabulary translation below.
 	CONFIG.eqivalentTypes = [
-	];  */
-
+	];
+*/
 	CONFIG.icons = new Map([
 		['FMC:Actor',"&#9632;"],
 		['FMC:State',"&#9679;"],

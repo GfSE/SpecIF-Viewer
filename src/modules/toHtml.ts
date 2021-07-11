@@ -98,7 +98,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+			'<div id="pageHeader" >'
 			+				'<div id="logo" ></div>'
 			+				'<div id="pageSelector" class="btn-group btn-group-md pageActions" ></div>'
-			+				'<div id="spinner" ></div>'
+			+				'<div id="spinner" ><i class="fa fa-spinner fa-spin" ></i></div>'
 			+				'<div id="pageTitle" class="pageTitle" ></div>'
 			+			'</div>'
 			+		'</div>'

@@ -648,8 +648,14 @@ var app:IApp,
 		// Add cache-busting on version-change to all files from this development project,
 		// i.e. all those having a relative URL.
 		// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
+		// Thus, append appVersion to all files of this particular app
+		// (third party libraries delivered by CDN have a version in the path);
+		// it must work for the regular app and the embedded app:
+		function bust(url: string): string {
+			return url + (url.startsWith(loadPath) ? "?" + CONFIG.appVersion : "")
+        }
 		function getCss( url:string ):void {
-			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+CONFIG.appVersion)+'" />' );
+			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'.
 			// Must be called explicitly, if not in conjunction with 'getScript'.
@@ -660,10 +666,7 @@ var app:IApp,
 			options = $.extend( options || {}, {
 				dataType: "script",
 				cache: true,
-				// append appVersion to all files of this particular app
-				// (third party libraries delivered by CDN have a version in the path);
-				// it must work for the regular app and the embedded app:
-				url: url + (url.startsWith(loadPath)? "?"+CONFIG.appVersion : "")
+				url: bust(url)
 			});
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )

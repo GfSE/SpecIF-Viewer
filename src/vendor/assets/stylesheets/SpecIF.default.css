@@ -31,12 +31,10 @@ body {
 	background-size: 121px;
 }
 #spinner {
-	width: 32px;
-	height: 32px;
-	background-image: url("../images/spinner-32.gif");
-	background-repeat: no-repeat;
+	font-size: 24px;
+	color: #3F3F3F;
 	float: right;
-	margin: 2px 16px 0 0;
+	margin: 0px 16px 0 0;
 }
 #message {
  position:fixed;
