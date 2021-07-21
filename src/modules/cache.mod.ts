@@ -599,7 +599,7 @@ function Project(): IProject {
 					// where the title may be defined with the property class.
 					let pT = propTitleOf(nP, prj),
 						rP = propByTitle(r, pT, self.data);
-					//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( r, pT, self.data )));
+//					console.debug('substituteR 3a',nP,pT,rP,hasContent(valByTitle( r, pT, self.data )));
 					if (!hasContent(valByTitle(r, pT, self.data))
 						// dataTypes must be compatible:
 						&& compatibleDT(dataTypeOf(self.data, rP['class']), dataTypeOf(prj, nP['class']))) {
@@ -2252,6 +2252,7 @@ function Project(): IProject {
 						propertiesLabel: opts.withOtherProperties? 'SpecIF:Properties' : undefined,
 						statementsLabel: opts.withStatements? 'SpecIF:Statements' : undefined,
 						fileName: opts.fileName,
+						colorAccent1: '0071B9',	// adesso blue
 						done: ()=>{ app.cache.selectedProject.exporting=false; resolve() },
 						fail: (xhr)=>{ app.cache.selectedProject.exporting=false; reject(xhr) }
 					};

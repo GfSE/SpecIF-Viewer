@@ -887,7 +887,8 @@ class CSpecIF implements SpecIF {
 								oE.value = languageValueOf(iE.value, opts)
 									// remove any leading whiteSpace:
 									.replace(/^\s+/, "")
-									.makeHTML(opts);
+									.makeHTML(opts)
+									.replace(/<br ?\/>\n/g, "<br/>");
 
 							//								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
 							break;

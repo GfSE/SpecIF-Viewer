@@ -655,7 +655,7 @@ String.prototype.ctrl2HTML = function():string {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
 	return this.replace( /\r|\f/g, '' )
 				.replace( /&#x0{0,3}a;/gi, '' )
-				.replace( /\t/g, '&nbsp;&nbsp;&nbsp;' )
+				.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;' )
 				.replace( /\n/g, '<br />' )
 				.replace( /&#x0{0,3}d;/gi, '<br />' );
 };
