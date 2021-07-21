@@ -182,7 +182,7 @@ function toOxml( data, opts ) {
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			const reB = '([\\s\\S]*?)'
-				+	'(<h[^>]*>[\\s\\S]*?</h>'
+				+	'(<h[^>]*>[^<]*</h[0-9]+>'
 				+	'|<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
@@ -632,7 +632,7 @@ function toOxml( data, opts ) {
 								return ''
 							});
 							// g) a heading:
-							$2 = $2.replace(/<h([0-9]+)[^>]*>([\s\S]*?)<\/h>/, function($0,$1,$2) {
+							$2 = $2.replace(/<h([0-9]+)[^>]*>([\s\S]*?)<\/h[0-9]+>/, function($0,$1,$2) {
 								bL.push( {p:{ text:$2.trim(), format:{heading:$1} }} );
 								return ''
 							});
@@ -1147,7 +1147,7 @@ function toOxml( data, opts ) {
 //					console.debug('pPr',ct);
 					if( ct.format ) {
 						let fmt = ct.format,
-							lvl = fmt.heading,
+							lvl = parseInt(fmt.heading,10),
 							pr = '';
 
 						if( fmt.title )
