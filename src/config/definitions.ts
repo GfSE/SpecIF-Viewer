@@ -1,10 +1,8 @@
-/////////////////////////////////////////////////
 /*	Configuration Parameters for Interactive-Spec (Interaktives Lastenheft)
 	Dependencies: none
-	According to the concept of 'semantic versioning' (http://semver.org/),
-		all minor versions j.n.p of this library work with all ReqIF Server minor versions j.n.q
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 const CONFIG:any = {};
@@ -29,21 +27,21 @@ const CONFIG:any = {};
 	CONFIG.maxReal = 10000000.0;
 	CONFIG.maxAccuracy = 9;		// max decimals of real numbers
 	CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
-	CONFIG.maxTitleLength =      // truncate longer titles (modules reqifserver*.js, specifications*.mod.js)
+	CONFIG.maxTitleLength =      // truncate longer titles (modules specifications.mod.ts)
 	CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
-	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications*.mod.js)
-	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules specifications*.mod.js, objectFilter*.mod.js)
-	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications*.mod.js)
+	CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications.mod.ts)
+	CONFIG.objToGetCount = 16;  // number of elements to get to fill the objectList (modules specifications.mod.ts, filter.mod.ts)
+	CONFIG.objToShowCount = 8;  // number of elements to show in the objectList (module specifications.mod.ts)
 	CONFIG.genIdLength = 27;  // length of generated GUIDs, any prefix comes in addition (but does not add significantly to the probability of collision)
-//	CONFIG.maxItemsToCache = 2000; // 0: object cache is disabled; undefined: object cache is enabled without limit
+//	CONFIG.maxItemsToCache = 2000; // 0: item cache is disabled; undefined: item cache is enabled without limit
 //	CONFIG.cacheAutoLoadPeriod = 90000; // in ms ... should be at least 60000ms
 //	CONFIG.cacheAutoLoadReader = false; // load the cache for the reader app
 	CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
 	CONFIG.addIconToType = true;
 	CONFIG.addIconToInstance = true;	// applies to resources, statements and hierarchies/outlines
 	CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
-	CONFIG.findMentionedObjects = true;	// looks for object titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
-	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match object titles
+	CONFIG.findMentionedObjects = true;	// looks for resource titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
+	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match resource titles
 	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
 	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
@@ -296,7 +294,7 @@ const CONFIG:any = {};
 		'UML:Stereotype'
 	];
 
-	// Show or suppress empty properties in the object list (document view):
+	// Show or suppress empty properties in the resource list (document view):
 	CONFIG.showEmptyProperties = false;
 
 	// A list of properties to suppress generally, specified by title.
@@ -313,7 +311,7 @@ const CONFIG:any = {};
 		'ListNumberText'
 	];
 
-/*	// A list of attributes not to show in the object list (document view), specified by title:
+/*	// A list of attributes not to show in the resource list (document view), specified by title:
 	// You must enter the title used by SpecIF (after translation):
 	CONFIG.overviewHiddenProperties = [
 	];
