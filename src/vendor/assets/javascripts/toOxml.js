@@ -289,7 +289,8 @@ function toOxml( data, opts ) {
 				let sts={}, cid, oid, sid, relatedR, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
-					// for clustering all statements by title:
+					// for clustering all statements by title;
+					// thus properties with different class but the same title are combined in the same cell:
 					cid = titleOf( st, undefined, opts );
 				/*	// for clustering all statements by class:
 					cid = st['class']; */
@@ -484,12 +485,13 @@ function toOxml( data, opts ) {
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', descriptions=[], other=[];
 
-				if( r.properties ) {
+				if (r.properties) {
+					// Extract description and other properties;
+					// disregard the title properties, here:
 					r.properties.forEach( (p)=>{
 						if( opts.descriptionProperties.indexOf( prpTitleOf(p) )>-1 ) {
 							descriptions.push(p);
 						} else {
-							// Disregard the title properties, here:
 							if( opts.titleProperties.indexOf( prpTitleOf(p) )<0 )
 								other.push(p);
 						};

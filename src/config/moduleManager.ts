@@ -5,6 +5,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 interface IModule {
@@ -553,7 +554,8 @@ var app:IApp,
 											return true;
 
 				// libraries:
-		//		case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
+		/*		case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
+				case 'checkSpecif':			getScript('https://specif.de/v' + CONFIG.specifVersion + '/check.js'); return true;   */
 				case "types":				getScript( loadPath+'types/specif.types.js'); return true;
 				case "i18n": 				switch( browser.language.slice(0,2) ) {
 												case 'de':  getScript( loadPath+'config/locales/iLaH-de.i18n.js' )
@@ -590,12 +592,10 @@ var app:IApp,
 				case 'bpmn2specif':			getScript( loadPath+'vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
 				case 'archimate2specif':	getScript( loadPath+'vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
 				case 'reqif2specif':		getScript( loadPath+'vendor/assets/javascripts/reqif2specif.js' ); return true;
-				case 'checkSpecif':			getScript( 'https://specif.de/v'+CONFIG.specifVersion+'/check.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( loadPath+'modules/graph.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 										//	loadM( 'dataTableButtons' );
-										//	loadM( 'zip' );  // needed for Excel export
 											getScript( loadPath+'modules/objectTable-0.93.1.js' ); return true;
 				case "serverPouch":			loadM('pouchDB');
 											getScript(loadPath + 'modules/serverPouch.mod.js'); return true; */
@@ -605,7 +605,7 @@ var app:IApp,
 				case 'importAny':			loadM( 'zip' );
 											getScript( loadPath+'modules/importAny.mod.js' ); return true;
 				case 'ioSpecif':			loadM( 'jsonSchema' );
-											loadM( 'checkSpecif' );
+										//	loadM( 'checkSpecif' );
 											getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			loadM( 'reqif2specif' );
 											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;

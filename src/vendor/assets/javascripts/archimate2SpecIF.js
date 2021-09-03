@@ -3,6 +3,7 @@
 	Author: se@enso-managers.de
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 // Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format
@@ -50,7 +51,7 @@ function Archimate2Specif( xmlString, opts ) {
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
 //	console.debug('xml',xmlDoc);
-		
+
 	// Get the model metadata:
 	let L = Array.from(xmlDoc.querySelectorAll("model"));
 /*	// There should be exactly one model per Open Exchange file:

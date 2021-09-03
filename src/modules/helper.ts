@@ -4,6 +4,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
  	Attention: 
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in jsIdOf() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.

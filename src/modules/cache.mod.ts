@@ -4,6 +4,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 /*	Naming:
 	- 'item' is any SpecIF object including classes and instances
@@ -88,16 +89,23 @@ moduleManager.construct({
 
 		return true
 	};
-	self.create = (p:SpecIF, opts:any ): JQueryDeferred<void> => {
+	self.create = (prj:SpecIF, opts:any ): JQueryDeferred<void> => {
 		// in this implementation, delete existing projects to save memory space:
 		self.projects.length = 0;
 
 		// append a project to the list:
 		self.projects.push( Project() );
 		self.selectedProject = self.projects[self.projects.length-1];
-		return self.selectedProject.create( p, opts );
+		return self.selectedProject.create( prj, opts );
 	};
-/*	// Periodically update the selected project with the current server state in a multi-user context:
+/*	self.update = (prj:SpecIF, opts:any ) => {
+		if (!prj) return;
+		// search the project and select it:
+		...
+		// update:
+		...
+ 	};
+	// Periodically update the selected project with the current server state in a multi-user context:
 	self.startAutoLoad = ( cb )=>{
 //		if( !self.cacheInstances ) return;
 //		console.info( 'startAutoLoad' );
@@ -208,7 +216,7 @@ function Project(): IProject {
 		newD = new CSpecIF(newD); // transform to internal data structure
 //		console.debug('app.cache.selectedProject.data.create',newD);
 
-		if (newD.isValid) {
+		if ( newD.isValid() ) {
 			self.data.setMeta(newD);
 
 			// Create the project
@@ -256,7 +264,14 @@ function Project(): IProject {
 			}
 		}
 	};
-	/*	self.read = ( prj, opts )=>{
+/*	self.updateMeta = ( prj )=>{
+		if( !prj ) return;
+		// update only the provided properties:
+		for( var p in prj ) self[p] = prj[p];
+		// Update the meta-data (header):
+	//	return server.project(self).update()
+ 	};
+	self.read = ( prj, opts )=>{
 		// Assemble the data of the project from all documents in a document database:
 		switch( typeof(opts) ) {
 			case 'boolean':
@@ -281,13 +296,6 @@ function Project(): IProject {
 		};
 		// else
 		return null
-	};
-	self.updateMeta = ( prj )=>{
-		if( !prj ) return;
-		// update only the provided properties:
-		for( var p in prj ) self[p] = prj[p];			
-		// Update the meta-data (header):
-	//	return server.project(self).update()
 	}; */
 	class CType {
 		ctg: string;
@@ -720,7 +728,6 @@ function Project(): IProject {
 		];
 		var r:Instance = itemById( dta.resources, dta.hierarchies[0].resource ),
 			rC:ResourceClass = itemById( dta.resourceClasses, r['class'] ),
-		//	singleHierarchyRoot = dta.hierarchies.length==1 && rC && CONFIG.hierarchyRoots.indexOf(rC.title)>-1;
 			prp:Property = itemByTitle( r.properties, CONFIG.propClassType ),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 			// or by the title of the resourceClass:

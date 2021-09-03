@@ -1,11 +1,14 @@
-/*!    ReqIF to SpecIF Transformation
+/*! 
+    ReqIF to SpecIF Transformation
     (C)copyright adesso SE, enso managers gmbh (http://www.enso-managers.de)
     Author: jasmin.droescher@adesso.de, se@enso-managers.de, Berlin
     License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
     We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
-    
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+
     ToDo:
     - transform RELATION-GROUP-TYPES and RELATION-GROUPS
+    - identify relationship SOURCEs and TARGETs without referenced OBJECTs and annotate them similarly to the Excel import
     - gather default values
 */
 
@@ -293,7 +296,6 @@ function extractXmlDocFromString(string) {
 /* 
 ##########################################################################
 ########################## Tools #########################################  
-##########################################################################
 */
 /*
 //      (xmlns:.*?=)\\".*?\\" Regular Expression to match namespace links (at beginning)
@@ -316,13 +318,13 @@ String.prototype.removeNamespaces = function(){
 };*/
 function removeNamespaces(input) {
     const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/
-        let namespace = getNameSpace(RE_NS_LINK, input);
-        let string = input.replace(RE_NS_LINK, '' ); 
-        //string = string.replaceAll(namespace, '')
-        const RE_namespace = new RegExp(namespace, 'g' )
-        string = string.replace(RE_namespace, '');
-        //console.log(string)
-        return string;
+    let namespace = getNameSpace(RE_NS_LINK, input);
+    let string = input.replace(RE_NS_LINK, '' ); 
+    //string = string.replaceAll(namespace, '')
+    const RE_namespace = new RegExp(namespace, 'g' )
+    string = string.replace(RE_namespace, '');
+//  console.log(string)
+    return string;
 }
 function getNameSpace(regEX, string) {
     let namespace = '';
@@ -331,7 +333,7 @@ function getNameSpace(regEX, string) {
         namespace = $1 + ":";
         return ''
     });
-    //console.log("Namespace: " + namespace)
+//  console.log("Namespace: " + namespace)
     return namespace;
 }
 }

@@ -4,6 +4,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 moduleManager.construct({
@@ -16,11 +17,11 @@ moduleManager.construct({
 			title: 'Create a new project with the given id',
 			desc: 'All types, objects, relations and hierarchies will be created as specified.',
 			label: i18n.BtnCreate
-	/*	},{
+		},{
 			id: 'clone',
 			title: 'Create a new instance of the project with a new id',
 			desc: 'There will be two projects with the existing and the new content.',
-			label: i18n.BtnClone  */
+			label: i18n.BtnClone
 		},{
 			id: 'replace',
 			title: 'Replace the project having the same id',
@@ -335,6 +336,8 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
+			document.getElementById("cloneBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
@@ -351,9 +354,10 @@ moduleManager.construct({
 		try {
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("fileSelectBtn").disabled = st;
-		//	document.getElementById("cloneBtn").disabled = 
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
+			document.getElementById("cloneBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
@@ -520,9 +524,9 @@ moduleManager.construct({
 				else opts.mode = importMode.id;
 
 				switch( opts.mode ) {
-					case 'clone': 	
+				/*	case 'clone': 	
 						dta.id = genID('P-');
-						// no break
+						// no break */
 					case 'create':
 					case 'replace':
 						opts.deduplicate = true;
@@ -533,12 +537,16 @@ moduleManager.construct({
 							.done( handleNext )
 							.fail( handleError );
 						break;
+				/*	case 'update':
+						app.cache.update(dta, opts)
+							.progress(setProgress)
+							.done(handleNext)
+							.fail(handleError)
+						break; */
 					case 'adopt':
 						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = true;
-						// no break;
-					case 'update':
 						app.cache.selectedProject.update( dta, opts )
 							.progress( setProgress )
 							.done( handleNext )

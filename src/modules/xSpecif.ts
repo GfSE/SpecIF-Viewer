@@ -4,134 +4,8 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
-
-const vocabulary = {
-	// Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
-	property: {
-		// for properyTypes and properties:
-		specif: function (iT: string): string {
-			// Target language: SpecIF
-			var oT = '';
-			switch (iT.specifIdOf().toLowerCase()) {
-				case "_berschrift":
-				case "title":
-				case "titel":
-				case "dc_title":
-				case "specif_heading":			//  'SpecIF:Heading' has been used falsely as property title
-				case "reqif_chaptername":
-				case "reqif_name":					oT = CONFIG.propClassTitle; break;
-				case "description":
-				case "beschreibung":
-				case "text":
-				case "dc_description":
-			//	case "reqif_changedescription":
-				case "reqif_description":
-				case "reqif_text":					oT = CONFIG.propClassDesc; break;
-				case "reqif_revision":				oT = "SpecIF:Revision"; break;
-				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
-				case "specif_subclass":			// deprecated, for compatibility
-				case "reqif_category":				oT = CONFIG.propClassType; break;
-				case 'specif_id':				// deprecated, for compatibility
-				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
-				case "specif_state":			// deprecated, for compatibility
-				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
-				case "dc_author":
-				case "dcterms_author":			// deprecated, for compatibility
-				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
-				case "specif_createdat":			oT = "dcterms:modified"; break;
-			//	case "reqif_foreignmodifiedby":		oT = ""; break;
-			//	case "reqif_foreigncreatedon":		oT = ""; break;
-			//	case "reqif_foreigncreatedthru":	oT = ""; break;
-			//	case "reqif_fitcriteria":			oT = ""; break;
-			//	case "reqif_prefix":				oT = ""; break;
-			//	case "reqif_associatedfiles":		oT = ""; break;
-			//	case "reqif_project":				oT = ""; break;
-			//	case "reqif_chapternumber":			oT = ""; break;
-				default:							oT = iT;
-			};
-			return oT;
-		},
-		reqif: function (iT: string): string {
-			// Target language: ReqIF
-			var oT = '';
-			switch (iT.specifIdOf().toLowerCase()) {
-				case "dcterms_title":				oT = "ReqIF.Name"; break;
-				case "dcterms_description":			oT = "ReqIF.Text"; break;
-				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
-				case "specif_heading":				oT = "ReqIF.ChapterName"; break;	// for compatibility
-				case "specif_category":
-				case "dcterms_type":				oT = "ReqIF.Category"; break;
-				case "specif_revision":				oT = "ReqIF.Revision"; break;
-				case "specif_state":			// deprecated, for compatibility
-				case "specif_status":				oT = "ReqIF.ForeignState"; break;
-				case "dcterms_author":			// deprecated, for compatibility
-				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
-			//	case "specif_createdat":
-			//	case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
-				default:							oT = iT;
-			};
-			return oT;
-		}
-	},
-	resource: {
-		// for resourceClasses and resources:
-		specif: function (iT: string): string {
-			// Target language: SpecIF
-			var oT = '';
-			switch (iT.specifIdOf().toLowerCase()) {
-				case 'actors':
-				case 'actor':
-				case 'akteure':
-				case 'akteur':						oT = "FMC:Actor"; break;
-				case 'states':
-				case 'state':
-				case 'zustände':
-				case 'zustand':						oT = "FMC:State"; break;
-				case 'events':
-				case 'event':
-				case 'ereignisse':
-				case 'ereignis':					oT = "FMC:Event"; break;
-				case 'anforderungen':
-				case 'anforderung':
-				case 'requirements':
-				case 'requirement':
-				case 'specif_requirement':			oT = "IREB:Requirement"; break;
-				case 'merkmale':
-				case 'merkmal':
-				case 'features':
-				case 'feature':						oT = "SpecIF:Feature"; break;
-				case 'annotations':
-				case 'annotationen':
-				case 'annotation':					oT = "IR:Annotation"; break;
-				case 'user_stories':
-				case 'user_story':					oT = 'SpecIF:UserStory'; break;
-				case 'specif_view':
-				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
-				case 'specif_folder':				oT = CONFIG.resClassFolder; break;
-				case 'specif_hierarchyroot':
-				case 'specif_hierarchy':			oT = CONFIG.resClassOutline; break;
-				default:							oT = iT;
-			};
-			return oT;
-	/*	},
-		reqif: function( iT:string ):string {
-			// no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
-			return iT */
-		}
-	},
-	statement: {
-		// for statementClasses and statements:
-		specif: function (iT: string): string {
-			// Target language: SpecIF
-			var oT = '';
-			switch (iT.specifIdOf().toLowerCase()) {
-				default:							oT = iT
-			};
-			return oT;
-		}
-	}
-};
 
 class CSpecifItemNames {
 	// SpecIF item names for all supported import versions 
@@ -282,7 +156,7 @@ class CSpecIF implements SpecIF {
 //		console.debug('set',simpleClone(spD));
 		this.names = new CSpecifItemNames(spD.specifVersion);
 
-		// Differences when using forAll() instead of Array.map():
+		// Differences when using forAll() instead of [..].map():
 		// - tolerates missing input list (not all are mandatory for SpecIF)
 		// - suppresses undefined list items in the result, so in effect forAll() is a combination of .map() and .filter().
 		try {
@@ -296,7 +170,8 @@ class CSpecIF implements SpecIF {
 			this.statements = forAll( spD.statements, (e: any) => { return this.s2int(e) });
 			this.hierarchies = forAll( spD.hierarchies, (e: any) => { return this.h2int(e) });
 			this.files = forAll( spD.files, (e: any) => { return this.f2int(e) })
-		} catch (e) {
+		}
+		catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
 			console.error(txt);
 			message.show({ status: 999, statusText: txt }, { severity: 'danger' });
@@ -1170,55 +1045,66 @@ const specif = {
 		return new Promise(
 			(resolve,reject)=>{
 
-				if( typeof(data)!='object' ) {
-					reject( {status:999,statusText:'No SpecIF data to check'} );
+				if (typeof (data) == 'object') {
+
+					// 1. Get the "official" routine for checking schema and constraints
+					//    - where already loaded checking routines are replaced by the newly loaded ones
+					//    - use $.ajax() with options since it is more flexible than $.getScript
+					//    - the first (relative) URL is for debugging within a local clone of Github
+					//    - both of the other (absolute) URLs are for a production environment
+					$.ajax({
+						dataType: "script",
+						cache: true,
+						url: (data['$schema'] && data['$schema'].indexOf('v1.0')<0 ?
+												(window.location.href.startsWith('file:/') ? '../../SpecIF/check/check.js'
+												: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(data['$schema'])[1] + '/check.min.js' )
+												: 'https://specif.de/v1.0/check.js' ) // older versions are covered by v1.0/check.js
+					})
+					.done( ()=>{
+						// 2. Get the specified schema file:
+						httpGet({
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
+							url: (data['$schema'] || 'https://specif.de/v' + data.specifVersion + '/schema'),
+							responseType: 'arraybuffer',
+							withCredentials: false,
+							done: handleResult,
+							fail: handleError
+						});
+					})
+					.fail(handleError);  
+				}
+				else {
+					reject({ status: 999, statusText: 'No SpecIF data to check' });
 				};
-
-			/*	// Get the "official" routines for checking schema and constraints:
-				// Use $.ajax() with options since it is more flexible than $.getScript:
-				$.ajax({
-					dataType: "script",
-					cache: true,
-					url: url + (url.slice(0, 4) == 'http' ? "" : "?" + CONFIG.appVersion)
-				})
-				.done(...)
-				.fail(handleError);  
-				.. currently this is loaded at initialization */
-
-				// Get the specified schema file:
-				httpGet({
-					// force a reload through cache-busting:
-					// @ts-ignore - 'specifVersion' is defined for versions <1.0
-					url: (data['$schema'] || 'https://specif.de/v' + data.specifVersion + '/schema') + '?' + simpleHash(Date.now().toString()),
-					responseType: 'arraybuffer',
-					withCredentials: false,
-					done: handleResult,
-					fail: handleError
-				});
 				return;
 
 				function handleResult(xhr: XMLHttpRequest) {
-//					console.debug('schema', xhr);
-					// 1. check data against schema:
-					// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
-					let rc: xhrMessage = checkSchema(data, { schema: JSON.parse(ab2str(xhr.response)) });
-					if (rc.status == 0) {
-						// 2. Check further constraints:
-						// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
-						rc = checkConstraints(data, opts);
+					if (typeof (checkSchema) == 'function' && typeof (checkConstraints) == 'function') {
+//						console.debug('schema', xhr);
+						// 1. check data against schema:
+						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
+						let rc: xhrMessage = checkSchema(data, { schema: JSON.parse(ab2str(xhr.response)) });
 						if (rc.status == 0) {
-							resolve(data);
+							// 2. Check further constraints:
+							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
+							rc = checkConstraints(data, opts);
+							if (rc.status == 0) {
+								resolve(data);
+							}
+							else {
+								reject(rc);
+							};
 						}
 						else {
+							// older versions of the checking routine don't set the responseType:
+							if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
+								rc.responseType = 'text';
 							reject(rc);
 						};
 					}
 					else {
-						// older versions of the checking routine don't set the responseType:
-						if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
-							rc.responseType = 'text';
-						reject(rc);
-					};
+						reject({ status: 999, statusText: 'Standard routines checkSchema and checkConstraints are not available.' });
+					}
 				}
 				function handleError(xhr: xhrMessage) {
 					switch (xhr.status) {

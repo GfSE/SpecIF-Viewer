@@ -115,27 +115,27 @@ function embeddedSpecif():IApp {
 		self.ioSpecif.toSpecif(str2ab(data))
 			.done(function (newD: SpecIF) {
 					specif.check( newD )
-						.then( (dta: SpecIF)=>{
-								var opts = {
-										deduplicate: true,
-										addGlossary: true,
-										collectProcesses: false
-									};
-								self.cache.create( dta, opts )
-									.done( function() {
-										message.show( i18n.lookup( 'MsgImportSuccessful', dta.title ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
-										setTimeout( function() {
-												// change view to browse the content:
-												moduleManager.show({ view: '#'+CONFIG.specifications /*, urlParams:urlP */ });
-												self.busy.reset();
-											}, 
-											CONFIG.showTimelag 
-										);
-									})
-									.fail( stdError );
-							},
-							stdError
-						);
+					.then( (dta: SpecIF)=>{
+							var opts = {
+									deduplicate: true,
+									addGlossary: true,
+									collectProcesses: false
+								};
+							self.cache.create( dta, opts )
+							.done( function() {
+								message.show( i18n.lookup( 'MsgImportSuccessful', dta.title ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
+								setTimeout( function() {
+										// change view to browse the content:
+										moduleManager.show({ view: '#'+CONFIG.specifications /*, urlParams:urlP */ });
+										self.busy.reset();
+									}, 
+									CONFIG.showTimelag 
+								);
+							})
+							.fail( stdError );
+						},
+						stdError
+					);
 			})
 			.fail( stdError );  
 	};
