@@ -173,7 +173,7 @@ class CSpecIF implements SpecIF {
 		}
 		catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
-			console.error(txt);
+			console.log(txt);
 			message.show({ status: 999, statusText: txt }, { severity: 'danger' });
 			return; // undefined 
 		};

@@ -23,6 +23,9 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 
 					pend++;
 				/*	switch( f.type ) {
+						case 'application/bpmn+xml':
+							// The 
+							// no break;
 						case 'image/svg+xml':
 							// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
 							// see: https://css-tricks.com/probably-dont-base64-svg/
@@ -51,16 +54,12 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 								0
 							);
                             break; 
-						case 'application/bpmn+xml':
-							delete f.blob;
-							console.warn( "BPMN file '"+f.title+"'has arrived, but should not arrive at toHTML(); it has been deleted." );
-							if (--pend < 1) resolve(make(pr));
-							break; 
+					
 						default:
 						//	let errT = 'Cannot transform diagram ' + f.title + ' of unknown type: ' + f.type;
 						//	console.warn(errT);
-						//	reject({ status: 999, statusText: errT }); */
-
+						//	reject({ status: 999, statusText: errT });
+				*/
 							blob2dataURL(f,
 								(r: string) => {
 									// perhaps there is a more elegant way to apply the type to the dataURL,

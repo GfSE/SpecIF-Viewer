@@ -651,12 +651,21 @@ function Project(): IProject {
 		// so replace dAV by rAV in the list named 'propN'
 		// (for example: in L[i][propN] (which is a list as well), replace dAV by rAV):
 		let idx:number;
-		if( Array.isArray(L) )
-			L.forEach( (e)=>{
-				// e is a resourceClass of statementClass:
-				if( !Array.isArray(e[propN]) ) return;
-				idx = e[propN].indexOf(dAV);
-				if( idx>-1 ) e[propN].splice( idx, 1, rAV );
+		if (Array.isArray(L))
+			L.forEach((e) => {
+				// e is a resourceClass or statementClass:
+				if (Array.isArray(e[propN])) {
+					idx = e[propN].indexOf(dAV);
+					if (idx > -1) {
+						// dAV is an element of e[propN]
+						// - replace dAV with rAV
+						// - in case rAV is already member of the list, just remove dAV
+						if (e[propN].indexOf(rAV) > -1)
+							e[propN].splice(idx, 1)
+						else
+							e[propN].splice(idx, 1, rAV);
+					};
+				};
 			});
 	}
 	function substituteRef(L,rId:string,dId:string):void {
@@ -1166,7 +1175,7 @@ function Project(): IProject {
 				adopt(newD, opts);
 				break;
 			default:
-				uDO.reject({status:999,statusText:'No update mode specified'});
+				uDO.reject({status:999,statusText:'Invalid update mode specified'});
 		};
 		return uDO;
 
@@ -2139,16 +2148,16 @@ function Project(): IProject {
 			message.show( xhr );
 		}
 	};
-	self.exportAs = (opts?:any):Promise<void> =>{
-		if( !opts ) opts = {};
-		if( !opts.format ) opts.format = 'specif';
+	self.exportAs = (opts?: any): Promise<void> => {
+		if (!opts) opts = {};
+		if (!opts.format) opts.format = 'specif';
 		// in certain cases, try to export files with the same name in PNG format, as well.
 		// - ole: often, preview images are supplied in PNG format;
 		// - svg: for generation of DOC or ePub, equivalent images in PNG-format are needed.
-	//	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;   ... is the default
-	//	if( !opts.alternatePngFor ) opts.alternatePngFor = ['svg','ole'];	... not yet supported
+		//	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;   ... is the default
+		//	if( !opts.alternatePngFor ) opts.alternatePngFor = ['svg','ole'];	... not yet supported
 
-		return new Promise( (resolve, reject)=>{
+		return new Promise((resolve, reject) => {
 
 			if (self.exporting) {
 				// prohibit multiple entry
@@ -2177,33 +2186,61 @@ function Project(): IProject {
 			};
 			return;
 
-			function transform2image( fileL:IFileWithContent[], fn:Function ):void {
-				let pend=0;
-				if( fileL )
+			function transform2image(dta, fn: Function): void {
+				let pend = 0,
+					re = /<object ([^>]+?)(\/>|>)/,
+					reT = /type="[^"]+"/,
+					replaced = false;
+				if (Array.isArray(dta.files))
 					// Transform any special file format to an image:
-					fileL.forEach( (f,i,L)=>{
-						switch( f.type ) {
+					dta.files.forEach((f, i, L) => {
+						let nFileName = f.title.fileName() + '.svg',
+							reD = new RegExp('data="' + f.title + '"');
+						switch (f.type) {
 							case 'application/bpmn+xml':
 								pend++;
+
+								// Replace the file reference names and types:
+								dta.resources.forEach((res) => {
+									if (Array.isArray(res.properties))
+										res.properties.forEach((prp) => {
+											prp.value = prp.value.replace(re, ($0, $1, $2) => {
+//												console.debug('#a', $0, $1, $2);
+												replaced = false;
+												if ($1) $1 = $1.replace(reD, ($4) => {
+//													console.debug('#b', $4, nFileName);
+													replaced = true;
+													return 'data="' + nFileName + '"'
+												});
+												if (replaced) $1 = $1.replace(reT, () => {
+													return 'type="image/svg+xml"'
+												});
+												return '<object ' + $1 + $2;
+											});
+//											console.debug('#c', prp);
+										});
+								});
+
 								// Read and render BPMN as SVG:
-								blob2text(f, (b:string) => {
+								blob2text(f, (b: string) => {
 									bpmn2svg(b)
 									.then(
-										(result)=>{
+										(result) => {
 											// replace BPMN by SVG:
-											L.splice(i,1,{
-												blob: new Blob([result.svg],{type: "image/svg+xml; charset=utf-8"}),
+											L.splice(i, 1, {
+											//	blob: new Blob([result.svg], { type: "image/svg+xml; charset=utf-8" }),
+												blob: new Blob([result.svg], { type: "image/svg+xml" }),
 												id: 'F-' + simpleHash(f.title),
-												title: f.title.fileName()+'.svg',
+												title: nFileName,
 												type: 'image/svg+xml',
 												changedAt: f.changedAt
 											});
 //											console.debug('SVG',result.svg,L);
-											if( --pend<1 )
+											if (--pend < 1)
 												// Finally publish in the desired format:
 												fn();
 										},
-										(err)=>{
+										(err) => {
 											console.error('BPMN-Viewer could not deliver SVG', err);
 											reject();
 										}
@@ -2212,25 +2249,25 @@ function Project(): IProject {
 						};
 					});
 				// In case there is nothing to transform, we start right away:
-				if( pend<1 )
+				if (pend < 1)
 					// publish in the desired format:
 					fn();
 			}
-			function publish( opts:any ):void {
-				if( !opts || ['epub','oxml'].indexOf(opts.format)<0 )  {
+			function publish(opts: any): void {
+				if (!opts || ['epub', 'oxml'].indexOf(opts.format) < 0) {
 					// programming error!
 					reject();
 					return;
 				};
 
 				// ToDo: Get the newest data from the server.
-//				console.debug( "publish", opts );
+				//				console.debug( "publish", opts );
 
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
 				// if the value is undefined, the property is suppressed in all cases.
 				opts.hiddenProperties = [
-					{title:CONFIG.propClassType,value:CONFIG.resClassFolder},
-					{title:CONFIG.propClassType,value:CONFIG.resClassOutline}
+					{ title: CONFIG.propClassType, value: CONFIG.resClassFolder },
+					{ title: CONFIG.propClassType, value: CONFIG.resClassOutline }
 				];
 
 				opts.allResources = false; // only resources referenced by a hierarchy.
@@ -2238,14 +2275,14 @@ function Project(): IProject {
 				opts.lookupTitles = false;  // applies to self.data.toExt()
 				opts.lookupValues = true;  // applies to self.data.toExt()
 				// But DO reduce to the language desired.
-				if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+				if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
 				opts.createHierarchyRootIfNotPresent = true;
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
 
-				let data = self.data.toExt( opts ),
+				let data = self.data.toExt(opts),
 					localOpts = {
 						// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 						titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties),
@@ -2255,36 +2292,35 @@ function Project(): IProject {
 						showEmptyProperties: CONFIG.showEmptyProperties,
 						imgExtensions: CONFIG.imgExtensions,
 						applExtensions: CONFIG.applExtensions,
-					//	hasContent: hasContent,
-						propertiesLabel: opts.withOtherProperties? 'SpecIF:Properties' : undefined,
-						statementsLabel: opts.withStatements? 'SpecIF:Statements' : undefined,
+						//	hasContent: hasContent,
+						propertiesLabel: opts.withOtherProperties ? 'SpecIF:Properties' : undefined,
+						statementsLabel: opts.withStatements ? 'SpecIF:Statements' : undefined,
 						fileName: opts.fileName,
 						colorAccent1: '0071B9',	// adesso blue
-						done: ()=>{ app.cache.selectedProject.exporting=false; resolve() },
-						fail: (xhr)=>{ app.cache.selectedProject.exporting=false; reject(xhr) }
+						done: () => { app.cache.selectedProject.exporting = false; resolve() },
+						fail: (xhr) => { app.cache.selectedProject.exporting = false; reject(xhr) }
 					};
 
-				transform2image( data.files,
-					function() {
-						switch( opts.format ) {
+				transform2image( data,
+					() => {
+						switch (opts.format) {
 							case 'epub':
 								// @ts-ignore - toEpub() is loaded at runtime
-								toEpub( data, localOpts );
+								toEpub(data, localOpts);
 								break;
 							case 'oxml':
 								// @ts-ignore - toOxml() is loaded at runtime
-								toOxml( data, localOpts );
+								toOxml(data, localOpts);
 						};
 						// resolve() is called in the call-backs defined by opts
 					}
 				);
 			}
-			function storeAs( opts:any ):void {
-				if( !opts || ['specif','html','reqif','turtle'].indexOf(opts.format)<0 ) {
+			function storeAs(opts: any): void {
+				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0)
 					// programming error!
-					reject();
-					return;
-				};
+					throw Error("Invalid format specified on export");
+
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
@@ -2293,21 +2329,21 @@ function Project(): IProject {
 				opts.lookupTitles = false;
 				opts.lookupValues = false;
 
-				switch( opts.format ) {
+				switch (opts.format) {
 					case 'specif':
 						opts.allResources = true;  // even, if not referenced by a hierarchy.
-						// no break
+					// no break
 					case 'html':
 						// export all languages:
 						opts.targetLanguage = undefined;
 						// keep all revisions:
 						opts.revisionDate = undefined;
 						break;
-				//	case 'rdf':
+					//	case 'rdf':
 					case 'turtle':
 					case 'reqif':
 						// only single language is supported:
-						if( typeof(opts.targetLanguage)!='string' ) opts.targetLanguage = browser.language;
+						if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
@@ -2319,110 +2355,111 @@ function Project(): IProject {
 						reject();
 						return; // should never arrive here
 				};
-//				console.debug( "storeAs", opts );
+				//				console.debug( "storeAs", opts );
 				let data = self.data.toExt(opts),
 					fName = opts.fileName || data.title;
 
 				// A) Processing for 'html':
-				if( opts.format=='html' ) {
+				if (opts.format == 'html') {
 					// find the fully qualified path of the content delivery server to fetch the viewer modules:
-					opts.cdn = window.location.href.substr(0,window.location.href.lastIndexOf("/")+1);
+					opts.cdn = window.location.href.substr(0, window.location.href.lastIndexOf("/") + 1);
 
-					transform2image( data.files,
-						()=>{ toHtmlDoc( data, opts )
-								.then(
-									function(dta):void {
-										let blob = new Blob([dta], {type: "text/html; charset=utf-8"});
+					transform2image( data,
+						() => {
+							toHtmlDoc(data, opts)
+							.then(
+								function (dta): void {
+									let blob = new Blob([dta], { type: "text/html; charset=utf-8" });
 									//	let blob = new Blob([dta], {type: "application/xhtml+xml; charset=utf-8"});
-										// @ts-ignore - saveAs() is loaded at runtime
-										saveAs( blob, fName+'.specif.html' );
-										self.exporting = false;
-										resolve();
-									}
-								)
-								.catch(
-									function(xhr):void {
-										self.exporting = false;
-										reject(xhr);
-									}
-								);
+									// @ts-ignore - saveAs() is loaded at runtime
+									saveAs(blob, fName + '.specif.html');
+									self.exporting = false;
+									resolve();
+								}
+							)
+							.catch(
+								function (xhr): void {
+									self.exporting = false;
+									reject(xhr);
+								}
+							);
 						}
 					);
 					return;
 				};
-				
+
 				// B) Processing for all formats except 'html':
 				// @ts-ignore - JSZip() is loaded at runtime
 				let zip = new JSZip(),
-					zName:string, 
+					zName: string,
 					mimetype = "application/zip";
-				
+
 				// Add the files to the ZIP container:
-				if( data.files )
-					data.files.forEach( (f)=>{
-//						console.debug('zip a file',f);
-						zip.file( f.title, f.blob );
+				if (data.files)
+					data.files.forEach((f) => {
+						//						console.debug('zip a file',f);
+						zip.file(f.title, f.blob);
 						delete f.blob; // the SpecIF data below shall not contain it ...
 					});
 
 				// Prepare the output data:
-				switch( opts.format ) {
+				switch (opts.format) {
 					case 'specif':
 						fName += ".specif";
 						zName = fName + '.zip';
-						data = JSON.stringify( data );
+						data = JSON.stringify(data);
 						break;
 					case 'reqif':
 						fName += ".reqif";
 						zName = fName + 'z';
 						mimetype = "application/reqif+zip";
-						data = app.ioReqif.toReqif( data );
+						data = app.ioReqif.toReqif(data);
 						break;
 					case 'turtle':
 						fName += ".ttl";
 						zName = fName + '.zip';
 						// @ts-ignore - transformSpecifToTTL() is loaded at runtime
-						data = transformSpecifToTTL( "https://specif.de/examples", data );
-				/*		break;
-					case 'rdf':
-						if( !app.ioRdf ) {
-							reject({status:999,statusText:"ioRdf not loaded."});
-							return;
-						};
-						fName += ".rdf";
-						data = app.ioRdf.toRdf( data ); */
+						data = transformSpecifToTTL("https://specif.de/examples", data);
+					/*		break;
+						case 'rdf':
+							if( !app.ioRdf ) {
+								reject({status:999,statusText:"ioRdf not loaded."});
+								return;
+							};
+							fName += ".rdf";
+							data = app.ioRdf.toRdf( data ); */
 				};
-				let blob = new Blob([data], {type: "text/plain; charset=utf-8"});
+				let blob = new Blob([data], { type: "text/plain; charset=utf-8" });
 				// Add the project:
-				zip.file( fName, blob );
+				zip.file(fName, blob);
 				blob = undefined; // free heap space
 
 				// done, store the specif.zip:
 				zip.generateAsync({
-						type: "blob",
-						compression: "DEFLATE",
-						compressionOptions: { level: 7 },
-						mimeType: mimetype
-					})
+					type: "blob",
+					compression: "DEFLATE",
+					compressionOptions: { level: 7 },
+					mimeType: mimetype
+				})
 					.then(
 						(blob: Blob) => {
 							// successfully generated:
-//							console.debug("storing ZIP of '"+fName+"'.");
+							//							console.debug("storing ZIP of '"+fName+"'.");
 							// @ts-ignore - saveAs() is loaded at runtime
-							saveAs( blob, zName );
+							saveAs(blob, zName);
 							self.exporting = false;
 							resolve();
 						},
 						(xhr: xhrMessage) => {
 							// an error has occurred:
-							console.error("Cannot create ZIP of '"+fName+"'.");
+							console.error("Cannot create ZIP of '" + fName + "'.");
 							self.exporting = false;
 							reject(xhr);
 						}
 					);
 			}
 		});
-	}
+	};
 	self.abort = ():void =>{
 		console.info('abort specif');
 	//	server.abort();

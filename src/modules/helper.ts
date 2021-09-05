@@ -297,7 +297,7 @@ function stdError(xhr: xhrMessage, cb?:Function): void {
 			message.show( xhr );
 	};
 	// log original values:
-	console.error( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
+	console.log( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
 	if( typeof(cb)=='function' ) cb();
 };
 // standard message box:
@@ -936,7 +936,7 @@ function noCode( s:string ):string {
 	};
 	return s;
 	function log(c:number):void {
-		console.error('Considered harmful ('+c+'):',s);
+		console.log("'"+s+"' is considered harmful ("+c+") and has been suppressed");
 	}
 }
 function cleanValue(o: string | ValueElement[] ):string|ValueElement[] {

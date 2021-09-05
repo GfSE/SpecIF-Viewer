@@ -434,7 +434,7 @@ moduleManager.construct({
 		else {
 			resQ.length = 0;
 			resIdx = 0;
-			handle( data, resIdx );
+			handle( data, 0 );
 		};
 		return;
 	
