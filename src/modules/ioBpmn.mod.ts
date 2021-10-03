@@ -63,26 +63,28 @@ moduleManager.construct({
 
 		bDO.notify('Transforming BPMN to SpecIF',10); 
 		// @ts-ignore - BPMN2Specif() is loaded at runtime
-		data = BPMN2Specif( ab2str(buf),
-							{ 
-								fileName: fName, 
-								fileDate: fDate, 
-								titleLength: CONFIG.textThreshold,
-								descriptionLength: CONFIG.maxStringLength,
-								strGlossaryType: CONFIG.resClassGlossary,
-								strGlossaryFolder: CONFIG.resClassGlossary,
-								strActorFolder: "FMC:Actors",
-								strStateFolder: "FMC:States",
-								strEventFolder: "FMC:Events",
-							//	strCollectionFolder: "SpecIF:Collections",
-							//	strAnnotationFolder: "SpecIF:Annotations",
-								strRoleType: CONFIG.resClassRole,
-								strConditionType: CONFIG.resClassCondition,
-								strBusinessProcessType: CONFIG.resClassProcess,
-								strBusinessProcessesType: CONFIG.resClassProcesses,
-								strBusinessProcessFolder: CONFIG.resClassProcesses,
-								isIE: false
-							});
+		data = BPMN2Specif(
+				Lib.ab2str(buf),
+				{ 
+					fileName: fName, 
+					fileDate: fDate, 
+					titleLength: CONFIG.textThreshold,
+					descriptionLength: CONFIG.maxStringLength,
+					strGlossaryType: CONFIG.resClassGlossary,
+					strGlossaryFolder: CONFIG.resClassGlossary,
+					strActorFolder: "FMC:Actors",
+					strStateFolder: "FMC:States",
+					strEventFolder: "FMC:Events",
+				//	strCollectionFolder: "SpecIF:Collections",
+				//	strAnnotationFolder: "SpecIF:Annotations",
+					strRoleType: CONFIG.resClassRole,
+					strConditionType: CONFIG.resClassCondition,
+					strBusinessProcessType: CONFIG.resClassProcess,
+					strBusinessProcessesType: CONFIG.resClassProcesses,
+					strBusinessProcessFolder: CONFIG.resClassProcesses,
+					isIE: false
+				}
+		);
 //		console.debug('input.prjName', self.parent.projectName, data );
 		if( typeof(data)=='object' && data.id )
 			bDO.resolve( data )

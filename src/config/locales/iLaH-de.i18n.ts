@@ -524,11 +524,13 @@ function LanguageTextsDe() {
 	self.SpecIF_Origin = "Quelle";		// oder "Herkunft"
 	self.SpecIF_Source = self.LblSource;
 	self.SpecIF_Target = self.LblTarget;
+	self.SpecIF_DataObject = "Datenobjekt";
 //	self.SpecIF_Author = "Autor";
 //	self.SpecIF_Authors = "Autoren";
 	self.IREB_Stakeholder = "Stakeholder";
 	self.SpecIF_Responsible = "Verantwortlicher";
 	self.SpecIF_Responsibles = "Verantwortliche";
+	self.SpecIF_UserRole = "Nutzerrolle";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
 	self.IR_AnnotationDescription = "Eine Interaction-Room '"+self.IR_Annotation+"' weist auf einen Punkt besonderen Interesses hin. Hierzu gehören Werte, die Kundenbedürfnisse widerspiegeln oder positiven Effekt auf die Ziele der Organisation haben, Produkteigenschaften, deren Umsetzung Nutzen/Aufwand verursacht, und Herausforderungen, die während der Entwicklung zu berücksichtigen sind.";

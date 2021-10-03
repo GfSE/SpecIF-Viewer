@@ -129,10 +129,11 @@ function BPMN2Specif( xmlString, opts ) {
 		changedAt: opts.fileDate
 	}];
 
-	const nbsp = '&#160;', // non-breakable space
+	const
+//		nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
-		hId = 'BPMN-outline-' + apx,
+//		hId = 'BPMN-outline-' + apx,
 		diagRef = '<object data="'+opts.fileName+'" type="'+opts.mimeType+'" >'+opts.fileName+'</object>';
 
 	// 1. Add the folders:
@@ -1247,7 +1248,7 @@ function BPMN2Specif( xmlString, opts ) {
 				if( L[i][p]==s ) return L[i]   // return list item
 		}
 	}
-	function indexBy( L, p, s ) {
+/*	function indexBy( L, p, s ) {
 		if( L && p && s ) {
 			// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 			// hand in property and searchTerm as string !
@@ -1255,7 +1256,7 @@ function BPMN2Specif( xmlString, opts ) {
 				if( L[i][p]==s ) return i
 		};
 		return -1
-	}
+	} */
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 	function simpleHash(str) {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};

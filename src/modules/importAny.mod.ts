@@ -46,7 +46,7 @@ moduleManager.construct({
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
 			help: i18n.MsgImportSpecif,	
-			opts: { mediaTypeOf: attachment2mediaType }
+			opts: { mediaTypeOf: Lib.attachment2mediaType }
 		},{
 			id:'archimate',	
 			name:'ioArchimate',	
@@ -54,7 +54,7 @@ moduleManager.construct({
 			label:'Archimate®',
 //			help: i18n.MsgImportArchimate, 
 			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
-			opts: { mediaTypeOf: attachment2mediaType } 
+			opts: { mediaTypeOf: Lib.attachment2mediaType } 
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
@@ -67,7 +67,7 @@ moduleManager.construct({
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
 			help: "Experimental: "+i18n.MsgImportReqif,
-			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"update", mediaTypeOf: attachment2mediaType } 
+			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"update", mediaTypeOf: Lib.attachment2mediaType } 
 	/*	},{
             id: 'rdf',
             name: 'ioRdf',
@@ -100,24 +100,6 @@ moduleManager.construct({
 		importing = false,
 		cacheLoaded = false,
 		allValid = false;
-
-	function terminateWithSuccess():void {
-		message.show( i18n.lookup( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
-		setTimeout( function() {
-				self.clear();
-				if( urlP ) delete urlP[CONFIG.keyImport];
-				// change view to browse the content:
-				moduleManager.show({ view: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
-			}, 
-			CONFIG.showTimelag
-		);
-	}
-	function handleError(xhr:xhrMessage):void {
-//		console.debug( 'handleError', xhr );
-		self.clear();
-		stdError(xhr);
-		self.show();
-	}
  
 	self.clear = function():void {
 		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
@@ -195,7 +177,7 @@ moduleManager.construct({
 		return true;
 	};
 	// The module entry;
-	// called by the modules view management:
+	// called by the moduleManager:
 	self.show = function( opts:any ):void {
 		if( !opts ) opts = {};
 //		console.debug( 'import.show', opts );
@@ -241,7 +223,7 @@ moduleManager.construct({
 					// Assume it is an absolute or relative URL;
 					// must be either from the same URL or CORS-enabled.
 					// Import the file: 
-					httpGet({
+					Lib.httpGet({
 						// force a reload through cache-busting:
 						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
 						responseType: 'arraybuffer',
@@ -277,7 +259,8 @@ moduleManager.construct({
 			//	app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
 					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
-				} else {
+				}
+				else {
 					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				};
 			};
@@ -418,6 +401,24 @@ moduleManager.construct({
 			rdr.readAsArrayBuffer( f );
 		}
 	};
+
+	function terminateWithSuccess(): void {
+		message.show(i18n.lookup('MsgImportSuccessful', self.file.name), { severity: "success", duration: CONFIG.messageDisplayTimeShort });
+		setTimeout(function () {
+			self.clear();
+			if (urlP) delete urlP[CONFIG.keyImport];
+			// change view to browse the content:
+			moduleManager.show({ view: '#' + (urlP && urlP[CONFIG.keyView] || CONFIG.specifications), urlParams: urlP })
+		},
+			CONFIG.showTimelag
+		);
+	}
+	function handleError(xhr: xhrMessage): void {
+		//		console.debug( 'handleError', xhr );
+		self.clear();
+		Lib.stdError(xhr);
+		self.show();
+	}
 	// ToDo: construct an object ...
 	var resQ:SpecIF[] = [],
 		resIdx = 0;
@@ -446,7 +447,7 @@ moduleManager.construct({
 		}
 		function handle( dta:SpecIF, idx:number ):void {
 //			console.debug('handleResult',simpleClone(dta),idx);
-			specif.check( dta, self.format.opts )
+			check( dta, self.format.opts )
 			.then( (dta:SpecIF)=>{
 			/*	//  First check if there is a project with the same id:
 					function sameId() {
@@ -486,7 +487,7 @@ moduleManager.construct({
 									// save according to the selected mode:
 									switch( mode.id ) {
 										case 'clone': 	
-											dta.id = genID('P-');
+											dta.id = Lib.genID('P-');
 											// no break
 										case 'replace':
 											setProgress('Creating project',20); 
@@ -525,7 +526,7 @@ moduleManager.construct({
 
 				switch( opts.mode ) {
 				/*	case 'clone': 	
-						dta.id = genID('P-');
+						dta.id = Lib.genID('P-');
 						// no break */
 					case 'create':
 					case 'replace':
@@ -538,6 +539,9 @@ moduleManager.construct({
 							.fail( handleError );
 						break;
 				/*	case 'update':
+						opts.deduplicate = true;
+						opts.addGlossary = true;
+						opts.collectProcesses = false;
 						app.cache.update(dta, opts)
 							.progress(setProgress)
 							.done(handleNext)
@@ -547,7 +551,7 @@ moduleManager.construct({
 						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = true;
-						app.cache.selectedProject.update( dta, opts )
+						app.cache.selectedProject.adopt( dta, opts )
 							.progress( setProgress )
 							.done( handleNext )
 							.fail( handleError )
@@ -558,6 +562,91 @@ moduleManager.construct({
 			);
 		};
 	}; 
+	function check(spD: SpecIF, opts?: any): Promise<SpecIF> {
+		// Check the SpecIF data for schema compliance and consistency;
+		// no data of app.cache is modified:
+		return new Promise(
+			(resolve, reject) => {
+				let checker: any;
+
+				if (typeof (spD) == 'object') {
+					// 1a. Get the "official" routine for checking schema and constraints
+					//    - where already loaded checking routines are replaced by the newly loaded ones
+					//    - use $.ajax() with options since it is more flexible than $.getScript
+					//    - the first (relative) URL is for debugging within a local clone of Github
+					//    - both of the other (absolute) URLs are for a production environment
+					$.ajax({
+						dataType: "script",
+						cache: true,
+						url: (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0 ?
+							(window.location.href.startsWith('file:/') ? '../../SpecIF/check/CCheck.min.js'
+								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.js')
+							: 'https://specif.de/v1.0/CCheck.min.js') // older versions are covered by v1.0/check.js
+					})
+					.done(() => {
+						// 2. Get the specified schema file:
+						Lib.httpGet({
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
+							url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
+							responseType: 'arraybuffer',
+							withCredentials: false,
+							done: handleResult,
+							fail: handleError
+						});
+						// 1b. Instantiate checker:
+						// @ts-ignore - 'CCheck' has just been loaded dynamically:
+						checker = new CCheck();
+					})
+					.fail(handleError);
+				}
+				else {
+					reject({ status: 999, statusText: 'No SpecIF data to check' });
+				};
+				return;
+
+				function handleResult(xhr: XMLHttpRequest) {
+					// @ts-ignore - checkSchema() and checkConstraints() are defined in check.js loaded at runtime
+					if (typeof (checker.checkSchema) == 'function' && typeof (checker.checkConstraints) == 'function') {
+//						console.debug('schema', xhr);
+						// 1. check data against schema:
+						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
+						let rc: xhrMessage = checker.checkSchema(spD, { schema: JSON.parse(Lib.ab2str(xhr.response)) });
+						if (rc.status == 0) {
+							// 2. Check further constraints:
+							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
+							rc = checker.checkConstraints(spD, opts);
+							if (rc.status == 0) {
+								resolve(spD);
+							}
+							else {
+								reject(rc);
+							};
+						}
+						else {
+							// older versions of the checking routine don't set the responseType:
+							if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
+								rc.responseType = 'text';
+							reject(rc);
+						};
+					}
+					else {
+						reject({ status: 999, statusText: 'Standard routines checkSchema and checkConstraints are not available.' });
+					}
+				}
+				function handleError(xhr: xhrMessage) {
+					switch (xhr.status) {
+						case 404:
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
+							let v = spD.specifVersion ? 'version ' + spD.specifVersion : 'with Schema ' + spD['$schema'];
+							xhr = { status: 903, statusText: 'SpecIF ' + v + ' is not supported by the program!' };
+						// no break
+						default:
+							reject(xhr);
+					};
+				}
+			}
+		);
+	}
 	function setProgress(msg:string,perc:number):void {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
 	}

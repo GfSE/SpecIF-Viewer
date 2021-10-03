@@ -107,7 +107,7 @@ function embeddedSpecif():IApp {
 	};
 	self.show = function() {
 		// data and type are valid, but it is necessary to indicate that the data is not zipped:
-		self.ioSpecif.init( {mediaTypeOf: attachment2mediaType} );
+		self.ioSpecif.init( {mediaTypeOf: Lib.attachment2mediaType} );
 		self.ioSpecif.verify( {name:'data.specif'} ); 
 		
 		self.busy.set();
@@ -132,12 +132,12 @@ function embeddedSpecif():IApp {
 									CONFIG.showTimelag 
 								);
 							})
-							.fail( stdError );
+							.fail( Lib.stdError );
 						},
-						stdError
+						Lib.stdError
 					);
 			})
-			.fail( stdError );  
+			.fail( Lib.stdError );  
 	};
 	self.logout = function() {
 		self.me.logout();

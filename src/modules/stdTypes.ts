@@ -1,9 +1,10 @@
 /*!	Standard type definitions with methods. 
 	Dependencies: -
-	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.com, Berlin
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 class StandardTypes {
@@ -107,9 +108,20 @@ class StandardTypes {
 		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
+	// The sequence is such that every list's elements have only references to list elements above:
+	listName = new Map([
+		['dataType', "dataTypes"],
+		['propertyClass', "propertyClasses"],
+		['resourceClass', "resourceClasses"],
+		['statementClass', "statementClasses"],
+		['file', "files"],
+		['resource', "resources"],
+		['statement', "statements"],
+		['hierarchy', "hierarchies"]
+	])
 
-	get(ctg:string,id:string,chAt?:string):Item {
-		var item:Item = itemById( this[this.listNameOf(ctg)], id );
+	get(ctg:string,id:string,chAt?:string):Item|undefined {
+		var item:Item = itemById( this[this.listName.get(ctg)], id );
 		if( item ) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
@@ -117,28 +129,70 @@ class StandardTypes {
 			return item;
 		};
 	}
+	iterateLists(fn: Function): void {
+		for (var le of this.listName.keys())
+			fn(le, this.listName.get(le));
+		return this.listName.size;
+    }
+/*	getByTitle(ctg: string, ti: string, chAt?: string): Item | undefined {
+		var item: Item = itemByTitle(this[this.listName.get(ctg)], ti);
+		if (item) {
+			// shield any subsequent change from the templates available here:
+			item = simpleClone(item);
+			if (chAt) item.changedAt = chAt;
+			return item;
+		};
+	}
 	listNameOf(ctg:string):string {
 		// Return the cache name for a given category:
-		switch(ctg) {
-			case 'dataType':		return "dataTypes";
-			case 'propertyClass':	return "propertyClasses";
-			case 'resourceClass':	return "resourceClasses";
-			case 'statementClass':	return "statementClasses";
-			case 'resource':		return "resources";
-			case 'statement':		return "statements";
-			case 'hierarchy':		return "hierarchies";
-			case 'file':			return "files";
-		};
+		if (this.listName.has(ctg))
+			return this.listName.get(ctg) as string;
 		throw Error("Invalid category '"+ctg+"'");
-	}
+	} */
 };
-	
+
+function addE(ctg: string, id: string, pr?): void {
+	// Add an element (e.g. class) to it's list, if not yet defined:
+	if (!pr) pr = app.cache.selectedProject.data;
+
+	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
+	let lN: string = standardTypes.listName.get(ctg);
+	// create it, if not yet available:
+	if (Array.isArray(pr[lN])) {
+		// add the type, but avoid duplicates:
+		if (indexById(pr[lN], id) < 0)
+			pr[lN].unshift(standardTypes.get(ctg, id));
+	}
+	else {
+		pr[lN] = [standardTypes.get(ctg, id)];
+	};
+}
+function addPC(eC: object, id: string): void {
+	// Add the propertyClass-id to an element class (eC), if not yet defined:
+	let lN = 'propertyClasses';
+	if (Array.isArray(eC[lN])) {
+		// Avoid duplicates:
+		if (eC[lN].indexOf(id) < 0)
+			eC[lN].unshift(id);
+	}
+	else {
+		eC[lN] = [id];
+	};
+}
+function addP(el: object, prp: object): void {
+	// Add the property to an element (el):
+	if (Array.isArray(el['properties']))
+		el['properties'].unshift(prp);
+	else
+		el['properties'] = [prp];
+}
+
 /*  ToDo: REWORK FOR v0.10.8:
 	// The standard types for comments:
 	// 	A list with all data-, object- and relation-types needed for the comments according to specif schema.
 	// 	For the time being, the addComment dialog (in specifications-*.html) is hard-coded for the current type definitions.  
 	function CommentTypes() {
-		let did = genID('DT-'), oid = genID('RC-'), rid = genID('SC-');
+		let did = Lib.genID('DT-'), oid = Lib.genID('RC-'), rid = Lib.genID('SC-');
 		this.title = 'Types for comments';
 		this.specifVersion = '0.10.4';
 		this.dataTypes = [{
@@ -169,59 +223,6 @@ class StandardTypes {
 		}]
 //		console.debug('CommentTypes done')
 	} 
-	function GlossaryItems() {
-		var self=this;
-		let dTid = genID('DT-'), rCid = genID('RC-'), sCid = genID('SC-'),
-			pC1id = genID('PC-'), pC3id = genID('PC-'), rId
-			time = new Date().toISOString();
-		self.title = 'Types and a folder instance for a glossary';
-		self.specifVersion = '0.10.8';
-		self.dataTypes = [{
-			id: dTid,
-			title: CONFIG.dataTypeComment,
-			type: "xs:string",
-			maxLength: CONFIG.textThreshold,
-			changedAt: time
-		}];
-		self.propertyClasses = [{
-			id: pC1id,
-			title: CONFIG.attrTypeTitle,
-			dataType: dTid,		// ID of the dataType defined before
-			changedAt: time
-	//	}, {
-	//		id: genID('PC-'),
-	//		title: attrTypeText,
-	//		dataType: dTid,		
-	//		changedAt: time 
-		}, { 
-			id: pC3id,
-			title: CONFIG.attrTypeType,
-			dataType: dTid,		// ID of the dataType defined before
-			changedAt: time
-		}];
-		self.resourceClasses = [{
-			id: rCid,
-			title: CONFIG.spcTypeGlossary,
-			description: "Comment referring to a model element ('resource' in general).",
-			instantiation: ["auto"],
-			propertyClasses: [pC1id,pC3id],
-			changedAt: time
-		}];
-		self.resources = [{
-			id: genID('R-'),
-			title: i18n.lookup(CONFIG.spcTypeGlossary),
-			class: rCid,
-			properties: [{
-				class: pC1id,
-				value: i18n.lookup(CONFIG.spcTypeGlossary)
-			}, {
-				class: pC3id,
-				value: CONFIG.spcTypeGlossary
-			}],
-			changedAt: time
-		}];
-		return self
-	}
 
 	// a constructor for standard types:
 	function StdTypes( prj, types ) {
@@ -236,9 +237,9 @@ class StandardTypes {
 	//	self.available = function() {  
 	//		// Return true if all types are available.
 	//		// Must compare by unique name, because the id may vary.
-	//		return containsByTitle( prj.dataTypes, types.dataTypes )
-	//			&& containsByTitle( prj.resourceClasses, types.resourceClasses )
-	//			&& containsByTitle( prj.statementClasses, types.statementClasses )
+	//		return Lib.containsByTitle( prj.dataTypes, types.dataTypes )
+	//			&& Lib.containsByTitle( prj.resourceClasses, types.resourceClasses )
+	//			&& Lib.containsByTitle( prj.statementClasses, types.statementClasses )
 	//	};
 
 		self.add = function() {

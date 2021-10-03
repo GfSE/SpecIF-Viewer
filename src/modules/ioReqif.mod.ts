@@ -154,7 +154,7 @@ moduleManager.construct({
                 // Selected file is not zipped - it is expected to be ReqIF data in XML format.
 			    // Check if data is valid XML:
                 
-				let str = ab2str(buf);
+				let str = Lib.ab2str(buf);
                 if( validateXML(str) ) {
 					// @ts-ignore - transformReqif2Specif() is loaded at runtime
 					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
@@ -344,7 +344,7 @@ moduleManager.construct({
 								for( j=L[i].properties.length-1;j>-1;j-- ) {
 									prp = L[i].properties[j];
 									// check only the property with the specified class:
-									if( prp['class']==id && isHTML(prp.value) ) return true;
+									if( prp['class']==id && Lib.isHTML(prp.value) ) return true;
 								};
 						};
 						return false;
@@ -391,7 +391,7 @@ moduleManager.construct({
 			+		'<CREATION-TIME>'+date+'</CREATION-TIME>'
 			+		'<REQ-IF-TOOL-ID></REQ-IF-TOOL-ID>'
 			+		'<REQ-IF-VERSION>1.0</REQ-IF-VERSION>'
-			+		'<SOURCE-TOOL-ID>'+(pr.tool || '')+'</SOURCE-TOOL-ID>'
+			+		'<SOURCE-TOOL-ID>'+(pr.generator || '')+'</SOURCE-TOOL-ID>'
 			+		'<TITLE>'+pr.title+'</TITLE>'
 			+	  '</REQ-IF-HEADER>'
 			+	'</THE-HEADER>'
@@ -599,10 +599,10 @@ moduleManager.construct({
 		return xml;
 
 			function dateTime( e ):string {
-				return e.changedAt || pr.changedAt || date
+				return e.changedAt || pr.createdAt || date
 			}
 			function commonAttsOf( e ):string {
-				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? stripHTML(e.title).escapeXML() : '') + '" DESC="' + (e.description ? stripHTML(e.description).escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? e.title.stripHTML().escapeXML() : '') + '" DESC="' + (e.description ? e.description.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
 			function attrTypesOf( eC ):string { 
 				// eC: resourceClass or statementClass
@@ -683,7 +683,7 @@ moduleManager.construct({
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + stripHTML(prp.value).escapeXML()+'">'
+							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + prp.value.stripHTML().escapeXML()+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
@@ -715,7 +715,7 @@ moduleManager.construct({
 							let	hasDiv = RE_hasDiv.test(prp.value),
 								txt =
 										// escape text except for HTML tags:
-										escapeInnerHtml(prp.value)
+										Lib.escapeInnerHtml(prp.value)
 										// ReqIF does not support the class attribute:
 										.replace( RE_class, function() { 
 											return '';

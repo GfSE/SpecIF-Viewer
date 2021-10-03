@@ -60,7 +60,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 						//	console.warn(errT);
 						//	reject({ status: 999, statusText: errT });
 				*/
-							blob2dataURL(f,
+							Lib.blob2dataURL(f,
 								(r: string) => {
 									// perhaps there is a more elegant way to apply the type to the dataURL,
 									// but it works:
@@ -123,7 +123,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+				'document.head.appendChild(link);'
 			+			'}'
 			+		'let pend = 4;'
-			+		'getScript("https://code.jquery.com/jquery-3.5.1.min.js");'
+			+		'getScript("https://code.jquery.com/jquery-3.6.0.min.js");'
 			+		'getScript(cdn+"config/definitions.js?" + Date.now().toString());'
 			+		'getScript(cdn+"config/moduleManager.js?" + Date.now().toString());'
 			+		'getScript(cdn+"embedded.js?" + Date.now().toString());'

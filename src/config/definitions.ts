@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.s",
+	CONFIG.appVersion = "1.0.t",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -542,8 +542,8 @@ const vocabulary = {
 				case "specif_status": oT = "ReqIF.ForeignState"; break;
 				case "dcterms_author":			// deprecated, for compatibility
 				case "dcterms_creator": oT = "ReqIF.ForeignCreatedBy"; break;
-				//	case "specif_createdat":
-				//	case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
+			//	case "specif_createdat":
+			//	case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
 				default: oT = iT;
 			};
 			return oT;
@@ -680,13 +680,20 @@ const RE:any = {};
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 	RE.tagA = new RegExp( '<a ([^>]+)>([\\s\\S]*?)</a>', 'g' );
-	RE.tagImg = new RegExp( '<img ([^>]+)/>', 'g' );
+	RE.tagImg = new RegExp('<img ([^>]+)/>', 'g');
+	RE.tagObject = /<object ([^>]+?)(\/>|>)/g;
+	RE.attrType = /type="([^"]+)"/;
+	RE.attrData = /data="([^"]+)"/;
 
-const reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)';
+const reSO = '<object ([^>]+?)(/>|>([^<]*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
-	RE.tagNestedObjects = new RegExp( '<object ([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
+	RE.tagNestedObjects = new RegExp( '<object ([^>]+?)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.inQuotes = /"(\S[^"]*?\S)"|'(\S[^']*?\S)'/i;  // empty space in the middle allowed, but not as first and last character
-	RE.inBrackets = /\((\S[^\)]*?\S)\)|\[(\S[^\]]*?\S)\]/i;  // empty space in the middle allowed, but not as first and last character
+
+const inBr = "\\((\\S[^\\)]*?\\S)\\)|\\[(\\S[^\\]]*?\\S)\\]"; // empty space in the middle allowed, but not as first and last character
+//	RE.inBrackets = new RegExp( inBr, 'i');
+	RE.inBracketsAtEnd = new RegExp(inBr + "$", 'i');
+	RE.withoutBracketsAtEnd = /^(.*?)\s+(\(\S[^\)]*?\S\)|\[\S[^\]]*?\S\])$/i;
 
 const tagStr = "(<\\/?)([a-z]{1,10}(?: [^<>]+)?\\/?>)";
 	RE.tag = new RegExp( tagStr, 'g' );
@@ -704,5 +711,5 @@ const tokenGroup = "(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|
 		// $3: any of the tokens listed in tokenGroup 
 		// $4: the rest of the tag including '>' or '/>'
 
-/////////////////
-const nbsp = '&#160;'; // non-breakable space
+	RE.splitNamespace = /^(\w+:|\w+\.)?(\w+)$/;
+

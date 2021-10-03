@@ -10,6 +10,7 @@
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in jsIdOf() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
+const Lib: any = {};
 interface IFieldOptions {
 	tagPos?: string;  // 'left', 'none'
 	typ?: string;     // 'line', 'area' for textField
@@ -22,7 +23,7 @@ function textField(tag: string, val: string, opts?: IFieldOptions): string {
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
 
-	val = typeof(val)=='string'? noCode( val ) : '';
+	val = typeof(val)=='string'? Lib.noCode( val ) : '';
 
 	let fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0)? ' oninput="' + opts.handle + '"' : '',
 		sH = simpleHash(tag),
@@ -98,7 +99,7 @@ function textValue( tag:string ):string {
 	// get the input value:
 	try {
 		// @ts-ignore - .value is in fact accessible
-		return noCode(document.getElementById('field' + simpleHash(tag)).value) || '';
+		return Lib.noCode(document.getElementById('field' + simpleHash(tag)).value) || '';
 	} catch(e) {
 		return '';
 	}
@@ -250,7 +251,10 @@ class xhrMessage {
 	}
 }
 // standard error handler:
-function stdError(xhr: xhrMessage, cb?:Function): void {
+Lib.logMsg = (xhr: xhrMessage): void =>{
+	console.log(xhr.statusText + " (" + xhr.status + (xhr.responseType == 'text' ? "): " + xhr.responseText : ")"));
+}
+Lib.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 //	console.debug('stdError',xhr);
 	// clone, as xhr.responseText ist read-only:
 	let xhrCl = new xhrMessage(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : '');
@@ -297,7 +301,7 @@ function stdError(xhr: xhrMessage, cb?:Function): void {
 			message.show( xhr );
 	};
 	// log original values:
-	console.log( xhr.statusText + " (" + xhr.status + (xhr.responseType=='text'?"): "+xhr.responseText : ")") );
+	Lib.logMsg(xhr);
 	if( typeof(cb)=='function' ) cb();
 };
 // standard message box:
@@ -467,7 +471,7 @@ function itemBy(L:any[], p:string, s:string ):any {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
-function containsById(cL:any[], L: Item[] ):boolean {
+Lib.containsById = (cL:any[], L: Item[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
@@ -478,8 +482,8 @@ function containsById(cL:any[], L: Item[] ):boolean {
 			if ( indexById( cL, L[i].id )<0 ) return false;
 		return true;
 	}
-}
-function containsByTitle(cL:any[], L: Item[] ):boolean {
+} 
+/* Lib.containsByTitle = (cL:any[], L: Item[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
@@ -489,25 +493,25 @@ function containsByTitle(cL:any[], L: Item[] ):boolean {
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
 		return true;
 	}
-}
-function cmp( i:string, a:string ):number {
+} */
+Lib.cmp = ( i:string, a:string ):number =>{
 	if( !i ) return -1;
 	if( !a ) return 1;
 	i = i.toLowerCase();
 	a = a.toLowerCase();
 	return i==a? 0 : (i<a? -1 : 1);
 }
-function sortByTitle( L:any ):void {
+Lib.sortByTitle = ( L:any ):void =>{
 	L.sort( 
-		(bim,bam)=>{ return cmp( bim.title, bam.title ) }
+		(bim,bam)=>{ return Lib.cmp( bim.title, bam.title ) }
 	);
 }
-function sortBy( L:any[], fn:(arg0:object)=>string ):void {
+Lib.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
 	L.sort( 
-		(bim,bam)=>{ return cmp( fn(bim), fn(bam) ) }
+		(bim, bam) => { return Lib.cmp( fn(bim), fn(bam) ) }
 	);
 }
-function forAll( L:any[], fn:(arg0:any)=>any ):Array<any> {
+Lib.forAll = ( L:any[], fn:(arg0:any)=>any ):Array<any> =>{
 	// return a new list with the results from applying the specified function to all items of input list L;
 	// differences when compared to Array.map():
 	// - tolerates missing L
@@ -520,68 +524,44 @@ function forAll( L:any[], fn:(arg0:any)=>any ):Array<any> {
 
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
-function addIcon(str: string, ic: string): string {
+Lib.addIcon = (str: string, ic: string): string =>{
 	if (ic) return ic + '&#xa0;' + str;
 	return str;
 }
-function addE( ctg:string, id:string, pr? ):void {
-	// Add an element (e.g. class) to it's list, if not yet defined:
-	if( !pr ) pr = app.cache.selectedProject.data;
-	
-	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
-	let lN:string = standardTypes.listNameOf(ctg);
-	// create it, if not yet available:
-	if (Array.isArray(pr[lN])) {
-		// add the type, but avoid duplicates:
-		if( indexById( pr[lN], id )<0 ) 
-			pr[lN].unshift( standardTypes.get(ctg,id) );
-	}
-	else {
-		pr[lN] = [ standardTypes.get(ctg,id) ];
-	};
-} 
-function addPC( eC:object, id:string ):void {
-	// Add the propertyClass-id to an element class (eC), if not yet defined:
-	let lN = 'propertyClasses';
-	if (Array.isArray(eC[lN])) {
-		// Avoid duplicates:
-		if( eC[lN].indexOf( id )<0 ) 
-			eC[lN].unshift( id );
-	} 
-	else {
-		eC[lN] = [id];
-	};
-} 
-function addP( el:object, prp:object ):void {
-	// Add the property to an element (el):
-	if (Array.isArray(el['properties']))
-		el['properties'].unshift( prp );
-	else
-		el['properties'] = [prp];
-}
-function cacheE( L:Array<object>, e:object ):number {  // ( list, entry )
+Lib.cacheE = ( L:Array<object>, e:object ):number =>{  // ( list, entry )
 	// add or update the item e in a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
-	if( n<0 ) { L.push( e ); return L.length-1 };  // add, if not yet listed 
-	L[n] = e; return n; // update otherwise
+	// add, if not yet listed:
+	if (n < 0) {
+		L.push(e);
+		return L.length - 1;
+	};
+	// update, if newer:
+//	if ( L[n].changedAt && e.changedAt && new Date(L[n].changedAt)<new Date(e.changedAt) )
+		L[n] = e;
+	return n;
 }
-function cacheL( L:Array<object>, es:Array<object> ):void {  // ( list, entries )
+Lib.cacheL = ( L:Array<object>, es:Array<object> ):boolean =>{  // ( list, entries )
 	// add or update the items es in a list L:
-	es.forEach( (e)=>{ cacheE( L, e ) } )
+	es.forEach((e) => { Lib.cacheE(L, e) })
+	// this operation cannot fail:
+	return true;
 }
-function uncacheE( L:Array<object>, e:object ):number {  // ( list, entry )
+Lib.uncacheE = ( L:Array<object>, e:object ):number =>{  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }
-function uncacheL( L:Array<object>, es:Array<object> ):void {  // ( list, entries )
+Lib.uncacheL = ( L:Array<object>, es:Array<object> ):boolean =>{  // ( list, entries )
 	// remove the items es from a list L:
-	es.forEach( (e)=>{ uncacheE( L, e ) } );
+	let done = true;
+	es.forEach((e) => { done = done && Lib.uncacheE(L, e) > -1 });
+	return done;
 }
 	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
-function genID(pfx:string):string {
+Lib.genID = (pfx:string):string =>{
 	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
 	let re = /^[A-Za-z_]/;
 	if( !re.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
@@ -610,12 +590,16 @@ interface String {
 	specifIdOf: Function;
 	linkifyURLs: Function;
 	ctrl2HTML: Function;
+	stripHTML: Function;
+	stripCtrl: Function;
 	makeHTML: Function;
 	escapeRE: Function;
 	escapeXML: Function;
 	escapeHTML: Function;
 	escapeHTMLTags: Function;
 	escapeHTMLEntities: Function;
+	unescapeHTMLTags: Function;
+	unescapeHTMLEntities: Function;
 	fileName: Function;
 	fileExt: Function;
 }
@@ -626,12 +610,6 @@ String.prototype.jsIdOf = function():string {
 // Make an id conforming with ReqIF and SpecIF:
 String.prototype.specifIdOf = function():string {
 	return this.replace( /[^_0-9a-zA-Z]/g, '_' );
-};
-// Make a very simple hash code from a string:
-// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-function simpleHash(str: string): string {
-	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
-	return r
 };
 /*
 function truncate(l:number):string {
@@ -648,27 +626,36 @@ String.prototype.log = function(m:string):string {
 	console.debug( m, this );
 	return this
 }; */
-function stripCtrl(str:string):string {
+String.prototype.stripHTML = function():string {
+	// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
+	return $("<dummy/>").html(this).text().trim() || '';
+};
+/*
+ * Returns the text from a HTML string
+ * see: https://ourcodeworld.com/articles/read/376/how-to-strip-html-from-a-string-extract-only-text-content-in-javascript
+ *
+ * @param {html} String The html string to strip
+ *
+function stripHtml(html){
+	// Create a new div element
+	var temp = document.createElement("div");
+	// Set the HTML content with the providen
+	temp.innerHTML = html;
+	// Retrieve the text property of the element (cross-browser support)
+	return temp.textContent || temp.innerText || "";
+} */
+String.prototype.stripCtrl = function():string {
 // Remove js/json control characters from HTML-Text or other:
-	return str.replace( /\b|\f|\n|\r|\t|\v/g, '' );
+	return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
 }
 String.prototype.ctrl2HTML = function():string {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
 	return this.replace( /\r|\f/g, '' )
 				.replace( /&#x0{0,3}a;/gi, '' )
-				.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;' )
+				.replace(/\t/g, '&#160;&#160;&#160;&#160;' )  // nbsp
 				.replace( /\n/g, '<br />' )
 				.replace( /&#x0{0,3}d;/gi, '<br />' );
 };
-function toHTML(str:string):string {
-// Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
-	return str.escapeHTML().ctrl2HTML()
-}
-// https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
-function isHTML(str:string):boolean {
-  let doc = new DOMParser().parseFromString(str, "text/html");
-  return Array.from(doc.body.childNodes).some(node => node.nodeType==1)
-}
 String.prototype.makeHTML = function(opts?:any):string {
 	// Note: HTML embedded in markdown is not supported, because isHTML() will return 'true'.
 	if (typeof (opts) == 'object' && opts.makeHTML) {
@@ -714,7 +701,16 @@ String.prototype.xmlChar2utf8 = function():string {
 		})
 } */
 
-function escapeInnerHtml( str:string ):string {
+Lib.toHTML = (str: string): string => {
+	// Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
+	return str.escapeHTML().ctrl2HTML()
+}
+// https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
+Lib.isHTML = (str: string): boolean => {
+	let doc = new DOMParser().parseFromString(str, "text/html");
+	return Array.from(doc.body.childNodes).some(node => node.nodeType == 1)
+}
+Lib.escapeInnerHtml = ( str:string ):string =>{
 	// escape text except for HTML tags:
 	var out = "";
 
@@ -728,15 +724,6 @@ function escapeInnerHtml( str:string ):string {
 
 		// escape the inner text and keep the tag:
 		out += $1.escapeXML() + $2 + $3 + $4; 
-
-	/*	// @ts-ignore - $0 is never read, but must be specified anyways
-		str = str.replace( RE.innerTag, function($0,$1,$2,$3) {
-			// $1: inner text (before the next tag)
-			// $2: start of opening tag '<' or closing tag '</'
-			// $3: rest of the tag including '>' or '/>'
-
-		// escape the inner text and keep the tag:
-		out += $1.escapeXML() + $2 + $3; */
 
 		// consume the matched piece of str:
 		return '';
@@ -764,9 +751,9 @@ String.prototype.escapeHTML = function():string {
 };
 String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
-	if( isHTML(this as string) ) return this as string;
+	if( Lib.isHTML(this as string) ) return this as string;
 	// @ts-ignore - $0 is never read, but must be specified anyways
-	return noCode(this.replace(RE.escapedHtmlTag, ($0,$1,$2,$3)=>{
+	return Lib.noCode(this.replace(RE.escapedHtmlTag, ($0,$1,$2,$3)=>{
 		return '<'+$1+$2+$3+'>';
 	}));
 };
@@ -774,7 +761,7 @@ String.prototype.unescapeHTMLTags = function():string {
 String.prototype.unescapeHTMLEntities = function():string {
 	// unescape HTML encoded entities (characters):
 	var el = document.createElement('div');
-	return noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
+	return Lib.noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
         return el.innerText;
 	}));
@@ -782,26 +769,8 @@ String.prototype.unescapeHTMLEntities = function():string {
 /*// better: https://stackoverflow.com/a/34064434/5445 but strips HTML tags.
 String.prototype.unescapeHTMLEntities = function() {
 	var doc = new DOMParser().parseFromString(input, "text/html");
-    return noCode( doc.documentElement.textContent )
+    return Lib.noCode( doc.documentElement.textContent )
 };*/
-function stripHTML(str:string):string {
-	// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-	return $("<dummy/>").html( str ).text().trim() || '';
-};
-/**
- * Returns the text from a HTML string
- * see: https://ourcodeworld.com/articles/read/376/how-to-strip-html-from-a-string-extract-only-text-content-in-javascript
- * 
- * @param {html} String The html string to strip
- *
-function stripHtml(html){
-	// Create a new div element
-	var temp = document.createElement("div");
-	// Set the HTML content with the providen
-	temp.innerHTML = html;
-	// Retrieve the text property of the element (cross-browser support)
-	return temp.textContent || temp.innerText || "";
-} */
 
 // Add a link to an isolated URL:
 String.prototype.linkifyURLs = function( opts?:any ):string {
@@ -813,7 +782,7 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
 				// all links which do not start with "http" are considered local by most browsers:
 				if( !$2.startsWith('http') ) $2 = 'https://'+$2;  // starts with "www." then according to RE.URI
 			/*	// we must encode the URI, but to avoid that an already encoded URI is corrupted, we first decode it
-				// under the assumption that a decoding a non-encoded URI does not cause a change.
+				// under the assumption that decoding a non-encoded URI does not cause a change.
 				// This does not work if a non-encoded URI contains '%'.
 				return $1+'<a href="'+encodeURI(decodeURI($2))+'" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9 */
 				return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9;
@@ -830,12 +799,12 @@ String.prototype.fileName = function():string {
 	// return the filename without extension:
 	return this.substring( 0, this.lastIndexOf('.') )
 };
-function trimJson(str:string):string {
+Lib.trimJson = (str:string):string =>{
 	// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
 	return str.substring( str.indexOf('{'), str.lastIndexOf('}')+1 )
 };
 
-/*	
+/*
 String.prototype.removeBOM = function():string {
 	// remove the byte order mask from a UTF-8 coded string
 	// ToDo: Any whitespace between BOM and JSON is not taken care of.
@@ -849,9 +818,9 @@ function toHex(str) {
 		hex += nV.length>1?''+nV:'0'+nV
 	};
 	return hex;
-};*/
+}; */
 
-function ab2str(buf):string {
+Lib.ab2str = (buf): string =>{
 	// Convert arrayBuffer to string:
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
 	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
@@ -869,7 +838,7 @@ function ab2str(buf):string {
 		return String.fromCharCode.apply(null, new Uint8Array(buf));
 	}; */
 }
-function str2ab(str:string) {
+Lib.str2ab = (str:string) =>{
 	// Convert string to arrayBuffer:
 //	try {
 		let encoder = new TextEncoder();
@@ -887,7 +856,7 @@ function str2ab(str:string) {
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-function blob2dataURL(file, fn: Function, timelag?: number): void {
+Lib.blob2dataURL = (file, fn: Function, timelag?: number): void =>{
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
@@ -898,18 +867,18 @@ function blob2dataURL(file, fn: Function, timelag?: number): void {
 	else
 		reader.readAsDataURL(file.blob);
 } 
-function blob2text(file,fn:Function,timelag?:number):void {
-	if( !file || !file.blob ) return;
+Lib.blob2text = (file, fn: Function, timelag?: number): void => {
+	if (!file || !file.blob) return;
 	const reader = new FileReader();
-	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
-	if( typeof(timelag)=='number' && timelag>0 )
-		setTimeout( ()=>{
+	reader.addEventListener('loadend', (e) => { fn(e.target.result, file.title, file.type) });
+	if (typeof (timelag) == 'number' && timelag > 0)
+		setTimeout(() => {
 			reader.readAsText(file.blob);
-		}, timelag );
+		}, timelag);
 	else
 		reader.readAsText(file.blob);
-}
-function uriBack2slash(str:string):string {
+};
+Lib.uriBack2slash = (str:string):string =>{
     return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
 		($0)=>{
 			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
@@ -924,7 +893,7 @@ function uriBack2slash(str:string):string {
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
 // do not implement as chainable function, because a string object is created. 
-function noCode( s:string ):string {
+Lib.noCode = ( s:string ):string =>{
 	if( s ) {
 		// just suppress the whole content, if there are inacceptable/evil tags or properties, do NOT try to repair it.
 		// <img src="bogus" onerror=alert('4711') />
@@ -939,13 +908,13 @@ function noCode( s:string ):string {
 		console.log("'"+s+"' is considered harmful ("+c+") and has been suppressed");
 	}
 }
-function cleanValue(o: string | ValueElement[] ):string|ValueElement[] {
+Lib.cleanValue = (o: string | ValueElement[]): string | ValueElement[] => {
 	// remove potential malicious code from a value which may be supplied in several languages:
-	if( typeof(o)=='string' ) return noCode( o ); 
-	if( Array.isArray(o) ) return forAll( o, ( val )=>{ val.text = noCode(val.text); return val } );
+	if( typeof(o)=='string' ) return Lib.noCode( o ); 
+	if( Array.isArray(o) ) return Lib.forAll( o, ( val )=>{ val.text = Lib.noCode(val.text); return val } );
 	return '';  // unexpected input (programming error with all likelihood
 }
-function attachment2mediaType( fname:string ):string|undefined {
+Lib.attachment2mediaType = ( fname:string ):string|undefined =>{
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( t ) {
 		// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
@@ -958,7 +927,7 @@ function attachment2mediaType( fname:string ):string|undefined {
 	};
 //	return undefined;
 }
-function localDateTime(iso:string):string {
+Lib.localDateTime = (iso:string):string =>{
 	if( typeof(iso)=='string' ) {
 		// ToDo: calculate offset of time-zone ... or use one of the libraries ..
 		if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
@@ -967,17 +936,24 @@ function localDateTime(iso:string):string {
 	return '';
 }
 
-function simpleClone( o ) { 
+// Make a very simple hash code from a string:
+// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+function simpleHash(str: string): string {
+	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
+	return r
+};
+function simpleClone( o ) {
 	// "deep" clone;
 	// does only work, if none of the property values are functions:
 		function cloneProp(p) {
 			return ( typeof(p) == 'object' )? simpleClone(p) : p;
 		}
 	if( typeof(o)=='object' ) {
-		if( Array.isArray(o) )
-			var n=[];
+		var n: any;
+		if (Array.isArray(o))
+			n=[];
 		else
-			var n={};
+			n={};
 		for( var p in o ) {
 			if( Array.isArray(o[p]) ) {
 				n[p] = [];
@@ -1118,7 +1094,7 @@ function clearUrlParams():void {
 //	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
 }
-function httpGet(params:any):void {
+Lib.httpGet = (params:any):void =>{
 	// https://blog.garstasio.com/you-dont-need-jquery/
 	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
 	var xhr = new XMLHttpRequest();

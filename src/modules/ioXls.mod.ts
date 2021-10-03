@@ -72,166 +72,166 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	"use strict";
 	// requires sheetjs
 
-		interface ICell {
-			t: string;
-			w: string;
-			v: string|number|boolean|Date;
+	interface ICell {
+		t: string;
+		w: string;
+		v: string|number|boolean|Date;
+	}
+	class Coord {
+		col: number;
+		row: number;
+		constructor(addr: string) {
+			// create a coordinate from a cell name: 'C4' becomes {col:3,row:4}
+			let res = addr.match(/([A-Z]+)([0-9]+)/);  // res[1] is column name, res[2] is line index
+			if ( !Array.isArray(res) || !res[1] || !res[2] )
+				throw Error("Incomplete input data: Cell without address!");
+			this.col = colIdx(res[1]);
+			this.row = parseInt(res[2]);
 		}
-		class Coord {
-			col: number;
-			row: number;
-			constructor(addr: string) {
-				// create a coordinate from a cell name: 'C4' becomes {col:3,row:4}
-				let res = addr.match(/([A-Z]+)([0-9]+)/);  // res[1] is column name, res[2] is line index
-				if ( !Array.isArray(res) || !res[1] || !res[2] )
-					throw Error("Incomplete input data: Cell without address!");
-				this.col = colIdx(res[1]);
-				this.row = parseInt(res[2]);
-			}
-		}
-		class Worksheet {
-			name: string;
-			data: any;
-			resClass: string;
-			hid: string;
-			range: string;
-			firstCell: Coord;
-			lastCell: Coord;
-			constructor(wsN: string) {
-				this.name = wsN;			// the name of the selected sheet (first has index '0'!)
-				this.data = wb.Sheets[wsN],
-				this.resClass = resClassId( pN + '-' + wsN );
+	}
+	class Worksheet {
+		name: string;
+		data: any;
+		resClass: string;
+		hid: string;
+		range: string;
+		firstCell: Coord;
+		lastCell: Coord;
+		constructor(wsN: string) {
+			this.name = wsN;			// the name of the selected sheet (first has index '0'!)
+			this.data = wb.Sheets[wsN],
+			this.resClass = resClassId( pN + '-' + wsN );
 
-				// ToDo: Check if the type name does not yet exist. Should not occur as Excel does not allow equal sheet names in a file.
-				this.hid = 'H-' + simpleHash(pN + wsN)	// the hierarchy ID of the folder carrying all resources of the selected sheet
-				this.range = this.data["!ref"]; 	// e.g. A1:C25
-				if (this.range) {
-					// only if the sheet has content:
-					this.firstCell = new Coord(this.range.split(":")[0]);
-					this.lastCell = new Coord(this.range.split(":")[1]);
-				}
-				else
-					throw Error("Incomplete input data: Worksheet without range!");
+			// ToDo: Check if the type name does not yet exist. Should not occur as Excel does not allow equal sheet names in a file.
+			this.hid = 'H-' + simpleHash(pN + wsN)	// the hierarchy ID of the folder carrying all resources of the selected sheet
+			this.range = this.data["!ref"]; 	// e.g. A1:C25
+			if (this.range) {
+				// only if the sheet has content:
+				this.firstCell = new Coord(this.range.split(":")[0]);
+				this.lastCell = new Coord(this.range.split(":")[1]);
 			}
+			else
+				throw Error("Incomplete input data: Worksheet without range!");
 		}
-		class BaseTypes {
-			dataTypes: DataType[];
-			propertyClasses: PropertyClass[];
-			resourceClasses: ResourceClass[];
-			statementClasses: StatementClass[];
-			resources: Resource[];
-			statements: Statement[];
-			hierarchies: SpecifNode[];
-			constructor() {
-				this.dataTypes = [
-					standardTypes.get("dataType", "DT-ShortString") as DataType,
-					standardTypes.get("dataType", "DT-Text") as DataType,
-					standardTypes.get("dataType", "DT-DateTime") as DataType,
-					standardTypes.get("dataType", "DT-Boolean") as DataType,
-					standardTypes.get("dataType", "DT-Integer") as DataType,
-					standardTypes.get("dataType", "DT-Real") as DataType
-				];
-				this.propertyClasses = [
-					standardTypes.get("propertyClass", "PC-Name") as PropertyClass,
-					standardTypes.get("propertyClass", "PC-Description") as PropertyClass,
-					standardTypes.get("propertyClass", "PC-Type") as PropertyClass
-				];
-				this.resourceClasses = [
-					standardTypes.get("resourceClass", "RC-Folder") as ResourceClass
-				];
-				// user-created instances are not checked for visibility:
-				this.resourceClasses[0].instantiation = [Instantiation.User];
-				this.statementClasses = [];
-				this.resources = [];
-				this.statements = [];
-				this.hierarchies = [];
-			}
+	}
+	class BaseTypes {
+		dataTypes: DataType[];
+		propertyClasses: PropertyClass[];
+		resourceClasses: ResourceClass[];
+		statementClasses: StatementClass[];
+		resources: Resource[];
+		statements: Statement[];
+		hierarchies: SpecifNode[];
+		constructor() {
+			this.dataTypes = [
+				standardTypes.get("dataType", "DT-ShortString") as DataType,
+				standardTypes.get("dataType", "DT-Text") as DataType,
+				standardTypes.get("dataType", "DT-DateTime") as DataType,
+				standardTypes.get("dataType", "DT-Boolean") as DataType,
+				standardTypes.get("dataType", "DT-Integer") as DataType,
+				standardTypes.get("dataType", "DT-Real") as DataType
+			];
+			this.propertyClasses = [
+				standardTypes.get("propertyClass", "PC-Name") as PropertyClass,
+				standardTypes.get("propertyClass", "PC-Description") as PropertyClass,
+				standardTypes.get("propertyClass", "PC-Type") as PropertyClass
+			];
+			this.resourceClasses = [
+				standardTypes.get("resourceClass", "RC-Folder") as ResourceClass
+			];
+			// user-created instances are not checked for visibility:
+			this.resourceClasses[0].instantiation = [Instantiation.User];
+			this.statementClasses = [];
+			this.resources = [];
+			this.statements = [];
+			this.hierarchies = [];
 		}
-		function dataTypeId( str:string ):string { 
-			// must be able to find it just knowing the ws-name and the column index:
-			return 'DT-' + simpleHash(str);
+	}
+	function dataTypeId( str:string ):string { 
+		// must be able to find it just knowing the ws-name and the column index:
+		return 'DT-' + simpleHash(str);
+	}
+	class PropClass {
+		id: string;
+		title: string;
+		dataType: string;
+		changedAt: string;
+		constructor (nm: string, ti: string, dT: string) {
+			this.id = propClassId(nm);
+			//	ti = vocabulary.property.specif(ti); has already be translated before calling
+			this.title = ti;
+			this.dataType = 'DT-' + dT;		// like baseTypes[i].id
+			this.changedAt = chAt;
 		}
-		class PropClass {
-			id: string;
-			title: string;
-			dataType: string;
-			changedAt: string;
-			constructor (nm: string, ti: string, dT: string) {
-				this.id = propClassId(nm);
-				//	ti = vocabulary.property.specif(ti); has already be translated before calling
-				this.title = ti;
-				this.dataType = 'DT-' + dT;		// like baseTypes[i].id
-				this.changedAt = chAt;
-			}
+	}
+	function propClassId( str:string ):string { 
+		// must be able to find it just knowing the ws-name and the column index:
+		return 'PC-' + simpleHash(str);
+	}
+	class ResClass {
+		id: string;
+		title: string;
+		description: string;
+		icon?: string;
+		instantiation: Instantiation[];
+		propertyClasses: PropertyClass[];
+		changedAt: string;
+		constructor(nm: string, ti: string) {
+			this.id = nm;
+			this.title = vocabulary.resource.specif(ti);
+			let ic = CONFIG.icons.get(this.title);
+			if (ic) this.icon = ic;
+			this.description = 'For resources specified per line of an excel sheet';
+			this.instantiation = [Instantiation.User];  // user-created instances are not checked for visibility
+			this.propertyClasses = [];
+			this.changedAt = chAt;
 		}
-		function propClassId( str:string ):string { 
-			// must be able to find it just knowing the ws-name and the column index:
-			return 'PC-' + simpleHash(str);
+	}
+	function resClassId( str:string ):string { 
+		return 'RC-' + simpleHash(str);
+	}
+	class StaClass {
+		id: string;
+		title: string;
+		description: string;
+		instantiation: Instantiation[];
+		changedAt: string;
+		constructor(ti: string) {
+			this.title = vocabulary.statement.specif(ti);
+			this.id = staClassId(this.title);
+			this.description = 'For statements created by columns whose title is declared as a statement';
+			this.instantiation = [Instantiation.User];  // user-created instances are not checked for visibility
+			// No subjectClasses or objectClasses means all are allowed.
+			// Cannot specify any, as we don't know the resourceClasses.
+			this.changedAt = chAt;
 		}
-		class ResClass {
-			id: string;
-			title: string;
-			description: string;
-			icon?: string;
-			instantiation: Instantiation[];
-			propertyClasses: PropertyClass[];
-			changedAt: string;
-			constructor(nm: string, ti: string) {
-				this.id = nm;
-				this.title = vocabulary.resource.specif(ti);
-				let ic = CONFIG.icons.get(this.title);
-				if (ic) this.icon = ic;
-				this.description = 'For resources specified per line of an excel sheet';
-				this.instantiation = [Instantiation.User];  // user-created instances are not checked for visibility
-				this.propertyClasses = [];
-				this.changedAt = chAt;
-			}
+	}
+	function staClassId( str:string ):string { 
+		return 'SC-' + simpleHash(str);
+	}
+	function colName( colI:number ):string {
+		// get the column name from an index: 4->'D', 27->'AA'
+		function cName( idx:number, res:string):string {
+			if( idx<1 ) return res;
+			let r = idx % 26,
+				f = (idx-r)/26;
+			res = String.fromCharCode(r+64) + res;
+			return cName(f, res);
 		}
-		function resClassId( str:string ):string { 
-			return 'RC-' + simpleHash(str);
-		}
-		class StaClass {
-			id: string;
-			title: string;
-			description: string;
-			instantiation: Instantiation[];
-			changedAt: string;
-			constructor(ti: string) {
-				this.title = vocabulary.statement.specif(ti);
-				this.id = staClassId(this.title);
-				this.description = 'For statements created by columns whose title is declared as a statement';
-				this.instantiation = [Instantiation.User];  // user-created instances are not checked for visibility
-				// No subjectClasses or objectClasses means all are allowed.
-				// Cannot specify any, as we don't know the resourceClasses.
-				this.changedAt = chAt;
-			}
-		}
-		function staClassId( str:string ):string { 
-			return 'SC-' + simpleHash(str);
-		}
-		function colName( colI:number ):string {
-			// get the column name from an index: 4->'D', 27->'AA'
-			function cName( idx:number, res:string):string {
-				if( idx<1 ) return res;
-				let r = idx % 26,
-					f = (idx-r)/26;
-				res = String.fromCharCode(r+64) + res;
-				return cName(f, res);
-			}
-			return cName(colI,'');
-		}
-		function cellName(col: number, row: number): string {
-			return colName(col) + row;
-		}
-		function colIdx(colN: string): number {
-			// transform column name to column index, e.g. 'C'->3 or 'AB'->28
-			let idx = 0, f = 1;
-			for (var i = colN.length - 1; i > -1; i--) {
-				idx += f * (colN.charCodeAt(i) - 64);
-				f *= 26;
-			};
-			return idx;
-		}
+		return cName(colI,'');
+	}
+	function cellName(col: number, row: number): string {
+		return colName(col) + row;
+	}
+	function colIdx(colN: string): number {
+		// transform column name to column index, e.g. 'C'->3 or 'AB'->28
+		let idx = 0, f = 1;
+		for (var i = colN.length - 1; i > -1; i--) {
+			idx += f * (colN.charCodeAt(i) - 64);
+			f *= 26;
+		};
+		return idx;
+	}
 
 	function collectMetaData(ws:Worksheet):void {
 		if (!ws) return;
@@ -316,13 +316,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
                     for ( a=res.properties.length-1; a>-1; a--) {
 						pC = itemById(specifData.propertyClasses as Item[], res.properties[a]['class'] as string);
                         if ( pC && CONFIG.titleProperties.indexOf(pC.title) > -1 )
-							return stripHTML(res.properties[a].value);
+							return res.properties[a].value.stripHTML();
                     };
 					// then try to find a property with title listed in CONFIG.idProperties:
                     for ( a=res.properties.length-1; a>-1; a--) {
 						pC = itemById(specifData.propertyClasses as Item[], res.properties[a]['class'] as string);
                         if (pC && CONFIG.idProperties.indexOf(pC.title) > -1 )
-							return stripHTML(res.properties[a].value);
+							return res.properties[a].value.stripHTML();
                     };
 				};
 				return '';
@@ -388,7 +388,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							obL:string[],
 							oInner:string[];
 						for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
-							pTi = ws.data[cellName(c, ws.firstCell.row)].v;  // column title in the first line
+							cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
+							pTi = cell ? (cell.v as string) : '';
 							// skip the column, if it has no title (value in the first row):
 							if ( !pTi ) continue;
 
@@ -405,7 +406,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									val = getVal({ type: pC.type }, cell);
 									// @ts-ignore - check is defined in this case
 									if (pC.check(val)) {
+										// @ts-ignore - name is defined in this case
 										res[pC.name] = val;
+										// @ts-ignore - name is defined in this case
 										console.info(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
 									}
 									else
@@ -513,7 +516,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							} else {
 								// No id specified, so a random value must be generated. 
 								// No chance to update the element later on!
-								res.id = genID('R-');
+								res.id = Lib.genID('R-');
 							};
 							res.title = titleFromProps( res );
 							// accept only resources with title:
@@ -606,7 +609,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						pC = getPropClass(c);
 						// .. and create the propertyClass:
 						if( pC ) { 
-							cacheE( specifData.propertyClasses, pC ); // add it to propertyClasses, avoid duplicates
+							Lib.cacheE( specifData.propertyClasses, pC ); // add it to propertyClasses, avoid duplicates
 							pCs.push(pC.id);  // add the key to the resourceClass' propertyClasses
 						};
 					};
@@ -720,7 +723,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 			// 3.1 Create a resourceClass per XLS-sheet:
 			// The resourceClass' title is taken from the worksheet name, project name or a default is applied:
-			var rC = new ResClass(ws.resClass, inBracketsOf(ws.name) || inBracketsOf(pN) || CONFIG.resClassXlsRow );
+			var rC = new ResClass(ws.resClass, inBracketsAtEnd(ws.name) || inBracketsAtEnd(pN) || CONFIG.resClassXlsRow );
 			// Add a property class for each column using the names specified in line 1:
 			rC.propertyClasses = getPropClasses( ws );
 //			console.debug('rC',rC);
@@ -796,10 +799,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	function isFalse(str: string): boolean {
 		return CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
 	}
-	function inBracketsOf(str:string):string {
-		// Extract resourceClass in [square brackets] or (round brackets):
+	function inBracketsAtEnd(str:string):string|undefined {
+		// Extract resourceClass in (round brackets) or [square brackets]:
 		//	let resL = /\s*(?:\(|\[)([a-zA-Z0-9:_\-].+?)(?:\)|\])$/.exec( pN );
-		let resL = RE.inBrackets.exec(str);
-		if (Array.isArray(resL) && resL.length > 1) return resL[1];
+		let resL = RE.inBracketsAtEnd.exec(str);
+		if (Array.isArray(resL) && resL.length > 1)
+			return resL[1] || resL[2];
     }
 });

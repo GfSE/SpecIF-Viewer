@@ -523,12 +523,14 @@ function LanguageTextsFr() {
 	self.SpecIF_Instantiation = "Instanciation";
 	self.SpecIF_Origin = "Origine";
 	self.SpecIF_Source = 	self.LblSource;
-	self.SpecIF_Target = 	self.LblTarget;
+	self.SpecIF_Target = self.LblTarget;
+	self.SpecIF_DataObject = "Objet de Données";
 //	self.SpecIF_Author = "Auteur";
 //	self.SpecIF_Authors = "Auteurs";
 	self.IREB_Stakeholder = "Stakeholder";
 	self.SpecIF_Responsible = "Responsable";
 	self.SpecIF_Responsibles = "Responsables";
+	self.SpecIF_UserRole = "Rôle";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
 	self.IR_AnnotationDescription = "An Interaction-Room '"+self.IR_Annotation+"' indicates a point of special interest. Examples are customer or user value, product features with prominent benefit,effort or challenges during development.";

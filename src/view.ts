@@ -161,9 +161,10 @@ function viewSpecif():IApp {
 		);
 	};
 	self.export = function():void {
-		if( !self.cache.selectedProject || !self.cache.selectedProject.data.id )
-			message.show( i18n.MsgNoProjectLoaded, {severity:'warning', duration:CONFIG.messageDisplayTimeShort} );
-		self.cache.selectedProject.chooseFormatAndExport();
+		if (self.cache.selectedProject && self.cache.selectedProject.isLoaded() )
+			self.cache.selectedProject.chooseFormatAndExport();
+		else
+			message.show(i18n.MsgNoProjectLoaded, { severity: 'warning', duration: CONFIG.messageDisplayTimeShort });
 	};
 /*	self.updateMe = function() {
 		self.me.beginUpdate();

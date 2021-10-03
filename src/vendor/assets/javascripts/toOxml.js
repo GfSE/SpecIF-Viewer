@@ -158,7 +158,8 @@ function toOxml( data, opts ) {
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
-			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];	
+			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor','FMC:State','FMC:Event','SpecIF:Collection','SpecIF:Diagram','FMC:Plan'];
+			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
@@ -197,7 +198,7 @@ function toOxml( data, opts ) {
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 			// Limitation: the innerHTML may not have any tags.
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-			const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+			const reSO = '<object([^>]+?)(/>|>([^<]*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
 		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
@@ -206,7 +207,7 @@ function toOxml( data, opts ) {
 		
 			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
-				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
+				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*?>|</span>'
 				+	'|'+reA
 				+	'|'+reI
 		/*		// The nested object pattern must be checked before the single object pattern:
@@ -246,9 +247,10 @@ function toOxml( data, opts ) {
 					// Remove all formatting for the title, as the app's format shall prevail.
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
 					ti = stripHtml( itm.properties[a].value );
-				} else {
+				}
+				else {
 					// In certain cases (SpecIF hierarchy root or comment), there is no title property. 
-					ti = elTitleOf(itm);
+					ti = staTitleOf(itm);
 				};
 				ti = minEscape( opts.lookup( ti ) );
 				if( !ti ) return '';  // no paragraph, if title is empty
@@ -260,7 +262,8 @@ function toOxml( data, opts ) {
 				
 //				console.debug('titleOf',itm,ic,ti);
 
-				if( !pars || typeof(pars.level)!='number' ) return  ic+ti;  // return raw text
+				if (!pars || typeof (pars.level) != 'number')
+					return ic + ti;  // return raw text
 
 				if( pars.level==0 )
 					return wParagraph( {text: ic+ti, format:{ title:true }} );
@@ -451,27 +454,22 @@ function toOxml( data, opts ) {
 			function anchorOf( resId ) {
 				// Find the hierarchy node id for a given resource;
 				// the first occurrence is returned:
-				let m, M, n, N, ndId=null;
- 				for( m=0, M=data.hierarchies.length; m<M; m++ ) {
-//					console.debug( 'nodes', m, data.hierarchies );
-					if( data.hierarchies[m].nodes )
-						for( n=0, N=data.hierarchies[m].nodes.length; n<N; n++ ) {
-							ndId = ndByRef( data.hierarchies[m].nodes[n] );
-//							console.debug('ndId',n,ndId);							
-							if( ndId ) return ndId		// return node id
-						}
+				let n, N, ndId;
+ 				for( n=0, N=data.hierarchies.length; n<N; n++ ) {
+					ndId = ndByRef( data.hierarchies[n] );
+					if(ndId) return ndId;		// return node id
 				};
-				return null;	// not found
+				return;	// undefined -> not found
 				
 				function ndByRef( nd ) {
 					if( nd.resource==resId ) return nd.id;
-					let ndId=null;
+					let t,T,ndId;
 					if( nd.nodes )
-						for( var t=0, T=nd.nodes.length; t<T; t++ ) {
+						for( t=0, T=nd.nodes.length; t<T; t++ ) {
 							ndId = ndByRef( nd.nodes[t] );							
-							if( ndId ) return ndId
+							if(ndId) return ndId;
 						};
-					return null;
+				//	return undefined;
 				}
 			}
 			function propertyClassOf( pCid ) {
@@ -673,7 +671,7 @@ function toOxml( data, opts ) {
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
 											// $1 is undefined in case of <th/>
-											cs.push( {p:{text:($1.trim()||nbsp), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
+											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp ), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
 											// ToDo: Somehow the text is not printed boldly ...
 											return '';
 											});
@@ -683,7 +681,7 @@ function toOxml( data, opts ) {
 //											console.debug('td',$0,'|',$1);
 											// the 'td' cell with it's content
 											// $1 is undefined in case of <td/>
-											cs.push( {p:{text:($1.trim()||nbsp)}, border:{style:'single'}} )
+											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp )}, border:{style:'single'}} )
 											return ''
 											});
 									// the row with it's content:
@@ -771,13 +769,13 @@ function toOxml( data, opts ) {
 								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
-								let sp = /<span[^>]+color: ?#([0-9a-fA-F]{6})[^>]*>/.exec($2);
+								let sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
 								if( sp && sp.length>1 ) {
 									fmt.font.color = sp[1].toUpperCase();
 									return '';
 								};
 								if( /<\/span>/.test($2) ) {
-									delete fmt.font.color;	// simply, since there is only one value so far.
+									delete fmt.font.color;
 									return '';
 								};
 								// ToDo: Transform '<span style="text-decoration: underline;">'
@@ -958,23 +956,25 @@ function toOxml( data, opts ) {
 							if( !opts.addTitleLinks || lk[1].length<opts.titleLinkMinLength ) 
 								return {text:lk[1]};
 							
-							let m=lk[1].toLowerCase(), cO=null, ti=null;
+							let m=lk[1].toLowerCase(), cR, ti, rC;
 							// is ti a title of any resource?
 							for( var x=data.resources.length-1;x>-1;x-- ) {
-								cO = data.resources[x];	
+								cR = data.resources[x];	
 								// avoid self-reflection:
-						//		if(ob.id==cO.id) continue;
+						//		if(ob.id==cR.id) continue;
 
-								// get the pure title text:
-								ti = cO.title;
-						//		ti = minEscape( cO.title );
-								
 								// disregard objects whose title is too short:
+								ti = cR.title;
+						//		ti = minEscape( cR.title );
 								if( !ti || ti.length<opts.titleLinkMinLength ) continue;
+
+								// disregard link targets which aren't diagrams nor model elements:
+								rC = itemById(data.resourceClasses, cR['class']);
+								if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
 
 								// if the titleLink content equals a resource's title, return a text run with hyperlink:
 								if(m==ti.toLowerCase())
-									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO.id)}}};
+									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cR.id)}}};
 							};
 							// The dynamic link has NOT been matched/replaced, so mark it:
 							return {text:lk[1],color:"82020"}
@@ -1180,14 +1180,15 @@ function toOxml( data, opts ) {
 //				console.debug('wRun',ct);
 				// assuming that hyperlink or bookmark or none of them are present, but never both:
 				
-				if( ct.format && ct.format.hyperlink ) {
+				if (ct.format && ct.format.hyperlink && (ct.format.hyperlink.external || ct.format.hyperlink.internal) ) {
 //					console.debug('hyperlink',ct.format.hyperlink);
-					if( ct.format.hyperlink.external )
-						var tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
+					let tg;
+					if (ct.format.hyperlink.external)
+						tg = 'r:id="rId' + pushReferencedUrl(ct.format.hyperlink.external) + '"'
 					else
 						// Interestingly enough, Word only supports internal links up to 40 chars:
-						var tg = 'w:anchor="'+limit(ct.format.hyperlink.internal)+'"';
-					return '<w:hyperlink '+tg+'><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+						tg = 'w:anchor="' + limit(ct.format.hyperlink.internal) + '"';
+					return '<w:hyperlink ' + tg + '><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>' + r + '</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
 				
@@ -1242,7 +1243,9 @@ function toOxml( data, opts ) {
 					return '';
 				}
 				function limit(e) {
-					// it is unique for length<41, so don't change it:
+					// MS Word truncates internal links to 40 characters resulting in links which are not unique;
+					// so longer ones are hashed to assure uniqueness.
+					// Link is unique for length<41, so don't change it:
 					return e.length<41? e : 'h'+hashCode(e)
 				}
 				function pushReferencedUrl( u ) {
@@ -2753,7 +2756,7 @@ function toOxml( data, opts ) {
 		};
 	//	return undefined
 	}
-	function elTitleOf( el ) {
+	function staTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class,
 		// where a resource always has a statement of its own, i.e. the second clause never applies:
 		return el.title || itemById(data.statementClasses,el['class']).title

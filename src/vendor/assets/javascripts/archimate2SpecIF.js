@@ -626,7 +626,7 @@ function Archimate2Specif( xmlString, opts ) {
 						// It is another folder,
 						// create the resource:
 						let ti = getChildsInnerByTag(ch,"label");
-						idRef = "N-"+simpleHash( ti+apx );
+						idRef = "Folder-"+simpleHash( ti+apx );
 						resL.push({
 							id: idRef,
 							class: "RC-Folder",

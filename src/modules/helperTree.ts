@@ -35,7 +35,8 @@ class Tree {
 		this.domE = $(options.loc);
 		this.domE.tree({
 			data: [],
-			//	saveState: true,
+		//	saveState: true,
+		//	buttonLeft: false,  // left alignment does not work yet for nodes without children
 			dragAndDrop: options.dragAndDrop
 		});
 		for (var e in options.eventHandlers) {

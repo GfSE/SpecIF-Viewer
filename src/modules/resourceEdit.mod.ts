@@ -50,7 +50,7 @@ class DialogForm {
 			};
 			setTextState(cPs.label, ok ? 'has-success' : 'has-error');
 			allOk = allOk && ok;
-			//			console.debug( 'DialogForm.check: ', cPs, val );
+//			console.debug( 'DialogForm.check: ', cPs, val );
 		});
 		return allOk;
 	}
@@ -64,7 +64,7 @@ moduleManager.construct({
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData:CSpecIF,			// the cached data
+		cData:SpecIF,			// the cached data
 		opts:any,				// the processing options
 		toEdit:CResourceToShow;	// the resource with classified properties to edit
 
@@ -163,10 +163,10 @@ moduleManager.construct({
 									];
 								editResource(r,opts);
 							}, 
-							stdError
+							Lib.stdError
 						);
 					},
-					stdError
+					Lib.stdError
 				);
 				break;
 			case 'clone':
@@ -179,7 +179,7 @@ moduleManager.construct({
 						// create a clone to collect the changed values before committing:
 						self.newRes = simpleClone(rL[0]);
 						if( opts.mode=='clone' ) {
-							self.newRes.id = genID('R-');
+							self.newRes.id = Lib.genID('R-');
 							opts.dialogTitle = i18n.MsgCloneResource,
 							opts.msgBtns = [
 								msgBtns.cancel,
@@ -195,7 +195,7 @@ moduleManager.construct({
 						}; 
 						editResource(self.newRes,opts)
 					},
-					stdError
+					Lib.stdError
 				);
 		};
 		return;
@@ -204,7 +204,7 @@ moduleManager.construct({
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
-			toEdit = new CResourceToShow( res, cData );
+			toEdit = new CResourceToShow( res );
 			let ti = i18n.lookup(CONFIG.propClassTitle);
 			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			new BootstrapDialog({
@@ -240,11 +240,12 @@ moduleManager.construct({
 			function editP(p) {
 				// Return a form element for a property;
 				// works only, if all propertyClasses and dataTypes are always cached:
-				let pC = itemById( cData.propertyClasses, p['class'] ),
+				let pC = cData.get("propertyClass", p['class'] )[0],
 					// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
-					dT = pC? itemById( cData.dataTypes, pC.dataType ) : undefined,
+					dT = pC? cData.get("dataType", pC.dataType )[0] : undefined,
 					opts = {
 						lookupTitles: true,
+						lookupLanguage: true,
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
 					},
@@ -257,7 +258,8 @@ moduleManager.construct({
 						if (propTitleOf(p, cData) == CONFIG.propClassDiagram) {
 							// it is a diagram reference (works only with XHTML-fields):
 							return renderDiagram(p, opts)
-						} else {
+						}
+						else {
 							// add parameters to check this input field:
 							self.dialogForm.addField(ti, dT);
 							// it is a text;
@@ -278,11 +280,12 @@ moduleManager.construct({
 					case 'xs:enumeration':
 						// no input checking needed:
 						let separatedValues = p.value.split(','),
-							vals = forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+							vals = Lib.forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
 							return checkboxField( ti, vals );
-						} else {
+						}
+						else {
 							return radioField( ti, vals );
 						};
 					case 'xs:boolean':
@@ -334,12 +337,12 @@ moduleManager.construct({
 		function selectResClass( opts ) {		
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
-				app.cache.selectedProject.readContent( 'resourceClass', forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
+				app.cache.selectedProject.readContent( 'resourceClass', Lib.forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
 				.then( 
 					(rCL)=>{
 						if( rCL.length>0 ) {
 							// store a clone and get the title to display:
-							let resClasses = forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
+							let resClasses = Lib.forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
 							if( resClasses.length>1 ) {
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
@@ -373,11 +376,13 @@ moduleManager.construct({
 										}]
 								})
 								.open();
-							} else {
+							}
+							else {
 								// exactly on class, so we can continue immediately:
 								resolve( resClasses[0] );
 							};
-						} else {
+						}
+						else {
 							// ToDo: Don't enable the 'create resource' button, if there are no eligible resourceClasses ..
 							reject({status:999,statusText:"No resource class defined for manual creation of a resource."});
 						};
@@ -449,7 +454,7 @@ moduleManager.construct({
 
 		toEdit.title.value = getP( toEdit.title );
 		// In any case, update the elements native title:
-		self.newRes.title = stripHTML(toEdit.title.value);
+		self.newRes.title = toEdit.title.value.stripHTML();
 		// If the title property doesn't have a class, 
 		// it has been added by new CResourceToShow() and there is no need to create it;
 		// in this case the title will only be seen in the element's title:
@@ -476,7 +481,7 @@ moduleManager.construct({
 			p.value = getP( p );
 			delete p.title;
 
-			let pV = stripHTML(p.value);
+			let pV = p.value.stripHTML();
 			if( pV ) {
 				// update the elements native description:
 				self.newRes.description = pV
@@ -490,7 +495,8 @@ moduleManager.construct({
 					else
 						self.newRes.properties = [ p ];
 				};
-			} else {
+			}
+			else {
 				// delete it:
 				delete self.newRes.description;
 			};
@@ -504,13 +510,14 @@ moduleManager.construct({
 			// a property class must exist, 
 			// because new CResourceToShow() puts only existing properties to 'other':
 			if( p['class'] ) {
-				if( hasContent(p.value) ) {
+				if( Lib.hasContent(p.value) ) {
 					if( Array.isArray( self.newRes.properties ) )
 						self.newRes.properties.push( p );
 					else
 						self.newRes.properties = [ p ];
 				};
-			} else {
+			}
+			else {
 					console.error('Cannot save edited property',p,' because it has no class');
 			};
 		});
@@ -518,35 +525,29 @@ moduleManager.construct({
 		self.newRes.changedAt = chD;
 //		console.debug( 'save', self.newRes );
 
+		app.cache.selectedProject.updateContent('resource', self.newRes)
+			.then(finalize, Lib.stdError);
 		switch( mode ) {
-			case 'update':
-				app.cache.selectedProject.updateContent( 'resource', self.newRes )
-					.then( finalize, stdError );
-				break;
+		//	case 'update':
+		//		break;
 			case 'insert':
-				app.cache.selectedProject.createContent( 'resource', self.newRes )
-					.then( finalize, stdError );
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD} )
-					.then( finalize, stdError );
+				app.cache.selectedProject.createContent( 'node', {id:Lib.genID('N-'),resource:self.newRes.id,changedAt:chD} )
+					.then( finalize, Lib.stdError );
 				break;
 			case 'insertAfter':
-				app.cache.selectedProject.createContent( 'resource', self.newRes )
-					.then( finalize, stdError );
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selNodeId} )
-					.then( finalize, stdError );
+				app.cache.selectedProject.createContent( 'node', {id:Lib.genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selNodeId} )
+					.then( finalize, Lib.stdError );
 				break;
 			case 'insertBelow':
-				app.cache.selectedProject.createContent( 'resource', self.newRes )
-					.then( finalize, stdError );
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selNodeId} )
-					.then( finalize, stdError );
+				app.cache.selectedProject.createContent( 'node', {id:Lib.genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selNodeId} )
+					.then( finalize, Lib.stdError );
 		};
 		// has no effect, if newFiles is empty:
 		app.cache.selectedProject.createContent( 'file', self.newFiles )
-			.then( finalize, stdError );
+			.then( finalize, Lib.stdError );
 		return;
 			
 		function finalize() {	
@@ -554,6 +555,7 @@ moduleManager.construct({
 				// update the tree because the title may have changed:
 				pData.updateTree({
 					lookupTitles: true,
+					lookupLanguage: true,
 					targetLanguage: browser.language
 				});
 				// get the selected node:
@@ -587,11 +589,12 @@ moduleManager.construct({
 			// ToDo: Works only, if all propertyClasses are always cached:
 			const opts = {
 				lookupTitles: true,
+				lookupLanguage: true,
 				targetLanguage: browser.language
 			};
-			let pC = itemById( cData.propertyClasses, p['class'] ),
+			let pC = cData.get("propertyClass", p['class'] )[0],
 				// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
-				dT = pC? itemById( cData.dataTypes, pC.dataType ) : undefined;
+				dT = pC? cData.get("dataType", pC.dataType )[0] : undefined;
 			switch( dT? dT.type : "xs:string" ) {
 				case 'xs:integer':
 				case 'xs:double':

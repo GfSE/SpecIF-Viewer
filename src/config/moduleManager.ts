@@ -444,7 +444,7 @@ var app:IApp,
 		setViewToLeaf( mo, params );
 		return;
 
-		function setViewFromRoot( le:IModule, pL ):void {
+		function setViewFromRoot( le:IModule, pL:any[] ):void {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
 				// all levels get access to the parameters besides view, if needed:
@@ -455,7 +455,7 @@ var app:IApp,
 			// set this level's view controller to choose the desired view:
 			le.parent.ViewControl.show( pL )
 		}
-		function setViewToLeaf(le: IModule, pL ):void {
+		function setViewToLeaf(le: IModule, pL: any[] ):void {
 			// step down, if there is a child view:
 				function findDefault(vL: IModule[]): IModule {
 					for( var i=vL.length-1; i>-1; i-- ) {
@@ -532,13 +532,13 @@ var app:IApp,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
 				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
-				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/tree.jquery.js' ); return true;
-				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.4/FileSaver.min.js' ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js' ); return true;
+				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true;
+				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.8/xlsx.full.min.js' ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js' ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@8.7.3/dist/bpmn-viewer.production.min.js' ); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
 		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
@@ -641,7 +641,7 @@ var app:IApp,
 		//		case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false;
-			}
+			};
 		};
 		return false;
 
@@ -652,7 +652,7 @@ var app:IApp,
 		// (third party libraries delivered by CDN have a version in the path);
 		// it must work for the regular app and the embedded app:
 		function bust(url: string): string {
-			return url + (url.startsWith(loadPath) ? "?" + CONFIG.appVersion : "")
+			return url + (url.startsWith(loadPath) ? "?" + CONFIG.appVersion : "");
         }
 		function getCss( url:string ):void {
 			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
@@ -694,7 +694,7 @@ var app:IApp,
 				callWhenReady()
 			else
 				throw Error("No callback provided to continue after module loading.");
-		}
+		};
 	}
 }();
 class State {
@@ -716,13 +716,13 @@ class State {
 			case undefined:
 			case true:
 				this.state = true;
-				this.hideWhenSet.forEach((v:string):void =>{
+				this.hideWhenSet.forEach((v: string): void => {
 					$(v).hide();
 				});
-				this.showWhenSet.forEach((v:string):void =>{
+				this.showWhenSet.forEach((v: string): void => {
 					$(v).show();
-				})
-		}
+				});
+		};
 	}
 	reset ():void {
 				this.state = false;

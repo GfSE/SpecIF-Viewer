@@ -34,6 +34,7 @@ function toXhtml( data, opts ) {
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
+	if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'FMC:Plan'];
 	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
@@ -116,7 +117,7 @@ function toXhtml( data, opts ) {
 			ti = stripHtml( itm.properties[a].value );
 		} else {
 			// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
-			ti = elTitleOf(itm);
+			ti = staTitleOf(itm);
 		};
 		ti = escapeXML( opts.lookup( ti ) );
 		if( !ti ) return '';
@@ -459,7 +460,7 @@ function toXhtml( data, opts ) {
 			str = str.replace( opts.RE.TitleLink, 
 				function( $0, $1 ) { 
 //					if( $1.length<opts.titleLinkMinLength ) return $1;
-					let m=$1.toLowerCase(), cR, ti;
+					let m=$1.toLowerCase(), cR, ti, rC;
 					// is ti a title of any resource?
 					for( var x=data.resources.length-1;x>-1;x-- ) {
 						cR = data.resources[x];
@@ -472,6 +473,10 @@ function toXhtml( data, opts ) {
 
 						// disregard objects whose title is too short:
 						if( !ti || ti.length<opts.titleLinkMinLength ) continue;
+
+						// disregard link targets which aren't diagrams nor model elements:
+						rC = itemById(data.resourceClasses, cR['class']);
+						if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
 
 						// if the titleLink content equals a resource's title, replace it with a link:
 						if(m==ti.toLowerCase()) return '<a href="'+anchorOf(cR,hi)+'">'+$1+'</a>'
@@ -573,7 +578,7 @@ function toXhtml( data, opts ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return prp.title || itemBy(data.propertyClasses,'id',prp['class']).title
 	}
-	function elTitleOf( el ) {
+	function staTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class,
 		// where a resource always has a statement of its own, i.e. the second clause never applies:
 		return el.title || itemBy(data.statementClasses,'id',el['class']).title

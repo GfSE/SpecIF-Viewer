@@ -26,8 +26,8 @@
 			options: [
 				{title:'Word Beginnings', id:'wordBeginnings', checked:false},
 				{title:'Whole Words', id:'wholeWords', checked:false},
-				{title:'Case Sensitive', id:'caseSensitive', checked:true},
-				{title:'Exclude Enums', id:'excludeEnums', checked:false}
+				{title:'Case Sensitive', id:'caseSensitive', checked:true}
+			//	{title:'Exclude Enums', id:'excludeEnums', checked:false}
 			]
 		},{ 
 			title: 'Resource Class',
@@ -174,7 +174,7 @@ moduleManager.construct({
 	function handleError(xhr: xhrMessage): void {
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		stdError(xhr);
+		Lib.stdError(xhr);
 	};
 
 	// standard module entry:
@@ -186,6 +186,7 @@ moduleManager.construct({
 		pData.showLeft.reset();
 		$('#filterNotice').empty();
 
+		displayOptions.lookupLanguage = true;
         displayOptions.targetLanguage = pData.targetLanguage;
         displayOptions.lookupTitles = true;
         displayOptions.lookupValues = true;
@@ -331,13 +332,13 @@ moduleManager.construct({
 					switch( dT.type ) {
 						case TypeEnum.XsEnumeration:
 							// only if enumerated values are included in the search:
-							if( !isChecked( f.options, 'excludeEnums' )) {
+						//	if( !isChecked( f.options, 'excludeEnums' )) {
 								if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true;
-							};
+						//	};
 							break;
 						case TypeEnum.XHTML:
 						case TypeEnum.XsString:
-							if (patt.test( stripHTML(languageValueOf(prp.value,displayOptions)) )) return true; 
+							if (patt.test( languageValueOf(prp.value, displayOptions).stripHTML() )) return true;
 							break;
 						default:
 							if( patt.test( languageValueOf(prp.value,displayOptions) )) return true;
@@ -491,14 +492,14 @@ moduleManager.construct({
 
 //							console.debug( '$0,$1,$2',$0,$1,$2 );
 							// 1. mark the preceding text:
-							if( stripHTML($1).length>0 )
+							if ($1.stripHTML().length>0 )
 								$1 = $1.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
 							markedText += $1+$2;
 							// consume txt:
 							return ''  
 						});
 					// 2. finally mark the remainder (the rest of the txt not consumed before):
-					if ( stripHTML(txt).length>0 )
+					if ( txt.stripHTML().length>0 )
 						markedText += txt.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
 					return markedText
 				}
@@ -572,7 +573,7 @@ moduleManager.construct({
 
 			function allEnumValues(pC: PropertyClass, vL):IBox[] {
 				var boxes = [],
-					dT = itemById(dta.dataTypes, pC.dataType);
+					dT = dta.get( "dataType", pC.dataType)[0];
 				// Look up the baseType and include all possible enumerated values:
 				if (dT && Array.isArray(dT.values)) {
 						dT.values.forEach( (v)=>{
@@ -627,14 +628,14 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC: ResourceClass = itemById(dta.resourceClasses, def.rCid),
+			var rC: ResourceClass = dta.get("resourceClass", def.rCid)[0],
 				pC: PropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pcid)=>{
-				pC = itemById( dta.propertyClasses, pcid );
+				pC = dta.get( "propertyClass", pcid )[0];
 //				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && itemById( dta.dataTypes, pC.dataType ).type==TypeEnum.XsEnumeration)) {
+					|| (!def.pCid && dta.get( "dataType", pC.dataType )[0].type==TypeEnum.XsEnumeration)) {
 					addEnumFilter( rC, pC, def.options )
 				};
 			});
@@ -660,8 +661,8 @@ moduleManager.construct({
 					options: [
 						{ id: 'wordBeginnings', title: i18n.LblWordBeginnings, checked: pre&&pre.options.indexOf('wordBeginnings')>-1 },
 						{ id: 'wholeWords', title: i18n.LblWholeWords, checked: pre&&pre.options.indexOf('wholeWords')>-1 },
-						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1 },
-						{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1 }
+						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1 }
+			//			{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1 }
 					]
 				};
 //				console.debug('addTextSearchFilter',flt);
@@ -690,7 +691,7 @@ moduleManager.construct({
 						baseType: TypeEnum.XsEnumeration,
 						options: [] 
 					};
-				dta.resourceClasses.forEach( ( rC )=>{
+				dta.get("resourceClass","all").forEach( ( rC )=>{
 					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
 					var box = { 
