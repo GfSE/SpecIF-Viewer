@@ -1602,10 +1602,11 @@ class CProject {
 				);
 			}
 			function storeAs(opts: any): void {
-				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0)
+				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0) {
 					// programming error!
 					reject({ status: 999, statusText: "Invalid format specified on export" });
 					throw Error("Invalid format specified on export");
+				};
 
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
