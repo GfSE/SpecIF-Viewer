@@ -1429,10 +1429,11 @@ class CProject {
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.2', id: 'reqif' },
-							//	{ title: 'RDF', id: 'rdf' },
+						//	{ title: 'RDF', id: 'rdf' },
 							{ title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
-							{ title: 'MS WORD® (Open XML)', id: 'oxml' }
+							{ title: 'MS Excel® (experimental)', id: 'xlsx' },
+							{ title: 'MS Word® (Open XML)', id: 'oxml' }
 						],
 						{ handle: exportFormatClicked }  // options depend on format
 					)
@@ -1520,6 +1521,7 @@ class CProject {
 							break;
 						case 'epub':
 						case 'oxml':
+						case 'xlsx':
 							publish(opts);
 					};
 			//	}
@@ -1530,10 +1532,10 @@ class CProject {
 			return;
 
 			function publish(opts: any): void {
-				if (!opts || ['epub', 'oxml'].indexOf(opts.format) < 0) {
+				if (!opts || ['epub', 'oxml', 'xlsx'].indexOf(opts.format) < 0) {
 					// programming error!
-					reject();
-					return;
+					reject({ status: 999, statusText: "Invalid format specified on export" });
+					throw Error("Invalid format specified on export");
 				};
 
 				// ToDo: Get the newest data from the server.
@@ -1591,7 +1593,9 @@ class CProject {
 							case 'oxml':
 								// @ts-ignore - toOxml() is loaded at runtime
 								toOxml(expD, localOpts);
-						};
+								break;
+							case 'xlsx':
+								app.ioXls.toXls(expD, localOpts);						};
 						// resolve() is called in the call-backs defined by opts
 					},
 					reject
@@ -1600,6 +1604,7 @@ class CProject {
 			function storeAs(opts: any): void {
 				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0)
 					// programming error!
+					reject({ status: 999, statusText: "Invalid format specified on export" });
 					throw Error("Invalid format specified on export");
 
 				// ToDo: Get the newest data from the server.
