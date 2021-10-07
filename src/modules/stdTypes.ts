@@ -120,20 +120,22 @@ class StandardTypes {
 		['hierarchy', "hierarchies"]
 	])
 
-	get(ctg:string,id:string,chAt?:string):Item|undefined {
-		var item:Item = itemById( this[this.listName.get(ctg)], id );
-		if( item ) {
-			// shield any subsequent change from the templates available here:
-			item = simpleClone(item);
-			if( chAt ) item.changedAt = chAt;
-			return item;
-		};
-	}
 	iterateLists(fn: Function): void {
+		// Perform the function fn for each list defined above:
 		for (var le of this.listName.keys())
 			fn(le, this.listName.get(le));
 		return this.listName.size;
     }
+	get(ctg: string, id: string, chAt?: string): Item | undefined {
+		// Get the element of the given category: 
+		var item: Item = itemById(this[this.listName.get(ctg)], id);
+		if (item) {
+			// shield any subsequent change from the templates available here:
+			item = simpleClone(item);
+			if (chAt) item.changedAt = chAt;
+			return item;
+		};
+	}
 /*	getByTitle(ctg: string, ti: string, chAt?: string): Item | undefined {
 		var item: Item = itemByTitle(this[this.listName.get(ctg)], ti);
 		if (item) {
@@ -149,42 +151,41 @@ class StandardTypes {
 			return this.listName.get(ctg) as string;
 		throw Error("Invalid category '"+ctg+"'");
 	} */
+	addTo(ctg: string, id: string, pr?): void {
+		// Add an element (e.g. class) to it's list, if not yet defined:
+		if (!pr) pr = app.cache.selectedProject.data;
+
+		// get the name of the list, e.g. 'dataType' -> 'dataTypes':
+		let lN: string = this.listName.get(ctg);
+		// create it, if not yet available:
+		if (Array.isArray(pr[lN])) {
+			// add the type, but avoid duplicates:
+			if (indexById(pr[lN], id) < 0)
+				pr[lN].unshift( this.get(ctg, id) );
+		}
+		else {
+			pr[lN] = [this.get(ctg, id)];
+		};
+	}
 };
 
-function addE(ctg: string, id: string, pr?): void {
-	// Add an element (e.g. class) to it's list, if not yet defined:
-	if (!pr) pr = app.cache.selectedProject.data;
-
-	// get the name of the list, e.g. 'dataType' -> 'dataTypes':
-	let lN: string = standardTypes.listName.get(ctg);
-	// create it, if not yet available:
-	if (Array.isArray(pr[lN])) {
-		// add the type, but avoid duplicates:
-		if (indexById(pr[lN], id) < 0)
-			pr[lN].unshift(standardTypes.get(ctg, id));
-	}
-	else {
-		pr[lN] = [standardTypes.get(ctg, id)];
-	};
-}
-function addPC(eC: object, id: string): void {
+function addPCReference(eC: ResourceClass|StatementClass, id: string): void {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
-	let lN = 'propertyClasses';
-	if (Array.isArray(eC[lN])) {
+	if (Array.isArray(eC.propertyClasses)) {
 		// Avoid duplicates:
-		if (eC[lN].indexOf(id) < 0)
-			eC[lN].unshift(id);
+		if (eC.propertyClasses.indexOf(id) < 0)
+			eC.propertyClasses.unshift(id);
 	}
 	else {
-		eC[lN] = [id];
+		eC.propertyClasses = [id];
 	};
 }
-function addP(el: object, prp: object): void {
+function addP(el:Resource|Statement, prp: Property): void {
 	// Add the property to an element (el):
-	if (Array.isArray(el['properties']))
-		el['properties'].unshift(prp);
+	if (Array.isArray(el.properties))
+		el.properties.unshift(prp);
 	else
-		el['properties'] = [prp];
+		el.properties = [prp];
 }
 
 /*  ToDo: REWORK FOR v0.10.8:

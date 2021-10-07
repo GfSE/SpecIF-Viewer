@@ -74,7 +74,6 @@ class CSpecifItemNames {
 class CSpecIF implements SpecIF {
 	// Transform a SpecIF data-set of several versions to the internal representation of the SpecIF Viewer/Editor
 	// and also transform it back to a SpecIF data-set of the most recent version.
-
 	id = '';
 	$schema = '';
 	title = '';
@@ -93,14 +92,115 @@ class CSpecIF implements SpecIF {
 	resources: Resource[] = [];   		// list of resources as referenced by the hierarchies
 	statements: Statement[] = [];
 	hierarchies: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of the project.
-	constructor(spD?:any) {
-		this.toInt(spD);
+
+	constructor() {
 	}
 	isValid(spD?: any): boolean {
 		if (!spD) spD = this;
-		return typeof(spD.id)=='string' && spD.id.length > 0;
-    }
-	toInt(spD: any):void {
+		return typeof (spD.id) == 'string' && spD.id.length > 0;
+	}
+	set(spD:any,opts?:any) {
+		return new Promise(
+			(resolve, reject) => {
+				if (opts && opts.noCheck) {
+					this.toInt(spD);
+					resolve(this)
+				}
+				else
+					this.check(spD,opts)
+						.then(
+							(nD) => { this.toInt(nD); resolve(this) },
+							reject
+						)
+			}
+		);
+	} 
+	private check(spD: SpecIF, opts?: any): Promise<SpecIF> {
+		// Check the SpecIF data for schema compliance and consistency;
+		// 'this' isn't modified, so it is used before 'toInt' is called:
+		return new Promise(
+			(resolve, reject) => {
+				let checker: any;
+
+				if (typeof (spD) == 'object') {
+					// 1a. Get the "official" routine for checking schema and constraints
+					//    - where already loaded checking routines are replaced by the newly loaded ones
+					//    - use $.ajax() with options since it is more flexible than $.getScript
+					//    - the first (relative) URL is for debugging within a local clone of Github
+					//    - both of the other (absolute) URLs are for a production environment
+					$.ajax({
+						dataType: "script",
+						cache: true,
+						url: (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0 ?
+							(window.location.href.startsWith('file:/') ? '../../SpecIF/check/CCheck.min.js'
+								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.js')
+							: 'https://specif.de/v1.0/CCheck.min.js') // older versions are covered by v1.0/check.js
+					})
+					.done(() => {
+						// 2. Get the specified schema file:
+						Lib.httpGet({
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
+							url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
+							responseType: 'arraybuffer',
+							withCredentials: false,
+							done: handleResult,
+							fail: handleError
+						});
+						// 1b. Instantiate checker:
+						// @ts-ignore - 'CCheck' has just been loaded dynamically:
+						checker = new CCheck();
+					})
+					.fail(handleError);
+				}
+				else {
+					reject({ status: 999, statusText: 'No SpecIF data to check' });
+				};
+				return;
+
+				function handleResult(xhr: XMLHttpRequest) {
+					// @ts-ignore - checkSchema() and checkConstraints() are defined in check.js loaded at runtime
+					if (typeof (checker.checkSchema) == 'function' && typeof (checker.checkConstraints) == 'function') {
+						//						console.debug('schema', xhr);
+						// 1. check data against schema:
+						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
+						let rc: xhrMessage = checker.checkSchema(spD, { schema: JSON.parse(Lib.ab2str(xhr.response)) });
+						if (rc.status == 0) {
+							// 2. Check further constraints:
+							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
+							rc = checker.checkConstraints(spD, opts);
+							if (rc.status == 0) {
+								resolve(spD);
+							}
+							else {
+								reject(rc);
+							};
+						}
+						else {
+							// older versions of the checking routine don't set the responseType:
+							if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
+								rc.responseType = 'text';
+							reject(rc);
+						};
+					}
+					else {
+						reject({ status: 999, statusText: 'Standard routines checkSchema and checkConstraints are not available.' });
+					}
+				}
+				function handleError(xhr: xhrMessage) {
+					switch (xhr.status) {
+						case 404:
+							// @ts-ignore - 'specifVersion' is defined for versions <1.0
+							let v = spD.specifVersion ? 'version ' + spD.specifVersion : 'with Schema ' + spD['$schema'];
+							xhr = { status: 903, statusText: 'SpecIF ' + v + ' is not supported by the program!' };
+						// no break
+						default:
+							reject(xhr);
+					};
+				}
+			}
+		);
+	}
+	private toInt(spD: any):void {
 		if (!this.isValid(spD)) return;
 
 		// transform SpecIF to internal data;
@@ -143,7 +243,7 @@ class CSpecIF implements SpecIF {
 
 //		console.debug('specif.toInt',simpleClone(this));
 
-		function i2int(iE) {
+		function i2int(iE:any) {
 			// common for all items:
 			var oE: any = {
 				id: iE.id,
@@ -166,7 +266,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a data type:
-		function dT2int(iE): DataType {
+		function dT2int(iE:any): DataType {
 			var oE: any = i2int(iE);
 			oE.title = Lib.cleanValue(iE.title);
 			oE.type = iE.type;
@@ -218,7 +318,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// common for all instance classes:
-		function aC2int(iE) {
+		function aC2int(iE:any) {
 			var oE: any = i2int(iE);
 			oE.title = Lib.cleanValue(iE.title);
 			if (iE['extends']) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5
@@ -278,7 +378,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a statementClass:
-		function sC2int(iE): StatementClass {
+		function sC2int(iE:any): StatementClass {
 			var oE: StatementClass = aC2int(iE);
 			if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
 			if (iE[names.subClasses]) oE.subjectClasses = iE[names.subClasses];
@@ -287,7 +387,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a hierarchyClass:
-		function hC2int(iE) {
+		function hC2int(iE:any) {
 			// hierarchyClasses (used up until v0.10.6) are stored as resourceClasses,
 			// later on, the hierarchy-roots will be stored as resources referenced by a node:
 			var oE = aC2int(iE);
@@ -296,7 +396,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a property:
-		function p2int(iE): Property {
+		function p2int(iE:any): Property {
 			var dT: DataType = dataTypeOf(self, iE[names.pClass]),
 				oE: Property = {
 					// no id
@@ -330,7 +430,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// common for all instances:
-		function a2int(iE): Instance {
+		function a2int(iE:any): Instance {
 			var oE = i2int(iE);
 			// resources must have a title, but statements may come without:
 			if (iE.title)
@@ -341,15 +441,15 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a resource:
-		function r2int(iE): Resource {
-			var oE: Resource = a2int(iE);
+		function r2int(iE:any): Resource {
+			var oE: Resource = a2int(iE) as Resource;
 			oE['class'] = iE[names.rClass];
 //			console.debug('resource 2int',iE,simpleClone(oE));
 			return oE
 		}
 		// a statement:
-		function s2int(iE): Statement {
-			var oE = a2int(iE);
+		function s2int(iE:any): Statement {
+			var oE: Statement = a2int(iE) as Statement;
 			oE['class'] = iE[names.sClass];
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
@@ -370,7 +470,7 @@ class CSpecIF implements SpecIF {
 			var iH: any;
 			if (names.hClasses) {
 				// up until v0.10.6, transform hierarchy root to a regular resource:
-				var iR = a2int(eH);
+				var iR:Resource = a2int(eH) as Resource;
 				//  ... and add a link to the hierarchy:
 				iH = {
 					id: 'N-' + iR.id,
@@ -481,94 +581,101 @@ class CSpecIF implements SpecIF {
 				spD.statements = Lib.forAll(this.statements, s2ext);
 				spD.hierarchies = Lib.forAll(this.hierarchies, n2ext);
 				spD.files = [];
-				this.files.forEach((f) => { f2ext(f).then(finalize, reject); });
+				this.files.forEach( (f) => {
+					pend++;
+					f2ext(f)
+						.then(
+							(oF) =>{
+								spD.files.push(oF);
+								if (--pend < 1) finalize();
+							},
+							reject
+						);
+				});
 				if (pend < 1) finalize();  // no files, so finalize right away
 				return;
 
-				function finalize(oF?) {
-					if(oF) spD.files.push(oF);
-					if (--pend < 1) {
-						// Check whether all statements reference resources or statements, which are listed.
-						// Obviously this check can only be done at the end ..
-						let lenBefore: number;
-						do {
-							lenBefore = spD.statements.length;
-							spD.statements = spD.statements.filter(
-								(s) => {
-									return (indexById(spD.resources, Lib.itemIdOf(s.subject)) > -1
-										|| indexById(spD.statements, Lib.itemIdOf(s.subject)) > -1)
-										&& (indexById(spD.resources, Lib.itemIdOf(s.object)) > -1
-											|| indexById(spD.statements, Lib.itemIdOf(s.object)) > -1)
-								}
-							);
-							console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
-						}
-						while (spD.statements.length < lenBefore);
+				function finalize() {
+					// Check whether all statements reference resources or statements, which are listed.
+					// Obviously this check can only be done at the end ..
+					let lenBefore: number;
+					do {
+						lenBefore = spD.statements.length;
+						spD.statements = spD.statements.filter(
+							(s) => {
+								return (indexById(spD.resources, Lib.idOf(s.subject)) > -1
+									|| indexById(spD.statements, Lib.idOf(s.subject)) > -1)
+									&& (indexById(spD.resources, Lib.idOf(s.object)) > -1
+										|| indexById(spD.statements, Lib.idOf(s.object)) > -1)
+							}
+						);
+						console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
+					}
+					while (spD.statements.length < lenBefore);
 
-						// Add a resource as hierarchyRoot, if needed.
-						// It is assumed, 
-						// - that in general SpecIF data do not have a hierarchy root with meta-data.
-						// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-						function outlineTypeIsNotHidden(hPL?): boolean {
-							if (!hPL || hPL.length < 1) return true;
-							for (var i = hPL.length - 1; i > -1; i--) {
-								if (hPL[i].title == CONFIG.propClassType
-									&& (typeof (hPL[i].value) != 'string' || hPL[i].value == CONFIG.resClassOutline))
-									return false;
-							};
-							return true;
-						}
-						if (opts.createHierarchyRootIfNotPresent && aHierarchyHasNoRoot(spD)) {
-
-							console.info("Adding a hierarchyRoot");
-							addE("resourceClass", "RC-HierarchyRoot", spD);
-
-							// ToDo: Let the program derive the referenced class ids from the above
-							addE("propertyClass", "PC-Type", spD);
-							addE("propertyClass", "PC-Description", spD);
-							addE("propertyClass", "PC-Name", spD);
-							addE("dataType", "DT-ShortString", spD);
-							addE("dataType", "DT-Text", spD);
-
-							var res = {
-								id: 'R-' + simpleHash(spD.id),
-								title: spD.title,
-								class: "RC-HierarchyRoot",
-								properties: [{
-									class: "PC-Name",
-									value: spD.title
-								}],
-								changedAt: spD.createdAt
-							};
-							// Add the resource type, if it is not hidden:
-							let rC = itemById(spD.resourceClasses, "RC-HierarchyRoot");
-							if (outlineTypeIsNotHidden(opts.hiddenProperties)) {
-								addP(res, {
-									class: "PC-Type",
-									value: rC.title // should be CONFIG.resClassOutline
-								});
-							};
-							// Add a description property only if it has a value:
-							if (spD.description)
-								addP(res, {
-									class: "PC-Description",
-									value: spD.description
-								});
-							spD.resources.push(r2ext(res));
-							// create a new root instance:
-							spD.hierarchies = [{
-								id: "H-" + res.id,
-								resource: res.id,
-								// .. and add the previous hierarchies as children:
-								nodes: spD.hierarchies,
-								changedAt: spD.changedAt
-							}];
+					// Add a resource as hierarchyRoot, if needed.
+					// It is assumed, 
+					// - that in general SpecIF data do not have a hierarchy root with meta-data.
+					// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+					function outlineTypeIsNotHidden(hPL?): boolean {
+						if (!hPL || hPL.length < 1) return true;
+						for (var i = hPL.length - 1; i > -1; i--) {
+							if (hPL[i].title == CONFIG.propClassType
+								&& (typeof (hPL[i].value) != 'string' || hPL[i].value == CONFIG.resClassOutline))
+								return false;
 						};
+						return true;
+					}
+					if (opts.createHierarchyRootIfNotPresent && aHierarchyHasNoRoot(spD)) {
 
-						// ToDo: schema and consistency check (if we want to detect any programming errors)
-						//				console.debug('specif.toExt exit',spD);
-						resolve(spD);
+						console.info("Adding a hierarchyRoot");
+						standardTypes.addTo("resourceClass", "RC-HierarchyRoot", spD);
+
+						// ToDo: Let the program derive the referenced class ids from the above
+						standardTypes.addTo("propertyClass", "PC-Type", spD);
+						standardTypes.addTo("propertyClass", "PC-Description", spD);
+						standardTypes.addTo("propertyClass", "PC-Name", spD);
+						standardTypes.addTo("dataType", "DT-ShortString", spD);
+						standardTypes.addTo("dataType", "DT-Text", spD);
+
+						var res = {
+							id: 'R-' + simpleHash(spD.id),
+							title: spD.title,
+							class: "RC-HierarchyRoot",
+							properties: [{
+								class: "PC-Name",
+								value: spD.title
+							}],
+							changedAt: spD.createdAt
+						};
+						// Add the resource type, if it is not hidden:
+						let rC = itemById(spD.resourceClasses, "RC-HierarchyRoot");
+						if (outlineTypeIsNotHidden(opts.hiddenProperties)) {
+							addP(res, {
+								class: "PC-Type",
+								value: rC.title // should be CONFIG.resClassOutline
+							});
+						};
+						// Add a description property only if it has a value:
+						if (spD.description)
+							addP(res, {
+								class: "PC-Description",
+								value: spD.description
+							});
+						spD.resources.push(r2ext(res));
+						// create a new root instance:
+						spD.hierarchies = [{
+							id: "H-" + res.id,
+							resource: res.id,
+							// .. and add the previous hierarchies as children:
+							nodes: spD.hierarchies,
+							changedAt: spD.changedAt
+						}];
 					};
+
+					// ToDo: schema and consistency check (if we want to detect any programming errors)
+					//				console.debug('specif.toExt exit',spD);
+					resolve(spD);
 				}
 
 				function aHierarchyHasNoRoot(dta: SpecIF): boolean {
@@ -588,7 +695,7 @@ class CSpecIF implements SpecIF {
 					return false;
 				}
 				// common for all items:
-				function i2ext(iE) {
+				function i2ext(iE:any) {
 					var oE = {
 						id: iE.id,
 						changedAt: iE.changedAt
@@ -655,24 +762,24 @@ class CSpecIF implements SpecIF {
 					return oE
 				}
 				// common for all instance classes:
-				function aC2ext(iE) {
+				function aC2ext(iE:any) {
 					var oE = i2ext(iE);
 					if (iE.icon) oE.icon = iE.icon;
 					if (iE.instantiation) oE.instantiation = iE.instantiation;
 					if (iE._extends) oE['extends'] = iE._extends;
-					if (iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
+					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
 					return oE
 				}
 				// a resource class:
 				function rC2ext(iE: ResourceClass) {
-					var oE: ResourceClass = aC2ext(iE);
+					var oE: ResourceClass = aC2ext(iE) as ResourceClass;
 					// Include "isHeading" in SpecIF only if true:
 					if (iE.isHeading) oE.isHeading = true;
 					return oE
 				}
 				// a statement class:
 				function sC2ext(iE: StatementClass) {
-					var oE: StatementClass = aC2ext(iE);
+					var oE: StatementClass = aC2ext(iE) as StatementClass;
 					if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
 					if (iE.subjectClasses && iE.subjectClasses.length > 0) oE.subjectClasses = iE.subjectClasses;
 					if (iE.objectClasses && iE.objectClasses.length > 0) oE.objectClasses = iE.objectClasses;
@@ -821,9 +928,9 @@ class CSpecIF implements SpecIF {
 					return oE; */
 				}
 				// common for all instances:
-				function a2ext(iE) {
+				function a2ext(iE:any) {
 					var oE = i2ext(iE);
-					//				console.debug('a2ext',iE,opts);
+//					console.debug('a2ext',iE,opts);
 					// resources and hierarchies usually have individual titles, and so we will not lookup:
 					oE['class'] = iE['class'];
 					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
@@ -833,16 +940,18 @@ class CSpecIF implements SpecIF {
 				// a resource:
 				function r2ext(iE: Resource) {
 					var oE: Resource = a2ext(iE);
-					//				console.debug('resource 2int',iE,oE);
+					// a resource title shall never be looked up (translated);
+					// for example in case of the vocabulary the terms would disappear:
+
+//					console.debug('resource2ext',iE,oE);
 					return oE;
 				}
 				// a statement:
 				function s2ext(iE: Statement) {
-					//				console.debug('statement2ext',iE.title);
 					// Skip statements with an open end;
 					// At the end it will be checked, wether all referenced resources resp. statements are listed:
-					if (!iE.subject || Lib.itemIdOf(iE.subject) == CONFIG.placeholder
-						|| !iE.object || Lib.itemIdOf(iE.object) == CONFIG.placeholder
+					if (!iE.subject || Lib.idOf(iE.subject) == CONFIG.placeholder
+						|| !iE.object || Lib.idOf(iE.object) == CONFIG.placeholder
 					) return;
 
 					// The statements usually do use a vocabulary item (and not have an individual title),
@@ -861,8 +970,8 @@ class CSpecIF implements SpecIF {
 					// for the time being, multiple revisions are not supported:
 					if (opts.revisionDate) {
 						// supply only the id, but not a key:
-						oE.subject = Lib.itemIdOf(iE.subject);
-						oE.object = Lib.itemIdOf(iE.object);
+						oE.subject = Lib.idOf(iE.subject);
+						oE.object = Lib.idOf(iE.object);
 					}
 					else {
 						// supply key or id:
@@ -880,7 +989,7 @@ class CSpecIF implements SpecIF {
 						// for the time being, multiple revisions are not supported:
 						//                            supply only the id, but not a key
 						//                            |                           supply key or id
-						resource: opts.revisionDate? Lib.itemIdOf(iN.resource) : iN.resource,
+						resource: opts.revisionDate? Lib.idOf(iN.resource) : iN.resource,
 						changedAt: iN.changedAt
 					};
 					
@@ -916,7 +1025,6 @@ class CSpecIF implements SpecIF {
 								// Remember to also replace any referencing links in property values!
 								switch (iF.type) {
 									case 'application/bpmn+xml':
-										pend++;
 										// Read and render BPMN as SVG:
 										Lib.blob2text(iF, (txt: string) => {
 											bpmn2svg(txt).then(

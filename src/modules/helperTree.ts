@@ -36,7 +36,7 @@ class Tree {
 		this.domE.tree({
 			data: [],
 		//	saveState: true,
-		//	buttonLeft: false,  // left alignment does not work yet for nodes without children
+			buttonLeft: false,
 			dragAndDrop: options.dragAndDrop
 		});
 		for (var e in options.eventHandlers) {
@@ -46,18 +46,19 @@ class Tree {
 			)
 		};
 		this.savedState = { open_nodes: [], selected_node: [] };
-		this.selectedNode = undefined;
+		this.selectedNode = this.firstNode();
 	}
-	init(): void {
+	clear(): void {
 		this.set([]);
 		this.savedState = {open_nodes:[],selected_node:[]};
 		this.selectedNode = undefined;
 	}
-	set(tr: jqTreeNode[], nId?:string ) {
+	set(tr: jqTreeNode[], nId?:string ):void {
 		let nd=undefined;
 		if( typeof(nId)=='string' && nId.length>0 ) nd = this.nodeById(nId);
 		// insert tr as a subtree, if nd is defined, or as a tree, otherwise:
-		return this.domE.tree( 'loadData', tr, nd )
+		this.domE.tree('loadData', tr, nd);
+		// this.selectedNode may be invalid
 	}
 	get(): jqTreeNode[] {
 		// return the list of nodes representing the SpecIF root nodes:

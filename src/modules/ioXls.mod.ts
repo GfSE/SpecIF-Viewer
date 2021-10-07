@@ -14,8 +14,7 @@ moduleManager.construct({
 }, function (self: IModule) {
 	"use strict";
 	// the mode for creating a new project:
-	var fDate:string,		// the file modification date
-		data: SpecIF;		// the SpecIF data structure for xls content
+	var fDate: string;		// the file modification date
 		
 	self.init = function():boolean {
 		return true;
@@ -57,11 +56,14 @@ moduleManager.construct({
 		
 		xDO.notify('Transforming Excel to SpecIF',10); 
 		// Transform the XLSX-data to SpecIF:
-		data = xslx2specif( buf, self.parent.projectName, fDate );
+		let data = xslx2specif(buf, self.parent.projectName, fDate);
 		xDO.resolve( data );
 
 		return xDO
 	};
+/*	self.toXls = function (pr: SpecIF, opts?: any): string {
+	 	console.debug('toXls',pr)
+	}; */
 	self.abort = function():void {
 		app.cache.abort();
 		self.abortFlag = true

@@ -29,7 +29,7 @@ function transformReqif2Specif(reqIfDocument,options) {
     specIfObject.statements = xmlDoc.getElementsByTagName("SPEC-RELATIONS")[0] ? extractStatementsFromXmlDoc(xmlDoc.getElementsByTagName("SPEC-RELATIONS")) : [];
     specIfObject.hierarchies = xmlDoc.getElementsByTagName("SPECIFICATIONS")[0] ? extractHierarchiesFromXmlDoc(xmlDoc.getElementsByTagName("SPECIFICATIONS")) : [];
     
-    console.debug(specIfObject);
+    console.info(specIfObject);
     return specIfObject;
 
 function extractMainSpecifProperties(XmlDocReqIfHeader) {
@@ -38,6 +38,7 @@ function extractMainSpecifProperties(XmlDocReqIfHeader) {
     specIfProperties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
     specIfProperties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0] && XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
     specIfProperties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] && XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML || '';
+    specIfProperties.generator = 'reqif2specif';
 
     specIfProperties.$schema = "https://specif.de/v1.0/schema.json";
     specIfProperties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 

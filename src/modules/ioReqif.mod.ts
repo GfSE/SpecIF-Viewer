@@ -1,9 +1,10 @@
 /*!	ReqIF import and export
 	Dependencies: -
-	Author: se@enso-managers.de, Berlin
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	ToDo: escapeXML the content. See toXHTML.
 	ToDo: Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
@@ -250,13 +251,13 @@ moduleManager.construct({
 						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Description",pr);
+						standardTypes.addTo("propertyClass","PC-Description",pr);
 						
 						// b. add dataType, if not yet defined:
-						addE("dataType","DT-Text",pr);
+						standardTypes.addTo("dataType","DT-Text",pr);
 						
 						// c. Add propertyClass to element class:
-						addPC( eC, "PC-Description" );
+						addPCReference( eC, "PC-Description" );
 						
 						// d. Add description property to element;
 						addP( el, {
@@ -302,13 +303,13 @@ moduleManager.construct({
 						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Name",pr);
+						standardTypes.addTo("propertyClass","PC-Name",pr);
 						
 						// b. add dataType, if not yet defined:
-						addE("dataType","DT-ShortString",pr);
+						standardTypes.addTo("dataType","DT-ShortString",pr);
 						
 						// c. Add propertyClass to element class:
-						addPC( eC, "PC-Name" );
+						addPCReference( eC, "PC-Name" );
 						
 						// d. Add title property to element;
 						addP( el, {
@@ -367,7 +368,7 @@ moduleManager.construct({
 							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = "DT-FormattedText";
-							addE("dataType","DT-FormattedText",pr);
+							standardTypes.addTo("dataType","DT-FormattedText",pr);
 						};
 					});
 				};

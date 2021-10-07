@@ -522,21 +522,25 @@ var app:IApp,
 	}
 	function loadM( mod:string ):boolean {
 		if( register( mod ) ) {
-			// Load the module, if registration went well (if it hadn't been registered before):
+			// Load the module, if registration went well:
 //			console.debug('loadM',mod);
 			switch( mod ) {
 				// 3rd party:
-				case "fontAwesome":			getCss("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+				case "fontAwesome":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
 				case "bootstrap":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" );
 											getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
 				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
-				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true;
+		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
+		//									getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true;
+				// temporary solution with fix for buttonLeft=false:
+				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets//jqtree.css');
+											getScript( loadPath +'vendor/assets/javascripts/tree.jquery.js'); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
+			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
 				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js' ); return true;
 				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@8.7.3/dist/bpmn-viewer.production.min.js' ); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
@@ -657,13 +661,13 @@ var app:IApp,
 		function getCss( url:string ):void {
 			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
-			// with 'getScript' which is taking care of 'setReady'.
-			// Must be called explicitly, if not in conjunction with 'getScript'.
+			// with 'getScript' which is taking care of 'setReady'; 
+			// thus call 'setReady' explicitly, if not in conjunction with 'getScript'.
 		}
 		function getScript( url:string, options?:any ):JQueryXHR {
 			// see http://api.jquery.com/jQuery.getScript/
 			// Any option may be set by the caller except for dataType and cache:
-			options = $.extend( options || {}, {
+			let settings = $.extend( options || {}, {
 				dataType: "script",
 				cache: true,
 				url: bust(url)
@@ -671,10 +675,10 @@ var app:IApp,
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )
 				// 'setReady' is called by 'construct':
-				return $.ajax( options );
+				return $.ajax( settings );
 			else
 				// call 'setReady' from here:
-				return $.ajax( options ).done( ()=>{setReady(mod)} );
+				return $.ajax( settings ).done( ()=>{setReady(mod)} );
 		}
 	}
 	function setReady( mod:string ):void {
@@ -684,7 +688,7 @@ var app:IApp,
 			self.ready.push( mod );
 			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" );
 		} else {
-			throw Error("Module '"+mod+"' is set 'ready' more than once");
+			throw Error("Module '"+mod+"' cannot be set 'ready' more than once");
 		};
 
 		if( self.registered.length === self.ready.length ) {

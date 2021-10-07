@@ -51,6 +51,7 @@ function toXhtml( data, opts ) {
 	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
+//	console.debug('toXhtml',data,opts);
 
 	const nbsp = '&#160;', // non-breakable space
 		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
@@ -116,22 +117,32 @@ function toXhtml( data, opts ) {
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
 			ti = stripHtml( itm.properties[a].value );
 		} else {
-			// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
-			ti = staTitleOf(itm);
+			// In case of a statement, use the class' title by default:
+			ti = elTitleOf(itm);
 		};
-		ti = escapeXML( opts.lookup( ti ) );
+//		console.debug('titleOf 1',itm,ti);
+		ti = escapeXML( ti );
 		if( !ti ) return '';
 			
-		// If itm has a 'subject', it is a statement:
+		// if itm has a 'subject', it is a statement:
 		let cL = itm.subject? data.statementClasses : data.resourceClasses,
-			eC = itemBy( cL, 'id', itm['class'] ),
-			ic = eC&&eC.icon? eC.icon+nbsp : '';
+			eC = itemBy( cL, 'id', itm['class'] );
+		
+//		console.debug('titleOf 2',itm,ti,eC);
+		// lookup titles only, if it is a resource used as heading or a statement;
+		// those may have vocabulary terms to translate;
+		// whereas individual resources may mean the vocabulary term as such:
+		if( eC&&eC.isHeading || itm.subject )
+			ti = opts.lookup(ti);
 
-		if( !pars || pars.level<1 ) return ic+ti;
+		// add icon, if specified:
+		ti = (eC&&eC.icon? eC.icon+'  ' : '') + ti;
 
-		if( eC.isHeading ) pushHeading( ti, pars );
-		let lvl = pars.level==1? 1:eC.isHeading? 2:3;
-		return '<h'+lvl+' id="'+pars.nodeId+'">'+ic+ti+'</h'+lvl+'>';
+		if( !pars || typeof(pars.level)!='number' || pars.level<1 ) return ti;
+
+		if( eC&&eC.isHeading ) pushHeading( ti, pars );
+		let lvl = pars.level==1? 1 : (eC&&eC.isHeading? 2:3);
+		return '<h'+lvl+' id="'+pars.nodeId+'">'+ti+'</h'+lvl+'>';
 				
 		function titleIdx( aL ) {
 			// Find the index of the property to be used as title.
@@ -578,10 +589,10 @@ function toXhtml( data, opts ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return prp.title || itemBy(data.propertyClasses,'id',prp['class']).title
 	}
-	function staTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class,
-		// where a resource always has a statement of its own, i.e. the second clause never applies:
-		return el.title || itemBy(data.statementClasses,'id',el['class']).title
+	function elTitleOf( el ) {
+		// get the title of a resource or statement as defined by itself or it's class;
+		// el is a statement, if it has a subject:
+		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
 	}
 	function hasContent( str ) {
 		// Check whether str has content or a reference:

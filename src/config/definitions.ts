@@ -42,10 +42,10 @@ const CONFIG:any = {};
 	CONFIG.addIconToInstance = true;	// applies to resources, statements and hierarchies/outlines
 	CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
 	CONFIG.findMentionedObjects = true;	// looks for resource titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
-	CONFIG.dynLinking = true;  // add internal links to all substrings in description properties which match resource titles
-	CONFIG.dynLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
-	CONFIG.dynLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
-	CONFIG.dynLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
+	CONFIG.titleLinking = true;  // add internal links to all substrings in description properties which match resource titles
+	CONFIG.titleLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
+	CONFIG.titleLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
+	CONFIG.titleLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
 	CONFIG.focusColor = '#1690D8';
 
 	// values for boolean 'true' and 'false':
@@ -395,6 +395,12 @@ const CONFIG:any = {};
 		CONFIG.resClassOutline,
 		CONFIG.resClassFolder
 	];
+	CONFIG.vocabularyClasses = [
+		"SpecIF:NameResourceClass",
+		"SpecIF:NameStatementClass",
+		"SpecIF:NameProperty",
+		"SpecIF:NamePropertyValue"
+	];
 	// A list with all model-element types by title,
 	// is used for example to build a glossary;
 	// it is expected that a plural of any list element exists ( element+'s' ):
@@ -404,6 +410,11 @@ const CONFIG:any = {};
 		'FMC:Event',
 		'SpecIF:Collection'
 	];
+	CONFIG.titleLinkTargets =
+		CONFIG.modelElementClasses
+		.concat(CONFIG.diagramClasses)
+		.concat(CONFIG.vocabularyClasses);
+
 	// A list of statement types by title,
 	// is used for example to recognize a statement to create when importing an xls sheet:
 	CONFIG.statementClasses = [

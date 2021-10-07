@@ -249,29 +249,41 @@ function toOxml( data, opts ) {
 					ti = stripHtml( itm.properties[a].value );
 				}
 				else {
-					// In certain cases (SpecIF hierarchy root or comment), there is no title property. 
-					ti = staTitleOf(itm);
+					// In case of a statement, use the class' title by default:
+					ti = elTitleOf(itm);
 				};
-				ti = minEscape( opts.lookup( ti ) );
+//				console.debug('titleOf 1',itm,ti);
+				ti = minEscape( ti );
 				if( !ti ) return '';  // no paragraph, if title is empty
 				
-				// If itm has a 'subject', it is a statement:
+				// if itm has a 'subject', it is a statement:
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
-					eC = itemById( cL, itm['class'] ),
-					ic = eC&&eC.icon? eC.icon+'  ' : '';
+					eC = itemById( cL, itm['class'] );
 				
-//				console.debug('titleOf',itm,ic,ti);
+				// lookup titles only, if it is a resource used as heading or a statement;
+				// those may have vocabulary terms to translate;
+				// whereas individual resources may mean the vocabulary term as such:
+				if( eC&&eC.isHeading || itm.subject )
+					ti = opts.lookup(ti);
+
+				// add icon, if specified:
+				ti = (eC&&eC.icon? eC.icon+'  ' : '') + ti;
+
+//				console.debug('titleOf 2',ti);
 
 				if (!pars || typeof (pars.level) != 'number')
-					return ic + ti;  // return raw text
+					// It is a regular model element:
+					return ti;  // return raw text
 
-				if( pars.level==0 )
-					return wParagraph( {text: ic+ti, format:{ title:true }} );
+				if( pars.level<1 )
+					// It is a heading:
+					return wParagraph( {text: ti, format:{ title:true }} );
 
+				// else: It is a heading:
 				// SpecIF headings are chapter level 2, all others level 3:
 				let lvl = pars.level==1? 1 : (eC.isHeading? 2:3);
 				// all titles get a bookmark, so that any titleLink has a target:
-				return wParagraph( {text: ic+ti, format:{ heading:lvl, bookmark:pars.nodeId }} );
+				return wParagraph( {text: ti, format:{ heading:lvl, bookmark:pars.nodeId }} );
 				
 				function titleIdx( aL ) {
 					// Find the index of the property to be used as title.
@@ -2745,6 +2757,11 @@ function toOxml( data, opts ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return prp.title || itemById(data.propertyClasses,prp['class']).title
 	}
+	function elTitleOf( el ) {
+		// get the title of a resource or statement as defined by itself or it's class;
+		// el is a statement, if it has a subject:
+		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
+	}
 	function valByTitle(itm,pN,prj) {
 		// Return the value of a resource's (or statement's) property with title pN:
 		// ToDo: return the class's default value, if available.
@@ -2755,11 +2772,6 @@ function toOxml( data, opts ) {
 			}
 		};
 	//	return undefined
-	}
-	function staTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class,
-		// where a resource always has a statement of its own, i.e. the second clause never applies:
-		return el.title || itemById(data.statementClasses,el['class']).title
 	}
 	function hasContent( str ) {
 		// check whether str has content or a reference:

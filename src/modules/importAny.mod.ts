@@ -67,7 +67,7 @@ moduleManager.construct({
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
 			help: "Experimental: "+i18n.MsgImportReqif,
-			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"update", mediaTypeOf: Lib.attachment2mediaType } 
+			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: Lib.attachment2mediaType } 
 	/*	},{
             id: 'rdf',
             name: 'ioRdf',
@@ -447,8 +447,6 @@ moduleManager.construct({
 		}
 		function handle( dta:SpecIF, idx:number ):void {
 //			console.debug('handleResult',simpleClone(dta),idx);
-			check( dta, self.format.opts )
-			.then( (dta:SpecIF)=>{
 			/*	//  First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
@@ -520,9 +518,8 @@ moduleManager.construct({
 
 				// The first object shall be imported as selected by the user --> importMode.id;
 				// all subsequent ones according to self.format.opts.multipleMode:
-				let opts:any = {};
-				if( idx>0 ) opts.mode = self.format.opts.multipleMode
-				else opts.mode = importMode.id;
+				let opts: any = self.format.opts || {};
+				opts.mode = idx<1? importMode.id : opts.multipleMode;
 
 				switch( opts.mode ) {
 				/*	case 'clone': 	
@@ -557,96 +554,8 @@ moduleManager.construct({
 							.fail( handleError )
 				};
 				console.info(importMode.id+' project',dta.title||dta.id);
-			},
-			handleError 
-			);
 		};
 	}; 
-	function check(spD: SpecIF, opts?: any): Promise<SpecIF> {
-		// Check the SpecIF data for schema compliance and consistency;
-		// no data of app.cache is modified:
-		return new Promise(
-			(resolve, reject) => {
-				let checker: any;
-
-				if (typeof (spD) == 'object') {
-					// 1a. Get the "official" routine for checking schema and constraints
-					//    - where already loaded checking routines are replaced by the newly loaded ones
-					//    - use $.ajax() with options since it is more flexible than $.getScript
-					//    - the first (relative) URL is for debugging within a local clone of Github
-					//    - both of the other (absolute) URLs are for a production environment
-					$.ajax({
-						dataType: "script",
-						cache: true,
-						url: (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0 ?
-							(window.location.href.startsWith('file:/') ? '../../SpecIF/check/CCheck.min.js'
-								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.js')
-							: 'https://specif.de/v1.0/CCheck.min.js') // older versions are covered by v1.0/check.js
-					})
-					.done(() => {
-						// 2. Get the specified schema file:
-						Lib.httpGet({
-							// @ts-ignore - 'specifVersion' is defined for versions <1.0
-							url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
-							responseType: 'arraybuffer',
-							withCredentials: false,
-							done: handleResult,
-							fail: handleError
-						});
-						// 1b. Instantiate checker:
-						// @ts-ignore - 'CCheck' has just been loaded dynamically:
-						checker = new CCheck();
-					})
-					.fail(handleError);
-				}
-				else {
-					reject({ status: 999, statusText: 'No SpecIF data to check' });
-				};
-				return;
-
-				function handleResult(xhr: XMLHttpRequest) {
-					// @ts-ignore - checkSchema() and checkConstraints() are defined in check.js loaded at runtime
-					if (typeof (checker.checkSchema) == 'function' && typeof (checker.checkConstraints) == 'function') {
-//						console.debug('schema', xhr);
-						// 1. check data against schema:
-						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
-						let rc: xhrMessage = checker.checkSchema(spD, { schema: JSON.parse(Lib.ab2str(xhr.response)) });
-						if (rc.status == 0) {
-							// 2. Check further constraints:
-							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
-							rc = checker.checkConstraints(spD, opts);
-							if (rc.status == 0) {
-								resolve(spD);
-							}
-							else {
-								reject(rc);
-							};
-						}
-						else {
-							// older versions of the checking routine don't set the responseType:
-							if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
-								rc.responseType = 'text';
-							reject(rc);
-						};
-					}
-					else {
-						reject({ status: 999, statusText: 'Standard routines checkSchema and checkConstraints are not available.' });
-					}
-				}
-				function handleError(xhr: xhrMessage) {
-					switch (xhr.status) {
-						case 404:
-							// @ts-ignore - 'specifVersion' is defined for versions <1.0
-							let v = spD.specifVersion ? 'version ' + spD.specifVersion : 'with Schema ' + spD['$schema'];
-							xhr = { status: 903, statusText: 'SpecIF ' + v + ' is not supported by the program!' };
-						// no break
-						default:
-							reject(xhr);
-					};
-				}
-			}
-		);
-	}
 	function setProgress(msg:string,perc:number):void {
 		$('#progress .progress-bar').css( 'width', perc+'%' ).html(msg)
 	}

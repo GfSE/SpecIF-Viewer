@@ -16,7 +16,7 @@ interface ISpecs extends IModule {
 	itemClicked: Function;
 }
 
-RE.titleLink = new RegExp(CONFIG.dynLinkBegin.escapeRE() + '(.+?)' + CONFIG.dynLinkEnd.escapeRE(), 'g');
+RE.titleLink = new RegExp(CONFIG.titleLinkBegin.escapeRE() + '(.+?)' + CONFIG.titleLinkEnd.escapeRE(), 'g');
 class CPropertyToShow implements Property {
 	id?: string;
 	title?: ValueElement[] | string;
@@ -39,8 +39,8 @@ class CPropertyToShow implements Property {
 	get( opts?: any): string {
 		if (typeof (opts) != 'object') opts = {};
 		opts.lookupLanguage = true;
-		if (typeof (opts.dynLinks) != 'boolean') opts.dynLinks = false;
-		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.modelElementClasses.concat(CONFIG.diagramClasses);
+		if (typeof (opts.titleLinking) != 'boolean') opts.titleLinking = false;
+		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.titleLinkTargets;
 
 		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
 		if (typeof (opts.linkifyURLs) != 'boolean') opts.linkifyURLs = false;
@@ -92,13 +92,13 @@ class CPropertyToShow implements Property {
 	private titleLinks(str: string, opts: any): string {
 		// Transform sub-strings with dynamic linking pattern to internal links.
 		// Syntax:
-		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
+		// - A resource title between CONFIG.titleLinkBegin and CONFIG.titleLinkEnd will be transformed to a link to that resource.
 		// - Icons in front of titles are ignored
 		// - Titles shorter than 4 characters are ignored
 		// - see: https://www.mediawiki.org/wiki/Help:Links
 
 		// in certain situations, just remove the dynamic linking pattern from the text:
-		if (!CONFIG.dynLinking || !opts.dynLinks)
+		if (!CONFIG.titleLinking || !opts.titleLinking)
 			// @ts-ignore - $0 is never read, but must be specified anyways
 			return str.replace(RE.titleLink, ($0, $1) => { return $1 });
 
@@ -114,7 +114,7 @@ class CPropertyToShow implements Property {
 				($0, $1) => {
 					replaced = true;
 					// disregard links being too short:
-					if ($1.length < CONFIG.dynLinkMinLength) return $1;
+					if ($1.length < CONFIG.titleLinkMinLength) return $1;
 					let m = $1.toLowerCase(), cR: Resource, ti: string, rC:ResourceClass, target: Resource;
 					// is ti a title of any resource?
 					app.specs.tree.iterate((nd: jqTreeNode) => {
@@ -128,7 +128,7 @@ class CPropertyToShow implements Property {
 						rC = itemById(app.cache.selectedProject.data.resourceClasses, cR['class']);
 						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
 
-						// the dynLink content equals a resource's title, remember the first occurrence:
+						// the titleLink content equals a resource's title, remember the first occurrence:
 						target = cR;
 						return false; // found, stop searching!
 					});
@@ -509,9 +509,8 @@ class CResourceToShow {
 
 		// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
 		//    there is no description propertyClass;
-		//    Why create a description, if there is none ?? What is the use-case?
-		//	if (this.descriptions.length < 1)
-		//		this.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
+		if (this.descriptions.length < 1 && el.description )
+			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
 	private normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
@@ -621,7 +620,7 @@ class CResourceToShow {
 		var opts = options ? simpleClone(options) : {};
 		opts.lookupLanguage = true;
 		opts.targetLanguage = browser.language;
-		opts.dynLinks
+		opts.titleLinking
 			= opts.clickableElements
 			= opts.linkifyURLs
 			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].indexOf(app.specs.selectedView()) > -1;
@@ -700,8 +699,8 @@ class CResourceToShow {
 //			console.debug('details.descr',prp.value);
 			if( Lib.hasContent(prp.value) ) {
 				var opts = {
-				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
-						dynLinks: true,
+				//		titleLinking: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
+						titleLinking: true,
 						clickableElements: true,
 						linkifyURLs: true
 					};
@@ -1090,7 +1089,7 @@ class CFileWithContent implements IFileWithContent {
 							ti = languageValueOf(clsPrp.title.value),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
-							// to avoid an endless recursive call, the property shall neither have dynLinks nor clickableElements
+							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
 							dsc += d.get({ unescapeHTMLTags: true, makeHTML: true })
 						});
 						if (dsc.stripCtrl().stripHTML()) {
@@ -1347,7 +1346,7 @@ moduleManager.construct({
 		return true;
 	};
 	self.clear = ():void =>{
-		self.tree.init();
+		self.tree.clear();
 		refreshReqCnt = 0;
 		app.cache.clear();
 		app.busy.reset();
@@ -1483,7 +1482,7 @@ moduleManager.construct({
 		if( !fNd
 			|| !app.cache.selectedProject.data.has("resource", fNd.ref )  // condition is probably too weak
 			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.id )
-			self.tree.init();
+			self.tree.clear();
 		
 //		console.debug('show 1',uP,self.tree.selectedNode);
 		// assuming that all initializing is completed (project and types are loaded), 
@@ -2236,7 +2235,7 @@ moduleManager.construct({
 					selTi = elementTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
-					selPatt = new RegExp( (CONFIG.dynLinkBegin+selTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
+					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
 				pData.tree.iterate( (nd)=>{
@@ -2250,12 +2249,12 @@ moduleManager.construct({
 							let refR: Resource = rL[0],
 								refTi = elementTitleOf(refR, localOpts);
 //							console.debug('pData.tree.iterate',refR,refTi,pend);
-							if( refTi && refTi.length>CONFIG.dynLinkMinLength-1 && refR.id!=selR.id ) {
+							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
 
 								// 1. The titles of other resource's found in the selected resource's texts 
 								//    result in a 'this mentions other' statement (selected resource is subject):
-								refPatt = new RegExp( (CONFIG.dynLinkBegin+refTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
+								refPatt = new RegExp( (CONFIG.titleLinkBegin+refTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
