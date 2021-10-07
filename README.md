@@ -28,8 +28,8 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Export 'reqifz' file (Requirements Interchange Format)
 - Export 'Turtle' file (experimental)
 - Export 'ePub' file
-- Export MS-Excel(R) XLSX file (experimental)
-- Export MS-Word(R) OOXML file
+- Export MS-Excel&#xAE; XLSX file (experimental)
+- Export MS-Word&#xAE; OOXML file
 
 ## Compatibility
 - Mozilla Firefox
