@@ -8,45 +8,53 @@
 
     ToDo:
     - transform RELATION-GROUP-TYPES and RELATION-GROUPS
-    - identify relationship SOURCEs and TARGETs without referenced OBJECTs and annotate them similarly to the Excel import
-    - gather default values
+    - extract default values
 */
 
-function transformReqif2Specif(reqIfDocument,options) {
+/*
+########################## Main #########################################
+*/
+function transformReqif2Specif(reqifDocument,options) {
+	const RE_DateTime = /[0-9-]{4,}(T[0-9:]{2,}(\.[0-9]+)?)?(Z|\+[0-9:]{2,}|\-[0-9:]{2,})?/,
+		RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
+	
     if( typeof(options)!='object' ) options = {};
     if( typeof(options.translateTitle2Specif)!='function' ) options.translateTitle2Specif = function(ti) {return ti};
 	
 	// Transform ReqIF data provided as an XML string to SpecIF data.
-    const xmlDoc = extractXmlDocFromString(reqIfDocument);
-    let specIfObject = extractMainSpecifProperties(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
-    specIfObject.dataTypes = extractDatatypesFromXmlDoc(xmlDoc.getElementsByTagName("DATATYPES"));
-    specIfObject.propertyClasses = extractPropertyClassesFromXmlDoc(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-    specIfObject.resourceClasses = extractResourceClassesFromXmlDoc(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-    specIfObject.statementClasses = extractStatementClassesFromXmlDoc(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-    specIfObject.resources = extractResourcesFromXmlDoc(xmlDoc.getElementsByTagName("SPEC-OBJECTS"))
+    const xmlDoc = parse(reqifDocument);
+    let specifData = extractMetaData(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
+    specifData.dataTypes = extractDatatypes(xmlDoc.getElementsByTagName("DATATYPES"));
+    specifData.propertyClasses = extractPropertyClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+    specifData.resourceClasses = extractResourceClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+    specifData.statementClasses = extractStatementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+    specifData.resources = extractResources(xmlDoc.getElementsByTagName("SPEC-OBJECTS"))
 							// ReqIF hierarchy roots are SpecIF resouces:
-							.concat(extractResourcesFromXmlDoc(xmlDoc.getElementsByTagName("SPECIFICATIONS")));
-    specIfObject.statements = xmlDoc.getElementsByTagName("SPEC-RELATIONS")[0] ? extractStatementsFromXmlDoc(xmlDoc.getElementsByTagName("SPEC-RELATIONS")) : [];
-    specIfObject.hierarchies = xmlDoc.getElementsByTagName("SPECIFICATIONS")[0] ? extractHierarchiesFromXmlDoc(xmlDoc.getElementsByTagName("SPECIFICATIONS")) : [];
+							.concat(extractResources(xmlDoc.getElementsByTagName("SPECIFICATIONS")));
+    specifData.statements = xmlDoc.getElementsByTagName("SPEC-RELATIONS")[0] ? extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS")) : [];
+    specifData.hierarchies = xmlDoc.getElementsByTagName("SPECIFICATIONS")[0] ? extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS")) : [];
     
-    console.info(specIfObject);
-    return specIfObject;
+//  console.info(specifData);
+    return specifData;
 
-function extractMainSpecifProperties(XmlDocReqIfHeader) {
-    if (XmlDocReqIfHeader.length<1) return {};
-    let specIfProperties = {};
-    specIfProperties.id = XmlDocReqIfHeader[0].getAttribute("IDENTIFIER");
-    specIfProperties.title = XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0] && XmlDocReqIfHeader[0].getElementsByTagName("TITLE")[0].innerHTML;
-    specIfProperties.description = XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0] && XmlDocReqIfHeader[0].getElementsByTagName("COMMENT")[0].innerHTML || '';
-    specIfProperties.generator = 'reqif2specif';
+/*
+########################## Subroutines #########################################
+*/
+function extractMetaData(header) {
+    if (header.length<1) return {};
+    let specifHeader = {};
+    specifHeader.id = header[0].getAttribute("IDENTIFIER");
+    specifHeader.title = header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML;
+    specifHeader.description = header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '';
+    specifHeader.generator = 'reqif2specif';
 
-    specIfProperties.$schema = "https://specif.de/v1.0/schema.json";
-    specIfProperties.createdAt = XmlDocReqIfHeader[0].getElementsByTagName("CREATION-TIME")[0].innerHTML; 
+    specifHeader.$schema = "https://specif.de/v1.0/schema.json";
+    specifHeader.createdAt = addTimezoneIfMissing(header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML); 
     
-    return specIfProperties;
+    return specifHeader;
 };
-function extractDatatypesFromXmlDoc(XmlDocDatatypes) {
-    return XmlDocDatatypes.length<1? [] : Array.from(XmlDocDatatypes[0].children, extractDatatype );
+function extractDatatypes(xmlDatatypes) {
+    return xmlDatatypes.length<1? [] : Array.from(xmlDatatypes[0].children, extractDatatype );
 
     function extractDatatype(datatype) {
         let specifDatatype = {};
@@ -59,7 +67,7 @@ function extractDatatypesFromXmlDoc(XmlDocDatatypes) {
         if( datatype.getAttribute("MAX-LENGTH") ) specifDatatype.maxLength = Number(datatype.getAttribute("MAX-LENGTH"));
         if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY"));
         if( datatype.childElementCount>0 ) specifDatatype.values = extractDataTypeValues(datatype.children);
-        specifDatatype.changedAt = datatype.getAttribute("LAST-CHANGE") || '';
+        specifDatatype.changedAt = addTimezoneIfMissing(datatype.getAttribute("LAST-CHANGE") || '');
 
         return specifDatatype;
     }
@@ -86,8 +94,8 @@ function extractDatatypesFromXmlDoc(XmlDocDatatypes) {
     }
 };
 
-function extractPropertyClassesFromXmlDoc(XmlSpecTypeDocument) {
-    const specAttributesMap = extractSpecAttributesMap(XmlSpecTypeDocument[0]);                                 
+function extractPropertyClasses(xmlSpecTypes) {
+    const specAttributesMap = extractSpecAttributesMap(xmlSpecTypes[0]);                                 
     return extractPropertyClassesFromSpecAttributeMap(specAttributesMap);
 
     function extractPropertyClassesFromSpecAttributeMap(specAttributeMap) {
@@ -123,7 +131,7 @@ function extractPropertyClassesFromXmlDoc(XmlSpecTypeDocument) {
                 attributeDefinitionMap[definition.getAttribute("IDENTIFIER")]={ 
                                                                                 title: definition.getAttribute("LONG-NAME"),
                                                                                 dataType: definition.children[0].children[0].innerHTML,
-                                                                                changedAt: definition.getAttribute("LAST-CHANGE"),
+                                                                                changedAt: addTimezoneIfMissing(definition.getAttribute("LAST-CHANGE")),
                                                                             } 
                 // Enumerations have an optional attribute MULTI-VALUED                                                 
                 if( definition.getAttribute("MULTI-VALUED") )
@@ -134,100 +142,103 @@ function extractPropertyClassesFromXmlDoc(XmlSpecTypeDocument) {
     }
 }
 
-function extractResourceClassesFromXmlDoc(XmlSpecTypeDocument) {
-    if (XmlSpecTypeDocument.length<1) return [];
-    const specifResourceClassesArray = [];
+function extractResourceClasses(xmlSpecTypes) {
+    if (xmlSpecTypes.length<1) return [];
+    const specifResourceClasses = [];
     // consider to use .querySelectorAll("nodeName")
-    Array.from(XmlSpecTypeDocument[0].children,
-        classDocument => {
-            if( isResourceClass(classDocument) )
-                specifResourceClassesArray.push(extractElementClass(classDocument));
+    Array.from(xmlSpecTypes[0].children,
+        xmlSpecType => {
+            if( isResourceClass(xmlSpecType) )
+                specifResourceClasses.push(extractElementClass(xmlSpecType));
         }
     );
-    return specifResourceClassesArray;
+    return specifResourceClasses;
 
-    function isResourceClass(classDocument) {
-        return classDocument.nodeName === 'SPEC-OBJECT-TYPE' || classDocument.nodeName === 'SPECIFICATION-TYPE'
+    function isResourceClass(xmlSpecType) {
+        return xmlSpecType.nodeName === 'SPEC-OBJECT-TYPE' || xmlSpecType.nodeName === 'SPECIFICATION-TYPE'
     }
 }
-function extractStatementClassesFromXmlDoc(XmlSpecTypeDocument) {
-    if (XmlSpecTypeDocument.length<1) return [];
-    let specifStatementClassesArray = [];
+function extractStatementClasses(xmlSpecTypes) {
+    if (xmlSpecTypes.length<1) return [];
+    let specifStatementClasses = [];
     // consider to use .querySelectorAll("nodeName")
-    Array.from(XmlSpecTypeDocument[0].children,
-        classDocument => {
-            if( isStatementClass(classDocument) )
-                specifStatementClassesArray.push(extractElementClass(classDocument));
+    Array.from(xmlSpecTypes[0].children,
+        xmlSpecType => {
+            if( isStatementClass(xmlSpecType) )
+                specifStatementClasses.push(extractElementClass(xmlSpecType));
         }
     );
-    return specifStatementClassesArray;
+    return specifStatementClasses;
     
-    function isStatementClass(classDocument) {
-        return classDocument.nodeName === 'SPEC-RELATION-TYPE';
-    //    return classDocument.nodeName === 'SPEC-RELATION-TYPE' || classDocument.nodeName === 'RELATION-GROUP-TYPE';
+    function isStatementClass(xmlSpecType) {
+        return xmlSpecType.nodeName === 'SPEC-RELATION-TYPE';
+    //    return xmlSpecType.nodeName === 'SPEC-RELATION-TYPE' || xmlSpecType.nodeName === 'RELATION-GROUP-TYPE';
     }
 }
-function extractElementClass(classDocument) {
+function extractElementClass(xmlSpecType) {
     // for both resourceClasses and statementClasses:
-    const specIfElementClass = {};
-    specIfElementClass.id = classDocument.getAttribute("IDENTIFIER");
-//    specIfElementClass.title = classDocument.getAttribute("LONG-NAME");
-    specIfElementClass.title = classDocument.getAttribute("LONG-NAME") || classDocument.getAttribute("IDENTIFIER");
-    if( classDocument.getAttribute("DESC") ) 
-        specIfElementClass.description = classDocument.getAttribute("DESC");
-    if( classDocument.getElementsByTagName("SPEC-ATTRIBUTES")[0] )
-        specIfElementClass.propertyClasses = extractPropertyClasses(classDocument.getElementsByTagName("SPEC-ATTRIBUTES"));
-    specIfElementClass.changedAt = classDocument.getAttribute("LAST-CHANGE");
+    const specifElementClass = {};
+    specifElementClass.id = xmlSpecType.getAttribute("IDENTIFIER");
+//    specifElementClass.title = xmlSpecType.getAttribute("LONG-NAME");
+    specifElementClass.title = xmlSpecType.getAttribute("LONG-NAME") || xmlSpecType.getAttribute("IDENTIFIER");
+    if( xmlSpecType.getAttribute("DESC") ) 
+        specifElementClass.description = xmlSpecType.getAttribute("DESC");
+    if( xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES")[0] )
+        specifElementClass.propertyClasses = extractPropertyClassReferenceses(xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES"));
+    specifElementClass.changedAt = addTimezoneIfMissing(xmlSpecType.getAttribute("LAST-CHANGE"));
    
-    return specIfElementClass;
+    return specifElementClass;
 
-    function extractPropertyClasses(propertyClassesDocument) {
+    function extractPropertyClassReferenceses(propertyClassesDocument) {
         return Array.from( propertyClassesDocument[0].children, property => {return property.getAttribute("IDENTIFIER")} )
     }
 }
 
-function extractResourcesFromXmlDoc(XmlDocResources) {
-    return XmlDocResources.length<1? [] : Array.from(XmlDocResources[0].children,extractResource);
+function extractResources(xmlSpecObjects) {
+    return xmlSpecObjects.length<1? [] : Array.from(xmlSpecObjects[0].children,extractResource);
 
-    function extractResource(resourceDocument) {
+    function extractResource(xmlSpecObject) {
         let specifResource = {};
-        specifResource.id = resourceDocument.getAttribute("IDENTIFIER");
-        //resourceDocument.getAttribute("LONG-NAME") ? specifResource.title = resourceDocument.getAttribute("LONG-NAME") : '';
-        specifResource.title = resourceDocument.getAttribute("LONG-NAME") || resourceDocument.getAttribute("IDENTIFIER");
-        specifResource['class'] = resourceDocument.getElementsByTagName("TYPE")[0].children[0].innerHTML;
-        //resourceDocument.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractProperties(resourceDocument.getElementsByTagName("VALUES")) : '';
-        let values = resourceDocument.getElementsByTagName("VALUES");
+        specifResource.id = xmlSpecObject.getAttribute("IDENTIFIER");
+        //xmlSpecObject.getAttribute("LONG-NAME") ? specifResource.title = xmlSpecObject.getAttribute("LONG-NAME") : '';
+        specifResource.title = xmlSpecObject.getAttribute("LONG-NAME") || xmlSpecObject.getAttribute("IDENTIFIER");
+        specifResource['class'] = xmlSpecObject.getElementsByTagName("TYPE")[0].children[0].innerHTML;
+        //xmlSpecObject.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractProperties(xmlSpecObject.getElementsByTagName("VALUES")) : '';
+        let values = xmlSpecObject.getElementsByTagName("VALUES");
         if( values && values.length>0 ) 
             specifResource.properties = extractProperties(values);
-        specifResource.changedAt = resourceDocument.getAttribute("LAST-CHANGE");
+        specifResource.changedAt = addTimezoneIfMissing(xmlSpecObject.getAttribute("LAST-CHANGE"));
         
         return specifResource;
     }
 }
-function extractStatementsFromXmlDoc(XmlDocStatements) {
-    return XmlDocStatements.length<1? [] : Array.from(XmlDocStatements[0].children,extractStatement);
+function extractStatements(xmlSpecRelations) {
+    return xmlSpecRelations.length<1? [] : Array.from(xmlSpecRelations[0].children,extractStatement);
 
-    function extractStatement(statementDocument) {
+    function extractStatement(xmlSpecRelation) {
         let specifStatement = {};
-        specifStatement.id = statementDocument.getAttribute("IDENTIFIER");
-        specifStatement['class'] = statementDocument.getElementsByTagName("TYPE")[0].children[0].innerHTML;
-        specifStatement.subject = statementDocument.getElementsByTagName("SOURCE")[0].children[0].innerHTML;
-        specifStatement.object = statementDocument.getElementsByTagName("TARGET")[0].children[0].innerHTML;
-        let values = statementDocument.getElementsByTagName("VALUES");
+        specifStatement.id = xmlSpecRelation.getAttribute("IDENTIFIER");
+        specifStatement['class'] = xmlSpecRelation.getElementsByTagName("TYPE")[0].children[0].innerHTML;
+        specifStatement.subject = xmlSpecRelation.getElementsByTagName("SOURCE")[0].children[0].innerHTML;
+        specifStatement.object = xmlSpecRelation.getElementsByTagName("TARGET")[0].children[0].innerHTML;
+        let values = xmlSpecRelation.getElementsByTagName("VALUES");
         if( values && values.length>0 ) 
             specifStatement.properties = extractProperties(values);
-        specifStatement.changedAt = statementDocument.getAttribute("LAST-CHANGE");
+        specifStatement.changedAt = addTimezoneIfMissing(xmlSpecRelation.getAttribute("LAST-CHANGE"));
         
         return specifStatement;
     }
 }
 function extractProperties(specObjectsValuesDocument) {
     // used for OBJECTS as well as RELATIONS:
-    return Array.from( specObjectsValuesDocument[0].children, extractSpecIfProperty );
+	let list = [];
+	// Only add a SpecIF property, if it has a value:
+    Array.from( specObjectsValuesDocument[0].children, (prp)=>{ let p=extractSpecIfProperty(prp); if(p.value) list.push(p)} );
+	return list;
 
     function extractSpecIfProperty(property) {
         let specifProperty = {};
-    /*    // Provide the id, even though it is not required by SpecIF:
+    /*  // Provide the id, even though it is not required by SpecIF:
         // The attribute-value id is not required by ReqIF, 
         // ToDo: check wether it *may* be specified, at all ...  
         specifProperty.id = property.getAttribute("IDENTIFIER"); */
@@ -239,7 +250,7 @@ function extractProperties(specObjectsValuesDocument) {
             specifProperty.value = property.getAttribute("THE-VALUE");
         // XHTML:
         else if( property.getElementsByTagName("THE-VALUE")[0] ) 
-            specifProperty.value = removeNamespaces(property.getElementsByTagName("THE-VALUE")[0].innerHTML);
+            specifProperty.value = removeNamespace(property.getElementsByTagName("THE-VALUE")[0].innerHTML);
         // ENUMERATION:
         else if( property.getElementsByTagName("VALUES")[0] ) 
             specifProperty.value = property.getElementsByTagName("VALUES")[0].children[0].innerHTML;
@@ -250,17 +261,17 @@ function extractProperties(specObjectsValuesDocument) {
     }
 }
 
-function extractHierarchiesFromXmlDoc(XmlDocSpecifications) {
-    return Array.from(XmlDocSpecifications[0].getElementsByTagName("SPECIFICATION"),extractRootNode);
+function extractHierarchies(xmlSpecifications) {
+    return Array.from(xmlSpecifications[0].getElementsByTagName("SPECIFICATION"),extractRootNode);
 
-    function extractRootNode(specificationDocument) {
-        let specIfRootNode = {};
-        specIfRootNode.resource = specificationDocument.getAttribute("IDENTIFIER");
-        specIfRootNode.id = "HR-" + specIfRootNode.resource;
-        //console.log( specIfRootNode.id)
-        specIfRootNode.changedAt = specificationDocument.getAttribute("LAST-CHANGE");
-        specIfRootNode.nodes = extractSpecIfSubNodes(specificationDocument)
-        return specIfRootNode;
+    function extractRootNode(xmlSpecification) {
+        let specifRootNode = {};
+        specifRootNode.resource = xmlSpecification.getAttribute("IDENTIFIER");
+        specifRootNode.id = "HR-" + specifRootNode.resource;
+        //console.log( specifRootNode.id)
+        specifRootNode.changedAt = addTimezoneIfMissing(xmlSpecification.getAttribute("LAST-CHANGE"));
+        specifRootNode.nodes = extractSpecIfSubNodes(xmlSpecification)
+        return specifRootNode;
 
         function extractSpecIfSubNodes(rootElement) {
             let specifNodesArray = [];
@@ -274,67 +285,62 @@ function extractHierarchiesFromXmlDoc(XmlDocSpecifications) {
                 return Array.from(parentDocument.children).filter(element => {return element.nodeName == nodeName});
             }
             function extractSpecIfHierarchy(hierarchyDocument) {
-                let specIfHierarchy = {};
-                specIfHierarchy.id = hierarchyDocument.getAttribute("IDENTIFIER");
-                specIfHierarchy.resource = hierarchyDocument.getElementsByTagName("OBJECT")[0].firstElementChild.innerHTML;
-                specIfHierarchy.changedAt = hierarchyDocument.getAttribute("LAST-CHANGE");
+                let specifHierarchy = {};
+                specifHierarchy.id = hierarchyDocument.getAttribute("IDENTIFIER");
+                specifHierarchy.resource = hierarchyDocument.getElementsByTagName("OBJECT")[0].firstElementChild.innerHTML;
+                specifHierarchy.changedAt = addTimezoneIfMissing(hierarchyDocument.getAttribute("LAST-CHANGE"));
                 
                 let specifSubnodesArray = extractSpecIfSubNodes(hierarchyDocument);
                 if( specifSubnodesArray.length>0 ) 
-                    specIfHierarchy.nodes = specifSubnodesArray;
+                    specifHierarchy.nodes = specifSubnodesArray;
                 
-                return specIfHierarchy;
+                return specifHierarchy;
             }
         }
     }
 }
-function extractXmlDocFromString(string) {
+function parse(string) {
     const parser = new DOMParser();
     return parser.parseFromString(string,"text/xml");
 }
 
 
 /* 
-##########################################################################
 ########################## Tools #########################################  
 */
-/*
-//      (xmlns:.*?=)\\".*?\\" Regular Expression to match namespace links (at beginning)
-String.prototype.removeNamespaces = function(){
-    if( this ) return this.replace( /(xmlns:.*?=)\\".*?\\"/g, '' ); 
-    return;
-};
-String.prototype.removeNamespaces = function(){
-    console.log("is in remove Namespace method")
-    if( this ) {
-        console.log("in this")
-        const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/
-        let namespace = getNameSpace(RE_NS_LINK, this)
-        let string = this.replace(RE_NS_LINK, '' ); 
-        string = string.replaceAll(namespace, '')
-        console.log(string)
+    /*
+    //      (xmlns:.*?=)\\".*?\\" Regular Expression to match namespace links (at beginning)
+    String.prototype.removeNamespace = function(){
+        if( this ) return this.replace( /(xmlns:.*?=)\\".*?\\"/g, '' ); 
+        return;
+    };*/
+    function removeNamespace(input) {
+        let namespace = getNameSpace(RE_NS_LINK, input);
+        let string = input.replace(RE_NS_LINK, '' ); 
+        //string = string.replaceAll(namespace, '')
+        const RE_namespace = new RegExp(namespace, 'g' )
+        string = string.replace(RE_namespace, '');
         return string;
+
+	    function getNameSpace(regEX, string) {
+		    let namespace = '';
+		    string = string.replace(regEX, function($0, $1){
+			    namespace = $1 + ":";
+			    return ''
+		    });
+		    return namespace;
+	    }
     }
-    return;
-};*/
-function removeNamespaces(input) {
-    const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/
-    let namespace = getNameSpace(RE_NS_LINK, input);
-    let string = input.replace(RE_NS_LINK, '' ); 
-    //string = string.replaceAll(namespace, '')
-    const RE_namespace = new RegExp(namespace, 'g' )
-    string = string.replace(RE_namespace, '');
-//  console.log(string)
-    return string;
-}
-function getNameSpace(regEX, string) {
-    let namespace = '';
-    string = string.replace(regEX, function($0, $1){
-        //console.log("$1:" + $1)
-        namespace = $1 + ":";
-        return ''
-    });
-//  console.log("Namespace: " + namespace)
-    return namespace;
-}
+    function addTimezoneIfMissing(dt) {
+	    if( dt ) {
+            let match = RE_DateTime.exec(dt);
+            // ReqIF data generated by PTC Integrity has been observed to have timestamps without timezone.
+		    // If date and time are specified, but no timezone, add "Z" for Greenwich time:
+		    if( match[0] && match[1] && !match[3] ) {
+			    console.info("ReqIF to SpecIF transformation: Added missing time-zone to "+dt);
+			    return dt + "Z";
+		    };
+	    };
+	    return dt;
+    }
 }

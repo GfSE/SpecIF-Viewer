@@ -396,10 +396,10 @@ const CONFIG:any = {};
 		CONFIG.resClassFolder
 	];
 	CONFIG.vocabularyClasses = [
-		"SpecIF:NameResourceClass",
-		"SpecIF:NameStatementClass",
-		"SpecIF:NameProperty",
-		"SpecIF:NamePropertyValue"
+		"SpecIF:TermResourceClass",
+		"SpecIF:TermStatementClass",
+		"SpecIF:TermProperty",
+		"SpecIF:TermPropertyValue"
 	];
 	// A list with all model-element types by title,
 	// is used for example to build a glossary;
@@ -501,6 +501,7 @@ const vocabulary = {
 			var oT = '';
 			switch (iT.specifIdOf().toLowerCase()) {
 				case "_berschrift":
+				case "name":
 				case "title":
 				case "titel":
 				case "dc_title":

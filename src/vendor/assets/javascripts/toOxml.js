@@ -260,7 +260,9 @@ function toOxml( data, opts ) {
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
 					eC = itemById( cL, itm['class'] );
 				
-				// lookup titles only, if it is a resource used as heading or a statement;
+				// lookup titles only, if it is 
+				// - a resource used as heading or 
+				// - a statement;
 				// those may have vocabulary terms to translate;
 				// whereas individual resources may mean the vocabulary term as such:
 				if( eC&&eC.isHeading || itm.subject )

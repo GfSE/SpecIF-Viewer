@@ -687,7 +687,7 @@ class CProject {
 		if (!opts || !opts.deduplicate) return;
 
 		let dta = this.data,
-			n: number, r: number, nR: Resource, rR: Resource;
+			r: number, n: number, rR: Resource, nR: Resource;
 //		console.debug('deduplicate',simpleClone(dta));
 
 		// 1. Deduplicate equal types having different ids;
@@ -763,7 +763,7 @@ class CProject {
 			};
 		};
 //		console.debug( 'deduplicate 3', simpleClone(dta) );
-		//	return undefined
+	//	return undefined
 	}
 	private createFolderWithResourcesByType(opts: any): Promise<void> {
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
@@ -1532,8 +1532,8 @@ class CProject {
 			function publish(opts: any): void {
 				if (!opts || ['epub', 'oxml'].indexOf(opts.format) < 0) {
 					// programming error!
-					reject();
-					return;
+					reject({ status: 999, statusText: "Invalid format specified on export");
+					throw Error("Invalid format specified on export");
 				};
 
 				// ToDo: Get the newest data from the server.
@@ -1574,7 +1574,7 @@ class CProject {
 							showEmptyProperties: CONFIG.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
-							//	hasContent: Lib.hasContent,
+						//	hasContent: Lib.hasContent,
 							propertiesLabel: opts.withOtherProperties ? 'SpecIF:Properties' : undefined,
 							statementsLabel: opts.withStatements ? 'SpecIF:Statements' : undefined,
 							fileName: self.fileName || expD.title,
@@ -1598,9 +1598,11 @@ class CProject {
 				);
 			}
 			function storeAs(opts: any): void {
-				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0)
+				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0) {
 					// programming error!
+					reject({ status: 999, statusText: "Invalid format specified on export");
 					throw Error("Invalid format specified on export");
+				};
 
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
@@ -2004,7 +2006,7 @@ class CProject {
 		if (this.compatiblePCReferences(refC, newC, opts))
 			return true;
 		// else:
-		Lib.logMsg({ status: 963, statusText: "new resourceClass or statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
+		Lib.logMsg({ status: 963, statusText: "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
 		return false;
 	}
 	private compatibleSC(refC: StatementClass, newC: StatementClass, opts?:any): boolean {
@@ -2025,7 +2027,7 @@ class CProject {
 		if (this.compatiblePCReferences(refC, newC, opts))
 			return true;
 		// else:
-		Lib.logMsg({ status: 963, statusText: "new resourceClass or statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
+		Lib.logMsg({ status: 963, statusText: "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
 		return false;
 	}
 	private substituteDT(prj: SpecIF, r: DataType, n: DataType,): void {
