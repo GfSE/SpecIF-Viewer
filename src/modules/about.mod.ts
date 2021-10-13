@@ -73,7 +73,8 @@ moduleManager.construct({
 		+ (moduleManager.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
 		+ (moduleManager.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
 		+ (moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
-		+ (moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
+		+ (moduleManager.isReady('toOxml')? "<li>Export MS-Word® OOXML file</li>":"")
+		+ (moduleManager.isReady('ioXls')? "<li>Export MS-Excel® XLSX file (experimental)</li>":"")
 		+		'</ul>'
 		+	'<h4>Compatibility</h4>'
 		+		'<ul>'
