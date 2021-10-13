@@ -46,7 +46,7 @@ async function openBrowser() {
 async function main() {
   await cleanBuildTarget();
   await buildProject();
-  await openBrowser();
+//  await openBrowser();
 }
 
 main();

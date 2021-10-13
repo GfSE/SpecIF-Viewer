@@ -61,10 +61,9 @@ moduleManager.construct({
 
 		return xDO
 	};
-	self.toXls = function (pr: SpecIF, options: any):void {
-		console.debug('toXls', pr);
-		options.done();
-	}; 
+/*	self.toXls = function (pr: SpecIF, opts?: any): string {
+	 	console.debug('toXls',pr)
+	}; */
 	self.abort = function():void {
 		app.cache.abort();
 		self.abortFlag = true

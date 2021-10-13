@@ -99,7 +99,7 @@ class CSpecIF implements SpecIF {
 		if (!spD) spD = this;
 		return typeof (spD.id) == 'string' && spD.id.length > 0;
 	}
-	set(spD:any,opts?:any) {
+	set(spD: any, opts?: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
 				if (opts && opts.noCheck) {
