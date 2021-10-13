@@ -2187,13 +2187,13 @@ moduleManager.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			Lib.cacheE( L, { id: Lib.itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			Lib.cacheE( L, { id: Lib.idOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L:Statement[],s:Statement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			Lib.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: Lib.itemIdOf(s.subject), object: Lib.itemIdOf(s.object)} );
-		//	Lib.cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: Lib.itemIdOf(s.subject), object: Lib.itemIdOf(s.object) });
+			Lib.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: Lib.idOf(s.subject), object: Lib.idOf(s.object)} );
+		//	Lib.cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: Lib.idOf(s.subject), object: Lib.idOf(s.object) });
 		}
 		function cacheNet(s:Statement):void {
 			// skip hidden statements:
@@ -2204,7 +2204,7 @@ moduleManager.construct({
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// collect the related resources:
-			if( Lib.itemIdOf(s.subject) == nd.ref ) { 
+			if( Lib.idOf(s.subject) == nd.ref ) { 
 				// the selected node is a subject, so the related resource is an object,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.object );
@@ -2304,7 +2304,7 @@ moduleManager.construct({
 			
 			function notListed( L:Statement[],s,t ):boolean {
 				for( var i=L.length-1;i>-1;i--  ) {
-					if( Lib.itemIdOf(L[i].subject)==s.id && Lib.itemIdOf(L[i].object)==t.id ) return false;
+					if( Lib.idOf(L[i].subject)==s.id && Lib.idOf(L[i].object)==t.id ) return false;
 				};
 				return true;
 			}
@@ -2443,7 +2443,7 @@ moduleManager.construct({
 					sG.rGs.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							sId: Lib.itemIdOf(s.subject),
+							sId: Lib.idOf(s.subject),
 							sT: elementTitleWithIcon(s.subject,opts),
 							computed: !s['class']
 						});
@@ -2474,7 +2474,7 @@ moduleManager.construct({
 					sG.rGt.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							tId: Lib.itemIdOf(s.object),
+							tId: Lib.idOf(s.object),
 							tT: elementTitleWithIcon(s.object,opts),
 							computed: !s['class']
 						});

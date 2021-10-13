@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.t",
+	CONFIG.appVersion = "1.0.u",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -396,10 +396,10 @@ const CONFIG:any = {};
 		CONFIG.resClassFolder
 	];
 	CONFIG.vocabularyClasses = [
-		"SpecIF:NameResourceClass",
-		"SpecIF:NameStatementClass",
-		"SpecIF:NameProperty",
-		"SpecIF:NamePropertyValue"
+		"SpecIF:TermResourceClass",
+		"SpecIF:TermStatementClass",
+		"SpecIF:TermProperty",
+		"SpecIF:TermPropertyValue"
 	];
 	// A list with all model-element types by title,
 	// is used for example to build a glossary;
@@ -501,6 +501,7 @@ const vocabulary = {
 			var oT = '';
 			switch (iT.specifIdOf().toLowerCase()) {
 				case "_berschrift":
+				case "name":
 				case "title":
 				case "titel":
 				case "dc_title":

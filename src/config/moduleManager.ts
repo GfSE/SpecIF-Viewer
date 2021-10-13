@@ -532,11 +532,11 @@ var app:IApp,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
 				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
-		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
-		//									getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true;
-				// temporary solution with fix for buttonLeft=false:
+				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true;
+		/*		// temporary solution with fix for buttonLeft=false:
 				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets//jqtree.css');
-											getScript( loadPath +'vendor/assets/javascripts/tree.jquery.js'); return true;
+											getScript( loadPath +'vendor/assets/javascripts/tree.jquery.js'); return true; */
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;

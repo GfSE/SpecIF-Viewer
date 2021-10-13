@@ -129,7 +129,9 @@ function toXhtml( data, opts ) {
 			eC = itemBy( cL, 'id', itm['class'] );
 		
 //		console.debug('titleOf 2',itm,ti,eC);
-		// lookup titles only, if it is a resource used as heading or a statement;
+		// lookup titles only, if it is 
+		// - a resource used as heading or 
+		// - a statement;
 		// those may have vocabulary terms to translate;
 		// whereas individual resources may mean the vocabulary term as such:
 		if( eC&&eC.isHeading || itm.subject )

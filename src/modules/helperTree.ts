@@ -36,7 +36,7 @@ class Tree {
 		this.domE.tree({
 			data: [],
 		//	saveState: true,
-			buttonLeft: false,
+		//	buttonLeft: false,
 			dragAndDrop: options.dragAndDrop
 		});
 		for (var e in options.eventHandlers) {
