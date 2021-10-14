@@ -432,13 +432,13 @@ class CProject {
 				//    b) if same id and same content, just use it (no action)
 				//    c) if same id and different content, save with new id and update all references
 				(nD) => {
-//					console.debug('adopt #1',simpleClone(self.data),simpleClone(newD));
+//					console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
 					this.types.forEach((ty) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-						if (Array.isArray(newD[ty.listName])) {
+						if (Array.isArray(nD[ty.listName])) {
 							let itmL: any[] = [];
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-							newD[ty.listName].forEach((nT) => {
+							nD[ty.listName].forEach((nT) => {
 								// nT is a type/class in new data
 								// types are compared by id:
 								let idx = indexById(dta[ty.listName], nT.id);
@@ -456,17 +456,17 @@ class CProject {
 										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
 										let alterId = nT.id;
 										nT.id += '-' + simpleHash(new Date().toISOString());
-										ty.substitute(newD, nT, { id: alterId });
+										ty.substitute(nD, nT, { id: alterId });
 										itmL.push(nT);
-										console.info("When adopting a project" + (newD.id ? " with id " + newD.id : "") +
+										console.info("When adopting a project" + (nD.id ? " with id " + nD.id : "") +
 											", a class with same id and incompatible content has been encountered: " + alterId +
 											"; it has been saved with a new identifier " + nT.id + ".");
 									};
 									// b) no action
 								};
 							});
-							// @ts-ignore - newD[ty.listName] is a valid address
-							console.info((newD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
+							// @ts-ignore - nD[ty.listName] is a valid address
+							console.info((nD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
 							pend++;
 							this.createContent(ty.category, itmL)
 								.then(finalize, aDO.reject);
@@ -482,20 +482,20 @@ class CProject {
 							self = this,  // make the class attributes and methods available within local function 'finalize'
 							dta = this.data,
 							pend = 0;
-//						console.debug('adopt #1',simpleClone(self.data),simpleClone(newD));
+//						console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
 						this.types.forEach((ty) => {
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-							if (Array.isArray(newD[ty.listName])) {
+							if (Array.isArray(nD[ty.listName])) {
 							};
 						}); */
-					//					console.debug('#2',simpleClone(dta),simpleClone(newD));
+					//					console.debug('#2',simpleClone(dta),simpleClone(nD));
 
 					// 2. Integrate the instances:
 					//    a) if different title or type, save new one and use it.
 					//    b) if same title and type, just use it and update all references
-					if (Array.isArray(newD.resources)) {
+					if (Array.isArray(nD.resources)) {
 						let itmL: Resource[] = [];
-						newD.resources.forEach((nR: Resource) => {
+						nD.resources.forEach((nR: Resource) => {
 							// nR is a resource in the new data
 
 							// Adopt resource with the same id, title and class right away:
@@ -505,8 +505,8 @@ class CProject {
 							// Adopt resource, if it's class belongs to a collection of class-titles and is not excluded from deduplication.
 							// The folders are excluded from consolidation, because it may happen that there are
 							// multiple folders with the same name but different description in different locations of the hierarchy.
-							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(nR, newD)) > -1
-								&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(nR, CONFIG.propClassType, newD)) < 0
+							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(nR, nD)) > -1
+								&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
 								// Check for a resource with the same title:
 								eR = itemByTitle(dta.resources, nR.title);  // resource in the existing data
@@ -516,13 +516,13 @@ class CProject {
 								//						console.debug('~1',nR,eR?eR:'');
 								if (eR
 									&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(eR, CONFIG.propClassType, dta)) < 0
-									&& resClassTitleOf(nR, newD) == resClassTitleOf(eR, dta)
-									//		&& valByTitle(nR,CONFIG.propClassType,newD)==valByTitle(eR,CONFIG.propClassType,dta)
+									&& resClassTitleOf(nR, nD) == resClassTitleOf(eR, dta)
+									//		&& valByTitle(nR,CONFIG.propClassType,nD)==valByTitle(eR,CONFIG.propClassType,dta)
 								) {
 									//							console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
 									// adopt it and update all references:
-									this.substituteR(newD, eR, nR, { rescueProperties: true });
+									this.substituteR(nD, eR, nR, { rescueProperties: true });
 									return;
 								}
 							};
@@ -540,27 +540,27 @@ class CProject {
 							if (this.duplicateId(dta, nR.id)) {
 								let newId = Lib.genID('R-');
 								// first assign new ID to all references:
-								this.substituteR(newD, { id: newId } as Resource, nR);
+								this.substituteR(nD, { id: newId } as Resource, nR);
 								// and then to the resource itself:
 								nR.id = newId
 							};
 							//					console.debug('+ resource',nR);
 							itmL.push(nR)
 						});
-						console.info((newD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
+						console.info((nD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
 						pend++;
 						this.createContent('resource', itmL)
 							.then(finalize, aDO.reject);
 					};
-					//					console.debug('#3',simpleClone(dta),simpleClone(newD));
+					//					console.debug('#3',simpleClone(dta),simpleClone(nD));
 
 					// 3. Create the remaining items;
-					// this.createContent('statement', newD.statements) could be called, 
+					// this.createContent('statement', nD.statements) could be called, 
 					// but then the new elements would replace the existing ones.
 					// In case of 'adopt' the existing shall prevail!
-					if (Array.isArray(newD.statements)) {
+					if (Array.isArray(nD.statements)) {
 						let itmL: Statement[] = [];
-						newD.statements.forEach((nS: Statement) => {
+						nD.statements.forEach((nS: Statement) => {
 							// nR is a resource in the new data
 
 							// Adopt statement with the same id, title and class right away:
@@ -569,18 +569,18 @@ class CProject {
 							// Else, create new element:
 							itmL.push(nS);
 						});
-						console.info((newD.statements.length - itmL.length) + " statements adopted and " + itmL.length + " added.");
+						console.info((nD.statements.length - itmL.length) + " statements adopted and " + itmL.length + " added.");
 						pend++;
 						this.createContent('statement', itmL)
 							.then(finalize, aDO.reject);
 					};
 					pend++;
-					this.createContent('hierarchy', newD.hierarchies)
+					this.createContent('hierarchy', nD.hierarchies)
 						.then(finalize, aDO.reject);
 
-					if (Array.isArray(newD.files)) {
+					if (Array.isArray(nD.files)) {
 						let itmL: any[] = [];
-						newD.files.forEach((nF: any) => {
+						nD.files.forEach((nF: any) => {
 							// nR is a resource in the new data
 
 							// Adopt equal file right away:
@@ -589,7 +589,7 @@ class CProject {
 							// Else, create new element:
 							itmL.push(nF);
 						});
-						console.info((newD.files.length - itmL.length) + " files adopted and " + itmL.length + " added.");
+						console.info((nD.files.length - itmL.length) + " files adopted and " + itmL.length + " added.");
 						pend++;
 						this.createContent('file', itmL)
 							.then(finalize, aDO.reject);
@@ -601,7 +601,7 @@ class CProject {
 
 		function finalize(): void {
 			if (--pend < 1) {
-//				console.debug('#4',simpleClone(dta),simpleClone(newD));
+//				console.debug('#4',simpleClone(dta),simpleClone(nD));
 				// 4. Finally some house-keeping:
 				self.hookStatements();
 				self.deduplicate(opts);	// deduplicate equal items
