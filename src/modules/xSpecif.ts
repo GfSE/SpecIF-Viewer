@@ -477,7 +477,7 @@ class CSpecIF implements SpecIF {
 				addP(oE, {
 					class: "PC-Name",
 					// no title is required in case of statements; it's class' title applies by default:
-					value: oE.title || eC.title
+					value: oE.title
 				});
 			};
 
@@ -485,17 +485,20 @@ class CSpecIF implements SpecIF {
 			return oE
 
 			function titlePropertyNeeded(el): boolean {
-				if (Array.isArray(el.properties))
-					for (var i = el.properties.length - 1; i > -1; i--) {
-						let ti = propTitleOf(el.properties[i], self);
-						if (CONFIG.titleProperties.indexOf(ti) > -1)
-							// SpecIF assumes that any title property *replaces* the element's title,
-							// so we just look for the case of *no* title property.
-							// There is no consideration of the content.
-							// It is expected that titles with multiple languages have been reduced, before.
-							return false; // title property is available
-					};
-				return true;
+				if (el.title && el.title.length > 0) {
+					if (Array.isArray(el.properties))
+						for (var i = el.properties.length - 1; i > -1; i--) {
+							let ti = propTitleOf(el.properties[i], self);
+							if (CONFIG.titleProperties.indexOf(ti) > -1)
+								// SpecIF assumes that any title property *replaces* the element's title,
+								// so we just look for the case of *no* title property.
+								// There is no consideration of the content.
+								// It is expected that titles with multiple languages have been reduced, before.
+								return false; // title property is available
+						};
+					return true;
+				};
+				return false; // no title, thus no property needed
 			}
 			function descPropertyNeeded(el) {
 				if (el.description && el.description.length > 0) {
