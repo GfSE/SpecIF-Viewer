@@ -438,7 +438,9 @@ class CSpecIF implements SpecIF {
 			if (iE.properties && iE.properties.length > 0)
 				oE.properties = Lib.forAll(iE.properties, (e: any): Property => { return p2int(e) });
 
-			// Add description propery, if there is none:
+	 		// Are there resources with description, but without description property?
+			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
+			// In this case, add a description property to hold the description as required by SpecIF v1.1:
 			if (descPropertyNeeded(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
@@ -458,7 +460,7 @@ class CSpecIF implements SpecIF {
 				});
 			};
 
-			// Add title propery, if there is none:
+			// Similarly, add a title property if missing:
 			if (titlePropertyNeeded(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
