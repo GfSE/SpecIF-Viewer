@@ -558,8 +558,7 @@ var app:IApp,
 											return true;
 
 				// libraries:
-		/*		case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
-				case 'checkSpecif':			getScript('https://specif.de/v' + CONFIG.specifVersion + '/check.js'); return true;   */
+		//		case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
 				case "types":				getScript( loadPath+'types/specif.types.js'); return true;
 				case "i18n": 				switch( browser.language.slice(0,2) ) {
 												case 'de':  getScript( loadPath+'config/locales/iLaH-de.i18n.js' )
@@ -607,10 +606,9 @@ var app:IApp,
 				// constructors/modules:
 				case "about":				getScript( loadPath+'modules/about.mod.js' ); return true;
 				case 'importAny':			loadM( 'zip' );
+											loadM('jsonSchema');
 											getScript( loadPath+'modules/importAny.mod.js' ); return true;
-				case 'ioSpecif':			loadM( 'jsonSchema' );
-										//	loadM( 'checkSpecif' );
-											getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
+				case 'ioSpecif':			getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			loadM( 'reqif2specif' );
 											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;
 		//		case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;

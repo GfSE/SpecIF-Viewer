@@ -265,7 +265,7 @@ moduleManager.construct({
 							// it is a text;
 							// in case of xhtml, it may contain a diagram reference, 
 							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-							//							console.debug( 'editP', languageValueOf(p.value,opts) );
+//							console.debug( 'editP', languageValueOf(p.value,opts) );
 							return textField(
 								ti,
 								languageValueOf(p.value, opts),
