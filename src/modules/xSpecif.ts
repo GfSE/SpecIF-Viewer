@@ -450,8 +450,8 @@ class CSpecIF implements SpecIF {
 				// b. add property class, if not yet defined:
 				standardTypes.addTo("propertyClass", "PC-Description", self);
 				// c. Add propertyClass to element class:
-				eC = iE.subject ? itemById(self[names.sClasses], iE[names.sClass])
-								: itemById(self[names.rClasses], iE[names.rClass]);
+				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
+						: itemById(self.resourceClasses, iE[names.rClass]);
 				addPCReference(eC, "PC-Description");
 				// d. Add description property to element;
 				addP(oE, {
@@ -470,8 +470,8 @@ class CSpecIF implements SpecIF {
 				// b. add property class, if not yet defined:
 				standardTypes.addTo("propertyClass", "PC-Name", self);
 				// c. Add propertyClass to element class:
-				eC = iE.subject ? itemById(self[names.sClasses], iE[names.sClass])
-					: itemById(self[names.rClasses], iE[names.rClass]);
+				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
+						: itemById(self.resourceClasses, iE[names.rClass]);
 				addPCReference(eC, "PC-Name");
 				// d. Add title property to element;
 				addP(oE, {
