@@ -241,7 +241,29 @@ var app:IApp,
 //			console.debug('init2',opts);
 			let modL = ['helper','helperTree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
-			loadL( modL, { done: ()=>{ window.app = window[appName]() } });
+			loadL(modL,
+				{
+					done: () => {
+						// Create and initialize the app,
+						// appName is 'editSpecif' found in edit.ts, for example:
+						window.app = window[appName]();
+
+						// Add a global spinner with state control;
+						// all actions are deactivated as long as the app is busy.
+						// - 'pageActions' are at the top of the page and can be initiated independently of the app's state
+						// - 'contentActions' appear on the content pane (the shown tab) depending on the app's state
+						// - 'elementActions' apply to a single list entry in the content pane (tab)
+						window.app.busy = new State({
+							showWhenSet: ['#spinner'],
+							hideWhenSet: ['.pageActions', '.contentActions']
+						//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
+						});
+
+						// Make sure page divs are resized, if the browser window is changed in size:
+						bindResizer();
+					}
+				}
+			);
 		}
 		function loadL(L: string[], opts?: any): void {
 			// load the modules in hierarchy h
@@ -249,7 +271,9 @@ var app:IApp,
 			// h can be a single element, a list or a tree.
 
 			if (opts && typeof (opts.done) == "function")
-				callWhenReady = opts.done;
+				callWhenReady = opts.done
+			else
+				callWhenReady = undefined;
 
 			L.forEach((e) => { loadM(e) });
 		}
@@ -281,7 +305,7 @@ var app:IApp,
 			// specified by a name string or an object with property 'name';
 			// tr can be a single element, a list or a tree.
 		self.tree = tr;
-		//		console.debug('loadH',h,opts);
+//		console.debug('loadH',h,opts);
 		if (opts && typeof (opts.done) == "function")
 			callWhenReady = opts.done;
 		ld(tr);
@@ -532,11 +556,11 @@ var app:IApp,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
 				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
-				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true;
-		/*		// temporary solution with fix for buttonLeft=false:
-				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets//jqtree.css');
-											getScript( loadPath +'vendor/assets/javascripts/tree.jquery.js'); return true; */
+		/*		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/jqtree.css" );
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.1/tree.jquery.js' ); return true; */
+				// temporary solution with fix for buttonLeft=false:
+				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree.css');
+											getScript( loadPath +'vendor/assets/javascripts/tree.jquery.js'); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
@@ -690,6 +714,7 @@ var app:IApp,
 		};
 
 		if( self.registered.length === self.ready.length ) {
+			// All modules have been loaded:
 			initH( self.tree );
 			console.info( "All "+self.ready.length+" modules loaded --> ready!" );
 			if (typeof (callWhenReady) == 'function')
@@ -738,4 +763,43 @@ class State {
 	get():boolean {
 		return this.state;
 	}
+}
+function doResize(): void {
+	// Resizes DOM-tree elements to fit in the current browser window.
+	// In effect it is assured that correct vertical sliders are shown.
+
+	// reduce by the padding; it is assumed that only padding-top is set and that it is equal for content and contentWide:
+	// consider that there may be no element of type content or contentWide at a given instant.
+	// see: https://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
+	let wH = window.innerHeight
+		|| document.documentElement.clientHeight
+		|| document.body.clientHeight,
+
+		// @ts-ignore . in this case it is defined
+		hH = $('#pageHeader').outerHeight(true)
+			// @ts-ignore . in this case it is defined
+			+ $('.nav-tabs').outerHeight(true),
+		pH = wH - hH;
+//	console.debug( 'doResize', hH, pH, vP );
+
+	$('.content').outerHeight(pH);
+	$('.contentWide').outerHeight(pH);
+	$('.pane-tree').outerHeight(pH);
+	$('.pane-details').outerHeight(pH);
+	$('.pane-filter').outerHeight(pH);
+
+	// adjust the vertical position of the contentActions:
+	$('.contentCtrl').css("top", hH);
+	/*	return
+		
+		function getNavbarHeight() {
+			return $('#navbar').css("height")
+		} */
+}
+function bindResizer(): void {
+	// adapt the display in case the window is being resized:
+	$(window).resize(() => {
+		//		console.debug('resize'); 
+		doResize();
+	});
 }

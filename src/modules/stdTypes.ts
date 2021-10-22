@@ -120,7 +120,7 @@ class StandardTypes {
 		['hierarchy', "hierarchies"]
 	])
 
-	iterateLists(fn: Function): void {
+	iterateLists(fn: Function): number {
 		// Perform the function fn for each list defined above:
 		for (var le of this.listName.keys())
 			fn(le, this.listName.get(le));

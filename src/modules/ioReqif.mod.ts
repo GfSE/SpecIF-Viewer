@@ -213,8 +213,10 @@ moduleManager.construct({
 		//    - Add description properties of resources and statements
 		//    - Add hierarchy root
 
-		// Are there resources with description, but without description property?
-		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/02_Related-Terms.md
+	/*	Missing title and description properties are now added during import:
+	 	
+	 	// Are there resources with description, but without description property?
+		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
 		// In this case, add a description property to hold the description as required by ReqIF:
 			function addDescProperty( ctg:string, eC ):void {
 				// eC is a resourceClass or statementClass;
@@ -321,7 +323,7 @@ moduleManager.construct({
 				});
 			};
 		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
-		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });
+		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });  */
 
 		// ReqIF does not allow media objects other than PNG.
 		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.

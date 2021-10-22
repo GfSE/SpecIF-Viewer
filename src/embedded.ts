@@ -9,18 +9,8 @@ function embeddedSpecif():IApp {
 		// must set it here, because the language files must be read first:
 		document.title = self.title = i18n.LblReader;
 		self.embedded = true;
-		// Add a global spinner with state control;
-		// all actions are deactivated as long as the app is busy.
-		// - 'pageActions' are at the top of the page and can be initiated independently of the app's state
-		// - 'contentActions' appear on the content pane (the shown tab) depending on the app's state
-		// - 'elementActions' apply to a single list entry in the content pane (tab)
-		self.busy = new State({
-			showWhenSet: ['#spinner'],
-			hideWhenSet: ['.pageActions','.contentActions']
-		//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
-		});
 		// Define the module hierarchy; it will be used to load the modules and to control the views later on:
-		let define = {
+		self.moduleTree = {
 			// Define
 			// - name: the modules to load as specified in 'moduleManager.js'
 			// - loadAs: name for execution (addressable javascript object)
@@ -100,10 +90,7 @@ function embeddedSpecif():IApp {
 		// React on Browser Back/Forward buttons:
 		window.addEventListener("hashchange", self.show );
 
-		// Make sure page divs are resized, if the browser window is changed in size:
-		bindResizer();
-
-		moduleManager.load(define, { done: self.show });
+		moduleManager.load(self.moduleTree, { done: self.show });
 	};
 	self.show = function() {
 		// data and type are valid, but it is necessary to indicate that the data is not zipped:
@@ -115,8 +102,9 @@ function embeddedSpecif():IApp {
 		self.ioSpecif.toSpecif(Lib.str2ab(data))
 			.done(function (newD: SpecIF) {
 				var opts = {
-						deduplicate: true,
-						addGlossary: true,
+						noCheck: true, // if data is to be checked, make sure to load module 'jsonSchema' during initialization
+						deduplicate: false,
+						addGlossary: false,
 						collectProcesses: false
 					};
 				self.cache.create( newD, opts )

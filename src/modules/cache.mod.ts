@@ -402,11 +402,28 @@ class CProject {
 	read(opts?: any): Promise<SpecIF> {
 		// collect all items of this project from the cache containing elements of multiple projects
 		// (.. so far only one project, so the selection-process is pretty simple ..)
-		var spD = this.getMeta();
-		for (var le of standardTypes.listName.keys())
-			spD[standardTypes.listName.get(le)] = this.data.get(le, 'all');
-//		console.debug('read',spD);
-		return spD.toExt(opts);
+		var pend = 0,
+			spD = this.getMeta();
+
+		return new Promise(
+			(resolve, reject) => {
+				pend = standardTypes.iterateLists(
+					(ctg: string, listName:string) => {
+						this.readContent(ctg, 'all')
+						.then(
+							(values) => {
+								spD[listName] = values;
+								if (--pend < 1) {
+									spD.toExt(opts)
+									.then(resolve, reject)
+								}
+							},
+							reject
+						);
+					}
+				);
+			}
+		);
     }
 /*	update(newD: SpecIF, opts: any): Promise<void> {
 		var uDO = $.Deferred();
@@ -1158,8 +1175,7 @@ class CProject {
 				//		addPermissions( item );
 				//		item.createdAt = new Date().toISOString();
 				//		item.createdBy = item.changedBy; */
-				this.data.put(ctg, item);
-//				console.debug('createContent',ctg,item);
+						this.data.put(ctg, item);
 			//	};
 				resolve(item);
 			}
@@ -2150,7 +2166,7 @@ class CProject {
 		// ToDo: Make it work, if keys are used as a reference.
 	}
 	abort(): void {
-		console.info('abort specif');
+		console.info('abort cache');
 	//	server.abort();
 		this.abortFlag = true;
 	};
@@ -3059,7 +3075,7 @@ function titleOf( item, opts?:any ):string {
 function languageValueOf( val, opts?:any ):string|undefined {
 	// Return the value in the specified target language .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object;
-	// if targetLanguage is not defined, keep all language options:
+	// if opts.lookupLanguage is not true, keep all language options:
 	if( typeof(val)=='string' || !(opts&&opts.lookupLanguage) ) return val;
 	// The value may be undefined:
 	if( val==undefined ) return;

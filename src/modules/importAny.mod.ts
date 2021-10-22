@@ -414,7 +414,7 @@ moduleManager.construct({
 		);
 	}
 	function handleError(xhr: xhrMessage): void {
-		//		console.debug( 'handleError', xhr );
+//		console.debug( 'handleError', xhr );
 		self.clear();
 		Lib.stdError(xhr);
 		self.show();

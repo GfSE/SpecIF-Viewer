@@ -466,7 +466,7 @@ class CResourceToShow {
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
-		// and removed from this.other.
+		// and moved from this.other to this.title resp. this.descriptions:
 
 		// a) Find and set the configured title:
 		let a = titleIdx(this.other, pData);
@@ -483,14 +483,14 @@ class CResourceToShow {
 			// which has been newly created by normalizeProps():
 			if (!this.title.value && el.title)
 				this.title.value = el.title;
-		}
+	/*	}
 		else {
 			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
 			// there is no title propertyClass;
 			// then create a property without class.
 			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
 			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' };
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
 		};
 		this.isHeading = this['class'].isHeading
 			|| CONFIG.headingProperties.indexOf(this['class'].title) > -1
@@ -507,10 +507,10 @@ class CResourceToShow {
 			};
 		};
 
-		// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+	/*	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
 		//    there is no description propertyClass;
 		if (this.descriptions.length < 1 && el.description )
-			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));
+			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
 	private normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {

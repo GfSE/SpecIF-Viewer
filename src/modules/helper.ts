@@ -375,48 +375,6 @@ Lib.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 	}
 };
 
-function doResize():void {
-	// Resizes DOM-tree elements to fit in the current browser window.
-	// In effect it is assured that correct vertical sliders are shown.
-
-//	console.debug( 'doResize', $('#app').height(), getOuterHeight('#specsHeader') ); 
-	
-	// reduce by the padding; it is assumed that only padding-top is set and that it is equal for content and contentWide:
-	// consider that there may be no element of type content or contentWide at a given instant.
-	// see: https://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
-	let wH = window.innerHeight
-			|| document.documentElement.clientHeight
-			|| document.body.clientHeight,
-
-			// @ts-ignore . in this case it is defined
-		hH = $('#pageHeader').outerHeight(true)
-			// @ts-ignore . in this case it is defined
-			+ $('.nav-tabs').outerHeight(true),
-		pH = wH-hH;
-//	console.debug( 'doResize', hH, pH, vP );
-
-	$('.content').outerHeight( pH );
-	$('.contentWide').outerHeight( pH );
-	$('.pane-tree').outerHeight( pH );
-	$('.pane-details').outerHeight( pH );
-	$('.pane-filter').outerHeight( pH );
-
-	// adjust the vertical position of the contentActions:
-	$('.contentCtrl').css( "top", hH );
-/*	return
-	
-	function getNavbarHeight() {
-		return $('#navbar').css("height")
-	} */
-}
-function bindResizer():void {
-	// adapt the display in case the window is being resized:
-	$(window).resize( ()=>{
-//		console.debug('resize'); 
-		doResize();
-	});
-}
-
 type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | SpecifNode | SpecifFile;
 type Instance = Resource | Statement;
 function indexById(L:any[],id:string):number {
