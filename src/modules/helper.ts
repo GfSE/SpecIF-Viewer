@@ -12,10 +12,11 @@
 
 const Lib: any = {};
 interface IFieldOptions {
-	tagPos?: string;  // 'left', 'none'
+	tagPos?: string;  // 'left', 'none' ('above')
 	typ?: string;     // 'line', 'area' for textField
 	classes?: string; // CSS classes
 	handle?: string;  // event handler
+	description?: string; // further explanation in a popup
 }
 function textField(tag: string, val: string, opts?: IFieldOptions): string {  
 	// assemble a form for text input or display:
@@ -30,15 +31,16 @@ function textField(tag: string, val: string, opts?: IFieldOptions): string {
 		fG: string,
 		aC: string;
 	if (typeof (opts.typ) == 'string' && ['line', 'area'].indexOf(opts.typ)>-1 ) 	
-			fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
-	else	fG = '<div class="attribute" >';				// for display field
+		fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
+	else
+		fG = '<div class="attribute" >';				// for display field
 
 	switch( opts.tagPos ) {
 		case 'none':
 			aC = 'attribute-wide';
 			break;
 		case 'left':
-			fG += '<div class="attribute-label" >'+tag+'</div>';
+			fG += '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag +'</div>';
 			aC = 'attribute-value';
 			break;
 		default:
@@ -69,7 +71,7 @@ function setTextValue( tag:string, val:string ):void {
 	// @ts-ignore - .value is in fact accessible
 	if( el ) el.value = val;
 }
-function setTextFocus( tag:string ):void {
+function setFocus( tag:string ):void {
 	let el = document.getElementById('field' + simpleHash(tag));
 	if( el ) el.focus()
 }
@@ -81,14 +83,16 @@ function setTextState( tag:string, state:string ):boolean {
 		if( state=='has-success' ) {
 			el.removeClass('has-error').addClass('has-success');
 			return true;
-		} else
+		}
+		else
 			return false;	// no change
 	};
 	if( el.hasClass('has-success') ) {
 		if( state=='has-error' ) {
 			el.removeClass('has-success').addClass('has-error');
 			return true;
-		} else
+		}
+		else
 			return false;	// no change
 	};
 	// else, has neither class:
@@ -108,7 +112,8 @@ function getTextLength( tag:string ):number {
 	// get length the input value:
 	try {
 		return textValue( tag ).length;
-	} catch(e) {
+	} 
+	catch(e) {
 		return -1;
 	}
 }
@@ -134,7 +139,7 @@ function radioField(tag: string, entries: IBox[], opts?: IFieldOptions): string 
 			break;
 		case 'left': 
 			rB = 	'<div class="form-group '+(opts.classes||'')+'">'
-				+		'<div class="attribute-label" >'+tag+'</div>'
+				+		'<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag + '</div>'
 				+		'<div class="attribute-value radio" >';
 			break;
 		default:
@@ -180,7 +185,7 @@ function checkboxField(tag: string, entries: IBox[], opts?: IFieldOptions): stri
 			break;
 		case 'left': 
 			cB = 	'<div class="form-group '+(opts.classes||'')+'">'
-				+		'<div class="attribute-label" >'+tag+'</div>'
+				+		'<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag + '</div>'
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
@@ -216,7 +221,7 @@ function booleanField( tag:string, val:boolean, opts?:any ):string {
 			fn = ' onclick="'+opts.handle+'"'
 	else 	fn = '';
 	return 	'<div class="form-group form-active">'
-		+		'<div class="attribute-label" >'+tag+'</div>'
+		+		'<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag + '</div>'
 		+		'<div class="attribute-value checkbox" >'
 		+			'<label>'
 		+ '<input type="checkbox" name="boolean' + simpleHash(tag)+'"'+(val?' checked':'')+fn+' />'
@@ -429,6 +434,11 @@ function itemBy(L:any[], p:string, s:string ):any {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
+Lib.containsAll = (rL: string[], nL: string[]): boolean =>{
+	for (var i = nL.length - 1; i > -1; i--)
+		if (rL.indexOf(nL[i]) < 0) return false;
+	return true;
+}
 Lib.containsById = (cL:any[], L: Item[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList),
@@ -486,7 +496,7 @@ Lib.addIcon = (str: string, ic: string): string =>{
 	if (ic) return ic + '&#xa0;' + str;
 	return str;
 }
-Lib.cacheE = ( L:Array<object>, e:object ):number =>{  // ( list, entry )
+Lib.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// add or update the item e in a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	// add, if not yet listed:
@@ -499,19 +509,19 @@ Lib.cacheE = ( L:Array<object>, e:object ):number =>{  // ( list, entry )
 		L[n] = e;
 	return n;
 }
-Lib.cacheL = ( L:Array<object>, es:Array<object> ):boolean =>{  // ( list, entries )
+Lib.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 	// add or update the items es in a list L:
 	es.forEach((e) => { Lib.cacheE(L, e) })
 	// this operation cannot fail:
 	return true;
 }
-Lib.uncacheE = ( L:Array<object>, e:object ):number =>{  // ( list, entry )
+Lib.uncacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }
-Lib.uncacheL = ( L:Array<object>, es:Array<object> ):boolean =>{  // ( list, entries )
+Lib.uncacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 	// remove the items es from a list L:
 	let done = true;
 	es.forEach((e) => { done = done && Lib.uncacheE(L, e) > -1 });
@@ -519,10 +529,9 @@ Lib.uncacheL = ( L:Array<object>, es:Array<object> ):boolean =>{  // ( list, ent
 }
 	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
-Lib.genID = (pfx:string):string =>{
+Lib.genID = (pfx?:string):string =>{
 	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
-	let re = /^[A-Za-z_]/;
-	if( !re.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
+	if( !RE.Id.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
 	
 	let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 	var result = '';
@@ -761,6 +770,12 @@ Lib.trimJson = (str:string):string =>{
 	// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
 	return str.substring( str.indexOf('{'), str.lastIndexOf('}')+1 )
 };
+Lib.isTrue = (str: string): boolean =>{
+	return CONFIG.valuesTrue.indexOf(str.toLowerCase().trim()) > -1;
+}
+Lib.isFalse = (str: string): boolean =>{
+	return CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
+}
 
 /*
 String.prototype.removeBOM = function():string {

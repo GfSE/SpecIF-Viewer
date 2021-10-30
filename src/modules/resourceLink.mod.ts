@@ -161,14 +161,14 @@ moduleManager.construct({
 						},
 						buttons: [{
 							label: i18n.BtnCancel,
-							action: (thisDlg)=>{ 
+							action: (thisDlg: any)=>{
 								thisDlg.close() 
 							}
 						}, {
 							id: 'btn-modal-saveResourceAsSubject',
 							label: i18n.IcoAdd +'&#160;'+i18n.LblSaveRelationAsSource,
 							cssClass: 'btn-success', 
-							action: (thisDlg)=>{
+							action: (thisDlg: any)=>{
 								self.saveStatement({secondAs:'subject'})
 								.then(
 									()=>{
@@ -182,7 +182,7 @@ moduleManager.construct({
 							id: 'btn-modal-saveResourceAsObject',
 							label: i18n.IcoAdd +'&#160;'+i18n.LblSaveRelationAsTarget,
 							cssClass: 'btn-success', 
-							action: (thisDlg)=>{
+							action: (thisDlg: any)=>{
 								self.saveStatement({secondAs:'object'})
 								.then(
 									()=>{
@@ -209,7 +209,7 @@ moduleManager.construct({
 	self.filterClicked = ():void =>{
 //		console.debug('click!', radioValue( i18n.LblStatementClass ));
 		self.selectedStatementClass = self.eligibleSCL[ radioValue( i18n.LblStatementClass ) ];
-		setTextFocus(i18n.TabFilter); 
+		setFocus(i18n.TabFilter); 
 		let	eligibleRs = '',
 			searchStr = textValue(i18n.TabFilter),
 			reTi = new RegExp( searchStr.escapeRE(), 'i' );  // don't use 'gi' - works only every other time.

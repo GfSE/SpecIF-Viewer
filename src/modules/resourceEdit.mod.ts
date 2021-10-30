@@ -16,7 +16,7 @@ class DialogForm {
 
 	list: IDialogField[];  // the list of parameter-sets, each for checking a certain input field.
 	constructor() {
-		this.list = [];
+		this.list = [] as IDialogField[];
 	}
 	addField(elementId: string, dT: DataType): void {
 		// Add a parameter-set for checking an input field;
@@ -86,7 +86,7 @@ moduleManager.construct({
 		cancel: {
 			id: 'btn-modal-cancel',
 			label: i18n.BtnCancel,
-			action: (thisDlg)=>{ 
+			action: (thisDlg:any)=>{ 
 //				console.debug('action cancelled');
 				thisDlg.close();
 			}
@@ -95,7 +95,7 @@ moduleManager.construct({
 			id: 'btn-modal-update',
 			label: i18n.BtnUpdate,
 			cssClass: 'btn-success btn-modal-save',
-			action: (thisDlg)=>{
+			action: (thisDlg:any)=>{
 				save('update');
 				thisDlg.close();
 			}  
@@ -104,7 +104,7 @@ moduleManager.construct({
 			id: 'btn-modal-insert',
 			label: i18n.BtnInsert,
 			cssClass: 'btn-success btn-modal-save', 
-			action: (thisDlg)=>{
+			action: (thisDlg: any)=>{
 				save('insert');
 				thisDlg.close();
 			}  
@@ -113,7 +113,7 @@ moduleManager.construct({
 			id: 'btn-modal-insertAfter',
 			label: i18n.BtnInsertSuccessor,
 			cssClass: 'btn-success btn-modal-save', 
-			action: (thisDlg)=>{
+			action: (thisDlg: any)=>{
 				save('insertAfter');
 				thisDlg.close();
 			}  
@@ -122,7 +122,7 @@ moduleManager.construct({
 			id: 'btn-modal-insertBelow',
 			label: i18n.BtnInsertChild,
 			cssClass: 'btn-success btn-modal-save', 
-			action: (thisDlg)=>{
+			action: (thisDlg: any)=>{
 				save('insertBelow');
 				thisDlg.close();
 			}  
@@ -209,13 +209,12 @@ moduleManager.construct({
 			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			new BootstrapDialog({
 					title: opts.dialogTitle,
-				//	type: 'type-success',
 					type: 'type-primary',
 					// @ts-ignore - BootstrapDialog() is loaded at runtime
 					size: BootstrapDialog.SIZE_WIDE,
 					// initialize the dialog;
 					// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
-					onshown: ()=>{ setTextFocus(ti); app[myName].check() },
+					onshown: ()=>{ setFocus(ti); app[myName].check() },
 				//	message: (thisDlg)=>{
 					message: () => {
 						var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
@@ -239,8 +238,11 @@ moduleManager.construct({
 			
 			function editP(p) {
 				// Return a form element for a property;
-				// works only, if all propertyClasses and dataTypes are always cached:
-				let pC = cData.get("propertyClass", p['class'] )[0],
+				// works only if the classes are cached:
+				let pC = cData.get("propertyClass", p['class'])[0],
+			// The result is delivered by promise ..:
+			//	let pC = app.cache.selectedProject.readContent("propertyClass", p['class']),
+
 					// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
 					dT = pC? cData.get("dataType", pC.dataType )[0] : undefined,
 					opts = {
@@ -273,7 +275,8 @@ moduleManager.construct({
 								// - open an input text-area, otherwise
 								{
 									typ: ((dT && dT.maxLength && dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
-									handle: myFullName + '.check()'
+									handle: myFullName + '.check()',
+									description: pC.description
 								} 
 							);
 						};
@@ -282,22 +285,23 @@ moduleManager.construct({
 						let separatedValues = p.value.split(','),
 							vals = Lib.forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
-						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-							return checkboxField( ti, vals );
-						}
-						else {
-							return radioField( ti, vals );
-						};
+						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple )
+							return checkboxField(ti, vals, { description: pC.description } );
+						else
+							return radioField(ti, vals, { description: pC.description } );
 					case 'xs:boolean':
 						// no input checking needed:
 //						console.debug('xs:boolean',ti,p,pC);
-						return booleanField( ti, p.value=='true' );
+						return booleanField(ti, Lib.isTrue(p.value), { description: pC.description } );
 					case 'xs:dateTime':
 					case 'xs:integer':
 					case 'xs:double':
 						// add parameters to check this input field:
 						self.dialogForm.addField( ti, dT );
-						return textField(ti, p.value, { typ: 'line', handle: myFullName + '.check()' } );
+						return textField(
+							ti,
+							p.value,
+							{ typ: 'line', handle: myFullName + '.check()', description: pC.description });
 				};
 				return
 
@@ -362,14 +366,14 @@ moduleManager.construct({
 									},
 									buttons: [{
 											label: i18n.BtnCancel,
-											action: (thisDlg)=>{ 
+											action: (thisDlg: any)=>{
 												reject({status:0,statusText:'Create Resource cancelled by the user'});
 												thisDlg.close();
 											}
 										},{ 	
 											label: i18n.LblNextStep,
 											cssClass: 'btn-success', 
-											action: (thisDlg)=>{
+											action: (thisDlg: any)=>{
 												resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
 												thisDlg.close();
 											}  

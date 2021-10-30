@@ -1111,7 +1111,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:shows",
 			description: "Statement: Plan shows Model-Element",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Diagram"],
 		//	objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate

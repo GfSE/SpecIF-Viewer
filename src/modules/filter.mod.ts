@@ -225,7 +225,7 @@ moduleManager.construct({
 			fps += '</div>';
 		});
 		$('#primaryFilters').html( fps );
-		setTextFocus(i18n.LblStringMatch); 
+		setFocus(i18n.LblStringMatch); 
 
 		let tr = pData.tree.get();
 		if( !tr || tr.length<1 ) {

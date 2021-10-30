@@ -60,6 +60,7 @@ class StandardTypes {
 	propertyClasses:PropertyClass[] = [{
 		id: "PC-Name",
 		title: CONFIG.propClassTitle,
+		description: "The element's name or title.",
 		dataType: "DT-ShortString",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {

@@ -166,11 +166,9 @@ class CPropertyToShow implements Property {
 	/*	function addFilePath( u ) {
 			if( /^https?:\/\/|^mailto:/i.test( u ) ) {
 				// don't change an external link starting with 'http://', 'https://' or 'mailto:'
-//				console.debug('addFilePath no change',u);
 				return u;
 			};
 			// else, add relative path:
-//			console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
 			return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
 		}  */
 		function getType(str: string): string {
@@ -314,7 +312,7 @@ class CPropertyToShow implements Property {
 				if (CONFIG.imgExtensions.indexOf(e) > -1 || CONFIG.applExtensions.indexOf(e) > -1) {
 					// it is an image, show it:
 					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-					//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
+//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
 					if (f1.hasContent()) {
 						hasImg = true;
 						// Create the DOM element to which the image will be added:
@@ -1510,13 +1508,14 @@ moduleManager.construct({
 					if( !nd ) nd = self.tree.selectedNode;
 					// no or unknown resource specified; select first node:
 					if( !nd ) nd = self.tree.selectFirstNode();
-					if( nd ) {
-						self.tree.openNode( nd );
+					if (nd) {
+						self.tree.openNode(nd);
 					}
 					else {
-						if( !self.resCre ) {
-							// Warn, if tree is empty and there are no resource classes for user instantiation:
-							message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
+						// tree is empty:
+						if (!self.resCre) {
+							// Warn, if there are no resource classes for user instantiation:
+							message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
 							return;
 						};
 					};
@@ -1528,6 +1527,11 @@ moduleManager.construct({
 			// the project has no spec:
 			$( self.view ).html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
 			app.busy.reset();
+			if (!self.resCre) {
+				// Warn, if there are no resource classes for user instantiation:
+				message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
+				return;
+			};
 		};
 	};
 
@@ -1954,12 +1958,12 @@ moduleManager.construct({
 			message: i18n.lookup( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
 			buttons: [{
 				label: i18n.BtnCancel,
-				action: (thisDlg)=>{ 
+				action: (thisDlg: any)=>{
 					thisDlg.close();
 				}
 			},{
 				label: i18n.BtnDeleteObjectRef,
-				action: (thisDlg)=>{
+				action: (thisDlg: any)=>{
 					delNd( pData.tree.selectedNode );
 					thisDlg.close();
 				}
@@ -2081,11 +2085,9 @@ moduleManager.construct({
 		return true;
 	}
 	self.hide = function():void {
-//		console.debug(CONFIG.relations, 'hide');
 		$( self.view ).empty()
 	};
 	self.show = function( opts?:any ):void {
-//		console.debug(CONFIG.relations, 'show');
 		pData.showLeft.set();
 		pData.showTree.set();
 		cacheData = app.cache.selectedProject.data;

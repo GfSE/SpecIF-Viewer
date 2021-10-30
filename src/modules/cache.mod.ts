@@ -505,7 +505,7 @@ class CProject {
 							if (Array.isArray(nD[ty.listName])) {
 							};
 						}); */
-					//					console.debug('#2',simpleClone(dta),simpleClone(nD));
+//						console.debug('#2',simpleClone(dta),simpleClone(nD));
 
 					// 2. Integrate the instances:
 					//    a) if different title or type, save new one and use it.
@@ -530,16 +530,21 @@ class CProject {
 								// If there is an instance with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
-								//						console.debug('~1',nR,eR?eR:'');
+//								console.debug('~1',nR,eR?eR:'');
 								if (eR
 									&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(eR, CONFIG.propClassType, dta)) < 0
 									&& resClassTitleOf(nR, nD) == resClassTitleOf(eR, dta)
 									//		&& valByTitle(nR,CONFIG.propClassType,nD)==valByTitle(eR,CONFIG.propClassType,dta)
 								) {
-									//							console.debug('~2',eR,nR);
+//									console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
 									// adopt it and update all references:
 									this.substituteR(nD, eR, nR, { rescueProperties: true });
+
+									// Memorize the replaced id, if not yet listed:
+									if (!Array.isArray(eR.alternativeIds)) eR.alternativeIds = [];
+									Lib.cacheE(eR.alternativeIds, {id:nR.id,revision:nR.revision,project:nD.id});
+
 									return;
 								}
 							};
@@ -559,9 +564,9 @@ class CProject {
 								// first assign new ID to all references:
 								this.substituteR(nD, { id: newId } as Resource, nR);
 								// and then to the resource itself:
-								nR.id = newId
+								nR.id = newId;
 							};
-							//					console.debug('+ resource',nR);
+//							console.debug('+ resource',nR);
 							itmL.push(nR)
 						});
 						console.info((nD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
@@ -569,7 +574,7 @@ class CProject {
 						this.createContent('resource', itmL)
 							.then(finalize, aDO.reject);
 					};
-					//					console.debug('#3',simpleClone(dta),simpleClone(nD));
+//					console.debug('#3',simpleClone(dta),simpleClone(nD));
 
 					// 3. Create the remaining items;
 					// this.createContent('statement', nD.statements) could be called, 
@@ -1183,8 +1188,8 @@ class CProject {
 	}
 	readContent(ctg: string, item: Item[] | Item | string, opts?: any): Promise<Item[]> {
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
-
 		if (!opts) opts = { reload: false, timelag: 10 };
+
 		// override 'reload' as long as there is no server and we know that the resource is found in the cache:
 		opts.reload = false;
 
@@ -1434,10 +1439,10 @@ class CProject {
 			size: BootstrapDialog.SIZE_WIDE,  */
 			message: () => {
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-					//	+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+				//	+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div class="col-sm-12" style="padding: 0 4px 0 4px">'
 					+ '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
-					//	+		"<h4>"+i18n.LblFormat+"</h4>"
+				//	+ "<h4>"+i18n.LblFormat+"</h4>"
 					+ "<p>" + i18n.MsgExport + "</p>"
 					+ radioField(
 						i18n.LblFormat,
@@ -1454,7 +1459,7 @@ class CProject {
 					)
 					+ '</div>'
 					+ '</div>'
-					//	+	'<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+				//	+ '<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div id="expOptions" class="col-sm-12" style="padding: 0 4px 0 4px">'
 					+ this.chooseExportOptions('specif')   // parameter must correspond to the checked option above
 					+ '</div>'
@@ -1464,14 +1469,14 @@ class CProject {
 			buttons: [
 				{
 					label: i18n.BtnCancel,
-					action: (thisDlg) => {
+					action: (thisDlg: any) => {
 						thisDlg.close()
 					}
 				},
 				{
 					label: i18n.BtnExport,
 					cssClass: 'btn-success',
-					action: (thisDlg) => {
+					action: (thisDlg: any) => {
 						// Get index of option:
 						app.busy.set();
 						message.show(i18n.MsgBrowserSaving, { severity: 'success', duration: CONFIG.messageDisplayTimeShort });
@@ -1791,8 +1796,9 @@ class CProject {
 	}
 	private equalPC(r: PropertyClass, n: PropertyClass): boolean {
 		// return true, if reference and new propertyClass are equal:
-		return r.dataType == n.dataType
-			&& r.title == n.title
+		return r.title == n.title
+			&& r.dataType == n.dataType
+			&& r.value == n.value
 			&& this.eqBool(r.multiple, n.multiple);
 	}
 	private equalRC(r: ResourceClass, n: ResourceClass): boolean {
@@ -1990,36 +1996,51 @@ class CProject {
 		Lib.logMsg({ status: 956, statusText: "new propertyClass '" + newC.id + "' is incompatible" });
 		return false;
 	}
-	private compatiblePCReferences(refC: ResourceClass | StatementClass, newC: ResourceClass | StatementClass, opts?:any): boolean {
+	private compatiblePCReferences(rCL: KeyObject[], nCL: KeyObject[], opts?: any): boolean {
+		// to be used for a tesourceClass' or statementClass' propertyClasses
 		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default
-		if (Array.isArray(refC.propertyClasses) && Array.isArray(newC.propertyClasses)) {
+		if (Array.isArray(rCL) && Array.isArray(nCL)) {
 			switch (opts.mode) {
 				case "include":
-					return !(refC.propertyClasses.length < newC.propertyClasses.length || missingProperty(refC, newC));
+					return rCL.length >= nCL.length && Lib.containsAll(rCL, nCL);
 				case "match":
 				default:
-					return !(refC.propertyClasses.length != newC.propertyClasses.length || missingProperty(refC, newC));
+					return rCL.length == nCL.length && Lib.containsAll(rCL, nCL);
 			};
 		};
 		switch (opts.mode) {
 			case "include":
 				// Also OK, if the new class doesn't reference any propertyClass,
 				// it is irrelevant whether the reference class references any or not:
-				return !Array.isArray(newC.propertyClasses) || newC.propertyClasses.length < 1;
+				return !Array.isArray(nCL) || nCL.length < 1;
 			case "match":
 			default:
-				return !Array.isArray(refC.propertyClasses) && !Array.isArray(newC.propertyClasses);
+				return !Array.isArray(rCL) && !Array.isArray(nCL);
 		};
+	}
+	private compatibleECReferences(rCL: KeyObject[], nCL: KeyObject[], opts?: any): boolean {
+		// to be used for a statementClass's subjectClasses and objectClasses;
+		// if any of these arrays is missing, subjects or objects of any class are allowed:
+		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default
 
-		function missingProperty(rC:any, nC:any):boolean {
-			for (var i = nC.propertyClasses.length - 1; i > -1; i--)
-				if (rC.propertyClasses.indexOf(nC.propertyClasses[i]) < 0)
-					return true;
-			return false;
-		}
+		if (Array.isArray(rCL)) {
+			if (Array.isArray(nCL))
+				switch (opts.mode) {
+					case "include":
+						return rCL.length >= nCL.length && Lib.containsAll(rCL, nCL);
+					case "match":
+					default:
+						return rCL.length == nCL.length && Lib.containsAll(rCL, nCL);
+				}
+			else
+				// there is a reference list, but no new list (i.e. subjects or objects of any class are allowed):
+				return false;
+		};
+		// else:
+		return opts.mode == "match" ? !Array.isArray(nCL) : true;
 	}
 	private compatibleRC(refC: ResourceClass, newC: ResourceClass, opts?:any): boolean {
-		if (this.compatiblePCReferences(refC, newC, opts))
+		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
 		Lib.logMsg({ status: 963, statusText: "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
@@ -2029,18 +2050,20 @@ class CProject {
 		// To be compatible, all sourceTypes of newC must be contained in the sourceTypes of refC;
 		// no sourceTypes means that all resourceClasses are permissible as subject.
 		// ... and similarly for the targetTypes:
-		if (refC.subjectClasses && !newC.subjectClasses
-			|| refC.subjectClasses && newC.subjectClasses && !Lib.containsById(refC.subjectClasses, newC.subjectClasses)) {
-			Lib.logMsg({ status: 961, statusText: "new statementClass '" + newC.id + "' is incompatible (subjectClasses)" });
+	//	if (refC.subjectClasses && !newC.subjectClasses
+	//		|| refC.subjectClasses && newC.subjectClasses && !Lib.containsById(refC.subjectClasses, newC.subjectClasses)) {
+		if (!this.compatibleECReferences(refC.subjectClasses, newC.subjectClasses) ) {
+			Lib.logMsg({ status: 961, statusText: "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" });
 			return false;
 		};
-		if (refC.objectClasses && !newC.objectClasses
-			|| refC.objectClasses && newC.objectClasses && !Lib.containsById(refC.objectClasses, newC.objectClasses)) {
-			Lib.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible (objectClasses)" });
+	//	if (refC.objectClasses && !newC.objectClasses
+	//		|| refC.objectClasses && newC.objectClasses && !Lib.containsById(refC.objectClasses, newC.objectClasses)) {
+		if (!this.compatibleECReferences(refC.objectClasses, newC.objectClasses)) {
+			Lib.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" });
 			return false;
 		};
 		// else: so far everything is OK, but go on checking ... (no break!)
-		if (this.compatiblePCReferences(refC, newC, opts))
+		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
 		Lib.logMsg({ status: 963, statusText: "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
@@ -2104,21 +2127,17 @@ class CProject {
 		// In the rare case that the ids are identical, there is no need to update the references:
 		if (r.id == n.id) return;
 
-		// 1. Memorize the replaced id, if not yet listed:
-		if (!Array.isArray(r.alternativeIds)) r.alternativeIds = [];
-		Lib.cacheE(r.alternativeIds, n.id);
-
-		// 2. Replace the references in all statements:
+		// 1. Replace the references in all statements:
 		prj.statements.forEach((st: Statement) => {
 			if (this.equalKey(st.object, n)) { if (st.object.id) { st.object.id = Lib.idOf(r) } else { st.object = Lib.idOf(r) } };
 			if (this.equalKey(st.subject, n)) { if (st.subject.id) { st.subject.id = Lib.idOf(r) } else { st.subject = Lib.idOf(r) } }
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
 
-		// 3. Replace the references in all hierarchies:
+		// 2. Replace the references in all hierarchies:
 		this.substituteRef(prj.hierarchies, r.id, n.id);
 
-		// 4. Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
+		// 3. Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
 		prj.statementClasses.forEach((sC: StatementClass) => {
 			if (Array.isArray(sC.subjectClasses) && sC.subjectClasses.indexOf(n['class']) > -1) Lib.cacheE(sC.subjectClasses, r['class']);
 			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(n['class']) > -1) Lib.cacheE(sC.objectClasses, r['class']);

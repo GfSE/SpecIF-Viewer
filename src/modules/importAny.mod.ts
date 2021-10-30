@@ -368,7 +368,7 @@ moduleManager.construct({
 			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
 				setTextValue( i18n.LblProjectName, self.projectName );
-				setTextFocus( i18n.LblProjectName );
+				setFocus( i18n.LblProjectName );
 			};
 
 			self.enableActions();

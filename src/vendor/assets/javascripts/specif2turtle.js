@@ -1,3 +1,15 @@
+/*!
+    SpecIF to Turtle Transformation
+    (C)copyright adesso SE, enso managers gmbh (http://www.enso-managers.de)
+    Author: ??@adesso.de, se@enso-managers.de, Berlin
+    License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-RDF-Bridge/issues)
+*/
+
+/*
+########################## Main #########################################
+*/
 testTransformSpecifToTTL = (specifData) => {
    return transformSpecifToTTL("https://www.example.com",specifData)
 };
@@ -14,11 +26,15 @@ transformSpecifToTTL = (baseUri, specifData) => {
                 + transformResources(resources)
                 + transformStatements(statements)
                 + transformHierarchies(hierarchies)
-                + transformFiles(files);
+                + transformFiles(files)
+				+ emptyLine();
 
     return resultTtlString;
 };
 
+/*
+########################## Subroutines #########################################
+*/
 defineTurtleVocabulary = (baseUri, projectID) => {
     let TtlString = tier0RdfEntry(`@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .`)
                 + tier0RdfEntry(`@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .`)
@@ -300,9 +316,7 @@ transformFiles = (files) => {
 };
 
 /* 
-##########################################################################
 ########################## Tools #########################################
-##########################################################################
 */
 
 isArrayWithContent = (array) => {
@@ -320,10 +334,6 @@ extractRdfFromSpecifDataArray = (predicate, objectArray) => {
     };
     return TtlString;
 };
-
-/* 
-########################## String #########################################
- */
 
 tier0RdfEntry = (content) => {
     return `\n${content}`;
