@@ -130,10 +130,10 @@ function BPMN2Specif( xmlString, opts ) {
 	}];
 
 	const
-//		nbsp = '&#160;', // non-breakable space
+	//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
-//		hId = 'BPMN-outline-' + apx,
+	//	hId = 'BPMN-outline-' + apx,
 		diagRef = '<object data="'+opts.fileName+'" type="'+opts.mimeType+'" >'+opts.fileName+'</object>';
 
 	// 1. Add the folders:
@@ -976,6 +976,16 @@ function BPMN2Specif( xmlString, opts ) {
 		title: model.title,
 		description: model.description,
 		class: "RC-Folder",
+		properties: [{
+			class: "PC-Name",
+			value: model.title
+		},{
+			class: "PC-Description",
+			value: model.description || ''
+		},{
+			class: "PC-Type",
+			value: opts.resClassOutline
+		}],
 		changedAt: opts.fileDate
 	}); */
 	// Add the tree:
@@ -1125,15 +1135,6 @@ function BPMN2Specif( xmlString, opts ) {
 			objectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
 			changedAt: opts.fileDate
 		},{
-			id: "SC-stores",
-			title: "SpecIF:stores",
-			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
-			instantiation: ['auto'],
-			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor"],
-			objectClasses: ["RC-State"],
-			changedAt: opts.fileDate
-		},{
 			id: "SC-writes",
 			title: "SpecIF:writes",
 			description: "Statement: Actor (Role, Function) writes State (Information)",
@@ -1161,6 +1162,15 @@ function BPMN2Specif( xmlString, opts ) {
 			objectClasses: ["RC-Actor", "RC-Event"],
 			changedAt: opts.fileDate
 	/*	},{
+			id: "SC-stores",
+			title: "SpecIF:stores",
+			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
+			instantiation: ['auto'],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: ["RC-Actor"],
+			objectClasses: ["RC-State"],
+			changedAt: opts.fileDate 
+		},{
 			id: "SC-signals",
 			title: "SpecIF:signals",
 			description: "A FMC:Actor 'signals' a FMC:Event.",

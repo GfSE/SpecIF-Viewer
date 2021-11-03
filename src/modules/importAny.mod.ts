@@ -48,7 +48,7 @@ moduleManager.construct({
 			help: i18n.MsgImportSpecif,	
 			opts: { mediaTypeOf: Lib.attachment2mediaType }
 		},{
-			id:'archimate',	
+			id:'xml',	
 			name:'ioArchimate',	
 			desc:'Archimate Open Exchange',
 			label:'Archimate®',

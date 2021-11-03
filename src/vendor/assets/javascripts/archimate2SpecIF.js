@@ -44,7 +44,7 @@ function Archimate2Specif( xmlString, opts ) {
 	if( !opts.strRoleType ) 
 		opts.strRoleType = "SpecIF:Role";  */
 	if( !opts.strNamespace ) 
-		opts.strNamespace = "Archimate:";
+		opts.strNamespace = "archimate:";
 	if( !Array.isArray(opts.hiddenDiagramProperties) )
 		opts.hiddenDiagramProperties = [];
 	
@@ -54,19 +54,20 @@ function Archimate2Specif( xmlString, opts ) {
 
 	// Get the model metadata:
 	let L = Array.from(xmlDoc.querySelectorAll("model"));
-/*	// There should be exactly one model per Open Exchange file:
+	// There should be exactly one model per Open Exchange file:
 	if( L.length<1 ) {
-		console.error("... with id '",model.id,"' has no model.");
+		console.error("Open-Exchange file with id '",model.id,"' has no model.");
 		return
 	};
-	if( L.length>1 )
-		console.warn("Diagram with id '",model.id,"' has more than one model.");  */
+/*	if( L.length>1 )
+		console.warn("Open-Exchange file with id '",model.id,"' has more than one model.");  */
 	
 	var model = {};
 	// The project's id and title:
 	model.id = L[0].getAttribute("identifier");
 
-	const nbsp = '&#160;', // non-breakable space
+	const
+	//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
 		hId = 'Archimate-' + apx;
 
@@ -78,6 +79,15 @@ function Archimate2Specif( xmlString, opts ) {
 //	model.resources = Folders();
 	model.resources = [];
 	model.statements = [];
+
+	// Reference the original Archimate Open Exchange file:
+	model.files = [ /*{
+		id: 'F-'+simpleHash(opts.fileName),
+		title: opts.fileName,
+		blob: new Blob([xmlString], {type: opts.mimeType}),
+		type: opts.mimeType,
+		changedAt: opts.fileDate
+	} */ ];
 
 	// 1. Add attributes:
 	Array.from( L[0].children, 
@@ -543,16 +553,6 @@ function Archimate2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-/*	// Reference used files,
-	// - the Archimate Open Exchange file:
-	model.files = [{
-		id: 'F-'+simpleHash(opts.fileName),
-		title: opts.fileName,
-		blob: new Blob([xmlString], {type: opts.mimeType}),
-		type: opts.mimeType,
-		changedAt: opts.fileDate
-	}];  */
-
 //	console.debug('Archimate',model);
 	return model;
 
