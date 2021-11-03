@@ -42,9 +42,9 @@ function viewSpecif():IApp {
 					name: 'ioSpecif'
 				},{
 					name: 'ioReqif'
-			/*	},{
-					name: 'ioArchimate'
 				},{
+					name: 'ioArchimate'
+			/*	},{
 					name: 'ioRdf' */
 				},{
 					name: 'ioBpmn'

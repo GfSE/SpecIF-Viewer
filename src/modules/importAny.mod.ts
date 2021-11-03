@@ -190,11 +190,10 @@ moduleManager.construct({
 		
 		$('#pageTitle').html( i18n.LblImport );
 		
-			function getFormat(p:string):object|undefined {
-				// filename without extension must have at least a length of 1:
-//				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
+			function getFormat(fN:string):object|undefined {
+//				console.debug('getFormat',fN.indexOf('.specif'),fN.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
-					if( p.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
+					if( fN.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
 						return formats[i];
 				};
 			}
@@ -241,8 +240,8 @@ moduleManager.construct({
 				};
 			};
 			// otherwise:
-			self.clear();
 			message.show( i18n.lookup('ErrInvalidFileType',self.file.name), {severity:'error'} );
+			self.clear();
 			self.show();
 			return;
 		};

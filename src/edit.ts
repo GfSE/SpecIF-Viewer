@@ -45,6 +45,8 @@ function editSpecif():IApp {
 					name: 'ioSpecif'
 				},{
 					name: 'ioArchimate'
+			/*	},{
+					name: 'ioRdf' */
 				},{
 					name: 'ioReqif'
 				},{
