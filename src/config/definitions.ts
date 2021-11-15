@@ -471,13 +471,13 @@ const CONFIG:any = {};
 	];
 */
 	CONFIG.nativeProperties = new Map([
-		["dcterms:created", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
+		["dcterms:created",	 { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
 		["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["dcterms:creator", { name: "createdBy", type: "xs:dateTime", check: function (): boolean { return true } }],
-		["SpecIF:createdBy", { name: "createdBy", type: "xs:dateTime", check: function (): boolean { return true } }],
 		["dcterms:modified", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
 		["SpecIF:changedAt", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["SpecIF:changedBy", { name: "changedBy", type:"xs:dateTime", check: function (): boolean { return true }}]
+		["dcterms:creator",  { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
+		["SpecIF:createdBy", { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
+		["SpecIF:changedBy", { name: "changedBy", type: "xs:string", check: function (): boolean { return true } }]
 	]);
 	CONFIG.icons = new Map([
 		['FMC:Actor',"&#9632;"],
