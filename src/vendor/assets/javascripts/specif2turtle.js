@@ -141,7 +141,7 @@ transformPropertyClasses = (propertyClasses) => {
                     + tier0RdfEntry(`this: meta:containsPropertyClassMapping :${id} .`)
                     + tier0RdfEntry(`:${id} a meta:PropertyClassMapping ;`)
                     + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
-                    + (title? tier1RdfEntry(`meta:title '${escapeSpecialCharaters(title)}' ; `) : '')
+                    + (title? tier1RdfEntry(`rdfs:label '${escapeSpecialCharaters(title)}' ; `) : '')
         //          + (title? tier1RdfEntry(`meta:vocabularyElement ${escapeSpecialCharaters(title)} ;`) : '')
                     + tier1RdfEntry(`meta:dataType '${escapeSpecialCharaters(dataType)}' ;`)
                     + (revision? tier1RdfEntry(`meta:revision '${escapeSpecialCharaters(revision)}' ;`) : '')
@@ -164,14 +164,14 @@ transformResourceClasses = (resourceClasses) => {
                     + tier0RdfEntry(`this: meta:containsResourceClassMapping :${id} .`)
                     + tier0RdfEntry(`:${id} a meta:ResourceClassMapping ;`)
                     + tier1RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
-                    + (title? tier1RdfEntry(`meta:title '${escapeSpecialCharaters(title)}';`):'')
+                    + (title? tier1RdfEntry(`rdfs:label '${escapeSpecialCharaters(title)}';`):'')
         //          + (title? tier1RdfEntry(`meta:vocabularyElement '${escapeSpecialCharaters(title)}' ;`):'')
-                    + (description? tier1RdfEntry(`meta:description '${escapeSpecialCharaters(description)}' ;`):'')
+                    + (description? tier1RdfEntry(`rdfs:comment '${escapeSpecialCharaters(description)}' ;`):'')
                     + (icon? tier1RdfEntry(`meta:icon '${escapeSpecialCharaters(icon)}' ;`):'')
                     + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`)
                     + (revision? tier1RdfEntry(`meta:revision '${escapeSpecialCharaters(revision)}' ;`):'')
-                    + (instantiation? extractRdfFromSpecifDataArray(`meta:instantiation`,instantiation) : '')
-                    + (propertyClasses? extractRdfFromSpecifDataArray(`meta:propertyClasses`,propertyClasses) : '')
+                    + (instantiation? extractRdfFromSpecif(`meta:instantiation`,instantiation) : '')
+                    + (propertyClasses? extractRdfFromSpecif(`meta:propertyClasses`,propertyClasses) : '')
                     + ' .';
     });
 
@@ -188,6 +188,7 @@ transformStatementClasses = (statementClasses) => {
     statementClasses.forEach( statementClass => {
         let {id , title , description , revision , changedAt , instantiation , subjectClasses , objectClasses} = statementClass;
         statementClassesTtlString += emptyLine()
+                    + tier0RdfEntry(`this: meta:containsStatementClassMapping :${id} .`)
                     + tier0RdfEntry(`:${id} a meta:StatementClassMapping ;`)
                     + tier0RdfEntry(`meta:id '${escapeSpecialCharaters(id)}' ;`)
                     + (title? tier1RdfEntry(`rdfs:label  '${escapeSpecialCharaters(title)}' ;`) : '')
@@ -195,9 +196,9 @@ transformStatementClasses = (statementClasses) => {
                     + (description? tier1RdfEntry(`rdfs:comment '${escapeSpecialCharaters(description)}' ;`) : '')
                     + (revision? tier1RdfEntry(`meta:revision: '${revision}' ;`) : '')
                     + tier1RdfEntry(`dcterms:modified '${escapeSpecialCharaters(changedAt)}' ;`)
-                    + (instantiation? extractRdfFromSpecifDataArray(`meta:instantiation`,instantiation) : '')
-                    + (subjectClasses? extractRdfFromSpecifDataArray(`meta:subjectClasses`,subjectClasses) : '')
-                    + (objectClasses? extractRdfFromSpecifDataArray(`meta:objectClasses `,objectClasses) : '')
+                    + (instantiation? extractRdfFromSpecif(`meta:instantiation`,instantiation) : '')
+                    + (subjectClasses? extractRdfFromSpecif(`meta:subjectClasses`,subjectClasses) : '')
+                    + (objectClasses? extractRdfFromSpecif(`meta:objectClasses `,objectClasses) : '')
                     + ' .';
         });
     
@@ -323,7 +324,7 @@ isArrayWithContent = (array) => {
     return (Array.isArray(array) && array.length > 0);
 };
 
-extractRdfFromSpecifDataArray = (predicate, objectArray) => {
+extractRdfFromSpecif = (predicate, objectArray) => {
     let TtlString = '';
     if(isArrayWithContent(objectArray)){
         TtlString = tier1RdfEntry(predicate);

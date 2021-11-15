@@ -210,7 +210,7 @@ var app:IApp,
 				- 'show()' selects the view of the specified module and hides all others.  */
 
 	var self:any = {};
-	let callWhenReady:Function,
+	let callWhenReady:Function|undefined,
 		loadPath = './';
 
 	self.init = ( appName:string, opts?:any ):void =>{
@@ -233,7 +233,7 @@ var app:IApp,
 		self.ready = [];
 
 		// init phase 1: Load the javascript routines common to all apps:
-		loadL(['bootstrap','fontAwesome','types','i18n','tree'], {done:init2} );
+		loadL(['bootstrap','font','types','i18n','tree'], {done:init2} );
 		return;
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
@@ -550,7 +550,7 @@ var app:IApp,
 //			console.debug('loadM',mod);
 			switch( mod ) {
 				// 3rd party:
-				case "fontAwesome":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+				case "font":				getCss( "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
 				case "bootstrap":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" );
 											getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;

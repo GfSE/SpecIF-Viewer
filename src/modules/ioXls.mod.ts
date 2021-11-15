@@ -418,7 +418,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									continue;
 								};
 
-						//		rC = itemById( specifData.resourceClasses, ws.resClass );
 								pC = itemById( specifData.propertyClasses as Item[], propClassId(ws.name+c) );
 //								console.debug('create p',c,cellName(c,row),cell,rC,pC);
 								if( pC ) {
@@ -462,7 +461,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									else {
 										// it is a statement:
 										obL = (cell.v as string).split(",");
-	//									console.debug('createRes - statement',pTi,obL);
+//										console.debug('createRes - statement',pTi,obL);
 										obL.forEach( (ob:string)=>{
 											oInner = RE.inQuotes.exec( ob );
 											if( oInner && oInner.length>2 ) {
@@ -710,7 +709,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// Add statementClass, if it is declared as such and if it is not yet listed:
 						if( sTi && indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.indexOf( sTi )>-1 ) {
 							sC = new StaClass( sTi );
-	//						console.debug( 'getStaClasses', sTi, sC );
+//							console.debug( 'getStaClasses', sTi, sC );
 							sCL.push( sC )
 						};
 					};
@@ -721,7 +720,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		
 		// Processing of transformData():
 		if( ws.range ) {
-			// only if the sheet has content:
+			// The sheet has content:
 
 			// 3.1 Create a resourceClass per XLS-sheet:
 			// The resourceClass' title is taken from the worksheet name, project name or a default is applied:
@@ -803,7 +802,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	}
 	function inBracketsAtEnd(str:string):string|undefined {
 		// Extract resourceClass in (round brackets) or [square brackets]:
-		//	let resL = /\s*(?:\(|\[)([a-zA-Z0-9:_\-].+?)(?:\)|\])$/.exec( pN );
+	//	let resL = /\s*(?:\(|\[)([a-zA-Z0-9:_\-].+?)(?:\)|\])$/.exec( pN );
 		let resL = RE.inBracketsAtEnd.exec(str);
 		if (Array.isArray(resL) && resL.length > 1)
 			return resL[1] || resL[2];

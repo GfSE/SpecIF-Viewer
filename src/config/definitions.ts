@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.v",
+	CONFIG.appVersion = "1.0.w",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -47,10 +47,6 @@ const CONFIG:any = {};
 	CONFIG.titleLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
 	CONFIG.titleLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
 	CONFIG.focusColor = '#1690D8';
-
-	// values for boolean 'true' and 'false':
-	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];
-	CONFIG.valuesFalse = ['false','no','falsch','nein','faux','non','0'];
 
 	// The indices of ..Extensions and ..Types must correspond!
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
@@ -471,13 +467,13 @@ const CONFIG:any = {};
 	];
 */
 	CONFIG.nativeProperties = new Map([
-		["dcterms:created", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
+		["dcterms:created",	 { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
 		["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["dcterms:creator", { name: "createdBy", type: "xs:dateTime", check: function (): boolean { return true } }],
-		["SpecIF:createdBy", { name: "createdBy", type: "xs:dateTime", check: function (): boolean { return true } }],
 		["dcterms:modified", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
 		["SpecIF:changedAt", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["SpecIF:changedBy", { name: "changedBy", type:"xs:dateTime", check: function (): boolean { return true }}]
+		["dcterms:creator",  { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
+		["SpecIF:createdBy", { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
+		["SpecIF:changedBy", { name: "changedBy", type: "xs:string", check: function (): boolean { return true } }]
 	]);
 	CONFIG.icons = new Map([
 		['FMC:Actor',"&#9632;"],
@@ -492,6 +488,19 @@ const CONFIG:any = {};
 		["IR:Annotation","&#9755;"]
 	]);
 
+	// values for boolean 'true' and 'false':
+	CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', '1'];
+	CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', '0'];
+
+/*	// values for priority:
+	CONFIG.valuesPriority = [
+		{ term: 'SpecIF:priorityHigh', translations: ['high', 'hoch'] },
+		{ term: 'SpecIF:priorityRatherHigh', translations: ['rather high', 'eher hoch'] },
+		{ term: 'SpecIF:priorityMedium', translations: ['medium', 'mittel'] },
+		{ term: 'SpecIF:priorityRatherLow', translations: ['rather low', 'eher niedrig'] },
+		{ term: 'SpecIF:priorityLow', translations: ['low', 'niedrig'] }
+	];  */
+
 const vocabulary = {
 	// Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
 	property: {
@@ -505,36 +514,36 @@ const vocabulary = {
 				case "title":
 				case "titel":
 				case "dc_title":
-				case "specif_heading":			//  'SpecIF:Heading' has been used falsely as property title
+				case "specif_heading":			//  has been used falsely as property title
 				case "reqif_chaptername":
-				case "reqif_name": oT = CONFIG.propClassTitle; break;
+				case "reqif_name":					oT = CONFIG.propClassTitle; break;
 				case "description":
 				case "beschreibung":
 				case "text":
 				case "dc_description":
-				//	case "reqif_changedescription":
+			//	case "reqif_changedescription":
 				case "reqif_description":
-				case "reqif_text": oT = CONFIG.propClassDesc; break;
-				case "reqif_revision": oT = "SpecIF:Revision"; break;
+				case "reqif_text":					oT = CONFIG.propClassDesc; break;
+				case "reqif_revision":				oT = "SpecIF:Revision"; break;
 				case "specif_stereotype":		// deprecated, for compatibility, not to confound with "UML:Stereotype"
 				case "specif_subclass":			// deprecated, for compatibility
-				case "reqif_category": oT = CONFIG.propClassType; break;
+				case "reqif_category":				oT = CONFIG.propClassType; break;
 				case 'specif_id':				// deprecated, for compatibility
-				case "reqif_foreignid": oT = CONFIG.propClassId; break;
+				case "reqif_foreignid":				oT = CONFIG.propClassId; break;
 				case "specif_state":			// deprecated, for compatibility
-				case "reqif_foreignstate": oT = "SpecIF:Status"; break;
+				case "reqif_foreignstate":			oT = "SpecIF:Status"; break;
 				case "dc_author":
 				case "dcterms_author":			// deprecated, for compatibility
-				case "reqif_foreigncreatedby": oT = "dcterms:creator"; break;
-				case "specif_createdat": oT = "dcterms:modified"; break;
-				//	case "reqif_foreignmodifiedby":		oT = ""; break;
-				//	case "reqif_foreigncreatedon":		oT = ""; break;
-				//	case "reqif_foreigncreatedthru":	oT = ""; break;
-				//	case "reqif_fitcriteria":			oT = ""; break;
-				//	case "reqif_prefix":				oT = ""; break;
-				//	case "reqif_associatedfiles":		oT = ""; break;
-				//	case "reqif_project":				oT = ""; break;
-				//	case "reqif_chapternumber":			oT = ""; break;
+				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
+				case "specif_createdat":			oT = "dcterms:modified"; break;
+			//	case "reqif_foreignmodifiedby":		oT = ""; break;
+			//	case "reqif_foreigncreatedon":		oT = ""; break;
+			//	case "reqif_foreigncreatedthru":	oT = ""; break;
+			//	case "reqif_fitcriteria":			oT = ""; break;
+			//	case "reqif_prefix":				oT = ""; break;
+			//	case "reqif_associatedfiles":		oT = ""; break;
+			//	case "reqif_project":				oT = ""; break;
+			//	case "reqif_chapternumber":			oT = ""; break;
 				default: oT = iT;
 			};
 			return oT;
@@ -543,17 +552,17 @@ const vocabulary = {
 			// Target language: ReqIF
 			var oT = '';
 			switch (iT.specifIdOf().toLowerCase()) {
-				case "dcterms_title": oT = "ReqIF.Name"; break;
-				case "dcterms_description": oT = "ReqIF.Text"; break;
-				case "dcterms_identifier": oT = "ReqIF.ForeignId"; break;
-				case "specif_heading": oT = "ReqIF.ChapterName"; break;	// for compatibility
+				case "dcterms_title":				oT = "ReqIF.Name"; break;
+				case "dcterms_description":			oT = "ReqIF.Text"; break;
+				case "dcterms_identifier":			oT = "ReqIF.ForeignId"; break;
+				case "specif_heading":				oT = "ReqIF.ChapterName"; break;	// for compatibility
 				case "specif_category":
-				case "dcterms_type": oT = "ReqIF.Category"; break;
-				case "specif_revision": oT = "ReqIF.Revision"; break;
+				case "dcterms_type":				oT = "ReqIF.Category"; break;
+				case "specif_revision":				oT = "ReqIF.Revision"; break;
 				case "specif_state":			// deprecated, for compatibility
-				case "specif_status": oT = "ReqIF.ForeignState"; break;
+				case "specif_status":				oT = "ReqIF.ForeignState"; break;
 				case "dcterms_author":			// deprecated, for compatibility
-				case "dcterms_creator": oT = "ReqIF.ForeignCreatedBy"; break;
+				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
 			//	case "specif_createdat":
 			//	case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
 				default: oT = iT;
@@ -570,35 +579,35 @@ const vocabulary = {
 				case 'actors':
 				case 'actor':
 				case 'akteure':
-				case 'akteur': oT = "FMC:Actor"; break;
+				case 'akteur':						oT = "FMC:Actor"; break;
 				case 'states':
 				case 'state':
 				case 'zustände':
-				case 'zustand': oT = "FMC:State"; break;
+				case 'zustand':						oT = "FMC:State"; break;
 				case 'events':
 				case 'event':
 				case 'ereignisse':
-				case 'ereignis': oT = "FMC:Event"; break;
+				case 'ereignis':					oT = "FMC:Event"; break;
 				case 'anforderungen':
 				case 'anforderung':
 				case 'requirements':
 				case 'requirement':
-				case 'specif_requirement': oT = "IREB:Requirement"; break;
+				case 'specif_requirement':			oT = "IREB:Requirement"; break;
 				case 'merkmale':
 				case 'merkmal':
 				case 'features':
-				case 'feature': oT = "SpecIF:Feature"; break;
+				case 'feature':						oT = "SpecIF:Feature"; break;
 				case 'annotations':
 				case 'annotationen':
-				case 'annotation': oT = "IR:Annotation"; break;
+				case 'annotation':					oT = "IR:Annotation"; break;
 				case 'user_stories':
-				case 'user_story': oT = 'SpecIF:UserStory'; break;
+				case 'user_story':					oT = 'SpecIF:UserStory'; break;
 				case 'specif_view':
-				case 'fmc_plan': oT = CONFIG.resClassDiagram; break;
-				case 'specif_folder': oT = CONFIG.resClassFolder; break;
+				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
+				case 'specif_folder':				oT = CONFIG.resClassFolder; break;
 				case 'specif_hierarchyroot':
-				case 'specif_hierarchy': oT = CONFIG.resClassOutline; break;
-				default: oT = iT;
+				case 'specif_hierarchy':			oT = CONFIG.resClassOutline; break;
+				default:							oT = iT;
 			};
 			return oT;
 			/*	},
