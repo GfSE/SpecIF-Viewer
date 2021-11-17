@@ -6,7 +6,9 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
-
+//type="module";
+//import { now } from "jquery";
+ // Globally defined 2 dimensional arry to prepare the Excel sheet content	
 // Constructor for XLS import:
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent...')
 moduleManager.construct({
@@ -64,12 +66,226 @@ moduleManager.construct({
 	self.toXls = function (pr: SpecIF, options: any):void {
 		console.debug('toXls', pr);
 		options.done();
+		specif2xlsx (pr);
 	}; 
 	self.abort = function():void {
 		app.cache.abort();
 		self.abortFlag = true
 	};
 	return self;
+
+function specif2xlsx (pr: SpecIF)
+{
+// XLSX Testcode:
+/* Write data starting at A2 */
+//XLSX.utils.sheet_add_aoa(ws, [[1,2], [2,3], [3,4]], {origin: "A2"});
+
+/* Write data starting at E2 */
+//XLSX.utils.sheet_add_aoa(ws, [[5,6,7], [6,7,8], [7,8,9]], {origin:{r:1, c:4}});
+
+/* Append row */
+//XLSX.utils.sheet_add_aoa(ws, [[4,5,6,7,8,9,0]], {origin: -1});
+//var ws_data = [['hello' , 'world', 'und','noch','was ']];  //a row with 5 columns
+//XLSX.utils.sheet_add_aoa(ws,ws_data,{origin: -1});
+//console.log(XLSX.utils.sheet_to_csv(ws));
+//XLSX.utils.book_append_sheet(wb, ws, 'Seite 1');
+
+	
+console.debug('Export to XLSX ', pr.id);
+
+// empty array of array for XLSX Worksheets
+    pr.hierarchies.forEach( function(h) {
+	    
+		let resFile: Resource = itemById (pr.resources, h.resource as string);
+		let xlsFileName = resFile.title;
+		var wb = XLSX.utils.book_new(); // Create Workbook
+		var ws = XLSX.utils.aoa_to_sheet([]);	
+
+			wb.Props = {
+				Title:    resFile.title + 'xlsx',
+				Subject: "Export SpecIF to XLSX Format",
+				Author:  "Winfried Reichardt"
+			}
+				console.debug ("Workbook created " +resFile.title + 'xlsx');
+
+		// console.debug ("Workbook ",xlsFileName + '.xlsx'); // hier nur Workbookname !!
+        if (h.nodes != null) { // if h.nodes exist
+		    h.nodes.forEach (function (h1) {  // h.nodes for each XLSX Workbook
+			
+			    var resid1  = h1.resource;
+			    let hR1 = itemById( pr.resources, resid1 as string );// the resource referenced by this node
+			    let iR1 = indexById (pr.resources, resid1 as string); // Index id		
+			    console.debug ( "Workbook1 ", hR1.title +'.xlsx', " WBIndex1 ", iR1 , hR1.id,  );	// resource id and title
+			    var wb = XLSX.utils.book_new(); // Create Workbook
+			    
+                
+			    wb.Props = {
+			    	Title:    hR1.title + 'xlsx',
+			    	Subject: "Export SpecIF to XLSX Format",
+			    	Author:  "Winfried Reichardt"
+			    	
+			    };
+			    console.debug ("Workbook created " +hR1.title + 'xlsx');
+			    
+			    
+			    if (h1.nodes != null) { // check, whether h1.nodes exists
+			        var ws = XLSX.utils.aoa_to_sheet([]);
+			        h1.nodes.forEach (function (h2) {   // for each Worksheet 
+						ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet	
+
+			    	    var resid2  = h2.resource;
+			    	    let hR2 = itemById( pr.resources, resid2 as string );// the resource referenced by this node
+			    	    let iR2 = indexById (pr.resources, resid2 as string); // Index id		
+			    	    //console.debug ( hR2, iR2 , hR2.id, hR2.title );	// resource id and sheetname
+			    	    
+			    	    console.debug ( "Worksheet ", hR2.title, " WsIndex ", iR2 , hR2.id,  );	// resource id and title
+                        
+			    	    var headerBuilt = false; // new header for every new Worksheet
+			    	    var topLineRclassIds: string[];
+			    	    var topLineTitles: string[];
+			    	    var aoaArray= []; 
+			    	    //aoaArray = [['','','','','','','','','','','','','','','','','','']];
+			    	    
+			    	    //[["one","two","three","four"]];
+			    	    //console.debug ("aoaArray table");
+			    	    
+			    	    //aoaArray.splice(2,0,["six",2]);
+			    	    //aoaArray.splice(2,0,["seven",3]);
+			    	    //console.debug (aoaArray);
+                        
+			    	    //for (var j=0;j<20;j++){
+			    	    ///	aoaArray [0][j]="leer";
+			    	    //}
+			    	    //console.debug (aoaArray);
+			    	    
+			    	    var lineItems: string [];
+			    	    if (  h2.nodes != null ) { // check, whether h2.nodes exists
+			    	        h2.nodes.forEach (function (h3) {  // for each line
+			    	        	
+			    	        	lineItems = []; //clear array
+			    	        	aoaArray = [['','','','','','','','','','','','','','','','','','']];
+			    	        	var resid3  = h3.resource;
+			    	        	let hR3 = itemById( pr.resources, resid3 as string );// the resource referenced by this node
+			    	        	let iR3 = indexById (pr.resources, resid3 as string); // Index id	
+			    	        	console.debug ( "LineItem ", hR3.title, " Index ", iR3 , hR3.id, hR3.class );
+                               
+			    	        	if (headerBuilt == false) {
+			    	        		// Build lineArray and fill according to fields IDs in ResourceClass
+			    	        	    topLineRclassIds  = []; // empty arrays 
+			    	        	    topLineTitles = []; 
+			    	        	    var pClassItem : PropertyClass;
+			    	        	    var i =0;
+                            
+			    	        	    let hRC3 = itemById( pr.resourceClasses, hR3.class as string );
+			    	        		console.debug ( "ResourceClass ",hRC3.id, hRC3.propertyClasses, hRC3 );
+			    	        		for (i = 0 ; i< hRC3.propertyClasses.length; i++)  //copy property Class ID strings
+			    	        		{	
+			    	        			topLineRclassIds[i] = hRC3.propertyClasses[i];
+			    	        			console.debug ( "Propertyclasses", topLineRclassIds[i]);
+                            
+			    	        			pClassItem = itemById( pr.propertyClasses, topLineRclassIds[i] );
+			    	        			topLineTitles[i] = pClassItem.title as string;
+			    	        			
+			    	        		};
+			    	        		console.debug ( "TopLineTitleIds ", topLineRclassIds, topLineTitles );
+			    	        		
+			    	        		
+			    	        		for (i=0;i<topLineTitles.length;i++){
+			    	        			aoaArray [0][i]=topLineTitles[i];
+			    	        		}
+			    	        		console.debug("aoaArray", aoaArray);
+			    	        			
+			    	        		
+			    	        		XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: 0});  //Shall be written as Top Line
+                                    //aoaArray=[]; //clear content of array
+			    	        		aoaArray = [['','','','','','','','','','','','','','','','','','']];
+			    	                headerBuilt = true; // Only built once first at the beginning for the topline in each Excel Worksheet
+			    	        	}
+                            
+			    	        	// Fill line Array	
+			    	        	
+			    	        	hR3.properties.forEach (function (rProp) { 
+			    	        	    var writeIdx = topLineRclassIds.indexOf (rProp.class);
+			    	        	    if (writeIdx < topLineRclassIds.length)
+			    	        	    {
+			    	        	  	    lineItems [writeIdx]=rProp.value;
+			    	        			  
+			    	        			if  (rProp.value.indexOf ("DT--")!=-1){
+			    	        				// Replace Enumeration ID with Datatype Enumeration Value
+			    	        				const DTItemIDLen = 13 ;// e.g. "DT--964552835"
+			    	        				
+			    	        				let DTypeId = rProp.value.substring(0,DTItemIDLen);
+			    	        				let DTItem = itemById( pr.dataTypes, DTypeId);
+                            
+			    	        				// Find the Enum Value for Enum ID
+			    	        				for (i=0; i< DTItem.values.length; i++){
+			    	        					//console.debug ( "for loop datatype Values ", rProp.value, DTItem.values[i].id);
+			    	        					if (rProp.value == DTItem.values[i].id){
+			    	        						//console.debug ( "Datatype Values ", DTItem.values[i].value, i , DTItem.values);
+			    	        						lineItems [writeIdx]= DTItem.values[i].value; // Write Enum Value
+			    	        					}
+			    	        					else
+			    	        					{
+			    	        						//console.debug ( "Datatype Values not eq ", rProp.value , DTItem.values[i].id, i , DTItem.values);
+			    	        					};
+			    	        				};
+			    	        				
+			    	        				
+			    	        				let enumIdx = indexById (DTItem,rProp.value);
+			    	        				//console.debug ( "Enum Value ", DTItem.values, DTItem.values.length, rProp.value , enumIdx);
+			    	        				
+                            
+			    	        			};
+			    	        	        
+			    	        			//var outstring : string; 
+			    	        			//outstring = "two";//aoaArray[2][0] as string;
+			    	        			//console.debug("aoaArray " + outstring );
+			    	        		}
+			    	        	    else
+			    	        	    {
+			    	        	    	console.debug ( "PropertyClassID not found " );
+			    	        		};
+			    	        	}); //end resProperties
+			    	        	//console.debug ( "LineItems", lineItems );
+			    	        			
+			    	        	for (i=0;i<lineItems.length;i++){
+			    	        	    aoaArray [0][i]=lineItems[i];
+			    	        	}
+			    	        	XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: -1}); // add a line at the end
+                            
+			    	        						
+							});	// h2.nodes fpr each line end
+			            } // end check, whether h2.nodes exists
+						else
+						{ // h2.node does not exists - no lines
+							
+						};
+                        console.debug ("Append WS",hR1.title, ws );
+			    	    XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook
+			    	    headerBuilt = false; // ready for next header
+			        
+			        }); // h1.nodes for each Worksheet  end
+			        XLSX.writeFile(wb, hR1.title + '.xlsx' ); 			
+			             
+		        }// end if h1.nodes exists 
+				else
+				{ // h1.nodes does not exists : no Worksheet
+			         console.debug ("no Worksheet");
+				};
+		    }); // h.nodes end h: for each XLSX Workbook
+		  
+	    } // end If h.nodes exists
+		else
+		{ // h.node does not exist
+			console.debug ("empty Worksheet");
+			XLSX.utils.book_append_sheet(wb, ws,"Table1"); //append default empty worksheet to Workbook
+			XLSX.writeFile(wb, resFile.title + '.xlsx' ); // attempt to write wb to filename to local directory or download in browser 
+		}; // end of check whether h.nodes exist 
+		
+
+	}); // pr.hierarchies end
+
+} // function specif2xlsx end 
 
 function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	"use strict";
@@ -291,19 +507,41 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				return cell && cell.t=='d';
 			}
 			function isNumber(cell: ICell ):boolean {
-				return cell && cell.t=='n';
-			}
+				//return cell && cell.t=='n';
+				if (cell == undefined) {return true};
+				
+				var floatCell: number = parseFloat (cell.v as string);
+				if (Number.isNaN (floatCell) ) 
+				{return false;} 
+				else
+				{ 
+				   cell.t = "n";
+				   cell.v = floatCell; 
+				   console.debug('isNumber',cell, floatCell, typeof cell == 'number', 
+				   typeof floatCell == 'number', "int ", Number.isInteger (cell.v as number), 
+				   "bool ", typeof cell == 'boolean'); 
+				  
+				   return true;
+			    }
+		    }
+
 			function isInt(cell: ICell): boolean {
+				if (cell == undefined) {return true};
 				return isNumber( cell ) && Number.isInteger( cell.v as number );
 			}
 			function isReal(cell: ICell): boolean {
+				if (cell == undefined) {return true};
 				return isNumber(cell) && !Number.isInteger( cell.v as number );
 			}
 			function isBool(cell: ICell): boolean {
-//				console.debug('isBool',cell);
-				return cell && (cell.t == 'b' || typeof (cell.v) == 'string' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
+				if (cell == undefined) {return true};
+				console.debug('isBool',cell, cell.v );
+                //if (typeof cell.v == "boolean")  {return true} else {return false};
+				return cell && ( typeof (cell.v) == 'string' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
+
 			}
 			function isStr(cell: ICell): boolean {
+				if (cell.t =='s' && cell.v == ''){return false}; // empty cell is not type string
 				return cell && cell.t=='s';
 			}
 		/*	function isXHTML( cell ):boolean {
@@ -658,14 +896,15 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					// start with the last and stop with the second line:
 					for( i=valL.length-1; i>0; i-- ) {
 						nC = classOf(valL[i]);
-//						console.debug('getPropClass 2',i,pC,valL[i],nC);
+   					    console.debug('getPropClass 2',i,pC,valL[i],nC);
 						if( nC.length<1 ) continue;
-						if( !pC ) { pC = nC; continue };
-						if( pC==nC ) continue;
-						if( pC=='Real' && nC=='Integer' ) continue;
-						if( pC=='Integer' && nC=='Real' ) { pC = 'Real'; continue };
-						// else: the classes are not equal, take the least restrictive:
-						pC = defaultC;
+
+						if (pC == defaultC) { continue };
+						if (nC == defaultC) {pC = defaultC; continue };
+						if (!pC && nC == 'Boolean') {pC = 'Boolean'; continue };
+						if (( !pC || pC == 'Boolean' ) && nC == 'Integer' ) {pC = 'Integer'; continue};
+						if (( !pC || pC == 'Boolean' || pC == 'Integer' ) && nC=='Real' ) {pC = 'Real'; continue};
+												
 					};
 					// Assign a longer text field for descriptions:
 					if( CONFIG.descProperties.indexOf( pTi )>-1 ) pC = 'Text';

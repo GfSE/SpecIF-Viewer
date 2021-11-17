@@ -15,7 +15,7 @@ moduleManager.construct({
 
 	var mime: string;
 	self.init = function():boolean {
-		mime = undefined;
+		mime = undefined!;
 		return true;
 	};
 	self.verify = function( f ):boolean {

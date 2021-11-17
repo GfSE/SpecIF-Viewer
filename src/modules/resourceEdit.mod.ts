@@ -200,7 +200,7 @@ moduleManager.construct({
 		};
 		return;
 		
-		function editResource(res,opts) {
+		function editResource(res: Resource, opts: { dialogTitle: any; msgBtns: any; }) {
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):

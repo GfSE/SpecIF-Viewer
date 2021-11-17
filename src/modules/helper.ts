@@ -143,7 +143,7 @@ function radioField(tag: string, entries: IBox[], opts?: IFieldOptions): string 
 	// zero or one checked entry is allowed:
 	let found = false, temp:boolean; 
 	entries.forEach( (e)=>{
-		temp = found || e.checked;
+		temp = found || e!.checked;
 		if( found && e.checked )
 			e.checked = false; // only the first check will remain
 		found = temp;
@@ -940,9 +940,9 @@ Lib.localDateTime = (iso:string):string =>{
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 function simpleHash(str: string): string {
 	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
-	return r
+	return r as unknown as string;
 };
-function simpleClone( o ) {
+function simpleClone( o ): any {
 	// "deep" clone;
 	// does only work, if none of the property values are functions:
 		function cloneProp(p) {

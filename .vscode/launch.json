@@ -1,0 +1,70 @@
+{
+  // Use IntelliSense to learn about possible Node.js debug attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+  {
+    "name": "Attach to Chrome",
+    "port": 9222,
+    "request": "attach",
+    "type": "pwa-chrome",
+    "webRoot": "${workspaceFolder}"
+  },
+    {
+      "name": "Run Smoke Test Program",
+      "type": "node",
+      "program": "${workspaceFolder}/dist/smoke.js",
+      "request": "launch",
+      "preLaunchTask": "npm: build"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach by Process ID",
+      "processId": "${command:PickProcess}",
+      "protocol": "inspector"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run Code from Chapter 1",
+      "program": "${workspaceFolder}/chapters/chapter-1_Getting_Started_With_Typescript_4/${input:programNameChapter1}",
+      "preLaunchTask": "tsc: build Chapter 1",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run Code from Chapter 2",
+      "program": "${workspaceFolder}/chapters/chapter-2_Core_Principles_and_use_cases/${input:programNameChapter2}",
+      "preLaunchTask": "tsc: build Chapter 2",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+    },
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "programNameChapter1",
+      "description": "What program you want to launch?",
+      "options": [
+        "intro.ts",
+        "inputOutput.ts",
+        "classDiagrams.ts",
+        "computeFrequency.ts",
+        "removeDuplicateVars.ts",
+        "refactoring.ts",
+        "libraries.ts",
+        "features.ts"
+      ],
+      "default": "computeFrequency.ts"
+    },
+    {
+      "type": "pickString",
+      "id": "programNameChapter2",
+      "description": "What program you want to launch?",
+      "options": ["intro.ts"],
+      "default": "intro.ts"
+    },
+  ]
+}
