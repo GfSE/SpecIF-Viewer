@@ -246,6 +246,7 @@ var app:IApp,
 					done: () => {
 						// Create and initialize the app,
 						// appName is 'editSpecif' found in edit.ts, for example:
+						// @ts-ignore - index value appName as string is valid:
 						window.app = window[appName]();
 
 						// Add a global spinner with state control;

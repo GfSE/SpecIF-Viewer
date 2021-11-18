@@ -204,7 +204,7 @@ function checkboxField(tag: string, entries: IBox[], opts?: IFieldOptions): stri
 			+	'</div>';
 	return cB;
 }
-function checkboxValues( tag:string ) {
+function checkboxValues( tag:string ):string[] {
 	// get the selected check boxes as array with indices:
 	let chd = $('input[name="checkbox' + simpleHash(tag)+'"]:checked');
 	var resL = [];
@@ -1025,6 +1025,7 @@ function getUrlParams(opts?:any):any {
 			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
 			// look for specific tokens, only:
 			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
+				// @ts-ignore - indexing is ok:
 				pO[p[0]] = p[1];
 			else
 				console.warn("Unknown URL-Parameter '",p[0],"' found.");

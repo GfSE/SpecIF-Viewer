@@ -38,21 +38,31 @@ interface IFileWithContent extends SpecifFile {
 class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;
+	// @ts-ignore - see constructor for initializer:
 	dataTypes: DataType[];
+	// @ts-ignore - see constructor for initializer:
 	propertyClasses: PropertyClass[];
+	// @ts-ignore - see constructor for initializer:
 	resourceClasses: ResourceClass[];
+	// @ts-ignore - see constructor for initializer:
 	statementClasses: StatementClass[];
+	// @ts-ignore - see constructor for initializer:
 	resources: Resource[];   		// list of resources as referenced by the hierarchies
+	// @ts-ignore - see constructor for initializer:
 	statements: Statement[];
+	// @ts-ignore - see constructor for initializer:
 	hierarchies: SpecifNode[];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
+	// @ts-ignore - see constructor for initializer:
 	files: IFileWithContent[];
 	constructor(opts:any) {
 		this.cacheInstances = opts.cacheInstances;
 		for (var le of standardTypes.listName.keys())
+			// @ts-ignore - index is ok:
 			this[standardTypes.listName.get(le)] = [];
 	}
 	length(ctg: string): number {
 		// Return the number of cached items per category:
+		// @ts-ignore - index is ok:
 		return this[standardTypes.listName.get(ctg)].length;
 	}
 	has(ctg: string, req: Item[] | Item | string): boolean {
@@ -61,6 +71,7 @@ class CCache {
 			throw Error("Querying whether 'all' items are available is pretty useless.");
 
 		if (Array.isArray(req)) {
+			// @ts-ignore - index is ok:
 			let L = this[standardTypes.listName.get(ctg)];
 			for (var i = req.length - 1; i > -1;i--) {
 				if (indexById(L, req.id || req) < 0) return false;
@@ -68,11 +79,12 @@ class CCache {
 			return true;
 		}
 		else
+			// @ts-ignore - index is ok:
 			return indexById(this[standardTypes.listName.get(ctg)],req)>-1;
 	}
-	put(ctg: string, item: Item[] | Item): void {
+	put(ctg: string, item: Item[] | Item): number | boolean {
 		if (!item || Array.isArray(item) && item.length < 1)
-			return;
+			return false;
 		// If item is a list, all elements must have the same category.
 		function cacheIfNewerE(L: Item[], e: Item): number {  // ( list, entry )
 			// Add or update the item e in a list L, if created later:
@@ -87,7 +99,7 @@ class CCache {
 				L[n] = e;
 			return n;
 		}
-		function cacheIfNewerL(L: Item[], es: Item[]): void {  // ( list, entries )
+		function cacheIfNewerL(L: Item[], es: Item[]): boolean {  // ( list, entries )
 			// add or update the items es in a list L:
 			es.forEach((e) => { cacheIfNewerE(L, e) })
 			// this operation cannot fail:
@@ -100,13 +112,13 @@ class CCache {
 			case 'propertyClass':
 			case 'resourceClass':
 			case 'statementClass':
-				// @ts-ignore - addressing is perfectly ok
+				// @ts-ignore - indexing is perfectly ok
 				return fn(this[standardTypes.listName.get(ctg)], item);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances) {
-					// @ts-ignore - addressing is perfectly ok
+					// @ts-ignore - indexing is perfectly ok
 					return fn(this[standardTypes.listName.get(ctg)], item);
 				};
 				return true;
@@ -1453,7 +1465,7 @@ class CProject {
 							//	{ title: 'RDF', id: 'rdf' },
 							{ title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
-							{ title: 'MS WORD® (Open XML)', id: 'oxml' }
+							{ title: 'MS Word® (Open XML)', id: 'oxml' }
 						],
 						{ handle: exportFormatClicked }  // options depend on format
 					)
@@ -1487,7 +1499,8 @@ class CProject {
 						};
 						// further options according to the checkboxes:
 						checkboxValues(i18n.modelElements).forEach(
-							(op) => {
+							(op: string) => {
+								// @ts-ignore - indexing is valid: 
 								options[op] = true
 							}
 						);

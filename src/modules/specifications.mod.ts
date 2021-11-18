@@ -30,6 +30,7 @@ class CPropertyToShow implements Property {
 	// @ts-ignore - presence of 'value' is checked by the schema on import
 	value: ValueElement[] | string;
 	constructor(prp: Property) {
+		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
     }
 	isVisible(opts: any): boolean {
@@ -841,6 +842,7 @@ class CFileWithContent implements IFileWithContent {
 	blob?: Blob;
 	dataURL?: string;
 	constructor(f: IFileWithContent) {
+		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
     }
 	hasBlob(): boolean {
@@ -1289,7 +1291,9 @@ moduleManager.construct({
 										ch = mNd.children.map( toSpecIF );
 									if( ch.length>0 ) nd.nodes = ch;
 									// copy predecessor or parent:
-									if( tgt ) for( var p in tgt ) { nd[p] = tgt[p].id };
+									if (tgt)
+										// @ts-ignore - index is ok:
+										for (var p in tgt) { nd[p] = tgt[p].id };
 									return nd;
 								}
 							}

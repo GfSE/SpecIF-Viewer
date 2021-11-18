@@ -116,7 +116,8 @@ class CSpecIF implements SpecIF {
 		);
 	} 
 	private check(spD: SpecIF, opts?: any): Promise<SpecIF> {
-		// Check the SpecIF data for schema compliance and consistency:
+		// Check the SpecIF data for schema compliance and consistency;
+		// 'this' isn't modified, so it shall be invoked before 'toInt' is called:
 		return new Promise(
 			(resolve, reject) => {
 				let checker: any;
@@ -131,7 +132,8 @@ class CSpecIF implements SpecIF {
 						dataType: "script",
 						cache: true,
 						url: (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0 ?
-							(window.location.href.startsWith('file:/') ? '../../SpecIF/check/CCheck.min.js'
+							(window.location.href.startsWith('file:/') ? '../../SpecIF/check/CCheck.min.js'  // take it locally ..
+								// or load it from the homepage, otherwise:
 								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.js')
 							: 'https://specif.de/v1.0/CCheck.min.js') // older versions are covered by v1.0/check.js
 					})
@@ -159,31 +161,32 @@ class CSpecIF implements SpecIF {
 				function handleResult(xhr: XMLHttpRequest) {
 					// @ts-ignore - checkSchema() and checkConstraints() are defined in check.js loaded at runtime
 					if (typeof (checker.checkSchema) == 'function' && typeof (checker.checkConstraints) == 'function') {
-						//						console.debug('schema', xhr);
+//						console.debug('schema', xhr);
 						// 1. check data against schema:
+						let sma = JSON.parse(Lib.ab2str(xhr.response));
+						// Override meta-schema until we get to work "https://json-schema.org/draft/2019-09/schema#";
+						// the schema check itself does not need the features of the newer one,
+						// but a future check of values xs:duration in the constraint-check does:
+						sma['$schema'] = "http://json-schema.org/draft-04/schema#";
+
 						// @ts-ignore - checkSchema() is defined in check.js loaded at runtime
-						let rc: xhrMessage = checker.checkSchema(spD, { schema: JSON.parse(Lib.ab2str(xhr.response)) });
+						let rc: xhrMessage = checker.checkSchema(spD, { schema: sma });
 						if (rc.status == 0) {
 							// 2. Check further constraints:
 							// @ts-ignore - checkConstraints() is defined in check.js loaded at runtime
 							rc = checker.checkConstraints(spD, opts);
 							if (rc.status == 0) {
 								resolve(spD);
+								return;
 							}
-							else {
-								reject(rc);
-							};
-						}
-						else {
-							// older versions of the checking routine don't set the responseType:
-							if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
-								rc.responseType = 'text';
-							reject(rc);
 						};
+					/*	// older versions of the checking routine don't set the responseType:
+						if (typeof (rc.responseText) == 'string' && rc.responseText.length > 0)
+							rc.responseType = 'text';  */
+						reject(rc);
 					}
-					else {
-						reject({ status: 999, statusText: 'Standard routines checkSchema and checkConstraints are not available.' });
-					}
+					else
+						throw Error( 'Standard routines checkSchema and checkConstraints are not available.' );
 				}
 				function handleError(xhr: xhrMessage) {
 					switch (xhr.status) {
@@ -749,7 +752,7 @@ class CSpecIF implements SpecIF {
 					};
 
 					// ToDo: schema and consistency check (if we want to detect any programming errors)
-					//				console.debug('specif.toExt exit',spD);
+//					console.debug('specif.toExt exit',spD);
 					resolve(spD);
 				}
 
@@ -841,6 +844,7 @@ class CSpecIF implements SpecIF {
 					var oE = i2ext(iE);
 					if (iE.icon) oE.icon = iE.icon;
 					if (iE.instantiation) oE.instantiation = iE.instantiation;
+					// @ts-ignore - index is ok:
 					if (iE._extends) oE['extends'] = iE._extends;
 					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
 					return oE
@@ -1007,6 +1011,7 @@ class CSpecIF implements SpecIF {
 					var oE = i2ext(iE);
 //					console.debug('a2ext',iE,opts);
 					// resources and hierarchies usually have individual titles, and so we will not lookup:
+					// @ts-ignore - index is ok:
 					oE['class'] = iE['class'];
 					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 					if (iE.properties && iE.properties.length > 0) oE.properties = Lib.forAll(iE.properties, p2ext);
