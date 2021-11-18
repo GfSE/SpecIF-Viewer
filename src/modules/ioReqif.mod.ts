@@ -512,6 +512,7 @@ moduleManager.construct({
 			h.id = hR.id;  // the resource's id takes precedence
 			h.title = hR.title || '';
 			h.description = hR.description || '';
+			// @ts-ignore - index is ok:
 			h['class'] = hC.id;
 			if( hR.properties ) h.properties = hR.properties;
 			// further down, only the resources referenced by the children will be included as OBJECT,
@@ -584,6 +585,7 @@ moduleManager.construct({
 		// 8. Transform hierarchies to SPECIFICATIONs:
 		pr.hierarchies.forEach( function(h) {
 			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
+				// @ts-ignore - index is ok:
 				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
 				+		attsOf( h )
 				+   	childrenOf( h )
