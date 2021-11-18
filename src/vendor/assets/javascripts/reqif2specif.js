@@ -124,18 +124,23 @@ function extractPropertyClasses(xmlSpecTypes) {
         );
 
         function extractSpecAttributeTypeMap(specTypesDocument, nodeName) {
-            let attributeDefinition = specTypesDocument.getElementsByTagName(nodeName)
-            let attributeDefinitionArray = Array.from(attributeDefinition)
-            let attributeDefinitionMap = {}
-            attributeDefinitionArray.forEach(definition => {
-                attributeDefinitionMap[definition.getAttribute("IDENTIFIER")]={ 
-                                                                                title: definition.getAttribute("LONG-NAME"),
-                                                                                dataType: definition.children[0].children[0].innerHTML,
-                                                                                changedAt: addTimezoneIfMissing(definition.getAttribute("LAST-CHANGE")),
-                                                                            } 
-                // Enumerations have an optional attribute MULTI-VALUED                                                 
-                if( definition.getAttribute("MULTI-VALUED") )
-                    attributeDefinitionMap[definition.getAttribute("IDENTIFIER")].multiple=true;
+            let attributeDefinition = specTypesDocument.getElementsByTagName(nodeName),
+                attributeDefinitionMap = {};
+
+            Array.from(attributeDefinition).forEach(definition => {
+                attributeDefinitionMap[definition.getAttribute("IDENTIFIER")] =
+                    {
+                        title: definition.getAttribute("LONG-NAME"),
+                        dataType: definition.children[0].children[0].innerHTML,
+                        changedAt: addTimezoneIfMissing(definition.getAttribute("LAST-CHANGE")),
+                    };
+
+                // Enumerations have an optional attribute MULTI-VALUED:  
+                if (nodeName == "ATTRIBUTE-DEFINITION-ENUMERATION") {
+                    let multiple = definition.getAttribute("MULTI-VALUED");
+                    if (multiple && multiple.toLowerCase() == 'true')
+                        attributeDefinitionMap[definition.getAttribute("IDENTIFIER")].multiple = true;
+                }
             });
             return attributeDefinitionMap;
         }
