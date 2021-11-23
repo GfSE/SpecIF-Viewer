@@ -240,7 +240,8 @@ var app:IApp,
 		function init2():void {
 //			console.debug('init2',opts);
 			let modL = ['helper','helperTree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
-			if( CONFIG.convertMarkdown ) modL.push('markdown');
+			if (CONFIG.convertMarkdown) modL.push('markdown');
+			// @ts-ignore - index value appName as string is valid:
 			loadL( modL, { done: ()=>{ window.app = window[appName]() } });
 		}
 		function loadL(L: string[], opts?: any): void {

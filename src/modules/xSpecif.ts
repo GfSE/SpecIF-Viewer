@@ -431,14 +431,90 @@ class CSpecIF implements SpecIF {
 		}
 		// common for all instances:
 		function a2int(iE:any): Instance {
-			var oE = i2int(iE);
+			var oE = i2int(iE), eC;
 			// resources must have a title, but statements may come without:
 			if (iE.title)
 				oE.title = Lib.cleanValue(iE.title);
 			if (iE.properties && iE.properties.length > 0)
-				oE.properties = Lib.forAll( iE.properties, (e: any): Property => { return p2int(e) });
+				oE.properties = Lib.forAll(iE.properties, (e: any): Property => { return p2int(e) });
+
+	 		// Are there resources with description, but without description property?
+			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
+			// In this case, add a description property to hold the description as required by SpecIF v1.1:
+			if (descPropertyNeeded(oE)) {
+				// There is an attempt to add the types in every loop ... which is hardly efficient.
+				// However, that way they are only added, if needed.
+				console.info("Adding a description property to element with id '" + oE.id + "'");
+				// a. add dataType, if not yet defined:
+				standardTypes.addTo("dataType", "DT-Text", self);
+				// b. add property class, if not yet defined:
+				standardTypes.addTo("propertyClass", "PC-Description", self);
+				// c. Add propertyClass to element class:
+				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
+						: itemById(self.resourceClasses, iE[names.rClass]);
+				addPCReference(eC, "PC-Description");
+				// d. Add description property to element;
+				addP(oE, {
+					class: "PC-Description",
+					value: oE.description
+				});
+			};
+
+			// Similarly, add a title property if missing:
+			if (titlePropertyNeeded(oE)) {
+				// There is an attempt to add the types in every loop ... which is hardly efficient.
+				// However, that way they are only added, if needed.
+				console.info("Adding a title property to element with id '" + oE.id + "'");
+				// a. add dataType, if not yet defined:
+				standardTypes.addTo("dataType", "DT-ShortString", self);
+				// b. add property class, if not yet defined:
+				standardTypes.addTo("propertyClass", "PC-Name", self);
+				// c. Add propertyClass to element class:
+				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
+						: itemById(self.resourceClasses, iE[names.rClass]);
+				addPCReference(eC, "PC-Name");
+				// d. Add title property to element;
+				addP(oE, {
+					class: "PC-Name",
+					// no title is required in case of statements; it's class' title applies by default:
+					value: oE.title
+				});
+			};
+
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
+
+			function titlePropertyNeeded(el): boolean {
+				if (el.title && el.title.length > 0) {
+					if (Array.isArray(el.properties))
+						for (var i = el.properties.length - 1; i > -1; i--) {
+							let ti = propTitleOf(el.properties[i], self);
+							if (CONFIG.titleProperties.indexOf(ti) > -1)
+								// SpecIF assumes that any title property *replaces* the element's title,
+								// so we just look for the case of *no* title property.
+								// There is no consideration of the content.
+								// It is expected that titles with multiple languages have been reduced, before.
+								return false; // title property is available
+						};
+					return true;
+				};
+				return false; // no title, thus no property needed
+			}
+			function descPropertyNeeded(el) {
+				if (el.description && el.description.length > 0) {
+					if (Array.isArray(el.properties))
+						for (var i = el.properties.length - 1; i > -1; i--) {
+							if (CONFIG.descProperties.indexOf(propTitleOf(el.properties[i], self)) > -1)
+								// SpecIF assumes that any description property *replaces* the resource's description,
+								// so we just look for the case of a resource description and *no* description property.
+								// There is no consideration of the content.
+								// It is expected that descriptions with multiple languages have been reduced, before.
+								return false; // description property is available
+						};
+					return true; // no array or no description property
+				};
+				return false; // no description, thus no property needed
+			}
 		}
 		// a resource:
 		function r2int(iE:any): Resource {
