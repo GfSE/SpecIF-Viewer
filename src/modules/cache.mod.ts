@@ -262,7 +262,7 @@ class CCache {
 		this.hierarchies.unshift(e);
 		return false;
 	}
-	clear(ctg?:string) {
+	clear(ctg?:string):void {
 		if (ctg)
 			this[standardTypes.listName.get(ctg)].length = 0
 		else
@@ -2063,14 +2063,10 @@ class CProject {
 		// To be compatible, all sourceTypes of newC must be contained in the sourceTypes of refC;
 		// no sourceTypes means that all resourceClasses are permissible as subject.
 		// ... and similarly for the targetTypes:
-	//	if (refC.subjectClasses && !newC.subjectClasses
-	//		|| refC.subjectClasses && newC.subjectClasses && !Lib.containsById(refC.subjectClasses, newC.subjectClasses)) {
 		if (!this.compatibleECReferences(refC.subjectClasses, newC.subjectClasses) ) {
 			Lib.logMsg({ status: 961, statusText: "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" });
 			return false;
 		};
-	//	if (refC.objectClasses && !newC.objectClasses
-	//		|| refC.objectClasses && newC.objectClasses && !Lib.containsById(refC.objectClasses, newC.objectClasses)) {
 		if (!this.compatibleECReferences(refC.objectClasses, newC.objectClasses)) {
 			Lib.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" });
 			return false;

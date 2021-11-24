@@ -24,7 +24,7 @@ moduleManager.construct({
 //		console.debug( 'file', f );
 
 			function isXls( fname:string ):boolean {
-				return fname.endsWith('.xlsx') || fname.endsWith('.xls') || fname.endsWith('.csv') 
+				return fname.endsWith('.xlsx') || fname.endsWith('.xlsm') || fname.endsWith('.xls') || fname.endsWith('.csv') 
 			}
 				
 		if ( !isXls(f.name) ) {
@@ -352,7 +352,15 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												case "n":   return (cell.v as number).toString();
 												case "b":   return (cell.v as boolean).toString();
 											}
-										case 'xs:dateTime': return (cell.v as Date).toISOString();
+										case 'xs:dateTime':
+											switch (cell.t) {
+												case "s":
+													if (RE.IsoDate.test(cell.v))
+														return cell.v as string;
+													console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
+													return '';
+												case "d": return (cell.v as Date).toISOString();
+											}
 										case 'xs:integer':
 										case 'xs:double':   return (cell.v as number).toString();
 										// we have found earlier that it is a valid boolean, 
@@ -363,8 +371,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												case "string":  return isTrue(cell.v as string).toString();
 											};
 										case 'xs:enumeration':
-															let eV = itemBy( dT.values, 'value', cell.v );
-															return (eV? eV.id : "" )
+											let eV = itemBy( dT.values, 'value', cell.v );
+											return (eV? eV.id : "" )
 									};
 								return '';
 							}

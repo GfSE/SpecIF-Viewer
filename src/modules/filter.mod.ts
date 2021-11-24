@@ -306,11 +306,14 @@ moduleManager.construct({
 //				str = str.replace( /(/g, '\(' );  // geht nicht: Problem ist nicht die Klammer selbst, sondern ein unvollständiges Klammerpaar
 //				str = str.replace( /)/g, '\)' );
 */ 
-				// ToDo: 'schlie' and 'schließ' in 'schließlich' are erroneously considered a whole word (as 'ß' is no regex word-character)
-				if( isChecked( f.options, 'wholeWords' )) {
+				// ToDo: 'schlie' and 'lich' in 'schließlich' are erroneously considered a whole word (as 'ß' is no regex word-character)
+				//       Similarly any Umlaut.
+				if (isChecked(f.options, 'wholeWords')) {
 					str = '\\b'+str+'\\b';
-				} else {
-					if( isChecked( f.options, 'wordBeginnings' )) {str = '\\b'+str};
+				}
+				else {
+					if (isChecked(f.options, 'wordBeginnings'))
+						str = '\\b' + str;
 				};
 				
 				let // dummy = str,   // otherwise nothing is found, no idea why.

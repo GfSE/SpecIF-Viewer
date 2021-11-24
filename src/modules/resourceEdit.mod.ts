@@ -32,17 +32,22 @@ class DialogForm {
 			// Get the input value:
 			val = textValue(cPs.label);
 			// Perform the test depending on the type:
-			// In case of a title or description it may happen, that there is no dataType (tutorial "Related Terms":
-			switch (cPs.dataType ? cPs.dataType.type : "xs:string") {
+			switch (cPs.dataType.type) {
 				case TypeEnum.XsString:
 				case TypeEnum.XHTML:
-					ok = !cPs.dataType || cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
+					ok = cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
 					break;
 				case TypeEnum.XsDouble:
-					ok = val.length < 1 || RE.Real(cPs.dataType.fractionDigits).test(val) && parseFloat(val) >= cPs.dataType.minInclusive && parseFloat(val) <= cPs.dataType.maxInclusive;
+					ok = val.length < 1
+						|| RE.Real(cPs.dataType.fractionDigits).test(val)
+						&& !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
+						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
 					break;
 				case TypeEnum.XsInteger:
-					ok = val.length < 1 || RE.Integer.test(val) && parseFloat(val) >= cPs.dataType.minInclusive && parseFloat(val) <= cPs.dataType.maxInclusive;
+					ok = val.length < 1
+						|| RE.Integer.test(val)
+						&& !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
+						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
 					break;
 				case TypeEnum.XsDateTime:
 					ok = val.length < 1 || RE.IsoDate.test(val);

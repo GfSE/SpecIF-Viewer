@@ -132,7 +132,7 @@ class CSpecIF implements SpecIF {
 						dataType: "script",
 						cache: true,
 						url: (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0 ?
-							(window.location.href.startsWith('file:/') ? '../../SpecIF/check/CCheck.min.js'  // take it locally ..
+							(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.js'  // take it locally ..
 								// or load it from the homepage, otherwise:
 								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.js')
 							: 'https://specif.de/v1.0/CCheck.min.js') // older versions are covered by v1.0/check.js
