@@ -584,14 +584,22 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								if( cell && dT ) 
 									switch( dT.type ) {
 										case 'xs:string':
-										case 'xhtml':		
-											switch( cell.t ) {
-												case "s":   return cell.v as string;
-												case "d":   return (cell.v as Date).toISOString();
-												case "n":   return (cell.v as number).toString();
-												case "b":   return (cell.v as boolean).toString();
-											}
-										case 'xs:dateTime': return (cell.v as Date).toISOString();
+										case 'xhtml':
+											switch (cell.t) {
+												case "s": return cell.v as string;
+												case "d": return (cell.v as Date).toISOString();
+												case "n": return (cell.v as number).toString();
+												case "b": return (cell.v as boolean).toString();
+											};
+										case 'xs:dateTime':
+											switch (cell.t) {
+												case "s":
+													if (RE.IsoDate.test(cell.v))
+														return cell.v as string;
+													console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
+													return '';
+												case "d": return (cell.v as Date).toISOString();
+											};
 										case 'xs:integer':
 										case 'xs:double':   return (cell.v as number).toString();
 										// we have found earlier that it is a valid boolean, 
