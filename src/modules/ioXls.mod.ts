@@ -636,7 +636,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 							cell = ws.data[cellName(c, row)];
 
-//							console.debug('createRes',c,cellName(c,row),cell);
+							console.debug('createRes',pTi,c,cellName(c,row),cell);
 							if (cell && cell.v) {
 								// the cell has content:
 
@@ -646,6 +646,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									// @ts-ignore - the first parameter of getVal() has all information needed for proper transformation
 									val = getVal({ type: pC.type }, cell);
 									// @ts-ignore - check is defined in this case
+									console.debug('nativeProp found',pTi,pc,val);
 									if (pC.check(val)) {
 										// @ts-ignore - name is defined in this case
 										res[pC.name] = val;
@@ -901,7 +902,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 						if (pC == defaultC) { continue };
 						if (nC == defaultC) {pC = defaultC; continue };
-						if (!pC && nC == 'Boolean') {pC = 'Boolean'; continue };
+						if (!pC && nC == 'Boolean') {pC = 'Boolean'; continue }; //  empty fields are rated boolean in nC
+						if (( !pC || pC == 'Boolean' || pC == 'DateTime' ) && nC == 'DateTime' ) {pC = 'DateTime'; continue};
 						if (( !pC || pC == 'Boolean' ) && nC == 'Integer' ) {pC = 'Integer'; continue};
 						if (( !pC || pC == 'Boolean' || pC == 'Integer' ) && nC=='Real' ) {pC = 'Real'; continue};
 												
@@ -927,11 +929,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					return new PropClass( ws.name+cX, pTi, pC || defaultC );
 
 						function classOf(cell: ICell): string {
+							if( isDateTime(cell) ) return 'DateTime';
 							if( isBool(cell) ) return 'Boolean';
 							if( isInt(cell) ) return 'Integer';
 							if( isReal(cell) ) return 'Real';
-							if( isDateTime(cell) ) return 'DateTime'
-						//	if( isXHTML(cell) ) return 'FormattedText';
+							//	if( isXHTML(cell) ) return 'FormattedText';
 							if (isStr(cell)) return defaultC;
 							return '';
 						}
