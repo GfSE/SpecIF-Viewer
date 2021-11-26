@@ -429,7 +429,8 @@ function BPMN2Specif( xmlString, opts ) {
 											}],
 											changedAt: opts.fileDate
 										})
-									} else {
+									}
+									else {
 										console.error("Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
@@ -461,7 +462,8 @@ function BPMN2Specif( xmlString, opts ) {
 											}],
 											changedAt: opts.fileDate
 										})
-									} else {
+									}
+									else {
 										console.error("Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
@@ -622,7 +624,8 @@ function BPMN2Specif( xmlString, opts ) {
 									title = opts.strJoinIncGateway;
 									desc = opts.strJoinIncGatewayDesc
 							}
-						} else { 
+						}
+						else {
 							// forking gateway (gw.outgoing.length>1):
 							switch( tag ) {
 								case 'parallelGateway':

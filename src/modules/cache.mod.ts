@@ -1004,7 +1004,8 @@ class CProject {
 								this.adopt(newD, { noCheck: true })
 									.done(resolve)
 									.fail(reject);
-							} else {
+							}
+							else {
 								resolve();
 							}
 						},
@@ -1980,7 +1981,8 @@ class CProject {
 			if (nPC.id) {
 				// If an id exists, it must be equal to one of refC's propertyClasses:
 				idx = indexById(refC.propertyClasses, nPC.id)
-			} else {
+			} 
+			else {
 				// If there is no id, the type is new and there are no referencing elements, yet.
 				// So it does not matter.
 				// But there must be a property class with the same name:
@@ -2439,7 +2441,8 @@ function Project(): IProject {
 								addNewPC( rT, nT.propertyClasses, 0 )
 							}
 					}
-				} else {
+				} 
+				else {
 					// else: the type does not exist and will be created, therefore:
 					pend++;
 					console.info('Creating type',nT.title);
@@ -2620,7 +2623,8 @@ function Project(): IProject {
 							self.updateContent( ctg, nI )
 								.done( updateTreeIfChanged( ctg, rI, nI ) )	// update the tree, if necessary.
 								.fail( uDO.reject )
-						} else {
+						} 
+						else {
 							// no change, so continue directly:
 							updateTreeIfChanged( ctg, rI, nI )	// update the tree, if necessary.
 						}
@@ -2693,7 +2697,8 @@ function Project(): IProject {
 							if( --pend<1 ) updateNext( ctg )
 						})
 						.fail( uDO.reject )
-				} else {
+				} 
+				else {
 					// no hierarchy (tree) has been changed, so no update:
 					if( --pend<1 ) updateNext( ctg )
 				}
@@ -2746,7 +2751,8 @@ function Project(): IProject {
 								cI += rL.length;  // current index
 								loadObjs( rL );
 								return
-							} else {
+							} 
+							else {
 								cDO.resolve( self.data.resources );
 								return
 							}
@@ -2758,7 +2764,8 @@ function Project(): IProject {
 			var rL = sp.flatL.slice(0,CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
 				cI=rL.length;  // current index pointing to start of next batch
 			loadObjs( rL )
-		} else {
+		} 
+		else {
 			cDO.resolve([])
 		};
 		return cDO
@@ -2780,7 +2787,8 @@ function Project(): IProject {
 						// continue caching, if the project hasn't been left, meanwhile (sp==null):
 						if( sp && ++cI<sp.flatL.length ) {
 							loadRels( {id:sp.flatL[cI]} )
-						} else {
+						} 
+						else {
 							rDO.resolve( self.data.statements )
 						}
 					})
@@ -2789,7 +2797,8 @@ function Project(): IProject {
 		if( sp && sp.flatL.length && self.data.statementClasses.length>0 ) {
 			var cI=0;  // current index
 			loadRels( {id:sp.flatL[cI]} )
-		} else {
+		} 
+		else {
 			rDO.resolve([])
 		};
 		return rDO;
@@ -2991,7 +3000,8 @@ moduleManager.construct({
 						})
 						.fail( lDo.reject );
 				return
-			} else {
+			} 
+			else {
 				lDO.resolve()
 			};
 			return lDO
@@ -3262,7 +3272,8 @@ function elementTitleOf(el: Resource | Statement, opts?:any, dta?:SpecIF): strin
 		if( !ti )
 			// take the class' title by default:
 			ti = staClassTitleOf( el, dta, opts );
-	} else {
+	}
+	else {
 		// it is a resource
 		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && ti )
 			ti = Lib.addIcon( ti, itemById( dta.resourceClasses, el['class'] ).icon );

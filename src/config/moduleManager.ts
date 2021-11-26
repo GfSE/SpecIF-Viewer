@@ -530,7 +530,8 @@ var app:IApp,
 			for( var i=tr.length-1; !m&&i>-1; i-- ) {
 				m = find(tr[i]);
 			};
-		} else {
+		}
+		else {
 			m = find(tr);
 		};
 		return m;
@@ -710,7 +711,8 @@ var app:IApp,
 		if( self.ready.indexOf(mod)<0 ) {
 			self.ready.push( mod );
 			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" );
-		} else {
+		}
+		else {
 			throw Error("Module '"+mod+"' cannot be set 'ready' more than once");
 		};
 

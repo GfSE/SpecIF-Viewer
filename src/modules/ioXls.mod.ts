@@ -36,7 +36,8 @@ moduleManager.construct({
 		// Remember the file modification date:
 		if( f.lastModified ) {
 			fDate = new Date(f.lastModified).toISOString()
-		} else {
+		}
+		else {
 			if( f.lastModifiedDate )
 				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
 				fDate = new Date(f.lastModifiedDate).toISOString()
@@ -99,6 +100,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		range: string;
 		firstCell: Coord;
 		lastCell: Coord;
+		isValid = false;
 		constructor(wsN: string) {
 			this.name = wsN;			// the name of the selected sheet (first has index '0'!)
 			this.data = wb.Sheets[wsN],
@@ -111,9 +113,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				// only if the sheet has content:
 				this.firstCell = new Coord(this.range.split(":")[0]);
 				this.lastCell = new Coord(this.range.split(":")[1]);
-			}
-			else
-				throw Error("Incomplete input data: Worksheet without range!");
+				this.isValid = true;
+			};
 		}
 	}
 	class BaseTypes {
@@ -236,7 +237,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	}
 
 	function collectMetaData(ws:Worksheet):void {
-		if (!ws) return;
+		if (!ws || !ws.isValid) return;
 		// Process all worksheets with a sheet name in (brackets):
 		switch( ws.name ) {
 			// It is assumed that all lists of enumerated values are defined on a worksheet named:
@@ -261,7 +262,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							// if the title corresponds to the property (column) name of a worksheet with data,
 							// this data column will assume the enumeration type:
 							pC.title = dT.title = (cell&&cell.t=='s'? cell.v as string : '')
-						} else {
+						}
+						else {
 							// enumerated values in the following rows:
 							if( cell&&cell.t=='s'&&cell.v )
 								dT.values.push({
@@ -280,30 +282,30 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		};
 	}
 
-	function transformData(ws:Worksheet):void {
-		if( !ws ) return;
+	function transformData(ws: Worksheet): void {
+		if (!ws || !ws.isValid) return;
 		// Skip all bracketed sheetnames, e.g. "(Enumerations)" or "(Setup)":
 		if (ws.name.indexOf("(") == 0 && ws.name.indexOf(")") == ws.name.length - 1) return;
 
 			function isDateTime(cell: ICell): boolean {
 //				console.debug('isDateTime:',cell);
-				return cell && cell.t=='d';
+				return cell && (cell.t == 'd' || cell.t == 's' && RE.IsoDate.test(cell.v as string) );
 			}
-			function isNumber(cell: ICell ):boolean {
-				return cell && cell.t=='n';
-			}
+		/*	function isNumber(cell: ICell ):boolean {
+				return cell && (cell.t == 'n' || cell.t == 's' && RE.Number.test(cell.v as string));
+			} */
 			function isInt(cell: ICell): boolean {
-				return isNumber( cell ) && Number.isInteger( cell.v as number );
+				return cell && (cell.t=='n' && Number.isInteger(cell.v as number) || (cell.t=='s' && RE.Integer.test(cell.v as string)));
 			}
 			function isReal(cell: ICell): boolean {
-				return isNumber(cell) && !Number.isInteger( cell.v as number );
+				return cell && (cell.t=='n' && !Number.isInteger(cell.v as number) || (cell.t=='s' && RE.Real().test(cell.v as string)));
 			}
 			function isBool(cell: ICell): boolean {
 //				console.debug('isBool',cell);
-				return cell && (cell.t == 'b' || typeof (cell.v) == 'string' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
+				return cell && (cell.t == 'b' || cell.t == 's' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
 			}
 			function isStr(cell: ICell): boolean {
-				return cell && cell.t=='s';
+				return cell && cell.t=='s' && cell.v.length>0;
 			}
 		/*	function isXHTML( cell ):boolean {
 				return cell && cell.t=='s' && ....
@@ -345,30 +347,36 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								if( cell && dT ) 
 									switch( dT.type ) {
 										case 'xs:string':
-										case 'xhtml':		
-											switch( cell.t ) {
-												case "s":   return cell.v as string;
-												case "d":   return (cell.v as Date).toISOString();
-												case "n":   return (cell.v as number).toString();
-												case "b":   return (cell.v as boolean).toString();
-											}
+										case 'xhtml':
+											switch (cell.t) {
+												case "s": return cell.v as string;
+												case "d": return (cell.v as Date).toISOString();
+												case "n": return (cell.v as number).toString();
+												case "b": return (cell.v as boolean).toString();
+											};
 										case 'xs:dateTime':
 											switch (cell.t) {
+												case "d": return (cell.v as Date).toISOString();
 												case "s":
+													// Can only get here in case of a native property;
+													// the value will be checked later on, so there is no need to log a warning.
 													if (RE.IsoDate.test(cell.v))
 														return cell.v as string;
-													console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
+												//	console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
 													return '';
-												case "d": return (cell.v as Date).toISOString();
-											}
+											};
 										case 'xs:integer':
-										case 'xs:double':   return (cell.v as number).toString();
-										// we have found earlier that it is a valid boolean, 
+										case 'xs:double': 
+											switch (cell.t) {
+												case "n": return (cell.v as number).toString();
+												case "s": return cell.v as string;
+											};
+										// we have found earlier that it is a valid boolean,
 										// so all values not beeing true are false:
 										case 'xs:boolean':
-											switch (typeof (cell.v)) {
-												case "boolean": return (cell.v as boolean).toString();
-												case "string":  return isTrue(cell.v as string).toString();
+											switch (cell.t) {
+												case "b": return (cell.v as boolean).toString();
+												case "s": return isTrue(cell.v as string).toString();
 											};
 										case 'xs:enumeration':
 											let eV = itemBy( dT.values, 'value', cell.v );
@@ -399,7 +407,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							oInner:string[];
 						for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
 							cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
-							pTi = cell ? (cell.v as string) : '';
+							pTi = cell ? (cell.v as string).trim() : '';
 							// skip the column, if it has no title (value in the first row):
 							if ( !pTi ) continue;
 
@@ -522,7 +530,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									// as an id must be unique, of course:
 									res.id = 'R-' + simpleHash(ws.name+id+counts[id]);
 								};
-							} else {
+							}
+							else {
 								// No id specified, so a random value must be generated. 
 								// No chance to update the element later on!
 								res.id = Lib.genID('R-');
@@ -539,7 +548,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								}); 
 								// add the resource to the list:
 								specifData.resources.push(res);
-								// store any statements only if the resource is stored, as well:
+								// the resource has been stored, so any statement can be stored, as well:
 								if( stL.length>0 ) {
 									stL.forEach((st) => { st.id = 'S-' + simpleHash(res.id+st.title+st.objectToFind); st.subject = res.id } );
 									specifData.statements = specifData.statements.concat(stL);
@@ -595,7 +604,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
 					// Check whether it is an enumerated dataType:
 					cell = ws.data[ cellName(c,ws.firstCell.row) ];
-					pTi = cell?(cell.v as string):'';
+					pTi = cell? (cell.v as string).trim() : '';
 					// Process only columns with title, skip the others:
 					if (pTi) {
 						// 1. A native property will be used, if possible, so no propertyClass is created:
@@ -708,7 +717,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				// build a list of statementClasses:
 				var sTi,sC:StatementClass;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
-					sTi = ws.data[ cellName(c,ws.firstCell.row) ];  					// value of first line
+					sTi = ws.data[ cellName(c,ws.firstCell.row) ];  			// value of first line
 					// Skip columns without title;
 					// in Excel 'deleted' cells are different from 'empty' cells,
 					// so we need to take a look at the actual values:

@@ -372,7 +372,8 @@ moduleManager.construct({
 
 			self.enableActions();
 //			console.debug('pickFiles',self.fileName(), self.projectName);
-		} else {
+		}
+		else {
 			self.clear();
 		}
 	};

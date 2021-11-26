@@ -394,7 +394,7 @@ const CONFIG:any = {};
 	CONFIG.vocabularyClasses = [
 		"SpecIF:TermResourceClass",
 		"SpecIF:TermStatementClass",
-		"SpecIF:TermProperty",
+		"SpecIF:TermPropertyClass",
 		"SpecIF:TermPropertyValue"
 	];
 	// A list with all model-element types by title,
@@ -489,8 +489,8 @@ const CONFIG:any = {};
 	]);
 
 	// values for boolean 'true' and 'false':
-	CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', '1'];
-	CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', '0'];
+	CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui'];
+	CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non'];
 
 /*	// values for priority:
 	CONFIG.valuesPriority = [
@@ -667,6 +667,7 @@ const RE:any = {};
 	RE.IsoDate = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;
 	// see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
 	// /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
+//	RE.Number = /^-?\d+(?:(?:.|,){1}\d+){0,1}(?:e-?\d+)?$/;
 	RE.Integer = /^(-?[1-9]\d*|0)$/;
 	RE.Real = function( decimals:number ) {
 		let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
