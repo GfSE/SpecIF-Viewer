@@ -49,8 +49,8 @@ const CONFIG:any = {};
 	CONFIG.focusColor = '#1690D8';
 
 	// values for boolean 'true' and 'false':
-	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui','1'];
-	CONFIG.valuesFalse = ['false','no','falsch','nein','faux','non','0'];
+	CONFIG.valuesTrue = ['true','yes','wahr','ja','vrai','oui'];
+	CONFIG.valuesFalse = ['false','no','falsch','nein','faux','non'];
 
 	// The indices of ..Extensions and ..Types must correspond!
 	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
@@ -398,7 +398,7 @@ const CONFIG:any = {};
 	CONFIG.vocabularyClasses = [
 		"SpecIF:TermResourceClass",
 		"SpecIF:TermStatementClass",
-		"SpecIF:TermProperty",
+		"SpecIF:TermPropertyClass",
 		"SpecIF:TermPropertyValue"
 	];
 	// A list with all model-element types by title,
