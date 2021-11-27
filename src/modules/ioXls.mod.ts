@@ -307,9 +307,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			function isStr(cell: ICell): boolean {
 				return cell && cell.t=='s' && cell.v.length>0;
 			}
-		/*	function isXHTML( cell ):boolean {
-				return cell && cell.t=='s' && ....
-			}  */			
 			function titleFromProps( res:Resource ):string {
 //				console.debug( 'titleFromProps', res );
 				// get the title from the properties:
@@ -413,7 +410,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 							cell = ws.data[cellName(c, row)];
 
-//							console.debug('createRes',c,cellName(c,row),cell);
+//							console.debug('createRes',pTi,c,cellName(c,row),cell);
 							if (cell && cell.v) {
 								// the cell has content:
 
@@ -707,7 +704,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							if( isInt(cell) ) return 'Integer';
 							if( isReal(cell) ) return 'Real';
 							if( isDateTime(cell) ) return 'DateTime'
-						//	if( isXHTML(cell) ) return 'FormattedText';
 							if (isStr(cell)) return defaultC;
 							return '';
 						}

@@ -19,30 +19,30 @@ function LanguageTextsFr() {
 		return '';
 	};
 
-//	self.IcoUser = '<i class="fa fa-user"></i>';
-	self.IcoSpecification = '<i class="fa fa-book"></i>';
-	self.IcoRead = '<i class="fa fa-eye"></i>';
-	self.IcoImport = '<i class="fa fa-download fa-rotate-270"></i>';
-	self.IcoExport = '<i class="fa fa-upload fa-rotate-90"></i>';
-	self.IcoAdminister = '<i class="fa fa-wrench"></i>';
+//	self.IcoUser = '<i class="bi-person"></i>';
+	self.IcoSpecification = '<i class="bi-book"></i>';
+	self.IcoRead = '<i class="bi-eye"></i>';
+	self.IcoImport = '<i class="bi-box-arrow-in-right"></i>';
+	self.IcoExport = '<i class="bi-box-arrow-right"></i>';
+	self.IcoAdminister = '<i class="bi-wrench"></i>';
 //	self.IcoUpdateSpecification =
-	self.IcoEdit = '<i class="fa fa-pencil"></i>';
-	self.IcoDelete = '<i class="fa fa-minus"></i>';
-	self.IcoAdd = '<i class="fa fa-plus"></i>';
-	self.IcoClone = '<i class="fa fa-clone"></i>';
-	self.IcoSave = '<i class="fa fa-floppy-o"></i>';
+	self.IcoEdit = '<i class="bi-pencil"></i>';
+	self.IcoDelete = '<i class="bi-x-lg"></i>';
+	self.IcoAdd = '<i class="bi-plus-lg"></i>';
+	self.IcoClone = '<i class="bi-files"></i>';
+	self.IcoSave = '<i class="bi-hdd"></i>';
 //	self.IcoReadSpecification = self.IcoRead;
-	self.IcoPrevious = '<i class="fa fa-chevron-up"></i>';
-	self.IcoNext = '<i class="fa fa-chevron-down"></i>';
-	self.IcoFilter = '<i class="fa fa-filter"></i>';
-	self.IcoType = '<i class="fa fa-cog"></i>';
+	self.IcoPrevious = '<i class="bi-chevron-up"></i>';
+	self.IcoNext = '<i class="bi-chevron-down"></i>';
+	self.IcoFilter = '<i class="bi-search"></i>';
+	self.IcoType = '<i class="bi-wrench"></i>';
 //	self.IcoGo = 
-//	self.IcoFind = '<i class="fa fa-search"></i>';
-	self.IcoComment = '<i class="fa fa-comment"></i>';
+//	self.IcoFind = '<i class="bi-search"></i>';
+	self.IcoComment = '<i class="bi-chat"></i>';
 //	self.IcoURL = '<span class="glyphicon glyphicon-map-marker"></span>';
 //	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
-//	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
-	self.IcoAbout = '<i class="fa fa-copyright"></i>';
+	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
+//	self.IcoAbout = '<i class="fa fa-copyright"></i>';
 
 // Buttons:
 //	self.LblImportReqif = 'ReqIF Import';
@@ -240,8 +240,8 @@ function LanguageTextsFr() {
 	self.BtnDetails = 'Détails';
 	self.BtnAddRole = self.IcoAdd +'&#160;Rôle';
 	self.BtnFileSelect = self.IcoAdd +'&#160;Choisir un fichier ...';
-//	self.BtnPrevious = '<i class="fa fa-chevron-up"></i>&#160;'+	self.LblPrevious;
-//	self.BtnNext = '<i class="fa fa-chevron-down"></i>&#160;'+	self.LblNext;
+//	self.BtnPrevious = '<i class="bi-chevron-up"></i>&#160;'+	self.LblPrevious;
+//	self.BtnNext = '<i class="bi-chevron-down"></i>&#160;'+	self.LblNext;
 //	self.BtnGo = self.IcoGo+'&#160;'+self.LblGo;
 	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neuf';
 	self.BtnSelectHierarchy = "Choix d'une arborescence";
@@ -270,11 +270,11 @@ function LanguageTextsFr() {
 //	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Page';
 //	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Révisions';
 //	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Chronologie';
-	self.TabRelations = '<i class="fa fa-link"></i>&#160;Relations';
+	self.TabRelations = '<i class="bi-link-45deg"></i>&#160;Relations';
 //	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Triage';
 //	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Images et fichiers';
 //	self.TabComments = self.IcoComment+'&#160;Commentaires';
-	self.TabReports = '<i class="fa fa-bar-chart"></i>&#160;Rapports';
+	self.TabReports = '<i class="bi-bar-chart-line"></i>&#160;Rapports';
 
 // Functions:
 //	self.FnProjectCreate = self.IcoAdd+'&#160;Projet';

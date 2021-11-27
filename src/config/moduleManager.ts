@@ -552,7 +552,8 @@ var app:IApp,
 //			console.debug('loadM',mod);
 			switch( mod ) {
 				// 3rd party:
-				case "font":				getCss( "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+		//		case "font":				getCss("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+				case "font":				getCss("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css"); setReady(mod); return true;
 				case "bootstrap":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" );
 											getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
