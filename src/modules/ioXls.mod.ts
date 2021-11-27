@@ -664,22 +664,22 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							console.debug('createRes',pTi,c,cellName(c,row),cell);
 							if (cell && cell.v) {
 								// the cell has content:
-
+								console.debug('nativeProp has ',pTi);
 								// Use native property, if appropriate:
 								if (CONFIG.nativeProperties.has(pTi)) {
 									pC = CONFIG.nativeProperties.get(pTi); // here, pC is actually not a real propertyClass, but serving it's role ...
 									// @ts-ignore - the first parameter of getVal() has all information needed for proper transformation
 									val = getVal({ type: pC.type }, cell);
 									// @ts-ignore - check is defined in this case
-									console.debug('nativeProp found',pTi,pc,val);
+									console.debug('nativeProp found',pTi,pC,val);
 									if (pC.check(val)) {
 										// @ts-ignore - name is defined in this case
 										res[pC.name] = val;
 										// @ts-ignore - name is defined in this case
-										console.info(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
+										console.debuginfo(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
 									}
 									else
-										console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
+										console.debug(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
 									continue;
 								};
 
