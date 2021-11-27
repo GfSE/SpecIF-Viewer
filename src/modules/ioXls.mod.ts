@@ -671,7 +671,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									// @ts-ignore - the first parameter of getVal() has all information needed for proper transformation
 									val = getVal({ type: pC.type }, cell);
 									// @ts-ignore - check is defined in this case
-									console.debug('nativeProp found',pTi,pc,val);
+									console.debug('nativeProp found',pTi,pC,val);
 									if (pC.check(val)) {
 										// @ts-ignore - name is defined in this case
 										res[pC.name] = val;
