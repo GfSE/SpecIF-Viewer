@@ -676,7 +676,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 										// @ts-ignore - name is defined in this case
 										res[pC.name] = val;
 										// @ts-ignore - name is defined in this case
-										console.debuginfo(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
+										console.debug(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
 									}
 									else
 										console.debug(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
