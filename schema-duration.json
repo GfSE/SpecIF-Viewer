@@ -1,8 +1,8 @@
 {
-    "$id": "http://specif.de/v1.1/duration/schema#",
-    "$schema": "https://json-schema.org/draft/2019-09/schema#",
-    "type": "object",
-    "properties": {
-      "value": { "type": "string", "format": "duration" }
-	}
+  "$id": "http://specif.de/v1.1/duration/schema#",
+  "$schema": "https://json-schema.org/draft/2019-09/schema#",
+  "type": "object",
+  "properties": {
+    "value": { "type": "string", "format": "duration" }
+  }
 }

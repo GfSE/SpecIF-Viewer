@@ -305,6 +305,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				return cell && (cell.t == 'b' || cell.t == 's' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
 			}
 			function isStr(cell: ICell): boolean {
+				// @ts-ignore - in this case cell.v is a string and has a length:
 				return cell && cell.t=='s' && cell.v.length>0;
 			}
 			function titleFromProps( res:Resource ):string {

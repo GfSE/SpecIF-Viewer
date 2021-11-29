@@ -97,7 +97,7 @@ function viewSpecif():IApp {
 					label: i18n.TabReports,
 					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 				}]
-			},{
+		/*	},{
 				action: 'app.export()',
 				label: i18n.BtnExport,
 				selectedBy: '#selectExport',		// DOM element in parent's selector to initiate this action
@@ -110,8 +110,8 @@ function viewSpecif():IApp {
 					name: 'toOxml'
 				},{
 					name: 'toTurtle'
-				}]
-			},{
+				}]  */
+			},{ 
 				name: 'about',
 				view: '#about',
 				viewClass: 'contentWide',			// whole width under control of the view

@@ -30,7 +30,7 @@ function LanguageTextsDe() {
 	self.IcoDelete = '<i class="bi-x-lg"></i>';
 	self.IcoAdd = '<i class="bi-plus-lg"></i>';
 	self.IcoClone = '<i class="bi-files"></i>';
-	self.IcoSave = '<i class="bi-hdd"></i>';
+	self.IcoSave = '<i class="bi-check-lg"></i>';
 //	self.IcoReadSpecification = self.IcoRead;
 	self.IcoPrevious = '<i class="bi-chevron-up"></i>';
 	self.IcoNext = '<i class="bi-chevron-down"></i>';
@@ -212,6 +212,7 @@ function LanguageTextsDe() {
 	self.BtnReplace = self.IcoImport +'&#160;Ersetzen';
 	self.BtnAdopt = self.IcoImport +'&#160;Adoptieren'; //Aneignen
 	self.BtnUpdate = self.IcoImport +'&#160;'+	self.LblUpdate;
+	self.BtnUpdateObject = self.IcoSave + '&#160;' + self.LblUpdate;
 //	self.BtnImportSpecif = self.IcoImport+'&#160;SpecIF';
 //	self.BtnImportReqif = self.IcoImport+'&#160;ReqIF';
 //	self.BtnImportXls = self.IcoImport+'&#160;xlsx';

@@ -1,0 +1,8 @@
+{
+  "$id": "http://specif.de/v1.1/anyURI/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "value": { "type": "string", "format": "uri" }
+  }
+}

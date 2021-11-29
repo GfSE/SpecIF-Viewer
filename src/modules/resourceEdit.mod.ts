@@ -98,7 +98,7 @@ moduleManager.construct({
 		},
 		update: { 	
 			id: 'btn-modal-update',
-			label: i18n.BtnUpdate,
+			label: i18n.BtnUpdateObject,
 			cssClass: 'btn-success btn-modal-save',
 			action: (thisDlg:any)=>{
 				save('update');
