@@ -1551,17 +1551,27 @@ class CProject {
 				opts.allResources = false; // only resources referenced by a hierarchy.
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
 				opts.lookupTitles = false;  // applies to self.data.toExt()
-				opts.lookupValues = true;  // applies to self.data.toExt()
 				// But DO reduce to the language desired.
 				opts.lookupLanguage = true;
 				if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
-				opts.makeHTML = true;
-				opts.linkifyURLs = true;
-				opts.createHierarchyRootIfNotPresent = true;
 				opts.allDiagramsAsImage = true;
 			//	opts.allImagesAsPNG = ["oxml"].indexOf(opts.format) > -1;   .. not yet implemented!!
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
+				switch (opts.format) {
+					case 'epub':
+					case 'oxml':
+						opts.lookupValues = true;  // applies to self.data.toExt()
+						opts.makeHTML = true;
+						opts.linkifyURLs = true;
+						opts.createHierarchyRootIfNotPresent = true;
+						break;
+					case 'xlsx':
+						opts.lookupValues = false;
+						opts.makeHTML = false;
+						opts.linkifyURLs = false;
+						opts.createHierarchyRootIfNotPresent = false;
+				};
 
 				self.read(opts).then(
 					(expD) => {
