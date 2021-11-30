@@ -892,7 +892,7 @@ class CSpecIF implements SpecIF {
 						// or for formats not supporting multiple languages:
 						let dT: DataType = dataTypeOf(spD, iE['class']);
 						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
-							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
+							if (opts.makeHTML && CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
 								// Transform to HTML, if possible;
 								// especially for publication, for example using WORD format:
 								oE.value = languageValueOf(iE.value, opts)
