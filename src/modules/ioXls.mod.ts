@@ -158,8 +158,10 @@ console.debug('Export to XLSX ', pr.id);
 			    	    //console.debug (aoaArray);
 			    	    
 			    	    var lineItems: string [];
-			    	    if (  h2.nodes != null ) { // check, whether h2.nodes exists
-			    	        h2.nodes.forEach (function (h3) {  // for each line
+			    	    if (  h2.nodes != null ) 
+						{ // check, whether h2.nodes exists
+			    	        h2.nodes.forEach (function (h3) 
+							{  // for each line
 			    	        	
 			    	        	lineItems = []; //clear array
 			    	        	aoaArray = [['','','','','','','','','','','','','','','','','','']];
@@ -173,7 +175,7 @@ console.debug('Export to XLSX ', pr.id);
 			    	        	    topLineRclassIds  = []; // empty arrays 
 			    	        	    topLineTitles = []; 
 			    	        	    var pClassItem : PropertyClass;
-			    	        	    var i =0;
+			    	        	    var i =0, j=0, k=0;
                             
 			    	        	    let hRC3 = itemById( pr.resourceClasses, hR3.class as string );
 			    	        		console.debug ( "ResourceClass ",hRC3.id, hRC3.propertyClasses, hRC3 );
@@ -203,43 +205,52 @@ console.debug('Export to XLSX ', pr.id);
                             
 			    	        	// Fill line Array	
 			    	        	
-			    	        	hR3.properties.forEach (function (rProp) { 
+			    	        	hR3.properties.forEach (function (rProp) { // for each line resource found in hierarchy
 			    	        	    var writeIdx = topLineRclassIds.indexOf (rProp.class);
-			    	        	    if (writeIdx < topLineRclassIds.length)
+									console.debug ("rProp.class",writeIdx, rProp.class,topLineRclassIds.length, rProp.value);
+			    	        	    if (writeIdx < topLineRclassIds.length) // Index is within bounds
 			    	        	    {
 			    	        	  	    lineItems [writeIdx]=rProp.value;
-			    	        			  
-			    	        			if  (rProp.value.indexOf ("DT--")!=-1){
-			    	        				// Replace Enumeration ID with Datatype Enumeration Value
-			    	        				const DTItemIDLen = 13 ;// e.g. "DT--964552835"
-			    	        				
-			    	        				let DTypeId = rProp.value.substring(0,DTItemIDLen);
-			    	        				let DTItem = itemById( pr.dataTypes, DTypeId);
-                            
-			    	        				// Find the Enum Value for Enum ID
-			    	        				for (i=0; i< DTItem.values.length; i++){
-			    	        					//console.debug ( "for loop datatype Values ", rProp.value, DTItem.values[i].id);
-			    	        					if (rProp.value == DTItem.values[i].id){
-			    	        						//console.debug ( "Datatype Values ", DTItem.values[i].value, i , DTItem.values);
-			    	        						lineItems [writeIdx]= DTItem.values[i].value; // Write Enum Value
-			    	        					}
-			    	        					else
-			    	        					{
-			    	        						//console.debug ( "Datatype Values not eq ", rProp.value , DTItem.values[i].id, i , DTItem.values);
-			    	        					};
-			    	        				};
-			    	        				
-			    	        				
-			    	        				let enumIdx = indexById (DTItem,rProp.value);
-			    	        				//console.debug ( "Enum Value ", DTItem.values, DTItem.values.length, rProp.value , enumIdx);
-			    	        				
-                            
-			    	        			};
-			    	        	        
-			    	        			//var outstring : string; 
-			    	        			//outstring = "two";//aoaArray[2][0] as string;
-			    	        			//console.debug("aoaArray " + outstring );
-			    	        		}
+			    	        			
+			    	        		    // Replace Enumeration ID with Datatype Enumeration Value
+										// For all Properties in line
+										
+											//let resourceClass = itemById (pr.resourceClasses, rProp.class );
+											//console.debug ("resourceClass ", resourceClass);
+											//if (resourceClass.propertyClasses.lenght > 0) {
+												//for (k=0; k< resourceClass.propertyClasses.lenght; k++){
+                                                    //let propertyClassId = resourceClass.propertyClasses [k];
+										let propertyClass = itemById (pr.propertyClasses, rProp.class);
+										if (propertyClass != undefined) 
+										{
+											let DTItem = itemById( pr.dataTypes, propertyClass.dataType);
+
+			    	        			    console.debug ("DTItem ", rProp.value, DTItem);
+                                            if (DTItem.values != undefined) 
+										    {
+			    	        			       	// Find the Enum Value for Enum ID
+			    	        			       	for (i=0; i< DTItem.values.length; i++)
+										       	{
+			    	        			       		console.debug ( "for loop datatype Values ", rProp.value, DTItem.values[i].id);
+			    	        			       		if (rProp.value == DTItem.values[i].id)
+										       		{
+			    	        			       			console.debug ( "Datatype Values ", DTItem.values[i].value, i , DTItem.values);
+			    	        			       			lineItems [writeIdx]= DTItem.values[i].value; // Write Enum Value
+			    	        			       		}
+			    	        			       		else
+			    	        			       		{
+			    	        			       			console.debug ( "Datatype Values not eq ", rProp.value , DTItem.values[i].id, i , DTItem.values);
+			    	        			       		};
+			    	        			       	};
+			    	        			       	
+			    	        			       	
+			    	        			       	let enumIdx = indexById (DTItem,rProp.value);
+			    	        			       	//console.debug ( "Enum Value ", DTItem.values, DTItem.values.length, rProp.value , enumIdx);
+			    	        			       	
+                                                    
+			    	        			    }; //end ifDTItem.values
+										}; // end propertyClass defined
+								    }
 			    	        	    else
 			    	        	    {
 			    	        	    	console.debug ( "PropertyClassID not found " );
