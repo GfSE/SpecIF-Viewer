@@ -887,19 +887,13 @@ class CSpecIF implements SpecIF {
 
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations:
-					if( opts.targetLanguage ) {
+					if (opts.lookupLanguage && opts.targetLanguage ) {
 						// reduce to the selected language; is used for generation of human readable documents
 						// or for formats not supporting multiple languages:
 						let dT: DataType = dataTypeOf(spD, iE['class']);
 						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
-							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) > -1) {
-								// if it is e.g. a title, remove all formatting:
-								oE.value = languageValueOf(iE.value, opts)
-									.replace(/^\s+/, "")   // remove any leading whiteSpace
-									.stripHTML();  
-							}
-							else {
-								// otherwise transform to HTML, if possible;
+							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
+								// Transform to HTML, if possible;
 								// especially for publication, for example using WORD format:
 								oE.value = languageValueOf(iE.value, opts)
 									.replace(/^\s+/, "")  // remove any leading whiteSpace
@@ -907,6 +901,12 @@ class CSpecIF implements SpecIF {
 									.replace(/<br ?\/>\n/g, "<br/>");
 
 								oE.value = refDiagramsAsImg(oE.value);
+							}
+							else {
+								// if it is e.g. a title, remove all formatting:
+								oE.value = languageValueOf(iE.value, opts)
+									.replace(/^\s+/, "")   // remove any leading whiteSpace
+									.stripHTML();
 							};
 							// return 'published' data structure (single language, ...):
 //							console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
