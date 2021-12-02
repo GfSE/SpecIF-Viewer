@@ -128,7 +128,7 @@ console.debug('Export to XLSX ', pr.id);
 			    
 			    
 			    if (h1.nodes != null) { // check, whether h1.nodes exists
-			        var ws = XLSX.utils.aoa_to_sheet([]);
+			        var ws = XLSX.utils.aoa_to_sheet([]); 
 			        h1.nodes.forEach (function (h2) {   // for each Worksheet 
 						ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet	
 
@@ -275,6 +275,60 @@ console.debug('Export to XLSX ', pr.id);
 			    	    headerBuilt = false; // ready for next header
 			        
 			        }); // h1.nodes for each Worksheet  end
+					// write Worksheet (Enumerations)
+					ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet
+					var aoaArray= []; 
+					aoaArray = 
+					//[12][20];
+					[['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','',''],
+					['','','','','','','','','','','','','','','','','','']]; 
+					
+					let columnNo = undefined;
+					let i : number , n: number= 0; 
+					for (i=0; i< pr.dataTypes.length;i++)
+					{
+					//For all  dataTypes  with have values defined
+                            // If first entry found i.e. Column-No == Undefined then
+					    console.debug ("dataType enum ", i, pr.dataTypes[i].values, pr.dataTypes[i].title );
+					    if ( pr.dataTypes[i].values != undefined)
+						{
+                            // If first entry found i.e. Column-No == Undefined then
+							if (columnNo == undefined)
+							{
+						    
+							// Create Worksheet "(Enumerations)"
+							   columnNo = 0;
+						    
+						    }; // end first entry and columnNo undefined
+						    //write title (Column-No)
+							console.debug ("datatype val",pr.dataTypes[i].values.length, pr.dataTypes[i].values[0].value )
+							aoaArray [0][columnNo]=pr.dataTypes[i].title;
+						    //write all Values (Column-No)
+							for (n=0; n< pr.dataTypes[i].values.length;n++)
+							{ 
+								console.debug ("dataType values ", n , pr.dataTypes[i].values[n].value, aoaArray);
+								aoaArray [n+1][columnNo]=pr.dataTypes[i].values[n].value;
+							}; // end for n 
+					        console.debug ("dataType values1 ", n , pr.dataTypes[i].values[0].value, pr.dataTypes[i].title );
+						    
+							//Increment Column-No 
+						    columnNo++;
+					    } ; // end dataTypes have values defined
+					};//End For all dataTypes
+					console.debug (columnNo, " enumerations found");
+					if (columnNo != undefined)
+					{   // append worksheet only, if there were datatypes with values defined
+						XLSX.utils.sheet_add_aoa(ws, aoaArray); // add whole content of page to worksheet
+					    XLSX.utils.book_append_sheet(wb, ws, "(Enumerations)"); //append worksheet to Workbook
+				    };
 			        XLSX.writeFile(wb, hR1.title + '.xlsx' ); 			
 			             
 		        }// end if h1.nodes exists 
