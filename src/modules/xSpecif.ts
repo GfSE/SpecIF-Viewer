@@ -139,7 +139,7 @@ class CSpecIF implements SpecIF {
 					})
 					.done(() => {
 						// 2. Get the specified schema file:
-						Lib.httpGet({
+						LIB.httpGet({
 							// @ts-ignore - 'specifVersion' is defined for versions <1.0
 							url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
 							responseType: 'arraybuffer',
@@ -163,7 +163,7 @@ class CSpecIF implements SpecIF {
 					if (typeof (checker.checkSchema) == 'function' && typeof (checker.checkConstraints) == 'function') {
 //						console.debug('schema', xhr);
 						// 1. check data against schema:
-						let sma = JSON.parse(Lib.ab2str(xhr.response));
+						let sma = JSON.parse(LIB.ab2str(xhr.response));
 						// Override meta-schema until we get to work "https://json-schema.org/draft/2019-09/schema#";
 						// the schema check itself does not need the features of the newer one,
 						// but a future check of values xs:duration in the constraint-check does:
@@ -216,16 +216,16 @@ class CSpecIF implements SpecIF {
 		// - tolerates missing input list (not all are mandatory for SpecIF)
 		// - suppresses undefined list items in the result, so in effect forAll() is a combination of .map() and .filter().
 		try {
-			this.dataTypes = Lib.forAll( spD.dataTypes, dT2int );
-			this.propertyClasses = Lib.forAll(spD.propertyClasses, pC2int );
-			this.resourceClasses = Lib.forAll( spD[names.rClasses], rC2int );
-			this.statementClasses = Lib.forAll( spD[names.sClasses], sC2int );
+			this.dataTypes = LIB.forAll( spD.dataTypes, dT2int );
+			this.propertyClasses = LIB.forAll(spD.propertyClasses, pC2int );
+			this.resourceClasses = LIB.forAll( spD[names.rClasses], rC2int );
+			this.statementClasses = LIB.forAll( spD[names.sClasses], sC2int );
 			if (names.hClasses)
-				this.resourceClasses = this.resourceClasses.concat( Lib.forAll( spD[names.hClasses], hC2int ));
-			this.resources = Lib.forAll( spD.resources, r2int );
-			this.statements = Lib.forAll( spD.statements, s2int );
-			this.hierarchies = Lib.forAll( spD.hierarchies, h2int );
-			this.files = Lib.forAll( spD.files, f2int )
+				this.resourceClasses = this.resourceClasses.concat( LIB.forAll( spD[names.hClasses], hC2int ));
+			this.resources = LIB.forAll( spD.resources, r2int );
+			this.statements = LIB.forAll( spD.statements, s2int );
+			this.hierarchies = LIB.forAll( spD.hierarchies, h2int );
+			this.files = LIB.forAll( spD.files, f2int )
 		}
 		catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
@@ -251,7 +251,7 @@ class CSpecIF implements SpecIF {
 				id: iE.id,
 				changedAt: iE.changedAt
 			};
-			if (iE.description) oE.description = Lib.cleanValue(iE.description);
+			if (iE.description) oE.description = LIB.cleanValue(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
 			switch (typeof (iE.revision)) {
 				case 'number':
@@ -270,7 +270,7 @@ class CSpecIF implements SpecIF {
 		// a data type:
 		function dT2int(iE:any): DataType {
 			var oE: any = i2int(iE);
-			oE.title = Lib.cleanValue(iE.title);
+			oE.title = LIB.cleanValue(iE.title);
 			oE.type = iE.type;
 			switch (iE.type) {
 				case "xs:double":
@@ -286,27 +286,29 @@ class CSpecIF implements SpecIF {
 				case "xs:string":
 					if (typeof (iE.maxLength) == 'number')
 						oE.maxLength = iE.maxLength;
-					break;
-				case "xs:enumeration":
-					if (iE.values)
-						oE.values = Lib.forAll(iE.values, (v): EnumeratedValue => {
-							// 'v.title' until v0.10.6, 'v.value' thereafter;
-							// 'v.value' can be a string or a multilanguage object.
-							return {
-								id: v.id,
-								value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
-							}
-						})
 			};
+			// Look for enumerated values;
+			// up until v1.0 there is a dedicated dataType "xs:enumeration" and
+			// starting with v1.1 every dataType except xs:boolean may have enumerated values:
+			if (iE.values)
+				oE.values = LIB.forAll(iE.values, (v): EnumeratedValue => {
+					// 'v.title' until v0.10.6, 'v.value' thereafter;
+					// 'v.value' can be a string or a multilanguage object.
+					return {
+						id: v.id,
+						value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
+					}
+				});
+
 //			console.debug('dataType 2int',iE);
 			return oE
 		}
 		// a property class:
 		function pC2int(iE: PropertyClass): PropertyClass {
 			var oE: any = i2int(iE);
-			oE.title = Lib.cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
-			if (iE.description) oE.description = Lib.cleanValue(iE.description);
-			if (iE.value) oE.value = Lib.cleanValue(iE.value);
+			oE.title = LIB.cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
+			if (iE.description) oE.description = LIB.cleanValue(iE.description);
+			if (iE.value) oE.value = LIB.cleanValue(iE.value);
 			oE.dataType = iE.dataType;
 			let dT: DataType = itemById(self.dataTypes, iE.dataType);
 //			console.debug('pC2int',iE,dT);
@@ -314,7 +316,7 @@ class CSpecIF implements SpecIF {
 				case 'xs:enumeration':
 					// include the property only, if it is different from the dataType's:
 					if (iE.multiple && !dT.multiple) oE.multiple = true
-					else if (iE.multiple == false && dT.multiple) oE.multiple = false
+					else if (iE.multiple == false && dT.multiple) oE.multiple = false;
 			};
 //			console.debug('propClass 2int',iE,oE);
 			return oE
@@ -322,7 +324,7 @@ class CSpecIF implements SpecIF {
 		// common for all instance classes:
 		function aC2int(iE:any) {
 			var oE: any = i2int(iE);
-			oE.title = Lib.cleanValue(iE.title);
+			oE.title = LIB.cleanValue(iE.title);
 			if (iE['extends']) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5
 			if (iE.icon) oE.icon = iE.icon;
 			if (iE.creation) oE.instantiation = iE.creation;	// deprecated, for compatibility
@@ -404,28 +406,28 @@ class CSpecIF implements SpecIF {
 					// no id
 					class: iE[names.pClass]
 				};
-			if (iE.title) oE.title = Lib.cleanValue(iE.title);
-			if (iE.description) oE.description = Lib.cleanValue(iE.description);
+			if (iE.title) oE.title = LIB.cleanValue(iE.title);
+			if (iE.description) oE.description = LIB.cleanValue(iE.description);
 
 			switch (dT.type) {
 				case 'xs:string':
 				case 'xhtml':
-					oE.value = Lib.cleanValue(iE.value);
+					oE.value = LIB.cleanValue(iE.value);
 					oE.value = Array.isArray(oE.value) ?
 						// multiple languages:
-						Lib.forAll(oE.value,
-							(val) => {
-								val.text = Lib.uriBack2slash(val.text);
+						LIB.forAll(oE.value,
+							(val: ValueElement) => {
+								val.text = LIB.uriBack2slash(val.text);
 								return val;
 							})
 						// single language:
-						: Lib.uriBack2slash(oE.value);
+						: LIB.uriBack2slash(oE.value);
 					break;
 				default:
 					// According to the schema, all property values are represented by a string
 					// and internally they are stored as string as well to avoid inaccuracies
 					// by multiple transformations:
-					oE.value = Lib.cleanValue(iE.value);
+					oE.value = LIB.cleanValue(iE.value);
 			};
 			// properties do not have their own revision and change info
 //			console.debug('propValue 2int',iE,pT,oE);
@@ -436,9 +438,9 @@ class CSpecIF implements SpecIF {
 			var oE = i2int(iE), eC;
 			// resources must have a title, but statements may come without:
 			if (iE.title)
-				oE.title = Lib.cleanValue(iE.title);
+				oE.title = LIB.cleanValue(iE.title);
 			if (iE.properties && iE.properties.length > 0)
-				oE.properties = Lib.forAll(iE.properties, (e: any): Property => { return p2int(e) });
+				oE.properties = LIB.forAll(iE.properties, (e: any): Property => { return p2int(e) });
 
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
@@ -486,7 +488,7 @@ class CSpecIF implements SpecIF {
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
-			function titlePropertyNeeded(el): boolean {
+			function titlePropertyNeeded(el:any): boolean {
 				if (el.title) {
 					if (Array.isArray(el.properties))
 						for (var i = el.properties.length - 1; i > -1; i--) {
@@ -502,7 +504,7 @@ class CSpecIF implements SpecIF {
 				};
 				return false; // no title, thus no property needed
 			}
-			function descPropertyNeeded(el): boolean {
+			function descPropertyNeeded(el:any): boolean {
 				if (el.description) {
 					if (Array.isArray(el.properties))
 						for (var i = el.properties.length - 1; i > -1; i--) {
@@ -567,7 +569,7 @@ class CSpecIF implements SpecIF {
 			};
 
 			// SpecIF allows resource references with id alone or with  a key (id+revision):
-			iH.nodes = Lib.forAll(eH.nodes, n2int);
+			iH.nodes = LIB.forAll(eH.nodes, n2int);
 //			console.debug('hierarchy 2int',eH,iH);
 			return iH
 
@@ -577,7 +579,7 @@ class CSpecIF implements SpecIF {
 					case 'number':
 						eN.revision = eN.revision.toString()
 				};
-				Lib.forAll(eN.nodes, n2int);
+				LIB.forAll(eN.nodes, n2int);
 				return eN
 			}
 		}
@@ -587,11 +589,11 @@ class CSpecIF implements SpecIF {
 			oF.title = iF.title ? iF.title.replace(/\\/g, '/') : iF.id;
 			// store the blob and it's type:
 			if (iF.blob) {
-				oF.type = iF.blob.type || iF.type || Lib.attachment2mediaType(iF.title);
+				oF.type = iF.blob.type || iF.type || LIB.attachment2mediaType(iF.title);
 				oF.blob = iF.blob;
 			}
 			else if (iF.dataURL) {
-				oF.type = iF.type || Lib.attachment2mediaType(iF.title);
+				oF.type = iF.type || LIB.attachment2mediaType(iF.title);
 				oF.dataURL = iF.dataURL;
 			}
 			else
@@ -651,13 +653,13 @@ class CSpecIF implements SpecIF {
 				};
 
 				// Now start to assemble the SpecIF output:
-				spD.dataTypes = Lib.forAll(this.dataTypes, dT2ext);
-				spD.propertyClasses = Lib.forAll(this.propertyClasses, pC2ext);
-				spD.resourceClasses = Lib.forAll(this.resourceClasses, rC2ext);
-				spD.statementClasses = Lib.forAll(this.statementClasses, sC2ext);
-				spD.resources = Lib.forAll((opts.allResources ? this.resources : collectResourcesByHierarchy(this)), r2ext);
-				spD.statements = Lib.forAll(this.statements, s2ext);
-				spD.hierarchies = Lib.forAll(this.hierarchies, n2ext);
+				spD.dataTypes = LIB.forAll(this.dataTypes, dT2ext);
+				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
+				spD.resourceClasses = LIB.forAll(this.resourceClasses, rC2ext);
+				spD.statementClasses = LIB.forAll(this.statementClasses, sC2ext);
+				spD.resources = LIB.forAll((opts.allResources ? this.resources : collectResourcesByHierarchy(this)), r2ext);
+				spD.statements = LIB.forAll(this.statements, s2ext);
+				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);
 				spD.files = [];
 				this.files.forEach( (f) => {
 					pend++;
@@ -681,10 +683,10 @@ class CSpecIF implements SpecIF {
 						lenBefore = spD.statements.length;
 						spD.statements = spD.statements.filter(
 							(s) => {
-								return (indexById(spD.resources, Lib.idOf(s.subject)) > -1
-									|| indexById(spD.statements, Lib.idOf(s.subject)) > -1)
-									&& (indexById(spD.resources, Lib.idOf(s.object)) > -1
-										|| indexById(spD.statements, Lib.idOf(s.object)) > -1)
+								return (indexById(spD.resources, LIB.idOf(s.subject)) > -1
+									|| indexById(spD.statements, LIB.idOf(s.subject)) > -1)
+									&& (indexById(spD.resources, LIB.idOf(s.object)) > -1
+										|| indexById(spD.statements, LIB.idOf(s.object)) > -1)
 							}
 						);
 						console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
@@ -774,7 +776,7 @@ class CSpecIF implements SpecIF {
 				}
 				// common for all items:
 				function i2ext(iE:any) {
-					var oE = {
+					var oE:any = {
 						id: iE.id,
 						changedAt: iE.changedAt
 					};
@@ -802,14 +804,18 @@ class CSpecIF implements SpecIF {
 						case "xhtml":
 						case "xs:string":
 							if (iE.maxLength) oE.maxLength = iE.maxLength;
-							break;
-						case "xs:enumeration":
-							if (opts.targetLanguage)
-								// reduce to the language specified:
-								oE.values = Lib.forAll(iE.values, (val) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
-							else
-								oE.values = iE.values
 					};
+					// Look for enumerated values;
+					// up until v1.0 there is a dedicated dataType "xs:enumeration" and
+					// starting with v1.1 every dataType except xs:boolean may have enumerated values:
+					if (iE.values) {
+						if (opts.lookupLanguage && opts.targetLanguage)
+							// reduce to the language specified:
+							oE.values = LIB.forAll(iE.values, (val: EnumeratedValue) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
+						else
+							oE.values = iE.values;
+					};
+
 					return oE
 				}
 				// a property class:
@@ -916,7 +922,7 @@ class CSpecIF implements SpecIF {
 							return oE;
 						};
 					};
-					// else, keep full data structure:
+					// else, the keep full data structure:
 					if (Array.isArray(iE.value)) {
 						// Just to avoid the climbing through list and objects, unless necessary:
 						if (opts.allDiagramsAsImage) {
@@ -941,9 +947,9 @@ class CSpecIF implements SpecIF {
 							// Replace all links to application files like BPMN by links to SVG images:
 							let replaced = false;
 							// @ts-ignore - $0 is never read, but must be specified anyways
-							val = val.replace(RE.tagObject, ($0, $1, $2) => {
+							val = val.replace(RE.tagObject, ($0: string, $1: string, $2: string) => {
 //								console.debug('#a', $0, $1, $2);
-								if ($1) $1 = $1.replace(RE.attrType, ($4, $5) => {
+								if ($1) $1 = $1.replace(RE.attrType, ($4:string, $5:string) => {
 //									console.debug('#b', $4, $5);
 									// ToDo: Further application file formats ... once in use.
 									// Use CONFIG.applTypes ... once appropriate.
@@ -955,7 +961,7 @@ class CSpecIF implements SpecIF {
 										return $4;
 								});
 								// @ts-ignore - $6 is never read, but must be specified anyways
-								if (replaced) $1 = $1.replace(RE.attrData, ($6, $7) => {
+								if (replaced) $1 = $1.replace(RE.attrData, ($6: string, $7: string) => {
 //									console.debug('#c', $6, $7);
 									return 'data="' + $7.fileName() + '.svg"'
 								});
@@ -964,47 +970,6 @@ class CSpecIF implements SpecIF {
 						};
 						return val;
                     }
-
-				/*	// According to the schema, all property values are represented by a string
-					// and we want to store them as string to avoid inaccuracies by multiple transformations:
-					if (opts.targetLanguage) {
-						// reduce to the selected language; is used for generation of human readable documents
-						// or for formats not supporting multiple languages:
-						let dT: DataType = dataTypeOf(spD, iE['class']);
-						switch (dT.type) {
-							case 'xs:string':
-							case 'xhtml':
-								if (opts.targetLanguage) {
-									if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) > -1)
-										// if it is e.g. a title, remove all formatting:
-										oE.value = stripHTML(languageValueOf(iE.value, opts)
-											// remove any leading whiteSpace:
-											.replace(/^\s+/, ""));
-									else
-										// otherwise transform to HTML, if possible;
-										// especially for publication, for example using WORD format:
-										oE.value = languageValueOf(iE.value, opts)
-											// remove any leading whiteSpace:
-											.replace(/^\s+/, "")
-											.makeHTML(opts)
-											.replace(/<br ?\/>\n/g, "<br/>");
-
-//								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
-									break;
-								};
-							// else: no break - return the original value
-							default:
-								//	in case of 'xs:enumeration', 
-								//  an id of the dataType's value is given, so it can be taken directly:
-								oE.value = iE.value;
-						};
-					}
-					else {
-						// for SpecIF export, keep full data structure:
-						oE.value = iE.value;
-					}; 
-					// properties do not have their own revision and change info; the parent's apply.
-					return oE; */
 				}
 				// common for all instances:
 				function a2ext(iE:any) {
@@ -1014,7 +979,7 @@ class CSpecIF implements SpecIF {
 					// @ts-ignore - index is ok:
 					oE['class'] = iE['class'];
 					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
-					if (iE.properties && iE.properties.length > 0) oE.properties = Lib.forAll(iE.properties, p2ext);
+					if (iE.properties && iE.properties.length > 0) oE.properties = LIB.forAll(iE.properties, p2ext);
 					return oE;
 				}
 				// a resource:
@@ -1030,8 +995,8 @@ class CSpecIF implements SpecIF {
 				function s2ext(iE: Statement) {
 					// Skip statements with an open end;
 					// At the end it will be checked, wether all referenced resources resp. statements are listed:
-					if (!iE.subject || Lib.idOf(iE.subject) == CONFIG.placeholder
-						|| !iE.object || Lib.idOf(iE.object) == CONFIG.placeholder
+					if (!iE.subject || LIB.idOf(iE.subject) == CONFIG.placeholder
+						|| !iE.object || LIB.idOf(iE.object) == CONFIG.placeholder
 					) return;
 
 					// The statements usually do use a vocabulary item (and not have an individual title),
@@ -1050,8 +1015,8 @@ class CSpecIF implements SpecIF {
 					// for the time being, multiple revisions are not supported:
 					if (opts.revisionDate) {
 						// supply only the id, but not a key:
-						oE.subject = Lib.idOf(iE.subject);
-						oE.object = Lib.idOf(iE.object);
+						oE.subject = LIB.idOf(iE.subject);
+						oE.object = LIB.idOf(iE.object);
 					}
 					else {
 						// supply key or id:
@@ -1069,12 +1034,12 @@ class CSpecIF implements SpecIF {
 						// for the time being, multiple revisions are not supported:
 						//                            supply only the id, but not a key
 						//                            |                           supply key or id
-						resource: opts.revisionDate? Lib.idOf(iN.resource) : iN.resource,
+						resource: opts.revisionDate? LIB.idOf(iN.resource) : iN.resource,
 						changedAt: iN.changedAt
 					};
 					
 					if (iN.nodes && iN.nodes.length > 0)
-						oN.nodes = Lib.forAll(iN.nodes, n2ext);
+						oN.nodes = LIB.forAll(iN.nodes, n2ext);
 					if (iN.revision)
 						oN.revision = iN.revision;
 					return oN
@@ -1106,7 +1071,7 @@ class CSpecIF implements SpecIF {
 								switch (iF.type) {
 									case 'application/bpmn+xml':
 										// Read and render BPMN as SVG:
-										Lib.blob2text(iF, (txt: string) => {
+										LIB.blob2text(iF, (txt: string) => {
 											bpmn2svg(txt).then(
 												(result) => {
 													let nFileName = iF.title.fileName() + '.svg';

@@ -62,7 +62,7 @@ moduleManager.construct({
 
 		bDO.notify('Transforming Archimate Open Exchange to SpecIF',10); 
 		// @ts-ignore - Archimate2Specif() is loaded at runtime
-		data = Archimate2Specif( Lib.ab2str(buf),
+		data = Archimate2Specif( LIB.ab2str(buf),
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 

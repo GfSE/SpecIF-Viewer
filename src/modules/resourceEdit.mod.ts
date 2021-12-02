@@ -168,10 +168,10 @@ moduleManager.construct({
 									];
 								editResource(r,opts);
 							}, 
-							Lib.stdError
+							LIB.stdError
 						);
 					},
-					Lib.stdError
+					LIB.stdError
 				);
 				break;
 			case 'clone':
@@ -184,7 +184,7 @@ moduleManager.construct({
 						// create a clone to collect the changed values before committing:
 						self.newRes = simpleClone(rL[0]);
 						if( opts.mode=='clone' ) {
-							self.newRes.id = Lib.genID('R-');
+							self.newRes.id = LIB.genID('R-');
 							opts.dialogTitle = i18n.MsgCloneResource,
 							opts.msgBtns = [
 								msgBtns.cancel,
@@ -200,7 +200,7 @@ moduleManager.construct({
 						}; 
 						editResource(self.newRes,opts)
 					},
-					Lib.stdError
+					LIB.stdError
 				);
 		};
 		return;
@@ -288,7 +288,7 @@ moduleManager.construct({
 					case 'xs:enumeration':
 						// no input checking needed:
 						let separatedValues = p.value.split(','),
-							vals = Lib.forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+							vals = LIB.forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple )
 							return checkboxField(ti, vals, { description: pC.description } );
@@ -297,7 +297,7 @@ moduleManager.construct({
 					case 'xs:boolean':
 						// no input checking needed:
 //						console.debug('xs:boolean',ti,p,pC);
-						return booleanField(ti, Lib.isTrue(p.value), { description: pC.description } );
+						return booleanField(ti, LIB.isTrue(p.value), { description: pC.description } );
 					case 'xs:dateTime':
 					case 'xs:integer':
 					case 'xs:double':
@@ -346,12 +346,12 @@ moduleManager.construct({
 		function selectResClass( opts ) {		
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
-				app.cache.selectedProject.readContent( 'resourceClass', Lib.forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
+				app.cache.selectedProject.readContent( 'resourceClass', LIB.forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
 				.then( 
 					(rCL)=>{
 						if( rCL.length>0 ) {
 							// store a clone and get the title to display:
-							let resClasses = Lib.forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
+							let resClasses = LIB.forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
 							if( resClasses.length>1 ) {
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
@@ -519,7 +519,7 @@ moduleManager.construct({
 			// a property class must exist, 
 			// because new CResourceToShow() puts only existing properties to 'other':
 			if( p['class'] ) {
-				if( Lib.hasContent(p.value) ) {
+				if( LIB.hasContent(p.value) ) {
 					if( Array.isArray( self.newRes.properties ) )
 						self.newRes.properties.push( p );
 					else
@@ -535,28 +535,28 @@ moduleManager.construct({
 //		console.debug( 'save', self.newRes );
 
 		app.cache.selectedProject.updateContent('resource', self.newRes)
-			.then(finalize, Lib.stdError);
+			.then(finalize, LIB.stdError);
 		switch( mode ) {
 		//	case 'update':
 		//		break;
 			case 'insert':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:Lib.genID('N-'),resource:self.newRes.id,changedAt:chD} )
-					.then( finalize, Lib.stdError );
+				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:self.newRes.id,changedAt:chD} )
+					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:Lib.genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selNodeId} )
-					.then( finalize, Lib.stdError );
+				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selNodeId} )
+					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:Lib.genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selNodeId} )
-					.then( finalize, Lib.stdError );
+				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selNodeId} )
+					.then( finalize, LIB.stdError );
 		};
 		// has no effect, if newFiles is empty:
 		app.cache.selectedProject.createContent( 'file', self.newFiles )
-			.then( finalize, Lib.stdError );
+			.then( finalize, LIB.stdError );
 		return;
 			
 		function finalize() {	

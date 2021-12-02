@@ -65,7 +65,7 @@ moduleManager.construct({
 		bDO.notify('Transforming BPMN to SpecIF',10); 
 		// @ts-ignore - BPMN2Specif() is loaded at runtime
 		data = BPMN2Specif(
-				Lib.ab2str(buf),
+				LIB.ab2str(buf),
 				{ 
 					fileName: fName, 
 					fileDate: fDate, 

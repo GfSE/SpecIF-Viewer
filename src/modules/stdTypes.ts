@@ -194,7 +194,7 @@ function addP(el:Resource|Statement, prp: Property): void {
 	// 	A list with all data-, object- and relation-types needed for the comments according to specif schema.
 	// 	For the time being, the addComment dialog (in specifications-*.html) is hard-coded for the current type definitions.  
 	function CommentTypes() {
-		let did = Lib.genID('DT-'), oid = Lib.genID('RC-'), rid = Lib.genID('SC-');
+		let did = LIB.genID('DT-'), oid = LIB.genID('RC-'), rid = LIB.genID('SC-');
 		this.title = 'Types for comments';
 		this.specifVersion = '0.10.4';
 		this.dataTypes = [{
@@ -239,9 +239,9 @@ function addP(el:Resource|Statement, prp: Property): void {
 	//	self.available = function() {  
 	//		// Return true if all types are available.
 	//		// Must compare by unique name, because the id may vary.
-	//		return Lib.containsByTitle( prj.dataTypes, types.dataTypes )
-	//			&& Lib.containsByTitle( prj.resourceClasses, types.resourceClasses )
-	//			&& Lib.containsByTitle( prj.statementClasses, types.statementClasses )
+	//		return LIB.containsByTitle( prj.dataTypes, types.dataTypes )
+	//			&& LIB.containsByTitle( prj.resourceClasses, types.resourceClasses )
+	//			&& LIB.containsByTitle( prj.statementClasses, types.statementClasses )
 	//	};
 
 		self.add = function() {

@@ -10,7 +10,7 @@
 	- Do NOT minify this module with the Google Closure Compiler. At least the RegExp in jsIdOf() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
-const Lib: any = {};
+const LIB: any = {};
 interface IFieldOptions {
 	tagPos?: string;  // 'left', 'none' ('above')
 	typ?: string;     // 'line', 'area' for textField
@@ -24,7 +24,7 @@ function textField(tag: string, val: string, opts?: IFieldOptions): string {
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
 
-	val = typeof(val)=='string'? Lib.noCode( val ) : '';
+	val = typeof(val)=='string'? LIB.noCode( val ) : '';
 
 	let fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0)? ' oninput="' + opts.handle + '"' : '',
 		sH = simpleHash(tag),
@@ -103,7 +103,7 @@ function textValue( tag:string ):string {
 	// get the input value:
 	try {
 		// @ts-ignore - .value is in fact accessible
-		return Lib.noCode(document.getElementById('field' + simpleHash(tag)).value) || '';
+		return LIB.noCode(document.getElementById('field' + simpleHash(tag)).value) || '';
 	} catch(e) {
 		return '';
 	}
@@ -256,10 +256,10 @@ class xhrMessage {
 	}
 }
 // standard error handler:
-Lib.logMsg = (xhr: xhrMessage): void =>{
+LIB.logMsg = (xhr: xhrMessage): void =>{
 	console.log(xhr.statusText + " (" + xhr.status + (xhr.responseType == 'text' ? "): " + xhr.responseText : ")"));
 }
-Lib.stdError = (xhr: xhrMessage, cb?:Function): void =>{
+LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 //	console.debug('stdError',xhr);
 	// clone, as xhr.responseText ist read-only:
 	let xhrCl = new xhrMessage(xhr.status, xhr.statusText, xhr.responseType, xhr.responseType=='text'? xhr.responseText : '');
@@ -306,7 +306,7 @@ Lib.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 			message.show( xhr );
 	};
 	// log original values:
-	Lib.logMsg(xhr);
+	LIB.logMsg(xhr);
 	if( typeof(cb)=='function' ) cb();
 };
 // standard message box:
@@ -434,12 +434,12 @@ function itemBy(L:any[], p:string, s:string ):any {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
-Lib.containsAll = (rL: string[], nL: string[]): boolean =>{
+LIB.containsAll = (rL: string[], nL: string[]): boolean =>{
 	for (var i = nL.length - 1; i > -1; i--)
 		if (rL.indexOf(nL[i]) < 0) return false;
 	return true;
 }
-Lib.containsById = (cL:any[], L: Item[] ):boolean =>{
+LIB.containsById = (cL:any[], L: Item[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
@@ -451,7 +451,7 @@ Lib.containsById = (cL:any[], L: Item[] ):boolean =>{
 		return true;
 	}
 } 
-/* Lib.containsByTitle = (cL:any[], L: Item[] ):boolean =>{
+/* LIB.containsByTitle = (cL:any[], L: Item[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
@@ -462,24 +462,24 @@ Lib.containsById = (cL:any[], L: Item[] ):boolean =>{
 		return true;
 	}
 } */
-Lib.cmp = ( i:string, a:string ):number =>{
+LIB.cmp = ( i:string, a:string ):number =>{
 	if( !i ) return -1;
 	if( !a ) return 1;
 	i = i.toLowerCase();
 	a = a.toLowerCase();
 	return i==a? 0 : (i<a? -1 : 1);
 }
-Lib.sortByTitle = ( L:any ):void =>{
+LIB.sortByTitle = ( L:any ):void =>{
 	L.sort( 
-		(bim,bam)=>{ return Lib.cmp( bim.title, bam.title ) }
+		(bim,bam)=>{ return LIB.cmp( bim.title, bam.title ) }
 	);
 }
-Lib.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
+LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
 	L.sort( 
-		(bim, bam) => { return Lib.cmp( fn(bim), fn(bam) ) }
+		(bim, bam) => { return LIB.cmp( fn(bim), fn(bam) ) }
 	);
 }
-Lib.forAll = ( L:any[], fn:(arg0:any)=>any ):Array<any> =>{
+LIB.forAll = ( L:any[], fn:(arg0:any)=>any ):Array<any> =>{
 	// return a new list with the results from applying the specified function to all items of input list L;
 	// differences when compared to Array.map():
 	// - tolerates missing L
@@ -492,11 +492,11 @@ Lib.forAll = ( L:any[], fn:(arg0:any)=>any ):Array<any> =>{
 
 // Add a leading icon to a title:
 // use only for display, don't add to stored variables.
-Lib.addIcon = (str: string, ic: string): string =>{
+LIB.addIcon = (str: string, ic: string): string =>{
 	if (ic) return ic + '&#xa0;' + str;
 	return str;
 }
-Lib.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
+LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// add or update the item e in a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	// add, if not yet listed:
@@ -509,27 +509,27 @@ Lib.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 		L[n] = e;
 	return n;
 }
-Lib.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
+LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 	// add or update the items es in a list L:
-	es.forEach((e) => { Lib.cacheE(L, e) })
+	es.forEach((e) => { LIB.cacheE(L, e) })
 	// this operation cannot fail:
 	return true;
 }
-Lib.uncacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
+LIB.uncacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// remove the item e from a list L:
 	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }
-Lib.uncacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
+LIB.uncacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 	// remove the items es from a list L:
 	let done = true;
-	es.forEach((e) => { done = done && Lib.uncacheE(L, e) > -1 });
+	es.forEach((e) => { done = done && LIB.uncacheE(L, e) > -1 });
 	return done;
 }
 	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript
-Lib.genID = (pfx?:string):string =>{
+LIB.genID = (pfx?:string):string =>{
 	if( !pfx || pfx.length<1 ) { pfx = 'ID_' };
 	if( !RE.Id.test(pfx) ) { pfx = '_'+pfx };   // prefix must begin with a letter or '_'
 	
@@ -668,16 +668,16 @@ String.prototype.xmlChar2utf8 = function():string {
 		})
 } */
 
-Lib.toHTML = (str: string): string => {
+LIB.toHTML = (str: string): string => {
 	// Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:
 	return str.escapeHTML().ctrl2HTML()
 }
 // https://stackoverflow.com/questions/15458876/check-if-a-string-is-html-or-not
-Lib.isHTML = (str: string): boolean => {
+LIB.isHTML = (str: string): boolean => {
 	let doc = new DOMParser().parseFromString(str, "text/html");
 	return Array.from(doc.body.childNodes).some(node => node.nodeType == 1)
 }
-Lib.escapeInnerHtml = ( str:string ):string =>{
+LIB.escapeInnerHtml = ( str:string ):string =>{
 	// escape text except for HTML tags:
 	var out = "";
 
@@ -718,9 +718,9 @@ String.prototype.escapeHTML = function():string {
 };
 String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
-	if( Lib.isHTML(this as string) ) return this as string;
+	if( LIB.isHTML(this as string) ) return this as string;
 	// @ts-ignore - $0 is never read, but must be specified anyways
-	return Lib.noCode(this.replace(RE.escapedHtmlTag, ($0,$1,$2,$3)=>{
+	return LIB.noCode(this.replace(RE.escapedHtmlTag, ($0,$1,$2,$3)=>{
 		return '<'+$1+$2+$3+'>';
 	}));
 };
@@ -728,7 +728,7 @@ String.prototype.unescapeHTMLTags = function():string {
 String.prototype.unescapeHTMLEntities = function():string {
 	// unescape HTML encoded entities (characters):
 	var el = document.createElement('div');
-	return Lib.noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
+	return LIB.noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
         return el.innerText;
 	}));
@@ -736,7 +736,7 @@ String.prototype.unescapeHTMLEntities = function():string {
 /*// better: https://stackoverflow.com/a/34064434/5445 but strips HTML tags.
 String.prototype.unescapeHTMLEntities = function() {
 	var doc = new DOMParser().parseFromString(input, "text/html");
-    return Lib.noCode( doc.documentElement.textContent )
+    return LIB.noCode( doc.documentElement.textContent )
 };*/
 
 // Add a link to an isolated URL:
@@ -766,14 +766,14 @@ String.prototype.fileName = function():string {
 	// return the filename without extension:
 	return this.substring( 0, this.lastIndexOf('.') )
 };
-Lib.trimJson = (str:string):string =>{
+LIB.trimJson = (str:string):string =>{
 	// trim all characters outside the outer curly brackets, which may include the UTF-8 byte-order-mask: 
 	return str.substring( str.indexOf('{'), str.lastIndexOf('}')+1 )
 };
-Lib.isTrue = (str: string): boolean =>{
+LIB.isTrue = (str: string): boolean =>{
 	return CONFIG.valuesTrue.indexOf(str.toLowerCase().trim()) > -1;
 }
-Lib.isFalse = (str: string): boolean =>{
+LIB.isFalse = (str: string): boolean =>{
 	return CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
 }
 
@@ -793,7 +793,7 @@ function toHex(str) {
 	return hex;
 }; */
 
-Lib.ab2str = (buf): string =>{
+LIB.ab2str = (buf): string =>{
 	// Convert arrayBuffer to string:
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
 	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
@@ -811,7 +811,7 @@ Lib.ab2str = (buf): string =>{
 		return String.fromCharCode.apply(null, new Uint8Array(buf));
 	}; */
 }
-Lib.str2ab = (str:string) =>{
+LIB.str2ab = (str:string) =>{
 	// Convert string to arrayBuffer:
 //	try {
 		let encoder = new TextEncoder();
@@ -829,7 +829,7 @@ Lib.str2ab = (str:string) =>{
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-Lib.blob2dataURL = (file, fn: Function, timelag?: number): void =>{
+LIB.blob2dataURL = (file, fn: Function, timelag?: number): void =>{
 	if( !file || !file.blob ) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
@@ -840,7 +840,7 @@ Lib.blob2dataURL = (file, fn: Function, timelag?: number): void =>{
 	else
 		reader.readAsDataURL(file.blob);
 } 
-Lib.blob2text = (file, fn: Function, timelag?: number): void => {
+LIB.blob2text = (file, fn: Function, timelag?: number): void => {
 	if (!file || !file.blob) return;
 	const reader = new FileReader();
 	reader.addEventListener('loadend', (e) => { fn(e.target.result, file.title, file.type) });
@@ -851,7 +851,7 @@ Lib.blob2text = (file, fn: Function, timelag?: number): void => {
 	else
 		reader.readAsText(file.blob);
 };
-Lib.uriBack2slash = (str:string):string =>{
+LIB.uriBack2slash = (str:string):string =>{
     return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
 		($0)=>{
 			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
@@ -866,7 +866,7 @@ Lib.uriBack2slash = (str:string):string =>{
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
 // do not implement as chainable function, because a string object is created. 
-Lib.noCode = ( s:string ):string =>{
+LIB.noCode = ( s:string ):string =>{
 	if( s ) {
 		// just suppress the whole content, if there are inacceptable/evil tags or properties, do NOT try to repair it.
 		// <img src="bogus" onerror=alert('4711') />
@@ -881,13 +881,13 @@ Lib.noCode = ( s:string ):string =>{
 		console.log("'"+s+"' is considered harmful ("+c+") and has been suppressed");
 	}
 }
-Lib.cleanValue = (o: string | ValueElement[]): string | ValueElement[] => {
+LIB.cleanValue = (o: string | ValueElement[]): string | ValueElement[] => {
 	// remove potential malicious code from a value which may be supplied in several languages:
-	if( typeof(o)=='string' ) return Lib.noCode( o ); 
-	if( Array.isArray(o) ) return Lib.forAll( o, ( val )=>{ val.text = Lib.noCode(val.text); return val } );
+	if( typeof(o)=='string' ) return LIB.noCode( o ); 
+	if( Array.isArray(o) ) return LIB.forAll( o, ( val )=>{ val.text = LIB.noCode(val.text); return val } );
 	return '';  // unexpected input (programming error with all likelihood
 }
-Lib.attachment2mediaType = ( fname:string ):string|undefined =>{
+LIB.attachment2mediaType = ( fname:string ):string|undefined =>{
 	let t = fname.fileExt();  // get the extension excluding '.'
 	if( t ) {
 		// the sequence of mediaTypes in xTypes corresponds to the sequence of extensions in xExtensions:
@@ -900,7 +900,7 @@ Lib.attachment2mediaType = ( fname:string ):string|undefined =>{
 	};
 //	return undefined;
 }
-Lib.localDateTime = (iso:string):string =>{
+LIB.localDateTime = (iso:string):string =>{
 	if( typeof(iso)=='string' ) {
 		// ToDo: calculate offset of time-zone ... or use one of the libraries ..
 		if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
@@ -1068,7 +1068,7 @@ function clearUrlParams():void {
 //	console.debug( 'clearUrlParams', path );
 	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
 }
-Lib.httpGet = (params:any):void =>{
+LIB.httpGet = (params:any):void =>{
 	// https://blog.garstasio.com/you-dont-need-jquery/
 	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
 	var xhr = new XMLHttpRequest();

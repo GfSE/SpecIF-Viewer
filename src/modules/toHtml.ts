@@ -60,7 +60,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 						//	console.warn(errT);
 						//	reject({ status: 999, statusText: errT });
 				*/
-							Lib.blob2dataURL(f,
+							LIB.blob2dataURL(f,
 								(r: string) => {
 									// perhaps there is a more elegant way to apply the type to the dataURL,
 									// but it works:

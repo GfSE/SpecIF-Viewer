@@ -60,7 +60,7 @@ moduleManager.construct({
 				selRes = rL[0];
 				createStatement( opts )
 			},
-			Lib.stdError
+			LIB.stdError
 		);
 
 //		console.debug('resourceLink.show',opts);
@@ -77,7 +77,7 @@ moduleManager.construct({
 			// 1. get the eligible statementClasses and all referenced resources in parallel and then create the desired statement:
 			self.eligibleSCL.length=0;
 			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach( (sCId)=>{
-				Lib.cacheE( self.eligibleSCL, sCId )  // avoid duplicates
+				LIB.cacheE( self.eligibleSCL, sCId )  // avoid duplicates
 			});
 			app.cache.selectedProject.readContent( 'statementClass', self.eligibleSCL )
 			.then( 
@@ -85,7 +85,7 @@ moduleManager.construct({
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
 					chooseResourceToLink()
 				}, 
-				Lib.stdError
+				LIB.stdError
 			);
 
 			// 2. collect all statements of the originally selected resource to exclude them from selection:
@@ -95,14 +95,14 @@ moduleManager.construct({
 					self.selResStatements = list;
 					chooseResourceToLink()
 				},
-				Lib.stdError
+				LIB.stdError
 			);
 			
 			// 3. collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
-			Lib.iterateNodes( cData.hierarchies, 
+			LIB.iterateNodes( cData.hierarchies, 
 				(nd:SpecifNode)=>{
-					Lib.cacheE( self.allResources, nd.resource );
+					LIB.cacheE( self.allResources, nd.resource );
 					// self.allResources contains the resource ids
 					return true // iterate the whole tree
 				}
@@ -112,7 +112,7 @@ moduleManager.construct({
 				(list:Resource[])=>{
 					
 					// Sort the resources:
-					Lib.sortBy( 
+					LIB.sortBy( 
 							list, 
 							(el)=>{ return elementTitleOf(el,opts,cData) } 
 					);
@@ -120,7 +120,7 @@ moduleManager.construct({
 					// now self.allResources contains the full resources
 					chooseResourceToLink()
 				}, 
-				Lib.stdError
+				LIB.stdError
 			);
 			return
 
@@ -129,7 +129,7 @@ moduleManager.construct({
 				if( --pend<1 ) {
 					// all parallel requests are done,
 					// store a clone and get the title to display:
-					let staClasses = Lib.forAll( 
+					let staClasses = LIB.forAll( 
 							self.eligibleSCL, 
 							(sC)=>{ return {title:titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} 
 						);
@@ -174,7 +174,7 @@ moduleManager.construct({
 									()=>{
 										pData.doRefresh({forced:true})
 									},
-									Lib.stdError
+									LIB.stdError
 								);
 								thisDlg.close()
 							}  
@@ -188,7 +188,7 @@ moduleManager.construct({
 									()=>{
 										pData.doRefresh({forced:true})
 									},
-									Lib.stdError
+									LIB.stdError
 								);
 								thisDlg.close()
 							}  
@@ -319,7 +319,7 @@ moduleManager.construct({
 	self.saveStatement = (dir):void =>{
 //		console.debug('saveStatement',selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
 		return app.cache.selectedProject.createContent( 'statement', {
-									id: Lib.genID('S-'),
+									id: LIB.genID('S-'),
 									class: self.selectedStatementClass.id,
 									subject: ( dir.secondAs=='object'? selRes.id : self.selectedCandidate.resource.id ),
 									object: ( dir.secondAs=='object'? self.selectedCandidate.resource.id : selRes.id ),

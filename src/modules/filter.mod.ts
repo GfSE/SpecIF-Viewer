@@ -174,7 +174,7 @@ moduleManager.construct({
 	function handleError(xhr: xhrMessage): void {
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		Lib.stdError(xhr);
+		LIB.stdError(xhr);
 	};
 
 	// standard module entry:

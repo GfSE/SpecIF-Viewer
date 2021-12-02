@@ -155,7 +155,7 @@ moduleManager.construct({
                 // Selected file is not zipped - it is expected to be ReqIF data in XML format.
 			    // Check if data is valid XML:
                 
-				let str = Lib.ab2str(buf);
+				let str = LIB.ab2str(buf);
                 if( validateXML(str) ) {
 					// @ts-ignore - transformReqif2Specif() is loaded at runtime
 					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
@@ -347,7 +347,7 @@ moduleManager.construct({
 								for( j=L[i].properties.length-1;j>-1;j-- ) {
 									prp = L[i].properties[j];
 									// check only the property with the specified class:
-									if( prp['class']==id && Lib.isHTML(prp.value) ) return true;
+									if( prp['class']==id && LIB.isHTML(prp.value) ) return true;
 								};
 						};
 						return false;
@@ -720,7 +720,7 @@ moduleManager.construct({
 							let	hasDiv = RE_hasDiv.test(prp.value),
 								txt =
 										// escape text except for HTML tags:
-										Lib.escapeInnerHtml(prp.value)
+										LIB.escapeInnerHtml(prp.value)
 										// ReqIF does not support the class attribute:
 										.replace( RE_class, function() { 
 											return '';

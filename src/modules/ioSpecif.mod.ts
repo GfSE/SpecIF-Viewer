@@ -92,7 +92,7 @@ moduleManager.construct({
 						// Please note:
 						// - the file may have a UTF-8 BOM
 						// - all property values are encoded as string, even if boolean, integer or double.
-						data = JSON.parse( Lib.trimJson(dta) );
+						data = JSON.parse( LIB.trimJson(dta) );
 						data.files = [];
 						// SpecIF data is valid.
 						
@@ -151,7 +151,7 @@ moduleManager.construct({
 			try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present.
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
-				var data = JSON.parse( Lib.trimJson(Lib.ab2str(buf)) );
+				var data = JSON.parse( LIB.trimJson(LIB.ab2str(buf)) );
 				zDO.resolve( data );
 			} catch (err) {
 				zDO.reject( errInvalidJson );

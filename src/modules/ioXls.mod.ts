@@ -532,7 +532,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							else {
 								// No id specified, so a random value must be generated. 
 								// No chance to update the element later on!
-								res.id = Lib.genID('R-');
+								res.id = LIB.genID('R-');
 							};
 							res.title = titleFromProps( res );
 							// accept only resources with title:
@@ -625,7 +625,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						pC = getPropClass(c);
 						// .. and create the propertyClass:
 						if( pC ) { 
-							Lib.cacheE( specifData.propertyClasses, pC ); // add it to propertyClasses, avoid duplicates
+							LIB.cacheE( specifData.propertyClasses, pC ); // add it to propertyClasses, avoid duplicates
 							pCs.push(pC.id);  // add the key to the resourceClass' propertyClasses
 						};
 					};

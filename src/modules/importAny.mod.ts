@@ -46,7 +46,7 @@ moduleManager.construct({
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
 			help: i18n.MsgImportSpecif,	
-			opts: { mediaTypeOf: Lib.attachment2mediaType }
+			opts: { mediaTypeOf: LIB.attachment2mediaType }
 		},{
 			id:'xml',	
 			name:'ioArchimate',	
@@ -54,7 +54,7 @@ moduleManager.construct({
 			label:'Archimate®',
 //			help: i18n.MsgImportArchimate, 
 			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
-			opts: { mediaTypeOf: Lib.attachment2mediaType } 
+			opts: { mediaTypeOf: LIB.attachment2mediaType } 
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
@@ -67,7 +67,7 @@ moduleManager.construct({
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
 			help: "Experimental: "+i18n.MsgImportReqif,
-			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: Lib.attachment2mediaType } 
+			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: LIB.attachment2mediaType } 
 	/*	},{
             id: 'rdf',
             name: 'ioRdf',
@@ -222,7 +222,7 @@ moduleManager.construct({
 					// Assume it is an absolute or relative URL;
 					// must be either from the same URL or CORS-enabled.
 					// Import the file: 
-					Lib.httpGet({
+					LIB.httpGet({
 						// force a reload through cache-busting:
 						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
 						responseType: 'arraybuffer',
@@ -416,7 +416,7 @@ moduleManager.construct({
 	function handleError(xhr: xhrMessage): void {
 //		console.debug( 'handleError', xhr );
 		self.clear();
-		Lib.stdError(xhr);
+		LIB.stdError(xhr);
 		self.show();
 	}
 	// ToDo: construct an object ...
@@ -485,7 +485,7 @@ moduleManager.construct({
 									// save according to the selected mode:
 									switch( mode.id ) {
 										case 'clone': 	
-											dta.id = Lib.genID('P-');
+											dta.id = LIB.genID('P-');
 											// no break
 										case 'replace':
 											setProgress('Creating project',20); 
@@ -523,7 +523,7 @@ moduleManager.construct({
 
 				switch( opts.mode ) {
 				/*	case 'clone': 	
-						dta.id = Lib.genID('P-');
+						dta.id = LIB.genID('P-');
 						// no break */
 					case 'create':
 					case 'replace':

@@ -35,7 +35,7 @@ class CPropertyToShow implements Property {
     }
 	isVisible(opts: any): boolean {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
-			&& (CONFIG.showEmptyProperties || Lib.hasContent(languageValueOf(this.value, opts))))
+			&& (CONFIG.showEmptyProperties || LIB.hasContent(languageValueOf(this.value, opts))))
 	}
 	get( opts?: any): string {
 		if (typeof (opts) != 'object') opts = {};
@@ -72,7 +72,7 @@ class CPropertyToShow implements Property {
 				ct = this.titleLinks(ct, opts);
 				break;
 			case TypeEnum.XsDateTime:
-				ct = Lib.localDateTime(this.value);
+				ct = LIB.localDateTime(this.value);
 				break;
 			case TypeEnum.XsEnumeration:
 				// Usually 'value' has a comma-separated list of value-IDs,
@@ -573,7 +573,7 @@ class CResourceToShow {
 		// ToDo: Create a class for attributes ..
 		cssCl = cssCl ? ' ' + cssCl : '';
 		if (typeof (val) == 'string')
-			val = Lib.noCode(val)
+			val = LIB.noCode(val)
 		else val = '';
 
 		// assemble a label:value pair resp. a wide value field for display:
@@ -596,7 +596,7 @@ class CResourceToShow {
 		};
 		// else: is not a heading:
 		// take title and add icon, if configured:
-		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? Lib.addIcon(ti, this['class'].icon) : ti) + '</div>';
+		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this['class'].icon) : ti) + '</div>';
 	}
 	renderChangeInfo(): string {
 		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
@@ -606,7 +606,7 @@ class CResourceToShow {
 				chI = this.renderAttr(i18n.LblRevision, this.revision, 'attribute-condensed');
 				// no break
 			case '#' + CONFIG.comments:
-				chI += this.renderAttr(i18n.LblModifiedAt, Lib.localDateTime(this.changedAt), 'attribute-condensed')
+				chI += this.renderAttr(i18n.LblModifiedAt, LIB.localDateTime(this.changedAt), 'attribute-condensed')
 					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
 			//	default: no change info!			
 		};
@@ -696,7 +696,7 @@ class CResourceToShow {
 		// 2 The description properties:
 		this.descriptions.forEach( function(prp) {
 //			console.debug('details.descr',prp.value);
-			if( Lib.hasContent(prp.value) ) {
+			if( LIB.hasContent(prp.value) ) {
 				var opts = {
 				//		titleLinking: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
 						titleLinking: true,
@@ -870,7 +870,7 @@ class CFileWithContent implements IFileWithContent {
 		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 		if (this.hasBlob())
-			Lib.blob2dataURL(this, addL, opts.timelag);
+			LIB.blob2dataURL(this, addL, opts.timelag);
 		else
 			// assuming that dataURL has content:
 			setTimeout(() => { addL(this.dataURL,this.title,this.type) }, opts.timelag);
@@ -930,7 +930,7 @@ class CFileWithContent implements IFileWithContent {
 	// end of renderImage()
 	};
 	private showRaster(opts: any): void {
-		Lib.blob2dataURL(this, (r: string, fTi: string, fTy: string): void => {
+		LIB.blob2dataURL(this, (r: string, fTi: string, fTy: string): void => {
 			// add image to DOM using an image-tag with data-URI:
 			Array.from(document.getElementsByClassName(tagId(fTi)),
 				(el) => {
@@ -947,7 +947,7 @@ class CFileWithContent implements IFileWithContent {
 	}
 	private showSvg(opts: any): void {
 		// Read and render SVG:
-		Lib.blob2text(this, displaySVGeverywhere, opts.timelag)
+		LIB.blob2text(this, displaySVGeverywhere, opts.timelag)
 		return;
 
 		function itemBySimilarId(L: Item[], id: string): Item | undefined {
@@ -1001,7 +1001,7 @@ class CFileWithContent implements IFileWithContent {
 					pend++;
 					//							console.debug('SVG embedded file',mL[2],ef,pend);
 					// transform file to data-URL and display, when done:
-					Lib.blob2dataURL(ef, (r: string, fTi: string): void => {
+					LIB.blob2dataURL(ef, (r: string, fTi: string): void => {
 						dataURLs.push({
 							id: fTi,
 							val: r
@@ -1095,7 +1095,7 @@ class CFileWithContent implements IFileWithContent {
 						if (dsc.stripCtrl().stripHTML()) {
 							// Remove the dynamic linking pattern from the text:
 							$("#details").html('<span style="font-size:120%">'
-								+ (CONFIG.addIconToInstance ? Lib.addIcon(ti, clsPrp['class'].icon) : ti)
+								+ (CONFIG.addIconToInstance ? LIB.addIcon(ti, clsPrp['class'].icon) : ti)
 								+ '</span>\n'
 								+ dsc);
 							app.specs.showTree.set(false);
@@ -1166,7 +1166,7 @@ class CFileWithContent implements IFileWithContent {
 	}
 	private showBpmn(opts: any): void {
 		// Read and render BPMN:
-		Lib.blob2text(this, (t: string, fTi: string) => {
+		LIB.blob2text(this, (t: string, fTi: string) => {
 			bpmn2svg(t)
 				.then(
 					(result) => {
@@ -1276,14 +1276,14 @@ moduleManager.construct({
 										document.getElementById(CONFIG.objectList).scrollTop = 0;
 										self.refresh();
 									},
-									Lib.stdError 
+									LIB.stdError 
 								);
 								return;
 
 								function toSpecIF(mNd: jqTreeNode, tgt: ITargetNode): INodeWithPosition {
 									// transform from jqTree node to SpecIF node:
 									var nd: INodeWithPosition = {
-										//	id: Lib.genID('N-'),
+										//	id: LIB.genID('N-'),
 											id: mNd.id,
 											resource: mNd.ref,
 											changedAt: chd
@@ -1325,7 +1325,7 @@ moduleManager.construct({
 									moveNode( event.move_info.moved_node, {parent:event.move_info.target_node.parent} );
 								};
 							},
-							Lib.stdError 
+							LIB.stdError 
 						);
 					}
 			}
@@ -1371,7 +1371,7 @@ moduleManager.construct({
 			case 201:
 				return; // some calls end up in the fail trail, even though all went well.
 			default:
-				Lib.stdError(xhr);
+				LIB.stdError(xhr);
 		}
 	} 
 	function setPermissions( nd ) {
@@ -1427,7 +1427,7 @@ moduleManager.construct({
 		let tr;
 		// Replace the tree:
 		if( Array.isArray( spc ) )
-			tr = Lib.forAll( spc, toChild );
+			tr = LIB.forAll( spc, toChild );
 		else
 			tr = [toChild(spc)];
 		
@@ -1449,7 +1449,7 @@ moduleManager.construct({
 				name: elementTitleOf(r,opts,pData), 
 				ref: iE.resource.id || iE.resource // for key (with revision) or for id (without revision)
 			};
-			oE.children = Lib.forAll( iE.nodes, toChild );
+			oE.children = LIB.forAll( iE.nodes, toChild );
 		//	if( typeof(iE.upd)=='boolean' ) oE.upd = iE.upd;
 			if( iE.revision ) oE.revision = iE.revision;
 			oE.changedAt = iE.changedAt;
@@ -1524,7 +1524,7 @@ moduleManager.construct({
 						};
 					};
 				},
-				Lib.stdError
+				LIB.stdError
 			);
 		}
 		else {
@@ -1608,7 +1608,7 @@ moduleManager.construct({
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
-			newId = Lib.genID('R-');
+			newId = LIB.genID('R-');
 		app.cache.selectedProject.initResource( cT )
 			.done( function(rsp) {
 				// returns an initialized resource of the requested type:
@@ -1819,7 +1819,7 @@ moduleManager.construct({
 			app.busy.reset();
 		}
 		function handleErr(err):void {
-			Lib.stdError( err );
+			LIB.stdError( err );
 			app.busy.reset();
 		}
 		function actionBtns():string {
@@ -2011,14 +2011,14 @@ moduleManager.construct({
 			// it is necessary to provide "shows" statements also for statements.
 			// ?? ToDo: delete the resource with all other references ...
 			app.cache.selectedProject.deleteContent( "resource", {id:resId} )
-				.catch( Lib.stdError );
+				.catch( LIB.stdError );
 			// Delete all statements related to this resource:
 			app.cache.selectedProject.readStatementsOf( {id:resId} )
 				.then( 
 					(staL)=>{
 						console.debug( 'delRes statements', staL);
 					},
-					Lib.stdError 
+					LIB.stdError 
 				);
 		} */
 		function delNd(nd: jqTreeNode): void {
@@ -2045,10 +2045,10 @@ moduleManager.construct({
 									});
 									pData.doRefresh({forced:true})
 								},
-								Lib.stdError 
+								LIB.stdError 
 							)
 					},
-					Lib.stdError 
+					LIB.stdError 
 				);
 		}
 	};
@@ -2175,7 +2175,7 @@ moduleManager.construct({
 							case 404:   // related resource(s) not found, just ignore it
 								break;
 							default:
-								Lib.stdError(xhr);
+								LIB.stdError(xhr);
 						}
 						app.busy.reset();	
 					} */
@@ -2186,20 +2186,20 @@ moduleManager.construct({
 		return;
 
 		function handleErr(xhr: xhrMessage): void {
-			Lib.stdError(xhr);
+			LIB.stdError(xhr);
 			app.busy.reset();
 		}
 		function cacheMinRes(L:Resource[],r:Resource):void {
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			Lib.cacheE( L, { id: Lib.idOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			LIB.cacheE( L, { id: LIB.idOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L:Statement[],s:Statement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			Lib.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: Lib.idOf(s.subject), object: Lib.idOf(s.object)} );
-		//	Lib.cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: Lib.idOf(s.subject), object: Lib.idOf(s.object) });
+			LIB.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: LIB.idOf(s.subject), object: LIB.idOf(s.object)} );
+		//	LIB.cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: LIB.idOf(s.subject), object: LIB.idOf(s.object) });
 		}
 		function cacheNet(s:Statement):void {
 			// skip hidden statements:
@@ -2210,7 +2210,7 @@ moduleManager.construct({
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// collect the related resources:
-			if( Lib.idOf(s.subject) == nd.ref ) { 
+			if( LIB.idOf(s.subject) == nd.ref ) { 
 				// the selected node is a subject, so the related resource is an object,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.object );
@@ -2310,7 +2310,7 @@ moduleManager.construct({
 			
 			function notListed( L:Statement[],s,t ):boolean {
 				for( var i=L.length-1;i>-1;i--  ) {
-					if( Lib.idOf(L[i].subject)==s.id && Lib.idOf(L[i].object)==t.id ) return false;
+					if( LIB.idOf(L[i].subject)==s.id && LIB.idOf(L[i].object)==t.id ) return false;
 				};
 				return true;
 			}
@@ -2320,7 +2320,7 @@ moduleManager.construct({
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
 			let res: Resource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
-			return Lib.iterateNodes(dta.hierarchies,
+			return LIB.iterateNodes(dta.hierarchies,
 				(nd): boolean => {
 					// get the referenced resource:
 					res = itemById(dta.resources, nd.resource);
@@ -2416,11 +2416,10 @@ moduleManager.construct({
 //		console.debug('showStaGraph',net,graphOptions);
 		app.statementsGraph.show(net, graphOptions);
 
-		let info = '<div style="position:absolute;top:4px;left:4px;z-index:900">';
-		if (modeStaDel)
-			$(self.view).prepend(info+'<span class="notice-danger" >' + i18n.MsgClickToDeleteRel + '</span></div>');
-		else
-			$(self.view).prepend(info +'<span class="notice-default" >' + i18n.MsgClickToNavigate + '</span></div>');
+		$(self.view).prepend('<div style="position:absolute;left:4px;z-index:900">'
+			+ (modeStaDel? '<span class="notice-danger" >' + i18n.MsgClickToDeleteRel 
+						: '<span class="notice-default" >' + i18n.MsgClickToNavigate )
+			+ '</span></div>');
 	}
 /*	function renderStatementsTable( sGL, opts ) {
 		// Render a table with all statements grouped by type:
@@ -2449,7 +2448,7 @@ moduleManager.construct({
 					sG.rGs.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							sId: Lib.idOf(s.subject),
+							sId: LIB.idOf(s.subject),
 							sT: elementTitleWithIcon(s.subject,opts),
 							computed: !s['class']
 						});
@@ -2480,7 +2479,7 @@ moduleManager.construct({
 					sG.rGt.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							tId: Lib.idOf(s.object),
+							tId: LIB.idOf(s.object),
 							tT: elementTitleWithIcon(s.object,opts),
 							computed: !s['class']
 						});
@@ -2551,7 +2550,7 @@ moduleManager.construct({
 			app.cache.selectedProject.deleteContent( 'statement', {id: sId} )
 			.then(
 				pData.doRefresh({forced:true}),
-				Lib.stdError
+				LIB.stdError
 			);
 		}
 		else { 

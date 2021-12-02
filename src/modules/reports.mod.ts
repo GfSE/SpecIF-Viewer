@@ -54,7 +54,7 @@ moduleManager.construct({
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		Lib.stdError(xhr,pData.returnToCaller)
+		LIB.stdError(xhr,pData.returnToCaller)
 	}
 	function showNotice(txt) {
 		$('#'+CONFIG.reports).html('<div class="notice-default" >'+txt+'</div>');
