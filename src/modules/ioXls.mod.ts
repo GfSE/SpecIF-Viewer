@@ -73,48 +73,152 @@ moduleManager.construct({
 	};
 	return self;
 
+
 function specif2xlsx (pr: SpecIF)
-{
-// XLSX Testcode:
-/* Write data starting at A2 */
-//XLSX.utils.sheet_add_aoa(ws, [[1,2], [2,3], [3,4]], {origin: "A2"});
+{   
+	// arrays live as long specif2xlsx runs
+	var topLineRclassIds: string=[];
+	var topLineTitles: string[];
+	var lineItems: string [];
+	var aoaArray= [];
 
-/* Write data starting at E2 */
-//XLSX.utils.sheet_add_aoa(ws, [[5,6,7], [6,7,8], [7,8,9]], {origin:{r:1, c:4}});
-
-/* Append row */
-//XLSX.utils.sheet_add_aoa(ws, [[4,5,6,7,8,9,0]], {origin: -1});
-//var ws_data = [['hello' , 'world', 'und','noch','was ']];  //a row with 5 columns
-//XLSX.utils.sheet_add_aoa(ws,ws_data,{origin: -1});
-//console.log(XLSX.utils.sheet_to_csv(ws));
-//XLSX.utils.book_append_sheet(wb, ws, 'Seite 1');
-
+	function fillWsFromResource (pr : SpecIF, ws : any, resId : string, line : number, maxLine: number )
+    {
+		
+		var i =0, j=0;   	
+		//console.debug ( "fillWsFromResource line ", resId, line, maxLine);             
+		var res : Resource = itemById( pr.resources, resId as string );// the resource referenced by this node
+		let resIdx = indexById (pr.resources, resId as string); // Index id	
+		//console.debug ( "fillWsFromResoure ", res.title, " Index ", resIdx , resId, res.id, res.class, line, maxLine );
+		lineItems = []; //clear line
+		aoaArray = [['','','','','','','','','','','','','','','','','','']];
+		if (line == 0) // if firstline, also write topline of XlsWorksheet
+		{
+			
+			aoaArray = [['','','','','','','','','','','','','','','','','','']];
+			// Build lineArray and fill according to fields IDs in ResourceClass
+			topLineRclassIds  = []; // empty arrays 
+			topLineTitles = []; 
+			var pClassItem : PropertyClass;
+			
+				
+				let hRC3 = itemById( pr.resourceClasses, res.class as string );
+				//console.debug ( "ResourceClass ",res.id, res.class, hRC3 );
+				for (i = 0 ; i< hRC3.propertyClasses.length; i++)  //copy property Class ID strings
+				{	
+					topLineRclassIds[i] = hRC3.propertyClasses[i];
+					// console.debug ( "Propertyclasses", topLineRclassIds[i]);
+				
+					pClassItem = itemById( pr.propertyClasses, topLineRclassIds[i] );
+					topLineTitles[i] = pClassItem.title as string;
+					
+				};
+				// console.debug ( "TopLineTitleIds ", topLineRclassIds, topLineTitles );
+				
+				
+				for (i=0;i<topLineTitles.length;i++){
+					aoaArray [0][i]=topLineTitles[i];
+				}
+				// console.debug("aoaArray", aoaArray);
+					
+				
+				XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: 0});  //Shall be written as Top Line
+						//aoaArray=[]; //clear content of array
+				aoaArray = [['','','','','','','','','','','','','','','','','','']];
+				// console.debug ("res.properties.len", res.properties.length, topLineRclassIds);
+		}; // end of line==0: Only build topline once at the beginning of each Excel Worksheet
+					
+		// Fill line Array	
+			
+		// console.debug ("res.properties.len 2", res.properties.length, topLineRclassIds[0]);
+		// console.debug ("res.properties.len", res.properties.length, topLineRclassIds.length);
+		for (i=0;i<res.properties.length;i++)
+		{
+			var writeIdx = topLineRclassIds.indexOf (res.properties[i].class as string );
+			// console.debug ("resProp.class",writeIdx, res.properties[i].class,topLineRclassIds.length );
+			// console.debug ("resProp.class",writeIdx, res.properties[i].class,topLineRclassIds.length, res.properties[i].value);
+			if (writeIdx < topLineRclassIds.length) // Index is within bounds
+			{
+				lineItems[writeIdx]=res.properties[i].value as string;
+				
+				// Replace Enumeration ID with Datatype Enumeration Value
+	        
+				let propertyClass = itemById (pr.propertyClasses, res.properties[i].class as string);
+				// console.debug ("propertyClass  ", propertyClass, propertyClass.dataType);
+				if (propertyClass != undefined) 
+				{
+					let DTItem = itemById( pr.dataTypes, propertyClass.dataType);
+		    
+					// console.debug ("DTItem ", res.properties[i].value, DTItem);
+					if (DTItem.values != undefined) 
+					{
+						// Find the Enum Value for Enum ID
+						for (j=0; j< DTItem.values.length; j++)
+						{
+							// console.debug ( "for loop datatype Values ", res.properties[i].value, DTItem.values[j].id);
+							if (res.properties[i].value == DTItem.values[j].id)
+							{
+								// console.debug ( "Datatype Values ", DTItem.values[j].value, j , DTItem.values, writeIdx);
+								lineItems [writeIdx]= DTItem.values[j].value; // Write Enum Value
+							}
+							else
+							{
+								// console.debug ( "Datatype Values not eq ", res.properties[i].value , DTItem.values[j].id, j , DTItem.values);
+							};
+						}; // end for j
+							
+						let enumIdx = indexById (DTItem.values, res.properties[i].value as string);
+						// console.debug ( "Enum Value ", DTItem.values, res.properties[i].value , enumIdx);
+						//console.debug ( "Enum Value ", DTItem.values, DTItem.values[enumIdx].value, res.properties[i].value , enumIdx);
+										
+					}; //end ifDTItem.values
+				}; // end propertyClass defined
+			} // index within boundws
+			else
+			{
+				//console.debug ( "PropertyClassID not found " );
+			};
+			
+			//console.debug ( "LineItems", lineItems );
+		};	// end for i 
+		
+		for (i=0;i<lineItems.length;i++)
+		{
+			aoaArray [0][i]=lineItems[i];
+		};
+		
+		XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: -1}); // add a line at the end
+		// console.debug ("Append intern WS", ws, aoaArray );
+		// XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook   	
 	
-console.debug('Export to XLSX ', pr.id);
+    }; // end fillWsFromResoure
 
-// empty array of array for XLSX Worksheets
-    pr.hierarchies.forEach( function(h) {
+    // console.debug('Export to XLSX ', pr.id);
+	
+
+    pr.hierarchies.forEach( function(h) {  //assume, that there is always at least one hierarchie
 	    
 		let resFile: Resource = itemById (pr.resources, h.resource as string);
 		let xlsFileName = resFile.title;
 		var wb = XLSX.utils.book_new(); // Create Workbook
-		var ws = XLSX.utils.aoa_to_sheet([]);	
+		var ws = XLSX.utils.aoa_to_sheet([]);		
 
 			wb.Props = {
 				Title:    resFile.title + 'xlsx',
 				Subject: "Export SpecIF to XLSX Format",
 				Author:  "Winfried Reichardt"
 			}
-				console.debug ("Workbook created " +resFile.title + 'xlsx');
+			// console.debug ("Workbook created " +resFile.title + 'xlsx');
 
 		// console.debug ("Workbook ",xlsFileName + '.xlsx'); // hier nur Workbookname !!
         if (h.nodes != null) { // if h.nodes exist
 		    h.nodes.forEach (function (h1) {  // h.nodes for each XLSX Workbook
 			
-			    var resid1  = h1.resource;
+			    var xlsLine = 0;
+				var resid1  = h1.resource;
 			    let hR1 = itemById( pr.resources, resid1 as string );// the resource referenced by this node
 			    let iR1 = indexById (pr.resources, resid1 as string); // Index id		
-			    console.debug ( "Workbook1 ", hR1.title +'.xlsx', " WBIndex1 ", iR1 , hR1.id,  );	// resource id and title
+			    // console.debug ( "Workbook1 ", hR1.title +'.xlsx', " WBIndex1 ", iR1 , hR1.id,  );	// resource id and title
 			    var wb = XLSX.utils.book_new(); // Create Workbook
 			    
                 
@@ -124,157 +228,41 @@ console.debug('Export to XLSX ', pr.id);
 			    	Author:  "Winfried Reichardt"
 			    	
 			    };
-			    console.debug ("Workbook created " +hR1.title + 'xlsx');
+			    // console.debug ("Workbook created " +hR1.title + 'xlsx');
 			    
 			    
 			    if (h1.nodes != null) { // check, whether h1.nodes exists
-			        var ws = XLSX.utils.aoa_to_sheet([]); 
-			        h1.nodes.forEach (function (h2) {   // for each Worksheet 
+			         
+			        h1.nodes.forEach (function (h2)
+					{	// for each Worksheet 
 						ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet	
 
 			    	    var resid2  = h2.resource;
 			    	    let hR2 = itemById( pr.resources, resid2 as string );// the resource referenced by this node
 			    	    let iR2 = indexById (pr.resources, resid2 as string); // Index id		
 			    	    //console.debug ( hR2, iR2 , hR2.id, hR2.title );	// resource id and sheetname
-			    	    
-			    	    console.debug ( "Worksheet ", hR2.title, " WsIndex ", iR2 , hR2.id,  );	// resource id and title
+		    	    
+			    	    //console.debug ( "Worksheet ", hR2.title, " WsIndex ", iR2 , hR2.id,  );	// resource id and title
                         
-			    	    var headerBuilt = false; // new header for every new Worksheet
-			    	    var topLineRclassIds: string[];
-			    	    var topLineTitles: string[];
-			    	    var aoaArray= []; 
-			    	    //aoaArray = [['','','','','','','','','','','','','','','','','','']];
+			    	    			    	    
 			    	    
-			    	    //[["one","two","three","four"]];
-			    	    //console.debug ("aoaArray table");
-			    	    
-			    	    //aoaArray.splice(2,0,["six",2]);
-			    	    //aoaArray.splice(2,0,["seven",3]);
-			    	    //console.debug (aoaArray);
-                        
-			    	    //for (var j=0;j<20;j++){
-			    	    ///	aoaArray [0][j]="leer";
-			    	    //}
-			    	    //console.debug (aoaArray);
-			    	    
-			    	    var lineItems: string [];
 			    	    if (  h2.nodes != null ) 
-						{ // check, whether h2.nodes exists
-			    	        h2.nodes.forEach (function (h3) 
+						{ // check, if h2.nodes exists
+			    	        //h2.nodes.forEach (function (h3) 
+							for (xlsLine =0;xlsLine<h2.nodes.length;xlsLine++)
 							{  // for each line
-			    	        	
-			    	        	lineItems = []; //clear array
-			    	        	aoaArray = [['','','','','','','','','','','','','','','','','','']];
-			    	        	var resid3  = h3.resource;
-			    	        	let hR3 = itemById( pr.resources, resid3 as string );// the resource referenced by this node
-			    	        	let iR3 = indexById (pr.resources, resid3 as string); // Index id	
-			    	        	console.debug ( "LineItem ", hR3.title, " Index ", iR3 , hR3.id, hR3.class );
-                               
-			    	        	if (headerBuilt == false) {
-			    	        		// Build lineArray and fill according to fields IDs in ResourceClass
-			    	        	    topLineRclassIds  = []; // empty arrays 
-			    	        	    topLineTitles = []; 
-			    	        	    var pClassItem : PropertyClass;
-			    	        	    var i =0, j=0, k=0;
-                            
-			    	        	    let hRC3 = itemById( pr.resourceClasses, hR3.class as string );
-			    	        		console.debug ( "ResourceClass ",hRC3.id, hRC3.propertyClasses, hRC3 );
-			    	        		for (i = 0 ; i< hRC3.propertyClasses.length; i++)  //copy property Class ID strings
-			    	        		{	
-			    	        			topLineRclassIds[i] = hRC3.propertyClasses[i];
-			    	        			console.debug ( "Propertyclasses", topLineRclassIds[i]);
-                            
-			    	        			pClassItem = itemById( pr.propertyClasses, topLineRclassIds[i] );
-			    	        			topLineTitles[i] = pClassItem.title as string;
-			    	        			
-			    	        		};
-			    	        		console.debug ( "TopLineTitleIds ", topLineRclassIds, topLineTitles );
-			    	        		
-			    	        		
-			    	        		for (i=0;i<topLineTitles.length;i++){
-			    	        			aoaArray [0][i]=topLineTitles[i];
-			    	        		}
-			    	        		console.debug("aoaArray", aoaArray);
-			    	        			
-			    	        		
-			    	        		XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: 0});  //Shall be written as Top Line
-                                    //aoaArray=[]; //clear content of array
-			    	        		aoaArray = [['','','','','','','','','','','','','','','','','','']];
-			    	                headerBuilt = true; // Only built once first at the beginning for the topline in each Excel Worksheet
-			    	        	}
-                            
-			    	        	// Fill line Array	
-			    	        	
-			    	        	hR3.properties.forEach (function (rProp) { // for each line resource found in hierarchy
-			    	        	    var writeIdx = topLineRclassIds.indexOf (rProp.class);
-									console.debug ("rProp.class",writeIdx, rProp.class,topLineRclassIds.length, rProp.value);
-			    	        	    if (writeIdx < topLineRclassIds.length) // Index is within bounds
-			    	        	    {
-			    	        	  	    lineItems [writeIdx]=rProp.value;
-			    	        			
-			    	        		    // Replace Enumeration ID with Datatype Enumeration Value
-										// For all Properties in line
-										
-											//let resourceClass = itemById (pr.resourceClasses, rProp.class );
-											//console.debug ("resourceClass ", resourceClass);
-											//if (resourceClass.propertyClasses.lenght > 0) {
-												//for (k=0; k< resourceClass.propertyClasses.lenght; k++){
-                                                    //let propertyClassId = resourceClass.propertyClasses [k];
-										let propertyClass = itemById (pr.propertyClasses, rProp.class);
-										if (propertyClass != undefined) 
-										{
-											let DTItem = itemById( pr.dataTypes, propertyClass.dataType);
-
-			    	        			    console.debug ("DTItem ", rProp.value, DTItem);
-                                            if (DTItem.values != undefined) 
-										    {
-			    	        			       	// Find the Enum Value for Enum ID
-			    	        			       	for (i=0; i< DTItem.values.length; i++)
-										       	{
-			    	        			       		console.debug ( "for loop datatype Values ", rProp.value, DTItem.values[i].id);
-			    	        			       		if (rProp.value == DTItem.values[i].id)
-										       		{
-			    	        			       			console.debug ( "Datatype Values ", DTItem.values[i].value, i , DTItem.values);
-			    	        			       			lineItems [writeIdx]= DTItem.values[i].value; // Write Enum Value
-			    	        			       		}
-			    	        			       		else
-			    	        			       		{
-			    	        			       			console.debug ( "Datatype Values not eq ", rProp.value , DTItem.values[i].id, i , DTItem.values);
-			    	        			       		};
-			    	        			       	};
-			    	        			       	
-			    	        			       	
-			    	        			       	let enumIdx = indexById (DTItem,rProp.value);
-			    	        			       	//console.debug ( "Enum Value ", DTItem.values, DTItem.values.length, rProp.value , enumIdx);
-			    	        			       	
-                                                    
-			    	        			    }; //end ifDTItem.values
-										}; // end propertyClass defined
-								    }
-			    	        	    else
-			    	        	    {
-			    	        	    	console.debug ( "PropertyClassID not found " );
-			    	        		};
-			    	        	}); //end resProperties
-			    	        	//console.debug ( "LineItems", lineItems );
-			    	        			
-			    	        	for (i=0;i<lineItems.length;i++){
-			    	        	    aoaArray [0][i]=lineItems[i];
-			    	        	}
-			    	        	XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: -1}); // add a line at the end
-                            
-			    	        						
-							});	// h2.nodes fpr each line end
-			            } // end check, whether h2.nodes exists
+			    	            fillWsFromResource (pr,ws, h2.nodes[xlsLine].resource as string , xlsLine, h2.nodes.length);
+							}; // for xlsLine
+							// console.debug ("Append WS", ws, aoaArray ); //console.debug ("Append WS",hR1.title, ws );
+	                        XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook
+						} // end if h2.nodes exists
 						else
-						{ // h2.node does not exists - no lines
-							
+						{ // content is in res.properties
+
 						};
-                        console.debug ("Append WS",hR1.title, ws );
-			    	    XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook
-			    	    headerBuilt = false; // ready for next header
-			        
+
 			        }); // h1.nodes for each Worksheet  end
+					//---------------------------------------------------------------
 					// write Worksheet (Enumerations)
 					ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet
 					var aoaArray= []; 
@@ -296,8 +284,8 @@ console.debug('Export to XLSX ', pr.id);
 					for (i=0; i< pr.dataTypes.length;i++)
 					{
 					//For all  dataTypes  with have values defined
-                            // If first entry found i.e. Column-No == Undefined then
-					    console.debug ("dataType enum ", i, pr.dataTypes[i].values, pr.dataTypes[i].title );
+                        
+					    // console.debug ("dataType enum ", i, pr.dataTypes[i].values, pr.dataTypes[i].title );
 					    if ( pr.dataTypes[i].values != undefined)
 						{
                             // If first entry found i.e. Column-No == Undefined then
@@ -309,21 +297,21 @@ console.debug('Export to XLSX ', pr.id);
 						    
 						    }; // end first entry and columnNo undefined
 						    //write title (Column-No)
-							console.debug ("datatype val",pr.dataTypes[i].values.length, pr.dataTypes[i].values[0].value )
+							// console.debug ("datatype val",pr.dataTypes[i].values.length, pr.dataTypes[i].values[0].value )
 							aoaArray [0][columnNo]=pr.dataTypes[i].title;
 						    //write all Values (Column-No)
 							for (n=0; n< pr.dataTypes[i].values.length;n++)
 							{ 
-								console.debug ("dataType values ", n , pr.dataTypes[i].values[n].value, aoaArray);
+								// console.debug ("dataType values ", n , pr.dataTypes[i].values[n].value, aoaArray);
 								aoaArray [n+1][columnNo]=pr.dataTypes[i].values[n].value;
 							}; // end for n 
-					        console.debug ("dataType values1 ", n , pr.dataTypes[i].values[0].value, pr.dataTypes[i].title );
+					        // console.debug ("dataType values1 ", n , pr.dataTypes[i].values[0].value, pr.dataTypes[i].title );
 						    
 							//Increment Column-No 
 						    columnNo++;
 					    } ; // end dataTypes have values defined
 					};//End For all dataTypes
-					console.debug (columnNo, " enumerations found");
+					// console.debug (columnNo, " enumerations found");
 					if (columnNo != undefined)
 					{   // append worksheet only, if there were datatypes with values defined
 						XLSX.utils.sheet_add_aoa(ws, aoaArray); // add whole content of page to worksheet
@@ -334,14 +322,14 @@ console.debug('Export to XLSX ', pr.id);
 		        }// end if h1.nodes exists 
 				else
 				{ // h1.nodes does not exists : no Worksheet
-			         console.debug ("no Worksheet");
+			         // console.debug ("no Worksheet");
 				};
 		    }); // h.nodes end h: for each XLSX Workbook
 		  
 	    } // end If h.nodes exists
 		else
 		{ // h.node does not exist
-			console.debug ("empty Worksheet");
+			// console.debug ("empty Worksheet");
 			XLSX.utils.book_append_sheet(wb, ws,"Table1"); //append default empty worksheet to Workbook
 			XLSX.writeFile(wb, resFile.title + '.xlsx' ); // attempt to write wb to filename to local directory or download in browser 
 		}; // end of check whether h.nodes exist 
@@ -582,9 +570,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				{ 
 				   cell.t = "n";
 				   cell.v = floatCell; 
-				   console.debug('isNumber',cell, floatCell, typeof cell == 'number', 
+				   /*console.debug('isNumber',cell, floatCell, typeof cell == 'number', 
 				   typeof floatCell == 'number', "int ", Number.isInteger (cell.v as number), 
-				   "bool ", typeof cell == 'boolean'); 
+				   "bool ", typeof cell == 'boolean'); */
 				  
 				   return true;
 			    }
@@ -612,15 +600,15 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			}
 			function isBool(cell: ICell): boolean {
 				if (cell == undefined) {return true};
-				console.debug('isBool',cell, cell.v );
-                //if (typeof cell.v == "boolean")  {return true} else {return false};
+				// console.debug('isBool',cell, cell.v );
+                
 				return cell && ( typeof (cell.v) == 'string' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
 
 			}
 			function isStr(cell: ICell): boolean {
 				return cell && cell.t=='s' && cell.v.length>0;
 			}
-		/*	function isXHTML( cell ):boolean {
+		    /*	function isXHTML( cell ):boolean {
 				return cell && cell.t=='s' && ....
 			}  */			
 			function titleFromProps( res:Resource ):string {
@@ -726,30 +714,32 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 							cell = ws.data[cellName(c, row)];
 
-							console.debug('createRes',pTi,c,cellName(c,row),cell);
+							// console.debug('createRes',pTi,c,cellName(c,row),cell);
 							if (cell && cell.v) {
 								// the cell has content:
-								console.debug('nativeProp has ',pTi);
+								// console.debug('nativeProp has ',pTi);
 								// Use native property, if appropriate:
 								if (CONFIG.nativeProperties.has(pTi)) {
 									pC = CONFIG.nativeProperties.get(pTi); // here, pC is actually not a real propertyClass, but serving it's role ...
 									// @ts-ignore - the first parameter of getVal() has all information needed for proper transformation
 									val = getVal({ type: pC.type }, cell);
 									// @ts-ignore - check is defined in this case
-									console.debug('nativeProp found',pTi,pC,val);
+									// console.debug('nativeProp found',pTi,pC,val);
 									if (pC.check(val)) {
 										// @ts-ignore - name is defined in this case
 										res[pC.name] = val;
 										// @ts-ignore - name is defined in this case
-										console.debug(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
+										//console.debug(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
 									}
 									else
-										console.debug(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
+									{
+										//console.debug(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
+									};
 									continue;
 								};
 
 								pC = itemById( specifData.propertyClasses as Item[], propClassId(ws.name+c) );
-//								console.debug('create p',c,cellName(c,row),cell,rC,pC);
+								//console.debug('create p',c,cellName(c,row),cell,rC,pC);
 								if( pC ) {
 									// it is a specifically created property type (with neither native nor enumerated dataType):
 									dT = itemById(specifData.dataTypes as Item[],pC.dataType);
@@ -987,7 +977,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					// start with the last and stop with the second line:
 					for( i=valL.length-1; i>0; i-- ) {
 						nC = classOf(valL[i]);
-   					    console.debug('getPropClass 2',i,pC,valL[i],nC);
+   					    // console.debug('getPropClass 2',i,pC,valL[i],nC);
 						if( nC.length<1 ) continue;
 
 				/* 2021-11-26 Implementation on branch 'develop':
