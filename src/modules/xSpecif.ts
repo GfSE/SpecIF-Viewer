@@ -284,18 +284,20 @@ class CSpecIF implements SpecIF {
 				case "xs:string":
 					if (typeof (iE.maxLength) == 'number')
 						oE.maxLength = iE.maxLength;
-					break;
-				case "xs:enumeration":
-					if (iE.values)
-						oE.values = Lib.forAll(iE.values, (v): EnumeratedValue => {
-							// 'v.title' until v0.10.6, 'v.value' thereafter;
-							// 'v.value' can be a string or a multilanguage object.
-							return {
-								id: v.id,
-								value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
-							}
-						})
 			};
+			// Look for enumerated values;
+			// up until v1.0 there is a dedicated dataType "xs:enumeration" and
+			// starting with v1.1 every dataType except xs:boolean may have enumerated values:
+			if (iE.values)
+				oE.values = Lib.forAll(iE.values, (v): EnumeratedValue => {
+					// 'v.title' until v0.10.6, 'v.value' thereafter;
+					// 'v.value' can be a string or a multilanguage object.
+					return {
+						id: v.id,
+						value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
+					}
+				});
+
 //			console.debug('dataType 2int',iE);
 			return oE
 		}
@@ -412,7 +414,7 @@ class CSpecIF implements SpecIF {
 					oE.value = Array.isArray(oE.value) ?
 						// multiple languages:
 						Lib.forAll(oE.value,
-							(val) => {
+							(val: ValueElement) => {
 								val.text = Lib.uriBack2slash(val.text);
 								return val;
 							})
@@ -451,7 +453,7 @@ class CSpecIF implements SpecIF {
 				standardTypes.addTo("propertyClass", "PC-Description", self);
 				// c. Add propertyClass to element class:
 				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
-						: itemById(self.resourceClasses, iE[names.rClass]);
+								: itemById(self.resourceClasses, iE[names.rClass]);
 				addPCReference(eC, "PC-Description");
 				// d. Add description property to element;
 				addP(oE, {
@@ -471,7 +473,7 @@ class CSpecIF implements SpecIF {
 				standardTypes.addTo("propertyClass", "PC-Name", self);
 				// c. Add propertyClass to element class:
 				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
-						: itemById(self.resourceClasses, iE[names.rClass]);
+								: itemById(self.resourceClasses, iE[names.rClass]);
 				addPCReference(eC, "PC-Name");
 				// d. Add title property to element;
 				addP(oE, {
@@ -484,8 +486,8 @@ class CSpecIF implements SpecIF {
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
-			function titlePropertyNeeded(el): boolean {
-				if (el.title && el.title.length > 0) {
+			function titlePropertyNeeded(el:any): boolean {
+				if (el.title) {
 					if (Array.isArray(el.properties))
 						for (var i = el.properties.length - 1; i > -1; i--) {
 							let ti = propTitleOf(el.properties[i], self);
@@ -500,8 +502,8 @@ class CSpecIF implements SpecIF {
 				};
 				return false; // no title, thus no property needed
 			}
-			function descPropertyNeeded(el) {
-				if (el.description && el.description.length > 0) {
+			function descPropertyNeeded(el:any):boolean {
+				if (el.description) {
 					if (Array.isArray(el.properties))
 						for (var i = el.properties.length - 1; i > -1; i--) {
 							if (CONFIG.descProperties.indexOf(propTitleOf(el.properties[i], self)) > -1)
@@ -750,7 +752,7 @@ class CSpecIF implements SpecIF {
 					};
 
 					// ToDo: schema and consistency check (if we want to detect any programming errors)
-					//				console.debug('specif.toExt exit',spD);
+//					console.debug('specif.toExt exit',spD);
 					resolve(spD);
 				}
 
@@ -772,7 +774,7 @@ class CSpecIF implements SpecIF {
 				}
 				// common for all items:
 				function i2ext(iE:any) {
-					var oE = {
+					var oE:any = {
 						id: iE.id,
 						changedAt: iE.changedAt
 					};
@@ -800,14 +802,18 @@ class CSpecIF implements SpecIF {
 						case "xhtml":
 						case "xs:string":
 							if (iE.maxLength) oE.maxLength = iE.maxLength;
-							break;
-						case "xs:enumeration":
-							if (opts.targetLanguage)
-								// reduce to the language specified:
-								oE.values = Lib.forAll(iE.values, (val) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
-							else
-								oE.values = iE.values
 					};
+					// Look for enumerated values;
+					// up until v1.0 there is a dedicated dataType "xs:enumeration" and
+					// starting with v1.1 every dataType except xs:boolean may have enumerated values:
+					if (iE.values) {
+						if (opts.lookupLanguage && opts.targetLanguage)
+							// reduce to the language specified:
+							oE.values = Lib.forAll(iE.values, (val: EnumeratedValue) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
+						else
+							oE.values = iE.values;
+					};
+
 					return oE
 				}
 				// a property class:
@@ -842,6 +848,7 @@ class CSpecIF implements SpecIF {
 					var oE = i2ext(iE);
 					if (iE.icon) oE.icon = iE.icon;
 					if (iE.instantiation) oE.instantiation = iE.instantiation;
+					// @ts-ignore - index is ok:
 					if (iE._extends) oE['extends'] = iE._extends;
 					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
 					return oE
@@ -887,19 +894,13 @@ class CSpecIF implements SpecIF {
 
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations:
-					if( opts.targetLanguage ) {
+					if (opts.lookupLanguage && opts.targetLanguage ) {
 						// reduce to the selected language; is used for generation of human readable documents
 						// or for formats not supporting multiple languages:
 						let dT: DataType = dataTypeOf(spD, iE['class']);
 						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
-							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) > -1) {
-								// if it is e.g. a title, remove all formatting:
-								oE.value = languageValueOf(iE.value, opts)
-									.replace(/^\s+/, "")   // remove any leading whiteSpace
-									.stripHTML();  
-							}
-							else {
-								// otherwise transform to HTML, if possible;
+							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
+								// Transform to HTML, if possible;
 								// especially for publication, for example using WORD format:
 								oE.value = languageValueOf(iE.value, opts)
 									.replace(/^\s+/, "")  // remove any leading whiteSpace
@@ -907,13 +908,19 @@ class CSpecIF implements SpecIF {
 									.replace(/<br ?\/>\n/g, "<br/>");
 
 								oE.value = refDiagramsAsImg(oE.value);
+							}
+							else {
+								// if it is e.g. a title, remove all formatting:
+								oE.value = languageValueOf(iE.value, opts)
+									.replace(/^\s+/, "")   // remove any leading whiteSpace
+									.stripHTML();
 							};
 							// return 'published' data structure (single language, ...):
 //							console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
 							return oE;
 						};
 					};
-					// else, keep full data structure:
+					// else, keep the full data structure:
 					if (Array.isArray(iE.value)) {
 						// Just to avoid the climbing through list and objects, unless necessary:
 						if (opts.allDiagramsAsImage) {
@@ -938,9 +945,9 @@ class CSpecIF implements SpecIF {
 							// Replace all links to application files like BPMN by links to SVG images:
 							let replaced = false;
 							// @ts-ignore - $0 is never read, but must be specified anyways
-							val = val.replace(RE.tagObject, ($0, $1, $2) => {
+							val = val.replace(RE.tagObject, ($0: string, $1: string, $2: string) => {
 //								console.debug('#a', $0, $1, $2);
-								if ($1) $1 = $1.replace(RE.attrType, ($4, $5) => {
+								if ($1) $1 = $1.replace(RE.attrType, ($4: string, $5: string) => {
 //									console.debug('#b', $4, $5);
 									// ToDo: Further application file formats ... once in use.
 									// Use CONFIG.applTypes ... once appropriate.
@@ -952,7 +959,7 @@ class CSpecIF implements SpecIF {
 										return $4;
 								});
 								// @ts-ignore - $6 is never read, but must be specified anyways
-								if (replaced) $1 = $1.replace(RE.attrData, ($6, $7) => {
+								if (replaced) $1 = $1.replace(RE.attrData, ($6: string, $7: string) => {
 //									console.debug('#c', $6, $7);
 									return 'data="' + $7.fileName() + '.svg"'
 								});
@@ -961,53 +968,13 @@ class CSpecIF implements SpecIF {
 						};
 						return val;
                     }
-
-				/*	// According to the schema, all property values are represented by a string
-					// and we want to store them as string to avoid inaccuracies by multiple transformations:
-					if (opts.targetLanguage) {
-						// reduce to the selected language; is used for generation of human readable documents
-						// or for formats not supporting multiple languages:
-						let dT: DataType = dataTypeOf(spD, iE['class']);
-						switch (dT.type) {
-							case 'xs:string':
-							case 'xhtml':
-								if (opts.targetLanguage) {
-									if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) > -1)
-										// if it is e.g. a title, remove all formatting:
-										oE.value = stripHTML(languageValueOf(iE.value, opts)
-											// remove any leading whiteSpace:
-											.replace(/^\s+/, ""));
-									else
-										// otherwise transform to HTML, if possible;
-										// especially for publication, for example using WORD format:
-										oE.value = languageValueOf(iE.value, opts)
-											// remove any leading whiteSpace:
-											.replace(/^\s+/, "")
-											.makeHTML(opts)
-											.replace(/<br ?\/>\n/g, "<br/>");
-
-//								console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
-									break;
-								};
-							// else: no break - return the original value
-							default:
-								//	in case of 'xs:enumeration', 
-								//  an id of the dataType's value is given, so it can be taken directly:
-								oE.value = iE.value;
-						};
-					}
-					else {
-						// for SpecIF export, keep full data structure:
-						oE.value = iE.value;
-					}; 
-					// properties do not have their own revision and change info; the parent's apply.
-					return oE; */
 				}
 				// common for all instances:
 				function a2ext(iE:any) {
 					var oE = i2ext(iE);
 //					console.debug('a2ext',iE,opts);
 					// resources and hierarchies usually have individual titles, and so we will not lookup:
+					// @ts-ignore - index is ok:
 					oE['class'] = iE['class'];
 					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 					if (iE.properties && iE.properties.length > 0) oE.properties = Lib.forAll(iE.properties, p2ext);
