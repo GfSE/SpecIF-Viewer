@@ -38,21 +38,31 @@ interface IFileWithContent extends SpecifFile {
 class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;
+	// @ts-ignore - see constructor for initializer:
 	dataTypes: DataType[];
+	// @ts-ignore - see constructor for initializer:
 	propertyClasses: PropertyClass[];
+	// @ts-ignore - see constructor for initializer:
 	resourceClasses: ResourceClass[];
+	// @ts-ignore - see constructor for initializer:
 	statementClasses: StatementClass[];
+	// @ts-ignore - see constructor for initializer:
 	resources: Resource[];   		// list of resources as referenced by the hierarchies
+	// @ts-ignore - see constructor for initializer:
 	statements: Statement[];
+	// @ts-ignore - see constructor for initializer:
 	hierarchies: SpecifNode[];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
+	// @ts-ignore - see constructor for initializer:
 	files: IFileWithContent[];
 	constructor(opts:any) {
 		this.cacheInstances = opts.cacheInstances;
 		for (var le of standardTypes.listName.keys())
+			// @ts-ignore - index is ok:
 			this[standardTypes.listName.get(le)] = [];
 	}
 	length(ctg: string): number {
 		// Return the number of cached items per category:
+		// @ts-ignore - index is ok:
 		return this[standardTypes.listName.get(ctg)].length;
 	}
 	has(ctg: string, req: Item[] | Item | string): boolean {
@@ -61,6 +71,7 @@ class CCache {
 			throw Error("Querying whether 'all' items are available is pretty useless.");
 
 		if (Array.isArray(req)) {
+			// @ts-ignore - index is ok:
 			let L = this[standardTypes.listName.get(ctg)];
 			for (var i = req.length - 1; i > -1;i--) {
 				if (indexById(L, req.id || req) < 0) return false;
@@ -68,11 +79,12 @@ class CCache {
 			return true;
 		}
 		else
+			// @ts-ignore - index is ok:
 			return indexById(this[standardTypes.listName.get(ctg)],req)>-1;
 	}
-	put(ctg: string, item: Item[] | Item): void {
+	put(ctg: string, item: Item[] | Item): number | boolean {
 		if (!item || Array.isArray(item) && item.length < 1)
-			return;
+			return false;
 		// If item is a list, all elements must have the same category.
 		function cacheIfNewerE(L: Item[], e: Item): number {  // ( list, entry )
 			// Add or update the item e in a list L, if created later:
@@ -87,7 +99,7 @@ class CCache {
 				L[n] = e;
 			return n;
 		}
-		function cacheIfNewerL(L: Item[], es: Item[]): void {  // ( list, entries )
+		function cacheIfNewerL(L: Item[], es: Item[]): boolean {  // ( list, entries )
 			// add or update the items es in a list L:
 			es.forEach((e) => { cacheIfNewerE(L, e) })
 			// this operation cannot fail:
@@ -100,13 +112,13 @@ class CCache {
 			case 'propertyClass':
 			case 'resourceClass':
 			case 'statementClass':
-				// @ts-ignore - addressing is perfectly ok
+				// @ts-ignore - indexing is perfectly ok
 				return fn(this[standardTypes.listName.get(ctg)], item);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances) {
-					// @ts-ignore - addressing is perfectly ok
+					// @ts-ignore - indexing is perfectly ok
 					return fn(this[standardTypes.listName.get(ctg)], item);
 				};
 				return true;
@@ -250,7 +262,7 @@ class CCache {
 		this.hierarchies.unshift(e);
 		return false;
 	}
-	clear(ctg?:string) {
+	clear(ctg?:string):void {
 		if (ctg)
 			this[standardTypes.listName.get(ctg)].length = 0
 		else
@@ -402,11 +414,28 @@ class CProject {
 	read(opts?: any): Promise<SpecIF> {
 		// collect all items of this project from the cache containing elements of multiple projects
 		// (.. so far only one project, so the selection-process is pretty simple ..)
-		var spD = this.getMeta();
-		for (var le of standardTypes.listName.keys())
-			spD[standardTypes.listName.get(le)] = this.data.get(le, 'all');
-//		console.debug('read',spD);
-		return spD.toExt(opts);
+		var pend = 0,
+			spD = this.getMeta();
+
+		return new Promise(
+			(resolve, reject) => {
+				pend = standardTypes.iterateLists(
+					(ctg: string, listName:string) => {
+						this.readContent(ctg, 'all')
+						.then(
+							(values) => {
+								spD[listName] = values;
+								if (--pend < 1) {
+									spD.toExt(opts)
+									.then(resolve, reject)
+								}
+							},
+							reject
+						);
+					}
+				);
+			}
+		);
     }
 /*	update(newD: SpecIF, opts: any): Promise<void> {
 		var uDO = $.Deferred();
@@ -488,7 +517,7 @@ class CProject {
 							if (Array.isArray(nD[ty.listName])) {
 							};
 						}); */
-					//					console.debug('#2',simpleClone(dta),simpleClone(nD));
+//						console.debug('#2',simpleClone(dta),simpleClone(nD));
 
 					// 2. Integrate the instances:
 					//    a) if different title or type, save new one and use it.
@@ -513,16 +542,21 @@ class CProject {
 								// If there is an instance with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
-								//						console.debug('~1',nR,eR?eR:'');
+//								console.debug('~1',nR,eR?eR:'');
 								if (eR
 									&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(eR, CONFIG.propClassType, dta)) < 0
 									&& resClassTitleOf(nR, nD) == resClassTitleOf(eR, dta)
 									//		&& valByTitle(nR,CONFIG.propClassType,nD)==valByTitle(eR,CONFIG.propClassType,dta)
 								) {
-									//							console.debug('~2',eR,nR);
+//									console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
 									// adopt it and update all references:
 									this.substituteR(nD, eR, nR, { rescueProperties: true });
+
+									// Memorize the replaced id, if not yet listed:
+									if (!Array.isArray(eR.alternativeIds)) eR.alternativeIds = [];
+									LIB.cacheE(eR.alternativeIds, {id:nR.id,revision:nR.revision,project:nD.id});
+
 									return;
 								}
 							};
@@ -542,9 +576,9 @@ class CProject {
 								// first assign new ID to all references:
 								this.substituteR(nD, { id: newId } as Resource, nR);
 								// and then to the resource itself:
-								nR.id = newId
+								nR.id = newId;
 							};
-							//					console.debug('+ resource',nR);
+//							console.debug('+ resource',nR);
 							itmL.push(nR)
 						});
 						console.info((nD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
@@ -552,7 +586,7 @@ class CProject {
 						this.createContent('resource', itmL)
 							.then(finalize, aDO.reject);
 					};
-					//					console.debug('#3',simpleClone(dta),simpleClone(nD));
+//					console.debug('#3',simpleClone(dta),simpleClone(nD));
 
 					// 3. Create the remaining items;
 					// this.createContent('statement', nD.statements) could be called, 
@@ -687,7 +721,7 @@ class CProject {
 		if (!opts || !opts.deduplicate) return;
 
 		let dta = this.data,
-			n: number, r: number, nR: Resource, rR: Resource;
+			r: number, n: number, rR: Resource, nR: Resource;
 //		console.debug('deduplicate',simpleClone(dta));
 
 		// 1. Deduplicate equal types having different ids;
@@ -763,7 +797,7 @@ class CProject {
 			};
 		};
 //		console.debug( 'deduplicate 3', simpleClone(dta) );
-		//	return undefined
+	//	return undefined
 	}
 	private createFolderWithResourcesByType(opts: any): Promise<void> {
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
@@ -970,7 +1004,8 @@ class CProject {
 								this.adopt(newD, { noCheck: true })
 									.done(resolve)
 									.fail(reject);
-							} else {
+							} 
+							else {
 								resolve();
 							}
 						},
@@ -1158,8 +1193,7 @@ class CProject {
 				//		addPermissions( item );
 				//		item.createdAt = new Date().toISOString();
 				//		item.createdBy = item.changedBy; */
-				this.data.put(ctg, item);
-//				console.debug('createContent',ctg,item);
+						this.data.put(ctg, item);
 			//	};
 				resolve(item);
 			}
@@ -1418,10 +1452,10 @@ class CProject {
 			size: BootstrapDialog.SIZE_WIDE,  */
 			message: () => {
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-					//	+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+				//	+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div class="col-sm-12" style="padding: 0 4px 0 4px">'
 					+ '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
-					//	+		"<h4>"+i18n.LblFormat+"</h4>"
+				//	+ "<h4>"+i18n.LblFormat+"</h4>"
 					+ "<p>" + i18n.MsgExport + "</p>"
 					+ radioField(
 						i18n.LblFormat,
@@ -1439,7 +1473,7 @@ class CProject {
 					)
 					+ '</div>'
 					+ '</div>'
-					//	+	'<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
+				//	+ '<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div id="expOptions" class="col-sm-12" style="padding: 0 4px 0 4px">'
 					+ this.chooseExportOptions('specif')   // parameter must correspond to the checked option above
 					+ '</div>'
@@ -1449,14 +1483,14 @@ class CProject {
 			buttons: [
 				{
 					label: i18n.BtnCancel,
-					action: (thisDlg) => {
+					action: (thisDlg: any) => {
 						thisDlg.close()
 					}
 				},
 				{
 					label: i18n.BtnExport,
 					cssClass: 'btn-success',
-					action: (thisDlg) => {
+					action: (thisDlg: any) => {
 						// Get index of option:
 						app.busy.set();
 						message.show(i18n.MsgBrowserSaving, { severity: 'success', duration: CONFIG.messageDisplayTimeShort });
@@ -1467,7 +1501,8 @@ class CProject {
 						};
 						// further options according to the checkboxes:
 						checkboxValues(i18n.modelElements).forEach(
-							(op) => {
+							(op: string) => {
+								// @ts-ignore - indexing is valid: 
 								options[op] = true
 							}
 						);
@@ -1549,19 +1584,33 @@ class CProject {
 				];
 
 				opts.allResources = false; // only resources referenced by a hierarchy.
+
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
 				opts.lookupTitles = false;  // applies to self.data.toExt()
-				opts.lookupValues = true;  // applies to self.data.toExt()
-				// But DO reduce to the language desired.
+				// Reduce to the language desired.
 				opts.lookupLanguage = true;
 				if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
-				opts.makeHTML = true;
-				opts.linkifyURLs = true;
-				opts.createHierarchyRootIfNotPresent = true;
+
 				opts.allDiagramsAsImage = true;
 			//	opts.allImagesAsPNG = ["oxml"].indexOf(opts.format) > -1;   .. not yet implemented!!
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
+
+				switch (opts.format) {
+					case 'epub':
+					case 'oxml':
+						opts.lookupValues = true;  // applies to self.data.toExt()
+						opts.makeHTML = true;
+						opts.linkifyURLs = true;
+						opts.createHierarchyRootIfNotPresent = true;
+						break;
+					case 'xlsx':
+						opts.lookupValues = true;
+						opts.makeHTML = false;
+						opts.linkifyURLs = false;
+						// ToDo: The next should be false, but so far it is necessary so that specif2xslx won't fail:
+						opts.createHierarchyRootIfNotPresent = true;
+				};
 
 				self.read(opts).then(
 					(expD) => {
@@ -1576,7 +1625,7 @@ class CProject {
 							showEmptyProperties: CONFIG.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
-							//	hasContent: Lib.hasContent,
+						//	hasContent: Lib.hasContent,
 							propertiesLabel: opts.withOtherProperties ? 'SpecIF:Properties' : undefined,
 							statementsLabel: opts.withStatements ? 'SpecIF:Statements' : undefined,
 							fileName: self.fileName || expD.title,
@@ -1779,8 +1828,9 @@ class CProject {
 	}
 	private equalPC(r: PropertyClass, n: PropertyClass): boolean {
 		// return true, if reference and new propertyClass are equal:
-		return r.dataType == n.dataType
-			&& r.title == n.title
+		return r.title == n.title
+			&& r.dataType == n.dataType
+			&& r.value == n.value
 			&& this.eqBool(r.multiple, n.multiple);
 	}
 	private equalRC(r: ResourceClass, n: ResourceClass): boolean {
@@ -1949,7 +1999,8 @@ class CProject {
 			if (nPC.id) {
 				// If an id exists, it must be equal to one of refC's propertyClasses:
 				idx = indexById(refC.propertyClasses, nPC.id)
-			} else {
+			} 
+			else {
 				// If there is no id, the type is new and there are no referencing elements, yet.
 				// So it does not matter.
 				// But there must be a property class with the same name:
@@ -2092,21 +2143,17 @@ class CProject {
 		// In the rare case that the ids are identical, there is no need to update the references:
 		if (r.id == n.id) return;
 
-		// 1. Memorize the replaced id, if not yet listed:
-		if (!Array.isArray(r.alternativeIds)) r.alternativeIds = [];
-		Lib.cacheE(r.alternativeIds, n.id);
-
-		// 2. Replace the references in all statements:
+		// 1. Replace the references in all statements:
 		prj.statements.forEach((st: Statement) => {
 			if (this.equalKey(st.object, n)) { if (st.object.id) { st.object.id = Lib.idOf(r) } else { st.object = Lib.idOf(r) } };
 			if (this.equalKey(st.subject, n)) { if (st.subject.id) { st.subject.id = Lib.idOf(r) } else { st.subject = Lib.idOf(r) } }
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
 
-		// 3. Replace the references in all hierarchies:
+		// 2. Replace the references in all hierarchies:
 		this.substituteRef(prj.hierarchies, r.id, n.id);
 
-		// 4. Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
+		// 3. Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
 		prj.statementClasses.forEach((sC: StatementClass) => {
 			if (Array.isArray(sC.subjectClasses) && sC.subjectClasses.indexOf(n['class']) > -1) Lib.cacheE(sC.subjectClasses, r['class']);
 			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(n['class']) > -1) Lib.cacheE(sC.objectClasses, r['class']);
@@ -2154,7 +2201,7 @@ class CProject {
 		// ToDo: Make it work, if keys are used as a reference.
 	}
 	abort(): void {
-		console.info('abort specif');
+		console.info('abort cache');
 	//	server.abort();
 		this.abortFlag = true;
 	};
@@ -2399,7 +2446,8 @@ function Project(): IProject {
 								addNewPC( rT, nT.propertyClasses, 0 )
 							}
 					}
-				} else {
+				} 
+				else {
 					// else: the type does not exist and will be created, therefore:
 					pend++;
 					console.info('Creating type',nT.title);
@@ -2580,7 +2628,8 @@ function Project(): IProject {
 							self.updateContent( ctg, nI )
 								.done( updateTreeIfChanged( ctg, rI, nI ) )	// update the tree, if necessary.
 								.fail( uDO.reject )
-						} else {
+						} 
+						else {
 							// no change, so continue directly:
 							updateTreeIfChanged( ctg, rI, nI )	// update the tree, if necessary.
 						}
@@ -2653,7 +2702,8 @@ function Project(): IProject {
 							if( --pend<1 ) updateNext( ctg )
 						})
 						.fail( uDO.reject )
-				} else {
+				} 
+				else {
 					// no hierarchy (tree) has been changed, so no update:
 					if( --pend<1 ) updateNext( ctg )
 				}
@@ -2706,7 +2756,8 @@ function Project(): IProject {
 								cI += rL.length;  // current index
 								loadObjs( rL );
 								return
-							} else {
+							} 
+							else {
 								cDO.resolve( self.data.resources );
 								return
 							}
@@ -2718,7 +2769,8 @@ function Project(): IProject {
 			var rL = sp.flatL.slice(0,CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
 				cI=rL.length;  // current index pointing to start of next batch
 			loadObjs( rL )
-		} else {
+		} 
+		else {
 			cDO.resolve([])
 		};
 		return cDO
@@ -2740,7 +2792,8 @@ function Project(): IProject {
 						// continue caching, if the project hasn't been left, meanwhile (sp==null):
 						if( sp && ++cI<sp.flatL.length ) {
 							loadRels( {id:sp.flatL[cI]} )
-						} else {
+						} 
+						else {
 							rDO.resolve( self.data.statements )
 						}
 					})
@@ -2749,7 +2802,8 @@ function Project(): IProject {
 		if( sp && sp.flatL.length && self.data.statementClasses.length>0 ) {
 			var cI=0;  // current index
 			loadRels( {id:sp.flatL[cI]} )
-		} else {
+		} 
+		else {
 			rDO.resolve([])
 		};
 		return rDO;
@@ -2951,7 +3005,8 @@ moduleManager.construct({
 						})
 						.fail( lDo.reject );
 				return
-			} else {
+			} 
+			else {
 				lDO.resolve()
 			};
 			return lDO
@@ -2997,8 +3052,8 @@ function dataTypeOf(prj: SpecIF, pCid:string ):DataType {
 		//     |                        get propertyClass
 		//	   get dataType
 	// else:
-	// may happen, if a resource does not have any properties and it's title or description is being used:
-	return { type: TypeEnum.XsString}; // by default
+	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
+	return { type: TypeEnum.XsString }; // by default  
 }
 function enumValueOf(dT: DataType, val: string, opts?: any): string {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
@@ -3063,7 +3118,7 @@ function titleOf( item, opts?:any ):string {
 function languageValueOf( val, opts?:any ):string|undefined {
 	// Return the value in the specified target language .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object;
-	// if targetLanguage is not defined, keep all language options:
+	// if opts.lookupLanguage is not true, keep all language options:
 	if( typeof(val)=='string' || !(opts&&opts.lookupLanguage) ) return val;
 	// The value may be undefined:
 	if( val==undefined ) return;
@@ -3222,7 +3277,8 @@ function elementTitleOf(el: Resource | Statement, opts?:any, dta?:SpecIF): strin
 		if( !ti )
 			// take the class' title by default:
 			ti = staClassTitleOf( el, dta, opts );
-	} else {
+	}
+	else {
 		// it is a resource
 		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && ti )
 			ti = Lib.addIcon( ti, itemById( dta.resourceClasses, el['class'] ).icon );
