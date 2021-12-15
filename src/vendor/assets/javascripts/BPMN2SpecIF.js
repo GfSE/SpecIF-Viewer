@@ -57,40 +57,40 @@ function BPMN2Specif( xmlString, opts ) {
 	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
-	if( !opts.strJoinExcGateway ) 
+	if (!opts.strNamespace)
+		opts.strNamespace = "bpmn:";
+	if (!opts.strNotation)
+		opts.strNotation = "BPMN 2.0 Process Diagram";
+	if( !opts.strJoinExcGateway )
 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
 	if( !opts.strJoinExcGatewayDesc ) 
-		opts.strJoinExcGatewayDesc = "<p>Wait for any <em>one</em> incoming branch to continue.</p>";
+		opts.strJoinExcGatewayDesc = "Wait for any *one* incoming branch to continue.";
 	if( !opts.strJoinParGateway ) 
 		opts.strJoinParGateway = "Joining Parallel Gateway";
 	if( !opts.strJoinParGatewayDesc ) 
-		opts.strJoinParGatewayDesc = "<p>Wait for <em>all</em> incoming branches to continue.</p>";
+		opts.strJoinParGatewayDesc = "Wait for *all* incoming branches to continue.";
 	if( !opts.strJoinIncGateway ) 
 		opts.strJoinIncGateway = "Joining Inclusive Gateway";
 	if( !opts.strJoinIncGatewayDesc ) 
-		opts.strJoinIncGatewayDesc = "<p>Wait for <em>all active</em> incoming branches to continue.</p>";
+		opts.strJoinIncGatewayDesc = "Wait for *all active* incoming branches to continue.";
 	if( !opts.strForkEvtGateway ) 
 		opts.strForkEvtGateway = "Forking (exclusive) Event Gateway";
 	if( !opts.strForkEvtGatewayDesc ) 
-		opts.strForkEvtGatewayDesc = "<p>The first of the following events to occur will prevail.</p>";
+		opts.strForkEvtGatewayDesc = "The first of the following events to occur will prevail.";
 	if( !opts.strForkExcGateway ) 
 		opts.strForkExcGateway = "Forking Exclusive Gateway";
 	if( !opts.strForkExcGatewayDesc ) 
-		opts.strForkExcGatewayDesc = "<p>Evaluate the condidition and signal the respective event.</p>";
+		opts.strForkExcGatewayDesc = "Evaluate the condidition and signal the respective event.";
 	if( !opts.strForkParGateway ) 
 		opts.strForkParGateway = "Forking Parallel Gateway";
 	if( !opts.strForkParGatewayDesc ) 
-		opts.strForkParGatewayDesc = "<p>Forward control to <em>all</em> outgoing branches.</p>";
+		opts.strForkParGatewayDesc = "Forward control to *all* outgoing branches.";
 	if( !opts.strForkIncGateway ) 
 		opts.strForkIncGateway = "Forking Inclusive Gateway";
 	if( !opts.strForkIncGatewayDesc ) 
-		opts.strForkIncGatewayDesc = "<p>Evaluate all condiditions and signal the respective events.</p>";
+		opts.strForkIncGatewayDesc = "Evaluate all condiditions and signal the respective events.";
 	if( !opts.strTextAnnotation ) 
 		opts.strTextAnnotation = "Text Annotation";
-	if( !opts.strNamespace ) 
-		opts.strNamespace = "bpmn:";
-	if( !opts.strNotation ) 
-		opts.strNotation = "BPMN 2.0 Process Diagram";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");

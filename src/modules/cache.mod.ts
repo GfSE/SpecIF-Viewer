@@ -1590,7 +1590,7 @@ class CProject {
 				if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
-				opts.createHierarchyRootIfNotPresent = true;
+				opts.createHierarchyRootIfMissing = true;
 				opts.allDiagramsAsImage = true;
 			//	opts.allImagesAsPNG = ["oxml"].indexOf(opts.format) > -1;   .. not yet implemented!!
 				// take newest revision:
@@ -1668,7 +1668,7 @@ class CProject {
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
-						opts.createHierarchyRootIfNotPresent = true;
+						opts.createHierarchyRootIfMissing = true;
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString();
 						break;

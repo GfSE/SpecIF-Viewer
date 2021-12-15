@@ -697,19 +697,10 @@ class CSpecIF implements SpecIF {
 					// It is assumed, 
 					// - that in general SpecIF data do not have a hierarchy root with meta-data.
 					// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-					function outlineTypeIsNotHidden(hPL?): boolean {
-						if (!hPL || hPL.length < 1) return true;
-						for (var i = hPL.length - 1; i > -1; i--) {
-							if (hPL[i].title == CONFIG.propClassType
-								&& (typeof (hPL[i].value) != 'string' || hPL[i].value == CONFIG.resClassOutline))
-								return false;
-						};
-						return true;
-					}
-					if (opts.createHierarchyRootIfNotPresent && aHierarchyHasNoRoot(spD)) {
+					if (opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
 
 						console.info("Adding a hierarchyRoot");
-						standardTypes.addTo("resourceClass", "RC-HierarchyRoot", spD);
+						standardTypes.addTo("resourceClass", "RC-Folder", spD);
 
 						// ToDo: Let the program derive the referenced class ids from the above
 						standardTypes.addTo("propertyClass", "PC-Type", spD);
@@ -721,20 +712,15 @@ class CSpecIF implements SpecIF {
 						var res = {
 							id: 'R-' + simpleHash(spD.id),
 							title: spD.title,
-							class: "RC-HierarchyRoot",
+							class: "RC-Folder",
 							properties: [{
 								class: "PC-Name",
 								value: spD.title
-							}],
-							changedAt: spD.createdAt
-						};
-						// Add the resource type, if it is not hidden:
-						let rC = itemById(spD.resourceClasses, "RC-HierarchyRoot");
-						if (outlineTypeIsNotHidden(opts.hiddenProperties)) {
-							addP(res, {
+							}, {
 								class: "PC-Type",
-								value: rC.title // should be CONFIG.resClassOutline
-							});
+								value: CONFIG.resClassOutline
+							}],
+							changedAt: spD.createdAt || new Date().toISOString()
 						};
 						// Add a description property only if it has a value:
 						if (spD.description)

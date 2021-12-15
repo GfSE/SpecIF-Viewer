@@ -21,12 +21,14 @@ function Archimate2Specif( xmlString, opts ) {
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/archimate+xml"; */
 
-	if( !opts.resClassOutline ) 
+	if (!opts.strNamespace)
+		opts.strNamespace = "archimate:";
+	if( !opts.resClassOutline )
 		opts.resClassOutline = 'SpecIF:Outline';
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramType ) 
-		opts.strDiagramType = "Archimate:Viewpoint";
+		opts.strDiagramType = opts.strNamespace+"Viewpoint";
 	if( !opts.strDiagramFolderType ) 
 		opts.strDiagramFolderType = "SpecIF:Diagrams";
 	if( !opts.strGlossaryType ) 
@@ -43,8 +45,6 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strAnnotationFolder = "Text Annotations";
 	if( !opts.strRoleType ) 
 		opts.strRoleType = "SpecIF:Role";  */
-	if( !opts.strNamespace ) 
-		opts.strNamespace = "archimate:";
 	if( !Array.isArray(opts.hiddenDiagramProperties) )
 		opts.hiddenDiagramProperties = [];
 	

@@ -779,6 +779,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		properties: [{
 			class: "PC-Name",
 			value: pN
+		}, {
+			class: "PC-Type",
+			value: CONFIG.resClassOutline
 		}],
 		changedAt: chAt
 	});

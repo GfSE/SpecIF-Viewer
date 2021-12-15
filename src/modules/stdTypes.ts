@@ -101,13 +101,14 @@ class StandardTypes {
 		instantiation: [Instantiation.Auto, Instantiation.User],
 		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 		changedAt: "2020-12-04T18:59:00+01:00"
-    },{
+/*  Instead, use RC-Folder and add a property with "PC-Type" and value "RC-HierarchyRoot":
+     },{
 		id: "RC-HierarchyRoot",
 		title: CONFIG.resClassOutline,
 		description: "Metadata of a document outline (hierarchy).",
 		instantiation: [Instantiation.Auto],
 		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
-		changedAt: "2016-05-26T08:59:00+02:00"
+		changedAt: "2016-05-26T08:59:00+02:00"   */
 	}];
 	// The sequence is such that every list's elements have only references to list elements above:
 	listName = new Map([
@@ -127,7 +128,7 @@ class StandardTypes {
 			fn(le, this.listName.get(le));
 		return this.listName.size;
     }
-	get(ctg: string, id: string, chAt?: string): Item | undefined {
+	get(ctg: string, id: string, chAt?: string): Item {
 		// Get the element of the given category: 
 		var item: Item = itemById(this[this.listName.get(ctg)], id);
 		if (item) {
@@ -136,6 +137,7 @@ class StandardTypes {
 			if (chAt) item.changedAt = chAt;
 			return item;
 		};
+		throw Error("No standard type with id '"+id+"' of category '"+ctg+"'");
 	}
 /*	getByTitle(ctg: string, ti: string, chAt?: string): Item | undefined {
 		var item: Item = itemByTitle(this[this.listName.get(ctg)], ti);
