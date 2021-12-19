@@ -724,7 +724,7 @@ const tagStr = "(<\\/?)([a-z]{1,10}(?: [^<>]+)?\\/?>)";
 		// $2: start of opening tag '<' or closing tag '</'
 		// $3: rest of the tag including '>' or '/>'
 
-const tokenGroup = "(p|div|br|b|i|em|span|ul|ol|li|a|table|thead|tbody|tfoot|th|td)";
+const tokenGroup = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|tfoot|th|td)";
 	RE.escapedHtmlTag = new RegExp("&(?:lt|#60);(\\/?)" + tokenGroup + "(.*?\\/?)&(?:gt|#62);", "g");
 //	RE.htmlTag = new RegExp("(<\\/?)" + tokenGroup + "(.*?\\/?)>", "g");
 	RE.innerHtmlTag = new RegExp("([\\s\\S]*?)(<\\/?)" + tokenGroup + "((?: [^<>]+)?\\/?>)", 'g');

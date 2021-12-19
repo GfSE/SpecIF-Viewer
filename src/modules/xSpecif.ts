@@ -222,10 +222,10 @@ class CSpecIF implements SpecIF {
 			this.statementClasses = LIB.forAll( spD[names.sClasses], sC2int );
 			if (names.hClasses)
 				this.resourceClasses = this.resourceClasses.concat( LIB.forAll( spD[names.hClasses], hC2int ));
+			this.files = LIB.forAll(spD.files, f2int);
 			this.resources = LIB.forAll( spD.resources, r2int );
 			this.statements = LIB.forAll( spD.statements, s2int );
 			this.hierarchies = LIB.forAll( spD.hierarchies, h2int );
-			this.files = LIB.forAll( spD.files, f2int )
 		}
 		catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
@@ -448,7 +448,7 @@ class CSpecIF implements SpecIF {
 			if (descPropertyNeeded(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
-				console.info("Adding a description property to element with id '" + oE.id + "'");
+				console.info("Added a description property to element with id '" + oE.id + "'");
 				// a. add dataType, if not yet defined:
 				standardTypes.addTo("dataType", "DT-Text", self);
 				// b. add property class, if not yet defined:
@@ -468,7 +468,7 @@ class CSpecIF implements SpecIF {
 			if (titlePropertyNeeded(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
-				console.info("Adding a title property to element with id '" + oE.id + "'");
+				console.info("Added a title property to element with id '" + oE.id + "'");
 				// a. add dataType, if not yet defined:
 				standardTypes.addTo("dataType", "DT-ShortString", self);
 				// b. add property class, if not yet defined:
@@ -657,9 +657,6 @@ class CSpecIF implements SpecIF {
 				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
 				spD.resourceClasses = LIB.forAll(this.resourceClasses, rC2ext);
 				spD.statementClasses = LIB.forAll(this.statementClasses, sC2ext);
-				spD.resources = LIB.forAll((opts.allResources ? this.resources : collectResourcesByHierarchy(this)), r2ext);
-				spD.statements = LIB.forAll(this.statements, s2ext);
-				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);
 				spD.files = [];
 				this.files.forEach( (f) => {
 					pend++;
@@ -672,12 +669,17 @@ class CSpecIF implements SpecIF {
 							reject
 						);
 				});
+				spD.resources = LIB.forAll((opts.allResources ? this.resources : collectResourcesByHierarchy(this)), r2ext);
+				spD.statements = LIB.forAll(this.statements, s2ext);
+				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);
+
 				if (pend < 1) finalize();  // no files, so finalize right away
 				return;
 
 				function finalize() {
 					// Check whether all statements reference resources or statements, which are listed.
-					// Obviously this check can only be done at the end ..
+					// As statements can be removed which may be referenced themselves,
+					// the checking must be repeated until no statements are removed any more:
 					let lenBefore: number;
 					do {
 						lenBefore = spD.statements.length;
@@ -699,7 +701,7 @@ class CSpecIF implements SpecIF {
 					// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
 					if (opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
 
-						console.info("Adding a hierarchyRoot");
+						console.info("Added a hierarchyRoot");
 						standardTypes.addTo("resourceClass", "RC-Folder", spD);
 
 						// ToDo: Let the program derive the referenced class ids from the above

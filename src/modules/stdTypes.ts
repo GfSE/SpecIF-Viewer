@@ -158,9 +158,13 @@ class StandardTypes {
 		// Add an element (e.g. class) to it's list, if not yet defined:
 		if (!pr) pr = app.cache.selectedProject.data;
 
-		// get the name of the list, e.g. 'dataType' -> 'dataTypes':
+		// 1. Get the name of the list, e.g. 'dataType' -> 'dataTypes':
 		let lN: string = this.listName.get(ctg);
-		// create it, if not yet available:
+
+		// ToDo: For avoiding duplicates, The checking for the id is not sufficient;
+		// if the existing element has an equal id, but different content,
+		// the resulting SpecIF data-set is not consistent.
+		// 2. Create it, if not yet available:
 		if (Array.isArray(pr[lN])) {
 			// add the type, but avoid duplicates:
 			if (indexById(pr[lN], id) < 0)

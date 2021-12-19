@@ -6,11 +6,10 @@
     "\\src\\config\\locales",
     "\\src\\modules",
     "\\src\\types",
-    "\\src\\vendor",
     "\\src\\vendor\\assets",
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\modules\\ioArchimate.mod.ts",
+  "SelectedNode": "\\src\\types\\specif.types.ts",
   "PreviewInSolutionExplorer": false
 }
