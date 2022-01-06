@@ -26,8 +26,8 @@
 			options: [
 				{title:'Word Beginnings', id:'wordBeginnings', checked:false},
 				{title:'Whole Words', id:'wholeWords', checked:false},
-				{title:'Case Sensitive', id:'caseSensitive', checked:true},
-				{title:'Exclude Enums', id:'excludeEnums', checked:false}
+				{title:'Case Sensitive', id:'caseSensitive', checked:true}
+			//	{title:'Exclude Enums', id:'excludeEnums', checked:false}
 			]
 		},{ 
 			title: 'Resource Class',
@@ -63,7 +63,7 @@
 			category: 'propertyValue',
 			primary: false,
 			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type OT-Req
-			propClass: 'PC-Req-Status,
+			propClass: 'PC-Req-Status',
 			dataType: 'DT-Status',
 			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
@@ -83,17 +83,28 @@
 			]
 		}];
 */		
+interface IFilter {
+	title: string,
+	category: string,  // 'textSearch', 'resourceClass' or enumerated 'propertyValue'
+	primary: boolean,
+	scope: string,     
+	propClass: string,
+	dataType: string,
+	baseType: string,
+	searchString?: string;
+	options?: IBox[]
+}
+
 moduleManager.construct({
 	name: CONFIG.objectFilter
-}, (self:IModule)=>{
-	"use strict";
+}, (self: IModule) =>{
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,
 		prj:any,
 		dta:SpecIF,
-		displayOptions = {};
+		displayOptions:any = {};
 		
 	self.filterList = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
@@ -127,9 +138,9 @@ moduleManager.construct({
 		reRun = new RegExp(reR,'g');
 		
 		// Standard module interface methods:
-		self.init = (): boolean =>{
+	self.init = (): boolean =>{
 //		console.debug( 'filters.init' );
-		self.filterList = []
+		self.filterList = [];
 		self.secondaryFilters = undefined;
 
 		// The left panel on this page (only for this view):
@@ -138,14 +149,13 @@ moduleManager.construct({
 			+		'<div id="primaryFilters" class="pane-filter" ></div>'
 			+	'</div>'
 			+	'<div id="filterCtrl" class="contentCtrl" >'
-			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
+			+		'<div class="btn-group" >'
 			+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
-	//		+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.goClicked()" >'+i18n.BtnGo+'</button>'
 			+		'</div>'
 			+		'<div id="filterNotice" class="notice-default contentNotice" ></div>'
-			+		'<div id="filterActions" class="btn-group btn-group-sm contentActions" ></div>'
+	//		+		'<div id="filterActions" class="btn-group contentActions" ></div>'
 			+	'</div>'
-			+	'<div id="hitlist" class="content" ></div>';
+			+	'<div id="hitlist" class="content" style="padding-top:44px"></div>';
 		$(self.view).html(h);
 		return true;
 	};
@@ -164,7 +174,7 @@ moduleManager.construct({
 	function handleError(xhr: xhrMessage): void {
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		stdError(xhr);
+		LIB.stdError(xhr);
 	};
 
 	// standard module entry:
@@ -176,6 +186,7 @@ moduleManager.construct({
 		pData.showLeft.reset();
 		$('#filterNotice').empty();
 
+		displayOptions.lookupLanguage = true;
         displayOptions.targetLanguage = pData.targetLanguage;
         displayOptions.lookupTitles = true;
         displayOptions.lookupValues = true;
@@ -201,27 +212,27 @@ moduleManager.construct({
 
 		// Show the panels with filter settings to the left:
 		let fps = '';
-		self.filterList.forEach( (f)=>{
+		self.filterList.forEach((f: IFilter)=>{
 			fps += '<div class="panel panel-default panel-filter" >'
 				+	'<h4>'+f.title+'</h4>';
-			switch( f.baseType ) {
-				case 'xs:string': 
-						fps += renderTextFilterSettings( f );
-						break;
-				case 'xs:enumeration': 
-						fps += renderEnumFilterSettings( f );
+			switch (f.baseType) {
+				case TypeEnum.XsString: 
+					fps += renderTextFilterSettings( f );
+					break;
+				case TypeEnum.XsEnumeration: 
+					fps += renderEnumFilterSettings( f );
 			};
 			fps += '</div>';
 		});
 		$('#primaryFilters').html( fps );
-		setTextFocus(i18n.LblStringMatch); 
+		setFocus(i18n.LblStringMatch); 
 
 		let tr = pData.tree.get();
 		if( !tr || tr.length<1 ) {
 		//	showNotice(i18n.MsgNoReports);
 //			console.debug('filter nothing to do',tr);
 			app.busy.reset();
-			return true;  // nothing to do ....
+			return;  // nothing to do ...
 		};
 //		console.debug('filter something to do',tr);
 		doFilter();
@@ -234,9 +245,9 @@ moduleManager.construct({
 		$('#hitlist').empty();
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
-		let pend=0, h, hCnt=0;
-		pData.tree.iterate( 
-			(nd)=>{
+		let pend = 0, h:CResourceToShow, hitCnt=0;
+		pData.tree.iterate(
+			(nd: jqTreeNode) => {
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
@@ -245,14 +256,14 @@ moduleManager.construct({
 				prj.readContent( 'resource', {id: nd.ref} )
 				.then(
 					(rL:Resource[])=>{
-						h = match( new CResource(rL[0]) );
+						h = match( new CResourceToShow(rL[0]) );
 //						console.debug('tree.iterate',self.filterList,pend,rsp[0],h);
 						if( h )	{
-							hCnt++;
+							hitCnt++;
 							$('#hitlist').append( h.listEntry() );
 						};
 						if( --pend<1 ) {  // all done
-							$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hCnt+'</div>' );
+							$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hitCnt+'</div>' );
 							app.busy.reset();
 						}
 					},
@@ -262,25 +273,29 @@ moduleManager.construct({
 			}
 		);
 	}
-	function match(res:Resource):boolean {
+	function match(res: CResourceToShow): CResourceToShow {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
 		// Note that res is not a SpecIF resource, but an object prepared for viewing built using classifyProps()!
 		// - If an enumerated property is missing, the resource does NOT match.
 		// - In case all filers match, the resource is returned with marked values (if appropriate). 
 		// - All resources pass, if there is no filter.
 
-			function matchResClass(f):boolean {   
+			function matchResClass(f:IFilter): boolean {   
 				// primary filter applying to all resources:
+				// @ts-ignore . in this case it is defined
 				for( var j=f.options.length-1; j>-1; j--){ 
 //					console.debug('matchResClass',f.options[j],res);
-					if( f.options[j].checked && f.options[j].id==res.toShow['class'].id ) return true
+					// @ts-ignore . in this case it is defined
+					if( f.options[j].checked && f.options[j].id==res['class'].id ) return true
 				};
 				return false;
 			}
-			function matchSearchString(f):boolean {   // primary filter applying to all resources (unless it has no property with strings or text):
-				if( f.searchString.length==0 ) return true;   // save the time, the regex below would finish just alike .... 
+			function matchSearchString(f: IFilter):boolean {   // primary filter applying to all resources (unless it has no property with strings or text):
+				// @ts-ignore . in this case it is defined
+				if( f.searchString.length==0 ) return true;   // save the time, the regex below would finish just alike ....
 
 				// ToDo: Parse the search string, separate terms and run the RegEX for each ....
+				// @ts-ignore . in this case it is defined
 				let str = f.searchString.escapeRE();
 				
 /*				// ToDo: escape other special characters in f.searchString:
@@ -291,50 +306,54 @@ moduleManager.construct({
 //				str = str.replace( /(/g, '\(' );  // geht nicht: Problem ist nicht die Klammer selbst, sondern ein unvollständiges Klammerpaar
 //				str = str.replace( /)/g, '\)' );
 */ 
-				// ToDo: 'schlie' and 'schließ' in 'schließlich' are erroneously considered a whole word (as 'ß' is no regex word-character)
-				if( isChecked( f.options, 'wholeWords' )) {
+				// ToDo: 'schlie' and 'lich' in 'schließlich' are erroneously considered a whole word (as 'ß' is no regex word-character)
+				//       Similarly any Umlaut.
+				if (isChecked(f.options, 'wholeWords')) {
 					str = '\\b'+str+'\\b';
-				} else {
-					if( isChecked( f.options, 'wordBeginnings' )) {str = '\\b'+str};
+				}
+				else {
+					if (isChecked(f.options, 'wordBeginnings'))
+						str = '\\b' + str;
 				};
 				
 				let // dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
-					dT:DataType, a:number;
-				if( matchStr( res.toShow.title, {type:'xs:string'} ) ) return true;
-				for( a=res.toShow.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.toShow.descriptions[a], {type:'xhtml'} ) ) return true;
-				for( a=res.toShow.other.length-1; a>-1; a-- ) {
+					dT: DataType, a: number;
+				if (matchStr(res.title, { type: TypeEnum.XsString } as DataType )) return true;
+				for( a=res.descriptions.length-1; a>-1; a-- )
+					if( matchStr( res.descriptions[a], {type:TypeEnum.XHTML} as DataType ) ) return true;
+				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
-					dT = dataTypeOf( dta, res.toShow.other[a]['class'] );
-//					console.debug('matchSearchString',f,res.toShow.other[a],dT,f.options);
-					if( matchStr( res.toShow.other[a], dT ) ) return true;
+					dT = dataTypeOf( dta, res.other[a]['class'] );
+//					console.debug('matchSearchString',f,res.other[a],dT,f.options);
+					if( matchStr( res.other[a], dT ) ) return true;
 				};
 				return false;  // not found
 
-				function matchStr(prp, dT: DataType): boolean {
+				function matchStr(prp: CPropertyToShow, dT: DataType): boolean {
 //					console.debug('matchStr',prp,dT.type);
 					switch( dT.type ) {
-						case 'xs:enumeration':
+						case TypeEnum.XsEnumeration:
 							// only if enumerated values are included in the search:
-							if( !isChecked( f.options, 'excludeEnums' )) {
+						//	if( !isChecked( f.options, 'excludeEnums' )) {
 								if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true;
-							};
+						//	};
 							break;
-						case 'xhtml':
-						case 'xs:string':
-							if (patt.test( stripHTML(languageValueOf(prp.value,displayOptions)) )) return true; 
+						case TypeEnum.XHTML:
+						case TypeEnum.XsString:
+							if (patt.test( languageValueOf(prp.value, displayOptions).stripHTML() )) return true;
 							break;
 						default:
 							if( patt.test( languageValueOf(prp.value,displayOptions) )) return true;
 					};
+					return false;
 				}
 			}
-			function matchPropValue(f):boolean {   
+			function matchPropValue(f:IFilter):boolean {   
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
-				if( f.scope && f.scope!=res.toShow['class'].id ) return true;
+				if( f.scope && f.scope!=res['class'].id ) return true;
 				
 //				console.debug( 'matchPropValue', f, res );
 
@@ -342,10 +361,11 @@ moduleManager.construct({
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
 				// 
 				switch ( f.baseType ) {
-					case 'xs:enumeration':
+					case TypeEnum.XsEnumeration:
 						// Assuming that there is max. one property per resource with the class specified by the filter,
 						// and also assuming that any property with enumerated value will only be found in the 'other' list:
-						let oa = itemBy( res.toShow.other, 'class', f.propClass ), // select the concerned property by class
+						let oa = itemBy( res.other as Item[], 'class', f.propClass ), // select the concerned property by class
+							// @ts-ignore . in this case it is defined
 							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id==CONFIG.notAssigned;
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies CONFIG.notAssigned:
@@ -356,7 +376,9 @@ moduleManager.construct({
 						let ct = oa.value.trim(),
 							cL, z, j;
 						// works with single-valued and multiple-valued ENUMERATIONs:
-						for( j=f.options.length-1; j>-1; j--) { 
+						// @ts-ignore . in this case it is defined
+						for( j=f.options.length-1; j>-1; j--) {
+							// @ts-ignore . in this case it is defined
 							if( !f.options[j].checked ) continue;
 							// try to match for every checked option (logical OR):
 							if( ct.length>0 ) {
@@ -364,11 +386,14 @@ moduleManager.construct({
 								// - if any selected id in the options list is contained in the property values list:
 								for( z=cL.length-1; z>-1; z-- ) { 
 //										console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
+									// @ts-ignore . in this case it is defined
 									if( f.options[j].id==cL[z].trim() ) return true;
 								};
 							} else {
 								// the resource property has no value:
+								// @ts-ignore . in this case it is defined
 								if( f.options[j].id==CONFIG.notAssigned ) return true;
+								// @ts-ignore . in this case it is defined
 								if( f.options[j].id.length<1 ) return true;
 							};
 						};
@@ -378,14 +403,14 @@ moduleManager.construct({
 				// no match has been found:
 				return false;
 			}
-			function matchAndMark( f ) {
-//				console.debug( 'matchAndMark', f, res.toShow.title );
+			function matchAndMark( f:IFilter ) {
+//				console.debug( 'matchAndMark', f, res.title );
 				switch( f.category ) {
 					case 'resourceClass': 
 						if( matchResClass(f) ) return res; // don't mark in this case
 						return; // undefined
 					case 'propertyValue': 
-//						console.debug( 'matchAndMark', f, res.toShow.title );
+//						console.debug( 'matchAndMark', f, res.title );
 						if( matchPropValue(f) ) return res; // don't mark in this case, either
 						return; // undefined
 					/*	if( matchPropValue(f) ) {
@@ -397,15 +422,15 @@ moduleManager.construct({
 							//     --> Don't mark within XHTML tags and property titles, mark only property values.
 							//     --> Only mark property values which are EQUAL to the filter title.
 							//     Preliminary solution: title must be longer than 4 characters, otherwise the property will not be marked.
-							if( f.scope == res.toShow['class'] ) { 
+							if( f.scope == res['class'] ) { 
 								var rgxA;
 								for( var o=0, O=f.options.length; o<O; o++ ) {
 									if( f.options[o].checked && f.options[o].title.length>4 ) {
 										rgxA = RegExp( '('+f.options[o].title+')', 'g' );
 
-										for( var a=0, A=res.toShow.other.length; a<A; a++ ){
-											if( f.dataType == res.toShow.other[a].dataType )
-												mO.properties[a].value = res.toShow.other[a].value.replace( rgxA, ( $0, $1 )=>{ return '<mark>'+$1+'</mark>' } )
+										for( var a=0, A=res.other.length; a<A; a++ ){
+											if( f.dataType == res.other[a].dataType )
+												mO.properties[a].value = res.other[a].value.replace( rgxA, ( $0, $1 )=>{ return '<mark>'+$1+'</mark>' } )
 										}
 									}
 								}
@@ -420,33 +445,35 @@ moduleManager.construct({
 							// ToDo: correct error: with option 'wholeWord', all findings are marked no matter it is a whole word or not. 
 							//   (The hitlist is correct, but also matches within a word are marked).
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
+							// @ts-ignore . in this case it is defined
 							if( f.searchString.length>2 ) {  // don't mark very short substrings
+								// @ts-ignore . in this case it is defined
 								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
 								    lE;
 								
-								lE = res.toShow.title;
+								lE = res.title;
 								lE.value = mark( languageValueOf(lE.value,displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
-								res.toShow.descriptions = res.toShow.descriptions.map( (prp)=>{
-									return 	{
+								res.descriptions = res.descriptions.map((prp: CPropertyToShow) => {
+									return	new CPropertyToShow({
 												title: prp.title,
 												class: prp['class'],
 												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
-											};
+											});
 								});
-								res.toShow.other = res.toShow.other.map( (prp)=>{
-									let dT = dataTypeOf( dta, prp['class'] );
-									return (dT && dT.type=="xs:enumeration")?
-											{
+								res.other = res.other.map((prp: CPropertyToShow) => {
+									let dT = dataTypeOf(dta, prp['class']);
+									return (dT && dT.type == TypeEnum.XsEnumeration) ?
+											new CPropertyToShow({
 												title: prp.title,
 												// default dataType is "xs:string"
 												value: mark( enumValueOf(dT,prp.value,displayOptions), rgxS )
-											}
-										:	{
+											})
+										:	new CPropertyToShow({
 												title: prp.title,
 												class: prp['class'],
 												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
-											};
+											});
 								});
 							};
 //							console.debug('hit resource',res);
@@ -468,19 +495,19 @@ moduleManager.construct({
 
 //							console.debug( '$0,$1,$2',$0,$1,$2 );
 							// 1. mark the preceding text:
-							if( stripHTML($1).length>0 )
+							if ($1.stripHTML().length>0 )
 								$1 = $1.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
 							markedText += $1+$2;
 							// consume txt:
 							return ''  
 						});
 					// 2. finally mark the remainder (the rest of the txt not consumed before):
-					if ( stripHTML(txt).length>0 )
+					if ( txt.stripHTML().length>0 )
 						markedText += txt.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
 					return markedText
 				}
 			}
-			function isChecked( opts, id:string ):boolean {
+			function isChecked( opts:any, id:string ):boolean {
 				let opt = itemById( opts, id );
 				return( opt && opt.checked )
 			}
@@ -500,24 +527,27 @@ moduleManager.construct({
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):
 		// All top level filters must allow results plus all secondary filters per selected resourceClass
 		if( !self.filterList.length ) return false;   // all resources pass, if there is no filter.
-		let rCL = [];  // all resource classes included in the search
+		let rCL:string[] = [];  // all resource classes included in the search
 
-			function checkResourceClass(f):boolean {   // project scope applies to all resources:
+			function checkResourceClass(f:IFilter):boolean {   // project scope applies to all resources:
 				// top-level filter, at least one option must be checked:
 				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
-				f.options.forEach( (o)=>{ 
+				// @ts-ignore . in this case it is defined
+				f.options.forEach( (o)=>{
 					if( o.checked ) rCL.push(o.id);
 				}); 
 				return !rCL.length;   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
-			function checkPropertyValue(f):boolean {   // 
+			function checkPropertyValue(f:IFilter):boolean {   // 
 				// 'f' is 'not applicable', if the scope of the specified filter 'f' is not contained in rCL:
 //				console.debug( f.scope, simpleClone(rCL), rCL.indexOf(f.scope) );
 				if( f.scope && rCL.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
 
-				switch( f.baseType ) {
-					case 'xs:enumeration':
-						for( var j=f.options.length-1; j>-1; j--){ 
+				switch (f.baseType) {
+					case TypeEnum.XsEnumeration:
+						// @ts-ignore . in this case it is defined
+						for( var j=f.options.length-1; j>-1; j--){
+							// @ts-ignore . in this case it is defined
 							if( f.options[j].checked ) return false  // at least one checked -> not clogged
 						};
 					//	break;
@@ -544,9 +574,9 @@ moduleManager.construct({
 		// def is like {category: 'enumValue', rCid: 'resourceClass.title', pCid: 'propertyClass.title', values: ['title1','title2']}
 //		console.debug( 'addEnumValueFilters', def );
 
-			function allEnumValues(pC: PropertyClass, vL) {
+			function allEnumValues(pC: PropertyClass, vL):IBox[] {
 				var boxes = [],
-					dT = itemById(dta.dataTypes, pC.dataType);
+					dT = dta.get( "dataType", pC.dataType)[0];
 				// Look up the baseType and include all possible enumerated values:
 				if (dT && Array.isArray(dT.values)) {
 						dT.values.forEach( (v)=>{
@@ -587,7 +617,7 @@ moduleManager.construct({
 					scope: rC.id, 
 					propClass: pC.id,
 					dataType: pC.dataType,
-					baseType: 'xs:enumeration',
+					baseType: TypeEnum.XsEnumeration,
 					options: allEnumValues( pC, vals )
 				};
 //				console.debug( 'eVF', eVF );
@@ -601,14 +631,14 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC = itemById( dta.resourceClasses, def.rCid ),
-				pC;
+			var rC: ResourceClass = dta.get("resourceClass", def.rCid)[0],
+				pC: PropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pcid)=>{
-				pC = itemById( dta.propertyClasses, pcid );
+				pC = dta.get( "propertyClass", pcid )[0];
 //				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration')) {
+					|| (!def.pCid && dta.get( "dataType", pC.dataType )[0].type==TypeEnum.XsEnumeration)) {
 					addEnumFilter( rC, pC, def.options )
 				};
 			});
@@ -628,14 +658,14 @@ moduleManager.construct({
 					category: 'textSearch',
 					primary: true,
 					scope: dta.id,
-					baseType: 'xs:string',
+					baseType: TypeEnum.XsString,
 			//		baseType: ['xs:string','xhtml'],
 					searchString: pre&&pre.searchString? pre.searchString : '',
 					options: [
 						{ id: 'wordBeginnings', title: i18n.LblWordBeginnings, checked: pre&&pre.options.indexOf('wordBeginnings')>-1 },
 						{ id: 'wholeWords', title: i18n.LblWholeWords, checked: pre&&pre.options.indexOf('wholeWords')>-1 },
-						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1 },
-						{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1 }
+						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1 }
+			//			{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1 }
 					]
 				};
 //				console.debug('addTextSearchFilter',flt);
@@ -661,10 +691,10 @@ moduleManager.construct({
 						category: 'resourceClass',
 						primary: true,
 						scope: dta.id,
-						baseType: 'xs:enumeration',
+						baseType: TypeEnum.XsEnumeration,
 						options: [] 
 					};
-				dta.resourceClasses.forEach( ( rC )=>{
+				dta.get("resourceClass","all").forEach( ( rC )=>{
 					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
 					var box = { 
@@ -720,14 +750,14 @@ moduleManager.construct({
 		};
 		return false
 	}; */
-	function renderTextFilterSettings( flt ):void {
+	function renderTextFilterSettings( flt:IFilter ):string {
 		// render a single panel for text search settings:
-		return textField( {label:flt.title,display:'none'}, flt.searchString, 'line', myFullName+'.goClicked()' )
+		return textField(flt.title, flt.searchString, { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
 			+	renderEnumFilterSettings( flt );
 	}
-	function renderEnumFilterSettings( flt ):void {
+	function renderEnumFilterSettings( flt:IFilter ):string {
 		// render a single panel for enum filter settings:
-		return checkboxField( {label:flt.title,display:'none',classes:''}, flt.options, {handle:myFullName+'.goClicked()'} );
+		return checkboxField(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
 	}
 /*	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };
@@ -757,7 +787,7 @@ moduleManager.construct({
 		self.clear();
 		self.show();
 	};
-/*	self.secondaryFiltersClicked = ( oT )={
+/*	self.secondaryFiltersClicked = ( oT )=>{
 		// toggle between the hitlist and the secondary filter settings:
 //		console.debug( 'secondaryFiltersClicked', oT );
 		if( self.secondaryFilters==oT ) {

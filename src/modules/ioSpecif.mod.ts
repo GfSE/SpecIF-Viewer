@@ -3,7 +3,8 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 // constructor for SpecIF import:
@@ -91,7 +92,7 @@ moduleManager.construct({
 						// Please note:
 						// - the file may have a UTF-8 BOM
 						// - all property values are encoded as string, even if boolean, integer or double.
-						data = JSON.parse( trimJson(dta) );
+						data = JSON.parse( LIB.trimJson(dta) );
 						data.files = [];
 						// SpecIF data is valid.
 						
@@ -150,7 +151,7 @@ moduleManager.construct({
 			try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present.
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
-				var data = JSON.parse( trimJson(ab2str(buf)) );
+				var data = JSON.parse( LIB.trimJson(LIB.ab2str(buf)) );
 				zDO.resolve( data );
 			} catch (err) {
 				zDO.reject( errInvalidJson );

@@ -37,12 +37,8 @@ function toOxml( data, opts ) {
 	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
 	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
 
-//	if( !opts.metaFontSize ) opts.metaFontSize = '70%';	
-//	if( !opts.metaFontColor ) opts.metaFontColor = '0071B9';	// adesso blue
-//	if( !opts.linkFontColor ) opts.linkFontColor = '0071B9';
-//	if( !opts.linkFontColor ) opts.linkFontColor = '005A92';	// darker
 //	if( !opts.colorAccent1 ) opts.colorAccent1 = '5B9BD5';   // original Office
-	if( !opts.colorAccent1 ) opts.colorAccent1 = '0071B9';  // adesso blue
+	if( !opts.colorAccent1 ) opts.colorAccent1 = 'CB0A1B';  // GfSE red-brown
 
 //	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
 	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
@@ -162,7 +158,9 @@ function toOxml( data, opts ) {
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
-			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];	
+			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor','FMC:State','FMC:Event','SpecIF:Collection','SpecIF:Diagram','FMC:Plan'];
+			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
+			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
@@ -185,7 +183,8 @@ function toOxml( data, opts ) {
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			const reB = '([\\s\\S]*?)'
-				+	'(<p[^>]*>[\\s\\S]*?</p>'
+				+	'(<h[^>]*>[^<]*</h[0-9]+>'
+				+	'|<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
 				+	'|<table[^>]*>[\\s\\S]*?</table>)',
@@ -199,7 +198,7 @@ function toOxml( data, opts ) {
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 			// Limitation: the innerHTML may not have any tags.
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-			const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+			const reSO = '<object([^>]+?)(/>|>([^<]*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
 		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
@@ -208,7 +207,7 @@ function toOxml( data, opts ) {
 		
 			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
-				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>'
+				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*?>|</span>'
 				+	'|'+reA
 				+	'|'+reI
 		/*		// The nested object pattern must be checked before the single object pattern:
@@ -248,29 +247,45 @@ function toOxml( data, opts ) {
 					// Remove all formatting for the title, as the app's format shall prevail.
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
 					ti = stripHtml( itm.properties[a].value );
-				} else {
-					// In certain cases (SpecIF hierarchy root or comment), there is no title property. 
+				}
+				else {
+					// In case of a statement, use the class' title by default:
 					ti = elTitleOf(itm);
 				};
-				ti = minEscape( opts.lookup( ti ) );
+//				console.debug('titleOf 1',itm,ti);
+				ti = minEscape( ti );
 				if( !ti ) return '';  // no paragraph, if title is empty
 				
-				// If itm has a 'subject', it is a statement:
+				// if itm has a 'subject', it is a statement:
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
-					eC = itemById( cL, itm['class'] ),
-					ic = eC&&eC.icon? eC.icon+'  ' : '';
+					eC = itemById( cL, itm['class'] );
 				
-//				console.debug('titleOf',itm,ic,ti);
+				// lookup titles only, if it is 
+				// - a resource used as heading or 
+				// - a statement;
+				// those may have vocabulary terms to translate;
+				// whereas individual resources may mean the vocabulary term as such:
+				if( eC&&eC.isHeading || itm.subject )
+					ti = opts.lookup(ti);
 
-				if( !pars || typeof(pars.level)!='number' ) return  ic+ti;  // return raw text
+				// add icon, if specified:
+				ti = (eC&&eC.icon? eC.icon+'  ' : '') + ti;
 
-				if( pars.level==0 )
-					return wParagraph( {text: ic+ti, format:{ title:true }} );
+//				console.debug('titleOf 2',ti);
 
+				if (!pars || typeof (pars.level) != 'number')
+					// It is a regular model element:
+					return ti;  // return raw text
+
+				if( pars.level<1 )
+					// It is a heading:
+					return wParagraph( {text: ti, format:{ title:true }} );
+
+				// else: It is a heading:
 				// SpecIF headings are chapter level 2, all others level 3:
 				let lvl = pars.level==1? 1 : (eC.isHeading? 2:3);
 				// all titles get a bookmark, so that any titleLink has a target:
-				return wParagraph( {text: ic+ti, format:{ heading:lvl, bookmark:pars.nodeId }} );
+				return wParagraph( {text: ti, format:{ heading:lvl, bookmark:pars.nodeId }} );
 				
 				function titleIdx( aL ) {
 					// Find the index of the property to be used as title.
@@ -288,10 +303,11 @@ function toOxml( data, opts ) {
 				// get the statements of the resource as table:
 				if( !opts.statementsLabel ) return '';
 				
-				let sts={}, cid, oid, sid, noSts=true;
+				let sts={}, cid, oid, sid, relatedR, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
-					// for clustering all statements by title:
+					// for clustering all statements by title;
+					// thus properties with different class but the same title are combined in the same cell:
 					cid = titleOf( st, undefined, opts );
 				/*	// for clustering all statements by class:
 					cid = st['class']; */
@@ -300,12 +316,25 @@ function toOxml( data, opts ) {
 					sid = st.subject.id || st.subject;
 					oid = st.object.id || st.object;
 //					console.debug(st,cid,sid,oid);
-					if( sid==r.id || oid==r.id ) {    // only statements with Resource r
-						noSts = false;
-						if( !sts[cid] ) sts[cid] = {subjects:[],objects:[]};
-						if( sid==r.id ) sts[cid].objects.push( itemById(data.resources,oid) )
-						else sts[cid].subjects.push( itemById(data.resources,sid) )
-					}
+					if (sid == r.id || oid == r.id) {    // only statements with Resource r
+						// create a list of statements with that type, unless it exists already:
+						if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+						// add the resource to the list, knowing that it can be either subject or object, but not both:
+						if (sid == r.id) {
+							relatedR = itemById(data.resources, oid);
+							if (relatedR) {
+								sts[cid].objects.push(relatedR);
+								noSts = false;
+							};
+						}
+						else {
+							relatedR = itemById(data.resources, sid);
+							if (relatedR) {
+								sts[cid].subjects.push(relatedR);
+								noSts = false;
+							};
+						};
+					};
 				});
 //				console.debug( 'statements', r, sts );
 				if( noSts ) return '';	// no statements ...
@@ -393,8 +422,7 @@ function toOxml( data, opts ) {
 										format:{
 											font: {color:opts.colorAccent1},
 											hyperlink: {internal:anchorOf( o.id )}, 
-											noSpacing: true,
-											align: 'end'
+											noSpacing: true
 										}
 							});
 						});
@@ -440,27 +468,22 @@ function toOxml( data, opts ) {
 			function anchorOf( resId ) {
 				// Find the hierarchy node id for a given resource;
 				// the first occurrence is returned:
-				let m, M, n, N, ndId=null;
- 				for( m=0, M=data.hierarchies.length; m<M; m++ ) {
-//					console.debug( 'nodes', m, data.hierarchies );
-					if( data.hierarchies[m].nodes )
-						for( n=0, N=data.hierarchies[m].nodes.length; n<N; n++ ) {
-							ndId = ndByRef( data.hierarchies[m].nodes[n] );
-//							console.debug('ndId',n,ndId);							
-							if( ndId ) return ndId		// return node id
-						}
+				let n, N, ndId;
+ 				for( n=0, N=data.hierarchies.length; n<N; n++ ) {
+					ndId = ndByRef( data.hierarchies[n] );
+					if(ndId) return ndId;		// return node id
 				};
-				return null;	// not found
+				return;	// undefined -> not found
 				
 				function ndByRef( nd ) {
 					if( nd.resource==resId ) return nd.id;
-					let ndId=null;
+					let t,T,ndId;
 					if( nd.nodes )
-						for( var t=0, T=nd.nodes.length; t<T; t++ ) {
+						for( t=0, T=nd.nodes.length; t<T; t++ ) {
 							ndId = ndByRef( nd.nodes[t] );							
-							if( ndId ) return ndId
+							if(ndId) return ndId;
 						};
-					return null;
+				//	return undefined;
 				}
 			}
 			function propertyClassOf( pCid ) {
@@ -474,12 +497,13 @@ function toOxml( data, opts ) {
 				// return the content of all properties, sorted by description and other properties:
 				let c1='', descriptions=[], other=[];
 
-				if( r.properties ) {
+				if (r.properties) {
+					// Extract description and other properties;
+					// disregard the title properties, here:
 					r.properties.forEach( (p)=>{
 						if( opts.descriptionProperties.indexOf( prpTitleOf(p) )>-1 ) {
 							descriptions.push(p);
 						} else {
-							// Disregard the title properties, here:
 							if( opts.titleProperties.indexOf( prpTitleOf(p) )<0 )
 								other.push(p);
 						};
@@ -586,7 +610,7 @@ function toOxml( data, opts ) {
 							// a) <div> enclosed text in the preceding part,
 							//    there could be several ones:
 							$1 = $1.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, function($0,$1) {
-								bL.push( {p:{ text:$1 }} );
+								bL.push( {p:{ text:$1.trim() }} );
 								return ''
 							});
 							// b) any text preceding the block:
@@ -621,7 +645,12 @@ function toOxml( data, opts ) {
 								});
 								return ''
 							});
-							// g) a table:
+							// g) a heading:
+							$2 = $2.replace(/<h([0-9]+)[^>]*>([\s\S]*?)<\/h[0-9]+>/, function($0,$1,$2) {
+								bL.push( {p:{ text:$2.trim(), format:{heading:$1} }} );
+								return ''
+							});
+							// h) a table:
 							var tbl = {
 								rows: []
 							};
@@ -656,7 +685,7 @@ function toOxml( data, opts ) {
 //											console.debug('th',$0,'|',$1);
 											// the 'th' cell with it's content
 											// $1 is undefined in case of <th/>
-											cs.push( {p:{text:($1||nbsp).trim(), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
+											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp ), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
 											// ToDo: Somehow the text is not printed boldly ...
 											return '';
 											});
@@ -666,7 +695,7 @@ function toOxml( data, opts ) {
 //											console.debug('td',$0,'|',$1);
 											// the 'td' cell with it's content
 											// $1 is undefined in case of <td/>
-											cs.push( {p:{text:($1||nbsp).trim()}, border:{style:'single'}} )
+											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp )}, border:{style:'single'}} )
 											return ''
 											});
 									// the row with it's content:
@@ -676,7 +705,7 @@ function toOxml( data, opts ) {
 							}
 						});
 
-						// add the remainder:
+						// Add the remainder:
 						// In fact, if the XHTML is properly built, there shouldn't be any remainder,
 						// but we do not want to ignore any content in case there is ...
 						// A <div> enclosed text:
@@ -685,7 +714,7 @@ function toOxml( data, opts ) {
 							return ''
 						});
 						if( opts.hasContent(txt) ) 
-							bL.push( {p:{text:txt}} );
+							bL.push( {p:{text:txt.trim()}} );
 
 						// Finally identify and separate the runs per block:
 						bL.forEach( splitRuns );
@@ -701,9 +730,10 @@ function toOxml( data, opts ) {
 									splitR( c.p )
 								})
 							});
-							return
+						}
+						else {
+							splitR( bl.p );
 						};
-						splitR( bl.p );
 						return
 						
 						function splitR(p) {
@@ -720,6 +750,7 @@ function toOxml( data, opts ) {
 							//   to identify any formatting change - the preceding text will be stored as a 'run'.
 							// - for all others which cannot be nested and which cannot contain others (such as <object>), the pair is specified.
 							//   In that case, the total construct is stored as a run.
+							// - Do NOT trim the text runs; we must preserve the blanks between words of different formatting!
 							txt = txt.replace( reRun, function($0,$1,$2) {
 								// $1 is the string before ... and
 								// $2 is the first identified tag or tag pair.
@@ -752,13 +783,13 @@ function toOxml( data, opts ) {
 								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
-								let sp = /<span[^>]+color: ?#([0-9a-fA-F]{6})[^>]*>/.exec($2);
+								let sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
 								if( sp && sp.length>1 ) {
 									fmt.font.color = sp[1].toUpperCase();
 									return '';
 								};
 								if( /<\/span>/.test($2) ) {
-									delete fmt.font.color;	// simply, since there is only one value so far.
+									delete fmt.font.color;
 									return '';
 								};
 								// ToDo: Transform '<span style="text-decoration: underline;">'
@@ -801,7 +832,7 @@ function toOxml( data, opts ) {
 									return ''
 								};
 								console.warn("'",$2,"' has not been transformed because none of the patterns has matched." );
-								return ''  // be sure to consume the matched text
+								return ''  // consume the matched text
 							});
 							// finally store the remainder:
 							if( opts.hasContent(txt) ) {
@@ -833,7 +864,7 @@ function toOxml( data, opts ) {
 								arr.push(br);
 								return ''
 							};
-							return ''  // be sure to consume the matched text
+							return ''  // consume the matched text
 						});
 						// finally store the remainder:
 						if( opts.hasContent(txt) ) {
@@ -927,7 +958,7 @@ function toOxml( data, opts ) {
 					// Transform a sub-string with dynamic linking pattern to a hyperlink
 					// and return a 'run' element:
 					// Syntax:
-					// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
+					// - A resource title between opts.titleLinkBegin and opts.titleLinkEnd will be transformed to a link to that resource.
 					// - Icons in front of titles are ignored
 					// - Titles shorter than 4 characters are ignored
 					// - see: https://www.mediawiki.org/wiki/Help:Links
@@ -939,23 +970,25 @@ function toOxml( data, opts ) {
 							if( !opts.addTitleLinks || lk[1].length<opts.titleLinkMinLength ) 
 								return {text:lk[1]};
 							
-							let m=lk[1].toLowerCase(), cO=null, ti=null;
+							let m=lk[1].toLowerCase(), cR, ti, rC;
 							// is ti a title of any resource?
 							for( var x=data.resources.length-1;x>-1;x-- ) {
-								cO = data.resources[x];	
+								cR = data.resources[x];	
 								// avoid self-reflection:
-						//		if(ob.id==cO.id) continue;
+						//		if(ob.id==cR.id) continue;
 
-								// get the pure title text:
-								ti = cO.title;
-						//		ti = minEscape( cO.title );
-								
 								// disregard objects whose title is too short:
+								ti = cR.title;
+						//		ti = minEscape( cR.title );
 								if( !ti || ti.length<opts.titleLinkMinLength ) continue;
+
+								// disregard link targets which aren't diagrams nor model elements:
+								rC = itemById(data.resourceClasses, cR['class']);
+								if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
 
 								// if the titleLink content equals a resource's title, return a text run with hyperlink:
 								if(m==ti.toLowerCase())
-									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cO.id)}}};
+									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cR.id)}}};
 							};
 							// The dynamic link has NOT been matched/replaced, so mark it:
 							return {text:lk[1],color:"82020"}
@@ -1034,7 +1067,7 @@ function toOxml( data, opts ) {
 					function chain( ct, fn ) {
 						if( Array.isArray(ct) ) {
 							var bs = '';
-							ct.forEach( function(b) {
+							ct.forEach( (b)=> {
 								bs += fn(b) 
 							});
 							return bs;
@@ -1044,12 +1077,20 @@ function toOxml( data, opts ) {
 				}
 			}
 			function renderHierarchy( nd, opts ) {
-				// Check whether there is a hierarchy root node with project metadata,
-				// otherwise take the title and description of the project:
+				// Iterate a single hierarchy below nd and generate OOXML from the referenced objects;
+				// is called in an outer loop processing all items of the hierarchyRoots folder.
 				
+				// The title and description of the project are ignored;
+				// it is assumed that the hierarchy contains the project title as first node.
+				// ToDo: This behaves differently here than in the browser and other exporters.
+				//       - Among other aspects, opts.hierarchyRoots is not like CONFIG.hierarchyRoots.
+				//       - It may happen that a document will get a title per hierarchy.
 				let r = itemById( data.resources, nd.resource ),
 					rC = itemById( data.resourceClasses, r['class'] ),
-					lvl = (rC && CONFIG.hierarchyRoots.indexOf( rC.title )>-1)? 0 : 1;
+					// Is the hierarchyRoot a title or a heading?
+					// lvl==0: title; lvl>0: heading
+					lvl = ( opts.hierarchyRoots.indexOf( valByTitle(r,opts.typeProperty,data) )>-1
+							|| rC && opts.hierarchyRoots.indexOf( rC.title )>-1)? 0 : 1;
 				return renderNode( nd, lvl );
 				
 				function renderNode( nd, lvl ) {
@@ -1068,7 +1109,7 @@ function toOxml( data, opts ) {
 							+	statementsOf( r, opts );
 
 					if( nd.nodes )
-						nd.nodes.forEach( function(n) {
+						nd.nodes.forEach( (n)=> {
 							ch += renderNode( n, lvl+1 );		// next level
 						});
 
@@ -1122,7 +1163,7 @@ function toOxml( data, opts ) {
 //					console.debug('pPr',ct);
 					if( ct.format ) {
 						let fmt = ct.format,
-							lvl = fmt.heading,
+							lvl = parseInt(fmt.heading,10),
 							pr = '';
 
 						if( fmt.title )
@@ -1153,14 +1194,15 @@ function toOxml( data, opts ) {
 //				console.debug('wRun',ct);
 				// assuming that hyperlink or bookmark or none of them are present, but never both:
 				
-				if( ct.format && ct.format.hyperlink ) {
+				if (ct.format && ct.format.hyperlink && (ct.format.hyperlink.external || ct.format.hyperlink.internal) ) {
 //					console.debug('hyperlink',ct.format.hyperlink);
-					if( ct.format.hyperlink.external )
-						var tg = 'r:id="rId'+pushReferencedUrl( ct.format.hyperlink.external )+'"'
+					let tg;
+					if (ct.format.hyperlink.external)
+						tg = 'r:id="rId' + pushReferencedUrl(ct.format.hyperlink.external) + '"'
 					else
 						// Interestingly enough, Word only supports internal links up to 40 chars:
-						var tg = 'w:anchor="'+limit(ct.format.hyperlink.internal)+'"';
-					return '<w:hyperlink '+tg+'><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>'+r+'</w:r></w:hyperlink>'
+						tg = 'w:anchor="' + limit(ct.format.hyperlink.internal) + '"';
+					return '<w:hyperlink ' + tg + '><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>' + r + '</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
 				
@@ -1215,7 +1257,9 @@ function toOxml( data, opts ) {
 					return '';
 				}
 				function limit(e) {
-					// it is unique for length<41, so don't change it:
+					// MS Word truncates internal links to 40 characters resulting in links which are not unique;
+					// so longer ones are hashed to assure uniqueness.
+					// Link is unique for length<41, so don't change it:
 					return e.length<41? e : 'h'+hashCode(e)
 				}
 				function pushReferencedUrl( u ) {
@@ -2196,6 +2240,7 @@ function toOxml( data, opts ) {
 		+						'<w:style w:type="paragraph" w:default="1" w:styleId="Standard">'
 		+							'<w:name w:val="Normal"/>'
 		+							'<w:qFormat/>'
+		+							'<w:pPr><w:spacing w:before="160" w:after="160"/></w:pPr>'
 		+						'</w:style>'
 		+						'<w:style w:type="paragraph" w:customStyle="1" w:styleId="OhneAbstnde">'
 		+							'<w:name w:val="Ohne Abstände"/>'
@@ -2212,7 +2257,7 @@ function toOxml( data, opts ) {
 		+							'<w:uiPriority w:val="10"/>'
 		+							'<w:qFormat/>'
 		+							'<w:pPr>'
-		+								'<w:spacing w:after="0" w:line="240" w:lineRule="auto"/>'
+		+								'<w:spacing w:after="160" w:line="240" w:lineRule="auto"/>'
 		+								'<w:contextualSpacing/>'
 		+							'</w:pPr>'
 		+							'<w:rPr>'
@@ -2715,9 +2760,20 @@ function toOxml( data, opts ) {
 		return prp.title || itemById(data.propertyClasses,prp['class']).title
 	}
 	function elTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class,
-		// where a resource always has a statement of its own, i.e. the second clause never applies:
-		return el.title || itemById(data.statementClasses,el['class']).title
+		// get the title of a resource or statement as defined by itself or it's class;
+		// el is a statement, if it has a subject:
+		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
+	}
+	function valByTitle(itm,pN,prj) {
+		// Return the value of a resource's (or statement's) property with title pN:
+		// ToDo: return the class's default value, if available.
+		if( itm.properties ) {
+			for( var i=itm.properties.length-1;i>-1;i-- ) {
+				if( (itm.properties[i].title || itemById( prj.propertyClasses, itm.properties[i]['class'] ).title)==pN )
+					return itm.properties[i].value
+			}
+		};
+	//	return undefined
 	}
 	function hasContent( str ) {
 		// check whether str has content or a reference:

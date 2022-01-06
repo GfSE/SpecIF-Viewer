@@ -1,9 +1,10 @@
 ﻿/*!	RDF import and export
 	Dependencies: 
-	Author: 
-	(C)copyright 
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!  
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 // Constructor for RDF import and export:
@@ -11,8 +12,8 @@
 moduleManager.construct({
 	name: 'ioRdf'
 }, function(self:IModule) {
-	"use strict";
-    var mime:string;
+
+	var mime: string;
 	self.init = function():boolean {
 		mime = undefined;
 		return true;

@@ -3,6 +3,7 @@
 	Author: se@enso-managers.de
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 // Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format
@@ -20,12 +21,14 @@ function Archimate2Specif( xmlString, opts ) {
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/archimate+xml"; */
 
-	if( !opts.resClassOutline ) 
+	if (!opts.strNamespace)
+		opts.strNamespace = "archimate:";
+	if( !opts.resClassOutline )
 		opts.resClassOutline = 'SpecIF:Outline';
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramType ) 
-		opts.strDiagramType = "Archimate:Viewpoint";
+		opts.strDiagramType = opts.strNamespace+"Viewpoint";
 	if( !opts.strDiagramFolderType ) 
 		opts.strDiagramFolderType = "SpecIF:Diagrams";
 	if( !opts.strGlossaryType ) 
@@ -42,30 +45,29 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strAnnotationFolder = "Text Annotations";
 	if( !opts.strRoleType ) 
 		opts.strRoleType = "SpecIF:Role";  */
-	if( !opts.strNamespace ) 
-		opts.strNamespace = "Archimate:";
 	if( !Array.isArray(opts.hiddenDiagramProperties) )
 		opts.hiddenDiagramProperties = [];
 	
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
 //	console.debug('xml',xmlDoc);
-		
+
 	// Get the model metadata:
 	let L = Array.from(xmlDoc.querySelectorAll("model"));
-/*	// There should be exactly one model per Open Exchange file:
+	// There should be exactly one model per Open Exchange file:
 	if( L.length<1 ) {
-		console.error("... with id '",model.id,"' has no model.");
+		console.error("Open-Exchange file with id '",model.id,"' has no model.");
 		return
 	};
-	if( L.length>1 )
-		console.warn("Diagram with id '",model.id,"' has more than one model.");  */
+/*	if( L.length>1 )
+		console.warn("Open-Exchange file with id '",model.id,"' has more than one model.");  */
 	
 	var model = {};
 	// The project's id and title:
 	model.id = L[0].getAttribute("identifier");
 
-	const nbsp = '&#160;', // non-breakable space
+	const
+	//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
 		hId = 'Archimate-' + apx;
 
@@ -77,6 +79,15 @@ function Archimate2Specif( xmlString, opts ) {
 //	model.resources = Folders();
 	model.resources = [];
 	model.statements = [];
+
+	// Reference the original Archimate Open Exchange file:
+	model.files = [ /*{
+		id: 'F-'+simpleHash(opts.fileName),
+		title: opts.fileName,
+		blob: new Blob([xmlString], {type: opts.mimeType}),
+		type: opts.mimeType,
+		changedAt: opts.fileDate
+	} */ ];
 
 	// 1. Add attributes:
 	Array.from( L[0].children, 
@@ -274,6 +285,7 @@ function Archimate2Specif( xmlString, opts ) {
 
 			// Determine the resourceClass:
 			switch( ty ) {
+				case "Stakeholder":
 				case 'BusinessActor':
 				case 'BusinessRole':
 				case 'BusinessCollaboration':
@@ -292,13 +304,13 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'Node':
 				case 'Equipment':
 				case 'Facility':
-				case 'DistributionNetwork':
 				case 'Device':
 				case 'SystemSoftware':
-				case 'TechnologyCollaboration':
-				case 'TechnologyInterface':
 				case 'Path':
 				case 'CommunicationNetwork':
+				case "DistributionNetwork":
+				case 'TechnologyCollaboration':
+				case 'TechnologyInterface':
 				case 'TechnologyFunction':
 				case 'TechnologyProcess':
 				case 'TechnologyInteraction':
@@ -307,24 +319,37 @@ function Archimate2Specif( xmlString, opts ) {
 				case "AndJunction":
 					r['class'] = "RC-Actor"
 					break;
+				case "Assessment":
 				case "Goal":
 				case 'Capability':
 				case 'BusinessObject':
 				case 'Contract':
 				case 'Representation':
+				case "Material":
 				case 'Product':
 				case 'DataObject':
 				case 'Artifact':
+				case "WorkPackage":
+				case "Deliverable":
+				case "Outcome":
+				case "Principle":
+				case "Meaning":
+				case "Value":
 					r['class'] = "RC-State";
 					break;
 				case 'BusinessEvent':
 				case 'ApplicationEvent':
 				case 'TechnologyEvent':
+				case 'ImplementationEvent':
 					r['class'] = "RC-Event";
 					break;
 				case 'Location':
 				case 'Grouping':
 					r['class'] = "RC-Collection";
+					break;
+				case 'Requirement':
+				case 'Constraint':
+					r['class'] = "RC-Requirement";
 					break;
 				default: 
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
@@ -528,16 +553,6 @@ function Archimate2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-/*	// Reference used files,
-	// - the Archimate Open Exchange file:
-	model.files = [{
-		id: 'F-'+simpleHash(opts.fileName),
-		title: opts.fileName,
-		blob: new Blob([xmlString], {type: opts.mimeType}),
-		type: opts.mimeType,
-		changedAt: opts.fileDate
-	}];  */
-
 //	console.debug('Archimate',model);
 	return model;
 
@@ -611,7 +626,7 @@ function Archimate2Specif( xmlString, opts ) {
 						// It is another folder,
 						// create the resource:
 						let ti = getChildsInnerByTag(ch,"label");
-						idRef = "N-"+simpleHash( ti+apx );
+						idRef = "Folder-"+simpleHash( ti+apx );
 						resL.push({
 							id: idRef,
 							class: "RC-Folder",
@@ -796,6 +811,14 @@ function Archimate2Specif( xmlString, opts ) {
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			icon: "&#11034;",
 			changedAt: opts.fileDate
+		},{
+			id: "RC-Requirement",
+			title: "IREB:Requirement",
+			description: "A 'Requirement' is a singular documented physical and functional need that a particular design, product or process must be able to perform.",
+			icon: "&#8623;",
+			instantiation: ["auto","user"],
+			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+			changedAt: "2021-02-22T08:59:00+02:00"
 		},{
 			id: "RC-Folder",
 			title: opts.strFolderType,
@@ -1024,7 +1047,10 @@ function Archimate2Specif( xmlString, opts ) {
 
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-	function simpleHash(str) {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};
+	function simpleHash(str) {
+		for (var r = 0, i = 0; i < str.length; i++)r = (r << 5) - r + str.charCodeAt(i), r &= r;
+		return r;
+	};
 	function indexById(L,id) {
 		if( L && id ) {
 			// given an ID of an item in a list, return it's index:

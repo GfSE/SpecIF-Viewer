@@ -34,6 +34,7 @@ function toXhtml( data, opts ) {
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
+	if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'FMC:Plan'];
 	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
@@ -50,6 +51,7 @@ function toXhtml( data, opts ) {
 	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
+//	console.debug('toXhtml',data,opts);
 
 	const nbsp = '&#160;', // non-breakable space
 		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
@@ -115,22 +117,34 @@ function toXhtml( data, opts ) {
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
 			ti = stripHtml( itm.properties[a].value );
 		} else {
-			// In certain cases (SpecIF hierarchy root, comment or ReqIF export), there is no title property. 
+			// In case of a statement, use the class' title by default:
 			ti = elTitleOf(itm);
 		};
-		ti = escapeXML( opts.lookup( ti ) );
+//		console.debug('titleOf 1',itm,ti);
+		ti = escapeXML( ti );
 		if( !ti ) return '';
 			
-		// If itm has a 'subject', it is a statement:
+		// if itm has a 'subject', it is a statement:
 		let cL = itm.subject? data.statementClasses : data.resourceClasses,
-			eC = itemBy( cL, 'id', itm['class'] ),
-			ic = eC&&eC.icon? eC.icon+nbsp : '';
+			eC = itemBy( cL, 'id', itm['class'] );
+		
+//		console.debug('titleOf 2',itm,ti,eC);
+		// lookup titles only, if it is 
+		// - a resource used as heading or 
+		// - a statement;
+		// those may have vocabulary terms to translate;
+		// whereas individual resources may mean the vocabulary term as such:
+		if( eC&&eC.isHeading || itm.subject )
+			ti = opts.lookup(ti);
 
-		if( !pars || pars.level<1 ) return ic+ti;
+		// add icon, if specified:
+		ti = (eC&&eC.icon? eC.icon+'  ' : '') + ti;
 
-		if( eC.isHeading ) pushHeading( ti, pars );
-		let lvl = pars.level==1? 1:eC.isHeading? 2:3;
-		return '<h'+lvl+' id="'+pars.nodeId+'">'+ic+ti+'</h'+lvl+'>';
+		if( !pars || typeof(pars.level)!='number' || pars.level<1 ) return ti;
+
+		if( eC&&eC.isHeading ) pushHeading( ti, pars );
+		let lvl = pars.level==1? 1 : (eC&&eC.isHeading? 2:3);
+		return '<h'+lvl+' id="'+pars.nodeId+'">'+ti+'</h'+lvl+'>';
 				
 		function titleIdx( aL ) {
 			// Find the index of the property to be used as title.
@@ -147,7 +161,7 @@ function toXhtml( data, opts ) {
 		// render the statements (relations) about the resource in a table
 		if( !opts.statementsLabel ) return '';
 		
-		let sts={}, cid, oid, sid, noSts=true;
+		let sts={}, cid, oid, sid, relatedR, noSts=true;
 		// Collect statements by type:
 		data.statements.forEach( function(st) {
 			cid = titleOf( st, undefined, opts );
@@ -156,15 +170,25 @@ function toXhtml( data, opts ) {
 			// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 			sid = st.subject.id || st.subject;
 			oid = st.object.id || st.object;
-			if( sid==r.id || oid==r.id ) {
-				// the statement us about the resource:
-				noSts = false;
+			if (sid == r.id || oid == r.id) {    // only statements with Resource r
 				// create a list of statements with that type, unless it exists already:
-				if( !sts[cid] ) sts[cid] = {subjects:[],objects:[]};
-				// add the resource to the list, assuming that it can be either subject or object, but not both:
-				if( sid==r.id ) sts[cid].objects.push( itemBy(data.resources,'id',oid) )
-				else sts[cid].subjects.push( itemBy(data.resources,'id',sid) )
-			}
+				if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+				// add the resource to the list, knowing that it can be either subject or object, but not both:
+				if (sid == r.id) {
+					relatedR = itemById(data.resources, oid);
+					if (relatedR) {
+						sts[cid].objects.push(relatedR);
+						noSts = false;
+					};
+				}
+				else {
+					relatedR = itemById(data.resources, sid);
+					if (relatedR) {
+						sts[cid].subjects.push(relatedR);
+						noSts = false;
+					};
+				};
+			};
 		});
 //		console.debug( 'statements', r.title, sts );
 //		if( Object.keys(sts).length<1 ) return '';
@@ -449,7 +473,7 @@ function toXhtml( data, opts ) {
 			str = str.replace( opts.RE.TitleLink, 
 				function( $0, $1 ) { 
 //					if( $1.length<opts.titleLinkMinLength ) return $1;
-					let m=$1.toLowerCase(), cR, ti;
+					let m=$1.toLowerCase(), cR, ti, rC;
 					// is ti a title of any resource?
 					for( var x=data.resources.length-1;x>-1;x-- ) {
 						cR = data.resources[x];
@@ -462,6 +486,10 @@ function toXhtml( data, opts ) {
 
 						// disregard objects whose title is too short:
 						if( !ti || ti.length<opts.titleLinkMinLength ) continue;
+
+						// disregard link targets which aren't diagrams nor model elements:
+						rC = itemById(data.resourceClasses, cR['class']);
+						if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
 
 						// if the titleLink content equals a resource's title, replace it with a link:
 						if(m==ti.toLowerCase()) return '<a href="'+anchorOf(cR,hi)+'">'+$1+'</a>'
@@ -564,9 +592,9 @@ function toXhtml( data, opts ) {
 		return prp.title || itemBy(data.propertyClasses,'id',prp['class']).title
 	}
 	function elTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class,
-		// where a resource always has a statement of its own, i.e. the second clause never applies:
-		return el.title || itemBy(data.statementClasses,'id',el['class']).title
+		// get the title of a resource or statement as defined by itself or it's class;
+		// el is a statement, if it has a subject:
+		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
 	}
 	function hasContent( str ) {
 		// Check whether str has content or a reference:

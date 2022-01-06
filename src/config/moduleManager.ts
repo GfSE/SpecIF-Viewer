@@ -5,6 +5,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 interface IModule {
@@ -190,10 +191,10 @@ class Browser {
 
 var app:IApp,
 	browser:Browser,
-	i18n:any,
+	i18n: any,
+	message: any,
 	standardTypes:StandardTypes,
 	moduleManager:IModuleManager = function() {
-		"use strict";
 		/* Supports two types of modules:
 		   1. Libraries
 				- 'load()' registers and loads a file or a list of files with named javascript functions
@@ -209,7 +210,7 @@ var app:IApp,
 				- 'show()' selects the view of the specified module and hides all others.  */
 
 	var self:any = {};
-	let callWhenReady:Function,
+	let callWhenReady:Function|undefined,
 		loadPath = './';
 
 	self.init = ( appName:string, opts?:any ):void =>{
@@ -232,15 +233,38 @@ var app:IApp,
 		self.ready = [];
 
 		// init phase 1: Load the javascript routines common to all apps:
-		loadL(['bootstrap','types','i18n'], {done:init2} );
+		loadL(['bootstrap','font','types','i18n','tree'], {done:init2} );
 		return;
 
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper','helperTree','tree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
+			let modL = ['helper','helperTree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
-			loadL( modL, { done: function () { window.app = window[appName](); window.app.init() } });
+			loadL(modL,
+				{
+					done: () => {
+						// Create and initialize the app,
+						// appName is 'editSpecif' found in edit.ts, for example:
+						// @ts-ignore - index value appName as string is valid:
+						window.app = window[appName]();
+
+						// Add a global spinner with state control;
+						// all actions are deactivated as long as the app is busy.
+						// - 'pageActions' are at the top of the page and can be initiated independently of the app's state
+						// - 'contentActions' appear on the content pane (the shown tab) depending on the app's state
+						// - 'elementActions' apply to a single list entry in the content pane (tab)
+						window.app.busy = new State({
+							showWhenSet: ['#spinner'],
+							hideWhenSet: ['.pageActions', '.contentActions']
+						//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
+						});
+
+						// Make sure page divs are resized, if the browser window is changed in size:
+						bindResizer();
+					}
+				}
+			);
 		}
 		function loadL(L: string[], opts?: any): void {
 			// load the modules in hierarchy h
@@ -248,7 +272,9 @@ var app:IApp,
 			// h can be a single element, a list or a tree.
 
 			if (opts && typeof (opts.done) == "function")
-				callWhenReady = opts.done;
+				callWhenReady = opts.done
+			else
+				callWhenReady = undefined;
 
 			L.forEach((e) => { loadM(e) });
 		}
@@ -280,7 +306,7 @@ var app:IApp,
 			// specified by a name string or an object with property 'name';
 			// tr can be a single element, a list or a tree.
 		self.tree = tr;
-		//		console.debug('loadH',h,opts);
+//		console.debug('loadH',h,opts);
 		if (opts && typeof (opts.done) == "function")
 			callWhenReady = opts.done;
 		ld(tr);
@@ -314,9 +340,9 @@ var app:IApp,
 							let s = '';
 							switch (e.selectorType) {
 								case 'btns':
-									s = '<div id="' + e.selector.substring(1) + '" class="btn-group btn-group-md" ></div>';
+									s = '<div id="' + e.selector.substring(1) + '" class="btn-group" ></div>';
 									break;
-								//	case 'tabs':
+							//	case 'tabs':
 								default:
 									s = '<ul id="' + e.selector.substring(1) + '" role="tablist" class="nav nav-tabs"></ul>'
 							};
@@ -329,8 +355,7 @@ var app:IApp,
 							if (ch.view) {
 								if (!ch.selectedBy) {
 									// only one of them is present:
-									console.error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
-									return
+									throw Error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
 								};
 								// else, both 'view' and 'selectedBy' are present:
 
@@ -358,8 +383,7 @@ var app:IApp,
 							if (ch.action) {
 								if (!ch.selectedBy) {
 									// only one of them is present:
-									console.error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
-									return
+									throw Error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
 								};
 								// Add a view selector element for the child (only button is implemented):
 								id = ch.selectedBy.substring(1);	// without '#'
@@ -371,7 +395,7 @@ var app:IApp,
 										);
 										break;
 									default:
-										console.error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
+										throw Error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
 								};
 							};
 						});
@@ -445,7 +469,7 @@ var app:IApp,
 		setViewToLeaf( mo, params );
 		return;
 
-		function setViewFromRoot( le:IModule, pL ):void {
+		function setViewFromRoot( le:IModule, pL:any[] ):void {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
 				// all levels get access to the parameters besides view, if needed:
@@ -456,7 +480,7 @@ var app:IApp,
 			// set this level's view controller to choose the desired view:
 			le.parent.ViewControl.show( pL )
 		}
-		function setViewToLeaf(le: IModule, pL ):void {
+		function setViewToLeaf(le: IModule, pL: any[] ):void {
 			// step down, if there is a child view:
 				function findDefault(vL: IModule[]): IModule {
 					for( var i=vL.length-1; i>-1; i-- ) {
@@ -506,7 +530,8 @@ var app:IApp,
 			for( var i=tr.length-1; !m&&i>-1; i-- ) {
 				m = find(tr[i]);
 			};
-		} else {
+		}
+		else {
 			m = find(tr);
 		};
 		return m;
@@ -523,22 +548,28 @@ var app:IApp,
 	}
 	function loadM( mod:string ):boolean {
 		if( register( mod ) ) {
-			// Load the module, if registration went well (if it hadn't been registered before):
+			// Load the module, if registration went well:
 //			console.debug('loadM',mod);
 			switch( mod ) {
 				// 3rd party:
+		//		case "font":				getCss("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+				case "font":				getCss("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css"); setReady(mod); return true;
 				case "bootstrap":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" );
 											getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
 				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
-				case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.5.3/tree.jquery.js' ); return true;
-				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.4/FileSaver.min.js' ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js' ); return true;
+				// temporary solution with fix for buttonLeft=false:
+				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css');
+		//									getScript(loadPath + 'vendor/assets/javascripts/tree.jquery.js'); return true;
+		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.2/jqtree.css" );
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.2/tree.jquery.js' ); return true;
+				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.8/xlsx.full.min.js' ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@7.2.1/dist/bpmn-viewer.production.min.js' ); return true;
+			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js' ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@8.8.2/dist/bpmn-viewer.production.min.js' ); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
 		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
@@ -549,6 +580,7 @@ var app:IApp,
 											.then( (m)=>{ window.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
 											return true;  */
 				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@12/dist/markdown-it.min.js' )
+											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done( ()=>{ window.markdown = window.markdownit({html:true,xhtmlOut:true,breaks:true,linkify:false}) });
 											return true;
 
@@ -568,7 +600,9 @@ var app:IApp,
 				case "stdTypes":			getScript(loadPath + 'modules/stdTypes.js')
 											.done(() => { standardTypes = new StandardTypes(); });
 											return true;
-				case "helper": 				getScript( loadPath+'modules/helper.js' ); return true;
+				case "helper": 				getScript( loadPath+'modules/helper.js' )
+											.done(() => { message = new Message(); });
+											return true;
 				case "helperTree": 			getScript( loadPath+'modules/helperTree.js' ); return true;
 				case "xSpecif":				getScript( loadPath+'modules/xSpecif.js' ); return true;
 				case "cache": 				getScript( loadPath+'modules/cache.mod.js' ); return true;
@@ -588,12 +622,10 @@ var app:IApp,
 				case 'bpmn2specif':			getScript( loadPath+'vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
 				case 'archimate2specif':	getScript( loadPath+'vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
 				case 'reqif2specif':		getScript( loadPath+'vendor/assets/javascripts/reqif2specif.js' ); return true;
-				case 'checkSpecif':			getScript( 'https://specif.de/v'+CONFIG.specifVersion+'/check.js' ); return true;
 				case 'statementsGraph': 	loadM( 'graphViz' );
 											getScript( loadPath+'modules/graph.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 										//	loadM( 'dataTableButtons' );
-										//	loadM( 'zip' );  // needed for Excel export
 											getScript( loadPath+'modules/objectTable-0.93.1.js' ); return true;
 				case "serverPouch":			loadM('pouchDB');
 											getScript(loadPath + 'modules/serverPouch.mod.js'); return true; */
@@ -601,10 +633,9 @@ var app:IApp,
 				// constructors/modules:
 				case "about":				getScript( loadPath+'modules/about.mod.js' ); return true;
 				case 'importAny':			loadM( 'zip' );
+											loadM('jsonSchema');
 											getScript( loadPath+'modules/importAny.mod.js' ); return true;
-				case 'ioSpecif':			loadM( 'jsonSchema' );
-											loadM( 'checkSpecif' );
-											getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
+				case 'ioSpecif':			getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
 				case 'ioReqif': 			loadM( 'reqif2specif' );
 											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;
 		//		case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
@@ -639,34 +670,40 @@ var app:IApp,
 		//		case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
 
 				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false;
-			}
+			};
 		};
 		return false;
 
 		// Add cache-busting on version-change to all files from this development project,
 		// i.e. all those having a relative URL.
 		// see: https://curtistimson.co.uk/post/front-end-dev/what-is-cache-busting/
+		// Thus, append appVersion to all files of this particular app
+		// (third party libraries delivered by CDN have a version in the path);
+		// it must work for the regular app and the embedded app:
+		function bust(url: string): string {
+			return url + (url.startsWith(loadPath) ? "?" + CONFIG.appVersion : "");
+        }
 		function getCss( url:string ):void {
-			$('head').append( '<link rel="stylesheet" type="text/css" href="'+url+(url.slice(0,4)=='http'? "" : "?"+CONFIG.appVersion)+'" />' );
+			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
-			// with 'getScript' which is taking care of 'setReady'.
-			// Must be called explicitly, if not in conjunction with 'getScript'.
+			// with 'getScript' which is taking care of 'setReady'; 
+			// thus call 'setReady' explicitly, if not in conjunction with 'getScript'.
 		}
 		function getScript( url:string, options?:any ):JQueryXHR {
 			// see http://api.jquery.com/jQuery.getScript/
 			// Any option may be set by the caller except for dataType and cache:
-			options = $.extend( options || {}, {
+			let settings = $.extend( options || {}, {
 				dataType: "script",
 				cache: true,
-				url: url + (url.slice(0,4)=='http'? "" : "?"+CONFIG.appVersion)
+				url: bust(url)
 			});
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )
 				// 'setReady' is called by 'construct':
-				return $.ajax( options );
+				return $.ajax( settings );
 			else
 				// call 'setReady' from here:
-				return $.ajax( options ).done( ()=>{setReady(mod)} );
+				return $.ajax( settings ).done( ()=>{setReady(mod)} );
 		}
 	}
 	function setReady( mod:string ):void {
@@ -675,18 +712,20 @@ var app:IApp,
 		if( self.ready.indexOf(mod)<0 ) {
 			self.ready.push( mod );
 			console.info( mod+" loaded ("+self.ready.length+"/"+self.registered.length+")" );
-		} else {
-			throw Error("Module '"+mod+"' is set 'ready' more than once");
+		}
+		else {
+			throw Error("Module '"+mod+"' cannot be set 'ready' more than once");
 		};
 
 		if( self.registered.length === self.ready.length ) {
+			// All modules have been loaded:
 			initH( self.tree );
 			console.info( "All "+self.ready.length+" modules loaded --> ready!" );
 			if (typeof (callWhenReady) == 'function')
 				callWhenReady()
 			else
 				throw Error("No callback provided to continue after module loading.");
-		}
+		};
 	}
 }();
 class State {
@@ -708,13 +747,13 @@ class State {
 			case undefined:
 			case true:
 				this.state = true;
-				this.hideWhenSet.forEach((v:string):void =>{
+				this.hideWhenSet.forEach((v: string): void => {
 					$(v).hide();
 				});
-				this.showWhenSet.forEach((v:string):void =>{
+				this.showWhenSet.forEach((v: string): void => {
 					$(v).show();
-				})
-		}
+				});
+		};
 	}
 	reset ():void {
 				this.state = false;
@@ -728,4 +767,43 @@ class State {
 	get():boolean {
 		return this.state;
 	}
+}
+function doResize(): void {
+	// Resizes DOM-tree elements to fit in the current browser window.
+	// In effect it is assured that correct vertical sliders are shown.
+
+	// reduce by the padding; it is assumed that only padding-top is set and that it is equal for content and contentWide:
+	// consider that there may be no element of type content or contentWide at a given instant.
+	// see: https://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
+	let wH = window.innerHeight
+		|| document.documentElement.clientHeight
+		|| document.body.clientHeight,
+
+		// @ts-ignore . in this case it is defined
+		hH = $('#pageHeader').outerHeight(true)
+			// @ts-ignore . in this case it is defined
+			+ $('.nav-tabs').outerHeight(true),
+		pH = wH - hH;
+//	console.debug( 'doResize', hH, pH, vP );
+
+	$('.content').outerHeight(pH);
+	$('.contentWide').outerHeight(pH);
+	$('.pane-tree').outerHeight(pH);
+	$('.pane-details').outerHeight(pH);
+	$('.pane-filter').outerHeight(pH);
+
+	// adjust the vertical position of the contentActions:
+	$('.contentCtrl').css("top", hH);
+	/*	return
+		
+		function getNavbarHeight() {
+			return $('#navbar').css("height")
+		} */
+}
+function bindResizer(): void {
+	// adapt the display in case the window is being resized:
+	$(window).resize(() => {
+		//		console.debug('resize'); 
+		doResize();
+	});
 }

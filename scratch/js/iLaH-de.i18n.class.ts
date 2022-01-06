@@ -10,12 +10,12 @@ class LanguageTextsDe {
 	IcoUser = '<span class="glyphicon glyphicon-user"></span>';
 	IcoSpecification = '<span class="glyphicon glyphicon-book"></span>';
 //	IcoReadSpecification = '<span class="glyphicon glyphicon-eye-open"></span>';
-//	IcoUpdateSpecification = '<span class="glyphicon glyphicon-pencil"></span>';
+//	IcoUpdateSpecification = '<i class="fa fa-pencil"></i>';
 //	IcoRead = '<span class="glyphicon glyphicon-eye-open"></span>';
 	IcoImport = '<span class="glyphicon glyphicon-import"></span>';
 	IcoExport = '<span class="glyphicon glyphicon-export"></span>';
 	IcoAdminister = '<span class="glyphicon glyphicon-wrench"></span>';
-	IcoUpdate = '<span class="glyphicon glyphicon-pencil"></span>';
+	IcoUpdate = '<i class="fa fa-pencil"></i>';
 	IcoDelete = '<span class="glyphicon glyphicon-remove"></span>';
 	IcoAdd = '<span class="glyphicon glyphicon-plus"></span>';
 	IcoClone = '<span class="glyphicon glyphicon-duplicate"></span>';
@@ -212,7 +212,7 @@ class LanguageTextsDe {
 	BtnAddAttribute = '<span class="glyphicon glyphicon-plus"></span>&#160;Attribut';
 	BtnAddTypeComment = '<span class="glyphicon glyphicon-plus"></span>&#160;Klassen für Kommentare';
 	BtnClone = '<span class="glyphicon glyphicon-duplicate"></span>&#160;Klonen';
-	BtnEdit = '<span class="glyphicon glyphicon-pencil"></span>&#160;Bearbeiten';
+	BtnEdit = '<i class="fa fa-pencil"></i>&#160;Bearbeiten';
 	BtnSave = '<span class="glyphicon glyphicon-save"></span>&#160;Speichern';
 	BtnSaveRole = '<span class="glyphicon glyphicon-save"></span>&#160;Rolle anlegen';
 	BtnSaveAttr = '<span class="glyphicon glyphicon-save"></span>&#160;Attribut anlegen';
@@ -234,8 +234,8 @@ class LanguageTextsDe {
 	TabAll = '<span class="glyphicon glyphicon-list"></span>';
 	TabUserList = '<span class="glyphicon glyphicon-list"></span>&#160;Nutzer';
 	TabProjectList = '<span class="glyphicon glyphicon-list"></span>&#160;Projekte';
-//	TabProjectDetails = '<span class="glyphicon glyphicon-pencil"></span>&#160;Meta';
-	TabUserDetails = '<span class="glyphicon glyphicon-pencil"></span>&#160;Meta';
+//	TabProjectDetails = '<i class="fa fa-pencil"></i>&#160;Meta';
+	TabUserDetails = '<i class="fa fa-pencil"></i>&#160;Meta';
 	TabProjectUsers = '<span class="glyphicon glyphicon-user"></span>&#160;Nutzer';
 	TabUserProjects = '<span class="glyphicon glyphicon-book"></span>&#160;Projekte';
 	TabPermissions = '<span class="glyphicon glyphicon-lock"></span>&#160;Rechte';
@@ -730,6 +730,6 @@ class LanguageTextsDe {
 	lookup( lb:string ):string { 
 		// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
 		// for use in regular text fields.
-		return this[jsIdOf(lb)] || lb;
+		return this[lb.jsIdOf()] || lb;
 	}
 };

@@ -9,7 +9,6 @@
 moduleManager.construct({
 	name: 'about'
 }, function(self:IModule) {
-	"use strict";
 
 	self.init = function():boolean {
 //		console.debug('me.init',opts);
@@ -83,22 +82,23 @@ moduleManager.construct({
 		+		  "<li>Microsoft Edge</li>"
 		+		  "<li>Opera</li>"
 		+		  "<li>Apple Safari <em>(beware of performance issues in case of bigger models)</em></li>"
-		+		  "<li>Microsoft Internet Explorer is <em>not</em> supported</li>"
+		+		  "<li>Microsoft Internet Explorer is <em>not any more</em> supported</li>"
 		+		'</ul>'
 		+	'</div>'
 		+	'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
 		+	'<h4>Support</h4>'
 		+	'<p>'
 		+		'In case you discover a conceptual inconsistency, a software bug or a flaw in documentation,'
-		+		' we appreciate your e-mail with a concise description and test-data'
-		+		' to <a href="mailto:maintenance@specif.de">maintenance (at) specif.de</a>.'
+		+		' we appreciate if you open an <a href="https://github.com/GfSE/SpecIF-Viewer/issues" target="_blank">issue</a>'
+		+		' ... or simply send an e-mail with a concise description and test-data to'
+		+		' <a href="mailto:maintenance@specif.de">maintenance(at)specif.de</a>.'
 		+		' We are highly interested to supply high-quality concepts and useful software.'
 		+	'</p>'
 		+	'<h4>Credits and License Information</h4>'
-		+	'<p>The SpecIF web-apps have been built with the open source components listed below. These are fine pieces of software '
-		+			'and we gratefully thank the contributors for their effort. '
-	/*	+			'Our policy is to donate 12% of our revenues made with'
-		+			'the SpecIF Apps to these projects ... and we hope that our software will be useful to many people, as well.'  */
+		+	'<p>The SpecIF web-apps have been built with the open source components listed below. These are fine pieces of software'
+		+		' and we gratefully thank the contributors for their effort.'
+	/*	+		' Our policy is to donate 12% of our revenues made with'
+		+		' the SpecIF Apps to these projects ... and we hope that our software will be useful to many people, as well.'  */
 		+	'</p>'
 		+	'<table class="table table-condensed">'
 		+	'<thead>'
@@ -173,6 +173,13 @@ moduleManager.construct({
 		+				'<a href="http://www.datatables.net" target="_blank">more</a></td>'
 		+			'<td><a href="http://www.datatables.net/license/mit" target="_blank">MIT</a></td>'
 		+		'</tr>'  */
+		+		'<tr>'
+		+			'<td>Font Awesome</td>'
+		+			'<td></td>'
+		+			'<td>Font Awesome gives you scalable vector icons that can instantly be customized — size, color, drop shadow, '
+		+				'and anything that can be done with the power of CSS ... <a href="https://fontawesome.com/v4.7/" target="_blank">more</a></td>'
+		+			'<td><a href="https://fontawesome.com/v4.7/license/" target="_blank">SIL OFL 1.1</a></td>'
+		+		'</tr>'
 		+		'<tr>'
 		+			'<td>jQuery</td>'
 		+			'<td></td>'

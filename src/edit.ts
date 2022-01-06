@@ -1,6 +1,5 @@
 
 function editSpecif():IApp {
-	"use strict";
 
 	// construct main app:
 	var self:any = {};
@@ -8,18 +7,8 @@ function editSpecif():IApp {
 	self.init = function() {
 		// must set it here, because the language files must be read first:
 		document.title = self.title = i18n.LblEditor;
-		// Add a global spinner with state control;
-		// all actions are deactivated as long as the app is busy.
-		// - 'pageActions' are at the top of the page and can be initiated independently of the app's state
-		// - 'contentActions' appear on the content pane (the shown tab) depending on the app's state
-		// - 'elementActions' apply to a single list entry in the content pane (tab)
-		self.busy = new State({
-			showWhenSet: ['#spinner'],
-			hideWhenSet: ['.pageActions','.contentActions']
-		//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
-		});
 		// Define the module hierarchy; it will be used to load the modules and to control the views later on:
-		let define = {
+		self.moduleTree = {
 			// Define
 			// - name: the modules to load as specified in 'moduleManager.js'
 			// - loadAs: name for execution (addressable javascript object)
@@ -56,6 +45,8 @@ function editSpecif():IApp {
 					name: 'ioSpecif'
 				},{
 					name: 'ioArchimate'
+			/*	},{
+					name: 'ioRdf' */
 				},{
 					name: 'ioReqif'
 				},{
@@ -149,10 +140,7 @@ function editSpecif():IApp {
 		   return "You are about to leave this application - did you save any changes you made?";
 		};
 
-		// Make sure page divs are resized, if the browser window is changed in size:
-		bindResizer();
-
-		moduleManager.load( define, {done: self.show } );
+		moduleManager.load( self.moduleTree, {done: self.show } );
 	};
 	self.show = function() {
 		console.info( self.title+" started!" );
@@ -176,10 +164,11 @@ function editSpecif():IApp {
 			self.logout
 		);
 	};
-	self.export = function() {
-		if( !self.cache.selectedProject || !self.cache.selectedProject.data.id )
-			message.show( i18n.MsgNoProjectLoaded, {severity:'warning', duration:CONFIG.messageDisplayTimeShort} );
-		self.cache.selectedProject.chooseFormatAndExport();
+	self.export = function (): void {
+		if (self.cache.selectedProject && self.cache.selectedProject.isLoaded())
+			self.cache.selectedProject.chooseFormatAndExport();
+		else
+			message.show(i18n.MsgNoProjectLoaded, { severity: 'warning', duration: CONFIG.messageDisplayTimeShort });
 	};
 /*	self.updateMe = function() {
 		self.me.beginUpdate();
@@ -192,5 +181,6 @@ function editSpecif():IApp {
 		// hide the app and show the login dialog:
 		// ToDo
 	};
+	self.init();
 	return self;
 }

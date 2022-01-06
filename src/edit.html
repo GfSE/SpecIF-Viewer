@@ -10,11 +10,11 @@
 <body>
 
 <div id="app" class="noOverflow" >
-	<div id="pageHeader" >
-		<div id="logo" ></div>
-		<div id="pageSelector" class="btn-group btn-group-md pageActions" ></div>
-		<div id="spinner" ></div>
-		<div id="pageTitle" class="pageTitle" ></div>
+	<div id="pageHeader">
+		<div id="logo"></div>
+		<div id="pageSelector" class="btn-group pageActions"></div>
+		<div id="spinner"><i class="fa fa-spinner fa-spin"></i></div>
+		<div id="pageTitle" class="pageTitle"></div>
 	</div>
 </div>
 
@@ -40,7 +40,7 @@ let fileName = /.*\/([^.?#]*)(?:\.html)?(?:#.*)?$/.exec( window.location.href )[
 		document.body.appendChild(el)
 	}
 let pend=4;
-getScript( 'https://code.jquery.com/jquery-3.5.1.min.js' );
+getScript( 'https://code.jquery.com/jquery-3.6.0.min.js' );
 getScript( './config/definitions.js?'+ Date.now().toString() ); // with cache-busting
 getScript( './config/moduleManager.js?'+ Date.now().toString() );
 getScript( './'+fileName+'.js?'+ Date.now().toString() );

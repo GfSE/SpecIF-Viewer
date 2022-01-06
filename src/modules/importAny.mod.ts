@@ -4,12 +4,12 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 moduleManager.construct({
 	name: 'importAny'
 }, function(self:IModule) {
-	"use strict";
 
 	// The modes for selection when an import is encountered which is already loaded:
 	const importModes = [{
@@ -17,11 +17,11 @@ moduleManager.construct({
 			title: 'Create a new project with the given id',
 			desc: 'All types, objects, relations and hierarchies will be created as specified.',
 			label: i18n.BtnCreate
-	/*	},{
+		},{
 			id: 'clone',
 			title: 'Create a new instance of the project with a new id',
 			desc: 'There will be two projects with the existing and the new content.',
-			label: i18n.BtnClone  */
+			label: i18n.BtnClone
 		},{
 			id: 'replace',
 			title: 'Replace the project having the same id',
@@ -46,15 +46,15 @@ moduleManager.construct({
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
 			help: i18n.MsgImportSpecif,	
-			opts: { mediaTypeOf: attachment2mediaType }
+			opts: { mediaTypeOf: LIB.attachment2mediaType }
 		},{
-			id:'archimate',	
+			id:'xml',	
 			name:'ioArchimate',	
 			desc:'Archimate Open Exchange',
 			label:'Archimate®',
 //			help: i18n.MsgImportArchimate, 
 			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
-			opts: { mediaTypeOf: attachment2mediaType } 
+			opts: { mediaTypeOf: LIB.attachment2mediaType } 
 		},{
 			id:'bpmn',
 			name:'ioBpmn',
@@ -67,7 +67,7 @@ moduleManager.construct({
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
 			help: "Experimental: "+i18n.MsgImportReqif,
-			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"update", mediaTypeOf: attachment2mediaType } 
+			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: LIB.attachment2mediaType } 
 	/*	},{
             id: 'rdf',
             name: 'ioRdf',
@@ -100,24 +100,6 @@ moduleManager.construct({
 		importing = false,
 		cacheLoaded = false,
 		allValid = false;
-
-	function terminateWithSuccess():void {
-		message.show( i18n.lookup( 'MsgImportSuccessful', self.file.name ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
-		setTimeout( function() {
-				self.clear();
-				if( urlP ) delete urlP[CONFIG.keyImport];
-				// change view to browse the content:
-				moduleManager.show({ view: '#'+(urlP&&urlP[CONFIG.keyView] || CONFIG.specifications), urlParams:urlP })
-			}, 
-			CONFIG.showTimelag
-		);
-	}
-	function handleError(xhr:xhrMessage):void {
-//		console.debug( 'handleError', xhr );
-		self.clear();
-		stdError(xhr);
-		self.show();
-	}
  
 	self.clear = function():void {
 		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
@@ -144,9 +126,9 @@ moduleManager.construct({
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="formatSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" ></div>'
+				+		'<div id="formatSelector" class="btn-group" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
-				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput btn-sm" style="margin: 0 0 0.8em 0" >'
+				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput" style="margin: 0 0 0.8em 0" >'
 				+			'<span>'+i18n.BtnFileSelect+'</span>'
 				+			'<input id="importFile" type="file" onchange="'+myFullName+'.pickFiles()" />'
 				+		'</div>'
@@ -156,7 +138,7 @@ moduleManager.construct({
 			+	'<div class="fileSelect" style="display:none;" >'
 				+	'<div class="attribute-label" ></div>'	// empty column to the left
 				+	'<div class="attribute-value" >'
-				+		'<div id="modeSelector" class="btn-group btn-group-sm" style="margin: 0 0 0.4em 0" >'
+				+		'<div id="modeSelector" class="btn-group" style="margin: 0 0 0.4em 0" >'
 				+	function() {
 						let btns = '';
 						importModes.forEach( function(b) { 
@@ -195,7 +177,7 @@ moduleManager.construct({
 		return true;
 	};
 	// The module entry;
-	// called by the modules view management:
+	// called by the moduleManager:
 	self.show = function( opts:any ):void {
 		if( !opts ) opts = {};
 //		console.debug( 'import.show', opts );
@@ -208,11 +190,10 @@ moduleManager.construct({
 		
 		$('#pageTitle').html( i18n.LblImport );
 		
-			function getFormat(p:string):object|undefined {
-				// filename without extension must have at least a length of 1:
-//				console.debug('getFormat',p.indexOf('.specif'),p.indexOf('.xls'));
+			function getFormat(fN:string):object|undefined {
+//				console.debug('getFormat',fN.indexOf('.specif'),fN.indexOf('.xls'));
 				for( var i=0, I=formats.length; i<I; i++) {
-					if( p.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
+					if( fN.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
 						return formats[i];
 				};
 			}
@@ -241,7 +222,7 @@ moduleManager.construct({
 					// Assume it is an absolute or relative URL;
 					// must be either from the same URL or CORS-enabled.
 					// Import the file: 
-					httpGet({
+					LIB.httpGet({
 						// force a reload through cache-busting:
 						url: urlP[CONFIG.keyImport] + '?' + Date.now().toString(),
 						responseType: 'arraybuffer',
@@ -259,8 +240,8 @@ moduleManager.construct({
 				};
 			};
 			// otherwise:
-			self.clear();
 			message.show( i18n.lookup('ErrInvalidFileType',self.file.name), {severity:'error'} );
+			self.clear();
 			self.show();
 			return;
 		};
@@ -277,7 +258,8 @@ moduleManager.construct({
 			//	app[s.name].init( self.format.opts );
 				if( typeof(app[s.name].toSpecif)=='function' && typeof(app[s.name].verify)=='function' ) {
 					str += '<button id="formatSelector-'+s.id+'" onclick="'+myFullName+'.setFormat(\''+s.id+'\')" class="btn btn-default'+(self.format.id==s.id?' active':'')+'" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
-				} else {
+				}
+				else {
 					str += '<button disabled class="btn btn-default" data-toggle="popover" title="'+s.desc+'">'+s.label+'</button>';
 				};
 			};
@@ -312,7 +294,7 @@ moduleManager.construct({
 		let rF = textField(i18n.LblFileName,'');
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textField(i18n.LblProjectName,self.projectName,'line',myFullName+'.enableActions()');
+			rF += textField(i18n.LblProjectName, self.projectName, { typ:'line', handle:myFullName + '.enableActions()' });
 
 		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
@@ -336,6 +318,8 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
+			document.getElementById("cloneBtn").disabled =
+			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
@@ -352,9 +336,10 @@ moduleManager.construct({
 		try {
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("fileSelectBtn").disabled = st;
-		//	document.getElementById("cloneBtn").disabled = 
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
+			// @ts-ignore - .disabled is an accessible attribute
+			document.getElementById("cloneBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("updateBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
@@ -382,12 +367,13 @@ moduleManager.construct({
 			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
 				setTextValue( i18n.LblProjectName, self.projectName );
-				setTextFocus( i18n.LblProjectName );
+				setFocus( i18n.LblProjectName );
 			};
 
 			self.enableActions();
 //			console.debug('pickFiles',self.fileName(), self.projectName);
-		} else {
+		}
+		else {
 			self.clear();
 		}
 	};
@@ -415,6 +401,24 @@ moduleManager.construct({
 			rdr.readAsArrayBuffer( f );
 		}
 	};
+
+	function terminateWithSuccess(): void {
+		message.show(i18n.lookup('MsgImportSuccessful', self.file.name), { severity: "success", duration: CONFIG.messageDisplayTimeShort });
+		setTimeout(function () {
+			self.clear();
+			if (urlP) delete urlP[CONFIG.keyImport];
+			// change view to browse the content:
+			moduleManager.show({ view: '#' + (urlP && urlP[CONFIG.keyView] || CONFIG.specifications), urlParams: urlP })
+		},
+			CONFIG.showTimelag
+		);
+	}
+	function handleError(xhr: xhrMessage): void {
+//		console.debug( 'handleError', xhr );
+		self.clear();
+		LIB.stdError(xhr);
+		self.show();
+	}
 	// ToDo: construct an object ...
 	var resQ:SpecIF[] = [],
 		resIdx = 0;
@@ -431,7 +435,7 @@ moduleManager.construct({
 		else {
 			resQ.length = 0;
 			resIdx = 0;
-			handle( data, resIdx );
+			handle( data, 0 );
 		};
 		return;
 	
@@ -443,9 +447,6 @@ moduleManager.construct({
 		}
 		function handle( dta:SpecIF, idx:number ):void {
 //			console.debug('handleResult',simpleClone(dta),idx);
-			specif.check( dta, self.format.opts )
-	//		specif.check( data, self.format.opts )
-			.then( (dta:SpecIF)=>{
 			/*	//  First check if there is a project with the same id:
 					function sameId() {
 						for( var p=self.projectL.length-1; p>-1; p-- ) {
@@ -484,7 +485,7 @@ moduleManager.construct({
 									// save according to the selected mode:
 									switch( mode.id ) {
 										case 'clone': 	
-											dta.id = genID('P-');
+											dta.id = LIB.genID('P-');
 											// no break
 										case 'replace':
 											setProgress('Creating project',20); 
@@ -517,14 +518,13 @@ moduleManager.construct({
 
 				// The first object shall be imported as selected by the user --> importMode.id;
 				// all subsequent ones according to self.format.opts.multipleMode:
-				let opts:any = {};
-				if( idx>0 ) opts.mode = self.format.opts.multipleMode
-				else opts.mode = importMode.id;
+				let opts: any = self.format.opts || {};
+				opts.mode = idx<1? importMode.id : opts.multipleMode;
 
 				switch( opts.mode ) {
-					case 'clone': 	
-						dta.id = genID('P-');
-						// no break
+				/*	case 'clone': 	
+						dta.id = LIB.genID('P-');
+						// no break */
 					case 'create':
 					case 'replace':
 						opts.deduplicate = true;
@@ -535,21 +535,25 @@ moduleManager.construct({
 							.done( handleNext )
 							.fail( handleError );
 						break;
+				/*	case 'update':
+						opts.deduplicate = true;
+						opts.addGlossary = true;
+						opts.collectProcesses = false;
+						app.cache.update(dta, opts)
+							.progress(setProgress)
+							.done(handleNext)
+							.fail(handleError)
+						break; */
 					case 'adopt':
 						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = true;
-						// no break;
-					case 'update':
-						app.cache.selectedProject.update( dta, opts )
+						app.cache.selectedProject.adopt( dta, opts )
 							.progress( setProgress )
 							.done( handleNext )
 							.fail( handleError )
 				};
 				console.info(importMode.id+' project',dta.title||dta.id);
-			},
-			handleError 
-		);
 		};
 	}; 
 	function setProgress(msg:string,perc:number):void {

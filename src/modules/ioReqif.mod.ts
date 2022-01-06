@@ -1,9 +1,10 @@
 /*!	ReqIF import and export
 	Dependencies: -
-	Author: se@enso-managers.de, Berlin
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	ToDo: escapeXML the content. See toXHTML.
 	ToDo: Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
@@ -154,7 +155,7 @@ moduleManager.construct({
                 // Selected file is not zipped - it is expected to be ReqIF data in XML format.
 			    // Check if data is valid XML:
                 
-				let str = ab2str(buf);
+				let str = LIB.ab2str(buf);
                 if( validateXML(str) ) {
 					// @ts-ignore - transformReqif2Specif() is loaded at runtime
 					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
@@ -179,7 +180,7 @@ moduleManager.construct({
 		}
 	};
 		
-	self.toReqif = function( pr:SpecIF, opts? ):string {
+	self.toReqif = function( pr:SpecIF, opts?:any ):string {
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
@@ -212,8 +213,10 @@ moduleManager.construct({
 		//    - Add description properties of resources and statements
 		//    - Add hierarchy root
 
-		// Are there resources with description, but without description property?
-		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/02_Related-Terms.md
+	/*	Missing title and description properties are now added during import:
+	 	
+	 	// Are there resources with description, but without description property?
+		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
 		// In this case, add a description property to hold the description as required by ReqIF:
 			function addDescProperty( ctg:string, eC ):void {
 				// eC is a resourceClass or statementClass;
@@ -250,13 +253,13 @@ moduleManager.construct({
 						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Description",pr);
+						standardTypes.addTo("propertyClass","PC-Description",pr);
 						
 						// b. add dataType, if not yet defined:
-						addE("dataType","DT-Text",pr);
+						standardTypes.addTo("dataType","DT-Text",pr);
 						
 						// c. Add propertyClass to element class:
-						addPC( eC, "PC-Description" );
+						addPCReference( eC, "PC-Description" );
 						
 						// d. Add description property to element;
 						addP( el, {
@@ -302,13 +305,13 @@ moduleManager.construct({
 						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
 						
 						// a. add property class, if not yet defined:
-						addE("propertyClass","PC-Name",pr);
+						standardTypes.addTo("propertyClass","PC-Name",pr);
 						
 						// b. add dataType, if not yet defined:
-						addE("dataType","DT-ShortString",pr);
+						standardTypes.addTo("dataType","DT-ShortString",pr);
 						
 						// c. Add propertyClass to element class:
-						addPC( eC, "PC-Name" );
+						addPCReference( eC, "PC-Name" );
 						
 						// d. Add title property to element;
 						addP( el, {
@@ -320,7 +323,7 @@ moduleManager.construct({
 				});
 			};
 		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
-		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });
+		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });  */
 
 		// ReqIF does not allow media objects other than PNG.
 		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
@@ -344,7 +347,7 @@ moduleManager.construct({
 								for( j=L[i].properties.length-1;j>-1;j-- ) {
 									prp = L[i].properties[j];
 									// check only the property with the specified class:
-									if( prp['class']==id && isHTML(prp.value) ) return true;
+									if( prp['class']==id && LIB.isHTML(prp.value) ) return true;
 								};
 						};
 						return false;
@@ -367,7 +370,7 @@ moduleManager.construct({
 							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = "DT-FormattedText";
-							addE("dataType","DT-FormattedText",pr);
+							standardTypes.addTo("dataType","DT-FormattedText",pr);
 						};
 					});
 				};
@@ -385,11 +388,13 @@ moduleManager.construct({
 			+	'<REQ-IF xmlns="http://www.omg.org/spec/ReqIF/20110401/reqif.xsd" xmlns:'+ns+'="http://www.w3.org/1999/xhtml">'
 			+	'<THE-HEADER>'
 			+	  '<REQ-IF-HEADER IDENTIFIER="'+pr.id+'">'
-			+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
+		//	+		'<COMMENT>'+(pr.description || '')+'</COMMENT>'
+					// the project description is made available in the resource referenced by first hierarchy root:
+			+		'<COMMENT></COMMENT>'
 			+		'<CREATION-TIME>'+date+'</CREATION-TIME>'
 			+		'<REQ-IF-TOOL-ID></REQ-IF-TOOL-ID>'
-			+		'<REQ-IF-VERSION>1.0</REQ-IF-VERSION>'
-			+		'<SOURCE-TOOL-ID>'+(pr.tool || '')+'</SOURCE-TOOL-ID>'
+			+		'<REQ-IF-VERSION>1.2</REQ-IF-VERSION>'
+			+		'<SOURCE-TOOL-ID>'+(pr.generator || '')+'</SOURCE-TOOL-ID>'
 			+		'<TITLE>'+pr.title+'</TITLE>'
 			+	  '</REQ-IF-HEADER>'
 			+	'</THE-HEADER>'
@@ -507,6 +512,7 @@ moduleManager.construct({
 			h.id = hR.id;  // the resource's id takes precedence
 			h.title = hR.title || '';
 			h.description = hR.description || '';
+			// @ts-ignore - index is ok:
 			h['class'] = hC.id;
 			if( hR.properties ) h.properties = hR.properties;
 			// further down, only the resources referenced by the children will be included as OBJECT,
@@ -523,10 +529,20 @@ moduleManager.construct({
 		
 		// 4. Transform statementClasses to RELATION-TYPES:
 		if(pr.statementClasses)	
-			pr.statementClasses.forEach( function(sC) {
-				xml += '<SPEC-RELATION-TYPE '+commonAttsOf( sC )+'>'
-					+		attrTypesOf( sC )
-				    +  '</SPEC-RELATION-TYPE>';
+			pr.statementClasses.forEach(function (sC) {
+			/*	// ToDo: transform only the statementClasses
+				// - having at least one resourceClass in each subjectClasses and objectClasses
+				//   ... unless subjectClasses or objectClasses are missing.
+				// Note that both subjectClasses or objectClasses are not transformed, themselves.
+				// However, currently (2021), 
+				// - Only the "shows" statement is used to relate diagrams and resources plus statements,
+				//   this means that the statementClass titled 'SpecIF:shows' must be transformed.
+				// - There are *no* statementClasses allowing only statements as subject or object,
+				//   so there is no known statementClass which should be excluded from transformation.
+				// Therefore we do not implement the check at this point in time.  */
+				xml += '<SPEC-RELATION-TYPE ' + commonAttsOf(sC) + '>'
+					+ attrTypesOf(sC)
+					+ '</SPEC-RELATION-TYPE>';
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
@@ -549,15 +565,19 @@ moduleManager.construct({
 			+	'<SPEC-RELATIONS>';
 		
 		// 7. Transform statements to RELATIONs:
-		pr.statements.forEach( function(s) {
-			// statements do not require a title, take the class' title by default:
-			if( !s.title ) s.title = itemById( pr.statementClasses, s['class'] ).title;
-			xml += '<SPEC-RELATION '+commonAttsOf( s )+'>'
-				+		'<TYPE><SPEC-RELATION-TYPE-REF>'+s['class']+'</SPEC-RELATION-TYPE-REF></TYPE>'
-				+		attsOf( s )
-				+		'<SOURCE><SPEC-OBJECT-REF>'+s.subject+'</SPEC-OBJECT-REF></SOURCE>'
-				+		'<TARGET><SPEC-OBJECT-REF>'+s.object+'</SPEC-OBJECT-REF></TARGET>'
-				+ '</SPEC-RELATION>'
+		pr.statements.forEach(function (s) {
+			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema,
+			// or transform only statements whose subject and object relating to resources:
+			if( indexById(pr.resources, s.object)>-1 && indexById(pr.resources, s.subject)>-1 ) {
+				// SpecIF statements do not require a title, take the class' title by default:
+				if (!s.title) s.title = itemById(pr.statementClasses, s['class']).title;
+				xml += '<SPEC-RELATION ' + commonAttsOf(s) + '>'
+					+ '<TYPE><SPEC-RELATION-TYPE-REF>' + s['class'] + '</SPEC-RELATION-TYPE-REF></TYPE>'
+					+ attsOf(s)
+					+ '<SOURCE><SPEC-OBJECT-REF>' + s.subject + '</SPEC-OBJECT-REF></SOURCE>'
+					+ '<TARGET><SPEC-OBJECT-REF>' + s.object + '</SPEC-OBJECT-REF></TARGET>'
+					+ '</SPEC-RELATION>'
+			};
 		});
 		xml +=  '</SPEC-RELATIONS>'
 			+	'<SPECIFICATIONS>';
@@ -565,6 +585,7 @@ moduleManager.construct({
 		// 8. Transform hierarchies to SPECIFICATIONs:
 		pr.hierarchies.forEach( function(h) {
 			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
+				// @ts-ignore - index is ok:
 				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
 				+		attsOf( h )
 				+   	childrenOf( h )
@@ -583,10 +604,10 @@ moduleManager.construct({
 		return xml;
 
 			function dateTime( e ):string {
-				return e.changedAt || pr.changedAt || date
+				return e.changedAt || pr.createdAt || date
 			}
 			function commonAttsOf( e ):string {
-				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? stripHTML(e.title).escapeXML() : '') + '" DESC="' + (e.description ? stripHTML(e.description).escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? e.title.stripHTML().escapeXML() : '') + '" DESC="' + (e.description ? e.description.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
 			function attrTypesOf( eC ):string { 
 				// eC: resourceClass or statementClass
@@ -667,7 +688,7 @@ moduleManager.construct({
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
 						case 'xs:string':
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + stripHTML(prp.value).escapeXML()+'">'
+							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + prp.value.stripHTML().escapeXML()+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
 							break;
@@ -695,8 +716,11 @@ moduleManager.construct({
 			} 
 		); */
 							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
+							// ToDo: HTML-characters in markup links (label)[http://...] such as '&' are falsely escaped
 							let	hasDiv = RE_hasDiv.test(prp.value),
-								txt = 	escapeInner( prp.value )
+								txt =
+										// escape text except for HTML tags:
+										LIB.escapeInnerHtml(prp.value)
 										// ReqIF does not support the class attribute:
 										.replace( RE_class, function() { 
 											return '';
@@ -731,7 +755,7 @@ moduleManager.construct({
 								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
 							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
-							vL.forEach( function(v) {
+							vL.forEach( function(v:string) {
 								xml += '<ENUM-VALUE-REF>'+v+'</ENUM-VALUE-REF>'
 							});
 							xml += 			'</VALUES>'

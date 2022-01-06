@@ -1,7 +1,6 @@
 {
   "ExpandedNodes": [
     "",
-    "\\scratch\\model\\SpecIF",
     "\\src",
     "\\src\\config",
     "\\src\\config\\locales",
@@ -9,8 +8,8 @@
     "\\src\\types",
     "\\src\\vendor",
     "\\src\\vendor\\assets",
-    "\\src\\vendor\\assets\\javascripts"
+    "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\config\\definitions.ts",
+  "SelectedNode": "\\src\\vendor\\assets\\stylesheets\\SpecIF.default.css",
   "PreviewInSolutionExplorer": false
 }

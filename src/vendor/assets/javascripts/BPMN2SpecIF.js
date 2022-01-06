@@ -57,40 +57,40 @@ function BPMN2Specif( xmlString, opts ) {
 	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
-	if( !opts.strJoinExcGateway ) 
+	if (!opts.strNamespace)
+		opts.strNamespace = "bpmn:";
+	if (!opts.strNotation)
+		opts.strNotation = "BPMN 2.0 Process Diagram";
+	if( !opts.strJoinExcGateway )
 		opts.strJoinExcGateway = "Joining Exclusive Gateway";
 	if( !opts.strJoinExcGatewayDesc ) 
-		opts.strJoinExcGatewayDesc = "<p>Wait for any <em>one</em> incoming branch to continue.</p>";
+		opts.strJoinExcGatewayDesc = "Wait for any *one* incoming branch to continue.";
 	if( !opts.strJoinParGateway ) 
 		opts.strJoinParGateway = "Joining Parallel Gateway";
 	if( !opts.strJoinParGatewayDesc ) 
-		opts.strJoinParGatewayDesc = "<p>Wait for <em>all</em> incoming branches to continue.</p>";
+		opts.strJoinParGatewayDesc = "Wait for *all* incoming branches to continue.";
 	if( !opts.strJoinIncGateway ) 
 		opts.strJoinIncGateway = "Joining Inclusive Gateway";
 	if( !opts.strJoinIncGatewayDesc ) 
-		opts.strJoinIncGatewayDesc = "<p>Wait for <em>all active</em> incoming branches to continue.</p>";
+		opts.strJoinIncGatewayDesc = "Wait for *all active* incoming branches to continue.";
 	if( !opts.strForkEvtGateway ) 
 		opts.strForkEvtGateway = "Forking (exclusive) Event Gateway";
 	if( !opts.strForkEvtGatewayDesc ) 
-		opts.strForkEvtGatewayDesc = "<p>The first of the following events to occur will prevail.</p>";
+		opts.strForkEvtGatewayDesc = "The first of the following events to occur will prevail.";
 	if( !opts.strForkExcGateway ) 
 		opts.strForkExcGateway = "Forking Exclusive Gateway";
 	if( !opts.strForkExcGatewayDesc ) 
-		opts.strForkExcGatewayDesc = "<p>Evaluate the condidition and signal the respective event.</p>";
+		opts.strForkExcGatewayDesc = "Evaluate the condidition and signal the respective event.";
 	if( !opts.strForkParGateway ) 
 		opts.strForkParGateway = "Forking Parallel Gateway";
 	if( !opts.strForkParGatewayDesc ) 
-		opts.strForkParGatewayDesc = "<p>Forward control to <em>all</em> outgoing branches.</p>";
+		opts.strForkParGatewayDesc = "Forward control to *all* outgoing branches.";
 	if( !opts.strForkIncGateway ) 
 		opts.strForkIncGateway = "Forking Inclusive Gateway";
 	if( !opts.strForkIncGatewayDesc ) 
-		opts.strForkIncGatewayDesc = "<p>Evaluate all condiditions and signal the respective events.</p>";
+		opts.strForkIncGatewayDesc = "Evaluate all condiditions and signal the respective events.";
 	if( !opts.strTextAnnotation ) 
 		opts.strTextAnnotation = "Text Annotation";
-	if( !opts.strNamespace ) 
-		opts.strNamespace = "bpmn:";
-	if( !opts.strNotation ) 
-		opts.strNotation = "BPMN 2.0 Process Diagram";
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -129,10 +129,11 @@ function BPMN2Specif( xmlString, opts ) {
 		changedAt: opts.fileDate
 	}];
 
-	const nbsp = '&#160;', // non-breakable space
+	const
+	//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
 		diagramId = 'D-' + apx,
-		hId = 'BPMN-outline-' + apx,
+	//	hId = 'BPMN-outline-' + apx,
 		diagRef = '<object data="'+opts.fileName+'" type="'+opts.mimeType+'" >'+opts.fileName+'</object>';
 
 	// 1. Add the folders:
@@ -428,7 +429,8 @@ function BPMN2Specif( xmlString, opts ) {
 											}],
 											changedAt: opts.fileDate
 										})
-									} else {
+									}
+									else {
 										console.error("Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
@@ -460,14 +462,15 @@ function BPMN2Specif( xmlString, opts ) {
 											}],
 											changedAt: opts.fileDate
 										})
-									} else {
+									}
+									else {
 										console.error("Did not find a dataStore or dataObject with id '"+dSId+"'.")
 									}
 								}
 							})
 						}
 					})
-				};
+				}
 			chNs.forEach( (el)=>{
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
@@ -621,7 +624,8 @@ function BPMN2Specif( xmlString, opts ) {
 									title = opts.strJoinIncGateway;
 									desc = opts.strJoinIncGatewayDesc
 							}
-						} else { 
+						}
+						else {
 							// forking gateway (gw.outgoing.length>1):
 							switch( tag ) {
 								case 'parallelGateway':
@@ -968,13 +972,23 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		});
 		return nL;
-	};
+	}
 /*	// 10. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
 		title: model.title,
 		description: model.description,
 		class: "RC-Folder",
+		properties: [{
+			class: "PC-Name",
+			value: model.title
+		},{
+			class: "PC-Description",
+			value: model.description || ''
+		},{
+			class: "PC-Type",
+			value: opts.resClassOutline
+		}],
 		changedAt: opts.fileDate
 	}); */
 	// Add the tree:
@@ -1110,7 +1124,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: "SpecIF:shows",
 			description: "Statement: Plan shows Model-Element",
 			instantiation: ['auto'],
-			propertyClasses: ["PC-Description","PC-Type"],
+			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Diagram"],
 		//	objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
 			changedAt: opts.fileDate
@@ -1122,15 +1136,6 @@ function BPMN2Specif( xmlString, opts ) {
 			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
 			objectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
-			changedAt: opts.fileDate
-		},{
-			id: "SC-stores",
-			title: "SpecIF:stores",
-			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
-			instantiation: ['auto'],
-			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor"],
-			objectClasses: ["RC-State"],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-writes",
@@ -1160,6 +1165,15 @@ function BPMN2Specif( xmlString, opts ) {
 			objectClasses: ["RC-Actor", "RC-Event"],
 			changedAt: opts.fileDate
 	/*	},{
+			id: "SC-stores",
+			title: "SpecIF:stores",
+			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
+			instantiation: ['auto'],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: ["RC-Actor"],
+			objectClasses: ["RC-State"],
+			changedAt: opts.fileDate 
+		},{
 			id: "SC-signals",
 			title: "SpecIF:signals",
 			description: "A FMC:Actor 'signals' a FMC:Event.",
@@ -1247,7 +1261,7 @@ function BPMN2Specif( xmlString, opts ) {
 				if( L[i][p]==s ) return L[i]   // return list item
 		}
 	}
-	function indexBy( L, p, s ) {
+/*	function indexBy( L, p, s ) {
 		if( L && p && s ) {
 			// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 			// hand in property and searchTerm as string !
@@ -1255,7 +1269,7 @@ function BPMN2Specif( xmlString, opts ) {
 				if( L[i][p]==s ) return i
 		};
 		return -1
-	}
+	} */
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 	function simpleHash(str) {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};

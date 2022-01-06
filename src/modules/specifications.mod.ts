@@ -4,6 +4,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 interface ISpecs extends IModule {
@@ -14,11 +15,1177 @@ interface ISpecs extends IModule {
 	doRefresh: Function;
 	itemClicked: Function;
 }
+
+RE.titleLink = new RegExp(CONFIG.titleLinkBegin.escapeRE() + '(.+?)' + CONFIG.titleLinkEnd.escapeRE(), 'g');
+class CPropertyToShow implements Property {
+	id?: string;
+	title?: ValueElement[] | string;
+	description?: ValueElement[] | string;
+	// @ts-ignore - presence of 'class' is checked by the schema on import
+	class: KeyObject | string;
+	replaces?: string[];
+	revision?: string;
+	changedAt?: string;
+	changedBy?: string;
+	// @ts-ignore - presence of 'value' is checked by the schema on import
+	value: ValueElement[] | string;
+	constructor(prp: Property) {
+		// @ts-ignore - index is ok:
+		for (var a in prp) this[a] = prp[a];
+    }
+	isVisible(opts: any): boolean {
+		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
+			&& (CONFIG.showEmptyProperties || LIB.hasContent(languageValueOf(this.value, opts))))
+	}
+	get( opts?: any): string {
+		if (typeof (opts) != 'object') opts = {};
+		opts.lookupLanguage = true;
+		if (typeof (opts.titleLinking) != 'boolean') opts.titleLinking = false;
+		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.titleLinkTargets;
+
+		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
+		if (typeof (opts.linkifyURLs) != 'boolean') opts.linkifyURLs = false;
+		// some environments escape the tags on export, e.g. camunda / in|flux:
+		if (typeof (opts.unescapeHTMLTags) != 'boolean') opts.unescapeHTMLTags = false;
+		// markup to HTML:
+		if (typeof (opts.makeHTML) != 'boolean') opts.makeHTML = false;
+		if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false;
+
+		// Malicious content has been removed upon import ( specif.toInt() ).
+		let pData = app.cache.selectedProject.data,
+			dT = dataTypeOf(pData, this['class']),
+			ct: string;
+		//	console.debug('*',this,dT);
+		switch (dT.type) {
+			case TypeEnum.XsString:
+			case TypeEnum.XHTML:
+				// remove any leading whiteSpace:
+				ct = languageValueOf(this.value, opts).replace(/^\s+/, "");
+				if (opts.lookupValues)
+					ct = i18n.lookup(ct);
+				if (opts.unescapeHTMLTags)
+					ct = ct.unescapeHTMLTags();
+				// Apply formatting only if not listed:
+				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, pData)) < 0)
+					ct = ct.makeHTML(opts);
+				ct = this.renderFile(ct, opts);   // show the diagrams
+				ct = this.titleLinks(ct, opts);
+				break;
+			case TypeEnum.XsDateTime:
+				ct = LIB.localDateTime(this.value);
+				break;
+			case TypeEnum.XsEnumeration:
+				// Usually 'value' has a comma-separated list of value-IDs,
+				// but the filter module delivers potentially marked titles in content.
+
+				// Translate IDs to values, if appropriate (i1lookup() is included):
+				ct = enumValueOf(dT, this.value, opts);
+				break;
+			default:
+				ct = this.value;
+		};
+	/*	// Add 'double-angle quotation' in case of stereotype values:
+		if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
+			ct = '&#x00ab;'+ct+'&#x00bb;'; */
+		return ct;
+	}
+
+	private titleLinks(str: string, opts: any): string {
+		// Transform sub-strings with dynamic linking pattern to internal links.
+		// Syntax:
+		// - A resource title between CONFIG.titleLinkBegin and CONFIG.titleLinkEnd will be transformed to a link to that resource.
+		// - Icons in front of titles are ignored
+		// - Titles shorter than 4 characters are ignored
+		// - see: https://www.mediawiki.org/wiki/Help:Links
+
+		// in certain situations, just remove the dynamic linking pattern from the text:
+		if (!CONFIG.titleLinking || !opts.titleLinking)
+			// @ts-ignore - $0 is never read, but must be specified anyways
+			return str.replace(RE.titleLink, ($0, $1) => { return $1 });
+
+	/*	let date1 = new Date();
+		let n1 = date1.getTime(); */
+
+		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
+		let replaced = false;
+		do {
+			replaced = false;
+			str = str.replace(RE.titleLink,
+				// @ts-ignore - $0 is never read, but must be specified anyways
+				($0, $1) => {
+					replaced = true;
+					// disregard links being too short:
+					if ($1.length < CONFIG.titleLinkMinLength) return $1;
+					let m = $1.toLowerCase(), cR: Resource, ti: string, rC:ResourceClass, target: Resource;
+					// is ti a title of any resource?
+					app.specs.tree.iterate((nd: jqTreeNode) => {
+						cR = itemById(app.cache.selectedProject.data.resources, nd.ref);
+						// avoid self-reflection:
+						//	if(ob.id==cR.id) return true;
+						ti = elementTitleOf(cR, opts);
+						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
+
+						// disregard link targets which aren't diagrams nor model elements:
+						rC = itemById(app.cache.selectedProject.data.resourceClasses, cR['class']);
+						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
+
+						// the titleLink content equals a resource's title, remember the first occurrence:
+						target = cR;
+						return false; // found, stop searching!
+					});
+					// replace it with a link in case of a match:
+					if (target)
+						return lnk(target, $1);
+					// The dynamic link has NOT been matched/replaced, so mark it:
+					return '<span style="color:#D82020">' + $1 + '</span>'
+				}
+			)
+		} while (replaced);
+
+	/*	let date2 = new Date();
+		let n2 = date2.getTime(); 
+		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
+		return str;
+
+		function lnk(r: Resource, t: string): string {
+			//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
+			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
+		}
+	}
+	renderFile(txt: string, opts?: any): string {
+	/*	Formerly fileRef.toGUI()
+		Properly handle file references in XHTML-Text. 
+		- An image is to be displayed 
+		- a file is to be downloaded
+		- an external hyperlink is to be included
+	*/
+		if (typeof (opts) != 'object') opts = {};
+	//	if (opts.projId == undefined) opts.projId = app.cache.selectedProject.id;
+	//	if( opts.rev==undefined ) opts.rev = 0;
+		if (opts.imgClass == undefined) opts.imgClass = 'forImage'	// regular size
+
+	/*	function addFilePath( u ) {
+			if( /^https?:\/\/|^mailto:/i.test( u ) ) {
+				// don't change an external link starting with 'http://', 'https://' or 'mailto:'
+				return u;
+			};
+			// else, add relative path:
+			return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
+		}  */
+		function getType(str: string): string {
+			let t = /(type="[^"]+")/.exec(str);
+			if (Array.isArray(t) && t.length > 0) return (' ' + t[1]);
+			return '';
+		}
+		function getUrl(str: string): string | undefined {
+			let l = /data="([^"]+)"/.exec(str);  // url in l[1]
+			// return null, because an URL is expected in any case:
+			if (Array.isArray(l) && l.length > 0) return l[1]
+			//						.replace(/\\/g,'/'); // is now handled during import
+			//	return undefined
+		}
+	/*	function getPrp( pnm:string, str:string ):string|undefined {
+			// get the value of XHTML property 'pnm':
+			let re = new RegExp( pnm+'="([^"]+)"', '' ),
+				l = re.exec(str);
+			if( Array.isArray(l)&&l.length>0 ) return l[0];
+		//	return undefined
+		} */
+		function getPrpVal(pnm: string, str: string): string | undefined {
+			// get the value of XHTML property 'pnm':
+			let re = new RegExp(pnm + '="([^"]+)"', ''),
+				l = re.exec(str);
+			if (Array.isArray(l) && l.length > 0) return l[1];
+			//	return undefined
+		}
+		function makeStyle(w: string, h: string): string {
+			// compose a style property, if there are such parameters,
+			// return empty string, otherwise:
+			return (h || w) ? ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + '"' : '';
+		//	return ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + ' position:relative;"';
+		}
+
+		// Prepare a file reference for viewing and editing:
+		//		console.debug('toGUI 0: ', txt);
+		var repStrings = [];   // a temporary store for replacement strings
+
+		// 1. transform two nested objects to link+object resp. link+image:
+		txt = txt.replace(RE.tagNestedObjects,
+			// @ts-ignore - $3 is never read, but must be specified anyways
+			($0, $1, $2, $3, $4) => {       // description is $4, $3 is not used
+				let u1 = getUrl($1),  	// the primary file
+					//	t1 = getType( $1 ), 
+					//	w1 = getPrp("width", $1 ),
+					//	h1 = getPrp("height", $1 ),
+					u2 = getUrl($2), 		// the preview image
+					//	t2 = getType( $2 ),
+					w2 = getPrpVal("width", $2),
+					h2 = getPrpVal("height", $2),
+					d = $4 || u1;		// If there is no description, use the name of the link object
+
+//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
+				if (!u1) console.warn('no file found in '+$0);
+				if (!u2) console.warn('no image found in '+$0);
+			//	u1 = addFilePath(u1);
+			//	u2 = addFilePath(u2);
+
+				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1)),
+					f2 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u2));
+
+				if (f1.hasContent()) {
+
+					if (f2.hasContent()) {
+						// take f1 to download and f2 to display:
+
+//						console.debug('tagId',tagId(u2));
+						// first add the element to which the file to download will be added:
+						repStrings.push('<div id="' + tagId(u1) + '"></div>');
+						// now add the image as innerHTML:
+						f1.renderDownloadLink(
+							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
+							+ makeStyle(w2, h2)
+							+ '></div>',
+					/*		// add a button to enlarge the diagram in the top-right corner:
+							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
+							+ makeStyle(w2, h2)
+							+ '></div>',
+					 										*/
+							opts
+						);
+						// Because an image must be added after the enclosing link, for example, the timelag is increased a little:
+						f2.renderImage($.extend({}, opts, { timelag: opts.timelag * 1.2 }));
+					}
+					else {
+						// nothing to display, so ignore f2:
+
+						// first add the element to which the attachment will be added:
+						repStrings.push('<span class="' + tagId(u1) + '"></span>');
+						// now add the download link with file as data-URL:
+						f1.renderDownloadLink(d, opts);
+					};
+					return 'aBra§kadabra' + (repStrings.length - 1) + '§';
+
+				}
+				else {
+					return '<div class="notice-danger" >File missing: ' + d + '</div>'
+				};
+			}
+		);
+//		console.debug('fileRef.toGUI 1: ', txt);
+
+		// 2. transform a single object to link+object resp. link+image:
+		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
+			// @ts-ignore - $2 is never read, but must be specified anyways
+			($0, $1, $2, $3) => {
+			//	var pairedImgExists = ( url )=>{
+			//		// ToDo: check actually ...
+			//		return true
+			//	};
+
+				let u1 = getUrl($1),
+					t1 = getType($1),
+					w1 = getPrpVal("width", $1),
+					h1 = getPrpVal("height", $1);
+
+				let e = u1? u1.fileExt() : undefined;
+				if (!e) return $0     // no change, if no extension found
+
+				// $3 is the description between the tags <object></object>:
+				let d = $3 || u1,
+					hasImg = false;
+				e = e.toLowerCase();
+//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
+
+			//	u1 = addFilePath(u1);
+				if (!u1) console.warn('no image or link found in '+$0);
+				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
+
+				// sometimes the application files (BPMN or other) have been replaced by images;
+				// this is for example the case for *.specif.html files:
+				if (!f1.hasContent() && u1 && CONFIG.applExtensions.indexOf(e) > -1) {
+					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
+						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
+						f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
+					};
+				};
+				// ... cannot happen any more now, is still here for compatibility with older files only.
+
+				if (CONFIG.imgExtensions.indexOf(e) > -1 || CONFIG.applExtensions.indexOf(e) > -1) {
+					// it is an image, show it:
+					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
+//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
+					if (f1.hasContent()) {
+						hasImg = true;
+						// Create the DOM element to which the image will be added:
+						//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
+						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
+							+ makeStyle(w1, h1)
+							+ '></div>';
+				/*		// add a button to enlarge the diagram in the top-right corner:
+				 		d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
+							+ makeStyle(w1, h1)
+							+ '><button class="btn btn-success" style="position:absolute;right:0;z-index:900;" >N</button></div>'; */
+//						console.debug('img opts',f1,opts);
+						// Add the image as innerHTML:
+						f1.renderImage(opts);
+					}
+					else {
+						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
+					};
+				}
+				else if (CONFIG.officeExtensions.indexOf(e) > -1) {
+					// it is an office file, show an icon plus filename:
+					if (f1.hasContent()) {
+						hasImg = true;
+
+						// Add the download link:
+						if (app.embedded)
+							// In case of *.specif.html the icons are not available:
+							f1.renderDownloadLink(d, opts);
+						else
+							// download link with icon indicating the file-type:
+							f1.renderDownloadLink('<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" alt="[ ' + e + ' ]" />', opts);
+
+						// Create the DOM element to which the attachment will be added:
+						d = '<div id="' + tagId(u1) + '" ' + CONFIG.fileIconStyle + '></div>';
+					}
+					else {
+						d = '<div class="notice-danger" >File missing: ' + d + '</div>'
+					};
+				}
+				else {
+				/*	switch (e) {
+						case 'ole':
+							// It is an ole-file, so add a preview image;
+							// in case there is no preview image, the browser will display d holding the description
+							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
+							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
+							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
+							if (f1.hasContent()) {
+								hasImg = true;
+							//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
+								d = '<img src="' + u1.fileName() + '.png" type="image/png" alt="' + d + '" />';
+							}
+							else {
+								d = '<div class="notice-danger" >File missing: ' + d + '</div>'
+							};
+							// ToDo: Offer a link for downloading the file
+							break;
+						default:  */
+							// last resort is to take the filename:
+							d = '<span>' + d + '</span>';
+						// ToDo: Offer a link for downloading the file
+				//	};
+				};
+
+				// finally add the link and an enclosing div for the formatting:
+				// avoid that a pattern is processed twice.
+
+				// insert a placeholder and replace it with the prepared string at the end ...
+				if (hasImg)
+					repStrings.push(d)
+				else
+					repStrings.push('<a href="' + u1 + '"' + t1 + ' >' + d + '</a>');
+
+				return 'aBra§kadabra' + (repStrings.length - 1) + '§';
+			}
+		);
+//		console.debug('fileRef.toGUI 2: ', txt);
+
+		// 3. process a single link:
+		txt = txt.replace(RE.tagA,
+			($0, $1, $2) => {
+				var u1 = getPrpVal('href', $1),
+					e = u1? u1.fileExt() : undefined;
+//				console.debug( $1, $2, u1, e );
+				if (!e) return $0     // no change, if no extension found
+
+				/*	if( /(<object|<img)/g.test( $2 ) ) 
+						return $0;		// no change, if an embedded object or image */
+
+				if (CONFIG.officeExtensions.indexOf(e.toLowerCase()) < 0)
+					return $0;	// no change, if not an office file
+
+				// it is an office file, add an icon:
+				var t1 = getType($1);
+				if (!$2) {
+					var d = u1.split('/');  // the last element is a filename with extension
+					$2 = d[d.length - 1]   // $2 is now the filename with extension
+				};
+				//				u1 = addFilePath(u1);
+
+				// add an icon:
+				e = '<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" />'
+
+				// finally returned the enhanced link:
+				return ('<a href="' + u1 + '" ' + t1 + ' target="_blank" >' + e + '</a>')
+			}
+		);
+//		console.debug('fileRef.toGUI 3: ', txt);
+
+		// Now, at the end, replace the placeholders with the respective strings,
+		txt = txt.replace(/aBra§kadabra([0-9]+)§/g,
+			// @ts-ignore - $0 is never read, but must be specified anyways
+			($0, $1) => {
+				return repStrings[$1]
+			});
+//		console.debug('fileRef.toGUI result: ', txt);
+		return txt
+	}
+}
+class CResourceToShow {
+	id: string;
+	class: ResourceClass; // in contrast to the SpecIF schema, this is the class itself and not it's id
+	isHeading: boolean;
+	order: string;
+	revision?: string;
+	replaces?: string[];
+	title: CPropertyToShow;
+	descriptions: CPropertyToShow[];
+	other: CPropertyToShow[];
+	changedAt: string;
+	changedBy?: string;
+	constructor(el: Resource) {
+		// add missing (empty) properties and classify properties into title, descriptions and other;
+		// for resources.
+		// ToDo: Basically it can also be used for Statements ... 
+		let pData = app.cache.selectedProject.data;
+		this.id = el.id;
+		this['class'] = itemById(pData.resourceClasses, el['class']) as ResourceClass;
+		this.isHeading = false; // will be set further down if appropriate
+		this.revision = el.revision;
+		this.order = el.order;
+		this.revision = el.revision;
+		this.replaces = el.replaces;
+		this.changedAt = el.changedAt;
+		this.changedBy = el.changedBy;
+		this.descriptions = [];
+		// create a new list by copying the elements (do not copy the list ;-):
+		this.other = this.normalizeProps(el, pData);
+
+		// Now, all properties are listed in this.other;
+		// in the following, the properties used as title and description will be identified
+		// and moved from this.other to this.title resp. this.descriptions:
+
+		// a) Find and set the configured title:
+		let a = titleIdx(this.other, pData);
+		if (a > -1) {  // found!
+			this.title = this.other[a];
+			// remove title from other:
+			this.other.splice(a, 1);
+
+			// Special case:
+			// - if the current instance does not have a title property
+			// - but it's class defines one,
+			// the title would get lost.
+			// Thus, the instance title is copied to the title property,
+			// which has been newly created by normalizeProps():
+			if (!this.title.value && el.title)
+				this.title.value = el.title;
+	/*	}
+		else {
+			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+			// there is no title propertyClass;
+			// then create a property without class.
+			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
+		};
+		this.isHeading = this['class'].isHeading
+			|| CONFIG.headingProperties.indexOf(this['class'].title) > -1
+			|| CONFIG.headingProperties.indexOf(this.title.title) > -1;
+
+		// b) Check the configured descriptions:
+		// We must iterate backwards, because we alter the list of other.
+		// ToDo: use this.other.filter()
+		for (a = this.other.length - 1; a > -1; a--) {
+			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], pData)) > -1) {
+				// To keep the original order of the properties, the unshift() method is used.
+				this.descriptions.unshift(this.other[a]);
+				this.other.splice(a, 1);
+			};
+		};
+
+	/*	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+		//    there is no description propertyClass;
+		if (this.descriptions.length < 1 && el.description )
+			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
+//		console.debug( 'classifyProps 2', simpleClone(this) );
+	}
+	private normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
+		// el: original instance (resource or statement)
+		// Create a list of properties in the sequence of propertyClasses of the respective class.
+		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+		// Assumption: Property classes are unique!
+
+		// check uniqueness of property classes:
+		if (el.properties) {
+			let cL: string[] = [],
+				pC: string;
+			el.properties.forEach((p: Property) => {
+				pC = p['class'];
+				if (cL.indexOf(pC)<0)
+					cL.push(pC);
+				else
+					console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
+			});
+		};
+
+		let p: Property,
+			pCs: string[],
+			nL: CPropertyToShow[] = [],
+			// iCs: instance class list (resourceClasses or statementClasses),
+			// the existence of subject (or object) let's us recognize that it is a statement:
+		//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
+			iCs = dta.resourceClasses,
+			iC = itemById(iCs, el['class']);
+		// build a list of propertyClass identifiers including the extended class':
+		pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
+		pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
+		// add the properties in sequence of the propertyClass identifiers:
+		pCs.forEach((pCid: string) => {
+			// skip hidden properties:
+			if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
+			// assuming that the property classes are unique:
+			p = itemBy(el.properties, 'class', pCid)
+				|| createProp(dta.propertyClasses, pCid);
+			if (p) {
+				// by default, use the propertyClass' title:
+				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
+				// An input data-set may have titles which are not from the SpecIF vocabulary;
+				// replace the result with a current vocabulary term:
+				p.title = vocabulary.property.specif(propTitleOf(p, dta));
+				nL.push(new CPropertyToShow(p));
+			}
+		});
+//		console.debug('normalizeProps result',simpleClone(nL));
+		return nL; // normalized property list
+	}
+	isEqual(res: Resource): boolean {
+		return res && this.id == res.id && this.changedAt == res.changedAt;
+    }
+	isUserInstantiated(): boolean {
+		return (!Array.isArray(this['class'].instantiation)
+			|| this['class'].instantiation.indexOf(Instantiation.User) > -1)
+	}
+	private renderAttr(lbl: string, val: string, cssCl: string): string {
+		// show a string value with or without label:
+		// ToDo: Create a class for attributes ..
+		cssCl = cssCl ? ' ' + cssCl : '';
+		if (typeof (val) == 'string')
+			val = LIB.noCode(val)
+		else val = '';
+
+		// assemble a label:value pair resp. a wide value field for display:
+		val = (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >' : '<div class="attribute-wide" >') + val + '</div>';
+		return '<div class="attribute' + cssCl + '">' + val + '</div>';
+	}
+	renderTitle(opts?: any): string {
+		//	console.debug('renderTitle',simpleClone(clsPrp),opts);
+		if (!this.title || !this.title.value) return '';
+		// Remove all formatting for the title, as the app's format shall prevail.
+		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
+		let ti = languageValueOf(this.title.value, opts);
+		if (this.isHeading) {
+			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
+			// whereas the individual elements may mean the vocabulary term as such:
+			if (opts && opts.lookupTitles)
+				ti = i18n.lookup(ti);
+			// it is assumed that a heading never has an icon:
+			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>';
+		};
+		// else: is not a heading:
+		// take title and add icon, if configured:
+		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this['class'].icon) : ti) + '</div>';
+	}
+	renderChangeInfo(): string {
+		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
+		var chI = '';
+		switch (app.specs.selectedView()) {
+			case '#' + CONFIG.objectRevisions:
+				chI = this.renderAttr(i18n.LblRevision, this.revision, 'attribute-condensed');
+				// no break
+			case '#' + CONFIG.comments:
+				chI += this.renderAttr(i18n.LblModifiedAt, LIB.localDateTime(this.changedAt), 'attribute-condensed')
+					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
+			//	default: no change info!			
+		};
+		return chI;
+	}
+	listEntry(options?: any): string {
+		if (!this.id) return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
+		// Create HTML for a list entry:
+
+		var opts = options ? simpleClone(options) : {};
+		opts.lookupLanguage = true;
+		opts.targetLanguage = browser.language;
+		opts.titleLinking
+			= opts.clickableElements
+			= opts.linkifyURLs
+			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].indexOf(app.specs.selectedView()) > -1;
+		// ToDo: Consider to make it a user option:
+		opts.unescapeHTMLTags = true;
+		// ToDo: Make it a user option:
+		opts.makeHTML = true;
+		opts.lookupValues = true;
+		opts.lookupTitles = true;
+		opts.rev = this.revision;
+
+		var rO = '<div class="listEntry">'
+			+ '<div class="content-main">';
+
+		// 1 Fill the main column:
+		// 1.1 The title:
+		switch (app.specs.selectedView()) {
+			case '#' + CONFIG.objectFilter:
+			case '#' + CONFIG.objectList:
+				// move item to the top, if the title is clicked:
+				rO += '<div onclick="app.specs.itemClicked(\'' + this.id + '\')">'
+					+ this.renderTitle(opts)
+					+ '</div>';
+				break;
+			default:
+				rO += this.renderTitle(opts);
+		};
+
+		// 1.2 The description properties:
+		this.descriptions.forEach((prp: CPropertyToShow): void => {
+			if (prp.isVisible(opts)) {
+				rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
+			}
+		});
+		rO += '</div>'  // end of content-main
+			+ '<div class="content-other">';
+
+		/*	// 2 Add elementActions:
+			switch( app.specs.selectedView() ) {
+				case '#'+CONFIG.comments:
+					rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
+					if( this.del )
+						rO +=	'<button onclick="app.specs.delComment(\''+this.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
+					else
+						rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
+					rO +=	'</div>'
+			//		break;
+			//	default:
+					// nothing, so far
+			}; */
+
+		// 3 Fill a separate column to the right
+		// 3.1 The remaining properties:
+		this.other.forEach((prp: CPropertyToShow): void => {
+			if (prp.isVisible(opts)) {
+				rO += this.renderAttr(titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
+			};
+		});
+		// 3.2 The type info:
+		// 3.3 The change info depending on selectedView:
+		rO += this.renderChangeInfo();
+		rO += '</div>'	// end of content-other
+			+ '</div>';  // end of listEntry
+
+		return rO;  // return rendered resource for display
+	}
+/*	self.details = function() {
+		// for the list view, where title and text are shown in the main column and the others to the right.
+		if( !this.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
+	
+		// Create HTML for a detail view:
+		// 1 The title:
+		var rO = this.renderTitle( opts );
+		// 2 The description properties:
+		this.descriptions.forEach( function(prp) {
+//			console.debug('details.descr',prp.value);
+			if( LIB.hasContent(prp.value) ) {
+				var opts = {
+				//		titleLinking: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
+						titleLinking: true,
+						clickableElements: true,
+						linkifyURLs: true
+					};
+				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
+			}
+		});
+		// 3 The remaining properties:
+		this.other.forEach( function( prp ) {
+//			console.debug('details.other',prp.value);
+			rO += this.renderAttr( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
+		});
+		// 4 The type info:
+		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
+		// 5 The change info depending on selectedView:
+		rO += this.renderChangeInfo();
+//		console.debug( 'CResource.details', self.toShow, rO );
+		return rO  // return rendered resource for display
+	};  */
+}
+
+/*	function deformat( txt ) {
+		// Remove all HTML-tags from 'txt',
+		// but keep all marked deletions and insertions (as prepared be diffmatchpatch):
+		// ToDo: consider to use this function only in the context of showing revisions and filter results,
+		// 		 ... and to use a similar implementation which does not save the deletions and insertions, otherwise.
+		let mL = [], dL = [], iL = [];
+		txt = txt.replace(/<del[^<]+<\/del>/g, function($0) {
+										dL.push($0);
+										return 'hoKu§pokus'+(dL.length-1)+'#'
+									});
+		txt = txt.replace(/<ins[^<]+<\/ins>/g, function($0) {
+										iL.push($0);
+										return 'siM§alabim'+(iL.length-1)+'#'
+									});
+		txt = txt.replace(/<mark[^<]+<\/mark>/g, function($0) {
+										mL.push($0);
+										return 'abRakad@bra'+(mL.length-1)+'#'
+									});
+		// Remove all formatting for the title, as the app's format shall prevail:
+		txt = stripHTML(txt);
+		// Finally re-insert the deletions and insertions with their tags:
+		// ToDo: Remove any HTML-tags within insertions and deletions
+		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
+		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
+		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
+		return txt
+	}  */
+class CResourcesToShow {
+	private opts = {
+		lookupTitles: true,
+		lookupLanguage: true,
+		targetLanguage: browser.language
+	};
+	values: CResourceToShow[];
+
+	constructor() {
+		this.values = [];
+	}
+	push(r: Resource): boolean {
+		// append a resource to the list:
+		this.values.push(new CResourceToShow(r));
+		return true;  // a change has been effected
+	}
+	append(rL: Resource[]): void {
+		// append a list of resources:
+		rL.forEach((r) => {
+			this.push(r);
+		});
+		return true;  // a change has been effected
+	}
+	set(idx:number, r: Resource): boolean {
+		if (this.values[idx].isEqual(r)) {
+			// assume that no change has happened:
+//			console.debug('object.set: no change');
+			return false;  // no change
+		};
+		this.values[idx] = new CResourceToShow(r);
+		return true;		// has changed
+	}
+	update(rL: Resource[]): boolean {
+		// update this.values with rL and return 'true' if a change has been effected:
+		if (rL.length == this.values.length) {
+			// there is a chance no change is necessary:
+			var chg = false;
+			for (var i = rL.length - 1; i > -1; i--)
+				// set() must be on the left, so that it is executed for every list item:
+				chg = this.set(i,rL[i]) || chg;
+			return chg;
+		}
+		else {
+			// there will be a change anyways:
+			this.values.length = 0;
+			this.append(rL);
+			return true;
+		};
+	}
+	updateSelected(r: Resource): boolean {
+		// update the first item (= selected resource), if it exists, or create it;
+		// return 'true' if a change has been effected:
+		if (this.values.length > 0)
+			return this.set(0,r);
+		else
+			return this.push(r);
+	}
+	selected(): CResourceToShow {
+		// return the selected resource; it is the first in the list by design:
+		return this.values[0];
+	}
+	exists(rId: string): boolean {
+		for (var i = this.values.length - 1; i > -1; i--)
+			if (this.values[i].id == rId) return true;
+		return false;
+	}
+	render(): string {
+		// generate HTML representing the resource list:
+		if (this.values.length < 1)
+			return '<div class="notice-default" >' + i18n.MsgNoMatchingObjects + '</div>';
+		// else:
+		var rL = '';
+		// render list of resources
+		this.values.forEach((v: CResourceToShow) => {
+			rL += v ? v.listEntry(this.opts) : '';
+		});
+		return rL;	// return rendered resource list
+	}
+}
+class CFileWithContent implements IFileWithContent {
+	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
+	changedAt: string;
+	changedBy?: string;
+	description?: ValueElement[] | string;
+	// @ts-ignore - presence of 'id' is checked by the schema on import
+	id: string;
+	replaces?: string[];
+	revision?: string;
+	// @ts-ignore - presence of 'title' is checked by the schema on import
+	title: ValueElement[] | string;
+	// @ts-ignore - presence of 'type' is checked by the schema on import
+	type: string;
+	blob?: Blob;
+	dataURL?: string;
+	constructor(f: IFileWithContent) {
+		// @ts-ignore - index is ok:
+		for (var a in f) this[a] = f[a];
+    }
+	hasBlob(): boolean {
+		return this.blob && this.blob.size > 0;
+	}
+	hasDataURL(): boolean {
+		return this.dataURL && this.dataURL.length > 0;
+	}
+	hasContent(): boolean {
+		return this.hasBlob() || this.hasDataURL();
+	}
+	renderDownloadLink(txt: string, opts?: any): void {
+		function addL(r: string, fTi: string, fTy: string): void {
+			// add link with icon to DOM using an a-tag with data-URL:
+			document.getElementById(tagId(fTi)).innerHTML =
+				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + txt + '</a>';
+		}
+
+		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
+		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts.timelag) != 'number') opts.timelag = CONFIG.imageRenderingTimelag;
+
+		// Add the download link of the attachment as innerHTML:
+		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
+		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
+		if (this.hasBlob())
+			LIB.blob2dataURL(this, addL, opts.timelag);
+		else
+			// assuming that dataURL has content:
+			setTimeout(() => { addL(this.dataURL,this.title,this.type) }, opts.timelag);
+	}
+	renderImage(opts?: any): void {
+
+		// Attention: the element with id 'this.id' has not yet been added to the DOM when execution arrives here;
+		// increase the timelag between building the DOM and rendering the images, if necessary.
+		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts.timelag) != 'number') opts.timelag = CONFIG.imageRenderingTimelag;
+
+		if (!this.blob && !this.dataURL) {
+			setTimeout(() => {
+				Array.from(document.getElementsByClassName(tagId(this.title)),
+					(el) => { el.innerHTML = '<div class="notice-danger" >Image missing: ' + this.title + '</div>' }
+				);
+			}, opts.timelag)
+			return;
+		};
+		// ToDo: in case of a server, the blob itself must be fetched first ...
+
+		if (this.dataURL) {
+			setTimeout(() => {
+				// add image to DOM using an image-tag with data-URI:
+				Array.from(document.getElementsByClassName(tagId(this.title)),
+					(el) => {
+						let ty = /data:([^;]+);/.exec(this.dataURL);
+						el.innerHTML = '<object data="' + this.dataURL
+							+ '" type="' + (ty[1] || this.type) + '"'
+							/*		+ (opts.w ? ' ' + opts.w : '')
+									+ (opts.h ? ' ' + opts.h : '') */
+							+ ' >' + this.title + '</object>';
+					});
+			}, opts.timelag);
+			return;
+		};
+		// else: the data is a blob
+
+		switch (this.type) {
+			case 'image/png':
+			case 'image/x-png':
+			case 'image/jpeg':
+			case 'image/jpg':
+			case 'image/gif':
+				this.showRaster(opts);
+				break;
+			case 'image/svg+xml':
+				this.showSvg(opts);
+				break;
+			case 'application/bpmn+xml':
+				this.showBpmn(opts);
+				break;
+			default:
+				console.warn('Cannot show diagram ' + this.title + ' of unknown type: ', this.type);
+		};
+	//	return undefined;
+	// end of renderImage()
+	};
+	private showRaster(opts: any): void {
+		LIB.blob2dataURL(this, (r: string, fTi: string, fTy: string): void => {
+			// add image to DOM using an image-tag with data-URI:
+			Array.from(document.getElementsByClassName(tagId(fTi)),
+				(el) => {
+					el.innerHTML = '<img src="' + r
+						+ '" type="' + fTy + '"'
+						/*		+ (opts.w ? ' ' + opts.w : '')
+								+ (opts.h ? ' ' + opts.h : '') */
+						+ ' alt="' + fTi + '" />';
+					/*	// set a grey background color for images with transparency:
+						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
+				}
+			);
+		}, opts.timelag);
+	}
+	private showSvg(opts: any): void {
+		// Read and render SVG:
+		LIB.blob2text(this, displaySVGeverywhere, opts.timelag)
+		return;
+
+		function itemBySimilarId(L: Item[], id: string): Item | undefined {
+			// return the list element having an id similar to the specified one:
+			id = id.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				// is id a substring of L[i].id?
+				// @ts-ignore - L[i] does exist, if execution gets here
+				if (L[i].id.indexOf(id) > -1) return L[i];   // return list item
+			//	return undefined
+		}
+		function itemBySimilarTitle(L: Item[], ti: string): Item|undefined {
+			// return the list element having a title similar to the specified one:
+			ti = ti.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				// is ti a substring of L[i].title?
+				// @ts-ignore - L[i] does exist, if execution gets here
+				if (L[i].title.indexOf(ti) > -1) return L[i];   // return list item
+			//	return undefined
+		}
+		//	function displaySVGeverywhere(r,fTi,fTy) {
+		function displaySVGeverywhere(r: string, fTi: string): void {
+			// Load pixel images embedded in SVG,
+			// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
+			// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
+			// see: https://css-tricks.com/probably-dont-base64-svg/
+			// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
+			let svg = {
+					// the locations where the svg shall be added:
+					locs: document.getElementsByClassName(tagId(fTi)),
+					// the SVG image with or without embedded images:
+					img: r
+				},
+				dataURLs:string[] = [],	// temporary list of embedded images
+				// RegExp for embedded images,
+				// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
+				rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
+				ef: CFileWithContent,
+				mL:string[],
+				pend = 0;		// the count of embedded images waiting for transformation
+
+			// process all image references within the SVG image one by one:
+			// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
+			while ((mL = rE.exec(r)) != null) {
+				// skip all images already provided as data-URLs:
+				if (mL[2].startsWith('data:')) continue;
+				// avoid transformation of redundant images:
+				if (indexById(dataURLs, mL[2]) > -1) continue;
+				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
+				if (ef && ef.blob) {
+					pend++;
+					//							console.debug('SVG embedded file',mL[2],ef,pend);
+					// transform file to data-URL and display, when done:
+					LIB.blob2dataURL(ef, (r: string, fTi: string): void => {
+						dataURLs.push({
+							id: fTi,
+							val: r
+						});
+						//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
+						if (--pend < 1) {
+							// all embedded images have been transformed,
+							// replace references by dataURLs and add complete image to DOM:
+							// @ts-ignore - $0 is never read, but must be specified anyways
+							svg.img = svg.img.replace(rE, ($0, $1, $2, $3) => {
+								let dURL = itemBySimilarId(dataURLs, $2);
+								// replace only if dataURL is available:
+								if (dURL) return $1 + dURL.val + $3
+								else return '';
+							});
+							displayAll(svg);
+						};
+					});
+				};
+			};
+			if (pend < 1) {
+				// there are no embedded images, so display right away:
+				displayAll(svg);
+			};
+			return;
+
+			function displayAll(svg): void {
+				Array.from(svg.locs,
+					(loc) => {
+						loc.innerHTML = svg.img;
+						if (opts && opts.clickableElements) registerClickEls(loc)
+					}
+				);
+			}
+		}
+		// see http://tutorials.jenkov.com/svg/scripting.html
+		function registerClickEls(svg): void {
+			if (!CONFIG.clickableModelElements || CONFIG.clickElementClasses.length < 1) return;
+			//					console.debug('registerClickEls',svg);
+			addViewBoxIfMissing(svg);
+
+			// now collect all clickable elements:
+			svg.clkEls = [];
+			// For all elements in CONFIG.clickElementClasses:
+			// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
+			// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
+			//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
+			// 	Array.from() converts the HTMLCollection to a regular array, 
+			//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
+			CONFIG.clickElementClasses.forEach((cl:string) => {
+				svg.clkEls = svg.clkEls.concat(Array.from(svg.getElementsByClassName(cl)));
+			});
+			//					console.debug(svg.clkEls, typeof(svg.clkEls))
+			svg.clkEls.forEach((clkEl) => {
+				// set cursor for clickable elements:
+				clkEl.setAttribute("style", "cursor:pointer;");
+
+				// see https://www.quirksmode.org/js/events_mouse.html
+				// see https://www.quirksmode.org/dom/events/
+				clkEl.addEventListener("dblclick",
+					function () {
+						// ToDo: So far, this only works with ARCWAY generated SVGs.
+						let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
+						// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
+						eId = correspondingPlan(eId);
+						// delete the details to make sure that images of the click target are shown,
+						// otherwise there will be more than one image container with the same id:
+						$("#details").empty();
+						app.specs.showTree.set();
+						// jump to the click target:
+						app.specs.tree.selectNodeByRef(eId, true);  // true: 'similar'; id must be a substring of nd.ref
+						// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
+						document.getElementById(CONFIG.objectList).scrollTop = 0;
+					}
+				);
+
+				// Show the description of the element under the cursor to the left:
+				clkEl.addEventListener("mouseover",
+					function () {
+						//								console.debug(evt,this,$(this));
+						// ToDo: So far, this only works with ARCWAY generated SVGs.
+						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
+						let eId = this.className.baseVal.split(' ')[1],		// id is second class
+							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
+							ti = languageValueOf(clsPrp.title.value),
+							dsc = '';
+						clsPrp.descriptions.forEach((d) => {
+							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
+							dsc += d.get({ unescapeHTMLTags: true, makeHTML: true })
+						});
+						if (dsc.stripCtrl().stripHTML()) {
+							// Remove the dynamic linking pattern from the text:
+							$("#details").html('<span style="font-size:120%">'
+								+ (CONFIG.addIconToInstance ? LIB.addIcon(ti, clsPrp['class'].icon) : ti)
+								+ '</span>\n'
+								+ dsc);
+							app.specs.showTree.set(false);
+						}
+					}
+				);
+				clkEl.addEventListener("mouseout",
+					function () {
+						//	evt.target.setAttribute("style", "cursor:default;"); 
+						$("#details").empty();
+						app.specs.showTree.set();
+					}
+				);
+			});
+			return svg;
+
+			function correspondingPlan(id: string): string {
+				// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
+				// This routine checks whether there is a plan with the same name to show that plan instead of the element.
+				if (CONFIG.selectCorrespondingDiagramFirst) {
+					// replace the id of a resource by the id of a diagram carrying the same title:
+					let cacheData = app.cache.selectedProject.data,
+						ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
+						rT: ResourceClass;
+					for (var i = cacheData.resources.length - 1; i > -1; i--) {
+						rT = itemById(cacheData.resourceClasses, cacheData.resources[i]['class']);
+						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
+						// else, it is a resource representing a diagram:
+						if (elementTitleOf(cacheData.resources[i], opts) == ti) {
+							// found: the diagram carries the same title 
+							if (app[CONFIG.objectList].resources.selected()
+								&& app[CONFIG.objectList].resources.selected().id == cacheData.resources[i].id)
+								// the searched plan is already selected, thus jump to the element: 
+								return id;
+							else
+								return cacheData.resources[i].id;	// the corresponding diagram's id
+						};
+					};
+				};
+				return id;	// no corresponding diagram found
+			}
+			// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+			// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
+			// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
+			// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
+			function addViewBoxIfMissing(svg): void {
+				let el;
+				for (var i = 0, I = svg.childNodes.length; i < I; i++) {
+					el = svg.childNodes[i];
+					//							console.debug('svg',svg,el,el.outerHTML);
+					// look for '<svg .. >' tag with its properties, often but not always the first child node:
+					if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
+						if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
+
+						// no viewbox property, so add it:
+						let w = el.getAttribute('width').replace(/px$/, ''),
+							h = el.getAttribute('height').replace(/px$/, '');
+						/*	// get rid of 'px':
+							// ToDo: perhaps this is a little too simple ...
+							if( w.endsWith('px') ) w = w.slice(0,-2);
+							if( h.endsWith('px') ) h = h.slice(0,-2); */
+						el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
+						return;
+					};
+				};
+			}
+		}
+	}
+	private showBpmn(opts: any): void {
+		// Read and render BPMN:
+		LIB.blob2text(this, (t: string, fTi: string) => {
+			bpmn2svg(t)
+				.then(
+					(result) => {
+//						console.debug('SVG',result);
+						Array.from(document.getElementsByClassName(tagId(fTi)),
+							(el) => { el.innerHTML = result.svg }
+						);
+					},
+					(err) => {
+						console.error('BPMN-Viewer could not deliver SVG', err);
+					}
+				);
+		}, opts.timelag);
+	}
+}
 // Construct the specifications controller:
 moduleManager.construct({
 	name: CONFIG.specifications
-}, (self: ISpecs):ISpecs =>{
-	"use strict";
+}, (self: ISpecs) =>{
 	// This module and view is responsible for the selection tabs and the navigation tree which are shared by several sub-views.
 	
 	let myName = self.loadAs,
@@ -30,9 +1197,9 @@ moduleManager.construct({
 	};
 	self.emptyTab = ( tab:string ):void =>{
 		app.busy.reset();
+	//	$( '#specNotice' ).empty();
 		// but show the buttons anyways, so the user can create the first resource:
-		$( '#contentNotice' ).empty();
-		$( '#contentActions' ).empty();
+	//	$( '#specActions' ).empty();
 		$( tab ).empty();
 	};
 
@@ -42,26 +1209,26 @@ moduleManager.construct({
 //		console.debug( 'specs.init', self );
 		
 		//  Add the left panel for tree or details and the up/down buttons to the DOM:
-		let h = '<div id="specLeft" class="paneLeft">'
-			+		'<div id="hierarchy" class="pane-tree" ></div>'
-			+		'<div id="details" class="pane-details" ></div>'
-			+	'</div>'
-			+	'<div id="specCtrl" class="contentCtrl" >'
-			+		'<div id="navBtns" class="btn-group btn-group-sm" >'
-			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveUp()" data-toggle="popover" title="'+i18n.LblPrevious+'" >'+i18n.IcoPrevious+'</button>'
-			+			'<button class="btn btn-default" onclick="'+myFullName+'.tree.moveDown()" data-toggle="popover" title="'+i18n.LblNext+'" >'+i18n.IcoNext+'</button>'
-			+		'</div>'
-			+		'<div id="contentNotice" class="contentNotice" ></div>'
-			+		'<div id="contentActions" class="btn-group btn-group-sm contentActions" ></div>'
-			+	'</div>';
-		if(self.selector)
-			$(self.selector).after( h );
+		let h = '<div id="specLeft" class="paneLeft" style="position:relative">'
+			+ '<div id="navBtns" class="btn-group-vertical btn-group-sm" style="position:absolute;top:4px;right:12px;z-index:900">'
+			+ '<button class="btn btn-default" onclick="' + myFullName + '.tree.moveUp()" data-toggle="popover" title="' + i18n.LblPrevious + '" >' + i18n.IcoPrevious + '</button>'
+			+ '<button class="btn btn-default" onclick="' + myFullName + '.tree.moveDown()" data-toggle="popover" title="' + i18n.LblNext + '" >' + i18n.IcoNext + '</button>'
+			+ '</div>'
+			+	'<div id="hierarchy" class="pane-tree" ></div>'
+			+	'<div id="details" class="pane-details" ></div>'
+			+ '</div>';
+		/*	+ '<div id="specCtrl" class="contentCtrl" >'
+		//	+	'<div id="specNotice" class="contentNotice" ></div>'
+		//	+	'<div id="specActions" class="btn-group contentActions" ></div>'
+		//	+ '</div>'; */
+		if (self.selector)
+			$(self.selector).after(h);
 		else
-			$(self.view).prepend( h );
+			$(self.view).prepend(h);
 
 		// Construct jqTree,
 		// holds the hierarchy tree (or outline):
-		self.tree = Tree({
+		self.tree = new Tree({
 			loc: '#hierarchy',
 			dragAndDrop: app.title!=i18n.LblReader,
 			eventHandlers: {
@@ -92,8 +1259,12 @@ moduleManager.construct({
 				'move':
 					(event):void =>{
 						// event: A node, potentially with children, has been moved by drag'n'drop.
-						
-							function moveNode( movedNd, target:string ):void {
+
+						interface ITargetNode {
+							parent?: string;
+							predecessor?: string;
+                        }
+						function moveNode(movedNd, target: ITargetNode ):void {
 //								console.debug( 'move: ', movedNd.name, target );
 								let chd = new Date().toISOString();
 								app.cache.selectedProject.createContent( 'node', toSpecIF(movedNd,target) )
@@ -105,22 +1276,24 @@ moduleManager.construct({
 										document.getElementById(CONFIG.objectList).scrollTop = 0;
 										self.refresh();
 									},
-									stdError 
+									LIB.stdError 
 								);
 								return;
 
-								function toSpecIF(mNd, tgt): INodeWithPosition {
+								function toSpecIF(mNd: jqTreeNode, tgt: ITargetNode): INodeWithPosition {
 									// transform from jqTree node to SpecIF node:
-									var nd = {
-										//	id: genID('N-'),
+									var nd: INodeWithPosition = {
+										//	id: LIB.genID('N-'),
 											id: mNd.id,
 											resource: mNd.ref,
 											changedAt: chd
 										},
-										ch = forAll( mNd.children, toSpecIF );
+										ch = mNd.children.map( toSpecIF );
 									if( ch.length>0 ) nd.nodes = ch;
 									// copy predecessor or parent:
-									if( tgt ) for( var p in tgt ) { nd[p] = tgt[p].id };
+									if (tgt)
+										// @ts-ignore - index is ok:
+										for (var p in tgt) { nd[p] = tgt[p].id };
 									return nd;
 								}
 							}
@@ -140,29 +1313,31 @@ moduleManager.construct({
 									// (a) event.move_info.position=='position after': 
 									//     The node is dropped between two nodes.
 									moveNode( event.move_info.moved_node, {predecessor:event.move_info.target_node} );
-								} else if( ire.test(event.move_info.position) ) {
+								}
+								else if (ire.test(event.move_info.position)) {
 									// (b) event.move_info.position=='position inside': 
 									//     The node is dropped on a target node without children or before the first node in a folder.
 									moveNode( event.move_info.moved_node, {parent:event.move_info.target_node} );
-								} else {
+								}
+								else {
 									// (c) event.move_info.position=='position before': 
 									//     The node is dropped before the first node in the tree:
 									moveNode( event.move_info.moved_node, {parent:event.move_info.target_node.parent} );
 								};
 							},
-							stdError 
+							LIB.stdError 
 						);
 					}
 			}
 		});
 		// controls whether the left panel with the tree or details is shown or not:
 		self.showLeft = new State({
-			showWhenSet: ['#specLeft','#specCtrl'],
+			showWhenSet: ['#specLeft'],
 			hideWhenSet: []
 		});
 		// controls whether the left panel shows tree or details (when showLeft is true):
 		self.showTree = new State({
-			showWhenSet: ['#hierarchy'],
+			showWhenSet: ['#hierarchy','#navBtns'],
 			hideWhenSet: ['#details']
 		});
 	//	self.typesComment = null;
@@ -173,7 +1348,7 @@ moduleManager.construct({
 		return true;
 	};
 	self.clear = ():void =>{
-		self.tree.init();
+		self.tree.clear();
 		refreshReqCnt = 0;
 		app.cache.clear();
 		app.busy.reset();
@@ -196,7 +1371,7 @@ moduleManager.construct({
 			case 201:
 				return; // some calls end up in the fail trail, even though all went well.
 			default:
-				stdError(xhr);
+				LIB.stdError(xhr);
 		}
 	} 
 	function setPermissions( nd ) {
@@ -234,7 +1409,8 @@ moduleManager.construct({
 					return false  // no statement is available for this resource for which the user has creation rights
 				};
 			self.staCre = mayHaveStatements( r )
-		} else {
+		} 
+		else {
 			noPerms()
 		}
 	}  */
@@ -251,7 +1427,7 @@ moduleManager.construct({
 		let tr;
 		// Replace the tree:
 		if( Array.isArray( spc ) )
-			tr = forAll( spc, toChild );
+			tr = LIB.forAll( spc, toChild );
 		else
 			tr = [toChild(spc)];
 		
@@ -273,7 +1449,7 @@ moduleManager.construct({
 				name: elementTitleOf(r,opts,pData), 
 				ref: iE.resource.id || iE.resource // for key (with revision) or for id (without revision)
 			};
-			oE.children = forAll( iE.nodes, toChild );
+			oE.children = LIB.forAll( iE.nodes, toChild );
 		//	if( typeof(iE.upd)=='boolean' ) oE.upd = iE.upd;
 			if( iE.revision ) oE.revision = iE.revision;
 			oE.changedAt = iE.changedAt;
@@ -285,20 +1461,20 @@ moduleManager.construct({
 	// called by the parent's view controller:
 	self.show = function( opts:any ):void {
 //		console.debug( CONFIG.specifications, 'show', opts );
-		if( !(app.cache.selectedProject && app.cache.selectedProject.data && app.cache.selectedProject.data.id) ) {
+		if( !(app.cache.selectedProject && app.cache.selectedProject.isLoaded() ) )
 			throw Error("No selected project on entry of spec.show()");
-		};
 		
-		$('#pageTitle').html( app.cache.selectedProject.data.title );
+		$('#pageTitle').html( app.cache.selectedProject.title );
 		app.busy.set();
-	//	$('#contentNotice').html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
-		$('#contentNotice').empty();
+	//	$( self.view ).html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
+	//	$('#specNotice').empty();
 
  		let uP = opts.urlParams,
 			fNd = self.tree.firstNode(),
-			nd;
+			nd: jqTreeNode;
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
+		opts.lookupLanguage = true;
 		self.targetLanguage = opts.targetLanguage = browser.language;
 		opts.lookupTitles = true;
 				
@@ -306,17 +1482,17 @@ moduleManager.construct({
 		// - URL parameters are specified where the project is equal to the loaded one
 		// - just a view is specifed without URL parameters (coming from another page)
 		if( !fNd
-			|| indexById( app.cache.selectedProject.data.resources, fNd.ref )<0  // condition is probably too weak
-			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.data.id )
-			self.tree.init();
+			|| !app.cache.selectedProject.data.has("resource", fNd.ref )  // condition is probably too weak
+			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.id )
+			self.tree.clear();
 		
 //		console.debug('show 1',uP,self.tree.selectedNode);
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
-		if( app.cache.selectedProject.data.hierarchies && app.cache.selectedProject.data.hierarchies.length>0 ) {
+		if (app.cache.selectedProject.data.length("hierarchy")>0 ) {
 			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			app.cache.selectedProject.readContent( 'hierarchy', app.cache.selectedProject.data.hierarchies, {reload:true} )
+			app.cache.selectedProject.readContent( 'hierarchy', "all", {reload:true} )
 			.then( 
 				(rsp)=>{
 //					console.debug('load',rsp);
@@ -336,22 +1512,30 @@ moduleManager.construct({
 					if( !nd ) nd = self.tree.selectedNode;
 					// no or unknown resource specified; select first node:
 					if( !nd ) nd = self.tree.selectFirstNode();
-					if( nd ) {
-						self.tree.openNode( nd );
-					} else {
-						if( !self.resCre ) {
-							// Warn, if tree is empty and there are no resource classes for user instantiation:
-							message.show( i18n.MsgNoObjectTypeForManualCreation, {duration:CONFIG.messageDisplayTimeLong} );
+					if (nd) {
+						self.tree.openNode(nd);
+					}
+					else {
+						// tree is empty:
+						if (!self.resCre) {
+							// Warn, if there are no resource classes for user instantiation:
+							message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
 							return;
 						};
 					};
 				},
-				stdError
+				LIB.stdError
 			);
-		} else {
+		}
+		else {
 			// the project has no spec:
-			$('#contentNotice').html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
+			$( self.view ).html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
 			app.busy.reset();
+			if (!self.resCre) {
+				// Warn, if there are no resource classes for user instantiation:
+				message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
+				return;
+			};
 		};
 	};
 
@@ -377,7 +1561,7 @@ moduleManager.construct({
 		// --> Don't disturb the user in case of the editing views ('objectEdit', 'linker').
 //		console.debug('doRefresh',parms);
 
-		$('#contentNotice').empty();
+	//	$('#specNotice').empty();
 	
 		// update the current view:
 		self.ViewControl.selected.show( parms );
@@ -405,7 +1589,8 @@ moduleManager.construct({
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			self.tree.openNode( self.tree.selectedNode );
 			// opening a node triggers an event, by which 'self.refresh' will be called.
-		} else {
+		}
+		else {
 			if( self.tree.selectedNode.children.length>0 ) {
 //				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
@@ -423,7 +1608,7 @@ moduleManager.construct({
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
-			newId = genID('R-');
+			newId = LIB.genID('R-');
 		app.cache.selectedProject.initResource( cT )
 			.done( function(rsp) {
 				// returns an initialized resource of the requested type:
@@ -442,7 +1627,7 @@ moduleManager.construct({
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(textField( txtLbl, '', 'area' )) );
+				form.append( $(textField( txtLbl, '', {typ:'area'} )) );
 				return form 
 			},
 			buttons: [{
@@ -509,14 +1694,14 @@ moduleManager.construct({
 // Construct the controller for resource listing ('Document View'):
 moduleManager.construct({
 	view:'#'+CONFIG.objectList
-}, (self:IModule):IModule =>{
+}, (self:IModule) =>{
 	// Construct an object for displaying a hierarchy of resources:
 
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cacheData,				// the cached project data
-		selRes;				// the currently selected resource
+		cacheData: CSpecIF,		// the cached project data
+		selRes: CResourceToShow;	// the currently selected resource
 
 	// Permissions for resources:
 	self.resCreClasses = [];  // all resource classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
@@ -526,17 +1711,12 @@ moduleManager.construct({
 //	self.cmtCre = false;
 //	self.cmtDel = false;
 
-	self.resources = new CResources(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
-//	self.comments = new CResources();  	// flat-listed comments for display
+	self.resources = new CResourcesToShow(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
+//	self.comments = new CResourcesToShow();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
-	function selResIsUserInstantiated():boolean {
-		return selRes 
-				&& ( !Array.isArray(selRes.toShow['class'].instantiation)
-					|| selRes.toShow['class'].instantiation.indexOf('user')>-1 )
-	}
 	self.init = (): boolean => {
-			return true;
+		return true;
 	};
 	self.clear = ():void =>{
 	//	selectResource(null);
@@ -584,7 +1764,8 @@ moduleManager.construct({
 						renderNextResources,
 						handleErr
 					);
-				} else {
+				}
+				else {
 					handleErr( err );
 				};
 			}
@@ -619,36 +1800,33 @@ moduleManager.construct({
 
 			return app.cache.selectedProject.readContent( 'resource', oL )
 		}
-		function renderNextResources( rL ):void {
-				// Format the titles with numbering:
-				for( var i=rL.length-1; i>-1; i-- )
-					rL[i].order = nL[i].order;
+		function renderNextResources(rL: Resource[]): void {
+			// Format the titles with numbering:
+			for( var i=rL.length-1; i>-1; i-- )
+				rL[i].order = nL[i].order;
 	
-				// Update the view list, if changed:
-				// Note that the list is always changed, when execution gets here,
-				// unless in a multi-user configuration with server and auto-update enabled.
-				if( self.resources.update( rL ) || opts && opts.forced ) {
-					// list value has changed in some way:
-				//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
-					$( self.view ).html( self.resources.render() );
-				};
-				// the currently selected resource:
-				selRes = self.resources.selected();
-				$( '#contentActions' ).html( actionBtns() );
-				app.busy.reset();
+			// Update the view list, if changed:
+			// Note that the list is always changed, when execution gets here,
+			// unless in a multi-user configuration with server and auto-update enabled.
+			if( self.resources.update( rL ) || opts && opts.forced ) {
+				// list value has changed in some way:
+			//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
+				$( self.view ).html( self.resources.render() );
+			};
+			// the currently selected resource:
+			selRes = self.resources.selected();
+			$( self.view ).prepend( actionBtns() );
+			app.busy.reset();
 		}
 		function handleErr(err):void {
-			stdError( err );
+			LIB.stdError( err );
 			app.busy.reset();
 		}
 		function actionBtns():string {
 			// render buttons:
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
-			var isUserNode = selResIsUserInstantiated(),
-		//		rootRes = itemById( 
-		//		isUserNode = CONFIG.hierarchyRoots.indexOf(  ),
-				rB = '<div class="btn-group btn-group-sm" >';
+			var rB = '<div class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
 //			console.debug( 'actionBtns', pData.tree.rootNode() );
 
 		/*	if( selRes )
@@ -661,7 +1839,8 @@ moduleManager.construct({
 			// a permission to update the hierarchy:
 		//	if( self.resCre && cacheData.selectedHierarchy.upd )
 			// ToDo: Respect the user's permission to change the hierarchy
-			if( self.resCre )
+			// ToDo: Don't allow creation of elements in automatically created branches like the glossary
+			if( self.resCre && (!selRes || selRes.isUserInstantiated()) )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'create\')" '
 						+'data-toggle="popover" title="'+i18n.LblAddObject+'" >'+i18n.IcoAdd+'</button>'
 			else
@@ -673,9 +1852,9 @@ moduleManager.construct({
 
 			// Add the clone button depending on the current user's permissions:
 		//	if( self.resCln && cacheData.selectedHierarchy.upd )
-			if( self.resCre )
+			if( self.resCre && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-success" onclick="'+myFullName+'.editResource(\'clone\')" '
-						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>';
+						+'data-toggle="popover" title="'+i18n.LblCloneObject+'" >'+i18n.IcoClone+'</button>'
 			else
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
@@ -690,11 +1869,11 @@ moduleManager.construct({
 					return false
 				}  */
 		//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.upd) )
-				rB += '<button class="btn btn-default" onclick="'+myFullName+'.editResource(\'update\')" '
-						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoUpdate+'</button>';
+			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.upd))
+				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
+						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoEdit+'</button>'
 			else
-				rB += '<button disabled class="btn btn-default" >'+i18n.IcoUpdate+'</button>';
+				rB += '<button disabled class="btn btn-default" >'+i18n.IcoEdit+'</button>';
 
 			// Add the commenting button, if all needed types are available and if permitted:
 		/*	if( self.cmtCre )
@@ -705,8 +1884,7 @@ moduleManager.construct({
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-		//	if( cacheData.selectedHierarchy.del )
-			if( app.title!=i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && isUserNode )
+			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
@@ -770,7 +1948,7 @@ moduleManager.construct({
 		else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
-			console.error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
+			throw Error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
 		};
 	}; 
 	self.deleteNode = ():void =>{
@@ -784,12 +1962,12 @@ moduleManager.construct({
 			message: i18n.lookup( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
 			buttons: [{
 				label: i18n.BtnCancel,
-				action: (thisDlg)=>{ 
+				action: (thisDlg: any)=>{
 					thisDlg.close();
 				}
 			},{
 				label: i18n.BtnDeleteObjectRef,
-				action: (thisDlg)=>{
+				action: (thisDlg: any)=>{
 					delNd( pData.tree.selectedNode );
 					thisDlg.close();
 				}
@@ -813,8 +1991,8 @@ moduleManager.construct({
 	/*	function enableDel( resId ) {
 		// Check, if the specified resource can be deleted.
 		// ToDo: also check permission via self.resources.selected().value.del
-//			console.debug('enableDel',selRes.toShow,resId,selResIsUserInstantiated());
-            return selRes.toShow.id == resId  // should always be the case ..
+//			console.debug('enableDel',selRes,resId,selResIsUserInstantiated());
+            return selRes.id == resId  // should always be the case ..
 				// only resources under "user" control can be deleted:
                 && selResIsUserInstantiated();
 		}
@@ -833,17 +2011,17 @@ moduleManager.construct({
 			// it is necessary to provide "shows" statements also for statements.
 			// ?? ToDo: delete the resource with all other references ...
 			app.cache.selectedProject.deleteContent( "resource", {id:resId} )
-				.catch( stdError );
+				.catch( LIB.stdError );
 			// Delete all statements related to this resource:
 			app.cache.selectedProject.readStatementsOf( {id:resId} )
 				.then( 
 					(staL)=>{
 						console.debug( 'delRes statements', staL);
 					},
-					stdError 
+					LIB.stdError 
 				);
 		} */
-		function delNd( nd ):void {
+		function delNd(nd: jqTreeNode): void {
 			// Delete the hierarchy node and all it's children. 
 			console.info( "Deleting tree object '"+nd.name+"'." );
 
@@ -857,7 +2035,7 @@ moduleManager.construct({
 					()=>{
 						// If a diagram has been deleted, build a new glossary with elements 
 						// which are shown by any of the remaining diagrams:
-						app.cache.selectedProject.createFolderWithGlossary( cacheData, {addGlossary:true} )
+						app.cache.selectedProject.createFolderWithGlossary({addGlossary:true} )
 							.then( 
 								()=>{  
 									// undefined parameters will be replaced by default value:
@@ -867,10 +2045,10 @@ moduleManager.construct({
 									});
 									pData.doRefresh({forced:true})
 								},
-								stdError 
+								LIB.stdError 
 							)
 					},
-					stdError 
+					LIB.stdError 
 				);
 		}
 	};
@@ -878,7 +2056,7 @@ moduleManager.construct({
 		// Delete the selected resource, all tree nodes and their children.
 		// very dangerous ....
 	};  */
-	self.relatedItemClicked = ( rId ):void =>{
+	self.relatedItemClicked = ( rId:string ):void =>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
 		pData.tree.selectNodeByRef( rId );
@@ -891,14 +2069,14 @@ moduleManager.construct({
 // Construct the controller for displaying the statements ('Statement View'):
 moduleManager.construct({
 	view:'#'+CONFIG.relations
-}, (self:IModule):IModule =>{
+}, (self:IModule) =>{
 	// Render the statements of a selected resource:
 
 	var myName = self.loadAs,
 		myFullName = 'app.' + myName,
 		pData: IModule = self.parent,	// the parent's data
 		cacheData: CSpecIF,		// the cached data
-		selRes:Resource,		// the currently selected resource
+		selRes:CResourceToShow,		// the currently selected resource
 		net,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
@@ -911,11 +2089,9 @@ moduleManager.construct({
 		return true;
 	}
 	self.hide = function():void {
-//		console.debug(CONFIG.relations, 'hide');
 		$( self.view ).empty()
 	};
 	self.show = function( opts?:any ):void {
-//		console.debug(CONFIG.relations, 'show');
 		pData.showLeft.set();
 		pData.showTree.set();
 		cacheData = app.cache.selectedProject.data;
@@ -952,7 +2128,7 @@ moduleManager.construct({
 
 		app.cache.selectedProject.readStatementsOf({ id: nd.ref }, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
 		.then( 
-			(sL)=>{
+			(sL:Statement[])=>{
 				// sL is the list of statements involving the selected resource.
 
 				// First, initialize the list and add the selected resource:
@@ -987,7 +2163,7 @@ moduleManager.construct({
 								stL.forEach( cacheNet );
 //								console.debug('local net',stL,net);
 								renderStatements( net );
-								$( '#contentActions' ).html( linkBtns() ); 
+								$( self.view ).prepend( linkBtns() ); 
 								app.busy.reset();
 							},
 							handleErr
@@ -999,7 +2175,7 @@ moduleManager.construct({
 							case 404:   // related resource(s) not found, just ignore it
 								break;
 							default:
-								stdError(xhr);
+								LIB.stdError(xhr);
 						}
 						app.busy.reset();	
 					} */
@@ -1010,20 +2186,20 @@ moduleManager.construct({
 		return;
 
 		function handleErr(xhr: xhrMessage): void {
-			stdError(xhr);
+			LIB.stdError(xhr);
 			app.busy.reset();
 		}
 		function cacheMinRes(L:Resource[],r:Resource):void {
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			cacheE( L, { id: itemIdOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			LIB.cacheE( L, { id: LIB.idOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L:Statement[],s:Statement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: itemIdOf(s.subject), object: itemIdOf(s.object)} );
-		//	cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: itemIdOf(s.subject), object: itemIdOf(s.object) });
+			LIB.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: LIB.idOf(s.subject), object: LIB.idOf(s.object)} );
+		//	LIB.cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: LIB.idOf(s.subject), object: LIB.idOf(s.object) });
 		}
 		function cacheNet(s:Statement):void {
 			// skip hidden statements:
@@ -1034,11 +2210,12 @@ moduleManager.construct({
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// collect the related resources:
-			if( itemIdOf(s.subject) == nd.ref ) { 
+			if( LIB.idOf(s.subject) == nd.ref ) { 
 				// the selected node is a subject, so the related resource is an object,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.object );
-			} else {
+			}
+			else {
 				// the related resource is a subject,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.subject );
@@ -1064,7 +2241,7 @@ moduleManager.construct({
 					selTi = elementTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
-					selPatt = new RegExp( (CONFIG.dynLinkBegin+selTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
+					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
 				pData.tree.iterate( (nd)=>{
@@ -1078,18 +2255,18 @@ moduleManager.construct({
 							let refR: Resource = rL[0],
 								refTi = elementTitleOf(refR, localOpts);
 //							console.debug('pData.tree.iterate',refR,refTi,pend);
-							if( refTi && refTi.length>CONFIG.dynLinkMinLength-1 && refR.id!=selR.id ) {
+							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
 
 								// 1. The titles of other resource's found in the selected resource's texts 
 								//    result in a 'this mentions other' statement (selected resource is subject):
-								refPatt = new RegExp( (CONFIG.dynLinkBegin+refTi+CONFIG.dynLinkEnd).escapeRE(), "i" );
+								refPatt = new RegExp( (CONFIG.titleLinkBegin+refTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cacheData, p['class'] ).type ) {
-											case 'xs:string':
-											case 'xhtml':	
+										switch (dataTypeOf(cacheData, p['class']).type) {
+											case TypeEnum.XsString:
+											case TypeEnum.XHTML:	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
 												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
@@ -1108,8 +2285,8 @@ moduleManager.construct({
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cacheData, p['class'] ).type ) {
-											case 'xs:string':
-											case 'xhtml':	
+											case TypeEnum.XsString:
+											case TypeEnum.XHTML:	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
 												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {
@@ -1133,7 +2310,7 @@ moduleManager.construct({
 			
 			function notListed( L:Statement[],s,t ):boolean {
 				for( var i=L.length-1;i>-1;i--  ) {
-					if( itemIdOf(L[i].subject)==s.id && itemIdOf(L[i].object)==t.id ) return false;
+					if( LIB.idOf(L[i].subject)==s.id && LIB.idOf(L[i].object)==t.id ) return false;
 				};
 				return true;
 			}
@@ -1143,7 +2320,7 @@ moduleManager.construct({
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
 			let res: Resource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
-			return iterateNodes(dta.hierarchies,
+			return LIB.iterateNodes(dta.hierarchies,
 				(nd): boolean => {
 					// get the referenced resource:
 					res = itemById(dta.resources, nd.resource);
@@ -1162,10 +2339,11 @@ moduleManager.construct({
 
 	function linkBtns():string {
 		if( !selRes ) return '';
-		if( modeStaDel ) 
-			return '<div class="btn-group btn-group-sm" ><button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+		var rB = '<div id="linkBtns" class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
 
-		var rB = '<div class="btn-group btn-group-sm" >';
+		if (modeStaDel) 
+			return rB+'<button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+
 //		console.debug( 'linkBtns', self.staCre );
 
 		if( app.title!=i18n.LblReader && self.staCre )
@@ -1218,10 +2396,6 @@ moduleManager.construct({
 			modeStaDel = false;
 			return;
 		};
-		if( modeStaDel ) 
-			$('#contentNotice').html( '<span class="notice-danger" >'+i18n.MsgClickToDeleteRel+'</span>' );
-		else
-			$('#contentNotice').html( '<span class="notice-default" >'+i18n.MsgClickToNavigate+'</span>' );
 
 //		console.debug('renderStatements',net);
 		
@@ -1241,6 +2415,11 @@ moduleManager.construct({
 			graphOptions.nodeColor = '#ef9a9a';
 //		console.debug('showStaGraph',net,graphOptions);
 		app.statementsGraph.show(net, graphOptions);
+
+		$(self.view).prepend('<div style="position:absolute;left:4px;z-index:900">'
+			+ (modeStaDel? '<span class="notice-danger" >' + i18n.MsgClickToDeleteRel 
+						: '<span class="notice-default" >' + i18n.MsgClickToNavigate )
+			+ '</span></div>');
 	}
 /*	function renderStatementsTable( sGL, opts ) {
 		// Render a table with all statements grouped by type:
@@ -1254,7 +2433,7 @@ moduleManager.construct({
 			var rT = '<div style="color: #D82020;" >'  // render table with the resource's statements in delete mode
 		else
 			var rT = '<div>';  // render table with the resource's statements in display mode
-		rT += renderTitle( self.toShow, opts );	// rendered statements
+		rT += self.toShow.renderTitle( opts );	// rendered statements
 		if( sGL.length>0 ) {
 //			console.debug( sGL.length, sGL );
 			if( opts.fnDel ) 
@@ -1269,7 +2448,7 @@ moduleManager.construct({
 					sG.rGs.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							sId: itemIdOf(s.subject),
+							sId: LIB.idOf(s.subject),
 							sT: elementTitleWithIcon(s.subject,opts),
 							computed: !s['class']
 						});
@@ -1300,7 +2479,7 @@ moduleManager.construct({
 					sG.rGt.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							tId: itemIdOf(s.object),
+							tId: LIB.idOf(s.object),
 							tT: elementTitleWithIcon(s.object,opts),
 							computed: !s['class']
 						});
@@ -1327,7 +2506,8 @@ moduleManager.construct({
 			rT += 	'</tbody></table>';
 			if( opts.fnDel ) 
 				rT += '<div class="doneBtns"><button class="btn btn-default btn-sm" onclick="'+opts.fnDel+'" >'+i18n.BtnCancel+'</button></div>'
-		} else {
+		} 
+		else {
 			rT += '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>'
 		};
 		rT += '</div>';
@@ -1350,16 +2530,16 @@ moduleManager.construct({
 		else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
-			
-			console.error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.");
+			throw Error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.");
 		};
 	}; 
 	self.toggleModeStaDel = function():void {
 		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
 //		console.debug( 'toggle delete statement mode:', modeStaDel);
-		$( '#contentActions' ).html( linkBtns() );
+		$( '#linkBtns' ).remove();
 		renderStatements( net );
+		$(self.view).prepend(linkBtns());
 	};
 	self.relatedItemClicked = function( rId:string, sId:string ):void {
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
@@ -1370,7 +2550,7 @@ moduleManager.construct({
 			app.cache.selectedProject.deleteContent( 'statement', {id: sId} )
 			.then(
 				pData.doRefresh({forced:true}),
-				stdError
+				LIB.stdError
 			);
 		}
 		else { 
@@ -1383,1265 +2563,3 @@ moduleManager.construct({
 	};
 	return self;
 });
-
-class CResourceWithClassifiedProps {
-	id: string;
-	title: Property;
-	class: ResourceClass;
-	isHeading: boolean;
-	order: string;
-	revision: string;
-	replaces: string[];
-	descriptions: Property[];
-	other: Property[];
-	createdAt: string;
-	createdBy: string;
-	changedAt: string;
-	changedBy: string;
-	constructor(el: Resource, pData?: CSpecIF) {
-		// add missing (empty) properties and classify properties into title, descriptions and other;
-		// for resources.
-		// ToDo: Basically it can also be used for Statements ... 
-		// Note that here 'class' is the class object itself ... and not the id as is the case with SpecIF.
-		if (!pData) pData = app.cache.selectedProject.data;
-		this.id = el.id;
-		this['class'] = itemById(pData.resourceClasses, el['class']) as ResourceClass;
-		this.revision = el.revision;
-		this.order = el.order;
-		this.changedAt = el.changedAt;
-		this.revision = el.revision;
-		this.replaces = el.replaces;
-		this.changedBy = el.changedBy;
-		this.createdAt = el.createdAt;
-		this.createdBy = el.createdBy;
-		this.descriptions = [];
-		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = normalizeProps(el, pData);
-
-		// Now, all properties are listed in this.other;
-		// in the following, the properties used as title and description will be identified
-		// and removed from this.other.
-
-		// a) Find and set the configured title:
-		let a = titleIdx(this.other, pData);
-		if (a > -1) {  // found!
-			this.title = this.other[a];
-			// remove title from other:
-			this.other.splice(a, 1);
-
-			// Special case:
-			// - if the current instance does not have a title property
-			// - but it's class defines one,
-			// the title would get lost.
-			// Thus, the instance title is copied to the title property,
-			// which has been newly created by normalizeProps():
-			if (!this.title.value && el.title)
-				this.title.value = el.title;
-			this.isHeading = this['class'].isHeading || CONFIG.headingProperties.indexOf(this.title.value) > -1;
-		};
-
-		// b) Check the configured descriptions:
-		// We must iterate backwards, because we alter the list of other.
-		// ToDo: use this.other.filter()
-		for (a = this.other.length - 1; a > -1; a--) {
-			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], pData)) > -1) {
-				// To keep the original order of the properties, the unshift() method is used.
-				this.descriptions.unshift(this.other[a]);
-				this.other.splice(a, 1);
-			};
-		};
-
-		// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-		//    there is no title or no description propertyClass;
-		//    then create a property without class.
-		//    If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-		if (!this.title)
-			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' };
-	//  Why create a description, if there is none ?? What is the use-case?
-	//	if (this.descriptions.length < 1)
-	//		this.descriptions.push( {title: CONFIG.propClassDesc, value: el.description || ''} );
-	//	console.debug( 'classifyProps 2', simpleClone(this) );
-		return;
-
-		function normalizeProps(el: Resource, dta: CSpecIF): Property[] {
-			// el: instance (resource or statement)
-			// Create a list of properties in the sequence of propertyClasses of the respective class.
-			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-			// Assumption: Property classes are unique!
-
-			// check uniqueness of property classes:
-			if (el.properties) {
-				let cL: PropertyClass[] = [], pC: PropertyClass;
-				el.properties.forEach((p) => {
-					pC = p['class'];
-					if (cL.indexOf(pC) > -1)
-						console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
-					cL.push(pC)
-				})
-			};
-
-			let p: Property,
-				pCs: PropertyClass[],
-				nL: Property[] = [],
-				// iCs: instance class list (resourceClasses or statementClasses),
-				// the existence of subject (or object) let's us recognize that it is a statement:
-				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-				iC = itemById(iCs, el['class']);
-			// build a list of propertyClass identifiers including the extended class':
-			pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
-			pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
-			// add the properties in sequence of the propertyClass identifiers:
-			pCs.forEach((pCid: string) => {
-				// skip hidden properties:
-				if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
-				// the property classes must be unique, otherwise the operation will:
-				p = simpleClone(itemBy(el.properties, 'class', pCid))
-					|| createProp(dta.propertyClasses, pCid);
-				if (p) {
-					// by default, use the propertyClass' title:
-					// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
-					// An input data-set may have titles which are not from the SpecIF vocabulary;
-					// replace the result with a current vocabulary term:
-					p.title = vocabulary.property.specif(propTitleOf(p, dta));
-					nL.push(p);
-				}
-			});
-			//		console.debug('normalizeProps result',simpleClone(nL));
-			return nL; // normalized property list
-		}
-	}
-}
-function CResource( obj:Resource ) {
-	"use strict";
-	// for the list view, where title and text are shown in the main column and the others to the right.
-	var self:any = {};
-	const noRes = {descriptions:[],other:[]},
-		opts = {
-				lookupTitles: true,
-				targetLanguage: browser.language
-			};
-	self.toShow = noRes;
-	self.staGroups = [];
-
-	self.set = ( res: Resource ): boolean =>{ 
-		if( res ) {
-			if( self.toShow.id==res.id && self.toShow.changedAt==res.changedAt ) {
-				// assume that no change has happened:
-//				console.debug('object.set: no change');
-				return false;  // no change
-			};
-			self.toShow = new CResourceWithClassifiedProps( res, app.cache.selectedProject.data );
-//			console.debug( 'CResource.set', res, simpleClone(self.toShow) );
-			return true;		// has changed
-		}
-		else {
-			if( !self.toShow.id ) return false;	// no change
-			self.toShow = noRes;
-//			console.debug('set new',self.toShow);
-			return true;		// has changed
-		};
-	};
-
-	self.listEntry = ():string =>{
-			function showPrp( prp:Property, opts ):boolean {
-//				console.debug('showPrp',prp);
-				if( CONFIG.hiddenProperties.indexOf( prp.title )>-1 ) return false;  // hide, if it is configured in the list
-				return (CONFIG.showEmptyProperties || hasContent( languageValueOf(prp.value,opts) ))
-			} 
-		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-		// Create HTML for a list entry:
-//		console.debug( 'CResource.listEntry', self.toShow );
-
-		opts.dynLinks 
-			= opts.clickableElements
-			= opts. linkifyURLs
-			= ['#'+CONFIG.objectList, '#'+CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1;
-		// ToDo: Consider to make it a user option:
-		opts.unescapeHTMLTags = true;
-		// ToDo: Make it a user option:
-		opts.makeHTML = true; 
-		opts.lookupValues = true;
-		opts.rev = self.toShow.revision;
-
-		var rO = '<div class="listEntry">'
-			+		'<div class="content-main">';
-		
-		// 1 Fill the main column:
-		// 1.1 The title:
-		switch( app.specs.selectedView() ) {
-			case '#'+CONFIG.objectFilter:
-			case '#'+CONFIG.objectList:
-				// move item to the top, if the title is clicked:
-				rO += '<div onclick="app.specs.itemClicked(\''+self.toShow.id+'\')">'
-					+	renderTitle( self.toShow, opts )
-					+ '</div>';
-				break;
-			default:
-				rO += renderTitle( self.toShow, opts );
-		};
-		
-		// 1.2 The description properties:
-		self.toShow.descriptions.forEach((prp: Property):void => {
-			if( showPrp( prp, opts ) ) {
-				rO += '<div class="attribute attribute-wide">'+propertyValueOf(prp,opts)+'</div>'
-			}
-		});
-		rO += 	'</div>'  // end of content-main
-			+	'<div class="content-other">';
-			
-	/*	// 2 Add elementActions:
-		switch( app.specs.selectedView() ) {
-			case '#'+CONFIG.comments:
-				rO += 	'<div class="btn-group btn-group-xs" style="margin-top:3px; position:absolute;right:1.6em" >';
-				if( self.toShow.del )
-					rO +=	'<button onclick="app.specs.delComment(\''+self.toShow.id+'\')" class="btn btn-danger" >'+i18n.IcoDelete+'</button>'
-				else
-					rO +=	'<button disabled class="btn btn-default btn-xs" >'+i18n.IcoDelete+'</button>';
-				rO +=	'</div>'
-		//		break;
-		//	default:
-				// nothing, so far
-		}; */
-		
-		// 3 Fill a separate column to the right
-		// 3.1 The remaining properties:
-		self.toShow.other.forEach((prp: Property):void => {
-			if( showPrp( prp, opts ) ) {
-				rO += renderProp( titleOf(prp,opts), propertyValueOf(prp,opts), 'attribute-condensed' );
-			};
-		});
-		// 3.2 The type info:
-	//	rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ), 'attribute-condensed' )
-		// 3.3 The change info depending on selectedView:
-		rO += renderChangeInfo( self.toShow );		
-		rO +=   '</div>'	// end of content-other
-		+	'</div>';  // end of listEntry
-		
-		return rO;  // return rendered resource for display
-	};
-/*	self.details = function() {
-		if( !self.toShow.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
-
-		// Create HTML for a detail view:
-		// 1 The title:
-		var rO = renderTitle( self.toShow, opts );	
-		// 2 The description properties:
-		self.toShow.descriptions.forEach( function(prp) {
-//			console.debug('details.descr',prp.value);
-			if( hasContent(prp.value) ) {
-				var opts = {
-				//		dynLinks: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
-						dynLinks: true,
-						clickableElements: true,
-						linkifyURLs: true
-					};
-				rO += 	'<div class="attribute attribute-wide">'+propertyValueOf(self.toShow,prp,opts)+'</div>'
-			}
-		});
-		// 3 The remaining properties:
-		self.toShow.other.forEach( function( prp ) {
-//			console.debug('details.other',prp.value);
-			rO += renderProp( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
-		});
-		// 4 The type info:
-		rO += renderProp( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
-		// 5 The change info depending on selectedView:
-		rO += renderChangeInfo( self.toShow );
-//		console.debug( 'CResource.details', self.toShow, rO );
-		return rO  // return rendered resource for display
-	};  */
-	function renderTitle( clsPrp, opts?:any ):string {
-//		console.debug('renderTitle',simpleClone(clsPrp),opts);
-		if( !clsPrp.title || !clsPrp.title.value ) return '';
-		// Remove all formatting for the title, as the app's format shall prevail.
-		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf( clsPrp.title.value, opts );
-		if( clsPrp.isHeading ) {
-			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
-			// whereas the individual elements may mean the vocabulary term as such:
-			if( opts && opts.lookupTitles )
-				ti = i18n.lookup( ti );
-			// it is assumed that a heading never has an icon:
-			return '<div class="chapterTitle" >'+(clsPrp.order?clsPrp.order+nbsp : '')+ti+'</div>';
-		};
-		// else: is not a heading:
-		// take title and add icon, if configured:
-//		console.debug('renderTitle',simpleClone(clsPrp),ti);
-		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? addIcon(ti,clsPrp['class'].icon) : ti)+'</div>';
-	}
-	function renderChangeInfo(clsPrp): string {
-		if( !clsPrp || !clsPrp.revision ) return '';  // the view may be faster than the data, so avoid an error
-		var rChI = '';
-		switch( app.specs.selectedView() ) {
-			case '#'+CONFIG.objectRevisions: 
-				rChI = 	renderProp( i18n.LblRevision, clsPrp.revision, 'attribute-condensed' );
-				// no break
-			case '#'+CONFIG.comments: 
-				rChI += renderProp( i18n.LblModifiedAt, localDateTime(clsPrp.changedAt), 'attribute-condensed' ) 
-					+	renderProp( i18n.LblModifiedBy, clsPrp.changedBy, 'attribute-condensed' );
-		//	default: no change info!			
-		};
-		return rChI;
-	}
-
-	// initialize:
-	self.set( obj );
-	return self;
-
-/*	function deformat( txt ) {
-		// Remove all HTML-tags from 'txt',
-		// but keep all marked deletions and insertions (as prepared be diffmatchpatch):
-		// ToDo: consider to use this function only in the context of showing revisions and filter results,
-		// 		 ... and to use a similar implementation which does not save the deletions and insertions, otherwise.
-		let mL = [], dL = [], iL = [];
-		txt = txt.replace(/<del[^<]+<\/del>/g, function($0) {
-										dL.push($0);
-										return 'hoKu§pokus'+(dL.length-1)+'#'
-									});
-		txt = txt.replace(/<ins[^<]+<\/ins>/g, function($0) {
-										iL.push($0);
-										return 'siM§alabim'+(iL.length-1)+'#'
-									});
-		txt = txt.replace(/<mark[^<]+<\/mark>/g, function($0) {
-										mL.push($0);
-										return 'abRakad@bra'+(mL.length-1)+'#'
-									});
-		// Remove all formatting for the title, as the app's format shall prevail:
-		txt = stripHTML(txt);
-		// Finally re-insert the deletions and insertions with their tags:
-		// ToDo: Remove any HTML-tags within insertions and deletions
-		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
-		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
-		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
-		return txt
-	}  */
-}
-function CResources() {
-	"use strict";
-	var self:any = {};
-
-	self.init = ():void =>{ 
-		self.values = [];
-	};
-	self.push = ( r:Resource ):boolean =>{
-		// append a resource to the list:
-		self.values.push( new CResource( r ) );
-		return true;  // a change has been effected
-	};
-	self.append = ( rL:Array<Resource> ):void =>{
-		// append a list of resources:
-		rL.forEach( (r)=>{ 
-			self.values.push( new CResource( r ) );
-		});
-	};
-	self.update = (rL: Array<Resource> ):boolean =>{
-		// update self.values with rL and return 'true' if a change has been effected:
-		if( rL.length==self.values.length ) {
-			// there is a chance no change is necessary:
-			var chg=false;
-			for( var i=rL.length-1;i>-1;i-- ) 
-				// set() must be on the left, so that it is executed for every list item:
-				chg = self.values[i].set( rL[i] ) || chg;
-			return chg;
-		} else {
-			// there will be a change anyways:
-			self.init();
-			self.append( rL );
-			return true;
-		};
-	};
-	self.updateSelected = ( r:Resource ):boolean =>{
-		// update the first item (= selected resource), if it exists, or create it;
-		// return 'true' if a change has been effected:
-		if( self.values.length>0 )
-			return self.values[0].set( r );
-		else
-			return self.push( r );
-	};
-	self.selected = function():Resource {
-		// return the selected resource; it is the first in the list by design:
-		return self.values[0];
-	};
-	self.exists = ( rId:string ):boolean =>{
-		for( var i=self.values.length-1; i>-1; i-- )
-			if( self.values[i].toShow.id==rId ) return true;
-		return false;
-	};
-	self.render = (resL:Resource[]): string => {
-		if( !Array.isArray(resL) ) resL = self.values;
-		// generate HTML representing the resource list:
-		if( resL.length<1 )
-			return '<div class="notice-default" >'+i18n.MsgNoMatchingObjects+'</div>';
-		// else:
-		var rL = '';	
-		// render list of resources
-		resL.forEach( (v)=>{
-			rL += v? v.listEntry() : '';
-		});
-		return rL;	// return rendered resource list
-	};
-
-	// initialize:
-	self.init();
-	return self;
-}
-
-RE.titleLink = new RegExp( CONFIG.dynLinkBegin.escapeRE()+'(.+?)'+CONFIG.dynLinkEnd.escapeRE(), 'g' );
-function propertyValueOf( prp:object, opts?:any ):string {
-	"use strict";
-	if( typeof(opts)!='object' ) opts = {};
-	if( typeof(opts.dynLinks)!='boolean' ) 			opts.dynLinks = false;
-	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-	if( typeof(opts.linkifyURLs)!='boolean' ) 		opts.linkifyURLs = false;
-	// some environments escape the tags on export, e.g. camunda / in|flux:
-	if( typeof(opts.unescapeHTMLTags)!='boolean' ) 	opts.unescapeHTMLTags = false;
-	// markup to HTML:
-	if( typeof(opts.makeHTML)!='boolean' ) 			opts.makeHTML = false;
-	if( typeof(opts.lookupValues)!='boolean' ) 		opts.lookupValues = false;
-
-	// Malicious content has been removed upon import ( specif.toInt() ).
-	let pData = app.cache.selectedProject.data,
-		dT = dataTypeOf( pData, prp['class'] ),
-		ct:string; 
-//	console.debug('*',prp,dT);
-	switch( dT.type ) {
-		case 'xs:string':
-		/*	ct = toHTML(languageValueOf( prp.value, opts ));
-			ct = ct.linkifyURLs( opts );
-			ct = titleLinks( ct, opts.dynLinks );
-			ct = i18n.lookup( ct );
-			break; */
-		case 'xhtml':
-			// remove any leading whiteSpace:
-			ct = languageValueOf( prp.value, opts ).replace( /^\s+/, "" );
-			if( opts.lookupValues )
-				ct = i18n.lookup( ct );
-			if( opts.unescapeHTMLTags )
-				ct = ct.unescapeHTMLTags();
-			// Apply formatting only if not listed:
-			if( CONFIG.excludedFromFormatting.indexOf( propTitleOf(prp,pData) )<0 )
-				ct = makeHTML( ct, opts );
-			ct = fileRef.toGUI( ct, opts );   // show the diagrams
-			ct = titleLinks( ct, opts.dynLinks );
-			break;
-		case 'xs:dateTime':
-			ct = localDateTime( prp.value );
-			break;
-		case 'xs:enumeration':
-			// Usually 'value' has a comma-separated list of value-IDs,
-			// but the filter module delivers potentially marked titles in content.
-
-			// Translate IDs to values, if appropriate (i1lookup() is included):
-			ct = enumValueOf( dT, prp.value, opts );
-			break;
-		default:
-			ct = prp.value;
-	};
-	/*	// Add 'double-angle quotation' in case of stereotype values:
-			if( CONFIG.stereotypeProperties.indexOf(prp.title)>-1 )
-				ct = '&#x00ab;'+ct+'&#x00bb;'; */
-	return ct;
-
-	function titleLinks( str:string, add:boolean ):string {
-		// Transform sub-strings with dynamic linking pattern to internal links.
-		// Syntax:
-		// - A resource title between CONFIG.dynLinkBegin and CONFIG.dynLinkEnd will be transformed to a link to that resource.
-		// - Icons in front of titles are ignored
-		// - Titles shorter than 4 characters are ignored
-		// - see: https://www.mediawiki.org/wiki/Help:Links
-
-		// in certain situations, just remove the dynamic linking pattern from the text:
-		if( !CONFIG.dynLinking || !add )
-			// @ts-ignore - $0 is never read, but must be specified anyways
-			return str.replace( RE.titleLink, ( $0, $1 )=>{ return $1 } );
-			
-	/*	let date1 = new Date();
-		let n1 = date1.getTime(); */
-
-		// else, find all dynamic link patterns in the current property and replace them by a link, if possible:
-		let replaced = false;
-		do {
-			replaced = false;
-			str = str.replace( RE.titleLink, 
-				// @ts-ignore - $0 is never read, but must be specified anyways
-				( $0, $1 )=>{
-					replaced = true;
-					// disregard links being too short:
-					if( $1.length<CONFIG.dynLinkMinLength ) return $1;
-					let m=$1.toLowerCase(), cO=null, ti:string, target=null, notFound=true;
-					// is ti a title of any resource?
-					app.specs.tree.iterate( (nd)=>{
-						cO = itemById( app.cache.selectedProject.data.resources, nd.ref );
-						// avoid self-reflection:
-					//	if(ob.id==cO.id) return true;
-						ti = elementTitleOf( cO, opts );
-						// if the dynLink content equals a resource's title, remember the first occurrence:
-						if( notFound && ti && m==ti.toLowerCase() ) {
-							notFound = false;
-							target = cO;
-						};
-						return notFound // go into depth (return true) only if not yet found
-					});
-					// replace it with a link in case of a match:
-					if( target )
-						return lnk(target,$1); 
-					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">'+$1+'</span>'
-				}
-			)
-		} while( replaced );
-
-	/*	let date2 = new Date();
-		let n2 = date2.getTime(); 
-		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
-		return str;
-
-		function lnk(r:Resource,t:string):string { 
-//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
-			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+r.id+'\')">'+t+'</a>'
-		}
-	}
-}
-var fileRef = function() {
-	"use strict";
-	var self:any = {};
-
-	self.toGUI = ( txt:string, opts?:any ):string =>{
-/*		Properly handle file references in XHTML-Text. 
-		- An image is to be displayed 
-		- a file is to be downloaded
-		- an external hyperlink is to be included
-*/
-		if( typeof(opts)!='object' ) opts = {};
-		if( opts.projId==undefined ) opts.projId = app.cache.selectedProject.data.id;
-	//	if( opts.rev==undefined ) opts.rev = 0;
-		if( opts.imgClass==undefined ) opts.imgClass = 'forImage'	// regular size
-		
-	/*		function addFilePath( u ) {
-				if( /^https?:\/\/|^mailto:/i.test( u ) ) {
-					// don't change an external link starting with 'http://', 'https://' or 'mailto:'
-//					console.debug('addFilePath no change',u);
-					return u;
-				};
-				// else, add relative path:
-//				console.debug('addFilepath',itemById( app.cache.selectedProject.data.files, u ));
-				return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
-			}  */
-			function getType( str:string ):string {
-				let t = /(type="[^"]+")/.exec( str );
-				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
-				return '';
-			}
-			function getUrl( str:string ):string|undefined {
-				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
-				// return null, because an URL is expected in any case:
-				if( Array.isArray(l)&&l.length>0 ) return l[1]
-			//						.replace(/\\/g,'/'); // is now handled during import
-			//	return undefined
-			}
-		/*	function getPrp( pnm:string, str:string ):string|undefined {
-				// get the value of XHTML property 'pnm':
-				let re = new RegExp( pnm+'="([^"]+)"', '' ),
-					l = re.exec(str);
-				if( Array.isArray(l)&&l.length>0 ) return l[0];
-			//	return undefined
-			} */
-			function getPrpVal( pnm:string, str:string ):string|undefined {
-				// get the value of XHTML property 'pnm':
-				let re = new RegExp( pnm+'="([^"]+)"', '' ),
-					l = re.exec(str);
-				if( Array.isArray(l)&&l.length>0 ) return l[1];
-			//	return undefined
-			}
-			function makeStyle( w:string,h:string ):string {
-				// compose a style property, if there are such parameters,
-				// return empty string, otherwise:
-				return (h||w)? ' style="'+(h?'height:'+h+'; ':'')+(w?'width:'+w+'; ':'')+'"' : '';
-			}
-			function hasContent( f:object ):boolean {
-				return f && (f.blob && f.blob.size>0 || f.dataURL && f.dataURL.length>0 );
-			}
-
-		// Prepare a file reference for viewing and editing:
-//		console.debug('toGUI 0: ', txt);
-		var repStrings = [];   // a temporary store for replacement strings
-			
-		// 1. transform two nested objects to link+object resp. link+image:
-		txt = txt.replace( RE.tagNestedObjects,   
-			// @ts-ignore - $3 is never read, but must be specified anyways
-			( $0, $1, $2, $3, $4 )=>{       // description is $4, $3 is not used
-				let u1 = getUrl( $1 ),  	// the primary file
-				//	t1 = getType( $1 ), 
-				//	w1 = getPrp("width", $1 ),
-				//	h1 = getPrp("height", $1 ),
-					u2 = getUrl( $2 ), 		// the preview image
-				//	t2 = getType( $2 ),
-					w2 = getPrpVal("width", $2 ),
-					h2 = getPrpVal("height", $2 ),
-					d = $4 || u1;		// If there is no description, use the name of the link object
-
-//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
-				if( !u1 ) console.warn('no file found in',$0);
-				if( !u2 ) console.warn('no image found in',$0);
-//				u1 = addFilePath(u1);
-//				u2 = addFilePath(u2);
-
-				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1),
-					f2 = itemByTitle(app.cache.selectedProject.data.files,u2);
-
-				if( hasContent(f1) ) {
-
-					if( hasContent(f2) ) {
-						// take f1 to download and f2 to display:
-
-//						console.debug('tagId',tagId(u2));
-						// first add the element to which the file to download will be added:
-						repStrings.push( '<div id="'+tagId(u1)+'"></div>' );
-						// now add the image as innerHTML:
-						self.renderDownloadLink( f1, 
-							'<div class="'+opts.imgClass+' '+tagId(u2)+'"'
-								+ makeStyle( w2, h2 )
-								+'></div>', 
-							opts 
-						);
-						// Because an image must be added after an enclosing link, for example, the timelag is increased a little.
-						self.renderImage( f2, $.extend( {}, opts, {timelag:opts.timelag*1.2} ) );
-					} 
-					else {
-						// nothing to display, so ignore f2:
-						
-						// first add the element to which the attachment will be added:
-						repStrings.push( '<span class="'+tagId(u1)+'"></span>' );
-						// now add the download link with file as data-URL:
-						self.renderDownloadLink(f1,d,opts);
-					};
-					return 'aBra§kadabra'+(repStrings.length-1)+'§';
-					
-				}
-				else {
-					return '<div class="notice-danger" >File missing: '+d+'</div>'
-				};
-			}
-		);
-//		console.debug('fileRef.toGUI 1: ', txt);
-			
-		// 2. transform a single object to link+object resp. link+image:
-		txt = txt.replace( RE.tagSingleObject,   //  comprehensive tag or tag pair
-			// @ts-ignore - $2 is never read, but must be specified anyways
-			( $0, $1, $2, $3 )=>{
-//				var pairedImgExists = ( url )=>{
-//					// ToDo: check actually ...
-//					return true
-//				};
-
-				let u1 = getUrl( $1 ), 
-					t1 = getType( $1 ),
-					w1 = getPrpVal("width", $1 ),
-					h1 = getPrpVal("height", $1 );
-
-				let e = u1.fileExt();
-				if (!e) return $0     // no change, if no extension found
-
-				// $3 is the description between the tags <object></object>:
-				let d = $3 || u1,
-					hasImg = false;
-				e = e.toLowerCase();
-//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
-
-//				u1 = addFilePath(u1);
-				if( !u1 ) console.info('no image found');
-				let f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
-				// sometimes the application files (BPMN or other) have been replaced by images;
-				// this is for example the case for *.specif.html files:
-				if( !f1 && CONFIG.applExtensions.indexOf( e )>-1 ) {
-					for( var i=0,I=CONFIG.imgExtensions.length; !f1&&i<I; i++ ) {
-						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
-						f1 = itemByTitle(app.cache.selectedProject.data.files,u1);
-					};
-				};
-					
-				if( CONFIG.imgExtensions.indexOf( e )>-1 || CONFIG.applExtensions.indexOf( e )>-1 ) {  
-					// it is an image, show it:
-					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
-					if( hasContent(f1) ) {
-						hasImg = true;
-						// first add the element to which the image will be added:
-					//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
-						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
-								+ makeStyle( w1, h1 )
-								+ '></div>';
-//						console.debug('img opts',f1,opts);
-						// now add the image as innerHTML:
-						self.renderImage( f1, opts );
-					}
-					else {
-						d = '<div class="notice-danger" >Image missing: '+d+'</div>'
-					};
-				}
-				else if( CONFIG.officeExtensions.indexOf( e )>-1 ) {  
-					// it is an office file, show an icon plus filename:
-					if( hasContent(f1) ) {
-						hasImg = true;
-						// first add the element to which the attachment will be added:
-						d= '<div id="'+tagId(u1)+'" '+CONFIG.fileIconStyle+'></div>';
-						// now add the download link with file icon:
-					self.renderDownloadLink(f1,'<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" alt="[ '+e+' ]" />',opts);
-					}
-					else {
-						d = '<div class="notice-danger" >File missing: '+d+'</div>'
-					};
-				}
-				else {
-					switch( e ) { 
-						case 'ole': 
-							// It is an ole-file, so add a preview image;
-							// in case there is no preview image, the browser will display d holding the description
-							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
-							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
-							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
-							hasImg = true;
-						//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
-							d = '<img src="'+u1.fileName()+'.png" type="image/png" alt="'+d+'" />';
-							// ToDo: Offer a link for downloading the file
-							break;
-						default:
-							// last resort is to take the filename:
-							d = '<span>'+d+'</span>';
-							// ToDo: Offer a link for downloading the file
-					};
-				};
-					
-				// finally add the link and an enclosing div for the formatting:
-				// avoid that a pattern is processed twice.
-
-				// insert a placeholder and replace it with the prepared string at the end ...
-				if( hasImg )
-					repStrings.push( d )
-				else
-					repStrings.push( '<a href="'+u1+'"'+t1+' >'+d+'</a>' );
-				
-				return 'aBra§kadabra'+(repStrings.length-1)+'§';
-			}
-		);	
-//		console.debug('fileRef.toGUI 2: ', txt);
-				
-		// 3. process a single link:
-		txt = txt.replace( RE.tagA,  
-			( $0, $1, $2 )=>{ 
-				var u1 = getPrpVal( 'href', $1 ),
-					e = u1.fileExt();
-//				console.debug( $1, $2, u1, e );
-				if( !e ) return $0     // no change, if no extension found
-					
-			/*	if( /(<object|<img)/g.test( $2 ) ) 
-					return $0;		// no change, if an embedded object or image */
-					
-				if( CONFIG.officeExtensions.indexOf( e.toLowerCase() )<0 ) 
-					return $0;	// no change, if not an office file
-
-				// it is an office file, add an icon:
-				var t1 = getType( $1 ); 
-				if( !$2 ) {
-					var d = u1.split('/');  // the last element is a filename with extension
-					$2 = d[d.length-1]   // $2 is now the filename with extension
-				};
-//				u1 = addFilePath(u1);
-
-				// add an icon:
-				e = '<img src="'+CONFIG.imgURL+'/'+e+'-icon.png" type="image/png" />'
-					
-				// finally returned the enhanced link:
-				return ('<a href="'+u1+'" '+t1+' target="_blank" >'+e+'</a>')
-			}
-		);	
-//		console.debug('fileRef.toGUI 3: ', txt);
-
-		// Now, at the end, replace the placeholders with the respective strings,
-		txt = txt.replace( /aBra§kadabra([0-9]+)§/g,  
-			// @ts-ignore - $0 is never read, but must be specified anyways
-			( $0, $1 )=>{
-				return repStrings[$1]
-			});
-//		console.debug('fileRef.toGUI result: ', txt);
-		return txt
-	};
-	self.renderDownloadLink = (f: IFileWithContent, inner: string, opts?: any): void => {
-
-		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-		// increase the timelag between building the DOM and rendering the images, if necessary.
-		if( typeof(opts)!='object' ) opts = {};
-		if( typeof(opts.timelag)!='number' ) opts.timelag = CONFIG.imageRenderingTimelag;
-
-		// Add the download link of the attachment as innerHTML:
-		// see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
-		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
-		blob2dataURL( f, (r,fTi,fTy)=>{
-			// add link with icon to DOM using an a-tag with data-URI:
-			document.getElementById(tagId(fTi)).innerHTML =
-				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + inner + '</a>';
-		},opts.timelag);
-	};
-	self.renderImage = (f: IFileWithContent, opts?: any): void => {
-
-		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
-		// increase the timelag between building the DOM and rendering the images, if necessary.
-		if( typeof(opts)!='object' ) opts = {};
-		if( typeof(opts.timelag)!='number' ) opts.timelag = CONFIG.imageRenderingTimelag;
-
-//		console.debug('renderImage',f,opts);
-        if (!f.blob && !f.dataURL) {
-			setTimeout( ()=>{
-				Array.from(document.getElementsByClassName(tagId(f.title)), 
-					(el)=>{el.innerHTML = '<div class="notice-danger" >Image missing: '+f.title+'</div>'}
-				);
-			}, opts.timelag )
-            return;
-		};
-		// ToDo: in case of a server, the blob itself must be fetched first ...
-		
-		if( f.dataURL ) {
-			setTimeout( ()=>{
-				// add image to DOM using an image-tag with data-URI:
-				Array.from( document.getElementsByClassName(tagId(f.title)), 
-					(el)=>{ 
-						let ty = /data:([^;]+);/.exec(f.dataURL);
-						el.innerHTML = '<object data="' + f.dataURL 
-											+ '" type="' + (ty[1] || f.type) + '"'
-									/*		+ (opts.w ? ' ' + opts.w : '')
-											+ (opts.h ? ' ' + opts.h : '') */
-											+ ' >' + f.title + '</object>';
-					});
-			}, opts.timelag );
-			return;
-		};
-		// else: the data is a blob
-
-		switch( f.type ) {
-			case 'image/png':
-			case 'image/x-png':
-			case 'image/jpeg':
-			case 'image/jpg':
-			case 'image/gif':
-				// reference the original list item, which has the blob and other properties:
-				showRaster( f, opts );
-				break;
-			case 'image/svg+xml':
-				showSvg( f, opts );
-				break;
-			case 'application/bpmn+xml':
-				showBpmn( f, opts );
-				break;
-			default:
-				console.warn('Cannot show diagram '+f.title+' of unknown type: ',f.type);
-		};
-		return;
-					
-		function showRaster(f: IFileWithContent, opts: any):void {
-			/*	if( f.dataURL ) {
-					// this works:
-					setTimeout( ()=>{
-						// add image to DOM using an image-tag with data-URI:
-						Array.from( document.getElementsByClassName(tagId(f.title)), 
-							(el)=>{el.innerHTML = '<img src="'+f.dataURL+'" type="'+f.type+'" alt="'+f.title+'" />'}
-						);
-					}, opts.timelag )
-				} 
-				else { */
-					blob2dataURL( f, (r,fTi,fTy)=>{
-						// add image to DOM using an image-tag with data-URI:
-						Array.from( document.getElementsByClassName(tagId(fTi)), 
-							(el)=>{el.innerHTML = '<img src="'+r
-													+ '" type="' + fTy + '"'
-											/*		+ (opts.w ? ' ' + opts.w : '')
-													+ (opts.h ? ' ' + opts.h : '') */
-													+ ' alt="' + fTi + '" />';
-						/*	// set a grey background color for images with transparency:
-							(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
-							}
-						);
-					}, opts.timelag );
-			//	};
-			}
-		function showSvg(f: IFileWithContent, opts: any):void {
-				// Show a SVG image.
-				
-//				console.debug('showSvg',f,opts);
-				// Read and render SVG:
-			/*	if( f.dataURL ) {
-					// this does not work, yet;
-					// here we need the SVG as XML-string, not as data-URL:
-					setTimeout( displaySVGeverywhere( .. ), opts.timelag )
-				}
-				else { */
-					blob2text( f, displaySVGeverywhere, opts.timelag )
-			//	};
-				return;
-
-			//	function displaySVGeverywhere(r,fTi,fTy) {
-				function displaySVGeverywhere(r, fTi) {
-					// Load pixel images embedded in SVG,
-					// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
-					// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-					// see: https://css-tricks.com/probably-dont-base64-svg/
-					// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
-					let svg = {
-							// the locations where the svg shall be added:
-							locs: document.getElementsByClassName(tagId(fTi)),
-							// the SVG image with or without embedded images:
-							img: r
-						},
-						dataURLs = [],	// temporary list of embedded images
-						// RegExp for embedded images,
-						// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
-						rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
-						ef: Item,
-						mL,
-						pend = 0;		// the count of embedded images waiting for transformation
-
-					// process all image references within the SVG image one by one:
-					// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec
-					while( (mL=rE.exec(r)) != null ) {
-						// skip all images already provided as data-URLs:
-						if( mL[2].startsWith('data:') ) continue;
-						// avoid transformation of redundant images:
-						if( indexById(dataURLs,mL[2])>-1 ) continue;
-						ef = itemBySimilarTitle( app.cache.selectedProject.data.files, mL[2] );
-						if( ef && ef.blob ) {
-							pend++;
-//							console.debug('SVG embedded file',mL[2],ef,pend);
-							// transform file to data-URL and display, when done:
-							blob2dataURL( ef, (r,fTi)=>{
-								dataURLs.push({
-									id: fTi,
-									val: r
-								});
-//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
-								if( --pend<1 ) {
-									// all embedded images have been transformed,
-									// replace references by dataURLs and add complete image to DOM:
-									// @ts-ignore - $0 is never read, but must be specified anyways
-									svg.img = svg.img.replace( rE, ($0,$1,$2,$3)=>{
-																let dURL=itemBySimilarId(dataURLs,$2);
-																// replace only if dataURL is available:
-																if( dURL ) return $1+dURL.val+$3
-																else return '';
-															});
-									displayAll( svg );
-								};
-							});
-						};
-					};
-					if( pend<1 ) {
-						// there are no embedded images, so display right away:
-						displayAll( svg );
-					};
-					return;
-					
-					function displayAll( svg ):void {
-						Array.from( svg.locs, 
-							(loc)=>{
-								loc.innerHTML = svg.img;
-								if( opts && opts.clickableElements ) registerClickEls(loc)
-							}
-						);
-					}
-				}
-				// see http://tutorials.jenkov.com/svg/scripting.html
-				function registerClickEls(svg):void {
-					if( !CONFIG.clickableModelElements || CONFIG.clickElementClasses.length<1 ) return;
-//					console.debug('registerClickEls',svg);
-					addViewBoxIfMissing(svg);
-					
-					// now collect all clickable elements:
-					svg.clkEls = [];
-					// For all elements in CONFIG.clickElementClasses:
-					// Note that .getElementsByClassName() returns a HTMLCollection, which is not an array and thus has neither concat nor slice methods.
-					// 	Array.prototype.slice.call() converts the HTMLCollection to a regular array, 
-					//  see http://stackoverflow.com/questions/24133231/concatenating-html-object-arrays-with-javascript
-					// 	Array.from() converts the HTMLCollection to a regular array, 
-					//  see https://hackernoon.com/htmlcollection-nodelist-and-array-of-objects-da42737181f9
-					CONFIG.clickElementClasses.forEach( (cl)=>{
-						svg.clkEls = svg.clkEls.concat(Array.from( svg.getElementsByClassName( cl )));
-					});
-//					console.debug(svg.clkEls, typeof(svg.clkEls))
-					svg.clkEls.forEach( (clkEl)=>{
-						// set cursor for clickable elements:
-						clkEl.setAttribute("style", "cursor:pointer;");
-
-						// see https://www.quirksmode.org/js/events_mouse.html
-						// see https://www.quirksmode.org/dom/events/
-						clkEl.addEventListener("dblclick", 
-							function () { 
-								// ToDo: So far, this only works with ARCWAY generated SVGs.
-								let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
-								// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
-								eId = correspondingPlan(eId);
-								// delete the details to make sure that images of the click target are shown,
-								// otherwise there will be more than one image container with the same id:
-								$("#details").empty();
-								app.specs.showTree.set(true);
-								// jump to the click target:
-								app.specs.tree.selectNodeByRef( eId, true );  // true: 'similar'; id must be a substring of nd.ref
-								// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
-								document.getElementById(CONFIG.objectList).scrollTop = 0;
-							}
-						);
-
-						// Show the description of the element under the cursor to the left:
-						clkEl.addEventListener("mouseover", 
-							function() { 
-//								console.debug(evt,this,$(this));
-								// ToDo: So far, this only works with ARCWAY generated SVGs.
-							//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
-								let eId = this.className.baseVal.split(' ')[1],		// id is second class
-									clsPrp = new CResourceWithClassifiedProps( itemBySimilarId(app.cache.selectedProject.data.resources,eId), app.cache.selectedProject.data ),
-									ti = languageValueOf( clsPrp.title.value ),
-									dsc = '';
-								clsPrp.descriptions.forEach( (d)=>{
-									// to avoid an endless recursive call, propertyValueOf shall add neither dynLinks nor clickableElements
-									dsc += propertyValueOf( d, {unescapeHTMLTags:true,makeHTML:true} )
-								});
-								if (stripHTML(stripCtrl(dsc)) ) {
-									// Remove the dynamic linking pattern from the text:
-									$("#details").html( '<span style="font-size:120%">' 
-														+ (CONFIG.addIconToInstance? addIcon(ti,clsPrp['class'].icon) : ti) 
-														+ '</span>\n'
-														+ dsc );
-									app.specs.showTree.set(false);
-								}
-							}
-						);
-						clkEl.addEventListener("mouseout", 
-							function() { 
-							//	evt.target.setAttribute("style", "cursor:default;"); 
-								$("#details").empty();
-								app.specs.showTree.set(true);
-							}
-						);
-					});
-					return svg;
-					
-					function correspondingPlan(id:string):string {
-						// In case a graphic element is clicked, usually the resp. element (resource) with it's properties is shown.
-						// This routine checks whether there is a plan with the same name to show that plan instead of the element.
-						if( CONFIG.selectCorrespondingDiagramFirst ) {
-							// replace the id of a resource by the id of a diagram carrying the same title:
-							let cacheData = app.cache.selectedProject.data,
-								ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
-								rT: ResourceClass;
-							for( var i=cacheData.resources.length-1;i>-1;i-- ) {
-								rT = itemById(cacheData.resourceClasses,cacheData.resources[i]['class']);
-								if( CONFIG.diagramClasses.indexOf(rT.title)<0 ) continue;
-								// else, it is a resource representing a diagram:
-								if( elementTitleOf(cacheData.resources[i],opts)==ti ) {
-									// found: the diagram carries the same title 
-									if( app[CONFIG.objectList].resources.selected().toShow 
-										&& app[CONFIG.objectList].resources.selected().toShow.id==cacheData.resources[i].id )
-										// the searched plan is already selected, thus jump to the element: 
-										return id;
-									else
-										return cacheData.resources[i].id;	// the corresponding diagram's id
-								};
-							};
-						};
-						return id;	// no corresponding diagram found
-					}
-					// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
-					// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
-					// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
-					// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
-					function addViewBoxIfMissing(svg):void {
-						let el;
-						for( var i=0,I=svg.childNodes.length;i<I;i++ ) {
-							el = svg.childNodes[i];
-//							console.debug('svg',svg,el,el.outerHTML);
-							// look for '<svg .. >' tag with its properties, often but not always the first child node:
-							if( el && el.outerHTML && el.outerHTML.startsWith('<svg') ) {
-								if( el.getAttribute("viewBox") ) return;  // all is fine, nothing to do
-
-								// no viewbox property, so add it:
-								let w = el.getAttribute('width').replace(/px$/,''),
-									h = el.getAttribute('height').replace(/px$/,'');
-							/*	// get rid of 'px':
-								// ToDo: perhaps this is a little too simple ...
-								if( w.endsWith('px') ) w = w.slice(0,-2);
-								if( h.endsWith('px') ) h = h.slice(0,-2); */
-								el.setAttribute("viewBox", '0 0 '+w+' '+h );
-								return;
-							};
-						};
-					}
-				}
-			}
-			function showBpmn(f: IFileWithContent, opts:any): void {
-				// Read and render BPMN:
-				blob2text( f, (b,fTi)=>{
-					bpmn2svg(b)
-					.then(
-						(result)=>{
-//							console.debug('SVG',result);
-							Array.from( document.getElementsByClassName(tagId(fTi)), 
-								(el)=>{ el.innerHTML = result.svg }
-							);
-						},
-						(err)=>{
-							console.error('BPMN-Viewer could not deliver SVG', err);
-						}
-					);
-				}, opts.timelag);
-			}
-			function itemBySimilarId(L:Item[],id:string):Item {
-				// return the list element having an id similar to the specified one:
-				id = id.trim();
-				for( var i=L.length-1;i>-1;i-- )
-					// is id a substring of L[i].id?
-					// @ts-ignore - L[i] does exist, if execution gets here
-					if( L[i].id.indexOf(id)>-1 ) return L[i];   // return list item
-			//	return undefined
-			}
-			function itemBySimilarTitle(L:Item[],ti:string):Item {
-				// return the list element having a title similar to the specified one:
-				ti = ti.trim();
-				for( var i=L.length-1;i>-1;i-- )
-					// is ti a substring of L[i].title?
-					// @ts-ignore - L[i] does exist, if execution gets here
-					if( L[i].title.indexOf(ti)>-1 ) return L[i];   // return list item
-			//	return undefined
-			}
-	// end of self.renderImage()
-	};
-/*	// Prepare a file reference to be compatible with ReqIF spec and conventions:
-	self.fromGUI = function( txt ) {
-			function getType( str ) {
-				let t = /(type="[^"]+")/.exec( str );
-				if( Array.isArray(t)&&t.length>0 ) return (' '+t[1]);
-				return ''
-			}
-			function getStyle( str ) {
-				let s = /(style="[^"]+")/.exec( str );
-				if( Array.isArray(s)&&s.length>0 ) return (' '+s[1]);
-				return ''
-			}
-			function getUrl( str, prp ) {
-				let l = /data="([^"]+)"/.exec( str );  // url in l[1]
-				// return null, because an URL is expected in any case:
-				if( Array.isArray(l)&&l.length>0 ) {
-					// ToDo: More greediness!?
-					let loc = /[^"]*\/projects\/[^"]*\/files\/([^"]+)/i.exec( l[1] );    // ...projects/.../files/..
-					// If matching, it is a local path, otherwise an external:
-					// ToDo: If the path is pointing to a specific revision of a file, the revision is ignored/removed.
-					if( Array.isArray(loc)&&loc.length>0 ) return loc[1];	// local link: take path following '.../files/'
-					return l[1];  											// external link: keep full path
-				};
-				return // undefined
-			}
-//		console.debug('fromGUI 0: ', JSON.stringify(txt));
-
-		// Remove the div which has been added for formatting:
-		// ToDo: This does not work in all cases. Observed with <a>..<object ...>text</object></a> used with an OLE object.
-		txt = txt.replace( /<div class="'+opts.imgClass+'">([\s\S]+?<\/a>)[\s]*<\/div>/g,  // note the 'lazy plus' !
-			function( $0, $1 ){ return $1 }
-		);	
-//		console.debug('fromGUI 1: ', JSON.stringify(txt));
-
-		// 1. In case of two nested objects, make the URLs relative to the project
-		//    The inner object can be a tag pair <object .. >....</object> or comprehensive tag <object .. />.
-		txt = txt.replace( /<object([^>]+)>[\s\S]*?<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^>]*<\/object>/g, 
-			function( $0, $1, $2, $3, $4 ) { 
-				var u1 = getUrl( $1, 'data' ),  			// the primary information
-					t1 = getType( $1 ); 
-				var u2 = getUrl( $2, 'data' ), 
-					t2 = getType( $2 ), 
-					s2 = getStyle( $2 ); 
-
-				// If there is no description, use the name of the link object:
-				if( !$4 ) $4 = u1;   // $4 is now the description between object tags
-				
-				return '<object data="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' />'+$4+'</object>'
-			}
-		);	
-//		console.debug('fromGUI 2: ', JSON.stringify(txt));
-			
-		// 2. Transform link and image to nested XHTML object(s) or a single XHTML object:
-		//    (Img is not allowed in RIF/ReqIF and it is proposed by the ReqIF Implementor Forum to use nested objects)
-		txt = txt.replace( /<a([^>]+)>[^<]*<img([^>]+)(\/>|>[^<]*<\/img>)([^<]*)<\/a>/g,  
-			function( $0, $1, $2, $3, $4 ) { 
-				var u1 = getUrl( $1, 'href' );  			// the primary information
-				if( u1==null ) return '';					// suppress it, if incomplete
-				var t1 = getType( $1 ); 					
-
-				var u2 = getUrl( $2, 'src' ); 				// the image
-				if( u2==null ) return '';					// suppress it, if incomplete
-				var t2 = getType( $2 );						
-				var s2 = getStyle( $2 );
-
-				// If there is no description, use the name of the link object:
-				if( !$4 ) $4 = u1;   // $4 is now the filename with extension
-					
-				if( u1==u2 )   
-					// Create a single object, if objectClasses of link and image are equal:
-					return ('<object data="'+u2+'"'+t2+s2+' >'+$4+'</object>');
-						
-				if( /\.\/im[^-]+-icon\.png/i.test( u2 ) )  // self-supplied icons: "./im*-icon.png"
-					// Create a single object, if the image is a locally provided icon:
-					// It is assumed that the self-supplied icons are found in a folder starting with '/im' (for 'img' or 'image')
-					// ... and that the path does not contain any dash '-'.
-					return ('<object data="'+u1+'"'+t1+' >'+$4+'</object>');
-						
-				// If objectClasses of link and image are different, create a nested pair of objects to keep the preview.
-				return '<object data="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' >'+$4+'</object></object>'
-			}
-		);
-//		console.debug('fromGUI 3: ', JSON.stringify(txt));
-
-		// 3. Transform a link plus object (in case of svg) to nested XHTML object(s):
-		txt = txt.replace( /<a([^>]+)>[^<]*<object([^>]+)(\/>|>([\s\S]*?)<\/object>)[^<]*<\/a>/g,  
-			function( $0, $1, $2, $3, $4 ) { 
-				// parse the primary information:
-				var u1 = getUrl( $1, 'href' ); 				
-				if( u1==null ) return '';
-				var t1 = getType( $1 ); 					
-
-				// Parse the image information: 
-				var u2 = getUrl( $2, 'data' ); 				
-				if( u2==null ) return '';
-				var t2 = getType( $2 );
-				var s2 = getStyle( $2 );
-					
-				// If there is no description, use the name of the link object:
-				if( !$4 ) $4 = u2;   // $4 is now the filename with extension
-					
-				if( u1==u2 ) {
-					// If objectClasses of link and image are equal or the image is locally provided icon, create a single object.
-					// Any locally provided icon is removed; it will be added again when reading.
-					return ('<object data="'+u2+'"'+t2+s2+' >'+$4+'</object>')
-				} else {
-					// If objectClasses of link and image are different, create a nested pair of objects to keep the preview.
-					return '<object data="'+u1+'"'+t1+' ><object data="'+u2+'"'+t2+s2+' >'+$4+'</object></object>'
-				}
-			}
-		);
-//		console.debug('fromGUI 4: ', JSON.stringify(txt));
-
-		// 4. Transformation of <img> to <object> has been moved to SpecIF->ReqIF, because it is a restriction of ReqIF.
-
-		// 5. If there is just a link, make the URLs relative to the project:
-		txt = txt.replace( /<a([^>]+)(\/>|>([^>]+)<\/a>)/g,
-			function( $0, $1, $2, $3 ){
-				var u = getUrl( $1, 'href' );
-				if( u==null ) return '';
-
-				// If there is no description, use the name of the link object:
-				if( !$3 ) $3 = u;   
-
-				return ('<a href="'+u+'" >'+$3+'</a>');  
-			} 
-		);
-//		console.debug('fromGUI result:', JSON.stringify(txt));
-
-		return txt;
-	}; */
-	return self;
-}();	// end of fileRef()

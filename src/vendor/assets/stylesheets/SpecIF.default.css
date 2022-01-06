@@ -2,7 +2,7 @@
 	Defines own CSS classes and overrides certain classes of Bootstrap and other libs.
 	Intended to be replaced with a custom file;
 	it is recommended to use a different name and to change path and name in config-XX.js.
-	(C)copyright 2010-2018 enso managers gmbh (http://www.enso-managers.de)
+	(C)copyright 2010-2018 enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
 
@@ -19,24 +19,22 @@ body {
 	font-size: 10.5pt;
 }
 #pageHeader {
-	padding: 8px 0 0 0;
+	padding: 0.3em 0 0 0;
 }
 #logo {
-	width: 121px;
+	width: 122px;
 	height: 36px;
 	float: right;
 	margin-right: 16px;
-	background-image: url("../images/logo-navbar-right.png");
+	background-image: url("../images/logo-navbar-right.svg");
 	background-repeat: no-repeat;
 	background-size: 121px;
 }
 #spinner {
-	width: 32px;
-	height: 32px;
-	background-image: url("../images/spinner-32.gif");
-	background-repeat: no-repeat;
+	font-size: 24px;
+	color: #3F3F3F;
 	float: right;
-	margin: 2px 16px 0 0;
+	margin: 0px 16px 0 0;
 }
 #message {
  position:fixed;
@@ -45,7 +43,7 @@ body {
 }
 .pageTitle {
 	font-size: 180%;
-	padding: 0 0 0.4em;
+	padding: 0 0 0.3em;
 }
 .title1,
 .chapterTitle {
@@ -124,9 +122,10 @@ div.content {   /* width is 75% with wide screen, 100% otherwise */
 	clear: both;
     /* height is set by script */
     box-sizing: border-box;
+	position: relative; /* create reference for inner absolute blocks */
     width: 100%;
     overflow: auto;
-    padding: 44px 0 0 4px;
+    padding: 0 0 0 4px;
 }
 /* main column for title and description: */
 div.content-main {
@@ -416,5 +415,3 @@ ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
   font-size: 100%;
   cursor: pointer;
 }
-
-

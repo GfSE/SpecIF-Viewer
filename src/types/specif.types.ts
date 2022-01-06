@@ -348,7 +348,7 @@ interface Property {
 
 interface Rights {
     title: string;
-    type:  string;
+    type?:  string;
     url:   string;
 }
 

@@ -5,7 +5,6 @@
 	We appreciate any correction, comment or contribution
 */
 app.statementsGraph = function Graph() {
-	"use strict";
 	// For a selected SpecIF resorce, draw a graph of all statements and related resources.
 	// All statements of the same type are grouped to make the reading easier.
 	// Incoming relations (where the selected resource is object of the statement) are positioned at the upper left half,
@@ -36,7 +35,7 @@ app.statementsGraph = function Graph() {
 		if( !opts.fontSize ) opts.fontSize = '14px';
 
 		// All required parameters are available, so we can begin:
-		let relations = collectStatementsByType( specifData.resources[opts.index] );
+		let relations:statement[] = collectStatementsByType( specifData.resources[opts.index] );
 //		console.debug('init relations',relations);
 		// if there are no relations, do not create a graph:
 		if ( !relations ) return;
@@ -132,6 +131,7 @@ app.statementsGraph = function Graph() {
 							for(var id in containedNodesPositions) {
 								if (containedNodesPositions.hasOwnProperty(id)) {
 									if (id === "0" || (!containedNodesPositions["0"] && !id.includes(":"))) {
+										// @ts-ignore - index is ok:
 										newPositions[id] = {x: clusterPosition.x, y: clusterPosition.y};
 										if (id !== "0") {
 											offset = Math.atan(clusterPosition.y / clusterPosition.x);
@@ -140,6 +140,7 @@ app.statementsGraph = function Graph() {
 										}
 									}
 									else {
+										// @ts-ignore - index is ok:
 										newPositions[id] = calculateNodePosition(
 											i,
 											Math.sqrt(2)*Math.PI,
@@ -519,12 +520,16 @@ app.statementsGraph = function Graph() {
 					cid = getStatementTitle(st);
 				/*	// all statements having the same class are clustered:
 					cid = st['class']; */
+					// @ts-ignore - cid as string 'can' be used as index:
 					if (!sts[cid]) {
+						// @ts-ignore - cid as string 'can' be used as index:
 						sts[cid] = { targets: [], sources: [] }
 					};
 					if ( oid===res.id )
+						// @ts-ignore - cid as string 'can' be used as index:
 						sts[cid].sources.push( {resource:resourceById(sid),statement:st} )
 					else
+						// @ts-ignore - cid as string 'can' be used as index:
 						sts[cid].targets.push( {resource:resourceById(oid),statement:st} )
 				}
             });

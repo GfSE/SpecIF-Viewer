@@ -54,7 +54,7 @@ moduleManager.construct({
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		stdError(xhr,pData.returnToCaller)
+		LIB.stdError(xhr,pData.returnToCaller)
 	}
 	function showNotice(txt) {
 		$('#'+CONFIG.reports).html('<div class="notice-default" >'+txt+'</div>');
@@ -69,6 +69,7 @@ moduleManager.construct({
 		pData.showLeft.reset();
 
 		// Language options have been selected at project level:
+		opts.lookupLanguage = true;
 		opts.targetLanguage = pData.targetLanguage;
 		opts.lookupTitles = true;
 		opts.lookupValues = true;
@@ -92,7 +93,7 @@ moduleManager.construct({
 		// but not navigation in the browser history:
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
-				project: dta.id,
+				project: prj.id,
 				view: self.view.substr(1)	// remove leading hash
 			}); 
 
@@ -109,7 +110,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				pr.resourceClasses.forEach( function( rC ) {
+				pr.resourceClasses.forEach( ( rC ) =>{
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
 								rCR.datasets.push({
@@ -133,7 +134,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				pr.statementClasses.forEach( function( sC ) {
+				pr.statementClasses.forEach( ( sC ) =>{
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
 								sCR.datasets.push({
@@ -152,7 +153,7 @@ moduleManager.construct({
 					// Look up the dataType and create a counter for all possible enumerated values:
 					for( var d=0, D=prj.dataTypes.length; d<D; d++ ) {
 						if( prj.dataTypes[d].id == pC.dataType ) {
-							prj.dataTypes[d].values.forEach( function(val) {
+							prj.dataTypes[d].values.forEach( (val) =>{
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
 								rep.datasets.push({  
 									label: i18n.lookup( languageValueOf( val.value, opts )), 
@@ -176,10 +177,10 @@ moduleManager.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC;
-				dta.resourceClasses.forEach( function(rC) {
-					rC.propertyClasses.forEach( function(id) {
-						pC = itemById( dta.propertyClasses, id );
-						if( itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration' ) {
+				dta.get("resourceClass","all").forEach( (rC) =>{
+					rC.propertyClasses.forEach( (id) =>{
+						pC = dta.get("propertyClass", id )[0];
+						if( dta.get("dataType", pC.dataType )[0].type=='xs:enumeration' ) {
 							var aVR = {
 									title: titleOf(rC,opts)+': '+titleOf(pC,opts),
 									category: 'enumValue',
@@ -234,12 +235,12 @@ moduleManager.construct({
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
-				let rC = itemById( dta.resourceClasses, rId );
+				let rC = dta.get("resourceClass", rId )[0];
 				// there is a report for every enumerated resourceClass:
 				let dT=null,oa=null,i=null,ct=null,pC;
-				rC.propertyClasses.forEach( function(pId) {
-					pC = itemById( dta.propertyClasses, pId );
-					dT = itemById( dta.dataTypes, pC.dataType );
+				rC.propertyClasses.forEach( (pId) =>{
+					pC = dta.get("propertyClass", pId )[0];
+					dT = dta.get("dataType", pC.dataType )[0];
 					if( dT.type!='xs:enumeration' ) return;
 					// find the report panel:
 					i = findPanel(self.list,rId,pId);
@@ -252,7 +253,7 @@ moduleManager.construct({
 							// has a value:
 //							console.debug( 'evalResource a', oa );
 							ct = oa.value.split(',');
-							ct.forEach( function(val) { 
+							ct.forEach( (val) =>{ 
 								// find the bar which corresponds to the property values
 								j = indexById( self.list[i].datasets, val.trim() );
 //								console.debug( 'evalResource z', ct, j );
@@ -270,7 +271,7 @@ moduleManager.construct({
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
 		let pend=0, visitedR=[];
-		pData.tree.iterate( function(nd) {
+		pData.tree.iterate( (nd) =>{
 			if( visitedR.indexOf(nd.ref)>-1 ) return; 
 			// not yet evaluated:
 			pend++;
@@ -303,12 +304,12 @@ moduleManager.construct({
 		function renderReports(list) {
 			var rs =	'<div class="row" >';
 			let lb;
-			list.forEach( function(li,i) {
+			list.forEach( (li,i) =>{
 				rs +=		'<div class="col-sm-6 col-md-4 col-lg-3" style="background-color:#f4f4f4; border-right: 4px solid #ffffff; border-top: 4px solid #ffffff; padding-right:0.4em; padding-left:0.4em; height: '+panelHeight(list)+'">'
 					+			'<h4>'+li.title+'</h4>'
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
-				li.datasets.forEach( function(ds,s) {
+				li.datasets.forEach( (ds,s) =>{
 					lb = ds.count>0? '<a onclick="app.'+self.loadAs+'.countClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
 						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
@@ -329,7 +330,7 @@ moduleManager.construct({
 			// Determine panel height.
 			// So far, all panels get the same size depending on the longest dataset.
 			let maxSets = 0;
-			L.forEach( function(p) {
+			L.forEach( (p) =>{
 				maxSets = Math.max( maxSets, p.datasets.length )
 			});
 			return ( 3+maxSets*1.8+'em' )

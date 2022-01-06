@@ -2,16 +2,17 @@
 	Dependencies: jQuery 3.0+
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de            
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 // Constructor for Archimate Open-Exchange import:
 // (A module constructor is needed, because there is an access to parent's data via 'self')
 moduleManager.construct({
 	name: 'ioArchimate'
-}, function(self:IModule):IModule {
-	"use strict";
+}, function(self:IModule) {
+
 	var fDate: string,		// the file modification date
 		fName: string,
 		data: SpecIF,		// the SpecIF data structure for xls content
@@ -61,7 +62,7 @@ moduleManager.construct({
 
 		bDO.notify('Transforming Archimate Open Exchange to SpecIF',10); 
 		// @ts-ignore - Archimate2Specif() is loaded at runtime
-		data = Archimate2Specif( ab2str(buf),
+		data = Archimate2Specif( LIB.ab2str(buf),
 							{ 
 								fileName: fName, 
 								fileDate: fDate, 

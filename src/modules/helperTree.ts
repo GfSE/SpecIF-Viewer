@@ -3,273 +3,295 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
 */
+interface JQuery {
+	tree: Function;
+}
+interface jqTreeNode {
+	id: string;
+	name: string;
+	order: string;
+	ref: string;
+	parent: jqTreeNode;
+	children: jqTreeNode[];
+	is_open: boolean;
+	getLevel: Function;
+	getPreviousNode: Function;
+	getNextNode: Function;
+	getNextSibling: Function;
+}
+interface jqTreeState {
+	open_nodes: string[];
+	selected_node: string[];
+}
 // a constructor for the tree object:
-function Tree( options:any ) {
-	"use strict";
+class Tree {
 	// options.loc is the id of a DOM element to which the tree is attached.
-	let self:any = {},
-		domE = $(options.loc);
-	domE.tree({
-		data: [],
-	//	saveState: true,
-		dragAndDrop: options.dragAndDrop
-	});
-	for( var e in options.eventHandlers ) {
-		domE.on(
-			'tree.'+e,
-			options.eventHandlers[e]
-		)
-	};
-
-	self.init = function():void {
-		self.set([]);
-		self.savedState = undefined;
-		self.selectedNode = undefined
-	};
-	self.set = function( tr, nId ) {
+	domE:JQuery;
+	savedState: jqTreeState;
+	selectedNode: jqTreeNode;
+	constructor(options: any) {
+		this.domE = $(options.loc);
+		this.domE.tree({
+			data: [],
+		//	saveState: true,
+			buttonLeft: false,
+			dragAndDrop: options.dragAndDrop
+		});
+		for (var e in options.eventHandlers) {
+			this.domE.on(
+				'tree.' + e,
+				options.eventHandlers[e]
+			)
+		};
+		this.savedState = { open_nodes: [], selected_node: [] };
+		this.selectedNode = this.firstNode();
+	}
+	clear(): void {
+		this.set([]);
+		this.savedState = {open_nodes:[],selected_node:[]};
+		this.selectedNode = undefined;
+	}
+	set(tr: jqTreeNode[], nId?:string ):void {
 		let nd=undefined;
-		if( typeof(nId)=='string' && nId.length>0 ) nd = self.nodeById(nId);
+		if( typeof(nId)=='string' && nId.length>0 ) nd = this.nodeById(nId);
 		// insert tr as a subtree, if nd is defined, or as a tree, otherwise:
-		return domE.tree( 'loadData', tr, nd )
-	};
-	self.get = function() {
+		this.domE.tree('loadData', tr, nd);
+		// this.selectedNode may be invalid
+	}
+	get(): jqTreeNode[] {
 		// return the list of nodes representing the SpecIF root nodes:
-		let tr = domE.tree('getTree');
+		let tr = this.domE.tree('getTree');
 //		console.debug('get',tr);
 		return tr? tr.children : undefined
-	};
-	self.iterate = function(fn) {
+	}
+	iterate(fn:Function) {
 		// apply the function fn to every node of the tree,
 		// the node is handed in as a call parameter function(node) {},
 		// if the return parameter is 'true', the iteration descends to the children:
-		domE.tree('getTree').iterate( fn )
+		this.domE.tree('getTree').iterate( fn )
 	};
-	self.firstNode = function() {
-		let tr = domE.tree('getTree');	// first get the root
+	firstNode(): jqTreeNode {
+		let tr = this.domE.tree('getTree');	// first get the root
 //		console.debug('firstNode',tr);
 		return tr? tr.children[0] : undefined	// avoid an exception when there is none ...
 	};
-	self.rootNode = function( nd ) {
+	rootNode(nd: jqTreeNode): jqTreeNode {
 		// return the root node of the given node:
-		if( !nd ) nd = self.selectedNode;
+		if( !nd ) nd = this.selectedNode;
 		// step up until the parent is the jqTree root node; it has no id:
 		while( nd.parent.id ) {
 			nd = nd.parent;
 		};
 		return nd;
 	};
-/*	self.nodesByName = function( ti ) {
-		return domE.tree('getNodesByProperty', 'name', ti)
+/*	nodesByName = function( ti ) {
+		return this.domE.tree('getNodesByProperty', 'name', ti)
 	}; */
-	self.nodesByRef = function( oId, similar ) {
+	nodesByRef(oId: string, similar?: boolean): jqTreeNode[] {
 		// Find all the nodes referencing the object and return them in a list.
 		// Use case: Update all tree entries after an object (title) has been changed.
 		let nodes = [];
 		// Try to find the objects in the currently loaded tree (selectedSpec):
 		if( similar ) {
 			// iterate through all nodes of all levels and list the nodes, where oId is a substring:
-			domE.tree('getTree').iterate( function(nd) {
+			this.domE.tree('getTree').iterate(function (nd: jqTreeNode) {
 				if( nd.ref.indexOf(oId)>-1 ) nodes.push( nd );
 				return true	// continue iteration
 			})
 		} else {
 			// get the nodes refencing the object id:
-			nodes = domE.tree('getNodesByProperty', 'ref', oId)
+			nodes = this.domE.tree('getNodesByProperty', 'ref', oId)
 		};
 		return nodes
 	};
-	self.references = function( oId, similar ) {
+	references(oId: string, similar?: boolean):boolean {
 		// Does the tree reference a resource with the given id?
-		return self.nodesByRef(oId,similar).length>0
+		return this.nodesByRef(oId,similar).length>0
 	};
-	self.nodeByRef = function( oId, similar ) {
+	nodeByRef(oId: string, similar?: boolean): jqTreeNode {
 		// Find the tree node for the specified tree obj.
 		// Use case: jump to a clicked object.
 		// similar: the object id may be just a substring of the reference
 		// !similar: the object id must be identical with the reference
 
 		// a) Try to find the object:
-		let nodes = self.nodesByRef(oId,similar);
+		let nodes = this.nodesByRef(oId,similar);
 		if( nodes && nodes.length>0 ) { 
 			return nodes[0]   // select the first occurrence in the tree
 		}; 
 		// b) If a node cannot be found (has been deleted), return first node, instead:
-		return self.firstNode()   // default: first node
+		return this.firstNode()   // default: first node
 	};
-	self.nodeById = function( nId ) {
+	nodeById(nId: string): jqTreeNode {
 		// Find the node with the specified ID:
 		
 		// a) Try to find the node:
-		let nd = domE.tree('getNodeById', nId);
+		let nd = this.domE.tree('getNodeById', nId);
 		if( nd )
 			return nd;   // return the node with the specified ID
 		// b) If a node cannot be found (has been deleted), return first node, instead:
-		return self.firstNode()   // default: first node
+		return this.firstNode()   // default: first node
 	};
-	self.selectNode = function( nd ) {
-		if( self.selectedNode && nd && self.selectedNode.id==nd.id )
+	selectNode(nd: jqTreeNode): jqTreeNode {
+		if( this.selectedNode && nd && this.selectedNode.id==nd.id )
 			// no change:
-			return self.selectedNode; 
+			return this.selectedNode; 
 		// selectNode( null ) is a valid use case:
 		if( nd&&nd.id ) {
-			nd = self.nodeById(nd.id);
-			domE.tree('selectNode', nd )
+			nd = this.nodeById(nd.id);
+			this.domE.tree('selectNode', nd )
 		};
-		self.selectedNode = nd;		// update the node handle; can be null
+		this.selectedNode = nd;		// update the node handle; can be null
 		return nd
-	};
-	self.selectFirstNode = function() {
+	}
+	selectFirstNode(): jqTreeNode {
 		// Note: This works, only if the tree is visible.
-		let fN = self.firstNode();
-		if( fN ) self.selectNode( fN );
+		let fN = this.firstNode();
+		if( fN ) this.selectNode( fN );
 		return fN
 	};
-	self.selectNodeById = function( nId ) {
+	selectNodeById(nId: string): jqTreeNode {
 		// Select an arbitrary node:
 		// Note: This works, only if the tree is visible.
-		if( self.selectedNode && self.selectedNode.id==nId ) 
-			return self.selectedNode;
+		if( this.selectedNode && this.selectedNode.id==nId ) 
+			return this.selectedNode;
 		// else:
-		return self.selectNode( self.nodeById( nId ) )
+		return this.selectNode( this.nodeById( nId ) )
 	};
-	self.selectNodeByRef = function( oId, similar ) {
+	selectNodeByRef(oId: string, similar?: boolean): jqTreeNode {
 		// If an arbitrary object is specified (when clicking a link somewhere), select it's first occurrence in the tree:
 		// Note: This works, only if the tree is visible.
-		if( self.selectedNode && self.selectedNode.ref==oId ) 
-			return self.selectedNode;
+		if( this.selectedNode && this.selectedNode.ref==oId ) 
+			return this.selectedNode;
 		// else:
-		return self.selectNode( self.nodeByRef( oId, similar ) )
+		return this.selectNode( this.nodeByRef( oId, similar ) )
 	};
-	self.openNode = function( nd ):void {
-		if( !nd ) nd = self.selectedNode;
-		if( nd ) domE.tree('openNode', nd)
+	openNode(nd: jqTreeNode ):void {
+		if( !nd ) nd = this.selectedNode;
+		if( nd ) this.domE.tree('openNode', nd)
 	};
-	self.toggleNode = function( nd ):void {
-		if( !nd ) nd = self.selectedNode;
-		if( nd ) domE.tree('toggleNode', nd)
+	toggleNode(nd: jqTreeNode ):void {
+		if( !nd ) nd = this.selectedNode;
+		if( nd ) this.domE.tree('toggleNode', nd)
 	};
-	self.closeNode = function( nd ):void {
-		if( !nd ) nd = self.selectedNode;
-		if( nd ) domE.tree('closeNode', nd)
+	closeNode(nd: jqTreeNode ):void {
+		if( !nd ) nd = this.selectedNode;
+		if( nd ) this.domE.tree('closeNode', nd)
 	};
-/*	self.appendNode = function( nd, val ) {
-		if( nd ) domE.tree( 'appendNode', val, nd )
+/*	appendNode( nd, val ) {
+		if( nd ) this.domE.tree( 'appendNode', val, nd )
 	};
-	self.addNodeBefore = function( nd, val ) {
-		if( nd ) domE.tree( 'addNodeBefore', val, nd )
+	addNodeBefore( nd, val ) {
+		if( nd ) this.domE.tree( 'addNodeBefore', val, nd )
 	}; 
-	self.addNodeAfter = function( nd, val ) {
-		if( nd ) domE.tree( 'addNodeAfter', val, nd )
+	addNodeAfter( nd, val ) {
+		if( nd ) this.domE.tree( 'addNodeAfter', val, nd )
 	};  */
-	self.updateNode = function( nd, val ):void {
-		// update node nd with the properties specified in {val},
+	updateNode(nd: jqTreeNode, val:object ):void {
+		// update node nd with the properties specified in val={tag:value},
 		// where val may be a title string or an object with all attributes:
-		if( nd ) domE.tree('updateNode', nd, val )
+		if( nd ) this.domE.tree('updateNode', nd, val )
 	};
-	self.removeNode = function( nd ):void {
-		if( !nd ) nd = self.tree.selectedNode;
-		if( nd ) domE.tree('removeNode', nd)
+	removeNode(nd: jqTreeNode ):void {
+		if( !nd ) nd = this.selectedNode;
+		if( nd ) this.domE.tree('removeNode', nd)
 	};
-	self.moveUp = function():void {
-		let cur=self.selectedNode;  // save the current position
-		if( !cur ) return selectFirstNode();
+	moveUp():void {
+		let cur=this.selectedNode;  // save the current position
+		if (!cur) { this.selectFirstNode(); return }
 		
 		// close open nodes behind (in this case we are coming from the next node)
 		if( cur.getNextNode() && cur.getLevel()<cur.getNextNode().getLevel() ) {  
-			domE.tree('closeNode', cur )
+			this.domE.tree('closeNode', cur )
 		};
 		
 		// if the previous node (as visible) is closed, open it, potentially over several levels:
 		// (is_open is undefined, if the node does not have children, and is null, if there is no previous )
 		// (is_open is also undefined, if the node hasn't been actively opened or closed, before)
-		while( self.selectedNode.getPreviousNode() && self.selectedNode.getPreviousNode().children.length && !self.selectedNode.getPreviousNode().is_open) {
-			domE.tree('openNode', self.selectedNode.getPreviousNode())
-			if( !self.selectedNode.getPreviousNode().children.length ) return
+		while( this.selectedNode.getPreviousNode() && this.selectedNode.getPreviousNode().children.length && !this.selectedNode.getPreviousNode().is_open) {
+			this.domE.tree('openNode', this.selectedNode.getPreviousNode())
+			if( !this.selectedNode.getPreviousNode().children.length ) return
 		};
 
 		if( cur.getPreviousNode() ) {
-			domE.tree('moveUp');
+			this.domE.tree('moveUp');
 		
-			self.selectNode( cur.getPreviousNode() );  // the event handler does it also, but it is asynchronous
-			if( self.selectedNode.getLevel()<cur.getLevel() ) {  
-				domE.tree('closeNode', self.selectedNode );
+			this.selectNode( cur.getPreviousNode() );  // the event handler does it also, but it is asynchronous
+			if( this.selectedNode.getLevel()<cur.getLevel() ) {  
+				this.domE.tree('closeNode', this.selectedNode );
 			};
-			while( self.selectedNode.getPreviousNode() && self.selectedNode.getPreviousNode().children.length && !self.selectedNode.getPreviousNode().is_open) {
-				domE.tree('openNode', self.selectedNode.getPreviousNode());
-				if( !self.selectedNode.getPreviousNode().children.length ) return
+			while( this.selectedNode.getPreviousNode() && this.selectedNode.getPreviousNode().children.length && !this.selectedNode.getPreviousNode().is_open) {
+				this.domE.tree('openNode', this.selectedNode.getPreviousNode());
+				if( !this.selectedNode.getPreviousNode().children.length ) return
 			}
 		}
 	};
-	self.moveDown = function():void {
-		let cur=self.selectedNode;  // save the current position
-		if( !cur ) { self.selectFirstNode(); return };
+	moveDown():void {
+		let cur=this.selectedNode;  // save the current position
+		if (!cur) { this.selectFirstNode(); return }
 
 		// close nodes behind, if open:
 		while( cur.getPreviousNode() && cur.getPreviousNode().getLevel()>cur.getLevel() ) {   // 'getPreviousNode' refers to the previous visible node
-			domE.tree('closeNode', cur.getPreviousNode().parent)
+			this.domE.tree('closeNode', cur.getPreviousNode().parent)
 		};
 
 		// if selected node has children and is closed, open it:
-		if( self.selectedNode.children.length && !self.selectedNode.is_open ) {
-			domE.tree('openNode', self.selectedNode);
+		if( this.selectedNode.children.length && !this.selectedNode.is_open ) {
+			this.domE.tree('openNode', this.selectedNode);
 			return
 		};
 		
 		if( cur.getNextNode() ) {
 			// if selected node has no children, step down:
 			// selected node is opened, step into:
-			domE.tree('moveDown');
+			this.domE.tree('moveDown');
 
 			// if it was the last child, close the folder behind:
-			self.selectNode( cur.getNextNode() );  // the event handler does it also, but it is asynchronous
-			while( self.selectedNode.getPreviousNode().getLevel()>self.selectedNode.getLevel() )
-				domE.tree('closeNode', self.selectedNode.getPreviousNode().parent);
-			if( self.selectedNode.children.length && !self.selectedNode.is_open )
-				domE.tree('openNode', self.selectedNode)
+			this.selectNode( cur.getNextNode() );  // the event handler does it also, but it is asynchronous
+			while( this.selectedNode.getPreviousNode().getLevel()>this.selectedNode.getLevel() )
+				this.domE.tree('closeNode', this.selectedNode.getPreviousNode().parent);
+			if( this.selectedNode.children.length && !this.selectedNode.is_open )
+				this.domE.tree('openNode', this.selectedNode)
 		}
 	};
-	self.numberize = function():void {
+	numberize():void {
 		// set the order numbers (such as 1.3.2):
-		let oNo='';  	// tree outline number
-
-			function setONo( nd, oNoP ):void {
+		let oNo = '',  	// tree outline number
+			setONo = (nd: jqTreeNode, oNoP:string ):void =>{
 				for( var k=0, K=nd.children.length; k<K; k++ ) {
 					oNo = oNoP.length? oNoP+'.'+(k+1) : (k+1).toString();	// deeper levels : first level
-					self.updateNode( nd.children[k], {order: oNo} );
+					this.updateNode( nd.children[k], {order: oNo} );
 					setONo( nd.children[k], oNo )
 				}
 			};
-		setONo( domE.tree('getTree'), '' )	// start numberizing with the root
+		setONo( this.domE.tree('getTree'), '' )	// start numberizing with the root
 	};
-/*	self.newIds = function( nd ) {
+/*	newIds( nd ) {
 		// assert new ids to nd and it's sub-tree, as the server doesn't allow to reuse any ID:
 		let rt = {};
 		for( var p in nd ) rt[p] = nd[p];
 		rt.id = genID('N-');
-		self.updateNode( nd, { id: rt.id } );  // set the ID of the tree entry with it's new value
+		this.updateNode( nd, { id: rt.id } );  // set the ID of the tree entry with it's new value
 		if( nd.children && nd.children.length ) {
 			rt.children = [];
 			for( var i=0, I=nd.children.length; i<I; i++ ) {
 				// get the first level children, then recursively their's:
-				rt.children.push( self.newIds( nd.children[i] ) )  
+				rt.children.push( this.newIds( nd.children[i] ) )  
 			}
 		};
 		return rt
 	}; */
-	self.saveState = function():void {
-		self.savedState = domE.tree('getState')
+	saveState():void {
+		this.savedState = this.domE.tree('getState')
 	};
-	self.restoreState = function():void {
-		domE.tree('setState', self.savedState);
-		self.selectedNode = domE.tree('getSelectedNode')
+	restoreState():void {
+		this.domE.tree('setState', this.savedState);
+		this.selectedNode = this.domE.tree('getSelectedNode')
 	};
-	self.destroy = function():void {
+	destroy():void {
 		// Destroy the tree. This removes the dom elements and event bindings:
-		domE.tree('destroy')
+		this.domE.tree('destroy')
 	};
-	
-	self.init();
-	return self;
 }
