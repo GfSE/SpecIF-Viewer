@@ -393,7 +393,7 @@ moduleManager.construct({
 			+		'<COMMENT></COMMENT>'
 			+		'<CREATION-TIME>'+date+'</CREATION-TIME>'
 			+		'<REQ-IF-TOOL-ID></REQ-IF-TOOL-ID>'
-			+		'<REQ-IF-VERSION>1.0</REQ-IF-VERSION>'
+			+		'<REQ-IF-VERSION>1.2</REQ-IF-VERSION>'
 			+		'<SOURCE-TOOL-ID>'+(pr.generator || '')+'</SOURCE-TOOL-ID>'
 			+		'<TITLE>'+pr.title+'</TITLE>'
 			+	  '</REQ-IF-HEADER>'

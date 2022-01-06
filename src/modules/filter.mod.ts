@@ -787,7 +787,7 @@ moduleManager.construct({
 		self.clear();
 		self.show();
 	};
-/*	self.secondaryFiltersClicked = ( oT )={
+/*	self.secondaryFiltersClicked = ( oT )=>{
 		// toggle between the hitlist and the secondary filter settings:
 //		console.debug( 'secondaryFiltersClicked', oT );
 		if( self.secondaryFilters==oT ) {

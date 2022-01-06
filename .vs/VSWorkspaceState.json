@@ -6,10 +6,10 @@
     "\\src\\config\\locales",
     "\\src\\modules",
     "\\src\\types",
+    "\\src\\vendor",
     "\\src\\vendor\\assets",
-    "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\types\\specif.types.ts",
+  "SelectedNode": "\\src\\vendor\\assets\\stylesheets\\SpecIF.default.css",
   "PreviewInSolutionExplorer": false
 }
