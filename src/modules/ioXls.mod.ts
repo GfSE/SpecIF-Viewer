@@ -77,67 +77,122 @@ moduleManager.construct({
 function specif2xlsx (pr: SpecIF)
 {   
 	// arrays live as long specif2xlsx runs
-	var topLineRclassIds: string=[];
-	var topLineTitles: string[];
+	var topLinePclassIds: string[]=[];
+	var topLineTitles: string[]=[];
 	var lineItems: string [];
 	var aoaArray= [];
+	var hierarchyLevel = 0;
+    var orderNo: number []= [0,0,0,0,0,0,0];
+		
+	var nodes  =  [] ;
+	var hierLevel = [];
+	var wb = XLSX.utils.book_new(); // Create Workbook
+	var ws = XLSX.utils.aoa_to_sheet([]);
+	var resFile: Resource	;
+	
+	function buildTopline ()
+	{
+	// Create Workbook and Build topline from all Property Classes plus OrderNo
+			
+		resFile  = itemById (pr.resources, pr.hierarchies[0].resource as string);
+		
+		wb = XLSX.utils.book_new(); // Create Workbook
+		ws = XLSX.utils.aoa_to_sheet([]);		
+		wb.Props = 
+		{
+			Title:    resFile.title + 'complete.xlsx',
+			Subject: "Export SpecIF to XLSX Format",
+			Author:  "Winfried Reichardt"
+		}
+		// console.debug ( "TopLineTitleIds ", pr.propertyClasses.length, pr.propertyClasses[0], topLinePclassIds, topLineTitles );	
+	    topLinePclassIds  = [] ; // empty public arrays 
+		topLineTitles = [];
+		aoaArray = [["OrderNo","OrderString","ResourceId","ResClass"],[]]; // Make it 2 Dimensional for XLSX.utils.sheet_add_aoa
+		
+		for (let i = 0 ; i< pr.propertyClasses.length; i++)  //copy property Class ID strings
+		{	
+			topLinePclassIds.push( pr.propertyClasses[i].id as string);
+			console.debug ( "Propertyclasses", topLinePclassIds);
+			topLineTitles.push ( pr.propertyClasses[i].title as string);
+			aoaArray[0].push ( pr.propertyClasses[i].title as string);
+		};
+		//console.debug ( "buildToplines ", topLinePclassIds, topLineTitles,aoaArray );	
+		XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: 0}); // add as topline of Worksheet
+	
+	} // end function buildTopline	
+	
 
-	function fillWsFromResource (pr : SpecIF, ws : any, resId : string, line : number, maxLine: number )
+	function iterateHierarchy ()
+	{
+	Lib.iterateNodes(
+		pr.hierarchies,
+		// continue searching until found:
+		(nd: SpecifNode) => {
+			console.debug ("for each node ", nd.id , nd.resource)
+			
+			return true;  // continue searching
+		},
+		(ndL: SpecifNode) => {
+			console.debug ("branch end ", ndL.id , ndL.resource)
+			
+			return true;  // continue searching
+		}
+		// no list function
+	)
+	}// end function IterateHierarchy
+
+//--------------------------
+	
+	function fillWsFromResource (pr : SpecIF, ws : any, resId : string, line : number )
     {
 		
 		var i =0, j=0;   	
-		//console.debug ( "fillWsFromResource line ", resId, line, maxLine);             
+		//console.debug ( "fillWsFromResource line ", resId);             
 		var res : Resource = itemById( pr.resources, resId as string );// the resource referenced by this node
 		let resIdx = indexById (pr.resources, resId as string); // Index id	
-		//console.debug ( "fillWsFromResoure ", res.title, " Index ", resIdx , resId, res.id, res.class, line, maxLine );
+		//console.debug ( "fillWsFromResoure ", res.title, " Index ", resIdx , resId, res.class, line );
 		lineItems = []; //clear line
-		aoaArray = [['','','','','','','','','','','','','','','','','','']];
 		if (line == 0) // if firstline, also write topline of XlsWorksheet
 		{
 			
-			aoaArray = [['','','','','','','','','','','','','','','','','','']];
 			// Build lineArray and fill according to fields IDs in ResourceClass
-			topLineRclassIds  = []; // empty arrays 
+			topLinePclassIds  = [] ; // empty arrays 
 			topLineTitles = []; 
 			var pClassItem : PropertyClass;
-			
 				
 				let hRC3 = itemById( pr.resourceClasses, res.class as string );
 				//console.debug ( "ResourceClass ",res.id, res.class, hRC3 );
 				for (i = 0 ; i< hRC3.propertyClasses.length; i++)  //copy property Class ID strings
 				{	
-					topLineRclassIds[i] = hRC3.propertyClasses[i];
-					// console.debug ( "Propertyclasses", topLineRclassIds[i]);
+					topLinePclassIds[i] = hRC3.propertyClasses[i];
+				    console.debug ( "Propertyclasses", topLinePclassIds[i]);
 				
-					pClassItem = itemById( pr.propertyClasses, topLineRclassIds[i] );
+					pClassItem = itemById( pr.propertyClasses, topLinePclassIds[i] );
 					topLineTitles[i] = pClassItem.title as string;
 					
 				};
-				// console.debug ( "TopLineTitleIds ", topLineRclassIds, topLineTitles );
+				// console.debug ( "TopLineTitleIds ", topLinePclassIds, topLineTitles );
 				
 				
 				for (i=0;i<topLineTitles.length;i++){
-					aoaArray [0][i]=topLineTitles[i];
+					aoaArray [0].push(topLineTitles[i]);
 				}
-				// console.debug("aoaArray", aoaArray);
-					
+				//console.debug("fillWsTopline aoaArray", aoaArray);
 				
 				XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: 0});  //Shall be written as Top Line
-						//aoaArray=[]; //clear content of array
-				aoaArray = [['','','','','','','','','','','','','','','','','','']];
-				// console.debug ("res.properties.len", res.properties.length, topLineRclassIds);
+				aoaArray = [[''],[]]; // Clear and make it 2 Dimensional for XLSX.utils.sheet_add_aoa
+				// console.debug ("res.properties.len", res.properties.length, topLinePclassIds);
 		}; // end of line==0: Only build topline once at the beginning of each Excel Worksheet
 					
 		// Fill line Array	
 			
-		// console.debug ("res.properties.len 2", res.properties.length, topLineRclassIds[0]);
-		// console.debug ("res.properties.len", res.properties.length, topLineRclassIds.length);
+		// console.debug ("res.properties.len", res.properties.length, topLinePclassIds.length);
 		for (i=0;i<res.properties.length;i++)
 		{
-			var writeIdx = topLineRclassIds.indexOf (res.properties[i].class as string );
-			// console.debug ("resProp.class",writeIdx, res.properties[i].class,topLineRclassIds.length );
-			// console.debug ("resProp.class",writeIdx, res.properties[i].class,topLineRclassIds.length, res.properties[i].value);
-			if (writeIdx < topLineRclassIds.length) // Index is within bounds
+			var writeIdx = topLinePclassIds.indexOf (res.properties[i].class as string );
+			// console.debug ("resProp.class",writeIdx, res.properties[i].class,topLinePclassIds.length );
+			// console.debug ("resProp.class",writeIdx, res.properties[i].class,topLinePclassIds.length, res.properties[i].value);
+			if (writeIdx < topLinePclassIds.length) // Index is within bounds
 			{
 				lineItems[writeIdx]=res.properties[i].value as string;
 				
@@ -168,7 +223,6 @@ function specif2xlsx (pr: SpecIF)
 						}; // end for j
 							
 						let enumIdx = indexById (DTItem.values, res.properties[i].value as string);
-						// console.debug ( "Enum Value ", DTItem.values, res.properties[i].value , enumIdx);
 						//console.debug ( "Enum Value ", DTItem.values, DTItem.values[enumIdx].value, res.properties[i].value , enumIdx);
 										
 					}; //end ifDTItem.values
@@ -184,160 +238,286 @@ function specif2xlsx (pr: SpecIF)
 		
 		for (i=0;i<lineItems.length;i++)
 		{
-			aoaArray [0][i]=lineItems[i];
+			aoaArray [0].push(lineItems[i]);
 		};
 		
 		XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: -1}); // add a line at the end
 		// console.debug ("Append intern WS", ws, aoaArray );
-		// XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook   	
 	
-    }; // end fillWsFromResoure
-
-    // console.debug('Export to XLSX ', pr.id);
+    }; // end function fillWsFromResoure
 	
-
-    pr.hierarchies.forEach( function(h) {  //assume, that there is always at least one hierarchie
-	    
-		let resFile: Resource = itemById (pr.resources, h.resource as string);
-		let xlsFileName = resFile.title;
-		var wb = XLSX.utils.book_new(); // Create Workbook
-		var ws = XLSX.utils.aoa_to_sheet([]);		
-
-			wb.Props = {
-				Title:    resFile.title + 'xlsx',
-				Subject: "Export SpecIF to XLSX Format",
-				Author:  "Winfried Reichardt"
-			}
-			// console.debug ("Workbook created " +resFile.title + 'xlsx');
-
-		// console.debug ("Workbook ",xlsFileName + '.xlsx'); // hier nur Workbookname !!
-        if (h.nodes != null) { // if h.nodes exist
-		    h.nodes.forEach (function (h1) {  // h.nodes for each XLSX Workbook
-			
-			    var xlsLine = 0;
-				var resid1  = h1.resource;
-			    let hR1 = itemById( pr.resources, resid1 as string );// the resource referenced by this node
-			    let iR1 = indexById (pr.resources, resid1 as string); // Index id		
-			    // console.debug ( "Workbook1 ", hR1.title +'.xlsx', " WBIndex1 ", iR1 , hR1.id,  );	// resource id and title
-			    var wb = XLSX.utils.book_new(); // Create Workbook
-			    
-                
-			    wb.Props = {
-			    	Title:    hR1.title + 'xlsx',
-			    	Subject: "Export SpecIF to XLSX Format",
-			    	Author:  "Winfried Reichardt"
-			    	
-			    };
-			    // console.debug ("Workbook created " +hR1.title + 'xlsx');
-			    
-			    
-			    if (h1.nodes != null) { // check, whether h1.nodes exists
-			         
-			        h1.nodes.forEach (function (h2)
-					{	// for each Worksheet 
-						ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet	
-
-			    	    var resid2  = h2.resource;
-			    	    let hR2 = itemById( pr.resources, resid2 as string );// the resource referenced by this node
-			    	    let iR2 = indexById (pr.resources, resid2 as string); // Index id		
-			    	    //console.debug ( hR2, iR2 , hR2.id, hR2.title );	// resource id and sheetname
-		    	    
-			    	    //console.debug ( "Worksheet ", hR2.title, " WsIndex ", iR2 , hR2.id,  );	// resource id and title
-                        
-			    	    			    	    
-			    	    
-			    	    if (  h2.nodes != null ) 
-						{ // check, if h2.nodes exists
-			    	        //h2.nodes.forEach (function (h3) 
-							for (xlsLine =0;xlsLine<h2.nodes.length;xlsLine++)
-							{  // for each line
-			    	            fillWsFromResource (pr,ws, h2.nodes[xlsLine].resource as string , xlsLine, h2.nodes.length);
-							}; // for xlsLine
-							// console.debug ("Append WS", ws, aoaArray ); //console.debug ("Append WS",hR1.title, ws );
-	                        XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook
-						} // end if h2.nodes exists
-						else
-						{ // content is in res.properties
-
-						};
-
-			        }); // h1.nodes for each Worksheet  end
-					//---------------------------------------------------------------
-					// write Worksheet (Enumerations)
-					ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet
-					var aoaArray= []; 
-					aoaArray = 
-					//[12][20];
-					[['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','',''],
-					['','','','','','','','','','','','','','','','','','']]; 
-					
-					let columnNo = undefined;
-					let i : number , n: number= 0; 
-					for (i=0; i< pr.dataTypes.length;i++)
-					{
-					//For all  dataTypes  with have values defined
-                        
-					    // console.debug ("dataType enum ", i, pr.dataTypes[i].values, pr.dataTypes[i].title );
-					    if ( pr.dataTypes[i].values != undefined)
-						{
-                            // If first entry found i.e. Column-No == Undefined then
-							if (columnNo == undefined)
-							{
-						    
-							// Create Worksheet "(Enumerations)"
-							   columnNo = 0;
-						    
-						    }; // end first entry and columnNo undefined
-						    //write title (Column-No)
-							// console.debug ("datatype val",pr.dataTypes[i].values.length, pr.dataTypes[i].values[0].value )
-							aoaArray [0][columnNo]=pr.dataTypes[i].title;
-						    //write all Values (Column-No)
-							for (n=0; n< pr.dataTypes[i].values.length;n++)
-							{ 
-								// console.debug ("dataType values ", n , pr.dataTypes[i].values[n].value, aoaArray);
-								aoaArray [n+1][columnNo]=pr.dataTypes[i].values[n].value;
-							}; // end for n 
-					        // console.debug ("dataType values1 ", n , pr.dataTypes[i].values[0].value, pr.dataTypes[i].title );
-						    
-							//Increment Column-No 
-						    columnNo++;
-					    } ; // end dataTypes have values defined
-					};//End For all dataTypes
-					// console.debug (columnNo, " enumerations found");
-					if (columnNo != undefined)
-					{   // append worksheet only, if there were datatypes with values defined
-						XLSX.utils.sheet_add_aoa(ws, aoaArray); // add whole content of page to worksheet
-					    XLSX.utils.book_append_sheet(wb, ws, "(Enumerations)"); //append worksheet to Workbook
-				    };
-			        XLSX.writeFile(wb, hR1.title + '.xlsx' ); 			
-			             
-		        }// end if h1.nodes exists 
-				else
-				{ // h1.nodes does not exists : no Worksheet
-			         // console.debug ("no Worksheet");
-				};
-		    }); // h.nodes end h: for each XLSX Workbook
-		  
-	    } // end If h.nodes exists
-		else
-		{ // h.node does not exist
-			// console.debug ("empty Worksheet");
-			XLSX.utils.book_append_sheet(wb, ws,"Table1"); //append default empty worksheet to Workbook
-			XLSX.writeFile(wb, resFile.title + '.xlsx' ); // attempt to write wb to filename to local directory or download in browser 
-		}; // end of check whether h.nodes exist 
+	
+	function traverseTree ()
+	{
+	// Function to traverse tree without recursion
+	// for all  nodes in tree
+	// function traverse_tree(root)
+	// Push the current node onto the stack
 		
+		var hLevelOld = hierarchyLevel;
+		var hLevelMax = hierarchyLevel;
+		
+		// Stack to store the nodes
+		// root.orderNo = orderNo;
+		nodes.push(pr.hierarchies[0]);
+		hierLevel.push (hierarchyLevel);
+	
+		// Loop while the stack is not empty
+		while (nodes.length != 0)
+		{
+			// Store the current node and pop
+			// it from the stack
+			
+			var curr  = nodes.pop();
+			//console.debug ("nodespop ", curr);
+			var currHierLevel= hierLevel.pop();
+			// Current node has been traversed
+			if (curr != null)
+			{
+				hierarchyLevel = currHierLevel;
+				orderNo [hierarchyLevel]++;
+				// console.debug("current node", currHierLevel , curr.id, curr.resource,orderNo ,hLevelOld);
+				if (hLevelOld > hierarchyLevel)
+				{  // hierarchy Level became smaller, set lower numbers to 0
+					for (i=hierarchyLevel+1;i<orderNo.length;i++)
+					{
+						orderNo [i]=0;
+					}
+					
+				}
+				hLevelOld=hierarchyLevel;
+				let resourceFound = itemById( pr.resources, curr.resource );
+				let orderNumber = 0; 
+				let j = 1;
+				for (i=orderNo.length-1;i>0;i--)
+				{
+					orderNumber = orderNumber + orderNo[i]*j; // build a sortable Number
+					j=j*100;
+				}
+				let orderString2 = orderNo.toString ();
+				// console.debug ("outp",orderNumber, orderString2, resourceFound.title, resourceFound.class); 
+				// Init aoaArray and push OrderNo, re-use aoaArray from fillWsFromResource
+				aoaArray = [[orderNumber,orderString2,resourceFound.id,resourceFound.class],[]]; // Make it 2 Dimensional for XLSX.utils.sheet_add_aoa
 
-	}); // pr.hierarchies end
+				fillWsFromResource (pr,ws, resourceFound.id as string , 2 ); // only resourceFound may be necessary ?
+				
+				if (curr.nodes != undefined)
+				{ // further subnodes exist
+				
+					//console.debug("hcLevel ", curr.id, curr.nodes.length, hierarchyLevel, hLevelOld);
+					
+					// Store all the children of
+					// current node from right to left.
+					for(var i = curr.nodes.length - 1;i >= 0; i--)
+					{  // for
+						if (i == curr.nodes.length - 1) // increase hierarchyLevel at beginning of loop
+						{
+							hierarchyLevel++;
+							if (hierarchyLevel>hLevelMax)
+							{
+								hLevelMax = hierarchyLevel; // remember highest Level
+							}
+						}
+									
+						//console.debug ("push ",curr.nodes[i].id, curr.nodes[i]);				
+						nodes.push(curr.nodes[i]);
+						//console.debug ("nodes ", nodes);
+						hierLevel.push (hierarchyLevel);
+						
+					} // end for
+				} // end further subnodes exist
+			}
+		}
+		//console.debug ("hierarchy max ",hLevelMax);
+		XLSX.utils.book_append_sheet(wb, ws, "resourcesCompleteTable"); //append worksheet to Workbook
+	} // end function traverseTree
+	
+    function exportEnumerations()
+	{
+		// write Worksheet (Enumerations)
+		ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet
+		// Clear and make 2 Dimensional for XLSX.utils.sheet_add_aoa
+		
+		var aoaArray1 = new Array();
 
-} // function specif2xlsx end 
+        for ( let i = 0; i < pr.dataTypes.length; i++) 
+		{
+            aoaArray1[i] = new Array();
+            for (let j = 0; j < 12; j++)
+			{
+                   aoaArray1[i][j] = '';
+            }
+        }
+		
+		let columnNo = undefined;
+		//let i : number , n: number= 0; 
+		for (let i=0; i< pr.dataTypes.length;i++)
+		{
+		//For all  dataTypes  with have values defined
+			
+			// console.debug ("dataType enum ", i, pr.dataTypes[i].values, pr.dataTypes[i].title );
+			if ( pr.dataTypes[i].values != undefined)
+			{
+				// If first entry found i.e. Column-No == Undefined then
+				if (columnNo == undefined)
+				{
+				
+				// Create Worksheet "(Enumerations)"
+				columnNo = 0;
+				
+				}; // end first entry and columnNo undefined
+				//write title (Column-No)
+				// console.debug ("datatype val",pr.dataTypes[i].values.length, pr.dataTypes[i].values[0].value )
+				aoaArray1 [0][columnNo]=(pr.dataTypes[i].title);
+				//write all Values (Column-No)
+				for (let n=0; n< pr.dataTypes[i].values.length;n++)
+				{ 
+					// console.debug ("dataType values ", n , pr.dataTypes[i].values[n].value, aoaArray);
+					aoaArray1 [n+1][columnNo]=(pr.dataTypes[i].values[n].value);
+				}; // end for n 
+				// console.debug ("dataType values1 ", n , pr.dataTypes[i].values[0].value, pr.dataTypes[i].title );
+				
+				//Increment Column-No 
+				columnNo++;
+			} ; // end dataTypes have values defined
+		};//End For all dataTypes
+		// console.debug (" enumerations found",columnNo, );
+		if (columnNo != undefined)
+		{   // append worksheet only, if there were datatypes with values defined
+			XLSX.utils.sheet_add_aoa(ws, aoaArray1); // add whole content of page to worksheet
+			//console.debug("Enums",aoaArray1);
+			XLSX.utils.book_append_sheet(wb, ws, "(Enumerations)"); //append worksheet to Workbook
+			//console.debug("Enums ws",wb,ws);
+		};
+	} // end function exportEnumerations		
+	
+	function exportHierXls ()
+	{
+		pr.hierarchies.forEach( function(h) {  //assume, that there is always at least one hierarchie
+			
+			resFile = itemById (pr.resources, h.resource as string);
+			let xlsFileName = resFile.title;
+			wb = XLSX.utils.book_new();  // Create Workbook
+			ws = XLSX.utils.aoa_to_sheet([]);		
+
+				wb.Props = {
+					Title:    resFile.title + 'xlsx',
+					Subject: "Export SpecIF to XLSX Format",
+					Author:  "Winfried Reichardt"
+				}
+				// console.debug ("Workbook created " +resFile.title + 'xlsx');
+	
+			//console.debug ("Workbook ",xlsFileName + '.xlsx'); // hier nur Workbookname !!
+			if (h.nodes != null) { // if h.nodes exist
+				h.nodes.forEach (function (h1) 
+				{  // h.nodes for each XLSX Workbook
+					var xlsLine = 0;
+					var resid1  = h1.resource;
+					let hR1 = itemById( pr.resources, resid1 as string );// the resource referenced by this node
+					// let iR1 = indexById (pr.resources, resid1 as string); // Index id		
+					// console.debug ( "Workbook1 ", hR1.title +'.xlsx', " WBIndex1 ", iR1 , hR1.id,  );	// resource id and title
+					wb = XLSX.utils.book_new(); // Create Workbook
+					
+					wb.Props = {
+						Title:    hR1.title + 'xlsx',
+						Subject: "Export SpecIF to XLSX Format",
+						Author:  "Winfried Reichardt"
+						
+					};
+					console.debug ("Workbook created " +hR1.title + 'xlsx');
+					
+					if (h1.nodes != null) { // check, whether h1.nodes exists
+						
+						h1.nodes.forEach (function (h2)
+						{	// for each Worksheet 
+							ws = XLSX.utils.aoa_to_sheet([]); // empty Worksheet	
+	
+							var resid2  = h2.resource;
+							let hR2 = itemById( pr.resources, resid2 as string );// the resource referenced by this node
+							let iR2 = indexById (pr.resources, resid2 as string); // Index id		
+							//console.debug ( hR2, iR2 , hR2.id, hR2.title );	// resource id and sheetname
+						
+							console.debug ( "Worksheet ", hR2.title, " WsIndex ", iR2 , hR2.id,  );	// resource id and title
+							
+							if (  h2.nodes != null ) 
+							{ // check, if h2.nodes exists
+								//h2.nodes.forEach (function (h3) 
+								for (xlsLine =0;xlsLine<h2.nodes.length;xlsLine++)
+								{  // for each line
+									fillWsFromResource (pr,ws, h2.nodes[xlsLine].resource as string , xlsLine);
+								}; // for xlsLine
+								XLSX.utils.book_append_sheet(wb, ws, hR2.title); //append worksheet to Workbook
+							} // end if h2.nodes exists
+							else
+							{ // content is in res.properties
+	
+							};
+	
+						}); // h1.nodes for each Worksheet  end
+						//---------------------------------------------------------------
+						exportEnumerations ();
+						//console.debug ("exportHier writeFile", wb, ws);
+						XLSX.writeFile(wb, hR1.title + '.xlsx' );
+					}// end if h1.nodes exists 
+					else
+					{ // h1.nodes does not exists : no Worksheet
+						// console.debug ("no Worksheet");
+					};
+				}); // h.nodes end h: for each XLSX Workbook
+			
+			} // end If h.nodes exists
+			else
+			{ // h.node does not exist
+				//console.debug ("empty Worksheet");
+				XLSX.utils.book_append_sheet(wb, ws,"Table1"); //append default empty worksheet to Workbook
+				exportEnumerations ();
+				XLSX.writeFile(wb, resFile.title + '.xlsx' ); // attempt to write wb to filename to local directory or download in browser 
+			}; // end of check whether h.nodes exist 
+		
+		}); // pr.hierarchies end
+	} //end function exportHierXls
+
+	function exportStatements ()
+	{
+		ws = XLSX.utils.aoa_to_sheet([]);
+		console.debug ( "Statements ", pr.statements.length );	
+	 	aoaArray = [["OrderNo","StatementId","Subject","Class","Object"],[]]; // Make it 2 Dimensional for XLSX.utils.sheet_add_aoa
+		XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: 0}); // add as topline of Worksheet
+	    //aoaArray[0][0] = "OrderNo";
+		for (let i = 0 ; i< pr.statements.length; i++)  //copy property Class ID strings
+		{	
+			aoaArray = [[i, pr.statements[i].id, pr.statements[i].subject,pr.statements[i].class, pr.statements[i].object],[]]; 
+			XLSX.utils.sheet_add_aoa(ws, aoaArray,{origin: -1}); // add as new line to Worksheet
+		};
+		XLSX.utils.book_append_sheet(wb, ws, "(Statements)"); //append worksheet to Workbook
+	
+	} // end function exportStatements	
+	
+
+	// Create Workbook and Build topline of resourcesCompleteTable from all Property Classes plus OrderNo:
+	buildTopline ();
+	
+	// traverse the hierarchie tree , generate Ordernumber and 
+	// put it with all properties of resources in resourcesCompleteTable:
+	traverseTree ();
+	
+	// optional for test purposes print all resources of hierarchie tree with a different algorithm:
+	//iterateHierarchy ();
+	
+    // export statements 
+	exportStatements ();
+	
+    // export enumerations should be included in exportHierXls ()
+    exportEnumerations ();
+	
+	// Write just one Workbook with Resources, Statements and Enumerations
+	// console.debug ("writeFile ", resFile.title);
+	XLSX.writeFile(wb, resFile.title + '.xlsx' );
+
+	// Export in Format ready for import again
+	exportHierXls ();
+
+} // end function specif2xlsx
 
 function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	"use strict";
