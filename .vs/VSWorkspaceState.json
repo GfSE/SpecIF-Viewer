@@ -2,14 +2,11 @@
   "ExpandedNodes": [
     "",
     "\\src",
-    "\\src\\config",
-    "\\src\\config\\locales",
     "\\src\\modules",
     "\\src\\types",
     "\\src\\vendor",
     "\\src\\vendor\\assets",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\vendor\\assets\\stylesheets\\SpecIF.default.css",
   "PreviewInSolutionExplorer": false
 }

@@ -32,7 +32,7 @@ function ObjectTable() {
 				// ToDo: Exclude only the first title attribute, the active one.
 				if( CONFIG.titleProperties.indexOf( ln )<0
 					&& CONFIG.descProperties.indexOf( ln )<0
-					&& indexBy(cols, 'data', ln.toJsId() )<0 ) {
+					&& LIB.indexBy(cols, 'data', ln.toJsId() )<0 ) {
 //						console.debug( s, a, ti );
 						cols.push({
 							title: ti,

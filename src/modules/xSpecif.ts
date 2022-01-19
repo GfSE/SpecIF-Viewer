@@ -13,7 +13,7 @@ class CSpecifItemNames {
 	sClasses: string;
 	hClasses?: string;
 	pClasses: string;
-	subClasses: string;
+	sbjClasses: string;
 	objClasses: string;
 	rClass: string;
 	sClass: string;
@@ -32,7 +32,7 @@ class CSpecifItemNames {
 				this.sClasses = 'statementTypes';
 				this.hClasses = 'hierarchyTypes';
 				this.pClasses = 'propertyTypes';
-				this.subClasses = 'subjectTypes';
+				this.sbjClasses = 'subjectTypes';
 				this.objClasses = 'objectTypes';
 				this.rClass = 'resourceType';
 				this.sClass = 'statementType';
@@ -51,7 +51,7 @@ class CSpecifItemNames {
 				this.rClasses = 'resourceClasses';
 				this.sClasses = 'statementClasses';
 				this.pClasses = 'propertyClasses';
-				this.subClasses = 'subjectClasses';
+				this.sbjClasses = 'subjectClasses';
 				this.objClasses = 'objectClasses';
 				this.rClass = 'class';
 				this.sClass = 'class';
@@ -76,21 +76,21 @@ class CSpecIF implements SpecIF {
 	// and also transform it back to a SpecIF data-set of the most recent version.
 	id = '';
 	$schema = '';
-	title = '';
-	description = '';
+	title = [{ text: '' }];
+	description = [{ text: '' }];
 	generator = '';
 	generatorVersion = '';
 	rights: any = {};
-	createdAt = '';
-	createdBy: CreatedBy;
+	createdAt: SpecifDateTime;
+	createdBy: SpecifCreatedBy;
 
-	dataTypes: DataType[] = [];
-	propertyClasses: PropertyClass[] = [];
-	resourceClasses: ResourceClass[] = [];
-	statementClasses: StatementClass[] = [];
+	dataTypes: SpecifDataType[] = [];
+	propertyClasses: SpecifPropertyClass[] = [];
+	resourceClasses: SpecifResourceClass[] = [];
+	statementClasses: SpecifStatementClass[] = [];
 	files: IFileWithContent[] = [];
-	resources: Resource[] = [];   		// list of resources as referenced by the hierarchies
-	statements: Statement[] = [];
+	resources: SpecifResource[] = [];   		// list of resources as referenced by the hierarchies
+	statements: SpecifStatement[] = [];
 	hierarchies: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of the project.
 
 	constructor() {
@@ -217,15 +217,33 @@ class CSpecIF implements SpecIF {
 		// - suppresses undefined list items in the result, so in effect forAll() is a combination of .map() and .filter().
 		try {
 			this.dataTypes = LIB.forAll( spD.dataTypes, dT2int );
-			this.propertyClasses = LIB.forAll(spD.propertyClasses, pC2int );
+			this.propertyClasses = LIB.forAll( spD.propertyClasses, pC2int );
 			this.resourceClasses = LIB.forAll( spD[names.rClasses], rC2int );
 			this.statementClasses = LIB.forAll( spD[names.sClasses], sC2int );
-			if (names.hClasses)
+			if (names.hClasses && Array.isArray(spD[names.hClasses]))
 				this.resourceClasses = this.resourceClasses.concat( LIB.forAll( spD[names.hClasses], hC2int ));
 			this.files = LIB.forAll(spD.files, f2int);
 			this.resources = LIB.forAll( spD.resources, r2int );
 			this.statements = LIB.forAll( spD.statements, s2int );
 			this.hierarchies = LIB.forAll( spD.hierarchies, h2int );
+
+			// Transform data with schema <v1.1.
+			// dataType.type: 'xs:enumeration' and 'xhtml' --> 'xs:string';
+			// do it here at the end so that the original type is available for the whole transformation:
+			this.dataTypes = LIB.forAll( this.dataTypes,
+				(dT:SpecifDataType) => {
+					switch( dT.type ) {
+						// @ts-ignore - can appear in SpecIF <v1.1:
+						case 'xs:enumeration':
+						// @ts-ignore - can appear in SpecIF <v1.1:
+						case "xhtml":
+							dT.type = SpecifDataTypeEnum.String;
+						// If this has become now a redundant dataType, 
+						// it will be removed later through 'deduplicate()'.
+					};
+					return dT;
+                }
+			);
 		}
 		catch (e) {
 			let txt = "Error when importing the project '" + spD.title + "'";
@@ -235,23 +253,24 @@ class CSpecIF implements SpecIF {
 		};
 
 		// header information provided only in case of project creation, but not in case of project update:
+		if (spD.rights) this.rights = { title: spD.rights.title, url: spD.rights.url };
 		if (spD.generator) this.generator = spD.generator;
 		if (spD.generatorVersion) this.generatorVersion = spD.generatorVersion;
 		if (spD.createdBy) this.createdBy = spD.createdBy;
 		if (spD.createdAt) this.createdAt = spD.createdAt;
-		if (spD.description) this.description = spD.description;
-		if (spD.title) this.title = spD.title;
-		if (spD.id) this.id = spD.id;
+		if (spD.description) this.description = makeMultiLanguageText(spD.description);
+		if (spD.title) this.title = makeMultiLanguageText(spD.title);
+		this.id = spD.id;
 
 //		console.debug('specif.toInt',simpleClone(this));
 
+		// common for all items:
 		function i2int(iE:any) {
-			// common for all items:
 			var oE: any = {
 				id: iE.id,
 				changedAt: iE.changedAt
 			};
-			if (iE.description) oE.description = LIB.cleanValue(iE.description);
+			if (iE.description) oE.description = makeMultiLanguageText(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
 			switch (typeof (iE.revision)) {
 				case 'number':
@@ -262,13 +281,11 @@ class CSpecIF implements SpecIF {
 			};
 			if (iE.replaces) oE.replaces = iE.replaces;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
-			if (iE.createdAt) oE.createdAt = iE.createdAt;
-			if (iE.createdBy) oE.createdBy = iE.createdBy;
 	//		console.debug('item 2int',iE,oE);
 			return oE
 		}
 		// a data type:
-		function dT2int(iE:any): DataType {
+		function dT2int(iE:any): SpecifDataType {
 			var oE: any = i2int(iE);
 			oE.title = LIB.cleanValue(iE.title);
 			oE.type = iE.type;
@@ -283,6 +300,10 @@ class CSpecIF implements SpecIF {
 					oE.maxInclusive = iE[names.maxI];
 					break;
 				case "xhtml":
+				//	oE.type = "xs:string";
+					// If this has become now a redundant dataType, 
+					// it will be removed later through 'deduplicate()'.
+					// no break
 				case "xs:string":
 					if (typeof (iE.maxLength) == 'number')
 						oE.maxLength = iE.maxLength;
@@ -291,40 +312,97 @@ class CSpecIF implements SpecIF {
 			// up until v1.0 there is a dedicated dataType "xs:enumeration" and
 			// starting with v1.1 every dataType except xs:boolean may have enumerated values:
 			if (iE.values)
-				oE.values = LIB.forAll(iE.values, (v): EnumeratedValue => {
+				oE.enumeration = LIB.forAll(iE.values, (v: any): SpecifEnumeratedValue => {
 					// 'v.title' until v0.10.6, 'v.value' thereafter;
 					// 'v.value' can be a string or a multilanguage object.
 					return {
 						id: v.id,
-						value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
+					//	value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
+						value: typeof (v.value) == 'object' ? v.value
+							: (typeof (v.value) == 'string' ? { text: v.value } : { text: v.title }) // works also for v.value==''
 					}
 				});
 
 //			console.debug('dataType 2int',iE);
 			return oE
 		}
+		function makeValues(iE: any, dT: SpecifDataType): SpecifValues {
+			if (Array.isArray(iE.values)) {
+				// it is SpecIF > v1.0:
+				return iE.values;
+			}
+			else if (LIB.isString(iE.value) || LIB.isSpecifMultiLanguageText(iE.value)) {
+				// it is SpecIF < v1.1:
+				switch (dT.type) {
+					// we are using the transformed dataTypes, but the base dataTypes are still original;
+					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
+					case "xhtml":
+					case SpecifDataTypeEnum.String:
+						// in SpecIF <v1.1 there were only enumerations of base-type xs:string:
+						if (dT.enumeration)
+							return [LIB.cleanValue(iE.value)]
+						else {
+							let vL = Array.isArray(iE.value) ?
+								// multiple languages:
+								LIB.forAll(iE.value,
+									(val: any) => {
+										val.text = LIB.uriBack2slash(val.text);
+										return val;
+									})
+								// single language:
+								: LIB.uriBack2slash(iE.value);
+							// @ts-ignore - dT is in fact a string:
+							return [makeMultiLanguageText(vL, dT.type)];
+						};
+					// break - all branches end with return;
+					default:
+						// According to the schema, all property values are represented by a string
+						// and internally they are stored as string as well to avoid inaccuracies
+						// by multiple transformations:
+						return [LIB.cleanValue(iE.value)];
+				};
+			}
+			else
+				throw Error("Invalid property with class " + iE[names.pClass] + ".");
+		}
 		// a property class:
-		function pC2int(iE: PropertyClass): PropertyClass {
+		function pC2int(iE: any): SpecifPropertyClass {
 			var oE: any = i2int(iE);
 			oE.title = LIB.cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
-			if (iE.description) oE.description = LIB.cleanValue(iE.description);
-			if (iE.value) oE.value = LIB.cleanValue(iE.value);
-			oE.dataType = iE.dataType;
-			let dT: DataType = itemById(self.dataTypes, iE.dataType);
+
+			oE.dataType = makeKey(iE.dataType);
+			let dT: SpecifDataType = itemById(self.dataTypes, iE.dataType);
 //			console.debug('pC2int',iE,dT);
-			switch (dT.type) {
-				case 'xs:enumeration':
-					// include the property only, if it is different from the dataType's:
-					if (iE.multiple && !dT.multiple) oE.multiple = true
-					else if (iE.multiple == false && dT.multiple) oE.multiple = false;
-			};
+
+			// The default values:
+			if (iE.value || iE.values)
+				oE.values = makeValues(iE, dT);
+		/*	// SpecIF <v1.1:
+			if (iE.value)
+				switch (dT.type) {
+					// @ts-ignore - can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
+					case "xhtml":
+					case SpecifDataTypeEnum.String:
+						oE.values = [makeMultiLanguageText(iE.value,dT.type)];
+						break;
+					default:
+						oE.values = [LIB.cleanValue(iE.value)];
+				};
+			// SpecIF >v1.0:
+			if (iE.values) oE.values = iE.values;  */
+
+			// include the property only, if it is different from the dataType's:
+			if (iE.multiple && !dT.multiple) oE.multiple = true
+			else if (iE.multiple == false && dT.multiple) oE.multiple = false;
+
 //			console.debug('propClass 2int',iE,oE);
-			return oE
+			return oE;
 		}
 		// common for all instance classes:
 		function aC2int(iE:any) {
 			var oE: any = i2int(iE);
 			oE.title = LIB.cleanValue(iE.title);
+
 			if (iE['extends']) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5
 			if (iE.icon) oE.icon = iE.icon;
 			if (iE.creation) oE.instantiation = iE.creation;	// deprecated, for compatibility
@@ -333,28 +411,36 @@ class CSpecIF implements SpecIF {
 				let idx = oE.instantiation.indexOf('manual');	// deprecated
 				if (idx > -1) oE.instantiation.splice(idx, 1, 'user')
 			};
-			// Up until v0.10.5, the pClasses themself are listed, starting v0.10.6 their ids are listed as a string.
-			if (Array.isArray(iE[names.pClasses]) && iE[names.pClasses].length > 0)
-				if (typeof (iE[names.pClasses][0]) == 'string')
-					// copy the list of pClasses' ids:
-					oE.propertyClasses = iE.propertyClasses
-				else {
-					// internally, the pClasses are stored like in v0.10.6.
-					oE.propertyClasses = [];
-					iE[names.pClasses].forEach((e: PropertyClass) => {
-						// Store the pClasses at the top level:
-						self.propertyClasses.push(pC2int(e));
-						// Add to a list with pClass' ids, here:
-						oE.propertyClasses.push(e.id)
-					})
+			// Up until v0.10.5, the pClasses themselves are listed, starting v0.10.6 references are listed:
+			if (Array.isArray(iE[names.pClasses]) && iE[names.pClasses].length > 0) {
+				if (typeof (iE[names.pClasses][0]) == 'object' && iE[names.pClasses][0].dataType == undefined) {
+					// it is a propertyClass reference according to v1.1:
+					oE.propertyClasses = iE.propertyClasses;
 				}
+				else if (typeof (iE[names.pClasses][0]) == 'string') {
+					// it is a propertyClass reference according to v1.0 (and some versions before that);
+					// make a list of pClasses according to v1.1:
+					oE.propertyClasses = makeKeyL(iE[names.pClasses]);
+				}
+				else {
+					// it is a full-fledged propertyClass in one of the oldest SpecIF versions:
+					oE.propertyClasses = [];
+					iE[names.pClasses].forEach((e: any): void => {
+						// Store the pClasses at the top level;
+						// redundant pClasses will be deduplicated, later:
+						self.propertyClasses.push(pC2int(e));
+						// Add to a list with pClass references, here:
+						oE.propertyClasses.push(LIB.keyOf(e));
+					})
+				};
+			}
 			else
 				oE.propertyClasses = [];
 //			console.debug('anyClass 2int',iE,oE);
 			return oE
 		}
 		// a resource class:
-		function rC2int(iE: ResourceClass): ResourceClass {
+		function rC2int(iE: SpecifResourceClass): SpecifResourceClass {
 			var oE: any = aC2int(iE);
 
 			// If "iE.isHeading" is defined, use it:
@@ -370,23 +456,23 @@ class CSpecIF implements SpecIF {
 			// else: look for a property class being configured in CONFIG.headingProperties
 			let pC;
 			for (var a = oE.propertyClasses.length - 1; a > -1; a--) {
-				pC = oE.propertyClasses[a];
-				// look up propertyClass starting v0.101.6:
-				if (typeof (pC) == 'string') pC = itemById(self.propertyClasses, pC);
+				pC = LIB.itemByKey(self.propertyClasses, oE.propertyClasses[a]);
 				if (CONFIG.headingProperties.indexOf(pC.title) > -1) {
 					oE.isHeading = true;
-					break
-				}
+					break;
+				};
 			};
 //			console.debug('resourceClass 2int',iE,oE);
 			return oE
 		}
 		// a statementClass:
-		function sC2int(iE:any): StatementClass {
-			var oE: StatementClass = aC2int(iE);
+		function sC2int(iE:any): SpecifStatementClass {
+			var oE: SpecifStatementClass = aC2int(iE);
 			if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
-			if (iE[names.subClasses]) oE.subjectClasses = iE[names.subClasses];
-			if (iE[names.objClasses]) oE.objectClasses = iE[names.objClasses];
+			if (iE[names.sbjClasses])
+				oE.subjectClasses = makeKeyL(iE[names.sbjClasses]);
+			if (iE[names.objClasses])
+				oE.objectClasses = makeKeyL(iE[names.objClasses]);
 //			console.debug('statementClass 2int',iE,oE);
 			return oE
 		}
@@ -400,53 +486,49 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a property:
-		function p2int(iE:any): Property {
-			var dT: DataType = dataTypeOf(self, iE[names.pClass]),
-				oE: Property = {
+		function p2int(iE: any): SpecifProperty {
+			// @ts-ignore - 'values'will be added later:
+			var oE: SpecifProperty = {
 					// no id
-					class: iE[names.pClass]
-				};
-			if (iE.title) oE.title = LIB.cleanValue(iE.title);
-			if (iE.description) oE.description = LIB.cleanValue(iE.description);
+					class: makeKey(iE[names.pClass])
+				},
+				dT: SpecifDataType = dataTypeOf(self, oE["class"]);
+//			console.debug('p2int', iE, dT);
 
-			switch (dT.type) {
-				case 'xs:string':
-				case 'xhtml':
-					oE.value = LIB.cleanValue(iE.value);
-					oE.value = Array.isArray(oE.value) ?
-						// multiple languages:
-						LIB.forAll(oE.value,
-							(val: ValueElement) => {
-								val.text = LIB.uriBack2slash(val.text);
-								return val;
-							})
-						// single language:
-						: LIB.uriBack2slash(oE.value);
-					break;
-				default:
-					// According to the schema, all property values are represented by a string
-					// and internally they are stored as string as well to avoid inaccuracies
-					// by multiple transformations:
-					oE.value = LIB.cleanValue(iE.value);
-			};
+			oE.values = makeValues(iE, dT);
+
 			// properties do not have their own revision and change info
 //			console.debug('propValue 2int',iE,pT,oE);
 			return oE
 		}
 		// common for all instances:
 		function a2int(iE:any): Instance {
-			var oE = i2int(iE), eC;
+			var eC,
+		//		oE = i2int(iE);
+				oE: any = {
+					id: iE.id,
+					changedAt: iE.changedAt
+				};
+			// revision is a number up until v0.10.6 and a string thereafter:
+			switch (typeof (iE.revision)) {
+				case 'number':
+					oE.revision = iE.revision.toString();	// for <v0.10.8
+					break;
+				case 'string':
+					oE.revision = iE.revision
+			};
+			if (iE.replaces) oE.replaces = iE.replaces;
+			if (iE.changedBy) oE.changedBy = iE.changedBy;
+
 			// resources must have a title, but statements may come without:
-			if (iE.title)
-				oE.title = LIB.cleanValue(iE.title);
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.properties && iE.properties.length > 0)
-				oE.properties = LIB.forAll(iE.properties, (e: any): Property => { return p2int(e) });
+				oE.properties = LIB.forAll(iE.properties, (e: any): SpecifProperty => { return p2int(e) });
 
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
 			// In this case, add a description property to hold the description as required by SpecIF v1.1:
-			if (descPropertyNeeded(oE)) {
+			if (descPropertyNeeded(iE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
 				console.info("Added a description property to element with id '" + oE.id + "'");
@@ -460,13 +542,13 @@ class CSpecIF implements SpecIF {
 				addPCReference(eC, "PC-Description");
 				// d. Add description property to element;
 				addP(oE, {
-					class: "PC-Description",
-					value: oE.description
+					class: { id: "PC-Description" },
+					values: [ makeMultiLanguageText(iE.description) ]
 				});
 			};
 
 			// Similarly, add a title property if missing:
-			if (titlePropertyNeeded(oE)) {
+			if (titlePropertyNeeded(iE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
 				console.info("Added a title property to element with id '" + oE.id + "'");
@@ -480,9 +562,9 @@ class CSpecIF implements SpecIF {
 				addPCReference(eC, "PC-Name");
 				// d. Add title property to element;
 				addP(oE, {
-					class: "PC-Name",
+					class: { id:"PC-Name" },
 					// no title is required in case of statements; it's class' title applies by default:
-					value: oE.title
+					values: [ makeMultiLanguageText(iE.title) ]
 				});
 			};
 
@@ -522,66 +604,69 @@ class CSpecIF implements SpecIF {
 			}
 		}
 		// a resource:
-		function r2int(iE:any): Resource {
-			var oE: Resource = a2int(iE) as Resource;
-			oE['class'] = iE[names.rClass];
+		function r2int(iE: any): SpecifResource {
+			var oE: SpecifResource = a2int(iE) as SpecifResource;
+			oE['class'] = makeKey(iE[names.rClass]);
 //			console.debug('resource 2int',iE,simpleClone(oE));
 			return oE
 		}
 		// a statement:
-		function s2int(iE:any): Statement {
-			var oE: Statement = a2int(iE) as Statement;
-			oE['class'] = iE[names.sClass];
+		function s2int(iE:any): SpecifStatement {
+			var oE: SpecifStatement = a2int(iE) as SpecifStatement;
+			oE['class'] = makeKey( iE[names.sClass] );
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
 			//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
-			oE.subject = iE.subject;
-			oE.object = iE.object;
+			oE.subject = makeKey( iE.subject );
+			oE.object = makeKey( iE.object );
 
 			// special feature to import statements to complete,
 			// used for example by the XLS or ReqIF import:
-			if (iE.subjectToFind) oE.subjectToFind = iE.subjectToFind;
-			if (iE.objectToFind) oE.objectToFind = iE.objectToFind;
+			// @ts-ignore - subjectToFind is implementation-specific for a-posteriori completion of statements
+			if (iE.subjectToFind) oE.subjectToFind = makeKey(iE.subjectToFind);
+			// @ts-ignore - objectToFind is implementation-specific for a-posteriori completion of statements
+			if (iE.objectToFind) oE.objectToFind = makeKey(iE.objectToFind);
 //			console.debug('statement 2int',iE,oE);
 			return oE
 		}
 		// a hierarchy:
-		function h2int(eH: SpecifNode) {
+		function h2int(iE: any): SpecifNode {
 			// the properties are stored with a resource, while the hierarchy is stored as a node with reference to that resource:
-			var iH: any;
+			var oE: SpecifNode;
 			if (names.hClasses) {
 				// up until v0.10.6, transform hierarchy root to a regular resource:
-				var iR:Resource = a2int(eH) as Resource;
-				//  ... and add a link to the hierarchy:
-				iH = {
-					id: 'N-' + iR.id,
-					resource: iR.id,
-					changedAt: eH.changedAt
-				};
-				iR['class'] = eH[names.hClass];
+				var iR = a2int(iE) as SpecifResource;
+				iR['class'] = makeKey(iE[names.hClass]);
 				self.resources.push(iR);
 
-				if (eH.revision) iH.revision = eH.revision.toString()
+				//  ... and add a link to the hierarchy:
+				oE = {
+					id: 'N-' + iR.id,
+					resource: LIB.keyOf( iR ),
+					changedAt: iE.changedAt
+				};
+				if (iE.revision) oE.revision = iE.revision.toString()
 			}
 			else {
 				// starting v0.10.8:
-				iH = i2int(eH);
-				iH.resource = eH.resource
+				oE = i2int(iE);
+				oE.resource = makeKey( iE.resource )
 			};
 
-			// SpecIF allows resource references with id alone or with  a key (id+revision):
-			iH.nodes = LIB.forAll(eH.nodes, n2int);
-//			console.debug('hierarchy 2int',eH,iH);
-			return iH
+			// SpecIF allows resource references with id alone or with a key (id+revision):
+			oE.nodes = LIB.forAll(iE.nodes, n2int);
+//			console.debug('hierarchy 2int',iE,oE);
+			return oE;
 
 			// a hierarchy node:
-			function n2int(eN) {
-				switch (typeof (eN.revision)) {
-					case 'number':
-						eN.revision = eN.revision.toString()
-				};
-				LIB.forAll(eN.nodes, n2int);
-				return eN
+			function n2int(iE:any): SpecifNode {
+				var oE: SpecifNode = {
+						id: iE.id,
+						resource: makeKey(iE.resource)
+					};
+				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
+				if (iE.nodes) oE.nodes = LIB.forAll(iE.nodes, n2int);
+				return oE;
 			}
 		}
 		// a file:
@@ -590,17 +675,32 @@ class CSpecIF implements SpecIF {
 			oF.title = iF.title ? iF.title.replace(/\\/g, '/') : iF.id;
 			// store the blob and it's type:
 			if (iF.blob) {
-				oF.type = iF.blob.type || iF.type || LIB.attachment2mediaType(iF.title);
+				oF.type = iF.blob.type || iF.type || LIB.attachment2mediaType(oF.title);
 				oF.blob = iF.blob;
 			}
 			else if (iF.dataURL) {
-				oF.type = iF.type || LIB.attachment2mediaType(iF.title);
+				oF.type = iF.type || LIB.attachment2mediaType(oF.title);
 				oF.dataURL = iF.dataURL;
 			}
 			else
 				oF.type = iF.type;
 			return oF
 		}
+		// utilities:
+		function makeKey(el: any[]): SpecifKey {
+			return typeof(el)=='string' ? { id: el } : el;
+		}
+		function makeKeyL(L: any[]): SpecifKeys {
+			return LIB.forAll(L, (el: any): SpecifKey => { return makeKey(el) });
+		}
+		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {
+			return (typeof (iE) == 'string' ?
+				( baseType == "xhtml" ?
+					[{ text: LIB.cleanValue(iE), format: "xhtml" }]
+					: [{ text: LIB.cleanValue(iE) }]
+				)
+				: LIB.cleanValue(iE) );
+        }
 	}
 	toExt(opts?: any): Promise<SpecIF> {
 		// transform self.data to SpecIF following defined options;
@@ -686,10 +786,10 @@ class CSpecIF implements SpecIF {
 						lenBefore = spD.statements.length;
 						spD.statements = spD.statements.filter(
 							(s) => {
-								return (indexById(spD.resources, LIB.idOf(s.subject)) > -1
-									|| indexById(spD.statements, LIB.idOf(s.subject)) > -1)
-									&& (indexById(spD.resources, LIB.idOf(s.object)) > -1
-										|| indexById(spD.statements, LIB.idOf(s.object)) > -1)
+								return (indexById(spD.resources, s.subject.id) > -1
+									|| indexById(spD.statements, s.subject.id) > -1)
+									&& (indexById(spD.resources, s.object.id) > -1
+										|| indexById(spD.statements, s.object.id) > -1)
 							}
 						);
 						console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
@@ -780,8 +880,8 @@ class CSpecIF implements SpecIF {
 					return oE;
 				}
 				// a data type:
-				function dT2ext(iE: DataType) {
-					var oE: DataType = i2ext(iE);
+				function dT2ext(iE: SpecifDataType) {
+					var oE: SpecifDataType = i2ext(iE);
 					oE.type = iE.type;
 					switch (iE.type) {
 						case "xs:double":
@@ -808,8 +908,8 @@ class CSpecIF implements SpecIF {
 					return oE
 				}
 				// a property class:
-				function pC2ext(iE: PropertyClass) {
-					var oE: PropertyClass = i2ext(iE);
+				function pC2ext(iE: SpecifPropertyClass) {
+					var oE: SpecifPropertyClass = i2ext(iE);
 					if (iE.value) oE.value = iE.value;  // a default value
 					oE.dataType = iE.dataType;
 					let dT = itemById(spD.dataTypes, iE.dataType);
@@ -845,34 +945,34 @@ class CSpecIF implements SpecIF {
 					return oE
 				}
 				// a resource class:
-				function rC2ext(iE: ResourceClass) {
-					var oE: ResourceClass = aC2ext(iE) as ResourceClass;
+				function rC2ext(iE: SpecifResourceClass) {
+					var oE: SpecifResourceClass = aC2ext(iE) as SpecifResourceClass;
 					// Include "isHeading" in SpecIF only if true:
 					if (iE.isHeading) oE.isHeading = true;
 					return oE
 				}
 				// a statement class:
-				function sC2ext(iE: StatementClass) {
-					var oE: StatementClass = aC2ext(iE) as StatementClass;
+				function sC2ext(iE: SpecifStatementClass) {
+					var oE: SpecifStatementClass = aC2ext(iE) as SpecifStatementClass;
 					if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
 					if (iE.subjectClasses && iE.subjectClasses.length > 0) oE.subjectClasses = iE.subjectClasses;
 					if (iE.objectClasses && iE.objectClasses.length > 0) oE.objectClasses = iE.objectClasses;
 					return oE
 				}
 				// a property:
-				function p2ext(iE: Property) {
+				function p2ext(iE: SpecifProperty) {
 					// skip empty properties:
 					if (!iE.value) return;
 
 					// skip hidden properties:
-					let pC: PropertyClass = itemById(spD.propertyClasses, iE['class']);
+					let pC: SpecifPropertyClass = itemById(spD.propertyClasses, iE['class']);
 					if (Array.isArray(opts.hiddenProperties)) {
 						opts.hiddenProperties.forEach((hP) => {
 							if (hP.title == (iE.title || pC.title) && (hP.value == undefined || hP.value == iE.value)) return;
 						});
 					};
 
-					var oE: Property = {
+					var oE: SpecifProperty = {
 						// no id
 						class: iE['class']
 					};
@@ -888,7 +988,7 @@ class CSpecIF implements SpecIF {
 					if (opts.lookupLanguage && opts.targetLanguage ) {
 						// reduce to the selected language; is used for generation of human readable documents
 						// or for formats not supporting multiple languages:
-						let dT: DataType = dataTypeOf(spD, iE['class']);
+						let dT: SpecifDataType = dataTypeOf(spD, iE['class']);
 						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
 							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
 								// Transform to HTML, if possible;
@@ -972,7 +1072,7 @@ class CSpecIF implements SpecIF {
 					return oE;
 				}
 				// a resource:
-				function r2ext(iE: Resource) {
+				function r2ext(iE: SpecifResource) {
 					var oE: Resource = a2ext(iE);
 					// a resource title shall never be looked up (translated);
 					// for example in case of the vocabulary the terms would disappear:
@@ -981,16 +1081,16 @@ class CSpecIF implements SpecIF {
 					return oE;
 				}
 				// a statement:
-				function s2ext(iE: Statement) {
+				function s2ext(iE: SpecifStatement) {
 					// Skip statements with an open end;
 					// At the end it will be checked, wether all referenced resources resp. statements are listed:
-					if (!iE.subject || LIB.idOf(iE.subject) == CONFIG.placeholder
-						|| !iE.object || LIB.idOf(iE.object) == CONFIG.placeholder
+					if (!iE.subject || iE.subject.id == CONFIG.placeholder
+						|| !iE.object || iE.object.id == CONFIG.placeholder
 					) return;
 
 					// The statements usually do use a vocabulary item (and not have an individual title),
 					// so we lookup, if so desired, e.g. when exporting to ePub:
-					var oE: Statement = a2ext(iE);
+					var oE: SpecifStatement = a2ext(iE);
 
 					// Skip the title, if it is equal to the statementClass' title;
 					// ToDo: remove limitation of single language.
@@ -1004,8 +1104,8 @@ class CSpecIF implements SpecIF {
 					// for the time being, multiple revisions are not supported:
 					if (opts.revisionDate) {
 						// supply only the id, but not a key:
-						oE.subject = LIB.idOf(iE.subject);
-						oE.object = LIB.idOf(iE.object);
+						oE.subject = iE.subject.id;
+						oE.object = iE.object.id;
 					}
 					else {
 						// supply key or id:
@@ -1023,7 +1123,7 @@ class CSpecIF implements SpecIF {
 						// for the time being, multiple revisions are not supported:
 						//                            supply only the id, but not a key
 						//                            |                           supply key or id
-						resource: opts.revisionDate? LIB.idOf(iN.resource) : iN.resource,
+						resource: opts.revisionDate? iN.resource.id : iN.resource,
 						changedAt: iN.changedAt
 					};
 					

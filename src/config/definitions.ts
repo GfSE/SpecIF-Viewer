@@ -7,8 +7,8 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.w",
-	CONFIG.specifVersion = "1.0";
+	CONFIG.appVersion = "1.1.a",
+	CONFIG.specifVersion = "1.1";
 	CONFIG.imgURL = './vendor/assets/images';
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 //	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server

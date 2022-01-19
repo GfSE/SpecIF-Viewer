@@ -248,7 +248,7 @@ moduleManager.construct({
 					if( i>-1 ) { 
 						// report panel found; it is assumed it is of type 'xs:enumeration'.
 						// check whether the resource has a property of this type:
-						oa = itemBy( res.properties, 'class', pId );
+						oa = LIB.itemBy( res.properties, 'class', pId );
 						if( oa && oa.value.trim().length ) {  
 							// has a value:
 //							console.debug( 'evalResource a', oa );

@@ -8,107 +8,93 @@
 */
 
 class StandardTypes {
-	dataTypes:DataType[] = [{
+	dataTypes:SpecifDataType[] = [{
 		id: "DT-ShortString",
-		title: "String ["+CONFIG.textThreshold+"]",
-		description: "String with length "+CONFIG.textThreshold,
-		type: TypeEnum.XsString,
+		title: "String [" + CONFIG.textThreshold + "]" ,
+		description: [{ text: "String with length " + CONFIG.textThreshold }],
+		type: SpecifDataTypeEnum.String,
 		maxLength: CONFIG.textThreshold,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "DT-Text",
 		title: "Plain or formatted Text",
-		description: "A text string, plain, or formatted with XHTML or markdown",
-		type: TypeEnum.XsString,
+		description: [{ text: "A text string, plain, or formatted with XHTML or markdown" }],
+		type: SpecifDataTypeEnum.String,
 		changedAt: "2021-02-14T08:59:00+02:00"
-	},{
-		// DEPRECATED for SpecIF, but needed for ReqIF:
-		id: "DT-FormattedText",
-		title: "XHTML-formatted Text",
-		type: TypeEnum.XHTML,
-		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-DateTime",  
 		title: "Date or Timestamp",
-		description: "Date or Timestamp in ISO-Format",
-		type: TypeEnum.XsDateTime,
+		description: [{ text: "Date or Timestamp in ISO-Format" }],
+		type: SpecifDataTypeEnum.DateTime,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Boolean",
 		title: "Boolean",
-		description: "The Boolean data type.",
-		type: TypeEnum.XsBoolean,
+		description: [{ text: "The Boolean data type." }],
+		type: SpecifDataTypeEnum.Boolean,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Integer",
 		title: "Integer",
-		description: "A numerical integer value from -32768 to 32768.",
-		type: TypeEnum.XsInteger,
+		description: [{ text: "A numerical integer value from -32768 to 32768." }],
+		type: SpecifDataTypeEnum.Integer,
 		minInclusive: CONFIG.minInteger,
 		maxInclusive: CONFIG.maxInteger,
 	    changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
 		id: "DT-Real",
 		title: "Real",
-		description: "A floating point number (double).",
-		type: TypeEnum.XsDouble,
+		description: [{ text: "A floating point number (double)." }],
+		type: SpecifDataTypeEnum.Double,
 		fractionDigits: CONFIG.maxAccuracy,
 		minInclusive: CONFIG.minReal,
 		maxInclusive: CONFIG.maxReal,
 		changedAt: "2021-02-14T08:59:00+02:00"
 	}];
-	propertyClasses:PropertyClass[] = [{
+	propertyClasses:SpecifPropertyClass[] = [{
 		id: "PC-Name",
 		title: CONFIG.propClassTitle,
-		description: "The element's name or title.",
-		dataType: "DT-ShortString",
+		description: [{ text: "The element's name or title." }],
+		dataType: { id: "DT-ShortString" },
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
 		id: "PC-Description",
 		title: CONFIG.propClassDesc,
-		dataType: "DT-Text",
+		dataType: { id: "DT-Text" },
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
 		// DEPRECATED for SpecIF, but needed for ReqIF:
 		id: "PC-FormattedText",
 		title: CONFIG.propClassDesc,
-		dataType: "DT-FormattedText",
+		dataType: { id: "DT-FormattedText" },
 		changedAt: "2020-11-06T08:59:00+02:00"
 	}, {
 		id: "PC-Diagram",
 		title: CONFIG.resClassDiagram,
-		dataType: "DT-Text",
+		dataType: { id: "DT-Text" },
 	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "PC-Type",
 		title: CONFIG.propClassType,
-		dataType: "DT-ShortString",
+		dataType: { id: "DT-ShortString" },
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}];
-	resourceClasses:ResourceClass[] = [{
+	resourceClasses:SpecifResourceClass[] = [{
 		id: "RC-Folder",
 		title: CONFIG.resClassFolder,
-		description: "Folder with title and text for chapters or descriptive paragraphs.",
+		description: [{ text: "Folder with title and text for chapters or descriptive paragraphs." }],
 		isHeading: true,
-		instantiation: [Instantiation.Auto, Instantiation.User],
-		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
+		propertyClasses: [{ id: "PC-Name" }, { id: "PC-Description" }, { id: "PC-Type" }],
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
         id: "RC-Paragraph",
-        title: "SpecIF:Paragraph",
-        description: "Information with title and text for descriptive paragraphs.",
-		instantiation: [Instantiation.Auto, Instantiation.User],
-		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
+		title: "SpecIF:Paragraph",
+		description: [{ text: "Information with title and text for descriptive paragraphs." }],
+		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
+		propertyClasses: [{ id: "PC-Name" },{ id: "PC-Description" }, { id: "PC-Type" }],
 		changedAt: "2020-12-04T18:59:00+01:00"
-/*  Instead, use RC-Folder and add a property with "PC-Type" and value "RC-HierarchyRoot":
-     },{
-		id: "RC-HierarchyRoot",
-		title: CONFIG.resClassOutline,
-		description: "Metadata of a document outline (hierarchy).",
-		instantiation: [Instantiation.Auto],
-		propertyClasses: ["PC-Name","PC-Description","PC-Type"],
-		changedAt: "2016-05-26T08:59:00+02:00"   */
 	}];
 	// The sequence is such that every list's elements have only references to list elements above:
 	listName = new Map([
@@ -176,18 +162,18 @@ class StandardTypes {
 	}
 };
 
-function addPCReference(eC: ResourceClass|StatementClass, id: string): void {
+function addPCReference(eC: SpecifResourceClass|SpecifStatementClass, id: string): void {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
 	if (Array.isArray(eC.propertyClasses)) {
 		// Avoid duplicates:
-		if (eC.propertyClasses.indexOf(id) < 0)
-			eC.propertyClasses.unshift(id);
+		if (indexById(eC.propertyClasses,id) < 0)
+			eC.propertyClasses.unshift({ id: id });
 	}
 	else {
-		eC.propertyClasses = [id];
+		eC.propertyClasses = [{ id: id }];
 	};
 }
-function addP(el:Resource|Statement, prp: Property): void {
+function addP(el:SpecifResource|SpecifStatement, prp: SpecifProperty): void {
 	// Add the property to an element (el):
 	if (Array.isArray(el.properties))
 		el.properties.unshift(prp);

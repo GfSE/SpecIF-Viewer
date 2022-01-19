@@ -118,32 +118,32 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		}
 	}
 	class BaseTypes {
-		dataTypes: DataType[];
-		propertyClasses: PropertyClass[];
-		resourceClasses: ResourceClass[];
-		statementClasses: StatementClass[];
-		resources: Resource[];
-		statements: Statement[];
+		dataTypes: SpecifDataType[];
+		propertyClasses: SpecifPropertyClass[];
+		resourceClasses: SpecifResourceClass[];
+		statementClasses: SpecifStatementClass[];
+		resources: SpecifResource[];
+		statements: SpecifStatement[];
 		hierarchies: SpecifNode[];
 		constructor() {
 			this.dataTypes = [
-				standardTypes.get("dataType", "DT-ShortString") as DataType,
-				standardTypes.get("dataType", "DT-Text") as DataType,
-				standardTypes.get("dataType", "DT-DateTime") as DataType,
-				standardTypes.get("dataType", "DT-Boolean") as DataType,
-				standardTypes.get("dataType", "DT-Integer") as DataType,
-				standardTypes.get("dataType", "DT-Real") as DataType
+				standardTypes.get("dataType", "DT-ShortString") as SpecifDataType,
+				standardTypes.get("dataType", "DT-Text") as SpecifDataType,
+				standardTypes.get("dataType", "DT-DateTime") as SpecifDataType,
+				standardTypes.get("dataType", "DT-Boolean") as SpecifDataType,
+				standardTypes.get("dataType", "DT-Integer") as SpecifDataType,
+				standardTypes.get("dataType", "DT-Real") as SpecifDataType
 			];
 			this.propertyClasses = [
-				standardTypes.get("propertyClass", "PC-Name") as PropertyClass,
-				standardTypes.get("propertyClass", "PC-Description") as PropertyClass,
-				standardTypes.get("propertyClass", "PC-Type") as PropertyClass
+				standardTypes.get("propertyClass", "PC-Name") as SpecifPropertyClass,
+				standardTypes.get("propertyClass", "PC-Description") as SpecifPropertyClass,
+				standardTypes.get("propertyClass", "PC-Type") as SpecifPropertyClass
 			];
 			this.resourceClasses = [
-				standardTypes.get("resourceClass", "RC-Folder") as ResourceClass
+				standardTypes.get("resourceClass", "RC-Folder") as SpecifResourceClass
 			];
 			// user-created instances are not checked for visibility:
-			this.resourceClasses[0].instantiation = [Instantiation.User];
+			this.resourceClasses[0].instantiation = [SpecifInstantiation.User];
 			this.statementClasses = [];
 			this.resources = [];
 			this.statements = [];
@@ -176,8 +176,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		title: string;
 		description: string;
 		icon?: string;
-		instantiation: Instantiation[];
-		propertyClasses: PropertyClass[];
+		instantiation: SpecifInstantiation[];
+		propertyClasses: SpecifPropertyClass[];
 		changedAt: string;
 		constructor(nm: string, ti: string) {
 			this.id = nm;
@@ -185,7 +185,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			let ic = CONFIG.icons.get(this.title);
 			if (ic) this.icon = ic;
 			this.description = 'For resources specified per line of an excel sheet';
-			this.instantiation = [Instantiation.User];  // user-created instances are not checked for visibility
+			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
 			this.propertyClasses = [];
 			this.changedAt = chAt;
 		}
@@ -197,13 +197,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		id: string;
 		title: string;
 		description: string;
-		instantiation: Instantiation[];
+		instantiation: SpecifInstantiation[];
 		changedAt: string;
 		constructor(ti: string) {
 			this.title = vocabulary.statement.specif(ti);
 			this.id = staClassId(this.title);
 			this.description = 'For statements created by columns whose title is declared as a statement';
-			this.instantiation = [Instantiation.User];  // user-created instances are not checked for visibility
+			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
 			// No subjectClasses or objectClasses means all are allowed.
 			// Cannot specify any, as we don't know the resourceClasses.
 			this.changedAt = chAt;
@@ -245,14 +245,14 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				let c: number,
 					r: number,
 					cell: ICell,
-					dT:DataType,
-					pC:PropertyClass;
+					dT:SpecifDataType,
+					pC:SpecifPropertyClass;
 				for (c = ws.firstCell.col; c < ws.lastCell.col + 1; c++) {
 					// skip, if there is no name = content in the first row:
 					cell = ws.data[cellName(c, ws.firstCell.row)];
 					if (!cell || !cell.v) continue;
 
-					dT = { id: dataTypeId(ws.name + c), title: '', type: TypeEnum.XsEnumeration, values: [], changedAt: chAt };
+					dT = { id: dataTypeId(ws.name + c), title: '', type: 'xs:enumeration', values: [], changedAt: chAt };
 					pC = { id: propClassId( ws.name+c ), title: '', dataType: dT.id, changedAt: chAt };
 					for( r=ws.firstCell.row; r<ws.lastCell.row+1; r++ ) {
 						cell = ws.data[cellName(c,r)];
@@ -308,12 +308,12 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				// @ts-ignore - in this case cell.v is a string and has a length:
 				return cell && cell.t=='s' && cell.v.length>0;
 			}
-			function titleFromProps( res:Resource ):string {
+			function titleFromProps( res:SpecifResource ):string {
 //				console.debug( 'titleFromProps', res );
 				// get the title from the properties:
 				if( res.properties ) {
 					let a: number,
-						pC: PropertyClass;
+						pC: SpecifPropertyClass;
 					// first try to find a property with title listed in CONFIG.titleProperties:
                     for ( a=res.properties.length-1; a>-1; a--) {
 						pC = itemById(specifData.propertyClasses as Item[], res.properties[a]['class'] as string);
@@ -336,7 +336,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// Create a resource and store it in specifData.resources;
 						// if a statement is found in a column, store it in specifData.statements (pretty obvious, isn't it):
 
-							function getVal(dT: DataType, cell: ICell): string {
+							function getVal(dT: SpecifDataType, cell: ICell): string {
 								// dT is the target dataType; 
 								// it is the least restrictive type for all values in the column.
 								// A single cell however, can have a more specific dataType.
@@ -377,7 +377,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												case "s": return isTrue(cell.v as string).toString();
 											};
 										case 'xs:enumeration':
-											let eV = itemBy( dT.values, 'value', cell.v );
+											let eV = LIB.itemBy( dT.values, 'value', cell.v );
 											return (eV? eV.id : "" )
 									};
 								return '';
@@ -397,9 +397,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							cell: ICell,
 							val: string,
 						//	rC,
-							pC: PropertyClass,
-							dT: DataType, id,
-							stL: Statement[] = [],
+							pC: SpecifPropertyClass,
+							dT: SpecifDataType, id,
+							stL: SpecifStatement[] = [],
 							pTi: string,
 							obL:string[],
 							oInner:string[];
@@ -557,7 +557,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		
 				// Processing of createFld:
 				// Create folder resource:
-				var fld:Resource = {
+				var fld:SpecifResource = {
 						id: 'R-' + simpleHash(pN+sh.name+CONFIG.resClassFolder),
 						title: sh.name,
 						class: "RC-Folder",
@@ -593,8 +593,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				// a complete propertyClass is added to pCL per column which is not titled with a statement title
 				// and a corresponding list of propertyClass ids is returned for the resourceClass.
 				var pCs: string[] = [], // list of propertyClass ids found on this worksheet
-					pC: PropertyClass,
-					dT: DataType,
+					pC: SpecifPropertyClass,
+					dT: SpecifDataType,
 					c: number, C: number,
 					cell: ICell,
 					noTitleFound = true,
@@ -632,7 +632,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				};
 				return pCs;
 
-				function getPropClass( cX:number ):PropertyClass|undefined {	
+				function getPropClass( cX:number ):SpecifPropertyClass|undefined {	
 					// Determine the data type of all values of the column starting with the second row (= second list entry).
 					// If all are equal, the data type is assumed; by default it is 'ShortString'.
 					// Some cell values may be undefined.
@@ -710,9 +710,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						}
 				}
 			}
-			function getStaClasses(ws: Worksheet, sCL: StatementClass[]): void { 
+			function getStaClasses(ws: Worksheet, sCL: SpecifStatementClass[]): void { 
 				// build a list of statementClasses:
-				var sTi,sC:StatementClass;
+				var sTi,sC:SpecifStatementClass;
 				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
 					sTi = ws.data[ cellName(c,ws.firstCell.row) ];  			// value of first line
 					// Skip columns without title;

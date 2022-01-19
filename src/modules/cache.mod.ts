@@ -39,17 +39,17 @@ class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;
 	// @ts-ignore - see constructor for initializer:
-	dataTypes: DataType[];
+	dataTypes: SpecifDataType[];
 	// @ts-ignore - see constructor for initializer:
-	propertyClasses: PropertyClass[];
+	propertyClasses: SpecifPropertyClass[];
 	// @ts-ignore - see constructor for initializer:
-	resourceClasses: ResourceClass[];
+	resourceClasses: SpecifResourceClass[];
 	// @ts-ignore - see constructor for initializer:
-	statementClasses: StatementClass[];
+	statementClasses: SpecifStatementClass[];
 	// @ts-ignore - see constructor for initializer:
-	resources: Resource[];   		// list of resources as referenced by the hierarchies
+	resources: SpecifResource[];   		// list of resources as referenced by the hierarchies
 	// @ts-ignore - see constructor for initializer:
-	statements: Statement[];
+	statements: SpecifStatement[];
 	// @ts-ignore - see constructor for initializer:
 	hierarchies: SpecifNode[];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
 	// @ts-ignore - see constructor for initializer:
@@ -65,7 +65,7 @@ class CCache {
 		// @ts-ignore - index is ok:
 		return this[standardTypes.listName.get(ctg)].length;
 	}
-	has(ctg: string, req: Item[] | Item | string): boolean {
+	has(ctg: string, req: Item | Item[] | string): boolean {
 		if (req == 'all')
 			// this is a stupid request, in fact.
 			throw Error("Querying whether 'all' items are available is pretty useless.");
@@ -523,12 +523,12 @@ class CProject {
 					//    a) if different title or type, save new one and use it.
 					//    b) if same title and type, just use it and update all references
 					if (Array.isArray(nD.resources)) {
-						let itmL: Resource[] = [];
-						nD.resources.forEach((nR: Resource) => {
+						let itmL: SpecifResource[] = [];
+						nD.resources.forEach((nR: SpecifResource) => {
 							// nR is a resource in the new data
 
 							// Adopt resource with the same id, title and class right away:
-							let eR: Resource = itemById(dta.resources, nR.id);  // resource in the existing data
+							let eR: SpecifResource = itemById(dta.resources, nR.id);  // resource in the existing data
 							if (eR && this.equalR(eR, nR)) return;
 
 							// Adopt resource, if it's class belongs to a collection of class-titles and is not excluded from deduplication.
@@ -574,7 +574,7 @@ class CProject {
 							if (this.duplicateId(dta, nR.id)) {
 								let newId = LIB.genID('R-');
 								// first assign new ID to all references:
-								this.substituteR(nD, { id: newId } as Resource, nR);
+								this.substituteR(nD, { id: newId } as SpecifResource, nR);
 								// and then to the resource itself:
 								nR.id = newId;
 							};
@@ -593,12 +593,12 @@ class CProject {
 					// but then the new elements would replace the existing ones.
 					// In case of 'adopt' the existing shall prevail!
 					if (Array.isArray(nD.statements)) {
-						let itmL: Statement[] = [];
-						nD.statements.forEach((nS: Statement) => {
+						let itmL: SpecifStatement[] = [];
+						nD.statements.forEach((nS: SpecifStatement) => {
 							// nR is a resource in the new data
 
 							// Adopt statement with the same id, title and class right away:
-							let eS: Statement = itemById(dta.statements, nS.id);  // statement in the existing data
+							let eS: SpecifStatement = itemById(dta.statements, nS.id);  // statement in the existing data
 							if (eS && this.equalS(eS, nS)) return;
 							// Else, create new element:
 							itmL.push(nS);
@@ -657,7 +657,7 @@ class CProject {
 //		console.debug('hookStatements',dta);
 		// For all statements with a loose end, hook the resource
 		// specified by title or by a property titled dcterms:identifier:
-		dta.statements.forEach((st: Statement) => {
+		dta.statements.forEach((st: SpecifStatement) => {
 			// Check every statement;
 			// it is assumed that only one end is loose:
 			if (st.subjectToFind) {
@@ -693,7 +693,7 @@ class CProject {
 		});
 		return;
 
-		function itemsByVisibleId(L, vId: string): Resource[] {
+		function itemsByVisibleId(L, vId: string): SpecifResource[] {
 			// return a list with all elements in L having a property 
 			// containing a visible id with value vId;
 			// should only be one resulting element:
@@ -721,7 +721,7 @@ class CProject {
 		if (!opts || !opts.deduplicate) return;
 
 		let dta = this.data,
-			r: number, n: number, rR: Resource, nR: Resource;
+			r: number, n: number, rR: SpecifResource, nR: SpecifResource;
 //		console.debug('deduplicate',simpleClone(dta));
 
 		// 1. Deduplicate equal types having different ids;
@@ -806,8 +806,8 @@ class CProject {
 			{ type: CONFIG.resClassProcess, flag: "collectProcesses", folder: CONFIG.resClassProcesses, folderNamePrefix: "FolderProcesses-" }
 		];
 		var r: Instance = itemById(dta.resources, dta.hierarchies[0].resource),
-			rC: ResourceClass = itemById(dta.resourceClasses, r['class']),
-			prp: Property = itemByTitle(r.properties, CONFIG.propClassType),
+			rC: SpecifResourceClass = itemById(dta.resourceClasses, r['class']),
+			prp: SpecifProperty = itemByTitle(r.properties, CONFIG.propClassType),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 			// or by the title of the resourceClass:
 			singleHierarchyRoot = dta.hierarchies.length == 1
@@ -822,7 +822,7 @@ class CProject {
 				let apx = simpleHash(this.id),
 					tim = new Date().toISOString();
 
-				function resDoesNotExist(rL: any[], res: Resource): boolean {
+				function resDoesNotExist(rL: any[], res: SpecifResource): boolean {
 					for (var i = rL.length - 1; i > -1; i--)
 						if (rL[i].r.id == res.id) return false;
 					return true;
@@ -837,7 +837,7 @@ class CProject {
 						// 1 Find all resp. folders (e.g. process folder):
 						let delL: SpecifNode[] = [],
 							creL: any[] = [],
-							res: Resource,
+							res: SpecifResource,
 							pV;
 //						console.debug('createFolderWithResourcesByType',dta.hierarchies,opts);
 						LIB.iterateNodes(
@@ -922,8 +922,8 @@ class CProject {
 				);
 				return;
 
-				function Folder(fId: string, ti: string): Resource[] {
-					var fL: Resource[] = [{
+				function Folder(fId: string, ti: string): SpecifResource[] {
+					var fL: SpecifResource[] = [{
 						id: fId,
 						class: "RC-Folder",
 						title: ti,
@@ -948,8 +948,8 @@ class CProject {
 				// 1. Delete any existing glossaries
 				// 1.1 Find all Glossary folders:
 				let delL: SpecifNode[] = [],
-					diagramL: Resource[] = [],
-					res: Resource,
+					diagramL: SpecifResource[] = [],
+					res: SpecifResource,
 					pV,
 					apx = simpleHash(this.id),
 					tim = new Date().toISOString();
@@ -1013,7 +1013,7 @@ class CProject {
 					);
 				return;
 
-				function isDiagram(r: Resource): boolean {
+				function isDiagram(r: SpecifResource): boolean {
 					// a resource is a diagram, if it's type has a title 'SpecIF:Diagram':
 					// .. or if it has a property dcterms:type with value 'SpecIF:Diagram':
 					// .. or if it has at least one statement with title 'SpecIF:shows':
@@ -1046,9 +1046,9 @@ class CProject {
 							}
 						);
 					} */
-				function Folders(): Resource[] {
+				function Folders(): SpecifResource[] {
 					// Create the resources for folder and subfolders of the glossary:
-					var fL: Resource[] = [{
+					var fL: SpecifResource[] = [{
 						id: "FolderGlossary-" + apx,
 						class: "RC-Folder",
 						title: CONFIG.resClassGlossary,
@@ -1070,7 +1070,7 @@ class CProject {
 					});
 					return fL;
 				}
-				function NodeList(resources: Resource[]): SpecifNode[] {
+				function NodeList(resources: SpecifResource[]): SpecifNode[] {
 					// a. Add the folders:
 					let gl: SpecifNode = {
 						id: "H-FolderGlossary-" + apx,
@@ -1094,7 +1094,7 @@ class CProject {
 						tL = LIB.forAll(CONFIG.modelElementClasses, () => { return [] });
 					// Each collection carries the ids of resourceClasses for the given model-element type:
 					dta.get("resourceClass","all").forEach(
-						(rC: ResourceClass) => {
+						(rC: SpecifResourceClass) => {
 							idx = CONFIG.modelElementClasses.indexOf(rC.title);
 							if (idx > -1) tL[idx].push(rC.id);
 						}
@@ -1111,14 +1111,14 @@ class CProject {
 					// In case of model-elements the resource class is distinctive;
 					// the title of the resource class indicates the model-element type.
 					// List only resources which are shown on a referenced diagram:
-					let resL = resources.filter((r) => { return indexBy(staL, 'object', r.id) > -1 });
+					let resL = resources.filter((r) => { return LIB.indexBy(staL, 'object', r.id) > -1 });
 					// in alphanumeric order:
 					LIB.sortByTitle(resL);
 					// ToDo: consider to sort by the title property via elementTitleOf()
 
 					// Categorize resources:
 					resL.forEach(
-						(r: Resource): void => {
+						(r: SpecifResource): void => {
 							// ... using the collections per fundamental model-element type:
 							for (idx = tL.length - 1; idx > -1; idx--) {
 								if (tL[idx].indexOf(r['class']) > -1) break;
@@ -1139,18 +1139,18 @@ class CProject {
 			}
 		)
 	}
-	createResource(rC: ResourceClass): Promise<Resource> {
+	createResource(rC: SpecifResourceClass): Promise<SpecifResource> {
 		// Create an empty form (resource instance) for the resource class rC:
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
 		// and https://javascript.info/promise-chaining
 		return new Promise(
 			(resolve, reject) => {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
-				var res: Resource;
+				var res: SpecifResource;
 
 				this.readContent('resourceClass', rC, { reload: true })
 					.then(
-						(rCL: ResourceClass[]) => {
+						(rCL: SpecifResourceClass[]) => {
 //							console.debug('#1',rC);
 							// return an empty resource instance of the given type:
 							res = {
@@ -1164,7 +1164,7 @@ class CProject {
 						}
 					)
 					.then(
-						(pCL: PropertyClass[]) => {
+						(pCL: SpecifPropertyClass[]) => {
 //							console.debug('#2',pCL);
 							res.properties = LIB.forAll(pCL, createProp);
 							resolve(res)
@@ -1260,7 +1260,7 @@ class CProject {
 					function dTIsInUse( L, dT ) {
 						let i=null;
 						for( var e=L.length-1;e>-1;e-- ) {
-							i = L[e].propertyClasses?indexBy(L[e].propertyClasses,'dataType',dT.id):-1;
+							i = L[e].propertyClasses?LIB.indexBy(L[e].propertyClasses,'dataType',dT.id):-1;
 //							console.debug('dTIsInUse',dT,L,e,i);
 							if( i>-1 ) return true
 						};
@@ -1269,7 +1269,7 @@ class CProject {
 					function aCIsInUse( ctg, sT ) {
 						let c = ctg.substr(0,ctg.length-4),  // xyzType --> xyz, xyzClass ??
 							L = cacheOf(c),
-							i = indexBy(L,ctg,sT.id);
+							i = LIB.indexBy(L,ctg,sT.id);
 //						console.debug('aCIsInUse',sT,c,L,i);
 						// ToDo: In project.html, the resource cache is empty, but the resourceClass may be in use, anyways.
 						// Similarly with statements.
@@ -1284,7 +1284,7 @@ class CProject {
 						// In case of PouchDB, all revisions of classes/types are stored, so it is sufficient to check whether there are currently some elements using the type.
 						// Similarly with statements.
 						for( var e=L.length-1;e>-1;e-- ) {
-							i = L[e].properties?indexBy(L[e].properties,'class',pT.id):-1;
+							i = L[e].properties?LIB.indexBy(L[e].properties,'class',pT.id):-1;
 //							console.debug('pCIsInUse property class',pT,L,e,i);
 							if( i>-1 ) return true
 						};
@@ -1333,7 +1333,7 @@ class CProject {
 			}
 		);
 	};
-	readStatementsOf(res: Resource, opts?: any): Promise<Statement[]> {
+	readStatementsOf(res: SpecifResource, opts?: any): Promise<SpecifStatement[]> {
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
 		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
@@ -1347,33 +1347,33 @@ class CProject {
 		//   (perhaps both checks are not necessary, as visible statements only referto vosible resources ...)
 
 		if (typeof (opts) != 'object') opts = {};
-		let sCL: StatementClass[];
+		let sCL: SpecifStatementClass[];
 		return new Promise(
 			(resolve, reject) => {
 				this.readContent('statementClass', 'all')
 					.then(
-						(sCs: StatementClass[]) => {
+						(sCs: SpecifStatementClass[]) => {
 							sCL = sCs;
 							return this.readContent('statement', 'all');
 						}
 					)
 					.then(
-						(sL: Statement[]) => {
+						(sL: SpecifStatement[]) => {
 							// make a list of shows statements for all diagrams shown in the hierarchy:
-							let showsL = sL.filter((s) => { return staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(LIB.idOf(s.subject)) });
+							let showsL = sL.filter((s) => { return staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject.id) });
 							// filter all statements involving res as subject or object:
 							resolve(
 								sL.filter(
 									(s) => {
-										let sC: StatementClass = itemById(sCL, s['class'] as string);
-										return (res.id == LIB.idOf(s.subject) || res.id == LIB.idOf(s.object))
+										let sC: SpecifStatementClass = itemById(sCL, s['class'] as string);
+										return (res.id == s.subject.id || res.id == s.object.id)
 											// statement must be visible on a diagram referenced in a hierarchy
 											// or be a shows statement itself.
 											// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
 											&& (opts.dontCheckStatementVisibility
 												// Accept manually created relations (including those imported via Excel):
-												|| !sC.instantiation || sC.instantiation.indexOf(Instantiation.User) > -1
-												|| indexBy(showsL, "object", s.id) > -1
+												|| !sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User) > -1
+												|| LIB.indexBy(showsL, "object", s.id) > -1
 												|| titleOf(sC) == CONFIG.staClassShows)
 											// AND fulfill certain conditions:
 											&& (
@@ -1383,12 +1383,12 @@ class CProject {
 												// cheap tests first:
 												&& titleOf(sC) != CONFIG.staClassCommentRefersTo
 												&& CONFIG.hiddenStatements.indexOf(s.title) < 0
-												&& isReferencedByHierarchy(LIB.idOf(s.subject))
-												&& isReferencedByHierarchy(LIB.idOf(s.object))
+												&& isReferencedByHierarchy(s.subject.id)
+												&& isReferencedByHierarchy(s.object.id)
 												// In case of a comment, the comment itself is not referenced in the tree:
 												|| opts.showComments
 												&& titleOf(sC) == CONFIG.staClassCommentRefersTo
-												&& isReferencedByHierarchy(LIB.idOf(s.object))
+												&& isReferencedByHierarchy(s.object.id)
 											)
 									}
 								)
@@ -1780,42 +1780,40 @@ class CProject {
 		});
 	}
 
-	private equalDT(r: DataType, n: DataType): boolean {
+	private equalDT(r: SpecifDataType, n: SpecifDataType): boolean {
 		// return true, if reference and new dataType are equal:
 		if (r.type != n.type) return false;
-		switch (r.type) {
-			case TypeEnum.XsDouble:
-				if (r.fractionDigits != n.fractionDigits) return false;
-				// no break
-			case TypeEnum.XsInteger:
-				return r.minInclusive == n.minInclusive && r.maxInclusive == n.maxInclusive;
-			case TypeEnum.XsString:
-			case TypeEnum.XHTML:
-				return r.maxLength == n.maxLength;
-			case TypeEnum.XsEnumeration:
-				// Perhaps we must also look at the title ..
-				// @ts-ignore - values is optional for a dataType, but not for an enumerated dataType
-				if (r.values.length != n.values.length) return false;
-				// @ts-ignore - values is optional for a dataType in general, but not for an enumerated dataType
-				for (var i = n.values.length - 1; i > -1; i--)
-					// assuming that the titles/values don't matter:
-					// @ts-ignore - values is optional for a dataType in general, but not for an enumerated dataType
-					if (indexById(r.values, n.values[i].id) < 0) return false;
-				// the list of enumerated values *is* equal,
-				// finally the multiple flag must be equal:
-				return this.eqBool(r.multiple, n.multiple);
-			default:
-				return true;
+		// Perhaps we must also look at the title ..
+		switch( r.type ) {
+			case SpecifDataTypeEnum.Double:
+				if( r.fractionDigits != n.fractionDigits ) return false;
+				break;
+			case SpecifDataTypeEnum.Integer:
+				if( r.minInclusive != n.minInclusive || r.maxInclusive != n.maxInclusive ) return false;
+				break;
+			case SpecifDataTypeEnum.String:
+				if( r.maxLength != n.maxLength ) return false;
 		};
+		if( !Array.isArray(r.enumeration) == !Array.isArray(n.enumeration) ) return true;
+		if( Array.isArray(r.enumeration) != Array.isArray(n.enumeration)
+			|| r.enumeration.length != n.enumeration.length ) return false;
+		// r and n have a property 'enumeration':
+		for( var i = n.enumeration.length - 1; i > -1; i-- )
+			// assuming that the values don't matter:
+			// @ts-ignore - values is optional for a dataType in general, but not for an enumerated dataType
+			if( indexById(r.enumeration, n.enumeration[i].id) < 0 ) return false;
+		// the list of enumerated values *is* equal,
+		// finally the multiple flag must be equal:
+		return this.eqBool(r.multiple, n.multiple);
 	}
-	private equalPC(r: PropertyClass, n: PropertyClass): boolean {
+	private equalPC(r: SpecifPropertyClass, n: SpecifPropertyClass): boolean {
 		// return true, if reference and new propertyClass are equal:
 		return r.title == n.title
 			&& r.dataType == n.dataType
 			&& r.value == n.value
 			&& this.eqBool(r.multiple, n.multiple);
 	}
-	private equalRC(r: ResourceClass, n: ResourceClass): boolean {
+	private equalRC(r: SpecifResourceClass, n: SpecifResourceClass): boolean {
 		// return true, if reference and new resourceClass are equal:
 		return r.title == n.title
 			&& this.eqBool(r.isHeading, n.isHeading)
@@ -1823,7 +1821,7 @@ class CProject {
 		//	&& this.eqL( r.instantiation, n.instantiation )
 		// --> the instantiation setting of the reference shall prevail
 	}
-	private equalSC(r: StatementClass, n: StatementClass): boolean {
+	private equalSC(r: SpecifStatementClass, n: SpecifStatementClass): boolean {
 		// return true, if reference and new statementClass are equal:
 		return r.title == n.title
 			&& eqSCL(r.propertyClasses, n.propertyClasses)
@@ -1849,7 +1847,7 @@ class CProject {
 		}
 	}
 
-	private equalR(r: Resource, n: Resource): boolean {
+	private equalR(r: SpecifResource, n: SpecifResource): boolean {
 		// return true, if reference and new resource are equal.
 		// ToDo: Consider, if model-elements are considered equal, 
 		// only if they have the same title *and* class,
@@ -1872,7 +1870,7 @@ class CProject {
 		// rgT[2] contains the type without namespace (works also, if there is no namespace).
 		return (!rgT || rgT[2] != r.title);
 	}
-	private equalS(r: Statement, n: Statement): boolean {
+	private equalS(r: SpecifStatement, n: SpecifStatement): boolean {
 		// return true, if reference and new statement are equal:
 		// Model-elements are only equal, if they have the same class.
 		// ToDo: Also, if they have the same class title?
@@ -1887,10 +1885,10 @@ class CProject {
 			&& r.title == n.title
 			&& r.type == n.type;
 	}
-	private equalKey(r: KeyObject, n: KeyObject): boolean {
+	private equalKey(r: SpecifKey, n: SpecifKey): boolean {
 		// Return true if both keys are equivalent;
 		// this applies if only an id is given or a key with id and revision:
-		return LIB.idOf(r) == LIB.idOf(n)
+		return r.id == n.id
 			&& r.revision == n.revision;
 	}
 	private eqBool(rB: Boolean, nB: Boolean): boolean {
@@ -1910,14 +1908,14 @@ class CProject {
 			if (nL.indexOf(rL[i]) < 0) return false;
 		return true;
 	}
-	private compatibleDT(refC: DataType, newC: DataType): boolean {
+	private compatibleDT(refC: SpecifDataType, newC: SpecifDataType): boolean {
 	//	return this.typeIsCompatible("dataType", refC, newC).status == 0;
 		switch (refC.type) {
-			case TypeEnum.XsBoolean:
-			case TypeEnum.XsDateTime:
+			case SpecifDataTypeEnum.Boolean:
+			case SpecifDataTypeEnum.DateTime:
 				return true;
-			case TypeEnum.XHTML:
-			case TypeEnum.XsString:
+			case 'xhtml':
+			case SpecifDataTypeEnum.String:
 //				console.debug( refC.maxLength>newC.maxLength-1 );
 				if (refC.maxLength == undefined)
 					return true;
@@ -1926,14 +1924,14 @@ class CProject {
 					return false;;
 				};
 				return true;
-			case TypeEnum.XsDouble:
+			case SpecifDataTypeEnum.Double:
 				// to be compatible, the new 'fractionDigits' must be lower or equal:
 				if (refC.fractionDigits < newC.fractionDigits) {
 					LIB.logMsg({ status: 952, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
 					return false;
 				};
 				// else: go on ...
-			case TypeEnum.XsInteger:
+			case SpecifDataTypeEnum.Integer:
 				// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 //				console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
 				if (refC.maxInclusive < newC.maxInclusive || refC.minInclusive > newC.minInclusive) {
@@ -1941,7 +1939,7 @@ class CProject {
 					return false;
 				};
 				return true;
-			case TypeEnum.XsEnumeration:
+			case 'xs:enumeration':
 				// to be compatible, every value of the new 'enumeration' must be present in the present one:
 				// ToDo: Add a new enum value to an existing enum dataType.
 				var idx: number;
@@ -1963,7 +1961,7 @@ class CProject {
 		// should never arrive here ... as every branch in every case above has a return.
 		throw Error("Invalid data type.");
 	}
-	private compatiblePC(refC: PropertyClass, newC: PropertyClass): boolean {
+	private compatiblePC(refC: SpecifPropertyClass, newC: SpecifPropertyClass): boolean {
 	/*	// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
 		// A resourceClass or statementClass is compatible, if all equally-named propertyClasses have the same dataType
 		if (!newC.propertyClasses || !newC.propertyClasses.length)
@@ -1975,7 +1973,7 @@ class CProject {
 		// else: The new type has no more properties than the reference
 	
 		var idx: number,
-			nPC: PropertyClass;
+			nPC: SpecifPropertyClass;
 		for (var a = newC.propertyClasses.length - 1; a > -1; a--) {
 			nPC = newC.propertyClasses[a];
 			if (nPC.id) {
@@ -2011,7 +2009,7 @@ class CProject {
 		LIB.logMsg({ status: 956, statusText: "new propertyClass '" + newC.id + "' is incompatible" });
 		return false;
 	}
-	private compatiblePCReferences(rCL: KeyObject[], nCL: KeyObject[], opts?: any): boolean {
+	private compatiblePCReferences(rCL: SpecifKey[], nCL: SpecifKey[], opts?: any): boolean {
 		// to be used for a tesourceClass' or statementClass' propertyClasses
 		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default
 		if (Array.isArray(rCL) && Array.isArray(nCL)) {
@@ -2033,7 +2031,7 @@ class CProject {
 				return !Array.isArray(rCL) && !Array.isArray(nCL);
 		};
 	}
-	private compatibleECReferences(rCL: KeyObject[], nCL: KeyObject[], opts?: any): boolean {
+	private compatibleECReferences(rCL: SpecifKey[], nCL: SpecifKey[], opts?: any): boolean {
 		// to be used for a statementClass's subjectClasses and objectClasses;
 		// if any of these arrays is missing, subjects or objects of any class are allowed:
 		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default
@@ -2054,14 +2052,14 @@ class CProject {
 		// else:
 		return opts.mode == "match" ? !Array.isArray(nCL) : true;
 	}
-	private compatibleRC(refC: ResourceClass, newC: ResourceClass, opts?:any): boolean {
+	private compatibleRC(refC: SpecifResourceClass, newC: SpecifResourceClass, opts?:any): boolean {
 		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
 		LIB.logMsg({ status: 963, statusText: "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
 		return false;
 	}
-	private compatibleSC(refC: StatementClass, newC: StatementClass, opts?:any): boolean {
+	private compatibleSC(refC: SpecifStatementClass, newC: SpecifStatementClass, opts?:any): boolean {
 		// To be compatible, all sourceTypes of newC must be contained in the sourceTypes of refC;
 		// no sourceTypes means that all resourceClasses are permissible as subject.
 		// ... and similarly for the targetTypes:
@@ -2080,11 +2078,11 @@ class CProject {
 		LIB.logMsg({ status: 963, statusText: "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
 		return false;
 	}
-	private substituteDT(prj: SpecIF, r: DataType, n: DataType,): void {
+	private substituteDT(prj: SpecIF, r: SpecifDataType, n: SpecifDataType,): void {
 		// For all propertyClasses, substitute new by the original dataType:
 		this.substituteProp(prj.propertyClasses, 'dataType', r.id, n.id);
 	}
-	private substitutePC(prj: SpecIF, r: ResourceClass, n: ResourceClass, ): void {
+	private substitutePC(prj: SpecIF, r: SpecifResourceClass, n: SpecifResourceClass, ): void {
 		// For all resourceClasses, substitute new by the original propertyClass:
 		this.substituteLe(prj.resourceClasses, 'propertyClasses', r.id, n.id);
 		// Also substitute the resource properties' class:
@@ -2098,17 +2096,17 @@ class CProject {
 				this.substituteProp(sta.properties, 'class', r.id, n.id)
 			});
 	}
-	private substituteRC(prj: SpecIF, r: ResourceClass, n: ResourceClass): void {
+	private substituteRC(prj: SpecIF, r: SpecifResourceClass, n: SpecifResourceClass): void {
 		// Substitute new by original resourceClass:
 		this.substituteLe(prj.statementClasses, 'subjectClasses', r.id, n.id);
 		this.substituteLe(prj.statementClasses, 'objectClasses', r.id, n.id);
 		this.substituteProp(prj.resources, 'class', r.id, n.id);
 	}
-	private substituteSC(prj: SpecIF, r: StatementClass, n: StatementClass): void {
+	private substituteSC(prj: SpecIF, r: SpecifStatementClass, n: SpecifStatementClass): void {
 		// Substitute new by original statementClass:
 		this.substituteProp(prj.statements, 'class', r.id, n.id);
 	}
-	private substituteR(prj: SpecIF, r: Resource, n: Resource, opts?: any): void {
+	private substituteR(prj: SpecIF, r: SpecifResource, n: SpecifResource, opts?: any): void {
 		// Substitute resource n by r in all references of n,
 		// where r is always an element of this.data.
 		// But: Rescue any property of n, if undefined for r.
@@ -2139,9 +2137,9 @@ class CProject {
 		if (r.id == n.id) return;
 
 		// 1. Replace the references in all statements:
-		prj.statements.forEach((st: Statement) => {
-			if (this.equalKey(st.object, n)) { if (st.object.id) { st.object.id = LIB.idOf(r) } else { st.object = LIB.idOf(r) } };
-			if (this.equalKey(st.subject, n)) { if (st.subject.id) { st.subject.id = LIB.idOf(r) } else { st.subject = LIB.idOf(r) } }
+		prj.statements.forEach((st: SpecifStatement) => {
+			if (this.equalKey(st.object, n)) { if (st.object.id) { st.object.id = r.id } else { st.object = r.id } };
+			if (this.equalKey(st.subject, n)) { if (st.subject.id) { st.subject.id = r.id } else { st.subject = r.id } }
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
 
@@ -2149,7 +2147,7 @@ class CProject {
 		this.substituteRef(prj.hierarchies, r.id, n.id);
 
 		// 3. Make sure all statementClasses allowing n.class also allow r.class (the class of the adopted resource):
-		prj.statementClasses.forEach((sC: StatementClass) => {
+		prj.statementClasses.forEach((sC: SpecifStatementClass) => {
 			if (Array.isArray(sC.subjectClasses) && sC.subjectClasses.indexOf(n['class']) > -1) LIB.cacheE(sC.subjectClasses, r['class']);
 			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(n['class']) > -1) LIB.cacheE(sC.objectClasses, r['class']);
 		});
@@ -2191,7 +2189,7 @@ class CProject {
 			(nd) => { if (nd.resource == dId) { nd.resource = rId }; return true },
 			// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
 			// for example it is avoided that the same diagram is shown twice if it has been imported twice:
-			(ndL) => { for (var i = ndL.length - 1; i > 0; i--) { if (indexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
+			(ndL) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.indexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
 		);
 		// ToDo: Make it work, if keys are used as a reference.
 	}
@@ -2522,7 +2520,7 @@ function Project(): IProject {
 						// no update, if the current user has no privilege:
 						if( !rA.upd ) continue;
 						// look for the corresponding property:
-						nA = itemBy( n.properties, 'class', rA['class'] );
+						nA = LIB.itemBy( n.properties, 'class', rA['class'] );
 						// no update, if there is no corresponding property in the new data:
 						if( !nA ) continue;
 						// in all other cases compare the value:
@@ -2587,7 +2585,7 @@ function Project(): IProject {
 							let nA=null;
 							rI.properties.forEach( (rA)=>{
 								// in case the nI.properties are supplied in a different order:
-								nA = itemBy(nI.properties,'class',rA['class']);
+								nA = LIB.itemBy(nI.properties,'class',rA['class']);
 								if( nA ) {
 									nA.upd = rA.upd;
 									nA.del = rA.del
@@ -2987,13 +2985,13 @@ moduleManager.construct({
 
 //////////////////////////
 // global helper functions:
-LIB.idOf = ( key:KeyObject|string ):string =>{
+/* LIB.idOf = ( key:SpecifKey|string ):string =>{
 	// Return the id of the referenced item; the key can be
 	// - a string with the requested id
 	// - an pbject with id and a revision
 	return key.id || key
 }
-/*	function keyOf( item ) {
+function keyOf( item ) {
 		// Normalize the identification including revision:
 		switch( typeof(item) ) {
 			case "object": return item;
@@ -3007,18 +3005,18 @@ function isReferencedByHierarchy(rId: string, H?: SpecifNode[]): boolean {
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
 	return LIB.iterateNodes( H, (nd)=>{ return nd.resource!=rId } )
 }
-function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):Resource[] {
+function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] {
 	// collect all resources referenced by the given hierarchy:
 	if( !prj ) prj = app.cache.selectedProject.data;
 	if( !H ) H = prj.hierarchies;
-	var rL:Resource[] = [];
-	LIB.iterateNodes( H, (nd)=>{ LIB.cacheE( rL, itemById(prj.resources,LIB.idOf(nd.resource)) ); return true } );
+	var rL:SpecifResource[] = [];
+	LIB.iterateNodes( H, (nd)=>{ LIB.cacheE( rL, itemById(prj.resources,nd.resource.id) ); return true } );
 	return rL;
 }
-function dataTypeOf(prj: SpecIF, pCid:string ):DataType {
+function dataTypeOf(prj: SpecIF, key: SpecifKey): SpecifDataType {
 	// given a propertyClass id, return it's dataType:
-	if (typeof(pCid) == 'string' && pCid.length > 0) {
-		let dT = itemById(prj.dataTypes, itemById(prj.propertyClasses, pCid).dataType);
+	if ( LIB.isKey(key) ) {
+		let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
 		//       |                       get propertyClass
 		//	     get dataType
 		if (dT)
@@ -3028,12 +3026,12 @@ function dataTypeOf(prj: SpecIF, pCid:string ):DataType {
 	};
 	// else:
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
-	return { type: TypeEnum.XsString }; // by default  
+	return { type: SpecifDataTypeEnum.String }; // by default  
 }
-function enumValueOf(dT: DataType, val: string, opts?: any): string {
+function enumValueOf(dT: SpecifDataType, val: string, opts?: any): string {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
-	if (dT.type != TypeEnum.XsEnumeration || !val) return val;
+	if (dT.type != SpecifDataTypeEnum.Enumeration || !val) return val;
 	let ct = '',
 		eV,
 		vL = val.split(',');  // in case of a multi-valued ENUMERATION, val may carry comma-separated value-IDs
@@ -3049,14 +3047,14 @@ function enumValueOf(dT: DataType, val: string, opts?: any): string {
 	});
 	return ct;
 }
-function multipleChoice(pC: PropertyClass, prj?: SpecIF): boolean {
+function multipleChoice(pC: SpecifPropertyClass, prj?: SpecIF): boolean {
 	if( !prj ) prj = app.cache.selectedProject.data;
 	// return 'true', if either the property type specifies it, or by default its datatype;
 	// if defined, the property type's value supersedes the datatype's value:
 	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
 	// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 }
-function visibleIdOf(r: Resource, prj?: SpecIF ):string|undefined {
+function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 	if( r && r.properties ) {
 		if( !prj ) prj = app.cache.selectedProject.data;
 		for( var a=0,A=r.properties.length;a<A;a++ ) {
@@ -3067,17 +3065,17 @@ function visibleIdOf(r: Resource, prj?: SpecIF ):string|undefined {
 	};
 //	return undefined
 }
-function resClassTitleOf(e: Resource, prj?: SpecIF, opts?:any ):string {
+function resClassTitleOf(e: SpecifResource, prj?: SpecIF, opts?:any ):string {
 	if (!prj) prj = app.cache.selectedProject.data;
 	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts );
 }
-function staClassTitleOf( e:Statement, prj?:SpecIF, opts?:any ):string {
+function staClassTitleOf( e:SpecifStatement, prj?:SpecIF, opts?:any ):string {
 	// Where available, take the statementClass' title, otherwise the statement's;
 	// The latter is the case with interpreted relations such as "mentions":
 	if (!prj) prj = app.cache.selectedProject.data;
     return e['class']? titleOf(itemById(prj.statementClasses, e['class']), opts) : titleOf(e, opts);
 }
-function propTitleOf(prp: Property, prj: SpecIF ):string {
+function propTitleOf(prp: SpecifProperty, prj: SpecIF ):string {
 	// get the title of a property as defined by itself or it's class:
 	return prp.title || itemById(prj.propertyClasses,prp['class']).title;
 }
@@ -3150,7 +3148,7 @@ LIB.iterateNodes = (tree: SpecifNode[]|SpecifNode, eFn:Function, lFn?:Function):
 	};
 	return !cont;
 }
-function createProp(pC:PropertyClass, pCid?: string): object {
+function createProp(pC:SpecifPropertyClass, pCid?: string): object {
 	// Create an empty property from the supplied class;
 	// the propertyClass may be supplied by the first parameter
 	// or will be selected from the propertyClasses list using the supplied propertyClass id pCid:
@@ -3165,16 +3163,16 @@ function createProp(pC:PropertyClass, pCid?: string): object {
 	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
 	};
 }
-function propByTitle(itm: Resource, pN: string, dta:SpecIF): Property|undefined {
+function propByTitle(itm: SpecifResource, pN: string, dta:SpecIF): SpecifProperty|undefined {
 	// Return the property of itm with title pN.
 	// If it doesn't exist, create it,
 	// if there is no propertyClass with that title either, return undefined.
 
 	// Look for the propertyClasses pCs of the item's class iC:
 	// ToDo: Add statementClasses, as soon as needed.
-	var iC:ResourceClass = itemById( dta.resourceClasses, itm['class'] as string ),
-		pC: PropertyClass,
-		prp: Property;
+	var iC:SpecifResourceClass = itemById( dta.resourceClasses, itm['class'] as string ),
+		pC: SpecifPropertyClass,
+		prp: SpecifProperty;
 //	console.debug('propByTitle',dta,itm,pN,iC);
 	for( var i=dta.propertyClasses.length-1;i>-1;i-- ) {
 		pC = dta.propertyClasses[i];
@@ -3182,7 +3180,7 @@ function propByTitle(itm: Resource, pN: string, dta:SpecIF): Property|undefined 
 			&& pC.title==pN ) {						// pC has the specified title
 				// take the existing property, if it exists;
 				// the property's title is not necessarily present:
-				prp = itemBy(itm.properties,'class',pC.id);
+				prp = LIB.itemBy(itm.properties,'class',pC.id);
 				if( prp ) return prp;
 				// else create a new one from the propertyClass:
 				prp = createProp(pC);
@@ -3192,7 +3190,7 @@ function propByTitle(itm: Resource, pN: string, dta:SpecIF): Property|undefined 
 	};
 //	return undefined
 }
-function valByTitle(itm:Resource,pN:string,dta:SpecIF):string|undefined {
+function valByTitle(itm:SpecifResource,pN:string,dta:SpecIF):string|undefined {
 	// Return the value of a resource's (or statement's) property with title pN:
 	// ToDo: return the class's default value, if available.
 //	console.debug('valByTitle',dta,itm,pN);
@@ -3204,7 +3202,7 @@ function valByTitle(itm:Resource,pN:string,dta:SpecIF):string|undefined {
 	};
 //	return undefined
 }
-function titleIdx(pL: Property[], dta?: SpecIF): number {
+function titleIdx(pL: SpecifProperty[], dta?: SpecIF): number {
 	// Find the index of the property to be used as title.
 	// The result depends on the current user - only the properties with read permission are taken into consideration.
 	// This works for title strings and multi-language title objects.
@@ -3221,11 +3219,11 @@ function titleIdx(pL: Property[], dta?: SpecIF): number {
 	};
 	return -1;
 }
-function elementTitleOf(el: Resource | Statement, opts?:any, dta?:SpecIF): string {
+function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:SpecIF): string {
 	// Get the title of a resource or a statement;
 	// ... from the properties or a replacement value in case of default.
 	// 'el' is an original element without 'classifyProps()'.
-	if( typeof(el)!='object' ) return;
+	if( typeof(el)!='object' ) throw Error('First input parameter is invalid');
 	if( !dta ) dta = app.cache.selectedProject.data;
 	
 	// Lookup titles only in case of a resource serving as heading or in case of a statement:
@@ -3262,7 +3260,7 @@ function elementTitleOf(el: Resource | Statement, opts?:any, dta?:SpecIF): strin
 // 	console.debug('elementTitleOf',el,opts,ti);
 	return typeof (ti) == 'string' ? ti.stripHTML() : ti;
 
-	function getTitle(pL: Property[], opts:any ): string {
+	function getTitle(pL: SpecifProperty[], opts:any ): string {
 	//	if( !pL ) return;
 		// look for a property serving as title:
 		let idx = titleIdx( pL );

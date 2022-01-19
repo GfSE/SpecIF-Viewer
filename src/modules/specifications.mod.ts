@@ -17,19 +17,19 @@ interface ISpecs extends IModule {
 }
 
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin.escapeRE() + '(.+?)' + CONFIG.titleLinkEnd.escapeRE(), 'g');
-class CPropertyToShow implements Property {
+class CPropertyToShow implements SpecifProperty {
 	id?: string;
-	title?: ValueElement[] | string;
-	description?: ValueElement[] | string;
+	title?: SpecifMultiLanguageText[] | string;
+	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
-	class: KeyObject | string;
+	class: SpecifKey;
 	replaces?: string[];
 	revision?: string;
 	changedAt?: string;
 	changedBy?: string;
 	// @ts-ignore - presence of 'value' is checked by the schema on import
-	value: ValueElement[] | string;
-	constructor(prp: Property) {
+	value: SpecifMultiLanguageText[] | string;
+	constructor(prp: SpecifProperty) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
     }
@@ -57,8 +57,8 @@ class CPropertyToShow implements Property {
 			ct: string;
 		//	console.debug('*',this,dT);
 		switch (dT.type) {
-			case TypeEnum.XsString:
-			case TypeEnum.XHTML:
+			case SpecifDataTypeEnum.String:
+			case 'xhtml':
 				// remove any leading whiteSpace:
 				ct = languageValueOf(this.value, opts).replace(/^\s+/, "");
 				if (opts.lookupValues)
@@ -71,10 +71,10 @@ class CPropertyToShow implements Property {
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
 				break;
-			case TypeEnum.XsDateTime:
+			case SpecifDataTypeEnum.DateTime:
 				ct = LIB.localDateTime(this.value);
 				break;
-			case TypeEnum.XsEnumeration:
+			case 'xs:enumeration':
 				// Usually 'value' has a comma-separated list of value-IDs,
 				// but the filter module delivers potentially marked titles in content.
 
@@ -116,7 +116,7 @@ class CPropertyToShow implements Property {
 					replaced = true;
 					// disregard links being too short:
 					if ($1.length < CONFIG.titleLinkMinLength) return $1;
-					let m = $1.toLowerCase(), cR: Resource, ti: string, rC:ResourceClass, target: Resource;
+					let m = $1.toLowerCase(), cR: SpecifResource, ti: string, rC:SpecifResourceClass, target: SpecifResource;
 					// is ti a title of any resource?
 					app.specs.tree.iterate((nd: jqTreeNode) => {
 						cR = itemById(app.cache.selectedProject.data.resources, nd.ref);
@@ -147,7 +147,7 @@ class CPropertyToShow implements Property {
 		console.info( 'dynamic linking in ', n2-n1,'ms' ) */
 		return str;
 
-		function lnk(r: Resource, t: string): string {
+		function lnk(r: SpecifResource, t: string): string {
 			//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
 			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
 		}
@@ -435,7 +435,7 @@ class CPropertyToShow implements Property {
 }
 class CResourceToShow {
 	id: string;
-	class: ResourceClass; // in contrast to the SpecIF schema, this is the class itself and not it's id
+	class: SpecifResourceClass; // in contrast to the SpecIF schema, this is the class itself and not it's id
 	isHeading: boolean;
 	order: string;
 	revision?: string;
@@ -445,13 +445,13 @@ class CResourceToShow {
 	other: CPropertyToShow[];
 	changedAt: string;
 	changedBy?: string;
-	constructor(el: Resource) {
+	constructor(el: SpecifResource) {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
 		// ToDo: Basically it can also be used for Statements ... 
 		let pData = app.cache.selectedProject.data;
 		this.id = el.id;
-		this['class'] = itemById(pData.resourceClasses, el['class']) as ResourceClass;
+		this['class'] = itemById(pData.resourceClasses, el['class']) as SpecifResourceClass;
 		this.isHeading = false; // will be set further down if appropriate
 		this.revision = el.revision;
 		this.order = el.order;
@@ -512,43 +512,43 @@ class CResourceToShow {
 			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
-	private normalizeProps(el: Resource, dta: CSpecIF): CPropertyToShow[] {
+	private normalizeProps(el: SpecifResource, dta: CSpecIF): CPropertyToShow[] {
 		// el: original instance (resource or statement)
 		// Create a list of properties in the sequence of propertyClasses of the respective class.
 		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-		// Assumption: Property classes are unique!
+		// Property classes must be unique!
 
 		// check uniqueness of property classes:
 		if (el.properties) {
-			let cL: string[] = [],
-				pC: string;
-			el.properties.forEach((p: Property) => {
-				pC = p['class'];
-				if (cL.indexOf(pC)<0)
-					cL.push(pC);
+			let idL: string[] = [],
+				pCid: string;
+			el.properties.forEach((p: SpecifProperty) => {
+				pCid = p['class'].id;
+				if (idL.indexOf(pCid)<0)
+					idL.push(pCid);
 				else
-					console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
+					console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
 			});
 		};
 
-		let p: Property,
-			pCs: string[],
+		let p: SpecifProperty,
+			pCs: SpecifKeys,
 			nL: CPropertyToShow[] = [],
 			// iCs: instance class list (resourceClasses or statementClasses),
 			// the existence of subject (or object) let's us recognize that it is a statement:
 		//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
 			iCs = dta.resourceClasses,
-			iC = itemById(iCs, el['class']);
+			iC = LIB.itemByKey(iCs, el['class']);
 		// build a list of propertyClass identifiers including the extended class':
-		pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
-		pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
+		pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses || [] : [];
+		pCs = pCs.concat(LIB.itemByKey(iCs, el['class']).propertyClasses || []);
 		// add the properties in sequence of the propertyClass identifiers:
-		pCs.forEach((pCid: string) => {
+		pCs.forEach((pC: SpecifKey):void => {
 			// skip hidden properties:
-			if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
+			if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
 			// assuming that the property classes are unique:
-			p = itemBy(el.properties, 'class', pCid)
-				|| createProp(dta.propertyClasses, pCid);
+			p = LIB.itemBy(el.properties, 'class', pC)
+				|| createProp(dta.propertyClasses, pC);
 			if (p) {
 				// by default, use the propertyClass' title:
 				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
@@ -561,12 +561,12 @@ class CResourceToShow {
 //		console.debug('normalizeProps result',simpleClone(nL));
 		return nL; // normalized property list
 	}
-	isEqual(res: Resource): boolean {
+	isEqual(res: SpecifResource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
 	isUserInstantiated(): boolean {
 		return (!Array.isArray(this['class'].instantiation)
-			|| this['class'].instantiation.indexOf(Instantiation.User) > -1)
+			|| this['class'].instantiation.indexOf(SpecifInstantiation.User) > -1)
 	}
 	private renderAttr(lbl: string, val: string, cssCl: string): string {
 		// show a string value with or without label:
@@ -758,19 +758,19 @@ class CResourcesToShow {
 	constructor() {
 		this.values = [];
 	}
-	push(r: Resource): boolean {
+	push(r: SpecifResource): boolean {
 		// append a resource to the list:
 		this.values.push(new CResourceToShow(r));
 		return true;  // a change has been effected
 	}
-	append(rL: Resource[]): void {
+	append(rL: SpecifResource[]): void {
 		// append a list of resources:
 		rL.forEach((r) => {
 			this.push(r);
 		});
 		return true;  // a change has been effected
 	}
-	set(idx:number, r: Resource): boolean {
+	set(idx:number, r: SpecifResource): boolean {
 		if (this.values[idx].isEqual(r)) {
 			// assume that no change has happened:
 //			console.debug('object.set: no change');
@@ -779,7 +779,7 @@ class CResourcesToShow {
 		this.values[idx] = new CResourceToShow(r);
 		return true;		// has changed
 	}
-	update(rL: Resource[]): boolean {
+	update(rL: SpecifResource[]): boolean {
 		// update this.values with rL and return 'true' if a change has been effected:
 		if (rL.length == this.values.length) {
 			// there is a chance no change is necessary:
@@ -796,7 +796,7 @@ class CResourcesToShow {
 			return true;
 		};
 	}
-	updateSelected(r: Resource): boolean {
+	updateSelected(r: SpecifResource): boolean {
 		// update the first item (= selected resource), if it exists, or create it;
 		// return 'true' if a change has been effected:
 		if (this.values.length > 0)
@@ -830,13 +830,13 @@ class CFileWithContent implements IFileWithContent {
 	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
 	changedAt: string;
 	changedBy?: string;
-	description?: ValueElement[] | string;
+	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'id' is checked by the schema on import
 	id: string;
 	replaces?: string[];
 	revision?: string;
 	// @ts-ignore - presence of 'title' is checked by the schema on import
-	title: ValueElement[] | string;
+	title: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'type' is checked by the schema on import
 	type: string;
 	blob?: Blob;
@@ -1119,7 +1119,7 @@ class CFileWithContent implements IFileWithContent {
 					// replace the id of a resource by the id of a diagram carrying the same title:
 					let cacheData = app.cache.selectedProject.data,
 						ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
-						rT: ResourceClass;
+						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
 						rT = itemById(cacheData.resourceClasses, cacheData.resources[i]['class']);
 						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
@@ -1441,7 +1441,7 @@ moduleManager.construct({
 		// -----------------
 		function toChild( iE ) {
 			// transform SpecIF hierarchy to jqTree:
-			let r:Resource = itemById( pData.resources, iE.resource );
+			let r:SpecifResource = itemById( pData.resources, iE.resource );
 //			console.debug('toChild',iE.resource,r);
 			var oE = {
 				id: iE.id,
@@ -1772,7 +1772,7 @@ moduleManager.construct({
 		);
 		return;
 		
-		function getNextResources():Promise<Resource[]> {
+		function getNextResources():Promise<SpecifResource[]> {
 			var nd = pData.tree.selectedNode,
 				oL = [];  // id list of the resources to view
 			nL = [];  // list of hierarchy nodes
@@ -1800,7 +1800,7 @@ moduleManager.construct({
 
 			return app.cache.selectedProject.readContent( 'resource', oL )
 		}
-		function renderNextResources(rL: Resource[]): void {
+		function renderNextResources(rL: SpecifResource[]): void {
 			// Format the titles with numbering:
 			for( var i=rL.length-1; i>-1; i-- )
 				rL[i].order = nL[i].order;
@@ -1906,7 +1906,7 @@ moduleManager.construct({
 					// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 				//	if( rC.cre && (!rC.instantiation || rC.instantiation.indexOf('user')>-1) )
 					// ToDo: Respect the current user's privileges:
-					if( !rC.instantiation || rC.instantiation.indexOf(Instantiation.User)>-1 )
+					if( !rC.instantiation || rC.instantiation.indexOf(SpecifInstantiation.User)>-1 )
 						self.resCreClasses.push( rC.id )
 				});
 				// b) set the permissions for the edit buttons:
@@ -2128,7 +2128,7 @@ moduleManager.construct({
 
 		app.cache.selectedProject.readStatementsOf({ id: nd.ref }, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
 		.then( 
-			(sL:Statement[])=>{
+			(sL:SpecifStatement[])=>{
 				// sL is the list of statements involving the selected resource.
 
 				// First, initialize the list and add the selected resource:
@@ -2144,7 +2144,7 @@ moduleManager.construct({
 				// Since the resources are cached, this is not too expensive.
 				app.cache.selectedProject.readContent( 'resource', net.resources )
 				.then( 
-					(rResL:Resource[])=>{   
+					(rResL:SpecifResource[])=>{   
 						// rResL is a list of the selected plus it's related resources
 
 						// Assuming that the sequence may be arbitrary:
@@ -2154,7 +2154,7 @@ moduleManager.construct({
 						// Now get the titles with icon of the resources,
 						// as the sequence of list items in net.resources is maintained, 
 						// the selected resource will be the first element in the list: 
-						rResL.forEach( (r:Resource)=>{ cacheMinRes( net.resources, r ) });
+						rResL.forEach( (r:SpecifResource)=>{ cacheMinRes( net.resources, r ) });
 					
 						// finally add the 'mentions' statements:
 						getMentionsRels(selRes,opts)
@@ -2189,19 +2189,18 @@ moduleManager.construct({
 			LIB.stdError(xhr);
 			app.busy.reset();
 		}
-		function cacheMinRes(L:Resource[],r:Resource):void {
+		function cacheMinRes(L:SpecifResource[],r:SpecifResource):void {
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			LIB.cacheE( L, { id: LIB.idOf(r), title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			LIB.cacheE( L, { id: r.id, title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
-		function cacheMinSta(L:Statement[],s:Statement):void {
+		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			LIB.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: LIB.idOf(s.subject), object: LIB.idOf(s.object)} );
-		//	LIB.cacheE(L, { id: s.id, title: elementTitleOf(s, opts, cacheData), subject: LIB.idOf(s.subject), object: LIB.idOf(s.object) });
+			LIB.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: s.subject.id, object: s.object.id} );
 		}
-		function cacheNet(s:Statement):void {
+		function cacheNet(s:SpecifStatement):void {
 			// skip hidden statements:
 			if (CONFIG.hiddenStatements.indexOf( staClassTitleOf(s, cacheData, opts) )>-1 ) return;
 
@@ -2210,7 +2209,7 @@ moduleManager.construct({
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// collect the related resources:
-			if( LIB.idOf(s.subject) == nd.ref ) { 
+			if( s.subject.id == nd.ref ) { 
 				// the selected node is a subject, so the related resource is an object,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.object );
@@ -2221,7 +2220,7 @@ moduleManager.construct({
 				cacheMinRes( net.resources, s.subject );
 			}
 		}
-		function getMentionsRels(selR: Resource, opts: any):Promise<Statement[]> {
+		function getMentionsRels(selR: SpecifResource, opts: any):Promise<SpecifStatement[]> {
 			// selR is the currently selected resource.
 			
 			return new Promise( (resolve,reject):void =>{	
@@ -2235,7 +2234,7 @@ moduleManager.construct({
 				var rT = itemByName( cacheData.statementClasses, CONFIG.staClassMentions );
 				if( !rT ) return;  */
 
-				let staL: Statement[] = [],	// a list of artificial statements; these are not stored in the server
+				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
 					localOpts = $.extend({},opts,{addIcon:false}),  // no icons when searching titles
 					selTi = elementTitleOf(selR, localOpts),
@@ -2250,9 +2249,9 @@ moduleManager.construct({
 					pend++;
 					app.cache.selectedProject.readContent( 'resource', {id: nd.ref} )
 					.then( 
-						(rL:Resource[])=>{   
+						(rL:SpecifResource[])=>{   
 							// refR is a resource referenced in a hierarchy
-							let refR: Resource = rL[0],
+							let refR: SpecifResource = rL[0],
 								refTi = elementTitleOf(refR, localOpts);
 //							console.debug('pData.tree.iterate',refR,refTi,pend);
 							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
@@ -2265,8 +2264,8 @@ moduleManager.construct({
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch (dataTypeOf(cacheData, p['class']).type) {
-											case TypeEnum.XsString:
-											case TypeEnum.XHTML:	
+											case SpecifDataTypeEnum.String:
+											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
 												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
@@ -2285,8 +2284,8 @@ moduleManager.construct({
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										switch( dataTypeOf( cacheData, p['class'] ).type ) {
-											case TypeEnum.XsString:
-											case TypeEnum.XHTML:	
+											case SpecifDataTypeEnum.String:
+											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
 												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {
@@ -2308,9 +2307,9 @@ moduleManager.construct({
 				})
 			})
 			
-			function notListed( L:Statement[],s,t ):boolean {
+			function notListed( L:SpecifStatement[],s,t ):boolean {
 				for( var i=L.length-1;i>-1;i--  ) {
-					if( LIB.idOf(L[i].subject)==s.id && LIB.idOf(L[i].object)==t.id ) return false;
+					if( L[i].subject.id==s.id && L[i].object.id==t.id ) return false;
 				};
 				return true;
 			}
@@ -2319,7 +2318,7 @@ moduleManager.construct({
 			// Return true, if there is at least one diagram, for which statements do not have 'shows' statements (older transformators);
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
-			let res: Resource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
+			let res: SpecifResource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
 			return LIB.iterateNodes(dta.hierarchies,
 				(nd): boolean => {
 					// get the referenced resource:
@@ -2360,7 +2359,7 @@ moduleManager.construct({
 
 		return rB+'</div>';	// return rendered buttons for display
 	}
-	function getPermissions( res:Resource ):void {
+	function getPermissions( res:SpecifResource ):void {
 		// No permissions beyond read, if it is the viewer:
 		if( app.title!=i18n.LblReader && res ) {
 			self.staCreClasses.subjectClasses.length = 0;
@@ -2374,7 +2373,7 @@ moduleManager.construct({
 					// store the classes' ids as it is invariant, when app.cache.selectedProject.data.allClasses is updated
 //					console.debug('staCreClasses',sC,res['class']);
 				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
-					if (!sC.instantiation || sC.instantiation.indexOf(Instantiation.User)>-1 ) {
+					if (!sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User)>-1 ) {
 						if( !sC.subjectClasses || sC.subjectClasses.indexOf( res['class'] )>-1 ) 
 							self.staCreClasses.subjectClasses.push( sC.id );	// all statementClasses eligible for the currently selected resource
 						if( !sC.objectClasses || sC.objectClasses.indexOf( res['class'] )>-1 )
@@ -2448,7 +2447,7 @@ moduleManager.construct({
 					sG.rGs.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							sId: LIB.idOf(s.subject),
+							sId: s.subject.id,
 							sT: elementTitleWithIcon(s.subject,opts),
 							computed: !s['class']
 						});
@@ -2479,7 +2478,7 @@ moduleManager.construct({
 					sG.rGt.forEach( function(s) {
 						relG.push({
 							id: s.id,
-							tId: LIB.idOf(s.object),
+							tId: s.object.id,
 							tT: elementTitleWithIcon(s.object,opts),
 							computed: !s['class']
 						});

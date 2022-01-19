@@ -1,6 +1,6 @@
 {
   "name": "specif-viewer",
-  "version": "1.0.0",
+  "version": "1.1",
   "description": "An app for your web-browser to view, edit and transform system specifications.",
   "main": "src/views/view.html",
   "scripts": {

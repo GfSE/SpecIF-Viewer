@@ -8,7 +8,7 @@
 
 interface IDialogField {
 	label: string;
-	dataType: DataType;
+	dataType: SpecifDataType;
 }
 class DialogForm {
 	// Construct an object performing the key-by-key input checking on an input form;
@@ -18,7 +18,7 @@ class DialogForm {
 	constructor() {
 		this.list = [] as IDialogField[];
 	}
-	addField(elementId: string, dT: DataType): void {
+	addField(elementId: string, dT: SpecifDataType): void {
 		// Add a parameter-set for checking an input field;
 		// - 'elementId' is the id of the HTML input element
 		// - 'dataType' is the dataType of the property
@@ -33,23 +33,23 @@ class DialogForm {
 			val = textValue(cPs.label);
 			// Perform the test depending on the type:
 			switch (cPs.dataType.type) {
-				case TypeEnum.XsString:
-				case TypeEnum.XHTML:
+				case SpecifDataTypeEnum.String:
+				case 'xhtml':
 					ok = cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
 					break;
-				case TypeEnum.XsDouble:
+				case SpecifDataTypeEnum.Double:
 					ok = val.length < 1
 						|| RE.Real(cPs.dataType.fractionDigits).test(val)
 						&& !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
 						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
 					break;
-				case TypeEnum.XsInteger:
+				case SpecifDataTypeEnum.Integer:
 					ok = val.length < 1
 						|| RE.Integer.test(val)
 						&& !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
 						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
 					break;
-				case TypeEnum.XsDateTime:
+				case SpecifDataTypeEnum.DateTime:
 					ok = val.length < 1 || RE.IsoDate.test(val);
 				// no need to check enumeration
 			};
@@ -148,10 +148,10 @@ moduleManager.construct({
 			case 'create':
 				selectResClass( opts )
 				.then(
-					(rC:ResourceClass)=>{ 
+					(rC:SpecifResourceClass)=>{ 
 						app.cache.selectedProject.createResource(rC)
 						.then( 
-							(r:Resource)=>{
+							(r:SpecifResource)=>{
 //								console.debug( '#', opts.mode, r );
 								self.newRes = r;
 								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
@@ -180,7 +180,7 @@ moduleManager.construct({
 				// get the selected resource:
 				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 				.then( 
-					(rL:Resource[])=>{
+					(rL:SpecifResource[])=>{
 						// create a clone to collect the changed values before committing:
 						self.newRes = simpleClone(rL[0]);
 						if( opts.mode=='clone' ) {
@@ -416,7 +416,7 @@ moduleManager.construct({
 				let fType = f.type||opts.mediaTypeOf(f.name),
 					fName = 'files_and_images/'+f.name,
 					newFile = new CFileWithContent({ blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() });
-				itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
+				LIB.itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
 			document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview ' + tagId(fName) + '">' + newFile.renderImage()+'</div>';
 		});
@@ -432,7 +432,7 @@ moduleManager.construct({
 	};
 	self.removeDiagram = (cId)=>{
 //		console.debug('removeDiagram',cId,toEdit);
-		itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '';
+		LIB.itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '';
 		document.getElementById(tagId(cId)).innerHTML = ''
 	};
 	self.check = ()=>{

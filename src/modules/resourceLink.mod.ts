@@ -16,19 +16,19 @@ moduleManager.construct({
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
 		cData: CSpecIF,			// the cached data
-		selRes:Resource,		// the currently selected resource
+		selRes:SpecifResource,		// the currently selected resource
 		opts:any;				// the processing options
 
 	self.eligibleSCL =[];		// all eligible statementClasses
 	self.selResStatements=[];	// all statements of the selected resource
 	self.allResources=[];		// all resources referenced in the tree
 
-	function candidateMayBeObject(sC: StatementClass, res: Resource): boolean {
+	function candidateMayBeObject(sC: SpecifStatementClass, res: SpecifResource): boolean {
 		// no *bjectClasses means all resourceClasses are permissible as *bject:
 		return (!sC.subjectClasses || sC.subjectClasses.indexOf(selRes['class']) > -1)
 			&& (!sC.objectClasses || sC.objectClasses.indexOf(res['class']) > -1)
 	}
-	function candidateMayBeSubject(sC: StatementClass, res: Resource): boolean {
+	function candidateMayBeSubject(sC: SpecifStatementClass, res: SpecifResource): boolean {
 		// no *bjectClasses means all resourceClasses are permissible as *bject:
 		return (!sC.objectClasses || sC.objectClasses.indexOf(selRes['class']) > -1)
 			&& (!sC.subjectClasses || sC.subjectClasses.indexOf(res['class']) > -1)
@@ -56,7 +56,7 @@ moduleManager.construct({
 
 		app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 		.then( 
-			(rL:Resource[])=>{
+			(rL:SpecifResource[])=>{
 				selRes = rL[0];
 				createStatement( opts )
 			},
@@ -81,7 +81,7 @@ moduleManager.construct({
 			});
 			app.cache.selectedProject.readContent( 'statementClass', self.eligibleSCL )
 			.then( 
-				(list:StatementClass[])=>{
+				(list:SpecifStatementClass[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
 					chooseResourceToLink()
 				}, 
@@ -91,7 +91,7 @@ moduleManager.construct({
 			// 2. collect all statements of the originally selected resource to exclude them from selection:
 			app.cache.selectedProject.readStatementsOf( {id: selRes.id} )
 			.then(
-				(list:Statement[])=>{
+				(list:SpecifStatement[])=>{
 					self.selResStatements = list;
 					chooseResourceToLink()
 				},
@@ -109,7 +109,7 @@ moduleManager.construct({
 			);
 			app.cache.selectedProject.readContent( 'resource', self.allResources )
 			.then( 
-				(list:Resource[])=>{
+				(list:SpecifResource[])=>{
 					
 					// Sort the resources:
 					LIB.sortBy( 
@@ -217,13 +217,13 @@ moduleManager.construct({
 		// among all statements of the originally selected resource (selRes), filter all those of the given class:
 		let sL = self.selResStatements.filter( (s)=>{ return s['class']==self.selectedStatementClass.id } );
 		self.allResources.forEach( 
-			(res:Resource,i:number)=>{
+			(res:SpecifResource,i:number)=>{
 				if( 
 					// no reflexive statements are allowed:
 					res.id!=selRes.id
 					// res is not eligible, if it is already related with selRes by a statement of the same class:
-					&& indexBy( sL, 'subject', res.id )<0
-					&& indexBy( sL, 'object', res.id )<0
+					&& LIB.indexBy( sL, 'subject', res.id )<0
+					&& LIB.indexBy( sL, 'object', res.id )<0
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {

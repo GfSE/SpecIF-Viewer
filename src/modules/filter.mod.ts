@@ -216,10 +216,10 @@ moduleManager.construct({
 			fps += '<div class="panel panel-default panel-filter" >'
 				+	'<h4>'+f.title+'</h4>';
 			switch (f.baseType) {
-				case TypeEnum.XsString: 
+				case SpecifDataTypeEnum.String: 
 					fps += renderTextFilterSettings( f );
 					break;
-				case TypeEnum.XsEnumeration: 
+				case 'xs:enumeration': 
 					fps += renderEnumFilterSettings( f );
 			};
 			fps += '</div>';
@@ -255,7 +255,7 @@ moduleManager.construct({
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
 				prj.readContent( 'resource', {id: nd.ref} )
 				.then(
-					(rL:Resource[])=>{
+					(rL:SpecifResource[])=>{
 						h = match( new CResourceToShow(rL[0]) );
 //						console.debug('tree.iterate',self.filterList,pend,rsp[0],h);
 						if( h )	{
@@ -318,10 +318,10 @@ moduleManager.construct({
 				
 				let // dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
-					dT: DataType, a: number;
-				if (matchStr(res.title, { type: TypeEnum.XsString } as DataType )) return true;
+					dT: SpecifDataType, a: number;
+				if (matchStr(res.title, { type: SpecifDataTypeEnum.String } as SpecifDataType )) return true;
 				for( a=res.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.descriptions[a], {type:TypeEnum.XHTML} as DataType ) ) return true;
+					if( matchStr( res.descriptions[a], {type:'xhtml'} as SpecifDataType ) ) return true;
 				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
 					dT = dataTypeOf( dta, res.other[a]['class'] );
@@ -330,17 +330,17 @@ moduleManager.construct({
 				};
 				return false;  // not found
 
-				function matchStr(prp: CPropertyToShow, dT: DataType): boolean {
+				function matchStr(prp: CPropertyToShow, dT: SpecifDataType): boolean {
 //					console.debug('matchStr',prp,dT.type);
 					switch( dT.type ) {
-						case TypeEnum.XsEnumeration:
+						case 'xs:enumeration':
 							// only if enumerated values are included in the search:
 						//	if( !isChecked( f.options, 'excludeEnums' )) {
 								if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true;
 						//	};
 							break;
-						case TypeEnum.XHTML:
-						case TypeEnum.XsString:
+						case 'xhtml':
+						case SpecifDataTypeEnum.String:
 							if (patt.test( languageValueOf(prp.value, displayOptions).stripHTML() )) return true;
 							break;
 						default:
@@ -361,10 +361,10 @@ moduleManager.construct({
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
 				// 
 				switch ( f.baseType ) {
-					case TypeEnum.XsEnumeration:
+					case 'xs:enumeration':
 						// Assuming that there is max. one property per resource with the class specified by the filter,
 						// and also assuming that any property with enumerated value will only be found in the 'other' list:
-						let oa = itemBy( res.other as Item[], 'class', f.propClass ), // select the concerned property by class
+						let oa = LIB.itemBy( res.other, 'class', f.propClass ), // select the concerned property by class
 							// @ts-ignore . in this case it is defined
 							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id==CONFIG.notAssigned;
 						// If the resource does not have a property of the specified class,
@@ -463,7 +463,7 @@ moduleManager.construct({
 								});
 								res.other = res.other.map((prp: CPropertyToShow) => {
 									let dT = dataTypeOf(dta, prp['class']);
-									return (dT && dT.type == TypeEnum.XsEnumeration) ?
+									return (dT && dT.type == 'xs:enumeration') ?
 											new CPropertyToShow({
 												title: prp.title,
 												// default dataType is "xs:string"
@@ -544,7 +544,7 @@ moduleManager.construct({
 				if( f.scope && rCL.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
 
 				switch (f.baseType) {
-					case TypeEnum.XsEnumeration:
+					case 'xs:enumeration':
 						// @ts-ignore . in this case it is defined
 						for( var j=f.options.length-1; j>-1; j--){
 							// @ts-ignore . in this case it is defined
@@ -574,7 +574,7 @@ moduleManager.construct({
 		// def is like {category: 'enumValue', rCid: 'resourceClass.title', pCid: 'propertyClass.title', values: ['title1','title2']}
 //		console.debug( 'addEnumValueFilters', def );
 
-			function allEnumValues(pC: PropertyClass, vL):IBox[] {
+			function allEnumValues(pC: SpecifPropertyClass, vL):IBox[] {
 				var boxes = [],
 					dT = dta.get( "dataType", pC.dataType)[0];
 				// Look up the baseType and include all possible enumerated values:
@@ -599,7 +599,7 @@ moduleManager.construct({
 				};
 				throw Error("Invalid Data: Missing or malformed dataType");
 			}
-			function addEnumFilter( rC:ResourceClass, pC:PropertyClass, vals ):void {
+			function addEnumFilter( rC:SpecifResourceClass, pC:SpecifPropertyClass, vals ):void {
 //				console.debug( 'addEnumFilter', aT, vals );
 				
 				// skip, if the filter is already in the list:
@@ -617,7 +617,7 @@ moduleManager.construct({
 					scope: rC.id, 
 					propClass: pC.id,
 					dataType: pC.dataType,
-					baseType: TypeEnum.XsEnumeration,
+					baseType: 'xs:enumeration',
 					options: allEnumValues( pC, vals )
 				};
 //				console.debug( 'eVF', eVF );
@@ -631,14 +631,14 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC: ResourceClass = dta.get("resourceClass", def.rCid)[0],
-				pC: PropertyClass;
+			var rC: SpecifResourceClass = dta.get("resourceClass", def.rCid)[0],
+				pC: SpecifPropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pcid)=>{
 				pC = dta.get( "propertyClass", pcid )[0];
 //				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && dta.get( "dataType", pC.dataType )[0].type==TypeEnum.XsEnumeration)) {
+					|| (!def.pCid && dta.get( "dataType", pC.dataType )[0].type=='xs:enumeration')) {
 					addEnumFilter( rC, pC, def.options )
 				};
 			});
@@ -658,7 +658,7 @@ moduleManager.construct({
 					category: 'textSearch',
 					primary: true,
 					scope: dta.id,
-					baseType: TypeEnum.XsString,
+					baseType: SpecifDataTypeEnum.String,
 			//		baseType: ['xs:string','xhtml'],
 					searchString: pre&&pre.searchString? pre.searchString : '',
 					options: [
@@ -672,7 +672,7 @@ moduleManager.construct({
 				self.filterList.push( flt );
 			}
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
-			var idx = indexBy( settings.filters, 'category', 'textSearch');
+			var idx = LIB.indexBy( settings.filters, 'category', 'textSearch');
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
 				addTextSearchFilter( settings.filters[idx]);
@@ -691,7 +691,7 @@ moduleManager.construct({
 						category: 'resourceClass',
 						primary: true,
 						scope: dta.id,
-						baseType: TypeEnum.XsEnumeration,
+						baseType: 'xs:enumeration',
 						options: [] 
 					};
 				dta.get("resourceClass","all").forEach( ( rC )=>{
@@ -712,7 +712,7 @@ moduleManager.construct({
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
-			var idx = indexBy( settings.filters, 'category', 'resourceClass');
+			var idx = LIB.indexBy( settings.filters, 'category', 'resourceClass');
 			// a) include the filter modules, if there is a settings.filters:
 			if( idx>-1 ) 
 				addResourceClassFilter( settings.filters[idx] );

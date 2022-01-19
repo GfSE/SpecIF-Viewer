@@ -404,7 +404,7 @@ moduleManager.construct({
 		
 		// 1. Transform dataTypes:
 		if (pr.dataTypes)
-			pr.dataTypes.forEach(function (dT: DataType) {
+			pr.dataTypes.forEach(function (dT: SpecifDataType) {
 				switch( dT.type ) {
 					case 'xs:boolean':
 						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
@@ -497,7 +497,7 @@ moduleManager.construct({
 			let hR = itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
 				hC = itemById( pr.resourceClasses, hR['class'] );	// it's class
 			
-			if( indexBy( separated.objects, 'class', hC.id )>-1 ) {
+			if( LIB.indexBy( separated.objects, 'class', hC.id )>-1 ) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
 				hC.id = 'HC-'+hC.id;

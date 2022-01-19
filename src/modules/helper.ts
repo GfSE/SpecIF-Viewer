@@ -345,19 +345,19 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 			case 'object': 
 				if( msg.status ) {
 					// msg is an jqXHR object:
+					if (!opts.severity) opts.severity = msg.status < 202 ? 'success' : 'danger';
+
 					msg = (msg.statusText || i18n.Error)
 						+ " (" + msg.status
 						+ ((msg.responseType == 'text' || typeof (msg.responseText) == 'string') && msg.responseText.length>0 ? 
 							"): " + msg.responseText : ")");
-
-					if( !opts.severity ) opts.severity = msg.status<202? 'success' : 'danger';
 					break;
 				};
 			default:
 				console.error(msg, ' is an invalid message.');
 				return;
 		};
-		// now, msg is of type 'string'.
+		// now, msg is definitively of type 'string'.
 
 		if( !opts.severity || ['success', 'info', 'warning', 'error', 'danger'].indexOf(opts.severity)<0 ) // severities as known by bootstrap plus "error"
 			opts.severity = 'warning';
@@ -380,8 +380,86 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 	}
 };
 
-type Item = DataType | PropertyClass | ResourceClass | StatementClass | Resource | Statement | SpecifNode | SpecifFile;
-type Instance = Resource | Statement;
+type Item = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
+type Instance = SpecifResource | SpecifStatement;
+LIB.keyOf = (el: any): SpecifKey => {
+//	if (typeof (el) == 'string' return { id: el });
+	// else:
+	return el.revision ? { id: el.id, revision: el.revision } : { id: el.id };
+}
+LIB.isKey = (el: any): boolean => {
+	return typeof (el)=='object' && el.id;
+}
+LIB.isString = (el:any): boolean => {
+	return typeof (el) == 'string';
+}
+LIB.isSpecifMultiLanguageText = (L: any[]): boolean => {
+	if (Array.isArray(L)) {
+		let hasMultipleLanguages = L.length > 1;
+		for (var i = L.length - 1; i > -1; i--) {
+			// SpecifMultilanguageText is a list of objects {text:"the text value", language:"IETF language tag"}
+			if (typeof (L[i]["text"]) != "string" || (hasMultipleLanguages && (typeof (L[i].language) != "string" || L[i].language.length < 2))) return false;
+		};
+		return true;
+	};
+	return false;
+}
+LIB.itemByKey = (L: any[], k: SpecifKey):any => {
+	// Return the item in L with key k 
+	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
+	//  - If k has no revision, the item in L having the latest revision applies.
+	//  - If k has a revision, the item in L having an an equal or the next lower revision applies.
+	//  - The uniqueness of keys has been checked, before.
+
+	// Find all elements with the same id:
+	let itemsWithEqId = L.filter( (e) =>{ return e.id == k.id });
+	if (itemsWithEqId.length < 1) return; // no element with the specified id
+
+	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].revision) {
+		// a single item without revision has been found:
+		if (k.revision) return // revisions don't match (this should not occur)
+		else return itemsWithEqId[0] // both the found element and the key have no revision
+	};
+
+	// The elements in L have a revision and there are more than 1 of them.
+	if (k.revision) {
+		// Find the element with equal revision:
+		let itemsWithEqRev = itemsWithEqId.filter((e) => { return e.revision == k.revision });
+		if (itemsWithEqRev.length > 0) return itemsWithEqRev[0];
+		// else, there is no element with the requested revision:
+		return;  // undefined
+	};
+
+	// Sort revisions with descending order:
+	itemsWithEqId.sort( (laurel, hardy) =>{ return hardy.changedAt - laurel.changedAt });
+	return itemsWithEqId[0]; // return the latest revision
+}
+LIB.indexByKey = (L: any[], k: SpecifKey): number => {
+	// Find all elements with the same id:
+	let	i=0,
+		// filter the input list and add an index to the elements:
+		itemsWithEqId = L.filter((e) => { e.idx = i++; return e.id == k.id });
+	if (itemsWithEqId.length < 1) return -1; // no element with the specified id
+
+	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].revision) {
+		// a single item without revision has been found:
+		if (k.revision) return -1 // revisions don't match (this should not occur)
+		else return itemsWithEqId[0].idx // both the found element and the key have no revision
+	};
+
+	// The elements in L have a revision and there are more than 1 of them.
+	if (k.revision) {
+		// Find the element with equal revision:
+		let itemsWithEqRev = itemsWithEqId.filter((e) => { return e.revision == k.revision });
+		if (itemsWithEqRev.length > 0) return itemsWithEqRev[0].idx;
+		// else, there is no element with the requested revision:
+		return -1;
+	};
+
+	// Sort revisions with descending order:
+	itemsWithEqId.sort( (laurel, hardy) =>{ return hardy.changedAt - laurel.changedAt });
+	return itemsWithEqId[0].idx; // return the latest revision
+}
 function indexById(L:any[],id:string):number {
 	if( L && id ) {
 		// given an ID of an item in a list, return it's index:
@@ -415,32 +493,52 @@ function itemByTitle(L:any[],ti:string):any {
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
 }
+LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
+	// should also work for revision==undefined:
+	return LIB.isKey(r) && LIB.isKey(n) && r.id==n.id && r.revision==n.revision 
+}
+LIB.indexBy = (L: any[], p: string, s: SpecifKey): number => {
+	if (L && p && s) {
+		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's';
+		// where s can be a string or a key:
+		for (var i = L.length - 1; i > -1; i--)
+			if( LIB.isKey(s) && LIB.isReferenced(L[i][p], s)) return i; // return list index
+	};
+	return -1;
+}
+LIB.itemBy = (L: any[], p: string, s: SpecifKey): any => {
+	if (L && p && s) {
+		// Return the element in list 'L' whose property 'p' equals searchterm 's';
+		// where s can be a string or a key:
+		for (var i = L.length - 1; i > -1; i--)
+			if( LIB.isKey(s) && LIB.isReferenced(L[i][p], s)) return L[i]; // return list item
+	};
+}
+/*
 function indexBy(L:any[], p:string, s:string ):number {
 	if( L && p && s ) {
-		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
-		// hand in property and searchTerm as string !
+		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's';
+		// where s can be a string or a key:
 		for (var i = L.length - 1; i > -1; i--)
-			// @ts-ignore - the addressing via string is perfectly acceptable
-			if( L[i][p]==s ) return i;
+			if( typeof (s)=='string' && L[i][p] == s ) return i; // return list index
 	};
 	return -1;
 }
 function itemBy(L:any[], p:string, s:string ):any {
 	if( L && p && s ) {
-		// Return the element in list 'L' whose property 'p' equals searchterm 's':
-	//	s = s.trim();
-		for( var i=L.length-1;i>-1;i-- )
-			// @ts-ignore - the addressing via string is perfectly acceptable
-			if( L[i][p]==s ) return L[i];   // return list item
+		// Return the element in list 'L' whose property 'p' equals searchterm 's';
+		// where s can be a string or a key:
+		for (var i = L.length - 1; i > -1; i--)
+			if( typeof(s)=='string' && L[i][p] == s ) return L[i]; // return list item
 	};
-}
+} */
 LIB.containsAll = (rL: string[], nL: string[]): boolean =>{
 	for (var i = nL.length - 1; i > -1; i--)
 		if (rL.indexOf(nL[i]) < 0) return false;
 	return true;
 }
-LIB.containsById = (cL:any[], L: Item[] ):boolean =>{
-	if (!cL || !L) throw Error("Missing Array");
+LIB.containsById = (cL:any[], L: Item|Item[] ):boolean =>{
+	if (!cL || !L) throw Error("Missing Input Parameter");
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
 	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
@@ -471,7 +569,7 @@ LIB.cmp = ( i:string, a:string ):number =>{
 }
 LIB.sortByTitle = ( L:any ):void =>{
 	L.sort( 
-		(bim,bam)=>{ return LIB.cmp( bim.title, bam.title ) }
+		(bim:any,bam:any)=>{ return LIB.cmp( bim.title, bam.title ) }
 	);
 }
 LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
@@ -479,13 +577,13 @@ LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
 		(bim, bam) => { return LIB.cmp( fn(bim), fn(bam) ) }
 	);
 }
-LIB.forAll = ( L:any[], fn:(arg0:any)=>any ):Array<any> =>{
+LIB.forAll = ( L:any[], fn:(arg0:any)=>any ):any[] =>{
 	// return a new list with the results from applying the specified function to all items of input list L;
 	// differences when compared to Array.map():
 	// - tolerates missing L
 	// - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
 	if(!L) return [];
-	var nL = [];
+	var nL:any[] = [];
 	L.forEach( (e)=>{ var r=fn(e); if(r) nL.push(r) } );
 	return nL;
 }
@@ -881,11 +979,11 @@ LIB.noCode = ( s:string ):string =>{
 		console.log("'"+s+"' is considered harmful ("+c+") and has been suppressed");
 	}
 }
-LIB.cleanValue = (o: string | ValueElement[]): string | ValueElement[] => {
+LIB.cleanValue = (o: any): string | SpecifMultiLanguageText[] => {
 	// remove potential malicious code from a value which may be supplied in several languages:
 	if( typeof(o)=='string' ) return LIB.noCode( o ); 
-	if( Array.isArray(o) ) return LIB.forAll( o, ( val )=>{ val.text = LIB.noCode(val.text); return val } );
-	return '';  // unexpected input (programming error with all likelihood
+	if (Array.isArray(o)) return LIB.forAll(o, (val:any) => { val.text = LIB.noCode(val.text); return val });
+	throw Error('Unexpected input to LIB.cleanValue: Programming error with all likelihood');
 }
 LIB.attachment2mediaType = ( fname:string ):string|undefined =>{
 	let t = fname.fileExt();  // get the extension excluding '.'
