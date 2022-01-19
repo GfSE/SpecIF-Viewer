@@ -474,7 +474,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									}
 									else {
 										// it is a statement:
-										obL = (cell.v as string).split(",");
+										obL = cell.w.split(",");  // cell.w is always a string
 //										console.debug('createRes - statement',pTi,obL);
 										obL.forEach( (ob:string)=>{
 											oInner = RE.inQuotes.exec( ob );
