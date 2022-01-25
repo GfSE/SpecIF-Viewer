@@ -1191,6 +1191,7 @@ class CProject {
 		);
 	}
 	readContent(ctg: string, item: Item[] | Item | string, opts?: any): Promise<Item[]> {
+		console.debug('readContent', ctg, item, opts);
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		if (!opts) opts = { reload: false, timelag: 10 };
 
