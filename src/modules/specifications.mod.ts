@@ -23,24 +23,40 @@ class CPropertyToShow implements SpecifProperty {
 	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
 	class: SpecifKey;
+	private pData: CCache;
+	private pC: SpecifPropertyClass;
+	private dT: SpecifDataType;
 	replaces?: string[];
 	revision?: string;
-	changedAt?: string;
-	changedBy?: string;
 	// @ts-ignore - presence of 'value' is checked by the schema on import
-	value: SpecifMultiLanguageText[] | string;
+	values: SpecifValues;
 	constructor(prp: SpecifProperty) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
+
+		this.pData = app.cache.selectedProject.data;
+		// @ts-ignore - 'class' is in fact initialized, above:
+		this.pC = LIB.itemByKey(this.pData.propertyClasses, this['class']);
+		this.dT = LIB.itemByKey(this.pData.dataTypes, this.pC['dataType']);
+	}
+	private allValuesByLanguage(opts: any): string {
+		// Return all values in the language specified;
+		// lookup the values in case of an enumeration:
+		if (opts && opts.targetLanguage) {
+			var str = '';
+			this.values.forEach((v: any) => { str += languageValueOf(v, opts) });
+			return str;
+		};
+		throw Error("When displaying property values, a target language must be specified.");
     }
 	isVisible(opts: any): boolean {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
-			&& (CONFIG.showEmptyProperties || LIB.hasContent(languageValueOf(this.value, opts))))
+			&& (CONFIG.showEmptyProperties || LIB.hasContent(this.allValuesByLanguage(opts))))
 	}
-	get( opts?: any): string {
+	get( opts: any): string {
 		if (typeof (opts) != 'object') opts = {};
-		opts.lookupLanguage = true;
 		if (typeof (opts.titleLinking) != 'boolean') opts.titleLinking = false;
+		if (!opts.targetLanguage) opts.targetLanguage = browser.language;
 		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.titleLinkTargets;
 
 		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
@@ -52,21 +68,18 @@ class CPropertyToShow implements SpecifProperty {
 		if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false;
 
 		// Malicious content has been removed upon import ( specif.toInt() ).
-		let pData = app.cache.selectedProject.data,
-			dT = dataTypeOf(pData, this['class']),
-			ct: string;
-		//	console.debug('*',this,dT);
-		switch (dT.type) {
+		let ct: string;
+		//	console.debug('*',this,this.dT);
+		switch (this.dT.type) {
 			case SpecifDataTypeEnum.String:
-			case 'xhtml':
 				// remove any leading whiteSpace:
-				ct = languageValueOf(this.value, opts).replace(/^\s+/, "");
+				ct = this.allValuesByLanguage(opts).replace(/^\s+/, "");
 				if (opts.lookupValues)
 					ct = i18n.lookup(ct);
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// Apply formatting only if not listed:
-				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, pData)) < 0)
+				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, this.pData)) < 0)
 					ct = ct.makeHTML(opts);
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
@@ -79,7 +92,7 @@ class CPropertyToShow implements SpecifProperty {
 				// but the filter module delivers potentially marked titles in content.
 
 				// Translate IDs to values, if appropriate (i1lookup() is included):
-				ct = enumValueOf(dT, this.value, opts);
+				ct = enumValueOf(this.dT, this.value, opts);
 				break;
 			default:
 				ct = this.value;
@@ -119,14 +132,14 @@ class CPropertyToShow implements SpecifProperty {
 					let m = $1.toLowerCase(), cR: SpecifResource, ti: string, rC:SpecifResourceClass, target: SpecifResource;
 					// is ti a title of any resource?
 					app.specs.tree.iterate((nd: jqTreeNode) => {
-						cR = itemById(app.cache.selectedProject.data.resources, nd.ref);
+						cR = LIB.itemByKey(app.cache.selectedProject.data.resources, nd.ref);
 						// avoid self-reflection:
 						//	if(ob.id==cR.id) return true;
 						ti = elementTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
 						// disregard link targets which aren't diagrams nor model elements:
-						rC = itemById(app.cache.selectedProject.data.resourceClasses, cR['class']);
+						rC = LIB.itemByKey(app.cache.selectedProject.data.resourceClasses, cR['class']);
 						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
 
 						// the titleLink content equals a resource's title, remember the first occurrence:
@@ -435,7 +448,9 @@ class CPropertyToShow implements SpecifProperty {
 }
 class CResourceToShow {
 	id: string;
-	class: SpecifResourceClass; // in contrast to the SpecIF schema, this is the class itself and not it's id
+	class: SpecifKey;
+	private pData: CCache;
+	private rC: SpecifResourceClass;
 	isHeading: boolean;
 	order: string;
 	revision?: string;
@@ -448,10 +463,11 @@ class CResourceToShow {
 	constructor(el: SpecifResource) {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
-		// ToDo: Basically it can also be used for Statements ... 
-		let pData = app.cache.selectedProject.data;
+		this.pData = app.cache.selectedProject.data;
+
 		this.id = el.id;
-		this['class'] = itemById(pData.resourceClasses, el['class']) as SpecifResourceClass;
+		this['class'] = el['class'];
+		this.rC = LIB.itemByKey(this.pData.resourceClasses, el['class']) as SpecifResourceClass;
 		this.isHeading = false; // will be set further down if appropriate
 		this.revision = el.revision;
 		this.order = el.order;
@@ -460,28 +476,18 @@ class CResourceToShow {
 		this.changedAt = el.changedAt;
 		this.changedBy = el.changedBy;
 		this.descriptions = [];
+
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = this.normalizeProps(el, pData);
+		this.other = this.normalizeProps(el);
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
 		// and moved from this.other to this.title resp. this.descriptions:
 
 		// a) Find and set the configured title:
-		let a = titleIdx(this.other, pData);
+		let a = titleIdx(this.other, this.pData);
 		if (a > -1) {  // found!
-			this.title = this.other[a];
-			// remove title from other:
-			this.other.splice(a, 1);
-
-			// Special case:
-			// - if the current instance does not have a title property
-			// - but it's class defines one,
-			// the title would get lost.
-			// Thus, the instance title is copied to the title property,
-			// which has been newly created by normalizeProps():
-			if (!this.title.value && el.title)
-				this.title.value = el.title;
+			this.title = this.other.splice(a, 1);
 	/*	}
 		else {
 			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
@@ -491,18 +497,16 @@ class CResourceToShow {
 			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
 			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
 		};
-		this.isHeading = this['class'].isHeading
-			|| CONFIG.headingProperties.indexOf(this['class'].title) > -1
-			|| CONFIG.headingProperties.indexOf(this.title.title) > -1;
+		this.isHeading = this.rC.isHeading
+			|| CONFIG.headingProperties.indexOf(this.rC.title) > -1;
 
 		// b) Check the configured descriptions:
 		// We must iterate backwards, because we alter the list of other.
 		// ToDo: use this.other.filter()
 		for (a = this.other.length - 1; a > -1; a--) {
-			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], pData)) > -1) {
+			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], this.pData)) > -1) {
 				// To keep the original order of the properties, the unshift() method is used.
-				this.descriptions.unshift(this.other[a]);
-				this.other.splice(a, 1);
+				this.descriptions.unshift(this.other.splice(a, 1));
 			};
 		};
 
@@ -512,7 +516,7 @@ class CResourceToShow {
 			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
-	private normalizeProps(el: SpecifResource, dta: CSpecIF): CPropertyToShow[] {
+	private normalizeProps(el: SpecifResource): CPropertyToShow[] {
 		// el: original instance (resource or statement)
 		// Create a list of properties in the sequence of propertyClasses of the respective class.
 		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
@@ -536,9 +540,9 @@ class CResourceToShow {
 			nL: CPropertyToShow[] = [],
 			// iCs: instance class list (resourceClasses or statementClasses),
 			// the existence of subject (or object) let's us recognize that it is a statement:
-		//	iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-			iCs = dta.resourceClasses,
-			iC = LIB.itemByKey(iCs, el['class']);
+		//	iCs = el.subject ? this.pData.statementClasses : this.pData.resourceClasses,
+			iCs = this.pData.resourceClasses,
+			iC = this.rC;
 		// build a list of propertyClass identifiers including the extended class':
 		pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses || [] : [];
 		pCs = pCs.concat(LIB.itemByKey(iCs, el['class']).propertyClasses || []);
@@ -548,13 +552,13 @@ class CResourceToShow {
 			if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
 			// assuming that the property classes are unique:
 			p = LIB.itemBy(el.properties, 'class', pC)
-				|| createProp(dta.propertyClasses, pC);
+				|| createProp(this.pData.propertyClasses, pC);
 			if (p) {
 				// by default, use the propertyClass' title:
-				// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
+				// (this.pData.propertyClasses contains all propertyClasses of all resource/statement classes)
 				// An input data-set may have titles which are not from the SpecIF vocabulary;
 				// replace the result with a current vocabulary term:
-				p.title = vocabulary.property.specif(propTitleOf(p, dta));
+				p.title = vocabulary.property.specif(propTitleOf(p, this.pData));
 				nL.push(new CPropertyToShow(p));
 			}
 		});
@@ -581,8 +585,8 @@ class CResourceToShow {
 		return '<div class="attribute' + cssCl + '">' + val + '</div>';
 	}
 	renderTitle(opts?: any): string {
-		//	console.debug('renderTitle',simpleClone(clsPrp),opts);
-		if (!this.title || !this.title.value) return '';
+		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
+		if (!this.title || !this.title.values) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
 		let ti = languageValueOf(this.title.value, opts);
@@ -617,7 +621,6 @@ class CResourceToShow {
 		// Create HTML for a list entry:
 
 		var opts = options ? simpleClone(options) : {};
-		opts.lookupLanguage = true;
 		opts.targetLanguage = browser.language;
 		opts.titleLinking
 			= opts.clickableElements
@@ -750,7 +753,6 @@ class CResourceToShow {
 class CResourcesToShow {
 	private opts = {
 		lookupTitles: true,
-		lookupLanguage: true,
 		targetLanguage: browser.language
 	};
 	values: CResourceToShow[];
@@ -1121,7 +1123,7 @@ class CFileWithContent implements IFileWithContent {
 						ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
-						rT = itemById(cacheData.resourceClasses, cacheData.resources[i]['class']);
+						rT = LIB.itemByKey(cacheData.resourceClasses, cacheData.resources[i]['class']);
 						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
 						// else, it is a resource representing a diagram:
 						if (elementTitleOf(cacheData.resources[i], opts) == ti) {
@@ -1182,6 +1184,7 @@ class CFileWithContent implements IFileWithContent {
 		}, opts.timelag);
 	}
 }
+
 // Construct the specifications controller:
 moduleManager.construct({
 	name: CONFIG.specifications
@@ -1415,14 +1418,13 @@ moduleManager.construct({
 		}
 	}  */
 
-	self.updateTree = function ( opts:any, spc?, pData?:CSpecIF ):void {
+	self.updateTree = function ( opts:any, spc? ):void {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
 		// undefined parameters are replaced by default values:
-		if( !pData ) pData = app.cache.selectedProject.data;
-		if( !spc ) spc = pData.hierarchies;
-//		console.debug( 'updateTree', simpleClone(spc), simpleClone(pData), opts );
+		if( !spc ) spc = self.pData.hierarchies;
+//		console.debug( 'updateTree', simpleClone(spc), simpleClone(self.pData), opts );
 
 		let tr;
 		// Replace the tree:
@@ -1441,18 +1443,15 @@ moduleManager.construct({
 		// -----------------
 		function toChild( iE ) {
 			// transform SpecIF hierarchy to jqTree:
-			let r:SpecifResource = itemById( pData.resources, iE.resource );
+			let r:SpecifResource = LIB.itemByKey( self.pData.resources, iE.resource );
 //			console.debug('toChild',iE.resource,r);
-			var oE = {
+			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: elementTitleOf(r,opts,pData), 
-				ref: iE.resource.id || iE.resource // for key (with revision) or for id (without revision)
+				name: elementTitleOf(r,opts,self.pData), 
+				ref: iE.resource
 			};
 			oE.children = LIB.forAll( iE.nodes, toChild );
-		//	if( typeof(iE.upd)=='boolean' ) oE.upd = iE.upd;
-			if( iE.revision ) oE.revision = iE.revision;
-			oE.changedAt = iE.changedAt;
 			return oE;
 		}
 	};
@@ -1472,9 +1471,9 @@ moduleManager.construct({
  		let uP = opts.urlParams,
 			fNd = self.tree.firstNode(),
 			nd: jqTreeNode;
+		self.pData = app.cache.selectedProject.data;
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
-		opts.lookupLanguage = true;
 		self.targetLanguage = opts.targetLanguage = browser.language;
 		opts.lookupTitles = true;
 				
@@ -1482,7 +1481,7 @@ moduleManager.construct({
 		// - URL parameters are specified where the project is equal to the loaded one
 		// - just a view is specifed without URL parameters (coming from another page)
 		if( !fNd
-			|| !app.cache.selectedProject.data.has("resource", fNd.ref )  // condition is probably too weak
+			|| !app.cache.selectedProject.data.has("resource", [fNd.ref] )  // condition is probably too weak
 			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.id )
 			self.tree.clear();
 		
@@ -1699,7 +1698,6 @@ moduleManager.construct({
 
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData = self.parent,	// the parent's data
 		cacheData: CSpecIF,		// the cached project data
 		selRes: CResourceToShow;	// the currently selected resource
 
@@ -1732,8 +1730,8 @@ moduleManager.construct({
 		// Show the next resources starting with the selected one:
 //		console.debug(CONFIG.objectList, 'show', opts);
 
-		pData.showLeft.set();
-		pData.showTree.set();
+		self.parent.showLeft.set();
+		self.parent.showTree.set();
 		cacheData = app.cache.selectedProject.data;
 		
 		// Select the language options at project level:
@@ -1745,9 +1743,9 @@ moduleManager.construct({
 	/*	if( self.resources.values.length<1 )
 			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' ); */
 
-		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
-	//	if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };  // quit, because the tree is empty
-//		console.debug(CONFIG.objectList, 'show', pData.tree.selectedNode);
+		if( !self.parent.tree.selectedNode ) self.parent.tree.selectFirstNode();
+	//	if( !self.parent.tree.selectedNode ) { self.parent.emptyTab( self.view ); return };  // quit, because the tree is empty
+//		console.debug(CONFIG.objectList, 'show', self.parent.tree.selectedNode);
 
 		var nL; // list of hierarchy nodes, must survive the promise
 
@@ -1758,7 +1756,7 @@ moduleManager.construct({
 				if( err.status==744 ) {
 					// A previously selected node is not any more available 
 					// with the latest revision of the project:
-					pData.tree.selectFirstNode();
+					self.parent.tree.selectFirstNode();
 					getNextResources()
 					.then(
 						renderNextResources,
@@ -1773,7 +1771,7 @@ moduleManager.construct({
 		return;
 		
 		function getNextResources():Promise<SpecifResource[]> {
-			var nd = pData.tree.selectedNode,
+			var nd = self.parent.tree.selectedNode,
 				oL = [];  // id list of the resources to view
 			nL = [];  // list of hierarchy nodes
 					
@@ -1810,7 +1808,7 @@ moduleManager.construct({
 			// unless in a multi-user configuration with server and auto-update enabled.
 			if( self.resources.update( rL ) || opts && opts.forced ) {
 				// list value has changed in some way:
-			//	setPermissions( pData.tree.selectedNode );  // use the newest revision to get the permissions ...
+			//	setPermissions( self.parent.tree.selectedNode );  // use the newest revision to get the permissions ...
 				$( self.view ).html( self.resources.render() );
 			};
 			// the currently selected resource:
@@ -1827,7 +1825,7 @@ moduleManager.construct({
 //			console.debug( 'actionBtns', selRes, self.resCre );
 
 			var rB = '<div class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
-//			console.debug( 'actionBtns', pData.tree.rootNode() );
+//			console.debug( 'actionBtns', self.parent.tree.rootNode() );
 
 		/*	if( selRes )
 				// Create a 'direct link' to the resource (the server renders the resource without client app):
@@ -1959,7 +1957,7 @@ moduleManager.construct({
 			title: i18n.MsgConfirm,
 			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			type: BootstrapDialog.TYPE_DANGER,
-			message: i18n.lookup( 'MsgConfirmObjectDeletion', pData.tree.selectedNode.name ),
+			message: i18n.lookup( 'MsgConfirmObjectDeletion', self.parent.tree.selectedNode.name ),
 			buttons: [{
 				label: i18n.BtnCancel,
 				action: (thisDlg: any)=>{
@@ -1968,19 +1966,19 @@ moduleManager.construct({
 			},{
 				label: i18n.BtnDeleteObjectRef,
 				action: (thisDlg: any)=>{
-					delNd( pData.tree.selectedNode );
+					delNd( self.parent.tree.selectedNode );
 					thisDlg.close();
 				}
 		/*	},{
 				label: i18n.BtnDeleteObject,
 				// This button is enabled, if the user has permission to delete the referenced resource,
 				// ?? and if the resource has no further references in any tree:
-				cssClass: 'btn-danger' +(enableDel(pData.tree.selectedNode.ref)?'':' disabled'), 
+				cssClass: 'btn-danger' +(enableDel(self.parent.tree.selectedNode.ref)?'':' disabled'), 
 				action: function (thisDlg) {
 					// the selected resource's instantiation must be "user" 
-//					console.debug( "Deleting resource '"+pData.tree.selectedNode.name+"'." );
-					delNd( pData.tree.selectedNode );
-			//		delRes( pData.tree.selectedNode.ref );
+//					console.debug( "Deleting resource '"+self.parent.tree.selectedNode.name+"'." );
+					delNd( self.parent.tree.selectedNode );
+			//		delRes( self.parent.tree.selectedNode.ref );
 					thisDlg.close();
 				} */
 			}]
@@ -2027,7 +2025,7 @@ moduleManager.construct({
 
 			// 1. Step away from tbe node to delete:
 //			console.debug('deleteNode',nd,nd.getNextSibling());
-			pData.tree.selectNode( nd.getNextSibling() ); 
+			self.parent.tree.selectNode( nd.getNextSibling() ); 
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
 			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
@@ -2039,11 +2037,11 @@ moduleManager.construct({
 							.then( 
 								()=>{  
 									// undefined parameters will be replaced by default value:
-									pData.updateTree({
+									self.parent.updateTree({
 										targetLanguage: browser.language,
 										lookupTitles: true
 									});
-									pData.doRefresh({forced:true})
+									self.parent.doRefresh({forced:true})
 								},
 								LIB.stdError 
 							)
@@ -2059,7 +2057,7 @@ moduleManager.construct({
 	self.relatedItemClicked = ( rId:string ):void =>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
-		pData.tree.selectNodeByRef( rId );
+		self.parent.tree.selectNodeByRef( rId );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 		// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 		document.getElementById(CONFIG.objectList).scrollTop = 0;
@@ -2074,7 +2072,6 @@ moduleManager.construct({
 
 	var myName = self.loadAs,
 		myFullName = 'app.' + myName,
-		pData: IModule = self.parent,	// the parent's data
 		cacheData: CSpecIF,		// the cached data
 		selRes:CResourceToShow,		// the currently selected resource
 		net,
@@ -2092,8 +2089,8 @@ moduleManager.construct({
 		$( self.view ).empty()
 	};
 	self.show = function( opts?:any ):void {
-		pData.showLeft.set();
-		pData.showTree.set();
+		self.parent.showLeft.set();
+		self.parent.showTree.set();
 		cacheData = app.cache.selectedProject.data;
 
 		// Select the language options at project level:
@@ -2105,16 +2102,16 @@ moduleManager.construct({
 	//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
 	
 		// The tree knows the selected resource; if not take the first:
-		if( !pData.tree.selectedNode ) pData.tree.selectFirstNode();
+		if( !self.parent.tree.selectedNode ) self.parent.tree.selectFirstNode();
 		// quit, because the tree is empty:
-		if( !pData.tree.selectedNode ) { pData.emptyTab( self.view ); return };
+		if( !self.parent.tree.selectedNode ) { self.parent.emptyTab( self.view ); return };
 
 		// else: the tree has entries:
 		app.busy.set();
 	//	$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
 		// ToDo: Redraw only if the selected node has changed, to avoid a flicker.
-		var nd = pData.tree.selectedNode;
+		var nd = self.parent.tree.selectedNode;
 						
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
@@ -2148,7 +2145,7 @@ moduleManager.construct({
 						// rResL is a list of the selected plus it's related resources
 
 						// Assuming that the sequence may be arbitrary:
-						selRes = itemById(rResL,nd.ref);
+						selRes = LIB.itemByKey(rResL,nd.ref);
 						getPermissions( selRes );
 
 						// Now get the titles with icon of the resources,
@@ -2243,7 +2240,7 @@ moduleManager.construct({
 					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
-				pData.tree.iterate( (nd)=>{
+				self.parent.tree.iterate( (nd)=>{
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check permissions, here:
 					pend++;
@@ -2253,7 +2250,7 @@ moduleManager.construct({
 							// refR is a resource referenced in a hierarchy
 							let refR: SpecifResource = rL[0],
 								refTi = elementTitleOf(refR, localOpts);
-//							console.debug('pData.tree.iterate',refR,refTi,pend);
+//							console.debug('self.parent.tree.iterate',refR,refTi,pend);
 							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
 
@@ -2263,7 +2260,7 @@ moduleManager.construct({
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch (dataTypeOf(cacheData, p['class']).type) {
+										switch (LIB.dataTypeOf(cacheData, p['class']).type) {
 											case SpecifDataTypeEnum.String:
 											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
@@ -2283,7 +2280,7 @@ moduleManager.construct({
 								if( refR.properties )
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( dataTypeOf( cacheData, p['class'] ).type ) {
+										switch( LIB.dataTypeOf( cacheData, p['class'] ).type ) {
 											case SpecifDataTypeEnum.String:
 											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
@@ -2322,7 +2319,7 @@ moduleManager.construct({
 			return LIB.iterateNodes(dta.hierarchies,
 				(nd): boolean => {
 					// get the referenced resource:
-					res = itemById(dta.resources, nd.resource);
+					res = LIB.itemByKey(dta.resources, nd.resource);
 					// find the property defining the type:
 					pV = valByTitle(res, CONFIG.propClassType, dta);
 					// Remember whether at least one diagram has been found:
@@ -2548,13 +2545,13 @@ moduleManager.construct({
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
 			app.cache.selectedProject.deleteContent( 'statement', {id: sId} )
 			.then(
-				pData.doRefresh({forced:true}),
+				self.parent.doRefresh({forced:true}),
 				LIB.stdError
 			);
 		}
 		else { 
 			// Jump to resource rId:
-			pData.tree.selectNodeByRef( rId );
+			self.parent.tree.selectNodeByRef( rId );
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 			document.getElementById(CONFIG.objectList).scrollTop = 0;

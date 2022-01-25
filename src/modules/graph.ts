@@ -35,7 +35,7 @@ app.statementsGraph = function Graph() {
 		if( !opts.fontSize ) opts.fontSize = '14px';
 
 		// All required parameters are available, so we can begin:
-		let relations:statement[] = collectStatementsByType( specifData.resources[opts.index] );
+		let relations:SpecifStatement[] = collectStatementsByType( specifData.resources[opts.index] );
 //		console.debug('init relations',relations);
 		// if there are no relations, do not create a graph:
 		if ( !relations ) return;
@@ -508,9 +508,9 @@ app.statementsGraph = function Graph() {
          * @param object The resource, where the relations are to
          * @returns json object of the statements with titles for statements, subjects and objects
          */
-        function collectStatementsByType(res) {
-            let sts = {}, cid, oid, sid;
-            specifData.statements.forEach( function(st) {
+        function collectStatementsByType(res:SpecifResource):SpecifStatement[] {
+			let sts = {}, cid, oid, sid;
+			specifData.statements.forEach((st: SpecifStatement) =>{
 				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 				oid = st.object.id || st.object;
 				sid = st.subject.id || st.subject;
@@ -533,11 +533,11 @@ app.statementsGraph = function Graph() {
 						sts[cid].targets.push( {resource:resourceById(oid),statement:st} )
 				}
             });
-            return sts
+			return sts;
         }
 
         /**
-         * Checks if the ie 11 or lower is used
+         * Checks if IE 11 or lower is used
          * @returns {boolean} true if ie es 11 or lower else false
          */
         function isIE() {

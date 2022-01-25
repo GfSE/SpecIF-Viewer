@@ -101,7 +101,6 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData = self.parent,
 		prj:any,
 		dta:SpecIF,
 		displayOptions:any = {};
@@ -183,11 +182,10 @@ moduleManager.construct({
 		if( typeof( opts ) != 'object' ) opts = {};
 		prj = app.cache.selectedProject;
 		dta = prj.data;
-		pData.showLeft.reset();
+		self.parent.showLeft.reset();
 		$('#filterNotice').empty();
 
-		displayOptions.lookupLanguage = true;
-        displayOptions.targetLanguage = pData.targetLanguage;
+        displayOptions.targetLanguage = self.parent.targetLanguage;
         displayOptions.lookupTitles = true;
         displayOptions.lookupValues = true;
 
@@ -227,7 +225,7 @@ moduleManager.construct({
 		$('#primaryFilters').html( fps );
 		setFocus(i18n.LblStringMatch); 
 
-		let tr = pData.tree.get();
+		let tr = self.parent.tree.get();
 		if( !tr || tr.length<1 ) {
 		//	showNotice(i18n.MsgNoReports);
 //			console.debug('filter nothing to do',tr);
@@ -246,7 +244,7 @@ moduleManager.construct({
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend = 0, h:CResourceToShow, hitCnt=0;
-		pData.tree.iterate(
+		self.parent.tree.iterate(
 			(nd: jqTreeNode) => {
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
@@ -324,7 +322,7 @@ moduleManager.construct({
 					if( matchStr( res.descriptions[a], {type:'xhtml'} as SpecifDataType ) ) return true;
 				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
-					dT = dataTypeOf( dta, res.other[a]['class'] );
+					dT = LIB.dataTypeOf( dta, res.other[a]['class'] );
 //					console.debug('matchSearchString',f,res.other[a],dT,f.options);
 					if( matchStr( res.other[a], dT ) ) return true;
 				};
@@ -462,7 +460,7 @@ moduleManager.construct({
 											});
 								});
 								res.other = res.other.map((prp: CPropertyToShow) => {
-									let dT = dataTypeOf(dta, prp['class']);
+									let dT = LIB.dataTypeOf(dta, prp['class']);
 									return (dT && dT.type == 'xs:enumeration') ?
 											new CPropertyToShow({
 												title: prp.title,
@@ -800,8 +798,8 @@ moduleManager.construct({
 	self.itemClicked =  ( itm )=>{
 //		console.debug( 'item clicked', itm );
 		// Jump to the page view of the clicked resource:
-		pData.showTab( CONFIG.objectDetails );  
-		pData.selectNodeByRef( itm.value() );
+		self.parent.showTab( CONFIG.objectDetails );  
+		self.parent.selectNodeByRef( itm.value() );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 	}; 
 */	

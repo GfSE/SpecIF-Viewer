@@ -33,7 +33,8 @@ moduleManager.construct({
 	name: CONFIG.reports
 }, function(self:IModule) {
 	"use strict";
-	var pData,prj,dta;
+	var prj: CProject,
+		pData: CCache;
 	self.list = [];  // the list of report panels
 
 	// Standard module interface methods:
@@ -54,29 +55,27 @@ moduleManager.construct({
 		self.hide();
 		self.clear();
 		// This is a sub-module to specs, so use its return method:
-		LIB.stdError(xhr,pData.returnToCaller)
+		LIB.stdError(xhr,self.parent.returnToCaller)
 	}
-	function showNotice(txt) {
+	function showNotice(txt:string) {
 		$('#'+CONFIG.reports).html('<div class="notice-default" >'+txt+'</div>');
 	}
 
 	// standard module entry:
-	self.show = function(opts) {
+	self.show = function(opts:any) {
 //		console.debug('reports.show');
 		prj = app.cache.selectedProject;
-		dta = prj.data;
-		pData = self.parent;
-		pData.showLeft.reset();
+		pData = prj.data;
+		self.parent.showLeft.reset();
 
 		// Language options have been selected at project level:
-		opts.lookupLanguage = true;
-		opts.targetLanguage = pData.targetLanguage;
+		opts.targetLanguage = self.parent.targetLanguage;
 		opts.lookupTitles = true;
 		opts.lookupValues = true;
 
 		self.list = [];
 
-		let tr = pData.tree.get();
+		let tr = self.parent.tree.get();
 		if( !tr || tr.length<1 ) {
 			showNotice(i18n.MsgNoReports);
 			app.busy.reset();
@@ -100,17 +99,17 @@ moduleManager.construct({
 		app.busy.set();
 		showNotice(i18n.MsgAnalyzing);
 
-			function addResourceClassReport( pr ) {
+			function addResourceClassReport() {
 				// Add a report with a counter per resourceClass:
 				var rCR = {
 						title: i18n.LblResourceClasses,
 						category: 'resourceClass',
-						pid: pr.id,
+						pid: prj.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-				pr.resourceClasses.forEach( ( rC ) =>{
+				pData.resourceClasses.forEach( ( rC:SpecifResourceClass ) =>{
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
 								rCR.datasets.push({
@@ -122,19 +121,19 @@ moduleManager.construct({
 				});
 				self.list.push(rCR)
 			}
-		addResourceClassReport( dta );  // must be on the first position
+		addResourceClassReport();  // must be on the first position
 
-	/*		function addStatementClassReport( prj ) {
+	/*		function addStatementClassReport() {
 				// Add a report with a counter per statementClass:
 				var sCR = {
 						title: i18n.LblStatementClasses,
 						category: 'statementClass',
-						pid: pr.id,
+						pid: prj.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-				pr.statementClasses.forEach( ( sC ) =>{
+				pData.statementClasses.forEach( ( sC ) =>{
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
 								sCR.datasets.push({
@@ -146,14 +145,14 @@ moduleManager.construct({
 				});
 				self.list.push(sCR)
 			}
-		addStatementClassReport( dta );  */
+		addStatementClassReport();  */
 					
-			function addEnumeratedValueReports( prj ) {
-				function addPossibleValues(pC,rep) {
+		function addEnumeratedValueReports() {
+			function addPossibleValues(pC: SpecifPropertyClass, rep) {
 					// Look up the dataType and create a counter for all possible enumerated values:
-					for( var d=0, D=prj.dataTypes.length; d<D; d++ ) {
-						if( prj.dataTypes[d].id == pC.dataType ) {
-							prj.dataTypes[d].values.forEach( (val) =>{
+					for( var d=0, D=pData.dataTypes.length; d<D; d++ ) {
+						if (pData.dataTypes[d].id == pC.dataType ) {
+							pData.dataTypes[d].values.forEach( (val) =>{
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
 								rep.datasets.push({  
 									label: i18n.lookup( languageValueOf( val.value, opts )), 
@@ -177,14 +176,14 @@ moduleManager.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC;
-				dta.get("resourceClass","all").forEach( (rC) =>{
+				pData.get("resourceClass","all").forEach( (rC:SpecifResourceClass) =>{
 					rC.propertyClasses.forEach( (id) =>{
-						pC = dta.get("propertyClass", id )[0];
-						if( dta.get("dataType", pC.dataType )[0].type=='xs:enumeration' ) {
+						pC = pData.get("propertyClass", id )[0];
+						if( pData.get("dataType", pC.dataType )[0].type=='xs:enumeration' ) {
 							var aVR = {
 									title: titleOf(rC,opts)+': '+titleOf(pC,opts),
 									category: 'enumValue',
-									pid: dta.id,	// pid: project-id
+									pid: prj.id,	// pid: project-id
 									rCid: rC.id, 	// rCid: resourceClass-id
 									pCid: id, 		// pCid: propertyClass-id
 									scaleMin: 0,
@@ -197,12 +196,12 @@ moduleManager.construct({
 					})
 				})
 			}
-		addEnumeratedValueReports( dta );
+		addEnumeratedValueReports();
 
-	/*		function addBooleaenValueReports( prj ) {
+	/*		function addBooleaenValueReports() {
 			// ToDo
 			}
-		addBooleanValueReports( dta );  */
+		addBooleanValueReports();  */
 
 			function incVal( i,j ) {
 				self.list[i].datasets[j].count++;
@@ -235,12 +234,12 @@ moduleManager.construct({
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
-				let rC = dta.get("resourceClass", rId )[0];
+				let rC = pData.get("resourceClass", rId )[0];
 				// there is a report for every enumerated resourceClass:
 				let dT=null,oa=null,i=null,ct=null,pC;
 				rC.propertyClasses.forEach( (pId) =>{
-					pC = dta.get("propertyClass", pId )[0];
-					dT = dta.get("dataType", pC.dataType )[0];
+					pC = pData.get("propertyClass", pId )[0];
+					dT = pData.get("dataType", pC.dataType )[0];
 					if( dT.type!='xs:enumeration' ) return;
 					// find the report panel:
 					i = findPanel(self.list,rId,pId);
@@ -271,7 +270,7 @@ moduleManager.construct({
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
 		let pend=0, visitedR=[];
-		pData.tree.iterate( (nd) =>{
+		self.parent.tree.iterate( (nd) =>{
 			if( visitedR.indexOf(nd.ref)>-1 ) return; 
 			// not yet evaluated:
 			pend++;

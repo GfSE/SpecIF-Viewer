@@ -65,22 +65,13 @@ class CCache {
 		// @ts-ignore - index is ok:
 		return this[standardTypes.listName.get(ctg)].length;
 	}
-	has(ctg: string, req: Item | Item[] | string): boolean {
-		if (req == 'all')
-			// this is a stupid request, in fact.
-			throw Error("Querying whether 'all' items are available is pretty useless.");
-
-		if (Array.isArray(req)) {
-			// @ts-ignore - index is ok:
-			let L = this[standardTypes.listName.get(ctg)];
-			for (var i = req.length - 1; i > -1;i--) {
-				if (indexById(L, req.id || req) < 0) return false;
-			};
-			return true;
-		}
-		else
-			// @ts-ignore - index is ok:
-			return indexById(this[standardTypes.listName.get(ctg)],req)>-1;
+	has(ctg: string, rL: SpecifKey[]): boolean {
+		// @ts-ignore - index is ok:
+		let L = this[standardTypes.listName.get(ctg)];
+		for (var i = rL.length - 1; i > -1;i--) {
+			if (LIB.indexByKey(L, rL[i]) < 0) return false;
+		};
+		return true;
 	}
 	put(ctg: string, item: Item[] | Item): number | boolean {
 		if (!item || Array.isArray(item) && item.length < 1)
@@ -315,9 +306,9 @@ class CProject {
 	types: CElement[];
 	fileName: string = "";
 
-	constructor(spData: SpecIF, cache: CCache) {
+	constructor(spData: SpecIF, pData: CCache) {
 		this.setMeta(spData);
-		this.data = cache;
+		this.data = pData;
 		// remember the hierarchies associated with this projects - the cache holds all:
 		for (var i = spData.hierarchies.length - 1; i > -1; i--) {
 			this.hierarchies.unshift({ id: spData.hierarchies[i].id, revision: spData.hierarchies[i].revision});
@@ -1586,8 +1577,7 @@ class CProject {
 				opts.lookupTitles = false;  // applies to self.data.toExt()
 				opts.lookupValues = true;  // applies to self.data.toExt()
 				// But DO reduce to the language desired.
-				opts.lookupLanguage = true;
-				if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
+				if ( !opts.targetLanguage ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
 				opts.createHierarchyRootIfMissing = true;
@@ -1654,8 +1644,7 @@ class CProject {
 						// no break
 					case 'html':
 						// export all languages:
-						opts.lookupLanguage = false;
-					//	opts.targetLanguage = undefined;
+						opts.targetLanguage = undefined;
 						// keep all revisions:
 					//	opts.revisionDate = undefined;
 						break;
@@ -1663,8 +1652,7 @@ class CProject {
 					case 'turtle':
 					case 'reqif':
 						// only single language is supported:
-						opts.lookupLanguage = true;
-						if (typeof (opts.targetLanguage) != 'string') opts.targetLanguage = browser.language;
+						if ( !opts.targetLanguage ) opts.targetLanguage = browser.language;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
@@ -2126,8 +2114,8 @@ class CProject {
 //					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(valByTitle( r, pT, this.data )));
 					if (!LIB.hasContent(valByTitle(r, pT, this.data))
 						// dataTypes must be compatible:
-						&& this.compatibleDT(dataTypeOf(this.data, rP['class']), dataTypeOf(prj, nP['class']))) {
-						//	&& this.typeIsCompatible( 'dataType', dataTypeOf(this.data,rP['class']), dataTypeOf(prj,nP['class']) ).status==0 ) {
+						&& this.compatibleDT(LIB.dataTypeOf(this.data, rP['class']), LIB.dataTypeOf(prj, nP['class']))) {
+						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(this.data,rP['class']), LIB.dataTypeOf(prj,nP['class']) ).status==0 ) {
 						rP.value = nP.value;
 					};
 				};
@@ -2525,8 +2513,8 @@ function Project(): IProject {
 						if( !nA ) continue;
 						// in all other cases compare the value:
 						let oT = itemById( app.cache.selectedProject.data.resourceClasses, n['class'] ),  // applies to both r and n
-							rDT = dataTypeOf( app.cache.selectedProject.data, rA['class'] ),
-							nDT = dataTypeOf( newD, nA['class'] );
+							rDT = LIB.dataTypeOf( app.cache.selectedProject.data, rA['class'] ),
+							nDT = LIB.dataTypeOf( newD, nA['class'] );
 						if( rDT.type!=nDT.type ) return null;  // fatal error, they must be equal!
 						switch( nDT.type ) {
 							case 'xs:enumeration':
@@ -2998,37 +2986,36 @@ function keyOf( item ) {
 			case "string": return {id: item, revision: "0"};
 			default: return null // programming error
 		}
-	}*/
-function isReferencedByHierarchy(rId: string, H?: SpecifNode[]): boolean {
+}*/
+function isReferencedByHierarchy(key: SpecifKey, H?: SpecifNode[]): boolean {
 	// checks whether a resource is referenced by the hierarchy:
-	// ToDo: make it work with revisions.
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
-	return LIB.iterateNodes( H, (nd)=>{ return nd.resource!=rId } )
+	return LIB.iterateNodes( H, (nd)=>{ return !LIB.isReferenced(nd.resource,key) } )
 }
 function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] {
 	// collect all resources referenced by the given hierarchy:
 	if( !prj ) prj = app.cache.selectedProject.data;
 	if( !H ) H = prj.hierarchies;
 	var rL:SpecifResource[] = [];
-	LIB.iterateNodes( H, (nd)=>{ LIB.cacheE( rL, itemById(prj.resources,nd.resource.id) ); return true } );
+	LIB.iterateNodes( H, (nd)=>{ LIB.cacheE( rL, LIB.itemByKey(prj.resources,nd.resource) ); return true } );
 	return rL;
 }
-function dataTypeOf(prj: SpecIF, key: SpecifKey): SpecifDataType {
+LIB.dataTypeOf = (prj: SpecIF, key: SpecifKey): SpecifDataType =>{
 	// given a propertyClass id, return it's dataType:
 	if ( LIB.isKey(key) ) {
 		let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
-		//       |                       get propertyClass
+		//       |                            get propertyClass
 		//	     get dataType
 		if (dT)
 			return dT
 		else
-			throw Error("dataType of '" + pCid + "' not found in SpecIF data-set with id " + prj.id);
+			throw Error("dataType of '" + key.id + "' not found in SpecIF data-set with id " + prj.id);
 	};
 	// else:
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
 	return { type: SpecifDataTypeEnum.String }; // by default  
 }
-function enumValueOf(dT: SpecifDataType, val: string, opts?: any): string {
+function enumValueOf(dT: SpecifDataType, val: string, opts: any): string {
 	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
 	// for all others, return the value as is:
 	if (dT.type != SpecifDataTypeEnum.Enumeration || !val) return val;
@@ -3067,48 +3054,41 @@ function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 }
 function resClassTitleOf(e: SpecifResource, prj?: SpecIF, opts?:any ):string {
 	if (!prj) prj = app.cache.selectedProject.data;
-	return titleOf( itemById( prj.resourceClasses, e['class'] ), opts );
+	return titleOf( LIB.itemByKey( prj.resourceClasses, e['class'] ), opts );
 }
 function staClassTitleOf( e:SpecifStatement, prj?:SpecIF, opts?:any ):string {
 	// Where available, take the statementClass' title, otherwise the statement's;
 	// The latter is the case with interpreted relations such as "mentions":
 	if (!prj) prj = app.cache.selectedProject.data;
-    return e['class']? titleOf(itemById(prj.statementClasses, e['class']), opts) : titleOf(e, opts);
+    return titleOf( LIB.itemByKey(prj.statementClasses, e['class'] ), opts );
 }
 function propTitleOf(prp: SpecifProperty, prj: SpecIF ):string {
 	// get the title of a property as defined by itself or it's class:
-	return prp.title || itemById(prj.propertyClasses,prp['class']).title;
+	return LIB.itemByKey(prj.propertyClasses,prp['class']).title;
 }
-function titleOf( item, opts?:any ):string {
-	// Pick up the native title of any item;
-	// look for a translation, take it as is or take the id by default.
-	// It can be a title string or a multi-language title object.
-	let ti = languageValueOf( item.title, opts );
-//	console.debug('titleOf',item,opts,ti);
-	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
-//	return undefined
+function titleOf( item: Item, opts?:any ):string {
+	// Pick up the native title of any item except resource and statement;
+	return opts && opts.lookupTitles ? i18n.lookup(item.title) : item.title;
 }
-function languageValueOf( val, opts?:any ):string|undefined {
+function languageValueOf(val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string {
 	// Return the value in the specified target language .. or the first value in the list by default.
 	// 'val' can be a string or a multi-language object;
-	// if opts.lookupLanguage is not true, keep all language options:
-	if( typeof(val)=='string' || !(opts&&opts.lookupLanguage) ) return val;
-	// The value may be undefined:
-	if( val==undefined ) return;
-	if( !Array.isArray(val) ) {
-		// neither a string nor an array is a programming error:
-		throw Error("Invalid value: '"+val+"'");
-	};
+	// if opts.targetLanguage is undefined, keep all language options:
+//	if (typeof(val)=='string' || !(opts && opts.targetLanguage)) return val;
+	if( !(opts && opts.targetLanguage) ) return val;
 
-	let lVs = val.filter( (v):boolean =>{
-		return opts.targetLanguage == v.language
+	if( !LIB.isMultiLanguageText(val) )
+		throw Error("Invalid value: '"+val+"' must be a multi-language text.");
+
+	let lVs = val.filter( (v:any):boolean =>{
+		return v.language && opts && opts.targetLanguage == v.language;
 	});
 	// lVs should have none or one elements; any additional ones are simply ignored:
 	if( lVs.length>0 ) return lVs[0].text;
 
 	// next try a little less stringently:
-	lVs = val.filter( (v):boolean =>{
-		return opts && opts.targetLanguage && (opts.targetLanguage.slice(0,2) == v.language.slice(0,2));
+	lVs = val.filter( (v:any):boolean =>{
+		return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0,2) == v.language.slice(0,2);
 	});
 	// lVs should have none or one elements; any additional ones are simply ignored:
 	if( lVs.length>0 ) return lVs[0].text;
@@ -3196,8 +3176,8 @@ function valByTitle(itm:SpecifResource,pN:string,dta:SpecIF):string|undefined {
 //	console.debug('valByTitle',dta,itm,pN);
 	if( itm.properties ) {
 		for( var i=itm.properties.length-1;i>-1;i-- ) {
-			if( (itm.properties[i].title || itemById( dta.propertyClasses, itm.properties[i]['class'] ).title)==pN )
-				return itm.properties[i].value
+			if( (itm.properties[i].title || LIB.itemByKey( dta.propertyClasses, itm.properties[i]['class'] ).title)==pN )
+				return itm.properties[i].values
 		}
 	};
 //	return undefined
@@ -3235,13 +3215,12 @@ function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:Sp
 	else {
 		// it is a resource
 		localOpts = {
-			lookupLanguage: opts.lookupLanguage,
 			targetLanguage: opts.targetLanguage,
-			lookupTitles: opts.lookupTitles && itemById( dta.resourceClasses, el['class'] ).isHeading
+			lookupTitles: opts.lookupTitles && LIB.itemByKey( dta.resourceClasses, el['class'] ).isHeading
 		};
 	};
-	// Get the title from the properties or natively by default:
-	let ti:string = getTitle( el.properties, localOpts ) || titleOf( el, localOpts );
+	// Get the title from the properties:
+	let ti:string = getTitle( el.properties, localOpts );
 
 	// In case of a resource, we never want to lookup a title,
 	// however in case of a statement, we do:
@@ -3254,7 +3233,7 @@ function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:Sp
 	else {
 		// it is a resource
 		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && ti )
-			ti = LIB.addIcon( ti, itemById( dta.resourceClasses, el['class'] ).icon );
+			ti = LIB.addIcon( ti, LIB.itemByKey( dta.resourceClasses, el['class'] ).icon );
 	};
 
 // 	console.debug('elementTitleOf',el,opts,ti);
@@ -3274,7 +3253,7 @@ function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:Sp
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //			console.debug('getTitle', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-			let ti = languageValueOf( pL[idx].value, opts );
+			let ti = languageValueOf( pL[idx].values[0], opts );
 			if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 		};
 		return '';

@@ -32,7 +32,7 @@ moduleManager.construct({
 		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
 		return false;
 	};
-/*	self.toSpecif = function( buf ) {
+/*	self.toSpecif = function( buf: ArrayBuffer ) {
 	}; */
 	self.toRdf = function(pr:SpecIF):string {
 		// pr is SpecIF data in JSON format (not the internal cache),

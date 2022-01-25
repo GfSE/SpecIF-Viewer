@@ -50,7 +50,8 @@ class Tree {
 	}
 	clear(): void {
 		this.set([]);
-		this.savedState = {open_nodes:[],selected_node:[]};
+		this.savedState = { open_nodes: [], selected_node: [] };
+		// @ts-ignore - undefined is assigned on purpose
 		this.selectedNode = undefined;
 	}
 	set(tr: jqTreeNode[], nId?:string ):void {

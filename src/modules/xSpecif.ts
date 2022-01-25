@@ -219,8 +219,10 @@ class CSpecIF implements SpecIF {
 			this.dataTypes = LIB.forAll( spD.dataTypes, dT2int );
 			this.propertyClasses = LIB.forAll( spD.propertyClasses, pC2int );
 			this.resourceClasses = LIB.forAll( spD[names.rClasses], rC2int );
-			this.statementClasses = LIB.forAll( spD[names.sClasses], sC2int );
-			if (names.hClasses && Array.isArray(spD[names.hClasses]))
+			this.statementClasses = LIB.forAll(spD[names.sClasses], sC2int);
+			// for data-sets <v0.10.8
+		//	if (names.hClasses && Array.isArray(spD[names.hClasses]))
+			if (names.hClasses)
 				this.resourceClasses = this.resourceClasses.concat( LIB.forAll( spD[names.hClasses], hC2int ));
 			this.files = LIB.forAll(spD.files, f2int);
 			this.resources = LIB.forAll( spD.resources, r2int );
@@ -287,7 +289,8 @@ class CSpecIF implements SpecIF {
 		// a data type:
 		function dT2int(iE:any): SpecifDataType {
 			var oE: any = i2int(iE);
-			oE.title = LIB.cleanValue(iE.title);
+			oE.title = makeTitle(iE.title);
+
 			oE.type = iE.type;
 			switch (iE.type) {
 				case "xs:double":
@@ -300,8 +303,8 @@ class CSpecIF implements SpecIF {
 					oE.maxInclusive = iE[names.maxI];
 					break;
 				case "xhtml":
-				//	oE.type = "xs:string";
-					// If this has become now a redundant dataType, 
+					// oE.type will be replaced later on to "xs:string".
+					// If this becomes a redundant dataType,
 					// it will be removed later through 'deduplicate()'.
 					// no break
 				case "xs:string":
@@ -326,49 +329,10 @@ class CSpecIF implements SpecIF {
 //			console.debug('dataType 2int',iE);
 			return oE
 		}
-		function makeValues(iE: any, dT: SpecifDataType): SpecifValues {
-			if (Array.isArray(iE.values)) {
-				// it is SpecIF > v1.0:
-				return iE.values;
-			}
-			else if (LIB.isString(iE.value) || LIB.isSpecifMultiLanguageText(iE.value)) {
-				// it is SpecIF < v1.1:
-				switch (dT.type) {
-					// we are using the transformed dataTypes, but the base dataTypes are still original;
-					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
-					case "xhtml":
-					case SpecifDataTypeEnum.String:
-						// in SpecIF <v1.1 there were only enumerations of base-type xs:string:
-						if (dT.enumeration)
-							return [LIB.cleanValue(iE.value)]
-						else {
-							let vL = Array.isArray(iE.value) ?
-								// multiple languages:
-								LIB.forAll(iE.value,
-									(val: any) => {
-										val.text = LIB.uriBack2slash(val.text);
-										return val;
-									})
-								// single language:
-								: LIB.uriBack2slash(iE.value);
-							// @ts-ignore - dT is in fact a string:
-							return [makeMultiLanguageText(vL, dT.type)];
-						};
-					// break - all branches end with return;
-					default:
-						// According to the schema, all property values are represented by a string
-						// and internally they are stored as string as well to avoid inaccuracies
-						// by multiple transformations:
-						return [LIB.cleanValue(iE.value)];
-				};
-			}
-			else
-				throw Error("Invalid property with class " + iE[names.pClass] + ".");
-		}
 		// a property class:
 		function pC2int(iE: any): SpecifPropertyClass {
 			var oE: any = i2int(iE);
-			oE.title = LIB.cleanValue(iE.title);	// an input file may have titles which are not from the SpecIF vocabulary.
+			oE.title = makeTitle(iE.title);  // an input file may have titles which are not from the SpecIF vocabulary.
 
 			oE.dataType = makeKey(iE.dataType);
 			let dT: SpecifDataType = itemById(self.dataTypes, iE.dataType);
@@ -401,7 +365,7 @@ class CSpecIF implements SpecIF {
 		// common for all instance classes:
 		function aC2int(iE:any) {
 			var oE: any = i2int(iE);
-			oE.title = LIB.cleanValue(iE.title);
+			oE.title = makeTitle(iE.title);
 
 			if (iE['extends']) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5
 			if (iE.icon) oE.icon = iE.icon;
@@ -492,7 +456,7 @@ class CSpecIF implements SpecIF {
 					// no id
 					class: makeKey(iE[names.pClass])
 				},
-				dT: SpecifDataType = dataTypeOf(self, oE["class"]);
+				dT: SpecifDataType = LIB.dataTypeOf(self, oE["class"]);
 //			console.debug('p2int', iE, dT);
 
 			oE.values = makeValues(iE, dT);
@@ -501,14 +465,17 @@ class CSpecIF implements SpecIF {
 //			console.debug('propValue 2int',iE,pT,oE);
 			return oE
 		}
-		// common for all instances:
+		// common for all resources or statements:
 		function a2int(iE:any): Instance {
-			var eC,
-		//		oE = i2int(iE);
-				oE: any = {
+		//	var oE = i2int(iE),
+			var	oE: any = {
 					id: iE.id,
+			//		class: makeKey(iE.subject ? iE[names.sClass] : iE[names.rClass]),
 					changedAt: iE.changedAt
 				};
+			//	eC = iE.subject ? LIB.itemByKey(self.statementClasses, oE["class"])
+			//					: LIB.itemByKey(self.resourceClasses, oE["class"]);
+
 			// revision is a number up until v0.10.6 and a string thereafter:
 			switch (typeof (iE.revision)) {
 				case 'number':
@@ -528,18 +495,16 @@ class CSpecIF implements SpecIF {
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
 			// In this case, add a description property to hold the description as required by SpecIF v1.1:
-			if (descPropertyNeeded(iE)) {
+			if (iE.description && descPropertyMissing(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
 				console.info("Added a description property to element with id '" + oE.id + "'");
 				// a. add dataType, if not yet defined:
-				standardTypes.addTo("dataType", "DT-Text", self);
+				standardTypes.addTo("dataType", { id: "DT-Text" }, self);
 				// b. add property class, if not yet defined:
-				standardTypes.addTo("propertyClass", "PC-Description", self);
+				standardTypes.addTo("propertyClass", { id: "PC-Description" }, self);
 				// c. Add propertyClass to element class:
-				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
-								: itemById(self.resourceClasses, iE[names.rClass]);
-				addPCReference(eC, "PC-Description");
+				addPCReference(eC(), { id: "PC-Description" });
 				// d. Add description property to element;
 				addP(oE, {
 					class: { id: "PC-Description" },
@@ -548,18 +513,16 @@ class CSpecIF implements SpecIF {
 			};
 
 			// Similarly, add a title property if missing:
-			if (titlePropertyNeeded(iE)) {
+			if (iE.title && titlePropertyMissing(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
 				console.info("Added a title property to element with id '" + oE.id + "'");
 				// a. add dataType, if not yet defined:
-				standardTypes.addTo("dataType", "DT-ShortString", self);
+				standardTypes.addTo("dataType", { id: "DT-ShortString" }, self);
 				// b. add property class, if not yet defined:
-				standardTypes.addTo("propertyClass", "PC-Name", self);
+				standardTypes.addTo("propertyClass", { id: "PC-Name"}, self);
 				// c. Add propertyClass to element class:
-				eC = iE.subject ? itemById(self.statementClasses, iE[names.sClass])
-								: itemById(self.resourceClasses, iE[names.rClass]);
-				addPCReference(eC, "PC-Name");
+				addPCReference(eC(), { id: "PC-Name" });
 				// d. Add title property to element;
 				addP(oE, {
 					class: { id:"PC-Name" },
@@ -571,36 +534,34 @@ class CSpecIF implements SpecIF {
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
-			function titlePropertyNeeded(el:any): boolean {
-				if (el.title) {
-					if (Array.isArray(el.properties))
-						for (var i = el.properties.length - 1; i > -1; i--) {
-							let ti = propTitleOf(el.properties[i], self);
-							if (CONFIG.titleProperties.indexOf(ti) > -1)
-								// SpecIF assumes that any title property *replaces* the element's title,
-								// so we just look for the case of *no* title property.
-								// There is no consideration of the content.
-								// It is expected that titles with multiple languages have been reduced, before.
-								return false; // title property is available
-						};
-					return true;
-				};
-				return false; // no title, thus no property needed
+			function eC(): SpecifResourceClass | SpecifStatementClass {
+				return iE.subject ? LIB.itemByKey(self.statementClasses, makeKey(iE[names.sClass]))
+								: LIB.itemByKey(self.resourceClasses, makeKey(iE[names.rClass]));
+            }
+			function titlePropertyMissing(el: any): boolean {
+				if (Array.isArray(el.properties))
+					for (var i = el.properties.length - 1; i > -1; i--) {
+						let ti = propTitleOf(el.properties[i], self);
+						if (CONFIG.titleProperties.indexOf(ti) > -1)
+							// SpecIF assumes that any title property *replaces* the element's title,
+							// so we just look for the case of *no* title property.
+							// There is no consideration of the content.
+							// It is expected that titles with multiple languages have been reduced, before.
+							return false; // title property is available
+					};
+				return true;
 			}
-			function descPropertyNeeded(el:any): boolean {
-				if (el.description) {
-					if (Array.isArray(el.properties))
-						for (var i = el.properties.length - 1; i > -1; i--) {
-							if (CONFIG.descProperties.indexOf(propTitleOf(el.properties[i], self)) > -1)
-								// SpecIF assumes that any description property *replaces* the resource's description,
-								// so we just look for the case of a resource description and *no* description property.
-								// There is no consideration of the content.
-								// It is expected that descriptions with multiple languages have been reduced, before.
-								return false; // description property is available
-						};
-					return true; // no array or no description property
-				};
-				return false; // no description, thus no property needed
+			function descPropertyMissing(el:any): boolean {
+				if (Array.isArray(el.properties))
+					for (var i = el.properties.length - 1; i > -1; i--) {
+						if (CONFIG.descProperties.indexOf(propTitleOf(el.properties[i], self)) > -1)
+							// SpecIF assumes that any description property *replaces* the resource's description,
+							// so we just look for the case of a resource description and *no* description property.
+							// There is no consideration of the content.
+							// It is expected that descriptions with multiple languages have been reduced, before.
+							return false; // description property is available
+					};
+				return true; // no array or no description property
 			}
 		}
 		// a resource:
@@ -636,16 +597,18 @@ class CSpecIF implements SpecIF {
 			if (names.hClasses) {
 				// up until v0.10.6, transform hierarchy root to a regular resource:
 				var iR = a2int(iE) as SpecifResource;
+				// @ts-ignore - if execution gets here, 'names.hClass' is defined:
 				iR['class'] = makeKey(iE[names.hClass]);
 				self.resources.push(iR);
 
-				//  ... and add a link to the hierarchy:
+				// ... and add a link to the hierarchy:
 				oE = {
 					id: 'N-' + iR.id,
 					resource: LIB.keyOf( iR ),
 					changedAt: iE.changedAt
 				};
-				if (iE.revision) oE.revision = iE.revision.toString()
+				if (iE.revision) oE.revision = iE.revision.toString();
+				if (iE.changedBy) oE.changedBy = iE.changedBy;
 			}
 			else {
 				// starting v0.10.8:
@@ -662,29 +625,33 @@ class CSpecIF implements SpecIF {
 			function n2int(iE:any): SpecifNode {
 				var oE: SpecifNode = {
 						id: iE.id,
-						resource: makeKey(iE.resource)
+						resource: makeKey(iE.resource),
+						changedAt: iE.changedAt
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
+				if (iE.changedBy) oE.changedBy = iE.changedBy;
 				if (iE.nodes) oE.nodes = LIB.forAll(iE.nodes, n2int);
 				return oE;
 			}
 		}
 		// a file:
-		function f2int(iF) {
-			var oF = i2int(iF);
-			oF.title = iF.title ? iF.title.replace(/\\/g, '/') : iF.id;
+		function f2int(iE:any): SpecifFile {
+			var oE = i2int(iE);
+			// The title is usually 'path/filename.ext';
+			// but sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+			oE.title = iE.title ? makeTitle(iE.title).replace(/\\/g, '/') : iE.id;
 			// store the blob and it's type:
-			if (iF.blob) {
-				oF.type = iF.blob.type || iF.type || LIB.attachment2mediaType(oF.title);
-				oF.blob = iF.blob;
+			if (iE.blob) {
+				oE.type = iE.blob.type || iE.type || LIB.attachment2mediaType(oE.title);
+				oE.blob = iE.blob;
 			}
-			else if (iF.dataURL) {
-				oF.type = iF.type || LIB.attachment2mediaType(oF.title);
-				oF.dataURL = iF.dataURL;
+			else if (iE.dataURL) {
+				oE.type = iE.type || LIB.attachment2mediaType(oE.title);
+				oE.dataURL = iE.dataURL;
 			}
 			else
-				oF.type = iF.type;
-			return oF
+				oE.type = iE.type;
+			return oE
 		}
 		// utilities:
 		function makeKey(el: any[]): SpecifKey {
@@ -692,6 +659,53 @@ class CSpecIF implements SpecIF {
 		}
 		function makeKeyL(L: any[]): SpecifKeys {
 			return LIB.forAll(L, (el: any): SpecifKey => { return makeKey(el) });
+		}
+		function makeTitle(ti: any): string {
+			// In <v1.1, titles can be simple strings or multi-language text objects;
+			// in >v1.0, native titles can only be stings (in fact SpecifText).
+			// So, in case of multi-language text, choose the default language:
+			return LIB.cleanValue( typeof(ti)=='string'? ti : ti[0].text );
+		}
+		function makeValues(iE: any, dT: SpecifDataType): SpecifValues {
+			if (Array.isArray(iE.values)) {
+				// it is SpecIF > v1.0:
+				return iE.values;
+			}
+			else if (LIB.isString(iE.value) || LIB.isMultiLanguageText(iE.value)) {
+				// it is SpecIF < v1.1:
+				switch (dT.type) {
+					// we are using the transformed dataTypes, but the base dataTypes are still original;
+					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
+					case "xhtml":
+					case SpecifDataTypeEnum.String:
+						// in SpecIF <v1.1 there were only enumerations of base-type xs:string:
+						if (dT.enumeration)
+							return [LIB.cleanValue(iE.value)]
+						else {
+							let vL = Array.isArray(iE.value) ?
+								// multiple languages:
+								LIB.forAll(iE.value,
+									(val: any) => {
+										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+										val.text = LIB.uriBack2slash(val.text);
+										return val;
+									})
+								// single language:
+								// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+								: LIB.uriBack2slash(iE.value);
+							// @ts-ignore - dT is in fact a string:
+							return [makeMultiLanguageText(vL, dT.type)];
+						};
+					// break - all branches end with return;
+					default:
+						// According to the schema, all property values are represented by a string
+						// and internally they are stored as string as well to avoid inaccuracies
+						// by multiple transformations:
+						return [LIB.cleanValue(iE.value)];
+				};
+			}
+			else
+				throw Error("Invalid property with class " + iE[names.pClass] + ".");
 		}
 		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {
 			return (typeof (iE) == 'string' ?
@@ -803,39 +817,39 @@ class CSpecIF implements SpecIF {
 					if (opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
 
 						console.info("Added a hierarchyRoot");
-						standardTypes.addTo("resourceClass", "RC-Folder", spD);
+						standardTypes.addTo("resourceClass", { id: "RC-Folder" }, spD);
 
 						// ToDo: Let the program derive the referenced class ids from the above
-						standardTypes.addTo("propertyClass", "PC-Type", spD);
-						standardTypes.addTo("propertyClass", "PC-Description", spD);
-						standardTypes.addTo("propertyClass", "PC-Name", spD);
-						standardTypes.addTo("dataType", "DT-ShortString", spD);
-						standardTypes.addTo("dataType", "DT-Text", spD);
+						standardTypes.addTo("propertyClass", { id: "PC-Type" }, spD);
+						standardTypes.addTo("propertyClass", { id: "PC-Description" }, spD);
+						standardTypes.addTo("propertyClass", { id: "PC-Name" }, spD);
+						standardTypes.addTo("dataType", { id: "DT-ShortString" }, spD);
+						standardTypes.addTo("dataType", { id: "DT-Text" }, spD);
 
 						var res = {
 							id: 'R-' + simpleHash(spD.id),
 							title: spD.title,
 							class: "RC-Folder",
 							properties: [{
-								class: "PC-Name",
-								value: spD.title
+								class: { id: "PC-Name" },
+								values: [spD.title]
 							}, {
-								class: "PC-Type",
-								value: CONFIG.resClassOutline
+								class: { id: "PC-Type"},
+								values: [CONFIG.resClassOutline]
 							}],
 							changedAt: spD.createdAt || new Date().toISOString()
 						};
 						// Add a description property only if it has a value:
 						if (spD.description)
 							addP(res, {
-								class: "PC-Description",
-								value: spD.description
+								class: { id: "PC-Description"},
+								values: [spD.description]
 							});
 						spD.resources.push(r2ext(res));
 						// create a new root instance:
 						spD.hierarchies = [{
 							id: "H-" + res.id,
-							resource: res.id,
+							resource: { id: res.id},
 							// .. and add the previous hierarchies as children:
 							nodes: spD.hierarchies,
 							changedAt: spD.changedAt
@@ -898,9 +912,9 @@ class CSpecIF implements SpecIF {
 					// up until v1.0 there is a dedicated dataType "xs:enumeration" and
 					// starting with v1.1 every dataType except xs:boolean may have enumerated values:
 					if (iE.values) {
-						if (opts.lookupLanguage && opts.targetLanguage)
+						if (opts.targetLanguage)
 							// reduce to the language specified:
-							oE.values = LIB.forAll(iE.values, (val: EnumeratedValue) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
+							oE.values = LIB.forAll(iE.values, (val:any) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
 						else
 							oE.values = iE.values;
 					};
@@ -962,7 +976,7 @@ class CSpecIF implements SpecIF {
 				// a property:
 				function p2ext(iE: SpecifProperty) {
 					// skip empty properties:
-					if (!iE.value) return;
+					if (!iE.values || iE.values.length<1) return;
 
 					// skip hidden properties:
 					let pC: SpecifPropertyClass = itemById(spD.propertyClasses, iE['class']);
@@ -985,10 +999,10 @@ class CSpecIF implements SpecIF {
 
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations:
-					if (opts.lookupLanguage && opts.targetLanguage ) {
+					if (opts.targetLanguage ) {
 						// reduce to the selected language; is used for generation of human readable documents
 						// or for formats not supporting multiple languages:
-						let dT: SpecifDataType = dataTypeOf(spD, iE['class']);
+						let dT: SpecifDataType = LIB.dataTypeOf(spD, iE['class']);
 						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
 							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
 								// Transform to HTML, if possible;
@@ -1073,7 +1087,7 @@ class CSpecIF implements SpecIF {
 				}
 				// a resource:
 				function r2ext(iE: SpecifResource) {
-					var oE: Resource = a2ext(iE);
+					var oE: SpecifResource = a2ext(iE);
 					// a resource title shall never be looked up (translated);
 					// for example in case of the vocabulary the terms would disappear:
 
@@ -1134,43 +1148,43 @@ class CSpecIF implements SpecIF {
 					return oN
 				}
 				// a file:
-				function f2ext(iF: IFileWithContent): Promise<IFileWithContent> {
+				function f2ext(iE: IFileWithContent): Promise<IFileWithContent> {
 					return new Promise(
 						(resolve, reject) => {
-//							console.debug('f2ext',iF,opts)
+//							console.debug('f2ext',iE,opts)
 
-							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.indexOf(iF.type) > -1 ) {
-								var oF: IFileWithContent = {
-									id: iF.id,
-									title: iF.title,
-									type: iF.type,
-									changedAt: iF.changedAt
+							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.indexOf(iE.type) > -1 ) {
+								var oE: IFileWithContent = {
+									id: iE.id,
+									title: iE.title,
+									type: iE.type,
+									changedAt: iE.changedAt
 								};
-								if (iF.revision) oF.revision = iF.revision;
-								if (iF.changedBy) oF.changedBy = iF.changedBy;
-//								if( iF.createdAt ) oF.createdAt = iF.createdAt;
-//								if( iF.createdBy ) oF.createdBy = iF.createdBy;
-								if (iF.blob) oF.blob = iF.blob;
-								if (iF.dataURL) oF.dataURL = iF.dataURL;
-								resolve(oF);
+								if (iE.revision) oE.revision = iE.revision;
+								if (iE.changedBy) oE.changedBy = iE.changedBy;
+							//	if( iE.createdAt ) oE.createdAt = iE.createdAt;
+							//	if( iE.createdBy ) oE.createdBy = iE.createdBy;
+								if (iE.blob) oE.blob = iE.blob;
+								if (iE.dataURL) oE.dataURL = iE.dataURL;
+								resolve(oE);
 							}
 							else {
 								// Transform to an image:
 								// Remember to also replace any referencing links in property values!
-								switch (iF.type) {
+								switch (iE.type) {
 									case 'application/bpmn+xml':
 										// Read and render BPMN as SVG:
-										LIB.blob2text(iF, (txt: string) => {
+										LIB.blob2text(iE, (txt: string) => {
 											bpmn2svg(txt).then(
 												(result) => {
-													let nFileName = iF.title.fileName() + '.svg';
+													let nFileName = iE.title.fileName() + '.svg';
 													resolve({
 														//	blob: new Blob([result.svg], { type: "image/svg+xml; charset=utf-8" }),
 														blob: new Blob([result.svg], { type: "image/svg+xml" }),
 														id: 'F-' + simpleHash(nFileName),
 														title: nFileName,
 														type: 'image/svg+xml',
-														changedAt: iF.changedAt
+														changedAt: iE.changedAt
 													} as IFileWithContent )
 												},
 												reject
@@ -1178,7 +1192,7 @@ class CSpecIF implements SpecIF {
 										});
 										break;
 									default:
-										reject({status:999,statusText:"Cannot transform file '"+iF.title+"' of type '"+iF.type+"' to an image."})
+										reject({status:999,statusText:"Cannot transform file '"+iE.title+"' of type '"+iE.type+"' to an image."})
 								};
 							};
 						}

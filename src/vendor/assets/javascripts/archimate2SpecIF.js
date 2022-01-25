@@ -463,32 +463,32 @@ function Archimate2Specif( xmlString, opts ) {
 				// include only relations which are shown on at least one visible diagram (suppress relations only shown on hidden diagrams);
 				// Note: A relation like "realizes", which is implicit in some diagrams, is accepted by isShown().
 				&& isShown( s ) ) {
-				// Additional attributes such as title and description:
-				Array.from( rs.children, 
-					// if a relation does not have a name, the statementClass' title acts as default value.
-					(ch)=>{
-						switch( ch.nodeName ) {
-							case 'name': 
-								s.title = ch.innerHTML;
-								break;
-							case 'documentation':
-								s.description = ch.innerHTML
+					// Additional attributes such as title and description:
+					Array.from( rs.children, 
+						// if a relation does not have a name, the statementClass' title acts as default value.
+						(ch)=>{
+							switch( ch.nodeName ) {
+								case 'name': 
+									s.title = ch.innerHTML;
+									break;
+								case 'documentation':
+									s.description = ch.innerHTML
+							}
 						}
-					}
-				);
-				addStaIfNotListed( s );
-			}
-			else {
-				// Archimate (or at least the tool Archi) allows relations from or to a relation;
-				// in this transformation we don't ...
-				// except for 'shows' relations, see definition of "SC-shows" below.
-				console.info("Skipping relation (statement) with id='"+s.id+"' of xsi:type=\""+ty+"\", because it is not shown on a visible diagram.");
-				// delete all "shows" statements pointing at this statement:
-				for( var i=model.statements.length-1;i>-1;i-- )
-					if( model.statements[i]["class"]=="SC-shows" 
-						&& model.statements[i].object==s.id )
-						model.statements.splice(i,1);
-			};
+					);
+					addStaIfNotListed( s );
+				}
+				else {
+					// Archimate (or at least the tool Archi) allows relations from or to a relation;
+					// in this transformation we don't ...
+					// except for 'shows' relations, see definition of "SC-shows" below.
+					console.info("Skipping relation (statement) with id='"+s.id+"' of xsi:type=\""+ty+"\", because it is not shown on a visible diagram.");
+					// delete all "shows" statements pointing at this statement:
+					for( var i=model.statements.length-1;i>-1;i-- )
+						if( model.statements[i]["class"]=="SC-shows" 
+							&& model.statements[i].object==s.id )
+							model.statements.splice(i,1);
+				};
 		}
 	);
 	// Now add all implicit statements derived from graphical nesting,

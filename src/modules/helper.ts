@@ -147,8 +147,8 @@ function radioField(tag: string, entries: IBox[], opts?: IFieldOptions): string 
 	};
 	// zero or one checked entry is allowed:
 	let found = false, temp:boolean; 
-	entries.forEach( (e)=>{
-		temp = found || e.checked;
+	entries.forEach((e: IBox): void => {
+		temp = found || !!e.checked;
 		if( found && e.checked )
 			e.checked = false; // only the first check will remain
 		found = temp;
@@ -349,7 +349,8 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 
 					msg = (msg.statusText || i18n.Error)
 						+ " (" + msg.status
-						+ ((msg.responseType == 'text' || typeof (msg.responseText) == 'string') && msg.responseText.length>0 ? 
+						// @ts-ignore - yes, can handle the case that the property is undefined:
+						+ (typeof (msg.responseText == 'string') && msg.responseText.length>0 ? 
 							"): " + msg.responseText : ")");
 					break;
 				};
@@ -393,7 +394,7 @@ LIB.isKey = (el: any): boolean => {
 LIB.isString = (el:any): boolean => {
 	return typeof (el) == 'string';
 }
-LIB.isSpecifMultiLanguageText = (L: any[]): boolean => {
+LIB.isMultiLanguageText = (L: any[]): boolean => {
 	if (Array.isArray(L)) {
 		let hasMultipleLanguages = L.length > 1;
 		for (var i = L.length - 1; i > -1; i--) {
@@ -495,7 +496,7 @@ function itemByTitle(L:any[],ti:string):any {
 }
 LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
 	// should also work for revision==undefined:
-	return LIB.isKey(r) && LIB.isKey(n) && r.id==n.id && r.revision==n.revision 
+	return LIB.isKey(r) && LIB.isKey(n) && r.id == n.id && ( !n.revision || r.revision == n.revision );
 }
 LIB.indexBy = (L: any[], p: string, s: SpecifKey): number => {
 	if (L && p && s) {
@@ -693,7 +694,7 @@ String.prototype.log = function(m:string):string {
 }; */
 String.prototype.stripHTML = function():string {
 	// strip html, but don't use a regex to impede cross-site-scripting (XSS) attacks:
-	return $("<dummy/>").html(this).text().trim() || '';
+	return $("<dummy/>").html(this as string).text().trim() || '';
 };
 /*
  * Returns the text from a HTML string
@@ -891,7 +892,7 @@ function toHex(str) {
 	return hex;
 }; */
 
-LIB.ab2str = (buf): string =>{
+LIB.ab2str = (buf: ArrayBuffer): string => {
 	// Convert arrayBuffer to string:
 	// UTF-8 character table: http://www.i18nqa.com/debug/utf8-debug.html
 	// or: https://bueltge.de/wp-content/download/wk/utf-8_kodierungen.pdf
@@ -909,7 +910,7 @@ LIB.ab2str = (buf): string =>{
 		return String.fromCharCode.apply(null, new Uint8Array(buf));
 	}; */
 }
-LIB.str2ab = (str:string) =>{
+LIB.str2ab = (str: string): ArrayBuffer => {
 	// Convert string to arrayBuffer:
 //	try {
 		let encoder = new TextEncoder();
@@ -927,39 +928,43 @@ LIB.str2ab = (str:string) =>{
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-LIB.blob2dataURL = (file, fn: Function, timelag?: number): void =>{
-	if( !file || !file.blob ) return;
-	const reader = new FileReader();
-	reader.addEventListener('loadend', (e)=>{ fn(e.target.result,file.title,file.type) });
-	if( typeof(timelag)=='number' && timelag>0 )
-		setTimeout( ()=>{
-			reader.readAsDataURL(file.blob);
-		}, timelag )
-	else
-		reader.readAsDataURL(file.blob);
-} 
-LIB.blob2text = (file, fn: Function, timelag?: number): void => {
+LIB.blob2dataURL = (file: IFileWithContent, fn: Function, timelag?: number): void => {
 	if (!file || !file.blob) return;
 	const reader = new FileReader();
+	// @ts-ignore - yes, result can be 'null'
 	reader.addEventListener('loadend', (e) => { fn(e.target.result, file.title, file.type) });
 	if (typeof (timelag) == 'number' && timelag > 0)
 		setTimeout(() => {
+			// @ts-ignore - existence of blob is checked above
+			reader.readAsDataURL(file.blob);
+		}, timelag)
+	else
+		reader.readAsDataURL(file.blob);
+};
+LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void => {
+	if (!file || !file.blob) return;
+	const reader = new FileReader();
+	// @ts-ignore - yes, result can be 'null'
+	reader.addEventListener('loadend', (e) => { fn(e.target.result, file.title, file.type) });
+	if (typeof (timelag) == 'number' && timelag > 0)
+		setTimeout(() => {
+			// @ts-ignore - existence of blob is checked above
 			reader.readAsText(file.blob);
 		}, timelag);
 	else
 		reader.readAsText(file.blob);
 };
-LIB.uriBack2slash = (str:string):string =>{
-    return str.replace( /<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g, 
-		($0)=>{
-			return $0.replace( /(?:data=|href=)"([^"]+)"/g, 
-				($0)=>{
+LIB.uriBack2slash = (str: string): string => {
+	return str.replace(/<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g,
+		($0) => {
+			return $0.replace(/(?:data=|href=)"([^"]+)"/g,
+				($0) => {
 					return $0.replace(/\\/g, '/');
 				}
 			);
 		}
 	);
-}
+};
 		
 // not good enough, but better than nothing:
 // see https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet
@@ -1009,14 +1014,14 @@ LIB.localDateTime = (iso:string):string =>{
 
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-function simpleHash(str: string): string {
+function simpleHash(str: string): number {
 	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
 	return r
 };
-function simpleClone( o ) {
+function simpleClone( o:any ): any {
 	// "deep" clone;
 	// does only work, if none of the property values are functions:
-		function cloneProp(p) {
+		function cloneProp(p:any) {
 			return ( typeof(p) == 'object' )? simpleClone(p) : p;
 		}
 	if( typeof(o)=='object' ) {
@@ -1028,7 +1033,7 @@ function simpleClone( o ) {
 		for( var p in o ) {
 			if( Array.isArray(o[p]) ) {
 				n[p] = [];
-				o[p].forEach( (op)=>{
+				o[p].forEach( (op:any)=>{
 					n[p].push( cloneProp(op) );
 				});
 				continue;
@@ -1042,7 +1047,7 @@ function simpleClone( o ) {
 }
 function hasUrlParams():boolean {
 	let p = document.URL.split('#');
-	return ( p[1] && p[1].length>0 );
+	return ( !!p[1] && p[1].length>0 );
 /*	( p[1] && p[1].length>0 ) return '#';
 	p = document.URL.split('?');   no queries, yet
 	if( p[1] && p[1].length>0 ) return '?';
@@ -1112,22 +1117,23 @@ function getUrlParams(opts?:any):any {
 	if( !p[1] ) return {};
 	return parse( decodeURI(p[1]) );
 
-	function parse( h:any ):any {
+	function parse( h:string ):any {
 		if( !h ) return {};
 		if ( h.charAt(0) == '/') h = h.substr(1);	// remove leading slash
 		var pO = {};
-		h = h.split(opts.separator);
-		h.forEach( (p)=>{
-			p = p.split('=');
-			// remove enclosing quotes from the value part:
-			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
-			// look for specific tokens, only:
-			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
-				// @ts-ignore - indexing is ok:
-				pO[p[0]] = p[1];
-			else
-				console.warn("Unknown URL-Parameter '",p[0],"' found.");
-		});
+		h.split(opts.separator).forEach(
+			(p: any) => {
+				p = p.split('=');
+				// remove enclosing quotes from the value part:
+				if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
+				// look for specific tokens, only:
+				if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
+					// @ts-ignore - indexing is ok:
+					pO[p[0]] = p[1];
+				else
+					console.warn("Unknown URL-Parameter '",p[0],"' found.");
+			}
+		);
 		return pO;
 	}
 }

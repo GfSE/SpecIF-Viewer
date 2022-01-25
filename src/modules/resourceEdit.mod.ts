@@ -68,8 +68,7 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData = self.parent,	// the parent's data
-		cData:SpecIF,			// the cached data
+		pData:SpecIF,			// the cached data
 		opts:any,				// the processing options
 		toEdit:CResourceToShow;	// the resource with classified properties to edit
 
@@ -138,10 +137,10 @@ moduleManager.construct({
 	self.show = ( options )=>{
 
 		self.clear();
-		cData = app.cache.selectedProject.data;
+		pData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
-		if( pData.tree.selectedNode )
-			opts.selNodeId = pData.tree.selectedNode.id;
+		if( self.parent.tree.selectedNode )
+			opts.selNodeId = self.parent.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
 		switch( opts.mode ) {
@@ -178,7 +177,7 @@ moduleManager.construct({
 			case 'update':
 //				console.debug('~',nd);
 				// get the selected resource:
-				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
+				app.cache.selectedProject.readContent( 'resource', self.parent.tree.selectedNode.ref )
 				.then( 
 					(rL:SpecifResource[])=>{
 						// create a clone to collect the changed values before committing:
@@ -207,7 +206,7 @@ moduleManager.construct({
 		
 		function editResource(res,opts) {
 			// Edit/update the resources properties:
-//			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
+//			console.debug( 'editResource', res, simpleClone(pData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
 			toEdit = new CResourceToShow( res );
 			let ti = i18n.lookup(CONFIG.propClassTitle);
@@ -244,15 +243,14 @@ moduleManager.construct({
 			function editP(p) {
 				// Return a form element for a property;
 				// works only if the classes are cached:
-				let pC = cData.get("propertyClass", p['class'])[0],
+				let pC = pData.get("propertyClass", p['class'])[0],
 			// The result is delivered by promise ..:
 			//	let pC = app.cache.selectedProject.readContent("propertyClass", p['class']),
 
 					// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
-					dT = pC? cData.get("dataType", pC.dataType )[0] : undefined,
+					dT = pC? pData.get("dataType", pC.dataType )[0] : undefined,
 					opts = {
 						lookupTitles: true,
-						lookupLanguage: true,
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
 					},
@@ -262,7 +260,7 @@ moduleManager.construct({
 				switch (dT ? dT.type : "xs:string") {
 					case 'xs:string':
 					case 'xhtml':
-						if (propTitleOf(p, cData) == CONFIG.propClassDiagram) {
+						if (propTitleOf(p, pData) == CONFIG.propClassDiagram) {
 							// it is a diagram reference (works only with XHTML-fields):
 							return renderDiagram(p, opts)
 						}
@@ -355,7 +353,7 @@ moduleManager.construct({
 							if( resClasses.length>1 ) {
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
-//								console.debug('#2',simpleClone(cData.resourceClasses));
+//								console.debug('#2',simpleClone(pData.resourceClasses));
 								// @ts-ignore - BootstrapDialog() is loaded at runtime
 								new BootstrapDialog({
 									title: i18n.MsgSelectResClass,
@@ -478,7 +476,7 @@ moduleManager.construct({
 		toEdit.descriptions.forEach( function(p) {
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
-			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,cData))>-1 ) {
+			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,pData))>-1 ) {
 				if( Array.isArray( self.newRes.properties ) )
 					self.newRes.properties.push( p );
 				else
@@ -562,35 +560,34 @@ moduleManager.construct({
 		function finalize() {	
 			if(--pend<1) {
 				// update the tree because the title may have changed:
-				pData.updateTree({
+				self.parent.updateTree({
 					lookupTitles: true,
-					lookupLanguage: true,
 					targetLanguage: browser.language
 				});
 				// get the selected node:
-				let selNd = pData.tree.selectedNode;
+				let selNd = self.parent.tree.selectedNode;
 //				console.debug('save.finalize',selNd);
 				// update the node name:
-			//	pData.tree.updateNode( selNd, self.newRes.title );
+			//	self.parent.tree.updateNode( selNd, self.newRes.title );
 				if( selNd ) {
 					switch( mode ) {
 				/*		case 'update':
 							break; */
 						case 'insertBelow':
-//							console.debug('nd below',selNd,pData.tree.selectedNode)
-							pData.tree.openNode( selNd );
-						//	pData.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
+//							console.debug('nd below',selNd,self.parent.tree.selectedNode)
+							self.parent.tree.openNode( selNd );
+						//	self.parent.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
 							// no break
 						case 'insertAfter':
-//							console.debug('nd after',selNd,pData.tree.selectedNode)
-						//	pData.tree.selectNode( selNd.getNextSibling() ); 
-							pData.tree.selectNode( selNd.getNextNode() );
+//							console.debug('nd after',selNd,self.parent.tree.selectedNode)
+						//	self.parent.tree.selectNode( selNd.getNextSibling() ); 
+							self.parent.tree.selectNode( selNd.getNextNode() );
 					};
 				} else {
 					// we get here only after creating the first node of a tree:
-					pData.tree.selectFirstNode();
+					self.parent.tree.selectFirstNode();
 				};
-				pData.doRefresh({forced:true});
+				self.parent.doRefresh({forced:true});
 			};
 		}
 		function getP(p) {
@@ -598,12 +595,11 @@ moduleManager.construct({
 			// ToDo: Works only, if all propertyClasses are always cached:
 			const opts = {
 				lookupTitles: true,
-				lookupLanguage: true,
 				targetLanguage: browser.language
 			};
-			let pC = cData.get("propertyClass", p['class'] )[0],
+			let pC = pData.get("propertyClass", p['class'] )[0],
 				// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
-				dT = pC? cData.get("dataType", pC.dataType )[0] : undefined;
+				dT = pC? pData.get("dataType", pC.dataType )[0] : undefined;
 			switch( dT? dT.type : "xs:string" ) {
 				case 'xs:integer':
 				case 'xs:double':

@@ -14,9 +14,8 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData = self.parent,	// the parent's data
-		cData: CSpecIF,			// the cached data
-		selRes:SpecifResource,		// the currently selected resource
+		pData: CSpecIF,			// the cached data
+		selRes:SpecifResource,	// the currently selected resource
 		opts:any;				// the processing options
 
 	self.eligibleSCL =[];		// all eligible statementClasses
@@ -48,13 +47,13 @@ moduleManager.construct({
 	self.show = ( options:any ):void =>{
 
 		self.clear();
-		cData = app.cache.selectedProject.data;
+		pData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
 		opts.lookupTitles = true;
 		opts.targetLanguage = browser.language;
 		opts.addIcon = true;
 
-		app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
+		app.cache.selectedProject.readContent( 'resource', self.parent.tree.selectedNode.ref )
 		.then( 
 			(rL:SpecifResource[])=>{
 				selRes = rL[0];
@@ -100,7 +99,7 @@ moduleManager.construct({
 			
 			// 3. collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
-			LIB.iterateNodes( cData.hierarchies, 
+			LIB.iterateNodes( pData.hierarchies, 
 				(nd:SpecifNode)=>{
 					LIB.cacheE( self.allResources, nd.resource );
 					// self.allResources contains the resource ids
@@ -114,7 +113,7 @@ moduleManager.construct({
 					// Sort the resources:
 					LIB.sortBy( 
 							list, 
-							(el)=>{ return elementTitleOf(el,opts,cData) } 
+							(el)=>{ return elementTitleOf(el,opts,pData) } 
 					);
 					self.allResources = list;
 					// now self.allResources contains the full resources
@@ -172,7 +171,7 @@ moduleManager.construct({
 								self.saveStatement({secondAs:'subject'})
 								.then(
 									()=>{
-										pData.doRefresh({forced:true})
+										self.parent.doRefresh({forced:true})
 									},
 									LIB.stdError
 								);
@@ -186,7 +185,7 @@ moduleManager.construct({
 								self.saveStatement({secondAs:'object'})
 								.then(
 									()=>{
-										pData.doRefresh({forced:true})
+										self.parent.doRefresh({forced:true})
 									},
 									LIB.stdError
 								);
@@ -227,8 +226,8 @@ moduleManager.construct({
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
-					//		let ti = desperateTitleOf(res,opts,cData);
-							let ti = elementTitleOf(res,opts,cData);
+					//		let ti = desperateTitleOf(res,opts,pData);
+							let ti = elementTitleOf(res,opts,pData);
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
 								eligibleRs += '<div id="cand-'+i+'" class="candidates" onclick="'+myFullName+'.itemClicked(\''+i+'\')">'+ti+'</div>'
@@ -267,12 +266,12 @@ moduleManager.construct({
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-		/*	btn.setAttribute("title", "'"+desperateTitleOf(selRes,opts,cData) +"' "
+		/*	btn.setAttribute("title", "'"+desperateTitleOf(selRes,opts,pData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
-										+ desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"'" ) */
-			btn.setAttribute("title", "'"+elementTitleOf(selRes,opts,cData) +"' "
+										+ desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"'" ) */
+			btn.setAttribute("title", "'"+elementTitleOf(selRes,opts,pData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
-										+ elementTitleOf(self.selectedCandidate.resource,opts,cData) +"'" )
+										+ elementTitleOf(self.selectedCandidate.resource,opts,pData) +"'" )
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
@@ -286,12 +285,12 @@ moduleManager.construct({
 			btn.disabled = false;
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
+		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
-										+ desperateTitleOf(selRes,opts,cData) +"'" ) */
-			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
+										+ desperateTitleOf(selRes,opts,pData) +"'" ) */
+			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
 										+ titleOf(self.selectedStatementClass,opts) +" '"
-										+ elementTitleOf(selRes,opts,cData) +"'" ) 
+										+ elementTitleOf(selRes,opts,pData) +"'" ) 
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
@@ -308,9 +307,9 @@ moduleManager.construct({
 				trigger:"hover",
 				placement:"top",
 				html: true,
-				content: "'"+desperateTitleOf(self.selectedCandidate.resource,opts,cData) +"' "
+				content: "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
 							+ '<i>'+titleOf(self.selectedStatementClass,opts) +"</i> '"
-							+ desperateTitleOf(selRes,opts,cData) +"'"
+							+ desperateTitleOf(selRes,opts,pData) +"'"
 			})
 		} else {
 			btn.prop('disabled',true)

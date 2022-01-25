@@ -114,16 +114,17 @@ class StandardTypes {
 			fn(le, this.listName.get(le));
 		return this.listName.size;
     }
-	get(ctg: string, id: string, chAt?: string): Item {
+	get(ctg: string, key: SpecifKey, chAt?: string): Item {
 		// Get the element of the given category: 
-		var item: Item = itemById(this[this.listName.get(ctg)], id);
+		// @ts-ignore - yes, the index can be undefined:
+		var item: Item = LIB.itemByKey(this[this.listName.get(ctg)], key);
 		if (item) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
 			if (chAt) item.changedAt = chAt;
 			return item;
 		};
-		throw Error("No standard type with id '"+id+"' of category '"+ctg+"'");
+		throw Error("No standard type with id '" + key.id + "' and revision '" + key.id +"' of category '"+ctg+"'");
 	}
 /*	getByTitle(ctg: string, ti: string, chAt?: string): Item | undefined {
 		var item: Item = itemByTitle(this[this.listName.get(ctg)], ti);
@@ -140,37 +141,51 @@ class StandardTypes {
 			return this.listName.get(ctg) as string;
 		throw Error("Invalid category '"+ctg+"'");
 	} */
-	addTo(ctg: string, id: string, pr?): void {
+	addTo(ctg: string, key: SpecifKey, dta?: SpecIF): void {
 		// Add an element (e.g. class) to it's list, if not yet defined:
-		if (!pr) pr = app.cache.selectedProject.data;
+		// @ts-ignore - missing properties not needed, here:
+		if (!dta) dta = app.cache.selectedProject.data;
 
 		// 1. Get the name of the list, e.g. 'dataType' -> 'dataTypes':
-		let lN: string = this.listName.get(ctg);
+		// @ts-ignore - yes, the result can be undefined:
+		let lN: string = this.listName.get(ctg),
+			item = this.get(ctg, key);
 
 		// ToDo: For avoiding duplicates, The checking for the id is not sufficient;
 		// if the existing element has an equal id, but different content,
 		// the resulting SpecIF data-set is not consistent.
+
 		// 2. Create it, if not yet available:
-		if (Array.isArray(pr[lN])) {
-			// add the type, but avoid duplicates:
-			if (indexById(pr[lN], id) < 0)
-				pr[lN].unshift( this.get(ctg, id) );
+		if (item) {
+			// @ts-ignore - index is ok:
+			if (Array.isArray(dta[lN])) {
+				// add the type, but avoid duplicates:
+				// @ts-ignore - index is ok:
+				if (LIB.indexByKey(dta[lN], key) < 0)
+					// @ts-ignore - yes, the object can be undefined:
+					dta[lN].unshift( item );
+			}
+			else {
+				// @ts-ignore - index is ok:
+				dta[lN] = [item];
+			};
 		}
-		else {
-			pr[lN] = [this.get(ctg, id)];
-		};
+		else
+			throw Error("Can't find item with key '"+key.id+"' and revision '"+key.revision+"' in standard types.")
 	}
 };
 
-function addPCReference(eC: SpecifResourceClass|SpecifStatementClass, id: string): void {
+function addPCReference(eC: SpecifResourceClass | SpecifStatementClass, key: SpecifKey): void {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
 	if (Array.isArray(eC.propertyClasses)) {
 		// Avoid duplicates:
-		if (indexById(eC.propertyClasses,id) < 0)
-			eC.propertyClasses.unshift({ id: id });
+		if ( indexById(eC.propertyClasses, key.id) < 0
+			|| LIB.indexByKey(eC.propertyClasses, key) <0 )
+			eC.propertyClasses.unshift(key);
+		// else: reference with equal id and revision is already present.
 	}
 	else {
-		eC.propertyClasses = [{ id: id }];
+		eC.propertyClasses = [key];
 	};
 }
 function addP(el:SpecifResource|SpecifStatement, prp: SpecifProperty): void {
