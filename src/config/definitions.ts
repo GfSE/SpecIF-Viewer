@@ -438,6 +438,7 @@ const CONFIG:any = {};
 		"SysML:isComposedOf",
 		"SysML:isAggregatedBy",
 		"SysML:uses",
+		"SysML:usedBy",
 		"SysML:extends",
 		"SysML:includes",
 		"SysML:isSpecializationOf",

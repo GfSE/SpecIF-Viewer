@@ -487,7 +487,7 @@ class CResourceToShow {
 		// a) Find and set the configured title:
 		let a = titleIdx(this.other, this.pData);
 		if (a > -1) {  // found!
-			this.title = this.other.splice(a, 1);
+			this.title = this.other.splice(a, 1)[0];
 	/*	}
 		else {
 			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
@@ -506,7 +506,7 @@ class CResourceToShow {
 		for (a = this.other.length - 1; a > -1; a--) {
 			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], this.pData)) > -1) {
 				// To keep the original order of the properties, the unshift() method is used.
-				this.descriptions.unshift(this.other.splice(a, 1));
+				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			};
 		};
 
@@ -589,7 +589,8 @@ class CResourceToShow {
 		if (!this.title || !this.title.values) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
-		let ti = languageValueOf(this.title.value, opts);
+		// Assuming that a title property has only a single value:
+		let ti = languageValueOf(this.title.values[0], opts);
 		if (this.isHeading) {
 			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
 			// whereas the individual elements may mean the vocabulary term as such:
@@ -1481,14 +1482,14 @@ moduleManager.construct({
 		// - URL parameters are specified where the project is equal to the loaded one
 		// - just a view is specifed without URL parameters (coming from another page)
 		if( !fNd
-			|| !app.cache.selectedProject.data.has("resource", [fNd.ref] )  // condition is probably too weak
+			|| !self.pData.has("resource", [fNd.ref] )  // condition is probably too weak
 			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.id )
 			self.tree.clear();
 		
 //		console.debug('show 1',uP,self.tree.selectedNode);
 		// assuming that all initializing is completed (project and types are loaded), 
 		// get and show the specs:
-		if (app.cache.selectedProject.data.length("hierarchy")>0 ) {
+		if (self.pData.length("hierarchy")>0 ) {
 			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
 			app.cache.selectedProject.readContent( 'hierarchy', "all", {reload:true} )
@@ -1602,8 +1603,8 @@ moduleManager.construct({
 	};
 /*	self.addComment = ()=>{
 //		console.debug( 'addComment', self.tree.selectedNode );
-		var cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.resClassComment ),
-			rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassCommentRefersTo );
+		var cT = itemByName( self.pData.resourceClasses, CONFIG.resClassComment ),
+			rT = itemByName( self.pData.statementClasses, CONFIG.staClassCommentRefersTo );
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
@@ -1619,7 +1620,7 @@ moduleManager.construct({
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
 		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
 			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
-		var dT = itemById( app.cache.selectedProject.data.dataTypes, txtPrC.dataType );
+		var dT = itemById( self.pData.dataTypes, txtPrC.dataType );
 
 		new BootstrapDialog({
 			title: i18n.lookup( 'LblAddCommentTo', self.tree.selectedNode.name ),
@@ -1744,7 +1745,6 @@ moduleManager.construct({
 			$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' ); */
 
 		if( !self.parent.tree.selectedNode ) self.parent.tree.selectFirstNode();
-	//	if( !self.parent.tree.selectedNode ) { self.parent.emptyTab( self.view ); return };  // quit, because the tree is empty
 //		console.debug(CONFIG.objectList, 'show', self.parent.tree.selectedNode);
 
 		var nL; // list of hierarchy nodes, must survive the promise
@@ -1791,7 +1791,7 @@ moduleManager.construct({
 			// only visible tree nodes are collected in oL (excluding those in closed folders ..), 
 			// so the main column corresponds with the tree.
 			for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
-				oL.push({ id: nd.ref });  // nd.ref is the id of a resource to show
+				oL.push( nd.ref );  // nd.ref is the id of a resource to show
 				nL.push( nd );
 				nd = nd.getNextNode();   // get next visible tree node
 			};
@@ -2129,7 +2129,7 @@ moduleManager.construct({
 				// sL is the list of statements involving the selected resource.
 
 				// First, initialize the list and add the selected resource:
-				net = { resources: [{id: nd.ref}], statements: [] };
+				net = { resources: [nd.ref], statements: [] };
 				// Store all related resources while avoiding duplicate entries,
 				// the title attribute will be undefined, 
 				// but we are interested only in the resource id at this point:
@@ -2317,11 +2317,11 @@ moduleManager.construct({
 			// Corner case: No diagram at all returns true, also.
 			let res: SpecifResource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
 			return LIB.iterateNodes(dta.hierarchies,
-				(nd): boolean => {
+				(nd:SpecifNode): boolean => {
 					// get the referenced resource:
 					res = LIB.itemByKey(dta.resources, nd.resource);
 					// find the property defining the type:
-					pV = valByTitle(res, CONFIG.propClassType, dta);
+					pV = LIB.valByTitle(res, CONFIG.propClassType, dta);
 					// Remember whether at least one diagram has been found:
 					isNotADiagram = CONFIG.diagramClasses.indexOf(resClassTitleOf(res, dta)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
@@ -2394,8 +2394,8 @@ moduleManager.construct({
 		};
 
 //		console.debug('renderStatements',net);
-		
-		let graphOptions = {
+
+		let graphOptions: GraphOptions = {
 				index: 0,
 				canvas: self.view.substr(1),	// without leading hash
 				titleProperties: CONFIG.titleProperties,
@@ -2404,9 +2404,9 @@ moduleManager.construct({
 					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
 						app[myName].relatedItemClicked(evt.target.resource,evt.target.statement);
 						// changing the tree node triggers an event, by which 'self.refresh' will be called.
-			},
-			focusColor: CONFIG.focusColor
-		};
+				},
+				focusColor: CONFIG.focusColor
+			};
 		if( modeStaDel )
 			graphOptions.nodeColor = '#ef9a9a';
 //		console.debug('showStaGraph',net,graphOptions);

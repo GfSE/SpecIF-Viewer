@@ -1078,12 +1078,25 @@ function Archimate2Specif( xmlString, opts ) {
 		return false;	
 	}
 	function addStaIfNotListed(st) {
-		for( var i=model.statements.length-1;i>-1;i-- ) 
-			if( model.statements[i]["class"] == st["class"]
-				&& model.statements[i].subject == st.subject
-				&& model.statements[i].object == st.object ) return model.statements[i];
+		// There is a special case: When a principle realizes a goal and the principle is
+		// graphically contained in the goal, there are two 'contains' relationships in
+		// the opposite direction, thus contradictory.
+		// So, it is refrained from adding a new relationship, if there is one already
+		// for the respective model elements, no matter which direction.
+		// This is OK, because the first entry in based on an explicit relation and
+		// an entry based on graphical analysis is added later.
+		for (var i = model.statements.length - 1; i > -1; i--)
+			if (	model.statements[i]["class"] == st["class"]
+				&& (
+						model.statements[i].subject == st.subject
+						&& model.statements[i].object == st.object
+					|| model.statements[i].subject == st.object
+						&& model.statements[i].object == st.subject
+					)
+			)
+				return model.statements[i];
 		// not found, so add:
-		model.statements.push( st );
-	//	return undefined
+		model.statements.push(st);
+		//	return undefined
 	}
 }

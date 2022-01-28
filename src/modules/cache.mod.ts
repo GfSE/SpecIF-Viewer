@@ -125,7 +125,7 @@ class CCache {
 	get(ctg: string, req: Item[] | Item | string): Item[] {
 		// Read items from cache
 		// - req can be single or a list,
-		// - each element can be an object with attribute id or an id string
+		// - each element can be an object with key
 		// - original lists and items are delivered, so don't change them!
 		if (!req)
 			return [];
@@ -141,7 +141,7 @@ class CCache {
 			let allFound = true, i = 0, I = req.length;
 			var rL: Item[] = [];
 			while (allFound && i < I) {
-				idx = indexById(itmL, req[i].id || req[i]);
+				idx = LIB.indexByKey(itmL, req[i] );
 				if (idx > -1) {
 					rL.push(itmL[idx]);
 					i++;
@@ -156,7 +156,7 @@ class CCache {
 		}
 		else {
 			// is a single item:
-			idx = indexById(itmL, req.id || req);
+			idx = LIB.indexByKey(itmL, req );
 			if (idx > -1)
 				return [itmL[idx]]
 			else
@@ -526,7 +526,7 @@ class CProject {
 							// The folders are excluded from consolidation, because it may happen that there are
 							// multiple folders with the same name but different description in different locations of the hierarchy.
 							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(nR, nD)) > -1
-								&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(nR, CONFIG.propClassType, nD)) < 0
+								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
 								// Check for a resource with the same title:
 								eR = itemByTitle(dta.resources, nR.title);  // resource in the existing data
@@ -535,9 +535,9 @@ class CProject {
 								// and is less restrictive than the class ID:
 //								console.debug('~1',nR,eR?eR:'');
 								if (eR
-									&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(eR, CONFIG.propClassType, dta)) < 0
+									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(eR, CONFIG.propClassType, dta)) < 0
 									&& resClassTitleOf(nR, nD) == resClassTitleOf(eR, dta)
-									//		&& valByTitle(nR,CONFIG.propClassType,nD)==valByTitle(eR,CONFIG.propClassType,dta)
+									//		&& LIB.valByTitle(nR,CONFIG.propClassType,nD)==LIB.valByTitle(eR,CONFIG.propClassType,dta)
 								) {
 //									console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
@@ -757,11 +757,11 @@ class CProject {
 //				console.debug( 'duplicate resource ?', rR, nR );
 				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(rR, dta)) > -1
 					&& this.equalR(rR, nR)
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(nR, CONFIG.propClassType, dta)) < 0
-					&& CONFIG.excludedFromDeduplication.indexOf(valByTitle(rR, CONFIG.propClassType, dta)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(nR, CONFIG.propClassType, dta)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(rR, CONFIG.propClassType, dta)) < 0
 				) {
 					// Are equal, so remove the duplicate resource:
-//					console.debug( 'duplicate resource', rR, nR, valByTitle( nR, CONFIG.propClassType, dta ) );
+//					console.debug( 'duplicate resource', rR, nR, LIB.valByTitle( nR, CONFIG.propClassType, dta ) );
 					this.substituteR(dta, rR, nR, { rescueProperties: true });
 					console.info("Resource with id=" + nR.id + " and title=" + nR.title + " has been removed because it is a duplicate of id=" + rR.id);
 					dta.resources.splice(n, 1);
@@ -837,7 +837,7 @@ class CProject {
 								// get the referenced resource:
 								res = dta.get("resource", nd.resource)[0];
 								// find the property defining the type:
-								pV = valByTitle(res, CONFIG.propClassType, dta);
+								pV = LIB.valByTitle(res, CONFIG.propClassType, dta);
 								// collect all nodes to delete, there should be only one:
 								if (pV == r2c.folder) {
 									delL.push(nd);
@@ -951,7 +951,7 @@ class CProject {
 						// get the referenced resource:
 						res = dta.get("resource", nd.resource)[0];
 						// check, whether it is a glossary:
-						pV = valByTitle(res, CONFIG.propClassType, this.data);
+						pV = LIB.valByTitle(res, CONFIG.propClassType, this.data);
 						// collect all items to delete, there should be only one:
 						if (pV == CONFIG.resClassGlossary) {
 							delL.push(nd)
@@ -1009,7 +1009,7 @@ class CProject {
 					// .. or if it has a property dcterms:type with value 'SpecIF:Diagram':
 					// .. or if it has at least one statement with title 'SpecIF:shows':
 					return resClassTitleOf(r, dta) == CONFIG.resClassDiagram
-						|| valByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
+						|| LIB.valByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
 						|| dta.get("statement","all").filter(
 							(sta) => {
 								return staClassTitleOf(sta) == CONFIG.staClassShows && sta.subject == r.id
@@ -1854,7 +1854,7 @@ class CProject {
 		// Only a genuine title will be considered truly equal, but not a default title
 		// being equal to the content of property CONFIG.propClassType is not considered equal
 		// (for example BPMN endEvents which don't have a genuine title):
-		let typ = valByTitle(r, CONFIG.propClassType, dta),
+		let typ = LIB.valByTitle(r, CONFIG.propClassType, dta),
 			rgT = RE.splitNamespace.exec(typ);
 		// rgT[2] contains the type without namespace (works also, if there is no namespace).
 		return (!rgT || rgT[2] != r.title);
@@ -2112,8 +2112,8 @@ class CProject {
 					// where the title may be defined with the property class.
 					let pT = propTitleOf(nP, prj),
 						rP = propByTitle(r, pT, this.data);
-//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(valByTitle( r, pT, this.data )));
-					if (!LIB.hasContent(valByTitle(r, pT, this.data))
+//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valByTitle( r, pT, this.data )));
+					if (!LIB.hasContent(LIB.valByTitle(r, pT, this.data))
 						// dataTypes must be compatible:
 						&& this.compatibleDT(LIB.dataTypeOf(this.data, rP['class']), LIB.dataTypeOf(prj, nP['class']))) {
 						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(this.data,rP['class']), LIB.dataTypeOf(prj,nP['class']) ).status==0 ) {
@@ -3171,13 +3171,12 @@ function propByTitle(itm: SpecifResource, pN: string, dta:SpecIF): SpecifPropert
 	};
 //	return undefined
 }
-function valByTitle(itm:SpecifResource,pN:string,dta:SpecIF):string|undefined {
+LIB.valByTitle = (itm:SpecifResource,pN:string,dta:SpecIF):string|undefined => {
 	// Return the value of a resource's (or statement's) property with title pN:
-	// ToDo: return the class's default value, if available.
 //	console.debug('valByTitle',dta,itm,pN);
 	if( itm.properties ) {
 		for( var i=itm.properties.length-1;i>-1;i-- ) {
-			if( (itm.properties[i].title || LIB.itemByKey( dta.propertyClasses, itm.properties[i]['class'] ).title)==pN )
+			if( LIB.itemByKey( dta.propertyClasses, itm.properties[i]['class']).title==pN )
 				return itm.properties[i].values
 		}
 	};

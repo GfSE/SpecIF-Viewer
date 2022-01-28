@@ -303,7 +303,7 @@ function toOxml( data, opts ) {
 				// get the statements of the resource as table:
 				if( !opts.statementsLabel ) return '';
 				
-				let sts={}, cid, oid, sid, relatedR, noSts=true;
+				let stC={}, cid, oid, sid, relatedR, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
 					// for clustering all statements by title;
@@ -318,25 +318,25 @@ function toOxml( data, opts ) {
 //					console.debug(st,cid,sid,oid);
 					if (sid == r.id || oid == r.id) {    // only statements with Resource r
 						// create a list of statements with that type, unless it exists already:
-						if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+						if (!stC[cid]) stC[cid] = { subjects: [], objects: [] };
 						// add the resource to the list, knowing that it can be either subject or object, but not both:
 						if (sid == r.id) {
 							relatedR = itemById(data.resources, oid);
 							if (relatedR) {
-								sts[cid].objects.push(relatedR);
+								stC[cid].objects.push(relatedR);
 								noSts = false;
 							};
 						}
 						else {
 							relatedR = itemById(data.resources, sid);
 							if (relatedR) {
-								sts[cid].subjects.push(relatedR);
+								stC[cid].subjects.push(relatedR);
 								noSts = false;
 							};
 						};
 					};
 				});
-//				console.debug( 'statements', r, sts );
+//				console.debug( 'statements', r, stC );
 				if( noSts ) return '';	// no statements ...
 
 				// else, there are statements to render:
@@ -345,7 +345,7 @@ function toOxml( data, opts ) {
 					sTi, row, cell, resL;
 
 				// build a table of the statements/relations by type:
-				for( cid in sts ) {
+				for( cid in stC ) {
 					// if we have clustered by title:
 					sTi = opts.lookup( cid );
 				/*	// if we have clustered by class:
@@ -353,10 +353,10 @@ function toOxml( data, opts ) {
 					sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 					// 3 columns:
-					if( sts[cid].subjects.length>0 ) {
+					if( stC[cid].subjects.length>0 ) {
 
 						// collect all related resources (here subjects):
-						resL = forAll( sts[cid].subjects, (s)=>{ return { id:s.id, ti:titleOf( s, undefined, opts ) }; });
+						resL = forAll( stC[cid].subjects, (s)=>{ return { id:s.id, ti:titleOf( s, undefined, opts ) }; });
 						
 						cell = '';
 						resL
@@ -407,10 +407,10 @@ function toOxml( data, opts ) {
 						}
 					};
 					
-					if( sts[cid].objects.length>0 ) {
+					if( stC[cid].objects.length>0 ) {
 
 						// collect all related resources (here objects):
-						resL = forAll( sts[cid].objects, (o)=>{ return { id:o.id, ti:titleOf( o, undefined, opts ) }; });
+						resL = forAll( stC[cid].objects, (o)=>{ return { id:o.id, ti:titleOf( o, undefined, opts ) }; });
 						
 						cell = '';
 						resL

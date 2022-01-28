@@ -2,8 +2,23 @@
 	Dependencies: vis-network
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
+interface GraphOptions {
+	canvas: string;
+	index?: number;
+	titleProperties?: string[];
+	lineLength?: number;
+	focusColor?: string;
+	nodeColor?: string;
+	edgeColor?: string;
+	clusterColor?: string;
+	fontFace?: string;
+	fontSize?: string;
+	onDoubleClick?: Function;
+}
 app.statementsGraph = function Graph() {
 	// For a selected SpecIF resorce, draw a graph of all statements and related resources.
 	// All statements of the same type are grouped to make the reading easier.
@@ -17,13 +32,13 @@ app.statementsGraph = function Graph() {
 	self.hide = function() {
 	};
 
-	self.show = function( specifData, opts ) {
+	self.show = function (specifData: SpecIF, opts:GraphOptions ):void {
 		// Accepts data-sets according to v0.10.4 or v0.11.2 and later.
 
 		// Check for missing options:
-		if ( !opts
-			|| !opts.canvas
-			) return;
+		if (!opts || !opts.canvas)
+			throw Error("Graphing of local semantic net of a resource misses specification of 'canvas'."); // minimum requirement
+
 		if( !opts.index || opts.index>specifData.resources.length-1 ) opts.index = 0;
 		if( !opts.titleProperties ) opts.titleProperties = [];
 		if( !opts.lineLength ) opts.lineLength = 22;
@@ -509,7 +524,7 @@ app.statementsGraph = function Graph() {
          * @returns json object of the statements with titles for statements, subjects and objects
          */
         function collectStatementsByType(res:SpecifResource):SpecifStatement[] {
-			let sts = {}, cid, oid, sid;
+			let stC = {}, cid, oid, sid;
 			specifData.statements.forEach((st: SpecifStatement) =>{
 				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 				oid = st.object.id || st.object;
@@ -521,19 +536,19 @@ app.statementsGraph = function Graph() {
 				/*	// all statements having the same class are clustered:
 					cid = st['class']; */
 					// @ts-ignore - cid as string 'can' be used as index:
-					if (!sts[cid]) {
+					if (!stC[cid]) {
 						// @ts-ignore - cid as string 'can' be used as index:
-						sts[cid] = { targets: [], sources: [] }
+						stC[cid] = { targets: [], sources: [] }
 					};
 					if ( oid===res.id )
 						// @ts-ignore - cid as string 'can' be used as index:
-						sts[cid].sources.push( {resource:resourceById(sid),statement:st} )
+						stC[cid].sources.push( {resource:resourceById(sid),statement:st} )
 					else
 						// @ts-ignore - cid as string 'can' be used as index:
-						sts[cid].targets.push( {resource:resourceById(oid),statement:st} )
+						stC[cid].targets.push( {resource:resourceById(oid),statement:st} )
 				}
             });
-			return sts;
+			return stC;
         }
 
         /**

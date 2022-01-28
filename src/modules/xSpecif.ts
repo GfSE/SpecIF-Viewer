@@ -81,7 +81,9 @@ class CSpecIF implements SpecIF {
 	generator = '';
 	generatorVersion = '';
 	rights: any = {};
+	// @ts-ignore - will be set by 'toInt()', if available in the input data:
 	createdAt: SpecifDateTime;
+	// @ts-ignore - will be set by 'toInt()', if available in the input data:
 	createdBy: SpecifCreatedBy;
 
 	dataTypes: SpecifDataType[] = [];
@@ -654,7 +656,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// utilities:
-		function makeKey(el: any[]): SpecifKey {
+		function makeKey(el: any): SpecifKey {
 			return typeof(el)=='string' ? { id: el } : el;
 		}
 		function makeKeyL(L: any[]): SpecifKeys {
@@ -867,7 +869,7 @@ class CSpecIF implements SpecIF {
 						if (!hR) {
 							throw Error("Hierarchy '"+dta.hierarchies[i].id+"' is corrupt");
 						};
-						let prpV = valByTitle(hR, CONFIG.propClassType, dta),
+						let prpV = LIB.valByTitle(hR, CONFIG.propClassType, dta),
 							hC = itemById(dta.resourceClasses, hR['class']);
 						// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 						// or by the title of the resourceClass:
@@ -1114,18 +1116,10 @@ class CSpecIF implements SpecIF {
 							delete oE.title;
 					};
 
-					//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
-					// for the time being, multiple revisions are not supported:
-					if (opts.revisionDate) {
-						// supply only the id, but not a key:
-						oE.subject = iE.subject.id;
-						oE.object = iE.object.id;
-					}
-					else {
-						// supply key or id:
-						oE.subject = iE.subject;
-						oE.object = iE.object;
-					};
+				//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
+					oE.subject = iE.subject;
+					oE.object = iE.object;
+
 					return oE;
 				}
 				// a hierarchy node:
@@ -1134,10 +1128,7 @@ class CSpecIF implements SpecIF {
 					// just take the non-redundant properties (omit 'title', for example):
 					let oN: SpecifNode = {
 						id: iN.id,
-						// for the time being, multiple revisions are not supported:
-						//                            supply only the id, but not a key
-						//                            |                           supply key or id
-						resource: opts.revisionDate? iN.resource.id : iN.resource,
+						resource: iN.resource,
 						changedAt: iN.changedAt
 					};
 					

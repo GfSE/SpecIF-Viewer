@@ -161,7 +161,7 @@ function toXhtml( data, opts ) {
 		// render the statements (relations) about the resource in a table
 		if( !opts.statementsLabel ) return '';
 		
-		let sts={}, cid, oid, sid, relatedR, noSts=true;
+		let stC={}, cid, oid, sid, relatedR, noSts=true;
 		// Collect statements by type:
 		data.statements.forEach( function(st) {
 			cid = titleOf( st, undefined, opts );
@@ -172,26 +172,26 @@ function toXhtml( data, opts ) {
 			oid = st.object.id || st.object;
 			if (sid == r.id || oid == r.id) {    // only statements with Resource r
 				// create a list of statements with that type, unless it exists already:
-				if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+				if (!stC[cid]) stC[cid] = { subjects: [], objects: [] };
 				// add the resource to the list, knowing that it can be either subject or object, but not both:
 				if (sid == r.id) {
 					relatedR = itemById(data.resources, oid);
 					if (relatedR) {
-						sts[cid].objects.push(relatedR);
+						stC[cid].objects.push(relatedR);
 						noSts = false;
 					};
 				}
 				else {
 					relatedR = itemById(data.resources, sid);
 					if (relatedR) {
-						sts[cid].subjects.push(relatedR);
+						stC[cid].subjects.push(relatedR);
 						noSts = false;
 					};
 				};
 			};
 		});
-//		console.debug( 'statements', r.title, sts );
-//		if( Object.keys(sts).length<1 ) return '';
+//		console.debug( 'statements', r.title, stC );
+//		if( Object.keys(stC).length<1 ) return '';
 		if( noSts ) return '';	// no statements ...
 		
 		// else, there are statements to render:
@@ -199,16 +199,16 @@ function toXhtml( data, opts ) {
 		let ct = '<p class="metaTitle">'+opts.statementsLabel+'</p>',
 			sTi;
 		ct += '<table class="statementTable"><tbody>';
-		for( cid in sts ) {
+		for( cid in stC ) {
 			// if we have clustered by title:
 			sTi = opts.lookup( cid );
 		/*	// we don't have (and don't need) the individual statement, just the class:
 			sTi = opts.lookup( itemBy(data.statementClasses,'id',cid).title ); */
 
 			// 3 columns:
-			if( sts[cid].subjects.length>0 ) {
+			if( stC[cid].subjects.length>0 ) {
 				ct += '<tr><td>';
-				sts[cid].subjects.forEach( function(s) {
+				stC[cid].subjects.forEach( function(s) {
 //					console.debug('s',s,itemBy( data.resourceClasses,'id',s['class']))
 					ct += '<a href="'+anchorOf( s, hi )+'">'+titleOf( s, undefined, opts )+'</a><br/>'
 				});
@@ -216,10 +216,10 @@ function toXhtml( data, opts ) {
 				ct += '</td><td>'+titleOf( r, undefined, opts );
 				ct += '</td></tr>'
 			};
-			if( sts[cid].objects.length>0 ) {
+			if( stC[cid].objects.length>0 ) {
 				ct += '<tr><td>'+titleOf( r, undefined, opts );
 				ct += '</td><td class="statementTitle">'+sTi+'</td><td>';
-				sts[cid].objects.forEach( function(o) {
+				stC[cid].objects.forEach( function(o) {
 					ct += '<a href="'+anchorOf( o, hi )+'">'+titleOf( o, undefined, opts )+'</a><br/>'
 				});
 				ct += '</td></tr>'
