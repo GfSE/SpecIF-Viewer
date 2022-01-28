@@ -459,6 +459,7 @@ function LanguageTextsDe() {
 	self.SpecIF_satisfies =
 	self.IREB_satisfies = "erfüllt";
 	self.SpecIF_modifies =
+	self.archimate_accesses = 
 	self.SpecIF_stores = "schreibt und liest";
 	self.SpecIF_reads = "liest";
 	self.SpecIF_writes = "schreibt";
@@ -493,6 +494,8 @@ function LanguageTextsDe() {
 	self.SysML_isGeneralizationOf = "ist generalisiert von";
 	self.SpecIF_isSpecializationOf =
 	self.SysML_isSpecializationOf = "ist spezialisiert von";
+	self.SysML_uses = "benutzt";
+	self.SysML_usedBy = "wird benutzt von";
 	self.SpecIF_isSynonymOf = "ist Synonym von";
 	self.SpecIF_isInverseOf = 						// DEPRECATED
 	self.SpecIF_isAntonymOf = "ist Antonym von";

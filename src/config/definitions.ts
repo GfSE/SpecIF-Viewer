@@ -438,6 +438,7 @@ const CONFIG:any = {};
 		"SysML:isComposedOf",
 		"SysML:isAggregatedBy",
 		"SysML:uses",
+		"SysML:usedBy",
 		"SysML:extends",
 		"SysML:includes",
 		"SysML:isSpecializationOf",
@@ -458,7 +459,8 @@ const CONFIG:any = {};
 		"SpecIF:contradicts",
 		"SpecIF:inheritsFrom",
 		"SpecIF:refersTo",
-		"SpecIF:sameAs"
+		"SpecIF:sameAs",
+		"archimate:accesses"
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
 	// The term appearing in the first position of an equivalence list is the preferred one:
