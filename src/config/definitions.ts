@@ -459,7 +459,8 @@ const CONFIG:any = {};
 		"SpecIF:contradicts",
 		"SpecIF:inheritsFrom",
 		"SpecIF:refersTo",
-		"SpecIF:sameAs"
+		"SpecIF:sameAs",
+		"archimate:accesses"
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
 	// The term appearing in the first position of an equivalence list is the preferred one:
@@ -486,6 +487,7 @@ const CONFIG:any = {};
 		['SpecIF:Diagram', "&#9635;"],
 		[CONFIG.resClassDiagram,"&#9635;"],
 	//	['SpecIF:UserStory',"&#9830;"],
+		['SpecIF:UserStory',"&#9786;"],
 		["IR:Annotation","&#9755;"]
 	]);
 

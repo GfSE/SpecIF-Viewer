@@ -11,7 +11,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self')
 moduleManager.construct({
 	name: 'ioSpecif'
-}, function(self:IModule) {
+}, (self:ITransform) => {
 	"use strict";
 	
 	let zipped:boolean,
@@ -23,13 +23,13 @@ moduleManager.construct({
 		errNoSpecif:xhrMessage = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
 		errInvalidJson:xhrMessage = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
 		
-	self.init = function(options:any):boolean {
+	self.init = (options:any):boolean => {
 		opts = options;
 //		console.debug('iospecif.init',options);
 		return true;
 	};
 
-	self.verify = function( f ):boolean {
+	self.verify = ( f:File ):boolean => {
 		// return f if file-type is eligible, null otherwise.
 		// 'specifz' is a specif file with optional images/attachments in a zipped file.
 		// 'specif' is a plain text file with specif data.
@@ -58,14 +58,15 @@ moduleManager.construct({
 		// else:
 		try {
 			message.show( i18n.lookup('ErrInvalidFileSpecif', f.name), {severity:'warning'} );
-		} catch (err) {
+		}
+		catch (err) {
 			alert(f.name+' has invalid file type.');
 		};
 		return false;
 	};
 
 
-		self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
+	self.toSpecif = (buf: ArrayBuffer): JQueryDeferred<SpecIF> => {
 		// import a read file buffer containing specif data:
 		// a button to upload the file appears at <object id="file-object"></object>
 //		console.debug('iospecif.toSpecif');
@@ -74,10 +75,10 @@ moduleManager.construct({
 		if( zipped ) {
 			// @ts-ignore - JSZIP is loaded at runtime
 			new JSZip().loadAsync(buf)
-			.then( function(zip:any) {
+			.then((zip: any) => {
 				// @ts-ignore - relPath is never read, but must be specified anyways
-				let fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.specif')}),
-					data:SpecIF = {};
+				let fileL = zip.filter( (relPath, file) => {return file.name.endsWith('.specif')}),
+					data:SpecIF;
 
 				if( fileL.length<1 ) {
 					zDO.reject( errNoSpecif );
@@ -86,7 +87,7 @@ moduleManager.construct({
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
 				// take the first specif file found, ignore any other so far:
 				zip.file( fileL[0].name ).async("string")
-				.then( function(dta:string) {
+				.then( (dta:string) => {
 					// Check if data is valid JSON:
 					try {
 						// Please note:
@@ -100,11 +101,11 @@ moduleManager.construct({
 							// First load the files, so that they get a lower revision number as the referencing resources.
 							// Create a list of all attachments:
 							// @ts-ignore - relPath is never read, but must be specified anyways
-							fileL = zip.filter(function (relPath, file) {return !file.name.endsWith('.specif')});
+							fileL = zip.filter( (relPath, file) => {return !file.name.endsWith('.specif')});
 //							console.debug('iospecif.toSpecif 2',fileL);
 							if( fileL.length>0 ) {
 								let pend = 0;
-								fileL.forEach( function(aFile) { 
+								fileL.forEach( (aFile:any) => { 
 													// skip directories:
 													if( aFile.dir ) return false;
 
@@ -115,9 +116,9 @@ moduleManager.construct({
 //													console.debug('iospecif.toSpecif 3',fType,aFile.date,aFile.date.toISOString());
 													pend++;
 													zip.file(aFile.name).async("blob")
-													.then( function(f) {
+													.then( (f:Blob) => {
 														data.files.push({ 
-															blob:f, 
+															blob: f, 
 															id: 'F-' + simpleHash(aFile.name), 
 															title: aFile.name, 
 															type: fType, 
@@ -130,22 +131,26 @@ moduleManager.construct({
 													});
 												});
 								if( pend<1 ) zDO.resolve( data );	// no suitable file found, continue anyways
-							} else {
+							}
+							else {
 								// no files with permissible types are supplied:
 								zDO.resolve( data );		// data is in SpecIF format
 							}
-						} else {
+						}
+						else {
 							// no function for filtering and mapping the mediaTypes supplied:
 							console.warn(errNoOptions.statusText);
 							// return SpecIF data anyways:
 							zDO.resolve( data );		// data is in SpecIF format
 						};
-					} catch (err) {
+					}
+					catch (err) {
 						zDO.reject( errInvalidJson );
 					};
 				});
 			});
-		} else {
+		}
+		else {
 			// Selected file is not zipped - it is expected to be SpecIF data in JSON format.
 			// Check if data is valid JSON:
 			try {
@@ -153,13 +158,14 @@ moduleManager.construct({
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
 				var data = JSON.parse( LIB.trimJson(LIB.ab2str(buf)) );
 				zDO.resolve( data );
-			} catch (err) {
+			}
+			catch (err) {
 				zDO.reject( errInvalidJson );
 			};
 		};
 		return zDO;
 	};
-	self.abort = function():void {
+	self.abort = ():void => {
 		self.abortFlag = true;
 	};
 	return self;

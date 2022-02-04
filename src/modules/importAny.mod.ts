@@ -7,6 +7,13 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
+// Importing modules must implement the following interface:
+interface ITransform extends IModule {
+	verify(f:File): boolean;
+	toSpecif(buf: ArrayBuffer): JQueryDeferred<SpecIF>;
+	abort(): void;
+}
+
 moduleManager.construct({
 	name: 'importAny'
 }, function(self:IModule) {
@@ -96,7 +103,7 @@ moduleManager.construct({
 	var showFileSelect:State,
 		importMode = {id:'replace'},
 		myFullName = 'app.'+self.loadAs,
-		urlP,				// the latest URL parameters
+		urlP:any,				// the latest URL parameters
 		importing = false,
 		cacheLoaded = false,
 		allValid = false;
@@ -390,13 +397,14 @@ moduleManager.construct({
 		readFile( self.file, app[self.format.name].toSpecif );
 		return;
 
-		function readFile( f, fn:Function ):void {
+		function readFile( f:File, fn:Function ):void {
 			let rdr = new FileReader();
-			rdr.onload = function(evt) {
-				fn( evt.target.result )		// process the buffer
-					.progress( setProgress )
-					.done( handleResult )
-					.fail( handleError )
+			rdr.onload = (evt) => {
+				if (evt.target && evt.target.result )
+					fn( evt.target.result )		// process the buffer
+						.progress( setProgress )
+						.done( handleResult )
+						.fail( handleError )
 			};
 			rdr.readAsArrayBuffer( f );
 		}
@@ -430,7 +438,7 @@ moduleManager.construct({
 			// (use-case: ioReqif imports a reqifz with multiple reqif files)
 			resQ = data;
 			resIdx = 0;
-			handle( resQ.shift(), resIdx );
+			handle( resQ.shift() as SpecIF, resIdx );
 		}
 		else {
 			resQ.length = 0;
@@ -441,7 +449,7 @@ moduleManager.construct({
 	
 		function handleNext():void {
 			if( resQ.length>0 )
-				handle( resQ.shift(), ++resIdx )
+				handle( resQ.shift() as SpecIF, ++resIdx )
 			else
 				terminateWithSuccess();
 		}

@@ -11,7 +11,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
 moduleManager.construct({
 	name: 'ioRdf'
-}, function(self:IModule) {
+}, function(self:ITransform) {
 
 	var mime: string;
 	self.init = function():boolean {
@@ -34,11 +34,11 @@ moduleManager.construct({
 	};
 /*	self.toSpecif = function( buf: ArrayBuffer ) {
 	}; */
-	self.toRdf = function(pr:SpecIF):string {
+	self.fromSpecif = function(pr:SpecIF):string {
 		// pr is SpecIF data in JSON format (not the internal cache),
 		// transform pr to RDF:
 		
-		console.debug( 'ioRdf.toRdf', simpleClone(pr) );
+		console.debug( 'ioRdf.fromSpecif', simpleClone(pr) );
 		
 		var xml = '';
 

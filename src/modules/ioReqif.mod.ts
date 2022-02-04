@@ -14,7 +14,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent..')
 moduleManager.construct({
 	name: 'ioReqif'
-}, function(self:IModule) {
+}, (self:ITransform) =>{
 	"use strict";
 	let mime,
 		zipped:boolean,
@@ -25,13 +25,13 @@ moduleManager.construct({
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
 		errInvalidXML: xhrMessage = { status: 900, statusText: 'ReqIF data is not valid XML.' };
 		
-	self.init = function(options:any):boolean {
+	self.init = (options:any):boolean =>{
 		mime = undefined;
 		opts = options;
 		return true;
 	};
 
-	self.verify = function( f ):boolean {
+	self.verify = ( f:File ):boolean =>{
 			// Verify the type (and eventually the content) of a ReqIF import file:
 	
 			function reqifFile2mediaType( fname:string ):string|undefined {
@@ -53,7 +53,7 @@ moduleManager.construct({
 		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
 		return false;
 	};
-	self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
+	self.toSpecif = (buf: ArrayBuffer): JQueryDeferred<SpecIF> => {
 		// Transform ReqIF to SpecIF for import:
 		// buf is an array-buffer containing reqif data:
 //		console.debug('ioReqif.toSpecif');
@@ -66,9 +66,9 @@ moduleManager.construct({
 		if( zipped ) {
 			// @ts-ignore - JSZIP is loaded at runtime
 			new JSZip().loadAsync(buf)
-			.then( function(zip:any) {
+			.then( (zip:any) =>{
 				// @ts-ignore - all's fine, no need to re-declare the zip interface.
-				fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.reqif')});
+				fileL = zip.filter( (relPath, file) => {return file.name.endsWith('.reqif')});
 
 				if( fileL.length < 1 ) {
 					zDO.reject( errNoReqif );
@@ -80,7 +80,7 @@ moduleManager.construct({
 				pend = fileL.length;
 				for( var i=fileL.length-1;i>-1;i-- ) {
 					zip.file( fileL[i].name ).async("string")
-					.then( function(dta:any) {
+					.then( (dta:any) =>{
 						// Check if data is valid XML:
 						// Please note:
 						// - the file may have a UTF-8 BOM
@@ -101,13 +101,13 @@ moduleManager.construct({
 								// First load the files, so that they get a lower revision number as the referencing resources.
 								// Create a list of all attachments:
 								// @ts-ignore - relPath is never read, but must be specified anyways
-								fileL = zip.filter(function (relPath, file) {return !file.name.endsWith('.reqif')});
+								fileL = zip.filter( (relPath, file) =>{return !file.name.endsWith('.reqif')});
 //								console.debug('iospecif.toSpecif 2',fileL);
 								if( fileL.length > 0 ) {
 									// add the files to the first specif data set:
 									resL[0].files = [];
 									pend = fileL.length;
-									fileL.forEach( function(aFile) { 
+									fileL.forEach( (aFile:any) =>{ 
 													// skip directories:
 													if( aFile.dir ) { pend--; return false };
 
@@ -117,7 +117,7 @@ moduleManager.construct({
 													
 //													console.debug('iospecif.toSpecif 3',t,e.date,e.date.toISOString());
 													zip.file(aFile.name).async("blob")
-													.then( function(f) {
+													.then( (f:Blob) =>{
 														resL[0].files.push({ 
 															blob: f, 
 															id: 'F-' + simpleHash(aFile.name), 
@@ -180,15 +180,15 @@ moduleManager.construct({
 		}
 	};
 		
-	self.toReqif = function( pr:SpecIF, opts?:any ):string {
+	self.fromSpecif = ( pr:SpecIF, opts?:any ):string =>{
 		// Transform pr to ReqIF,
 		// where pr is a SpecIF data in JSON format (not the internal cache):
 		// ToDo:
 		// - transform any default values
 		// - suppress or replace xhtml-tags not supported by ReqIF, e.g. <img>
 		// - in ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-		
-//		console.debug( 'ioReqif.toReqif', simpleClone(pr) );
+
+//		console.debug( 'ioReqif.fromSpecif', simpleClone(pr) );
 
 		// Check for missing options:
 		if( typeof(opts)!='object' ) opts = {};
@@ -332,12 +332,11 @@ moduleManager.construct({
 		// Text may be XHTML-formatted, even in a property of dataType 'xs:string'.
 		// So change all propertyClasses of dataType 'xs:string' to 'xhtml', 
 		// if XHTML-formatted text exists in at least one instance.
-			function specializeClassToFormattedText( ctg:string, eC ):void {
-				// eC is a resourceClass or statementClass;
+			function specializeClassToFormattedText(ctg: string, eC: SpecifResourceClass | SpecifStatementClass): void {
 				// get all instances of eC:
-			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
+				//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
 
-					function withHtml(L,id:string):boolean {
+					function withHtml(L: SpecifResource[]|SpecifStatement[], id: string): boolean {
 						// for all elements (resources or statements) in list L, 
 						// check whether a property of the given propertyClass id
 						// has HTML content; a single occurrence is sufficient: 
@@ -356,8 +355,8 @@ moduleManager.construct({
 				if( eC.propertyClasses ) {
 					// list elements, i.e. resources or statements, of a certain class:
 					let eL = ctg=='statementClass'? 
-								pr.statements.filter( function(sta) { return sta['class']==eC.id } )
-							: 	pr.resources.filter( function(res) { return res['class']==eC.id } ),
+								pr.statements.filter( (sta) => { return sta['class']==eC.id } )
+							: 	pr.resources.filter( (res) => { return res['class']==eC.id } ),
 						pC;
 //					console.debug( 'specializeClassToFormattedText', eC, eL );
 
@@ -404,7 +403,7 @@ moduleManager.construct({
 		
 		// 1. Transform dataTypes:
 		if (pr.dataTypes)
-			pr.dataTypes.forEach(function (dT: SpecifDataType) {
+			pr.dataTypes.forEach( (dT: SpecifDataType) =>{
 				switch( dT.type ) {
 					case 'xs:boolean':
 						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
@@ -431,7 +430,7 @@ moduleManager.construct({
 					case 'xs:enumeration':
 						xml += '<DATATYPE-DEFINITION-ENUMERATION '+commonAttsOf( dT )+'>' +
 								'<SPECIFIED-VALUES>';
-						dT.values.forEach( function(val,i) {
+						dT.values.forEach( (val,i) =>{
 							xml += '<ENUM-VALUE IDENTIFIER="'+val.id+'" LONG-NAME="'+val.value+'" LAST-CHANGE="'+dateTime(dT)+'" >' +
 									 '<PROPERTIES><EMBEDDED-VALUE KEY="'+i+'" OTHER-CONTENT="" /></PROPERTIES>' +
 								   '</ENUM-VALUE>';
@@ -481,15 +480,15 @@ moduleManager.construct({
 			}
 		// First, collect all resources referenced by the hierarchies,
 		// ignore the hierarchy roots here, they are handled further down:
-		pr.hierarchies.forEach( function(h) {
+		pr.hierarchies.forEach( (h) =>{
 			if( h.nodes )
-				h.nodes.forEach( function(n) {
+				h.nodes.forEach( (n) =>{
 					iterate( n, prepObj );
 				});
 		});
 //		console.debug( 'after collecting referenced resources: ', separated );
 		// Then, have a look at the hierarchy roots:
-		pr.hierarchies.forEach( function(h) {
+		pr.hierarchies.forEach( (h) =>{
 			// The resources referenced at the lowest level of hierarchies 
 			// are SPECIFICATIONS in terms of ReqIF.
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
@@ -521,7 +520,7 @@ moduleManager.construct({
 //		console.debug( 'reqSort', separated );
 		
 		// 3. Transform resourceClasses to OBJECT-TYPES:
-		separated.objTypes.forEach( function(oT) {
+		separated.objTypes.forEach( (oT) =>{
 			xml += '<SPEC-OBJECT-TYPE '+commonAttsOf( oT )+'>'
 				+		attrTypesOf( oT )
 				+ '</SPEC-OBJECT-TYPE>';
@@ -529,7 +528,7 @@ moduleManager.construct({
 		
 		// 4. Transform statementClasses to RELATION-TYPES:
 		if(pr.statementClasses)	
-			pr.statementClasses.forEach(function (sC) {
+			pr.statementClasses.forEach( (sC) =>{
 			/*	// ToDo: transform only the statementClasses
 				// - having at least one resourceClass in each subjectClasses and objectClasses
 				//   ... unless subjectClasses or objectClasses are missing.
@@ -546,7 +545,7 @@ moduleManager.construct({
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
-		separated.spcTypes.forEach( function(hC) {
+		separated.spcTypes.forEach( (hC) =>{
 			xml += '<SPECIFICATION-TYPE '+commonAttsOf( hC )+'>'
 				+		attrTypesOf( hC )
 				+  '</SPECIFICATION-TYPE>';
@@ -555,7 +554,7 @@ moduleManager.construct({
 			+	'<SPEC-OBJECTS>';
 		
 		// 6. Transform resources to OBJECTS:
-		separated.objects.forEach( function(r) {
+		separated.objects.forEach( (r) =>{
 			xml += '<SPEC-OBJECT '+commonAttsOf( r )+'>'
 				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+r['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
 				+		attsOf( r )
@@ -565,7 +564,7 @@ moduleManager.construct({
 			+	'<SPEC-RELATIONS>';
 		
 		// 7. Transform statements to RELATIONs:
-		pr.statements.forEach(function (s) {
+		pr.statements.forEach( (s) =>{
 			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema,
 			// or transform only statements whose subject and object relating to resources:
 			if( indexById(pr.resources, s.object)>-1 && indexById(pr.resources, s.subject)>-1 ) {
@@ -583,7 +582,7 @@ moduleManager.construct({
 			+	'<SPECIFICATIONS>';
 		
 		// 8. Transform hierarchies to SPECIFICATIONs:
-		pr.hierarchies.forEach( function(h) {
+		pr.hierarchies.forEach( (h) =>{
 			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
 				// @ts-ignore - index is ok:
 				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
@@ -613,7 +612,7 @@ moduleManager.construct({
 				// eC: resourceClass or statementClass
 				if( !eC || !eC.propertyClasses || eC.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
 				var xml='<SPEC-ATTRIBUTES>';
-				eC.propertyClasses.forEach( function(pC) {
+				eC.propertyClasses.forEach( (pC) =>{
 					pC = itemById( pr.propertyClasses, pC );  // replace id by the item itself
 					// SpecIF resourceClasses and statementClasses may share propertyClasses,
 					// but in ReqIF every type has its own ATTRIBUTE-DEFINITIONs.
@@ -667,7 +666,7 @@ moduleManager.construct({
 			function attsOf( me ):string {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
 				var xml='<VALUES>';
-				me.properties.forEach( function(prp) {
+				me.properties.forEach( (prp) =>{
 					let pC = itemById( pr.propertyClasses, prp['class'] ),
 						dT = itemById( pr.dataTypes, pC.dataType ),
 						adId = simpleHash(me['class']+prp['class']);
@@ -722,27 +721,27 @@ moduleManager.construct({
 										// escape text except for HTML tags:
 										LIB.escapeInnerHtml(prp.value)
 										// ReqIF does not support the class attribute:
-										.replace( RE_class, function() { 
+										.replace( RE_class, () =>{ 
 											return '';
 										})
 										// ReqIF does not support the target attribute within the anchor tag <a>:
 										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE_aTarget, function($0,$1) {
+										.replace( RE_aTarget, ($0,$1) =>{
 											return $1;
 										})
 										// ReqIF schema: "Only data, type, width and height are allowed as attributes 
 										// for XHTML object element and type must be set to MIME-Type (if one exists)"
 										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE_objectId, function($0,$1) {
+										.replace( RE_objectId, ($0,$1) =>{
 											return $1;
 										})
 										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE_objectName, function($0,$1) {
+										.replace( RE_objectName, ($0,$1) =>{
 											return $1;
 										})
 										// Add the namespace to XHTML-tags:
 										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE.tag, function($0,$1,$2) {
+										.replace( RE.tag, ($0,$1,$2) =>{
 											return $1+ns+':'+$2;
 										});
 							xml += '<ATTRIBUTE-VALUE-XHTML>'
@@ -755,7 +754,7 @@ moduleManager.construct({
 								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
 								+			'<VALUES>'
 							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
-							vL.forEach( function(v:string) {
+							vL.forEach( (v:string) =>{
 								xml += '<ENUM-VALUE-REF>'+v+'</ENUM-VALUE-REF>'
 							});
 							xml += 			'</VALUES>'
@@ -773,7 +772,7 @@ moduleManager.construct({
 			function childrenOf( el ):string {
 				if( !el.nodes || el.nodes.length<1 ) return ''
 				var xml = '<CHILDREN>'
-					el.nodes.forEach( function(ch) {
+					el.nodes.forEach( (ch) =>{
 						xml += '<SPEC-HIERARCHY IDENTIFIER="'+(ch.id||'N-'+ch.resource)+'" LONG-NAME="'+(ch.title||'')+'" LAST-CHANGE="'+(ch.changedAt||el.changedAt)+'">'
 							+		'<OBJECT><SPEC-OBJECT-REF>'+ch.resource+'</SPEC-OBJECT-REF></OBJECT>'
 							+		childrenOf( ch )
@@ -784,12 +783,12 @@ moduleManager.construct({
 			function iterate( tree, fn ) {
 				fn( tree );
 				if( tree.nodes )
-					tree.nodes.forEach( function(n) {
+					tree.nodes.forEach( (n) => {
 						iterate( n, fn );
 					});
 			}
 	};
-	self.abort = function():void {
+	self.abort = ():void =>{
 //		app.cache.abort();
 //		server.project().cancelImport();
 		self.abortFlag = true;

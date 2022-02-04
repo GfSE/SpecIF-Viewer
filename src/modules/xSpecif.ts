@@ -101,7 +101,7 @@ class CSpecIF implements SpecIF {
 		if (!spD) spD = this;
 		return typeof (spD.id) == 'string' && spD.id.length > 0;
 	}
-	set(spD:any,opts?:any) {
+	set(spD: any, opts?: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
 				if (opts && opts.noCheck) {
@@ -337,7 +337,7 @@ class CSpecIF implements SpecIF {
 			oE.title = makeTitle(iE.title);  // an input file may have titles which are not from the SpecIF vocabulary.
 
 			oE.dataType = makeKey(iE.dataType);
-			let dT: SpecifDataType = itemById(self.dataTypes, iE.dataType);
+			let dT: SpecifDataType = LIB.itemByKey(self.dataTypes, oE.dataType);
 //			console.debug('pC2int',iE,dT);
 
 			// The default values:
@@ -851,7 +851,7 @@ class CSpecIF implements SpecIF {
 						// create a new root instance:
 						spD.hierarchies = [{
 							id: "H-" + res.id,
-							resource: { id: res.id},
+							resource: LIB.keyOf(res),
 							// .. and add the previous hierarchies as children:
 							nodes: spD.hierarchies,
 							changedAt: spD.changedAt
@@ -865,16 +865,16 @@ class CSpecIF implements SpecIF {
 
 				function aHierarchyHasNoRoot(dta: SpecIF): boolean {
 					for (var i = dta.hierarchies.length - 1; i > -1; i--) {
-						let hR = itemById(dta.resources, dta.hierarchies[i].resource);
-						if (!hR) {
+						let r = LIB.itemByKey(dta.resources, dta.hierarchies[i].resource);
+						if (!r) {
 							throw Error("Hierarchy '"+dta.hierarchies[i].id+"' is corrupt");
 						};
-						let prpV = LIB.valByTitle(hR, CONFIG.propClassType, dta),
-							hC = itemById(dta.resourceClasses, hR['class']);
+						let prpV = LIB.valByTitle(r, CONFIG.propClassType, dta),
+							rC = LIB.itemByKey(dta.resourceClasses, r['class']);
 						// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 						// or by the title of the resourceClass:
 						if ((!prpV || CONFIG.hierarchyRoots.indexOf(prpV) < 0)
-							&& (!hC || CONFIG.hierarchyRoots.indexOf(hC.title) < 0))
+							&& (!rC || CONFIG.hierarchyRoots.indexOf(rC.title) < 0))
 							return true;
 					};
 					return false;
@@ -900,14 +900,14 @@ class CSpecIF implements SpecIF {
 					var oE: SpecifDataType = i2ext(iE);
 					oE.type = iE.type;
 					switch (iE.type) {
-						case "xs:double":
+						case SpecifDataTypeEnum.Double:
 							if (iE.fractionDigits) oE.fractionDigits = iE.fractionDigits;
-						case "xs:integer":
+						case SpecifDataTypeEnum.Integer:
 							if (typeof (iE.minInclusive) == 'number') oE.minInclusive = iE.minInclusive;
 							if (typeof (iE.maxInclusive) == 'number') oE.maxInclusive = iE.maxInclusive;
 							break;
-						case "xhtml":
-						case "xs:string":
+					//	case "xhtml":
+						case SpecifDataTypeEnum.String:
 							if (iE.maxLength) oE.maxLength = iE.maxLength;
 					};
 					// Look for enumerated values;
@@ -928,7 +928,7 @@ class CSpecIF implements SpecIF {
 					var oE: SpecifPropertyClass = i2ext(iE);
 					if (iE.value) oE.value = iE.value;  // a default value
 					oE.dataType = iE.dataType;
-					let dT = itemById(spD.dataTypes, iE.dataType);
+					let dT = LIB.itemByKey(spD.dataTypes, iE.dataType);
 					switch (dT.type) {
 						case 'xs:enumeration':
 							// With SpecIF, he 'multiple' property should be defined at dataType level
@@ -981,7 +981,7 @@ class CSpecIF implements SpecIF {
 					if (!iE.values || iE.values.length<1) return;
 
 					// skip hidden properties:
-					let pC: SpecifPropertyClass = itemById(spD.propertyClasses, iE['class']);
+					let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
 					if (Array.isArray(opts.hiddenProperties)) {
 						opts.hiddenProperties.forEach((hP) => {
 							if (hP.title == (iE.title || pC.title) && (hP.value == undefined || hP.value == iE.value)) return;
@@ -1111,7 +1111,7 @@ class CSpecIF implements SpecIF {
 					// Skip the title, if it is equal to the statementClass' title;
 					// ToDo: remove limitation of single language.
 					if (oE.title && typeof (oE.title) == "string") {
-						let sC = itemById(spD.statementClasses, iE['class']);
+						let sC = LIB.itemByKey(spD.statementClasses, iE['class']);
 						if (typeof (sC.title) == "string" && oE.title == sC.title)
 							delete oE.title;
 					};

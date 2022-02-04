@@ -830,20 +830,20 @@ class CResourcesToShow {
 	}
 }
 class CFileWithContent implements IFileWithContent {
-	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
-	changedAt: string;
-	changedBy?: string;
-	description?: SpecifMultiLanguageText[] | string;
-	// @ts-ignore - presence of 'id' is checked by the schema on import
-	id: string;
-	replaces?: string[];
-	revision?: string;
 	// @ts-ignore - presence of 'title' is checked by the schema on import
 	title: SpecifMultiLanguageText[] | string;
+	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'type' is checked by the schema on import
 	type: string;
 	blob?: Blob;
 	dataURL?: string;
+	// @ts-ignore - presence of 'id' is checked by the schema on import
+	id: string;
+	replaces?: string[];
+	revision?: string;
+	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
+	changedAt: string;
+	changedBy?: string;
 	constructor(f: IFileWithContent) {
 		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
@@ -953,7 +953,7 @@ class CFileWithContent implements IFileWithContent {
 		LIB.blob2text(this, displaySVGeverywhere, opts.timelag)
 		return;
 
-		function itemBySimilarId(L: Item[], id: string): Item | undefined {
+		function itemBySimilarId(L: any[], id: string):any | undefined {
 			// return the list element having an id similar to the specified one:
 			id = id.trim();
 			for (var i = L.length - 1; i > -1; i--)
@@ -984,7 +984,7 @@ class CFileWithContent implements IFileWithContent {
 					// the SVG image with or without embedded images:
 					img: r
 				},
-				dataURLs:string[] = [],	// temporary list of embedded images
+				dataURLs:any[] = [],	// temporary list of embedded images
 				// RegExp for embedded images,
 				// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
 				rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
@@ -1009,7 +1009,7 @@ class CFileWithContent implements IFileWithContent {
 							id: fTi,
 							val: r
 						});
-						//								console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
+//						console.debug('last dataURL',pend,dataURLs[dataURLs.length-1],svg);
 						if (--pend < 1) {
 							// all embedded images have been transformed,
 							// replace references by dataURLs and add complete image to DOM:
@@ -1017,8 +1017,7 @@ class CFileWithContent implements IFileWithContent {
 							svg.img = svg.img.replace(rE, ($0, $1, $2, $3) => {
 								let dURL = itemBySimilarId(dataURLs, $2);
 								// replace only if dataURL is available:
-								if (dURL) return $1 + dURL.val + $3
-								else return '';
+								return dURL ? $1 + dURL.val + $3 : "";
 							});
 							displayAll(svg);
 						};
@@ -2119,11 +2118,11 @@ moduleManager.construct({
 			setUrlParams({
 				project: cacheData.id,
 				view: self.view.substr(1),	// without leading hash
-				node: nd.id,
-				item: nd.ref
+				node: nd.id
+			//	item: nd.ref
 			}); 
 
-		app.cache.selectedProject.readStatementsOf({ id: nd.ref }, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
+		app.cache.selectedProject.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
 		.then( 
 			(sL:SpecifStatement[])=>{
 				// sL is the list of statements involving the selected resource.
@@ -2233,18 +2232,18 @@ moduleManager.construct({
 
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
-					localOpts = $.extend({},opts,{addIcon:false}),  // no icons when searching titles
+					localOpts = $.extend({}, opts, { addIcon: false, targetLanguage: browser.language }),  // no icons when searching titles
 					selTi = elementTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
 					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
 
 				// Iterate the tree ... 
-				self.parent.tree.iterate( (nd)=>{
+				self.parent.tree.iterate((nd: jqTreeNode) => {
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check permissions, here:
 					pend++;
-					app.cache.selectedProject.readContent( 'resource', {id: nd.ref} )
+					app.cache.selectedProject.readContent('resource', nd.ref )
 					.then( 
 						(rL:SpecifResource[])=>{   
 							// refR is a resource referenced in a hierarchy
@@ -2262,10 +2261,9 @@ moduleManager.construct({
 										// assuming that the dataTypes are always cached:
 										switch (LIB.dataTypeOf(cacheData, p['class']).type) {
 											case SpecifDataTypeEnum.String:
-											case 'xhtml':	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
+												if (refPatt.test( languageValueOf(p.values[0],localOpts )) && notListed( staL, selR, refR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted

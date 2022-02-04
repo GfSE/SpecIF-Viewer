@@ -11,7 +11,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self')
 moduleManager.construct({
 	name: 'ioArchimate'
-}, function(self:IModule) {
+}, function(self:ITransform) {
 
 	var fDate: string,		// the file modification date
 		fName: string,
@@ -22,7 +22,7 @@ moduleManager.construct({
 		return true
 	};
 
-	self.verify = function( f ):boolean {
+	self.verify = function( f:File ):boolean {
 
 			function isArchimate( fname:string ):boolean {
 				// ToDo: Briefly check for Archimate content
@@ -36,20 +36,18 @@ moduleManager.construct({
 //		console.debug( 'file', f );
 		// remove directory path:
 		// see https://stackoverflow.com/questions/423376/how-to-get-the-file-name-from-a-full-path-using-javascript
+		// @ts-ignore - in practice fname is always defined:
 		fName = f.name.split('\\').pop().split('/').pop();
 		
 		// Remember the file modification date:
 		if( f.lastModified ) {
 			fDate = new Date(f.lastModified).toISOString()
-		} else {
-			if( f.lastModifiedDate )
-				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
-				fDate = new Date(f.lastModifiedDate).toISOString()
-			else
-				// Take the actual date as a final fall back.
-				// Date() must get *no* parameter here; 
-				// an undefined value causes an error and a null value brings the UNIX start date:
-				fDate = new Date().toISOString()
+		}
+		else {
+			// Take the actual date as a final fall back.
+			// Date() must get *no* parameter here; 
+			// an undefined value causes an error and a null value brings the UNIX start date:
+			fDate = new Date().toISOString()
 		};
 //		console.debug( 'file', f, fDate );
 		return true;

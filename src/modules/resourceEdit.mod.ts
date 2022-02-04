@@ -413,7 +413,7 @@ moduleManager.construct({
 				// "<div><p class=\"inline-label\">Plan:</p><p><object type=\"image/svg+xml\" data=\"files_and_images\\50f2e49a0029b1a8016ea6a5f78ff594.svg\">Arbeitsumgebung</object></p></div>"
 				let fType = f.type||opts.mediaTypeOf(f.name),
 					fName = 'files_and_images/'+f.name,
-					newFile = new CFileWithContent({ blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified || f.lastModifiedDate ).toISOString() });
+					newFile = new CFileWithContent({ blob: data, id: 'F-' + simpleHash(fName), title:fName, type: fType, changedAt: new Date( f.lastModified ).toISOString() });
 				LIB.itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '<object data="'+fName+'" type="'+fType+'">'+fName+'</object>';
 				self.newFiles.push( newFile );
 			document.getElementById(tagId(cId)).innerHTML = '<div class="forImagePreview ' + tagId(fName) + '">' + newFile.renderImage()+'</div>';

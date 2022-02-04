@@ -20,7 +20,7 @@ interface IFieldOptions {
 }
 function textField(tag: string, val: string, opts?: IFieldOptions): string {  
 	// assemble a form for text input or display:
-	//	console.debug('textField 1',tag,val,typ,fn);
+//	console.debug('textField 1',tag,val,typ,fn);
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
 
@@ -30,10 +30,10 @@ function textField(tag: string, val: string, opts?: IFieldOptions): string {
 		sH = simpleHash(tag),
 		fG: string,
 		aC: string;
-	if (typeof (opts.typ) == 'string' && ['line', 'area'].indexOf(opts.typ)>-1 ) 	
-		fG = '<div id="'+sH+'" class="form-group form-active" >'    // for input field
+	if ( opts.typ && ['line', 'area'].indexOf(opts.typ)>-1 ) 	
+		fG = '<div id="'+sH+'" class="form-group form-active" >'    // input field
 	else
-		fG = '<div class="attribute" >';				// for display field
+		fG = '<div class="attribute" >';				// display field
 
 	switch( opts.tagPos ) {
 		case 'none':
@@ -347,11 +347,14 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 					// msg is an jqXHR object:
 					if (!opts.severity) opts.severity = msg.status < 202 ? 'success' : 'danger';
 
+				/*	msg = (msg.statusText || i18n.Error)
+						+ " (" + msg.status
+						+ ((msg.responseType == 'text' || typeof (msg.responseText) == 'string') && msg.responseText.length > 0 ?
+							"): " + msg.responseText : ")"); */
+
 					msg = (msg.statusText || i18n.Error)
 						+ " (" + msg.status
-						// @ts-ignore - yes, can handle the case that the property is undefined:
-						+ (typeof (msg.responseText == 'string') && msg.responseText.length>0 ? 
-							"): " + msg.responseText : ")");
+						+ ( msg.responseText ? "): " + msg.responseText : ")");
 					break;
 				};
 			default:
@@ -384,8 +387,6 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 type Item = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
 type Instance = SpecifResource | SpecifStatement;
 LIB.keyOf = (el: any): SpecifKey => {
-//	if (typeof (el) == 'string' return { id: el });
-	// else:
 	return el.revision ? { id: el.id, revision: el.revision } : { id: el.id };
 }
 LIB.isKey = (el: any): boolean => {
@@ -405,61 +406,51 @@ LIB.isMultiLanguageText = (L: any[]): boolean => {
 	};
 	return false;
 }
-LIB.itemByKey = (L: any[], k: SpecifKey):any => {
+LIB.itemByKey = (L: Item[], k: SpecifKey):any => {
 	// Return the item in L with key k 
+	return L[ LIB.indexByKey(L, k) ]; // return the latest revision
+}
+LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
+	// Return the index of item with key k in L
 	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
 	//  - If k has no revision, the item in L having the latest revision applies.
 	//  - If k has a revision, the item in L having an an equal or the next lower revision applies.
 	//  - The uniqueness of keys has been checked, before.
 
-	// Find all elements with the same id:
-	let itemsWithEqId = L.filter( (e) =>{ return e.id == k.id });
-	if (itemsWithEqId.length < 1) return; // no element with the specified id
-
-	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].revision) {
-		// a single item without revision has been found:
-		if (k.revision) return // revisions don't match (this should not occur)
-		else return itemsWithEqId[0] // both the found element and the key have no revision
-	};
-
-	// The elements in L have a revision and there are more than 1 of them.
-	if (k.revision) {
-		// Find the element with equal revision:
-		let itemsWithEqRev = itemsWithEqId.filter((e) => { return e.revision == k.revision });
-		if (itemsWithEqRev.length > 0) return itemsWithEqRev[0];
-		// else, there is no element with the requested revision:
-		return;  // undefined
-	};
-
-	// Sort revisions with descending order:
-	itemsWithEqId.sort( (laurel, hardy) =>{ return hardy.changedAt - laurel.changedAt });
-	return itemsWithEqId[0]; // return the latest revision
-}
-LIB.indexByKey = (L: any[], k: SpecifKey): number => {
-	// Find all elements with the same id:
+	// Find all items with the same id:
 	let	i=0,
-		// filter the input list and add an index to the elements:
-		itemsWithEqId = L.filter((e) => { e.idx = i++; return e.id == k.id });
+		// filter the input list and add the index to the elements;
+		// add index without changing L and it's items:
+		itemsWithEqId = LIB.forAll(
+			L,
+			(e:Item) => {
+				if (e.id == k.id )
+					return { idx: i++, rev: e.revision, chAt: e.changedAt }
+			}
+		);
 	if (itemsWithEqId.length < 1) return -1; // no element with the specified id
 
-	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].revision) {
+	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].rev) {
 		// a single item without revision has been found:
-		if (k.revision) return -1 // revisions don't match (this should not occur)
-		else return itemsWithEqId[0].idx // both the found element and the key have no revision
+		if (k.revision) return -1; // revisions don't match (this should not occur)
+		return itemsWithEqId[0].idx // both the found element and the key have no revision
 	};
 
-	// The elements in L have a revision and there are more than 1 of them.
+	// The elements in itemsWithEqId have a revision:
+	// If there are more than one and the constraint checker was happy, they must have a revision.
 	if (k.revision) {
 		// Find the element with equal revision:
-		let itemsWithEqRev = itemsWithEqId.filter((e) => { return e.revision == k.revision });
-		if (itemsWithEqRev.length > 0) return itemsWithEqRev[0].idx;
-		// else, there is no element with the requested revision:
-		return -1;
+		let itemsWithEqRev = itemsWithEqId.filter((e: Item) => { return e.revision == k.revision });
+		// With the project data being constraint checked, itemsWithEqRev.length can be 0 or 1:
+		if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
+		if (itemsWithEqRev.length < 2) return itemsWithEqRev[0].idx;
+		throw Error("There are >1 items with the same id '"+k.id+"' and revision '"+k.revision+"'.");
 	};
 
-	// Sort revisions with descending order:
-	itemsWithEqId.sort( (laurel, hardy) =>{ return hardy.changedAt - laurel.changedAt });
-	return itemsWithEqId[0].idx; // return the latest revision
+	// The key has no revision and so the latest shall be returned.
+	// Sort revisions in the order of creation; the latest first:
+	itemsWithEqId.sort(( laurel: any, hardy:any ) => { return hardy.changedAt - laurel.changedAt });
+	return itemsWithEqId[0].idx; // return the index of the latest revision
 }
 function indexById(L:any[],id:string):number {
 	if( L && id ) {
@@ -494,25 +485,35 @@ function itemByTitle(L:any[],ti:string):any {
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
 }
-LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
-	// should also work for revision==undefined:
-	return LIB.isKey(r) && LIB.isKey(n) && r.id == n.id && ( !n.revision || r.revision == n.revision );
+/* LIB.mostRecent = (L: Item[], k: SpecifKey): Item => {
+	let itmL = L.filter(
+			(itm) => { return itm.id == k.id }
+		)
+		.sort();
+	return
+} */
+LIB.equalKey = (refE: SpecifKey, newE: SpecifKey): boolean => {
+	// Return true if both keys are equivalent;
+	// this applies if only an id is given or a key with id and revision:
+	return refE.id == newE.id && refE.revision == newE.revision;
 }
-LIB.indexBy = (L: any[], p: string, s: SpecifKey): number => {
-	if (L && p && s) {
-		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's';
-		// where s can be a string or a key:
+LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
+	// ToDo: true, only if r is the latest revision in case n.revision is undefined ...
+	return LIB.isKey(r) && LIB.isKey(n) && r.id == n.id && (!n.revision || r.revision == n.revision);
+}
+LIB.indexBy = (L: any[], p: string, k: SpecifKey): number => {
+	if (L && p && k) {
+		// Return the index of an element in list 'L' whose property 'p' equals key 'k':
 		for (var i = L.length - 1; i > -1; i--)
-			if( LIB.isKey(s) && LIB.isReferenced(L[i][p], s)) return i; // return list index
+			if( LIB.isKey(k) && LIB.isReferenced(L[i][p], k)) return i; // return list index
 	};
 	return -1;
 }
-LIB.itemBy = (L: any[], p: string, s: SpecifKey): any => {
-	if (L && p && s) {
-		// Return the element in list 'L' whose property 'p' equals searchterm 's';
-		// where s can be a string or a key:
+LIB.itemBy = (L: any[], p: string, k: SpecifKey): any => {
+	if (L && p && k) {
+		// Return the element in list 'L' whose property 'p' equals key 'k':
 		for (var i = L.length - 1; i > -1; i--)
-			if( LIB.isKey(s) && LIB.isReferenced(L[i][p], s)) return L[i]; // return list item
+			if( LIB.isKey(k) && LIB.isReferenced(L[i][p], k)) return L[i]; // return list item
 	};
 }
 /*
@@ -1020,7 +1021,7 @@ function simpleHash(str: string): number {
 };
 function simpleClone( o:any ): any {
 	// "deep" clone;
-	// does only work, if none of the property values are functions:
+	// does only work, if none of the property values is a function:
 		function cloneProp(p:any) {
 			return ( typeof(p) == 'object' )? simpleClone(p) : p;
 		}

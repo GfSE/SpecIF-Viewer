@@ -11,7 +11,7 @@
 // (A module constructor is needed, because there is an access to parent's data via 'self.parent...')
 moduleManager.construct({
 	name: 'ioXls'
-}, function (self: IModule) {
+}, function (self: ITransform) {
 	"use strict";
 	// the mode for creating a new project:
 	var fDate: string;		// the file modification date
@@ -38,14 +38,10 @@ moduleManager.construct({
 			fDate = new Date(f.lastModified).toISOString()
 		}
 		else {
-			if( f.lastModifiedDate )
-				// this is deprecated, but at the time of coding Edge does not support 'lastModified', yet:
-				fDate = new Date(f.lastModifiedDate).toISOString()
-			else
-				// Take the actual date as a final fall back.
-				// Date() must get *no* parameter here; 
-				// an undefined value causes an error and a null value brings the UNIX start date:
-				fDate = new Date().toISOString()
+			// Take the actual date as a final fall back.
+			// Date() must get *no* parameter here; 
+			// an undefined value causes an error and a null value brings the UNIX start date:
+			fDate = new Date().toISOString()
 		};
 //		console.debug( 'file', f, fDate );
 		return true;
@@ -62,7 +58,7 @@ moduleManager.construct({
 
 		return xDO
 	};
-/*	self.toXls = function (pr: SpecIF, opts?: any): string {
+/*	self.fromSpecif = function (pr: SpecIF, opts?: any): string {
 	 	console.debug('toXls',pr)
 	}; */
 	self.abort = function():void {
@@ -127,20 +123,20 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		hierarchies: SpecifNode[];
 		constructor() {
 			this.dataTypes = [
-				standardTypes.get("dataType", "DT-ShortString") as SpecifDataType,
-				standardTypes.get("dataType", "DT-Text") as SpecifDataType,
-				standardTypes.get("dataType", "DT-DateTime") as SpecifDataType,
-				standardTypes.get("dataType", "DT-Boolean") as SpecifDataType,
-				standardTypes.get("dataType", "DT-Integer") as SpecifDataType,
-				standardTypes.get("dataType", "DT-Real") as SpecifDataType
+				standardTypes.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
+				standardTypes.get("dataType", { id: "DT-Text" }) as SpecifDataType,
+				standardTypes.get("dataType", { id: "DT-DateTime" }) as SpecifDataType,
+				standardTypes.get("dataType", { id: "DT-Boolean" }) as SpecifDataType,
+				standardTypes.get("dataType", { id: "DT-Integer" }) as SpecifDataType,
+				standardTypes.get("dataType", { id: "DT-Real" }) as SpecifDataType
 			];
 			this.propertyClasses = [
-				standardTypes.get("propertyClass", "PC-Name") as SpecifPropertyClass,
-				standardTypes.get("propertyClass", "PC-Description") as SpecifPropertyClass,
-				standardTypes.get("propertyClass", "PC-Type") as SpecifPropertyClass
+				standardTypes.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
+				standardTypes.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
+				standardTypes.get("propertyClass", { id: "PC-Type" }) as SpecifPropertyClass
 			];
 			this.resourceClasses = [
-				standardTypes.get("resourceClass", "RC-Folder") as SpecifResourceClass
+				standardTypes.get("resourceClass", { id: "RC-Folder" }) as SpecifResourceClass
 			];
 			// user-created instances are not checked for visibility:
 			this.resourceClasses[0].instantiation = [SpecifInstantiation.User];
