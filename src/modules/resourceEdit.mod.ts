@@ -3,7 +3,8 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 interface IDialogField {
@@ -34,7 +35,7 @@ class DialogForm {
 			// Perform the test depending on the type:
 			switch (cPs.dataType.type) {
 				case SpecifDataTypeEnum.String:
-				case 'xhtml':
+			//	case 'xhtml':
 					ok = cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
 					break;
 				case SpecifDataTypeEnum.Double:
@@ -68,7 +69,7 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData:SpecIF,			// the cached data
+		pData:CCache,			// the cached data
 		opts:any,				// the processing options
 		toEdit:CResourceToShow;	// the resource with classified properties to edit
 
@@ -134,7 +135,7 @@ moduleManager.construct({
 	};
 
 	// The module entry;
-	self.show = ( options )=>{
+	self.show = ( options:any )=>{
 
 		self.clear();
 		pData = app.cache.selectedProject.data;
@@ -254,13 +255,13 @@ moduleManager.construct({
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
 					},
-					ti = titleOf(p,opts);
+					ti = LIB.titleOf(p,opts);
 				// create an input field depending on the property's dataType;
 				// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
 				switch (dT ? dT.type : "xs:string") {
 					case 'xs:string':
 					case 'xhtml':
-						if (propTitleOf(p, pData) == CONFIG.propClassDiagram) {
+						if (LIB.propTitleOf(p, pData) == CONFIG.propClassDiagram) {
 							// it is a diagram reference (works only with XHTML-fields):
 							return renderDiagram(p, opts)
 						}
@@ -311,7 +312,7 @@ moduleManager.construct({
 				function renderDiagram(p,opts) {
 //					console.debug('renderDiagram',p);
 					return '<div class="form-group form-active" >'
-						+ 		'<div class="attribute-label" >'+titleOf(p,opts)+'</div>'
+						+ 		'<div class="attribute-label" >'+LIB.titleOf(p,opts)+'</div>'
 						+ 		'<div class="attribute-value">'
 						+			diagBtns(p)
 									// Add a container based on the propertyClass (which should be unique and since there is usually no property-id), 
@@ -349,7 +350,7 @@ moduleManager.construct({
 					(rCL)=>{
 						if( rCL.length>0 ) {
 							// store a clone and get the title to display:
-							let resClasses = LIB.forAll( simpleClone( rCL ), (rC)=>{ rC.title=titleOf(rC,{lookupTitles:true}); return rC } );
+							let resClasses = LIB.forAll( simpleClone( rCL ), (rC)=>{ rC.title=LIB.titleOf(rC,{lookupTitles:true}); return rC } );
 							if( resClasses.length>1 ) {
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
@@ -476,7 +477,7 @@ moduleManager.construct({
 		toEdit.descriptions.forEach( function(p) {
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
-			if( CONFIG.diagramClasses.indexOf(propTitleOf(p,pData))>-1 ) {
+			if( CONFIG.diagramClasses.indexOf(LIB.propTitleOf(p,pData))>-1 ) {
 				if( Array.isArray( self.newRes.properties ) )
 					self.newRes.properties.push( p );
 				else
@@ -575,7 +576,7 @@ moduleManager.construct({
 							break; */
 						case 'insertBelow':
 //							console.debug('nd below',selNd,self.parent.tree.selectedNode)
-							self.parent.tree.openNode( selNd );
+							self.parent.tree.openNode();
 						//	self.parent.tree.selectNode( selNd.getNextNode() )   // go to next visible tree node
 							// no break
 						case 'insertAfter':
@@ -607,19 +608,19 @@ moduleManager.construct({
 				case 'xs:string':
 				case 'xhtml':
 					// The diagrams are skipped in the calling layer above.
-//					console.debug( 'getP',p,textValue( titleOf(p,opts) ) );
-					return textValue( titleOf(p,opts) );
+//					console.debug( 'getP',p,textValue( LIB.titleOf(p,opts) ) );
+					return textValue( LIB.titleOf(p,opts) );
 				case 'xs:enumeration':
 //					console.debug('xs:enumeration',p,pC,separatedValues,vals);
 					if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
-//						console.debug( '*',p,checkboxValues( titleOf(p,opts) ).toString() );
-						return checkboxValues( titleOf(p,opts) ).toString();
+//						console.debug( '*',p,checkboxValues( LIB.titleOf(p,opts) ).toString() );
+						return checkboxValues( LIB.titleOf(p,opts) ).toString();
 					} else {
-//						console.debug( '*',p,radioValue( titleOf(p,opts) ) );
-						return radioValue( titleOf(p,opts) );
+//						console.debug( '*',p,radioValue( LIB.titleOf(p,opts) ) );
+						return radioValue( LIB.titleOf(p,opts) );
 					};
 				case 'xs:boolean':
-					return booleanValue( titleOf(p,opts) ).toString();
+					return booleanValue( LIB.titleOf(p,opts) ).toString();
 			}
 		}
 	};

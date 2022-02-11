@@ -26,7 +26,7 @@ function ObjectTable() {
 			oT = myProject.objTypes[s];
 			for( a=0,A=oT.attributeTypes.length;a<A;a++ ) {
 				ln=oT.attributeTypes[a].longName;
-				ti=titleOf(oT.attributeTypes[a]);
+				ti=LIB.titleOf(oT.attributeTypes[a]);
 				// only for attributes which are not a title or a description (already contained in column "titleAndDescr")
 				// .. and only if it is a new column (there isn't any with the same name, yet):
 				// ToDo: Exclude only the first title attribute, the active one.

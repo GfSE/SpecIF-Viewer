@@ -3,7 +3,8 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 // Construct the resource editor:
@@ -14,7 +15,7 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData: CSpecIF,			// the cached data
+		pData: CCache,			// the cached data
 		selRes:SpecifResource,	// the currently selected resource
 		opts:any;				// the processing options
 
@@ -130,7 +131,7 @@ moduleManager.construct({
 					// store a clone and get the title to display:
 					let staClasses = LIB.forAll( 
 							self.eligibleSCL, 
-							(sC)=>{ return {title:titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} 
+							(sC)=>{ return {title:LIB.titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} 
 						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
@@ -267,10 +268,10 @@ moduleManager.construct({
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(selRes,opts,pData) +"' "
-										+ titleOf(self.selectedStatementClass,opts) +" '"
+										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"'" ) */
 			btn.setAttribute("title", "'"+elementTitleOf(selRes,opts,pData) +"' "
-										+ titleOf(self.selectedStatementClass,opts) +" '"
+										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(self.selectedCandidate.resource,opts,pData) +"'" )
 		}
 		else {
@@ -286,10 +287,10 @@ moduleManager.construct({
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
-										+ titleOf(self.selectedStatementClass,opts) +" '"
+										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(selRes,opts,pData) +"'" ) */
 			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
-										+ titleOf(self.selectedStatementClass,opts) +" '"
+										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ elementTitleOf(selRes,opts,pData) +"'" ) 
 		}
 		else {
@@ -308,7 +309,7 @@ moduleManager.construct({
 				placement:"top",
 				html: true,
 				content: "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
-							+ '<i>'+titleOf(self.selectedStatementClass,opts) +"</i> '"
+							+ '<i>'+LIB.titleOf(self.selectedStatementClass,opts) +"</i> '"
 							+ desperateTitleOf(selRes,opts,pData) +"'"
 			})
 		} else {

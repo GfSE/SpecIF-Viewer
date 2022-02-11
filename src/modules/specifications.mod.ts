@@ -40,14 +40,29 @@ class CPropertyToShow implements SpecifProperty {
 		this.dT = LIB.itemByKey(this.pData.dataTypes, this.pC['dataType']);
 	}
 	private allValuesByLanguage(opts: any): string {
+		if (this.dT.type != SpecifDataTypeEnum.String)
+			throw Error("Cannot select a language for a dataType other than xs:string");
 		// Return all values in the language specified;
-		// lookup the values in case of an enumeration:
-		if (opts && opts.targetLanguage) {
-			var str = '';
-			this.values.forEach((v: any) => { str += languageValueOf(v, opts) });
-			return str;
-		};
-		throw Error("When displaying property values, a target language must be specified.");
+		// or lookup the values in case of an enumeration:
+		if (this.values) {
+			if (opts && opts.targetLanguage) {
+				var str = '';
+				if (this.dT.enumeration) {
+					let v: SpecifMultiLanguageText;
+					this.values.forEach((id) => {
+						v = itemById(this.dT.enumeration, id).value;
+						str += languageValueOf(v, opts);
+					});
+				}
+				else
+					this.values.forEach((v:any) => { str += languageValueOf(v, opts); });
+				return str;
+			};
+			// else
+			throw Error("When displaying property values, a target language must be specified.");
+		}
+		else
+			return '';
     }
 	isVisible(opts: any): boolean {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
@@ -69,7 +84,7 @@ class CPropertyToShow implements SpecifProperty {
 
 		// Malicious content has been removed upon import ( specif.toInt() ).
 		let ct: string;
-		//	console.debug('*',this,this.dT);
+//		console.debug('*',this,this.dT);
 		switch (this.dT.type) {
 			case SpecifDataTypeEnum.String:
 				// remove any leading whiteSpace:
@@ -79,7 +94,7 @@ class CPropertyToShow implements SpecifProperty {
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// Apply formatting only if not listed:
-				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, this.pData)) < 0)
+				if (CONFIG.excludedFromFormatting.indexOf(LIB.propTitleOf(this, this.pData)) < 0)
 					ct = ct.makeHTML(opts);
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
@@ -161,7 +176,7 @@ class CPropertyToShow implements SpecifProperty {
 		return str;
 
 		function lnk(r: SpecifResource, t: string): string {
-			//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
+//			console.debug('lnk',r,t,'app['+CONFIG.objectList+'].relatedItemClicked(\''+r.id+'\')');
 			return '<a onclick="app[CONFIG.objectList].relatedItemClicked(\'' + r.id + '\')">' + t + '</a>'
 		}
 	}
@@ -219,7 +234,7 @@ class CPropertyToShow implements SpecifProperty {
 		}
 
 		// Prepare a file reference for viewing and editing:
-		//		console.debug('toGUI 0: ', txt);
+//		console.debug('toGUI 0: ', txt);
 		var repStrings = [];   // a temporary store for replacement strings
 
 		// 1. transform two nested objects to link+object resp. link+image:
@@ -485,7 +500,7 @@ class CResourceToShow {
 		// and moved from this.other to this.title resp. this.descriptions:
 
 		// a) Find and set the configured title:
-		let a = titleIdx(this.other, this.pData);
+		let a = LIB.titleIdx(this.other, this.pData);
 		if (a > -1) {  // found!
 			this.title = this.other.splice(a, 1)[0];
 	/*	}
@@ -504,7 +519,7 @@ class CResourceToShow {
 		// We must iterate backwards, because we alter the list of other.
 		// ToDo: use this.other.filter()
 		for (a = this.other.length - 1; a > -1; a--) {
-			if (CONFIG.descProperties.indexOf(propTitleOf(this.other[a], this.pData)) > -1) {
+			if (CONFIG.descProperties.indexOf(LIB.propTitleOf(this.other[a], this.pData)) > -1) {
 				// To keep the original order of the properties, the unshift() method is used.
 				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			};
@@ -544,21 +559,23 @@ class CResourceToShow {
 			iCs = this.pData.resourceClasses,
 			iC = this.rC;
 		// build a list of propertyClass identifiers including the extended class':
-		pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses || [] : [];
-		pCs = pCs.concat(LIB.itemByKey(iCs, el['class']).propertyClasses || []);
+	//	pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses || [] : [];
+	//	pCs = pCs.concat(LIB.itemByKey(iCs, el['class']).propertyClasses || []);
+		pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
+		pCs = pCs.concat(iC.propertyClasses);
 		// add the properties in sequence of the propertyClass identifiers:
 		pCs.forEach((pC: SpecifKey):void => {
 			// skip hidden properties:
 			if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
 			// assuming that the property classes are unique:
 			p = LIB.itemBy(el.properties, 'class', pC)
-				|| createProp(this.pData.propertyClasses, pC);
+				|| LIB.createProp(this.pData.propertyClasses, pC);
 			if (p) {
 				// by default, use the propertyClass' title:
 				// (this.pData.propertyClasses contains all propertyClasses of all resource/statement classes)
 				// An input data-set may have titles which are not from the SpecIF vocabulary;
 				// replace the result with a current vocabulary term:
-				p.title = vocabulary.property.specif(propTitleOf(p, this.pData));
+				p.title = vocabulary.property.specif(LIB.propTitleOf(p, this.pData));
 				nL.push(new CPropertyToShow(p));
 			}
 		});
@@ -585,7 +602,7 @@ class CResourceToShow {
 		return '<div class="attribute' + cssCl + '">' + val + '</div>';
 	}
 	renderTitle(opts?: any): string {
-		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
+//		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
 		if (!this.title || !this.title.values) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
@@ -593,7 +610,7 @@ class CResourceToShow {
 		let ti = languageValueOf(this.title.values[0], opts);
 		if (this.isHeading) {
 			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
-			// whereas the individual elements may mean the vocabulary term as such:
+			// whereas the individual elements may mean the vocabulary term as such (example: vocabulary):
 			if (opts && opts.lookupTitles)
 				ti = i18n.lookup(ti);
 			// it is assumed that a heading never has an icon:
@@ -679,7 +696,7 @@ class CResourceToShow {
 		// 3.1 The remaining properties:
 		this.other.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
-				rO += this.renderAttr(titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
+				rO += this.renderAttr(LIB.titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
 			};
 		});
 		// 3.2 The type info:
@@ -713,10 +730,10 @@ class CResourceToShow {
 		// 3 The remaining properties:
 		this.other.forEach( function( prp ) {
 //			console.debug('details.other',prp.value);
-			rO += this.renderAttr( titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
+			rO += this.renderAttr( LIB.titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), titleOf( self.toShow['class'], opts ) );
+		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), LIB.titleOf( self.toShow['class'], opts ) );
 		// 5 The change info depending on selectedView:
 		rO += this.renderChangeInfo();
 //		console.debug( 'CResource.details', self.toShow, rO );
@@ -1002,7 +1019,7 @@ class CFileWithContent implements IFileWithContent {
 				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
 				if (ef && ef.blob) {
 					pend++;
-					//							console.debug('SVG embedded file',mL[2],ef,pend);
+//					console.debug('SVG embedded file',mL[2],ef,pend);
 					// transform file to data-URL and display, when done:
 					LIB.blob2dataURL(ef, (r: string, fTi: string): void => {
 						dataURLs.push({
@@ -1042,7 +1059,7 @@ class CFileWithContent implements IFileWithContent {
 		// see http://tutorials.jenkov.com/svg/scripting.html
 		function registerClickEls(svg): void {
 			if (!CONFIG.clickableModelElements || CONFIG.clickElementClasses.length < 1) return;
-			//					console.debug('registerClickEls',svg);
+//			console.debug('registerClickEls',svg);
 			addViewBoxIfMissing(svg);
 
 			// now collect all clickable elements:
@@ -1056,7 +1073,7 @@ class CFileWithContent implements IFileWithContent {
 			CONFIG.clickElementClasses.forEach((cl:string) => {
 				svg.clkEls = svg.clkEls.concat(Array.from(svg.getElementsByClassName(cl)));
 			});
-			//					console.debug(svg.clkEls, typeof(svg.clkEls))
+//			console.debug(svg.clkEls, typeof(svg.clkEls))
 			svg.clkEls.forEach((clkEl) => {
 				// set cursor for clickable elements:
 				clkEl.setAttribute("style", "cursor:pointer;");
@@ -1064,6 +1081,7 @@ class CFileWithContent implements IFileWithContent {
 				// see https://www.quirksmode.org/js/events_mouse.html
 				// see https://www.quirksmode.org/dom/events/
 				clkEl.addEventListener("dblclick",
+					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
 					function () {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
@@ -1082,23 +1100,24 @@ class CFileWithContent implements IFileWithContent {
 
 				// Show the description of the element under the cursor to the left:
 				clkEl.addEventListener("mouseover",
+					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
 					function () {
-						//								console.debug(evt,this,$(this));
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 						let eId = this.className.baseVal.split(' ')[1],		// id is second class
 							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
-							ti = languageValueOf(clsPrp.title.value),
+							ti = languageValueOf(clsPrp.title.values[0], { targetLanguage: browser.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
 							dsc += d.get({ unescapeHTMLTags: true, makeHTML: true })
 						});
+						// display details only, if there is a description - so no titles without description:
 						if (dsc.stripCtrl().stripHTML()) {
 							// Remove the dynamic linking pattern from the text:
-							$("#details").html('<span style="font-size:120%">'
+							$("#details").html('<div style="font-size:120%;margin-bottom:0.3em">'
 								+ (CONFIG.addIconToInstance ? LIB.addIcon(ti, clsPrp['class'].icon) : ti)
-								+ '</span>\n'
+								+ '</div>'
 								+ dsc);
 							app.specs.showTree.set(false);
 						}
@@ -1147,7 +1166,7 @@ class CFileWithContent implements IFileWithContent {
 				let el;
 				for (var i = 0, I = svg.childNodes.length; i < I; i++) {
 					el = svg.childNodes[i];
-					//							console.debug('svg',svg,el,el.outerHTML);
+//					console.debug('svg',svg,el,el.outerHTML);
 					// look for '<svg .. >' tag with its properties, often but not always the first child node:
 					if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
 						if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
@@ -1235,6 +1254,7 @@ moduleManager.construct({
 			loc: '#hierarchy',
 			dragAndDrop: app.title!=i18n.LblReader,
 			eventHandlers: {
+				// some of the events as defined by jqTree with their handlers:
 				'select':  
 					// when a node is clicked or traversed by up/down keys
 					(event):void =>{  // The clicked node is 'event.node'
@@ -1586,14 +1606,14 @@ moduleManager.construct({
 			// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
-			self.tree.openNode( self.tree.selectedNode );
+			self.tree.openNode();
 			// opening a node triggers an event, by which 'self.refresh' will be called.
 		}
 		else {
 			if( self.tree.selectedNode.children.length>0 ) {
 //				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
-				self.tree.toggleNode( self.tree.selectedNode );
+				self.tree.toggleNode();
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
 			}
 		};
@@ -2056,7 +2076,7 @@ moduleManager.construct({
 	self.relatedItemClicked = ( rId:string ):void =>{
 //		console.debug( 'relatedItemClicked', rId );
 		// Jump to resource rId:
-		self.parent.tree.selectNodeByRef( rId );
+		self.parent.tree.selectNodeByRef( LIB.makeKey(rId) );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 		// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 		document.getElementById(CONFIG.objectList).scrollTop = 0;
@@ -2205,7 +2225,7 @@ moduleManager.construct({
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// collect the related resources:
-			if( s.subject.id == nd.ref ) { 
+			if( LIB.equalKey(s.subject, nd.ref) ) {
 				// the selected node is a subject, so the related resource is an object,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.object );
@@ -2232,7 +2252,7 @@ moduleManager.construct({
 
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
-					localOpts = $.extend({}, opts, { addIcon: false, targetLanguage: browser.language }),  // no icons when searching titles
+					localOpts = $.extend({}, opts, { addIcon: false }),  // no icons when searching titles
 					selTi = elementTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
@@ -2463,7 +2483,7 @@ moduleManager.construct({
 							rT += '<a onclick="app[CONFIG.objectList].relatedItemClicked(\''+sc.sId+'\', \''+sc.id+'\')">'+sc.sT+'</a><br />'
 					});
 					// Title and object are the same for all statements in this list:
-					rT += '</td><td style="vertical-align: middle"><i>'+titleOf(sG.rGs[0],opts)+'</i></td>';
+					rT += '</td><td style="vertical-align: middle"><i>'+LIB.titleOf(sG.rGs[0],opts)+'</i></td>';
 					rT += '<td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGs[0].object,opts)+'</span></td></tr>'
 				};
 				if( sG.rGt.length ) {
@@ -2486,7 +2506,7 @@ moduleManager.construct({
 					});
 					// Title and subject are the same for all statements in this list:
 					rT += '<tr><td style="vertical-align: middle"><span>'+elementTitleWithIcon(sG.rGt[0].subject,opts)+'</span></td>';
-					rT += '<td style="vertical-align: middle"><i>'+titleOf(sG.rGt[0],opts)+'</i></td><td>';
+					rT += '<td style="vertical-align: middle"><i>'+LIB.titleOf(sG.rGt[0],opts)+'</i></td><td>';
 					// The list of resources:
 					relG.forEach( function(tg) {
 						if( opts.fnDel && tg.computed )
@@ -2541,7 +2561,7 @@ moduleManager.construct({
 		if( modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
-			app.cache.selectedProject.deleteContent( 'statement', {id: sId} )
+			app.cache.selectedProject.deleteContent('statement', LIB.makeKey(sId) )
 			.then(
 				self.parent.doRefresh({forced:true}),
 				LIB.stdError
@@ -2549,7 +2569,7 @@ moduleManager.construct({
 		}
 		else { 
 			// Jump to resource rId:
-			self.parent.tree.selectNodeByRef( rId );
+			self.parent.tree.selectNodeByRef( LIB.makeKey(rId) );
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 			document.getElementById(CONFIG.objectList).scrollTop = 0;

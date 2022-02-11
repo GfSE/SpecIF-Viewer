@@ -1044,22 +1044,27 @@ class CProject {
 				function Folders(): SpecifResource[] {
 					// Create the resources for folder and subfolders of the glossary:
 					var fL: SpecifResource[] = [{
-						id: "FolderGlossary-" + apx,
-						class: "RC-Folder",
-						title: CONFIG.resClassGlossary,
-						properties: [{
-							class: "PC-Type",
-							value: CONFIG.resClassGlossary
-						}],
-						changedAt: tim
-					}];
+							id: "FolderGlossary-" + apx,
+							class: LIB.makeKey("RC-Folder"),
+							properties: [{
+								class: LIB.makeKey("PC-Name"),
+								values: [ LIB.makeMultiLanguageText(CONFIG.resClassGlossary) ]
+							}, {
+								class: LIB.makeKey("PC-Type"),
+								values: [ LIB.makeMultiLanguageText(CONFIG.resClassGlossary) ]
+							}],
+							changedAt: tim
+						}];
 					// Create a folder resource for every model-element type:
 					CONFIG.modelElementClasses.forEach((mEl: string) => {
 						fL.push({
 							id: "Folder-" + mEl.jsIdOf() + "-" + apx,
-							class: "RC-Folder",
-							title: mEl + 's',  // just adding the 's' is an ugly quickfix ... that works for now.
-							properties: [],
+							class: LIB.makeKey("RC-Folder"),
+							properties: [{
+								class: LIB.makeKey("PC-Name"),
+								// just adding the 's' is an ugly quickfix ... that works for now.
+								values: [LIB.makeMultiLanguageText(mEl + 's')]
+							}],
 							changedAt: tim
 						});
 					});
@@ -1069,7 +1074,7 @@ class CProject {
 					// a. Add the folders:
 					let gl: SpecifNode = {
 						id: "H-FolderGlossary-" + apx,
-						resource: "FolderGlossary-" + apx,
+						resource: LIB.makeKey("FolderGlossary-" + apx),
 						nodes: [],
 						changedAt: tim
 					};
@@ -1077,7 +1082,7 @@ class CProject {
 					CONFIG.modelElementClasses.forEach(function (mEl: string) {
 						gl.nodes.push({
 							id: "N-Folder-" + mEl.jsIdOf() + "-" + apx,
-							resource: "Folder-" + mEl.jsIdOf() + "-" + apx,
+							resource: LIB.makeKey("Folder-" + mEl.jsIdOf() + "-" + apx ),
 							nodes: [],
 							changedAt: tim
 						});
@@ -1161,7 +1166,7 @@ class CProject {
 					.then(
 						(pCL: SpecifPropertyClass[]) => {
 //							console.debug('#2',pCL);
-							res.properties = LIB.forAll(pCL, createProp);
+							res.properties = LIB.forAll(pCL, LIB.createProp);
 							resolve(res)
 						}
 					)
@@ -1195,7 +1200,7 @@ class CProject {
 		);
 	}
 	readContent(ctg: string, item: Item[] | Item | string, opts?: any): Promise<Item[]> {
-		console.debug('readContent', ctg, item, opts);
+//		console.debug('readContent', ctg, item, opts);
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		if (!opts) opts = { reload: false, timelag: 10 };
 
@@ -1356,7 +1361,7 @@ class CProject {
 					.then(
 						(sL: SpecifStatement[]) => {
 							// make a list of shows statements for all diagrams shown in the hierarchy:
-							let showsL = sL.filter((s) => { return staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject.id) });
+							let showsL = sL.filter((s) => { return staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject) });
 							// filter all statements involving res as subject or object:
 							resolve(
 								sL.filter(
@@ -1370,21 +1375,22 @@ class CProject {
 												// Accept manually created relations (including those imported via Excel):
 												|| !sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User) > -1
 												|| LIB.indexBy(showsL, "object", s.id) > -1
-												|| titleOf(sC) == CONFIG.staClassShows)
+												|| LIB.titleOf(sC) == CONFIG.staClassShows
+											)
 											// AND fulfill certain conditions:
 											&& (
-												// related subject and object must be referenced in the tree to be navigable,
-												// also, the statement must not be declared 'hidden':
-												!opts.showComments
-												// cheap tests first:
-												&& titleOf(sC) != CONFIG.staClassCommentRefersTo
-												&& CONFIG.hiddenStatements.indexOf(s.title) < 0
-												&& isReferencedByHierarchy(s.subject)
-												&& isReferencedByHierarchy(s.object)
-												// In case of a comment, the comment itself is not referenced in the tree:
+													// related subject and object must be referenced in the tree to be navigable,
+													// also, the statement must not be declared 'hidden':
+													!opts.showComments
+													// cheap tests first:
+													&& LIB.titleOf(sC) != CONFIG.staClassCommentRefersTo
+													&& CONFIG.hiddenStatements.indexOf(s.title) < 0
+													&& isReferencedByHierarchy(s.subject)
+													&& isReferencedByHierarchy(s.object)
+													// In case of a comment, the comment itself is not referenced in the tree:
 												|| opts.showComments
-												&& titleOf(sC) == CONFIG.staClassCommentRefersTo
-												&& isReferencedByHierarchy(s.object)
+													&& LIB.titleOf(sC) == CONFIG.staClassCommentRefersTo
+													&& isReferencedByHierarchy(s.object)
 											)
 									}
 								)
@@ -2118,8 +2124,8 @@ class CProject {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let pT = propTitleOf(nP, prj),
-						rP = propByTitle(refE, pT, this.data);
+					let pT = LIB.propTitleOf(nP, prj),
+						rP = LIB.propByTitle(refE, pT, this.data);
 //					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valByTitle( refE, pT, this.data )));
 					if (!LIB.hasContent(LIB.valByTitle(refE, pT, this.data))
 						// dataTypes must be compatible:
@@ -3041,7 +3047,7 @@ function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 		if( !prj ) prj = app.cache.selectedProject.data;
 		for( var a=0,A=r.properties.length;a<A;a++ ) {
 			// Check the configured ids:
-			if( CONFIG.idProperties.indexOf( vocabulary.property.specif( propTitleOf(r.properties[a],prj) ) )>-1 )
+			if( CONFIG.idProperties.indexOf( vocabulary.property.specif( LIB.propTitleOf(r.properties[a],prj) ) )>-1 )
 				return r.properties[a].value
 		};
 	};
@@ -3049,21 +3055,22 @@ function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 }
 function resClassTitleOf(e: SpecifResource, prj?: SpecIF, opts?:any ):string {
 	if (!prj) prj = app.cache.selectedProject.data;
-	return titleOf( LIB.itemByKey( prj.resourceClasses, e['class'] ), opts );
+	return LIB.titleOf( LIB.itemByKey( prj.resourceClasses, e['class'] ), opts );
 }
 function staClassTitleOf( e:SpecifStatement, prj?:SpecIF, opts?:any ):string {
 	// Where available, take the statementClass' title, otherwise the statement's;
 	// The latter is the case with interpreted relations such as "mentions":
 	if (!prj) prj = app.cache.selectedProject.data;
-    return titleOf( LIB.itemByKey(prj.statementClasses, e['class'] ), opts );
+    return LIB.titleOf( LIB.itemByKey(prj.statementClasses, e['class'] ), opts );
 }
-function propTitleOf(prp: SpecifProperty, prj: SpecIF ):string {
+LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF ):string =>{
 	// get the title of a property as defined by itself or it's class:
-	return LIB.itemByKey(prj.propertyClasses,prp['class']).title;
+	let pC = LIB.itemByKey(prj.propertyClasses, prp['class']);
+	return pC ? pC.title : undefined;
 }
-function titleOf( item: Item, opts?:any ):string {
+LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
-	return opts && opts.lookupTitles ? i18n.lookup(item.title) : item.title;
+	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
 }
 function languageValueOf(val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string {
 	// Return the value in the specified target language .. or the first value in the list by default.
@@ -3123,21 +3130,20 @@ LIB.iterateNodes = (tree: SpecifNode[]|SpecifNode, eFn:Function, lFn?:Function):
 	};
 	return !cont;
 }
-function createProp(pC: SpecifPropertyClass | SpecifPropertyClass[], key?: SpecifKey): object {
+LIB.createProp = (pC: SpecifPropertyClass | SpecifPropertyClass[], key?: SpecifKey): SpecifProperty => {
 	// Create an empty property from the supplied class;
 	// the propertyClass may be supplied by the first parameter
-	// or will be selected from the propertyClasses list using the supplied propertyClass id pCid:
+	// or will be selected from the propertyClasses list using the supplied key:
 	let _pC = Array.isArray(pC)? LIB.itemByKey( pC, key ) : pC;
-//	console.debug('createProp',pC,pCid);
+//	console.debug('createProp',pC,key);
 	return {
-		title: _pC.title,
-		class: _pC.id,
+		class: LIB.keyOf(_pC),
 		// supply default value if available:
-		value: _pC.value||''
+		values: _pC.values
 	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
 	};
 }
-function propByTitle(itm: SpecifResource, pN: string, dta:SpecIF): SpecifProperty|undefined {
+LIB.propByTitle = (itm: SpecifResource, pN: string, dta:SpecIF): SpecifProperty|undefined => {
 	// Return the property of itm with title pN.
 	// If it doesn't exist, create it,
 	// if there is no propertyClass with that title either, return undefined.
@@ -3150,32 +3156,34 @@ function propByTitle(itm: SpecifResource, pN: string, dta:SpecIF): SpecifPropert
 //	console.debug('propByTitle',dta,itm,pN,iC);
 	for( var i=dta.propertyClasses.length-1;i>-1;i-- ) {
 		pC = dta.propertyClasses[i];
-		if( iC.propertyClasses.indexOf(pC.id)>-1 	// pC is used by the item's class iC
+		if( LIB.indexByKey( iC.propertyClasses, pC )>-1 	// pC is used by the item's class iC
 			&& pC.title==pN ) {						// pC has the specified title
 				// take the existing property, if it exists;
 				// the property's title is not necessarily present:
-				prp = LIB.itemBy(itm.properties,'class',pC.id);
+				prp = LIB.itemBy(itm.properties,'class',pC);
 				if( prp ) return prp;
 				// else create a new one from the propertyClass:
-				prp = createProp(pC);
+				prp = LIB.createProp(pC);
 				itm.properties.push(prp);
 				return prp
 		};
 	};
 //	return undefined
 }
-LIB.valByTitle = (itm:SpecifResource,pN:string,dta:SpecIF):string|undefined => {
+LIB.valByTitle = (itm: SpecifResource, pN: string, dta: SpecIF): SpecifValues|undefined => {
 	// Return the value of a resource's (or statement's) property with title pN:
 //	console.debug('valByTitle',dta,itm,pN);
 	if( itm.properties ) {
-		for( var i=itm.properties.length-1;i>-1;i-- ) {
-			if( LIB.itemByKey( dta.propertyClasses, itm.properties[i]['class']).title==pN )
-				return itm.properties[i].values
+		let pC;
+		for (var i = itm.properties.length - 1; i > -1; i--) {
+			pC = LIB.itemByKey(dta.propertyClasses, itm.properties[i]['class']);
+			if (pC && pC.title == pN)
+				return itm.properties[i].values;
 		}
 	};
 //	return undefined
 }
-function titleIdx(pL: SpecifProperty[], dta?: SpecIF): number {
+LIB.titleIdx = (pL: SpecifProperty[], dta?: SpecIF): number =>{
 	// Find the index of the property to be used as title.
 	// The result depends on the current user - only the properties with read permission are taken into consideration.
 	// This works for title strings and multi-language title objects.
@@ -3185,7 +3193,7 @@ function titleIdx(pL: SpecifProperty[], dta?: SpecIF): number {
 		if( !dta ) dta = app.cache.selectedProject.data;
 		let pt;
 		for( var a=0,A=pL.length;a<A;a++ ) {
-			pt = vocabulary.property.specif( propTitleOf(pL[a],dta) );
+			pt = vocabulary.property.specif( LIB.propTitleOf(pL[a],dta) );
 			// Check the configured headings and titles:
 			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a;
 		};
@@ -3197,6 +3205,7 @@ function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:Sp
 	// ... from the properties or a replacement value in case of default.
 	// 'el' is an original element without 'classifyProps()'.
 	if( typeof(el)!='object' ) throw Error('First input parameter is invalid');
+	if (!(el.properties || el['class'])) return '';
 	if( !dta ) dta = app.cache.selectedProject.data;
 	
 	// Lookup titles only in case of a resource serving as heading or in case of a statement:
@@ -3235,7 +3244,7 @@ function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:Sp
 	function getTitle(pL: SpecifProperty[], opts:any ): string {
 	//	if( !pL ) return;
 		// look for a property serving as title:
-		let idx = titleIdx( pL );
+		let idx = LIB.titleIdx( pL );
 		if( idx>-1 ) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.

@@ -25,12 +25,9 @@ app.statementsGraph = function Graph() {
 	// Incoming relations (where the selected resource is object of the statement) are positioned at the upper left half,
 	// outgoing relations (where the selected resource is subject of the statement) are positioned at the lower right half
 	var self:any = {};
-	self.init = function() {
-	};
-	self.clear = function() {
-	};
-	self.hide = function() {
-	};
+	self.init = () => {};
+	self.clear = () => {};
+	self.hide = () => {};
 
 	self.show = function (specifData: SpecIF, opts:GraphOptions ):void {
 		// Accepts data-sets according to v0.10.4 or v0.11.2 and later.
@@ -50,7 +47,7 @@ app.statementsGraph = function Graph() {
 		if( !opts.fontSize ) opts.fontSize = '14px';
 
 		// All required parameters are available, so we can begin:
-		let relations:SpecifStatement[] = collectStatementsByType( specifData.resources[opts.index] );
+		let relations = collectStatementsByType( specifData.resources[opts.index] );
 //		console.debug('init relations',relations);
 		// if there are no relations, do not create a graph:
 		if ( !relations ) return;
@@ -72,16 +69,13 @@ app.statementsGraph = function Graph() {
 			if (relations.hasOwnProperty(entry) && relations[entry].targets.length )
 					idx = pushChildNodesAndEdges(idx, relations[entry].targets, relProp, false)
 		};
-//		console.debug('rawData',nodesData,edgeData);
-		// @ts-ignore - 'vis' is loaded at runtime
-		let nodes = new vis.DataSet(nodesData),
-		// @ts-ignore - 'vis' is loaded at runtime
-			edges = new vis.DataSet(edgeData),
-			container = document.getElementById( opts.canvas );
 
+//		console.debug('rawData',nodesData,edgeData);
 		let data = {
-			nodes: nodes,
-			edges: edges
+			// @ts-ignore - 'vis' is loaded at runtime
+			nodes: new vis.DataSet(nodesData),
+			// @ts-ignore - 'vis' is loaded at runtime
+			edges: new vis.DataSet(edgeData)
 		};
 		let options = {
 			autoResize: true,
@@ -109,7 +103,7 @@ app.statementsGraph = function Graph() {
 		};
 
 		// @ts-ignore - 'vis' is loaded at runtime
-		let network = new vis.Network(container, data, options);
+		let network = new vis.Network(document.getElementById(opts.canvas), data, options);
 		// Collapse/close a 'large' sub-network:
 		// see https://github.com/GfSE/SpecIF-Graph/blob/master/src/modules/graph.js
 		network.getConnectedNodes("0").forEach(function (connectedNode) {
@@ -118,19 +112,18 @@ app.statementsGraph = function Graph() {
 				closeCluster(connectedNode, network);
 			}
 		});
-		network.on("doubleClick", function (prms) {
+		network.on("doubleClick", (prms:any) => {
 //			console.debug("doubleClick",prms);
 			if (prms.nodes.length === 1) {
 				if( prms.nodes[0] == 0 ) return;  // no action for the node in focus
-				if( !isIE() &&
-					(typeof(opts.onDoubleClick)==="function") &&
-					network.getConnectedNodes(prms.nodes[0]).length === 1 &&
-					!network.clustering.isCluster(prms.nodes[0])) {
-					// it is a peripheral node with a single edge,
-					// extract the node-id from 'n:m=id':
-					let nId = prms.nodes[0].match(/.+=([\S]+)/)[1];
-					opts.onDoubleClick({target:{resource:nId,statement:prms.edges[0]}});
-					return
+				if( typeof(opts.onDoubleClick)==="function"
+					&& network.getConnectedNodes(prms.nodes[0]).length === 1
+					&& !network.clustering.isCluster(prms.nodes[0])) {
+						// it is a peripheral node with a single edge,
+						// extract the node-id from 'n:m=id':
+						let nId = prms.nodes[0].match(/.+=([\S]+)/)[1];
+						opts.onDoubleClick({target:{resource:nId,statement:prms.edges[0]}});
+						return
 				};
 				if (typeof(prms.nodes[0])==="string" && prms.nodes[0].includes(":")) {
 					if (!network.clustering.isCluster(prms.nodes[0])) return
@@ -523,7 +516,7 @@ app.statementsGraph = function Graph() {
          * @param object The resource, where the relations are to
          * @returns json object of the statements with titles for statements, subjects and objects
          */
-        function collectStatementsByType(res:SpecifResource):SpecifStatement[] {
+        function collectStatementsByType(res) {
 			let stC = {}, cid, oid, sid;
 			specifData.statements.forEach((st: SpecifStatement) =>{
 				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
@@ -549,16 +542,6 @@ app.statementsGraph = function Graph() {
 				}
             });
 			return stC;
-        }
-
-        /**
-         * Checks if IE 11 or lower is used
-         * @returns {boolean} true if ie es 11 or lower else false
-         */
-        function isIE() {
-            let ua = window.navigator.userAgent;
-            let msie = ua.indexOf("MSIE ");
-            return msie > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./);
         }
     };
 	self.init();

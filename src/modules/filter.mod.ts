@@ -2,7 +2,8 @@
 	Dependencies: jQuery, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution!          
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 /*	Resource filtering
 	// Primary or top-level filters apply to resources of all classes (scope: project), whereas
@@ -609,7 +610,7 @@ moduleManager.construct({
 				
 				// Construct the filter descriptor and add it to the list of filters:
 				var eVF = { 
-					title: titleOf(rC,displayOptions)+': '+titleOf(pC,displayOptions),
+					title: LIB.titleOf(rC,displayOptions)+': '+LIB.titleOf(pC,displayOptions),
 					category: 'propertyValue',
 					primary: false,
 					scope: rC.id, 
@@ -696,7 +697,7 @@ moduleManager.construct({
 					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
 					var box = { 
-							title: titleOf( rC, displayOptions ),
+							title: LIB.titleOf( rC, displayOptions ),
 							id: rC.id,
 							checked: true
 						};   // set selection by default

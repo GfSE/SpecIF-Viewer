@@ -319,12 +319,14 @@ class CSpecIF implements SpecIF {
 			if (iE.values)
 				oE.enumeration = LIB.forAll(iE.values, (v: any): SpecifEnumeratedValue => {
 					// 'v.title' until v0.10.6, 'v.value' thereafter;
-					// 'v.value' can be a string or a multilanguage object.
+					// 'v.value' can be a string or a multilanguage text.
 					return {
 						id: v.id,
 					//	value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
-						value: typeof (v.value) == 'object' ? v.value
-							: (typeof (v.value) == 'string' ? { text: v.value } : { text: v.title }) // works also for v.value==''
+					//	value: typeof (v.value) == 'object' ? v.value
+					//		: (typeof (v.value) == 'string' ? { text: v.value } : { text: v.title }) // works also for v.value==''
+						value: Array.isArray(v.value) ? v.value
+							: [{ text: v.value || v.title || '' }] // v.value or v.title is a string; works also for v.value==''
 					}
 				});
 
@@ -336,7 +338,7 @@ class CSpecIF implements SpecIF {
 			var oE: any = i2int(iE);
 			oE.title = makeTitle(iE.title);  // an input file may have titles which are not from the SpecIF vocabulary.
 
-			oE.dataType = makeKey(iE.dataType);
+			oE.dataType = LIB.makeKey(iE.dataType);
 			let dT: SpecifDataType = LIB.itemByKey(self.dataTypes, oE.dataType);
 //			console.debug('pC2int',iE,dT);
 
@@ -386,7 +388,7 @@ class CSpecIF implements SpecIF {
 				else if (typeof (iE[names.pClasses][0]) == 'string') {
 					// it is a propertyClass reference according to v1.0 (and some versions before that);
 					// make a list of pClasses according to v1.1:
-					oE.propertyClasses = makeKeyL(iE[names.pClasses]);
+					oE.propertyClasses = LIB.makeKeyL(iE[names.pClasses]);
 				}
 				else {
 					// it is a full-fledged propertyClass in one of the oldest SpecIF versions:
@@ -436,9 +438,9 @@ class CSpecIF implements SpecIF {
 			var oE: SpecifStatementClass = aC2int(iE);
 			if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
 			if (iE[names.sbjClasses])
-				oE.subjectClasses = makeKeyL(iE[names.sbjClasses]);
+				oE.subjectClasses = LIB.makeKeyL(iE[names.sbjClasses]);
 			if (iE[names.objClasses])
-				oE.objectClasses = makeKeyL(iE[names.objClasses]);
+				oE.objectClasses = LIB.makeKeyL(iE[names.objClasses]);
 //			console.debug('statementClass 2int',iE,oE);
 			return oE
 		}
@@ -456,7 +458,7 @@ class CSpecIF implements SpecIF {
 			// @ts-ignore - 'values'will be added later:
 			var oE: SpecifProperty = {
 					// no id
-					class: makeKey(iE[names.pClass])
+					class: LIB.makeKey(iE[names.pClass])
 				},
 				dT: SpecifDataType = LIB.dataTypeOf(self, oE["class"]);
 //			console.debug('p2int', iE, dT);
@@ -472,7 +474,7 @@ class CSpecIF implements SpecIF {
 		//	var oE = i2int(iE),
 			var	oE: any = {
 					id: iE.id,
-			//		class: makeKey(iE.subject ? iE[names.sClass] : iE[names.rClass]),
+			//		class: LIB.makeKey(iE.subject ? iE[names.sClass] : iE[names.rClass]),
 					changedAt: iE.changedAt
 				};
 			//	eC = iE.subject ? LIB.itemByKey(self.statementClasses, oE["class"])
@@ -500,7 +502,6 @@ class CSpecIF implements SpecIF {
 			if (iE.description && descPropertyMissing(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
-				console.info("Added a description property to element with id '" + oE.id + "'");
 				// a. add dataType, if not yet defined:
 				standardTypes.addTo("dataType", { id: "DT-Text" }, self);
 				// b. add property class, if not yet defined:
@@ -512,13 +513,13 @@ class CSpecIF implements SpecIF {
 					class: { id: "PC-Description" },
 					values: [ makeMultiLanguageText(iE.description) ]
 				});
+				console.info("Added a description property to element with id '" + oE.id + "'");
 			};
 
 			// Similarly, add a title property if missing:
 			if (iE.title && titlePropertyMissing(oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
-				console.info("Added a title property to element with id '" + oE.id + "'");
 				// a. add dataType, if not yet defined:
 				standardTypes.addTo("dataType", { id: "DT-ShortString" }, self);
 				// b. add property class, if not yet defined:
@@ -531,19 +532,20 @@ class CSpecIF implements SpecIF {
 					// no title is required in case of statements; it's class' title applies by default:
 					values: [ makeMultiLanguageText(iE.title) ]
 				});
+				console.info("Added a title property to element with id '" + oE.id + "'");
 			};
 
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
 			function eC(): SpecifResourceClass | SpecifStatementClass {
-				return iE.subject ? LIB.itemByKey(self.statementClasses, makeKey(iE[names.sClass]))
-								: LIB.itemByKey(self.resourceClasses, makeKey(iE[names.rClass]));
+				return iE.subject ? LIB.itemByKey(self.statementClasses, LIB.makeKey(iE[names.sClass]))
+								: LIB.itemByKey(self.resourceClasses, LIB.makeKey(iE[names.rClass]));
             }
 			function titlePropertyMissing(el: any): boolean {
 				if (Array.isArray(el.properties))
 					for (var i = el.properties.length - 1; i > -1; i--) {
-						let ti = propTitleOf(el.properties[i], self);
+						let ti = LIB.propTitleOf(el.properties[i], self);
 						if (CONFIG.titleProperties.indexOf(ti) > -1)
 							// SpecIF assumes that any title property *replaces* the element's title,
 							// so we just look for the case of *no* title property.
@@ -556,7 +558,7 @@ class CSpecIF implements SpecIF {
 			function descPropertyMissing(el:any): boolean {
 				if (Array.isArray(el.properties))
 					for (var i = el.properties.length - 1; i > -1; i--) {
-						if (CONFIG.descProperties.indexOf(propTitleOf(el.properties[i], self)) > -1)
+						if (CONFIG.descProperties.indexOf(LIB.propTitleOf(el.properties[i], self)) > -1)
 							// SpecIF assumes that any description property *replaces* the resource's description,
 							// so we just look for the case of a resource description and *no* description property.
 							// There is no consideration of the content.
@@ -569,26 +571,26 @@ class CSpecIF implements SpecIF {
 		// a resource:
 		function r2int(iE: any): SpecifResource {
 			var oE: SpecifResource = a2int(iE) as SpecifResource;
-			oE['class'] = makeKey(iE[names.rClass]);
+			oE['class'] = LIB.makeKey(iE[names.rClass]);
 //			console.debug('resource 2int',iE,simpleClone(oE));
 			return oE
 		}
 		// a statement:
 		function s2int(iE:any): SpecifStatement {
 			var oE: SpecifStatement = a2int(iE) as SpecifStatement;
-			oE['class'] = makeKey( iE[names.sClass] );
+			oE['class'] = LIB.makeKey( iE[names.sClass] );
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
 			//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
-			oE.subject = makeKey( iE.subject );
-			oE.object = makeKey( iE.object );
+			oE.subject = LIB.makeKey( iE.subject );
+			oE.object = LIB.makeKey( iE.object );
 
 			// special feature to import statements to complete,
 			// used for example by the XLS or ReqIF import:
 			// @ts-ignore - subjectToFind is implementation-specific for a-posteriori completion of statements
-			if (iE.subjectToFind) oE.subjectToFind = makeKey(iE.subjectToFind);
+			if (iE.subjectToFind) oE.subjectToFind = LIB.makeKey(iE.subjectToFind);
 			// @ts-ignore - objectToFind is implementation-specific for a-posteriori completion of statements
-			if (iE.objectToFind) oE.objectToFind = makeKey(iE.objectToFind);
+			if (iE.objectToFind) oE.objectToFind = LIB.makeKey(iE.objectToFind);
 //			console.debug('statement 2int',iE,oE);
 			return oE
 		}
@@ -600,7 +602,7 @@ class CSpecIF implements SpecIF {
 				// up until v0.10.6, transform hierarchy root to a regular resource:
 				var iR = a2int(iE) as SpecifResource;
 				// @ts-ignore - if execution gets here, 'names.hClass' is defined:
-				iR['class'] = makeKey(iE[names.hClass]);
+				iR['class'] = LIB.makeKey(iE[names.hClass]);
 				self.resources.push(iR);
 
 				// ... and add a link to the hierarchy:
@@ -615,7 +617,7 @@ class CSpecIF implements SpecIF {
 			else {
 				// starting v0.10.8:
 				oE = i2int(iE);
-				oE.resource = makeKey( iE.resource )
+				oE.resource = LIB.makeKey( iE.resource )
 			};
 
 			// SpecIF allows resource references with id alone or with a key (id+revision):
@@ -627,7 +629,7 @@ class CSpecIF implements SpecIF {
 			function n2int(iE:any): SpecifNode {
 				var oE: SpecifNode = {
 						id: iE.id,
-						resource: makeKey(iE.resource),
+						resource: LIB.makeKey(iE.resource),
 						changedAt: iE.changedAt
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
@@ -656,12 +658,6 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// utilities:
-		function makeKey(el: any): SpecifKey {
-			return typeof(el)=='string' ? { id: el } : el;
-		}
-		function makeKeyL(L: any[]): SpecifKeys {
-			return LIB.forAll(L, (el: any): SpecifKey => { return makeKey(el) });
-		}
 		function makeTitle(ti: any): string {
 			// In <v1.1, titles can be simple strings or multi-language text objects;
 			// in >v1.0, native titles can only be stings (in fact SpecifText).
@@ -886,7 +882,7 @@ class CSpecIF implements SpecIF {
 						changedAt: iE.changedAt
 					};
 					// most items must have a title, but statements may come without:
-					if (iE.title) oE.title = titleOf(iE, opts);
+					if (iE.title) oE.title = LIB.titleOf(iE, opts);
 					if (iE.description) oE.description = languageValueOf(iE.description, opts);
 					if (iE.revision) oE.revision = iE.revision;
 					if (iE.replaces) oE.replaces = iE.replaces;
@@ -994,7 +990,7 @@ class CSpecIF implements SpecIF {
 					};
 					if (iE.title) {
 						// skip the property title, if it is equal to the propertyClass' title:
-						let ti = titleOf(iE, opts);
+						let ti = LIB.titleOf(iE, opts);
 						if (ti != pC.title) oE.title = ti;
 					};
 					if (iE.description) oE.description = languageValueOf(iE.description, opts);

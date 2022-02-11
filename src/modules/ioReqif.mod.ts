@@ -233,7 +233,7 @@ moduleManager.construct({
 						if( r.description && r.description.length>0 ) {
 							if( Array.isArray( r.properties ) )
 								for (var i = r.properties.length - 1; i > -1; i--) {
-										if( CONFIG.descProperties.indexOf( propTitleOf(r.properties[i],pr) )>-1 )
+										if( CONFIG.descProperties.indexOf( LIB.propTitleOf(r.properties[i],pr) )>-1 )
 											// SpecIF assumes that any description property *replaces* the resource's description,
 											// so we just look for the case of a resource description and *no* description property.
 											// There is no consideration of the content.
@@ -286,7 +286,7 @@ moduleManager.construct({
 					function titlePropertyNeeded(r):boolean {
 							if( Array.isArray( r.properties ) )
 								for ( var i = r.properties.length-1; i>-1; i-- ) {
-										let ti = propTitleOf(r.properties[i],pr);
+										let ti = LIB.propTitleOf(r.properties[i],pr);
 										if( CONFIG.titleProperties.indexOf( ti )>-1 )
 											// SpecIF assumes that any title property *replaces* the element's title,
 											// so we just look for the case of *no* title property.

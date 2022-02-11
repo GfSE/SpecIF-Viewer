@@ -3,7 +3,8 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution!
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
 moduleManager.construct({
@@ -69,7 +70,7 @@ moduleManager.construct({
 		+		  "<li>Filter using text fragments ('full text search'), resource classes or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource classes or used property enumerated values</li>"
 		+ (moduleManager.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
-		+		  "<li>Export 'specif.zip' file</li>"
+		+ (isEditor? "<li>Export 'specif.zip' file</li>" : "")
 		+ (moduleManager.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
 		+ (moduleManager.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
 		+ (moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")

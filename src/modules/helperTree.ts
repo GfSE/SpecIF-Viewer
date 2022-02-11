@@ -4,6 +4,7 @@
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 interface JQuery {
 	tree: Function;
@@ -12,7 +13,7 @@ interface jqTreeNode {
 	id: string;
 	name: string;
 	order: string;
-	ref: string;
+	ref: any;
 	parent: jqTreeNode;
 	children: jqTreeNode[];
 	is_open: boolean;
@@ -27,11 +28,11 @@ interface jqTreeState {
 }
 // a constructor for the tree object:
 class Tree {
-	// options.loc is the id of a DOM element to which the tree is attached.
 	domE:JQuery;
 	savedState: jqTreeState;
 	selectedNode: jqTreeNode;
 	constructor(options: any) {
+		// options.loc is the id of a DOM element to which the tree is attached.
 		this.domE = $(options.loc);
 		this.domE.tree({
 			data: [],
@@ -87,24 +88,25 @@ class Tree {
 		};
 		return nd;
 	};
-/*	nodesByName = function( ti ) {
-		return this.domE.tree('getNodesByProperty', 'name', ti)
-	}; */
-	nodesByRef(oId: string, similar?: boolean): jqTreeNode[] {
+	private equalRef(ref: SpecifKey, chk: SpecifKey):boolean {
+		return LIB.equalKey(ref,chk);
+    }
+	private similarRef(ref: SpecifKey, chk: SpecifKey):boolean {
+		return ref.id.indexOf(chk.id) > -1;
+	}
+	nodesByRef(chk:any, similar?: boolean) {
 		// Find all the nodes referencing the object and return them in a list.
 		// Use case: Update all tree entries after an object (title) has been changed.
-		let nodes = [];
-		// Try to find the objects in the currently loaded tree (selectedSpec):
-		if( similar ) {
-			// iterate through all nodes of all levels and list the nodes, where oId is a substring:
-			this.domE.tree('getTree').iterate(function (nd: jqTreeNode) {
-				if( nd.ref.indexOf(oId)>-1 ) nodes.push( nd );
-				return true	// continue iteration
-			})
-		} else {
-			// get the nodes refencing the object id:
-			nodes = this.domE.tree('getNodesByProperty', 'ref', oId)
-		};
+		let nodes: jqTreeNode[] = [];
+		// Try to find the objects in the currently loaded tree:
+
+		// iterate through all nodes of all levels and list the nodes, where oId is a substring:
+		this.domE.tree('getTree').iterate((nd: jqTreeNode) => {
+			if (similar && this.similarRef(nd.ref, chk)
+				|| !similar && this.equalRef(nd.ref, chk) )
+					nodes.push(nd);
+			return true	// continue iteration
+		});
 		return nodes
 	};
 	references(oId: string, similar?: boolean):boolean {

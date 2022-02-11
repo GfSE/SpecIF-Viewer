@@ -2,7 +2,8 @@
 	Dependencies: jQuery, bootstrap
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution!          
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 /*	The report descriptors for display, two examples:
 		{	title: 'Anforderung: Priorit&auml;t',
@@ -113,7 +114,7 @@ moduleManager.construct({
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
 								rCR.datasets.push({
-									label: titleOf(rC,opts),
+									label: LIB.titleOf(rC,opts),
 									id: rC.id,
 									count: 0,
 									color: CONFIG.focusColor 
@@ -137,7 +138,7 @@ moduleManager.construct({
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
 								sCR.datasets.push({
-									label: titleOf(sC,opts),
+									label: LIB.titleOf(sC,opts),
 									id: sC.id,
 									count: 0,
 									color: CONFIG.focusColor 
@@ -181,7 +182,7 @@ moduleManager.construct({
 						pC = pData.get("propertyClass", id )[0];
 						if( pData.get("dataType", pC.dataType )[0].type=='xs:enumeration' ) {
 							var aVR = {
-									title: titleOf(rC,opts)+': '+titleOf(pC,opts),
+									title: LIB.titleOf(rC,opts)+': '+LIB.titleOf(pC,opts),
 									category: 'enumValue',
 									pid: prj.id,	// pid: project-id
 									rCid: rC.id, 	// rCid: resourceClass-id

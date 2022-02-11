@@ -385,9 +385,28 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 };
 
 type Item = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
+type ItemWithNativeTitle = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifNode | SpecifFile;
 type Instance = SpecifResource | SpecifStatement;
-LIB.keyOf = (el: any): SpecifKey => {
-	return el.revision ? { id: el.id, revision: el.revision } : { id: el.id };
+LIB.keyOf = (itm: any): SpecifKey => {
+	// create a key from an item by selective cloning:
+	return itm.revision ? { id: itm.id, revision: itm.revision } : { id: itm.id };
+}
+LIB.makeKey = (el: any): SpecifKey => {
+	// create a key from an id string used in earlier SpecIF versions
+	// and support the case where a full key has already been used:
+	return typeof (el) == 'string' ? { id: el } : LIB.keyOf(el);
+}
+LIB.makeKeyL = (L: any[]): SpecifKeys => {
+	return LIB.forAll(L, (el: any): SpecifKey => { return LIB.makeKey(el) });
+}
+LIB.equalKey = (refE: SpecifKey, newE: SpecifKey): boolean => {
+	// Return true if both keys are equivalent;
+	// this applies if only an id is given or a key with id and revision:
+	return refE.id == newE.id && refE.revision == newE.revision;
+}
+LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
+	// ToDo: true, only if r is the latest revision in case n.revision is undefined ...
+	return LIB.isKey(r) && LIB.isKey(n) && r.id == n.id && (!n.revision || r.revision == n.revision);
 }
 LIB.isKey = (el: any): boolean => {
 	return typeof (el)=='object' && el.id;
@@ -406,9 +425,8 @@ LIB.isMultiLanguageText = (L: any[]): boolean => {
 	};
 	return false;
 }
-LIB.itemByKey = (L: Item[], k: SpecifKey):any => {
-	// Return the item in L with key k 
-	return L[ LIB.indexByKey(L, k) ]; // return the latest revision
+LIB.makeMultiLanguageText = (el:any): SpecifMultiLanguageText => {
+	return typeof (el) == 'string' ? [{ text: el }] : (LIB.isMultiLanguageText( el )? el : undefined );
 }
 LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
 	// Return the index of item with key k in L
@@ -418,14 +436,13 @@ LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
 	//  - The uniqueness of keys has been checked, before.
 
 	// Find all items with the same id:
-	let	i=0,
-		// filter the input list and add the index to the elements;
-		// add index without changing L and it's items:
-		itemsWithEqId = LIB.forAll(
+	let	itemsWithEqId = LIB.forAll(
+			// filter the input list and add the index to the elements;
+			// add index without changing L and it's items:
 			L,
-			(e:Item) => {
+			(e:Item,i:number) => {
 				if (e.id == k.id )
-					return { idx: i++, rev: e.revision, chAt: e.changedAt }
+					return { idx: i, rev: e.revision, chAt: e.changedAt }
 			}
 		);
 	if (itemsWithEqId.length < 1) return -1; // no element with the specified id
@@ -451,6 +468,16 @@ LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
 	// Sort revisions in the order of creation; the latest first:
 	itemsWithEqId.sort(( laurel: any, hardy:any ) => { return hardy.changedAt - laurel.changedAt });
 	return itemsWithEqId[0].idx; // return the index of the latest revision
+}
+LIB.itemByKey = (L: Item[], k: SpecifKey): any => {
+	// Return the item in L with key k 
+	let i = LIB.indexByKey(L, k);
+	if (i > -1) return L[i]; // return the latest revision
+	//	return undefined
+}
+LIB.mostRecent = (L: Item[], k: SpecifKey): Item => {
+	// call indexByKey without revision to get the most recent revision:
+	return L[LIB.indexByKey(L, { id: k.id })];
 }
 function indexById(L:any[],id:string):number {
 	if( L && id ) {
@@ -484,22 +511,6 @@ function itemByTitle(L:any[],ti:string):any {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
-}
-/* LIB.mostRecent = (L: Item[], k: SpecifKey): Item => {
-	let itmL = L.filter(
-			(itm) => { return itm.id == k.id }
-		)
-		.sort();
-	return
-} */
-LIB.equalKey = (refE: SpecifKey, newE: SpecifKey): boolean => {
-	// Return true if both keys are equivalent;
-	// this applies if only an id is given or a key with id and revision:
-	return refE.id == newE.id && refE.revision == newE.revision;
-}
-LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
-	// ToDo: true, only if r is the latest revision in case n.revision is undefined ...
-	return LIB.isKey(r) && LIB.isKey(n) && r.id == n.id && (!n.revision || r.revision == n.revision);
 }
 LIB.indexBy = (L: any[], p: string, k: SpecifKey): number => {
 	if (L && p && k) {
@@ -579,14 +590,14 @@ LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
 		(bim, bam) => { return LIB.cmp( fn(bim), fn(bam) ) }
 	);
 }
-LIB.forAll = ( L:any[], fn:(arg0:any)=>any ):any[] =>{
+LIB.forAll = ( L:any[], fn:(arg0:any,idx:number)=>any ):any[] =>{
 	// return a new list with the results from applying the specified function to all items of input list L;
 	// differences when compared to Array.map():
 	// - tolerates missing L
 	// - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
 	if(!L) return [];
 	var nL:any[] = [];
-	L.forEach( (e)=>{ var r=fn(e); if(r) nL.push(r) } );
+	L.forEach( (e,i)=>{ var r=fn(e,i); if(r) nL.push(r) } );
 	return nL;
 }
 
