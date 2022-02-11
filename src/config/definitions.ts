@@ -482,11 +482,12 @@ const CONFIG:any = {};
 		['FMC:State',"&#9679;"],
 		['FMC:Event',"&#11047;"],
 		['SpecIF:Collection',"&#11034;"],
-		['IREB:Requirement', "&#8623;"],
-		['SpecIF:Feature', "&#10038;"],
-		['SpecIF:Diagram', "&#9635;"],
+		['IREB:Requirement',"&#8623;"],
+		['SpecIF:Feature',"&#10038;"],
+		['SpecIF:Diagram',"&#9635;"],
 		[CONFIG.resClassDiagram,"&#9635;"],
 	//	['SpecIF:UserStory',"&#9830;"],
+		['SpecIF:UserStory',"&#9786;"],
 		["IR:Annotation","&#9755;"]
 	]);
 
