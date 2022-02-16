@@ -540,17 +540,17 @@ moduleManager.construct({
 		//		break;
 			case 'insert':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:self.newRes.id,changedAt:chD} )
+				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:LIB.keyOf(self.newRes),changedAt:chD} )
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:self.newRes.id,changedAt:chD,predecessor:opts.selNodeId} )
+				app.cache.selectedProject.createContent('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes),changedAt:chD,predecessor:opts.selNodeId} )
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:self.newRes.id,changedAt:chD,parent:opts.selNodeId} )
+				app.cache.selectedProject.createContent('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes),changedAt:chD,parent:opts.selNodeId} )
 					.then( finalize, LIB.stdError );
 		};
 		// has no effect, if newFiles is empty:

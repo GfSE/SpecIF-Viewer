@@ -776,7 +776,7 @@ function Archimate2Specif( xmlString, opts ) {
 			title: "SpecIF:Diagram",
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ["user"],
-			propertyClasses: ["PC-Name","PC-Description","PC-Diagram","PC-Type","PC-Notation"],
+			propertyClasses: ["PC-Name","PC-Diagram","PC-Description","PC-Type","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{

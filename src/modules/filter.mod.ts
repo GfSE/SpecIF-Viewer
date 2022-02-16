@@ -252,7 +252,7 @@ moduleManager.construct({
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
-				prj.readContent( 'resource', {id: nd.ref} )
+				prj.readContent( 'resource', nd.ref )
 				.then(
 					(rL:SpecifResource[])=>{
 						h = match( new CResourceToShow(rL[0]) );

@@ -277,7 +277,7 @@ moduleManager.construct({
 			pend++;
 			visitedR.push(nd.ref); // memorize all resources already evaluated
 			// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
-			prj.readContent( 'resource', {id: nd.ref}, {reload:false,timelag:10} )	
+			prj.readContent( 'resource', nd.ref, {reload:false,timelag:10} )	
 			.then(
 				(rsp)=>{
 					evalResource( rsp[0] );
@@ -293,7 +293,7 @@ moduleManager.construct({
 				},
 				handleError
 			);
-		//	prj.readStatementsOf( {id: nd.ref} )
+		//	prj.readStatementsOf( nd.ref )
 		//		.done(function(rsp) {
 		//		})
 		//		.fail( handleError ); 

@@ -150,7 +150,7 @@ class CPropertyToShow implements SpecifProperty {
 						cR = LIB.itemByKey(app.cache.selectedProject.data.resources, nd.ref);
 						// avoid self-reflection:
 						//	if(ob.id==cR.id) return true;
-						ti = elementTitleOf(cR, opts);
+						ti = LIB.elementTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
 						// disregard link targets which aren't diagrams nor model elements:
@@ -1139,13 +1139,13 @@ class CFileWithContent implements IFileWithContent {
 				if (CONFIG.selectCorrespondingDiagramFirst) {
 					// replace the id of a resource by the id of a diagram carrying the same title:
 					let cacheData = app.cache.selectedProject.data,
-						ti = elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
+						ti = LIB.elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
 						rT = LIB.itemByKey(cacheData.resourceClasses, cacheData.resources[i]['class']);
 						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
 						// else, it is a resource representing a diagram:
-						if (elementTitleOf(cacheData.resources[i], opts) == ti) {
+						if (LIB.elementTitleOf(cacheData.resources[i], opts) == ti) {
 							// found: the diagram carries the same title 
 							if (app[CONFIG.objectList].resources.selected()
 								&& app[CONFIG.objectList].resources.selected().id == cacheData.resources[i].id)
@@ -1323,7 +1323,7 @@ moduleManager.construct({
 						
 						app.busy.set();
 						// 1. Delete the moved node with all its children:
-						app.cache.selectedProject.deleteContent( 'node', {id: event.move_info.moved_node.id} )
+						app.cache.selectedProject.deleteContent( 'node', LIB.keyOf(event.move_info.moved_node) )
 						.then( 
 							()=>{
 //								console.debug('delete node done',event)
@@ -1468,7 +1468,7 @@ moduleManager.construct({
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: elementTitleOf(r,opts,self.pData), 
+				name: LIB.elementTitleOf(r,opts,self.pData), 
 				ref: iE.resource
 			};
 			oE.children = LIB.forAll( iE.nodes, toChild );
@@ -2047,7 +2047,7 @@ moduleManager.construct({
 			self.parent.tree.selectNode( nd.getNextSibling() ); 
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
-			app.cache.selectedProject.deleteContent( 'node', {id: nd.id} )
+			app.cache.selectedProject.deleteContent( 'node', LIB.keyOf(nd) )
 				.then( 
 					()=>{
 						// If a diagram has been deleted, build a new glossary with elements 
@@ -2209,7 +2209,7 @@ moduleManager.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			LIB.cacheE( L, { id: r.id, title: elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			LIB.cacheE( L, { id: r.id, title: LIB.elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
@@ -2253,7 +2253,7 @@ moduleManager.construct({
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
 					localOpts = $.extend({}, opts, { addIcon: false }),  // no icons when searching titles
-					selTi = elementTitleOf(selR, localOpts),
+					selTi = LIB.elementTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
 					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
@@ -2268,7 +2268,7 @@ moduleManager.construct({
 						(rL:SpecifResource[])=>{   
 							// refR is a resource referenced in a hierarchy
 							let refR: SpecifResource = rL[0],
-								refTi = elementTitleOf(refR, localOpts);
+								refTi = LIB.elementTitleOf(refR, localOpts);
 //							console.debug('self.parent.tree.iterate',refR,refTi,pend);
 							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
@@ -2339,7 +2339,7 @@ moduleManager.construct({
 					// get the referenced resource:
 					res = LIB.itemByKey(dta.resources, nd.resource);
 					// find the property defining the type:
-					pV = LIB.valByTitle(res, CONFIG.propClassType, dta);
+					pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
 					// Remember whether at least one diagram has been found:
 					isNotADiagram = CONFIG.diagramClasses.indexOf(resClassTitleOf(res, dta)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;

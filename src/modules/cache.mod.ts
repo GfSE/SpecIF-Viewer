@@ -131,7 +131,7 @@ class CCache {
 			return [];
 
 		// @ts-ignore - addressing is perfectly ok
-		let itmL: Item[] = this[standardTypes.listName.get(ctg)],
+		let itmL = this[standardTypes.listName.get(ctg)],
 			idx: number;
 
 		if (req == 'all')
@@ -216,7 +216,7 @@ class CCache {
 		// 1. Delete the node, if it exists somewhere to prevent
 		//    that there are multiple nodes with the same id;
 		//    Thus, 'putNode' is in fact a 'move':
-		this.delete('node', { id: e.id });
+		this.delete('node', LIB.keyOf(e));
 
 		// 2. Insert the node, if the predecessor exists somewhere:
 		if (e.predecessor && LIB.iterateNodes(
@@ -315,7 +315,7 @@ class CProject {
 		// remember the hierarchies associated with this projects - the cache holds all:
 		for (var i = spData.hierarchies.length - 1; i > -1; i--) {
 			// @ts-ignore - in this case only the id and revision are stored as a reference:
-			this.hierarchies.unshift({ id: spData.hierarchies[i].id, revision: spData.hierarchies[i].revision});
+			this.hierarchies.unshift( LIB.keyOf(spData.hierarchies[i]) );
 		};
 	//	this.exp = true;
 
@@ -530,7 +530,7 @@ class CProject {
 							// The folders are excluded from consolidation, because it may happen that there are
 							// multiple folders with the same name but different description in different locations of the hierarchy.
 							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(nR, nD)) > -1
-								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(nR, CONFIG.propClassType, nD)) < 0
+								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
 								// Check for a resource with the same title:
 								eR = itemByTitle(dta.resources, nR.title);  // resource in the existing data
@@ -539,9 +539,9 @@ class CProject {
 								// and is less restrictive than the class ID:
 //								console.debug('~1',nR,eR?eR:'');
 								if (eR
-									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(eR, CONFIG.propClassType, dta)) < 0
+									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(eR, CONFIG.propClassType, dta)) < 0
 									&& resClassTitleOf(nR, nD) == resClassTitleOf(eR, dta)
-									//		&& LIB.valByTitle(nR,CONFIG.propClassType,nD)==LIB.valByTitle(eR,CONFIG.propClassType,dta)
+									//		&& LIB.valuesByTitle(nR,CONFIG.propClassType,nD)==LIB.valuesByTitle(eR,CONFIG.propClassType,dta)
 								) {
 //									console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
@@ -761,11 +761,11 @@ class CProject {
 //				console.debug( 'duplicate resource ?', rR, nR );
 				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(rR, dta)) > -1
 					&& this.equalR(rR, nR)
-					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(nR, CONFIG.propClassType, dta)) < 0
-					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valByTitle(rR, CONFIG.propClassType, dta)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, dta)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(rR, CONFIG.propClassType, dta)) < 0
 				) {
 					// Are equal, so remove the duplicate resource:
-//					console.debug( 'duplicate resource', rR, nR, LIB.valByTitle( nR, CONFIG.propClassType, dta ) );
+//					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, CONFIG.propClassType, dta ) );
 					this.substituteR(dta, rR, nR, { rescueProperties: true });
 					console.info("Resource with id=" + nR.id + " and title=" + nR.title + " has been removed because it is a duplicate of id=" + rR.id);
 					dta.resources.splice(n, 1);
@@ -841,7 +841,7 @@ class CProject {
 								// get the referenced resource:
 								res = dta.get("resource", nd.resource)[0];
 								// find the property defining the type:
-								pV = LIB.valByTitle(res, CONFIG.propClassType, dta);
+								pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
 								// collect all nodes to delete, there should be only one:
 								if (pV == r2c.folder) {
 									delL.push(nd);
@@ -955,7 +955,7 @@ class CProject {
 						// get the referenced resource:
 						res = dta.get("resource", nd.resource)[0];
 						// check, whether it is a glossary:
-						pV = LIB.valByTitle(res, CONFIG.propClassType, this.data);
+						pV = LIB.valuesByTitle(res, CONFIG.propClassType, this.data);
 						// collect all items to delete, there should be only one:
 						if (pV == CONFIG.resClassGlossary) {
 							delL.push(nd)
@@ -1013,7 +1013,7 @@ class CProject {
 					// .. or if it has a property dcterms:type with value 'SpecIF:Diagram':
 					// .. or if it has at least one statement with title 'SpecIF:shows':
 					return resClassTitleOf(r, dta) == CONFIG.resClassDiagram
-						|| LIB.valByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
+						|| LIB.valuesByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
 						|| dta.get("statement","all").filter(
 							(sta) => {
 								return staClassTitleOf(sta) == CONFIG.staClassShows && sta.subject == r.id
@@ -1793,40 +1793,41 @@ class CProject {
 			case SpecifDataTypeEnum.String:
 				if( refE.maxLength != newE.maxLength ) return false;
 		};
-		if( !Array.isArray(refE.enumeration) == !Array.isArray(newE.enumeration) ) return true;
+		if( !Array.isArray(refE.enumeration) && !Array.isArray(newE.enumeration) ) return true;
 		if( Array.isArray(refE.enumeration) != Array.isArray(newE.enumeration)
 			|| refE.enumeration.length != newE.enumeration.length ) return false;
 		// refE and newE have a property 'enumeration':
 		for( var i = newE.enumeration.length - 1; i > -1; i-- )
 			// assuming that the values don't matter:
-			// @ts-ignore - values is optional for a dataType in general, but not for an enumerated dataType
 			if( indexById(refE.enumeration, newE.enumeration[i].id) < 0 ) return false;
 		// the list of enumerated values *is* equal,
 		// finally the multiple flag must be equal:
-		return this.eqBool(refE.multiple, newE.multiple);
+		return LIB.equalBoolean(refE.multiple, newE.multiple);
 	}
 	private equalPC(refE: SpecifPropertyClass, newE: SpecifPropertyClass): boolean {
 		// return true, if reference and new propertyClass are equal:
+		if (Array.isArray(refE.values) != Array.isArray(newE.values)) return false;
 		return refE.title == newE.title
-			&& refE.dataType == newE.dataType
-			&& refE.value == newE.value
-			&& this.eqBool(refE.multiple, newE.multiple);
+			&& LIB.equalKey(refE.dataType, newE.dataType)
+			&& (!Array.isArray(refE.values) && !Array.isArray(newE.values)
+				|| LIB.equalValues(refE.values, newE.values))
+			&& LIB.equalBoolean(refE.multiple, newE.multiple);
 	}
 	private equalRC(refE: SpecifResourceClass, newE: SpecifResourceClass): boolean {
 		// return true, if reference and new resourceClass are equal:
 		return refE.title == newE.title
-			&& this.eqBool(refE.isHeading, newE.isHeading)
-			&& this.eqL(refE.propertyClasses, newE.propertyClasses)
-		//	&& this.eqL( refE.instantiation, newE.instantiation )
+			&& LIB.equalBoolean(refE.isHeading, newE.isHeading)
+			&& LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
+		//	&& LIB.equalKeyL( refE.instantiation, newE.instantiation )
 		// --> the instantiation setting of the reference shall prevail
 	}
 	private equalSC(refE: SpecifStatementClass, newE: SpecifStatementClass): boolean {
 		// return true, if reference and new statementClass are equal:
 		return refE.title == newE.title
-			&& eqSCL(refE.propertyClasses, newE.propertyClasses)
+			&& LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
 			&& eqSCL(refE.subjectClasses, newE.subjectClasses)
 			&& eqSCL(refE.objectClasses, newE.objectClasses)
-			&& eqSCL(refE.instantiation, newE.instantiation);
+			&& LIB.equalStringL(refE.instantiation, newE.instantiation);
 
 		function eqSCL(rL: any, nL: any): boolean {
 //			console.debug('eqSCL',rL,nL);
@@ -1835,94 +1836,73 @@ class CProject {
 			// (for example, when a statement is created from an Excel sheet):
 			if (!Array.isArray(nL)) return true;
 			// no or empty lists are allowed and considerated equal:
-			let rArr = Array.isArray(rL) && rL.length > 0,
+			return LIB.equalKeyL(rL,nL);
+		/*	let rArr = Array.isArray(rL) && rL.length > 0,
 				nArr = Array.isArray(nL) && nL.length > 0;
 			if (!rArr && nArr
 				|| rL.length != nL.length) return false;
 			// the sequence may differ:
 			for (var i = rL.length - 1; i > -1; i--)
-				if (nL.indexOf(rL[i]) < 0) return false;
-			return true;
+				if (LIB.indexByKey(nL, rL[i]) < 0) return false;
+			return true; */
 		}
 	}
 
 	private equalR(refE: SpecifResource, newE: SpecifResource): boolean {
-		// return true, if reference and new resource are equal.
-		// ToDo: Consider, if model-elements are considered equal, 
-		// only if they have the same title *and* class,
+		// Return true, if reference and new resource are equal.
+		// Resources are considered equal, if they have the same title *and* class.
 		// ToDo: Also, if a property with title CONFIG.propClassType has the same value?
-//		console.debug('equalR',refE,newE,resClassTitleOf(refE,dta),resClassTitleOf(newE,dta));
+//		console.debug('equalR',refE,newE);
 
 		// Sort out most cases with minimal computing;
 		// assuming that the types have already been consolidated:
-		let dta = this.data;
-		if (refE.title != newE.title || resClassTitleOf(refE, dta) != resClassTitleOf(newE, dta))
-			return false;
+		let dta = this.data,
+			opts = { targetLanguage: browser.language };
+		return LIB.equalKey(refE['class'], newE['class'])
+			&& LIB.elementTitleOf(refE, opts, dta) == LIB.elementTitleOf(newE, opts, dta);
 
-		// Here, both resources have equal titles and class-titles:
+	/*	if (LIB.equalKey(refE['class'], newE['class'])
+			&& LIB.elementTitleOf(refE, opts, dta) == LIB.elementTitleOf(newE, opts, dta)
+			)
+				return true;
 
-		// Only a genuine title will be considered truly equal, but not a default title
+		// ToDo: Consider, if a property with title CONFIG.propClassType has the same value?
+
 		// being equal to the content of property CONFIG.propClassType is not considered equal
 		// (for example BPMN endEvents which don't have a genuine title):
-		let typ = LIB.valByTitle(refE, CONFIG.propClassType, dta),
+		let typ = LIB.valuesByTitle(refE, CONFIG.propClassType, dta),
 			rgT = RE.splitNamespace.exec(typ);
 		// rgT[2] contains the type without namespace (works also, if there is no namespace).
-		return (!rgT || rgT[2] != refE.title);
+		return (!rgT || rgT[2] != refE.title);  */
 	}
 	private equalS(refE: SpecifStatement, newE: SpecifStatement): boolean {
 		// return true, if reference and new statement are equal:
 		// Model-elements are only equal, if they have the same class.
-		// ToDo: Also, if they have the same class title?
 		// ToDo: Also, if a property with title CONFIG.propClassType has the same value?
-		return refE['class'] == newE['class']
+		return LIB.equalKey(refE['class'], newE['class'])
+		//	&& LIB.elementTitleOf(refE, opts, dta) == LIB.elementTitleOf(newE, opts, dta)
 			&& LIB.equalKey(refE.subject, newE.subject)
 			&& LIB.equalKey(refE.object, newE.object);
 	}
-	private equalF(refE: any, newE: any): boolean {
+	private equalF(refE: SpecifFile, newE: SpecifFile): boolean {
 		// return true, if reference and new file are equal:
-		return refE.id == newE.id
+		return LIB.equalKey(refE,newE)
 			&& refE.title == newE.title
 			&& refE.type == newE.type;
 	}
-	private eqBool(rB: Boolean, nB: Boolean): boolean {
-		return (rB && nB || !rB && !nB);
-	}
-	private eqL(rL: any[], nL: any[]): boolean {
-		// return true, if both lists have equal members:
-		// no or empty lists are allowed and considerated equal:
-		let rArr = Array.isArray(rL) && rL.length > 0,
-			nArr = Array.isArray(nL) && nL.length > 0;
-		if (!rArr && !nArr) return true;
-		if (!rArr && nArr
-			|| rArr && !nArr
-			|| rL.length != nL.length) return false;
-		// the sequence may differ:
-		for (var i = rL.length - 1; i > -1; i--)
-			if (nL.indexOf(rL[i]) < 0) return false;
-		return true;
-	}
 	private compatibleDT(refC: SpecifDataType, newC: SpecifDataType): boolean {
 		if (refC.type == newC.type) {
-			switch (refC.type) {
+			switch (newC.type) {
 				case SpecifDataTypeEnum.Boolean:
 					// can't have enumerated values
 					return true;
-				case SpecifDataTypeEnum.DateTime:
-					return compatibleEnumeration(refC, newC);
-				case SpecifDataTypeEnum.String:
-//					console.debug( refC.maxLength>newC.maxLength-1 );
-					if (refC.maxLength && (newC.maxLength == undefined || refC.maxLength < newC.maxLength)) {
-						LIB.logMsg({ status: 951, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
-						return false;;
-					};
-					return compatibleEnumeration(refC, newC);
 				case SpecifDataTypeEnum.Double:
 					// to be compatible, the new 'fractionDigits' must be lower or equal:
 					if (refC.fractionDigits < newC.fractionDigits) {
 						LIB.logMsg({ status: 952, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
 						return false;
 					};
-					// else: go on ...
+				// else: go on ...
 				case SpecifDataTypeEnum.Integer:
 					// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 //					console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
@@ -1930,19 +1910,32 @@ class CProject {
 						LIB.logMsg({ status: 953, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
 						return false;
 					};
-					return compatibleEnumeration(refC, newC);
+					break;
+				case SpecifDataTypeEnum.String:
+//					console.debug( refC.maxLength>newC.maxLength-1 );
+					if (refC.maxLength && (newC.maxLength == undefined || refC.maxLength < newC.maxLength)) {
+						LIB.logMsg({ status: 951, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
+						return false;;
+					};
+					break;
+				case SpecifDataTypeEnum.DateTime:
+				case SpecifDataTypeEnum.Duration:
+				case SpecifDataTypeEnum.AnyUri:
+					break;
+				default:
+					// should never arrive here ... as every branch in every case above has a return.
+					throw Error("Invalid data type.");
 			};
-			// should never arrive here ... as every branch in every case above has a return.
-			throw Error("Invalid data type.");
+			return compatibleEnumeration(refC, newC);
 		}
 		return false;
 
 		function compatibleEnumeration(refC: SpecifDataType, newC: SpecifDataType): boolean {
 			// A SpecifEnumeratedValue can be scalar or in case of type string a multiLanguageValue.
-			// ToDo: Add a new enum value to an existing enum dataType.
 			if (!refC.enumeration && !newC.enumeration) return true;
 			if (!refC.enumeration == !!newC.enumeration) return false;
-			// else, both enumeerations are present:
+
+			// else, both refC and newC have enumerations:
 			var idx: number;
 			// @ts-ignore - newC.enumeration *is* present:
 			for (var v = newC.enumeration.length - 1; v > -1; v--) {
@@ -1955,7 +1948,7 @@ class CProject {
 				};
 			/*	//  b. the values must be equal; distinguish between data types:
 			 	// - SpecifDataTypeEnum.String: multiLanguage text (ToDo:  needs rework!)
-				// - all others: scalar
+				// - all others: string
 				if (refC.enumeration[idx].value != newC.enumeration[v].value) { 
 					LIB.logMsg({ status: 955, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
 					return false;
@@ -1965,6 +1958,12 @@ class CProject {
         }
 	}
 	private compatiblePC(refC: SpecifPropertyClass, newC: SpecifPropertyClass): boolean {
+		if (this.equalPC(refC, newC))
+			return true;
+		// else:
+		LIB.logMsg({ status: 956, statusText: "new propertyClass '" + newC.id + "' is incompatible" });
+		return false;
+
 	/*	// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
 		// A resourceClass or statementClass is compatible, if all equally-named propertyClasses have the same dataType
 		if (!newC.propertyClasses || !newC.propertyClasses.length)
@@ -2006,22 +2005,17 @@ class CProject {
 			}
 		};
 		return { status: 0 };  */
-		if (this.equalPC(refC, newC))
-			return true;
-		// else:
-		LIB.logMsg({ status: 956, statusText: "new propertyClass '" + newC.id + "' is incompatible" });
-		return false;
 	}
 	private compatiblePCReferences(rCL: SpecifKey[], nCL: SpecifKey[], opts?: any): boolean {
-		// to be used for a tesourceClass' or statementClass' propertyClasses
+		// to be used for a resourceClass' or statementClass' propertyClasses
 		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default
 		if (Array.isArray(rCL) && Array.isArray(nCL)) {
 			switch (opts.mode) {
 				case "include":
-					return rCL.length >= nCL.length && LIB.containsAll(rCL, nCL);
+					return rCL.length >= nCL.length && LIB.containsAllKeys(rCL, nCL);
 				case "match":
 				default:
-					return rCL.length == nCL.length && LIB.containsAll(rCL, nCL);
+					return rCL.length == nCL.length && LIB.containsAllKeys(rCL, nCL);
 			};
 		};
 		switch (opts.mode) {
@@ -2043,10 +2037,10 @@ class CProject {
 			if (Array.isArray(nCL))
 				switch (opts.mode) {
 					case "include":
-						return rCL.length >= nCL.length && LIB.containsAll(rCL, nCL);
+						return rCL.length >= nCL.length && LIB.containsAllKeys(rCL, nCL);
 					case "match":
 					default:
-						return rCL.length == nCL.length && LIB.containsAll(rCL, nCL);
+						return rCL.length == nCL.length && LIB.containsAllKeys(rCL, nCL);
 				}
 			else
 				// there is a reference list, but no new list (i.e. subjects or objects of any class are allowed):
@@ -2126,8 +2120,8 @@ class CProject {
 					// where the title may be defined with the property class.
 					let pT = LIB.propTitleOf(nP, prj),
 						rP = LIB.propByTitle(refE, pT, this.data);
-//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valByTitle( refE, pT, this.data )));
-					if (!LIB.hasContent(LIB.valByTitle(refE, pT, this.data))
+//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valuesByTitle( refE, pT, this.data )));
+					if (!LIB.hasContent(LIB.valuesByTitle(refE, pT, this.data))
 						// dataTypes must be compatible:
 						&& this.compatibleDT(LIB.dataTypeOf(this.data, rP['class']), LIB.dataTypeOf(prj, nP['class']))) {
 						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(this.data,rP['class']), LIB.dataTypeOf(prj,nP['class']) ).status==0 ) {
@@ -3170,9 +3164,9 @@ LIB.propByTitle = (itm: SpecifResource, pN: string, dta:SpecIF): SpecifProperty|
 	};
 //	return undefined
 }
-LIB.valByTitle = (itm: SpecifResource, pN: string, dta: SpecIF): SpecifValues|undefined => {
+LIB.valuesByTitle = (itm: SpecifResource, pN: string, dta: SpecIF): SpecifValues|undefined => {
 	// Return the value of a resource's (or statement's) property with title pN:
-//	console.debug('valByTitle',dta,itm,pN);
+//	console.debug('valuesByTitle',dta,itm,pN);
 	if( itm.properties ) {
 		let pC;
 		for (var i = itm.properties.length - 1; i > -1; i--) {
@@ -3200,7 +3194,7 @@ LIB.titleIdx = (pL: SpecifProperty[], dta?: SpecIF): number =>{
 	};
 	return -1;
 }
-function elementTitleOf(el: SpecifResource | SpecifStatement, opts?:any, dta?:SpecIF): string {
+LIB.elementTitleOf = (el: SpecifResource | SpecifStatement, opts?:any, dta?:SpecIF): string =>{
 	// Get the title of a resource or a statement;
 	// ... from the properties or a replacement value in case of default.
 	// 'el' is an original element without 'classifyProps()'.

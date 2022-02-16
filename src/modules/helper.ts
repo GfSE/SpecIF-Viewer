@@ -387,7 +387,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 type Item = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
 type ItemWithNativeTitle = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifNode | SpecifFile;
 type Instance = SpecifResource | SpecifStatement;
-LIB.keyOf = (itm: any): SpecifKey => {
+LIB.keyOf = (itm: Item): SpecifKey => {
 	// create a key from an item by selective cloning:
 	return itm.revision ? { id: itm.id, revision: itm.revision } : { id: itm.id };
 }
@@ -399,10 +399,57 @@ LIB.makeKey = (el: any): SpecifKey => {
 LIB.makeKeyL = (L: any[]): SpecifKeys => {
 	return LIB.forAll(L, (el: any): SpecifKey => { return LIB.makeKey(el) });
 }
-LIB.equalKey = (refE: SpecifKey, newE: SpecifKey): boolean => {
+LIB.containsAllKeys = (refL: SpecifKeys, newL: SpecifKeys): boolean => {
+	// return true, if all elements of newL are contained in refL;
+	// sequence does not matter:
+	if (Array.isArray(refL) && Array.isArray(newL)) {
+		// first a quick check:
+		if (refL.length < newL.length)
+			return false;
+		// then a full check:
+		for (var nE of newL)
+			if (LIB.indexByKey(refL, nE) < 0) return false;
+		return true;
+	};
+	throw Error("Both input parameters must be an array.");
+}
+LIB.equalKey = (refE: any, newE: any): boolean => {
 	// Return true if both keys are equivalent;
 	// this applies if only an id is given or a key with id and revision:
 	return refE.id == newE.id && refE.revision == newE.revision;
+}
+LIB.equalKeyL = (refL: any[], newL: any[]): boolean => {
+	// return true, if both lists have equal members:
+	// no or empty lists are allowed and considerated equal:
+	let rArr = Array.isArray(refL) && refL.length > 0,
+		nArr = Array.isArray(newL) && newL.length > 0;
+	if (!rArr && !nArr) return true;
+	if (!rArr && nArr
+		|| rArr && !nArr
+		|| refL.length != newL.length) return false;
+	// the sequence may differ:
+	return containsAllKeys(refL,newL);
+}
+LIB.equalValue = (refV: SpecifValue, newV: SpecifValue): boolean => {
+	// Return true if both values are equivalent:
+	if (typeof (refV) != typeof (newV)) return false;
+	if (LIB.isString(refV))
+		return refV == newV;
+	if (LIB.isMultiLanguageText(refV))
+		// @ts-ignore - these attributes are defined with SpecifMultiLanguageText
+		return refV.text == newV.text && refV.language == newV.language && refV.format == newV.format;
+	return false;
+}
+LIB.equalValues = (refVL: SpecifValues, newVL: SpecifValues): boolean => {
+	// Return true if both value lists are equivalent;
+	// sequence matters:
+	if (refVL.length != newVL.length) return false;
+	for (var i = newVL.length - 1; i > -1; i--)
+		if (!LIB.equalValue(refVL[i], newVL[i])) return false;
+	return true;
+}
+LIB.equalBoolean = (rB: Boolean, nB: Boolean): boolean => {
+	return (rB && nB || !rB && !nB);
 }
 LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
 	// ToDo: true, only if r is the latest revision in case n.revision is undefined ...
@@ -414,12 +461,26 @@ LIB.isKey = (el: any): boolean => {
 LIB.isString = (el:any): boolean => {
 	return typeof (el) == 'string';
 }
+LIB.equalStringL = (refL: any[], newL: any[]): boolean => {
+		// return true, if both lists have equal members:
+		// no or empty lists are allowed and considerated equal:
+		let rArr = Array.isArray(refL) && refL.length > 0,
+			nArr = Array.isArray(newL) && newL.length > 0;
+		if (!rArr && !nArr) return true;
+		if (!rArr && nArr
+			|| rArr && !nArr
+			|| refL.length != newL.length) return false;
+		// the sequence may differ:
+		for (var lE of refL )
+			if (newL.indexOf(lE) < 0) return false;
+		return true;
+}
 LIB.isMultiLanguageText = (L: any[]): boolean => {
 	if (Array.isArray(L)) {
 		let hasMultipleLanguages = L.length > 1;
-		for (var i = L.length - 1; i > -1; i--) {
+		for (var lE of L) {
 			// SpecifMultilanguageText is a list of objects {text:"the text value", language:"IETF language tag"}
-			if (typeof (L[i]["text"]) != "string" || (hasMultipleLanguages && (typeof (L[i].language) != "string" || L[i].language.length < 2))) return false;
+			if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && (typeof (lE.language) != "string" || lE.language.length < 2))) return false;
 		};
 		return true;
 	};
@@ -545,11 +606,6 @@ function itemBy(L:any[], p:string, s:string ):any {
 			if( typeof(s)=='string' && L[i][p] == s ) return L[i]; // return list item
 	};
 } */
-LIB.containsAll = (rL: string[], nL: string[]): boolean =>{
-	for (var i = nL.length - 1; i > -1; i--)
-		if (rL.indexOf(nL[i]) < 0) return false;
-	return true;
-}
 LIB.containsById = (cL:any[], L: Item|Item[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Input Parameter");
 	// return true, if all items in L are contained in cL (cachedList),
@@ -572,6 +628,11 @@ LIB.containsById = (cL:any[], L: Item|Item[] ):boolean =>{
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
 		return true;
 	}
+} */
+/* LIB.containsAllStrings = (refL: string[], newL: string[]): boolean => {
+	for (var i = newL.length - 1; i > -1; i--)
+		if (refL.indexOf(newL[i]) < 0) return false;
+	return true;
 } */
 LIB.cmp = ( i:string, a:string ):number =>{
 	if( !i ) return -1;

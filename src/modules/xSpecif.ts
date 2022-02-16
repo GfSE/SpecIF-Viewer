@@ -865,7 +865,7 @@ class CSpecIF implements SpecIF {
 						if (!r) {
 							throw Error("Hierarchy '"+dta.hierarchies[i].id+"' is corrupt");
 						};
-						let prpV = LIB.valByTitle(r, CONFIG.propClassType, dta),
+						let prpV = LIB.valuesByTitle(r, CONFIG.propClassType, dta),
 							rC = LIB.itemByKey(dta.resourceClasses, r['class']);
 						// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 						// or by the title of the resourceClass:

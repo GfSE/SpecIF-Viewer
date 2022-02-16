@@ -114,7 +114,7 @@ moduleManager.construct({
 					// Sort the resources:
 					LIB.sortBy( 
 							list, 
-							(el)=>{ return elementTitleOf(el,opts,pData) } 
+							(el)=>{ return LIB.elementTitleOf(el,opts,pData) } 
 					);
 					self.allResources = list;
 					// now self.allResources contains the full resources
@@ -228,7 +228,7 @@ moduleManager.construct({
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
 					//		let ti = desperateTitleOf(res,opts,pData);
-							let ti = elementTitleOf(res,opts,pData);
+							let ti = LIB.elementTitleOf(res,opts,pData);
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
 								eligibleRs += '<div id="cand-'+i+'" class="candidates" onclick="'+myFullName+'.itemClicked(\''+i+'\')">'+ti+'</div>'
@@ -270,9 +270,9 @@ moduleManager.construct({
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(selRes,opts,pData) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"'" ) */
-			btn.setAttribute("title", "'"+elementTitleOf(selRes,opts,pData) +"' "
+			btn.setAttribute("title", "'"+LIB.elementTitleOf(selRes,opts,pData) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ elementTitleOf(self.selectedCandidate.resource,opts,pData) +"'" )
+										+ LIB.elementTitleOf(self.selectedCandidate.resource,opts,pData) +"'" )
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
@@ -289,9 +289,9 @@ moduleManager.construct({
 		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ desperateTitleOf(selRes,opts,pData) +"'" ) */
-			btn.setAttribute("title", "'"+elementTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
+			btn.setAttribute("title", "'"+LIB.elementTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ elementTitleOf(selRes,opts,pData) +"'" ) 
+										+ LIB.elementTitleOf(selRes,opts,pData) +"'" ) 
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
