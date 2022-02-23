@@ -131,7 +131,7 @@ moduleManager.construct({
 					// store a clone and get the title to display:
 					let staClasses = LIB.forAll( 
 							self.eligibleSCL, 
-							(sC)=>{ return {title:LIB.titleOf(sC,{lookupTitles:true}),description:languageValueOf(sC.description,opts)}} 
+							(sC)=>{ return {title:LIB.titleOf(sC,{lookupTitles:true}),description:LIB.languageValueOf(sC.description,opts)}} 
 						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));

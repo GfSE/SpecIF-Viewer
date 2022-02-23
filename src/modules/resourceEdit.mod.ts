@@ -154,7 +154,7 @@ moduleManager.construct({
 							(r:SpecifResource)=>{
 //								console.debug( '#', opts.mode, r );
 								self.newRes = r;
-								opts.dialogTitle = i18n.MsgCreateResource+' ('+languageValueOf(rC.title)+')';
+								opts.dialogTitle = i18n.MsgCreateResource+' ('+LIB.languageValueOf(rC.title)+')';
 								if( opts.selNodeId )
 									opts.msgBtns = [
 										msgBtns.cancel,
@@ -271,10 +271,10 @@ moduleManager.construct({
 							// it is a text;
 							// in case of xhtml, it may contain a diagram reference, 
 							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//							console.debug( 'editP', languageValueOf(p.value,opts) );
+//							console.debug( 'editP', LIB.languageValueOf(p.value,opts) );
 							return textField(
 								ti,
-								languageValueOf(p.value, opts),
+								LIB.languageValueOf(p.value, opts),
 								// - open an input line, if it is a title or has a specified length lower than the threshold
 								// - open an input text-area, otherwise
 								{
@@ -287,7 +287,7 @@ moduleManager.construct({
 					case 'xs:enumeration':
 						// no input checking needed:
 						let separatedValues = p.value.split(','),
-							vals = LIB.forAll( dT.values, (v)=>{ return {title:i18n.lookup(languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+							vals = LIB.forAll( dT.values, (v)=>{ return {title:i18n.lookup(LIB.languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
 //						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple )
 							return checkboxField(ti, vals, { description: pC.description } );
@@ -378,7 +378,7 @@ moduleManager.construct({
 											label: i18n.LblNextStep,
 											cssClass: 'btn-success', 
 											action: (thisDlg: any)=>{
-												resolve( itemById( resClasses, radioValue( i18n.LblResourceClass )));
+												resolve( LIB.itemById( resClasses, radioValue( i18n.LblResourceClass )));
 												thisDlg.close();
 											}  
 										}]

@@ -110,14 +110,14 @@ class StandardTypes {
 
 	iterateLists(fn: Function): number {
 		// Perform the function fn for each list defined above:
-		for (var le of this.listName.keys())
-			fn(le, this.listName.get(le));
+		for (var ctg of this.listName.keys())
+			fn(ctg, this.listName.get(ctg));
 		return this.listName.size;
     }
-	get(ctg: string, key: SpecifKey, chAt?: string): Item {
+	get(ctg: string, key: SpecifKey, chAt?: string): SpecifItem {
 		// Get the element of the given category: 
 		// @ts-ignore - yes, the index can be undefined:
-		var item: Item = LIB.itemByKey(this[this.listName.get(ctg)], key);
+		var item: SpecifItem = LIB.itemByKey(this[this.listName.get(ctg)], key);
 		if (item) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
@@ -126,8 +126,8 @@ class StandardTypes {
 		};
 		throw Error("No standard type with id '" + key.id + "' and revision '" + key.id +"' of category '"+ctg+"'");
 	}
-/*	getByTitle(ctg: string, ti: string, chAt?: string): Item | undefined {
-		var item: Item = itemByTitle(this[this.listName.get(ctg)], ti);
+/*	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
+		var item: SpecifItem = itemByTitle(this[this.listName.get(ctg)], ti);
 		if (item) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
@@ -179,7 +179,7 @@ function addPCReference(eC: SpecifResourceClass | SpecifStatementClass, key: Spe
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
 	if (Array.isArray(eC.propertyClasses)) {
 		// Avoid duplicates:
-		if ( indexById(eC.propertyClasses, key.id) < 0
+		if ( LIB.indexById(eC.propertyClasses, key.id) < 0
 			|| LIB.indexByKey(eC.propertyClasses, key) <0 )
 			eC.propertyClasses.unshift(key);
 		// else: reference with equal id and revision is already present.

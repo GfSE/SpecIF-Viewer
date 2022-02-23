@@ -74,17 +74,17 @@ class CSpecifItemNames {
 class CSpecIF implements SpecIF {
 	// Transform a SpecIF data-set of several versions to the internal representation of the SpecIF Viewer/Editor
 	// and also transform it back to a SpecIF data-set of the most recent version.
-	id = '';
+	id:SpecifId = '';
 	$schema = '';
-	title = [{ text: '' }];
-	description = [{ text: '' }];
-	generator = '';
-	generatorVersion = '';
-	rights: any = {};
+	title?: SpecifMultiLanguageText = [{ text: '' }];
+	description?: SpecifMultiLanguageText = [{ text: '' }];
+	generator? = '';
+	generatorVersion? = '';
+	rights?: any = {};
 	// @ts-ignore - will be set by 'toInt()', if available in the input data:
-	createdAt: SpecifDateTime;
+	createdAt?: SpecifDateTime;
 	// @ts-ignore - will be set by 'toInt()', if available in the input data:
-	createdBy: SpecifCreatedBy;
+	createdBy?: SpecifCreatedBy;
 
 	dataTypes: SpecifDataType[] = [];
 	propertyClasses: SpecifPropertyClass[] = [];
@@ -460,7 +460,7 @@ class CSpecIF implements SpecIF {
 					// no id
 					class: LIB.makeKey(iE[names.pClass])
 				},
-				dT: SpecifDataType = LIB.dataTypeOf(self, oE["class"]);
+				dT: SpecifDataType = LIB.dataTypeOf(oE["class"], self);
 //			console.debug('p2int', iE, dT);
 
 			oE.values = makeValues(iE, dT);
@@ -470,7 +470,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// common for all resources or statements:
-		function a2int(iE:any): Instance {
+		function a2int(iE:any): SpecifInstance {
 		//	var oE = i2int(iE),
 			var	oE: any = {
 					id: iE.id,
@@ -673,12 +673,21 @@ class CSpecIF implements SpecIF {
 				// it is SpecIF < v1.1:
 				switch (dT.type) {
 					// we are using the transformed dataTypes, but the base dataTypes are still original;
+					case SpecifDataTypeEnum.String:
 					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
 					case "xhtml":
-					case SpecifDataTypeEnum.String:
-						// in SpecIF <v1.1 there were only enumerations of base-type xs:string:
-						if (dT.enumeration)
-							return [LIB.cleanValue(iE.value)]
+					// @ts-ignore - "xs:enumeration" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
+					case "xs:enumeration":
+						// in SpecIF <v1.1 there are only enumerations of base-type xs:string:
+						if (dT.enumeration) {
+							// in SpecIF <1.1 multiple enumeration ids were in a comma-separated list;
+							// starting v1.1 they are separate list items:
+							let vL: string[] = LIB.cleanValue(iE.value).split(',');
+							return LIB.forAll(vL, (v: string) => { return v.trim() });
+/*							let nL = LIB.forAll(vL, (v: string) => { return v.trim() })
+							console.debug('makeValues',iE.value,nL);
+							return nL; */
+						}
 						else {
 							let vL = Array.isArray(iE.value) ?
 								// multiple languages:
@@ -726,14 +735,14 @@ class CSpecIF implements SpecIF {
 				var pend = 0,
 					spD: SpecIF = {
 						id: this.id,
-						title: languageValueOf(this.title, opts),
+						title: LIB.languageValueOf(this.title, opts),
 						$schema: 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json',
 						generator: app.title,
 						generatorVersion: CONFIG.appVersion,
 						createdAt: new Date().toISOString()
 					};
 
-				if (this.description) spD.description = languageValueOf(this.description, opts);
+				if (this.description) spD.description = LIB.languageValueOf(this.description, opts);
 
 				if (this.rights && this.rights.title && this.rights.url)
 					spD.rights = this.rights;
@@ -798,10 +807,10 @@ class CSpecIF implements SpecIF {
 						lenBefore = spD.statements.length;
 						spD.statements = spD.statements.filter(
 							(s) => {
-								return (indexById(spD.resources, s.subject.id) > -1
-									|| indexById(spD.statements, s.subject.id) > -1)
-									&& (indexById(spD.resources, s.object.id) > -1
-										|| indexById(spD.statements, s.object.id) > -1)
+								return (LIB.indexById(spD.resources, s.subject.id) > -1
+									|| LIB.indexById(spD.statements, s.subject.id) > -1)
+									&& (LIB.indexById(spD.resources, s.object.id) > -1
+										|| LIB.indexById(spD.statements, s.object.id) > -1)
 							}
 						);
 						console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
@@ -883,7 +892,7 @@ class CSpecIF implements SpecIF {
 					};
 					// most items must have a title, but statements may come without:
 					if (iE.title) oE.title = LIB.titleOf(iE, opts);
-					if (iE.description) oE.description = languageValueOf(iE.description, opts);
+					if (iE.description) oE.description = LIB.languageValueOf(iE.description, opts);
 					if (iE.revision) oE.revision = iE.revision;
 					if (iE.replaces) oE.replaces = iE.replaces;
 					if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -912,7 +921,7 @@ class CSpecIF implements SpecIF {
 					if (iE.values) {
 						if (opts.targetLanguage)
 							// reduce to the language specified:
-							oE.values = LIB.forAll(iE.values, (val:any) => { return { id: val.id, value: languageValueOf(val.value, opts) } })
+							oE.values = LIB.forAll(iE.values, (val:any) => { return { id: val.id, value: LIB.languageValueOf(val.value, opts) } })
 						else
 							oE.values = iE.values;
 					};
@@ -993,19 +1002,19 @@ class CSpecIF implements SpecIF {
 						let ti = LIB.titleOf(iE, opts);
 						if (ti != pC.title) oE.title = ti;
 					};
-					if (iE.description) oE.description = languageValueOf(iE.description, opts);
+					if (iE.description) oE.description = LIB.languageValueOf(iE.description, opts);
 
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations:
 					if (opts.targetLanguage ) {
 						// reduce to the selected language; is used for generation of human readable documents
 						// or for formats not supporting multiple languages:
-						let dT: SpecifDataType = LIB.dataTypeOf(spD, iE['class']);
+						let dT: SpecifDataType = LIB.dataTypeOf(iE['class'],spD);
 						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
 							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
 								// Transform to HTML, if possible;
 								// especially for publication, for example using WORD format:
-								oE.value = languageValueOf(iE.value, opts)
+								oE.value = LIB.languageValueOf(iE.value, opts)
 									.replace(/^\s+/, "")  // remove any leading whiteSpace
 									.makeHTML(opts)
 									.replace(/<br ?\/>\n/g, "<br/>");
@@ -1014,12 +1023,12 @@ class CSpecIF implements SpecIF {
 							}
 							else {
 								// if it is e.g. a title, remove all formatting:
-								oE.value = languageValueOf(iE.value, opts)
+								oE.value = LIB.languageValueOf(iE.value, opts)
 									.replace(/^\s+/, "")   // remove any leading whiteSpace
 									.stripHTML();
 							};
 							// return 'published' data structure (single language, ...):
-//							console.debug('p2ext',iE,languageValueOf( iE.value, opts ),oE.value);
+//							console.debug('p2ext',iE,LIB.languageValueOf( iE.value, opts ),oE.value);
 							return oE;
 						};
 					};

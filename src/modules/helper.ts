@@ -384,10 +384,11 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 	}
 };
 
-type Item = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
+type SpecifItem = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
+type SpecifClass = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass;
 type ItemWithNativeTitle = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifNode | SpecifFile;
-type Instance = SpecifResource | SpecifStatement;
-LIB.keyOf = (itm: Item): SpecifKey => {
+type SpecifInstance = SpecifResource | SpecifStatement;
+LIB.keyOf = (itm: SpecifItem): SpecifKey => {
 	// create a key from an item by selective cloning:
 	return itm.revision ? { id: itm.id, revision: itm.revision } : { id: itm.id };
 }
@@ -428,7 +429,7 @@ LIB.equalKeyL = (refL: any[], newL: any[]): boolean => {
 		|| rArr && !nArr
 		|| refL.length != newL.length) return false;
 	// the sequence may differ:
-	return containsAllKeys(refL,newL);
+	return LIB.containsAllKeys(refL,newL);
 }
 LIB.equalValue = (refV: SpecifValue, newV: SpecifValue): boolean => {
 	// Return true if both values are equivalent:
@@ -489,7 +490,7 @@ LIB.isMultiLanguageText = (L: any[]): boolean => {
 LIB.makeMultiLanguageText = (el:any): SpecifMultiLanguageText => {
 	return typeof (el) == 'string' ? [{ text: el }] : (LIB.isMultiLanguageText( el )? el : undefined );
 }
-LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
+LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
 	// Return the index of item with key k in L
 	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
 	//  - If k has no revision, the item in L having the latest revision applies.
@@ -501,7 +502,7 @@ LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
 			// filter the input list and add the index to the elements;
 			// add index without changing L and it's items:
 			L,
-			(e:Item,i:number) => {
+			(e:SpecifItem,i:number) => {
 				if (e.id == k.id )
 					return { idx: i, rev: e.revision, chAt: e.changedAt }
 			}
@@ -518,7 +519,7 @@ LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
 	// If there are more than one and the constraint checker was happy, they must have a revision.
 	if (k.revision) {
 		// Find the element with equal revision:
-		let itemsWithEqRev = itemsWithEqId.filter((e: Item) => { return e.revision == k.revision });
+		let itemsWithEqRev = itemsWithEqId.filter((e: SpecifItem) => { return e.rev == k.revision });
 		// With the project data being constraint checked, itemsWithEqRev.length can be 0 or 1:
 		if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
 		if (itemsWithEqRev.length < 2) return itemsWithEqRev[0].idx;
@@ -530,17 +531,17 @@ LIB.indexByKey = (L: Item[], k: SpecifKey): number => {
 	itemsWithEqId.sort(( laurel: any, hardy:any ) => { return hardy.changedAt - laurel.changedAt });
 	return itemsWithEqId[0].idx; // return the index of the latest revision
 }
-LIB.itemByKey = (L: Item[], k: SpecifKey): any => {
+LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
 	// Return the item in L with key k 
 	let i = LIB.indexByKey(L, k);
 	if (i > -1) return L[i]; // return the latest revision
 	//	return undefined
 }
-LIB.mostRecent = (L: Item[], k: SpecifKey): Item => {
+LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
 	// call indexByKey without revision to get the most recent revision:
 	return L[LIB.indexByKey(L, { id: k.id })];
 }
-function indexById(L:any[],id:string):number {
+LIB.indexById = (L:any[],id:string):number => {
 	if( L && id ) {
 		// given an ID of an item in a list, return it's index:
 		id = id.trim();
@@ -549,7 +550,7 @@ function indexById(L:any[],id:string):number {
 	};
 	return -1;
 }
-function itemById(L:any[],id:string):any {
+LIB.itemById = (L:any[],id:string):any => {
 //	console.debug('+',L,id,(L && id));
 	if( L && id ) {
 		// given the ID of an item in a list, return the item itself:
@@ -558,6 +559,7 @@ function itemById(L:any[],id:string):any {
 			if( L[i].id==id ) return L[i]   // return list item
 	};
 }
+/*
 function indexByTitle(L:any[],ti:string):number {
 	if( L && ti ) {
 		// given a title of an item in a list, return it's index:
@@ -572,7 +574,7 @@ function itemByTitle(L:any[],ti:string):any {
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
-}
+} */
 LIB.indexBy = (L: any[], p: string, k: SpecifKey): number => {
 	if (L && p && k) {
 		// Return the index of an element in list 'L' whose property 'p' equals key 'k':
@@ -606,24 +608,24 @@ function itemBy(L:any[], p:string, s:string ):any {
 			if( typeof(s)=='string' && L[i][p] == s ) return L[i]; // return list item
 	};
 } */
-LIB.containsById = (cL:any[], L: Item|Item[] ):boolean =>{
+LIB.containsById = (cL:any[], L: SpecifItem|SpecifItem[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Input Parameter");
 	// return true, if all items in L are contained in cL (cachedList),
 	// where L may be an array or a single item:
-	return Array.isArray(L)?containsL( cL, L ):indexById( cL, L.id )>-1;
+	return Array.isArray(L)?containsL( cL, L ):LIB.indexById( cL, L.id )>-1;
 
-	function containsL(cL:any[], L: Item[] ):boolean {
+	function containsL(cL:any[], L: SpecifItem[] ):boolean {
 		for( var i=L.length-1;i>-1;i-- )
-			if ( indexById( cL, L[i].id )<0 ) return false;
+			if ( LIB.indexById( cL, L[i].id )<0 ) return false;
 		return true;
 	}
 } 
-/* LIB.containsByTitle = (cL:any[], L: Item[] ):boolean =>{
+/* LIB.containsByTitle = (cL:any[], L: SpecifItem[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Array");
 	// return true, if all items in L are contained in cL (cachedList):
 	return Array.isArray(L)?containsL( cL, L ):( indexByTitle( cL, L.title )>-1 );
 	
-	function containsL(cL: Item[], L: Item[] ):boolean {
+	function containsL(cL: SpecifItem[], L: SpecifItem[] ):boolean {
 		for( var i=L.length-1;i>-1;i-- )
 			if ( indexByTitle( cL, L[i].title )<0 ) return false;
 		return true;
@@ -670,7 +672,7 @@ LIB.addIcon = (str: string, ic: string): string =>{
 }
 LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// add or update the item e in a list L:
-	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
+	let n = typeof(e)=='object'? LIB.indexById( L, e.id ) : L.indexOf(e);
 	// add, if not yet listed:
 	if (n < 0) {
 		L.push(e);
@@ -689,7 +691,7 @@ LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 }
 LIB.uncacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// remove the item e from a list L:
-	let n = typeof(e)=='object'? indexById( L, e.id ) : L.indexOf(e);
+	let n = typeof(e)=='object'? LIB.indexById( L, e.id ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }

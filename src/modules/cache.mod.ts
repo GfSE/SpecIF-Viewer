@@ -38,27 +38,19 @@ interface IFileWithContent extends SpecifFile {
 class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;
-	// @ts-ignore - see constructor for initializer:
-	dataTypes: SpecifDataType[];
-	// @ts-ignore - see constructor for initializer:
-	propertyClasses: SpecifPropertyClass[];
-	// @ts-ignore - see constructor for initializer:
-	resourceClasses: SpecifResourceClass[];
-	// @ts-ignore - see constructor for initializer:
-	statementClasses: SpecifStatementClass[];
-	// @ts-ignore - see constructor for initializer:
-	resources: SpecifResource[];   		// list of resources as referenced by the hierarchies
-	// @ts-ignore - see constructor for initializer:
-	statements: SpecifStatement[];
-	// @ts-ignore - see constructor for initializer:
-	hierarchies: SpecifNode[];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
-	// @ts-ignore - see constructor for initializer:
-	files: IFileWithContent[];
+	dataTypes: SpecifDataType[] = [];
+	propertyClasses: SpecifPropertyClass[] = [];
+	resourceClasses: SpecifResourceClass[] = [];
+	statementClasses: SpecifStatementClass[] = [];
+	resources: SpecifResource[] = [];   		// list of resources as referenced by the hierarchies
+	statements: SpecifStatement[] = [];
+	hierarchies: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of all loaded projects
+	files: IFileWithContent[] = [];
 	constructor(opts:any) {
 		this.cacheInstances = opts.cacheInstances;
-		for (var le of standardTypes.listName.keys())
+	/*	for (var le of standardTypes.listName.keys())
 			// @ts-ignore - index is ok:
-			this[standardTypes.listName.get(le)] = [];
+			this[standardTypes.listName.get(le)] = []; */
 	}
 	length(ctg: string): number {
 		// Return the number of cached items per category:
@@ -73,24 +65,24 @@ class CCache {
 		};
 		return true;
 	}
-	put(ctg: string, item: Item[] | Item): number | boolean {
+	put(ctg: string, item: SpecifItem[] | SpecifItem): boolean {
 		if (!item || Array.isArray(item) && item.length < 1)
 			return false;
 		// If item is a list, all elements must have the same category.
-		function cacheIfNewerE(L: Item[], e: Item): number {  // ( list, entry )
+		function cacheIfNewerE(L: SpecifItem[], e: SpecifItem): boolean {  // ( list, entry )
 			// Add or update the item e in a list L, if created later:
-			let n = typeof (e) == 'object' ? indexById(L, e.id) : L.indexOf(e);
+			let n = typeof (e) == 'object' ? LIB.indexById(L, e.id) : L.indexOf(e);
 			// add, if not yet listed:
 			if (n < 0) {
 				L.push(e);
-				return L.length - 1;
+				return true;
 			};
 			// Update, if newer:
 			if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt))
 				L[n] = e;
-			return n;
+			return true;
 		}
-		function cacheIfNewerL(L: Item[], es: Item[]): boolean {  // ( list, entries )
+		function cacheIfNewerL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
 			// add or update the items es in a list L:
 			es.forEach((e) => { cacheIfNewerE(L, e) })
 			// this operation cannot fail:
@@ -122,7 +114,7 @@ class CCache {
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 	}
-	get(ctg: string, req: Item[] | Item | string): Item[] {
+	get(ctg: string, req: SpecifItem[] | SpecifItem | string): SpecifItem[] {
 		// Read items from cache
 		// - req can be single or a list,
 		// - each element can be an object with key
@@ -139,7 +131,7 @@ class CCache {
 
 		if (Array.isArray(req)) {
 			let allFound = true, i = 0, I = req.length;
-			var rL: Item[] = [];
+			var rL: SpecifItem[] = [];
 			while (allFound && i < I) {
 				idx = LIB.indexByKey(itmL, req[i] );
 				if (idx > -1) {
@@ -163,7 +155,7 @@ class CCache {
 				return [];
 		};
 	}
-	delete(ctg: string, item: Item): boolean | undefined {
+	delete(ctg: string, item: SpecifItem): boolean | undefined {
 		if (!item) return;
 		let fn = Array.isArray(item) ? LIB.uncacheL : LIB.uncacheE;
 		switch (ctg) {
@@ -226,7 +218,7 @@ class CCache {
 			// insert the node after the predecessor:
 			(ndL: SpecifNode[]) => {
 				// @ts-ignore - e.predecessor is defined:
-				let i = indexById(ndL as Item[], e.predecessor);
+				let i = LIB.indexById(ndL as SpecifItem[], e.predecessor);
 				if (i > -1) ndL.splice(i + 1, 0, e);
 			}
 		))
@@ -283,19 +275,21 @@ class CProject {
 	// - Common Cache (for all locally known projects)
 	// - assigned Server(s)
 	// @ts-ignore - initialized by this.setMeta()
-	id: string;
+	id: SpecifId;
 	// @ts-ignore - initialized by this.setMeta()
-	title: string;
+	revision?: SpecifRevision;
 	// @ts-ignore - initialized by this.setMeta()
-	description?: string;
+	title?: SpecifMultiLanguageText;
+	// @ts-ignore - initialized by this.setMeta()
+	description?: SpecifMultiLanguageText;
 	// @ts-ignore - initialized by this.setMeta()
 	generator?: string;
 	// @ts-ignore - initialized by this.setMeta()
 	generatorVersion?: string;
 	// @ts-ignore - initialized by this.setMeta()
-	createdAt?: string;
+	createdAt?: SpecifDateTime;
 	// @ts-ignore - initialized by this.setMeta()
-	createdBy?: string;
+	createdBy?: SpecifCreatedBy;
 	hierarchies: SpecifNode[] = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
 	data: CCache;
 /*	myRole = i18n.LblRoleProjectAdmin;
@@ -376,8 +370,9 @@ class CProject {
 					// at the same time the cache is updated.
 					cDO.notify(i18n.MsgLoadingTypes, 30);
 					pend = standardTypes.iterateLists(
-						(key:string, value:string) => {
-							this.createContent(key, nD[value])
+						(ctg: string, listName: string) => {
+							// @ts-ignore - the indexing works fine:
+							this.createContent(ctg, nD[listName])
 								.then(finalize, cDO.reject);
 						}
 					);
@@ -419,6 +414,7 @@ class CProject {
 						this.readContent(ctg, 'all')
 						.then(
 							(values) => {
+								// @ts-ignore - indexing by string works fine
 								spD[listName] = values;
 								if (--pend < 1) {
 									spD.toExt(opts)
@@ -456,15 +452,16 @@ class CProject {
 				//    b) if same id and same content, just use it (no action)
 				//    c) if same id and different content, save with new id and update all references
 				(nD: CSpecIF) => {
-//					console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
-					this.types.forEach((ty) => {
+					//					console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
+					this.types.forEach((ty:CElement) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 						if (Array.isArray(nD[ty.listName])) {
-							let itmL: any[] = [];
+							let itmL: SpecifItem[] = [];
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 							nD[ty.listName].forEach((nT) => {
 								// nT is a type/class in new data
 								// types are compared by id:
+								// @ts-ignore - indexing by string works fine
 								let idx = LIB.indexByKey(dta[ty.listName], nT);
 								if (idx < 0) {
 									// a) there is no item with the same id
@@ -473,6 +470,7 @@ class CProject {
 								else {
 									// there is an item with the same id.
 									//	if( !ty.isEqual( self.data[ty.listName][idx], nT) ) {
+									// @ts-ignore - indexing by string works fine
 									if (!ty.isCompatible(dta[ty.listName][idx], nT, { mode: "include" })) {
 										// there is an item with the same id and different content.
 										// c) create a new id and update all references:
@@ -522,7 +520,8 @@ class CProject {
 						nD.resources.forEach((nR: SpecifResource) => {
 							// nR is a resource in the new data
 
-							// Adopt resource with the same id, title and class right away:
+							// Adopt resource with the same key, title and class right away;
+							// obviously there is no need to update any reference:
 							let eR: SpecifResource = LIB.itemByKey(dta.resources, nR);  // resource in the existing data
 							if (eR && this.equalR(eR, nR)) return;
 
@@ -532,8 +531,8 @@ class CProject {
 							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(nR, nD)) > -1
 								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
-								// Check for a resource with the same title:
-								eR = itemByTitle(dta.resources, nR.title);  // resource in the existing data
+								// Check for an exsiting resource with the same title:
+								eR = itemByTitle(dta.resources, nR.title);
 								// If there is an instance with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
@@ -688,11 +687,11 @@ class CProject {
 		});
 		return;
 
-		function itemsByVisibleId(L, vId: string): SpecifResource[] {
+		function itemsByVisibleId(L: SpecifResource[], vId: string): SpecifResource[] {
 			// return a list with all elements in L having a property 
 			// containing a visible id with value vId;
 			// should only be one resulting element:
-			return LIB.forAll(L, (r) => {
+			return LIB.forAll(L, (r: SpecifResource) => {
 				if (visibleIdOf(r) == vId) return r;
 			});
 		}
@@ -723,6 +722,7 @@ class CProject {
 		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
 		// whereas the second in a pair is removed.
 		this.types.forEach((ty) => {
+			// @ts-ignore - indexing by string works fine
 			let lst = dta[ty.listName];
 			// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 			if (Array.isArray(lst))
@@ -767,7 +767,7 @@ class CProject {
 					// Are equal, so remove the duplicate resource:
 //					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, CONFIG.propClassType, dta ) );
 					this.substituteR(dta, rR, nR, { rescueProperties: true });
-					console.info("Resource with id=" + nR.id + " and title=" + nR.title + " has been removed because it is a duplicate of id=" + rR.id);
+					console.info("Resource with id=" + nR.id + " has been removed because it is a duplicate of id=" + rR.id);
 					dta.resources.splice(n, 1);
 					// skip the remaining iterations of the inner loop:
 					break;
@@ -800,7 +800,7 @@ class CProject {
 		const resourcesToCollect = [
 			{ type: CONFIG.resClassProcess, flag: "collectProcesses", folder: CONFIG.resClassProcesses, folderNamePrefix: "FolderProcesses-" }
 		];
-		var r: Instance = LIB.itemByKey(dta.resources, dta.hierarchies[0].resource),
+		var r: SpecifResource = LIB.itemByKey(dta.resources, dta.hierarchies[0].resource),
 			rC: SpecifResourceClass = LIB.itemByKey(dta.resourceClasses, r['class']),
 			prp: SpecifProperty = itemByTitle(r.properties, CONFIG.propClassType),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
@@ -1036,7 +1036,7 @@ class CProject {
 						return extractByType(
 							(nd)=>{
 								// get the referenced resource:
-								var res = itemById( self.resources, nd.resource );
+								var res = LIB.itemById( self.resources, nd.resource );
 								if( isDiagram( res ) ) return res;
 							}
 						);
@@ -1174,7 +1174,7 @@ class CProject {
 			}
 		);
 	}
-	createContent(ctg: string, item: Item): Promise<Item> {
+	createContent(ctg: string, item: SpecifItem[] | SpecifItem): Promise<SpecifItem> {
 		// item can be a js-object or a list of js-objects
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 		// ...  not all of them may be implemented, so far.
@@ -1199,7 +1199,7 @@ class CProject {
 			}
 		);
 	}
-	readContent(ctg: string, item: Item[] | Item | string, opts?: any): Promise<Item[]> {
+	readContent(ctg: string, item: SpecifItem[] | SpecifItem | string, opts?: any): Promise<SpecifItem[]> {
 //		console.debug('readContent', ctg, item, opts);
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		if (!opts) opts = { reload: false, timelag: 10 };
@@ -1227,9 +1227,9 @@ class CProject {
 			}
 		);
 	}
-	updateContent (ctg: string, item: Item[] | Item): Promise<void> {
+	updateContent (ctg: string, item: SpecifItem[] | SpecifItem): Promise<void> {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
-		function updateCh(itm: Item): void {
+		function updateCh(itm: SpecifItem): void {
 			itm.changedAt = new Date().toISOString();
 			itm.changedBy = app.me.userName;
 		}
@@ -1255,7 +1255,7 @@ class CProject {
 			}
 		);
 	}
-	deleteContent(ctg: string, item: Item): Promise<void> {
+	deleteContent(ctg: string, item: SpecifItem): Promise<void> {
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 /*			function isInUse( ctg, itm ) {
 					function dTIsInUse( L, dT ) {
@@ -1366,7 +1366,8 @@ class CProject {
 							resolve(
 								sL.filter(
 									(s) => {
-										let sC: SpecifStatementClass = LIB.itemByKey(sCL, s['class'] as string);
+										let sC: SpecifStatementClass = LIB.itemByKey(sCL, s['class'] as string),
+											ti = LIB.titleOf(sC);
 										return (res.id == s.subject.id || res.id == s.object.id)
 											// statement must be visible on a diagram referenced in a hierarchy
 											// or be a shows statement itself.
@@ -1375,7 +1376,7 @@ class CProject {
 												// Accept manually created relations (including those imported via Excel):
 												|| !sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User) > -1
 												|| LIB.indexBy(showsL, "object", s.id) > -1
-												|| LIB.titleOf(sC) == CONFIG.staClassShows
+												|| ti == CONFIG.staClassShows
 											)
 											// AND fulfill certain conditions:
 											&& (
@@ -1383,13 +1384,13 @@ class CProject {
 													// also, the statement must not be declared 'hidden':
 													!opts.showComments
 													// cheap tests first:
-													&& LIB.titleOf(sC) != CONFIG.staClassCommentRefersTo
-													&& CONFIG.hiddenStatements.indexOf(s.title) < 0
+													&& ti != CONFIG.staClassCommentRefersTo
+													&& CONFIG.hiddenStatements.indexOf(ti) < 0
 													&& isReferencedByHierarchy(s.subject)
 													&& isReferencedByHierarchy(s.object)
 													// In case of a comment, the comment itself is not referenced in the tree:
 												|| opts.showComments
-													&& LIB.titleOf(sC) == CONFIG.staClassCommentRefersTo
+													&& ti == CONFIG.staClassCommentRefersTo
 													&& isReferencedByHierarchy(s.object)
 											)
 									}
@@ -1796,10 +1797,10 @@ class CProject {
 		if( !Array.isArray(refE.enumeration) && !Array.isArray(newE.enumeration) ) return true;
 		if( Array.isArray(refE.enumeration) != Array.isArray(newE.enumeration)
 			|| refE.enumeration.length != newE.enumeration.length ) return false;
-		// refE and newE have a property 'enumeration':
+		// refE and newE have a property 'enumeration' with equal length:
 		for( var i = newE.enumeration.length - 1; i > -1; i-- )
 			// assuming that the values don't matter:
-			if( indexById(refE.enumeration, newE.enumeration[i].id) < 0 ) return false;
+			if( LIB.indexById(refE.enumeration, newE.enumeration[i].id) < 0 ) return false;
 		// the list of enumerated values *is* equal,
 		// finally the multiple flag must be equal:
 		return LIB.equalBoolean(refE.multiple, newE.multiple);
@@ -1940,7 +1941,7 @@ class CProject {
 			// @ts-ignore - newC.enumeration *is* present:
 			for (var v = newC.enumeration.length - 1; v > -1; v--) {
 				// @ts-ignore - refC.enumeration *is* present:
-				idx = indexById(refC.enumeration, newC.enumeration[v].id);
+				idx = LIB.indexById(refC.enumeration, newC.enumeration[v].id);
 				// a. The id of the new 'enumeration' must be present in the present one:
 				if (idx < 0) {
 					LIB.logMsg({ status: 954, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
@@ -1980,7 +1981,7 @@ class CProject {
 			nPC = newC.propertyClasses[a];
 			if (nPC.id) {
 				// If an id exists, it must be equal to one of refC's propertyClasses:
-				idx = indexById(refC.propertyClasses, nPC.id)
+				idx = LIB.indexById(refC.propertyClasses, nPC.id)
 			} 
 			else {
 				// If there is no id, the type is new and there are no referencing elements, yet.
@@ -2057,13 +2058,17 @@ class CProject {
 		return false;
 	}
 	private compatibleSC(refC: SpecifStatementClass, newC: SpecifStatementClass, opts?:any): boolean {
-		// To be compatible, all sourceTypes of newC must be contained in the sourceTypes of refC;
-		// no sourceTypes means that all resourceClasses are permissible as subject.
-		// ... and similarly for the targetTypes:
+		if (refC.title != newC.title) {
+			LIB.logMsg({ status: 961, statusText: "new statementClass '" + newC.id + "' is incompatible; titles don't match" });
+			return false;
+        }
+		// To be compatible, all subjectClasses of newC must be contained in the subjectClasses of refC;
+		// no subjectClasses means that all resourceClasses are permissible as subject.
 		if (!this.compatibleECReferences(refC.subjectClasses, newC.subjectClasses) ) {
-			LIB.logMsg({ status: 961, statusText: "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" });
+			LIB.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" });
 			return false;
 		};
+		// ... and similarly for the objectClasses:
 		if (!this.compatibleECReferences(refC.objectClasses, newC.objectClasses)) {
 			LIB.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" });
 			return false;
@@ -2077,31 +2082,31 @@ class CProject {
 	}
 	private substituteDT(prj: SpecIF, refE: SpecifDataType, newE: SpecifDataType,): void {
 		// For all propertyClasses, substitute new by the original dataType:
-		this.substituteProp(prj.propertyClasses, 'dataType', refE.id, newE.id);
+		this.substituteProp(prj.propertyClasses, 'dataType', keyOf(refE), keyOf(newE));
 	}
 	private substitutePC(prj: SpecIF, refE: SpecifResourceClass, newE: SpecifResourceClass, ): void {
 		// For all resourceClasses, substitute new by the original propertyClass:
 		this.substituteLe(prj.resourceClasses, 'propertyClasses', refE.id, newE.id);
 		// Also substitute the resource properties' class:
 		prj.resources.forEach((res) => {
-			this.substituteProp(res.properties, 'class', refE.id, newE.id);
+			this.substituteProp(res.properties, 'class', keyOf(refE), keyOf(newE));
 		});
 		// The same with the statementClasses:
 		this.substituteLe(prj.statementClasses, 'propertyClasses', refE.id, newE.id);
 		if (Array.isArray(prj.statements))
 			prj.statements.forEach((sta) => {
-				this.substituteProp(sta.properties, 'class', refE.id, newE.id)
+				this.substituteProp(sta.properties, 'class', keyOf(refE), keyOf(newE))
 			});
 	}
 	private substituteRC(prj: SpecIF, refE: SpecifResourceClass, newE: SpecifResourceClass): void {
 		// Substitute new by original resourceClass:
 		this.substituteLe(prj.statementClasses, 'subjectClasses', refE.id, newE.id);
 		this.substituteLe(prj.statementClasses, 'objectClasses', refE.id, newE.id);
-		this.substituteProp(prj.resources, 'class', refE.id, newE.id);
+		this.substituteProp(prj.resources, 'class', keyOf(refE), keyOf(newE));
 	}
 	private substituteSC(prj: SpecIF, refE: SpecifStatementClass, newE: SpecifStatementClass): void {
 		// Substitute new by original statementClass:
-		this.substituteProp(prj.statements, 'class', refE.id, newE.id);
+		this.substituteProp(prj.statements, 'class', keyOf(refE), keyOf(newE));
 	}
 	private substituteR(prj: SpecIF, refE: SpecifResource, newE: SpecifResource, opts?: any): void {
 		// Substitute resource newE by refE in all references of newE,
@@ -2113,7 +2118,7 @@ class CProject {
 			// Rescue any property value of newE,
 			// if the corresponding property of the adopted resource refE is undefined or empty;
 			// looking at the property types, which ones are in common:
-			newE.properties.forEach((nP) => {
+			newE.properties.forEach((nP: SpecifProperty) => {
 				if (LIB.hasContent(nP.value)) {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
@@ -2123,25 +2128,25 @@ class CProject {
 //					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valuesByTitle( refE, pT, this.data )));
 					if (!LIB.hasContent(LIB.valuesByTitle(refE, pT, this.data))
 						// dataTypes must be compatible:
-						&& this.compatibleDT(LIB.dataTypeOf(this.data, rP['class']), LIB.dataTypeOf(prj, nP['class']))) {
-						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(this.data,rP['class']), LIB.dataTypeOf(prj,nP['class']) ).status==0 ) {
+						&& this.compatibleDT(LIB.dataTypeOf(rP['class'], this.data), LIB.dataTypeOf(nP['class'], prj))) {
+						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(rP['class'],this.data), LIB.dataTypeOf(nP['class'],prj) ).status==0 ) {
 						rP.value = nP.value;
 					};
 				};
 			});
 		};
 		// In the rare case that the ids are identical, there is no need to update the references:
-		if (refE.id == newE.id) return;
+		if (LIB.equalKey(refE,newE) return;
 
 		// 1. Replace the references in all statements:
 		prj.statements.forEach((st: SpecifStatement) => {
-			if (LIB.equalKey(st.object, newE)) { if (st.object.id) { st.object.id = refE.id } else { st.object = refE.id } };
-			if (LIB.equalKey(st.subject, newE)) { if (st.subject.id) { st.subject.id = refE.id } else { st.subject = refE.id } }
+			if (LIB.equalKey(st.object, newE)) { if (st.object.id) { st.object.id = LIB.keyOf(refE) } else { st.object = LIB.keyOf(refE) } };
+			if (LIB.equalKey(st.subject, newE)) { if (st.subject.id) { st.subject.id = LIB.keyOf(refE) } else { st.subject = LIB.keyOf(refE) } }
 			// ToDo: Is the substitution is too simple, if a key is used?
 		});
 
 		// 2. Replace the references in all hierarchies:
-		this.substituteRef(prj.hierarchies, refE.id, newE.id);
+		this.substituteRef(prj.hierarchies, LIB.keyOf(refE), LIB.keyOf(newE));
 
 		// 3. Make sure all statementClasses allowing newE.class also allow refE.class (the class of the adopted resource):
 		prj.statementClasses.forEach((sC: SpecifStatementClass) => {
@@ -2149,13 +2154,13 @@ class CProject {
 			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(newE['class']) > -1) LIB.cacheE(sC.objectClasses, refE['class']);
 		});
 	}
-	private substituteProp(L, propN: string, rAV: string, dAV: string): void {
+	private substituteProp(L, propN: string, rK: SpecifKey, dK: SpecifKey): void {
 		// replace ids of the duplicate item by the id of the original one;
 		// this applies to the property 'propN' of each member of the list L:
 		if (Array.isArray(L))
-			L.forEach((e) => { if (e[propN] == dAV) e[propN] = rAV });
+			L.forEach((e) => { if (LIB.equalKey(e[propN], dK) e[propN] = rK });
 	}
-	private substituteLe(L, propN: string, rAV: string, dAV: string): void {
+	private substituteLe(L, propN: string, rK: SpecifKey, dK: SpecifKey): void {
 		// Replace the duplicate id by the id of the original item;
 		// so replace dAV by rAV in the list named 'propN'
 		// (for example: in L[i][propN] (which is a list as well), replace dAV by rAV):
@@ -2164,31 +2169,30 @@ class CProject {
 			L.forEach((e) => {
 				// e is a resourceClass or statementClass:
 				if (Array.isArray(e[propN])) {
-					idx = e[propN].indexOf(dAV);
+					idx = LIB.indexByKey(e[propN],dK);
 					if (idx > -1) {
-						// dAV is an element of e[propN]
-						// - replace dAV with rAV
-						// - in case rAV is already member of the list, just remove dAV
-						if (e[propN].indexOf(rAV) > -1)
-							e[propN].splice(idx, 1)
+						// dK is an element of e[propN]
+						if (LIB.indexByKey(e[propN], rK) <0)
+							// replace dK with rK
+							e[propN].splice(idx, 1, rK);
 						else
-							e[propN].splice(idx, 1, rAV);
+							// rK is already member of the list, just remove dK:
+							e[propN].splice(idx, 1)
 					};
 				};
 			});
 	}
-	private substituteRef(L, rId: string, dId: string): void {
+	private substituteRef(L, rK: SpecifKey, dK: SpecifKey): void {
 		// For all hierarchies, replace any reference to dId by rId;
 		// eliminate double entries in the same folder (together with the children):
 		LIB.iterateNodes(
 			L,
 			// replace resource id:
-			(nd) => { if (nd.resource == dId) { nd.resource = rId }; return true },
+			(nd: SpecifNode) => { if (LIB.equalKey(nd.resource,dK) { nd.resource = rK }; return true },
 			// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
 			// for example it is avoided that the same diagram is shown twice if it has been imported twice:
-			(ndL) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.indexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
+			(ndL: SpecifNodes) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.indexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
 		);
-		// ToDo: Make it work, if keys are used as a reference.
 	}
 	abort(): void {
 		console.info('abort cache');
@@ -2385,7 +2389,7 @@ function Project(): IProject {
 				default: return null //should never arrive here
 			};
 			nL.forEach( (nT)=>{
-				rT = itemById(rL,nT.id);
+				rT = LIB.itemById(rL,nT.id);
 				if( rT ) {
 					// a type with the same id exists.
 					// ToDo: Add a new enum value to an existing enum dataType (server does not allow it yet)
@@ -2431,7 +2435,7 @@ function Project(): IProject {
 					// r: existing (=reference) type with its propertyClasses
 					// nPCs: new list of propertyClasses
 					// idx: current index of nPCs
-					if( nPCs[idx].id?itemById( r.propertyClasses, nPCs[idx].id ):itemByName( r.propertyClasses, nPCs[idx].title ) ) {
+					if( nPCs[idx].id?LIB.itemById( r.propertyClasses, nPCs[idx].id ):itemByName( r.propertyClasses, nPCs[idx].title ) ) {
 						// not missing, so try next:
 						if( ++idx<nPCs.length ) addNewPC( r, nPCs, idx );
 						return
@@ -2443,7 +2447,7 @@ function Project(): IProject {
 						nPCs[idx].predecessor = nPCs[idx-1].id;
 
 					// add the new property class also to r:
-					let p = indexById( r.propertyClasses, nPCs[idx].predecessor );
+					let p = LIB.indexById( r.propertyClasses, nPCs[idx].predecessor );
 					console.info('Creating property class', nPCs[idx].title);
 					// insert at the position similarly to the new type;
 					// if p==-1, then it will be inserted at the first position:
@@ -2521,9 +2525,9 @@ function Project(): IProject {
 						// no update, if there is no corresponding property in the new data:
 						if( !nA ) continue;
 						// in all other cases compare the value:
-						let oT = itemById( app.cache.selectedProject.data.resourceClasses, n['class'] ),  // applies to both r and n
-							rDT = LIB.dataTypeOf( app.cache.selectedProject.data, rA['class'] ),
-							nDT = LIB.dataTypeOf( newD, nA['class'] );
+						let oT = LIB.itemById( app.cache.selectedProject.data.resourceClasses, n['class'] ),  // applies to both r and n
+							rDT = LIB.dataTypeOf( rA['class'], app.cache.selectedProject.data ),
+							nDT = LIB.dataTypeOf( nA['class'], newD );
 						if( rDT.type!=nDT.type ) return null;  // fatal error, they must be equal!
 						switch( nDT.type ) {
 							case 'xs:enumeration':
@@ -2607,7 +2611,7 @@ function Project(): IProject {
 								// whereas it delivers 404, if it is an admin.
 								// Thus: If 403 is delivered and the user has read access according to the resourceClass,
 								// do as if 404 had been delivered.
-								var pT = itemById(app.cache.selectedProject.data.allClasses,nI['class']);
+								var pT = LIB.itemById(app.cache.selectedProject.data.allClasses,nI['class']);
 //								console.debug('403 instead of 404',nI,pT);
 								if( !pT.rea || !pT.cre ) { uDO.reject(xhr); return };
 								// else the server should have delivered 404, so go on ...
@@ -2995,7 +2999,7 @@ function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):SpecifResou
 	LIB.iterateNodes( H, (nd)=>{ LIB.cacheE( rL, LIB.itemByKey(prj.resources,nd.resource) ); return true } );
 	return rL;
 }
-LIB.dataTypeOf = (prj: SpecIF, key: SpecifKey): SpecifDataType =>{
+LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
 	// given a propertyClass id, return it's dataType:
 	if ( LIB.isKey(key) ) {
 		let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
@@ -3009,32 +3013,6 @@ LIB.dataTypeOf = (prj: SpecIF, key: SpecifKey): SpecifDataType =>{
 	// else:
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
 	return { type: SpecifDataTypeEnum.String }; // by default  
-}
-function enumValueOf(dT: SpecifDataType, val: string, opts: any): string {
-	// for a property value of type ENUMERATION, create a comma-separated-value string of titles;
-	// for all others, return the value as is:
-	if (dT.type != SpecifDataTypeEnum.Enumeration || !val) return val;
-	let ct = '',
-		eV,
-		vL = val.split(',');  // in case of a multi-valued ENUMERATION, val may carry comma-separated value-IDs
-//	console.debug('enumValueOf',dT,val,vL,opts);
-	vL.forEach( (v,i)=>{
-		eV = languageValueOf( itemById(dT.values,v).value, opts );
-		if( opts&&opts.lookupValues )
-			eV = i18n.lookup(eV);
-		// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
-		// For example, when an object is from a search hitlist or from a revision list,
-		// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
-		ct += (i == 0 ? '' : ', ') + (eV ? eV : v);
-	});
-	return ct;
-}
-function multipleChoice(pC: SpecifPropertyClass, prj?: SpecIF): boolean {
-	if( !prj ) prj = app.cache.selectedProject.data;
-	// return 'true', if either the property type specifies it, or by default its datatype;
-	// if defined, the property type's value supersedes the datatype's value:
-	return ( typeof(pC.multiple)=='boolean'?pC.multiple : !!itemById(prj.dataTypes,pC.dataType).multiple )
-	// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 }
 function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 	if( r && r.properties ) {
@@ -3066,9 +3044,9 @@ LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
 }
-function languageValueOf(val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string {
+LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
 	// Return the value in the specified target language .. or the first value in the list by default.
-	// 'val' can be a string or a multi-language object;
+
 	// if opts.targetLanguage is undefined, keep all language options:
 //	if (typeof(val)=='string' || !(opts && opts.targetLanguage)) return val;
 	if( !(opts && opts.targetLanguage) ) return val;
@@ -3133,7 +3111,7 @@ LIB.createProp = (pC: SpecifPropertyClass | SpecifPropertyClass[], key?: SpecifK
 	return {
 		class: LIB.keyOf(_pC),
 		// supply default value if available:
-		values: _pC.values
+		values: _pC.values || []
 	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
 	};
 }
@@ -3248,8 +3226,8 @@ LIB.elementTitleOf = (el: SpecifResource | SpecifStatement, opts?:any, dta?:Spec
 				return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
 			// For now, let's try without replacements; so far this function is called before the filters are applied,
 			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//			console.debug('getTitle', idx, pL[idx], op, languageValueOf( pL[idx].value,op ) );
-			let ti = languageValueOf( pL[idx].values[0], opts );
+//			console.debug('getTitle', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
+			let ti = LIB.languageValueOf( pL[idx].values[0], opts );
 			if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 		};
 		return '';

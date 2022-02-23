@@ -361,9 +361,9 @@ moduleManager.construct({
 //					console.debug( 'specializeClassToFormattedText', eC, eL );
 
 					eC.propertyClasses.forEach( (pCid)=>{
-						pC = itemById( pr.propertyClasses, pCid );
+						pC = LIB.itemById( pr.propertyClasses, pCid );
 						// Has any given property value of the listed resources or statements XHTML-content:
-						if( (itemById( pr.dataTypes, pC.dataType ).type=='xs:string') && withHtml(eL,pCid) ) {
+						if( (LIB.itemById( pr.dataTypes, pC.dataType ).type=='xs:string') && withHtml(eL,pCid) ) {
 //							console.debug( 'specializeClassToFormattedText', eC, pC );
 							console.info("Specializing propertyClass for formatted text to element with title '"+pCid+"'");
 							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
@@ -456,13 +456,13 @@ moduleManager.construct({
 		};
 
 			function prepObj( n ):void {
-				let r = itemById(pr.resources,n.resource),
-					rC = itemById(pr.resourceClasses,r['class']);
+				let r = LIB.itemById(pr.resources,n.resource),
+					rC = LIB.itemById(pr.resourceClasses,r['class']);
 				// a) Collect resourceClass without duplication:
-				if( indexById(separated.objTypes,rC.id)<0 ) {
+				if( LIB.indexById(separated.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
-						let anc = itemById(pr.resourceClasses,rC['extends']);
+						let anc = LIB.itemById(pr.resourceClasses,rC['extends']);
 						if( Array.isArray(anc.propertyClasses) ) {
 							if ( Array.isArray(rC.propertyClasses) ) 
 								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);
@@ -474,7 +474,7 @@ moduleManager.construct({
 					separated.objTypes.push( rC );
 				};
 				// b) Collect resource without duplication:
-				if( indexById(separated.objects,r.id)<0 ) 
+				if( LIB.indexById(separated.objects,r.id)<0 ) 
 					// ToDo: Sort properties according to the propertyClasses
 					separated.objects.push( r );
 			}
@@ -493,8 +493,8 @@ moduleManager.construct({
 			// are SPECIFICATIONS in terms of ReqIF.
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:
-			let hR = itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
-				hC = itemById( pr.resourceClasses, hR['class'] );	// it's class
+			let hR = LIB.itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
+				hC = LIB.itemById( pr.resourceClasses, hR['class'] );	// it's class
 			
 			if( LIB.indexBy( separated.objects, 'class', hC.id )>-1 ) {
 				// The hierarchy root's class is shared by a resource:
@@ -504,7 +504,7 @@ moduleManager.construct({
 				// we need to update all affected 'extend' properties. There is a minor chance, though.
 			};
 			// Collect hierarchy root's class without duplication:
-			if( indexById(separated.spcTypes,hC.id)<0 )
+			if( LIB.indexById(separated.spcTypes,hC.id)<0 )
 				separated.spcTypes.push( hC );
 			
 			// add the resources attributes to the hierarchy root:
@@ -567,9 +567,9 @@ moduleManager.construct({
 		pr.statements.forEach( (s) =>{
 			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema,
 			// or transform only statements whose subject and object relating to resources:
-			if( indexById(pr.resources, s.object)>-1 && indexById(pr.resources, s.subject)>-1 ) {
+			if( LIB.indexById(pr.resources, s.object)>-1 && LIB.indexById(pr.resources, s.subject)>-1 ) {
 				// SpecIF statements do not require a title, take the class' title by default:
-				if (!s.title) s.title = itemById(pr.statementClasses, s['class']).title;
+				if (!s.title) s.title = LIB.itemById(pr.statementClasses, s['class']).title;
 				xml += '<SPEC-RELATION ' + commonAttsOf(s) + '>'
 					+ '<TYPE><SPEC-RELATION-TYPE-REF>' + s['class'] + '</SPEC-RELATION-TYPE-REF></TYPE>'
 					+ attsOf(s)
@@ -613,7 +613,7 @@ moduleManager.construct({
 				if( !eC || !eC.propertyClasses || eC.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
 				var xml='<SPEC-ATTRIBUTES>';
 				eC.propertyClasses.forEach( (pC) =>{
-					pC = itemById( pr.propertyClasses, pC );  // replace id by the item itself
+					pC = LIB.itemById( pr.propertyClasses, pC );  // replace id by the item itself
 					// SpecIF resourceClasses and statementClasses may share propertyClasses,
 					// but in ReqIF every type has its own ATTRIBUTE-DEFINITIONs.
 					// Issue: The attribute-definition ids are different from those on import, as the propertyClasses are consolidated/deduplicated;
@@ -621,7 +621,7 @@ moduleManager.construct({
 					// - and here the original id must be taken, if the propertyClass is exclusively used by the respective resourceClass (OBJECT-TYPE) or statementClass (RELATION-TYPE).
 					// - If it is changed here, it must be changed for the ATTRIBUTE-DEFINITION-REFs further down, as well.
 					let adId = simpleHash(eC.id+pC.id);
-					switch( itemById( pr.dataTypes, pC.dataType ).type ) {
+					switch( LIB.itemById( pr.dataTypes, pC.dataType ).type ) {
 						case 'xs:boolean':
 							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
@@ -667,8 +667,8 @@ moduleManager.construct({
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
 				var xml='<VALUES>';
 				me.properties.forEach( (prp) =>{
-					let pC = itemById( pr.propertyClasses, prp['class'] ),
-						dT = itemById( pr.dataTypes, pC.dataType ),
+					let pC = LIB.itemById( pr.propertyClasses, prp['class'] ),
+						dT = LIB.itemById( pr.dataTypes, pC.dataType ),
 						adId = simpleHash(me['class']+prp['class']);
 					switch( dT.type ) {
 						case 'xs:boolean':
@@ -786,6 +786,13 @@ moduleManager.construct({
 					tree.nodes.forEach( (n) => {
 						iterate( n, fn );
 					});
+			}
+			function multipleChoice(pC: SpecifPropertyClass, prj?: SpecIF): boolean {
+				if (!prj) prj = app.cache.selectedProject.data;
+				// return 'true', if either the property type specifies it, or by default its datatype;
+				// if defined, the property type's value supersedes the datatype's value:
+				return (typeof (pC.multiple) == 'boolean' ? pC.multiple : !!LIB.itemById(prj.dataTypes, pC.dataType).multiple)
+				// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 			}
 	};
 	self.abort = ():void =>{

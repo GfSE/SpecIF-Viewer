@@ -312,13 +312,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						pC: SpecifPropertyClass;
 					// first try to find a property with title listed in CONFIG.titleProperties:
                     for ( a=res.properties.length-1; a>-1; a--) {
-						pC = itemById(specifData.propertyClasses as Item[], res.properties[a]['class'] as string);
+						pC = LIB.itemById(specifData.propertyClasses as SpecifItem[], res.properties[a]['class'] as string);
                         if ( pC && CONFIG.titleProperties.indexOf(pC.title) > -1 )
 							return res.properties[a].value.stripHTML();
                     };
 					// then try to find a property with title listed in CONFIG.idProperties:
                     for ( a=res.properties.length-1; a>-1; a--) {
-						pC = itemById(specifData.propertyClasses as Item[], res.properties[a]['class'] as string);
+						pC = LIB.itemById(specifData.propertyClasses as SpecifItem[], res.properties[a]['class'] as string);
                         if (pC && CONFIG.idProperties.indexOf(pC.title) > -1 )
 							return res.properties[a].value.stripHTML();
                     };
@@ -428,11 +428,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									continue;
 								};
 
-								pC = itemById( specifData.propertyClasses as Item[], propClassId(ws.name+c) );
+								pC = LIB.itemById( specifData.propertyClasses as SpecifItem[], propClassId(ws.name+c) );
 //								console.debug('create p',c,cellName(c,row),cell,rC,pC);
 								if( pC ) {
 									// it is a specifically created property type (with neither native nor enumerated dataType):
-									dT = itemById(specifData.dataTypes as Item[],pC.dataType);
+									dT = LIB.itemById(specifData.dataTypes as SpecifItem[],pC.dataType);
 									val = getVal( dT, cell );
 
 									// Find the property value to be taken as resource identifier.
@@ -454,11 +454,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 										});
 								}
 								else {
-									pC = itemByTitle( specifData.propertyClasses as Item[], pTi );
+									pC = itemByTitle( specifData.propertyClasses as SpecifItem[], pTi );
 									if( pC ) {
 										// it is a property with enumerated dataType; only a defined value will be used.
 										// Thus, if a cell contains a value which is not listed in the type, it will be ignored:
-										val = getVal(itemById(specifData.dataTypes as Item[],pC.dataType as string), cell );
+										val = getVal(LIB.itemById(specifData.dataTypes as SpecifItem[],pC.dataType as string), cell );
 //										console.debug( 'enumerated dataType',cell,pTi,pC,val,typeof(val) );
 										if( val ) 
 											res.properties.push({
@@ -511,7 +511,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							if( id ) {
 								// An id has been specified
 								res.id = 'R-' + simpleHash(ws.name+id);
-								if( indexById( specifData.resources, res.id )>-1 ) {
+								if( LIB.indexById( specifData.resources, res.id )>-1 ) {
 									// The specified id is not unique,
 									// it will be modified deterministically based on the number of occurrences of that same id:
 									// see https://stackoverflow.com/questions/19395257/how-to-count-duplicate-value-in-an-array-in-javascript
@@ -605,9 +605,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						if (CONFIG.nativeProperties.has(pTi))
 							continue;
 						// 2. Find out, whether its a (previously created) enumerated dataType:
-						pC = itemByTitle( specifData.propertyClasses as Item[], pTi );
+						pC = itemByTitle( specifData.propertyClasses as SpecifItem[], pTi );
 						if (pC && pC.id) {
-							dT = itemById(specifData.dataTypes as Item[], pC.dataType as string);
+							dT = LIB.itemById(specifData.dataTypes as SpecifItem[], pC.dataType as string);
 							if( dT && dT.type=="xs:enumeration" ) {
 //								console.debug( 'enum found: ', cell, pTi, pC );
 								// The current column has an enumeration dataType;
@@ -717,7 +717,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					if( sTi ) {
 						sTi = sTi.w || sTi.v;
 						// Add statementClass, if it is declared as such and if it is not yet listed:
-						if( sTi && indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.indexOf( sTi )>-1 ) {
+						if( sTi && LIB.indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.indexOf( sTi )>-1 ) {
 							sC = new StaClass( sTi );
 //							console.debug( 'getStaClasses', sTi, sC );
 							sCL.push( sC )

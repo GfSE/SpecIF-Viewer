@@ -126,7 +126,7 @@ function toXhtml( data, opts ) {
 			
 		// if itm has a 'subject', it is a statement:
 		let cL = itm.subject? data.statementClasses : data.resourceClasses,
-			eC = itemBy( cL, 'id', itm['class'] );
+			eC = itemById( cL, itm['class'] );
 		
 //		console.debug('titleOf 2',itm,ti,eC);
 		// lookup titles only, if it is 
@@ -203,13 +203,13 @@ function toXhtml( data, opts ) {
 			// if we have clustered by title:
 			sTi = opts.lookup( cid );
 		/*	// we don't have (and don't need) the individual statement, just the class:
-			sTi = opts.lookup( itemBy(data.statementClasses,'id',cid).title ); */
+			sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 			// 3 columns:
 			if( stC[cid].subjects.length>0 ) {
 				ct += '<tr><td>';
 				stC[cid].subjects.forEach( function(s) {
-//					console.debug('s',s,itemBy( data.resourceClasses,'id',s['class']))
+//					console.debug('s',s,itemById( data.resourceClasses,s['class']))
 					ct += '<a href="'+anchorOf( s, hi )+'">'+titleOf( s, undefined, opts )+'</a><br/>'
 				});
 				ct += '</td><td class="statementTitle">'+sTi;
@@ -257,13 +257,13 @@ function toXhtml( data, opts ) {
 		}
 	}
 	function propertyClassOf( pCid ) {
-		return itemBy(data.propertyClasses,'id',pCid)
+		return itemById(data.propertyClasses,pCid)
 	}
 	function propertiesOf( r, hi, opts ) {
 		// render the resource's properties with title and value as xhtml:
 		// designed for use also by statements.
 
-	//	let rC = itemBy( data.resourceClasses, 'id', r['class'] );
+	//	let rC = itemById( data.resourceClasses, r['class'] );
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
@@ -505,7 +505,7 @@ function toXhtml( data, opts ) {
 			// return the value of a single property:
 //			console.debug('propertyValueOf',prp,hi);
 			if(prp['class']) {
-				let dT = itemBy( data.dataTypes, 'id', propertyClassOf(prp['class']).dataType );
+				let dT = itemById( data.dataTypes, propertyClassOf(prp['class']).dataType );
 				switch( dT.type ) {
 					case opts.dataTypeEnumeration:
 						let ct = '',
@@ -513,7 +513,7 @@ function toXhtml( data, opts ) {
 							st = opts.stereotypeProperties.indexOf(prp.title)>-1,
 							vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
 						for( var v=0,V=vL.length;v<V;v++ ) {
-							eV = itemBy(dT.values,'id',vL[v]);
+							eV = itemById(dT.values,vL[v]);
 							// If 'eV' is an id, replace it by title, otherwise don't change:
 							// Add 'double-angle quotation' in case of SubClass values.
 							if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(eV.value)+'&#x00bb;'):opts.lookup(eV.value))
@@ -535,7 +535,7 @@ function toXhtml( data, opts ) {
 		// write a paragraph for the referenced resource:
 	//	if( !nd.nodes || nd.nodes.length<1 ) return '';
 		
-		let r = itemBy( data.resources, 'id', nd.resource ), // the referenced resource
+		let r = itemById( data.resources, nd.resource ), // the referenced resource
 			params={
 				nodeId: nd.id,
 				level: lvl
@@ -569,6 +569,14 @@ function toXhtml( data, opts ) {
 	}
 
 	// ---------- helper -----------
+	function itemById(L, id) {
+		if (!L || !id) return // undefined;
+		// given the ID of an element in a list, return the element itself:
+		//		id = id.trim();
+		for (var i = L.length - 1; i > -1; i--)
+			if (L[i].id === id) return L[i];   // return list item
+	//	return;
+	}
 	function itemBy( L, p, s ) {
 		if( L && p && s ) {
 			// given the ID of an element in a list, return the element itself:
@@ -576,7 +584,7 @@ function toXhtml( data, opts ) {
 			for( var i=L.length-1;i>-1;i-- )
 				if( L[i][p]==s ) return L[i];   // return list item
 		};
-		return;
+	//	return;
 	}
 	function indexBy( L, p, s ) {
 		if( L && p && s ) {
@@ -589,7 +597,7 @@ function toXhtml( data, opts ) {
 	}
 	function prpTitleOf( prp ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
-		return prp.title || itemBy(data.propertyClasses,'id',prp['class']).title
+		return prp.title || itemById(data.propertyClasses,prp['class']).title
 	}
 	function elTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;

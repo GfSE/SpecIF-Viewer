@@ -62,6 +62,7 @@ const CONFIG:any = {};
 
 	// Keys for the query parameters - if changed, existing links will end up in default view:
 //	CONFIG.keyUId = 'uid';	// userId
+	CONFIG.importAny =
 	CONFIG.keyImport = 'import';
 	CONFIG.keyMode = 'mode';
 	CONFIG.keyProject = 'project';	// projectId
@@ -460,7 +461,7 @@ const CONFIG:any = {};
 		"SpecIF:inheritsFrom",
 		"SpecIF:refersTo",
 		"SpecIF:sameAs",
-		"archimate:accesses"
+		"Archimate:accesses"
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
 	// The term appearing in the first position of an equivalence list is the preferred one:
@@ -468,6 +469,8 @@ const CONFIG:any = {};
 	CONFIG.eqivalentTypes = [
 	];
 */
+	// Used to map resource or statement properties to native properties, where applicable;
+	// For example in ioXls.ts:
 	CONFIG.nativeProperties = new Map([
 		["dcterms:created",	 { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
 		["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],

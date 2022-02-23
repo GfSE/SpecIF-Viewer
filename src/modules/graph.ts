@@ -60,13 +60,17 @@ app.statementsGraph = function Graph() {
 		for(var entry in relations) {
 			// an iteration per relation type,
 			// first the inbound relations, i.e. where the node in focus is target:
+			// @ts-ignore - indexing by string works fine
 			if (relations.hasOwnProperty(entry) && relations[entry].sources.length )
+					// @ts-ignore - indexing by string works fine
 					idx = pushChildNodesAndEdges(idx, relations[entry].sources, relProp, true)
 		};
 		for(var entry in relations) {
 			// an iteration per relation type,
 			// now the outbound relations, i.e. where the node in focus is source:
+			// @ts-ignore - indexing by string works fine
 			if (relations.hasOwnProperty(entry) && relations[entry].targets.length )
+					// @ts-ignore - indexing by string works fine
 					idx = pushChildNodesAndEdges(idx, relations[entry].targets, relProp, false)
 		};
 

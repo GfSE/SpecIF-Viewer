@@ -156,7 +156,7 @@ moduleManager.construct({
 							pData.dataTypes[d].values.forEach( (val) =>{
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
 								rep.datasets.push({  
-									label: i18n.lookup( languageValueOf( val.value, opts )), 
+									label: i18n.lookup( LIB.languageValueOf( val.value, opts )), 
 									id: val.id,
 									count: 0,    // resource count with a certain property value
 									color: '#1a48aa'
@@ -230,7 +230,7 @@ moduleManager.construct({
 										
 				// a) The histogram of resource classes; it is the first report panel:
 				let rId = res['class'],
-					j = indexById( self.list[0].datasets, rId );
+					j = LIB.indexById( self.list[0].datasets, rId );
 //				console.debug( 'evalResource j', res, j );
 				if( j>-1 ) incVal( 0,j );
 
@@ -255,7 +255,7 @@ moduleManager.construct({
 							ct = oa.value.split(',');
 							ct.forEach( (val) =>{ 
 								// find the bar which corresponds to the property values
-								j = indexById( self.list[i].datasets, val.trim() );
+								j = LIB.indexById( self.list[i].datasets, val.trim() );
 //								console.debug( 'evalResource z', ct, j );
 								if( j>-1 ) { incVal( i,j ) } // property value found
 							})

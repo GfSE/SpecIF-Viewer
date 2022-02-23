@@ -38,31 +38,62 @@ class CPropertyToShow implements SpecifProperty {
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = LIB.itemByKey(this.pData.propertyClasses, this['class']);
 		this.dT = LIB.itemByKey(this.pData.dataTypes, this.pC['dataType']);
+
+		// by default, use the propertyClass' title:
+		// An input data-set may have titles which are not from the SpecIF vocabulary;
+		// replace the result with a preferred vocabulary term:
+		this.title = vocabulary.property.specif(this.pC.title);
+
+		if (this.dT.enumeration) 
+			this.values = this.lookupEnumeratedValues();
+	}
+	private lookupEnumeratedValues() {
+		// replace identifiers of enumerated values by their value as defined in the dataType:
+		var oL: SpecifValues = [];
+		this.values.forEach(
+			(v: SpecifValue): void => {
+				oL.push(LIB.itemById(this.dT.enumeration, v).value);
+			});
+//		console.debug('#2', simpleClone(oL));
+		return oL;
 	}
 	private allValuesByLanguage(opts: any): string {
-		if (this.dT.type != SpecifDataTypeEnum.String)
-			throw Error("Cannot select a language for a dataType other than xs:string");
 		// Return all values in the language specified;
-		// or lookup the values in case of an enumeration:
-		if (this.values) {
+		// it is assumed that the values in case of an enumeration have already been looked up:
+		var str = '';
+		if (this.dT.type == SpecifDataTypeEnum.String) {
 			if (opts && opts.targetLanguage) {
-				var str = '';
-				if (this.dT.enumeration) {
-					let v: SpecifMultiLanguageText;
-					this.values.forEach((id) => {
-						v = itemById(this.dT.enumeration, id).value;
-						str += languageValueOf(v, opts);
-					});
-				}
-				else
-					this.values.forEach((v:any) => { str += languageValueOf(v, opts); });
+				/*	if (this.dT.enumeration) {
+						let v: SpecifMultiLanguageText;
+						this.values.forEach((id) => {
+							v = LIB.itemById(this.dT.enumeration, id).value;
+							str += LIB.languageValueOf(v, opts);
+						});
+					}
+					else */
+				this.values.forEach((v: any, i: number) => { str += (i == 0 ? '' : ', ') + LIB.languageValueOf(v, opts); });
 				return str;
 			};
 			// else
 			throw Error("When displaying property values, a target language must be specified.");
-		}
-		else
-			return '';
+		};
+		// else, all data types except string:
+		this.values.forEach((v: any, i: number) => { str += (i == 0 ? '' : ', ') + v; });
+		return str;
+
+		/*	let ct = '',
+				eV;
+			console.debug('enumValueOf',dT,val,opts);
+			dT.enumeration.forEach( (v,i)=>{
+				eV = LIB.languageValueOf( LIB.itemById(dT.enumeration,v).value, opts );
+				// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
+				// For example, when an object is from a search hitlist or from a revision list,
+				// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
+				if (opts && opts.lookupValues)
+					eV = i18n.lookup(eV);
+				ct += (i == 0 ? '' : ', ') + (eV ? eV : v);
+			});
+			return ct; */
     }
 	isVisible(opts: any): boolean {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
@@ -94,20 +125,13 @@ class CPropertyToShow implements SpecifProperty {
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// Apply formatting only if not listed:
-				if (CONFIG.excludedFromFormatting.indexOf(LIB.propTitleOf(this, this.pData)) < 0)
+				if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
 					ct = ct.makeHTML(opts);
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
 				break;
 			case SpecifDataTypeEnum.DateTime:
 				ct = LIB.localDateTime(this.value);
-				break;
-			case 'xs:enumeration':
-				// Usually 'value' has a comma-separated list of value-IDs,
-				// but the filter module delivers potentially marked titles in content.
-
-				// Translate IDs to values, if appropriate (i1lookup() is included):
-				ct = enumValueOf(this.dT, this.value, opts);
 				break;
 			default:
 				ct = this.value;
@@ -198,7 +222,7 @@ class CPropertyToShow implements SpecifProperty {
 				return u;
 			};
 			// else, add relative path:
-			return URL.createObjectURL( itemById( app.cache.selectedProject.data.files, u ).blob );
+			return URL.createObjectURL( LIB.itemById( app.cache.selectedProject.data.files, u ).blob );
 		}  */
 		function getType(str: string): string {
 			let t = /(type="[^"]+")/.exec(str);
@@ -519,7 +543,7 @@ class CResourceToShow {
 		// We must iterate backwards, because we alter the list of other.
 		// ToDo: use this.other.filter()
 		for (a = this.other.length - 1; a > -1; a--) {
-			if (CONFIG.descProperties.indexOf(LIB.propTitleOf(this.other[a], this.pData)) > -1) {
+			if (CONFIG.descProperties.indexOf(this.other[a].title) > -1) {
 				// To keep the original order of the properties, the unshift() method is used.
 				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			};
@@ -571,11 +595,6 @@ class CResourceToShow {
 			p = LIB.itemBy(el.properties, 'class', pC)
 				|| LIB.createProp(this.pData.propertyClasses, pC);
 			if (p) {
-				// by default, use the propertyClass' title:
-				// (this.pData.propertyClasses contains all propertyClasses of all resource/statement classes)
-				// An input data-set may have titles which are not from the SpecIF vocabulary;
-				// replace the result with a current vocabulary term:
-				p.title = vocabulary.property.specif(LIB.propTitleOf(p, this.pData));
 				nL.push(new CPropertyToShow(p));
 			}
 		});
@@ -607,7 +626,7 @@ class CResourceToShow {
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
 		// Assuming that a title property has only a single value:
-		let ti = languageValueOf(this.title.values[0], opts);
+		let ti = LIB.languageValueOf(this.title.values[0], opts);
 		if (this.isHeading) {
 			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
 			// whereas the individual elements may mean the vocabulary term as such (example: vocabulary):
@@ -979,7 +998,7 @@ class CFileWithContent implements IFileWithContent {
 				if (L[i].id.indexOf(id) > -1) return L[i];   // return list item
 			//	return undefined
 		}
-		function itemBySimilarTitle(L: Item[], ti: string): Item|undefined {
+		function itemBySimilarTitle(L: SpecifItem[], ti: string): SpecifItem|undefined {
 			// return the list element having a title similar to the specified one:
 			ti = ti.trim();
 			for (var i = L.length - 1; i > -1; i--)
@@ -1015,7 +1034,7 @@ class CFileWithContent implements IFileWithContent {
 				// skip all images already provided as data-URLs:
 				if (mL[2].startsWith('data:')) continue;
 				// avoid transformation of redundant images:
-				if (indexById(dataURLs, mL[2]) > -1) continue;
+				if (LIB.indexById(dataURLs, mL[2]) > -1) continue;
 				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
 				if (ef && ef.blob) {
 					pend++;
@@ -1106,7 +1125,7 @@ class CFileWithContent implements IFileWithContent {
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 						let eId = this.className.baseVal.split(' ')[1],		// id is second class
 							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
-							ti = languageValueOf(clsPrp.title.values[0], { targetLanguage: browser.language }),
+							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: browser.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
@@ -1404,12 +1423,12 @@ moduleManager.construct({
 			}
 		if( !nd ) { noPerms(); return };
 		
-		var r = itemById( app.cache.selectedProject.data.resources, nd.ref );
+		var r = LIB.itemById( app.cache.selectedProject.data.resources, nd.ref );
 		if( r ) {
 			// self.resCre is set when resCreClasses are filled ...
 			self.resCln = self.resCreClasses.indexOf( r['class'] )>-1;
 			// give permission to an admin, anyway:
-//			self.resCln = ( indexById( self.resCreClasses, r['class'] )>-1 || me.isAdmin(app.cache.selectedProject.data) )
+//			self.resCln = ( LIB.indexById( self.resCreClasses, r['class'] )>-1 || me.isAdmin(app.cache.selectedProject.data) )
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
@@ -1419,7 +1438,7 @@ moduleManager.construct({
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
 					self.staCreClasses.forEach( function(sT) {   
-						creR = itemById( app.cache.selectedProject.data.statementClasses, sT );
+						creR = LIB.itemById( app.cache.selectedProject.data.statementClasses, sT );
 //						console.debug( 'mayHaveStatements', self.staCreClasses[s], creR, selR['class'] );
 						if( 
 							// if creation mode is not specified or 'user' is listed, the statement may be applied to this resource:
@@ -1639,7 +1658,7 @@ moduleManager.construct({
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
 		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
 			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
-		var dT = itemById( self.pData.dataTypes, txtPrC.dataType );
+		var dT = LIB.itemById( self.pData.dataTypes, txtPrC.dataType );
 
 		new BootstrapDialog({
 			title: i18n.lookup( 'LblAddCommentTo', self.tree.selectedNode.name ),
@@ -2268,7 +2287,8 @@ moduleManager.construct({
 						(rL:SpecifResource[])=>{   
 							// refR is a resource referenced in a hierarchy
 							let refR: SpecifResource = rL[0],
-								refTi = LIB.elementTitleOf(refR, localOpts);
+								refTi = LIB.elementTitleOf(refR, localOpts),
+								dT: SpecifDataType;
 //							console.debug('self.parent.tree.iterate',refR,refTi,pend);
 							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
 								// ToDo: Search in a native description field ... not only in properties ...
@@ -2279,11 +2299,14 @@ moduleManager.construct({
 								if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch (LIB.dataTypeOf(cacheData, p['class']).type) {
-											case SpecifDataTypeEnum.String:
+										dT = LIB.dataTypeOf(p['class'], cacheData);
+										// considering only text-properties except enumerated values,
+										// because it is not expected that type information references instance data
+										// and also we would need to explicitly look up the enumerated value, first:
+										if (dT && dT.type==SpecifDataTypeEnum.String && !dT.enumeration) {
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if (refPatt.test( languageValueOf(p.values[0],localOpts )) && notListed( staL, selR, refR ) ) {
+												if (refPatt.test( LIB.languageValueOf(p.values[0],localOpts )) && notListed( staL, selR, refR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
@@ -2298,7 +2321,7 @@ moduleManager.construct({
 								if( refR.properties )
 									refR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
-										switch( LIB.dataTypeOf( cacheData, p['class'] ).type ) {
+										switch (LIB.dataTypeOf(p['class'], cacheData ).type ) {
 											case SpecifDataTypeEnum.String:
 											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
@@ -2557,7 +2580,7 @@ moduleManager.construct({
 	};
 	self.relatedItemClicked = function( rId:string, sId:string ):void {
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
-//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, itemById( app.cache.selectedProject.data.statements, sId ) );
+//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, LIB.itemById( app.cache.selectedProject.data.statements, sId ) );
 		if( modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:

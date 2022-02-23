@@ -31,7 +31,7 @@ function checkSpecif():IApp {
 				name: 'importAny',
 				// no loadAs, so name will be used for the controller object
 				// This is a view of the parent:
-				view: '#import',				// uses implicit actions show/hide
+				view: '#' + CONFIG.importAny,	// uses implicit actions show/hide
 				viewClass: 'contentWide',		// whole width under control of the view
 				label: i18n.BtnImport,
 				selectedBy: '#selectImport',	// DOM element in parent's selector to choose this view
@@ -74,7 +74,7 @@ function checkSpecif():IApp {
 					// - no project is loaded
 					// - a project id is found in the URL parameters and it differs from the one of the loaded project
 					// - an URL parameter 'import' has been found:
-					v = '#import'
+					v = '#'+ CONFIG.importAny
 				else
 					v = '#'+ (uP[CONFIG.keyView] || CONFIG.specifications);
 //				console.debug( 'app.view', uP, v );

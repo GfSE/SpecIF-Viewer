@@ -323,7 +323,7 @@ moduleManager.construct({
 					if( matchStr( res.descriptions[a], {type:'xhtml'} as SpecifDataType ) ) return true;
 				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
-					dT = LIB.dataTypeOf( dta, res.other[a]['class'] );
+					dT = LIB.dataTypeOf(res.other[a]['class'], dta );
 //					console.debug('matchSearchString',f,res.other[a],dT,f.options);
 					if( matchStr( res.other[a], dT ) ) return true;
 				};
@@ -335,15 +335,14 @@ moduleManager.construct({
 						case 'xs:enumeration':
 							// only if enumerated values are included in the search:
 						//	if( !isChecked( f.options, 'excludeEnums' )) {
-								if( patt.test( enumValueOf(dT,prp.value,displayOptions) ) ) return true;
+								if( patt.test( LIB.enumValueOf(dT,prp.values,displayOptions) ) ) return true;
 						//	};
 							break;
-						case 'xhtml':
 						case SpecifDataTypeEnum.String:
-							if (patt.test( languageValueOf(prp.value, displayOptions).stripHTML() )) return true;
+							if (patt.test( LIB.languageValueOf(prp.values[0], displayOptions).stripHTML() )) return true;
 							break;
 						default:
-							if( patt.test( languageValueOf(prp.value,displayOptions) )) return true;
+							if( patt.test( LIB.languageValueOf(prp.values[0],displayOptions) )) return true;
 					};
 					return false;
 				}
@@ -446,32 +445,32 @@ moduleManager.construct({
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
 							// @ts-ignore . in this case it is defined
 							if( f.searchString.length>2 ) {  // don't mark very short substrings
-								// @ts-ignore . in this case it is defined
+								// @ts-ignore - in this case it is defined
 								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
 								    lE;
 								
 								lE = res.title;
-								lE.value = mark( languageValueOf(lE.value,displayOptions), rgxS );
+								lE.value = mark( LIB.languageValueOf(lE.value,displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
 								res.descriptions = res.descriptions.map((prp: CPropertyToShow) => {
 									return	new CPropertyToShow({
 												title: prp.title,
 												class: prp['class'],
-												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
+												value: mark( LIB.languageValueOf(prp.value,displayOptions), rgxS )
 											});
 								});
 								res.other = res.other.map((prp: CPropertyToShow) => {
-									let dT = LIB.dataTypeOf(dta, prp['class']);
+									let dT = LIB.dataTypeOf(prp['class'], dta);
 									return (dT && dT.type == 'xs:enumeration') ?
 											new CPropertyToShow({
 												title: prp.title,
 												// default dataType is "xs:string"
-												value: mark( enumValueOf(dT,prp.value,displayOptions), rgxS )
+												value: mark( LIB.enumValueOf(dT,prp.value,displayOptions), rgxS )
 											})
 										:	new CPropertyToShow({
 												title: prp.title,
 												class: prp['class'],
-												value: mark( languageValueOf(prp.value,displayOptions), rgxS )
+												value: mark( LIB.languageValueOf(prp.value,displayOptions), rgxS )
 											});
 								});
 							};
@@ -581,7 +580,7 @@ moduleManager.construct({
 						dT.values.forEach( (v)=>{
 							// the checkboxes for the secondary filter selector per enum value:
 							var box = {
-									title: i18n.lookup( languageValueOf( v.value, displayOptions )), 
+									title: i18n.lookup( LIB.languageValueOf( v.value, displayOptions )), 
 									id: v.id, 
 									checked: true
 								};

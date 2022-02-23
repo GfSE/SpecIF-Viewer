@@ -291,7 +291,7 @@ moduleManager.construct({
 			$('#formatSelector-'+self.format.id).removeClass('active');
 		if( typeof(self.format)!='object' || fId!=self.format.id ) {
 			$('#formatSelector-'+fId).addClass('active');
-			self.format = itemById(formats,fId);
+			self.format = LIB.itemById(formats,fId);
 		};
 
 		// initialize the importer:
@@ -416,7 +416,7 @@ moduleManager.construct({
 			self.clear();
 			if (urlP) delete urlP[CONFIG.keyImport];
 			// change view to browse the content:
-			moduleManager.show({ view: '#' + (urlP && urlP[CONFIG.keyView] || CONFIG.specifications), urlParams: urlP })
+			moduleManager.show({ view: '#' + (urlP ? urlP[CONFIG.keyView] : CONFIG.specifications || CONFIG.importAny), urlParams: urlP })
 		},
 			CONFIG.showTimelag
 		);
