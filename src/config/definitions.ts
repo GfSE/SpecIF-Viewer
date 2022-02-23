@@ -460,7 +460,7 @@ const CONFIG:any = {};
 		"SpecIF:inheritsFrom",
 		"SpecIF:refersTo",
 		"SpecIF:sameAs",
-		"archimate:accesses"
+		"Archimate:accesses"
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
 	// The term appearing in the first position of an equivalence list is the preferred one:

@@ -22,7 +22,7 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.mimeType = "application/archimate+xml"; */
 
 	if (!opts.strNamespace)
-		opts.strNamespace = "archimate:";
+		opts.strNamespace = "Archimate:";
 	if( !opts.resClassOutline )
 		opts.resClassOutline = 'SpecIF:Outline';
 	if( !opts.strFolderType ) 
