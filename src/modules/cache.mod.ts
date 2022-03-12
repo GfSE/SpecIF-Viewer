@@ -114,7 +114,7 @@ class CCache {
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 	}
-	get(ctg: string, req: SpecifItem[] | SpecifItem | string): SpecifItem[] {
+	get(ctg: string, req: SpecifKey[] | SpecifKey | string): SpecifItem[] {
 		// Read items from cache
 		// - req can be single or a list,
 		// - each element can be an object with key
@@ -155,7 +155,7 @@ class CCache {
 				return [];
 		};
 	}
-	delete(ctg: string, item: SpecifItem): boolean | undefined {
+	delete(ctg: string, item: SpecifKey[] | SpecifNode[] | SpecifKey | SpecifNode): boolean | undefined {
 		if (!item) return;
 		let fn = Array.isArray(item) ? LIB.uncacheL : LIB.uncacheE;
 		switch (ctg) {
@@ -175,27 +175,28 @@ class CCache {
 				return true;
 			case 'node':
 				if (Array.isArray(item))
-					item.forEach((el: SpecifNode) => { delNodes(this.hierarchies, el) })
+					item.forEach((el):void => { delNodes(this.hierarchies, el) })
 				else
-					delNodes(this.hierarchies, item as SpecifNode);
+					delNodes(this.hierarchies, item );
 				return true;
 			default:
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 		// all cases have a return statement ..
 
-		function delNodes(L: SpecifNode[], el: SpecifNode): void {
+		function delNodes(L: SpecifNode[]|undefined, el: SpecifNode|SpecifKey): void {
 			// Delete all nodes specified by the element;
 			// if el is the node, 'id' will be used to identify it (obviously at most one node),
 			// and if el is the referenced resource, 'resource' will be used to identify all referencing nodes.
 			if (Array.isArray(L))
 				for (var h = L.length - 1; h > -1; h--) {
+					// @ts-ignore - doesn't matter if el.resource is undefined:
 					if (L[h].id == el.id || L[h].resource == el.resource) {
 						L.splice(h, 1);
 						break;	// can't delete any children
 					};
 					// step down, if the node hasn't been deleted:
-					delNodes(L[h].nodes as SpecifNode[], el);
+					delNodes(L[h].nodes, el);
 				};
 		}
 	}
@@ -291,6 +292,7 @@ class CProject {
 	// @ts-ignore - initialized by this.setMeta()
 	createdBy?: SpecifCreatedBy;
 	hierarchies: SpecifNode[] = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
+	language = browser.language;
 	data: CCache;
 /*	myRole = i18n.LblRoleProjectAdmin;
 	cre;
@@ -434,6 +436,16 @@ class CProject {
 		uDO.resolve();
 		return uDO;
 	} */
+
+	private instanceByTitle(L: SpecifInstance[], ti: string): SpecifInstance|undefined {
+		if (L && ti) {
+			// given the title of an instance in a list, return the instance itself;
+			// if a title has multiple languages, the behavior may be different in each case:
+			for (var ice of L)
+				if (LIB.instanceTitleOf(ice, { targetLanguage: browser.language }, this.data) == ti) return ice;   // return list item
+		};
+		// else return undefined
+	}
 	adopt(newD: SpecIF, opts?: any): JQueryDeferred<void> {
 		// First check whether BPMN collaboration and process have unique ids:
 //		console.debug('adopt project',newD);
@@ -476,9 +488,9 @@ class CProject {
 										// c) create a new id and update all references:
 										// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-										let alterId = nT.id;
+										let alterId = keyOf(nT);
 										nT.id += '-' + simpleHash(new Date().toISOString());
-										ty.substitute(nD, nT, { id: alterId });
+										ty.substitute(nD, nT, alterId );
 										itmL.push(nT);
 										console.info("When adopting a project" + (nD.id ? " with id " + nD.id : "") +
 											", a class with same id and incompatible content has been encountered: " + alterId +
@@ -525,22 +537,24 @@ class CProject {
 							let eR: SpecifResource = LIB.itemByKey(dta.resources, nR);  // resource in the existing data
 							if (eR && this.equalR(eR, nR)) return;
 
-							// Adopt resource, if it's class belongs to a collection of class-titles and is not excluded from deduplication.
+							// Adopt a resource, only if it's class belongs to a certain collection of class-titles and is not excluded from deduplication.
 							// The folders are excluded from consolidation, because it may happen that there are
 							// multiple folders with the same name but different description in different locations of the hierarchy.
-							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(nR, nD)) > -1
+							// The title of the resource class signifies the main (abstract) type for model integration,
+							// whereas the property with a class title CONFIG.propClassType (dcterms:type) is used to store the type of the original notation.
+							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(nR, nD)) > -1
 								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								eR = itemByTitle(dta.resources, nR.title);
-								// If there is an instance with the same title ... and if the types match;
+								eR = this.instanceByTitle(dta.resources, LIB.instanceTitleOf(nR, opts, this.data)) as SpecifResource;
+								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
 //								console.debug('~1',nR,eR?eR:'');
 								if (eR
 									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(eR, CONFIG.propClassType, dta)) < 0
-									&& resClassTitleOf(nR, nD) == resClassTitleOf(eR, dta)
-									//		&& LIB.valuesByTitle(nR,CONFIG.propClassType,nD)==LIB.valuesByTitle(eR,CONFIG.propClassType,dta)
+									&& LIB.resClassTitleOf(nR, nD) == LIB.resClassTitleOf(eR, dta)
+								//	&& LIB.valuesByTitle(nR,CONFIG.propClassType,nD)==LIB.valuesByTitle(eR,CONFIG.propClassType,dta)
 								) {
 //									console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
@@ -565,7 +579,7 @@ class CProject {
 							// Check, whether the existing model has an element with the same id,
 							// and since it does have a different title or different type (otherwise it would have been substituted above),
 							// assign a new id to the new element:
-							if (this.duplicateId(dta, nR.id)) {
+							if (LIB.duplicateId(dta, nR.id)) {
 								let newId = LIB.genID('R-');
 								// first assign new ID to all references:
 								this.substituteR(nD, { id: newId } as SpecifResource, nR);
@@ -661,10 +675,10 @@ class CProject {
 					s = sL[0];
 				else
 					// Find the resource with the given title:
-					s = itemByTitle(dta.resources, st.subjectToFind);
+					s = this.instanceByTitle(dta.resources, st.subjectToFind);
 //				console.debug('hookStatements subject',s);
 				if (s) {
-					st.subject = s.id;
+					st.subject = LIB.keyOf(s);
 					delete st.subjectToFind;
 					return;
 				};
@@ -676,10 +690,10 @@ class CProject {
 					o = oL[0];
 				else
 					// Find the resource with the given title:
-					o = itemByTitle(dta.resources, st.objectToFind);
+					o = this.instanceByTitle(dta.resources, st.objectToFind);
 //				console.debug('hookStatements object',o);
 				if (o) {
-					st.object = o.id;
+					st.object = LIB.keyOf(o);
 					delete st.objectToFind;
 					return;
 				};
@@ -695,19 +709,6 @@ class CProject {
 				if (visibleIdOf(r) == vId) return r;
 			});
 		}
-	}
-	private duplicateId(dta: any, id: string): boolean {
-		// check whether there is an item with the same id in dta.
-		// If so, return the item:
-		if (dta.id == id) return true;
-		for (var i in dta) {
-			if (Array.isArray(dta[i])) {
-				for (var j = dta[i].length - 1; j > -1; j--) {
-					if (this.duplicateId(dta[i][j], id)) return true;
-				};
-			};
-		};
-		return false;
 	}
 	private deduplicate(opts?:any): void {
 		// Uses the cache.
@@ -759,7 +760,7 @@ class CProject {
 				nR = dta.resources[n];
 				rR = dta.resources[r];
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(resClassTitleOf(rR, dta)) > -1
+				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(rR, dta)) > -1
 					&& this.equalR(rR, nR)
 					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, dta)) < 0
 					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(rR, CONFIG.propClassType, dta)) < 0
@@ -802,12 +803,19 @@ class CProject {
 		];
 		var r: SpecifResource = LIB.itemByKey(dta.resources, dta.hierarchies[0].resource),
 			rC: SpecifResourceClass = LIB.itemByKey(dta.resourceClasses, r['class']),
-			prp: SpecifProperty = itemByTitle(r.properties, CONFIG.propClassType),
+			pVL: SpecifValues = LIB.valuesByTitle(r, CONFIG.propClassType, dta),
+
+			// true, if there is a 'single' hierarchy and if it is a hierarchyRoot:
+			singleHierarchyRoot = dta.hierarchies.length == 1
+				&& ( rC && CONFIG.hierarchyRoots.indexOf(rC.title) > -1
+					|| pVL && pVL.length > 0 && CONFIG.hierarchyRoots.indexOf(pVL[0]) > -1);
+		/*	prp: SpecifProperty = itemByTitle(r.properties, CONFIG.propClassType),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 			// or by the title of the resourceClass:
 			singleHierarchyRoot = dta.hierarchies.length == 1
 				&& (prp && CONFIG.hierarchyRoots.indexOf(prp.value) > -1
-					|| rC && CONFIG.hierarchyRoots.indexOf(rC.title) > -1);
+					|| rC && CONFIG.hierarchyRoots.indexOf(rC.title) > -1); */
+
 		return new Promise(
 			(resolve, reject) => {
 				if (typeof (opts) != 'object') {
@@ -839,7 +847,7 @@ class CProject {
 							dta.get("hierarchy", "all"),
 							(nd: SpecifNode) => {
 								// get the referenced resource:
-								res = dta.get("resource", nd.resource)[0];
+								res = dta.get("resource", nd.resource)[0] as SpecifResource;
 								// find the property defining the type:
 								pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
 								// collect all nodes to delete, there should be only one:
@@ -867,22 +875,24 @@ class CProject {
 										LIB.sortBy(creL, (el: any) => { return el.r.title });
 
 										// 4. Create a new combined folder:
-										let newD = {
+										let newD: SpecIF = {
 											id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
 											$schema: 'https://specif.de/v1.0/schema.json',
 											dataTypes: [
-												standardTypes.get('dataType', { id: "DT-ShortString" }),
-												standardTypes.get('dataType', { id: "DT-Text" })
+												standardTypes.get('dataType', { id: "DT-ShortString" }) as SpecifDataType,
+												standardTypes.get('dataType', { id: "DT-Text" }) as SpecifDataType
 											],
 											propertyClasses: [
-												standardTypes.get('propertyClass', { id: "PC-Name" }),
-												standardTypes.get('propertyClass', { id: "PC-Description" }),
-												standardTypes.get('propertyClass', { id: "PC-Type" })
+												standardTypes.get('propertyClass', { id: "PC-Name" }) as SpecifPropertyClass,
+												standardTypes.get('propertyClass', { id: "PC-Description" }) as SpecifPropertyClass,
+												standardTypes.get('propertyClass', { id: "PC-Type" }) as SpecifPropertyClass
 											],
 											resourceClasses: [
-												standardTypes.get('resourceClass', { id: "RC-Folder" })
+												standardTypes.get('resourceClass', { id: "RC-Folder" }) as SpecifResourceClass
 											],
+											statementClasses: [],
 											resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
+											statements: [],
 											hierarchies: []
 										};
 										// use the update function to eliminate duplicate types:
@@ -893,7 +903,7 @@ class CProject {
 													id: "H" + r2c.folderNamePrefix + apx,
 													resource: { id: r2c.folderNamePrefix + apx },
 													// re-use the nodes with their references to the resources:
-													nodes: LIB.forAll(creL, (pr) => { return pr.n; }),
+													nodes: LIB.forAll(creL, (pr:any) => { return pr.n; }),
 													changedAt: tim
 												};
 												// Insert the hierarchy node as first element of a hierarchy root 
@@ -920,11 +930,11 @@ class CProject {
 				function Folder(fId: string, ti: string): SpecifResource[] {
 					var fL: SpecifResource[] = [{
 						id: fId,
-						class: "RC-Folder",
+						class: { "id": "RC-Folder" },
 						title: ti,
 						properties: [{
-							class: "PC-Type",
-							value: CONFIG.resClassProcesses
+							class: { "id": "PC-Type" },
+							values: [CONFIG.resClassProcesses]
 						}],
 						changedAt: tim
 					}];
@@ -953,7 +963,7 @@ class CProject {
 					dta.get("hierarchy","all"),
 					(nd: SpecifNode): boolean => {
 						// get the referenced resource:
-						res = dta.get("resource", nd.resource)[0];
+						res = dta.get("resource", nd.resource)[0] as SpecifResource;
 						// check, whether it is a glossary:
 						pV = LIB.valuesByTitle(res, CONFIG.propClassType, this.data);
 						// collect all items to delete, there should be only one:
@@ -975,7 +985,7 @@ class CProject {
 						() => {
 							// 2. Create a new combined glossary:
 							if (diagramL.length > 0) {
-								let newD = {
+								let newD: any = {
 									id: 'Create Glossary ' + new Date().toISOString(),
 									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: [
@@ -990,13 +1000,15 @@ class CProject {
 									resourceClasses: [
 										standardTypes.get('resourceClass', { id: "RC-Folder" })
 									],
+									statementClasses: [],
 									resources: Folders(),
+									statements: [],
 									hierarchies: NodeList(this.data.resources)
 								};
 //								console.debug('glossary',newD);
 								// use the update function to eliminate duplicate types;
 								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								this.adopt(newD, { noCheck: true })
+								this.adopt(newD as SpecIF, { noCheck: true })
 									.done(resolve)
 									.fail(reject);
 							}
@@ -1012,11 +1024,11 @@ class CProject {
 					// a resource is a diagram, if it's type has a title 'SpecIF:Diagram':
 					// .. or if it has a property dcterms:type with value 'SpecIF:Diagram':
 					// .. or if it has at least one statement with title 'SpecIF:shows':
-					return resClassTitleOf(r, dta) == CONFIG.resClassDiagram
+					return LIB.resClassTitleOf(r, dta) == CONFIG.resClassDiagram
 						|| LIB.valuesByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
 						|| dta.get("statement","all").filter(
 							(sta) => {
-								return staClassTitleOf(sta) == CONFIG.staClassShows && sta.subject == r.id
+								return LIB.staClassTitleOf(sta) == CONFIG.staClassShows && sta.subject == r.id
 							}
 						).length > 0;
 				}
@@ -1103,7 +1115,7 @@ class CProject {
 
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
 					let staL = dta.get("statement", "all").filter(
-						(s) => { return staClassTitleOf(s) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
+						(s) => { return LIB.staClassTitleOf(s) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
 					);
 //					console.debug('gl tL dL',gl,tL,staL);
 
@@ -1114,7 +1126,7 @@ class CProject {
 					let resL = resources.filter((r) => { return LIB.indexBy(staL, 'object', r) > -1 });
 					// in alphanumeric order:
 			//		LIB.sortByTitle(resL);
-					// ToDo: consider to sort by the title property via elementTitleOf()
+					// ToDo: consider to sort by the title property via instanceTitleOf()
 
 					// Categorize resources:
 					resL.forEach(
@@ -1199,7 +1211,7 @@ class CProject {
 			}
 		);
 	}
-	readContent(ctg: string, item: SpecifItem[] | SpecifItem | string, opts?: any): Promise<SpecifItem[]> {
+	readContent(ctg: string, item: SpecifKey[] | SpecifKey | string, opts?: any): Promise<SpecifItem[]> {
 //		console.debug('readContent', ctg, item, opts);
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		if (!opts) opts = { reload: false, timelag: 10 };
@@ -1255,7 +1267,7 @@ class CProject {
 			}
 		);
 	}
-	deleteContent(ctg: string, item: SpecifItem): Promise<void> {
+	deleteContent(ctg: string, item: SpecifKey[]|SpecifKey): Promise<void> {
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 /*			function isInUse( ctg, itm ) {
 					function dTIsInUse( L, dT ) {
@@ -1361,7 +1373,7 @@ class CProject {
 					.then(
 						(sL: SpecifStatement[]) => {
 							// make a list of shows statements for all diagrams shown in the hierarchy:
-							let showsL = sL.filter((s) => { return staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject) });
+							let showsL = sL.filter((s) => { return LIB.staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject) });
 							// filter all statements involving res as subject or object:
 							resolve(
 								sL.filter(
@@ -1417,14 +1429,15 @@ class CProject {
 					//	i18n.LblOptions,
 					i18n.modelElements,
 					[
+						{ title: i18n.withStatements, id: 'withStatements', checked: false },
 						{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
-						{ title: i18n.withStatements, id: 'withStatements', checked: false }
+						{ title: i18n.showEmptyProperties, id: 'showEmptyProperties', checked: CONFIG.showEmptyProperties }
 					],
 					{ handle: exportOptionsClicked }
 				);
 		};
 		pnl += '</div>';
-		//		console.debug('chooseExportOptions',fmt,pnl);
+//		console.debug('chooseExportOptions',fmt,pnl);
 		return pnl;
 	}
 	exportFormatClicked(): void {
@@ -1440,7 +1453,7 @@ class CProject {
 		this.title = textValue('&#x200b;' + i18n.LblProjectName);
 		this.fileName = textValue('&#x200b;' + i18n.LblFileName);
 
-//		console.debug('exportOptionsClicked',self.title,fileName);
+//		console.debug('exportOptionsClicked',this.title,this.fileName);
 	}
 	chooseFormatAndExport() {
 		if (this.exporting) return;
@@ -1608,7 +1621,7 @@ class CProject {
 							descriptionProperties: CONFIG.descProperties,
 							stereotypeProperties: CONFIG.stereotypeProperties,
 							lookup: i18n.lookup,
-							showEmptyProperties: CONFIG.showEmptyProperties,
+							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
 						//	hasContent: LIB.hasContent,
@@ -1857,13 +1870,12 @@ class CProject {
 
 		// Sort out most cases with minimal computing;
 		// assuming that the types have already been consolidated:
-		let dta = this.data,
-			opts = { targetLanguage: browser.language };
+		let opts = { targetLanguage: browser.language };
 		return LIB.equalKey(refE['class'], newE['class'])
-			&& LIB.elementTitleOf(refE, opts, dta) == LIB.elementTitleOf(newE, opts, dta);
+			&& LIB.instanceTitleOf(refE, opts, this.dta) == LIB.instanceTitleOf(newE, opts, this.dta);
 
 	/*	if (LIB.equalKey(refE['class'], newE['class'])
-			&& LIB.elementTitleOf(refE, opts, dta) == LIB.elementTitleOf(newE, opts, dta)
+			&& LIB.instanceTitleOf(refE, opts, dta) == LIB.instanceTitleOf(newE, opts, dta)
 			)
 				return true;
 
@@ -1881,7 +1893,7 @@ class CProject {
 		// Model-elements are only equal, if they have the same class.
 		// ToDo: Also, if a property with title CONFIG.propClassType has the same value?
 		return LIB.equalKey(refE['class'], newE['class'])
-		//	&& LIB.elementTitleOf(refE, opts, dta) == LIB.elementTitleOf(newE, opts, dta)
+		//	&& LIB.instanceTitleOf(refE, opts, dta) == LIB.instanceTitleOf(newE, opts, dta)
 			&& LIB.equalKey(refE.subject, newE.subject)
 			&& LIB.equalKey(refE.object, newE.object);
 	}
@@ -2080,33 +2092,70 @@ class CProject {
 		LIB.logMsg({ status: 963, statusText: "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
 		return false;
 	}
+	private substituteProp(L, propN: string, rK: SpecifKey, dK: SpecifKey): void {
+		// replace ids of the duplicate item by the id of the original one;
+		// this applies to the property 'propN' of each member of the list L:
+		if (Array.isArray(L))
+			L.forEach((e) => {
+				if (e[propN].revision) {
+					if (LIB.equalKey(e[propN], dK)) e[propN] = rK
+				}
+				else {
+					// If the duplicate key dK (to be replaced) has no revision, 
+					// the replacement shall have no revision either: 
+					if (e[propN].id == dK.id) e[propN].id = rK.id
+                }
+			})
+	}
+	private substituteLe(L, propN: string, rK: SpecifKey, dK: SpecifKey): void {
+		// Replace the duplicate id by the id of the original item;
+		// so replace dK by rK in the list named 'propN'
+		// (for example: in L[i][propN] (which is a list as well), replace dK by rK):
+		let idx: number;
+		if (Array.isArray(L))
+			L.forEach((e) => {
+				// e is a resourceClass or statementClass:
+				if (Array.isArray(e[propN])) {
+					idx = LIB.indexByKey(e[propN], dK);
+					if (idx > -1) {
+						// dK is an element of e[propN]
+						if (LIB.indexByKey(e[propN], rK) < 0)
+							// replace dK with rK
+							e[propN].splice(idx, 1, rK);
+						else
+							// rK is already member of the list, just remove dK:
+							e[propN].splice(idx, 1)
+					};
+				};
+			});
+	}
 	private substituteDT(prj: SpecIF, refE: SpecifDataType, newE: SpecifDataType,): void {
 		// For all propertyClasses, substitute new by the original dataType:
-		this.substituteProp(prj.propertyClasses, 'dataType', keyOf(refE), keyOf(newE));
+		this.substituteProp(prj.propertyClasses, 'dataType', LIB.keyOf(refE), LIB.keyOf(newE));
 	}
 	private substitutePC(prj: SpecIF, refE: SpecifResourceClass, newE: SpecifResourceClass, ): void {
 		// For all resourceClasses, substitute new by the original propertyClass:
-		this.substituteLe(prj.resourceClasses, 'propertyClasses', refE.id, newE.id);
+		this.substituteLe(prj.resourceClasses, 'propertyClasses', LIB.keyOf(refE), LIB.keyOf(newE));
 		// Also substitute the resource properties' class:
 		prj.resources.forEach((res) => {
-			this.substituteProp(res.properties, 'class', keyOf(refE), keyOf(newE));
+			this.substituteProp(res.properties, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
 		});
 		// The same with the statementClasses:
-		this.substituteLe(prj.statementClasses, 'propertyClasses', refE.id, newE.id);
+		this.substituteLe(prj.statementClasses, 'propertyClasses', LIB.keyOf(refE), LIB.keyOf(newE));
 		if (Array.isArray(prj.statements))
 			prj.statements.forEach((sta) => {
-				this.substituteProp(sta.properties, 'class', keyOf(refE), keyOf(newE))
+				this.substituteProp(sta.properties, 'class', LIB.keyOf(refE), LIB.keyOf(newE))
 			});
 	}
 	private substituteRC(prj: SpecIF, refE: SpecifResourceClass, newE: SpecifResourceClass): void {
 		// Substitute new by original resourceClass:
-		this.substituteLe(prj.statementClasses, 'subjectClasses', refE.id, newE.id);
-		this.substituteLe(prj.statementClasses, 'objectClasses', refE.id, newE.id);
-		this.substituteProp(prj.resources, 'class', keyOf(refE), keyOf(newE));
+		this.substituteLe(prj.statementClasses, 'subjectClasses', LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteLe(prj.statementClasses, 'objectClasses', LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteProp(prj.resources, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
 	}
 	private substituteSC(prj: SpecIF, refE: SpecifStatementClass, newE: SpecifStatementClass): void {
 		// Substitute new by original statementClass:
-		this.substituteProp(prj.statements, 'class', keyOf(refE), keyOf(newE));
+		this.substituteProp(prj.statements, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
 	}
 	private substituteR(prj: SpecIF, refE: SpecifResource, newE: SpecifResource, opts?: any): void {
 		// Substitute resource newE by refE in all references of newE,
@@ -2136,7 +2185,7 @@ class CProject {
 			});
 		};
 		// In the rare case that the ids are identical, there is no need to update the references:
-		if (LIB.equalKey(refE,newE) return;
+		if (LIB.equalKey(refE,newE)) return;
 
 		// 1. Replace the references in all statements:
 		prj.statements.forEach((st: SpecifStatement) => {
@@ -2154,41 +2203,13 @@ class CProject {
 			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(newE['class']) > -1) LIB.cacheE(sC.objectClasses, refE['class']);
 		});
 	}
-	private substituteProp(L, propN: string, rK: SpecifKey, dK: SpecifKey): void {
-		// replace ids of the duplicate item by the id of the original one;
-		// this applies to the property 'propN' of each member of the list L:
-		if (Array.isArray(L))
-			L.forEach((e) => { if (LIB.equalKey(e[propN], dK) e[propN] = rK });
-	}
-	private substituteLe(L, propN: string, rK: SpecifKey, dK: SpecifKey): void {
-		// Replace the duplicate id by the id of the original item;
-		// so replace dAV by rAV in the list named 'propN'
-		// (for example: in L[i][propN] (which is a list as well), replace dAV by rAV):
-		let idx: number;
-		if (Array.isArray(L))
-			L.forEach((e) => {
-				// e is a resourceClass or statementClass:
-				if (Array.isArray(e[propN])) {
-					idx = LIB.indexByKey(e[propN],dK);
-					if (idx > -1) {
-						// dK is an element of e[propN]
-						if (LIB.indexByKey(e[propN], rK) <0)
-							// replace dK with rK
-							e[propN].splice(idx, 1, rK);
-						else
-							// rK is already member of the list, just remove dK:
-							e[propN].splice(idx, 1)
-					};
-				};
-			});
-	}
 	private substituteRef(L, rK: SpecifKey, dK: SpecifKey): void {
 		// For all hierarchies, replace any reference to dId by rId;
 		// eliminate double entries in the same folder (together with the children):
 		LIB.iterateNodes(
 			L,
 			// replace resource id:
-			(nd: SpecifNode) => { if (LIB.equalKey(nd.resource,dK) { nd.resource = rK }; return true },
+			(nd: SpecifNode) => { if (LIB.equalKey(nd.resource,dK)) { nd.resource = rK }; return true },
 			// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
 			// for example it is avoided that the same diagram is shown twice if it has been imported twice:
 			(ndL: SpecifNodes) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.indexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
@@ -3012,7 +3033,7 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
 	};
 	// else:
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
-	return { type: SpecifDataTypeEnum.String }; // by default  
+	return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
 }
 function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 	if( r && r.properties ) {
@@ -3025,11 +3046,11 @@ function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
 	};
 //	return undefined
 }
-function resClassTitleOf(e: SpecifResource, prj?: SpecIF, opts?:any ):string {
+LIB.resClassTitleOf= (e: SpecifResource, prj?: SpecIF, opts?:any ):string => {
 	if (!prj) prj = app.cache.selectedProject.data;
 	return LIB.titleOf( LIB.itemByKey( prj.resourceClasses, e['class'] ), opts );
 }
-function staClassTitleOf( e:SpecifStatement, prj?:SpecIF, opts?:any ):string {
+LIB.staClassTitleOf = ( e:SpecifStatement, prj?:SpecIF, opts?:any ):string => {
 	// Where available, take the statementClass' title, otherwise the statement's;
 	// The latter is the case with interpreted relations such as "mentions":
 	if (!prj) prj = app.cache.selectedProject.data;
@@ -3142,7 +3163,7 @@ LIB.propByTitle = (itm: SpecifResource, pN: string, dta:SpecIF): SpecifProperty|
 	};
 //	return undefined
 }
-LIB.valuesByTitle = (itm: SpecifResource, pN: string, dta: SpecIF): SpecifValues|undefined => {
+LIB.valuesByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF): SpecifValues|undefined => {
 	// Return the value of a resource's (or statement's) property with title pN:
 //	console.debug('valuesByTitle',dta,itm,pN);
 	if( itm.properties ) {
@@ -3172,7 +3193,7 @@ LIB.titleIdx = (pL: SpecifProperty[], dta?: SpecIF): number =>{
 	};
 	return -1;
 }
-LIB.elementTitleOf = (el: SpecifResource | SpecifStatement, opts?:any, dta?:SpecIF): string =>{
+LIB.instanceTitleOf = (el: SpecifInstance, opts?:any, dta?:SpecIF): string =>{
 	// Get the title of a resource or a statement;
 	// ... from the properties or a replacement value in case of default.
 	// 'el' is an original element without 'classifyProps()'.
@@ -3202,7 +3223,7 @@ LIB.elementTitleOf = (el: SpecifResource | SpecifStatement, opts?:any, dta?:Spec
 		// it is a statement
 		if( !ti )
 			// take the class' title by default:
-			ti = staClassTitleOf( el, dta, opts );
+			ti = LIB.staClassTitleOf( el, dta, opts );
 	}
 	else {
 		// it is a resource
@@ -3210,7 +3231,7 @@ LIB.elementTitleOf = (el: SpecifResource | SpecifStatement, opts?:any, dta?:Spec
 			ti = LIB.addIcon( ti, LIB.itemByKey( dta.resourceClasses, el['class'] ).icon );
 	};
 
-// 	console.debug('elementTitleOf',el,opts,ti);
+// 	console.debug('instanceTitleOf',el,opts,ti);
 	return typeof (ti) == 'string' ? ti.stripHTML() : ti;
 
 	function getTitle(pL: SpecifProperty[], opts:any ): string {

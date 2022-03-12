@@ -470,7 +470,8 @@ const CONFIG:any = {};
 	];
 */
 	// Used to map resource or statement properties to native properties, where applicable;
-	// For example in ioXls.ts:
+	// for example in ioXls.ts.
+	// The key is the property class' title, the value the native property's name plus the data type and validity test applying to both:
 	CONFIG.nativeProperties = new Map([
 		["dcterms:created",	 { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
 		["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],

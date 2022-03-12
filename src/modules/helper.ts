@@ -449,7 +449,7 @@ LIB.equalValues = (refVL: SpecifValues, newVL: SpecifValues): boolean => {
 		if (!LIB.equalValue(refVL[i], newVL[i])) return false;
 	return true;
 }
-LIB.equalBoolean = (rB: Boolean, nB: Boolean): boolean => {
+LIB.equalBoolean = (rB: boolean, nB: boolean): boolean => {
 	return (rB && nB || !rB && !nB);
 }
 LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
@@ -519,7 +519,7 @@ LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
 	// If there are more than one and the constraint checker was happy, they must have a revision.
 	if (k.revision) {
 		// Find the element with equal revision:
-		let itemsWithEqRev = itemsWithEqId.filter((e: SpecifItem) => { return e.rev == k.revision });
+		let itemsWithEqRev = itemsWithEqId.filter((e:any) => { return e.rev == k.revision });
 		// With the project data being constraint checked, itemsWithEqRev.length can be 0 or 1:
 		if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
 		if (itemsWithEqRev.length < 2) return itemsWithEqRev[0].idx;
@@ -559,6 +559,18 @@ LIB.itemById = (L:any[],id:string):any => {
 			if( L[i].id==id ) return L[i]   // return list item
 	};
 }
+LIB.duplicateId = (dta: any, id: string): boolean => {
+	// check whether there is an item with the same id in dta:
+	if (dta.id == id) return true;
+	for (var i in dta) {
+		if (Array.isArray(dta[i])) {
+			for (var j = dta[i].length - 1; j > -1; j--) {
+				if (LIB.duplicateId(dta[i][j], id)) return true;
+			};
+		};
+	};
+	return false;
+}
 /*
 function indexByTitle(L:any[],ti:string):number {
 	if( L && ti ) {
@@ -567,14 +579,15 @@ function indexByTitle(L:any[],ti:string):number {
 			if( L[i].title==ti ) return i   // return list index
 	};
 	return -1;
-}
-function itemByTitle(L:any[],ti:string):any {
+} */
+LIB.itemByTitle = (L: ItemWithNativeTitle[],ti:string):any => {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ti ) return L[i];   // return list item
 	};
-} */
+	// else return undefined
+}
 LIB.indexBy = (L: any[], p: string, k: SpecifKey): number => {
 	if (L && p && k) {
 		// Return the index of an element in list 'L' whose property 'p' equals key 'k':

@@ -127,7 +127,7 @@ class StandardTypes {
 		throw Error("No standard type with id '" + key.id + "' and revision '" + key.id +"' of category '"+ctg+"'");
 	}
 /*	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
-		var item: SpecifItem = itemByTitle(this[this.listName.get(ctg)], ti);
+		var item: SpecifItem = LIB.itemByTitle(this[this.listName.get(ctg)], ti);
 		if (item) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);

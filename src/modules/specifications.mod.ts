@@ -174,7 +174,7 @@ class CPropertyToShow implements SpecifProperty {
 						cR = LIB.itemByKey(app.cache.selectedProject.data.resources, nd.ref);
 						// avoid self-reflection:
 						//	if(ob.id==cR.id) return true;
-						ti = LIB.elementTitleOf(cR, opts);
+						ti = LIB.instanceTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
 						// disregard link targets which aren't diagrams nor model elements:
@@ -281,8 +281,8 @@ class CPropertyToShow implements SpecifProperty {
 			//	u1 = addFilePath(u1);
 			//	u2 = addFilePath(u2);
 
-				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1)),
-					f2 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u2));
+				let f1 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u1)),
+					f2 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u2));
 
 				if (f1.hasContent()) {
 
@@ -350,14 +350,14 @@ class CPropertyToShow implements SpecifProperty {
 
 			//	u1 = addFilePath(u1);
 				if (!u1) console.warn('no image or link found in '+$0);
-				let f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
+				let f1 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u1));
 
 				// sometimes the application files (BPMN or other) have been replaced by images;
 				// this is for example the case for *.specif.html files:
 				if (!f1.hasContent() && u1 && CONFIG.applExtensions.indexOf(e) > -1) {
 					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
 						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
-						f1 = new CFileWithContent(itemByTitle(app.cache.selectedProject.data.files, u1));
+						f1 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u1));
 					};
 				};
 				// ... cannot happen any more now, is still here for compatibility with older files only.
@@ -1158,13 +1158,13 @@ class CFileWithContent implements IFileWithContent {
 				if (CONFIG.selectCorrespondingDiagramFirst) {
 					// replace the id of a resource by the id of a diagram carrying the same title:
 					let cacheData = app.cache.selectedProject.data,
-						ti = LIB.elementTitleOf(itemBySimilarId(cacheData.resources, id), opts),
+						ti = LIB.instanceTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
 						rT = LIB.itemByKey(cacheData.resourceClasses, cacheData.resources[i]['class']);
 						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
 						// else, it is a resource representing a diagram:
-						if (LIB.elementTitleOf(cacheData.resources[i], opts) == ti) {
+						if (LIB.instanceTitleOf(cacheData.resources[i], opts) == ti) {
 							// found: the diagram carries the same title 
 							if (app[CONFIG.objectList].resources.selected()
 								&& app[CONFIG.objectList].resources.selected().id == cacheData.resources[i].id)
@@ -1487,7 +1487,7 @@ moduleManager.construct({
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: LIB.elementTitleOf(r,opts,self.pData), 
+				name: LIB.instanceTitleOf(r,opts,self.pData), 
 				ref: iE.resource
 			};
 			oE.children = LIB.forAll( iE.nodes, toChild );
@@ -2228,16 +2228,16 @@ moduleManager.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource, a key pointing to a resource or a resource-id;
 			// note that the sequence of items in L is always maintained:
-			LIB.cacheE( L, { id: r.id, title: LIB.elementTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			LIB.cacheE( L, { id: r.id, title: LIB.instanceTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
 		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement:
-			LIB.cacheE(L, { id: s.id, title: staClassTitleOf(s, cacheData, opts), subject: s.subject.id, object: s.object.id} );
+			LIB.cacheE(L, { id: s.id, title: LIB.staClassTitleOf(s, cacheData, opts), subject: s.subject.id, object: s.object.id} );
 		}
 		function cacheNet(s:SpecifStatement):void {
 			// skip hidden statements:
-			if (CONFIG.hiddenStatements.indexOf( staClassTitleOf(s, cacheData, opts) )>-1 ) return;
+			if (CONFIG.hiddenStatements.indexOf( LIB.staClassTitleOf(s, cacheData, opts) )>-1 ) return;
 
 			// store the statements in the net:
 			cacheMinSta( net.statements, s );
@@ -2272,7 +2272,7 @@ moduleManager.construct({
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
 					localOpts = $.extend({}, opts, { addIcon: false }),  // no icons when searching titles
-					selTi = LIB.elementTitleOf(selR, localOpts),
+					selTi = LIB.instanceTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
 					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
@@ -2287,7 +2287,7 @@ moduleManager.construct({
 						(rL:SpecifResource[])=>{   
 							// refR is a resource referenced in a hierarchy
 							let refR: SpecifResource = rL[0],
-								refTi = LIB.elementTitleOf(refR, localOpts),
+								refTi = LIB.instanceTitleOf(refR, localOpts),
 								dT: SpecifDataType;
 //							console.debug('self.parent.tree.iterate',refR,refTi,pend);
 							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {

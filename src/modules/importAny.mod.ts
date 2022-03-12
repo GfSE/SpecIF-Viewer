@@ -416,7 +416,7 @@ moduleManager.construct({
 			self.clear();
 			if (urlP) delete urlP[CONFIG.keyImport];
 			// change view to browse the content:
-			moduleManager.show({ view: '#' + (urlP ? urlP[CONFIG.keyView] : CONFIG.specifications || CONFIG.importAny), urlParams: urlP })
+			moduleManager.show({ view: '#' + (app.title=="check"? CONFIG.importAny : (urlP && urlP[CONFIG.keyView]? urlP[CONFIG.keyView] : CONFIG.specifications)), urlParams: urlP })
 		},
 			CONFIG.showTimelag
 		);

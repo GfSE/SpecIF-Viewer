@@ -339,16 +339,16 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								// Malicious content will be removed upon import.
 //								console.debug( 'getVal', cell, dT );
 								if( cell && dT ) 
-									switch( dT.type ) {
-										case 'xs:string':
-										case 'xhtml':
+									switch (dT.type) {
+										case SpecifDataTypeEnum.String:
+									//	case 'xhtml':
 											switch (cell.t) {
 												case "s": return cell.v as string;
 												case "d": return (cell.v as Date).toISOString();
 												case "n": return (cell.v as number).toString();
 												case "b": return (cell.v as boolean).toString();
 											};
-										case 'xs:dateTime':
+										case SpecifDataTypeEnum.DateTime:
 											switch (cell.t) {
 												case "d": return (cell.v as Date).toISOString();
 												case "s":
@@ -359,15 +359,15 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												//	console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
 													return '';
 											};
-										case 'xs:integer':
-										case 'xs:double': 
+										case SpecifDataTypeEnum.Integer:
+										case SpecifDataTypeEnum.Double:
 											switch (cell.t) {
 												case "n": return (cell.v as number).toString();
 												case "s": return cell.v as string;
 											};
 										// we have found earlier that it is a valid boolean,
 										// so all values not beeing true are false:
-										case 'xs:boolean':
+										case SpecifDataTypeEnum.Boolean:
 											switch (cell.t) {
 												case "b": return (cell.v as boolean).toString();
 												case "s": return isTrue(cell.v as string).toString();

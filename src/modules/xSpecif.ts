@@ -1009,8 +1009,8 @@ class CSpecIF implements SpecIF {
 					if (opts.targetLanguage ) {
 						// reduce to the selected language; is used for generation of human readable documents
 						// or for formats not supporting multiple languages:
-						let dT: SpecifDataType = LIB.dataTypeOf(iE['class'],spD);
-						if (['xs:string', 'xhtml'].indexOf(dT.type) > -1) {
+						let dT: SpecifDataType = LIB.dataTypeOf(iE['class'], spD);
+						if ([SpecifDataTypeEnum.String].indexOf(dT.type) > -1) {
 							if (CONFIG.excludedFromFormatting.indexOf(iE.title || pC.title) <0) {
 								// Transform to HTML, if possible;
 								// especially for publication, for example using WORD format:

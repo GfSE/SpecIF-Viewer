@@ -363,7 +363,7 @@ moduleManager.construct({
 					eC.propertyClasses.forEach( (pCid)=>{
 						pC = LIB.itemById( pr.propertyClasses, pCid );
 						// Has any given property value of the listed resources or statements XHTML-content:
-						if( (LIB.itemById( pr.dataTypes, pC.dataType ).type=='xs:string') && withHtml(eL,pCid) ) {
+						if ((LIB.itemById(pr.dataTypes, pC.dataType).type == SpecifDataTypeEnum.String) && withHtml(eL, pCid)) {
 //							console.debug( 'specializeClassToFormattedText', eC, pC );
 							console.info("Specializing propertyClass for formatted text to element with title '"+pCid+"'");
 							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
@@ -404,24 +404,24 @@ moduleManager.construct({
 		// 1. Transform dataTypes:
 		if (pr.dataTypes)
 			pr.dataTypes.forEach( (dT: SpecifDataType) =>{
-				switch( dT.type ) {
-					case 'xs:boolean':
+				switch (dT.type) {
+					case SpecifDataTypeEnum.Boolean:
 						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
 						break;
-					case 'xs:integer':
+					case SpecifDataTypeEnum.Integer:
 						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAttsOf( dT )
 									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxInteger)
 									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minInteger)
 								+'" />';
 						break;
-					case 'xs:double':
+					case SpecifDataTypeEnum.Double:
 						xml += '<DATATYPE-DEFINITION-REAL '+commonAttsOf( dT )
 									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxReal)
 									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minReal)
 									+'" ACCURACY="'+(typeof(dT.fractionDigits)=='number'? dT.fractionDigits : CONFIG.maxAccuracy)
 								+'" />';
 						break;
-					case 'xs:string':
+					case SpecifDataTypeEnum.String:
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
 					case 'xhtml':
@@ -438,7 +438,7 @@ moduleManager.construct({
 						xml += 	'</SPECIFIED-VALUES>' +
 								'</DATATYPE-DEFINITION-ENUMERATION>';
 						break;
-					case 'xs:dateTime':
+					case SpecifDataTypeEnum.DateTime:
 						xml += '<DATATYPE-DEFINITION-DATE '+commonAttsOf( dT )+'/>';
 						break;
 					default: 
@@ -602,7 +602,7 @@ moduleManager.construct({
 		console.debug('reqif',xml);  */
 		return xml;
 
-			function dateTime( e ):string {
+			function dateTime(e: SpecifItem): string {
 				return e.changedAt || pr.createdAt || date
 			}
 			function commonAttsOf( e ):string {
@@ -621,23 +621,23 @@ moduleManager.construct({
 					// - and here the original id must be taken, if the propertyClass is exclusively used by the respective resourceClass (OBJECT-TYPE) or statementClass (RELATION-TYPE).
 					// - If it is changed here, it must be changed for the ATTRIBUTE-DEFINITION-REFs further down, as well.
 					let adId = simpleHash(eC.id+pC.id);
-					switch( LIB.itemById( pr.dataTypes, pC.dataType ).type ) {
-						case 'xs:boolean':
+					switch (LIB.itemById(pr.dataTypes, pC.dataType).type) {
+						case SpecifDataTypeEnum.Boolean:
 							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-BOOLEAN>'
 							break;
-						case 'xs:integer':
+						case SpecifDataTypeEnum.Integer:
 							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-INTEGER>'
 							break;
-						case 'xs:double':
+						case SpecifDataTypeEnum.Double:
 							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-REAL>'
 							break;
-						case 'xs:string':
+						case SpecifDataTypeEnum.String:
 							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-STRING>'
@@ -654,7 +654,7 @@ moduleManager.construct({
 								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-ENUMERATION>'
 							break;
-						case 'xs:dateTime':
+						case SpecifDataTypeEnum.DateTime:
 							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
 								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-DATE>'
@@ -670,23 +670,23 @@ moduleManager.construct({
 					let pC = LIB.itemById( pr.propertyClasses, prp['class'] ),
 						dT = LIB.itemById( pr.dataTypes, pC.dataType ),
 						adId = simpleHash(me['class']+prp['class']);
-					switch( dT.type ) {
-						case 'xs:boolean':
+					switch (dT.type) {
+						case SpecifDataTypeEnum.Boolean:
 							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-BOOLEAN>'
 							break;
-						case 'xs:integer':
+						case SpecifDataTypeEnum.Integer:
 							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+prp.value+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-INTEGER>'
 							break;
-						case 'xs:double':
+						case SpecifDataTypeEnum.Double:
 							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+prp.value+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-REAL>'
 							break;
-						case 'xs:string':
+						case SpecifDataTypeEnum.String:
 							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + prp.value.stripHTML().escapeXML()+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-STRING>'
@@ -760,7 +760,7 @@ moduleManager.construct({
 							xml += 			'</VALUES>'
 								+	'</ATTRIBUTE-VALUE-ENUMERATION>'
 							break;
-						case 'xs:dateTime':
+						case SpecifDataTypeEnum.DateTime:
 							xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="'+prp.value+'">'
 								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
 								+  '</ATTRIBUTE-VALUE-DATE>'
