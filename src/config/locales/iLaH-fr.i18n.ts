@@ -161,7 +161,8 @@ function LanguageTextsFr() {
 	self.LblOptions = 'Options';
 	self.LblFileFormat = 'Format de fichier';
 	self.modelElements = 'Élements de modèle';
-	self.withOtherProperties = 'avec autres attributes';
+	self.withOtherProperties = "avec les autres attributs";
+	self.showEmptyProperties = 'montrer les attributs vides';
 	self.withStatements = 'avec affirmations';
 	self.LblStringMatch = 'Recherche de <mark>texte</mark>';
 	self.LblWordBeginnings = 'Seulement mots commençant par';
@@ -526,7 +527,7 @@ function LanguageTextsFr() {
 //	self.SpecIF_Creation = "";
 	self.SpecIF_Instantiation = "Instanciation";
 	self.SpecIF_Origin = "Origine";
-	self.SpecIF_Source = 	self.LblSource;
+	self.SpecIF_Source = self.LblSource;
 	self.SpecIF_Target = self.LblTarget;
 	self.SpecIF_DataObject = "Objet de Données";
 //	self.SpecIF_Author = "Auteur";
@@ -538,15 +539,19 @@ function LanguageTextsFr() {
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
 	self.IR_AnnotationDescription = "An Interaction-Room '"+self.IR_Annotation+"' indicates a point of special interest. Examples are customer or user value, product features with prominent benefit,effort or challenges during development.";
-	self.IR_refersTo = 	self.SpecIF_refersTo;
+	self.IR_refersTo = self.SpecIF_refersTo;
 	self.IR_approves = "approves";
 	self.IR_opposes = "retoques";
 	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
 // for oem-supplier agreement as defined by the "Hersteller-Initiative-Software":
-	self.HIS_OemStatus = 'OEM-Status';
-	self.HIS_OemComment = 'OEM-Comment';
-	self.HIS_SupplierStatus = 'Supplier-Status';
-	self.HIS_SupplierComment = 'Supplier-Comment';
+	self.HIS_OemStatus =
+	self.ReqIF_WF_CustomerStatus = self.LblState + ' de Client';
+	self.HIS_OemComment =
+	self.ReqIF_WF_CustomerComment = 'Commentaire de Client';
+	self.HIS_SupplierStatus =
+	self.ReqIF_WF_SupplierStatus = self.LblState + ' de Fournisseur';
+	self.HIS_SupplierComment =
+	self.ReqIF_WF_SupplierComment = 'Commentaire de Fournisseur';
 /*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Titre';

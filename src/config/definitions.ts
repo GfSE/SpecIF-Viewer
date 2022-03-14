@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.y",
+	CONFIG.appVersion = "1.0.z",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
@@ -236,17 +236,7 @@ const CONFIG:any = {};
 		'Name',
 		// carhs SafetyWissen:
 		'carhs.Title.en',
-		'carhs.Title.de',
-		// Glossary:
-		'Title.en',
-		'Title.de',
-		'Title.fr',
-		'Title.es', 
-		// Viacar Glossary:
-		'Bezeichnung_DE',
-		'Bezeichnung_FR',
-		// openETCS:
-		'requirementID', */
+		'carhs.Title.de',*/
 		// Other:
 		'Title',
 		'Titel'
@@ -274,17 +264,7 @@ const CONFIG:any = {};
 		'Dokument',
 		// RIF 1.1a Atego Exerpt:
 		'Object Text',
-	//	'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning
-		// Glossary:
-		'Text.en',
-		'Text.de',
-		'Text.fr',
-		'Text.es',
-		// Viacar Glossary:
-		'Definition_DE',
-		'Definition_FR', */
-		// openETCS:
-		'RichText'
+	//	'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
 	];
 
 	CONFIG.stereotypeProperties = [

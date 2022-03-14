@@ -1414,8 +1414,9 @@ class CProject {
 					//	i18n.LblOptions,
 					i18n.modelElements,
 					[
+						{ title: i18n.withStatements, id: 'withStatements', checked: false },
 						{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
-						{ title: i18n.withStatements, id: 'withStatements', checked: false }
+						{ title: i18n.showEmptyProperties, id: 'showEmptyProperties', checked: CONFIG.showEmptyProperties }
 					],
 					{ handle: exportOptionsClicked }
 				);
@@ -1606,7 +1607,7 @@ class CProject {
 							descriptionProperties: CONFIG.descProperties,
 							stereotypeProperties: CONFIG.stereotypeProperties,
 							lookup: i18n.lookup,
-							showEmptyProperties: CONFIG.showEmptyProperties,
+							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
 						//	hasContent: LIB.hasContent,

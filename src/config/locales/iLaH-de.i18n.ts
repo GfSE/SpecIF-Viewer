@@ -162,6 +162,7 @@ function LanguageTextsDe() {
 	self.LblFileFormat = 'Dateiformat';
 	self.modelElements = 'Modell-Elemente';
 	self.withOtherProperties = 'mit weiteren Eigenschaften';
+	self.showEmptyProperties = 'leere Eigenschaften zeigen';
 	self.withStatements = 'mit Relationen (Aussagen)';
 	self.LblStringMatch = 'Text<mark>such</mark>e';
 	self.LblWordBeginnings = 'Nur Wortanfänge berücksichtigen';
@@ -543,10 +544,14 @@ function LanguageTextsDe() {
 	self.IR_opposes = "lehnt ab";
 	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
 // for oem-supplier agreement as defined by the "Hersteller-Initiative-Software":
-	self.HIS_OemStatus = 'Status Hersteller';
-	self.HIS_OemComment = 'Kommentar Hersteller';
-	self.HIS_SupplierStatus = 'Status Lieferant';
-	self.HIS_SupplierComment = 'Kommentar Lieferant';
+	self.HIS_OemStatus =
+	self.ReqIF_WF_CustomerStatus = 'Status Kunde';
+	self.HIS_OemComment =
+	self.ReqIF_WF_CustomerComment = 'Kommentar Kunde';
+	self.HIS_SupplierStatus =
+	self.ReqIF_WF_SupplierStatus = 'Status Lieferant';
+	self.HIS_SupplierComment =
+	self.ReqIF_WF_SupplierComment = 'Kommentar Lieferant';
 /*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Titel';

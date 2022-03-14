@@ -763,6 +763,54 @@ class CSpecIF implements SpecIF {
 					};
 					return false;
 				}
+				function normalizeProperties(el: Resource, dta): Property[] {
+						// el: original instance (resource or statement)
+						// Create a list of properties in the sequence of propertyClasses of the respective class.
+						// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+						// Assumption: Property classes are unique!
+
+						// check uniqueness of property classes:
+						if(el.properties) {
+						let cL: string[] = [],
+							pC: string;
+						el.properties.forEach((p: Property) => {
+							pC = p['class'];
+							if (cL.indexOf(pC) < 0)
+								cL.push(pC);
+							else
+								console.warn('The property class ' + pC + ' of element ' + el.id + ' is occurring more than once.');
+						});
+					};
+
+					let p: Property,
+						pCs: string[],
+						nL: Property[] = [],
+						// iCs: instance class list (resourceClasses or statementClasses),
+						// the existence of subject (or object) let's us recognize that it is a statement:
+						iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
+						iC = itemById(iCs, el['class']);
+					// build a list of propertyClass identifiers including the extended class':
+					pCs = iC._extends ? itemById(iCs, iC._extends).propertyClasses || [] : [];
+					pCs = pCs.concat(itemById(iCs, el['class']).propertyClasses || []);
+					// add the properties in sequence of the propertyClass identifiers:
+					pCs.forEach((pCid: string) => {
+						// skip hidden properties:
+						if (CONFIG.hiddenProperties.indexOf(pCid) > -1) return;
+						// assuming that the property classes are unique:
+						p = itemBy(el.properties, 'class', pCid)
+							|| createProp(dta.propertyClasses, pCid);
+						if (p) {
+							// by default, use the propertyClass' title:
+							// (dta.propertyClasses contains all propertyClasses of all resource/statement classes)
+							// An input data-set may have titles which are not from the SpecIF vocabulary;
+							// replace the result with a current vocabulary term:
+							p.title = vocabulary.property.specif(propTitleOf(p, dta));
+							nL.push(p);
+						}
+					});
+					//		console.debug('normalizeProps result',simpleClone(nL));
+					return nL; // normalized property list
+				}
 				// common for all items:
 				function i2ext(iE:any) {
 					var oE:any = {
@@ -862,7 +910,7 @@ class CSpecIF implements SpecIF {
 				// a property:
 				function p2ext(iE: Property) {
 					// skip empty properties:
-					if (!iE.value) return;
+					if (!iE.value && !opts.showEmptyProperties) return;
 
 					// skip hidden properties:
 					let pC: PropertyClass = itemById(spD.propertyClasses, iE['class']);
@@ -968,7 +1016,9 @@ class CSpecIF implements SpecIF {
 					// @ts-ignore - index is ok:
 					oE['class'] = iE['class'];
 					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
-					if (iE.properties && iE.properties.length > 0) oE.properties = LIB.forAll(iE.properties, p2ext);
+
+					let pL = opts.showEmptyProperties ? normalizeProperties(iE,spD) : iE.properties;
+					if (pL && pL.length > 0) oE.properties = LIB.forAll(pL, p2ext);
 					return oE;
 				}
 				// a resource:
