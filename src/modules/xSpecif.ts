@@ -664,7 +664,8 @@ class CSpecIF implements SpecIF {
 					f2ext(f)
 						.then(
 							(oF) =>{
-								spD.files.push(oF);
+								if (oF&&oF.id)
+									spD.files.push(oF);
 								if (--pend < 1) finalize();
 							},
 							reject
@@ -1098,8 +1099,6 @@ class CSpecIF implements SpecIF {
 								};
 								if (iF.revision) oF.revision = iF.revision;
 								if (iF.changedBy) oF.changedBy = iF.changedBy;
-//								if( iF.createdAt ) oF.createdAt = iF.createdAt;
-//								if( iF.createdBy ) oF.createdBy = iF.createdBy;
 								if (iF.blob) oF.blob = iF.blob;
 								if (iF.dataURL) oF.dataURL = iF.dataURL;
 								resolve(oF);
@@ -1127,8 +1126,10 @@ class CSpecIF implements SpecIF {
 											)
 										});
 										break;
+									// skipping any other is better than stopping with error:
 									default:
-										reject({status:999,statusText:"Cannot transform file '"+iF.title+"' of type '"+iF.type+"' to an image."})
+										console.warn("Cannot transform file '" + iF.title + "' of type '" + iF.type + "' to an image.");
+										resolve();
 								};
 							};
 						}

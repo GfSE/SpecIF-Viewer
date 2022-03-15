@@ -385,6 +385,7 @@ function toOxml( data, opts ) {
 									content: wParagraph({
 											text:sTi,
 											format:{
+												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
 												noSpacing:true
 											}

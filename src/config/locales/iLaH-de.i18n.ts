@@ -619,7 +619,7 @@ function LanguageTextsDe() {
 	self.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 	self.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
 /*	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.'; */
-	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
+	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqif oder *.reqifz. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
 	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';
 	self.MsgImportBpmn = 'Zulässiger Dateityp *.bpmn. Inhalte müssen den Schemata für BPMN 2.0 XML entsprechen. Der Import kann bis zu einigen Minuten dauern.';
 	self.MsgImportXls = 'Zulässige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import kann bei sehr großen Dateien mehrere Minuten dauern.';
@@ -691,7 +691,7 @@ function LanguageTextsDe() {
 	self.ErrInvalidFile = 'Ungültige oder unzulässige Datei.';
 	self.ErrInvalidFileType = "'~A' hat einen unzulässigen Dateityp.";
 	self.ErrInvalidAttachment = "Unzulässiger Dateityp. Wählen Sie bitte unter ~A.";
-	self.ErrInvalidFileReqif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.reqifz', '*.reqif', '*.zip' oder '*.xml'.";
+	self.ErrInvalidFileReqif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.reqif' oder '*.reqifz'.";
 	self.ErrInvalidFileSpecif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.specif.zip', '*.specifz' oder '*.specif'.";
 	self.ErrInvalidFileBpmn = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.xml'.";

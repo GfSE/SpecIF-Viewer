@@ -619,7 +619,7 @@ function LanguageTextsEn() {
 	self.MsgOtherProject = "Late response; another project has been selected meanwhile";
 	self.MsgWaitPermissions = 'Please wait while loading the permissions.';
 /*	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.'; */
-	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
+	self.MsgImportReqif = 'Permissible filetypes are *.reqif or *.reqifz. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
 	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
 	self.MsgImportBpmn = 'Permissible filetype is *.bpmn. The content must conform with the schema BPMN 2.0 XML. The import may take a couple of minutes.';
 	self.MsgImportXls = 'Permissible filetypes are *.xls, *.xlsx and *.csv. The import may take a couple of minutes for very large files.';
@@ -691,7 +691,7 @@ function LanguageTextsEn() {
 	self.ErrInvalidFile = 'Invalid file.';
 	self.ErrInvalidFileType = "Invalid file type of '~A'.";
 	self.ErrInvalidAttachment = "Invalid file type. Please select one of ~A.";
-	self.ErrInvalidFileReqif = "Invalid file type of '~A'. Please select '*.reqifz', '*.reqif', '*.zip' or '*.xml'.";
+	self.ErrInvalidFileReqif = "Invalid file type of '~A'. Please select '*.reqif' or '*.reqifz'.";
 	self.ErrInvalidFileSpecif = "Invalid file type of '~A'. Please select '*.specif.zip', '*.specifz' or '*.specif'.";
 	self.ErrInvalidFileBpmn = "Invalid file type of '~A'. Please select '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "Invalid file type of '~A'. Please select '*.xml'.";

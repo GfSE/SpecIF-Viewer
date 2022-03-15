@@ -20,10 +20,10 @@ moduleManager.construct({
 		zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
 		opts:any,
-		errNoOptions: xhrMessage = { status: 899, statusText: 'No options or no mediaTypes defined.' },
-		errNoReqif: xhrMessage = { status: 901, statusText: 'No ReqIF file in the reqifz container.' },
+		errNoOptions: xhrMessage = { status: 896, statusText: 'No options or no mediaTypes defined.' },
+		errNoReqifFile: xhrMessage = { status: 897, statusText: 'No ReqIF file in the reqifz container.' },
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
-		errInvalidXML: xhrMessage = { status: 900, statusText: 'ReqIF data is not valid XML.' };
+		errInvalidXML: xhrMessage = { status: 898, statusText: 'ReqIF data is not valid XML.' };
 		
 	self.init = function(options:any):boolean {
 		mime = undefined;
@@ -71,7 +71,7 @@ moduleManager.construct({
 				fileL = zip.filter(function (relPath, file) {return file.name.endsWith('.reqif')});
 
 				if( fileL.length < 1 ) {
-					zDO.reject( errNoReqif );
+					zDO.reject( errNoReqifFile );
 					return zDO
 				};
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
@@ -87,13 +87,21 @@ moduleManager.construct({
 						// - all property values are encoded as string, even if boolean, integer or double.
 
 						if (!validateXML(dta)) {
-							//console.log(dta)
+							//console.debug(dta)
 							zDO.reject( errInvalidXML );
 							return zDO;
 						};
-						// ReqIF data is valid:
+						// XML data is valid:
 						// @ts-ignore - transformReqif2Specif() is loaded at runtime
-						resL.unshift( transformReqif2Specif( dta, {translateTitle2Specif:vocabulary.property.specif} ) );
+						let result = transformReqif2Specif(dta, { translateTitle2Specif: vocabulary.property.specif });
+						if (result.status != 0) {
+							//console.debug(dta)
+							zDO.reject(result);
+							return zDO;
+						};
+
+						// ReqIF data is valid:
+						resL.unshift( result.response );
 
 						// add all other files (than reqif) to the last specif data set:
 						if( --pend<1 )
@@ -134,11 +142,13 @@ moduleManager.construct({
 									if( pend < 1 ) 
 										// no suitable file found, continue anyways:
 										zDO.resolve( resL );	
-								} else {
+								}
+								else {
 									// no files with permissible types are supplied:
 									zDO.resolve( resL );
 								};
-							} else {
+							}
+							else {
 								// no function for filtering and mapping the mediaTypes supplied:
 								console.error(errNoOptions.statusText);
 								// but import anyways:
@@ -147,7 +157,8 @@ moduleManager.construct({
 					});
 				};
 			});
-		} else {
+		}
+		else {
 			//try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
@@ -158,10 +169,14 @@ moduleManager.construct({
 				let str = LIB.ab2str(buf);
                 if( validateXML(str) ) {
 					// @ts-ignore - transformReqif2Specif() is loaded at runtime
-					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
-					// transformReqif2Specif gibt string zurück
-                    zDO.resolve( data );
-                } else {
+					var result = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
+					if (result.status == 0)
+						zDO.resolve(result.response)
+					else
+						zDO.reject(result);
+
+				}
+				else {
                     zDO.reject( errInvalidXML );
                 }
 		};
@@ -172,7 +187,8 @@ moduleManager.construct({
 				let parser = new DOMParser();
 				let xmlDoc = parser.parseFromString(xml_data,"text/xml");
 				return xmlDoc.getElementsByTagName('parsererror').length<1
-			} else { 
+			}
+			else {
 				let xmlDoc = new ActiveXObject("Microsoft.XMLDOM");          //compatability for older IE versions
 				xmlDoc.async = false;
 				return (xmlDoc.loadXML(xml_data)? true : false );
@@ -195,13 +211,14 @@ moduleManager.construct({
 		if( !Array.isArray(opts.hierarchyRoots) ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
 
 
-		const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
+		const
+			RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
 			RE_class = / class=\"[^\"]+\"/g,
 			RE_objectName = /(<object[^>]*) name=\"[^\"]+\"/g,
 			RE_objectId = /(<object[^>]*) id=\"[^\"]+\"/g,
-			RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g;
+			RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g,
 			
-		const date = new Date().toISOString(),
+			date = new Date().toISOString(),
 			ns = 'xhtml';
 
 		// ------------------------------------------------------------------------------
@@ -212,118 +229,6 @@ moduleManager.construct({
 		//    - Add title properties of resources and statements
 		//    - Add description properties of resources and statements
 		//    - Add hierarchy root
-
-	/*	Missing title and description properties are now added during import:
-	 	
-	 	// Are there resources with description, but without description property?
-		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
-		// In this case, add a description property to hold the description as required by ReqIF:
-			function addDescProperty( ctg:string, eC ):void {
-				// eC is a resourceClass or statementClass;
-				// get all instances of eC:
-			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
-
-				// list of elements, i.e. resources or statements
-				let eL = ctg=='statementClass'? 
-							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
-						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
-//				console.debug( 'addDescProperty', eC, eL );
-				
-					function descPropertyNeeded(r) {
-						if( r.description && r.description.length>0 ) {
-							if( Array.isArray( r.properties ) )
-								for (var i = r.properties.length - 1; i > -1; i--) {
-										if( CONFIG.descProperties.indexOf( propTitleOf(r.properties[i],pr) )>-1 )
-											// SpecIF assumes that any description property *replaces* the resource's description,
-											// so we just look for the case of a resource description and *no* description property.
-											// There is no consideration of the content.
-											// It is expected that descriptions with multiple languages have been reduced, before.
-											return false; // description property is available
-								};
-							return true; // no array or no description property
-						};
-						return false; // no description, thus no property needed
-					}
-				// for every instance of the given class:
-				eL.forEach( (el)=>{
-					if( descPropertyNeeded(el) ) {
-						// There is an attempt to add the types in every loop ... which is hardly efficient.
-						// However, that way they are only added, if needed.
-
-						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
-						
-						// a. add property class, if not yet defined:
-						standardTypes.addTo("propertyClass","PC-Description",pr);
-						
-						// b. add dataType, if not yet defined:
-						standardTypes.addTo("dataType","DT-Text",pr);
-						
-						// c. Add propertyClass to element class:
-						addPCReference( eC, "PC-Description" );
-						
-						// d. Add description property to element;
-						addP( el, {
-								class: "PC-Description",
-								value: el.description
-						});
-					};
-				});
-			};
-		pr.resourceClasses.forEach( (rC)=>{ addDescProperty('resourceClass',rC) });
-		pr.statementClasses.forEach( (sC)=>{ addDescProperty('statementClass',sC) });
-//		console.debug('pr',simpleClone(pr));
-		
-		// If missing, add a title property:
-			function addTitleProperty( ctg:string, eC ):void {
-				// get all instances of this resourceClass:
-
-				// list of elements, i.e. resources or statements
-				let eL = ctg=='statementClass'? 
-							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
-						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
-//				console.debug( 'addTitleProperty', eC, eL );
-				
-					function titlePropertyNeeded(r):boolean {
-							if( Array.isArray( r.properties ) )
-								for ( var i = r.properties.length-1; i>-1; i-- ) {
-										let ti = propTitleOf(r.properties[i],pr);
-										if( CONFIG.titleProperties.indexOf( ti )>-1 )
-											// SpecIF assumes that any title property *replaces* the element's title,
-											// so we just look for the case of *no* title property.
-											// There is no consideration of the content.
-											// It is expected that titles with multiple languages have been reduced, before.
-											return false; // title property is available
-								};
-							return true;
-					}
-				// for every instance of the given class:
-				eL.forEach( (el)=>{
-					if( titlePropertyNeeded(el) ) {
-						// There is an attempt to add the types in every loop ... which is hardly efficient.
-						// However, that way they are only added, if needed.
-
-						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
-						
-						// a. add property class, if not yet defined:
-						standardTypes.addTo("propertyClass","PC-Name",pr);
-						
-						// b. add dataType, if not yet defined:
-						standardTypes.addTo("dataType","DT-ShortString",pr);
-						
-						// c. Add propertyClass to element class:
-						addPCReference( eC, "PC-Name" );
-						
-						// d. Add title property to element;
-						addP( el, {
-								class: "PC-Name",
-								// no title is required in case of statements; it's class' title applies by default:
-								value: el.title || eC.title
-						});
-					};
-				});
-			};
-		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
-		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });  */
 
 		// ReqIF does not allow media objects other than PNG.
 		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
