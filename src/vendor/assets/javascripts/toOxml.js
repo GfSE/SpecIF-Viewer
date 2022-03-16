@@ -698,7 +698,6 @@ function toOxml( data, opts ) {
 											// the 'th' cell with it's content
 											// $1 is undefined in case of <th/>
 											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp ), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
-											// ToDo: Somehow the text is not printed boldly ...
 											return '';
 											});
 									$1 = $1.replace(/<td[^\/>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g, function($0,$1) {
@@ -750,7 +749,8 @@ function toOxml( data, opts ) {
 						
 						function splitR(p) {
 							let txt = p.text,
-								fmt = p.font?{font:{weight:p.font.weight,style:p.font.style,color:p.font.color}}:{font:{}};
+								fmt = p.format || {};
+							if (!fmt.font) fmt.font = {};
 							p.runs = [];
 //							console.debug('splitR',txt,fmt.font);
 
@@ -770,7 +770,8 @@ function toOxml( data, opts ) {
 
 								// store the preceding text as run with a clone of the current formatting:
 								if( opts.hasContent($1) )
-									p.runs.push({text:$1,format:{font:clone(fmt.font)}});
+								//	p.runs.push({text:$1,format:{font:clone(fmt.font)}});
+									p.runs.push({ text: $1, format: clone(fmt) });
 
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
@@ -849,7 +850,8 @@ function toOxml( data, opts ) {
 							// finally store the remainder:
 							if( opts.hasContent(txt) ) {
 //								console.debug('splitR #',txt,fmt);
-								p.runs.push({text:txt,format:{font:clone(fmt.font)}})
+							//	p.runs.push({text:txt,format:{font:clone(fmt.font)}})
+								p.runs.push({ text: txt, format: clone(fmt) })
 							};
 							delete p.text;
 							delete p.font;
@@ -862,7 +864,7 @@ function toOxml( data, opts ) {
 						}
 					}
 					function splitText(txt) {
-						var tf, arr=[], br={};
+						var arr=[], br={};
 						txt = txt.replace( reText, function($0,$1,$2) {
 							br={};
 							// store the preceding fragment:
@@ -1303,8 +1305,9 @@ function toOxml( data, opts ) {
 					let str = '';
 					// the array may hold fragments of text or line-breaks:
 					ct.text.forEach( function(c) {
-						if( c.str ) str += '<w:t xml:space="preserve">'+c.str+'</w:t>';
-						if( c['break']=='line' ) str += '<w:cr />'
+						if (c.str) str += '<w:t xml:space="preserve">' + c.str + '</w:t>';
+						// see http://officeopenxml.com/WPtextSpecialContent-break.php
+						if( c['break']=='line' ) str += '<w:br/>'
 					});
 					return str;
 				};
