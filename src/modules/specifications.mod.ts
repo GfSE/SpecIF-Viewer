@@ -418,7 +418,7 @@ class CPropertyToShow implements Property {
 				e = '<img src="' + CONFIG.imgURL + '/' + e + '-icon.png" type="image/png" />'
 
 				// finally returned the enhanced link:
-				return ('<a href="' + u1 + '" ' + t1 + ' target="_blank" >' + e + '</a>')
+				return ('<a href="' + u1 + '" ' + t1 + ' target="_blank" rel="noopener">' + e + '</a>')
 			}
 		);
 //		console.debug('fileRef.toGUI 3: ', txt);

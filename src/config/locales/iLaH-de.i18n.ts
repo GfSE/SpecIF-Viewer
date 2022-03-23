@@ -43,6 +43,8 @@ function LanguageTextsDe() {
 //	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
 	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 //	self.IcoAbout = '<i class="fa fa-copyright"></i>';
+	self.IcoRelation = '<i class="bi-link-45deg" ></i>';
+	self.IcoReport = '<i class="bi-bar-chart-line" ></i>';
 
 // Buttons:
 //	self.LblImportReqif = 'ReqIF Import';
@@ -242,8 +244,8 @@ function LanguageTextsDe() {
 	self.BtnDetails = 'Details';
 	self.BtnAddRole = self.IcoAdd +'&#160;Rolle';
 	self.BtnFileSelect = self.IcoAdd+'&#160;Datei auswählen ...';
-//	self.BtnPrevious = '<i class="bi-chevron-up"></i>&#160;' + self.LblPrevious;
-//	self.BtnNext = '<i class="bi-chevron-down"></i>&#160;' + self.LblNext;
+//	self.BtnPrevious = self.IcoPrevious+'&#160;' + self.LblPrevious;
+//	self.BtnNext = self.IcoNext+'&#160;' + self.LblNext;
 //	self.BtnGo = self.IcoGo+'&#160;'+self.LblGo;
 	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neu';
 	self.BtnSelectHierarchy = "Gliederung auswählen";
@@ -272,11 +274,11 @@ function LanguageTextsDe() {
 //	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Seite';
 //	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Revisionen';
 //	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Zeitleiste';
-	self.TabRelations = '<i class="bi-link-45deg"></i>&#160;Relationen';
+	self.TabRelations = self.IcoRelation +'&#160;Relationen';
 //	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Sortieren';
 //	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Bilder und Dateien';
 //	self.TabComments = self.IcoComment+'&#160;Kommentare';
-	self.TabReports = '<i class="bi-bar-chart-line"></i>&#160;Berichte';
+	self.TabReports = self.IcoReport +'&#160;Berichte';
 
 // Functions:
 //	self.FnProjectCreate = self.IcoAdd+'&#160;Projekt';
@@ -598,6 +600,7 @@ function LanguageTextsDe() {
 	self.SpecIF_statusWithdrawn = "90_zurückgezogen";
 
 // Messages:
+	self.MsgIntro = 'Sind Sie neu hier? Lesen Sie eine kurze <a href="' + CONFIG.QuickStartGuideDe + '" target="_blank" rel="noopener">Einführung</a>, wenn Sie mögen.';
 	self.MsgConfirm = 'Bitte bestätigen:';
 	self.MsgConfirmDeletion = "'~A' löschen?";
 	self.MsgConfirmObjectDeletion = "Ressource '<b>~A</b>' löschen?";

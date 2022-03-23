@@ -10,12 +10,16 @@
 	- #4A8C00 SpecIF dark green
 */
 
+@font-face {
+  font-family: "dejavusansmono";
+  src: url("../fonts/DejaVuSansMono.ttf");
+}
 body {
     height: 100%;
     overflow: hidden;
     margin: 0;
 	padding: 0 0 0 8px;
-	font-family: arial, sans-serif;
+	font-family: arial, "DejaVu Sans Mono", dejavusansmono, sans-serif;
 	font-size: 10.5pt;
 }
 #pageHeader {
@@ -383,24 +387,6 @@ mark{
 /*.panel-title {
   font-size: 100%;
 }*/
-
-/* override jqtree.css */
-.jqtree-tree .jqtree-title {
-	display: block;
-}
-.jqtree-tree .jqtree-title.jqtree-title-folder {
-	display: inline;
-}
-ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler,
-ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-title {
-	color: #ffffff;
-}
-ul.jqtree-tree li.jqtree-selected > .jqtree-element,
-ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
-	background: none;
-	background-color: #1690D8;
-	text-shadow: none;
-}
 .btn-fileinput {
   position: relative;
   overflow: hidden;
@@ -414,4 +400,25 @@ ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
   -ms-filter: 'alpha(opacity=0)';
   font-size: 100%;
   cursor: pointer;
+}
+
+/* override jqtree.css */
+.jqtree-tree .jqtree-title {
+	display: block;
+}
+.jqtree-tree .jqtree-title.jqtree-title-folder {
+	display: inline;
+}  
+/* ul.jqtree-tree .jqtree-element {
+	display: unset;    for selection buttonLeft:false 
+} */
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-toggler,
+ul.jqtree-tree li.jqtree-selected>.jqtree-element .jqtree-title {
+	color: #ffffff;
+}
+ul.jqtree-tree li.jqtree-selected > .jqtree-element,
+ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
+	background: none;
+	background-color: #1690D8;
+	text-shadow: none;
 }

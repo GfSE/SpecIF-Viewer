@@ -752,7 +752,7 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
 				// under the assumption that decoding a non-encoded URI does not cause a change.
 				// This does not work if a non-encoded URI contains '%'.
 				return $1+'<a href="'+encodeURI(decodeURI($2))+'" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9 */
-				return $1+'<a href="'+$2+'" target="_blank" >'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9;
+				return $1 + '<a href="' + $2 +'" target="_blank" rel="noopener">'+(opts&&opts.label? opts.label:$3+($4||'')+$5)+'</a>'+$9;
 			});
 	return this as string;
 };

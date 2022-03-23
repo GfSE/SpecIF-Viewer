@@ -160,6 +160,10 @@ moduleManager.construct({
 				+		'</div>'
 				+   '</div>'
 			+	'</div>'
+			+	'<div style="padding-top:2em">'
+				+	'<div class="attribute-label" ></div>'	// empty column to the left
+				+	'<div class="attribute-value" >'+i18n.MsgIntro+'</div>'
+			+	'</div>'
 		+	'</div>';
 	//	if(self.selector)
 	//		$(self.selector).after( h );

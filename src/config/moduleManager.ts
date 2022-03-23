@@ -561,7 +561,7 @@ var app:IApp,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
 				// temporary solution with fix for buttonLeft=false:
 				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css');
-		//									getScript(loadPath + 'vendor/assets/javascripts/tree.jquery.js'); return true;
+		//									getScript(loadPath + 'vendor/assets/javascripts/tree.jquery.js'); return true; */
 		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.2/jqtree.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.2/tree.jquery.js' ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;

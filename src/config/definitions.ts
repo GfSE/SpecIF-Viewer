@@ -10,6 +10,8 @@ const CONFIG:any = {};
 	CONFIG.appVersion = "1.0.z",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
+	CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
+	CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
 //	CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
 //	CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
 	CONFIG.placeholder = 'to-be-replaced';
@@ -457,18 +459,24 @@ const CONFIG:any = {};
 		["SpecIF:createdBy", { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
 		["SpecIF:changedBy", { name: "changedBy", type: "xs:string", check: function (): boolean { return true } }]
 	]);
+	// see: https://www.fileformat.info/info/unicode/char/2702/fontsupport.htm
 	CONFIG.icons = new Map([
 		['FMC:Actor',"&#9632;"],
 		['FMC:State',"&#9679;"],
 		['FMC:Event',"&#11047;"],
+	//	['FMC:Event',"&#x2666;"],
 		['SpecIF:Collection',"&#11034;"],
-		['IREB:Requirement',"&#8623;"],
-		['SpecIF:Feature',"&#10038;"],
-		['SpecIF:Diagram',"&#9635;"],
+	//	['IREB:Requirement',"&#8623;"],
+		['IREB:Requirement', "&#x2762;"],	// HEAVY EXCLAMATION MARK ORNAMENT
+		['SpecIF:Feature',"&#10038;"],		// star
 		[CONFIG.resClassDiagram,"&#9635;"],
 	//	['SpecIF:UserStory',"&#9830;"],
-		['SpecIF:UserStory',"&#9786;"],
-		["IR:Annotation","&#9755;"]
+	//	['SpecIF:UserStory', "&#9786;"],	// smiley
+		['SpecIF:UserStory', "&#x263A;"],	// WHITE SMILEY
+		["SpecIF:PainPoint", "&#x2702;"],	// BLACK SCISSORS
+	//	["IR:Annotation","&#9755;"]
+		["IR:Annotation", "&#x25BA;"]		// BLACK RIGHT-POINTING POINTER
+	//	["IR:Annotation", "&#x27A4;"]		// BLACK RIGHTWARDS ARROWHEAD
 	]);
 
 	// values for boolean 'true' and 'false':
@@ -583,8 +591,16 @@ const vocabulary = {
 				case 'annotations':
 				case 'annotationen':
 				case 'annotation':					oT = "IR:Annotation"; break;
+				case 'userstory':
+				case 'userstories':
 				case 'user_stories':
 				case 'user_story':					oT = 'SpecIF:UserStory'; break;
+				case 'painpoint':
+				case 'painpoints':
+				case 'pain_point':
+				case 'pain_points':
+				case 'schmerzpunkt':
+				case 'schmerzpunkte':				oT = "SpecIF:PainPoint"; break;
 				case 'specif_view':
 				case 'fmc_plan':					oT = CONFIG.resClassDiagram; break;
 				case 'specif_folder':				oT = CONFIG.resClassFolder; break;

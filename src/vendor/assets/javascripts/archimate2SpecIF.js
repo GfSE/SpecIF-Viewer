@@ -158,34 +158,35 @@ function Archimate2Specif( xmlString, opts ) {
 						changedAt: opts.fileDate
 					};
 					
-					function storeContainsStatement(chId,pId) {
-						// temporarily store all containment relations derived from the node hierarchy,
-						// which corresponds to the graphical nesting of model elements:
-						let stId = "S-"+simpleHash( "SC-contains"+pId+chId );
-						if( indexById( model.statements, stId )<0 ) {
-							graphicallyContainsL.push({
-								contains: {
-									id: stId,
-									class: "SC-contains",
-									subject: pId,
-									object: chId,
-									changedAt: opts.fileDate
-								},
-								// even though implicitly, the containment is shown by this diagram:
-								shows: {
-									id: "S-"+simpleHash( "SC-shows"+dId+stId ),
-									class: "SC-shows",
-									subject: dId,
-									object: stId,
-									changedAt: opts.fileDate
-								}
-							});
-						};
-					}
 					// The view's nodes are hierarchically ordered: 
 					function storeShowsAndContainsStatements(nd,parentId) {
 						// Ignore visual elements of xsi:type="Label" (Note)
 						// as well as xsi:type="Container" (VisualGroup).
+
+							function storeContainsStatement(chId, pId) {
+								// temporarily store all containment relations derived from the node hierarchy,
+								// which corresponds to the graphical nesting of model elements:
+								let stId = "S-" + simpleHash("SC-contains" + pId + chId);
+								if (indexById(model.statements, stId) < 0) {
+									graphicallyContainsL.push({
+										contains: {
+											id: stId,
+											class: "SC-contains",
+											subject: pId,
+											object: chId,
+											changedAt: opts.fileDate
+										},
+										// even though implicitly, the containment is shown by this diagram:
+										shows: {
+											id: "S-" + simpleHash("SC-shows" + dId + stId),
+											class: "SC-shows",
+											subject: dId,
+											object: stId,
+											changedAt: opts.fileDate
+										}
+									});
+								};
+							}
 
 						let
 						//	ty = nd.getAttribute('xsi:type'),
