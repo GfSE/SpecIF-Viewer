@@ -43,6 +43,8 @@ function LanguageTextsFr() {
 //	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
 	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 //	self.IcoAbout = '<i class="fa fa-copyright"></i>';
+	self.IcoRelation = '<i class="bi-link-45deg" ></i>';
+	self.IcoReport = '<i class="bi-bar-chart-line" ></i>';
 
 // Buttons:
 //	self.LblImportReqif = 'ReqIF Import';
@@ -242,8 +244,8 @@ function LanguageTextsFr() {
 	self.BtnDetails = 'Détails';
 	self.BtnAddRole = self.IcoAdd +'&#160;Rôle';
 	self.BtnFileSelect = self.IcoAdd +'&#160;Choisir un fichier ...';
-//	self.BtnPrevious = '<i class="bi-chevron-up"></i>&#160;'+	self.LblPrevious;
-//	self.BtnNext = '<i class="bi-chevron-down"></i>&#160;'+	self.LblNext;
+//	self.BtnPrevious = self.IcoPrevious+'&#160;' + self.LblPrevious;
+//	self.BtnNext = self.IcoNext+'&#160;' + self.LblNext;
 //	self.BtnGo = self.IcoGo+'&#160;'+self.LblGo;
 	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neuf';
 	self.BtnSelectHierarchy = "Choix d'une arborescence";
@@ -272,11 +274,11 @@ function LanguageTextsFr() {
 //	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Page';
 //	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Révisions';
 //	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Chronologie';
-	self.TabRelations = '<i class="bi-link-45deg"></i>&#160;Relations';
+	self.TabRelations = self.IcoRelation +'&#160;Relations';
 //	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Triage';
 //	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Images et fichiers';
 //	self.TabComments = self.IcoComment+'&#160;Commentaires';
-	self.TabReports = '<i class="bi-bar-chart-line"></i>&#160;Rapports';
+	self.TabReports = self.IcoReport +'&#160;Rapports';
 
 // Functions:
 //	self.FnProjectCreate = self.IcoAdd+'&#160;Projet';
@@ -598,6 +600,7 @@ function LanguageTextsFr() {
 	self.SpecIF_statusWithdrawn = "90_withdrawn";
 
 // Messages:
+	self.MsgIntro = 'Vous êtes nouveau ici? Lisez une brève <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction en anglais</a>, si vous le souhaitez.';
 	self.MsgConfirm = "Confirmez, s'il vous plaît:";
 	self.MsgConfirmDeletion = "Effacer '~A'?";
 	self.MsgConfirmObjectDeletion = "Effacer la ressource '<b>~A</b>' ?";
@@ -619,7 +622,7 @@ function LanguageTextsFr() {
 	self.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
 	self.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
 /*	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers."; */
-	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
+	self.MsgImportReqif = "Types de fichiers valides: *.reqif ou *.reqifz. Le contenu doit correspondre au schéma ReqIF 1.0+. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
 	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip et *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
 	self.MsgImportBpmn = "Type de fichier valide est *.bpmn. Le contenu doit correspondre au schéma BPMN 2.0 XML. Le téléchargement peut durer quelques minutes.";
 	self.MsgImportXls = "Types de fichiers valides: *.xls, *.xlsx et *.csv. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
@@ -691,7 +694,7 @@ function LanguageTextsFr() {
 	self.ErrInvalidFile = 'Fichier non valide ou erroné.';
 	self.ErrInvalidFileType = "Type de fichier '~A' non valide.";
 	self.ErrInvalidAttachment = "Type de fichier non valide. Choisissez entre ~A.";
-	self.ErrInvalidFileReqif = "Type de fichier '~A' non valide. Choisissez '*.reqifz', '*.reqif', '*.zip' ou '*.xml'.";
+	self.ErrInvalidFileReqif = "Type de fichier '~A' non valide. Choisissez '*.reqif' ou '*.reqifz'.";
 	self.ErrInvalidFileSpecif = "Type de fichier '~A' non valide. Choisissez '*.specif.zip', '*.specifz' ou '*.specif'.";
 	self.ErrInvalidFileBpmn = "Type de fichier '~A' non valide. Choisissez '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "Type de fichier '~A' non valide. Choisissez '*.xml'.";

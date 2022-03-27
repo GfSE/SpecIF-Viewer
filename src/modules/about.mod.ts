@@ -56,7 +56,7 @@ moduleManager.construct({
 		+		  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
 		+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
 	// So far, editing is needed in case of Achimate for manually adding the diagrams ..
-		+ (isEditor&&moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
+		+ (isEditor && moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
 		+ (moduleManager.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
 		+ (moduleManager.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
 		+		  "<li>Import from an URL or the local file system</li>"
@@ -69,12 +69,12 @@ moduleManager.construct({
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource classes or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource classes or used property enumerated values</li>"
-		+ (moduleManager.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
-		+ (isEditor? "<li>Export 'specif.zip' file</li>" : "")
-		+ (moduleManager.isReady('ioReqif')? "<li>Export 'reqifz' file</li>":"")
-		+ (moduleManager.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
-		+ (moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
-		+ (moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
+		+ (isEditor && moduleManager.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
+		+ (isEditor? "<li>Export 'specif.zip' file</li>":"")
+		+ (isEditor && moduleManager.isReady('reqif2specif')? "<li>Export 'reqifz' file</li>":"")
+		+ (isEditor && moduleManager.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
+		+ (isEditor && moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
+		+ (isEditor && moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
 		+		'</ul>'
 		+	'<h4>Compatibility</h4>'
 		+		'<ul>'

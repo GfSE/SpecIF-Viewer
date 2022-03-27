@@ -37,6 +37,7 @@ class Tree {
 		this.domE.tree({
 			data: [],
 		//	saveState: true,
+			//  in SpecIF.default.css, remove overriding css declaration in case of buttonLeft:true !
 			buttonLeft: false,
 			dragAndDrop: options.dragAndDrop
 		});

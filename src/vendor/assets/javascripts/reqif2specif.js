@@ -14,60 +14,71 @@
 /*
 ########################## Main #########################################
 */
-function transformReqif2Specif(reqifDocument,options) {
+function transformReqif2Specif(reqifDoc,options) {
 	const RE_DateTime = /[0-9-]{4,}(T[0-9:]{2,}(\.[0-9]+)?)?(Z|\+[0-9:]{2,}|\-[0-9:]{2,})?/,
 		RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
 	
     if( typeof(options)!='object' ) options = {};
     if( typeof(options.translateTitle2Specif)!='function' ) options.translateTitle2Specif = function(ti) {return ti};
-	
-	// Transform ReqIF data provided as an XML string to SpecIF data.
-    const xmlDoc = parse(reqifDocument);
-    let specifData = extractMetaData(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
-    specifData.dataTypes = extractDatatypes(xmlDoc.getElementsByTagName("DATATYPES"));
-    specifData.propertyClasses = extractPropertyClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-    specifData.resourceClasses = extractResourceClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-    specifData.statementClasses = extractStatementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-    specifData.resources = extractResources(xmlDoc.getElementsByTagName("SPEC-OBJECTS"))
-							// ReqIF hierarchy roots are SpecIF resouces:
-							.concat(extractResources(xmlDoc.getElementsByTagName("SPECIFICATIONS")));
-    specifData.statements = xmlDoc.getElementsByTagName("SPEC-RELATIONS")[0] ? extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS")) : [];
-    specifData.hierarchies = xmlDoc.getElementsByTagName("SPECIFICATIONS")[0] ? extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS")) : [];
-    
-//  console.info(specifData);
-    return specifData;
+
+    const xmlDoc = parse(reqifDoc);
+
+    var xhr;
+    if (validateReqif(xmlDoc))
+        xhr = { status: 0, statusText: "ReqIF data is valid" }
+    else
+        xhr = options.errInvalidReqif || { status: 899, statusText: "ReqIF data is invalid" };
+
+    if (xhr.status == 0) {
+        // Transform ReqIF data provided as an XML string to SpecIF data.
+        xhr.response = extractMetaData(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
+        xhr.response.dataTypes = extractDatatypes(xmlDoc.getElementsByTagName("DATATYPES"));
+        xhr.response.propertyClasses = extractPropertyClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+        xhr.response.resourceClasses = extractResourceClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+        xhr.response.statementClasses = extractStatementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
+        xhr.response.resources = extractResources(xmlDoc.getElementsByTagName("SPEC-OBJECTS"))
+            // ReqIF hierarchy roots are SpecIF resouces:
+            .concat(extractResources(xmlDoc.getElementsByTagName("SPECIFICATIONS")));
+        xhr.response.statements = extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS"));
+        xhr.response.hierarchies = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
+    };
+
+//  console.info(xhr);
+    return xhr;
 
 /*
 ########################## Subroutines #########################################
 */
+function validateReqif(xml) {
+    return xml.getElementsByTagName("REQ-IF-HEADER").length > 0
+        && xml.getElementsByTagName("REQ-IF-CONTENT").length > 0;
+}
 function extractMetaData(header) {
-    if (header.length<1) return {};
-    let specifHeader = {};
-    specifHeader.id = header[0].getAttribute("IDENTIFIER");
-    specifHeader.title = header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML;
-    specifHeader.description = header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '';
-    specifHeader.generator = 'reqif2specif';
-
-    specifHeader.$schema = "https://specif.de/v1.0/schema.json";
-    specifHeader.createdAt = addTimezoneIfMissing(header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML); 
-    
-    return specifHeader;
+    return (header.length < 1 ? {} : {
+        id: header[0].getAttribute("IDENTIFIER"),
+        title: header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML,
+        description: header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '',
+        generator: 'reqif2specif',
+        $schema: "https://specif.de/v1.0/schema.json",
+        createdAt: addTimezoneIfMissing(header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML)
+    });
 };
 function extractDatatypes(xmlDatatypes) {
     return xmlDatatypes.length<1? [] : Array.from(xmlDatatypes[0].children, extractDatatype );
 
     function extractDatatype(datatype) {
-        let specifDatatype = {};
-        specifDatatype.id = datatype.getAttribute("IDENTIFIER");
-        specifDatatype.type = getTypeOfDatatype(datatype);
-        specifDatatype.title = datatype.getAttribute("LONG-NAME") || '';
-        specifDatatype.description = datatype.getAttribute("DESC") || '';
+        let specifDatatype = {
+            id: datatype.getAttribute("IDENTIFIER"),
+            type: getTypeOfDatatype(datatype),
+            title: datatype.getAttribute("LONG-NAME") || '',
+            description: datatype.getAttribute("DESC") || '',
+            changedAt: addTimezoneIfMissing(datatype.getAttribute("LAST-CHANGE") || '')
+        };
         if( datatype.getAttribute("MIN") ) specifDatatype.minInclusive = Number(datatype.getAttribute("MIN"));
         if( datatype.getAttribute("MAX") ) specifDatatype.maxInclusive = Number(datatype.getAttribute("MAX"));
         if( datatype.getAttribute("MAX-LENGTH") ) specifDatatype.maxLength = Number(datatype.getAttribute("MAX-LENGTH"));
         if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY"));
         if( datatype.childElementCount>0 ) specifDatatype.values = extractDataTypeValues(datatype.children);
-        specifDatatype.changedAt = addTimezoneIfMissing(datatype.getAttribute("LAST-CHANGE") || '');
 
         return specifDatatype;
     }
@@ -153,15 +164,14 @@ function extractResourceClasses(xmlSpecTypes) {
     // consider to use .querySelectorAll("nodeName")
     Array.from(xmlSpecTypes[0].children,
         xmlSpecType => {
-            if( isResourceClass(xmlSpecType) )
-                specifResourceClasses.push(extractElementClass(xmlSpecType));
+            switch (xmlSpecType.nodeName) {
+                case 'SPECIFICATION-TYPE':
+                case 'SPEC-OBJECT-TYPE':
+                    specifResourceClasses.push(extractElementClass(xmlSpecType));
+            }
         }
     );
     return specifResourceClasses;
-
-    function isResourceClass(xmlSpecType) {
-        return xmlSpecType.nodeName === 'SPEC-OBJECT-TYPE' || xmlSpecType.nodeName === 'SPECIFICATION-TYPE'
-    }
 }
 function extractStatementClasses(xmlSpecTypes) {
     if (xmlSpecTypes.length<1) return [];
@@ -169,32 +179,30 @@ function extractStatementClasses(xmlSpecTypes) {
     // consider to use .querySelectorAll("nodeName")
     Array.from(xmlSpecTypes[0].children,
         xmlSpecType => {
-            if( isStatementClass(xmlSpecType) )
-                specifStatementClasses.push(extractElementClass(xmlSpecType));
+            switch (xmlSpecType.nodeName) {
+            //  case 'RELATION-GROUP-TYPE':
+                case 'SPEC-RELATION-TYPE':
+                    specifStatementClasses.push(extractElementClass(xmlSpecType));
+            }
         }
     );
     return specifStatementClasses;
-    
-    function isStatementClass(xmlSpecType) {
-        return xmlSpecType.nodeName === 'SPEC-RELATION-TYPE';
-    //    return xmlSpecType.nodeName === 'SPEC-RELATION-TYPE' || xmlSpecType.nodeName === 'RELATION-GROUP-TYPE';
-    }
 }
 function extractElementClass(xmlSpecType) {
     // for both resourceClasses and statementClasses:
-    const specifElementClass = {};
-    specifElementClass.id = xmlSpecType.getAttribute("IDENTIFIER");
-//    specifElementClass.title = xmlSpecType.getAttribute("LONG-NAME");
-    specifElementClass.title = xmlSpecType.getAttribute("LONG-NAME") || xmlSpecType.getAttribute("IDENTIFIER");
+    const specifElementClass = {
+        id: xmlSpecType.getAttribute("IDENTIFIER"),
+        title: xmlSpecType.getAttribute("LONG-NAME") || xmlSpecType.getAttribute("IDENTIFIER"),
+        changedAt: addTimezoneIfMissing(xmlSpecType.getAttribute("LAST-CHANGE"))
+    };
     if( xmlSpecType.getAttribute("DESC") ) 
         specifElementClass.description = xmlSpecType.getAttribute("DESC");
     if( xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES")[0] )
-        specifElementClass.propertyClasses = extractPropertyClassReferenceses(xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES"));
-    specifElementClass.changedAt = addTimezoneIfMissing(xmlSpecType.getAttribute("LAST-CHANGE"));
+        specifElementClass.propertyClasses = extractPropertyClassReferences(xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES"));
    
     return specifElementClass;
 
-    function extractPropertyClassReferenceses(propertyClassesDocument) {
+    function extractPropertyClassReferences(propertyClassesDocument) {
         return Array.from( propertyClassesDocument[0].children, property => {return property.getAttribute("IDENTIFIER")} )
     }
 }
@@ -203,16 +211,15 @@ function extractResources(xmlSpecObjects) {
     return xmlSpecObjects.length<1? [] : Array.from(xmlSpecObjects[0].children,extractResource);
 
     function extractResource(xmlSpecObject) {
-        let specifResource = {};
-        specifResource.id = xmlSpecObject.getAttribute("IDENTIFIER");
-        //xmlSpecObject.getAttribute("LONG-NAME") ? specifResource.title = xmlSpecObject.getAttribute("LONG-NAME") : '';
-        specifResource.title = xmlSpecObject.getAttribute("LONG-NAME") || xmlSpecObject.getAttribute("IDENTIFIER");
+        let specifResource = {
+            id: xmlSpecObject.getAttribute("IDENTIFIER"),
+            title: xmlSpecObject.getAttribute("LONG-NAME") || xmlSpecObject.getAttribute("IDENTIFIER"),
+            changedAt: addTimezoneIfMissing(xmlSpecObject.getAttribute("LAST-CHANGE"))
+        };
         specifResource['class'] = xmlSpecObject.getElementsByTagName("TYPE")[0].children[0].innerHTML;
         //xmlSpecObject.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractProperties(xmlSpecObject.getElementsByTagName("VALUES")) : '';
         let values = xmlSpecObject.getElementsByTagName("VALUES");
-        if( values && values.length>0 ) 
-            specifResource.properties = extractProperties(values);
-        specifResource.changedAt = addTimezoneIfMissing(xmlSpecObject.getAttribute("LAST-CHANGE"));
+        specifResource.properties = extractProperties(values);
         
         return specifResource;
     }
@@ -221,24 +228,25 @@ function extractStatements(xmlSpecRelations) {
     return xmlSpecRelations.length<1? [] : Array.from(xmlSpecRelations[0].children,extractStatement);
 
     function extractStatement(xmlSpecRelation) {
-        let specifStatement = {};
-        specifStatement.id = xmlSpecRelation.getAttribute("IDENTIFIER");
+        let specifStatement = {
+            id: xmlSpecRelation.getAttribute("IDENTIFIER"),
+            subject: xmlSpecRelation.getElementsByTagName("SOURCE")[0].children[0].innerHTML,
+            object: xmlSpecRelation.getElementsByTagName("TARGET")[0].children[0].innerHTML,
+            changedAt: addTimezoneIfMissing(xmlSpecRelation.getAttribute("LAST-CHANGE"))
+        };
         specifStatement['class'] = xmlSpecRelation.getElementsByTagName("TYPE")[0].children[0].innerHTML;
-        specifStatement.subject = xmlSpecRelation.getElementsByTagName("SOURCE")[0].children[0].innerHTML;
-        specifStatement.object = xmlSpecRelation.getElementsByTagName("TARGET")[0].children[0].innerHTML;
         let values = xmlSpecRelation.getElementsByTagName("VALUES");
-        if( values && values.length>0 ) 
-            specifStatement.properties = extractProperties(values);
-        specifStatement.changedAt = addTimezoneIfMissing(xmlSpecRelation.getAttribute("LAST-CHANGE"));
+        specifStatement.properties = extractProperties(values);
         
         return specifStatement;
     }
 }
-function extractProperties(specObjectsValuesDocument) {
+function extractProperties(specAttributes) {
     // used for OBJECTS as well as RELATIONS:
+    if ( specAttributes.length<1 ) return [];
 	let list = [];
 	// Only add a SpecIF property, if it has a value:
-    Array.from( specObjectsValuesDocument[0].children, (prp)=>{ let p=extractSpecIfProperty(prp); if(p.value) list.push(p)} );
+    Array.from( specAttributes[0].children, (prp)=>{ let p=extractSpecIfProperty(prp); if(p.value) list.push(p)} );
 	return list;
 
     function extractSpecIfProperty(property) {
@@ -257,43 +265,43 @@ function extractProperties(specObjectsValuesDocument) {
         else if( property.getElementsByTagName("THE-VALUE")[0] ) 
             specifProperty.value = removeNamespace(property.getElementsByTagName("THE-VALUE")[0].innerHTML);
         // ENUMERATION:
-        else if( property.getElementsByTagName("VALUES")[0] ) 
-            specifProperty.value = property.getElementsByTagName("VALUES")[0].children[0].innerHTML;
-        else
-            console.error('ReqIF to SpecIF transformation: Attribute value of attribute '+property.getAttribute("IDENTIFIER")+' is missing.');
-        
+        else if (property.getElementsByTagName("VALUES")[0]) {
+            specifProperty.value = '';
+            Array.from(property.getElementsByTagName("VALUES")[0].children, (ch) => { specifProperty.value += (specifProperty.value.length > 0 ? ',' : '') + ch.innerHTML });
+        };
         return specifProperty;
     }
 }
 
 function extractHierarchies(xmlSpecifications) {
-    return Array.from(xmlSpecifications[0].getElementsByTagName("SPECIFICATION"),extractRootNode);
+    return xmlSpecifications.length < 1 ? [] : Array.from(xmlSpecifications[0].getElementsByTagName("SPECIFICATION"),extractRootNode);
 
     function extractRootNode(xmlSpecification) {
-        let specifRootNode = {};
-        specifRootNode.resource = xmlSpecification.getAttribute("IDENTIFIER");
-        specifRootNode.id = "HR-" + specifRootNode.resource;
-        //console.log( specifRootNode.id)
-        specifRootNode.changedAt = addTimezoneIfMissing(xmlSpecification.getAttribute("LAST-CHANGE"));
-        specifRootNode.nodes = extractSpecIfSubNodes(xmlSpecification)
-        return specifRootNode;
+        let rId = xmlSpecification.getAttribute("IDENTIFIER");
+        return {
+            id: "HR-" + rId,
+            resource: rId,
+            changedAt: addTimezoneIfMissing(xmlSpecification.getAttribute("LAST-CHANGE")),
+            nodes: extractSpecIfSubNodes(xmlSpecification)
+        };
 
         function extractSpecIfSubNodes(rootElement) {
             let specifNodesArray = [];
             const childrenDocElement = getChildNodeswithTag(rootElement, "CHILDREN")[0];
             if(childrenDocElement != undefined){
-                specifNodesArray = Array.from(childrenDocElement.children,extractSpecIfHierarchy)
+                specifNodesArray = Array.from(childrenDocElement.children,extractSpecifNode)
             };
             return specifNodesArray;
 
             function getChildNodeswithTag(parentDocument, nodeName) {
                 return Array.from(parentDocument.children).filter(element => {return element.nodeName == nodeName});
             }
-            function extractSpecIfHierarchy(hierarchyDocument) {
-                let specifHierarchy = {};
-                specifHierarchy.id = hierarchyDocument.getAttribute("IDENTIFIER");
-                specifHierarchy.resource = hierarchyDocument.getElementsByTagName("OBJECT")[0].firstElementChild.innerHTML;
-                specifHierarchy.changedAt = addTimezoneIfMissing(hierarchyDocument.getAttribute("LAST-CHANGE"));
+            function extractSpecifNode(hierarchyDocument) {
+                let specifHierarchy = {
+                    id: hierarchyDocument.getAttribute("IDENTIFIER"),
+                    resource: hierarchyDocument.getElementsByTagName("OBJECT")[0].firstElementChild.innerHTML,
+                    changedAt: addTimezoneIfMissing(hierarchyDocument.getAttribute("LAST-CHANGE"))
+                };
                 
                 let specifSubnodesArray = extractSpecIfSubNodes(hierarchyDocument);
                 if( specifSubnodesArray.length>0 ) 

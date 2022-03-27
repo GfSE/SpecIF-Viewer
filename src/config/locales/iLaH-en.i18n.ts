@@ -43,6 +43,8 @@ function LanguageTextsEn() {
 //	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
 	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 //	self.IcoAbout = '<i class="fa fa-copyright"></i>';
+	self.IcoRelation = '<i class="bi-link-45deg" ></i>';
+	self.IcoReport = '<i class="bi-bar-chart-line" ></i>';
 
 // Buttons:
 //	self.LblImportReqif = 'ReqIF Import';
@@ -242,8 +244,8 @@ function LanguageTextsEn() {
 	self.BtnDetails = 'Details';
 	self.BtnAddRole = self.IcoAdd +'&#160;Role';
 	self.BtnFileSelect = self.IcoAdd +'&#160;Select file ...';
-//	self.BtnPrevious = '<i class="bi-chevron-up"></i>&#160;' + self.LblPrevious;
-//	self.BtnNext = '<i class="bi-chevron-down"></i>&#160;' + self.LblNext;
+//	self.BtnPrevious = self.IcoPrevious+'&#160;' + self.LblPrevious;
+//	self.BtnNext = self.IcoNext+'&#160;' + self.LblNext;
 //	self.BtnGo = self.IcoGo+'&#160;'+self.LblGo;
 	self.BtnFilterReset = self.IcoFilter+'&#160;New';
 	self.BtnSelectHierarchy = "Select a hierarchy (outline)";
@@ -272,11 +274,11 @@ function LanguageTextsEn() {
 //	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Page';
 //	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Revisions';
 //	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Timeline';
-	self.TabRelations = '<i class="bi-link-45deg"></i>&#160;Relations';
+	self.TabRelations = self.IcoRelation +'&#160;Relations';
 //	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Sort';
 //	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Images and Files';
 //	self.TabComments = self.IcoComment+'&#160;Comments';
-	self.TabReports = '<i class="bi-bar-chart-line"></i>&#160;Reports';
+	self.TabReports = self.IcoReport +'&#160;Reports';
 
 // Functions:
 //	self.FnProjectCreate = self.IcoAdd+'&#160;Project';
@@ -598,6 +600,7 @@ function LanguageTextsEn() {
 	self.SpecIF_statusWithdrawn = "90_withdrawn";
 
 // Messages:
+	self.MsgIntro = 'Are you new here? Read a short <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction</a>, if you like.';
 	self.MsgConfirm = 'Please confirm:';
 	self.MsgConfirmDeletion = "Delete '~A'?";
 	self.MsgConfirmObjectDeletion = "Delete resource '<b>~A</b>' ?";
@@ -619,7 +622,7 @@ function LanguageTextsEn() {
 	self.MsgOtherProject = "Late response; another project has been selected meanwhile";
 	self.MsgWaitPermissions = 'Please wait while loading the permissions.';
 /*	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.'; */
-	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
+	self.MsgImportReqif = 'Permissible filetypes are *.reqif or *.reqifz. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
 	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';
 	self.MsgImportBpmn = 'Permissible filetype is *.bpmn. The content must conform with the schema BPMN 2.0 XML. The import may take a couple of minutes.';
 	self.MsgImportXls = 'Permissible filetypes are *.xls, *.xlsx and *.csv. The import may take a couple of minutes for very large files.';
@@ -691,7 +694,7 @@ function LanguageTextsEn() {
 	self.ErrInvalidFile = 'Invalid file.';
 	self.ErrInvalidFileType = "Invalid file type of '~A'.";
 	self.ErrInvalidAttachment = "Invalid file type. Please select one of ~A.";
-	self.ErrInvalidFileReqif = "Invalid file type of '~A'. Please select '*.reqifz', '*.reqif', '*.zip' or '*.xml'.";
+	self.ErrInvalidFileReqif = "Invalid file type of '~A'. Please select '*.reqif' or '*.reqifz'.";
 	self.ErrInvalidFileSpecif = "Invalid file type of '~A'. Please select '*.specif.zip', '*.specifz' or '*.specif'.";
 	self.ErrInvalidFileBpmn = "Invalid file type of '~A'. Please select '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "Invalid file type of '~A'. Please select '*.xml'.";

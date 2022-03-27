@@ -11,6 +11,6 @@
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\modules\\resourceEdit.mod.ts",
+  "SelectedNode": "\\src\\config\\definitions.ts",
   "PreviewInSolutionExplorer": false
 }

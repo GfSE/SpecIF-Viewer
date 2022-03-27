@@ -43,6 +43,8 @@ function LanguageTextsDe() {
 //	self.IcoLogout = '<span class="glyphicon glyphicon-log-out"></span>';
 	self.IcoAbout = '<strong>&#169;</strong>'; // copyright sign
 //	self.IcoAbout = '<i class="fa fa-copyright"></i>';
+	self.IcoRelation = '<i class="bi-link-45deg" ></i>';
+	self.IcoReport = '<i class="bi-bar-chart-line" ></i>';
 
 // Buttons:
 //	self.LblImportReqif = 'ReqIF Import';
@@ -242,8 +244,8 @@ function LanguageTextsDe() {
 	self.BtnDetails = 'Details';
 	self.BtnAddRole = self.IcoAdd +'&#160;Rolle';
 	self.BtnFileSelect = self.IcoAdd+'&#160;Datei auswählen ...';
-//	self.BtnPrevious = '<i class="bi-chevron-up"></i>&#160;' + self.LblPrevious;
-//	self.BtnNext = '<i class="bi-chevron-down"></i>&#160;' + self.LblNext;
+//	self.BtnPrevious = self.IcoPrevious+'&#160;' + self.LblPrevious;
+//	self.BtnNext = self.IcoNext+'&#160;' + self.LblNext;
 //	self.BtnGo = self.IcoGo+'&#160;'+self.LblGo;
 	self.BtnFilterReset = 	self.IcoFilter+'&#160;Neu';
 	self.BtnSelectHierarchy = "Gliederung auswählen";
@@ -272,11 +274,11 @@ function LanguageTextsDe() {
 //	self.TabPage = '<span class="glyphicon glyphicon-file"></span>&#160;Seite';
 //	self.TabRevisions = '<span class="glyphicon glyphicon-grain"></span>&#160;Revisionen';
 //	self.TabTimeline = '<span class="glyphicon glyphicon-film"></span>&#160;Zeitleiste';
-	self.TabRelations = '<i class="bi-link-45deg"></i>&#160;Relationen';
+	self.TabRelations = self.IcoRelation +'&#160;Relationen';
 //	self.TabSort = '<span class="glyphicon glyphicon-magnet"></span>&#160;Sortieren';
 //	self.TabAttachments = '<span class="glyphicon glyphicon-paperclip"></span>&#160;Bilder und Dateien';
 //	self.TabComments = self.IcoComment+'&#160;Kommentare';
-	self.TabReports = '<i class="bi-bar-chart-line"></i>&#160;Berichte';
+	self.TabReports = self.IcoReport +'&#160;Berichte';
 
 // Functions:
 //	self.FnProjectCreate = self.IcoAdd+'&#160;Projekt';
@@ -598,6 +600,7 @@ function LanguageTextsDe() {
 	self.SpecIF_statusWithdrawn = "90_zurückgezogen";
 
 // Messages:
+	self.MsgIntro = 'Sind Sie neu hier? Lesen Sie eine kurze <a href="' + CONFIG.QuickStartGuideDe + '" target="_blank" rel="noopener">Einführung</a>, wenn Sie mögen.';
 	self.MsgConfirm = 'Bitte bestätigen:';
 	self.MsgConfirmDeletion = "'~A' löschen?";
 	self.MsgConfirmObjectDeletion = "Ressource '<b>~A</b>' löschen?";
@@ -619,7 +622,7 @@ function LanguageTextsDe() {
 	self.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 	self.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
 /*	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.'; */
-	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
+	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqif oder *.reqifz. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
 	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';
 	self.MsgImportBpmn = 'Zulässiger Dateityp *.bpmn. Inhalte müssen den Schemata für BPMN 2.0 XML entsprechen. Der Import kann bis zu einigen Minuten dauern.';
 	self.MsgImportXls = 'Zulässige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import kann bei sehr großen Dateien mehrere Minuten dauern.';
@@ -691,7 +694,7 @@ function LanguageTextsDe() {
 	self.ErrInvalidFile = 'Ungültige oder unzulässige Datei.';
 	self.ErrInvalidFileType = "'~A' hat einen unzulässigen Dateityp.";
 	self.ErrInvalidAttachment = "Unzulässiger Dateityp. Wählen Sie bitte unter ~A.";
-	self.ErrInvalidFileReqif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.reqifz', '*.reqif', '*.zip' oder '*.xml'.";
+	self.ErrInvalidFileReqif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.reqif' oder '*.reqifz'.";
 	self.ErrInvalidFileSpecif = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.specif.zip', '*.specifz' oder '*.specif'.";
 	self.ErrInvalidFileBpmn = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.bpmn'.";
 	self.ErrInvalidFileTogaf = "'~A' hat einen unzulässigen Dateityp. Wählen Sie '*.xml'.";

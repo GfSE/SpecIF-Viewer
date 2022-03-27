@@ -20,10 +20,10 @@ moduleManager.construct({
 		zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
 		opts:any,
-		errNoOptions: xhrMessage = { status: 899, statusText: 'No options or no mediaTypes defined.' },
-		errNoReqif: xhrMessage = { status: 901, statusText: 'No ReqIF file in the reqifz container.' },
+		errNoOptions: xhrMessage = { status: 896, statusText: 'No options or no mediaTypes defined.' },
+		errNoReqifFile: xhrMessage = { status: 897, statusText: 'No ReqIF file in the reqifz container.' },
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
-		errInvalidXML: xhrMessage = { status: 900, statusText: 'ReqIF data is not valid XML.' };
+		errInvalidXML: xhrMessage = { status: 898, statusText: 'ReqIF data is not valid XML.' };
 		
 	self.init = (options:any):boolean =>{
 		mime = undefined;
@@ -71,7 +71,7 @@ moduleManager.construct({
 				fileL = zip.filter( (relPath, file) => {return file.name.endsWith('.reqif')});
 
 				if( fileL.length < 1 ) {
-					zDO.reject( errNoReqif );
+					zDO.reject( errNoReqifFile );
 					return zDO
 				};
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
@@ -87,13 +87,22 @@ moduleManager.construct({
 						// - all property values are encoded as string, even if boolean, integer or double.
 
 						if (!validateXML(dta)) {
-							//console.log(dta)
+							//console.debug(dta)
 							zDO.reject( errInvalidXML );
 							return zDO;
 						};
+						// XML data is valid:
+						// @ts-ignore - transformReqif2Specif() is loaded at runtime
+						let result = transformReqif2Specif(dta, { translateTitle2Specif: vocabulary.property.specif });
+						if (result.status != 0) {
+							//console.debug(dta)
+							zDO.reject(result);
+							return zDO;
+						};
+
 						// ReqIF data is valid:
 						// @ts-ignore - transformReqif2Specif() is loaded at runtime
-						resL.unshift( transformReqif2Specif( dta, {translateTitle2Specif:vocabulary.property.specif} ) );
+						resL.unshift( result.response );
 
 						// add all other files (than reqif) to the last specif data set:
 						if( --pend<1 )
@@ -134,11 +143,13 @@ moduleManager.construct({
 									if( pend < 1 ) 
 										// no suitable file found, continue anyways:
 										zDO.resolve( resL );	
-								} else {
+								} 
+								else {
 									// no files with permissible types are supplied:
 									zDO.resolve( resL );
 								};
-							} else {
+							} 
+							else {
 								// no function for filtering and mapping the mediaTypes supplied:
 								console.error(errNoOptions.statusText);
 								// but import anyways:
@@ -147,7 +158,8 @@ moduleManager.construct({
 					});
 				};
 			});
-		} else {
+		} 
+		else {
 			//try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
@@ -157,13 +169,18 @@ moduleManager.construct({
                 
 				let str = LIB.ab2str(buf);
                 if( validateXML(str) ) {
-					// @ts-ignore - transformReqif2Specif() is loaded at runtime
-					var data = transformReqif2Specif( str, {translateTitle2Specif:vocabulary.property.specif} );
 					// transformReqif2Specif gibt string zurück
-                    zDO.resolve( data );
-                } else {
-                    zDO.reject( errInvalidXML );
-                }
+					// @ts-ignore - transformReqif2Specif() is loaded at runtime
+				var result = transformReqif2Specif(str, { translateTitle2Specif: vocabulary.property.specif });
+				if (result.status == 0)
+					zDO.resolve(result.response)
+				else
+					zDO.reject(result);
+
+			}
+			else {
+				zDO.reject(errInvalidXML);
+			}
 		};
 		return zDO;
 
@@ -172,7 +189,8 @@ moduleManager.construct({
 				let parser = new DOMParser();
 				let xmlDoc = parser.parseFromString(xml_data,"text/xml");
 				return xmlDoc.getElementsByTagName('parsererror').length<1
-			} else { 
+			} 
+			else { 
 				let xmlDoc = new ActiveXObject("Microsoft.XMLDOM");          //compatability for older IE versions
 				xmlDoc.async = false;
 				return (xmlDoc.loadXML(xml_data)? true : false );
@@ -195,13 +213,14 @@ moduleManager.construct({
 		if( !Array.isArray(opts.hierarchyRoots) ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
 
 
-		const RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
+		const
+			RE_hasDiv = /^<([a-z]{1,6}:)?div>.+<\/([a-z]{1,6}:)?div>$/,
 			RE_class = / class=\"[^\"]+\"/g,
 			RE_objectName = /(<object[^>]*) name=\"[^\"]+\"/g,
 			RE_objectId = /(<object[^>]*) id=\"[^\"]+\"/g,
-			RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g;
+			RE_aTarget = /(<a[^>]*) target=\"[^\"]+\"/g,
 			
-		const date = new Date().toISOString(),
+			date = new Date().toISOString(),
 			ns = 'xhtml';
 
 		// ------------------------------------------------------------------------------

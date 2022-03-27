@@ -377,31 +377,31 @@ function toOxml( data, opts ) {
 						if( cell ) {
 							// The subjects:
 							row = wTableCell({
-									content:cell,
-									border:{type:'single'}
+									content: cell,
+									border: { type: 'single', sides: 'TB' }
 								});
 							// The predicate:
 							row += wTableCell({
-									content:wParagraph({
+									content: wParagraph({
 											text:sTi,
 											format:{
-												font: {color:opts.colorAccent1},
+												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
 												noSpacing:true
 											}
 									}),
-									border:{type:'single'}
+									border: { type: 'single', sides: 'TB' }
 								});
 							// The object:
 							row += wTableCell({
-									content:wParagraph({ 
+									content: wParagraph({ 
 											text:titleOf( r, undefined, opts ), 
 											format:{
 												font: {color:opts.colorAccent1},
 												noSpacing: true
 											}
 									}),
-									border: {type:'single'}
+									border: { type: 'single', sides: 'TB' }
 								});
 							ct += wTableRow( row )
 						}
@@ -431,39 +431,39 @@ function toOxml( data, opts ) {
 						if( cell ) {
 							// The subject:
 							row = wTableCell({
-									content:wParagraph({
-											text:titleOf( r, undefined, opts ),
+									content: wParagraph({
+											text: titleOf( r, undefined, opts ),
 											format:{
 												font: {color:opts.colorAccent1},
 												noSpacing: true,
 												align:'end'
 											}
 									}), 
-									border:{type:'single'}
+									border: { type: 'single', sides: 'TB' }
 								});
 							// The predicate:
 							row += wTableCell({
-									content:wParagraph({
+									content: wParagraph({
 											text:sTi,
 											format:{
-												font: {color:opts.colorAccent1},
+												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
 												noSpacing: true
 											}
 									}),
-									border:{type:'single'}
+									border: { type: 'single', sides: 'TB' }
 								});
 							// The objects:
 							row += wTableCell({
-									content:cell,
-									border:{type:'single'}
+									content: cell,
+									border: { type: 'single', sides: 'TB' }
 								});
 							ct += wTableRow( row )
 						}
 					}
 				};
 //				console.debug('statementsOf',ct);
-				return wTable( {content:ct,width:'full'} )
+				return wTable( {content:ct,width:100} )
 			}
 			function anchorOf( resId ) {
 				// Find the hierarchy node id for a given resource;
@@ -537,22 +537,34 @@ function toOxml( data, opts ) {
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
 						);
 //						console.debug('other properties',p,rt,c3);
-						rows += wTableRow( wTableCell( wParagraph({
-														text:rt,
-														format:{
-															font:{style:'italic',color:opts.colorAccent1},
-															noSpacing: true,
-															align:'end'
-														}
-													})) 
-											+ wTableCell( c3 ))
+						rows += wTableRow(wTableCell({
+											content: 
+												wParagraph({
+													text: rt,
+													format: {
+														font: { style: 'italic', color: opts.colorAccent1 },
+														noSpacing: true,
+														align: 'end'
+													}
+												}),
+											border: { sides: "TB" },
+											width: 20 // in percent of table-width
+										})
+										+ wTableCell({
+											content: c3,
+											border: { sides: "TB" }
+										})
+							)
 					}
 				});
 				
-				if( !rows ) return c1;  // no other properties
-				return c1 
-						+ wParagraph( {text: opts.propertiesLabel, format:{heading: 4}} )
-						+ wTable( rows );
+				return c1
+					+	(rows ? (
+									wParagraph({ text: opts.propertiesLabel, format: { heading: 4 } })
+									//	+ wTable(rows);
+									+ wTable({ content: rows, width: 100 })
+								)
+							: '');
 
 				// ---------------
 			/*	function parseText( txt, opts ) {
@@ -587,7 +599,7 @@ function toOxml( data, opts ) {
 					// Prepare:
 					// Remove empty <div> tags:
 					txt = txt.replace(/<div[^>]*>\s*<\/div>|<div *\/>/g,'');
-					if( !txt ) return [];
+					if (!txt) return opts.showEmptyProperties? [{ p: { text: "" } }] : [];
 
 					// Identify and separate the blocks:
 					var blocks = splitBlocks(txt);
@@ -686,7 +698,6 @@ function toOxml( data, opts ) {
 											// the 'th' cell with it's content
 											// $1 is undefined in case of <th/>
 											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp ), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
-											// ToDo: Somehow the text is not printed boldly ...
 											return '';
 											});
 									$1 = $1.replace(/<td[^\/>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g, function($0,$1) {
@@ -738,7 +749,8 @@ function toOxml( data, opts ) {
 						
 						function splitR(p) {
 							let txt = p.text,
-								fmt = p.font?{font:{weight:p.font.weight,style:p.font.style,color:p.font.color}}:{font:{}};
+								fmt = p.format || {};
+							if (!fmt.font) fmt.font = {};
 							p.runs = [];
 //							console.debug('splitR',txt,fmt.font);
 
@@ -758,7 +770,8 @@ function toOxml( data, opts ) {
 
 								// store the preceding text as run with a clone of the current formatting:
 								if( opts.hasContent($1) )
-									p.runs.push({text:$1,format:{font:clone(fmt.font)}});
+								//	p.runs.push({text:$1,format:{font:clone(fmt.font)}});
+									p.runs.push({ text: $1, format: clone(fmt) });
 
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
@@ -837,7 +850,8 @@ function toOxml( data, opts ) {
 							// finally store the remainder:
 							if( opts.hasContent(txt) ) {
 //								console.debug('splitR #',txt,fmt);
-								p.runs.push({text:txt,format:{font:clone(fmt.font)}})
+							//	p.runs.push({text:txt,format:{font:clone(fmt.font)}})
+								p.runs.push({ text: txt, format: clone(fmt) })
 							};
 							delete p.text;
 							delete p.font;
@@ -850,7 +864,7 @@ function toOxml( data, opts ) {
 						}
 					}
 					function splitText(txt) {
-						var tf, arr=[], br={};
+						var arr=[], br={};
 						txt = txt.replace( reText, function($0,$1,$2) {
 							br={};
 							// store the preceding fragment:
@@ -993,7 +1007,8 @@ function toOxml( data, opts ) {
 							// The dynamic link has NOT been matched/replaced, so mark it:
 							return {text:lk[1],color:"82020"}
 						};
-					return null  // should never arrive here
+					// should never arrive here
+					throw Error("SpecIF to WORD: Invalid title link.");
 				}
 				function propertyValueOf( prp ) {
 					// In a first transformation step, return the value of a single property
@@ -1047,7 +1062,8 @@ function toOxml( data, opts ) {
 								});
 								return wTable( rs )
 							};
-							return null // should never get here
+							// should never get here
+							throw Error("SpecIF to WORD: Invalid content type.");
 						}
 					)
 					
@@ -1289,8 +1305,9 @@ function toOxml( data, opts ) {
 					let str = '';
 					// the array may hold fragments of text or line-breaks:
 					ct.text.forEach( function(c) {
-						if( c.str ) str += '<w:t xml:space="preserve">'+c.str+'</w:t>';
-						if( c['break']=='line' ) str += '<w:cr />'
+						if (c.str) str += '<w:t xml:space="preserve">' + c.str + '</w:t>';
+						// see http://officeopenxml.com/WPtextSpecialContent-break.php
+						if( c['break']=='line' ) str += '<w:br/>'
 					});
 					return str;
 				};
@@ -1361,13 +1378,13 @@ function toOxml( data, opts ) {
 				// ct can be 
 				// - a 'string' 
 				// - an object {content:'string'}
-				// - an object {content:'string',width:'full'}
+				// - an object {content:'string',width:100} // full column width
 				if( !rs || typeof(rs)=='object'&&!rs.content ) return '';
 				return 	'<w:tbl>'
 					+		'<w:tblPr>'
 					+			'<w:tblStyle w:val="Tabellenraster"/>'
-					+		(rs.width&&rs.width=='full'?'<w:tblW w:w="5000" w:type="pct"/>':'<w:tblW w:w="0" w:type="auto"/>')
-			//		+			'<w:tblW w:w="0" w:type="auto"/>'
+							// in WORD, a percent value is given as the fiftieth of a percent, so 100% == 5000 (without unit)
+					+		(rs.width==100? '<w:tblW w:w="5000" w:type="pct"/>' : '<w:tblW w:w="0" w:type="auto"/>')
 					+			'<w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>'
 					+		'</w:tblPr>'
 					+ 		(rs.content || rs)
@@ -1380,13 +1397,14 @@ function toOxml( data, opts ) {
 			}
 			function wTableCell( c ) {
 				return '<w:tc>'
-					+	'<w:tcPr>'
-					+		'<w:tcW w:w="0" w:type="auto"/>'
+					+ '<w:tcPr>'
+							// in WORD, a percent value is given as the fiftieth of a percent, so 100% == 5000 (without unit)
+					+		(c.width ? '<w:tcW w:w="'+c.width*50+'" w:type="pct"/>' : '<w:tcW w:w="0" w:type="auto"/>')
 					+		tcBorders(c)
-		//			+		'<w:tcMar>'
-		//			+			'<w:left w:w="20" w:type="dxa"/>'
-		//			+			'<w:right w:w="20" w:type="dxa"/>'
-		//			+		'</w:tcMar>'
+			//		+		'<w:tcMar>'
+			//		+			'<w:left w:w="20" w:type="dxa"/>'
+			//		+			'<w:right w:w="20" w:type="dxa"/>'
+			//		+		'</w:tcMar>'
 					+		'<w:vAlign w:val="center"/>'
 					+	'</w:tcPr>'
 					+ (c.content || c)
@@ -1395,10 +1413,10 @@ function toOxml( data, opts ) {
 				function tcBorders(c) {
 					if( !c.border ) return '';
 					return 	'<w:tcBorders>'
-						+		'<w:top w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>'
-						+		'<w:left w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>'
-						+		'<w:bottom w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>'
-						+		'<w:right w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>'
+						+		(!c.border.sides || c.border.sides.indexOf("T")>-1? '<w:top w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>' : '')
+						+		(!c.border.sides || c.border.sides.indexOf("R")>-1? '<w:right w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
+						+		(!c.border.sides || c.border.sides.indexOf("B")>-1? '<w:bottom w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
+						+		(!c.border.sides || c.border.sides.indexOf("L")>-1? '<w:left w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
 						+	'</w:tcBorders>'
 				}
 			}
@@ -1478,10 +1496,8 @@ function toOxml( data, opts ) {
 		+			'<pkg:binaryData>'
 		// find the referenced image:
 		let imgIdx = indexById(imageL,b64.id);
-		if( imgIdx<0 ) {
-			console.error("File '"+b64.id+"' is referenced, but not available");
-			return null
-		};
+		if( imgIdx<0 )
+			throw Error("File '"+b64.id+"' is referenced, but not available");
 		
 		let startIdx = imageL[imgIdx].b64.indexOf(',')+1;	// image data starts after the ','
 
@@ -2722,11 +2738,11 @@ function toOxml( data, opts ) {
 		return // undefined
 	}
 	function itemByTitle(L,ln) {
-		if(!L||!ln) return null;
+		if(!L||!ln) return;
 		// given a title of an element in a list, return the element itself:
 		for( var i=L.length-1;i>-1;i-- )
 			if( L[i].title==ln ) return L[i];   // return list item
-		return null
+		return
 	}
 	function indexById(L,id) {
 		if( L && id ) {
