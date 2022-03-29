@@ -2364,7 +2364,7 @@ moduleManager.construct({
 					// find the property defining the type:
 					pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
 					// Remember whether at least one diagram has been found:
-					isNotADiagram = CONFIG.diagramClasses.indexOf(resClassTitleOf(res, dta)) < 0;
+					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, dta)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram

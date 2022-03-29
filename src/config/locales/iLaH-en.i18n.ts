@@ -639,7 +639,7 @@ function LanguageTextsEn() {
 	self.MsgNoReports = 'No reports for this project.';
 	self.MsgTypeNoObjectType = "Please add at least one resource-class, otherwise no resources can be created.";
 	self.MsgTypeNoAttribute = "Please add at least one attribute, otherwise the type is not useful.";
-	self.MsgNoObjectTypeForManualCreation = "Ressources cannot be created, because of missing permission or because there are no resourc-types for manual creation.";
+	self.MsgNoObjectTypeForManualCreation = "Ressources cannot be created, because of missing permission or because there are no resource-types for manual creation.";
 	self.MsgFilterClogged = 'Filter is clogged - at least one branch will not yield any results!';
 	self.MsgCredentialsUnknown = 'Credentials are unknown to the system.';
 	self.MsgUserMgmtNeedsAdminRole = 'Please ask an administrator to manage the users and roles.';

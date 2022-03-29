@@ -43,6 +43,19 @@ function transformReqif2Specif(reqifDoc,options) {
         xhr.response.hierarchies = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
     };
 
+    // get project title from hierarchy roots in case of default;
+    // for example the ReqIF exports from Cameo do not have a TITLE:
+    if (!xhr.response.title) {
+        let ti = '', r;
+        xhr.response.hierarchies.forEach((h) => {
+            r = itemById(xhr.response.resources, h.resource);
+            ti += (ti.length > 0 ? ', ' : '') + r.title;
+        });
+        xhr.response.title = ti;
+        console.info('Project title assembled from ReqIF SPECIFICATION roots');
+    };
+
+
 //  console.info(xhr);
     return xhr;
 
@@ -321,6 +334,14 @@ function parse(string) {
 /* 
 ########################## Tools #########################################  
 */
+    function itemById(L, id) {
+        if (L && id) {
+            // given an ID of an item in a list, return it's index:
+            id = id.trim();
+            for (var i = L.length - 1; i > -1; i--)
+                if (L[i].id == id) return L[i]   // return list item
+        };
+    }
     /*
     //      (xmlns:.*?=)\\".*?\\" Regular Expression to match namespace links (at beginning)
     String.prototype.removeNamespace = function(){

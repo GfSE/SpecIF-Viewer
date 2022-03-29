@@ -67,7 +67,7 @@ moduleManager.construct({
 //		console.debug('reports.show');
 		prj = app.cache.selectedProject;
 		pData = prj.data;
-		self.parent.showLeft.reset();
+		self.parent.showLeft.reset();  // no panel to the left
 
 		// Language options have been selected at project level:
 		opts.targetLanguage = self.parent.targetLanguage;
@@ -148,8 +148,8 @@ moduleManager.construct({
 			}
 		addStatementClassReport();  */
 					
-		function addEnumeratedValueReports() {
-			function addPossibleValues(pC: SpecifPropertyClass, rep) {
+			function addEnumeratedValueReports() {
+				function addPossibleValues(pC: SpecifPropertyClass, rep) {
 					// Look up the dataType and create a counter for all possible enumerated values:
 					for( var d=0, D=pData.dataTypes.length; d<D; d++ ) {
 						if (pData.dataTypes[d].id == pC.dataType ) {
@@ -229,26 +229,27 @@ moduleManager.construct({
 					}
 										
 				// a) The histogram of resource classes; it is the first report panel:
-				let rId = res['class'],
-					j = LIB.indexById( self.list[0].datasets, rId );
+				let rK = res['class'],
+					j = LIB.indexByKey( self.list[0].datasets, rK );
 //				console.debug( 'evalResource j', res, j );
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
-				let rC = pData.get("resourceClass", rId )[0];
-				// there is a report for every enumerated resourceClass:
+				let rC = pData.get("resourceClass", rK )[0];
+
+				// prepare a report for every enumerated resourceClass:
 				let dT=null,oa=null,i=null,ct=null,pC;
-				rC.propertyClasses.forEach( (pId) =>{
-					pC = pData.get("propertyClass", pId )[0];
+				rC.propertyClasses.forEach( (pK) =>{
+					pC = pData.get("propertyClass", pK )[0];
 					dT = pData.get("dataType", pC.dataType )[0];
-					if( dT.type!='xs:enumeration' ) return;
+					if (!dT.enumeration || dT.enumeration.length<1 ) return;
 					// find the report panel:
-					i = findPanel(self.list,rId,pId);
+					i = findPanel(self.list,rK,pK);
 //					console.debug( 'evalResource i', pC, i );
 					if( i>-1 ) { 
 						// report panel found; it is assumed it is of type 'xs:enumeration'.
 						// check whether the resource has a property of this type:
-						oa = LIB.itemBy( res.properties, 'class', pId );
+						oa = LIB.itemBy( res.properties, 'class', pK );
 						if( oa && oa.value.trim().length ) {  
 							// has a value:
 //							console.debug( 'evalResource a', oa );
@@ -368,8 +369,8 @@ moduleManager.construct({
 		//	case 'statementClass':
 			// cannot filter by 'statement', yet
 			case 'enumValue':
-				fL.push({category: 'resourceClass', options: [itm.rCid]});  // pid: project-id
-				fL.push({category: 'enumValue', rCid: itm.rCid, pCid: itm.pCid, options: [itm.datasets[cX].id]})  // rCid: type-id
+				fL.push({ category: 'resourceClass', options: [itm.rCid] });  // rCid: resourceClass id
+				fL.push({category: 'enumValue', rCid: itm.rCid, pCid: itm.pCid, options: [itm.datasets[cX].id]})  
 		};
 //		console.debug( 'countClicked', itm, cX, fL );
 		// show the resources:
