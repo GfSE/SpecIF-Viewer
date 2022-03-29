@@ -100,8 +100,17 @@ class CSpecIF implements SpecIF {
 		return typeof (spD.id) == 'string' && spD.id.length > 0;
 	}
 	set(spD:any,opts?:any) {
+
 		return new Promise(
 			(resolve, reject) => {
+				// refuse to import any data-set with SpecIF > 1.0:
+				if (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0) {
+					let txt = "Can not yet import SpecIF above v1.0";
+					console.log(txt);
+					reject({ status: 999, statusText: txt });
+					return; // undefined 
+				};
+
 				if (opts && opts.noCheck) {
 					this.toInt(spD);
 					resolve(this)

@@ -639,7 +639,7 @@ function LanguageTextsDe() {
 	self.MsgNoReports = 'Keine Auswertungen für dieses Projekt.';
 	self.MsgTypeNoObjectType = "Mindestens eine Ressource-Klasse anlegen, sonst können keine Ressourcen erzeugt werden.";
 	self.MsgTypeNoAttribute = "Mindestens ein Attribut anlegen, sonst ist der Typ nicht brauchbar.";
-	self.MsgNoObjectTypeForManualCreation = "Es können keine Ressourcen angelegt werden, weil entweder keine Rechte eingeräumt sind oder weil kein Ressouce-Typ für manuelles Anlegen vorgesehen ist.";
+	self.MsgNoObjectTypeForManualCreation = "Es können keine Ressourcen angelegt werden, weil entweder keine Rechte eingeräumt sind oder weil kein Ressource-Typ für manuelles Anlegen vorgesehen ist.";
 	self.MsgFilterClogged = 'Filter ist undurchlässig - mindestens ein Kriterium ist nicht erfüllbar.';
 	self.MsgCredentialsUnknown = 'Anmeldeinformation ist unbekannt.';
 	self.MsgUserMgmtNeedsAdminRole = 'Bitten Sie einen Administrator die Nutzer und Rollen zu verwalten.';
