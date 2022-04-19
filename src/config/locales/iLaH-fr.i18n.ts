@@ -518,6 +518,7 @@ function LanguageTextsFr() {
 //	self.SpecIF_SubClass = "Sous-classe";
 	self.SpecIF_Category = 	self.LblCategory;
 	self.SpecIF_State =								// DEPRECATED
+	self.SpecIF_LifecycleStatus =
 	self.SpecIF_Status = 	self.LblState;
 	self.SpecIF_Priority = 	self.LblPriority;
 	self.SpecIF_Milestone = "Jalon";

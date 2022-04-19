@@ -71,17 +71,17 @@ class CPropertyToShow implements SpecifProperty {
 						});
 					}
 					else */
-				this.values.forEach((v: any, i: number) => { str += (i == 0 ? '' : ', ') + LIB.languageValueOf(v, opts); });
+				this.values.forEach((v: any, i: number) => { str += (i<1? '' : ', ') + LIB.languageValueOf(v, opts); });
 				return str;
 			};
 			// else
-			throw Error("When displaying property values, a target language must be specified.");
+			throw Error("When displaying a property value, a target language must be specified.");
 		};
 		// else, all data types except string:
-		this.values.forEach((v: any, i: number) => { str += (i == 0 ? '' : ', ') + v; });
+		this.values.forEach((v: any, i: number) => { str += (i<1? '' : ', ') + v; });
 		return str;
 
-		/*	let ct = '',
+	/*	let ct = '',
 				eV;
 			console.debug('enumValueOf',dT,val,opts);
 			dT.enumeration.forEach( (v,i)=>{
@@ -131,10 +131,10 @@ class CPropertyToShow implements SpecifProperty {
 				ct = this.titleLinks(ct, opts);
 				break;
 			case SpecifDataTypeEnum.DateTime:
-				ct = LIB.localDateTime(this.value);
+				ct = LIB.localDateTime(this.values[0]);   // multiple values not yet supported
 				break;
 			default:
-				ct = this.value;
+				ct = this.allValuesByLanguage(opts);
 		};
 	/*	// Add 'double-angle quotation' in case of stereotype values:
 		if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
@@ -555,7 +555,7 @@ class CResourceToShow {
 			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
-	private normalizeProps(el: SpecifResource): CPropertyToShow[] {
+/*	private normalizeProps(el: SpecifResource): CPropertyToShow[] {
 		// el: original instance (resource or statement)
 		// Create a list of properties in the sequence of propertyClasses of the respective class.
 		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
@@ -600,7 +600,7 @@ class CResourceToShow {
 		});
 //		console.debug('normalizeProps result',simpleClone(nL));
 		return nL; // normalized property list
-	}
+	} */
 	isEqual(res: SpecifResource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }

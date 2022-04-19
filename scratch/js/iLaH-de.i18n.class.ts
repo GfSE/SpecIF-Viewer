@@ -495,6 +495,7 @@ class LanguageTextsDe {
 //	SpecIF_SubClass = "Unterklasse";
 	SpecIF_Category = 	this.LblCategory;
 	SpecIF_State =								// DEPRECATED
+	SpecIF_LifecycleStatus =
 	SpecIF_Status = 	this.LblState;
 	SpecIF_Priority = 	this.LblPriority;
 	SpecIF_Milestone = "Meilenstein";

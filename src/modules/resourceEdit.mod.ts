@@ -64,24 +64,24 @@ class DialogForm {
 // Construct the resource editor:
 moduleManager.construct({
 	name: CONFIG.resourceEdit
-}, (self: IModule) =>{
+}, (self: IModule) => {
 	"use strict";
 
 	let myName = self.loadAs,
-		myFullName = 'app.'+myName,
-		pData:CCache,			// the cached data
-		opts:any,				// the processing options
-		toEdit:CResourceToShow;	// the resource with classified properties to edit
+		myFullName = 'app.' + myName,
+		pData: CCache,			// the cached data
+		opts: any,				// the processing options
+		toEdit: CResourceToShow;	// the resource with classified properties to edit
 
 	self.newFiles = [];			// collect uploaded files before committing the change
 	self.dialogForm = new DialogForm();
 
-	self.init = ():boolean =>{
+	self.init = (): boolean => {
 //		console.debug('resourceEdit.init')
 		self.clear();
 		return true;
 	};
-	self.clear = ():void =>{
+	self.clear = (): void => {
 		self.newFiles.length = 0;
 		self.dialogForm = new DialogForm();
 	};
@@ -91,62 +91,62 @@ moduleManager.construct({
 		cancel: {
 			id: 'btn-modal-cancel',
 			label: i18n.BtnCancel,
-			action: (thisDlg:any)=>{ 
+			action: (thisDlg: any) => {
 //				console.debug('action cancelled');
 				thisDlg.close();
 			}
 		},
-		update: { 	
+		update: {
 			id: 'btn-modal-update',
 			label: i18n.BtnUpdateObject,
 			cssClass: 'btn-success btn-modal-save',
-			action: (thisDlg:any)=>{
+			action: (thisDlg: any) => {
 				save('update');
 				thisDlg.close();
-			}  
-		},	
+			}
+		},
 		insert: {
 			id: 'btn-modal-insert',
 			label: i18n.BtnInsert,
-			cssClass: 'btn-success btn-modal-save', 
-			action: (thisDlg: any)=>{
+			cssClass: 'btn-success btn-modal-save',
+			action: (thisDlg: any) => {
 				save('insert');
 				thisDlg.close();
-			}  
-		},	
+			}
+		},
 		insertAfter: {
 			id: 'btn-modal-insertAfter',
 			label: i18n.BtnInsertSuccessor,
-			cssClass: 'btn-success btn-modal-save', 
-			action: (thisDlg: any)=>{
+			cssClass: 'btn-success btn-modal-save',
+			action: (thisDlg: any) => {
 				save('insertAfter');
 				thisDlg.close();
-			}  
+			}
 		},
-		insertBelow: { 	
+		insertBelow: {
 			id: 'btn-modal-insertBelow',
 			label: i18n.BtnInsertChild,
-			cssClass: 'btn-success btn-modal-save', 
-			action: (thisDlg: any)=>{
+			cssClass: 'btn-success btn-modal-save',
+			action: (thisDlg: any) => {
 				save('insertBelow');
 				thisDlg.close();
-			}  
+			}
 		}
 	};
 
 	// The module entry;
-	self.show = ( options:any )=>{
+	self.show = (options: any) => {
 
 		self.clear();
 		pData = app.cache.selectedProject.data;
-		opts = simpleClone( options );
-		if( self.parent.tree.selectedNode )
+		opts = simpleClone(options);
+		if (self.parent.tree.selectedNode)
 			opts.selNodeId = self.parent.tree.selectedNode.id;
 
 //		console.debug('resourceEdit.show',opts);
-		switch( opts.mode ) {
+		switch (opts.mode) {
 			case 'create':
-				selectResClass( opts )
+				selectResClass(opts)
 				.then(
 					(rC:SpecifResourceClass)=>{ 
 						app.cache.selectedProject.createResource(rC)
@@ -173,6 +173,29 @@ moduleManager.construct({
 					},
 					LIB.stdError
 				);
+			/*	.then(
+					(rC: SpecifResourceClass) => {
+						return app.cache.selectedProject.createResource(rC)
+				})
+				.then(
+					(r: SpecifResource) => {
+//						console.debug( '#', opts.mode, r );
+						self.newRes = r;
+						opts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageValueOf(rC.title) + ')';
+						if (opts.selNodeId)
+							opts.msgBtns = [
+								msgBtns.cancel,
+								msgBtns.insertAfter,
+								msgBtns.insertBelow
+							]
+						else
+							opts.msgBtns = [
+								msgBtns.cancel,
+								msgBtns.insert
+							];
+						editResource(r, opts);
+				})
+				.catch ( LIB.stdError ); */
 				break;
 			case 'clone':
 			case 'update':
@@ -224,14 +247,14 @@ moduleManager.construct({
 					message: () => {
 						var form = '<div style="max-height:'+($('#app').outerHeight(true)-190)+'px; overflow:auto" >';
 						// field for the title property:
-						form += editP(toEdit.title);
+						form += editPrp(toEdit.title);
 						// fields for the description properties: 
 						toEdit.descriptions.forEach( (d)=>{
-							form += editP(d);
+							form += editPrp(d);
 						});
 						// fields for the remaining properties:
 						toEdit.other.forEach( (p)=>{
-							form += editP(p);
+							form += editPrp(p);
 						});
 						form += '</div>';
 						return $( form );
@@ -241,7 +264,7 @@ moduleManager.construct({
 				.open();
 			return;
 			
-			function editP(p) {
+			function editPrp(p) {
 				// Return a form element for a property;
 				// works only if the classes are cached:
 				let pC = pData.get("propertyClass", p['class'])[0],
@@ -260,9 +283,8 @@ moduleManager.construct({
 				// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
 				switch (dT ? dT.type : "xs:string") {
 					case 'xs:string':
-					case 'xhtml':
 						if (LIB.propTitleOf(p, pData) == CONFIG.propClassDiagram) {
-							// it is a diagram reference (works only with XHTML-fields):
+							// it is a diagram reference (thus an XHTML-formatted field):
 							return renderDiagram(p, opts)
 						}
 						else {
@@ -271,7 +293,7 @@ moduleManager.construct({
 							// it is a text;
 							// in case of xhtml, it may contain a diagram reference, 
 							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//							console.debug( 'editP', LIB.languageValueOf(p.value,opts) );
+//							console.debug( 'editPrp', LIB.languageValueOf(p.value,opts) );
 							return textField(
 								ti,
 								LIB.languageValueOf(p.value, opts),
@@ -284,7 +306,7 @@ moduleManager.construct({
 								} 
 							);
 						};
-					case 'xs:enumeration':
+			/*		case 'xs:enumeration':
 						// no input checking needed:
 						let separatedValues = p.value.split(','),
 							vals = LIB.forAll( dT.values, (v)=>{ return {title:i18n.lookup(LIB.languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
@@ -292,7 +314,7 @@ moduleManager.construct({
 						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple )
 							return checkboxField(ti, vals, { description: pC.description } );
 						else
-							return radioField(ti, vals, { description: pC.description } );
+							return radioField(ti, vals, { description: pC.description } );  */
 					case 'xs:boolean':
 						// no input checking needed:
 //						console.debug('xs:boolean',ti,p,pC);
@@ -442,7 +464,7 @@ moduleManager.construct({
 		Array.from( document.getElementsByClassName('btn-modal-save'), (btn)=>{
 			btn.disabled = notOk;
 		})
-	//	console.debug('input made',document.getElementsByClassName('btn-modal-save'));
+//		console.debug('input made',document.getElementsByClassName('btn-modal-save'));
 	};
 
 	function save(mode) {

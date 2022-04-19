@@ -249,9 +249,10 @@ class CCache {
 	}
 	clear(ctg?:string):void {
 		if (ctg)
-			// @ts-ignore - shouldn't be undefined:
+			// @ts-ignore - in this branch it is not undefined:
 			this[standardTypes.listName.get(ctg)].length = 0
 		else
+			// clear all lists, if undefined:
 			for (var le of standardTypes.listName.keys())
 				// @ts-ignore - shouldn't be undefined:
 				this[standardTypes.listName.get(le)].length = 0;
@@ -488,7 +489,7 @@ class CProject {
 										// c) create a new id and update all references:
 										// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-										let alterId = keyOf(nT);
+										let alterId = LIB.keyOf(nT);
 										nT.id += '-' + simpleHash(new Date().toISOString());
 										ty.substitute(nD, nT, alterId );
 										itmL.push(nT);
@@ -659,6 +660,41 @@ class CProject {
 					);
 			};
 		}
+	}
+	createResource(rC: SpecifResourceClass): Promise<SpecifResource> {
+		// Create an empty form (resource instance) for the resource class rC:
+		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
+		// and https://javascript.info/promise-chaining
+		return new Promise(
+			(resolve, reject) => {
+				// Get the class's permissions. So far, it's property permissions are not loaded ...
+				var res: SpecifResource;
+
+				this.readContent('resourceClass', rC, { reload: true })
+					.then(
+						(rCL: SpecifResourceClass[]) => {
+							//							console.debug('#1',rC);
+							// return an empty resource instance of the given type:
+							res = {
+								id: LIB.genID('R-'),
+								class: rCL[0].id,
+								title: '',
+								permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
+								properties: []
+							};
+							return this.readContent('propertyClass', rC.propertyClasses, { reload: true })
+						}
+					)
+					.then(
+						(pCL: SpecifPropertyClass[]) => {
+							//							console.debug('#2',pCL);
+							res.properties = LIB.forAll(pCL, LIB.createProp);
+							resolve(res)
+						}
+					)
+					.catch(reject);
+			}
+		);
 	}
 	private hookStatements(): void {
 		let dta = this.data;
@@ -930,11 +966,13 @@ class CProject {
 				function Folder(fId: string, ti: string): SpecifResource[] {
 					var fL: SpecifResource[] = [{
 						id: fId,
-						class: { "id": "RC-Folder" },
-						title: ti,
+						class: LIB.makeKey("RC-Folder"),
 						properties: [{
-							class: { "id": "PC-Type" },
-							values: [CONFIG.resClassProcesses]
+							class: LIB.makeKey("PC-Name" ),
+							values: [LIB.makeMultiLanguageText(ti)]
+						}, {
+							class: LIB.makeKey("PC-Type" ),
+							values: [LIB.makeMultiLanguageText(CONFIG.resClassProcesses)]
 						}],
 						changedAt: tim
 					}];
@@ -1027,10 +1065,10 @@ class CProject {
 					return LIB.resClassTitleOf(r, dta) == CONFIG.resClassDiagram
 						|| LIB.valuesByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
 						|| dta.get("statement","all").filter(
-							(sta) => {
-								return LIB.staClassTitleOf(sta) == CONFIG.staClassShows && sta.subject == r.id
-							}
-						).length > 0;
+								(sta) => {
+									return LIB.staClassTitleOf(sta) == CONFIG.staClassShows && LIB.isReferenced(r,sta.subject)
+								}
+							).length > 0;
 				}
 			/*	function extractByType(fn) {
 						var L=[], el;
@@ -1151,41 +1189,6 @@ class CProject {
 			}
 		)
 	}
-	createResource(rC: SpecifResourceClass): Promise<SpecifResource> {
-		// Create an empty form (resource instance) for the resource class rC:
-		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
-		// and https://javascript.info/promise-chaining
-		return new Promise(
-			(resolve, reject) => {
-				// Get the class's permissions. So far, it's property permissions are not loaded ...
-				var res: SpecifResource;
-
-				this.readContent('resourceClass', rC, { reload: true })
-					.then(
-						(rCL: SpecifResourceClass[]) => {
-//							console.debug('#1',rC);
-							// return an empty resource instance of the given type:
-							res = {
-								id: LIB.genID('R-'),
-								class: rCL[0].id,
-								title: '',
-								permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
-								properties: []
-							};
-							return this.readContent('propertyClass', rC.propertyClasses, { reload: true })
-						}
-					)
-					.then(
-						(pCL: SpecifPropertyClass[]) => {
-//							console.debug('#2',pCL);
-							res.properties = LIB.forAll(pCL, LIB.createProp);
-							resolve(res)
-						}
-					)
-					.catch(reject);
-			}
-		);
-	}
 	createContent(ctg: string, item: SpecifItem[] | SpecifItem): Promise<SpecifItem> {
 		// item can be a js-object or a list of js-objects
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
@@ -1216,16 +1219,13 @@ class CProject {
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		if (!opts) opts = { reload: false, timelag: 10 };
 
-		// override 'reload' as long as there is no server and we know that the resource is found in the cache:
-		opts.reload = false;
-
 		return new Promise(
 			(resolve, reject) => {
-				if (opts.reload) {
+			/*	if (opts.reload) {
 					// try to get the items from the server, but meanwhile:
 					reject({ status: 745, statusText: "No server available" })
 				}
-				else {
+				else { */
 					// return the cached object asynchronously:
 					// delay the answer a little, so that the caller can properly process a batch:
 					setTimeout(() => {
@@ -1235,7 +1235,7 @@ class CProject {
 							item = this.hierarchies;  */
 						resolve(this.data.get(ctg, item));
 					}, opts.timelag);
-				};
+			//	};
 			}
 		);
 	}
