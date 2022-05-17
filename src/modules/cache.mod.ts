@@ -106,15 +106,17 @@ class CCache {
 				};
 				return true;
 			case 'node':
-				if (Array.isArray(item))
-					throw Error("No list of nodes supported.");
+				if (Array.isArray(item)) {
+					item.forEach((n) => { this.putNode(n as INodeWithPosition) });
+					return true
+				};
 //				console.debug('cache',ctg,item);
 				return this.putNode(item as INodeWithPosition);
 			default:
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 	}
-	get(ctg: string, req: SpecifKey[] | SpecifKey | string): SpecifItem[] {
+	get(ctg: string, req: SpecifKey[] | string): SpecifItem[] {
 		// Read items from cache
 		// - req can be single or a list,
 		// - each element can be an object with key
@@ -123,41 +125,28 @@ class CCache {
 			return [];
 
 		// @ts-ignore - addressing is perfectly ok
-		let itmL = this[standardTypes.listName.get(ctg)],
-			idx: number;
+		let itmL = this[standardTypes.listName.get(ctg)];
 
 		if (req == 'all')
 			return [].concat(itmL);	  // return all cached items in a new list
 
-		if (Array.isArray(req)) {
-			let allFound = true, i = 0, I = req.length;
-			var rL: SpecifItem[] = [];
-			while (allFound && i < I) {
-				idx = LIB.indexByKey(itmL, req[i] );
-				if (idx > -1) {
-					rL.push(itmL[idx]);
-					i++;
-				}
-				else
-					allFound = false;
-			};
-			if (allFound)
-				return rL;
+		let allFound = true, i = 0, I = req.length, idx: number;
+		var rL: SpecifItem[] = [];
+		while (allFound && i < I) {
+			idx = LIB.indexByKey(itmL, req[i] );
+			if (idx > -1) {
+				rL.push(itmL[idx]);
+				i++;
+			}
 			else
-				return [];
-		}
-		else {
-			// is a single item:
-			idx = LIB.indexByKey(itmL, req );
-			if (idx > -1)
-				return [itmL[idx]]
-			else
-				return [];
+				allFound = false;
 		};
+		if (allFound)
+			return rL;
+		else
+			return [];
 	}
-	delete(ctg: string, item: SpecifKey[] | SpecifNode[] | SpecifKey | SpecifNode): boolean | undefined {
-		if (!item) return;
-		let fn = Array.isArray(item) ? LIB.uncacheL : LIB.uncacheE;
+	delete(ctg: string, itemL: SpecifKey[] ): boolean | undefined {
 		switch (ctg) {
 			case 'hierarchy':
 			case 'dataType':
@@ -165,26 +154,23 @@ class CCache {
 			case 'resourceClass':
 			case 'statementClass':
 				// @ts-ignore - addressing is perfectly ok
-				return fn(this[standardTypes.listName.get(ctg)], item);
+				return LIB.uncacheL(this[standardTypes.listName.get(ctg)], itemL);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances)
 					// @ts-ignore - addressing is perfectly ok
-					return fn(this[standardTypes.listName.get(ctg)], item);
+					return LIB.uncacheL(this[standardTypes.listName.get(ctg)], itemL);
 				return true;
 			case 'node':
-				if (Array.isArray(item))
-					item.forEach((el):void => { delNodes(this.hierarchies, el) })
-				else
-					delNodes(this.hierarchies, item );
+				itemL.forEach((el):void => { delNodes(this.hierarchies, el) })
 				return true;
 			default:
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 		// all cases have a return statement ..
 
-		function delNodes(L: SpecifNode[]|undefined, el: SpecifNode|SpecifKey): void {
+		function delNodes(L: SpecifNode[]|undefined, el: SpecifKey): void {
 			// Delete all nodes specified by the element;
 			// if el is the node, 'id' will be used to identify it (obviously at most one node),
 			// and if el is the referenced resource, 'resource' will be used to identify all referencing nodes.
@@ -209,7 +195,7 @@ class CCache {
 		// 1. Delete the node, if it exists somewhere to prevent
 		//    that there are multiple nodes with the same id;
 		//    Thus, 'putNode' is in fact a 'move':
-		this.delete('node', LIB.keyOf(e));
+		this.delete('node', [LIB.keyOf(e)]);
 
 		// 2. Insert the node, if the predecessor exists somewhere:
 		if (e.predecessor && LIB.iterateNodes(
@@ -375,7 +361,7 @@ class CProject {
 					pend = standardTypes.iterateLists(
 						(ctg: string, listName: string) => {
 							// @ts-ignore - the indexing works fine:
-							this.createContent(ctg, nD[listName])
+							this.createItems(ctg, nD[listName])
 								.then(finalize, cDO.reject);
 						}
 					);
@@ -414,7 +400,7 @@ class CProject {
 			(resolve, reject) => {
 				pend = standardTypes.iterateLists(
 					(ctg: string, listName:string) => {
-						this.readContent(ctg, 'all')
+						this.readItems(ctg, 'all', opts)
 						.then(
 							(values) => {
 								// @ts-ignore - indexing by string works fine
@@ -503,7 +489,7 @@ class CProject {
 							// @ts-ignore - nD[ty.listName] is a valid address
 							console.info((nD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
 							pend++;
-							this.createContent(ty.category, itmL)
+							this.createItems(ty.category, itmL)
 								.then(finalize, aDO.reject);
 						};
 					});
@@ -592,13 +578,13 @@ class CProject {
 						});
 						console.info((nD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
 						pend++;
-						this.createContent('resource', itmL)
+						this.createItems('resource', itmL)
 							.then(finalize, aDO.reject);
 					};
 //					console.debug('#3',simpleClone(dta),simpleClone(nD));
 
 					// 3. Create the remaining items;
-					// this.createContent('statement', nD.statements) could be called, 
+					// this.createItems('statement', nD.statements) could be called, 
 					// but then the new elements would replace the existing ones.
 					// In case of 'adopt' the existing shall prevail!
 					if (Array.isArray(nD.statements)) {
@@ -614,11 +600,11 @@ class CProject {
 						});
 						console.info((nD.statements.length - itmL.length) + " statements adopted and " + itmL.length + " added.");
 						pend++;
-						this.createContent('statement', itmL)
+						this.createItems('statement', itmL)
 							.then(finalize, aDO.reject);
 					};
 					pend++;
-					this.createContent('hierarchy', nD.hierarchies)
+					this.createItems('hierarchy', nD.hierarchies)
 						.then(finalize, aDO.reject);
 
 					if (Array.isArray(nD.files)) {
@@ -634,7 +620,7 @@ class CProject {
 						});
 						console.info((nD.files.length - itmL.length) + " files adopted and " + itmL.length + " added.");
 						pend++;
-						this.createContent('file', itmL)
+						this.createItems('file', itmL)
 							.then(finalize, aDO.reject);
 					};
 				},
@@ -670,19 +656,18 @@ class CProject {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
 				var res: SpecifResource;
 
-				this.readContent('resourceClass', rC, { reload: true })
+				this.readItems('resourceClass', [LIB.keyOf(rC)], { reload: true })
 					.then(
 						(rCL: SpecifResourceClass[]) => {
 							//							console.debug('#1',rC);
 							// return an empty resource instance of the given type:
 							res = {
 								id: LIB.genID('R-'),
-								class: rCL[0].id,
-								title: '',
-								permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
+								class: LIB.makeKey(rCL[0].id),
+							//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
 								properties: []
 							};
-							return this.readContent('propertyClass', rC.propertyClasses, { reload: true })
+							return this.readItems('propertyClass', rC.propertyClasses, { reload: true })
 						}
 					)
 					.then(
@@ -883,7 +868,7 @@ class CProject {
 							dta.get("hierarchy", "all"),
 							(nd: SpecifNode) => {
 								// get the referenced resource:
-								res = dta.get("resource", nd.resource)[0] as SpecifResource;
+								res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 								// find the property defining the type:
 								pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
 								// collect all nodes to delete, there should be only one:
@@ -902,7 +887,7 @@ class CProject {
 
 						// 2. Delete any existing folders:
 						//    (Alternative: Keep folder and delete only the children.)
-						this.deleteContent('node', delL)
+						this.deleteItems('node', delL)
 							.then(
 								() => {
 									// Create a folder with all respective objects (e.g. diagrams):
@@ -948,7 +933,7 @@ class CProject {
 												// or as first element at root level, otherwise:
 												if (singleHierarchyRoot)
 													nd.parent = dta.hierarchies[0].id;
-												this.createContent('node', nd)
+												this.createItems('node', nd)
 													.then(resolve, reject);
 											})
 											.fail(reject);
@@ -1001,7 +986,7 @@ class CProject {
 					dta.get("hierarchy","all"),
 					(nd: SpecifNode): boolean => {
 						// get the referenced resource:
-						res = dta.get("resource", nd.resource)[0] as SpecifResource;
+						res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 						// check, whether it is a glossary:
 						pV = LIB.valuesByTitle(res, CONFIG.propClassType, this.data);
 						// collect all items to delete, there should be only one:
@@ -1018,7 +1003,7 @@ class CProject {
 				);
 				// 1.2 Delete now:
 //				console.debug('createFolderWithGlossary',delL,diagramL);
-				this.deleteContent('node', delL)
+				this.deleteItems('node', delL)
 					.then(
 						() => {
 							// 2. Create a new combined glossary:
@@ -1189,14 +1174,14 @@ class CProject {
 			}
 		)
 	}
-	createContent(ctg: string, item: SpecifItem[] | SpecifItem): Promise<SpecifItem> {
+	createItems(ctg: string, item: SpecifItem[] | SpecifItem): Promise<SpecifItem> {
 		// item can be a js-object or a list of js-objects
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 		// ...  not all of them may be implemented, so far.
 		// cache the value before sending it to the server, as the result is not received after sending (except for 'resource' and 'statement')
 		return new Promise(
 			(resolve) => {
-//				console.debug('createContent', ctg, item );
+//				console.debug('createItems', ctg, item );
 			/*	switch( ctg ) {
 				//	case 'resource':
 				//	case 'statement':
@@ -1214,13 +1199,13 @@ class CProject {
 			}
 		);
 	}
-	readContent(ctg: string, item: SpecifKey[] | SpecifKey | string, opts?: any): Promise<SpecifItem[]> {
-//		console.debug('readContent', ctg, item, opts);
+	readItems(ctg: string, itemL: SpecifKey[] | string, opts?: any): Promise<SpecifItem[]> {
+//		console.debug('readItems', ctg, item, opts);
 		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
 		if (!opts) opts = { reload: false, timelag: 10 };
 
 		return new Promise(
-			(resolve, reject) => {
+			(resolve) => {
 			/*	if (opts.reload) {
 					// try to get the items from the server, but meanwhile:
 					reject({ status: 745, statusText: "No server available" })
@@ -1233,13 +1218,67 @@ class CProject {
 						if (ctg == "hierarchy" && item == "all")
 							// Return only the hierarchies of this project:
 							item = this.hierarchies;  */
-						resolve(this.data.get(ctg, item));
+						let items = this.data.get(ctg, itemL);
+						// Normalize the properties if desired:
+						if (opts.showEmptyProperties && ['resource', 'statement'].indexOf(ctg) > -1) {
+							items.forEach((itm: any) => {
+								// classes are alwways cached, so we can use this.data:
+								itm.properties = normalizeProperties(itm, this.data)
+							})
+						};
+//						console.debug('readItems',opts,items)
+						resolve(items);
 					}, opts.timelag);
 			//	};
 			}
 		);
+
+		function normalizeProperties(el: SpecifInstance, dta: CCache): SpecifProperty[] {
+			// el: original instance (resource or statement)
+			// Create a list of properties in the sequence of propertyClasses of the respective class.
+			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+			// Property classes must be unique!
+
+			// check uniqueness of property classes:
+			if (el.properties) {
+				let idL: string[] = [],
+					pCid: string;
+				el.properties.forEach((p: SpecifProperty) => {
+					pCid = p['class'].id;
+					if (idL.indexOf(pCid) < 0)
+						idL.push(pCid);
+					else
+						console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
+				});
+			};
+
+			let p: SpecifProperty,
+				pCs: SpecifKeys, // keys of propertyClasses
+				nL: SpecifProperty[] = [],  // normalized property list
+				// iCs: instance class list (resourceClasses or statementClasses),
+				// the existence of subject (or object) let's us recognize that it is a statement:
+				// @ts-ignore - existance of subject signifies whether it is a resource or statement
+				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
+				iC = LIB.itemByKey(iCs, el['class']);
+
+			// build a list of propertyClass identifiers including the extended class':
+			pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
+			pCs = pCs.concat(iC.propertyClasses);
+
+			// add the properties in sequence of the propertyClass identifiers:
+			pCs.forEach((pC: SpecifKey): void => {
+				// skip hidden properties:
+				if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
+				// assuming that the property classes are unique:
+				p = LIB.itemBy(el.properties, 'class', pC);
+				nL.push(p || { class: pC, values: [] })
+			});
+//			console.debug('normalizeProps result',simpleClone(nL));
+			return nL; // normalized property list
+		}
+
 	}
-	updateContent (ctg: string, item: SpecifItem[] | SpecifItem): Promise<void> {
+	updateItems (ctg: string, item: SpecifItem[] | SpecifItem): Promise<void> {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
 		function updateCh(itm: SpecifItem): void {
 			itm.changedAt = new Date().toISOString();
@@ -1256,7 +1295,7 @@ class CProject {
 					//	case 'hierarchy':
 					// no break
 					default:
-//						console.debug('updateContent - cache', ctg );
+//						console.debug('updateItems - cache', ctg );
 						if (Array.isArray(item))
 							item.forEach(updateCh)
 						else
@@ -1267,7 +1306,7 @@ class CProject {
 			}
 		);
 	}
-	deleteContent(ctg: string, item: SpecifKey[]|SpecifKey): Promise<void> {
+	deleteItems(ctg: string, item: SpecifKey[]): Promise<void> {
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 /*			function isInUse( ctg, itm ) {
 					function dTIsInUse( L, dT ) {
@@ -1315,7 +1354,7 @@ class CProject {
 				return false
 			}  */
 
-//		console.debug('deleteContent',ctg,item);
+//		console.debug('deleteItems',ctg,item);
 		return new Promise(
 			(resolve, reject) => {
 				// Do not delete types which are in use;
@@ -1333,7 +1372,7 @@ class CProject {
 					case "resource":
 					case "statement":
 					case "node":
-//						console.debug('deleteContent',ctg,item);
+//						console.debug('deleteItems',ctg,item);
 						if (this.data.delete(ctg, item))
 							break;
 						reject({ status: 999, statusText: ctg + ' ' + item.id + ' not found and thus not deleted.' });
@@ -1363,11 +1402,11 @@ class CProject {
 		let sCL: SpecifStatementClass[];
 		return new Promise(
 			(resolve, reject) => {
-				this.readContent('statementClass', 'all')
+				this.readItems('statementClass', 'all')
 					.then(
 						(sCs: SpecifStatementClass[]) => {
 							sCL = sCs;
-							return this.readContent('statement', 'all');
+							return this.readItems('statement', 'all');
 						}
 					)
 					.then(
@@ -2216,7 +2255,7 @@ class CProject {
 		);
 	}
 	abort(): void {
-		console.info('abort cache');
+		console.info('abort project');
 	//	server.abort();
 		this.abortFlag = true;
 	};
@@ -2441,7 +2480,7 @@ function Project(): IProject {
 					// else: the type does not exist and will be created, therefore:
 					pend++;
 					console.info('Creating type',nT.title);
-					self.createContent(nT.category,nT)
+					self.createItems(nT.category,nT)
 						.done(()=>{
 							if( --pend<1 ) updateNext( ctg )
 						})
@@ -2496,7 +2535,7 @@ function Project(): IProject {
 					// For the time being, upload all files anyways. The server does not save duplicate blobs.
 					// So we lose 'only' the transfer time.
 					if( newD.files && newD.files.length>0 )
-						self.updateContent(ctg,newD.files)
+						self.updateItems(ctg,newD.files)
 							.done( ()=>{
 								// Wait for all files to be loaded, so that resources will have higher revision numbers:
 								newD.files = [];
@@ -2593,7 +2632,7 @@ function Project(): IProject {
 			function updateInstanceIfChanged(ctg:string,nI) {
 				// Update an element/item of the specified category, if changed.
 				pend++;
-				self.readContent(ctg,nI,true)	// reload from the server to obtain most recent data
+				self.readItems(ctg,nI,true)	// reload from the server to obtain most recent data
 					.done( (rI)=>{
 						// compare actual and new item:
 //						console.debug('updateInstanceIfChanged',ctg,rI,nI);
@@ -2615,7 +2654,7 @@ function Project(): IProject {
 							});
 							console.info('Updating instance',nI.title);
 							// ToDo: Test whether only supplied properties are updated by the server; otherwise implement the behavior, here.
-							self.updateContent( ctg, nI )
+							self.updateItems( ctg, nI )
 								.done( updateTreeIfChanged( ctg, rI, nI ) )	// update the tree, if necessary.
 								.fail( uDO.reject )
 						} 
@@ -2639,7 +2678,7 @@ function Project(): IProject {
 							case 404:
 //								console.debug('not found',xhr.status);
 								// no item with this id, so create a new one:
-								self.createContent(ctg,nI)
+								self.createItems(ctg,nI)
 									.done(()=>{
 										if( --pend<1 ) updateNext( ctg )
 									})
@@ -2685,7 +2724,7 @@ function Project(): IProject {
 				// In case of a resource or statement, the tree operations are skipped:
 				if( ctg == 'hierarchy' && treeChanged(aI,nI) ) {
 					message.show( i18n.MsgOutlineAdded, {severity:'info', duration:CONFIG.messageDisplayTimeShort} );
-			//		self.deleteContent('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
+			//		self.deleteItems('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
 					newIds(nI);
 					server.project(app.cache.selectedProject.data).specification(nI).createChildren()
 						.done( ()=>{
@@ -2719,7 +2758,7 @@ function Project(): IProject {
 	function loadFiles() {
 		// in case of ReqIF Server, only a list of file meta data is delivered,
 		// whereas in case of PouchDB, the files themselves are delivered.
-		return self.readContent( 'file', 'all', {reload:true} )
+		return self.readItems( 'file', 'all', {reload:true} )
 	}
 	function loadObjsOf( sp ) {
 		// Cache all resources referenced in the given spec (hierarchy):
@@ -2735,7 +2774,7 @@ function Project(): IProject {
 				var rL=[];
 				for( var o=oL.length-1;o>-1;o-- ) rL[o] = {id: oL[o]};
 
-				return server.readContent( 'resource', rL )
+				return server.readItems( 'resource', rL )
 					.done( (rsp)=>{
 						// continue caching, if the project hasn't been left, meanwhile:
 						if( sp ) {  // sp is null, if the project has been left.
@@ -2830,11 +2869,11 @@ function Project(): IProject {
 			// else, start the update:
 			loading = true;
 			// 1) load the dataTypes:
-			self.readContent( 'dataType', [], true )	// true: reload
+			self.readItems( 'dataType', [], true )	// true: reload
 				.done( ()=>{
 					if( autoLoadId && aU==autoLoadId ) {  // if the update hasn't been stopped, meanwhile
 						// 2) load allClasses:
-						self.readContent( 'anyClass', [], true )
+						self.readItems( 'anyClass', [], true )
 							.done( ()=>{
 								// new allClasses and the permissions have arrived.
 								// 3) update the current spec and the referenced resources:
@@ -2855,7 +2894,7 @@ function Project(): IProject {
 
 	function addPermissions( item ) {
 		// add permissions;
-		// for use with createContent and updateContent functions.
+		// for use with createItems and updateItems functions.
 		// Take the correct permissions from the type:
 		if( !item || Array.isArray(item)&&item.length<1 ) return;
 			function addPerms( itm ) {
@@ -2952,7 +2991,7 @@ moduleManager.construct({
 	//					loadRelsOf( self.selectedHierarchy );
 						// update the hierarchy (outline).
 						// it is done after the resources to reflect any change in the hierarchy made during the loading.
-						self.readContent( 'hierarchy', self.selectedHierarchy, true )	// true: reload
+						self.readItems( 'hierarchy', self.selectedHierarchy, true )	// true: reload
 							// - call cb to refresh the app:
 							.done( ()=>{
 								if( typeof(cb)=="function" ) cb();
@@ -3009,13 +3048,14 @@ moduleManager.construct({
 // global helper functions:
 function isReferencedByHierarchy(key: SpecifKey, H?: SpecifNode[]): boolean {
 	// checks whether a resource is referenced by the hierarchy:
+	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
 	return LIB.iterateNodes( H, (nd)=>{ return !LIB.isReferenced(nd.resource,key) } )
 }
 function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] {
 	// collect all resources referenced by the given hierarchy:
-	if( !prj ) prj = app.cache.selectedProject.data;
-	if( !H ) H = prj.hierarchies;
+	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
+	if (!H) H = app.cache.selectedProject.data.hierarchies;
 	var rL:SpecifResource[] = [];
 	LIB.iterateNodes( H, (nd)=>{ LIB.cacheE( rL, LIB.itemByKey(prj.resources,nd.resource) ); return true } );
 	return rL;

@@ -444,7 +444,6 @@ function LanguageTextsDe() {
 	self.SpecIF_Collection = "Kollektion oder Gruppe";
 	self.SpecIF_Collections = "Kollektionen und Gruppen";
 	self.SpecIF_CollectionDescription = "Eine '"+self.SpecIF_Collection+"' ist eine logische Gruppierung von '"+self.modelElements+"'.";
-	self.SpecIF_Annotations = "Annotationen";
 	self.SpecIF_Vote = "Wertung";
 	self.SpecIF_Votes = "Wertungen";
 	self.SpecIF_Perspective = "Perspektive";
@@ -485,14 +484,17 @@ function LanguageTextsDe() {
 	self.SpecIF_isAssociatedWith =
 	self.SysML_isAssociatedWith = "ist assoziiert mit";
 	self.SysML_isAllocatedTo = "wird ausgeführt von";
-	self.SysML_includes = "inkludiert";
+	self.SysML_includes = 
+	self.SpecIF_includes = "inkludiert";
+	self.SpecIF_excludes = "exkludiert";
+	self.SpecIF_mentions = "erwähnt";
 	self.SysML_extends = "erweitert";
 	self.SpecIF_isDerivedFrom = 
 	self.SysML_isDerivedFrom = "ist abgeleitet von";
 	self.SpecIF_isComposedOf = 
-	self.SysML_isComposedOf = "ist Komposition von";
+	self.SysML_isComposedOf = "besteht zwingend aus";
 	self.SpecIF_isAggregatedBy =
-	self.SysML_isAggregatedBy = "ist Aggregation von";
+	self.SysML_isAggregatedBy = "besteht aus";
 	self.SpecIF_isGeneralizationOf = 
 	self.SysML_isGeneralizationOf = "ist generalisiert von";
 	self.SpecIF_isSpecializationOf =
@@ -506,15 +508,13 @@ function LanguageTextsDe() {
 	self.SpecIF_refersTo = "bezieht sich auf";
 	self.SpecIF_commentRefersTo = 	self.SpecIF_refersTo;
 	self.SpecIF_issueRefersTo = 	self.SpecIF_refersTo;
-	self.SpecIF_includes = "schließt ein";
-	self.SpecIF_excludes = "schließt aus";
-	self.SpecIF_mentions = "erwähnt"; 
 	self.SpecIF_sameAs =
 	self.owl_sameAs = "ist identisch mit";
 	self.SpecIF_Id = 	self.LblIdentifier;
 	self.SpecIF_Type = 	self.LblType;
 	self.SpecIF_Notation = "Notation";
-//	self.SpecIF_Stereotype = 
+	self.UML_Stereotype = "Stereotyp";
+//	self.SpecIF_Stereotype =
 //	self.SpecIF_SubClass = "Unterklasse";
 	self.SpecIF_Category = 	self.LblCategory;
 	self.SpecIF_State =								// DEPRECATED
@@ -529,7 +529,7 @@ function LanguageTextsDe() {
 	self.SpecIF_UserStory = "User-Story";
 //	self.SpecIF_Creation = "";
 	self.SpecIF_Instantiation = "Instanziierung";
-	self.SpecIF_Origin = "Quelle";		// oder "Herkunft"
+	self.SpecIF_Origin = "Herkunft";		// oder "Quelle"
 	self.SpecIF_Source = self.LblSource;
 	self.SpecIF_Target = self.LblTarget;
 	self.SpecIF_DataObject = "Datenobjekt";
@@ -541,6 +541,8 @@ function LanguageTextsDe() {
 	self.SpecIF_UserRole = "Nutzerrolle";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
+	self.SpecIF_Annotations =
+	self.IR_Annotations = "Annotationen";
 	self.IR_AnnotationDescription = "Eine Interaction-Room '"+self.IR_Annotation+"' weist auf einen Punkt besonderen Interesses hin. Hierzu gehören Werte, die Kundenbedürfnisse widerspiegeln oder positiven Effekt auf die Ziele der Organisation haben, Produkteigenschaften, deren Umsetzung Nutzen/Aufwand verursacht, und Herausforderungen, die während der Entwicklung zu berücksichtigen sind.";
 	self.IR_refersTo = self.SpecIF_refersTo;
 	self.IR_approves = "unterstützt";

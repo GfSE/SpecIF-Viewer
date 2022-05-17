@@ -444,7 +444,6 @@ function LanguageTextsEn() {
 	self.SpecIF_Collection = "Collection or Group";
 	self.SpecIF_Collections = "Collections and Groups";
 	self.SpecIF_CollectionDescription = "A '"+self.SpecIF_Collection+"' is a logical grouping of '"+self.modelElements+"'.";
-	self.SpecIF_Annotations = "Annotations";
 	self.SpecIF_Vote = "Vote";
 	self.SpecIF_Votes = "Votes";
 	self.SpecIF_Perspective = "Perspective";
@@ -485,7 +484,10 @@ function LanguageTextsEn() {
 	self.SpecIF_isAssignedTo =
 	self.SysML_isAssociatedWith = "is associated with";
 	self.SysML_isAllocatedTo = "is executed by (allocated to)";
-	self.SysML_includes = "includes";
+	self.SysML_includes = 
+	self.SpecIF_includes = "includes";
+	self.SpecIF_excludes = "excludes";
+	self.SpecIF_mentions = "mentions";
 	self.SysML_extends = "extends";
 	self.SpecIF_isDerivedFrom = 
 	self.SysML_isDerivedFrom = "is derived from";
@@ -506,14 +508,12 @@ function LanguageTextsEn() {
 	self.SpecIF_refersTo = "refers to";
 	self.SpecIF_commentRefersTo = "refers to";
 	self.SpecIF_issueRefersTo = "refers to";
-	self.SpecIF_includes = "includes";
-	self.SpecIF_excludes = "excludes";
-	self.SpecIF_mentions = "mentions";
 	self.SpecIF_sameAs = 
 	self.owl_sameAs = "is same as";
 	self.SpecIF_Id = 	self.LblIdentifier;
 	self.SpecIF_Type = 	self.LblType;
 	self.SpecIF_Notation = "Notation";
+	self.UML_Stereotype = "Stereotype";
 //	self.SpecIF_Stereotype =
 //	self.SpecIF_SubClass = "SubClass";
 	self.SpecIF_Category = 	self.LblCategory;  
@@ -541,6 +541,8 @@ function LanguageTextsEn() {
 	self.SpecIF_UserRole = "User-Role";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
+	self.SpecIF_Annotations =
+	self.IR_Annotations = "Annotations";
 	self.IR_AnnotationDescription = "An Interaction-Room '"+self.IR_Annotation+"' indicates a point of special interest. Examples are customer or user value, product features with prominent benefit,effort or challenges during development.";
 	self.IR_refersTo = 	self.SpecIF_refersTo;
 	self.IR_approves = "approves";

@@ -763,7 +763,7 @@ String.prototype.jsIdOf = function():string {
 };
 // Make an id conforming with ReqIF and SpecIF:
 String.prototype.specifIdOf = function():string {
-	return this.replace( /[^_0-9a-zA-Z]/g, '_' );
+	return ( /[0-9]/.test(this[0])? '_':'' ) + this.replace( /[^_0-9a-zA-Z]/g, '_' );
 };
 /*
 function truncate(l:number):string {

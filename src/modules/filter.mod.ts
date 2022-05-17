@@ -9,7 +9,7 @@
 	// Primary or top-level filters apply to resources of all classes (scope: project), whereas
 	//    secondary filters are 'applicable', only if the corresponding resource class (scope: resourceClass) is selected.
 	// The filter lets a resource pass, if all primary filters plus all applicable secondary filters discover a match (conjunction of filter criteria).
-	// The filter architecture and algorithms (filterList, filterMatch and isClogged) support any combination of filters and selections. 
+	// The filter architecture and algorithms (filters, filterMatch and isClogged) support any combination of filters and selections. 
 	//    However, the GUI restricts the possible configurations towards more ease-of-use.
 	// The filters are built dynamically based on the project's classes. 
 	// If a filter for an ENUMERATION has only one option, it is omitted, as it is not useful.
@@ -90,8 +90,8 @@ interface IFilter {
 	primary: boolean,
 	scope: string,     
 	propClass: string,
-	dataType: string,
-	baseType: string,
+	dataType: SpecifKey,
+	baseType: SpecifDataTypeEnum,
 	searchString?: string;
 	options?: IBox[]
 }
@@ -101,16 +101,21 @@ moduleManager.construct({
 }, (self: IModule) =>{
 
 	let myName = self.loadAs,
-		myFullName = 'app.'+myName,
-		prj:any,
-		dta:SpecIF,
-		displayOptions:any = {};
-		
-	self.filterList = [];  // keep the filter descriptors for display and sequential execution
+		myFullName = 'app.' + myName,
+		prj: any,
+		dta: SpecIF;
+
+	self.filters = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
 
 	// Construct a Regex to isolate content from XHTML-tags:
-	const reA = '<a([^>]+)>([\\s\\S]*?)</a>',
+	const
+		displayOptions: any = {
+			targetLanguage: self.parent.targetLanguage,
+			lookupTitles: true,
+			lookupValues: true
+		},
+		reA = '<a([^>]+)>([\\s\\S]*?)</a>',
 		// A single comprehensive <img .../>:
 		reI = '<img([^>]+)/>',
 		// A single comprehensive <object .../> or tag pair <object ...>..</object>.
@@ -140,7 +145,7 @@ moduleManager.construct({
 		// Standard module interface methods:
 	self.init = (): boolean =>{
 //		console.debug( 'filters.init' );
-		self.filterList = [];
+		self.filters = [];
 		self.secondaryFilters = undefined;
 
 		// The left panel on this page (only for this view):
@@ -162,7 +167,7 @@ moduleManager.construct({
 	self.clear = (): void => {
 		self.secondaryFilters = undefined;
 		$('#filterNotice').empty();
-		self.filterList.length = 0;
+		self.filters.length = 0;
 		app.busy.reset();
 	};
 	self.hide = (): void => {
@@ -179,19 +184,15 @@ moduleManager.construct({
 
 	// standard module entry:
 	self.show = ( opts?:any ):void =>{   // optional urlParams or filter settings
-//		console.debug( 'filter.show', opts, self.filterList );
+//		console.debug( 'filter.show', opts, self.filters );
 		if( typeof( opts ) != 'object' ) opts = {};
 		prj = app.cache.selectedProject;
 		dta = prj.data;
 		self.parent.showLeft.reset();
 		$('#filterNotice').empty();
 
-        displayOptions.targetLanguage = self.parent.targetLanguage;
-        displayOptions.lookupTitles = true;
-        displayOptions.lookupValues = true;
-
-		// build filterList from the specTypes when executed for the first time:
-		if( self.filterList.length<1 || opts.filters || opts.forced ) 
+		// build filter list from the specTypes when executed for the first time:
+		if( self.filters.length<1 || opts.filters || opts.forced ) 
 			build( opts );  
 
 		// Now start the evaluation based on the current filter settings:
@@ -199,7 +200,7 @@ moduleManager.construct({
 			message.show(i18n.lookup('MsgFilterClogged') ); 
 			return;
 		};
-//		console.debug('filter.show',opts,self.filterList);
+//		console.debug('filter.show',opts,self.filters);
 
 		// Update browser history, if it is a view change, 
 		// but not navigation in the browser history:
@@ -211,7 +212,7 @@ moduleManager.construct({
 
 		// Show the panels with filter settings to the left:
 		let fps = '';
-		self.filterList.forEach((f: IFilter)=>{
+		self.filters.forEach((f: IFilter)=>{
 			fps += '<div class="panel panel-default panel-filter" >'
 				+	'<h4>'+f.title+'</h4>';
 			switch (f.baseType) {
@@ -252,11 +253,11 @@ moduleManager.construct({
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
-				prj.readContent( 'resource', nd.ref )
+				prj.readItems( 'resource', [nd.ref] )
 				.then(
 					(rL:SpecifResource[])=>{
 						h = match( new CResourceToShow(rL[0]) );
-//						console.debug('tree.iterate',self.filterList,pend,rsp[0],h);
+//						console.debug('tree.iterate',self.filters,pend,rsp[0],h);
 						if( h )	{
 							hitCnt++;
 							$('#hitlist').append( h.listEntry() );
@@ -317,34 +318,29 @@ moduleManager.construct({
 				
 				let // dummy = str,   // otherwise nothing is found, no idea why.
 					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
-					dT: SpecifDataType, a: number;
-				if (matchStr(res.title, { type: SpecifDataTypeEnum.String } as SpecifDataType )) return true;
+					a: number;
+				if ( matchStr(res.title ) ) return true;
 				for( a=res.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.descriptions[a], {type:'xhtml'} as SpecifDataType ) ) return true;
+					if( matchStr( res.descriptions[a] ) ) return true;
 				for( a=res.other.length-1; a>-1; a-- ) {
 					// for each property test whether it contains 'str':
-					dT = LIB.dataTypeOf(res.other[a]['class'], dta );
 //					console.debug('matchSearchString',f,res.other[a],dT,f.options);
-					if( matchStr( res.other[a], dT ) ) return true;
+					if( matchStr(res.other[a] ) ) return true;
 				};
 				return false;  // not found
 
-				function matchStr(prp: CPropertyToShow, dT: SpecifDataType): boolean {
-//					console.debug('matchStr',prp,dT.type);
-					switch( dT.type ) {
-						case 'xs:enumeration':
-							// only if enumerated values are included in the search:
-						//	if( !isChecked( f.options, 'excludeEnums' )) {
-								if( patt.test( LIB.enumValueOf(dT,prp.values,displayOptions) ) ) return true;
-						//	};
-							break;
+				function matchStr(prp: CPropertyToShow): boolean {
+//					console.debug('matchStr',prp,prp.get());
+					return patt.test(prp.get(displayOptions));
+				/*	// ToDo: ckeck for enumerated value and get it from the dataType
+					switch( prp.dT.type ) {
 						case SpecifDataTypeEnum.String:
-							if (patt.test( LIB.languageValueOf(prp.values[0], displayOptions).stripHTML() )) return true;
+							if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions).stripHTML() )) return true;
 							break;
 						default:
-							if( patt.test( LIB.languageValueOf(prp.values[0],displayOptions) )) return true;
+							if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions) )) return true;
 					};
-					return false;
+					return false; */
 				}
 			}
 			function matchPropValue(f:IFilter):boolean {   
@@ -450,7 +446,7 @@ moduleManager.construct({
 								    lE;
 								
 								lE = res.title;
-								lE.value = mark( LIB.languageValueOf(lE.value,displayOptions), rgxS );
+								lE.value = mark( LIB.languageValueOf(lE.values[0],displayOptions), rgxS );
 								// Clone the marked list elements for not modifying the original resources:
 								res.descriptions = res.descriptions.map((prp: CPropertyToShow) => {
 									return	new CPropertyToShow({
@@ -506,25 +502,25 @@ moduleManager.construct({
 				}
 			}
 			function isChecked( opts:any, id:string ):boolean {
-				let opt = itemById( opts, id );
+				let opt = LIB.itemById( opts, id );
 				return( opt && opt.checked )
 			}
 		
 //		console.debug('match',res);
 
 		// Top-level: for the given resource, apply all filters (cycle through all elements of the filter list),
-		// work the filterList from the beginning backwards, so that the primary filters are evaluated first.
+		// work the filter list from the beginning backwards, so that the primary filters are evaluated first.
 		// 'res' accumulates all markings without changing the original resource value in the project data (cache).
 		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
-		for( var i=0, I=self.filterList.length; res && i<I; i++) { 
-			res = matchAndMark( self.filterList[i] );
+		for( var i=0, I=self.filters.length; res && i<I; i++) { 
+			res = matchAndMark( self.filters[i] );
 		};
 		return res;
 	}
 	function isClogged():boolean {
 		// Return 'true', if the user's filter settings cannot produce any hit (empty hit-list due to overly restrictive settings):
 		// All top level filters must allow results plus all secondary filters per selected resourceClass
-		if( !self.filterList.length ) return false;   // all resources pass, if there is no filter.
+		if( !self.filters.length ) return false;   // all resources pass, if there is no filter.
 		let rCL:string[] = [];  // all resource classes included in the search
 
 			function checkResourceClass(f:IFilter):boolean {   // project scope applies to all resources:
@@ -556,12 +552,12 @@ moduleManager.construct({
 		// top-level:
 		var clogged = false;  // initialize
 		// must iterate with ascending index, because rCL is filled by checkResourceClass():
-		for( var i=0, I=self.filterList.length; !clogged && i<I; i++) {   
+		for( var i=0, I=self.filters.length; !clogged && i<I; i++) {   
 			// stop iterating right away if known it is clogged.
-			switch( self.filterList[i].category ) {
-				case 'resourceClass': clogged = clogged || checkResourceClass(self.filterList[i]); break;
+			switch( self.filters[i].category ) {
+				case 'resourceClass': clogged = clogged || checkResourceClass(self.filters[i]); break;
 			//	case 'statementClass': ....
-				case 'propertyValue': clogged = clogged || checkPropertyValue(self.filterList[i]); 
+				case 'propertyValue': clogged = clogged || checkPropertyValue(self.filters[i]); 
 			//	'textSearch' cannot contribute to clogging
 			};
 		};
@@ -574,7 +570,7 @@ moduleManager.construct({
 
 			function allEnumValues(pC: SpecifPropertyClass, vL):IBox[] {
 				var boxes = [],
-					dT = dta.get( "dataType", pC.dataType)[0];
+					dT = dta.get( "dataType", [LIB.makeKey(pC.dataType)])[0];
 				// Look up the baseType and include all possible enumerated values:
 				if (dT && Array.isArray(dT.values)) {
 						dT.values.forEach( (v)=>{
@@ -601,9 +597,9 @@ moduleManager.construct({
 //				console.debug( 'addEnumFilter', aT, vals );
 				
 				// skip, if the filter is already in the list:
-				for( var i=self.filterList.length-1; i>-1; i--) {
-					if (( self.filterList[i].dataType==pC.dataType )
-						&& ( self.filterList[i].scope==rC.id )) 
+				for( var i=self.filters.length-1; i>-1; i--) {
+					if (( self.filters[i].dataType==pC.dataType )
+						&& ( self.filters[i].scope==rC.id )) 
 						return // undefined									
 				};
 				
@@ -619,24 +615,24 @@ moduleManager.construct({
 					options: allEnumValues( pC, vals )
 				};
 //				console.debug( 'eVF', eVF );
-				self.filterList.push(eVF)
+				self.filters.push(eVF)
 			}
 				
 		// start working, now:
 		if( def && def.category=='enumValue' ) {
 			// Add the filters for the specified resourceClass:
-			// def.category: 'enumValue' translates to filterList.category: 'propertyValue' && filterlist.baseType: 'xs.enumeration'
+			// def.category: 'enumValue' translates to filter list.category: 'propertyValue' && filterlist.baseType: 'xs.enumeration'
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC: SpecifResourceClass = dta.get("resourceClass", def.rCid)[0],
+			var rC: SpecifResourceClass = dta.get("resourceClass", [LIB.makeKey(def.rCid)])[0],
 				pC: SpecifPropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pcid)=>{
-				pC = dta.get( "propertyClass", pcid )[0];
+				pC = dta.get("propertyClass", [LIB.makeKey(pcid)] )[0];
 //				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && dta.get( "dataType", pC.dataType )[0].type=='xs:enumeration')) {
+					|| (!def.pCid && dta.get("dataType", [LIB.makeKey(pC.dataType)] )[0].type=='xs:enumeration')) {
 					addEnumFilter( rC, pC, def.options )
 				};
 			});
@@ -647,7 +643,7 @@ moduleManager.construct({
 		// settings is a list with filter types and options to build a specific filter list.
 //		console.debug( 'build', settings );
 
-		self.filterList.length = 0;
+		self.filters.length = 0;
 
 			function addTextSearchFilter( pre? ) {
 				// pre is a resource with filter settings like {category: 'textSearch', searchString: 'string'}
@@ -667,7 +663,7 @@ moduleManager.construct({
 					]
 				};
 //				console.debug('addTextSearchFilter',flt);
-				self.filterList.push( flt );
+				self.filters.push( flt );
 			}
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
 			var idx = LIB.indexBy( settings.filters, 'category', 'textSearch');
@@ -706,7 +702,7 @@ moduleManager.construct({
 					};
 					oTF.options.push( box );
 				});
-				self.filterList.push(oTF);
+				self.filters.push(oTF);
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
@@ -764,7 +760,7 @@ moduleManager.construct({
 		self.secondaryFilters = undefined;
 
 		// read filter settings and update the filterlist:
-		self.filterList.forEach( (f)=>{
+		self.filters.forEach( (f)=>{
 			let checkedL = checkboxValues(f.title);
 			switch( f.category ) {
 				case 'textSearch': 
@@ -777,7 +773,7 @@ moduleManager.construct({
 					});
 			};
 		});
-//		console.debug( 'goClicked', self.filterList, fL );
+//		console.debug( 'goClicked', self.filters, fL );
 		doFilter();
 	};
 	self.resetClicked = ():void =>{  

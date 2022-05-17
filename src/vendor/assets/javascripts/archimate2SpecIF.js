@@ -6,7 +6,9 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-// Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format
+// Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format;
+// see also: https://pubs.opengroup.org/architecture/archimate31-exchange-file-format-guide/.
+// Test cases: http://www.opengroup.org/xsd/archimate/3.1/examples/
 function Archimate2Specif( xmlString, opts ) {
 	"use strict";
 	if( typeof(opts)!='object' || !opts.fileName ) return null;
@@ -31,23 +33,16 @@ function Archimate2Specif( xmlString, opts ) {
 		opts.strDiagramType = opts.strNamespace+"Viewpoint";
 	if( !opts.strDiagramFolderType ) 
 		opts.strDiagramFolderType = "SpecIF:Diagrams";
-	if( !opts.strGlossaryType ) 
-		opts.strGlossaryType = "SpecIF:Glossary";
-	if (!opts.strActorFolder)
-		opts.strActorFolder = "FMC:Actors";
-	if (!opts.strStateFolder)
-		opts.strStateFolder = "FMC:States";
-	if (!opts.strEventFolder)
-		opts.strEventFolder = "FMC:Events";
-	if( !opts.strCollectionFolder ) 
-		opts.strCollectionFolder = "Collections and Groups";
-/*	if( !opts.strAnnotationFolder ) 
-		opts.strAnnotationFolder = "Text Annotations";
-	if( !opts.strRoleType ) 
-		opts.strRoleType = "SpecIF:Role";  */
-	if( !Array.isArray(opts.hiddenDiagramProperties) )
+//	if( !opts.strAnnotationFolder ) 
+//		opts.strAnnotationFolder = "Text Annotations";
+//	if( !opts.strRoleType ) 
+//		opts.strRoleType = "SpecIF:Role";  
+
+	if (!Array.isArray(opts.hiddenDiagramProperties))
 		opts.hiddenDiagramProperties = [];
-	
+	if (typeof(opts.includeAllElements) != 'boolean')
+		opts.includeAllElements = true;  // if false, only shown elements are included
+
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
 //	console.debug('xml',xmlDoc);
@@ -102,20 +97,49 @@ function Archimate2Specif( xmlString, opts ) {
 		}
 	);
 
-	// 2. List the defined user-properties in a map:
-	let userProperties = new Map();
+	// 2. List the defined propertyDefinitions:
+	let propertyDefinitions = new Map();
 	Array.from(xmlDoc.querySelectorAll("propertyDefinition"), 
-		(pD)=>{
-			if( pD.getAttribute("type")=="string" )
-				userProperties.set(
-					pD.getAttribute("identifier"),
-					getChildsInnerByTag(pD,"name")
-				);
+		(pD) => {
+			let ty = pD.getAttribute("type");
+			if (["string", "date", "boolean"].indexOf(ty) > -1) {
+				let id = pD.getAttribute("identifier"),
+					nm = getChildsInnerByTag(pD, "name");
+				// 2a List them in a map:
+				propertyDefinitions.set( id, nm );
+				// 2b create a propertyClass only, if not used to flag hidden diagrams:
+				if (opts.hiddenDiagramProperties.indexOf(nm) < 0) {
+					let pC = {
+						id: id,
+						title: nm,
+						changedAt: opts.fileDate
+					};
+					switch (ty) {
+						case 'string':
+							pC.dataType = "DT-ShortString";
+							break;
+						case 'date':
+							pC.dataType = "DT-DateTime";
+							break;
+						case 'number';
+							// Best: find all instances, check the type ...
+							pC.dataType = "DT-Integer";
+							break;
+						case 'boolean':
+							pC.dataType = "DT-Boolean";
+					};
+					model.propertyClasses.push(pC);
+				};
+			}
+			else
+				console.warn("Archimate propertyDefinition of type '" + ty + "' has been skipped.");
 		}
 	);
+	console.debug('propertyDefinitions', propertyDefinitions, model.propertyClasses);
 
 	// 3. Transform the diagrams:
-	let graphicallyContainsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
+	let diagramsDefinedButNotReferencedInHierarchyL = [],
+		graphicallyContainsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
 
 		function isNotHidden(view) {
 			// This works with 'Hide' properties defined in tool 'Archi 4.6' and probably later.
@@ -133,8 +157,8 @@ function Archimate2Specif( xmlString, opts ) {
 					// if the name is listed in opts.hiddenDiagramProperties
 					// and the property's value is "true",
 					// then the diagram shall be hidden:
-					if( opts.hiddenDiagramProperties.indexOf( userProperties.get(pL[i].getAttribute("propertyDefinitionRef")) )>-1
-						&& getChildsInnerByTag(pL[i],"value")=="true" ) return false;
+					if( opts.hiddenDiagramProperties.indexOf( propertyDefinitions.get(pL[i].getAttribute("propertyDefinitionRef")) )>-1
+						&& getChildsInnerByTag(pL[i],"value")=="true" ) return false;   // => diagram is hidden!
 				};
 			};
 			// none of the view's properties is listed;
@@ -278,6 +302,7 @@ function Archimate2Specif( xmlString, opts ) {
 				//       so far, we must add them manually after import. 
 
 				model.resources.push(r);
+				diagramsDefinedButNotReferencedInHierarchyL.push( dId );
 			};
 		}
 	);
@@ -368,7 +393,7 @@ function Archimate2Specif( xmlString, opts ) {
 			};
 
 			if( r['class'] 
-				&& isShown( r ) ) {
+				&& (opts.includeAllElements || isShown( r ) )) {
 				// Additional attributes such as title and description:
 				Array.from( el.children, 
 					(ch)=>{
@@ -433,10 +458,6 @@ function Archimate2Specif( xmlString, opts ) {
 			//		s['class'] = "SC-triggers";
 				case 'Flow':
 					s['class'] = "SC-precedes";
-					s.properties.push({
-						class: "PC-Type", 
-						value: opts.strNamespace + ty
-					});
 					break;
 				// The "uniting" relationships:
 				case 'Composition':
@@ -448,10 +469,6 @@ function Archimate2Specif( xmlString, opts ) {
 				case 'Assignment':
 			//		s['class'] = "SC-isAssignedTo";
 					s['class'] = "SC-contains";
-					s.properties.push({
-						class: "PC-Type", 
-						value: opts.strNamespace + ty
-					});
 					break;
 				case 'Specialization':
 					s['class'] = "SC-isSpecializationOf";
@@ -472,7 +489,7 @@ function Archimate2Specif( xmlString, opts ) {
 				&& indexById(model.resources,s.object)>-1  */
 				// include only relations which are shown on at least one visible diagram (suppress relations only shown on hidden diagrams);
 				// Note: A relation like "realizes", which is implicit in some diagrams, is accepted by isShown().
-				&& isShown( s ) ) {
+				&& (opts.includeAllElements || isShown(s))) {
 					// Additional attributes such as title and description:
 					Array.from( rs.children, 
 						// if a relation does not have a name, the statementClass' title acts as default value.
@@ -486,6 +503,10 @@ function Archimate2Specif( xmlString, opts ) {
 							}
 						}
 					);
+					s.properties.push({
+						class: "PC-Type",
+						value: opts.strNamespace + ty
+					});
 					addStaIfNotListed( s );
 				}
 				else {
@@ -563,7 +584,7 @@ function Archimate2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-//	console.debug('Archimate',model);
+	console.debug('Archimate',model);
 	return model;
 
 
@@ -572,41 +593,35 @@ function Archimate2Specif( xmlString, opts ) {
 
 	// The hierarchy with pointers to all resources:
 	function NodeList(resL) {
-		// a) first add the folders:
-		let nodeL =  [{
-			id: "H-"+hId,
-			resource: hId,
-			nodes: [{
-				id: "N-"+simpleHash("FolderDiagrams-" + apx),
+		const
+			diagramFolder = {
+				id: "FolderDiagrams-" + apx,
+				class: "RC-Folder",
+				title: opts.strDiagramFolderType,
+				properties: [{
+					class: "PC-Name",
+					value: opts.strDiagramFolderType
+				}, {
+			/*		class: "PC-Description",
+					value: getChildsInnerByTag(ch, "documentation") || ''
+				}, { */
+					class: "PC-Type",
+					value: opts.strDiagramFolderType
+				}],
+				changedAt: opts.fileDate
+			},
+			diagramFolderNode = {
+				id: "N-" + simpleHash("FolderDiagrams-" + apx),
 				resource: "FolderDiagrams-" + apx,
 				nodes: [],
 				changedAt: opts.fileDate
-	/*		},{
-				id: simpleHash("N-FolderGlossary-" + apx),
-				resource: "FolderGlossary-" + apx,
-				nodes: [{
-					id: simpleHash("N-FolderAct-" + apx),
-					resource: "FolderAct-" + apx,
-					nodes: [],
-					changedAt: opts.fileDate
-				},{
-					id: simpleHash("N-FolderSta-" + apx),
-					resource: "FolderSta-" + apx,
-					nodes: [],
-					changedAt: opts.fileDate
-				},{
-					id: simpleHash("N-FolderEvt-" + apx),
-					resource: "FolderEvt-" + apx,
-					nodes: [],
-					changedAt: opts.fileDate
-				},{
-					id: simpleHash("N-FolderCol-" + apx),
-					resource: "FolderCol-" + apx,
-					nodes: [],
-					changedAt: opts.fileDate
-				}],
-				changedAt: opts.fileDate */
-			}],
+			};
+
+		// a) First create the hierarchy list with the hierarchy root:
+		let nodeL =  [{
+			id: "H-"+hId,
+			resource: hId,
+			nodes: [],
 			changedAt: opts.fileDate
 		}];
 
@@ -623,12 +638,15 @@ function Archimate2Specif( xmlString, opts ) {
 						// However, create hierarchy node, if the diagram is available,
 						// (a view may be hidden and excluded from transformation):
 						if( indexById(model.resources,idRef)>-1 ) {
+							// reference the view:
 							ndL.push({
 								id: "N-"+simpleHash(idRef),
 								resource: idRef,
 								nodes: [],
 								changedAt: opts.fileDate
 							});
+							// remove referenced view from the list:
+							diagramsDefinedButNotReferencedInHierarchyL.splice(diagramsDefinedButNotReferencedInHierarchyL.indexOf(idRef),1);
 						};
 					}
 					else {
@@ -665,7 +683,17 @@ function Archimate2Specif( xmlString, opts ) {
 				};
 			}
 
-		Array.from(xmlDoc.querySelectorAll("organizations"), 
+		// Since not all tools export an <organizations> section (e.g. ADOIT, at least not always),
+		// it is first tried to extract the folder hierarchy with references to the views from an <organizations> section
+		// ... and the remaining diagrams are added subsequenty.
+		// Ideal is, if all views=diagrams are referenced in the <organizations> section (as does Archi).
+		if (diagramsDefinedButNotReferencedInHierarchyL.length > 0) {
+			// create the folder resource:
+			resL.push(diagramFolder);
+			// create the hierarchy node: nodeL[0].nodes[0]:
+			nodeL[0].nodes.push(diagramFolderNode);
+		};
+		Array.from(xmlDoc.querySelectorAll("organizations"),
 			(org)=>{
 				Array.from(org.children,
 					(ch)=>{
@@ -678,29 +706,10 @@ function Archimate2Specif( xmlString, opts ) {
 								case "Relations":
 									break; */
 								case "Views":
-									// We've got the 'Views' folder.
-									// a) create the folder resource:
-									resL.push({
-										id: "FolderDiagrams-" + apx,
-										class: "RC-Folder",
-										title: opts.strDiagramFolderType,
-										properties: [{
-											class: "PC-Name",
-											value: opts.strDiagramFolderType
-										},{
-											class: "PC-Description",
-											value: getChildsInnerByTag(ch,"documentation") || ''
-										},{
-											class: "PC-Type",
-											value: opts.strDiagramFolderType
-										}],
-										changedAt: opts.fileDate
-									});
-//									console.debug('Views',ch,resL[resL.length-1]);
-									
-									// b) the hierarchy node has been created before: nodeL[0].nodes[0]
-
-									// c) get the <item> subfolders:
+									// We've got the 'Views' folder;
+									// 1. Add the description of the 'Views' folder to the diagramFolder, if there is any:
+									// ToDo
+									// 2. get the <item> subfolders:
 									Array.from(ch.children, 
 										(ch)=>{parseItem( ch, resL, nodeL[0].nodes[0].nodes )}
 									);
@@ -709,7 +718,20 @@ function Archimate2Specif( xmlString, opts ) {
 				);
 			}
 		);
-		
+		// Defined diagrams which have not been referenced in an <organizations> section:
+		diagramsDefinedButNotReferencedInHierarchyL.forEach(
+			(idRef) => {
+				// add to diagramFolderNode:
+				if (indexById(model.resources, idRef) > -1)
+					nodeL[0].nodes[0].nodes.push({
+						id: "N-" + simpleHash(idRef),
+						resource: idRef,
+						nodes: [],
+						changedAt: opts.fileDate
+					});
+			}
+		);
+
 	/*	// c) Add Actors, States and Events to the respective folders in alphabetical order:
 		if( resL.length>1 )
 			resL.sort( function(bim, bam) {
@@ -746,6 +768,26 @@ function Archimate2Specif( xmlString, opts ) {
 			description: "A text string, plain, or formatted with XHTML or markdown",
 			type: "xs:string",
 			changedAt: "2021-02-14T08:59:00+02:00"
+		}, {
+			id: "DT-DateTime",
+			title: "Date or Timestamp",
+			description: "Date or Timestamp in ISO-Format",
+			type: "xs:dateTime",
+			changedAt: "2016-05-26T08:59:00+02:00"
+		}, {
+			id: "DT-Integer",
+			title: "Integer",
+			description: "A numerical integer value from -32768 to 32768.",
+			type: "xs:integer",
+		//	minInclusive: CONFIG.minInteger,
+		//	maxInclusive: CONFIG.maxInteger,
+			changedAt: "2016-05-26T08:59:00+02:00"
+		}, {
+			id: "DT-Boolean",
+			title: "Boolean",
+			description: "The Boolean data type.",
+			type: "xs:boolean",
+			changedAt: "2016-05-26T08:59:00+02:00"
 		}]
 	}
 	
@@ -1007,50 +1049,6 @@ function Archimate2Specif( xmlString, opts ) {
 			changedAt: opts.fileDate  */
 		}]
 	}
-
-	// The folder resources for the glossary:
-/*	function Folders() {
-		return [{
-			id: "FolderGlossary-" + apx,
-			class: "RC-Folder",
-			title: opts.strGlossaryType,
-			properties: [{
-				class: "PC-Type",
-				value: opts.strGlossaryType
-			}],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderAct-" + apx,
-			class: "RC-Folder",
-			title: opts.strActorFolder,
-			properties: [],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderSta-" + apx,
-			class: "RC-Folder",
-			title: opts.strStateFolder,
-			properties: [],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderEvt-" + apx,
-			class: "RC-Folder",
-			title: opts.strEventFolder,
-			properties: [],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderCol-" + apx,
-			class: "RC-Folder",
-			title: opts.strCollectionFolder,
-			properties: [],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderNte-" + apx,
-			class: "RC-Folder",
-			title: opts.strAnnotationFolder,
-			properties: [],
-			changedAt: opts.fileDate 
-		}]
-	} */
 	
 // =======================================
 // some helper functions:	

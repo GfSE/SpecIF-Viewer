@@ -441,7 +441,6 @@ function LanguageTextsFr() {
 	self.SpecIF_Outlines =
 	self.SpecIF_Hierarchies = "Arborescences";
 	self.SpecIF_Glossary = "Élements de modèle (Glossaire)";
-	self.SpecIF_Annotations = "Annotations";
 	self.SpecIF_Collection = "Collection ou Groupe";
 	self.SpecIF_Collections = "Collections et Groupes";
 	self.SpecIF_CollectionDescription = "A '"+self.SpecIF_Collection+"' is a logical grouping of '"+self.modelElements+"'.";
@@ -485,7 +484,10 @@ function LanguageTextsFr() {
 	self.SpecIF_isAssociatedWith =
 	self.SysML_isAssociatedWith = "est associé avec";
 	self.SysML_isAllocatedTo = "est éxecuté par";
-	self.SysML_includes = "inclut";
+	self.SysML_includes = 
+	self.SpecIF_includes = "inclut";
+	self.SpecIF_excludes = "exclut";
+	self.SpecIF_mentions = "évoque";
 	self.SysML_extends = "élargit";
 	self.SpecIF_isDerivedFrom = 
 	self.SysML_isDerivedFrom = "est dérivé de";
@@ -506,15 +508,13 @@ function LanguageTextsFr() {
 	self.SpecIF_refersTo = "concerne";
 	self.SpecIF_commentRefersTo = "concerne";
 	self.SpecIF_issueRefersTo = "concerne";
-	self.SpecIF_includes = "inclures";
-	self.SpecIF_excludes = "exclures";
-	self.SpecIF_mentions = "évoque";
 	self.SpecIF_sameAs =
 	self.owl_sameAs = "est identique à";
 	self.SpecIF_Id = 	self.LblIdentifier;
 	self.SpecIF_Type = 	self.LblType;
 	self.SpecIF_Notation = "Notation";
-//	self.SpecIF_Stereotype = 
+	self.UML_Stereotype = "Stereotyp";
+//	self.SpecIF_Stereotype =
 //	self.SpecIF_SubClass = "Sous-classe";
 	self.SpecIF_Category = 	self.LblCategory;
 	self.SpecIF_State =								// DEPRECATED
@@ -541,6 +541,8 @@ function LanguageTextsFr() {
 	self.SpecIF_UserRole = "Rôle";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
+	self.SpecIF_Annotations =
+	self.IR_Annotations = "Annotations";
 	self.IR_AnnotationDescription = "An Interaction-Room '"+self.IR_Annotation+"' indicates a point of special interest. Examples are customer or user value, product features with prominent benefit,effort or challenges during development.";
 	self.IR_refersTo = self.SpecIF_refersTo;
 	self.IR_approves = "approves";
@@ -550,11 +552,11 @@ function LanguageTextsFr() {
 	self.HIS_OemStatus =
 	self.ReqIF_WF_CustomerStatus = self.LblState + ' de Client';
 	self.HIS_OemComment =
-	self.ReqIF_WF_CustomerComment = 'Commentaire de Client';
+	self.ReqIF_WF_CustomerComment = self.SpecIF_Comment + ' de Client';
 	self.HIS_SupplierStatus =
 	self.ReqIF_WF_SupplierStatus = self.LblState + ' de Fournisseur';
 	self.HIS_SupplierComment =
-	self.ReqIF_WF_SupplierComment = 'Commentaire de Fournisseur';
+	self.ReqIF_WF_SupplierComment = self.SpecIF_Comment + ' de Fournisseur';
 /*
 // attribute names used by DocBridge Resource Director:
 	self.DBRD_ChapterName = 'Titre';

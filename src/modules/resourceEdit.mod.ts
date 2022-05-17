@@ -201,7 +201,7 @@ moduleManager.construct({
 			case 'update':
 //				console.debug('~',nd);
 				// get the selected resource:
-				app.cache.selectedProject.readContent( 'resource', self.parent.tree.selectedNode.ref )
+				app.cache.selectedProject.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
 				.then( 
 					(rL:SpecifResource[])=>{
 						// create a clone to collect the changed values before committing:
@@ -214,7 +214,8 @@ moduleManager.construct({
 								msgBtns.insertAfter,
 								msgBtns.insertBelow
 							]
-						} else {
+						}
+						else {
 							opts.dialogTitle = i18n.MsgUpdateResource;
 							opts.msgBtns = [
 								msgBtns.cancel,
@@ -263,73 +264,82 @@ moduleManager.construct({
 				})
 				.open();
 			return;
-			
-			function editPrp(p) {
-				// Return a form element for a property;
-				// works only if the classes are cached:
-				let pC = pData.get("propertyClass", p['class'])[0],
-			// The result is delivered by promise ..:
-			//	let pC = app.cache.selectedProject.readContent("propertyClass", p['class']),
 
-					// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
-					dT = pC? pData.get("dataType", pC.dataType )[0] : undefined,
-					opts = {
+			function editPrp(p: CPropertyToShow):string {
+				// Return a form element for a property;
+
+				let opts = {
 						lookupTitles: true,
 						targetLanguage: browser.language,
 						imgClass: 'forImagePreview'
 					},
 					ti = LIB.titleOf(p,opts);
+
+				// create radio-buttons or checkboxes, if it is an enumerated dataType:
+				if (p.dT.enumeration) {
+					// entryL is the list of entries for an input field with checkboxes or radio-buttons, 
+					// depending on whether multiple values are allowed or not:
+					let entryL = LIB.forAll(p.dT.enumeration, (eV) => {
+							let val = p.dT.type == SpecifDataTypeEnum.String ? i18n.lookup(LIB.languageValueOf(eV.value, opts)) : eV.value;
+							return { title: val, id: eV.id, checked: p.enumIdL.indexOf(eV.id) > -1 }
+						});
+
+					console.debug('Enumeration', p, ti, entryL);
+					if (typeof (p.pC.multiple) == 'boolean' ? p.pC.multiple : p.dT.multiple)
+						return checkboxField(ti, entryL, { description: p.pC.description });
+					else
+						return radioField(ti, entryL, { description: p.pC.description });
+				};
+				/*		case 'xs:enumeration':
+							// no input checking needed:
+							let separatedValues = p.value.split(','),
+								vals = LIB.forAll( p.dT.values, (v)=>{ return {title:i18n.lookup(LIB.languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
+	//						console.debug('xs:enumeration',ti,p,p.pC,separatedValues,vals);
+							if( typeof(p.pC.multiple)=='boolean'? p.pC.multiple : p.dT.multiple )
+								return checkboxField(ti, vals, { description: p.pC.description } );
+							else
+								return radioField(ti, vals, { description: p.pC.description } );  */
+
 				// create an input field depending on the property's dataType;
 				// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
-				switch (dT ? dT.type : "xs:string") {
-					case 'xs:string':
-						if (LIB.propTitleOf(p, pData) == CONFIG.propClassDiagram) {
+				switch ( p.dT.type ) {
+					case SpecifDataTypeEnum.Boolean:
+						// - no input checking needed
+						// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
+						//						console.debug('xs:boolean',ti,p);
+						return booleanField(ti, p.values.length > 0 ? LIB.isTrue(p.values[0]) : false, { description: p.pC.description });
+					case SpecifDataTypeEnum.String:
+						if( p.pC.title == CONFIG.propClassDiagram) {
 							// it is a diagram reference (thus an XHTML-formatted field):
 							return renderDiagram(p, opts)
 						}
 						else {
 							// add parameters to check this input field:
-							self.dialogForm.addField(ti, dT);
+							self.dialogForm.addField(ti, p.dT);
 							// it is a text;
 							// in case of xhtml, it may contain a diagram reference, 
 							// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
 //							console.debug( 'editPrp', LIB.languageValueOf(p.value,opts) );
 							return textField(
 								ti,
-								LIB.languageValueOf(p.value, opts),
+								p.values.length > 0 ? LIB.languageValueOf(p.values[0], opts) : '',  // only first value for the time being ...
 								// - open an input line, if it is a title or has a specified length lower than the threshold
 								// - open an input text-area, otherwise
 								{
-									typ: ((dT && dT.maxLength && dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+									typ: ((p.dT.maxLength && p.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
 									handle: myFullName + '.check()',
-									description: pC.description
+									description: p.pC.description
 								} 
 							);
 						};
-			/*		case 'xs:enumeration':
-						// no input checking needed:
-						let separatedValues = p.value.split(','),
-							vals = LIB.forAll( dT.values, (v)=>{ return {title:i18n.lookup(LIB.languageValueOf(v.value,opts)),id:v.id,checked:separatedValues.indexOf(v.id)>-1} });
-//						console.debug('xs:enumeration',ti,p,pC,separatedValues,vals);
-						if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple )
-							return checkboxField(ti, vals, { description: pC.description } );
-						else
-							return radioField(ti, vals, { description: pC.description } );  */
-					case 'xs:boolean':
-						// no input checking needed:
-//						console.debug('xs:boolean',ti,p,pC);
-						return booleanField(ti, LIB.isTrue(p.value), { description: pC.description } );
-					case 'xs:dateTime':
-					case 'xs:integer':
-					case 'xs:double':
+					default:
 						// add parameters to check this input field:
-						self.dialogForm.addField( ti, dT );
+						self.dialogForm.addField( ti, p.dT );
 						return textField(
 							ti,
-							p.value,
-							{ typ: 'line', handle: myFullName + '.check()', description: pC.description });
+							p.values.length > 0 ? p.values[0] : '',
+							{ typ: 'line', handle: myFullName + '.check()', description: p.pC.description });
 				};
-				return
 
 				function renderDiagram(p,opts) {
 //					console.debug('renderDiagram',p);
@@ -339,7 +349,9 @@ moduleManager.construct({
 						+			diagBtns(p)
 									// Add a container based on the propertyClass (which should be unique and since there is usually no property-id), 
 									// so that the user can update and delete the diagram later on:
-						+			'<div id="'+tagId(p['class'])+'">'+p.renderFile( p.value, opts )+'</div>'
+						+           '<div id="' + tagId(p['class']) + '">'
+						+				p.renderFile(p.values.length > 0 ? LIB.languageValueOf(p.values[0], opts) : '', opts)
+						+			'</div>'
 						+		'</div>'
 						+ '</div>';
 					
@@ -349,10 +361,10 @@ moduleManager.construct({
 						// and at most one resource is edited in this session at any point in time.
 						var bts = 	'<div class="btn-group btn-group-sm pull-right" >';
 						if( !p.permissions || p.permissions.upd ) {
-							bts +=			'<span class="btn btn-default btn-fileinput">' +
-												'<span>'+i18n.IcoEdit+'</span>' +
-								'<input id="file' + simpleHash(p['class'])+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />' + 
-											'</span>';
+							bts +=			'<span class="btn btn-default btn-fileinput">'
+								+				'<span>'+i18n.IcoEdit+'</span>'
+								+	'<input id="file' + simpleHash(p['class'])+'" type="file" onchange="'+myFullName+'.updateDiagram(\''+p['class']+'\')" />'
+								+			'</span>';
 						};  
 						if( !p.permissions || p.permissions.del ) {
 							bts +=			'<button class="btn btn-danger" data-toggle="popover" '
@@ -367,7 +379,7 @@ moduleManager.construct({
 		function selectResClass( opts ) {		
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
-				app.cache.selectedProject.readContent( 'resourceClass', LIB.forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
+				app.cache.selectedProject.readItems('resourceClass', LIB.forAll(opts.eligibleResourceClasses, (rCId) => { return LIB.makeKey(rCId) }))
 				.then( 
 					(rCL)=>{
 						if( rCL.length>0 ) {
@@ -451,12 +463,12 @@ moduleManager.construct({
 			rdr.readAsArrayBuffer( f );
 		}
 	};
-	self.removeDiagram = (cId)=>{
+	self.removeDiagram = (cId):void =>{
 //		console.debug('removeDiagram',cId,toEdit);
 		LIB.itemBy(toEdit.descriptions.concat(toEdit.other), 'class', cId ).value = '';
 		document.getElementById(tagId(cId)).innerHTML = ''
 	};
-	self.check = ()=>{
+	self.check = ():void =>{
 		// called on every key-input;
 		// check all input fields:
 		let notOk = !self.dialogForm.check();
@@ -475,35 +487,28 @@ moduleManager.construct({
 		// a 'properties' list yet, even though it's class defines propertyClasses.
 		// ToDo: If the original resource had different languages, take care of them;
 		//       The new values must not replace any original multi-language property values!
-		let pend=2, // minimally 2 calls with promise
-			// The properties of toEdit are complete (in contrast to self.newRes):
+		let pend = 2, // minimally 2 calls with promise
+			val: String,
 			chD = new Date().toISOString();  // changedAt
 
-		if( Array.isArray(self.newRes.properties) )
-			self.newRes.properties.length = 0;
+	//	if( Array.isArray(self.newRes.properties) )
+	//		self.newRes.properties.length = 0;
+		self.newRes.properties = [];  // resources must have at least one property (SpecIF v1.1)
 
-		toEdit.title.value = getP( toEdit.title );
-		// In any case, update the elements native title:
-		self.newRes.title = toEdit.title.value.stripHTML();
-		// If the title property doesn't have a class, 
-		// it has been added by new CResourceToShow() and there is no need to create it;
-		// in this case the title will only be seen in the element's title:
-		if( toEdit.title['class'] ) {
-			delete toEdit.title.title;  // is redundant, the property's class title applies
-			if( Array.isArray( self.newRes.properties ) )
-				self.newRes.properties.push( toEdit.title );
-			else
-				self.newRes.properties = [ toEdit.title ];
-		};
+		// In any case, update the elements native title;
+		// the properties of toEdit are complete:
+		val = LIB.makeMultiLanguageText( getP(toEdit.title).stripHTML() || ("Title of " + self.newRes.id) );
+		self.newRes.properties.push({ class: LIB.keyOf(toEdit.title.pC), values: [val] });
+		console.debug('#1', self.newRes, toEdit);
 
 		toEdit.descriptions.forEach( function(p) {
 
 			// In case of a diagram, the value is already updated when the user uploads a new file:
-			if( CONFIG.diagramClasses.indexOf(LIB.propTitleOf(p,pData))>-1 ) {
-				if( Array.isArray( self.newRes.properties ) )
+			if( CONFIG.diagramClasses.indexOf(p.pC.title)>-1 ) {
+			/*	if( Array.isArray( self.newRes.properties ) )
 					self.newRes.properties.push( p );
 				else
-					self.newRes.properties = [ p ];
+					self.newRes.properties = [ p ]; */
 				return;
 			};
 
@@ -526,10 +531,10 @@ moduleManager.construct({
 						self.newRes.properties = [ p ];
 				};
 			}
-			else {
+		/*	else {
 				// delete it:
 				delete self.newRes.description;
-			};
+			}; */
 //			console.debug( 'save',mode, p, getP( p ) );
 		});
 
@@ -555,28 +560,29 @@ moduleManager.construct({
 		self.newRes.changedAt = chD;
 //		console.debug( 'save', self.newRes );
 
-		app.cache.selectedProject.updateContent('resource', self.newRes)
+		app.cache.selectedProject.updateItems('resource', self.newRes)
 			.then(finalize, LIB.stdError);
-		switch( mode ) {
-		//	case 'update':
-		//		break;
+
+		// If it is a new item, insert a mode in the hierarchy:
+		switch (mode) {
 			case 'insert':
 				pend++;
-				app.cache.selectedProject.createContent( 'node', {id:LIB.genID('N-'),resource:LIB.keyOf(self.newRes),changedAt:chD} )
+				app.cache.selectedProject.createItems( 'node', {id:LIB.genID('N-'), resource:LIB.keyOf(self.newRes), changedAt:chD} )
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.cache.selectedProject.createContent('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes),changedAt:chD,predecessor:opts.selNodeId} )
+				app.cache.selectedProject.createItems('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt:chD, predecessor:opts.selNodeId} )
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.cache.selectedProject.createContent('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes),changedAt:chD,parent:opts.selNodeId} )
+				app.cache.selectedProject.createItems('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt:chD, parent:opts.selNodeId} )
 					.then( finalize, LIB.stdError );
 		};
+
 		// has no effect, if newFiles is empty:
-		app.cache.selectedProject.createContent( 'file', self.newFiles )
+		app.cache.selectedProject.createItems( 'file', self.newFiles )
 			.then( finalize, LIB.stdError );
 		return;
 			
@@ -613,36 +619,31 @@ moduleManager.construct({
 				self.parent.doRefresh({forced:true});
 			};
 		}
-		function getP(p) {
+		function getP(p:CPropertyToShow) {
 			// Get the value of a property:
 			// ToDo: Works only, if all propertyClasses are always cached:
 			const opts = {
 				lookupTitles: true,
 				targetLanguage: browser.language
 			};
-			let pC = pData.get("propertyClass", p['class'] )[0],
-				// title and description may not have a propertyClass (e.g. Tutorial 2 "Related terms"):
-				dT = pC? pData.get("dataType", pC.dataType )[0] : undefined;
-			switch( dT? dT.type : "xs:string" ) {
-				case 'xs:integer':
-				case 'xs:double':
-				case 'xs:dateTime':
-				case 'xs:string':
-				case 'xhtml':
-					// The diagrams are skipped in the calling layer above.
-//					console.debug( 'getP',p,textValue( LIB.titleOf(p,opts) ) );
-					return textValue( LIB.titleOf(p,opts) );
-				case 'xs:enumeration':
+
+			// In case of enumeration:
+			/*	case 'xs:enumeration':
 //					console.debug('xs:enumeration',p,pC,separatedValues,vals);
-					if( typeof(pC.multiple)=='boolean'? pC.multiple : dT.multiple ) {
+					if( typeof(p.pC.multiple)=='boolean'? p.pC.multiple : p.dT.multiple ) {
 //						console.debug( '*',p,checkboxValues( LIB.titleOf(p,opts) ).toString() );
 						return checkboxValues( LIB.titleOf(p,opts) ).toString();
 					} else {
 //						console.debug( '*',p,radioValue( LIB.titleOf(p,opts) ) );
 						return radioValue( LIB.titleOf(p,opts) );
-					};
-				case 'xs:boolean':
-					return booleanValue( LIB.titleOf(p,opts) ).toString();
+					}; */
+
+			// Otherwise take the value itself:
+			switch (p.dT.type) {
+				case SpecifDataTypeEnum.Boolean:
+					return booleanValue(LIB.titleOf(p, opts)).toString();
+				default:
+					return textValue(LIB.titleOf(p, opts));
 			}
 		}
 	};

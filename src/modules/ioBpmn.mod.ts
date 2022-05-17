@@ -68,19 +68,12 @@ moduleManager.construct({
 					fileDate: fDate, 
 					titleLength: CONFIG.textThreshold,
 					descriptionLength: CONFIG.maxStringLength,
-					strGlossaryType: CONFIG.resClassGlossary,
-					strGlossaryFolder: CONFIG.resClassGlossary,
-					strActorFolder: "FMC:Actors",
-					strStateFolder: "FMC:States",
-					strEventFolder: "FMC:Events",
-				//	strCollectionFolder: "SpecIF:Collections",
 				//	strAnnotationFolder: "SpecIF:Annotations",
 					strRoleType: CONFIG.resClassRole,
 					strConditionType: CONFIG.resClassCondition,
 					strBusinessProcessType: CONFIG.resClassProcess,
 					strBusinessProcessesType: CONFIG.resClassProcesses,
-					strBusinessProcessFolder: CONFIG.resClassProcesses,
-					isIE: false
+					strBusinessProcessFolder: CONFIG.resClassProcesses
 				}
 		);
 //		console.debug('input.prjName', self.parent.projectName, data );

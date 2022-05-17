@@ -23,13 +23,15 @@ class CPropertyToShow implements SpecifProperty {
 	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
 	class: SpecifKey;
-	private pData: CCache;
-	private pC: SpecifPropertyClass;
-	private dT: SpecifDataType;
+	private pData: CCache;  // the classes are always available in the cache, not necessarily the instances
+	pC: SpecifPropertyClass;
+	dT: SpecifDataType;
 	replaces?: string[];
 	revision?: string;
 	// @ts-ignore - presence of 'value' is checked by the schema on import
 	values: SpecifValues;
+	enumIdL?: SpecifValues;
+
 	constructor(prp: SpecifProperty) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
@@ -44,8 +46,12 @@ class CPropertyToShow implements SpecifProperty {
 		// replace the result with a preferred vocabulary term:
 		this.title = vocabulary.property.specif(this.pC.title);
 
-		if (this.dT.enumeration) 
+		if (this.dT.enumeration) {
+		//	this.enumIdL = simpleClone(prp.values);  // keep original values for resourceEdit
+			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
+			this.enumIdL = [].concat(prp.values);  // keep original values for resourceEdit
 			this.values = this.lookupEnumeratedValues();
+		};
 	}
 	private lookupEnumeratedValues() {
 		// replace identifiers of enumerated values by their value as defined in the dataType:
@@ -99,8 +105,23 @@ class CPropertyToShow implements SpecifProperty {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
 			&& (CONFIG.showEmptyProperties || LIB.hasContent(this.allValuesByLanguage(opts))))
 	}
-	get( opts: any): string {
-		if (typeof (opts) != 'object') opts = {};
+	get( options: any): string {
+		let opts = $.extend({
+				titleLinking: false,
+				targetLanguage: browser.language,
+				titleLinkTargets: CONFIG.titleLinkTargets,
+				clickableElements: false,
+				linkifyURLs: false,
+				// some environments escape the tags on export, e.g. camunda / in|flux:
+				unescapeHTMLTags: false,
+				// markup to HTML:
+				makeHTML: false,
+				lookupValues: false
+			},
+			options
+		);
+
+	/*	if (typeof (opts) != 'object') opts = {};
 		if (typeof (opts.titleLinking) != 'boolean') opts.titleLinking = false;
 		if (!opts.targetLanguage) opts.targetLanguage = browser.language;
 		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.titleLinkTargets;
@@ -111,7 +132,7 @@ class CPropertyToShow implements SpecifProperty {
 		if (typeof (opts.unescapeHTMLTags) != 'boolean') opts.unescapeHTMLTags = false;
 		// markup to HTML:
 		if (typeof (opts.makeHTML) != 'boolean') opts.makeHTML = false;
-		if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false;
+		if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false; */
 
 		// Malicious content has been removed upon import ( specif.toInt() ).
 		let ct: string;
@@ -517,7 +538,7 @@ class CResourceToShow {
 		this.descriptions = [];
 
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = this.normalizeProps(el);
+		this.other = LIB.forAll(el.properties, (pr:SpecifProperty) => { return new CPropertyToShow(pr) });
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
@@ -555,58 +576,12 @@ class CResourceToShow {
 			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
-/*	private normalizeProps(el: SpecifResource): CPropertyToShow[] {
-		// el: original instance (resource or statement)
-		// Create a list of properties in the sequence of propertyClasses of the respective class.
-		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-		// Property classes must be unique!
-
-		// check uniqueness of property classes:
-		if (el.properties) {
-			let idL: string[] = [],
-				pCid: string;
-			el.properties.forEach((p: SpecifProperty) => {
-				pCid = p['class'].id;
-				if (idL.indexOf(pCid)<0)
-					idL.push(pCid);
-				else
-					console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
-			});
-		};
-
-		let p: SpecifProperty,
-			pCs: SpecifKeys,
-			nL: CPropertyToShow[] = [],
-			// iCs: instance class list (resourceClasses or statementClasses),
-			// the existence of subject (or object) let's us recognize that it is a statement:
-		//	iCs = el.subject ? this.pData.statementClasses : this.pData.resourceClasses,
-			iCs = this.pData.resourceClasses,
-			iC = this.rC;
-		// build a list of propertyClass identifiers including the extended class':
-	//	pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses || [] : [];
-	//	pCs = pCs.concat(LIB.itemByKey(iCs, el['class']).propertyClasses || []);
-		pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
-		pCs = pCs.concat(iC.propertyClasses);
-		// add the properties in sequence of the propertyClass identifiers:
-		pCs.forEach((pC: SpecifKey):void => {
-			// skip hidden properties:
-			if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
-			// assuming that the property classes are unique:
-			p = LIB.itemBy(el.properties, 'class', pC)
-				|| LIB.createProp(this.pData.propertyClasses, pC);
-			if (p) {
-				nL.push(new CPropertyToShow(p));
-			}
-		});
-//		console.debug('normalizeProps result',simpleClone(nL));
-		return nL; // normalized property list
-	} */
 	isEqual(res: SpecifResource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
 	isUserInstantiated(): boolean {
-		return (!Array.isArray(this['class'].instantiation)
-			|| this['class'].instantiation.indexOf(SpecifInstantiation.User) > -1)
+		return (!Array.isArray(this.rC.instantiation)
+			|| this.rC.instantiation.indexOf(SpecifInstantiation.User) > -1)
 	}
 	private renderAttr(lbl: string, val: string, cssCl: string): string {
 		// show a string value with or without label:
@@ -637,7 +612,7 @@ class CResourceToShow {
 		};
 		// else: is not a heading:
 		// take title and add icon, if configured:
-		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this['class'].icon) : ti) + '</div>';
+		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this.rC.icon) : ti) + '</div>';
 	}
 	renderChangeInfo(): string {
 		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
@@ -752,7 +727,7 @@ class CResourceToShow {
 			rO += this.renderAttr( LIB.titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), LIB.titleOf( self.toShow['class'], opts ) );
+		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), LIB.titleOf( self.toShow.rC, opts ) );
 		// 5 The change info depending on selectedView:
 		rO += this.renderChangeInfo();
 //		console.debug( 'CResource.details', self.toShow, rO );
@@ -788,6 +763,11 @@ class CResourceToShow {
 		return txt
 	}  */
 class CResourcesToShow {
+	// Controls the list of resources shown.
+	// So 'update' means the update on the screen 
+	// and not an update of the resource as such.
+	// Some logic is applied to minimize the screen flickering;
+	// for example the DOM is only changed if the data has really changed.
 	private opts = {
 		lookupTitles: true,
 		targetLanguage: browser.language
@@ -1111,7 +1091,7 @@ class CFileWithContent implements IFileWithContent {
 						$("#details").empty();
 						app.specs.showTree.set();
 						// jump to the click target:
-						app.specs.tree.selectNodeByRef(eId, true);  // true: 'similar'; id must be a substring of nd.ref
+						app.specs.tree.selectNodeByRef(LIB.makeKey(eId), true);  // true: 'similar'; id must be a substring of nd.ref
 						// ToDo: In fact, we are either in CONFIG.objectDetails or CONFIG.objectList
 						document.getElementById(CONFIG.objectList).scrollTop = 0;
 					}
@@ -1123,7 +1103,7 @@ class CFileWithContent implements IFileWithContent {
 					function () {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
-						let eId = this.className.baseVal.split(' ')[1],		// id is second class
+						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
 							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
 							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: browser.language }),
 							dsc = '';
@@ -1135,7 +1115,7 @@ class CFileWithContent implements IFileWithContent {
 						if (dsc.stripCtrl().stripHTML()) {
 							// Remove the dynamic linking pattern from the text:
 							$("#details").html('<div style="font-size:120%;margin-bottom:0.3em">'
-								+ (CONFIG.addIconToInstance ? LIB.addIcon(ti, clsPrp['class'].icon) : ti)
+								+ (CONFIG.addIconToInstance ? LIB.addIcon(ti, clsPrp.rC.icon) : ti)
 								+ '</div>'
 								+ dsc);
 							app.specs.showTree.set(false);
@@ -1309,7 +1289,7 @@ moduleManager.construct({
 						function moveNode(movedNd, target: ITargetNode ):void {
 //								console.debug( 'move: ', movedNd.name, target );
 								let chd = new Date().toISOString();
-								app.cache.selectedProject.createContent( 'node', toSpecIF(movedNd,target) )
+								app.cache.selectedProject.createItems( 'node', toSpecIF(movedNd,target) )
 								.then( 
 									()=>{
 										self.tree.numberize();
@@ -1342,7 +1322,7 @@ moduleManager.construct({
 						
 						app.busy.set();
 						// 1. Delete the moved node with all its children:
-						app.cache.selectedProject.deleteContent( 'node', LIB.keyOf(event.move_info.moved_node) )
+						app.cache.selectedProject.deleteItems( 'node', [LIB.keyOf(event.move_info.moved_node)] )
 						.then( 
 							()=>{
 //								console.debug('delete node done',event)
@@ -1530,7 +1510,7 @@ moduleManager.construct({
 		if (self.pData.length("hierarchy")>0 ) {
 			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			app.cache.selectedProject.readContent( 'hierarchy', "all", {reload:true} )
+			app.cache.selectedProject.readItems( 'hierarchy', "all", {reload:true} )
 			.then( 
 				(rsp)=>{
 //					console.debug('load',rsp);
@@ -1621,7 +1601,7 @@ moduleManager.construct({
 		if( self.tree.selectedNode.ref != rId ) {
 			// different node: select it and open it:
 //			console.debug('#1',rId,self.tree.selectedNode);
-			self.tree.selectNodeByRef( rId );
+			self.tree.selectNodeByRef( LIB.makeKey(rId) );
 			// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
@@ -1680,7 +1660,7 @@ moduleManager.construct({
 //					newC.title = ....	// an instance-specific name (or title)
 
 //					console.info( 'saving comment', newC );
-					app.cache.selectedProject.createContent( 'resource', newC )
+					app.cache.selectedProject.createItems( 'resource', newC )
 						.done( function(newO) {
 							var newR = {
 								subject: { id: newId, revision: 0 },
@@ -1690,7 +1670,7 @@ moduleManager.construct({
 //								description: ''
 							};
 //							console.info( 'saving statement', newR );
-							app.cache.selectedProject.createContent( 'statement', newR )
+							app.cache.selectedProject.createItems( 'statement', newR )
 								.done( self.refresh )
 								.fail( handleError )
 						})
@@ -1710,13 +1690,13 @@ moduleManager.construct({
 			.done( function(rL) {
 				// delete all statements of the comment - should just be one, currently:
 //				console.debug('deleteComment',rL.statements,el);
-				app.cache.selectedProject.deleteContent('statement',rL)
+				app.cache.selectedProject.deleteItems('statement',rL)
 					.done( function(dta, textStatus, xhr) { 
 						if( --pend<1 ) self.refresh()
 					})
 					.fail( handleError );
 				// and delete the resource, as well:
-				app.cache.selectedProject.deleteContent('resource',{id:el})
+				app.cache.selectedProject.deleteItems('resource',[LIB.makeKey(el)])
 					.done( function(dta, textStatus, xhr) { 
 						if( --pend<1 ) self.refresh()
 					})
@@ -1834,7 +1814,7 @@ moduleManager.construct({
 				nd = nd.getNextNode();   // get next visible tree node
 			};
 
-			return app.cache.selectedProject.readContent( 'resource', oL )
+			return app.cache.selectedProject.readItems( 'resource', oL )
 		}
 		function renderNextResources(rL: SpecifResource[]): void {
 			// Format the titles with numbering:
@@ -2046,7 +2026,7 @@ moduleManager.construct({
 			// in other words: If a user wants to potentially delete statements which are shown by a diagram to be deleted,
 			// it is necessary to provide "shows" statements also for statements.
 			// ?? ToDo: delete the resource with all other references ...
-			app.cache.selectedProject.deleteContent( "resource", {id:resId} )
+			app.cache.selectedProject.deleteItems( "resource", {id:resId} )
 				.catch( LIB.stdError );
 			// Delete all statements related to this resource:
 			app.cache.selectedProject.readStatementsOf( {id:resId} )
@@ -2066,7 +2046,7 @@ moduleManager.construct({
 			self.parent.tree.selectNode( nd.getNextSibling() ); 
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
-			app.cache.selectedProject.deleteContent( 'node', LIB.keyOf(nd) )
+			app.cache.selectedProject.deleteItems( 'node', [LIB.keyOf(nd)] )
 				.then( 
 					()=>{
 						// If a diagram has been deleted, build a new glossary with elements 
@@ -2177,7 +2157,7 @@ moduleManager.construct({
 				// The titles may not be defined in a tree node and anyways don't have the icon, 
 				// therefore obtain the title from the referenced resources.
 				// Since the resources are cached, this is not too expensive.
-				app.cache.selectedProject.readContent( 'resource', net.resources )
+				app.cache.selectedProject.readItems( 'resource', net.resources )
 				.then( 
 					(rResL:SpecifResource[])=>{   
 						// rResL is a list of the selected plus it's related resources
@@ -2282,7 +2262,7 @@ moduleManager.construct({
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check permissions, here:
 					pend++;
-					app.cache.selectedProject.readContent('resource', nd.ref )
+					app.cache.selectedProject.readItems('resource', [nd.ref] )
 					.then( 
 						(rL:SpecifResource[])=>{   
 							// refR is a resource referenced in a hierarchy
@@ -2584,7 +2564,7 @@ moduleManager.construct({
 		if( modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
-			app.cache.selectedProject.deleteContent('statement', LIB.makeKey(sId) )
+			app.cache.selectedProject.deleteItems('statement', [LIB.makeKey(sId)] )
 			.then(
 				self.parent.doRefresh({forced:true}),
 				LIB.stdError

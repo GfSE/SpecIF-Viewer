@@ -54,7 +54,7 @@ moduleManager.construct({
 		opts.targetLanguage = browser.language;
 		opts.addIcon = true;
 
-		app.cache.selectedProject.readContent( 'resource', self.parent.tree.selectedNode.ref )
+		app.cache.selectedProject.readItems( 'resource', self.parent.tree.selectedNode.ref )
 		.then( 
 			(rL:SpecifResource[])=>{
 				selRes = rL[0];
@@ -79,7 +79,7 @@ moduleManager.construct({
 			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach( (sCId)=>{
 				LIB.cacheE( self.eligibleSCL, sCId )  // avoid duplicates
 			});
-			app.cache.selectedProject.readContent( 'statementClass', self.eligibleSCL )
+			app.cache.selectedProject.readItems( 'statementClass', self.eligibleSCL )
 			.then( 
 				(list:SpecifStatementClass[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
@@ -107,7 +107,7 @@ moduleManager.construct({
 					return true // iterate the whole tree
 				}
 			);
-			app.cache.selectedProject.readContent( 'resource', self.allResources )
+			app.cache.selectedProject.readItems( 'resource', self.allResources )
 			.then( 
 				(list:SpecifResource[])=>{
 					
@@ -318,7 +318,7 @@ moduleManager.construct({
 	};
 	self.saveStatement = (dir):void =>{
 //		console.debug('saveStatement',selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
-		return app.cache.selectedProject.createContent( 'statement', {
+		return app.cache.selectedProject.createItems( 'statement', {
 									id: LIB.genID('S-'),
 									class: self.selectedStatementClass.id,
 									subject: ( dir.secondAs=='object'? selRes.id : self.selectedCandidate.resource.id ),

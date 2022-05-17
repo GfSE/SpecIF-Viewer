@@ -23,8 +23,6 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.descriptionLength = 8192;
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/bpmn+xml";
-	if( typeof(opts.isIE)!='boolean' )
-		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent );
 	
 	if( !opts.strRoleType ) 
 		opts.strRoleType = "SpecIF:Role";
@@ -34,27 +32,13 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strBusinessProcessType = 'SpecIF:BusinessProcess';
 	if( !opts.strBusinessProcessesType ) 
 		opts.strBusinessProcessesType = 'SpecIF:BusinessProcesses';
-	if( !opts.strGlossaryType ) 
-		opts.strGlossaryType = "SpecIF:Glossary";
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramType ) 
 		opts.strDiagramType = "SpecIF:Diagram";
-/*	if( !opts.strDiagramFolderType ) 
-		opts.strDiagramFolderType = "SpecIF:Diagrams"; */
 	if( !opts.strBusinessProcessFolder ) 
 		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
-	if( !opts.strGlossaryFolder ) 
-		opts.strGlossaryFolder = "SpecIF:Glossary";
-	if( !opts.strActorFolder ) 
-		opts.strActorFolder = "FMC:Actors";
-	if( !opts.strStateFolder ) 
-		opts.strStateFolder = "FMC:States";
-	if( !opts.strEventFolder ) 
-		opts.strEventFolder = "FMC:Events";
-/*	if (!opts.strCollectionFolder)
-		opts.strCollectionFolder = "Collections and Groups";
-	if( !opts.strAnnotationFolder ) 
+/*	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
 	if (!opts.strNamespace)
@@ -408,11 +392,6 @@ function BPMN2Specif( xmlString, opts ) {
 							Array.from(ch.childNodes, (ref)=>{
 //								console.debug('dataInputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
-								if( opts.isIE ) {
-									console.warn('Omitting dataInputAssociation with id '+ch.getAttribute("id")
-												+', because IE cannot read the object reference.');
-									return
-								};
 								if( ref.tagName.includes('sourceRef') ) {
 									let dS = findStoredResource( ref.innerHTML );  // does not work in IE, not even IE11
 //									console.debug('storeAccessAssociations',ref.innerHTML,dS);
@@ -442,11 +421,6 @@ function BPMN2Specif( xmlString, opts ) {
 							Array.from(ch.childNodes, (ref)=>{
 //								console.debug('dataOutputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
-								if( opts.isIE ) {
-									console.warn('Omitting dataOutputAssociation with id '+ch.getAttribute("id")
-												+', because IE cannot read the object reference.');
-									return
-								};
 								if( ref.tagName.includes('targetRef') ) {
 									let dS = findStoredResource( ref.innerHTML );  // does not work in IE, not even IE11
 									if( dS ) {
@@ -1218,36 +1192,6 @@ function BPMN2Specif( xmlString, opts ) {
 				value: opts.strBusinessProcessesType
 			}],
 			changedAt: opts.fileDate
-	/*	}, {
-			id: "FolderGlossary-" + apx,
-			class: "RC-Folder",
-			title: opts.strGlossaryFolder,
-			properties: [{
-				class: "PC-Type",
-				value: opts.strGlossaryType
-			}],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderAct-" + apx,
-			class: "RC-Folder",
-			title: opts.strActorFolder,
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderSta-" + apx,
-			class: "RC-Folder",
-			title: opts.strStateFolder,
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderEvt-" + apx,
-			class: "RC-Folder",
-			title: opts.strEventFolder,
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderNte-" + apx,
-			class: "RC-Folder",
-			title: opts.strAnnotationFolder,
-			properties: [],
-			changedAt: opts.fileDate */
 		}]
 	}
 	

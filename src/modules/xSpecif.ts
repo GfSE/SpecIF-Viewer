@@ -723,49 +723,6 @@ class CSpecIF implements SpecIF {
 				: LIB.cleanValue(iE) );
         }
 	}
-/*	private normalizeProperties(el: SpecifInstance, dta): SpecifProperty[] {
-		// el: original instance (resource or statement)
-		// Create a list of properties in the sequence of propertyClasses of the respective class.
-		// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-		// Property classes must be unique!
-
-		// check uniqueness of property classes:
-		if (el.properties) {
-			let idL: string[] = [],
-				pCid: string;
-			el.properties.forEach((p: SpecifProperty) => {
-				pCid = p['class'].id;
-				if (idL.indexOf(pCid) < 0)
-					idL.push(pCid);
-				else
-					console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
-			});
-		};
-
-		let p: SpecifProperty,
-			pCs: SpecifKeys,
-			nL: SpecifProperty[] = [],
-			// iCs: instance class list (resourceClasses or statementClasses),
-			// the existence of subject (or object) let's us recognize that it is a statement:
-			// @ts-ignore - existance of subject is checked to find out whether it is a resource or statement
-			iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-			iC = LIB.itemByKey(iCs, el['class']);
-		// build a list of propertyClass identifiers including the extended class':
-		//	pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses || [] : [];
-		//	pCs = pCs.concat(LIB.itemByKey(iCs, el['class']).propertyClasses || []);
-		pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
-		pCs = pCs.concat(iC.propertyClasses);
-		// add the properties in sequence of the propertyClass identifiers:
-		pCs.forEach((pC: SpecifKey): void => {
-			// skip hidden properties:
-			if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
-			// assuming that the property classes are unique:
-			p = LIB.itemBy(el.properties, 'class', pC);
-			nL.push(p || { class: pC, values: [] })
-		});
-//		console.debug('normalizeProperties result',simpleClone(nL));
-		return nL; // normalized property list
-	} */
 	toExt(opts?: any): Promise<SpecIF> {
 		// transform self.data to SpecIF following defined options;
 		// a clone is delivered.
@@ -776,6 +733,7 @@ class CSpecIF implements SpecIF {
 		return new Promise(
 			(resolve, reject) => {
 				var pend = 0,
+					// @ts-ignore - the missing attributes will come below:
 					spD: SpecIF = {
 						id: this.id,
 						title: LIB.languageValueOf(this.title, opts),
@@ -927,7 +885,7 @@ class CSpecIF implements SpecIF {
 					};
 					return false;
 				}
-				function normalizeProperties(el: SpecifResource, dta:SpecIF): SpecifProperty[] {
+			/*	function normalizeProperties(el: SpecifResource, dta:SpecIF): SpecifProperty[] {
 					// el: original instance (resource or statement)
 					// Create a list of properties in the sequence of propertyClasses of the respective class.
 					// Use those provided by the instance's properties and fill in missing ones with default (no) values.
@@ -967,9 +925,9 @@ class CSpecIF implements SpecIF {
 						p = LIB.itemBy(el.properties, 'class', pC);
 						nL.push(p || { class: pC, values: [] })
 					});
-					//		console.debug('normalizeProps result',simpleClone(nL));
+//					console.debug('normalizeProps result',simpleClone(nL));
 					return nL; // normalized property list
-				}
+				} */
 				// common for all items:
 				function i2ext(iE:any) {
 					var oE:any = {
@@ -1176,7 +1134,8 @@ class CSpecIF implements SpecIF {
 					oE['class'] = iE['class'];
 					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 
-					let pL = opts.showEmptyProperties ? normalizeProperties(iE, spD) : iE.properties;
+				//	let pL = opts.showEmptyProperties ? normalizeProperties(iE, spD) : iE.properties;
+					let pL = iE.properties;
 					if (pL && pL.length > 0) oE.properties = LIB.forAll(pL, p2ext);
 					return oE;
 				}
