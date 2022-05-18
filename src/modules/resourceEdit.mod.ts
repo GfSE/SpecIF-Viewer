@@ -69,7 +69,7 @@ moduleManager.construct({
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
 		pData = self.parent,	// the parent's data
-		cData:SpecIF,			// the cached data
+		cData:CCache,			// the cached data
 		opts:any,				// the processing options
 		toEdit:CResourceToShow;	// the resource with classified properties to edit
 
@@ -135,7 +135,7 @@ moduleManager.construct({
 	};
 
 	// The module entry;
-	self.show = ( options )=>{
+	self.show = ( options?:any )=>{
 
 		self.clear();
 		cData = app.cache.selectedProject.data;
@@ -148,7 +148,7 @@ moduleManager.construct({
 			case 'create':
 				selectResClass( opts )
 				.then(
-					(rC:ResourceClass)=>{ 
+					(rC:ResourceClass):void =>{ 
 						app.cache.selectedProject.createResource(rC)
 						.then( 
 							(r:Resource)=>{
@@ -180,7 +180,7 @@ moduleManager.construct({
 				// get the selected resource:
 				app.cache.selectedProject.readContent( 'resource', pData.tree.selectedNode.ref )
 				.then( 
-					(rL:Resource[])=>{
+					(rL:Item[])=>{
 						// create a clone to collect the changed values before committing:
 						self.newRes = simpleClone(rL[0]);
 						if( opts.mode=='clone' ) {
@@ -205,7 +205,7 @@ moduleManager.construct({
 		};
 		return;
 		
-		function editResource(res,opts) {
+		function editResource(res: Resource, opts: any) {
 			// Edit/update the resources properties:
 //			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
@@ -343,7 +343,7 @@ moduleManager.construct({
 				}
 			}
 		}
-		function selectResClass( opts ) {		
+		function selectResClass( opts?:any ):Promise<resourceClass> {		
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
 				app.cache.selectedProject.readContent( 'resourceClass', LIB.forAll( opts.eligibleResourceClasses, (rCId)=>{return {id:rCId}} ))
