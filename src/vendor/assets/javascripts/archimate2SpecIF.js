@@ -41,11 +41,15 @@ function Archimate2Specif(xmlString, opts) {
 	if (!Array.isArray(opts.hiddenDiagramProperties))
 		opts.hiddenDiagramProperties = [];
 	if (typeof (opts.includeAllElements) != 'boolean')
-		opts.includeAllElements = true;  // if false, only shown elements are included
+		// if false, only shown elements are included
+		opts.includeAllElements = true;  
 	if (typeof (opts.propertyClassesShallHaveDifferentTitles) != 'boolean')
-		opts.propertyClassesShallHaveDifferentTitles = false;  // if true, consolidation on SpecIF import is precluded
+		// if true, consolidation on SpecIF import is precluded
+		opts.propertyClassesShallHaveDifferentTitles = false;
 	if (typeof (opts.transformPermissibleStatementsOnly) != 'boolean')
-		opts.transformPermissibleStatementsOnly = false;  // if false, statementClasses are altered to support all used statements
+		// if false, statementClasses are altered to support all used statements
+		// if true, all statements not supported by it's statementClass are ignored
+		opts.transformPermissibleStatementsOnly = false;
 
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -162,7 +166,7 @@ function Archimate2Specif(xmlString, opts) {
 				(p) => { return p.nodeName == "property" }
 			);
 			// pL is the list of the view's properties.
-			//				console.debug( 'pL', pL );
+//			console.debug( 'pL', pL );
 			for (var i = pL.length - 1; i > -1; i--) {
 				// look up the name of the referenced propertyDefinition,
 				// if the name is listed in opts.hiddenDiagramProperties
@@ -538,7 +542,7 @@ function Archimate2Specif(xmlString, opts) {
 				case 'Realization':
 				//		s['class'] = "SC-realizes";
 				case 'Assignment':
-					//		s['class'] = "SC-isAssignedTo";
+				//		s['class'] = "SC-isAssignedTo";
 					s['class'] = "SC-contains";
 					break;
 				case 'Specialization':
@@ -1228,9 +1232,12 @@ function Archimate2Specif(xmlString, opts) {
 	} */
 	function extendStatementClassIfNecessary(st) {
 		if (st['class'] == "SC-shows") return;
+		// in Archimate, all statements except "SC-shows" have only resources as subject or object:
 		let sC = itemById(model.statementClasses, st['class']),
 			subC = itemById(model.resources, st.subject)['class'],
 			obC = itemById(model.resources, st.object)['class'];
+		// Add a subjectClass, if a statement has a subject with class which is not yet listed;
+		// if the statementClass has no subjectClasses, subjects of all classes are eligible:
 		if (sC.subjectClasses && !sC.subjectClasses.includes(subC)) {
 			console.info('Adding resourceClass="' + subC 
 				+ '" of subject="' + st.subject
@@ -1239,6 +1246,8 @@ function Archimate2Specif(xmlString, opts) {
 				+ '" to the statementClass\' subject class.');
 			sC.subjectClasses.push(subC);
 		};
+		// Add an objectClass, if a statement has an object with class which is not yet listed;
+		// if the statementClass has no objectClasses, objects of all classes are eligible:
 		if (sC.objectClasses && !sC.objectClasses.includes(obC)) {
 			console.info('Adding resourceClass="' + obC
 				+ '" of subject="' + st.object
@@ -1250,7 +1259,9 @@ function Archimate2Specif(xmlString, opts) {
 	}
 	function isStatementPermissible(st) {
 		if (st['class'] == "SC-shows") return true;
-		// check if the classes of a statement's subject and object are
+		// check if the classes of a statement's subject and object are listed 
+		// in it's class subjectClasses resp. objectClasses, return a boolean value;
+		// in Archimate, all statements except "SC-shows" have only resources as subject or object:
 		let sC = itemById(model.statementClasses, st['class']),
 			subC = itemById(model.resources, st.subject)['class'],
 			obC = itemById(model.resources, st.object)['class'];
