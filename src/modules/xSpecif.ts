@@ -218,7 +218,7 @@ class CSpecIF implements SpecIF {
 			this.propertyClasses = Lib.forAll(spD.propertyClasses, pC2int );
 			this.resourceClasses = Lib.forAll( spD[names.rClasses], rC2int );
 			this.statementClasses = Lib.forAll( spD[names.sClasses], sC2int );
-			if (names.hClasses)
+			if (names.hClasses && Array.isArray(spD[names.hClasses]))
 				this.resourceClasses = this.resourceClasses.concat( Lib.forAll( spD[names.hClasses], hC2int ));
 			this.resources = Lib.forAll( spD.resources, r2int );
 			this.statements = Lib.forAll( spD.statements, s2int );
