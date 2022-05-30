@@ -137,7 +137,7 @@ function Archimate2Specif(xmlString, opts) {
 							pC.dataType = "DT-DateTime";
 							break;
 						case 'number':
-							// Best: find all instances, check the type ...
+							// ToDo: find all instances, check the type ...
 							pC.dataType = "DT-Integer";
 							break;
 						case 'boolean':
@@ -167,13 +167,13 @@ function Archimate2Specif(xmlString, opts) {
 			);
 			// pL is the list of the view's properties.
 //			console.debug( 'pL', pL );
-			for (var i = pL.length - 1; i > -1; i--) {
+			for (var p of pL) {
 				// look up the name of the referenced propertyDefinition,
 				// if the name is listed in opts.hiddenDiagramProperties
 				// and the property's value is "true",
 				// then the diagram shall be hidden:
-				if (opts.hiddenDiagramProperties.includes(propertyDefinitions.get(pL[i].getAttribute("propertyDefinitionRef")))
-					&& getChildsInnerByTag(pL[i], "value") == "true") return false;   // => diagram is hidden!
+				if (opts.hiddenDiagramProperties.includes(propertyDefinitions.get(p.getAttribute("propertyDefinitionRef")))
+					&& getChildsInnerByTag(p, "value") == "true") return false;   // => diagram is hidden!
 			};
 		};
 		// none of the view's properties is listed;
@@ -624,37 +624,36 @@ function Archimate2Specif(xmlString, opts) {
 		// Check the statement consistency. 
 		// So far only problems with "shows" statements have been encountered, and so it is sufficient to check the objects.
 		// However, the subjects are checked, as well, to be on the 'safe side':
-		/*	if( indexById( model.resources, model.statements[i].object )<0
-				&& indexById( model.statements, model.statements[i].object )<0 ) { */
 		if (indexById(model.resources, st.subject) < 0
-		//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
+			//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
 			|| indexById(model.resources, st.object) < 0
 			&& indexById(model.statements, st.object) < 0) {
 			console.warn('Skipping statement '
-				+ (st.title ? " with title '" + st.title + "' " : "")
-				+ 'of class="' + st["class"]
+				+ ' with id="' + st.id
+				+ '" of class="' + st["class"]
 				+ '" with subject="' + st.subject
 				+ '" and object="' + st.object
 				+ '", because subject or object are not listed.');
 			// remove any statement which is not consistent:
 			model.statements.splice(i, 1);
-			break;
-		};
-		if (opts.transformPermissibleStatementsOnly) {
-			if (!isStatementPermissible(st)) {
-				console.warn('Skipping statement '
-					+ (st.title ? " with title '" + st.title + "' " : "")
-					+ 'of class="' + st["class"]
-					+ '" with subject="' + st.subject
-					+ '" and object="' + st.object
-					+ '", because the subject or object class is not listed with the statement class.');
-				// remove any statement which is not consistent:
-				model.statements.splice(i, 1);
-			};
 		}
 		else {
-			extendStatementClassIfNecessary(st);
-        }
+			if (opts.transformPermissibleStatementsOnly) {
+				if (!isStatementPermissible(st)) {
+					console.warn('Skipping statement '
+						+ ' with id="' + st.id
+						+ '" of class="' + st["class"]
+						+ '" with subject="' + st.subject
+						+ '" and object="' + st.object
+						+ '", because the subject or object class is not listed with the statement class.');
+					// remove any statement which is not consistent:
+					model.statements.splice(i, 1);
+				};
+			}
+			else {
+				extendStatementClassIfNecessary(st);
+			}
+		}
 	};
 
 	// 6. Add the resource for the hierarchy root:
@@ -1172,19 +1171,18 @@ function Archimate2Specif(xmlString, opts) {
 	}
 	function getChildsInnerByTag(itm,tag) {
 		// Get innerHTML of the child with the given nodeName:
-		let lst = Array.from(itm.children);
-		for( var i=0,I=lst.length; i<I; i++ ) {
-			if( lst[i].nodeName==tag ) return lst[i].innerHTML;
+		for (var l of Array.from(itm.children) ) {
+			if( l.nodeName==tag ) return l.innerHTML;
 		};
 		return "";
 	}
 	function isShown(item) {
 		// Some Archimate structural relationships ("uniting") can be implicit and are accepted:
-		if( ["SC-contains"].indexOf(item['class'])>-1 ) return true;
+		if( ["SC-contains"].includes(item['class']) ) return true;
 		// accept shown items:
-		for( var i=model.statements.length-1; i>-1; i-- )
-			if( model.statements[i]["class"]=="SC-shows"
-				&& model.statements[i].object==item.id ) return true
+		for( var s of model.statements )
+			if( s["class"]=="SC-shows"
+				&& s.object==item.id ) return true
 		return false;	
 	}
 	function addStaIfNotListed(st) {
@@ -1193,18 +1191,16 @@ function Archimate2Specif(xmlString, opts) {
 		// the opposite direction, thus contradictory.
 		// So, it is refrained from adding a new relationship, if there is one already
 		// for the respective model elements, no matter which direction.
-		// This is OK, because the first entry in based on an explicit relation and
+		// This is OK, because the first entry is based on an explicit relation and
 		// an entry based on graphical analysis is added later.
-		for( var i=model.statements.length-1;i>-1;i-- ) 
-			if(		model.statements[i]["class"] == st["class"]
+		for( var s of model.statements ) 
+			if(		s["class"] == st["class"]
 				&&	(
-						model.statements[i].subject == st.subject
-						&& model.statements[i].object == st.object
-					|| model.statements[i].subject == st.object
-						&& model.statements[i].object == st.subject
+						s.subject == st.subject && s.object == st.object
+					|| s.subject == st.object && s.object == st.subject
 					)
 			)
-					return model.statements[i];
+				return s;
 		// not found, so add:
 		model.statements.push( st );
 	//	return undefined
@@ -1213,23 +1209,6 @@ function Archimate2Specif(xmlString, opts) {
 		let rC = itemById(model.resourceClasses, rCId);
 		if (!rC.propertyClasses.includes(pCId)) rC.propertyClasses.push(pCId);
 	}
-/*	function extendStatementClassIfNecessary(st) {
-		if ( st['class']!="SC-shows") {
-			let sC = itemById(model.statementClasses, st['class']),
-				subC = itemById(model.resourceClasses, st.subject)['class'],
-				obC = itemById(model.resourceClasses, st.object)['class'];
-			if (!sC.subjectClasses.includes(subC)) sC.subjectClasses.push(subC);
-			if (!sC.objectClasses.includes(obC)) sC.objectClasses.push(obC);
-		};
-    }
-	function isStatementPermissible(st) {
-		if (st['class'] == "SC-shows") return true;
-		// check if the classes of a statement's subject and object are
-		let sC = itemById(model.statementClasses, st['class']),
-			subC = itemById(model.resourceClasses, st.subject)['class'],
-			obC = itemById(model.resourceClasses, st.object)['class'];
-		return (sC.subjectClasses.includes(subC) && sC.objectClasses.includes(obC));
-	} */
 	function extendStatementClassIfNecessary(st) {
 		if (st['class'] == "SC-shows") return;
 		// in Archimate, all statements except "SC-shows" have only resources as subject or object:
@@ -1269,12 +1248,10 @@ function Archimate2Specif(xmlString, opts) {
 			&& (!sC.objectClasses || sC.objectClasses.includes(obC)));
 	}
 	function makeISODate(dt) {
-		// repair faulty time-zone from ADOIT (add colon between hours and minutes):
+		// repair faulty time-zone from ADOIT (add missing colon between hours and minutes):
 		return dt.replace(
 				/(.+\+\d{2})(\d{2})$/,
-				($0,$1,$2) => {
-					return $1+':'+$2;
-				}
+				($0,$1,$2) => { return $1+':'+$2; }
 			)
 	}
 }
