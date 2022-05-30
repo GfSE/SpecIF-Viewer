@@ -280,7 +280,7 @@ class CPropertyToShow implements SpecifProperty {
 
 		// Prepare a file reference for viewing and editing:
 //		console.debug('toGUI 0: ', txt);
-		var repStrings = [];   // a temporary store for replacement strings
+		var repStrings:string[] = [];   // a temporary store for replacement strings
 
 		// 1. transform two nested objects to link+object resp. link+image:
 		txt = txt.replace(RE.tagNestedObjects,
@@ -1142,10 +1142,9 @@ class CFileWithContent implements IFileWithContent {
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
 						rT = LIB.itemByKey(cacheData.resourceClasses, cacheData.resources[i]['class']);
-						if (CONFIG.diagramClasses.indexOf(rT.title) < 0) continue;
-						// else, it is a resource representing a diagram:
-						if (LIB.instanceTitleOf(cacheData.resources[i], opts) == ti) {
-							// found: the diagram carries the same title 
+						if (CONFIG.diagramClasses.includes(rT.title)
+							&& LIB.instanceTitleOf(cacheData.resources[i], opts) == ti) {
+							// found: it is a resource representing a diagram carrying the same title
 							if (app[CONFIG.objectList].resources.selected()
 								&& app[CONFIG.objectList].resources.selected().id == cacheData.resources[i].id)
 								// the searched plan is already selected, thus jump to the element: 
@@ -2204,9 +2203,9 @@ moduleManager.construct({
 			LIB.stdError(xhr);
 			app.busy.reset();
 		}
-		function cacheMinRes(L:SpecifResource[],r:SpecifResource):void {
+		function cacheMinRes(L:SpecifResource[],r:SpecifResource|SpecifKey):void {
 			// cache the minimal representation of a resource;
-			// r may be a resource, a key pointing to a resource or a resource-id;
+			// r may be a resource or a key pointing to a resource;
 			// note that the sequence of items in L is always maintained:
 			LIB.cacheE( L, { id: r.id, title: LIB.instanceTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
 		}
@@ -2264,9 +2263,9 @@ moduleManager.construct({
 					pend++;
 					app.cache.selectedProject.readItems('resource', [nd.ref] )
 					.then( 
-						(rL:SpecifResource[])=>{   
+						(rL:SpecifItem[])=>{   
 							// refR is a resource referenced in a hierarchy
-							let refR: SpecifResource = rL[0],
+							let refR = rL[0] as SpecifResource,
 								refTi = LIB.instanceTitleOf(refR, localOpts),
 								dT: SpecifDataType;
 //							console.debug('self.parent.tree.iterate',refR,refTi,pend);
@@ -2289,7 +2288,7 @@ moduleManager.construct({
 												if (refPatt.test( LIB.languageValueOf(p.values[0],localOpts )) && notListed( staL, selR, refR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
-											//			class:	// no class indicates also that the statement cannot be deleted
+													//	class:	// no class indicates also that the statement cannot be deleted
 														subject:	selR,
 														object:		refR
 													})
@@ -2298,18 +2297,17 @@ moduleManager.construct({
 									});
 								// 2. The selected resource's title found in other resource's texts 
 								//    result in a 'other mentions this' statement (selected resource is object):
-								if( refR.properties )
-									refR.properties.forEach( (p)=>{
+								if (refR.properties)
+									refR.properties.forEach((p) => {
 										// assuming that the dataTypes are always cached:
 										switch (LIB.dataTypeOf(p['class'], cacheData ).type ) {
 											case SpecifDataTypeEnum.String:
-											case 'xhtml':	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
-												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {
+												if (selPatt.test( LIB.languageValueOf(p.values[0], localOpts) ) && notListed( staL,refR,selR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
-											//			class:	// no class indicates also that the statement cannot be deleted
+													//	class:	// no class indicates also that the statement cannot be deleted
 														subject:	refR,
 														object:		selR
 													})
@@ -2392,10 +2390,10 @@ moduleManager.construct({
 //					console.debug('staCreClasses',sC,res['class']);
 				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
 					if (!sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User)>-1 ) {
-						if( !sC.subjectClasses || sC.subjectClasses.indexOf( res['class'] )>-1 ) 
-							self.staCreClasses.subjectClasses.push( sC.id );	// all statementClasses eligible for the currently selected resource
-						if( !sC.objectClasses || sC.objectClasses.indexOf( res['class'] )>-1 )
-							self.staCreClasses.objectClasses.push( sC.id );		// all statementClasses eligible for the currently selected resource
+						if (!sC.subjectClasses || LIB.indexByKey(sC.subjectClasses, res['class']) > -1)
+							self.staCreClasses.subjectClasses.push( LIB.keyOf(sC) );	// all statementClasses eligible for the currently selected resource
+						if (!sC.objectClasses || LIB.indexByKey(sC.objectClasses, res['class']) > -1)
+							self.staCreClasses.objectClasses.push( LIB.keyOf(sC) );		// all statementClasses eligible for the currently selected resource
 					};
 				}
 			);

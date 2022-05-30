@@ -757,17 +757,17 @@ class CSpecIF implements SpecIF {
 					spD.createdBy = {
 						familyName: app.me.lastName,
 						givenName: app.me.firstName,
-						email: { type: "text/html", value: app.me.email }
+						email: app.me.email
 					};
 					if (app.me.organization)
 						spD.createdBy.org = { organizationName: app.me.organization };
 				}
 				else {
-					if (this.createdBy && this.createdBy.email && this.createdBy.email.value) {
+					if (this.createdBy && this.createdBy.email ) {
 						spD.createdBy = {
 							familyName: this.createdBy.familyName,
 							givenName: this.createdBy.givenName,
-							email: { type: "text/html", value: this.createdBy.email.value }
+							email: this.createdBy.email
 						};
 						if (this.createdBy.org && this.createdBy.org.organizationName)
 							spD.createdBy.org = this.createdBy.org;
@@ -1160,14 +1160,6 @@ class CSpecIF implements SpecIF {
 					// so we lookup, if so desired, e.g. when exporting to ePub:
 					var oE: SpecifStatement = a2ext(iE);
 
-					// Skip the title, if it is equal to the statementClass' title;
-					// ToDo: remove limitation of single language.
-					if (oE.title && typeof (oE.title) == "string") {
-						let sC = LIB.itemByKey(spD.statementClasses, iE['class']);
-						if (typeof (sC.title) == "string" && oE.title == sC.title)
-							delete oE.title;
-					};
-
 				//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 					oE.subject = iE.subject;
 					oE.object = iE.object;
@@ -1205,8 +1197,6 @@ class CSpecIF implements SpecIF {
 								};
 								if (iE.revision) oE.revision = iE.revision;
 								if (iE.changedBy) oE.changedBy = iE.changedBy;
-							//	if( iE.createdAt ) oE.createdAt = iE.createdAt;
-							//	if( iE.createdBy ) oE.createdBy = iE.createdBy;
 								if (iE.blob) oE.blob = iE.blob;
 								if (iE.dataURL) oE.dataURL = iE.dataURL;
 								resolve(oE);

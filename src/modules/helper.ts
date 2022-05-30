@@ -205,13 +205,17 @@ function checkboxField(tag: string, entries: IBox[], opts?: IFieldOptions): stri
 	return cB;
 }
 function checkboxValues( tag:string ):string[] {
-	// get the selected check boxes as array with indices:
+	// get the selected check boxes as array:
 	let chd = $('input[name="checkbox' + simpleHash(tag)+'"]:checked');
-	var resL = [];
-	for( var i=0, I=chd.length; i<I; i++ ) {	// chd is an object, not an array
+	var resL:string[] = [];
+	Array.from(chd, (el) => {
+		// @ts-ignore - .value is in fact accessible
+		resL.push(el.value);
+    });
+/*	for( var i=0, I=chd.length; i<I; i++ ) {	// chd is an object, not an array
 		// @ts-ignore - .value is in fact accessible
 		resL.push( chd[i].value );
-	};
+	}; */
 	return resL;
 }
 function booleanField( tag:string, val:boolean, opts?:any ):string {
@@ -452,17 +456,13 @@ LIB.equalValues = (refVL: SpecifValues, newVL: SpecifValues): boolean => {
 LIB.equalBoolean = (rB: boolean, nB: boolean): boolean => {
 	return (rB && nB || !rB && !nB);
 }
-LIB.isReferenced = (r: SpecifKey, n: SpecifKey): boolean => {
-	// ToDo: true, only if r is the latest revision in case n.revision is undefined ...
-	return LIB.isKey(r) && LIB.isKey(n) && r.id == n.id && (!n.revision || r.revision == n.revision);
-}
 LIB.isKey = (el: any): boolean => {
 	return typeof (el)=='object' && el.id;
 }
 LIB.isString = (el:any): boolean => {
 	return typeof (el) == 'string';
 }
-LIB.equalStringL = (refL: any[], newL: any[]): boolean => {
+LIB.isEqualStringL = (refL: any[], newL: any[]): boolean => {
 		// return true, if both lists have equal members:
 		// no or empty lists are allowed and considerated equal:
 		let rArr = Array.isArray(refL) && refL.length > 0,
@@ -583,24 +583,30 @@ function indexByTitle(L:any[],ti:string):number {
 LIB.itemByTitle = (L: ItemWithNativeTitle[],ti:string):any => {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].title==ti ) return L[i];   // return list item
+		for( var l of L )
+			if( l.title==ti ) return l;   // return list item
 	};
 	// else return undefined
+}
+LIB.references = (n: SpecifKey, el: SpecifKey): boolean => {
+	// true, if n references el.
+	return LIB.isKey(el) && LIB.isKey(n) && el.id == n.id && (!n.revision || el.revision == n.revision);
 }
 LIB.indexBy = (L: any[], p: string, k: SpecifKey): number => {
 	if (L && p && k) {
 		// Return the index of an element in list 'L' whose property 'p' equals key 'k':
+		// ToDo: true, only if n is the latest revision in case r.revision is undefined ...
 		for (var i = L.length - 1; i > -1; i--)
-			if( LIB.isKey(k) && LIB.isReferenced(L[i][p], k)) return i; // return list index
+			if( LIB.references(k,L[i][p])) return i; // return list index
 	};
 	return -1;
 }
 LIB.itemBy = (L: any[], p: string, k: SpecifKey): any => {
 	if (L && p && k) {
 		// Return the element in list 'L' whose property 'p' equals key 'k':
-		for (var i = L.length - 1; i > -1; i--)
-			if( LIB.isKey(k) && LIB.isReferenced(L[i][p], k)) return L[i]; // return list item
+		// ToDo: true, only if n is the latest revision in case r.revision is undefined ...
+		for (var l of L)
+			if( LIB.references(k,l[p])) return l; // return list item
 	};
 }
 /*
@@ -1092,12 +1098,12 @@ LIB.attachment2mediaType = ( fname:string ):string|undefined =>{
 //	return undefined;
 }
 LIB.localDateTime = (iso:string):string =>{
-	if( typeof(iso)=='string' ) {
+//	if( typeof(iso)=='string' ) {
 		// ToDo: calculate offset of time-zone ... or use one of the libraries ..
-		if( iso.length>15 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
-		if( iso.length>9 ) return (iso.substr(0,10));
-	};
-	return '';
+		if( iso.length>11 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
+		return (iso.substr(0,10));
+//	};
+//	return '';
 }
 
 // Make a very simple hash code from a string:

@@ -128,7 +128,7 @@ class CCache {
 		let itmL = this[standardTypes.listName.get(ctg)];
 
 		if (req == 'all')
-			return [].concat(itmL);	  // return all cached items in a new list
+			return simpleClone(itmL);	  // return all cached items in a new list
 
 		let allFound = true, i = 0, I = req.length, idx: number;
 		var rL: SpecifItem[] = [];
@@ -142,7 +142,7 @@ class CCache {
 				allFound = false;
 		};
 		if (allFound)
-			return rL;
+			return simpleClone(rL);
 		else
 			return [];
 	}
@@ -451,7 +451,7 @@ class CProject {
 				//    b) if same id and same content, just use it (no action)
 				//    c) if same id and different content, save with new id and update all references
 				(nD: CSpecIF) => {
-					//					console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
+//					console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
 					this.types.forEach((ty:CElement) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 						if (Array.isArray(nD[ty.listName])) {
@@ -658,21 +658,22 @@ class CProject {
 
 				this.readItems('resourceClass', [LIB.keyOf(rC)], { reload: true })
 					.then(
-						(rCL: SpecifResourceClass[]) => {
+						(rCL: SpecifItem[]) => {
 							//							console.debug('#1',rC);
 							// return an empty resource instance of the given type:
 							res = {
 								id: LIB.genID('R-'),
 								class: LIB.makeKey(rCL[0].id),
 							//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
-								properties: []
+								properties: [],
+								changedAt: new Date().toISOString()
 							};
 							return this.readItems('propertyClass', rC.propertyClasses, { reload: true })
 						}
 					)
 					.then(
-						(pCL: SpecifPropertyClass[]) => {
-							//							console.debug('#2',pCL);
+						(pCL: SpecifItem[]) => {
+//							console.debug('#2',pCL);
 							res.properties = LIB.forAll(pCL, LIB.createProp);
 							resolve(res)
 						}
@@ -729,6 +730,19 @@ class CProject {
 			return LIB.forAll(L, (r: SpecifResource) => {
 				if (visibleIdOf(r) == vId) return r;
 			});
+
+			// ToDo: Rework!  prj?  app.cache.selectedProject.data? value?
+			function visibleIdOf(r: SpecifResource, prj?: SpecIF): string | undefined {
+				if (r && r.properties) {
+					if (!prj) prj = app.cache.selectedProject.data;
+					for (var a = 0, A = r.properties.length; a < A; a++) {
+						// Check the configured ids:
+						if (CONFIG.idProperties.indexOf(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], prj))) > -1)
+							return r.properties[a].value
+					};
+				};
+				//	return undefined
+			}
 		}
 	}
 	private deduplicate(opts?:any): void {
@@ -1051,7 +1065,8 @@ class CProject {
 						|| LIB.valuesByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
 						|| dta.get("statement","all").filter(
 								(sta) => {
-									return LIB.staClassTitleOf(sta) == CONFIG.staClassShows && LIB.isReferenced(r,sta.subject)
+									// @ts-ignore - subject does exist on a statement
+									return LIB.staClassTitleOf(sta) == CONFIG.staClassShows && LIB.references(sta.subject,r)
 								}
 							).length > 0;
 				}
@@ -1127,11 +1142,11 @@ class CProject {
 					// and that there may be multiple resourceClasses per model-element type:
 					let idx: number,
 						tL = LIB.forAll(CONFIG.modelElementClasses, () => { return [] });
-					// Each collection carries the ids of resourceClasses for the given model-element type:
+					// Each array in tL shall carry the keys of resourceClasses for the model-element to collect:
 					dta.get("resourceClass","all").forEach(
 						(rC: SpecifResourceClass) => {
 							idx = CONFIG.modelElementClasses.indexOf(rC.title);
-							if (idx > -1) tL[idx].push(rC.id);
+							if (idx > -1) tL[idx].push(LIB.keyOf(rC));
 						}
 					);
 //					console.debug('gl tL',gl,tL);
@@ -1156,17 +1171,18 @@ class CProject {
 						(r: SpecifResource): void => {
 							// ... using the collections per fundamental model-element type:
 							for (idx = tL.length - 1; idx > -1; idx--) {
-								if (tL[idx].indexOf(r['class']) > -1) break;
+								if (LIB.indexByKey(tL[idx], r['class']) > -1) {
+									gl.nodes[idx].nodes.push({
+										// Create new hierarchy node with reference to the resource:
+										// ID should be the same when the glossary generated multiple times,
+										// but must be different from a potential reference somewhere else.
+										id: 'N-' + simpleHash(r.id + '-gen'),
+										resource: LIB.keyOf(r),
+										changedAt: tim
+									});
+									break;
+								};
 							};
-							if (idx > -1)
-								gl.nodes[idx].nodes.push({
-									// Create new hierarchy node with reference to the resource:
-									// ID should be the same when the glossary generated multiple times,
-									// but must be different from a potential reference somewhere else.
-									id: 'N-' + simpleHash(r.id + '-gen'),
-									resource: LIB.keyOf(r),
-									changedAt: tim
-								});
 						}
 					);
 					return [gl];
@@ -1220,7 +1236,7 @@ class CProject {
 							item = this.hierarchies;  */
 						let items = this.data.get(ctg, itemL);
 						// Normalize the properties if desired:
-						if (opts.showEmptyProperties && ['resource', 'statement'].indexOf(ctg) > -1) {
+						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
 							items.forEach((itm: any) => {
 								// classes are alwways cached, so we can use this.data:
 								itm.properties = normalizeProperties(itm, this.data)
@@ -1252,8 +1268,9 @@ class CProject {
 				});
 			};
 
-			let p: SpecifProperty,
-				pCs: SpecifKeys, // keys of propertyClasses
+			let pCkL: SpecifKeys, // keys of propertyClasses
+				pC: SpecifPropertyClass,
+				p: SpecifProperty,
 				nL: SpecifProperty[] = [],  // normalized property list
 				// iCs: instance class list (resourceClasses or statementClasses),
 				// the existence of subject (or object) let's us recognize that it is a statement:
@@ -1261,22 +1278,33 @@ class CProject {
 				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
 				iC = LIB.itemByKey(iCs, el['class']);
 
-			// build a list of propertyClass identifiers including the extended class':
-			pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
-			pCs = pCs.concat(iC.propertyClasses);
+			// from the instance class including the extended class, build the list of propertyClass keys:
+			pCkL = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
+			pCkL = pCkL.concat(iC.propertyClasses);
 
-			// add the properties in sequence of the propertyClass identifiers:
-			pCs.forEach((pC: SpecifKey): void => {
+			// add the properties in sequence of the propertyClass keys as specified by the instance class:
+			pCkL.forEach((pCk: SpecifKey): void => {
 				// skip hidden properties:
-				if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
+				if (CONFIG.hiddenProperties.indexOf(pCk.id) > -1) return;
+				// the full propertyClass referenced by pCk;
+				// pC may, but pCk may not have a revision:
+				pC = LIB.itemByKey(dta.propertyClasses, pCk);
 				// assuming that the property classes are unique:
-				p = LIB.itemBy(el.properties, 'class', pC);
-				nL.push(p || { class: pC, values: [] })
+				p = theListItemReferencingByClass(el.properties, pC);
+				// take the original property if it exists or create an empty one, otherwise:
+				nL.push(p || { class: pCk, values: [] })
 			});
 //			console.debug('normalizeProps result',simpleClone(nL));
 			return nL; // normalized property list
-		}
 
+			function theListItemReferencingByClass (L: any[], cl: SpecifPropertyClass): any {
+				if (L && cl) {
+					// Return the item in list 'L' whose class references pC:
+					for (var l of L)
+						if (LIB.references(l['class'],cl)) return l; // return list item
+				};
+			}
+		}
 	}
 	updateItems (ctg: string, item: SpecifItem[] | SpecifItem): Promise<void> {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
@@ -1880,7 +1908,7 @@ class CProject {
 			&& LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
 			&& eqSCL(refE.subjectClasses, newE.subjectClasses)
 			&& eqSCL(refE.objectClasses, newE.objectClasses)
-			&& LIB.equalStringL(refE.instantiation, newE.instantiation);
+			&& LIB.isEqualStringL(refE.instantiation, newE.instantiation);
 
 		function eqSCL(rL: any, nL: any): boolean {
 //			console.debug('eqSCL',rL,nL);
@@ -2207,7 +2235,7 @@ class CProject {
 			// if the corresponding property of the adopted resource refE is undefined or empty;
 			// looking at the property types, which ones are in common:
 			newE.properties.forEach((nP: SpecifProperty) => {
-				if (LIB.hasContent(nP.value)) {
+				if (LIB.hasContent(nP.values[0])) {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
@@ -3046,11 +3074,11 @@ moduleManager.construct({
 
 //////////////////////////
 // global helper functions:
-function isReferencedByHierarchy(key: SpecifKey, H?: SpecifNode[]): boolean {
+function isReferencedByHierarchy(itm: SpecifKey, H?: SpecifNode[]): boolean {
 	// checks whether a resource is referenced by the hierarchy:
 	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
-	return LIB.iterateNodes( H, (nd)=>{ return !LIB.isReferenced(nd.resource,key) } )
+	return LIB.iterateNodes( H, (nd)=>{ return !LIB.references(nd.resource,itm) } )
 }
 function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] {
 	// collect all resources referenced by the given hierarchy:
@@ -3074,17 +3102,6 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
 	// else:
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
 	return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
-}
-function visibleIdOf(r: SpecifResource, prj?: SpecIF ):string|undefined {
-	if( r && r.properties ) {
-		if( !prj ) prj = app.cache.selectedProject.data;
-		for( var a=0,A=r.properties.length;a<A;a++ ) {
-			// Check the configured ids:
-			if( CONFIG.idProperties.indexOf( vocabulary.property.specif( LIB.propTitleOf(r.properties[a],prj) ) )>-1 )
-				return r.properties[a].value
-		};
-	};
-//	return undefined
 }
 LIB.resClassTitleOf= (e: SpecifResource, prj?: SpecIF, opts?:any ):string => {
 	if (!prj) prj = app.cache.selectedProject.data;

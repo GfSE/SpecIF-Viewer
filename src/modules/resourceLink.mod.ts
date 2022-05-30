@@ -23,19 +23,19 @@ moduleManager.construct({
 	self.selResStatements=[];	// all statements of the selected resource
 	self.allResources=[];		// all resources referenced in the tree
 
-	function candidateMayBeObject(sC: SpecifStatementClass, res: SpecifResource): boolean {
+	function candidateMayBeObject(sC: SpecifStatementClass, res: SpecifResource) {
 		// no *bjectClasses means all resourceClasses are permissible as *bject:
-		return (!sC.subjectClasses || sC.subjectClasses.indexOf(selRes['class']) > -1)
-			&& (!sC.objectClasses || sC.objectClasses.indexOf(res['class']) > -1)
+		return (!sC.subjectClasses || LIB.indexByKey(sC.subjectClasses, selRes['class']) > -1)
+			&& (!sC.objectClasses || LIB.indexByKey(sC.objectClasses, res['class']) > -1);
 	}
-	function candidateMayBeSubject(sC: SpecifStatementClass, res: SpecifResource): boolean {
+	function candidateMayBeSubject(sC: SpecifStatementClass, res: SpecifResource) {
 		// no *bjectClasses means all resourceClasses are permissible as *bject:
-		return (!sC.objectClasses || sC.objectClasses.indexOf(selRes['class']) > -1)
-			&& (!sC.subjectClasses || sC.subjectClasses.indexOf(res['class']) > -1)
+		return (!sC.objectClasses || LIB.indexByKey(sC.objectClasses, selRes['class']) > -1)
+			&& (!sC.subjectClasses || LIB.indexByKey(sC.subjectClasses, res['class']) > -1);
 	}
 
-	self.init = (): boolean => {
-//		console.debug('resourceEdit.init')
+	self.init = () => {
+//		console.debug('resourceLink.init')
 		self.clear();
 		return true;
 	};
@@ -54,10 +54,10 @@ moduleManager.construct({
 		opts.targetLanguage = browser.language;
 		opts.addIcon = true;
 
-		app.cache.selectedProject.readItems( 'resource', self.parent.tree.selectedNode.ref )
+		app.cache.selectedProject.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
 		.then( 
-			(rL:SpecifResource[])=>{
-				selRes = rL[0];
+			(rL:SpecifItem[])=>{
+				selRes = rL[0] as SpecifResource;
 				createStatement( opts )
 			},
 			LIB.stdError
@@ -69,19 +69,19 @@ moduleManager.construct({
 
 		return;
 		
-		function createStatement( opts ):void {		
+		function createStatement( opts:any ):void {		
 			// Let the user choose the class of the resource to be created later on:
 //			console.debug('createStatement',opts);
 			let pend = 3;  // the number of parallel requests
 				
 			// 1. get the eligible statementClasses and all referenced resources in parallel and then create the desired statement:
 			self.eligibleSCL.length=0;
-			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach( (sCId)=>{
-				LIB.cacheE( self.eligibleSCL, sCId )  // avoid duplicates
-			});
+			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach(
+				(sCk:SpecifKey) => { LIB.cacheE(self.eligibleSCL, sCk) } // avoid duplicates
+			);
 			app.cache.selectedProject.readItems( 'statementClass', self.eligibleSCL )
 			.then( 
-				(list:SpecifStatementClass[])=>{
+				(list:SpecifItem[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
 					chooseResourceToLink()
 				}, 
@@ -89,7 +89,7 @@ moduleManager.construct({
 			);
 
 			// 2. collect all statements of the originally selected resource to exclude them from selection:
-			app.cache.selectedProject.readStatementsOf( {id: selRes.id} )
+			app.cache.selectedProject.readStatementsOf( LIB.keyOf(selRes) )
 			.then(
 				(list:SpecifStatement[])=>{
 					self.selResStatements = list;
@@ -109,12 +109,12 @@ moduleManager.construct({
 			);
 			app.cache.selectedProject.readItems( 'resource', self.allResources )
 			.then( 
-				(list:SpecifResource[])=>{
+				(list:SpecifItem[])=>{
 					
 					// Sort the resources:
 					LIB.sortBy( 
-							list, 
-							(el)=>{ return LIB.instanceTitleOf(el,opts,pData) } 
+						list, 
+						(el: SpecifResource)=>{ return LIB.instanceTitleOf(el,opts,pData) }
 					);
 					self.allResources = list;
 					// now self.allResources contains the full resources
@@ -130,8 +130,13 @@ moduleManager.construct({
 					// all parallel requests are done,
 					// store a clone and get the title to display:
 					let staClasses = LIB.forAll( 
-							self.eligibleSCL, 
-							(sC)=>{ return {title:LIB.titleOf(sC,{lookupTitles:true}),description:LIB.languageValueOf(sC.description,opts)}} 
+							self.eligibleSCL,
+							(sC: SpecifStatementClass) => {
+								return {
+									title: LIB.titleOf(sC, { lookupTitles: true }),
+									description: (sC.description? LIB.languageValueOf(sC.description, opts) : '')
+								}
+							}
 						);
 					staClasses[0].checked = true;
 //					console.debug('#2',simpleClone(staClasses));
@@ -215,19 +220,18 @@ moduleManager.construct({
 			reTi = new RegExp( searchStr.escapeRE(), 'i' );  // don't use 'gi' - works only every other time.
 
 		// among all statements of the originally selected resource (selRes), filter all those of the given class:
-		let sL = self.selResStatements.filter( (s)=>{ return s['class']==self.selectedStatementClass.id } );
+		let sL = self.selResStatements.filter((s: SpecifStatement) => { return LIB.equalKey(s['class'], self.selectedStatementClass); });
 		self.allResources.forEach( 
 			(res:SpecifResource,i:number)=>{
 				if( 
 					// no reflexive statements are allowed:
 					res.id!=selRes.id
 					// res is not eligible, if it is already related with selRes by a statement of the same class:
-					&& LIB.indexBy( sL, 'subject', res.id )<0
-					&& LIB.indexBy( sL, 'object', res.id )<0
+					&& LIB.indexBy(sL, 'subject', LIB.keyOf(res))<0
+					&& LIB.indexBy(sL, 'object', LIB.keyOf(res))<0
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
-					//		let ti = desperateTitleOf(res,opts,pData);
 							let ti = LIB.instanceTitleOf(res,opts,pData);
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
@@ -246,7 +250,7 @@ moduleManager.construct({
 //		console.debug('click!',idx);
 
 		// remove focus from previously selected candidate:
-		if( self.selectedCandidate && self.selectedCandidate.resource.id!=self.allResources[idx].id ) {
+		if (self.selectedCandidate && !LIB.equalKey(self.selectedCandidate.resource, self.allResources[idx]) ) {
 			self.selectedCandidate.div.style.background = 'white';
 			self.selectedCandidate.div.style.color = 'black'
 		};
@@ -263,13 +267,11 @@ moduleManager.construct({
 		// (a) the selected candidate may be a object:
 		let btn = document.getElementById("btn-modal-saveResourceAsObject");
 		if( candidateMayBeObject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
-			// @ts-ignore - .disabled is an accessible attribute
+			// @ts-ignore - btn is defined and .disabled is an accessible attribute
 			btn.disabled = false;
 			// show the statement to create in a popup:
+			// @ts-ignore - btn is defined
 			btn.setAttribute("data-toggle","popover");
-		/*	btn.setAttribute("title", "'"+desperateTitleOf(selRes,opts,pData) +"' "
-										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"'" ) */
 			btn.setAttribute("title", "'"+LIB.instanceTitleOf(selRes,opts,pData) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ LIB.instanceTitleOf(self.selectedCandidate.resource,opts,pData) +"'" )
@@ -284,11 +286,9 @@ moduleManager.construct({
 		if( candidateMayBeSubject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
 			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = false;
+		//	btn.prop('disabled', false);
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-		/*	btn.setAttribute("title", "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
-										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ desperateTitleOf(selRes,opts,pData) +"'" ) */
 			btn.setAttribute("title", "'"+LIB.instanceTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
 										+ LIB.instanceTitleOf(selRes,opts,pData) +"'" ) 
@@ -297,32 +297,14 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			btn.disabled = true
 		}; 
-	/*	unfortunately the popup content keeps the first text and is not updated on selecting another candidate:
-		btn = $("#btn-modal-saveResourceAsSubject");
-		if( candidateMayBeSubject( self.selectedStatementClass, self.selectedCandidate.resource ) ) {
-			console.debug( 'candidateMayBeObject', self.selectedCandidate.resource );
-			btn.prop('disabled',false);
-			// show the statement to create in a popup:
-			btn.attr("data-toggle","popover");
-			btn.popover({
-				trigger:"hover",
-				placement:"top",
-				html: true,
-				content: "'"+desperateTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
-							+ '<i>'+LIB.titleOf(self.selectedStatementClass,opts) +"</i> '"
-							+ desperateTitleOf(selRes,opts,pData) +"'"
-			})
-		} else {
-			btn.prop('disabled',true)
-		}  */
 	};
-	self.saveStatement = (dir):void =>{
+	self.saveStatement = (dir: any): Promise<SpecifItem> =>{
 //		console.debug('saveStatement',selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
 		return app.cache.selectedProject.createItems( 'statement', {
 									id: LIB.genID('S-'),
-									class: self.selectedStatementClass.id,
-									subject: ( dir.secondAs=='object'? selRes.id : self.selectedCandidate.resource.id ),
-									object: ( dir.secondAs=='object'? self.selectedCandidate.resource.id : selRes.id ),
+									class: self.selectedStatementClass,
+									subject: (dir.secondAs == 'object' ? selRes : self.selectedCandidate.resource),
+									object: (dir.secondAs == 'object' ? self.selectedCandidate.resource : selRes),
 									changedAt: new Date().toISOString()
 								}
 		)

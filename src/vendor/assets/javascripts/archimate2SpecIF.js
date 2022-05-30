@@ -624,37 +624,36 @@ function Archimate2Specif(xmlString, opts) {
 		// Check the statement consistency. 
 		// So far only problems with "shows" statements have been encountered, and so it is sufficient to check the objects.
 		// However, the subjects are checked, as well, to be on the 'safe side':
-		/*	if( indexById( model.resources, model.statements[i].object )<0
-				&& indexById( model.statements, model.statements[i].object )<0 ) { */
 		if (indexById(model.resources, st.subject) < 0
-		//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
+			//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
 			|| indexById(model.resources, st.object) < 0
 			&& indexById(model.statements, st.object) < 0) {
 			console.warn('Skipping statement '
-				+ (st.title ? " with title '" + st.title + "' " : "")
-				+ 'of class="' + st["class"]
+				+ ' with id="' + st.id
+				+ '" of class="' + st["class"]
 				+ '" with subject="' + st.subject
 				+ '" and object="' + st.object
 				+ '", because subject or object are not listed.');
 			// remove any statement which is not consistent:
 			model.statements.splice(i, 1);
-			break;
-		};
-		if (opts.transformPermissibleStatementsOnly) {
-			if (!isStatementPermissible(st)) {
-				console.warn('Skipping statement '
-					+ (st.title ? " with title '" + st.title + "' " : "")
-					+ 'of class="' + st["class"]
-					+ '" with subject="' + st.subject
-					+ '" and object="' + st.object
-					+ '", because the subject or object class is not listed with the statement class.');
-				// remove any statement which is not consistent:
-				model.statements.splice(i, 1);
-			};
 		}
 		else {
-			extendStatementClassIfNecessary(st);
-        }
+			if (opts.transformPermissibleStatementsOnly) {
+				if (!isStatementPermissible(st)) {
+					console.warn('Skipping statement '
+						+ ' with id="' + st.id
+						+ '" of class="' + st["class"]
+						+ '" with subject="' + st.subject
+						+ '" and object="' + st.object
+						+ '", because the subject or object class is not listed with the statement class.');
+					// remove any statement which is not consistent:
+					model.statements.splice(i, 1);
+				};
+			}
+			else {
+				extendStatementClassIfNecessary(st);
+			}
+		}
 	};
 
 	// 6. Add the resource for the hierarchy root:

@@ -38,7 +38,7 @@ moduleManager.construct({
 		// pr is SpecIF data in JSON format (not the internal cache),
 		// transform pr to RDF:
 		
-		console.debug( 'ioRdf.fromSpecif', simpleClone(pr) );
+//		console.debug( 'ioRdf.fromSpecif', simpleClone(pr) );
 		
 		var xml = '';
 

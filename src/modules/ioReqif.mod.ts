@@ -359,13 +359,12 @@ moduleManager.construct({
 						// for all elements (resources or statements) in list L, 
 						// check whether a property of the given propertyClass id
 						// has HTML content; a single occurrence is sufficient: 
-						let i,j,prp;
-						for( i=L.length-1;i>-1;i-- ) {
-							if( L[i].properties )
-								for( j=L[i].properties.length-1;j>-1;j-- ) {
-									prp = L[i].properties[j];
+						let l,prp;
+						for( l of L ) {
+							if( l.properties )
+								for( prp of l.properties ) {
 									// check only the property with the specified class:
-									if( prp['class']==id && LIB.isHTML(prp.value) ) return true;
+									if( prp['class'].id==id && LIB.isHTML(prp.values[0]) ) return true;
 								};
 						};
 						return false;
@@ -374,8 +373,8 @@ moduleManager.construct({
 				if( eC.propertyClasses ) {
 					// list elements, i.e. resources or statements, of a certain class:
 					let eL = ctg=='statementClass'? 
-								pr.statements.filter( (sta) => { return sta['class']==eC.id } )
-							: 	pr.resources.filter( (res) => { return res['class']==eC.id } ),
+								pr.statements.filter( (sta) => { return sta['class'].id==eC.id } )
+							: 	pr.resources.filter( (res) => { return res['class'].id==eC.id } ),
 						pC;
 //					console.debug( 'specializeClassToFormattedText', eC, eL );
 
