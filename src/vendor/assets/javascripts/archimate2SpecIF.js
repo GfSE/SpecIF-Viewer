@@ -226,13 +226,14 @@ function Archimate2Specif(xmlString, opts) {
 
 	Array.from(xmlDoc.querySelectorAll("view"),
 		(vi) => {
-			//			console.debug('view',vi);
+//			console.debug('view',vi);
 
 			// Skip the view, if there is a propety indicating that it is hidden:
 			if (isNotHidden(vi)) {
 
-				let dId = vi.getAttribute('identifier'),
-					r = {
+				let nodeL = [],  // list of nodes for analysis of containment by their coordinates
+					dId = vi.getAttribute('identifier'),
+					diag = {
 						id: dId,
 						//	title: '',
 						class: idResourceClassDiagram,
@@ -240,42 +241,42 @@ function Archimate2Specif(xmlString, opts) {
 						changedAt: opts.fileDate
 					};
 
-				// The view's nodes are hierarchically ordered: 
+				function storeContainsStatement(chId, pId) {
+					// temporarily store all containment relations derived from the node hierarchy,
+					// which corresponds to the graphical nesting of model elements:
+					let stId = "S-" + simpleHash("SC-contains" + pId + chId);
+					if (indexById(model.statements, stId) < 0) {
+						graphicallyContainsL.push({
+							contains: {
+								id: stId,
+								class: "SC-contains",
+								subject: pId,
+								object: chId,
+								changedAt: opts.fileDate
+							},
+							// even though implicitly, the containment is shown by this diagram:
+							shows: {
+								id: "S-" + simpleHash("SC-shows" + dId + stId),
+								class: "SC-shows",
+								subject: dId,
+								object: stId,
+								changedAt: opts.fileDate
+							}
+						});
+					};
+				}
+
+				// The view's nodes are hierarchically ordered (at least in case of tool Archi):
 				function storeShowsAndContainsStatements(nd, parentId) {
 					// Ignore visual elements of xsi:type="Label" (Note)
 					// as well as xsi:type="Container" (VisualGroup).
 
-					function storeContainsStatement(chId, pId) {
-						// temporarily store all containment relations derived from the node hierarchy,
-						// which corresponds to the graphical nesting of model elements:
-						let stId = "S-" + simpleHash("SC-contains" + pId + chId);
-						if (indexById(model.statements, stId) < 0) {
-							graphicallyContainsL.push({
-								contains: {
-									id: stId,
-									class: "SC-contains",
-									subject: pId,
-									object: chId,
-									changedAt: opts.fileDate
-								},
-								// even though implicitly, the containment is shown by this diagram:
-								shows: {
-									id: "S-" + simpleHash("SC-shows" + dId + stId),
-									class: "SC-shows",
-									subject: dId,
-									object: stId,
-									changedAt: opts.fileDate
-								}
-							});
-						};
-					}
-
 					let
-						//	ty = nd.getAttribute('xsi:type'),
+					//	ty = nd.getAttribute('xsi:type'),
 						refId = nd.getAttribute('elementRef');
 
 					// Only nodes of xsi:type="Element" have an 'elementRef'.
-					// Store a relation; it is assumed that the referred resource will be found later on:
+					// Store a 'shows' relation; it is assumed that the referred resource will be found later on:
 					if (refId) {
 						addStaIfNotListed({
 							id: "S-" + simpleHash("SC-shows" + dId + refId),
@@ -306,21 +307,21 @@ function Archimate2Specif(xmlString, opts) {
 					(ch) => {
 						switch (ch.nodeName) {
 							case 'name':
-								r.title = ch.innerHTML;
-								r.properties.push({
+								diag.title = ch.innerHTML;
+								diag.properties.push({
 									class: "PC-Name",
 									value: ch.innerHTML
 								});
 								break;
 							case 'documentation':
-								r.properties.push({
+								diag.properties.push({
 									class: "PC-Description",
 									value: ch.innerHTML
 								});
 								break;
 							case 'properties':
 								// custom properties:
-								storeOtherProperties(ch, r);
+								storeOtherProperties(ch, diag);
 								break;
 							case 'node':
 								// A node is the *graphical* representation of an Element, Note or VisualGroup;
@@ -328,6 +329,8 @@ function Archimate2Specif(xmlString, opts) {
 								// However, any implicit relationships through graphical containment 
 								// will be discovered and stored, here:
 								storeShowsAndContainsStatements(ch);
+								// Some tools like ADOIT export a flat list of nodes, so the coordinates must be analysed further down:
+								nodeL.push(ch);
 								break;
 							case 'connection':
 								// A connection is the *graphical* representation of a shown relationship;
@@ -349,14 +352,45 @@ function Archimate2Specif(xmlString, opts) {
 					}
 				);
 
-				r.properties.push({
+				// Some tools like ADOIT export a flat list of nodes, so analyse the coordinates of all node pairs:
+				let xi, yi, wi, hi, xj, yj, wj, hj;
+				for (var i = 1; i < nodeL.length; i++) {
+					xi = parseInt(nodeL[i].getAttribute('x'));
+					yi = parseInt(nodeL[i].getAttribute('y'));
+					wi = parseInt(nodeL[i].getAttribute('w'));
+					hi = parseInt(nodeL[i].getAttribute('h'));
+					for (var j = 0; j < i; j++) {
+						xj = parseInt(nodeL[j].getAttribute('x'));
+						yj = parseInt(nodeL[j].getAttribute('y'));
+						wj = parseInt(nodeL[j].getAttribute('w'));
+						hj = parseInt(nodeL[j].getAttribute('h'));
+
+						if (xi+1 > xj
+							&& yi+1 > yj
+							&& xi+wi < xj+wj+1
+							&& yi+hi < yj+hj+1
+						) {
+							storeContainsStatement(nodeL[i].getAttribute('elementRef'), nodeL[j].getAttribute('elementRef'));
+						}
+						else
+							if (xi < xj+1
+								&& yi < yj+1
+								&& xi+wi+1 > xj+wj
+								&& yi+hi+1 > yj+hj
+							) {
+								storeContainsStatement(nodeL[j].getAttribute('elementRef'), nodeL[i].getAttribute('elementRef'));
+							}
+					};
+				};
+
+				diag.properties.push({
 					class: "PC-Type",
 					value: opts.strDiagramType
 				});
 				// Store the Archimate viewpoint:
 				let vp = vi.getAttribute('viewpoint');
 				if (vp)
-					r.properties.push({
+					diag.properties.push({
 						class: "PC-Notation",
 						value: vp
 					});
@@ -364,13 +398,13 @@ function Archimate2Specif(xmlString, opts) {
 				// ToDo: Add image reference to the diagram resource (but we need to export/find the image, first);
 				//       so far, we must add them manually after import. 
 
-				model.resources.push(r);
+				model.resources.push(diag);
 				diagramsDefinedButNotReferencedInHierarchyL.push(dId);
 			};
 		}
 	);
 
-	// 4.ransform the model elements:
+	// 4. Transform the model elements as SpecIF resources:
 	Array.from(xmlDoc.querySelectorAll("element"),
 		(el) => {
 			let r = {
