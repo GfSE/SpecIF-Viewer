@@ -450,6 +450,7 @@ const CONFIG:any = {};
 		"rdf:type",
 		'IR:refersTo',
 		"SpecIF:contains",
+		"SpecIF:shows",
 		"SpecIF:satisfies",
 		"SpecIF:implements",
 		"SpecIF:serves",
