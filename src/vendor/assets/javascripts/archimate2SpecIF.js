@@ -153,7 +153,7 @@ function Archimate2Specif(xmlString, opts) {
 //	console.debug('propertyDefinitions', propertyDefinitions, model.propertyClasses);
 
 	// 3. Transform the diagrams, i.e. Archimate views:
-	let diagramsDefinedButNotReferencedInOrganizations = [],
+	let diagramsDefinedButNotYetReferencedInHierarchy = [],
 		graphicallyContainsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
 
 	function isNotHidden(view) {
@@ -401,7 +401,7 @@ function Archimate2Specif(xmlString, opts) {
 				//       so far, we must add them manually after import. 
 
 				model.resources.push(diag);
-				diagramsDefinedButNotReferencedInOrganizations.push(dId);
+				diagramsDefinedButNotYetReferencedInHierarchy.push(dId);
 			};
 		}
 	);
@@ -802,7 +802,7 @@ function Archimate2Specif(xmlString, opts) {
 								changedAt: opts.fileDate
 							});
 							// remove referenced view from the list:
-							diagramsDefinedButNotReferencedInOrganizations.splice(diagramsDefinedButNotReferencedInOrganizations.indexOf(idRef), 1);
+							diagramsDefinedButNotYetReferencedInHierarchy.splice(diagramsDefinedButNotYetReferencedInHierarchy.indexOf(idRef), 1);
 						};
 					}
 					else {
@@ -823,7 +823,7 @@ function Archimate2Specif(xmlString, opts) {
 		// it is first tried to extract the folder hierarchy with references to the views from an <organizations> section
 		// ... and the remaining diagrams are added subsequenty.
 		// Ideal is, if all views=diagrams are referenced in the <organizations> section (as does Archi).
-		if (diagramsDefinedButNotReferencedInOrganizations.length > 0) {
+		if (diagramsDefinedButNotYetReferencedInHierarchy.length > 0) {
 			// create the folder resource:
 			resL.push(diagramFolder);
 			// create the hierarchy node: nodeL[0].nodes[0]:
@@ -874,7 +874,7 @@ function Archimate2Specif(xmlString, opts) {
 			}
 		);
 		// Defined diagrams which have not been referenced in an <organizations> section:
-		diagramsDefinedButNotReferencedInOrganizations.forEach(
+		diagramsDefinedButNotYetReferencedInHierarchy.forEach(
 			(idRef) => {
 				// add to diagramFolderNode:
 				if (indexById(model.resources, idRef) > -1)
