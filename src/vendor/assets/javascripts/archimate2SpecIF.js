@@ -208,15 +208,19 @@ function Archimate2Specif(xmlString, opts) {
 								res.changedAt = makeISODate(val);
 							break;
 						default:
-							// Add keys to the resourceClass, if not yet present:
-							addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
+							// Certain propertyClasses are used to hide a document and are not transformed to a propertyClass;
+							// properties referencing these can/must be skipped here:
+							if (indexById(model.propertyClasses, pCId) > -1) {
+								// Add keys to the resourceClass, if not yet present:
+								addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
 
-							// Add property to the resource res at hand:
-							if (val)
-								res.properties.push({
-									class: pCId,
-									value: val
-								});
+								// Add property to the resource res at hand:
+								if (val)
+									res.properties.push({
+										class: pCId,
+										value: val
+									});
+							};
 					};
 
 				};
