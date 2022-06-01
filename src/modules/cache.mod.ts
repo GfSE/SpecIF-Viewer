@@ -1114,6 +1114,9 @@ class CProject {
 								class: LIB.makeKey("PC-Name"),
 								// just adding the 's' is an ugly quickfix ... that works for now.
 								values: [LIB.makeMultiLanguageText(mEl + 's')]
+							}, {
+								class: LIB.makeKey("PC-Type"),
+								values: [LIB.makeMultiLanguageText(CONFIG.resClassFolder)]
 							}],
 							changedAt: tim
 						});

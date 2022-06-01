@@ -152,8 +152,8 @@ function Archimate2Specif(xmlString, opts) {
 	);
 //	console.debug('propertyDefinitions', propertyDefinitions, model.propertyClasses);
 
-	// 3. Transform the diagrams:
-	let diagramsDefinedButNotReferencedInHierarchyL = [],
+	// 3. Transform the diagrams, i.e. Archimate views:
+	let diagramsDefinedButNotReferencedInOrganizations = [],
 		graphicallyContainsL = [];  // temporary list of implicit model-element aggregation by graphical containment.
 
 	function isNotHidden(view) {
@@ -365,19 +365,21 @@ function Archimate2Specif(xmlString, opts) {
 						wj = parseInt(nodeL[j].getAttribute('w'));
 						hj = parseInt(nodeL[j].getAttribute('h'));
 
-						if (xi+1 > xj
+						if (   xi+1 > xj
 							&& yi+1 > yj
 							&& xi+wi < xj+wj+1
 							&& yi+hi < yj+hj+1
 						) {
+							// NodeL[i] is graphically contained in nodeL[j]:
 							storeContainsStatement(nodeL[i].getAttribute('elementRef'), nodeL[j].getAttribute('elementRef'));
 						}
 						else
-							if (xi < xj+1
+							if (   xi < xj+1
 								&& yi < yj+1
 								&& xi+wi+1 > xj+wj
 								&& yi+hi+1 > yj+hj
 							) {
+								// NodeL[j] is graphically contained in nodeL[i]:
 								storeContainsStatement(nodeL[j].getAttribute('elementRef'), nodeL[i].getAttribute('elementRef'));
 							}
 					};
@@ -399,7 +401,7 @@ function Archimate2Specif(xmlString, opts) {
 				//       so far, we must add them manually after import. 
 
 				model.resources.push(diag);
-				diagramsDefinedButNotReferencedInHierarchyL.push(dId);
+				diagramsDefinedButNotReferencedInOrganizations.push(dId);
 			};
 		}
 	);
@@ -753,54 +755,62 @@ function Archimate2Specif(xmlString, opts) {
 
 		// b) Add the folders and the diagrams to the hierarchy:
 
+			function createFolderWithNode(ch, rL, nL) {
+				let ti = getChildsInnerByTag(ch, "label"),
+					idRef = "Folder-" + simpleHash(ti + apx);
+				// create the folder resource:
+				rL.push({
+					id: idRef,
+					class: "RC-Folder",
+					title: ti,
+					properties: [{
+						class: "PC-Name",
+						value: ti
+					}, {
+						class: "PC-Description",
+						value: getChildsInnerByTag(ch, "documentation") || ''
+					}, {
+						class: "PC-Type",
+						value: opts.strFolderType
+					}],
+					changedAt: opts.fileDate
+				});
+				// create the node referencing the folder:
+				nL.push({
+					id: "N-" + simpleHash(idRef),
+					resource: idRef,
+					nodes: [],
+					changedAt: opts.fileDate
+				});
+			}
 			function parseItem(ch,resL,ndL) {
 				if(ch.nodeName=="item") {
 					let idRef = ch.getAttribute("identifierRef");
-					if( idRef ) {
+					if (idRef) {
 //						console.debug('#5a', ch, idRef, indexById(model.resources,idRef));
 						// It is a diagram reference; 
 						// it should have been transformed before,
 						// so no resource needs to be crated.
 						// However, create hierarchy node, if the diagram is available,
 						// (a view may be hidden and excluded from transformation):
-						if( indexById(model.resources,idRef)>-1 ) {
+						if (indexById(model.resources, idRef) > -1) {
 							// reference the view:
 							ndL.push({
-								id: "N-"+simpleHash(idRef),
+								id: "N-" + simpleHash(idRef),
 								resource: idRef,
 								nodes: [],
 								changedAt: opts.fileDate
 							});
 							// remove referenced view from the list:
-							diagramsDefinedButNotReferencedInHierarchyL.splice(diagramsDefinedButNotReferencedInHierarchyL.indexOf(idRef),1);
+							diagramsDefinedButNotReferencedInOrganizations.splice(diagramsDefinedButNotReferencedInOrganizations.indexOf(idRef), 1);
 						};
 					}
 					else {
 //						console.debug('#5b', ch );
 						// It is another folder,
 						// create the resource:
-						let ti = getChildsInnerByTag(ch,"label");
-						idRef = "Folder-"+simpleHash( ti+apx );
-						resL.push({
-							id: idRef,
-							class: "RC-Folder",
-							title: ti,
-							properties: [{
-								class: "PC-Name",
-								value: ti
-							},{
-								class: "PC-Description",
-								value: getChildsInnerByTag(ch,"documentation") || ''
-							}],
-							changedAt: opts.fileDate
-						});
-						// create the node:
-						ndL.push({
-							id: "N-"+simpleHash(idRef),
-							resource: idRef,
-							nodes: [],
-							changedAt: opts.fileDate
-						});
+						createFolderWithNode( ch, resL, ndL);
+
 						// step down to get children:
 						Array.from(ch.children, 
 							(ch)=>{parseItem( ch, resL, ndL[ndL.length-1].nodes )}
@@ -813,31 +823,50 @@ function Archimate2Specif(xmlString, opts) {
 		// it is first tried to extract the folder hierarchy with references to the views from an <organizations> section
 		// ... and the remaining diagrams are added subsequenty.
 		// Ideal is, if all views=diagrams are referenced in the <organizations> section (as does Archi).
-		if (diagramsDefinedButNotReferencedInHierarchyL.length > 0) {
+		if (diagramsDefinedButNotReferencedInOrganizations.length > 0) {
 			// create the folder resource:
 			resL.push(diagramFolder);
 			// create the hierarchy node: nodeL[0].nodes[0]:
 			nodeL[0].nodes.push(diagramFolderNode);
 		};
-		Array.from(xmlDoc.querySelectorAll("organizations"),
+		Array.from( xmlDoc.querySelectorAll("organizations"),
 			(org)=>{
-				Array.from(org.children,
+				Array.from( org.children,
 					(ch)=>{
 						if(ch.nodeName=="item")
 							switch(	getChildsInnerByTag(ch,"label")) {
-							/*	case "Business":
-								case "Application":
-								case "Technology &amp; Physical":
-								case "Other":
-								case "Relations":
-									break; */
 								case "Views":
 									// We've got the 'Views' folder;
 									// 1. Add the description of the 'Views' folder to the diagramFolder, if there is any:
 									// ToDo
 									// 2. get the <item> subfolders:
-									Array.from(ch.children, 
-										(ch)=>{parseItem( ch, resL, nodeL[0].nodes[0].nodes )}
+									Array.from( ch.children,
+										(ch) => { parseItem(ch, resL, nodeL[0].nodes[0].nodes) }
+									);
+								case "Relations":
+									// Relations cannot yet be displayed as pert of the hierarchy
+									break;
+							/*	case "Business":
+								case "Application":
+								case "Technology &amp; Physical":
+								case "Other": */
+								default:
+									// Add a list of model elements per category as listed in <organizations>.
+									// a. Create a folder object and it's reference in the hierarchy:
+									createFolderWithNode(ch, resL, nodeL[0].nodes);
+									// b. Add the items to new folder in the hierarchy:
+									Array.from( ch.children,
+										(ch2) => {
+											if (ch2.nodeName == "item") {
+												let idRef = ch2.getAttribute("identifierRef");
+												// add to the folder created just above:
+												nodeL[0].nodes[nodeL[0].nodes.length-1].nodes.push({
+													id: "N-" + simpleHash(idRef),
+													resource: idRef,
+													changedAt: opts.fileDate
+												});
+											};
+										}
 									);
 							}
 					}
@@ -845,7 +874,7 @@ function Archimate2Specif(xmlString, opts) {
 			}
 		);
 		// Defined diagrams which have not been referenced in an <organizations> section:
-		diagramsDefinedButNotReferencedInHierarchyL.forEach(
+		diagramsDefinedButNotReferencedInOrganizations.forEach(
 			(idRef) => {
 				// add to diagramFolderNode:
 				if (indexById(model.resources, idRef) > -1)
