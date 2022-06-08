@@ -727,18 +727,20 @@ class CProject {
 			// return a list with all elements in L having a property 
 			// containing a visible id with value vId;
 			// should only be one resulting element:
-			return LIB.forAll(L, (r: SpecifResource) => {
-				if (visibleIdOf(r) == vId) return r;
-			});
+			/*	return LIB.forAll(L, (r: SpecifResource) => {
+					if (visibleIdOf(r) == vId) return r;
+				}); */
+			return L.filter( r => visibleIdOf(r)==vId );
 
-			// ToDo: Rework!  prj?  app.cache.selectedProject.data? value?
-			function visibleIdOf(r: SpecifResource, prj?: SpecIF): string | undefined {
+			function visibleIdOf(r: SpecifResource): string | undefined {
 				if (r && r.properties) {
-					if (!prj) prj = app.cache.selectedProject.data;
+				//	let prj = app.cache.selectedProject.data;
+				//	let prj = this.data;
+					// loop to find the *first' occurrence:
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.indexOf(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], prj))) > -1)
-							return r.properties[a].value
+						if (CONFIG.idProperties.contains(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], dta))))
+							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: browser.language })
 					};
 				};
 				//	return undefined
@@ -1147,7 +1149,8 @@ class CProject {
 						tL = LIB.forAll(CONFIG.modelElementClasses, () => { return [] });
 					// Each array in tL shall carry the keys of resourceClasses for the model-element to collect:
 					dta.get("resourceClass","all").forEach(
-						(rC: SpecifResourceClass) => {
+						(rC) => {
+							// @ts-ignore - a resourceClass *has* a title
 							idx = CONFIG.modelElementClasses.indexOf(rC.title);
 							if (idx > -1) tL[idx].push(LIB.keyOf(rC));
 						}
@@ -1156,6 +1159,7 @@ class CProject {
 
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
 					let staL = dta.get("statement", "all").filter(
+						// @ts-ignore - s is a statement and *has* a subject
 						(s) => { return LIB.staClassTitleOf(s) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
 					);
 //					console.debug('gl tL dL',gl,tL,staL);
@@ -1193,7 +1197,7 @@ class CProject {
 			}
 		)
 	}
-	createItems(ctg: string, item: SpecifItem[] | SpecifItem): Promise<SpecifItem> {
+	createItems(ctg: string, item: SpecifItem[] | SpecifItem): Promise<void> {
 		// item can be a js-object or a list of js-objects
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 		// ...  not all of them may be implemented, so far.
@@ -1214,7 +1218,7 @@ class CProject {
 				//		item.createdBy = item.changedBy; */
 						this.data.put(ctg, item);
 			//	};
-				resolve(item);
+				resolve();
 			}
 		);
 	}
@@ -1300,7 +1304,7 @@ class CProject {
 //			console.debug('normalizeProps result',simpleClone(nL));
 			return nL; // normalized property list
 
-			function theListItemReferencingByClass (L: any[], cl: SpecifPropertyClass): any {
+			function theListItemReferencingByClass(L: SpecifProperty[], cl: SpecifPropertyClass): any {
 				if (L && cl) {
 					// Return the item in list 'L' whose class references pC:
 					for (var l of L)
@@ -1406,10 +1410,10 @@ class CProject {
 //						console.debug('deleteItems',ctg,item);
 						if (this.data.delete(ctg, item))
 							break;
-						reject({ status: 999, statusText: ctg + ' ' + item.id + ' not found and thus not deleted.' });
+						reject({ status: 999, statusText: 'One or more items of ' + ctg + ' not found and thus not deleted.' });
 						return;
 					default:
-						reject({ status: 999, statusText: 'Category ' + ctg + ' is unknown; item ' + item.id + ' could not be deleted.' });
+						reject({ status: 999, statusText: 'Category ' + ctg + ' is unknown; one or more items could not be deleted.' });
 						return;
 				};
 				resolve();
@@ -1435,28 +1439,29 @@ class CProject {
 			(resolve, reject) => {
 				this.readItems('statementClass', 'all')
 					.then(
-						(sCs: SpecifStatementClass[]) => {
-							sCL = sCs;
+						(sCs) => {
+							sCL = sCs as SpecifStatementClass[];
 							return this.readItems('statement', 'all');
 						}
 					)
 					.then(
-						(sL: SpecifStatement[]) => {
-							// make a list of shows statements for all diagrams shown in the hierarchy:
-							let showsL = sL.filter((s) => { return LIB.staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject) });
+						(sL) => {
+							// make a list of 'shows' statements for all diagrams shown in the hierarchy:
+							// @ts-ignore - subject *does* exist on a statement ...
+							let showsL = sL.filter( s => LIB.staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject) );
 							// filter all statements involving res as subject or object:
 							resolve(
 								sL.filter(
 									(s) => {
-										let sC: SpecifStatementClass = LIB.itemByKey(sCL, s['class'] as string),
+										let sC = LIB.itemByKey(sCL, s['class']) as SpecifStatementClass,
 											ti = LIB.titleOf(sC);
-										return (res.id == s.subject.id || res.id == s.object.id)
+										return ((res.id == s.subject.id || res.id == s.object.id)
 											// statement must be visible on a diagram referenced in a hierarchy
 											// or be a shows statement itself.
 											// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
 											&& (opts.dontCheckStatementVisibility
 												// Accept manually created relations (including those imported via Excel):
-												|| !sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User) > -1
+												|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
 												|| LIB.indexBy(showsL, "object", s.id) > -1
 												|| ti == CONFIG.staClassShows
 											)
@@ -1474,7 +1479,7 @@ class CProject {
 												|| opts.showComments
 													&& ti == CONFIG.staClassCommentRefersTo
 													&& isReferencedByHierarchy(s.object)
-											)
+											))
 									}
 								)
 							);
@@ -1485,13 +1490,14 @@ class CProject {
 		);
 	}
 	// Select format and options with a modal dialog, then export the data:
-	private chooseExportOptions(fmt) {
-		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
+	private chooseExportOptions(fmt:string) {
+		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()',
+			ti = LIB.languageValueOf(this.title, { targetLanguage: browser.language });
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ textField('&#x200b;' + i18n.LblProjectName, this.title, { typ: 'line', handle: exportOptionsClicked })
-			+ textField('&#x200b;' + i18n.LblFileName, this.title, { typ: 'line', handle: exportOptionsClicked });
+			+ textField('&#x200b;' + i18n.LblProjectName, ti, { typ: 'line', handle: exportOptionsClicked })
+			+ textField('&#x200b;' + i18n.LblFileName, ti, { typ: 'line', handle: exportOptionsClicked });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
@@ -1789,7 +1795,8 @@ class CProject {
 
 						// B) Processing for all formats except 'html':
 						// @ts-ignore - JSZip() is loaded at runtime
-						let zipper = new JSZip(),
+						let expStr: string,
+							zipper = new JSZip(),
 							zName: string,
 							mimetype = "application/zip";
 
@@ -1806,19 +1813,19 @@ class CProject {
 							case 'specif':
 								fName += ".specif";
 								zName = fName + '.zip';
-								expD = JSON.stringify(expD);
+								expStr = JSON.stringify(expD);
 								break;
 							case 'reqif':
 								fName += ".reqif";
 								zName = fName + 'z';
 								mimetype = "application/reqif+zip";
-								expD = app.ioReqif.fromSpecif(expD);
+								expStr = app.ioReqif.fromSpecif(expD);
 								break;
 							case 'turtle':
 								fName += ".ttl";
 								zName = fName + '.zip';
 								// @ts-ignore - transformSpecifToTTL() is loaded at runtime
-								expD = transformSpecifToTTL("https://specif.de/examples", expD);
+								expStr = transformSpecifToTTL("https://specif.de/examples", expD);
 						/*		break;
 							case 'rdf':
 								if( !app.ioRdf ) {
@@ -1826,9 +1833,10 @@ class CProject {
 									return;
 								};
 								fName += ".rdf";
-								expD = app.ioRdf.fromSpecif( expD ); */
+								expStr = app.ioRdf.fromSpecif( expD ); */
 						};
-						let blob = new Blob([expD], { type: "text/plain; charset=utf-8" });
+						expD = undefined; // save some memory space
+						let blob = new Blob([expStr], { type: "text/plain; charset=utf-8" });
 						// Add the project:
 						zipper.file(fName, blob);
 						blob = undefined; // free heap space
@@ -3106,51 +3114,6 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
 	return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
 }
-LIB.resClassTitleOf= (e: SpecifResource, prj?: SpecIF, opts?:any ):string => {
-	if (!prj) prj = app.cache.selectedProject.data;
-	return LIB.titleOf( LIB.itemByKey( prj.resourceClasses, e['class'] ), opts );
-}
-LIB.staClassTitleOf = ( e:SpecifStatement, prj?:SpecIF, opts?:any ):string => {
-	// Where available, take the statementClass' title, otherwise the statement's;
-	// The latter is the case with interpreted relations such as "mentions":
-	if (!prj) prj = app.cache.selectedProject.data;
-    return LIB.titleOf( LIB.itemByKey(prj.statementClasses, e['class'] ), opts );
-}
-LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF ):string =>{
-	// get the title of a property as defined by itself or it's class:
-	let pC = LIB.itemByKey(prj.propertyClasses, prp['class']);
-	return pC ? pC.title : undefined;
-}
-LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
-	// Pick up the native title of any item except resource and statement;
-	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
-}
-LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
-	// Return the value in the specified target language .. or the first value in the list by default.
-
-	// if opts.targetLanguage is undefined, keep all language options:
-//	if (typeof(val)=='string' || !(opts && opts.targetLanguage)) return val;
-	if( !(opts && opts.targetLanguage) ) return val;
-
-	if( !LIB.isMultiLanguageText(val) )
-		throw Error("Invalid value: '"+val+"' must be a multi-language text.");
-
-	let lVs = val.filter( (v:any):boolean =>{
-		return v.language && opts && opts.targetLanguage == v.language;
-	});
-	// lVs should have none or one elements; any additional ones are simply ignored:
-	if( lVs.length>0 ) return lVs[0].text;
-
-	// next try a little less stringently:
-	lVs = val.filter( (v:any):boolean =>{
-		return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0,2) == v.language.slice(0,2);
-	});
-	// lVs should have none or one elements; any additional ones are simply ignored:
-	if( lVs.length>0 ) return lVs[0].text;
-
-	// As a final resourt take the first element in the original list of values:
-	return val[0].text;
-}
 LIB.hasContent = ( pV:string ):boolean =>{
 	// must be a string with the value of the selected language.
 	if( typeof(pV)!="string" ) return false;
@@ -3252,6 +3215,24 @@ LIB.titleIdx = (pL: SpecifProperty[], dta?: SpecIF): number =>{
 		};
 	};
 	return -1;
+}
+LIB.resClassTitleOf = (e: SpecifResource, prj?: SpecIF, opts?: any): string => {
+	if (!prj) prj = app.cache.selectedProject.data;
+	return LIB.titleOf(LIB.itemByKey(prj.resourceClasses, e['class']), opts);
+}
+LIB.staClassTitleOf = (e: SpecifStatement, prj?: SpecIF, opts?: any): string => {
+	// Return the statementClass' title:
+	if (!prj) prj = app.cache.selectedProject.data;
+	return LIB.titleOf(LIB.itemByKey(prj.statementClasses, e['class']), opts);
+}
+LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF): string => {
+	// get the title of a property as defined by itself or it's class:
+	let pC = LIB.itemByKey(prj.propertyClasses, prp['class']);
+	return pC ? pC.title : undefined;
+}
+LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
+	// Pick up the native title of any item except resource and statement;
+	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
 }
 LIB.instanceTitleOf = (el: SpecifInstance, opts?:any, dta?:SpecIF): string =>{
 	// Get the title of a resource or a statement;

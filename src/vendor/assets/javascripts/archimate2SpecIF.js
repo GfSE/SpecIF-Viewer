@@ -208,15 +208,23 @@ function Archimate2Specif(xmlString, opts) {
 								res.changedAt = makeISODate(val);
 							break;
 						default:
-							// Add keys to the resourceClass, if not yet present:
-							addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
+							// Certain Archimate propertyDefinitions are used to hide a view,
+							// namely the ones whose names are listed in opts.hiddenDiagramProperties,
+							// and are thus not transformed to a propertyClass;
+							// properties referencing these can/must be skipped here.
+							// In fact, execution gets here only and the if condition fails, 
+							// only if the property is defined for a view, but set to 'false'.
+							if (indexById(model.propertyClasses, pCId) > -1) {
+								// Add keys to the resourceClass, if not yet present:
+								addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
 
-							// Add property to the resource res at hand:
-							if (val)
-								res.properties.push({
-									class: pCId,
-									value: val
-								});
+								// Add property to the resource res at hand:
+								if (val)
+									res.properties.push({
+										class: pCId,
+										value: val
+									});
+							};
 					};
 
 				};

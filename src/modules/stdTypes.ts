@@ -96,6 +96,12 @@ class StandardTypes {
 		propertyClasses: [{ id: "PC-Name" },{ id: "PC-Description" }, { id: "PC-Type" }],
 		changedAt: "2020-12-04T18:59:00+01:00"
 	}];
+/*	statementClasses: SpecifStatementClass[] = [{
+		id: "SC-mentions",
+		title: CONFIG.staClassMentions,
+		instantiation: ['internal'],  // this value is not defined by the schema
+		changedAt: "2022-06-05T18:59:00+01:00"
+	}];  */
 	// The sequence is such that every list's elements have only references to list elements above:
 	listName = new Map([
 		['dataType', "dataTypes"],

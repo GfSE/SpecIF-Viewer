@@ -68,7 +68,7 @@ moduleManager.construct({
 								descriptionLength: CONFIG.maxStringLength,
 						//		strAnnotationFolder: "SpecIF:Annotations",
 						//		strRoleType: "SpecIF:Role",
-								// the property names to hide a document as used at Vattenfall:
+								// the property names to hide a document as used by Archi 4.6 and later:
 								hiddenDiagramProperties: ["Report:View:Hide","Report:View:Hide:Diagram"]
 							}); 
 //		console.debug('ioArchimate.toSpecif', self.parent.projectName, data );

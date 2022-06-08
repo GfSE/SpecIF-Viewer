@@ -192,14 +192,16 @@ class CPropertyToShow implements SpecifProperty {
 					let m = $1.toLowerCase(), cR: SpecifResource, ti: string, rC:SpecifResourceClass, target: SpecifResource;
 					// is ti a title of any resource?
 					app.specs.tree.iterate((nd: jqTreeNode) => {
-						cR = LIB.itemByKey(app.cache.selectedProject.data.resources, nd.ref);
+					//	cR = LIB.itemByKey(app.cache.selectedProject.data.resources, nd.ref);
+						cR = LIB.itemByKey(this.pData.resources, nd.ref);
 						// avoid self-reflection:
 						//	if(ob.id==cR.id) return true;
 						ti = LIB.instanceTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
 						// disregard link targets which aren't diagrams nor model elements:
-						rC = LIB.itemByKey(app.cache.selectedProject.data.resourceClasses, cR['class']);
+					//	rC = LIB.itemByKey(app.cache.selectedProject.data.resourceClasses, cR['class']);
+						rC = LIB.itemByKey(this.pData.resourceClasses, cR['class']);
 						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
 
 						// the titleLink content equals a resource's title, remember the first occurrence:
@@ -243,7 +245,7 @@ class CPropertyToShow implements SpecifProperty {
 				return u;
 			};
 			// else, add relative path:
-			return URL.createObjectURL( LIB.itemById( app.cache.selectedProject.data.files, u ).blob );
+			return URL.createObjectURL( LIB.itemById( this.pData.files, u ).blob );
 		}  */
 		function getType(str: string): string {
 			let t = /(type="[^"]+")/.exec(str);
@@ -302,8 +304,8 @@ class CPropertyToShow implements SpecifProperty {
 			//	u1 = addFilePath(u1);
 			//	u2 = addFilePath(u2);
 
-				let f1 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u1)),
-					f2 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u2));
+				let f1 = new CFileWithContent(LIB.itemByTitle(this.pData.files, u1)),
+					f2 = new CFileWithContent(LIB.itemByTitle(this.pData.files, u2));
 
 				if (f1.hasContent()) {
 
@@ -371,14 +373,14 @@ class CPropertyToShow implements SpecifProperty {
 
 			//	u1 = addFilePath(u1);
 				if (!u1) console.warn('no image or link found in '+$0);
-				let f1 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u1));
+				let f1 = new CFileWithContent(LIB.itemByTitle(this.pData.files, u1));
 
 				// sometimes the application files (BPMN or other) have been replaced by images;
 				// this is for example the case for *.specif.html files:
 				if (!f1.hasContent() && u1 && CONFIG.applExtensions.indexOf(e) > -1) {
 					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
 						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
-						f1 = new CFileWithContent(LIB.itemByTitle(app.cache.selectedProject.data.files, u1));
+						f1 = new CFileWithContent(LIB.itemByTitle(this.pData.files, u1));
 					};
 				};
 				// ... cannot happen any more now, is still here for compatibility with older files only.
@@ -1716,7 +1718,7 @@ moduleManager.construct({
 
 	var myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		cacheData: CSpecIF,		// the cached project data
+		cacheData: CCache,		// the cached project data
 		selRes: CResourceToShow;	// the currently selected resource
 
 	// Permissions for resources:
@@ -2089,9 +2091,9 @@ moduleManager.construct({
 
 	var myName = self.loadAs,
 		myFullName = 'app.' + myName,
-		cacheData: CSpecIF,		// the cached data
-		selRes:CResourceToShow,		// the currently selected resource
-		net,
+		cacheData: CCache,		// the cached data
+		selRes: SpecifResource,		// the currently selected resource
+		net: any,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
 	// Permissions for resources and statements:
@@ -2158,7 +2160,7 @@ moduleManager.construct({
 				// Since the resources are cached, this is not too expensive.
 				app.cache.selectedProject.readItems( 'resource', net.resources )
 				.then( 
-					(rResL:SpecifResource[])=>{   
+					(rResL:SpecifItem[])=>{   
 						// rResL is a list of the selected plus it's related resources
 
 						// Assuming that the sequence may be arbitrary:
@@ -2168,7 +2170,7 @@ moduleManager.construct({
 						// Now get the titles with icon of the resources,
 						// as the sequence of list items in net.resources is maintained, 
 						// the selected resource will be the first element in the list: 
-						rResL.forEach( (r:SpecifResource)=>{ cacheMinRes( net.resources, r ) });
+						rResL.forEach( (r)=>{ cacheMinRes( net.resources, r ) });
 					
 						// finally add the 'mentions' statements:
 						getMentionsRels(selRes,opts)
@@ -2211,19 +2213,29 @@ moduleManager.construct({
 		}
 		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
-			// s is a statement:
-			LIB.cacheE(L, { id: s.id, title: LIB.staClassTitleOf(s, cacheData, opts), subject: s.subject.id, object: s.object.id} );
+			// s is a statement;
+			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
+			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
+			//   so the first term of the OR condition applies.
+			LIB.cacheE(L, { id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData, opts), subject: s.subject.id, object: s.object.id} );
 		}
-		function cacheNet(s:SpecifStatement):void {
-			// skip hidden statements:
-			if (CONFIG.hiddenStatements.indexOf( LIB.staClassTitleOf(s, cacheData, opts) )>-1 ) return;
+		function cacheNet(s: SpecifStatement): void {
+			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
+			// Please remember that regular statements according to v1.1 and later do not have a native title property,
+			// but the 'mentions' statements, generated for display only, *have* a native title property for simplicity reasons 
+			// (so that no statementClass is needed).
 
-			// store the statements in the net:
+			// 1. skip hidden statements;
+			// hiddenStatements holds the vocabulary terms, so the title shall *not* be translated to the targetLanguage.
+			// @ts-ignore - property 'title' is used on purpose for the mentions statements generated for display
+			if (CONFIG.hiddenStatements.includes( s.title || LIB.staClassTitleOf(s, cacheData, {})) ) return;
+
+			// 2. store the statements in the net:
 			cacheMinSta( net.statements, s );
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
-			// collect the related resources:
-			if( LIB.equalKey(s.subject, nd.ref) ) {
+			// 3. collect the related resource:
+			if (LIB.references(nd.ref, s.subject)) {
 				// the selected node is a subject, so the related resource is an object,
 				// list it, but only once:
 				cacheMinRes( net.resources, s.object );
@@ -2234,7 +2246,7 @@ moduleManager.construct({
 				cacheMinRes( net.resources, s.subject );
 			}
 		}
-		function getMentionsRels(selR: SpecifResource, opts: any):Promise<SpecifStatement[]> {
+		function getMentionsRels(selR: SpecifResource, opts: any):Promise<any[]> {
 			// selR is the currently selected resource.
 			
 			return new Promise( (resolve,reject):void =>{	
@@ -2275,7 +2287,7 @@ moduleManager.construct({
 								// 1. The titles of other resource's found in the selected resource's texts 
 								//    result in a 'this mentions other' statement (selected resource is subject):
 								refPatt = new RegExp( (CONFIG.titleLinkBegin+refTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
-								if( selR.properties )
+							//	if( selR.properties )
 									selR.properties.forEach( (p)=>{
 										// assuming that the dataTypes are always cached:
 										dT = LIB.dataTypeOf(p['class'], cacheData);
@@ -2283,39 +2295,48 @@ moduleManager.construct({
 										// because it is not expected that type information references instance data
 										// and also we would need to explicitly look up the enumerated value, first:
 										if (dT && dT.type==SpecifDataTypeEnum.String && !dT.enumeration) {
-												// add, if the iterated resource's title appears in the selected resource's property ..
-												// and if it is not yet listed:
-												if (refPatt.test( LIB.languageValueOf(p.values[0],localOpts )) && notListed( staL, selR, refR ) ) {
-													staL.push({
-														title: 	CONFIG.staClassMentions,
-													//	class:	// no class indicates also that the statement cannot be deleted
-														subject:	selR,
-														object:		refR
-													})
-												}
+											// add, if the iterated resource's title appears in the selected resource's property ..
+											// and if it is not yet listed:
+											if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
+												// these are minimal statements only just for displaying the statement graph:
+												staL.push({
+													title: CONFIG.staClassMentions,
+													//	class:	LIB.makeKey("SC-mentions"),
+													subject: selR,
+													object: refR
+												});
+											}
 										}
 									});
 								// 2. The selected resource's title found in other resource's texts 
 								//    result in a 'other mentions this' statement (selected resource is object):
-								if (refR.properties)
+							//	if (refR.properties)
 									refR.properties.forEach((p) => {
 										// assuming that the dataTypes are always cached:
-										switch (LIB.dataTypeOf(p['class'], cacheData ).type ) {
-											case SpecifDataTypeEnum.String:
-												// add, if the selected resource's title appears in the iterated resource's property ..
-												// and if it is not yet listed:
-												if (selPatt.test( LIB.languageValueOf(p.values[0], localOpts) ) && notListed( staL,refR,selR ) ) {
-													staL.push({
-														title: 	CONFIG.staClassMentions,
-													//	class:	// no class indicates also that the statement cannot be deleted
-														subject:	refR,
-														object:		selR
-													})
-												}
+										dT = LIB.dataTypeOf(p['class'], cacheData);
+										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+											// add, if the selected resource's title appears in the iterated resource's property ..
+											// and if it is not yet listed:
+											if (selPatt.test( LIB.languageValueOf(p.values[0], localOpts) ) && notListed( staL,refR,selR ) ) {
+												// these are minimal statements only just for displaying the statement graph:
+												staL.push({
+													title: CONFIG.staClassMentions,
+													//	class: LIB.makeKey("SC-mentions"),
+													subject: refR,
+													object: selR
+												});
+											}
 										}
 									});
 							};
-							if( --pend<1 ) resolve(staL)
+							if(--pend < 1) {
+							/*	if (staL.length > 1)
+									cacheData.put(
+										'statementClass',
+										standardTypes.get('statementClass', LIB.makeKey("SC-mentions"))
+									);  */
+								resolve(staL)
+							};
 						},
 						reject
 					);

@@ -102,19 +102,15 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.' + myName,
-		prj: any,
-		dta: SpecIF;
+		prj: CProject,
+		cData: CCache,
+		displayOptions: any;
 
 	self.filters = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
 
 	// Construct a Regex to isolate content from XHTML-tags:
 	const
-		displayOptions: any = {
-			targetLanguage: self.parent.targetLanguage,
-			lookupTitles: true,
-			lookupValues: true
-		},
 		reA = '<a([^>]+)>([\\s\\S]*?)</a>',
 		// A single comprehensive <img .../>:
 		reI = '<img([^>]+)/>',
@@ -186,8 +182,13 @@ moduleManager.construct({
 	self.show = ( opts?:any ):void =>{   // optional urlParams or filter settings
 //		console.debug( 'filter.show', opts, self.filters );
 		if( typeof( opts ) != 'object' ) opts = {};
+		displayOptions = {
+			targetLanguage: self.parent.targetLanguage,
+			lookupTitles: true,
+			lookupValues: true
+		};
 		prj = app.cache.selectedProject;
-		dta = prj.data;
+		cData = prj.data;
 		self.parent.showLeft.reset();
 		$('#filterNotice').empty();
 
@@ -206,7 +207,7 @@ moduleManager.construct({
 		// but not navigation in the browser history:
 		if( !opts.urlParams ) 
 			setUrlParams({
-				project: dta.id,
+				project: cData.id,
 				view: self.view.substr(1)	// remove leading hash
 			}); 
 
@@ -456,7 +457,7 @@ moduleManager.construct({
 											});
 								});
 								res.other = res.other.map((prp: CPropertyToShow) => {
-									let dT = LIB.dataTypeOf(prp['class'], dta);
+									let dT = LIB.dataTypeOf(prp['class'], cData);
 									return (dT && dT.type == 'xs:enumeration') ?
 											new CPropertyToShow({
 												title: prp.title,
@@ -570,7 +571,7 @@ moduleManager.construct({
 
 			function allEnumValues(pC: SpecifPropertyClass, vL):IBox[] {
 				var boxes = [],
-					dT = dta.get( "dataType", [LIB.makeKey(pC.dataType)])[0];
+					dT = cData.get( "dataType", [LIB.makeKey(pC.dataType)])[0];
 				// Look up the baseType and include all possible enumerated values:
 				if (dT && Array.isArray(dT.values)) {
 						dT.values.forEach( (v)=>{
@@ -625,14 +626,14 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC: SpecifResourceClass = dta.get("resourceClass", [LIB.makeKey(def.rCid)])[0],
+			var rC: SpecifResourceClass = cData.get("resourceClass", [LIB.makeKey(def.rCid)])[0],
 				pC: SpecifPropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pcid)=>{
-				pC = dta.get("propertyClass", [LIB.makeKey(pcid)] )[0];
-//				if( pcid==def.pCid && itemById( dta.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
+				pC = cData.get("propertyClass", [LIB.makeKey(pcid)] )[0];
+//				if( pcid==def.pCid && itemById( cData.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
 				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && dta.get("dataType", [LIB.makeKey(pC.dataType)] )[0].type=='xs:enumeration')) {
+					|| (!def.pCid && cData.get("dataType", [LIB.makeKey(pC.dataType)] )[0].type=='xs:enumeration')) {
 					addEnumFilter( rC, pC, def.options )
 				};
 			});
@@ -651,7 +652,7 @@ moduleManager.construct({
 					title: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
 					category: 'textSearch',
 					primary: true,
-					scope: dta.id,
+					scope: cData.id,
 					baseType: SpecifDataTypeEnum.String,
 			//		baseType: ['xs:string','xhtml'],
 					searchString: pre&&pre.searchString? pre.searchString : '',
@@ -684,11 +685,11 @@ moduleManager.construct({
 						title: i18n.TabSpecTypes,
 						category: 'resourceClass',
 						primary: true,
-						scope: dta.id,
+						scope: cData.id,
 						baseType: 'xs:enumeration',
 						options: [] 
 					};
-				dta.get("resourceClass","all").forEach( ( rC )=>{
+				cData.get("resourceClass","all").forEach( ( rC )=>{
 					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
 					
 					var box = { 
@@ -733,14 +734,14 @@ moduleManager.construct({
 /*	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
 		// Check if a resourceClass (or statementClass ) has a property with enumerated values,
 		// so that a secondary facet filter can be built
-	//	var rC = itemById( dta.allClasses, rCid ),
-		var rC = itemById( dta.resourceClasses, rCid ),
+	//	var rC = itemById( cData.allClasses, rCid ),
+		var rC = itemById( cData.resourceClasses, rCid ),
 			pC;  
 		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
 			// if the class has at least one property with enums
 			// ToDo: same with boolean
-			pC = itemById( dta.propertyClasses, rC.propertyClasses[i] );
-			if( itemById( dta.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
+			pC = itemById( cData.propertyClasses, rC.propertyClasses[i] );
+			if( itemById( cData.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
 		};
 		return false
 	}; */

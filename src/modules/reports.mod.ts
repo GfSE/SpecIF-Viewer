@@ -35,7 +35,7 @@ moduleManager.construct({
 }, function(self:IModule) {
 	"use strict";
 	var prj: CProject,
-		pData: CCache;
+		cData: CCache;
 	self.list = [];  // the list of report panels
 
 	// Standard module interface methods:
@@ -66,7 +66,7 @@ moduleManager.construct({
 	self.show = function(opts:any) {
 //		console.debug('reports.show');
 		prj = app.cache.selectedProject;
-		pData = prj.data;
+		cData = prj.data;
 		self.parent.showLeft.reset();  // no panel to the left
 
 		// Language options have been selected at project level:
@@ -110,7 +110,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				pData.resourceClasses.forEach( ( rC:SpecifResourceClass ) =>{
+				cData.resourceClasses.forEach( ( rC:SpecifResourceClass ) =>{
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
 								rCR.datasets.push({
@@ -134,7 +134,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				pData.statementClasses.forEach( ( sC ) =>{
+				cData.statementClasses.forEach( ( sC ) =>{
 							// Add a counter for each resourceClass
 							if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
 								sCR.datasets.push({
@@ -151,9 +151,9 @@ moduleManager.construct({
 			function addEnumeratedValueReports() {
 				function addPossibleValues(pC: SpecifPropertyClass, rep) {
 					// Look up the dataType and create a counter for all possible enumerated values:
-					for( var d=0, D=pData.dataTypes.length; d<D; d++ ) {
-						if (pData.dataTypes[d].id == pC.dataType ) {
-							pData.dataTypes[d].values.forEach( (val) =>{
+					for( var d=0, D=cData.dataTypes.length; d<D; d++ ) {
+						if (cData.dataTypes[d].id == pC.dataType ) {
+							cData.dataTypes[d].values.forEach( (val) =>{
 								// add a counter for resources whose properties have a certain value (one per enumerated value)
 								rep.datasets.push({  
 									label: i18n.lookup( LIB.languageValueOf( val.value, opts )), 
@@ -177,10 +177,10 @@ moduleManager.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC;
-				pData.get("resourceClass","all").forEach( (rC:SpecifResourceClass) =>{
+				cData.get("resourceClass","all").forEach( (rC:SpecifResourceClass) =>{
 					rC.propertyClasses.forEach( (id) =>{
-						pC = pData.get("propertyClass", id )[0];
-						if( pData.get("dataType", pC.dataType )[0].type=='xs:enumeration' ) {
+						pC = cData.get("propertyClass", id )[0];
+						if( cData.get("dataType", pC.dataType )[0].type=='xs:enumeration' ) {
 							var aVR = {
 									title: LIB.titleOf(rC,opts)+': '+LIB.titleOf(pC,opts),
 									category: 'enumValue',
@@ -235,13 +235,13 @@ moduleManager.construct({
 				if( j>-1 ) incVal( 0,j );
 
 				// b) The histograms of all enumerated properties:
-				let rC = pData.get("resourceClass", rK )[0];
+				let rC = cData.get("resourceClass", rK )[0];
 
 				// prepare a report for every enumerated resourceClass:
 				let dT=null,oa=null,i=null,ct=null,pC;
 				rC.propertyClasses.forEach( (pK) =>{
-					pC = pData.get("propertyClass", pK )[0];
-					dT = pData.get("dataType", pC.dataType )[0];
+					pC = cData.get("propertyClass", pK )[0];
+					dT = cData.get("dataType", pC.dataType )[0];
 					if (!dT.enumeration || dT.enumeration.length<1 ) return;
 					// find the report panel:
 					i = findPanel(self.list,rK,pK);

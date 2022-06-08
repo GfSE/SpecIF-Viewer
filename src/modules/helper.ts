@@ -490,6 +490,32 @@ LIB.isMultiLanguageText = (L: any[]): boolean => {
 LIB.makeMultiLanguageText = (el:any): SpecifMultiLanguageText => {
 	return typeof (el) == 'string' ? [{ text: el }] : (LIB.isMultiLanguageText( el )? el : undefined );
 }
+LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
+	// Return the value in the specified target language .. or the first value in the list by default.
+
+	// if opts.targetLanguage is undefined, keep all language options:
+	//	if (typeof(val)=='string' || !(opts && opts.targetLanguage)) return val;
+	if (!(opts && opts.targetLanguage)) return val;
+
+	if (!LIB.isMultiLanguageText(val))
+		throw Error("Invalid value: '" + val + "' must be a multi-language text.");
+
+	let lVs = val.filter((v: any): boolean => {
+		return v.language && opts && opts.targetLanguage == v.language;
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if (lVs.length > 0) return lVs[0].text;
+
+	// next try a little less stringently:
+	lVs = val.filter((v: any): boolean => {
+		return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0, 2) == v.language.slice(0, 2);
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if (lVs.length > 0) return lVs[0].text;
+
+	// As a final resourt take the first element in the original list of values:
+	return val[0].text;
+}
 LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
 	// Return the index of item with key k in L
 	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
