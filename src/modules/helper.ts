@@ -847,7 +847,9 @@ String.prototype.makeHTML = function(opts?:any):string {
 	if (typeof (opts) == 'object' && opts.makeHTML) {
 		let newS = this
 			.linkifyURLs(opts)
-			.replace(/--(?:&gt;|>)/g, '&#8594;')  // &rarr;
+		//	.replace(/(?:<<|&lt;&lt;)/g, '&#xAB;')   // &laquo;
+		//	.replace(/(?:>>|&gt;&gt;)/g, '&#xBB;')  // &raquo;
+			.replace(/--(?:&gt;|>)/g, '&#8594;')   // &rarr;
 			.replace(/(?:&lt;|<)--/g, '&#8592;');  // &larr;
 		/*	// Dont't convert markdown, if the text begins and ends with a XHTML tag:
 			if( /^\s*<.+>\s*$/.test(str) )

@@ -579,7 +579,7 @@ var app:IApp,
 		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' )
 											.then( (m)=>{ window.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
 											return true;  */
-				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@12/dist/markdown-it.min.js' )
+				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@13/dist/markdown-it.min.js' )
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done( ()=>{ window.markdown = window.markdownit({html:true,xhtmlOut:true,breaks:true,linkify:false}) });
 											return true;

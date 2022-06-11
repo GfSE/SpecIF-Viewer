@@ -1174,10 +1174,6 @@ class CFileWithContent implements IFileWithContent {
 						// no viewbox property, so add it:
 						let w = el.getAttribute('width').replace(/px$/, ''),
 							h = el.getAttribute('height').replace(/px$/, '');
-						/*	// get rid of 'px':
-							// ToDo: perhaps this is a little too simple ...
-							if( w.endsWith('px') ) w = w.slice(0,-2);
-							if( h.endsWith('px') ) h = h.slice(0,-2); */
 						el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
 						return;
 					};
@@ -1257,7 +1253,7 @@ moduleManager.construct({
 				// some of the events as defined by jqTree with their handlers:
 				'select':  
 					// when a node is clicked or traversed by up/down keys
-					(event):void =>{  // The clicked node is 'event.node'
+					(event:any):void =>{  // The clicked node is 'event.node'
 						// just update the node handle (don't use self.tree.selectNode() ... no need to update the tree ;-):
 //						console.debug('tree.select',event);
 						self.tree.selectedNode = event.node;
@@ -1280,7 +1276,7 @@ moduleManager.construct({
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'move':
-					(event):void =>{
+					(event:any):void =>{
 						// event: A node, potentially with children, has been moved by drag'n'drop.
 
 						interface ITargetNode {
@@ -2344,14 +2340,14 @@ moduleManager.construct({
 				})
 			})
 			
-			function notListed( L:SpecifStatement[],s,t ):boolean {
+			function notListed(L: SpecifStatement[], s: SpecifResource, t: SpecifResource ):boolean {
 				for( var i=L.length-1;i>-1;i--  ) {
 					if( L[i].subject.id==s.id && L[i].object.id==t.id ) return false;
 				};
 				return true;
 			}
 		};
-		function aDiagramWithoutShowsStatementsForEdges(dta: SpecIF): boolean {
+		function aDiagramWithoutShowsStatementsForEdges(dta: CCache): boolean {
 			// Return true, if there is at least one diagram, for which statements do not have 'shows' statements (older transformators);
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
@@ -2388,7 +2384,7 @@ moduleManager.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
 
-		if( app.title!=i18n.LblReader && net.statements.length>0 && (!selRes.permissions || selRes.permissions.del) )
+		if( app.title!=i18n.LblReader && net.statements.length>0 /* && (!selRes.permissions || selRes.permissions.del) */ )
 			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" '
 					+'data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
 		else
@@ -2423,7 +2419,7 @@ moduleManager.construct({
 		};
 //		console.debug('permissions',res,self.staCreClasses,self.staCre);
 	}
-	function renderStatements( net ):void {
+	function renderStatements( net:any ):void {
 		// net contains resources and statements as a SpecIF data-set for graph rendering,
 		// where the selected resource is the first element in the resources list.
 
@@ -2438,8 +2434,8 @@ moduleManager.construct({
 		let graphOptions: GraphOptions = {
 				index: 0,
 				canvas: self.view.substr(1),	// without leading hash
-				titleProperties: CONFIG.titleProperties,
-				onDoubleClick: ( evt )=>{
+			titleProperties: CONFIG.titleProperties,
+			onDoubleClick: (evt: any) => {
 	//				console.debug('Double Click on:',evt);
 					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
 						app[myName].relatedItemClicked(evt.target.resource,evt.target.statement);

@@ -564,8 +564,8 @@ moduleManager.construct({
 							.progress( setProgress )
 							.done( handleNext )
 							.fail( handleError )
-				};
-				console.info(importMode.id+' project',dta.title||dta.id);
+			};
+			console.info(importMode.id + ' project ' + (typeof (dta.title) == 'string' ? dta.title : LIB.languageValueOf(dta.title, { targetLanguage: browser.language })) || dta.id);
 		};
 	}; 
 	function setProgress(msg:string,perc:number):void {

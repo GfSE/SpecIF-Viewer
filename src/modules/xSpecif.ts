@@ -122,38 +122,44 @@ class CSpecIF implements SpecIF {
 		// 'this' isn't modified, so it shall be invoked before 'toInt' is called:
 		return new Promise(
 			(resolve, reject) => {
+
 				let checker: any;
 
 				if (typeof (spD) == 'object') {
-					// 1a. Get the "official" routine for checking schema and constraints
+					// 1. Get the "official" routine for checking schema and constraints
 					//    - where already loaded checking routines are replaced by the newly loaded ones
 					//    - use $.ajax() with options since it is more flexible than $.getScript
 					//    - the first (relative) URL is for debugging within a local clone of Github
 					//    - both of the other (absolute) URLs are for a production environment
-					$.ajax({
-						dataType: "script",
-						cache: true,
-						url: (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0 ?
-							(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.js'  // take it locally ..
-								// or load it from the homepage, otherwise:
-								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.js')
-							: 'https://specif.de/v1.0/CCheck.min.js') // older versions are covered by v1.0/check.js
-					})
-					.done(() => {
-						// 2. Get the specified schema file:
-						LIB.httpGet({
-							// @ts-ignore - 'specifVersion' is defined for versions <1.0
-							url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
-							responseType: 'arraybuffer',
-							withCredentials: false,
-							done: handleResult,
-							fail: handleError
-						});
-						// 1b. Instantiate checker:
-						// @ts-ignore - 'CCheck' has just been loaded dynamically:
-						checker = new CCheck();
-					})
-					.fail(handleError);
+					if (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0) {
+						// for data sets according to schema v1.1 and later;
+						// get the constraint checker locally, if started locally in the debug phase:
+						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
+								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
+						.then(modChk => {
+							// 2. Get the specified schema file:
+							getSchema();
+							// 3. Instantiate checker:
+							checker = new modChk.CCheck();
+						})
+						.catch(handleError);
+					}
+					else {
+						// for data sets up until schema v1.0:
+						$.ajax({
+							dataType: "script",
+							cache: true,
+							url: 'https://specif.de/v1.0/CCheck.min.js' // older versions are covered by v1.0/check.js
+						})
+						.done(() => {
+							// 2. Get the specified schema file:
+							getSchema();
+							// 3. Instantiate checker:
+							// @ts-ignore - 'CCheck' has just been loaded dynamically:
+							checker = new CCheck();
+						})
+						.fail(handleError);
+					}
 				}
 				else {
 					reject({ status: 999, statusText: 'No SpecIF data to check' });
@@ -200,6 +206,16 @@ class CSpecIF implements SpecIF {
 						default:
 							reject(xhr);
 					};
+				}
+				function getSchema() {
+					LIB.httpGet({
+						// @ts-ignore - 'specifVersion' is defined for versions <1.0
+						url: (spD['$schema'] || 'https://specif.de/v' + spD.specifVersion + '/schema'),
+						responseType: 'arraybuffer',
+						withCredentials: false,
+						done: handleResult,
+						fail: handleError
+					});
 				}
 			}
 		);
@@ -265,6 +281,7 @@ class CSpecIF implements SpecIF {
 		if (spD.description) this.description = makeMultiLanguageText(spD.description);
 		if (spD.title) this.title = makeMultiLanguageText(spD.title);
 		this.id = spD.id;
+		return;
 
 //		console.debug('specif.toInt',simpleClone(this));
 
@@ -293,7 +310,10 @@ class CSpecIF implements SpecIF {
 			var oE: any = i2int(iE);
 			oE.title = makeTitle(iE.title);
 
-			oE.type = iE.type;
+			// up until v1.0, there was a special dataType 'xs:enumeration' just for strings,
+			// starting v1.1 every dataType except 'xs:boolean' can have enumerated values
+			oE.type = iE.type == "xs:enumeration" ? SpecifDataTypeEnum.String : iE.type;
+
 			switch (iE.type) {
 				case "xs:double":
 					oE.fractionDigits = iE[names.frct];
@@ -314,8 +334,10 @@ class CSpecIF implements SpecIF {
 						oE.maxLength = iE.maxLength;
 			};
 			// Look for enumerated values;
-			// up until v1.0 there is a dedicated dataType "xs:enumeration" and
 			// starting with v1.1 every dataType except xs:boolean may have enumerated values:
+			if (iE.enumeration)
+				oE.enumeration = iE.enumeration;
+			// up until v1.0 there is a dedicated dataType "xs:enumeration":
 			if (iE.values)
 				oE.enumeration = LIB.forAll(iE.values, (v: any): SpecifEnumeratedValue => {
 					// 'v.title' until v0.10.6, 'v.value' thereafter;
@@ -743,7 +765,7 @@ class CSpecIF implements SpecIF {
 						createdAt: new Date().toISOString()
 					};
 
-				if (this.description) spD.description = LIB.languageValueOf(this.description, opts);
+				if (this.description) spD.description = this.description;
 
 				if (this.rights && this.rights.title && this.rights.url)
 					spD.rights = this.rights;
@@ -780,21 +802,21 @@ class CSpecIF implements SpecIF {
 				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
 				spD.resourceClasses = LIB.forAll(this.resourceClasses, rC2ext);
 				spD.statementClasses = LIB.forAll(this.statementClasses, sC2ext);
-				spD.files = [];
+			/*	spD.files = [];
 				this.files.forEach( (f) => {
 					pend++;
 					f2ext(f)
 						.then(
-							(oF) =>{
+							(oF: IFileWithContent) =>{
 								spD.files.push(oF);
 								if (--pend < 1) finalize();
 							},
 							reject
 						);
 				});
-				spD.resources = LIB.forAll((opts.allResources ? this.resources : collectResourcesByHierarchy(this)), r2ext);
+				spD.resources = LIB.forAll((opts.allResources ? this.resources : LIB.collectResourcesByHierarchy(this)), r2ext);
 				spD.statements = LIB.forAll(this.statements, s2ext);
-				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);
+				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);  */
 
 				if (pend < 1) finalize();  // no files, so finalize right away
 				return;
@@ -808,10 +830,10 @@ class CSpecIF implements SpecIF {
 						lenBefore = spD.statements.length;
 						spD.statements = spD.statements.filter(
 							(s) => {
-								return (LIB.indexById(spD.resources, s.subject.id) > -1
-									|| LIB.indexById(spD.statements, s.subject.id) > -1)
-									&& (LIB.indexById(spD.resources, s.object.id) > -1
-										|| LIB.indexById(spD.statements, s.object.id) > -1)
+								return (LIB.indexByKey(spD.resources, s.subject) > -1
+									|| LIB.indexByKey(spD.statements, s.subject) > -1)
+									&& (LIB.indexByKey(spD.resources, s.object) > -1
+										|| LIB.indexByKey(spD.statements, s.object) > -1)
 							}
 						);
 						console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
@@ -822,7 +844,7 @@ class CSpecIF implements SpecIF {
 					// It is assumed, 
 					// - that in general SpecIF data do not have a hierarchy root with meta-data.
 					// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-					if (opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
+			/*		if (opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
 
 						console.info("Added a hierarchyRoot");
 						standardTypes.addTo("resourceClass", { id: "RC-Folder" }, spD);
@@ -834,16 +856,15 @@ class CSpecIF implements SpecIF {
 						standardTypes.addTo("dataType", { id: "DT-ShortString" }, spD);
 						standardTypes.addTo("dataType", { id: "DT-Text" }, spD);
 
-						var res = {
+						var res: SpecifResource = {
 							id: 'R-' + simpleHash(spD.id),
-							title: spD.title,
-							class: "RC-Folder",
+							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: { id: "PC-Name" },
-								values: [spD.title]
+								values: [LIB.makeMultiLanguageText(spD.title)]
 							}, {
 								class: { id: "PC-Type"},
-								values: [CONFIG.resClassOutline]
+								values: [LIB.makeMultiLanguageText(CONFIG.resClassOutline)]
 							}],
 							changedAt: spD.createdAt || new Date().toISOString()
 						};
@@ -862,14 +883,14 @@ class CSpecIF implements SpecIF {
 							nodes: spD.hierarchies,
 							changedAt: res.changedAt
 						}];
-					};
+					};  */
 
 					// ToDo: schema and consistency check (if we want to detect any programming errors)
-//					console.debug('specif.toExt exit',spD);
+					console.debug('specif.toExt exit',spD);
 					resolve(spD);
 				}
 
-				function aHierarchyHasNoRoot(dta: SpecIF): boolean {
+			/*	function aHierarchyHasNoRoot(dta: SpecIF): boolean {
 					for (var i = dta.hierarchies.length - 1; i > -1; i--) {
 						let r = LIB.itemByKey(dta.resources, dta.hierarchies[i].resource);
 						if (!r) {
@@ -884,49 +905,6 @@ class CSpecIF implements SpecIF {
 							return true;
 					};
 					return false;
-				}
-			/*	function normalizeProperties(el: SpecifResource, dta:SpecIF): SpecifProperty[] {
-					// el: original instance (resource or statement)
-					// Create a list of properties in the sequence of propertyClasses of the respective class.
-					// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-					// Property classes must be unique!
-
-					// check uniqueness of property classes:
-					if (el.properties) {
-						let idL: string[] = [],
-							pCid: string;
-						el.properties.forEach((p: SpecifProperty) => {
-							pCid = p['class'].id;
-							if (idL.indexOf(pCid) < 0)
-								idL.push(pCid);
-							else
-								console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
-						});
-					};
-
-					let p: SpecifProperty,
-						pCs: SpecifKeys,
-						nL: SpecifProperty[] = [],
-						// iCs: instance class list (resourceClasses or statementClasses),
-						// the existence of subject (or object) let's us recognize that it is a statement:
-						// @ts-ignore - existance of subject is checked to find out whether it is a resource or statement
-						iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-						iC = LIB.itemByKey(iCs, el['class']);
-
-					// build a list of propertyClass identifiers including the extended class':
-					pCs = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
-					pCs = pCs.concat(iC.propertyClasses);
-
-					// add the properties in sequence of the propertyClass identifiers:
-					pCs.forEach((pC: SpecifKey): void => {
-						// skip hidden properties:
-						if (CONFIG.hiddenProperties.indexOf(pC.id) > -1) return;
-						// assuming that the property classes are unique:
-						p = LIB.itemBy(el.properties, 'class', pC);
-						nL.push(p || { class: pC, values: [] })
-					});
-//					console.debug('normalizeProps result',simpleClone(nL));
-					return nL; // normalized property list
 				} */
 				// common for all items:
 				function i2ext(iE:any) {

@@ -278,8 +278,9 @@ class CProject {
 	createdAt?: SpecifDateTime;
 	// @ts-ignore - initialized by this.setMeta()
 	createdBy?: SpecifCreatedBy;
-	hierarchies: SpecifNode[] = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
-	language = browser.language;
+	hierarchies: SpecifNode[];    	// reference the specifications (aka hierarchies, outlines) of the project.
+	// @ts-ignore - initialized by this.setMeta()
+	language: string;
 	data: CCache;
 /*	myRole = i18n.LblRoleProjectAdmin;
 	cre;
@@ -287,20 +288,18 @@ class CProject {
 	del = app.title != i18n.LblReader;
 	locked = app.title == i18n.LblReader; 
 	exp: boolean = true;			// permission to export  */
-	exporting: boolean = false;		// prevent concurrent exports
-	abortFlag: boolean = false;
+	exportParams: object;
+	exporting: boolean;		// prevent concurrent exports
+	abortFlag: boolean;
 	types: CElement[];
-	fileName: string = "";
 
-	constructor(spData: SpecIF, pData: CCache) {
-		this.setMeta(spData);
+	constructor(pData: CCache) {
+		this.hierarchies = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
+		// The common cache for all local projects:
 		this.data = pData;
-		// remember the hierarchies associated with this projects - the cache holds all:
-		for (var i = spData.hierarchies.length - 1; i > -1; i--) {
-			// @ts-ignore - in this case only the id and revision are stored as a reference:
-			this.hierarchies.unshift( LIB.keyOf(spData.hierarchies[i]) );
-		};
 	//	this.exp = true;
+		this.exporting = false;		// prevent concurrent exports
+		this.abortFlag = false;
 
 		//	Create a table of types and relevant attributes:	
 		this.types = [
@@ -313,20 +312,30 @@ class CProject {
 	isLoaded(): boolean {
 		return typeof (this.id) == 'string' && this.id.length > 0;
 	};
-	setMeta(spD: SpecIF): void {
+	private setMeta(spD: SpecIF): void {
+		// store a project's individual data apart from the common cache:
 		this.id = spD.id;
 		this.title = spD.title;
 		this.description = spD.description;
+		this.language = spD.language || browser.language;
 		this.generator = spD.generator;
 		this.generatorVersion = spD.generatorVersion;
 		this.createdAt = spD.createdAt;
 		this.createdBy = spD.createdBy;
+		this.exportParams = {
+			projectName: LIB.languageValueOf(this.title, { targetLanguage: this.language }),
+			fileName: LIB.languageValueOf(this.title, { targetLanguage: this.language })
+		};
+		// remember the hierarchies associated with this projects - the cache holds all:
+		spD.hierarchies.forEach(h => this.hierarchies.push(LIB.keyOf(h)));
 	/*	this.myRole = i18n.LblRoleProjectAdmin;
 		this.cre = this.data.upd = this.data.del = app.title != i18n.LblReader;
 		this.locked = app.title == i18n.LblReader; 
 		this.exp = true; */
 	};
-	getMeta(): CSpecIF {
+	private getMeta(): CSpecIF {
+		// retrieve a project's individual data apart from the common cache;
+		// a new SpecIF data set is created, so this shall be called before the data is retrieved from the cache:
 		var spD = new CSpecIF();
 		spD.id = this.id;
 		spD.title = this.title;
@@ -335,6 +344,7 @@ class CProject {
 		spD.generatorVersion = this.generatorVersion;
 		spD.createdAt = this.createdAt;
 		spD.createdBy = this.createdBy;
+		spD.hierarchies = this.hierarchies;
 		return spD;
 	};
 	create(newD: SpecIF, opts: any): JQueryDeferred<void> {
@@ -348,7 +358,6 @@ class CProject {
 
 		this.abortFlag = false;
 
-	//	newD = new CSpecIF(newD); // transform to internal data structure
 //		console.debug('app.cache.selectedProject.data.create',newD);
 
 		new CSpecIF().set(newD,opts)
@@ -358,6 +367,7 @@ class CProject {
 					// The project meta-data and each item are created as a separate document in a document database;
 					// at the same time the cache is updated.
 					cDO.notify(i18n.MsgLoadingTypes, 30);
+					this.setMeta(nD);
 					pend = standardTypes.iterateLists(
 						(ctg: string, listName: string) => {
 							// @ts-ignore - the indexing works fine:
@@ -1448,7 +1458,7 @@ class CProject {
 						(sL) => {
 							// make a list of 'shows' statements for all diagrams shown in the hierarchy:
 							// @ts-ignore - subject *does* exist on a statement ...
-							let showsL = sL.filter( s => LIB.staClassTitleOf(s) == CONFIG.staClassShows && isReferencedByHierarchy(s.subject) );
+							let showsL = sL.filter( s => LIB.staClassTitleOf(s) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) );
 							// filter all statements involving res as subject or object:
 							resolve(
 								sL.filter(
@@ -1473,12 +1483,12 @@ class CProject {
 													// cheap tests first:
 													&& ti != CONFIG.staClassCommentRefersTo
 													&& CONFIG.hiddenStatements.indexOf(ti) < 0
-													&& isReferencedByHierarchy(s.subject)
-													&& isReferencedByHierarchy(s.object)
+													&& LIB.isReferencedByHierarchy(s.subject)
+													&& LIB.isReferencedByHierarchy(s.object)
 													// In case of a comment, the comment itself is not referenced in the tree:
 												|| opts.showComments
 													&& ti == CONFIG.staClassCommentRefersTo
-													&& isReferencedByHierarchy(s.object)
+													&& LIB.isReferencedByHierarchy(s.object)
 											))
 									}
 								)
@@ -1491,13 +1501,12 @@ class CProject {
 	}
 	// Select format and options with a modal dialog, then export the data:
 	private chooseExportOptions(fmt:string) {
-		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()',
-			ti = LIB.languageValueOf(this.title, { targetLanguage: browser.language });
+		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ textField('&#x200b;' + i18n.LblProjectName, ti, { typ: 'line', handle: exportOptionsClicked })
-			+ textField('&#x200b;' + i18n.LblFileName, ti, { typ: 'line', handle: exportOptionsClicked });
+			+ textField('&#x200b;' + i18n.LblProjectName, this.exportParams.projectName, { typ: 'line', handle: exportOptionsClicked })
+			+ textField('&#x200b;' + i18n.LblFileName, this.exportParams.fileName, { typ: 'line', handle: exportOptionsClicked });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
@@ -1526,8 +1535,10 @@ class CProject {
 	exportOptionsClicked(): void {
 		// Obtain selected options:
 		// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-		this.title = textValue('&#x200b;' + i18n.LblProjectName);
-		this.fileName = textValue('&#x200b;' + i18n.LblFileName);
+		this.exportParams = {
+			projectName: textValue('&#x200b;' + i18n.LblProjectName),
+			fileName: textValue('&#x200b;' + i18n.LblFileName) || textValue('&#x200b;' + i18n.LblProjectName) || this.id
+		};
 
 //		console.debug('exportOptionsClicked',this.title,this.fileName);
 	}
@@ -1703,12 +1714,13 @@ class CProject {
 						//	hasContent: LIB.hasContent,
 							propertiesLabel: opts.withOtherProperties ? 'SpecIF:Properties' : undefined,
 							statementsLabel: opts.withStatements ? 'SpecIF:Statements' : undefined,
-							fileName: self.fileName || expD.title,
+							fileName: self.exportParams.fileName,
 							colorAccent1: '0071B9',	// adesso blue
 							done: () => { app.cache.selectedProject.exporting = false; resolve() },
 							fail: (xhr) => { app.cache.selectedProject.exporting = false; reject(xhr) }
 						};
 
+						expD.title = LIB.makeMultiLanguageText(self.exportParams.projectName);
 						switch (opts.format) {
 							case 'epub':
 								// @ts-ignore - toEpub() is loaded at runtime
@@ -1770,7 +1782,8 @@ class CProject {
 				self.read(opts).then(
 					(expD) => {
 //						console.debug('storeAs', expD, opts);
-						let fName = self.fileName || expD.title;
+						let fName = self.exportParams.fileName;
+						expD.title = LIB.makeMultiLanguageText(self.exportParams.projectName);
 
 						// A) Processing for 'html':
 						if (opts.format == 'html') {
@@ -2991,8 +3004,7 @@ moduleManager.construct({
 		self.projects.length = 0;
 		self.data.clear();
 		// append a project to the list:
-		self.projects.push(new CProject(prj,self.data));
-	//	self.projects.push(Project());
+		self.projects.push(new CProject(self.data));
 		self.selectedProject = self.projects[self.projects.length - 1];
 		return self.selectedProject.create(prj, opts);
 	};
@@ -3085,13 +3097,13 @@ moduleManager.construct({
 
 //////////////////////////
 // global helper functions:
-function isReferencedByHierarchy(itm: SpecifKey, H?: SpecifNode[]): boolean {
+LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
 	// checks whether a resource is referenced by the hierarchy:
 	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
 	return LIB.iterateNodes( H, (nd)=>{ return !LIB.references(nd.resource,itm) } )
 }
-function collectResourcesByHierarchy(prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] {
+LIB.collectResourcesByHierarchy = (prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] => {
 	// collect all resources referenced by the given hierarchy:
 	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
 	if (!H) H = app.cache.selectedProject.data.hierarchies;
@@ -3116,7 +3128,9 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
 }
 LIB.hasContent = ( pV:string ):boolean =>{
 	// must be a string with the value of the selected language.
-	if( typeof(pV)!="string" ) return false;
+	if (typeof (pV) != "string"
+		|| /^.{0,2}(?:no entry|empty).{0,2}$/.test(pV.toLowerCase())
+	) return false;
 	return pV.stripHTML().length>0
 		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
 		|| RE.tagImg.test(pV)

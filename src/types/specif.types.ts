@@ -95,6 +95,12 @@ interface SpecifProject {
     createdBy?: SpecifCreatedBy;
     /**
      * 
+     * @type {string}
+     * @memberof SpecifProject
+     */
+    language?: string;
+    /**
+     * 
      * @type {SpecifNodes}
      * @memberof SpecifProject
      */
@@ -173,6 +179,12 @@ interface SpecIF {
      * @memberof SpecIF
      */
     createdBy?: SpecifCreatedBy;
+    /**
+     * 
+     * @type {string}
+     * @memberof Specif
+     */
+    language?: string;
     /**
      * 
      * @type {Array<SpecifDataType>}
