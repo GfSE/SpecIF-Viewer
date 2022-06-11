@@ -2466,7 +2466,9 @@ function languageValueOf( val, opts?:any ):string|undefined {
 }
 LIB.hasContent = ( pV:string ):boolean =>{
 	// must be a string with the value of the selected language.
-	if( typeof(pV)!="string" ) return false;
+	if (typeof (pV) != "string"
+		|| /^.{0,2}(?:no entry|empty).{0,2}$/.test(pV.toLowerCase())
+	) return false;
 	return pV.stripHTML().length>0
 		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
 		|| RE.tagImg.test(pV)
