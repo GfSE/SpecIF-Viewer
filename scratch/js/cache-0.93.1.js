@@ -1199,7 +1199,7 @@ function CachedProject() {
 					// If a hidden property is defined with value, it is suppressed only if it has this value;
 					// if the value is undefined, the property is suppressed in all cases.
 					// so far (iLaH v0.92.44), property titles are translated:
-					hiddenProperties: opts.translateTitlesOnExport? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'},{title:i18n.lookup('SpecIF:Type'),value:'Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],
+					skipProperties: opts.translateTitlesOnExport? [{title:i18n.lookup('SpecIF:Type'),value:'SpecIF:Folder'},{title:i18n.lookup('SpecIF:Type'),value:'Folder'}] : [{title:'SpecIF:Type',value:'SpecIF:Folder'},{title:'SpecIF:Type',value:'Folder'}],
 					hideEmptyProperties: true,
 					propertiesLabel: opts.translateTitlesOnExport? i18n.lookup('SpecIF:Properties') : 'SpecIF:Properties',
 					statementsLabel: opts.translateTitlesOnExport? i18n.lookup('SpecIF:Statements') : 'SpecIF:Statements',

@@ -476,6 +476,16 @@ LIB.isEqualStringL = (refL: any[], newL: any[]): boolean => {
 			if (newL.indexOf(lE) < 0) return false;
 		return true;
 }
+LIB.hasContent = (pV: string): boolean => {
+	// must be a string with the value of the selected language.
+	if (typeof (pV) != "string"
+		|| /^.{0,2}(?:no entry|empty).{0,2}$/.test(pV.toLowerCase())
+	) return false;
+	return pV.stripHTML().length > 0
+		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
+		|| RE.tagImg.test(pV)
+		|| RE.tagA.test(pV)
+}
 LIB.isMultiLanguageText = (L: any[]): boolean => {
 	if (Array.isArray(L)) {
 		let hasMultipleLanguages = L.length > 1;
@@ -486,6 +496,9 @@ LIB.isMultiLanguageText = (L: any[]): boolean => {
 		return true;
 	};
 	return false;
+}
+LIB.multiLanguageTextHasContent = (L: any[]): boolean => {
+	return L && L.length > 0 && LIB.isMultiLanguageText(L) && LIB.hasContent(L[0]["text"]);
 }
 LIB.makeMultiLanguageText = (el:any): SpecifMultiLanguageText => {
 	return typeof (el) == 'string' ? [{ text: el }] : (LIB.isMultiLanguageText( el )? el : undefined );
@@ -515,6 +528,9 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 
 	// As a final resourt take the first element in the original list of values:
 	return val[0].text;
+}
+LIB.valueOf = (val: SpecifValue, opts?: any): string => {
+	return LIB.isMultiLanguageText(val) ? LIB.languageValueOf(val, opts) : val;
 }
 LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
 	// Return the index of item with key k in L
@@ -1146,7 +1162,7 @@ function simpleClone( o:any ): any {
 		function cloneProp(p:any) {
 			return ( typeof(p) == 'object' )? simpleClone(p) : p;
 		}
-	if( typeof(o)=='object' ) {
+	if (typeof (o) == 'object' && !(o instanceof Blob)) {
 		var n: any;
 		if (Array.isArray(o))
 			n=[];
@@ -1165,6 +1181,7 @@ function simpleClone( o:any ): any {
 		};
 		return n;
 	};
+	// o is a scalar/atomic value or a Blob:
 	return o;
 }
 function hasUrlParams():boolean {

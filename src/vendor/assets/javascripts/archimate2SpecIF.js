@@ -662,43 +662,50 @@ function Archimate2Specif(xmlString, opts) {
 		}
 	);
 
-	// Check the relations:
-	for (var i = model.statements.length - 1; i > -1; i--) {
-		let st = model.statements[i];
-		// Check the statement consistency. 
-		// So far only problems with "shows" statements have been encountered, and so it is sufficient to check the objects.
-		// However, the subjects are checked, as well, to be on the 'safe side':
-		if (indexById(model.resources, st.subject) < 0
-			//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
-			|| indexById(model.resources, st.object) < 0
-			&& indexById(model.statements, st.object) < 0) {
-			console.warn('Skipping statement '
-				+ ' with id="' + st.id
-				+ '" of class="' + st["class"]
-				+ '" with subject="' + st.subject
-				+ '" and object="' + st.object
-				+ '", because subject or object are not listed.');
-			// remove any statement which is not consistent:
-			model.statements.splice(i, 1);
-		}
-		else {
-			if (opts.transformPermissibleStatementsOnly) {
-				if (!isStatementPermissible(st)) {
-					console.warn('Skipping statement '
-						+ ' with id="' + st.id
-						+ '" of class="' + st["class"]
-						+ '" with subject="' + st.subject
-						+ '" and object="' + st.object
-						+ '", because the subject or object class is not listed with the statement class.');
-					// remove any statement which is not consistent:
-					model.statements.splice(i, 1);
-				};
+	// Check the relations;
+	// relations can reference skipped relations, so the check is repeated until no more statements are removed:
+	let removed;
+	do {
+		removed = false;
+		for (var i = model.statements.length - 1; i > -1; i--) {
+			let st = model.statements[i];
+			// Check the statement consistency. 
+			// So far only problems with "shows" statements have been encountered, and so it is sufficient to check the objects.
+			// However, the subjects are checked, as well, to be on the 'safe side':
+			if (indexById(model.resources, st.subject) < 0
+				//	&& indexById( model.statements, st.subject )<0  .. no statement will ever appear as a subject, here
+				|| indexById(model.resources, st.object) < 0
+				&& indexById(model.statements, st.object) < 0) {
+				console.warn('Skipping statement '
+					+ ' with id="' + st.id
+					+ '" of class="' + st["class"]
+					+ '" with subject="' + st.subject
+					+ '" and object="' + st.object
+					+ '", because subject or object are not listed.');
+				// remove any statement which is not consistent:
+				model.statements.splice(i, 1);
+				removed = true;
 			}
 			else {
-				extendStatementClassIfNecessary(st);
+				if (opts.transformPermissibleStatementsOnly) {
+					if (!isStatementPermissible(st)) {
+						console.warn('Skipping statement '
+							+ ' with id="' + st.id
+							+ '" of class="' + st["class"]
+							+ '" with subject="' + st.subject
+							+ '" and object="' + st.object
+							+ '", because the subject or object class is not listed with the statement class.');
+						// remove any statement which is not consistent:
+						model.statements.splice(i, 1);
+						removed = true;
+					};
+				}
+				else {
+					extendStatementClassIfNecessary(st);
+				}
 			}
-		}
-	};
+		};
+	} while (removed);
 
 	// 6. Add the resource for the hierarchy root:
 	model.resources.push({

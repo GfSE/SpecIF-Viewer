@@ -1244,8 +1244,7 @@ moduleManager.construct({
 		else
 			$(self.view).prepend(h);
 
-		// Construct jqTree,
-		// holds the hierarchy tree (or outline):
+		// Construct jqTree - holds the hierarchy tree (or outline):
 		self.tree = new Tree({
 			loc: '#hierarchy',
 			dragAndDrop: app.title!=i18n.LblReader,
@@ -1479,7 +1478,7 @@ moduleManager.construct({
 		if( !(app.cache.selectedProject && app.cache.selectedProject.isLoaded() ) )
 			throw Error("No selected project on entry of spec.show()");
 		
-		$('#pageTitle').html( app.cache.selectedProject.title );
+		$('#pageTitle').html(LIB.languageValueOf(app.cache.selectedProject.title, { targetLanguage: app.cache.selectedProject.language }));
 		app.busy.set();
 	//	$( self.view ).html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
 	//	$('#specNotice').empty();

@@ -116,35 +116,38 @@ class CCache {
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 	}
-	get(ctg: string, req: SpecifKey[] | string): SpecifItem[] {
+	get(ctg: string, req: SpecifKey[] | Function | string): SpecifItem[] {
 		// Read items from cache
 		// - req can be single or a list,
 		// - each element can be an object with key
 		// - original lists and items are delivered, so don't change them!
-		if (!req)
-			return [];
+		if (req) {
+			// @ts-ignore - addressing is perfectly ok
+			let itmL = this[standardTypes.listName.get(ctg)];
 
-		// @ts-ignore - addressing is perfectly ok
-		let itmL = this[standardTypes.listName.get(ctg)];
-
-		if (req == 'all')
-			return simpleClone(itmL);	  // return all cached items in a new list
-
-		let allFound = true, i = 0, I = req.length, idx: number;
-		var rL: SpecifItem[] = [];
-		while (allFound && i < I) {
-			idx = LIB.indexByKey(itmL, req[i] );
-			if (idx > -1) {
-				rL.push(itmL[idx]);
-				i++;
+			if (Array.isArray(req)) {
+				let allFound = true, i = 0, I = req.length, idx: number;
+				var rL: SpecifItem[] = [];
+				while (allFound && i < I) {
+					idx = LIB.indexByKey(itmL, req[i]);
+					if (idx > -1) {
+						rL.push(itmL[idx]);
+						i++;
+					}
+					else
+						allFound = false;
+				};
+				if (allFound)
+					return simpleClone(rL);
 			}
-			else
-				allFound = false;
+			else if (typeof (req) == 'function') {
+				return simpleClone(itmL.filter(req));
+			}
+			else if (req == 'all') {
+				return simpleClone(itmL);	  // return all cached items in a new list
+			};
 		};
-		if (allFound)
-			return simpleClone(rL);
-		else
-			return [];
+		return [];
 	}
 	delete(ctg: string, itemL: SpecifKey[] ): boolean | undefined {
 		switch (ctg) {
@@ -282,12 +285,14 @@ class CProject {
 	// @ts-ignore - initialized by this.setMeta()
 	language: string;
 	data: CCache;
-/*	myRole = i18n.LblRoleProjectAdmin;
+/*	server: URL // or servers ??
+ 	myRole = i18n.LblRoleProjectAdmin;
 	cre;
 	upd;
 	del = app.title != i18n.LblReader;
 	locked = app.title == i18n.LblReader; 
 	exp: boolean = true;			// permission to export  */
+	// @ts-ignore - initialized by this.setMeta()
 	exportParams: object;
 	exporting: boolean;		// prevent concurrent exports
 	abortFlag: boolean;
@@ -400,31 +405,147 @@ class CProject {
 			}
 		}
 	}
-	read(opts?: any): Promise<SpecIF> {
-		// collect all items of this project from the cache containing elements of multiple projects
-		// (.. so far only one project, so the selection-process is pretty simple ..)
-		var pend = 0,
-			spD = this.getMeta();
+	read(opts?: any): Promise<CSpecIF> {
+		// Extract all items of this project from the cache containing elements of multiple projects
+		var exD = this.getMeta();
 
 		return new Promise(
 			(resolve, reject) => {
+				this.readItems('hierarchy', this.hierarchies, opts)
+					.then(
+						(hL) => {
+							exD.hierarchies = hL as SpecifNode[];
+//							console.debug('1', simpleClone(exD));
+							return this.readItems('resource', LIB.collectResourcesByHierarchy(this.data, hL), opts)
+						}
+					)
+					.then(
+						(rL) => {
+							exD.resources = rL as SpecifResource[];
+//							console.debug('2', simpleClone(exD));
+							return this.readItems('statement', flt, opts);
+
+							function flt(s) {
+								let rL = exD.resources;
+								return LIB.indexByKey(rL, s.subject) > -1 && LIB.indexByKey(rL, s.object) > -1
+							}
+						}
+					)
+					.then(
+						(sL) => {
+							exD.statements = sL;
+							let rCL = [];
+							for( var r of exD.resources ) {
+								// assuming all used classes have the same revision
+								LIB.cacheE(rCL, r['class']);
+							};
+//							console.debug('3', simpleClone(exD), rCL);
+							return this.readItems('resourceClass', rCL, opts);
+						}
+					)
+					.then(
+						(rCL) => {
+							exD.resourceClasses = rCL;
+							let sCL = [];
+							for (var s of exD.statements ) {
+								// assuming all used classes have the same revision
+								LIB.cacheE(sCL, s['class']);
+							};
+//							console.debug('4', simpleClone(exD), sCL);
+							return this.readItems('statementClass', sCL, opts);
+						}
+					)
+					.then(
+						(sCL) => {
+							exD.statementClasses = sCL;
+							let pCL = [];
+							for (var rC of exD.resourceClasses ) {
+								// assuming all used classes have the same revision
+								for (var pC of rC.propertyClasses) {
+									LIB.cacheE(pCL, pC);
+								};
+							};
+							for (var sC of exD.statementClasses ) {
+								// assuming all used classes have the same revision
+								for (var pC of sC.propertyClasses) {
+									LIB.cacheE(pCL, pC);
+								};
+							};
+//							console.debug('5', simpleClone(exD),pCL);
+							return this.readItems('propertyClass', pCL, opts);
+						}
+					)
+					.then(
+						(pCL) => {
+							exD.propertyClasses = pCL;
+							let dTL = [];
+							for( var pC of exD.propertyClasses ) {
+								// assuming all used classes have the same revision
+								LIB.cacheE(dTL, pC['dataType']);
+							}
+
+//							console.debug('6', simpleClone(exD),dTL);
+							return this.readItems('dataType', dTL, opts)
+						}
+					)
+					.then(
+						(dTL) => {
+							exD.dataTypes = dTL;
+							let fL = [], dT;
+							for (var r of exD.resources) {
+								for (var p of r.properties) {
+									dT = LIB.dataTypeOf(p['class'], this.data);
+									if (dT && dT.type == SpecifDataTypeEnum.String) {
+										for (var v of p.values) {
+											// Cycle through all values:
+											for (var l of v) {
+												// Cycle through all languages:
+												// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#specifications
+												let re = /data="([^"]+)"/g,
+													mL;
+												// Get multiple references in a single property:
+												while ((mL = re.exec(l.text)) !== null) {
+													// mL[1] is the file title
+													LIB.cacheE(fL, mL[1]);
+												};
+											};
+										};
+									};
+								};
+							};
+//							console.debug('7', simpleClone(exD),fL);
+							// LIB.itemByTitle(this.pData.files, u1)
+							return this.readItems('file', (f) => { return fL.indexOf(f.title)>-1 }, opts)
+						}
+					)
+					.then(
+						(fL) => {
+							exD.files = fL;
+//							console.debug('8', simpleClone(exD));
+							return exD.get(opts);
+						}
+					)
+					.then(resolve)
+					.catch(reject)
+
+			/*	// Copy the whole cache (which is acceptable here, as long as only one project is handled ...)
 				pend = standardTypes.iterateLists(
 					(ctg: string, listName:string) => {
 						this.readItems(ctg, 'all', opts)
 						.then(
 							(values) => {
 								// @ts-ignore - indexing by string works fine
-								spD[listName] = values;
+								exD[listName] = values;
 								if (--pend < 1) {
-									spD.toExt(opts)
+									exD.get(opts)
 									.then(resolve, reject)
 								}
 							},
 							reject
 						);
 					}
-				);
-			}
+				); */
+			} 
 		);
     }
 /*	update(newD: SpecIF, opts: any): Promise<void> {
@@ -1208,10 +1329,10 @@ class CProject {
 		)
 	}
 	createItems(ctg: string, item: SpecifItem[] | SpecifItem): Promise<void> {
-		// item can be a js-object or a list of js-objects
-		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
-		// ...  not all of them may be implemented, so far.
-		// cache the value before sending it to the server, as the result is not received after sending (except for 'resource' and 'statement')
+		// Create one or more items of a given category in cache and in the remote store (server).
+
+		// - item can be a js-object or a list of js-objects
+		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
 		return new Promise(
 			(resolve) => {
 //				console.debug('createItems', ctg, item );
@@ -1232,9 +1353,10 @@ class CProject {
 			}
 		);
 	}
-	readItems(ctg: string, itemL: SpecifKey[] | string, opts?: any): Promise<SpecifItem[]> {
+	readItems(ctg: string, itemL: SpecifKey[] | Function | string, opts?: any): Promise<SpecifItem[]> {
+		// Read one or more items of a given category either from cache or from the permanent store (server), otherwise:
 //		console.debug('readItems', ctg, item, opts);
-		// ctg is a member of [dataType, resourceClass, statementClass, resource, statement, hierarchy]
+		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
 		if (!opts) opts = { reload: false, timelag: 10 };
 
 		return new Promise(
@@ -1679,15 +1801,14 @@ class CProject {
 
 				// If a hidden property is defined with value, it is suppressed only if it has this value;
 				// if the value is undefined, the property is suppressed in all cases.
-				opts.hiddenProperties = [
+				opts.skipProperties = [
 					{ title: CONFIG.propClassType, value: CONFIG.resClassFolder },
 					{ title: CONFIG.propClassType, value: CONFIG.resClassOutline }
 				];
 
-				opts.allResources = false; // only resources referenced by a hierarchy.
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
-				opts.lookupTitles = false;  // applies to self.data.toExt()
-				opts.lookupValues = true;  // applies to self.data.toExt()
+				opts.lookupTitles = false;  // applies to self.data.get()
+				opts.lookupValues = true;  // applies to self.data.get()
 				// But DO reduce to the language desired.
 				if ( !opts.targetLanguage ) opts.targetLanguage = browser.language;
 				opts.makeHTML = true;
@@ -1745,16 +1866,13 @@ class CProject {
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
-				opts.allResources = false;  // only resources referenced by a hierarchy.
 				// keep vocabulary terms:
 				opts.lookupTitles = false;
 				opts.lookupValues = false;
-				opts.allDiagramsAsImage = ["html","turtle","reqif"].indexOf(opts.format) > -1;
+				opts.allDiagramsAsImage = ["html","turtle","reqif"].includes(opts.format);
 
 				switch (opts.format) {
 					case 'specif':
-						opts.allResources = true;  // even if not referenced by a hierarchy.
-						// no break
 					case 'html':
 						// export all languages:
 						opts.targetLanguage = undefined;
@@ -1815,11 +1933,11 @@ class CProject {
 
 						// Add the files to the ZIP container:
 						if (expD.files)
-							expD.files.forEach((f) => {
+							for( var f of expD.files ) {
 //								console.debug('zip a file',f);
 								zipper.file(f.title, f.blob);
 								delete f.blob; // the SpecIF data below shall not contain it ...
-							});
+							};
 
 						// Prepare the output data:
 						switch (opts.format) {
@@ -1849,10 +1967,8 @@ class CProject {
 								expStr = app.ioRdf.fromSpecif( expD ); */
 						};
 						expD = undefined; // save some memory space
-						let blob = new Blob([expStr], { type: "text/plain; charset=utf-8" });
 						// Add the project:
-						zipper.file(fName, blob);
-						blob = undefined; // free heap space
+						zipper.file(fName, new Blob([expStr], { type: "text/plain; charset=utf-8" }));
 
 						// done, store the specif.zip:
 						zipper.generateAsync({
@@ -3112,7 +3228,7 @@ LIB.collectResourcesByHierarchy = (prj: SpecIF, H?: SpecifNode[] ):SpecifResourc
 	return rL;
 }
 LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
-	// given a propertyClass id, return it's dataType:
+	// given a propertyClass key, return it's dataType:
 	if ( LIB.isKey(key) ) {
 		let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
 		//       |                            get propertyClass
@@ -3125,16 +3241,6 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
 	// else:
 	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
 	return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
-}
-LIB.hasContent = ( pV:string ):boolean =>{
-	// must be a string with the value of the selected language.
-	if (typeof (pV) != "string"
-		|| /^.{0,2}(?:no entry|empty).{0,2}$/.test(pV.toLowerCase())
-	) return false;
-	return pV.stripHTML().length>0
-		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
-		|| RE.tagImg.test(pV)
-		|| RE.tagA.test(pV)
 }
 LIB.iterateNodes = (tree: SpecifNode[]|SpecifNode, eFn:Function, lFn?:Function): boolean =>{
 	// Iterate a SpecIF hierarchy or a branch of a hierarchy.
