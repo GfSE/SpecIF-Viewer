@@ -281,7 +281,12 @@ class CProject {
 	createdAt?: SpecifDateTime;
 	// @ts-ignore - initialized by this.setMeta()
 	createdBy?: SpecifCreatedBy;
-	hierarchies: SpecifNode[];    	// reference the specifications (aka hierarchies, outlines) of the project.
+	// remember the ids of all types and classes, so they can be exported, even if they have no instances (yet):
+	dataTypes: SpecifKey[];
+	propertyClasses: SpecifKey[];
+	resourceClasses: SpecifKey[];
+	statementClasses: SpecifKey[];
+	hierarchies: SpecifKey[];
 	// @ts-ignore - initialized by this.setMeta()
 	language: string;
 	data: CCache;
@@ -299,6 +304,10 @@ class CProject {
 	types: CElement[];
 
 	constructor(pData: CCache) {
+		this.dataTypes = [];
+		this.propertyClasses = [];
+		this.resourceClasses = [];
+		this.statementClasses = [];
 		this.hierarchies = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
 		// The common cache for all local projects:
 		this.data = pData;
@@ -331,8 +340,15 @@ class CProject {
 			projectName: LIB.languageValueOf(this.title, { targetLanguage: this.language }),
 			fileName: LIB.languageValueOf(this.title, { targetLanguage: this.language })
 		};
-		// remember the hierarchies associated with this projects - the cache holds all:
-		spD.hierarchies.forEach(h => this.hierarchies.push(LIB.keyOf(h)));
+		// remember the hierarchies associated with this projects - the cache holds all;
+		// store only the id, so that the newest revision will be selected on export:
+		spD.hierarchies.forEach(h => this.hierarchies.push({ id: h.id }));
+		// similarly remember the sets of classes and dataTypes,
+		// so that all will be re-expoerted, even if the project has no instances (yet):
+		spD.resourceClasses.forEach(r => this.resourceClasses.push({ id: r.id }));
+		spD.statementClasses.forEach(s => this.statementClasses.push({ id: s.id }));
+		spD.propertyClasses.forEach(p => this.propertyClasses.push({ id: p.id }));
+		spD.dataTypes.forEach(d => this.dataTypes.push({ id: d.id }));
 	/*	this.myRole = i18n.LblRoleProjectAdmin;
 		this.cre = this.data.upd = this.data.del = app.title != i18n.LblReader;
 		this.locked = app.title == i18n.LblReader; 
@@ -349,7 +365,6 @@ class CProject {
 		spD.generatorVersion = this.generatorVersion;
 		spD.createdAt = this.createdAt;
 		spD.createdBy = this.createdBy;
-		spD.hierarchies = this.hierarchies;
 		return spD;
 	};
 	create(newD: SpecIF, opts: any): JQueryDeferred<void> {
@@ -425,7 +440,7 @@ class CProject {
 //							console.debug('2', simpleClone(exD));
 							return this.readItems('statement', flt, opts);
 
-							function flt(s) {
+							function flt(s:SpecifStatement):boolean {
 								let rL = exD.resources;
 								return LIB.indexByKey(rL, s.subject) > -1 && LIB.indexByKey(rL, s.object) > -1
 							}
@@ -433,8 +448,11 @@ class CProject {
 					)
 					.then(
 						(sL) => {
-							exD.statements = sL;
-							let rCL = [];
+							exD.statements = sL as SpecifStatement[];
+							// collect the resourceClasses referenced by the resources of this project:
+							// start with the stored resourceClasses of this project in case they have no instances (yet):
+							let rCL: SpecifKey[] = [].concat(this.resourceClasses);
+							// add those actually used by the project:
 							for( var r of exD.resources ) {
 								// assuming all used classes have the same revision
 								LIB.cacheE(rCL, r['class']);
@@ -445,8 +463,11 @@ class CProject {
 					)
 					.then(
 						(rCL) => {
-							exD.resourceClasses = rCL;
-							let sCL = [];
+							exD.resourceClasses = rCL as SpecifResourceClass[];
+							// collect the statementClasses referenced by the resources of this project:
+							// start with the stored statementClasses of this project in case they have no instances (yet):
+							let sCL: SpecifKey[] = [].concat(this.statementClasses);
+							// add those actually used by the project:
 							for (var s of exD.statements ) {
 								// assuming all used classes have the same revision
 								LIB.cacheE(sCL, s['class']);
@@ -457,28 +478,35 @@ class CProject {
 					)
 					.then(
 						(sCL) => {
-							exD.statementClasses = sCL;
-							let pCL = [];
-							for (var rC of exD.resourceClasses ) {
+							exD.statementClasses = sCL as SpecifStatementClass[];
+							// collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
+							// start with the stored propertyClasses of this project in case they have no references (yet):
+							let pCL: SpecifKey[] = [].concat(this.propertyClasses);
+							// add those actually used by the project:
+							// @ts-ignore - both resourceClasses and statementClasses have a list of propertyClasses:
+							for (var eC of exD.resourceClasses.concat(exD.statementClasses) ) {
 								// assuming all used classes have the same revision
-								for (var pC of rC.propertyClasses) {
+								for (var pC of eC.propertyClasses) {
 									LIB.cacheE(pCL, pC);
 								};
 							};
-							for (var sC of exD.statementClasses ) {
+						/*	for (var sC of exD.statementClasses ) {
 								// assuming all used classes have the same revision
 								for (var pC of sC.propertyClasses) {
 									LIB.cacheE(pCL, pC);
 								};
-							};
+							}; */
 //							console.debug('5', simpleClone(exD),pCL);
 							return this.readItems('propertyClass', pCL, opts);
 						}
 					)
 					.then(
 						(pCL) => {
-							exD.propertyClasses = pCL;
-							let dTL = [];
+							exD.propertyClasses = pCL as SpecifPropertyClass[];
+							// collect the dataTypes referenced by the propertyClasses of this project:
+							// start with the stored dataTypes of this project in case they have no references (yet):
+							let dTL: SpecifKey[] = [].concat(this.dataTypes);
+							// add those actually used by the project:
 							for( var pC of exD.propertyClasses ) {
 								// assuming all used classes have the same revision
 								LIB.cacheE(dTL, pC['dataType']);
@@ -490,20 +518,23 @@ class CProject {
 					)
 					.then(
 						(dTL) => {
-							exD.dataTypes = dTL;
-							let fL = [], dT;
+							exD.dataTypes = dTL as SpecifDataType[];
+							// collect the files referenced by the resource properties of this project:
+							let fL: string[] = [],
+								dT: SpecifDataType;
 							for (var r of exD.resources) {
 								for (var p of r.properties) {
 									dT = LIB.dataTypeOf(p['class'], this.data);
 									if (dT && dT.type == SpecifDataTypeEnum.String) {
+										// Cycle through all values:
 										for (var v of p.values) {
-											// Cycle through all values:
+											// Cycle through all languages of a value:
 											for (var l of v) {
-												// Cycle through all languages:
 												// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#specifications
 												let re = /data="([^"]+)"/g,
 													mL;
 												// Get multiple references in a single property:
+												// @ts-ignore - in case of SpecifDataTypeEnum there is a property 'text'
 												while ((mL = re.exec(l.text)) !== null) {
 													// mL[1] is the file title
 													LIB.cacheE(fL, mL[1]);
@@ -515,12 +546,12 @@ class CProject {
 							};
 //							console.debug('7', simpleClone(exD),fL);
 							// LIB.itemByTitle(this.pData.files, u1)
-							return this.readItems('file', (f) => { return fL.indexOf(f.title)>-1 }, opts)
+							return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts)
 						}
 					)
 					.then(
 						(fL) => {
-							exD.files = fL;
+							exD.files = fL as IFileWithContent[];
 //							console.debug('8', simpleClone(exD));
 							return exD.get(opts);
 						}
