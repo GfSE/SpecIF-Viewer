@@ -595,24 +595,24 @@ moduleManager.construct({
 		self.newRes.changedAt = chD;
 //		console.debug('save',simpleClone(self.newRes));
 
-		app.cache.selectedProject.updateItems('resource', self.newRes)
+		app.cache.selectedProject.updateItems('resource', [self.newRes])
 			.then(finalize, LIB.stdError);
 
 		// If it is a new item, insert a mode in the hierarchy:
 		switch (mode) {
 			case 'insert':
 				pend++;
-				app.cache.selectedProject.createItems( 'node', {id:LIB.genID('N-'), resource:LIB.keyOf(self.newRes), changedAt:chD} )
+				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD } as SpecifNode])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.cache.selectedProject.createItems('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: opts.selNodeId } as INodeWithPosition )
+				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: opts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.cache.selectedProject.createItems('node', { id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: opts.selNodeId } as INodeWithPosition )
+				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: opts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 		};
 

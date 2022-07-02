@@ -529,55 +529,10 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 	// As a final resourt take the first element in the original list of values:
 	return val[0].text;
 }
-LIB.valueOf = (val: SpecifValue, opts?: any): string => {
-	return LIB.isMultiLanguageText(val) ? LIB.languageValueOf(val, opts) : val;
-}
-LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
-	// Return the index of item with key k in L
-	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
-	//  - If k has no revision, the item in L having the latest revision applies.
-	//  - If k has a revision, the item in L having an an equal or the next lower revision applies.
-	//  - The uniqueness of keys has been checked, before.
-
-	// Find all items with the same id:
-	let	itemsWithEqId = LIB.forAll(
-			// filter the input list and add the index to the elements;
-			// add index without changing L and it's items:
-			L,
-			(e:SpecifItem,i:number) => {
-				if (e.id == k.id )
-					return { idx: i, rev: e.revision, chAt: e.changedAt }
-			}
-		);
-	if (itemsWithEqId.length < 1) return -1; // no element with the specified id
-
-	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].rev) {
-		// a single item without revision has been found:
-		if (k.revision) return -1; // revisions don't match (this should not occur)
-		return itemsWithEqId[0].idx // both the found element and the key have no revision
-	};
-
-	// The elements in itemsWithEqId have a revision:
-	// If there are more than one and the constraint checker was happy, they must have a revision.
-	if (k.revision) {
-		// Find the element with equal revision:
-		let itemsWithEqRev = itemsWithEqId.filter((e:any) => { return e.rev == k.revision });
-		// With the project data being constraint checked, itemsWithEqRev.length can be 0 or 1:
-		if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
-		if (itemsWithEqRev.length < 2) return itemsWithEqRev[0].idx;
-		throw Error("There are >1 items with the same id '"+k.id+"' and revision '"+k.revision+"'.");
-	};
-
-	// The key has no revision and so the latest shall be returned.
-	// Sort revisions in the order of creation; the latest first:
-	itemsWithEqId.sort(( laurel: any, hardy:any ) => { return hardy.changedAt - laurel.changedAt });
-	return itemsWithEqId[0].idx; // return the index of the latest revision
-}
-LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
-	// Return the item in L with key k 
-	let i = LIB.indexByKey(L, k);
-	if (i > -1) return L[i]; // return the latest revision
-	//	return undefined
+LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
+	// for display, any vocabulary term is always translated tp the selected language:
+	return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
+//	return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
 }
 LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
 	// call indexByKey without revision to get the most recent revision:
@@ -630,27 +585,105 @@ LIB.itemByTitle = (L: ItemWithNativeTitle[],ti:string):any => {
 	};
 	// else return undefined
 }
-LIB.references = (n: SpecifKey, el: SpecifKey): boolean => {
-	// true, if n references el.
-	return LIB.isKey(el) && LIB.isKey(n) && el.id == n.id && (!n.revision || el.revision == n.revision);
-}
-LIB.indexBy = (L: any[], p: string, k: SpecifKey): number => {
-	if (L && p && k) {
-		// Return the index of an element in list 'L' whose property 'p' equals key 'k':
-		// ToDo: true, only if n is the latest revision in case r.revision is undefined ...
-		for (var i = L.length - 1; i > -1; i--)
-			if( LIB.references(k,L[i][p])) return i; // return list index
+LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
+	// Return the index of item in L referenced by key k:
+	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
+	//  - If k has no revision, the item in L having the latest revision applies.
+	//  - If k has a revision, the item in L having an an equal or the next lower revision applies.
+	//  - The uniqueness of keys has been checked, before.
+	// Note that referenceIndex does the inverse: it returns the index of the list item which is referencing k.
+
+	// Find all items with the same id:
+	let itemsWithEqId = LIB.forAll(
+		// filter the input list and add the index to the elements;
+		// add index without changing L and it's items:
+		L,
+		(e: SpecifItem, i: number) => {
+			if (e.id == k.id)
+				return { idx: i, rev: e.revision, chAt: e.changedAt }
+		}
+	);
+	if (itemsWithEqId.length < 1) return -1; // no element with the specified id
+
+	if (itemsWithEqId.length == 1 && !itemsWithEqId[0].rev) {
+		// a single item without revision has been found:
+		if (k.revision) return -1; // revisions don't match (this should not occur)
+		return itemsWithEqId[0].idx // both the found element and the key have no revision
 	};
+
+	// The elements in itemsWithEqId have a revision:
+	// If there are more than one and the constraint checker was happy, they must have a revision.
+	if (k.revision) {
+		// Find the element with equal revision:
+		let itemsWithEqRev = itemsWithEqId.filter((e: any) => { return e.rev == k.revision });
+		// With the project data being constraint checked, itemsWithEqRev.length can be 0 or 1:
+		if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
+		if (itemsWithEqRev.length < 2) return itemsWithEqRev[0].idx;
+		throw Error("There are >1 items with the same id '" + k.id + "' and revision '" + k.revision + "'.");
+	};
+
+	// The key has no revision and so the latest shall be returned.
+	// Sort revisions in the order of creation; the latest first:
+	itemsWithEqId.sort((laurel: any, hardy: any) => { return hardy.changedAt - laurel.changedAt });
+	return itemsWithEqId[0].idx; // return the index of the latest revision
+}
+LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
+	// Return the item in L with key k 
+	let i = LIB.indexByKey(L, k);
+	if (i > -1) return L[i]; // return the latest revision
+	//	return undefined
+}
+LIB.references = (n: SpecifKey, k: SpecifKey): boolean => {
+	// true, if n references el.
+	return LIB.isKey(k) && LIB.isKey(n) && k.id == n.id && (!n.revision || k.revision == n.revision);
+}
+LIB.referenceIndex = (L: SpecifKey[], k: SpecifKey): number => {
+	// return the index of the item in L referencing k.
+	// Note that indexByKey does the inverse: it returns the index of the list item which is referenced by k.
+	for (var i = L.length-1; i > -1; i--)
+		if (LIB.references(L[i], k)) return i;
 	return -1;
 }
-LIB.itemBy = (L: any[], p: string, k: SpecifKey): any => {
+/* LIB.referenceItem = (N: SpecifKey[], k: SpecifKey): number => {
+	// return the item in N referencing k.
+	let i = LIB.referenceIndex(N, k);
+	if (i > -1) return N[i]; // return the latest revision
+	//	return undefined
+} */
+LIB.referenceIndexBy = (L: any[], p: string, k: SpecifKey) => {
+	// return the index of the item in L whose property p is referencing k.
+	if (L && p && k) {
+		for (var i = L.length - 1; i > -1; i--)
+			if (LIB.references(L[i][p], k)) return i;
+	};
+	return -1;
+};
+LIB.referenceItemBy = (L: any[], p: string, k: SpecifKey) => {
+	// return the item in L whose property p is referencing k.
+	let i = LIB.referenceIndexBy(L, p, k);
+	//	console.debug('##',L,p,k,i);
+	if (i > -1) return L[i];
+	//	return undefined
+};
+LIB.indexBy = (L: any[], p: string, k: SpecifKey | string): number => {
+	if (L && p && k) {
+		// Return the index of an element in list 'L' whose property 'p' is referenced by key 'k':
+		// ToDo: true, only if n is the latest revision in case k.revision is undefined ...
+		for (var i = L.length - 1; i > -1; i--)
+			if (LIB.isKey(k) ? LIB.references(k, L[i][p]) : L[i][p] == k)
+				return i; // return list index
+	};
+	return -1;
+};
+LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
 	if (L && p && k) {
 		// Return the element in list 'L' whose property 'p' equals key 'k':
-		// ToDo: true, only if n is the latest revision in case r.revision is undefined ...
+		// ToDo: true, only if n is the latest revision in case k.revision is undefined ...
 		for (var l of L)
-			if( LIB.references(k,l[p])) return l; // return list item
+			if (LIB.isKey(k) ? LIB.references(k, l[p]) : l[p] == k)
+				return l; // return list item
 	};
-}
+};
 /*
 function indexBy(L:any[], p:string, s:string ):number {
 	if( L && p && s ) {
@@ -1155,34 +1188,43 @@ LIB.localDateTime = (iso:string):string =>{
 function simpleHash(str: string): number {
 	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
 	return r
-};
+}
 function simpleClone( o:any ): any {
-	// "deep" clone;
-	// does only work, if none of the property values is a function:
+	// "deep" clone
+	// - functions and null are returned 'undefined'
+	// - ToDo: consider cases 'Date', 'String', 'Number', 'Boolean' all being an 'object'
+	//   (however none of these are currently used in this software)
+	// see https://www.w3schools.com/js/js_typeof.asp
 		function cloneProp(p:any) {
 			return ( typeof(p) == 'object' )? simpleClone(p) : p;
 		}
-	if (typeof (o) == 'object' && !(o instanceof Blob)) {
-		var n: any;
-		if (Array.isArray(o))
-			n=[];
-		else
-			n={};
-		for( var p in o ) {
-			if( Array.isArray(o[p]) ) {
-				n[p] = [];
-				o[p].forEach( (op:any)=>{
-					n[p].push( cloneProp(op) );
-				});
-				continue;
+	if (o != null) {
+		// a Blob is an object, but treat it as a whole further down:
+		if (typeof (o) == 'object' && !(o instanceof Blob)) {
+			var n: any;
+			if (Array.isArray(o))
+				n = [];
+			else
+				n = {};
+			for (var p in o) {
+				if (Array.isArray(o[p])) {
+					n[p] = [];
+					o[p].forEach((op: any) => {
+						n[p].push(cloneProp(op));
+					});
+					continue;
+				};
+				// else
+				n[p] = cloneProp(o[p]);
 			};
-			// else
-			n[p] = cloneProp(o[p]);
+			return n;
 		};
-		return n;
+		if (typeof (o) != 'function')
+			// arriving here, o is a scalar/atomic value or a Blob
+			return o;
+		// arriving here, o is a function
 	};
-	// o is a scalar/atomic value or a Blob:
-	return o;
+	// here, only a 'function' or a 'null' value should arrive ... returning 'undefined'
 }
 function hasUrlParams():boolean {
 	let p = document.URL.split('#');

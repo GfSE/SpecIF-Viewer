@@ -328,7 +328,7 @@ class CSpecIF implements SpecIF {
 					oE.maxInclusive = iE[names.maxI];
 					break;
 				case "xhtml":
-					// oE.type will be replaced later on to "xs:string".
+					// oE.type "xhtml" will be replaced later on to "xs:string".
 					// If this becomes a redundant dataType,
 					// it will be removed later through 'deduplicate()'.
 					// no break
@@ -693,23 +693,23 @@ class CSpecIF implements SpecIF {
 			if (Array.isArray(iE.values)) {
 				// it is SpecIF > v1.0:
 				return iE.values;
-			}
-			else if (LIB.isString(iE.value) || LIB.isMultiLanguageText(iE.value)) {
+			};
+			if (LIB.isString(iE.value) || LIB.isMultiLanguageText(iE.value)) {
 				// it is SpecIF < v1.1:
 				switch (dT.type) {
 					// we are using the transformed dataTypes, but the base dataTypes are still original;
 					case SpecifDataTypeEnum.String:
 					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
 					case "xhtml":
-					// @ts-ignore - "xs:enumeration" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
-					case "xs:enumeration":
-						// in SpecIF <v1.1 there are only enumerations of base-type xs:string:
+				/*	// @ts-ignore - "xs:enumeration" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
+					case "xs:enumeration":  has already been replaced by "xs:string", in fact */
+						// in SpecIF <v1.1 enumerations are implictly of base-type xs:string:
 						if (dT.enumeration) {
 							// in SpecIF <1.1 multiple enumeration ids were in a comma-separated list;
 							// starting v1.1 they are separate list items:
 							let vL: string[] = LIB.cleanValue(iE.value).split(',');
 							return LIB.forAll(vL, (v: string) => { return v.trim() });
-/*							let nL = LIB.forAll(vL, (v: string) => { return v.trim() })
+				/*			let nL = LIB.forAll(vL, (v: string) => { return v.trim() })
 							console.debug('makeValues',iE.value,nL);
 							return nL; */
 						}
@@ -1017,7 +1017,7 @@ class CSpecIF implements SpecIF {
 					let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
 					if (Array.isArray(opts.skipProperties)) {
 						for (var sP of opts.skipProperties) {
-							if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.valueOf(iE.values[0], opts))) return;
+							if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.displayValueOf(iE.values[0], opts))) return;
 						};
 					};
 

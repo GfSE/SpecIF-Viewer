@@ -373,7 +373,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												case "s": return isTrue(cell.v as string).toString();
 											};
 										case 'xs:enumeration':
-											let eV = LIB.itemBy( dT.values, 'value', cell.v );
+											let eV = LIB.itemBy( dT.values, 'value', cell.v );  // doesn't work any more as before!
 											return (eV? eV.id : "" )
 									};
 								return '';
@@ -567,7 +567,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				specifData.resources.push( fld );
 
 				// Create the hierarchy entry for the folder containing all resources of the current worksheet:
-				var hTree = { 
+				var hTree: SpecifNode = { 
 						id: sh.hid, 
 						resource: fld.id,
 						nodes: [],

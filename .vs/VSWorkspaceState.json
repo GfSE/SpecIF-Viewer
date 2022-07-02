@@ -5,12 +5,7 @@
     "\\src\\config",
     "\\src\\config\\locales",
     "\\src\\modules",
-    "\\src\\types",
-    "\\src\\vendor",
-    "\\src\\vendor\\assets",
-    "\\src\\vendor\\assets\\javascripts",
-    "\\src\\vendor\\assets\\stylesheets"
+    "\\src\\types"
   ],
-  "SelectedNode": "\\src\\vendor\\assets\\javascripts\\archimate2SpecIF.js",
   "PreviewInSolutionExplorer": false
 }

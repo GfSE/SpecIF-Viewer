@@ -21,7 +21,6 @@
 			category: 'textSearch',
 			primary: true,
 			scope: 'projectId',  
-			baseType: 'xs:string',
 			// All resources will pass, if no searchString is specified:
 			searchString: '',
 			options: [
@@ -35,7 +34,6 @@
 			category: 'resourceClass',
 			primary: true,
 			scope: 'projectId',  
-			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
 				// Only resources with type 'Requirement' will pass:
 				{title:'Plan', id:'RC-Pln', checked:false},
@@ -46,12 +44,11 @@
 			] 
 		},{ 
 			title: 'Priority',
-			category: 'propertyValue',
+			category: 'enumValue',
 			primary: false,
-			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type OT-Req
+			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type RC-Req
 			propClass: 'PC-Req-Priority,
 			dataType: 'DT-Priority',
-			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
 				// Only resources with priority 'high' will pass:
 				{title:'1_high', id:'V-Req-Prio-0', checked:true},
@@ -61,12 +58,11 @@
 			]
 		},{ 
 			title: 'Status',
-			category: 'propertyValue',
+			category: 'enumValue',
 			primary: false,
 			scope: 'RC-Req',   // this is a sub-filter for a property of a resource of type OT-Req
 			propClass: 'PC-Req-Status',
 			dataType: 'DT-Status',
-			baseType: 'xs:enumeration',
 			options: [  // example - the actual content is generated from the data model:
 				// All resources will pass, so this filter is without effect:
 				{title:'00_na', id:'V-Req-Status-0', checked:true},
@@ -84,21 +80,38 @@
 			]
 		}];
 */		
+enum FilterCategory {
+	textSearch = 'textSearch',
+	resourceClass = 'resourceClass',
+	enumValue = 'enumValue'
+}
+enum SearchOption {
+	wordBeginnings = 'wordBeginnings',
+	wholeWords = 'wholeWords',
+	caseSensitive = 'caseSensitive'
+//	excludeEnums = 'excludeEnums'
+}
 interface IFilter {
 	title: string,
-	category: string,  // 'textSearch', 'resourceClass' or enumerated 'propertyValue'
+	category: FilterCategory,
 	primary: boolean,
 	scope: string,     
-	propClass: string,
-	dataType: SpecifKey,
-	baseType: SpecifDataTypeEnum,
-	searchString?: string;
+	propClass?: SpecifKey,
+	dataType?: SpecifKey,
+	searchString?: string,
 	options?: IBox[]
+}
+// Limitation: Works only, if a project does not use multiple revisions of a resourceClass and propertyClass:
+interface IFilterDefinition {
+	category: FilterCategory,
+	rCk?: SpecifKey,
+	pCk?: SpecifKey,
+	selected: SpecifId[]		// enumeration.id or resourceClass.id
 }
 
 moduleManager.construct({
 	name: CONFIG.objectFilter
-}, (self: IModule) =>{
+}, (self: IModule) => {
 
 	let myName = self.loadAs,
 		myFullName = 'app.' + myName,
@@ -119,44 +132,44 @@ moduleManager.construct({
 		// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
 		reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
 		// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
-		reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*)</object>',
+		reNO = '<object([^>]+)>[\\s]*' + reSO + '([\\s\\S]*)</object>',
 		reR = '([\\s\\S]*?)('
-			+	'<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>|<br ?/>'
-			+	'|<div[^>]*>|</div>|<div ?/>'
-			+	'|<p[^>]*>|</p>'
-			+	'|<ul[^>]*>|</ul>'
-			+	'|<ol[^>]*>|</ol>'
-			+	'|<li[^>]*>|</li>'
-			+	'|<table[^>]*>|<thead[^>]*>|<tbody[^>]*>|<tfoot[^>]*>|<tr[^>]*>|<tr[^>]*>|<th[^>]*>|<td[^>]*>'
-			+	'|</table>|</thead>|</tbody>|</tfoot>|</tr>|</tr>|</th>|</td>'
-			+	'|'+reA
-			+	'|'+reI
+			+ '<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>|<br ?/>'
+			+ '|<div[^>]*>|</div>|<div ?/>'
+			+ '|<p[^>]*>|</p>'
+			+ '|<ul[^>]*>|</ul>'
+			+ '|<ol[^>]*>|</ol>'
+			+ '|<li[^>]*>|</li>'
+			+ '|<table[^>]*>|<thead[^>]*>|<tbody[^>]*>|<tfoot[^>]*>|<tr[^>]*>|<tr[^>]*>|<th[^>]*>|<td[^>]*>'
+			+ '|</table>|</thead>|</tbody>|</tfoot>|</tr>|</tr>|</th>|</td>'
+			+ '|' + reA
+			+ '|' + reI
 			// The nested object pattern must be checked before the single object pattern:
-			+	'|'+reNO
-			+	'|'+reSO
-	//		+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
-			+	')',
-		reRun = new RegExp(reR,'g');
-		
-		// Standard module interface methods:
-	self.init = (): boolean =>{
-//		console.debug( 'filters.init' );
+			+ '|' + reNO
+			+ '|' + reSO
+			//		+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
+			+ ')',
+		reRun = new RegExp(reR, 'g');
+
+	// Standard module interface methods:
+	self.init = (): boolean => {
+		//		console.debug( 'filters.init' );
 		self.filters = [];
 		self.secondaryFilters = undefined;
 
 		// The left panel on this page (only for this view):
 		let h = '<div id="filterLeft" class="paneLeft">'
-	//		+		'<div id="clicklist" class="pane-tree" ></div>'
-			+		'<div id="primaryFilters" class="pane-filter" ></div>'
-			+	'</div>'
-			+	'<div id="filterCtrl" class="contentCtrl" >'
-			+		'<div class="btn-group" >'
-			+			'<button class="btn btn-default" onclick="app.'+self.loadAs+'.resetClicked()" >'+i18n.BtnFilterReset+'</button>'
-			+		'</div>'
-			+		'<div id="filterNotice" class="notice-default contentNotice" ></div>'
-	//		+		'<div id="filterActions" class="btn-group contentActions" ></div>'
-			+	'</div>'
-			+	'<div id="hitlist" class="content" style="padding-top:44px"></div>';
+			//		+		'<div id="clicklist" class="pane-tree" ></div>'
+			+ '<div id="primaryFilters" class="pane-filter" ></div>'
+			+ '</div>'
+			+ '<div id="filterCtrl" class="contentCtrl" >'
+			+ '<div class="btn-group" >'
+			+ '<button class="btn btn-default" onclick="app.' + self.loadAs + '.resetClicked()" >' + i18n.BtnFilterReset + '</button>'
+			+ '</div>'
+			+ '<div id="filterNotice" class="notice-default contentNotice" ></div>'
+			//		+		'<div id="filterActions" class="btn-group contentActions" ></div>'
+			+ '</div>'
+			+ '<div id="hitlist" class="content" style="padding-top:44px"></div>';
 		$(self.view).html(h);
 		return true;
 	};
@@ -167,9 +180,9 @@ moduleManager.construct({
 		app.busy.reset();
 	};
 	self.hide = (): void => {
-//		console.debug( 'filter.hide' );
-		// don't delete the page with $(self.view).empty(), as the structure is built in init()
-		$( '#hitlist' ).empty();
+		//		console.debug( 'filter.hide' );
+		// don't delete the page with $(self.view).empty() to preserve the structure built in init()
+		$('#hitlist').empty();
 		self.clear();
 	};
 	function handleError(xhr: xhrMessage): void {
@@ -179,97 +192,100 @@ moduleManager.construct({
 	};
 
 	// standard module entry:
-	self.show = ( opts?:any ):void =>{   // optional urlParams or filter settings
+	self.show = (opts?: any): void => {   // optional urlParams or filter settings
 //		console.debug( 'filter.show', opts, self.filters );
-		if( typeof( opts ) != 'object' ) opts = {};
+		$('#filterNotice').empty();
+
+		prj = app.cache.selectedProject;
+		cData = prj.data;
+
+		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {
-			targetLanguage: self.parent.targetLanguage,
+			targetLanguage: prj.language,
 			lookupTitles: true,
 			lookupValues: true
 		};
-		prj = app.cache.selectedProject;
-		cData = prj.data;
-		self.parent.showLeft.reset();
-		$('#filterNotice').empty();
 
 		// build filter list from the specTypes when executed for the first time:
-		if( self.filters.length<1 || opts.filters || opts.forced ) 
-			build( opts );  
+		if (self.filters.length < 1 || opts.filters || opts.forced)
+			build(opts);
 
 		// Now start the evaluation based on the current filter settings:
-		if( isClogged() ) { 
-			message.show(i18n.lookup('MsgFilterClogged') ); 
+		if (isClogged()) {
+			message.show(i18n.lookup('MsgFilterClogged'));
 			return;
 		};
 //		console.debug('filter.show',opts,self.filters);
 
 		// Update browser history, if it is a view change, 
 		// but not navigation in the browser history:
-		if( !opts.urlParams ) 
+		if (!opts.urlParams)
 			setUrlParams({
-				project: cData.id,
+				project: prj.id,
 				view: self.view.substr(1)	// remove leading hash
-			}); 
+			});
 
 		// Show the panels with filter settings to the left:
+		self.parent.showLeft.set(false);
 		let fps = '';
-		self.filters.forEach((f: IFilter)=>{
+		for (var f of self.filters) {
 			fps += '<div class="panel panel-default panel-filter" >'
-				+	'<h4>'+f.title+'</h4>';
-			switch (f.baseType) {
-				case SpecifDataTypeEnum.String: 
-					fps += renderTextFilterSettings( f );
+				+ '<h4>' + f.title + '</h4>';
+			switch (f.category) {
+				case FilterCategory.textSearch:
+					fps += renderTextFilterSettings(f);
 					break;
-				case 'xs:enumeration': 
-					fps += renderEnumFilterSettings( f );
+				case FilterCategory.resourceClass:
+				case FilterCategory.enumValue:
+					fps += renderEnumFilterSettings(f);
 			};
 			fps += '</div>';
-		});
-		$('#primaryFilters').html( fps );
-		setFocus(i18n.LblStringMatch); 
+		};
+		$('#primaryFilters').html(fps);
+		setFocus(i18n.LblStringMatch);
 
 		let tr = self.parent.tree.get();
-		if( !tr || tr.length<1 ) {
-		//	showNotice(i18n.MsgNoReports);
-//			console.debug('filter nothing to do',tr);
+		if (!tr || tr.length < 1) {
+			//	showNotice(i18n.MsgNoReports);
+			//			console.debug('filter nothing to do',tr);
 			app.busy.reset();
 			return;  // nothing to do ...
 		};
-//		console.debug('filter something to do',tr);
+		//		console.debug('filter something to do',tr);
 		doFilter();
 	};
 
-	function doFilter():void {
+	function doFilter(): void {
 		// Get every resource referenced in the hierarchy tree and try whether it is a match.
 		app.busy.set();
-	//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
+		//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
 		$('#hitlist').empty();
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
-		let pend = 0, h:CResourceToShow, hitCnt=0;
+		let pend = 0, h: CResourceToShow, hitCnt = 0;
 		self.parent.tree.iterate(
 			(nd: jqTreeNode) => {
 				pend++;
-//				console.debug('tree.iterate',pend,nd.ref);
+				//				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
-				prj.readItems( 'resource', [nd.ref] )
-				.then(
-					(rL:SpecifResource[])=>{
-						h = match( new CResourceToShow(rL[0]) );
-//						console.debug('tree.iterate',self.filters,pend,rsp[0],h);
-						if( h )	{
-							hitCnt++;
-							$('#hitlist').append( h.listEntry() );
-						};
-						if( --pend<1 ) {  // all done
-							$('#filterNotice').html( '<div class="notice-default" >'+i18n.LblHitCount+': '+hitCnt+'</div>' );
-							app.busy.reset();
-						}
-					},
-					handleError
-				);
+				prj.readItems('resource', [nd.ref])
+					.then(
+						(rL) => {
+							h = match(new CResourceToShow(rL[0] as SpecifResource));
+							//						console.debug('tree.iterate',self.filters,pend,rsp[0],h);
+							if (h) {
+								hitCnt++;
+								$('#hitlist').append(h.listEntry());
+							};
+							if (--pend < 1) {  // all done
+								$('#filterNotice').html('<div class="notice-default" >' + i18n.LblHitCount + ': ' + hitCnt + '</div>');
+								app.busy.reset();
+							}
+						},
+						handleError
+					);
 				return true; // descend into deeper levels
 			}
 		);
@@ -281,135 +297,135 @@ moduleManager.construct({
 		// - In case all filers match, the resource is returned with marked values (if appropriate). 
 		// - All resources pass, if there is no filter.
 
-			function matchResClass(f:IFilter): boolean {   
+			function matchResClass(f: IFilter): boolean {
 				// primary filter applying to all resources:
 				// @ts-ignore . in this case it is defined
-				for( var j=f.options.length-1; j>-1; j--){ 
+				for (var o of f.options) {
 //					console.debug('matchResClass',f.options[j],res);
-					// @ts-ignore . in this case it is defined
-					if( f.options[j].checked && f.options[j].id==res['class'].id ) return true
+					if (o.checked && o.id == res['class'].id) return true;
 				};
 				return false;
 			}
-			function matchSearchString(f: IFilter):boolean {   // primary filter applying to all resources (unless it has no property with strings or text):
+			function matchSearchString(f: IFilter): boolean {   // primary filter applying to all resources (unless it has no property with strings or text):
 				// @ts-ignore . in this case it is defined
-				if( f.searchString.length==0 ) return true;   // save the time, the regex below would finish just alike ....
+				if (f.searchString.length == 0) return true;   // save the time, the regex below would finish just alike ....
 
 				// ToDo: Parse the search string, separate terms and run the RegEX for each ....
 				// @ts-ignore . in this case it is defined
 				let str = f.searchString.escapeRE();
-				
-/*				// ToDo: escape other special characters in f.searchString:
-				str = str.replace( "'", "\'" );
-				str = str.replace( '"', '\"' );
-				str = str.replace( '.', '\.' );
-//				str = str.replace( '(', '\(' );   // geht nicht
-//				str = str.replace( /(/g, '\(' );  // geht nicht: Problem ist nicht die Klammer selbst, sondern ein unvollständiges Klammerpaar
-//				str = str.replace( /)/g, '\)' );
-*/ 
+
+				/*				// ToDo: escape other special characters in f.searchString:
+								str = str.replace( "'", "\'" );
+								str = str.replace( '"', '\"' );
+								str = str.replace( '.', '\.' );
+				//				str = str.replace( '(', '\(' );   // geht nicht
+				//				str = str.replace( /(/g, '\(' );  // geht nicht: Problem ist nicht die Klammer selbst, sondern ein unvollständiges Klammerpaar
+				//				str = str.replace( /)/g, '\)' );
+				*/
 				// ToDo: 'schlie' and 'lich' in 'schließlich' are erroneously considered a whole word (as 'ß' is no regex word-character)
 				//       Similarly any Umlaut.
-				if (isChecked(f.options, 'wholeWords')) {
-					str = '\\b'+str+'\\b';
+				if (isChecked(f.options, SearchOption.wholeWords)) {
+					str = '\\b' + str + '\\b';
 				}
-				else {
-					if (isChecked(f.options, 'wordBeginnings'))
-						str = '\\b' + str;
-				};
-				
+				else if (isChecked(f.options, SearchOption.wordBeginnings))
+					str = '\\b' + str;
+
 				let // dummy = str,   // otherwise nothing is found, no idea why.
-					patt = new RegExp( str, isChecked( f.options, 'caseSensitive' )? '':'i' ), 
-					a: number;
-				if ( matchStr(res.title ) ) return true;
-				for( a=res.descriptions.length-1; a>-1; a-- )
-					if( matchStr( res.descriptions[a] ) ) return true;
-				for( a=res.other.length-1; a>-1; a-- ) {
+					patt = new RegExp(str, isChecked(f.options, SearchOption.caseSensitive) ? '' : 'i'),
+					p: CPropertyToShow;
+
+				// Remember: As CPropertyToShow, all enumerated values of p have already been looked up ...
+				if (matchStr(res.title)) return true;
+				for (p of res.descriptions)
+					if (matchStr(p)) return true;
+				for (p of res.other) {
 					// for each property test whether it contains 'str':
 //					console.debug('matchSearchString',f,res.other[a],dT,f.options);
-					if( matchStr(res.other[a] ) ) return true;
+					if (matchStr(p)) return true;
 				};
 				return false;  // not found
 
 				function matchStr(prp: CPropertyToShow): boolean {
 //					console.debug('matchStr',prp,prp.get());
 					return patt.test(prp.get(displayOptions));
-				/*	// ToDo: ckeck for enumerated value and get it from the dataType
-					switch( prp.dT.type ) {
-						case SpecifDataTypeEnum.String:
-							if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions).stripHTML() )) return true;
-							break;
-						default:
-							if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions) )) return true;
-					};
-					return false; */
+					/*	// ToDo: ckeck for enumerated value and get it from the dataType
+						switch( prp.dT.type ) {
+							case SpecifDataTypeEnum.String:
+								if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions).stripHTML() )) return true;
+								break;
+							default:
+								if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions) )) return true;
+						};
+						return false; */
 				}
 			}
-			function matchPropValue(f:IFilter):boolean {   
+			function matchPropValue(f: IFilter): boolean {
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
-				if( f.scope && f.scope!=res['class'].id ) return true;
-				
+				if (f.scope && f.scope != res['class'].id) return true;
+
 //				console.debug( 'matchPropValue', f, res );
 
 				// The filter is 'applicable': 
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
-				// 
-				switch ( f.baseType ) {
-					case 'xs:enumeration':
+				switch (f.category) {
+					case FilterCategory.enumValue:
 						// Assuming that there is max. one property per resource with the class specified by the filter,
 						// and also assuming that any property with enumerated value will only be found in the 'other' list:
-						let oa = LIB.itemBy( res.other, 'class', f.propClass ), // select the concerned property by class
-							// @ts-ignore . in this case it is defined
-							no = f.options[f.options.length-1].checked && f.options[f.options.length-1].id==CONFIG.notAssigned;
+
+						// select the concerned resource property by class:
+						let rp = LIB.referenceItemBy(res.other, 'class', f.propClass);
+
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies CONFIG.notAssigned:
-//						console.debug('matchPropValue',f,oa,no);
-						if( !oa.value ) return no;
-						
+//						console.debug('matchPropValue',f,rp,no);
+						if (!rp || rp.values.length < 1)
+							return f.options[f.options.length - 1].checked && f.options[f.options.length - 1].id == CONFIG.notAssigned;
+
 						// return 'true' only if there is a match between any resource property value and the specified filter option 'box':
-						let ct = oa.value.trim(),
-							cL, z, j;
+						let v;
 						// works with single-valued and multiple-valued ENUMERATIONs:
 						// @ts-ignore . in this case it is defined
-						for( j=f.options.length-1; j>-1; j--) {
-							// @ts-ignore . in this case it is defined
-							if( !f.options[j].checked ) continue;
+						for (var o of f.options) {
+							if (!o.checked) continue;
 							// try to match for every checked option (logical OR):
-							if( ct.length>0 ) {
-								cL = ct.split(',');	// this is a list of value ids
-								// - if any selected id in the options list is contained in the property values list:
-								for( z=cL.length-1; z>-1; z-- ) { 
-//										console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
-									// @ts-ignore . in this case it is defined
-									if( f.options[j].id==cL[z].trim() ) return true;
-								};
-							} else {
-								// the resource property has no value:
-								// @ts-ignore . in this case it is defined
-								if( f.options[j].id==CONFIG.notAssigned ) return true;
-								// @ts-ignore . in this case it is defined
-								if( f.options[j].id.length<1 ) return true;
+							for (v of rp.enumIdL) {
+//								console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
+								if (o.id == v) return true;
 							};
+
+					/*		if (rp.values.length > 0) {
+								// - if any selected id in the options list is contained in the property values list:
+								for (v of rp.values) {
+//									console.debug( 'match', f.options[j].title, rp.valueIDs[z] );
+									if (o.id == LIB.displayValueOf(v)) return true;
+								};
+							}
+							else {
+								// the resource property has no value:
+								if (o.id == CONFIG.notAssigned) return true;
+								if (o.id.length < 1) return true;
+							};  */
 						};
-				//		break;
-				//	default:
+					//		break;
+					//	default:
 				};
 				// no match has been found:
 				return false;
 			}
-			function matchAndMark( f:IFilter ) {
+			function matchAndMark(f: IFilter) {
 //				console.debug( 'matchAndMark', f, res.title );
-				switch( f.category ) {
-					case 'resourceClass': 
-						if( matchResClass(f) ) return res; // don't mark in this case
+				switch (f.category) {
+					case FilterCategory.resourceClass:
+						if (matchResClass(f)) return res; // don't mark in this case
 						return; // undefined
-					case 'propertyValue': 
+					case FilterCategory.enumValue:
 //						console.debug( 'matchAndMark', f, res.title );
-						if( matchPropValue(f) ) return res; // don't mark in this case, either
+						if (matchPropValue(f)) return res; // don't mark in this case, either
 						return; // undefined
 					/*	if( matchPropValue(f) ) {
-							console.debug( 'attValueMatched' );
+//							console.debug( 'attValueMatched' );
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
 							//    (very short property titles cause a marking within formatting tags, which destroys them.)
@@ -433,76 +449,77 @@ moduleManager.construct({
 							return true;
 						}; 
 						return false;  */
-					case 'textSearch': 
-						if( matchSearchString(f) ) {
+					case FilterCategory.textSearch:
+						if (matchSearchString(f)) {
 //							console.debug('matchSearchString',f,res);
 							// mark matching strings:
 							// ToDo: correct error: with option 'wholeWord', all findings are marked no matter it is a whole word or not. 
 							//   (The hitlist is correct, but also matches within a word are marked).
 							// ToDo: Similarly, when 'word beginnings only' are searched, all matches are marked, not only the word beginnings.
 							// @ts-ignore . in this case it is defined
-							if( f.searchString.length>2 ) {  // don't mark very short substrings
+							if (f.searchString.length > 2) {  // don't mark very short substrings
 								// @ts-ignore - in this case it is defined
-								let rgxS = new RegExp( f.searchString.escapeRE(), isChecked( f.options, 'caseSensitive' )? 'g':'gi' ),
-								    lE;
-								
-								lE = res.title;
-								lE.value = mark( LIB.languageValueOf(lE.values[0],displayOptions), rgxS );
-								// Clone the marked list elements for not modifying the original resources:
-								res.descriptions = res.descriptions.map((prp: CPropertyToShow) => {
-									return	new CPropertyToShow({
-												title: prp.title,
-												class: prp['class'],
-												value: mark( LIB.languageValueOf(prp.value,displayOptions), rgxS )
-											});
+								let rgxS = new RegExp(f.searchString.escapeRE(), isChecked(f.options, SearchOption.caseSensitive) ? 'g' : 'gi');
+
+								res.title.values = markValL(res.title, rgxS);
+								res.descriptions = res.descriptions.map((rp: CPropertyToShow) => {
+									rp.values = markValL(rp, rgxS);
+									return rp;
+									/*	return new CPropertyToShow({
+											class: rp['class'],
+											values: markValL(rp.values, rgxS)
+										}); */
 								});
-								res.other = res.other.map((prp: CPropertyToShow) => {
-									let dT = LIB.dataTypeOf(prp['class'], cData);
-									return (dT && dT.type == 'xs:enumeration') ?
-											new CPropertyToShow({
-												title: prp.title,
-												// default dataType is "xs:string"
-												value: mark( LIB.enumValueOf(dT,prp.value,displayOptions), rgxS )
-											})
-										:	new CPropertyToShow({
-												title: prp.title,
-												class: prp['class'],
-												value: mark( LIB.languageValueOf(prp.value,displayOptions), rgxS )
-											});
+								res.other = res.other.map((rp: CPropertyToShow) => {
+									rp.values = markValL(rp, rgxS);
+									return rp;
+									/*	return new CPropertyToShow({
+											class: rp['class'],
+											values: markValL(rp.values,rgxS)
+										}); */
 								});
 							};
 //							console.debug('hit resource',res);
 							return res;
-						}; 
+						};
 				};
 				return; // undefined
 
-				function mark(txt: string, re: RegExp): string {
-					// Mark the txt, but spare XHTML-tags.
-					
-					// 1. txt is iteratively processed until the first tag or tag pair,
-					//    where the text before the tag is appropriately marked,
-					let markedText = '';
-					// @ts-ignore - $0 is not used, but must me declared anyhow.
-					txt = txt.replace( reRun, ($0,$1,$2)=>{
-							// $1 is the string before ... and
-							// $2 is the first identified tag or tag pair.
+				function markValL(prp:CPropertyToShow, re: RegExp): SpecifValues {
+					//	return [LIB.makeMultiLanguageText(mark(LIB.languageValueOf(valL[0], displayOptions), re))];
+					let mV:string;
+					return prp.values.map((v) => {
+						mV = mark(LIB.displayValueOf(v, displayOptions), re);
+						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageText(mV) : mV;
+					});
 
-//							console.debug( '$0,$1,$2',$0,$1,$2 );
-							// 1. mark the preceding text:
-							if ($1.stripHTML().length>0 )
-								$1 = $1.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
-							markedText += $1+$2;
-							// consume txt:
-							return ''  
-						});
-					// 2. finally mark the remainder (the rest of the txt not consumed before):
-					if ( txt.stripHTML().length>0 )
-						markedText += txt.replace( re, ($a)=>{ return '<mark>'+$a+'</mark>' });
-					return markedText
+						function mark(txt: string, re: RegExp): string {
+							// Mark the txt, but spare XHTML-tags.
+
+							// 1. txt is iteratively processed until the first tag or tag pair,
+							//    where the text before the tag is appropriately marked,
+							let markedText = '';
+							// @ts-ignore - $0 is not used, but must me declared anyhow.
+							txt = txt.replace(reRun, ($0, $1, $2) => {
+								// $1 is the string before ... and
+								// $2 is the first identified tag or tag pair.
+
+//								console.debug( '$0,$1,$2',$0,$1,$2 );
+								// 1. mark the preceding text:
+								if ($1.stripHTML().length > 0)
+									$1 = $1.replace(re, ($a:string) => { return '<mark>' + $a + '</mark>' });
+								markedText += $1 + $2;
+								// consume txt:
+								return ''
+							});
+							// 2. finally mark the remainder (the rest of the txt not consumed before):
+							if (txt.stripHTML().length > 0)
+								markedText += txt.replace(re, ($a) => { return '<mark>' + $a + '</mark>' });
+							return markedText
+						}
 				}
 			}
-			function isChecked( opts:any, id:string ):boolean {
+			function isChecked( opts:any, id:SearchOption ):boolean {
 				let opt = LIB.itemById( opts, id );
 				return( opt && opt.checked )
 			}
@@ -513,8 +530,8 @@ moduleManager.construct({
 		// work the filter list from the beginning backwards, so that the primary filters are evaluated first.
 		// 'res' accumulates all markings without changing the original resource value in the project data (cache).
 		// If a filter is not passed, the result is 'undefined' and the loop is terminated.
-		for( var i=0, I=self.filters.length; res && i<I; i++) { 
-			res = matchAndMark( self.filters[i] );
+		for (var i = 0, I = self.filters.length; res && i < I; i++) {
+			res = matchAndMark(self.filters[i]);
 		};
 		return res;
 	}
@@ -528,9 +545,9 @@ moduleManager.construct({
 				// top-level filter, at least one option must be checked:
 				// This filter must be in front of depending secondary filters (to avoid a two-pass check):
 				// @ts-ignore . in this case it is defined
-				f.options.forEach( (o)=>{
+				for( var o of f.options ) {
 					if( o.checked ) rCL.push(o.id);
-				}); 
+				}; 
 				return !rCL.length;   // returns true, if no box is checked, i.e. the filter is clogged.
 			};
 			function checkPropertyValue(f:IFilter):boolean {   // 
@@ -538,12 +555,11 @@ moduleManager.construct({
 //				console.debug( f.scope, simpleClone(rCL), rCL.indexOf(f.scope) );
 				if( f.scope && rCL.indexOf(f.scope)<0 ) return false;  // not applicable -> not clogged
 
-				switch (f.baseType) {
-					case 'xs:enumeration':
+				switch (f.category) {
+					case FilterCategory.enumValue:
 						// @ts-ignore . in this case it is defined
-						for( var j=f.options.length-1; j>-1; j--){
-							// @ts-ignore . in this case it is defined
-							if( f.options[j].checked ) return false  // at least one checked -> not clogged
+						for( var o of f.options ) {
+							if( o.checked ) return false  // at least one checked -> not clogged
 						};
 					//	break;
 				};
@@ -553,66 +569,71 @@ moduleManager.construct({
 		// top-level:
 		var clogged = false;  // initialize
 		// must iterate with ascending index, because rCL is filled by checkResourceClass():
-		for( var i=0, I=self.filters.length; !clogged && i<I; i++) {   
+		for( var f of self.filters ) {   
 			// stop iterating right away if known it is clogged.
-			switch( self.filters[i].category ) {
-				case 'resourceClass': clogged = clogged || checkResourceClass(self.filters[i]); break;
-			//	case 'statementClass': ....
-				case 'propertyValue': clogged = clogged || checkPropertyValue(self.filters[i]); 
-			//	'textSearch' cannot contribute to clogging
+			switch( f.category ) {
+				case FilterCategory.resourceClass: clogged = clogged || checkResourceClass(f); break;
+			//	case FilterCategory.statementClass: ....
+				case FilterCategory.enumValue: clogged = clogged || checkPropertyValue(f);
+			//	FilterCategory.textSearch cannot contribute to clogging
 			};
 		};
 		return clogged;  // returns false, if hits are possible.
 	}
 
-	function addEnumValueFilters(def): void { 
-		// def is like {category: 'enumValue', rCid: 'resourceClass.title', pCid: 'propertyClass.title', values: ['title1','title2']}
+	function addEnumValueFilters(def: IFilterDefinition): void {
+		// def is like {category: 'enumValue', rCk: resourceClass-key, pCk: propertyClass-key, selected: ['title1','title2']}
 //		console.debug( 'addEnumValueFilters', def );
 
-			function allEnumValues(pC: SpecifPropertyClass, vL):IBox[] {
-				var boxes = [],
-					dT = cData.get( "dataType", [LIB.makeKey(pC.dataType)])[0];
-				// Look up the baseType and include all possible enumerated values:
-				if (dT && Array.isArray(dT.values)) {
-						dT.values.forEach( (v)=>{
-							// the checkboxes for the secondary filter selector per enum value:
-							var box = {
-									title: i18n.lookup( LIB.languageValueOf( v.value, displayOptions )), 
-									id: v.id, 
-									checked: true
-								};
-							if( vL ) { box.checked = vL.indexOf( v.id )>-1 };
-							boxes.push( box )
-						});
-						// add one more option for the case 'value not assigned':
-						boxes.push({ 
-								title: i18n.LblNotAssigned, 
-								id: CONFIG.notAssigned, 			// matches resource properties without a value (empty value list).
-								checked: (!vL || vL.indexOf(CONFIG.notAssigned)>-1)
-							}); 
-						return boxes  // no need to iterate the remaining dataTypes
+			function allEnumValues(pC: SpecifPropertyClass, vL: SpecifId[]) {
+				var boxes: IBox[] = [],
+					dT = cData.get( "dataType", [LIB.makeKey(pC.dataType)])[0] as SpecifDataType;
+				// Include all possible enumerated values:
+				if (dT && Array.isArray(dT.enumeration)) {
+					for( var v of dT.enumeration ) {
+						// the checkboxes for the secondary filter selector per enum value:
+					/*	var box: IBox = {
+								title: i18n.lookup( LIB.languageValueOf( v.value, displayOptions )), 
+								id: v.id,
+								checked: vL.includes(v.id)
+					//			checked: true
+							};
+					//	if( vL ) { box.checked = vL.includes( v.id ) };
+						boxes.push( box ) */
+						boxes.push({
+							title: i18n.lookup(LIB.languageValueOf(v.value, displayOptions)),
+							id: v.id,
+							checked: vL.includes(v.id)
+						})
+					};
+					// add one more option for the case 'value not assigned':
+					boxes.push({ 
+							title: i18n.LblNotAssigned, 
+							id: CONFIG.notAssigned, 			// matches resource properties without a value (empty value list).
+							checked: (!vL || vL.includes(CONFIG.notAssigned))
+						}); 
+					return boxes;  // no need to iterate the remaining dataTypes
 				};
 				throw Error("Invalid Data: Missing or malformed dataType");
 			}
-			function addEnumFilter( rC:SpecifResourceClass, pC:SpecifPropertyClass, vals ):void {
+			function addEnumFilter( rC:SpecifResourceClass, pC:SpecifPropertyClass, vals:SpecifId[] ):void {
 //				console.debug( 'addEnumFilter', aT, vals );
 				
 				// skip, if the filter is already in the list:
-				for( var i=self.filters.length-1; i>-1; i--) {
-					if (( self.filters[i].dataType==pC.dataType )
-						&& ( self.filters[i].scope==rC.id )) 
+				for( var f of self.filters ) {
+					if (( f.dataType==pC.dataType )
+						&& ( f.scope==rC.id )) 
 						return // undefined									
 				};
 				
 				// Construct the filter descriptor and add it to the list of filters:
-				var eVF = { 
+				var eVF: IFilter = {
 					title: LIB.titleOf(rC,displayOptions)+': '+LIB.titleOf(pC,displayOptions),
-					category: 'propertyValue',
+					category: FilterCategory.enumValue,
 					primary: false,
 					scope: rC.id, 
-					propClass: pC.id,
+					propClass: LIB.keyOf(pC),
 					dataType: pC.dataType,
-					baseType: 'xs:enumeration',
 					options: allEnumValues( pC, vals )
 				};
 //				console.debug( 'eVF', eVF );
@@ -620,99 +641,93 @@ moduleManager.construct({
 			}
 				
 		// start working, now:
-		if( def && def.category=='enumValue' ) {
+		if (def && def.category == FilterCategory.enumValue ) {
 			// Add the filters for the specified resourceClass:
-			// def.category: 'enumValue' translates to filter list.category: 'propertyValue' && filterlist.baseType: 'xs.enumeration'
+			// def.category: 'enumValue' translates to filter list.category: 'enumValue'
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC: SpecifResourceClass = cData.get("resourceClass", [LIB.makeKey(def.rCid)])[0],
+			var rC = cData.get("resourceClass", [def.rCk])[0] as SpecifResourceClass,
 				pC: SpecifPropertyClass;
 //			console.debug( 'rC', def, rC );
-			rC.propertyClasses.forEach( (pcid)=>{
-				pC = cData.get("propertyClass", [LIB.makeKey(pcid)] )[0];
-//				if( pcid==def.pCid && itemById( cData.dataTypes, pC.dataType ).type == 'xs:enumeration' ) {
-				if( (def.pCid && pC.id==def.pCid )   // we can assume that def.pCid == 'xs:enumeration'
-					|| (!def.pCid && cData.get("dataType", [LIB.makeKey(pC.dataType)] )[0].type=='xs:enumeration')) {
-					addEnumFilter( rC, pC, def.options )
+			rC.propertyClasses.forEach( (pck)=>{
+				pC = cData.get("propertyClass", [pck] )[0] as SpecifPropertyClass;
+				if ((def.pCk && LIB.references(def.pCk,pC))   // we can assume that def.pCk is an enumeration
+					|| (!def.pCk && (cData.get("dataType", [pC.dataType])[0] as SpecifDataType).enumeration)) {
+					addEnumFilter( rC, pC, def.selected )
 				};
 			});
 		};
 	}
 	// Build the filter list based on the project's data model:
-	function build( settings ):void {
+	function build( settings?:any ):void {
 		// settings is a list with filter types and options to build a specific filter list.
 //		console.debug( 'build', settings );
 
 		self.filters.length = 0;
 
-			function addTextSearchFilter( pre? ) {
+			function addTextSearchFilter( pre?:any ) {
 				// pre is a resource with filter settings like {category: 'textSearch', searchString: 'string'}
-				var flt = {
+				var flt:IFilter = {
 					title: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
-					category: 'textSearch',
+					category: FilterCategory.textSearch,
 					primary: true,
-					scope: cData.id,
-					baseType: SpecifDataTypeEnum.String,
-			//		baseType: ['xs:string','xhtml'],
+					scope: prj.id,
 					searchString: pre&&pre.searchString? pre.searchString : '',
 					options: [
-						{ id: 'wordBeginnings', title: i18n.LblWordBeginnings, checked: pre&&pre.options.indexOf('wordBeginnings')>-1 },
-						{ id: 'wholeWords', title: i18n.LblWholeWords, checked: pre&&pre.options.indexOf('wholeWords')>-1 },
-						{ id: 'caseSensitive', title: i18n.LblCaseSensitive, checked: pre&&pre.options.indexOf('caseSensitive')>-1 }
-			//			{ id: 'excludeEnums', title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf('excludeEnums')>-1 }
+						{ id: SearchOption.wordBeginnings, title: i18n.LblWordBeginnings, checked: pre && pre.options.indexOf(SearchOption.wordBeginnings)>-1 },
+						{ id: SearchOption.wholeWords, title: i18n.LblWholeWords, checked: pre && pre.options.indexOf(SearchOption.wholeWords)>-1 },
+						{ id: SearchOption.caseSensitive, title: i18n.LblCaseSensitive, checked: pre && pre.options.indexOf(SearchOption.caseSensitive)>-1 }
+			//			{ id: SearchOption.excludeEnums, title: i18n.LblExcludeEnums, checked: pre&&pre.options.indexOf(SearchOption.excludeEnums)>-1 }
 					]
 				};
 //				console.debug('addTextSearchFilter',flt);
 				self.filters.push( flt );
 			}
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
-			var idx = LIB.indexBy( settings.filters, 'category', 'textSearch');
+			var idx = LIB.indexBy(settings.filters, 'category', FilterCategory.textSearch);
 			// a) include a text search module, if there is a respective element with or without preset values:
 			if( idx>-1 ) 
 				addTextSearchFilter( settings.filters[idx]);
 			// do not include a text search filter if there are settings.filters without a respective entry
-		} else {
+		}
+		else {
 			// b) include a default text search if there is no settings.filters
 			addTextSearchFilter();
 		};
 
-			function addResourceClassFilter( pre? ):void {
+			function addResourceClassFilter( pre?:any ):void {
 				// Add a filter with a checkbox for each 'resourceClass',
 				// pre is a resource with filter settings like {category: 'resourceClass', options: ['title1','title2']}
-//				console.debug( 'addResourceClassFilter', pre );
-				var oTF = {   // the primary filter criterion 'resource type'
+				//				console.debug( 'addResourceClassFilter', pre );
+				var oTF: IFilter = {   // the primary filter criterion 'resource type'
 						title: i18n.TabSpecTypes,
-						category: 'resourceClass',
+						category: FilterCategory.resourceClass,
 						primary: true,
-						scope: cData.id,
-						baseType: 'xs:enumeration',
+						scope: prj.id,
 						options: [] 
-					};
-				cData.get("resourceClass","all").forEach( ( rC )=>{
-					if( CONFIG.excludedFromTypeFiltering.indexOf( rC.title )>-1 ) return;  // skip
-					
-					var box = { 
-							title: LIB.titleOf( rC, displayOptions ),
+				};
+				(cData.get("resourceClass", prj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
+					if (CONFIG.excludedFromTypeFiltering.indexOf(rC.title) < 0) {
+						oTF.options.push({
+							title: LIB.titleOf(rC, displayOptions),
 							id: rC.id,
-							checked: true
-						};   // set selection by default
-					// if there are preset options, set the select flag accordingly:
-					if( pre && pre.options ) { 
-						box.checked = pre.options.indexOf( rC.id )>-1
-					};
-					oTF.options.push( box );
+							// if there are preset options, set the select flag accordingly:
+							checked: (pre && pre.selected) ? pre.selected.indexOf(rC.id) > -1 : true
+						});
+					}
 				});
 				self.filters.push(oTF);
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
-			var idx = LIB.indexBy( settings.filters, 'category', 'resourceClass');
+			var idx = LIB.indexBy(settings.filters, 'category', FilterCategory.resourceClass);
 			// a) include the filter modules, if there is a settings.filters:
 			if( idx>-1 ) 
 				addResourceClassFilter( settings.filters[idx] );
 			// do not include a text search filter if there is a settings.filters without a respective entry
-		} else {
+		}
+		else {
 			// b) include a default text search if there is no settings.filters
 			addResourceClassFilter();
 		};
@@ -724,18 +739,16 @@ moduleManager.construct({
 */
 		// Add the secondary filters contained in the settings.filters to the list:
 		if( settings && settings.filters && Array.isArray(settings.filters) ) {
-			settings.filters.forEach( (s)=>{
-				if( s.category == 'enumValue' )
+			(settings.filters as IFilterDefinition[]).forEach( (s)=>{
+				if (s.category == FilterCategory.enumValue )
 					addEnumValueFilters( s );
 			})
 		};
-		// Secondary filters are also added to the list on request via addEnumValueFilters().
 	}
-/*	function mayHaveSecondaryFilters( rCid ) {  // rCid is resource class id
+/*	function mayHaveSecondaryFilters( rCk ) {  // rCk is resource class key
 		// Check if a resourceClass (or statementClass ) has a property with enumerated values,
 		// so that a secondary facet filter can be built
-	//	var rC = itemById( cData.allClasses, rCid ),
-		var rC = itemById( cData.resourceClasses, rCid ),
+		var rC = itemByKey( cData.resourceClasses, rCk ),
 			pC;  
 		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
 			// if the class has at least one property with enums
@@ -761,16 +774,16 @@ moduleManager.construct({
 		self.secondaryFilters = undefined;
 
 		// read filter settings and update the filterlist:
-		self.filters.forEach( (f)=>{
-			let checkedL = checkboxValues(f.title);
+		self.filters.forEach( (f:IFilter)=>{
 			switch( f.category ) {
-				case 'textSearch': 
+				case FilterCategory.textSearch:
 					f.searchString = textValue(f.title);
 					// no break
-				case 'resourceClass':
-				case 'propertyValue':
+				case FilterCategory.resourceClass:
+				case FilterCategory.enumValue:
+					let checkedL = checkboxValues(f.title);
 					f.options.forEach( (o)=> {
-						o.checked = checkedL.indexOf( o.id )>-1;
+						o.checked = checkedL.includes( o.id );
 					});
 			};
 		});
@@ -787,8 +800,9 @@ moduleManager.construct({
 //		console.debug( 'secondaryFiltersClicked', oT );
 		if( self.secondaryFilters==oT ) {
 			self.goClicked()
-		} else {
-			addEnumValueFilters({category: 'enumValue', rCid: oT.id});  // rCid: type-id
+		} 
+		else {
+			addEnumValueFilters({category: FilterCategory.enumValue, rCk: LIB.keyOf(oT)});  // rCk: resourceClass key
 			self.secondaryFilters = oT;
 		}
 	};

@@ -805,7 +805,7 @@ moduleManager.construct({
 						iterate( n, fn );
 					});
 			}
-			function multipleChoice(pC: SpecifPropertyClass, prj?: SpecIF): boolean {
+			function multipleChoice(pC: SpecifPropertyClass, prj?: SpecIF|CCache): boolean {
 				if (!prj) prj = app.cache.selectedProject.data;
 				// return 'true', if either the property type specifies it, or by default its datatype;
 				// if defined, the property type's value supersedes the datatype's value:

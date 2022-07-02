@@ -33,7 +33,7 @@ moduleManager.construct({
 		return false;
 	};
 /*	self.toSpecif = function( buf: ArrayBuffer ) {
-	}; */
+	}; 
 	self.fromSpecif = function(pr:SpecIF):string {
 		// pr is SpecIF data in JSON format (not the internal cache),
 		// transform pr to RDF:
@@ -43,7 +43,7 @@ moduleManager.construct({
 		var xml = '';
 
 		return xml;
-	};
+	}; */
 	self.abort = function():void {
 //		app.cache.abort();
 		self.abortFlag = true
