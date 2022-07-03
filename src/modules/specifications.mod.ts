@@ -23,6 +23,7 @@ class CPropertyToShow implements SpecifProperty {
 	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
 	class: SpecifKey;
+	private selPrj: CProject;
 	private cData: CCache;  // the classes are always available in the cache, not necessarily the instances
 	pC: SpecifPropertyClass;
 	dT: SpecifDataType;
@@ -36,7 +37,8 @@ class CPropertyToShow implements SpecifProperty {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
 
-		this.cData = app.cache.selectedProject.data;
+		this.selPrj = app.cache.selectedProject;
+		this.cData = this.selPrj.data;
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
 		this.dT = this.cData.get("dataType", [this.pC['dataType']])[0] as SpecifDataType;
@@ -198,7 +200,7 @@ class CPropertyToShow implements SpecifProperty {
 						cR = LIB.itemByKey(this.cData.resources, nd.ref);
 						// avoid self-reflection:
 						//	if(ob.id==cR.id) return true;
-						ti = LIB.instanceTitleOf(cR, opts);
+						ti = this.cData.instanceTitleOf(cR, opts);
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
 						// disregard link targets which aren't diagrams nor model elements:
@@ -788,7 +790,7 @@ class CResourcesToShow {
 		this.values.push(new CResourceToShow(r));
 		return true;  // a change has been effected
 	}
-	append(rL: SpecifResource[]): void {
+	append(rL: SpecifResource[]) {
 		// append a list of resources:
 		rL.forEach((r) => {
 			this.push(r);
@@ -853,8 +855,10 @@ class CResourcesToShow {
 }
 class CFileWithContent implements IFileWithContent {
 	// @ts-ignore - presence of 'title' is checked by the schema on import
-	title: SpecifMultiLanguageText[] | string;
-	description?: SpecifMultiLanguageText[] | string;
+	title: string;
+	description?: SpecifMultiLanguageText[];
+/*	private selPrj: CProject;
+	private cData: CCache; */
 	// @ts-ignore - presence of 'type' is checked by the schema on import
 	type: string;
 	blob?: Blob;
@@ -867,6 +871,9 @@ class CFileWithContent implements IFileWithContent {
 	changedAt: string;
 	changedBy?: string;
 	constructor(f: IFileWithContent) {
+	/*	this.selPrj = app.cache.selectedProject;
+		this.cData = this.selPrj.data; */
+
 		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
     }
@@ -1011,7 +1018,7 @@ class CFileWithContent implements IFileWithContent {
 				// e.g. in ARCWAY-generated SVGs: <image x="254.6" y="45.3" width="5.4" height="5.9" xlink:href="name.png"/>
 				rE = /(<image .* xlink:href=\")(.+)(\".*\/>)/g,
 				ef: CFileWithContent,
-				mL:string[],
+				mL:string[] | null,
 				pend = 0;		// the count of embedded images waiting for transformation
 
 			// process all image references within the SVG image one by one:
@@ -1144,12 +1151,12 @@ class CFileWithContent implements IFileWithContent {
 				if (CONFIG.selectCorrespondingDiagramFirst) {
 					// replace the id of a resource by the id of a diagram carrying the same title:
 					let cacheData = app.cache.selectedProject.data,
-						ti = LIB.instanceTitleOf(itemBySimilarId(cacheData.resources, id), opts),
+						ti = cacheData.instanceTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
 						rT = LIB.itemByKey(cacheData.resourceClasses, cacheData.resources[i]['class']);
 						if (CONFIG.diagramClasses.includes(rT.title)
-							&& LIB.instanceTitleOf(cacheData.resources[i], opts) == ti) {
+							&& cacheData.instanceTitleOf(cacheData.resources[i], opts) == ti) {
 							// found: it is a resource representing a diagram carrying the same title
 							if (app[CONFIG.objectList].resources.selected()
 								&& app[CONFIG.objectList].resources.selected().id == cacheData.resources[i].id)
@@ -1460,7 +1467,7 @@ moduleManager.construct({
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: LIB.instanceTitleOf(r,opts,self.cData), 
+				name: self.cData.instanceTitleOf(r,opts,self.cData),
 				ref: iE.resource
 			};
 			oE.children = LIB.forAll( iE.nodes, toChild );
@@ -1472,10 +1479,14 @@ moduleManager.construct({
 	// called by the parent's view controller:
 	self.show = function( opts:any ):void {
 //		console.debug( CONFIG.specifications, 'show', opts );
-		if( !(app.cache.selectedProject && app.cache.selectedProject.isLoaded() ) )
+		self.selPrj = app.cache.selectedProject;
+
+		if (!(self.selPrj && self.selPrj.isLoaded()))
 			throw Error("No selected project on entry of spec.show()");
-		
-		$('#pageTitle').html(LIB.languageValueOf(app.cache.selectedProject.title, { targetLanguage: app.cache.selectedProject.language }));
+
+		self.cData = self.selPrj.data;
+
+		$('#pageTitle').html(LIB.languageValueOf(self.selPrj.title, { targetLanguage: self.selPrj.language }));
 		app.busy.set();
 	//	$( self.view ).html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
 	//	$('#specNotice').empty();
@@ -1483,10 +1494,9 @@ moduleManager.construct({
  		let uP = opts.urlParams,
 			fNd = self.tree.firstNode(),
 			nd: jqTreeNode;
-		self.cData = app.cache.selectedProject.data;
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
-		self.targetLanguage = opts.targetLanguage = app.cache.selectedProject.language;
+		self.targetLanguage = opts.targetLanguage = self.selPrj.language;
 		opts.lookupTitles = true;
 				
 		// Initialize the tree, unless
@@ -1494,7 +1504,7 @@ moduleManager.construct({
 		// - just a view is specifed without URL parameters (coming from another page)
 		if( !fNd
 			|| !self.cData.has("resource", [fNd.ref] )  // condition is probably too weak
-			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=app.cache.selectedProject.id )
+			|| uP && uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self.selPrj.id )
 			self.tree.clear();
 		
 //		console.debug('show 1',uP,self.tree.selectedNode);
@@ -1503,7 +1513,7 @@ moduleManager.construct({
 		if (self.cData.length("hierarchy")>0 ) {
 			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			app.cache.selectedProject.readItems( 'hierarchy', "all", {reload:true} )
+			self.selPrj.readItems( 'hierarchy', "all", {reload:true} )
 			.then( 
 				(rsp)=>{
 //					console.debug('load',rsp);
@@ -2138,7 +2148,7 @@ moduleManager.construct({
 			//	item: nd.ref
 			}); 
 
-		app.cache.selectedProject.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
+		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
 		.then( 
 			(sL:SpecifStatement[])=>{
 				// sL is the list of statements involving the selected resource.
@@ -2154,7 +2164,7 @@ moduleManager.construct({
 				// The titles may not be defined in a tree node and anyways don't have the icon, 
 				// therefore obtain the title from the referenced resources.
 				// Since the resources are cached, this is not too expensive.
-				app.cache.selectedProject.readItems( 'resource', net.resources )
+				selPrj.readItems( 'resource', net.resources )
 				.then( 
 					(rResL:SpecifItem[])=>{   
 						// rResL is a list of the selected plus it's related resources
@@ -2205,7 +2215,7 @@ moduleManager.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource or a key pointing to a resource;
 			// note that the sequence of items in L is always maintained:
-			LIB.cacheE( L, { id: r.id, title: LIB.instanceTitleOf( r, $.extend({},opts,{addIcon:true}), cacheData )});
+			LIB.cacheE(L, { id: r.id, title: cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true })) });
 		}
 		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
@@ -2213,7 +2223,7 @@ moduleManager.construct({
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			LIB.cacheE(L, { id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData, opts), subject: s.subject.id, object: s.object.id} );
+			LIB.cacheE(L, { id: s.id, title: LIB.titleOf(s, opts) || cacheData.staClassTitleOf(s, opts), subject: s.subject.id, object: s.object.id} );
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2224,7 +2234,7 @@ moduleManager.construct({
 			// 1. skip hidden statements;
 			// hiddenStatements holds the vocabulary terms, so the title shall *not* be translated to the targetLanguage.
 			// @ts-ignore - property 'title' is used on purpose for the mentions statements generated for display
-			if (CONFIG.hiddenStatements.includes( s.title || LIB.staClassTitleOf(s, cacheData, {})) ) return;
+			if (CONFIG.hiddenStatements.includes(s.title || cacheData.staClassTitleOf(s, {})) ) return;
 
 			// 2. store the statements in the net:
 			cacheMinSta( net.statements, s );
@@ -2259,7 +2269,7 @@ moduleManager.construct({
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
 					localOpts = $.extend({}, opts, { addIcon: false }),  // no icons when searching titles
-					selTi = LIB.instanceTitleOf(selR, localOpts),
+					selTi = cacheData.instanceTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
 					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
@@ -2274,7 +2284,7 @@ moduleManager.construct({
 						(rL:SpecifItem[])=>{   
 							// refR is a resource referenced in a hierarchy
 							let refR = rL[0] as SpecifResource,
-								refTi = LIB.instanceTitleOf(refR, localOpts),
+								refTi = cacheData.instanceTitleOf(refR, localOpts),
 								dT: SpecifDataType;
 //							console.debug('self.parent.tree.iterate',refR,refTi,pend);
 							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {

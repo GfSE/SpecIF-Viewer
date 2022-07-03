@@ -681,7 +681,7 @@ moduleManager.construct({
 				});
 				return xml + '</SPEC-ATTRIBUTES>';
 			}
-			function attsOf( me ):string {
+			function attsOf(me: SpecifResource | SpecifStatement): string {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
 				var xml='<VALUES>';
 				me.properties.forEach( (prp) =>{
@@ -787,7 +787,7 @@ moduleManager.construct({
 				});
 				return xml + '</VALUES>';
 			}
-			function childrenOf( el ):string {
+			function childrenOf( el:SpecifNode ):string {
 				if( !el.nodes || el.nodes.length<1 ) return ''
 				var xml = '<CHILDREN>'
 					el.nodes.forEach( (ch) =>{
@@ -798,7 +798,7 @@ moduleManager.construct({
 					});
 				return xml + '</CHILDREN>';
 			}
-			function iterate( tree, fn ) {
+			function iterate( tree:SpecifNode, fn:Function ) {
 				fn( tree );
 				if( tree.nodes )
 					tree.nodes.forEach( (n) => {

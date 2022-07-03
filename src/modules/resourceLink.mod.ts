@@ -114,7 +114,7 @@ moduleManager.construct({
 					// Sort the resources:
 					LIB.sortBy( 
 						list, 
-						(el: SpecifResource)=>{ return LIB.instanceTitleOf(el,opts,pData) }
+						(el: SpecifResource)=>{ return pData.instanceTitleOf(el,opts) }
 					);
 					self.allResources = list;
 					// now self.allResources contains the full resources
@@ -232,7 +232,7 @@ moduleManager.construct({
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
-							let ti = LIB.instanceTitleOf(res,opts,pData);
+							let ti = pData.instanceTitleOf(res,opts);
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
 								eligibleRs += '<div id="cand-'+i+'" class="candidates" onclick="'+myFullName+'.itemClicked(\''+i+'\')">'+ti+'</div>'
@@ -272,9 +272,9 @@ moduleManager.construct({
 			// show the statement to create in a popup:
 			// @ts-ignore - btn is defined
 			btn.setAttribute("data-toggle","popover");
-			btn.setAttribute("title", "'"+LIB.instanceTitleOf(selRes,opts,pData) +"' "
+			btn.setAttribute("title", "'"+pData.instanceTitleOf(selRes,opts) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ LIB.instanceTitleOf(self.selectedCandidate.resource,opts,pData) +"'" )
+										+ pData.instanceTitleOf(self.selectedCandidate.resource,opts) +"'" )
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
@@ -289,9 +289,9 @@ moduleManager.construct({
 		//	btn.prop('disabled', false);
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-			btn.setAttribute("title", "'"+LIB.instanceTitleOf(self.selectedCandidate.resource,opts,pData) +"' "
+			btn.setAttribute("title", "'"+pData.instanceTitleOf(self.selectedCandidate.resource,opts) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ LIB.instanceTitleOf(selRes,opts,pData) +"'" ) 
+										+ pData.instanceTitleOf(selRes,opts) +"'" ) 
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute

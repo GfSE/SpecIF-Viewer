@@ -266,7 +266,7 @@ moduleManager.construct({
 		self.parent.tree.iterate(
 			(nd: jqTreeNode) => {
 				pend++;
-				//				console.debug('tree.iterate',pend,nd.ref);
+//				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
@@ -274,7 +274,7 @@ moduleManager.construct({
 					.then(
 						(rL) => {
 							h = match(new CResourceToShow(rL[0] as SpecifResource));
-							//						console.debug('tree.iterate',self.filters,pend,rsp[0],h);
+//							console.debug('tree.iterate',self.filters,pend,rsp[0],h);
 							if (h) {
 								hitCnt++;
 								$('#hitlist').append(h.listEntry());
@@ -384,16 +384,17 @@ moduleManager.construct({
 							return f.options[f.options.length - 1].checked && f.options[f.options.length - 1].id == CONFIG.notAssigned;
 
 						// return 'true' only if there is a match between any resource property value and the specified filter option 'box':
-						let v;
+					//	let v;
 						// works with single-valued and multiple-valued ENUMERATIONs:
 						// @ts-ignore . in this case it is defined
 						for (var o of f.options) {
-							if (!o.checked) continue;
+							if (o.checked && rp.enumIdL.includes(o.id)) return true;
+					/*		if (!o.checked) continue;
 							// try to match for every checked option (logical OR):
 							for (v of rp.enumIdL) {
 //								console.debug( 'match', f.options[j].title, oa.valueIDs[z] );
 								if (o.id == v) return true;
-							};
+							}; */
 
 					/*		if (rp.values.length > 0) {
 								// - if any selected id in the options list is contained in the property values list:

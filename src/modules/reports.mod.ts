@@ -264,7 +264,7 @@ moduleManager.construct({
 //								console.debug( 'evalResource a', rp );
 								rp.values.forEach((val) => {
 									// find the bar which corresponds to the property value:
-									j = LIB.indexById(self.list[i].datasets, val.trim());
+									j = LIB.indexById(self.list[i].datasets, val);
 //									console.debug( 'evalResource z', ct, j );
 									if (j > -1) { incVal(self.list[i], j) } // property value found
 								})
@@ -282,8 +282,8 @@ moduleManager.construct({
 //		console.debug('report panels', self.list);
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
-		let pend=0, visitedR=[];
-		self.parent.tree.iterate( (nd) =>{
+		let pend = 0, visitedR: SpecifKey[] = [];
+		self.parent.tree.iterate((nd: jqTreeNode) => {
 			if( visitedR.includes(nd.ref) ) return; 
 			// not yet evaluated:
 			pend++;

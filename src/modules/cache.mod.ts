@@ -236,6 +236,75 @@ class CCache {
 		this.hierarchies.unshift(e);
 		return false;
 	}
+	// resClassTitleOf() and propClassTitleOf() are a member of LIB, 
+	// as they are also used for independent SpecIF datasets.
+	staClassTitleOf (e: SpecifStatement, opts?: any): string {
+		// Return the statementClass' title:
+		return LIB.titleOf(LIB.itemByKey(this.statementClasses, e['class']), opts);
+	}
+	instanceTitleOf(el: SpecifInstance, opts?: any): string {
+		// Get the title of a resource or a statement;
+		// ... from the properties or a replacement value in case of default.
+		// 'el' is an original element without 'classifyProps()'.
+		// It is assumed that the classes are always cached.
+		if (typeof (el) != 'object') throw Error('First input parameter is invalid');
+		if (!(el.properties || el['class'])) return '';
+
+		// Lookup titles only in case of a resource serving as heading or in case of a statement:
+		let localOpts;
+		// @ts-ignore - of course resources have no subject, that's why we ask
+		if (el.subject) {
+			// it is a statement
+			localOpts = opts;
+		}
+		else {
+			// it is a resource
+			localOpts = {
+				targetLanguage: opts.targetLanguage,
+				lookupTitles: opts.lookupTitles && LIB.itemByKey(this.resourceClasses, el['class']).isHeading
+			};
+		};
+		// Get the title from the properties:
+		let ti = getTitle(el.properties, localOpts);
+
+		// In case of a resource, we never want to lookup a title,
+		// however in case of a statement, we do:
+		// @ts-ignore - of course resources have no subject, that's why we ask
+		if (el.subject) {
+			// it is a statement
+			if (!ti)
+				// take the class' title by default:
+				ti = this.staClassTitleOf(el, opts);
+		}
+		else {
+			// it is a resource
+			if (opts && opts.addIcon && CONFIG.addIconToInstance && ti)
+				ti = LIB.addIcon(ti, LIB.itemByKey(this.resourceClasses, el['class']).icon);
+		};
+
+// 		console.debug('instanceTitleOf',el,opts,ti);
+		return typeof (ti) == 'string' ? ti.stripHTML() : ti;
+
+		function getTitle(pL: SpecifProperty[] | undefined, opts: any): string {
+			//	if( !pL ) return;
+			// look for a property serving as title:
+			let idx = LIB.titleIdx(pL);
+			if (idx > -1) {  // found!
+				// Remove all formatting for the title, as the app's format shall prevail.
+				// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+				// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+				// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+				/*	if( moduleManager.ready.indexOf( 'diff' )>-1 )
+						return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
+				// For now, let's try without replacements; so far this function is called before the filters are applied,
+				// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+				//			console.debug('getTitle', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
+				let ti = LIB.languageValueOf(pL[idx].values[0], opts);
+				if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
+			};
+			return '';
+		}
+	}
 	clear(ctg?:string):void {
 		if (ctg)
 			// @ts-ignore - in this branch it is not undefined:
@@ -592,7 +661,7 @@ class CProject {
 			// given the title of an instance in a list, return the instance itself;
 			// if a title has multiple languages, the behavior may be different in each case:
 			for (var ice of L)
-				if (LIB.instanceTitleOf(ice, { targetLanguage: browser.language }, this.data) == ti) return ice;   // return list item
+				if (this.data.instanceTitleOf(ice, { targetLanguage: this.language }) == ti) return ice;   // return list item
 		};
 		// else return undefined
 	}
@@ -696,7 +765,7 @@ class CProject {
 								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								eR = this.instanceByTitle(dta.resources, LIB.instanceTitleOf(nR, opts, this.data)) as SpecifResource;
+								eR = this.instanceByTitle(dta.resources, this.data.instanceTitleOf(nR, opts)) as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
@@ -1205,7 +1274,7 @@ class CProject {
 									statementClasses: [],
 									resources: Folders(),
 									statements: [],
-									hierarchies: NodeList(this.data.resources)
+									hierarchies: NodeList()
 								};
 //								console.debug('glossary',newD);
 								// use the update function to eliminate duplicate types;
@@ -1228,10 +1297,11 @@ class CProject {
 					// .. or if it has at least one statement with title 'SpecIF:shows':
 					return LIB.resClassTitleOf(r, dta) == CONFIG.resClassDiagram
 						|| LIB.valuesByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
-						|| dta.get("statement","all").filter(
-								(sta) => {
+						|| dta.get(
+							"statement",
+							(s: SpecifStatement) => {
 									// @ts-ignore - subject does exist on a statement
-									return LIB.staClassTitleOf(sta) == CONFIG.staClassShows && LIB.references(sta.subject,r)
+									return dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.references(s.subject,r)
 								}
 							).length > 0;
 				}
@@ -1288,7 +1358,7 @@ class CProject {
 					});
 					return fL;
 				}
-				function NodeList(resources: SpecifResource[]): SpecifNode[] {
+				function NodeList(): SpecifNode[] {
 					// a. Add the folders:
 					let gl: SpecifNode = {
 						id: "H-FolderGlossary-" + apx,
@@ -1297,14 +1367,16 @@ class CProject {
 						changedAt: tim
 					};
 					// Create a hierarchy node for each folder per model-element type
-					CONFIG.modelElementClasses.forEach(function (mEl: string) {
-						gl.nodes.push({
-							id: "N-Folder-" + mEl.jsIdOf() + "-" + apx,
-							resource: LIB.makeKey("Folder-" + mEl.jsIdOf() + "-" + apx ),
-							nodes: [],
-							changedAt: tim
-						});
-					});
+					CONFIG.modelElementClasses.forEach(
+						(mEl: string) =>{
+							gl.nodes.push({
+								id: "N-Folder-" + mEl.jsIdOf() + "-" + apx,
+								resource: LIB.makeKey("Folder-" + mEl.jsIdOf() + "-" + apx ),
+								nodes: [],
+								changedAt: tim
+							});
+						}
+					);
 					// Create a list tL of collections per model-element type;
 					// assuming that type adoption/deduplication is not always successful
 					// and that there may be multiple resourceClasses per model-element type:
@@ -1321,17 +1393,20 @@ class CProject {
 //					console.debug('gl tL',gl,tL);
 
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
-					let staL = dta.get("statement", "all").filter(
-						// @ts-ignore - s is a statement and *has* a subject
-						(s) => { return LIB.staClassTitleOf(s) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
-					);
+					let staL = dta.get(
+						"statement",
+						(s:SpecifStatement) => { return dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
+					) as SpecifStatement[];
 //					console.debug('gl tL dL',gl,tL,staL);
 
 					// c. Add model-elements by class to the respective folders.
 					// In case of model-elements the resource class is distinctive;
 					// the title of the resource class indicates the model-element type.
 					// List only resources which are shown on a referenced diagram:
-					let resL = resources.filter((r) => { return LIB.indexBy(staL, 'object', r) > -1 });
+					let resL = dta.get(
+						"resource",
+						(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
+					) as SpecifResource[];
 					// in alphanumeric order:
 			//		LIB.sortByTitle(resL);
 					// ToDo: consider to sort by the title property via instanceTitleOf()
@@ -1595,7 +1670,8 @@ class CProject {
 		//   (perhaps both checks are not necessary, as visible statements only referto vosible resources ...)
 
 		if (typeof (opts) != 'object') opts = {};
-		let sCL: SpecifStatementClass[];
+		let dta = this.data,
+			sCL: SpecifStatementClass[];
 		return new Promise(
 			(resolve, reject) => {
 				this.readItems('statementClass', this.statementClasses)
@@ -1609,7 +1685,7 @@ class CProject {
 						(sL) => {
 							// make a list of 'shows' statements for all diagrams shown in the hierarchy:
 							// @ts-ignore - subject *does* exist on a statement ...
-							let showsL = sL.filter( s => LIB.staClassTitleOf(s) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) );
+							let showsL = sL.filter( s => dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) );
 							// filter all statements involving res as subject or object:
 							resolve(
 								(sL as SpecifStatement[]).filter(
@@ -2111,7 +2187,7 @@ class CProject {
 		// assuming that the types have already been consolidated:
 		let opts = { targetLanguage: this.language };
 		return LIB.equalKey(refE['class'], newE['class'])
-			&& LIB.instanceTitleOf(refE, opts, this.data) == LIB.instanceTitleOf(newE, opts, this.data);
+			&& this.data.instanceTitleOf(refE, opts) == this.data.instanceTitleOf(newE, opts);
 
 	/*	if (LIB.equalKey(refE['class'], newE['class'])
 			&& LIB.instanceTitleOf(refE, opts, dta) == LIB.instanceTitleOf(newE, opts, dta)
@@ -2132,7 +2208,7 @@ class CProject {
 		// Model-elements are only equal, if they have the same class.
 		// ToDo: Also, if a property with title CONFIG.propClassType has the same value?
 		return LIB.equalKey(refE['class'], newE['class'])
-		//	&& LIB.instanceTitleOf(refE, opts, dta) == LIB.instanceTitleOf(newE, opts, dta)
+		//	&& this.data.instanceTitleOf(refE, opts) == this.data.instanceTitleOf(newE, opts)
 			&& LIB.equalKey(refE.subject, newE.subject)
 			&& LIB.equalKey(refE.object, newE.object);
 	}
@@ -3371,14 +3447,11 @@ LIB.titleIdx = (pL: SpecifProperty[]|undefined, dta?: SpecIF|CSpecIF|CCache): nu
 	};
 	return -1;
 }
+// staClassTitle() is now a method of CCache as it is applied only to data already cached,
+// which is not the case with resClassTitleOf() and propTitleOf().
 LIB.resClassTitleOf = (e: SpecifResource, prj?: SpecIF | CSpecIF | CCache, opts?: any): string => {
 	if (!prj) prj = app.cache.selectedProject.data;
 	return LIB.titleOf(LIB.itemByKey(prj.resourceClasses, e['class']), opts);
-}
-LIB.staClassTitleOf = (e: SpecifStatement, prj?: SpecIF | CSpecIF | CCache, opts?: any): string => {
-	// Return the statementClass' title:
-	if (!prj) prj = app.cache.selectedProject.data;
-	return LIB.titleOf(LIB.itemByKey(prj.statementClasses, e['class']), opts);
 }
 LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF | CSpecIF | CCache): string => {
 	// get the title of a property as defined by itself or it's class:
@@ -3388,67 +3461,4 @@ LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF | CSpecIF | CCache): string 
 LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
-}
-LIB.instanceTitleOf = (el: SpecifInstance, opts?: any, dta?: SpecIF | CSpecIF | CCache): string =>{
-	// Get the title of a resource or a statement;
-	// ... from the properties or a replacement value in case of default.
-	// 'el' is an original element without 'classifyProps()'.
-	if( typeof(el)!='object' ) throw Error('First input parameter is invalid');
-	if (!(el.properties || el['class'])) return '';
-	if( !dta ) dta = app.cache.selectedProject.data;
-	
-	// Lookup titles only in case of a resource serving as heading or in case of a statement:
-	let localOpts;
-	// @ts-ignore - of course resources have no subject, that's why we ask
-	if( el.subject ) {
-		// it is a statement
-		localOpts = opts;
-	}
-	else {
-		// it is a resource
-		localOpts = {
-			targetLanguage: opts.targetLanguage,
-			lookupTitles: opts.lookupTitles && LIB.itemByKey( dta.resourceClasses, el['class'] ).isHeading
-		};
-	};
-	// Get the title from the properties:
-	let ti:string = getTitle( el.properties, localOpts );
-
-	// In case of a resource, we never want to lookup a title,
-	// however in case of a statement, we do:
-	// @ts-ignore - of course resources have no subject, that's why we ask
-	if( el.subject ) {
-		// it is a statement
-		if( !ti )
-			// take the class' title by default:
-			ti = LIB.staClassTitleOf( el, dta, opts );
-	}
-	else {
-		// it is a resource
-		if( opts && opts.addIcon && CONFIG.addIconToInstance && dta && ti )
-			ti = LIB.addIcon( ti, LIB.itemByKey( dta.resourceClasses, el['class'] ).icon );
-	};
-
-// 	console.debug('instanceTitleOf',el,opts,ti);
-	return typeof (ti) == 'string' ? ti.stripHTML() : ti;
-
-	function getTitle(pL: SpecifProperty[]|undefined, opts:any ): string {
-	//	if( !pL ) return;
-		// look for a property serving as title:
-		let idx = LIB.titleIdx( pL );
-		if( idx>-1 ) {  // found!
-			// Remove all formatting for the title, as the app's format shall prevail.
-			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
-			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-		/*	if( moduleManager.ready.indexOf( 'diff' )>-1 )
-				return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
-			// For now, let's try without replacements; so far this function is called before the filters are applied,
-			// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//			console.debug('getTitle', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
-			let ti = LIB.languageValueOf( pL[idx].values[0], opts );
-			if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
-		};
-		return '';
-	}
 }
