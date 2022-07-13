@@ -89,13 +89,13 @@ class Tree {
 		};
 		return nd;
 	};
-	private equalRef(ref: SpecifKey, chk: SpecifKey):boolean {
-		return LIB.equalKey(ref,chk);
+	private preciseRef(ref: SpecifKey, chk: SpecifKey):boolean {
+		return LIB.references(chk, ref);
     }
 	private similarRef(ref: SpecifKey, chk: SpecifKey):boolean {
 		return ref.id.indexOf(chk.id) > -1;
 	}
-	nodesByRef(chk:any, similar?: boolean) {
+	nodesByRef(k:SpecifKey, similar?: boolean):jqTreeNode[] {
 		// Find all the nodes referencing the object and return them in a list.
 		// Use case: Update all tree entries after an object (title) has been changed.
 		let nodes: jqTreeNode[] = [];
@@ -103,25 +103,24 @@ class Tree {
 
 		// iterate through all nodes of all levels and list the nodes, where oId is a substring:
 		this.domE.tree('getTree').iterate((nd: jqTreeNode) => {
-			if (similar && this.similarRef(nd.ref, chk)
-				|| !similar && this.equalRef(nd.ref, chk) )
-					nodes.push(nd);
+			if (similar? this.similarRef(nd.ref, k) : this.preciseRef(nd.ref, k) )
+				nodes.push(nd);
 			return true	// continue iteration
 		});
 		return nodes
 	};
-	references(oId: string, similar?: boolean):boolean {
+	references(k:SpecifKey, similar?: boolean):boolean {
 		// Does the tree reference a resource with the given id?
-		return this.nodesByRef(oId,similar).length>0
+		return this.nodesByRef(k,similar).length>0
 	};
-	nodeByRef(oId: string, similar?: boolean): jqTreeNode {
+	nodeByRef(k: SpecifKey, similar?: boolean): jqTreeNode {
 		// Find the tree node for the specified tree obj.
 		// Use case: jump to a clicked object.
 		// similar: the object id may be just a substring of the reference
 		// !similar: the object id must be identical with the reference
 
 		// a) Try to find the object:
-		let nodes = this.nodesByRef(oId,similar);
+		let nodes = this.nodesByRef(k,similar);
 		if( nodes && nodes.length>0 ) { 
 			return nodes[0]   // select the first occurrence in the tree
 		}; 
@@ -164,13 +163,14 @@ class Tree {
 		// else:
 		return this.selectNode( this.nodeById( nId ) )
 	};
-	selectNodeByRef(oId: string, similar?: boolean): jqTreeNode {
+	selectNodeByRef(k: SpecifKey, similar?: boolean): jqTreeNode {
 		// If an arbitrary object is specified (when clicking a link somewhere), select it's first occurrence in the tree:
 		// Note: This works, only if the tree is visible.
-		if( this.selectedNode && this.selectedNode.ref==oId ) 
+		if (this.selectedNode && (similar ? this.similarRef(this.selectedNode.ref, k)
+										: this.preciseRef(this.selectedNode.ref, k)))
 			return this.selectedNode;
 		// else:
-		return this.selectNode( this.nodeByRef( oId, similar ) )
+		return this.selectNode( this.nodeByRef( k, similar ) )
 	};
 	openNode(nd: jqTreeNode ):void {
 		if( !nd ) nd = this.selectedNode;

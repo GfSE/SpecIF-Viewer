@@ -264,8 +264,7 @@ class CCache {
 				lookupTitles: opts.lookupTitles && LIB.itemByKey(this.resourceClasses, el['class']).isHeading
 			};
 		};
-		// Get the title from the properties:
-		let ti = getTitle(el.properties, localOpts);
+		let ti = LIB.getTitleFromProperties(el.properties, localOpts);
 
 		// In case of a resource, we never want to lookup a title,
 		// however in case of a statement, we do:
@@ -274,7 +273,7 @@ class CCache {
 			// it is a statement
 			if (!ti)
 				// take the class' title by default:
-				ti = this.staClassTitleOf(el, opts);
+				ti = this.staClassTitleOf(el as SpecifStatement, opts);
 		}
 		else {
 			// it is a resource
@@ -284,26 +283,15 @@ class CCache {
 
 // 		console.debug('instanceTitleOf',el,opts,ti);
 		return typeof (ti) == 'string' ? ti.stripHTML() : ti;
-
-		function getTitle(pL: SpecifProperty[] | undefined, opts: any): string {
-			//	if( !pL ) return;
-			// look for a property serving as title:
-			let idx = LIB.titleIdx(pL);
-			if (idx > -1) {  // found!
-				// Remove all formatting for the title, as the app's format shall prevail.
-				// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
-				// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-				// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-				/*	if( moduleManager.ready.indexOf( 'diff' )>-1 )
-						return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
-				// For now, let's try without replacements; so far this function is called before the filters are applied,
-				// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-				//			console.debug('getTitle', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
-				let ti = LIB.languageValueOf(pL[idx].values[0], opts);
-				if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
-			};
-			return '';
-		}
+	}
+	resourceByTitle(ti: string, opts?: any): SpecifResource | undefined {
+		if (ti) {
+			// given the title of a resource, return the instance itself;
+			// if a title has multiple languages, the behavior may be different in each case:
+			for (var ice of this.resources)
+				if (this.instanceTitleOf(ice, opts) == ti) return ice;   // return list item
+		};
+		// else return undefined
 	}
 	clear(ctg?:string):void {
 		if (ctg)
@@ -416,6 +404,7 @@ class CProject {
 		// remember the hierarchies associated with this projects - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
 		for (var h of spD.hierarchies ) this.hierarchies.push({ id: h.id });
+	//	this.hierarchies = forAll(spD.hierarchies, (h) => { return { id: h.id } });
 		// similarly remember the sets of classes and dataTypes,
 		// so that all will be re-expoerted, even if the project has no instances (yet):
 		for (var r of spD.resourceClasses ) this.resourceClasses.push({ id: r.id });
@@ -656,15 +645,6 @@ class CProject {
 		return uDO;
 	} */
 
-	private instanceByTitle(L: SpecifInstance[], ti: string): SpecifInstance|undefined {
-		if (L && ti) {
-			// given the title of an instance in a list, return the instance itself;
-			// if a title has multiple languages, the behavior may be different in each case:
-			for (var ice of L)
-				if (this.data.instanceTitleOf(ice, { targetLanguage: this.language }) == ti) return ice;   // return list item
-		};
-		// else return undefined
-	}
 	adopt(newD: SpecIF, opts?: any): JQueryDeferred<void> {
 		// First check whether BPMN collaboration and process have unique ids:
 //		console.debug('adopt project',newD);
@@ -765,7 +745,7 @@ class CProject {
 								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, nD)) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								eR = this.instanceByTitle(dta.resources, this.data.instanceTitleOf(nR, opts)) as SpecifResource;
+								eR = this.data.resourceByTitle(LIB.getTitleFromProperties(nR.properties, opts), opts) as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
@@ -879,7 +859,248 @@ class CProject {
 			};
 		}
 	}
-	createResource(rC: SpecifResourceClass): Promise<SpecifResource> {
+	createItems(ctg: string, itmL: SpecifItem[] | INodeWithPosition[]): Promise<void> {
+		// Create one or more items of a given category in cache and in the remote store (server).
+
+		// - itmL is list of js-objects
+		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
+		return new Promise(
+			(resolve) => {
+				//				console.debug('createItems', ctg, itmL );
+				switch (ctg) {
+					case 'hierarchy':
+						// Update the project's remembering list;
+						// but don't keep the revision, as it can change:
+						LIB.cacheL(this.hierarchies, LIB.forAll(itmL, (el: SpecifNode) => { return { id: el.id } }));
+					// no break
+					//	case 'node':
+					//	case 'resource':
+					//	case 'statement':
+					// no break
+					default:
+						// if current user can create an item, he has the other permissions, as well:
+						//		addPermissions( item );
+						//		item.createdAt = new Date().toISOString();
+						//		item.createdBy = item.changedBy; 
+
+						this.data.put(ctg, itmL);
+				};
+				resolve();
+			}
+		);
+	}
+	readItems(ctg: string, itemL: SpecifKey[] | Function | string, opts?: any): Promise<SpecifItem[]> {
+		// Read one or more items of a given category either from cache or from the permanent store (server), otherwise:
+		//		console.debug('readItems', ctg, item, opts);
+		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
+		if (!opts) opts = { reload: false, timelag: 10 };
+
+		return new Promise(
+			(resolve) => {
+				/*	if (opts.reload) {
+						// try to get the items from the server, but meanwhile:
+						reject({ status: 745, statusText: "No server available" })
+					}
+					else { */
+				// return the cached object asynchronously:
+
+				// the list of model element instances must include all SpecIF elements which are not remembered by the project:
+				if (itemL == "all" && ['resource', 'statement', 'file', 'node'].includes(ctg))
+					throw Error("Don't request 'all' model element instances, since the result list can be very long!");
+				//	console.warn("Don't request 'all' model element instances, since the result list can be very long!");
+
+				// delay the answer a little, so that the caller can properly process a batch:
+				setTimeout(() => {
+					let items = this.data.get(
+						ctg,
+						(itemL == 'all' ?
+							//	(itemL == 'all' && ['dataType','propertyClass','resourceClass','statementClass','hierarchy'].includes(ctg) ?
+							this[standardTypes.listName.get(ctg)]  // only those remembered by the project
+							: itemL)
+					);
+					// Normalize the properties if desired:
+					if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
+						items.forEach((itm: any) => {
+							// classes are alwways cached, so we can use this.data:
+							itm.properties = normalizeProperties(itm, this.data)
+						})
+					};
+					//						console.debug('readItems',opts,items)
+					resolve(items);
+				}, opts.timelag);
+				//	};
+			}
+		);
+
+		function normalizeProperties(el: SpecifInstance, dta: CCache): SpecifProperty[] {
+			// el: original instance (resource or statement)
+			// Create a list of properties in the sequence of propertyClasses of the respective class.
+			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
+			// Property classes must be unique!
+
+			// check uniqueness of property classes:
+			if (el.properties) {
+				let idL: string[] = [],
+					pCid: string;
+				el.properties.forEach((p: SpecifProperty) => {
+					pCid = p['class'].id;
+					if (idL.indexOf(pCid) < 0)
+						idL.push(pCid);
+					else
+						console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
+				});
+			};
+
+			let pCkL: SpecifKeys, // keys of propertyClasses
+				pC: SpecifPropertyClass,
+				p: SpecifProperty,
+				nL: SpecifProperty[] = [],  // normalized property list
+				// iCs: instance class list (resourceClasses or statementClasses),
+				// the existence of subject (or object) let's us recognize that it is a statement:
+				// @ts-ignore - existance of subject signifies whether it is a resource or statement
+				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
+				iC = LIB.itemByKey(iCs, el['class']);
+
+			// from the instance class including the extended class, build the list of propertyClass keys:
+			pCkL = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
+			pCkL = pCkL.concat(iC.propertyClasses);
+
+			// add the properties in sequence of the propertyClass keys as specified by the instance class:
+			pCkL.forEach((pCk: SpecifKey): void => {
+				// skip hidden properties:
+				if (CONFIG.hiddenProperties.indexOf(pCk.id) > -1) return;
+				// the full propertyClass referenced by pCk;
+				// pC may, but pCk may not have a revision:
+				pC = LIB.itemByKey(dta.propertyClasses, pCk);
+				// assuming that the property classes are unique:
+				p = theListItemReferencingByClass(el.properties, pC);
+				// take the original property if it exists or create an empty one, otherwise:
+				nL.push(p || { class: pCk, values: [] })
+			});
+			//			console.debug('normalizeProps result',simpleClone(nL));
+			return nL; // normalized property list
+
+			function theListItemReferencingByClass(L: SpecifProperty[] | undefined, cl: SpecifPropertyClass | undefined): any {
+				if (L && cl) {
+					// Return the item in list 'L' whose class references pC:
+					for (var l of L)
+						if (LIB.references(l['class'], cl)) return l; // return list item
+				};
+			}
+		}
+	}
+	updateItems(ctg: string, itmL: SpecifItem[]): Promise<void> {
+		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
+		function updateCh(itm: SpecifItem): void {
+			itm.changedAt = new Date().toISOString();
+			itm.changedBy = app.me.userName;
+		}
+
+		return new Promise(
+			(resolve) => {
+				switch (ctg) {
+					case 'node':
+						throw Error("Nodes can only be created, read or deleted");
+					//	case 'resource':
+					//	case 'statement':
+					//	case 'hierarchy':
+					// no break
+					default:
+						//						console.debug('updateItems - cache', ctg );
+						itmL.forEach(updateCh)
+						this.data.put(ctg, itmL)
+				};
+				resolve();
+			}
+		);
+	}
+	deleteItems(ctg: string, itmL: SpecifKey[]): Promise<void> {
+		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
+		/*			function isInUse( ctg, itm ) {
+							function dTIsInUse( L, dT ) {
+								let i=null;
+								for( var e=L.length-1;e>-1;e-- ) {
+									i = L[e].propertyClasses?LIB.indexBy(L[e].propertyClasses,'dataType',dT.id):-1;
+		//							console.debug('dTIsInUse',dT,L,e,i);
+									if( i>-1 ) return true
+								};
+								return false
+							}
+							function aCIsInUse( ctg, sT ) {
+								let c = ctg.substr(0,ctg.length-4),  // xyzType --> xyz, xyzClass ??
+									L = cacheOf(c),
+									i = LIB.indexBy(L,ctg,sT.id);
+		//						console.debug('aCIsInUse',sT,c,L,i);
+								// ToDo: In project.html, the resource cache is empty, but the resourceClass may be in use, anyways.
+								// Similarly with statements.
+								return ( i>-1 )
+							}
+							function pCIsInUse( L, pT ) {
+								if( L==undefined ) return false; // can't be in use, if the list is not (yet) defined/present.
+								let i=null;
+								// ToDo: In project.html, the resource cache is empty, but the property class may be in use, anyways.
+								// Also a deleted resource may have used the propertyClass.
+								// As it stores only the newest types, the ReqIF Server will refuse to delete the type.
+								// In case of PouchDB, all revisions of classes/types are stored, so it is sufficient to check whether there are currently some elements using the type.
+								// Similarly with statements.
+								for( var e=L.length-1;e>-1;e-- ) {
+									i = L[e].properties?LIB.indexBy(L[e].properties,'class',pT.id):-1;
+		//							console.debug('pCIsInUse property class',pT,L,e,i);
+									if( i>-1 ) return true
+								};
+								return false
+							}
+		//				console.debug('isInUse',ctg,itmL);
+						switch( ctg ) {
+							case 'dataType':		return dTIsInUse(self.data.allClasses,itm);
+							case 'resourceClass':
+							case 'statementClass':	return aCIsInUse(ctg,itm);
+							case 'class':			return pCIsInUse(self.data.resources,itm)
+														|| pCIsInUse(self.data.hierarchies,itm)
+														|| pCIsInUse(self.data.statements,itm);
+						};
+						return false
+					}  */
+
+		//		console.debug('deleteItems',ctg,itmL);
+		return new Promise(
+			(resolve, reject) => {
+				// Do not delete types which are in use;
+				switch (ctg) {
+					/*	case 'class':
+						case 'dataType':
+						case 'resourceClass':
+						case 'statementClass':	
+							if( Array.isArray(itmL) ) return null;	// not yet supported
+							if( isInUse(ctg,item) ) {
+								reject({status:972, statusText:i18n.Err400TypeIsInUse});
+								return;
+							};
+							// no break;  */
+					case "hierarchy":
+					case "node":
+						// delete also the respective keys remembered by the project;
+						// a node can also be a hierarchy - in this case remove it as well;
+						// disregard the revision:
+						for( var i of itmL )
+							LIB.uncacheE(this.hierarchies, { id: i.id });
+					// no break;
+					case "resource":
+					case "statement":
+						//						console.debug('deleteItems',ctg,itmL);
+						if (this.data.delete(ctg, itmL))
+							break;
+						reject({ status: 999, statusText: 'One or more items of ' + ctg + ' not found and thus not deleted.' });
+						return;
+					default:
+						reject({ status: 999, statusText: 'Category ' + ctg + ' is unknown; one or more items could not be deleted.' });
+						return;
+				};
+				resolve();
+			}
+		);
+	};
+	makeEmptyResource(rC: SpecifResourceClass): Promise<SpecifResource> {
 		// Create an empty form (resource instance) for the resource class rC:
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
 		// and https://javascript.info/promise-chaining
@@ -891,12 +1112,11 @@ class CProject {
 				this.readItems('resourceClass', [LIB.keyOf(rC)], { reload: true })
 					.then(
 						(rCL: SpecifItem[]) => {
-							//							console.debug('#1',rC);
 							// return an empty resource instance of the given type:
 							res = {
 								id: LIB.genID('R-'),
 								class: LIB.makeKey(rCL[0].id),
-							//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
+								//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
 								properties: [],
 								changedAt: new Date().toISOString()
 							};
@@ -905,7 +1125,6 @@ class CProject {
 					)
 					.then(
 						(pCL: SpecifItem[]) => {
-//							console.debug('#2',pCL);
 							res.properties = LIB.forAll(pCL, LIB.createProp);
 							resolve(res)
 						}
@@ -914,22 +1133,25 @@ class CProject {
 			}
 		);
 	}
+
 	private hookStatements(): void {
-		let dta = this.data;
+		var self = this,
+			dta = this.data;
 //		console.debug('hookStatements',dta);
 		// For all statements with a loose end, hook the resource
 		// specified by title or by a property titled dcterms:identifier:
-		dta.statements.forEach((st: SpecifStatement) => {
+	//	dta.statements.forEach((st: SpecifStatement) => {
+		(dta.get("statement", "all") as SpecifStatement[]).forEach((st) => {
 			// Check every statement;
 			// it is assumed that only one end is loose:
 			if (st.subjectToFind) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
-				let s, sL = itemsByVisibleId(dta.resources, st.subjectToFind);
+				let s, sL = itemsByVisibleId(st.subjectToFind);
 				if (sL.length > 0)
 					s = sL[0];
 				else
 					// Find the resource with the given title:
-					s = this.instanceByTitle(dta.resources, st.subjectToFind);
+					s = dta.resourceByTitle(st.subjectToFind);
 //				console.debug('hookStatements subject',s);
 				if (s) {
 					st.subject = LIB.keyOf(s);
@@ -939,12 +1161,12 @@ class CProject {
 			};
 			if (st.objectToFind) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
-				let o, oL = itemsByVisibleId(dta.resources, st.objectToFind);
+				let o, oL = itemsByVisibleId(st.objectToFind);
 				if (oL.length > 0)
 					o = oL[0];
 				else
 					// Find the resource with the given title:
-					o = this.instanceByTitle(dta.resources, st.objectToFind);
+					o = dta.resourceByTitle(st.objectToFind);
 //				console.debug('hookStatements object',o);
 				if (o) {
 					st.object = LIB.keyOf(o);
@@ -955,16 +1177,27 @@ class CProject {
 		});
 		return;
 
-		function itemsByVisibleId(L: SpecifResource[], vId: string): SpecifResource[] {
+		function itemsByVisibleId(vId: string): SpecifResource[] {
 			// return a list with all elements in L having a property 
 			// containing a visible id with value vId;
 			// should only be one resulting element:
-			/*	return LIB.forAll(L, (r: SpecifResource) => {
-					if (visibleIdOf(r) == vId) return r;
-				}); */
-			return L.filter( r => visibleIdOf(r)==vId );
+			return dta.get(
+				"resource",
+				// filter function:
+				(r: SpecifResource) => {
+					// loop to find the *first' occurrence:
+					for (var p of r.properties ) {
+						// Check the configured ids:
+						if (CONFIG.idProperties.contains(vocabulary.property.specif(LIB.propTitleOf(p, dta)))
+							&& LIB.languageValueOf(p.values[0], { targetLanguage: self.language }) == vId)
+							return true;
+					};
+					return false
+				//	return visibleIdOf(r) == vId
+				}
+			) as SpecifResource[];
 
-			function visibleIdOf(r: SpecifResource): string | undefined {
+		/*	function visibleIdOf(r: SpecifResource): string | undefined {
 				if (r && r.properties) {
 				//	let prj = app.cache.selectedProject.data;
 				//	let prj = this.data;
@@ -972,11 +1205,11 @@ class CProject {
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
 						if (CONFIG.idProperties.contains(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], dta))))
-							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: browser.language })
+							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: self.language })
 					};
 				};
 				//	return undefined
-			}
+			} */
 		}
 	}
 	private deduplicate(opts?:any): void {
@@ -1066,7 +1299,8 @@ class CProject {
 	}
 	private createFolderWithResourcesByType(opts: any): Promise<void> {
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
-		let dta = this.data;
+		let self = this,
+			dta = this.data;
 		const resourcesToCollect = [
 			{ type: CONFIG.resClassProcess, flag: "collectProcesses", folder: CONFIG.resClassProcesses, folderNamePrefix: "FolderProcesses-" }
 		];
@@ -1110,32 +1344,34 @@ class CProject {
 						let delL: SpecifNode[] = [],
 							creL: any[] = [],
 							res: SpecifResource,
-							pV;
+							pVs: SpecifValues,
+							pV: string;
 //						console.debug('createFolderWithResourcesByType',dta.hierarchies,opts);
 						LIB.iterateNodes(
-							dta.get("hierarchy", "all"),
+							dta.get("hierarchy", self.hierarchies),
 							(nd: SpecifNode) => {
 								// get the referenced resource:
 								res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 								// find the property defining the type:
-								pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
-								// collect all nodes to delete, there should be only one:
-								if (pV == r2c.folder) {
-									delL.push(nd);
+								pVs = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
+								if (Array.isArray(pVs) && pVs.length > 0) {
+									pV = LIB.languageValueOf(pVs[0], { targetLanguage: self.language });
+									// collect all nodes to delete, there should be only one:
+									if (pV == r2c.folder )
+										delL.push(nd);
+									// collect all elements for the new folder,
+									// but avoid duplicate entries:
+									if (pV == r2c.type && resDoesNotExist(creL, res))
+										creL.push({ n: nd, r: res });
 								};
-								// collect all elements for the new folder,
-								// but avoid duplicate entries:
-								if (pV == r2c.type && resDoesNotExist(creL, res)) {
-									creL.push({ n: nd, r: res });
-								};
-								return true;  // continue always to the end
+								return true;  // continue to the end
 							}
 						);
 //						console.debug('createFolderWithResourcesByType',delL,creL);
 
 						// 2. Delete any existing folders:
 						//    (Alternative: Keep folder and delete only the children.)
-						this.deleteItems('node', delL)
+						self.deleteItems('node', delL)
 							.then(
 								() => {
 									// Create a folder with all respective objects (e.g. diagrams):
@@ -1165,7 +1401,7 @@ class CProject {
 											hierarchies: []
 										};
 										// use the update function to eliminate duplicate types:
-										this.adopt(newD, {noCheck:true})
+										self.adopt(newD, {noCheck:true})
 											.done(() => {
 												// Finally create the node referencing the folder to create:
 												let nd: INodeWithPosition = {
@@ -1181,7 +1417,7 @@ class CProject {
 												// or as first element at root level, otherwise:
 												if (singleHierarchyRoot)
 													nd.parent = dta.hierarchies[0].id;
-												this.createItems('node', [nd])
+												self.createItems('node', [nd])
 													.then(resolve, reject);
 											})
 											.fail(reject);
@@ -1216,7 +1452,8 @@ class CProject {
 	};
 	createFolderWithGlossary(opts: any): Promise<void> {
 //		console.debug('createFolderWithGlossary');
-		let dta = this.data;
+		let self = this,
+			dta = this.data;
 		return new Promise(
 			(resolve, reject) => {
 				if (typeof (opts) != 'object' || !opts.addGlossary) { resolve(); return; };
@@ -1226,32 +1463,33 @@ class CProject {
 				let delL: SpecifNode[] = [],
 					diagramL: SpecifResource[] = [],
 					res: SpecifResource,
-					pV,
-					apx = simpleHash(this.id),
+					pVs: SpecifValues,
+					apx = simpleHash(self.id),
 					tim = new Date().toISOString();
 //				console.debug('createFolderWithGlossary',this.hierarchies);
 				LIB.iterateNodes(
-					dta.get("hierarchy","all"),
+					dta.get("hierarchy",self.hierarchies),
 					(nd: SpecifNode): boolean => {
 						// get the referenced resource:
 						res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 						// check, whether it is a glossary:
-						pV = LIB.valuesByTitle(res, CONFIG.propClassType, this.data);
+						pVs = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
 						// collect all items to delete, there should be only one:
-						if (pV == CONFIG.resClassGlossary) {
-							delL.push(nd)
-						};
+						if (Array.isArray(pVs) && pVs.length > 0
+							&& CONFIG.resClassGlossary == LIB.languageValueOf(pVs[0], { targetLanguage: self.language })) {
+								delL.push(nd)
+						}	;
 						// collect all diagrams which are referenced in the hierarchy
 						// for inclusion in the new folders:
 						if (isDiagram(res)) {
 							diagramL.push(res)
 						};
-						return true  // continue always to the end
+						return true  // continue to the end
 					}
 				);
 				// 1.2 Delete now:
 //				console.debug('createFolderWithGlossary',delL,diagramL);
-				this.deleteItems('node', delL)
+				self.deleteItems('node', delL)
 					.then(
 						() => {
 							// 2. Create a new combined glossary:
@@ -1279,7 +1517,7 @@ class CProject {
 //								console.debug('glossary',newD);
 								// use the update function to eliminate duplicate types;
 								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								this.adopt(newD as SpecIF, { noCheck: true })
+								self.adopt(newD as SpecIF, { noCheck: true })
 									.done(resolve)
 									.fail(reject);
 							}
@@ -1383,7 +1621,7 @@ class CProject {
 					let idx: number,
 						tL = LIB.forAll(CONFIG.modelElementClasses, () => { return [] });
 					// Each array in tL shall carry the keys of resourceClasses for the model-element to collect:
-					dta.get("resourceClass","all").forEach(
+					dta.get("resourceClass",self.resourceClasses).forEach(
 						(rC) => {
 							// @ts-ignore - a resourceClass *has* a title
 							idx = CONFIG.modelElementClasses.indexOf(rC.title);
@@ -1408,8 +1646,7 @@ class CProject {
 						(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
 					) as SpecifResource[];
 					// in alphanumeric order:
-			//		LIB.sortByTitle(resL);
-					// ToDo: consider to sort by the title property via instanceTitleOf()
+					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
 
 					// Categorize resources:
 					resL.forEach(
@@ -1435,227 +1672,6 @@ class CProject {
 			}
 		)
 	}
-	createItems(ctg: string, itmL: SpecifItem[] | INodeWithPosition[]): Promise<void> {
-		// Create one or more items of a given category in cache and in the remote store (server).
-
-		// - itmL is list of js-objects
-		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
-		return new Promise(
-			(resolve) => {
-//				console.debug('createItems', ctg, itmL );
-			/*	switch( ctg ) {
-				//	case 'resource':
-				//	case 'statement':
-				//	case 'hierarchy':
-				//	case 'node':
-						// no break
-					default:
-						// if current user can create an item, he has the other permissions, as well:
-				//		addPermissions( item );
-				//		item.createdAt = new Date().toISOString();
-				//		item.createdBy = item.changedBy; */
-						this.data.put(ctg, itmL);
-			//	};
-				resolve();
-			}
-		);
-	}
-	readItems(ctg: string, itemL: SpecifKey[] | Function | string, opts?: any): Promise<SpecifItem[]> {
-		// Read one or more items of a given category either from cache or from the permanent store (server), otherwise:
-//		console.debug('readItems', ctg, item, opts);
-		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
-		if (!opts) opts = { reload: false, timelag: 10 };
-
-		return new Promise(
-			(resolve) => {
-			/*	if (opts.reload) {
-					// try to get the items from the server, but meanwhile:
-					reject({ status: 745, statusText: "No server available" })
-				}
-				else { */
-					// return the cached object asynchronously:
-					// delay the answer a little, so that the caller can properly process a batch:
-					setTimeout(() => {
-					/*	// ToDo:
-						if (ctg == "hierarchy" && item == "all")
-							// Return only the hierarchies of this project:
-							item = this.hierarchies;  */
-						let items = this.data.get(ctg, itemL);
-						// Normalize the properties if desired:
-						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
-							items.forEach((itm: any) => {
-								// classes are alwways cached, so we can use this.data:
-								itm.properties = normalizeProperties(itm, this.data)
-							})
-						};
-//						console.debug('readItems',opts,items)
-						resolve(items);
-					}, opts.timelag);
-			//	};
-			}
-		);
-
-		function normalizeProperties(el: SpecifInstance, dta: CCache): SpecifProperty[] {
-			// el: original instance (resource or statement)
-			// Create a list of properties in the sequence of propertyClasses of the respective class.
-			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
-			// Property classes must be unique!
-
-			// check uniqueness of property classes:
-			if (el.properties) {
-				let idL: string[] = [],
-					pCid: string;
-				el.properties.forEach((p: SpecifProperty) => {
-					pCid = p['class'].id;
-					if (idL.indexOf(pCid) < 0)
-						idL.push(pCid);
-					else
-						console.warn('The property class ' + pCid + ' of element ' + el.id + ' is occurring more than once.');
-				});
-			};
-
-			let pCkL: SpecifKeys, // keys of propertyClasses
-				pC: SpecifPropertyClass,
-				p: SpecifProperty,
-				nL: SpecifProperty[] = [],  // normalized property list
-				// iCs: instance class list (resourceClasses or statementClasses),
-				// the existence of subject (or object) let's us recognize that it is a statement:
-				// @ts-ignore - existance of subject signifies whether it is a resource or statement
-				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-				iC = LIB.itemByKey(iCs, el['class']);
-
-			// from the instance class including the extended class, build the list of propertyClass keys:
-			pCkL = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
-			pCkL = pCkL.concat(iC.propertyClasses);
-
-			// add the properties in sequence of the propertyClass keys as specified by the instance class:
-			pCkL.forEach((pCk: SpecifKey): void => {
-				// skip hidden properties:
-				if (CONFIG.hiddenProperties.indexOf(pCk.id) > -1) return;
-				// the full propertyClass referenced by pCk;
-				// pC may, but pCk may not have a revision:
-				pC = LIB.itemByKey(dta.propertyClasses, pCk);
-				// assuming that the property classes are unique:
-				p = theListItemReferencingByClass(el.properties, pC);
-				// take the original property if it exists or create an empty one, otherwise:
-				nL.push(p || { class: pCk, values: [] })
-			});
-//			console.debug('normalizeProps result',simpleClone(nL));
-			return nL; // normalized property list
-
-			function theListItemReferencingByClass(L: SpecifProperty[] | undefined, cl: SpecifPropertyClass | undefined): any {
-				if (L && cl) {
-					// Return the item in list 'L' whose class references pC:
-					for (var l of L)
-						if (LIB.references(l['class'],cl)) return l; // return list item
-				};
-			}
-		}
-	}
-	updateItems (ctg: string, itmL: SpecifItem[] ): Promise<void> {
-		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
-		function updateCh(itm: SpecifItem): void {
-			itm.changedAt = new Date().toISOString();
-			itm.changedBy = app.me.userName;
-		}
-
-		return new Promise(
-			(resolve) => {
-				switch (ctg) {
-					case 'node':
-						throw Error("Nodes can only be created, read or deleted");
-					//	case 'resource':
-					//	case 'statement':
-					//	case 'hierarchy':
-					// no break
-					default:
-//						console.debug('updateItems - cache', ctg );
-						itmL.forEach(updateCh)
-						this.data.put(ctg, itmL)
-				};
-				resolve();
-			}
-		);
-	}
-	deleteItems(ctg: string, itmL: SpecifKey[]): Promise<void> {
-		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
-/*			function isInUse( ctg, itm ) {
-					function dTIsInUse( L, dT ) {
-						let i=null;
-						for( var e=L.length-1;e>-1;e-- ) {
-							i = L[e].propertyClasses?LIB.indexBy(L[e].propertyClasses,'dataType',dT.id):-1;
-//							console.debug('dTIsInUse',dT,L,e,i);
-							if( i>-1 ) return true
-						};
-						return false
-					}
-					function aCIsInUse( ctg, sT ) {
-						let c = ctg.substr(0,ctg.length-4),  // xyzType --> xyz, xyzClass ??
-							L = cacheOf(c),
-							i = LIB.indexBy(L,ctg,sT.id);
-//						console.debug('aCIsInUse',sT,c,L,i);
-						// ToDo: In project.html, the resource cache is empty, but the resourceClass may be in use, anyways.
-						// Similarly with statements.
-						return ( i>-1 )
-					}
-					function pCIsInUse( L, pT ) {
-						if( L==undefined ) return false; // can't be in use, if the list is not (yet) defined/present.
-						let i=null;
-						// ToDo: In project.html, the resource cache is empty, but the property class may be in use, anyways.
-						// Also a deleted resource may have used the propertyClass.
-						// As it stores only the newest types, the ReqIF Server will refuse to delete the type.
-						// In case of PouchDB, all revisions of classes/types are stored, so it is sufficient to check whether there are currently some elements using the type.
-						// Similarly with statements.
-						for( var e=L.length-1;e>-1;e-- ) {
-							i = L[e].properties?LIB.indexBy(L[e].properties,'class',pT.id):-1;
-//							console.debug('pCIsInUse property class',pT,L,e,i);
-							if( i>-1 ) return true
-						};
-						return false
-					}
-//				console.debug('isInUse',ctg,itmL);
-				switch( ctg ) {
-					case 'dataType':		return dTIsInUse(self.data.allClasses,itm);
-					case 'resourceClass':
-					case 'statementClass':	return aCIsInUse(ctg,itm);
-					case 'class':			return pCIsInUse(self.data.resources,itm)
-												|| pCIsInUse(self.data.hierarchies,itm)
-												|| pCIsInUse(self.data.statements,itm);
-				};
-				return false
-			}  */
-
-//		console.debug('deleteItems',ctg,itmL);
-		return new Promise(
-			(resolve, reject) => {
-				// Do not delete types which are in use;
-				switch (ctg) {
-				/*	case 'class':
-					case 'dataType':
-					case 'resourceClass':
-					case 'statementClass':	
-						if( Array.isArray(itmL) ) return null;	// not yet supported
-						if( isInUse(ctg,item) ) {
-							reject({status:972, statusText:i18n.Err400TypeIsInUse});
-							return;
-						};
-						// no break;  */
-					case "resource":
-					case "statement":
-					case "node":
-//						console.debug('deleteItems',ctg,itmL);
-						if (this.data.delete(ctg, itmL))
-							break;
-						reject({ status: 999, statusText: 'One or more items of ' + ctg + ' not found and thus not deleted.' });
-						return;
-					default:
-						reject({ status: 999, statusText: 'Category ' + ctg + ' is unknown; one or more items could not be deleted.' });
-						return;
-				};
-				resolve();
-			}
-		);
-	};
 	readStatementsOf(res: SpecifKey, opts?: any): Promise<SpecifStatement[]> {
 		// Get the statements of a resource ... there are 2 use-cases:
 		// - All statements between resources appearing in a hierarchy shall be shown for navigation;
@@ -1671,52 +1687,64 @@ class CProject {
 
 		if (typeof (opts) != 'object') opts = {};
 		let dta = this.data,
-			sCL: SpecifStatementClass[];
+			sCL: SpecifStatementClass[],
+			showsL: SpecifStatement[];
 		return new Promise(
 			(resolve, reject) => {
 				this.readItems('statementClass', this.statementClasses)
 					.then(
 						(sCs) => {
 							sCL = sCs as SpecifStatementClass[];
-							return this.readItems('statement', 'all');
+							// Query: The 'shows' statements of this project's diagrams (only those can be a subject of a 'shows' statement):
+							return this.readItems(
+								'statement',
+								(s: SpecifStatement) => { return dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) }
+							);
 						}
 					)
 					.then(
 						(sL) => {
-							// make a list of 'shows' statements for all diagrams shown in the hierarchy:
-							// @ts-ignore - subject *does* exist on a statement ...
-							let showsL = sL.filter( s => dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) );
-							// filter all statements involving res as subject or object:
+							showsL = sL as SpecifStatement[];
+							// Query: The statements involving the selected resource as subject or object:
+							return this.readItems(
+								'statement',
+								(s: SpecifStatement) => { return res.id == s.subject.id || res.id == s.object.id }
+							);
+						}
+					)
+					.then(
+						(sL) => {
 							resolve(
 								(sL as SpecifStatement[]).filter(
 									(s) => {
 										let sC = LIB.itemByKey(sCL, s['class']) as SpecifStatementClass,
 											ti = LIB.titleOf(sC);
-										return ((res.id == s.subject.id || res.id == s.object.id)
-											// statement must be visible on a diagram referenced in a hierarchy
-											// or be a shows statement itself.
-											// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
-											&& (opts.dontCheckStatementVisibility
-												// Accept manually created relations (including those imported via Excel):
-												|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
-												|| LIB.indexBy(showsL, "object", s.id) > -1
-												|| ti == CONFIG.staClassShows
-											)
+										return (
+												// statement must be visible on a diagram referenced in a hierarchy
+												// or be a shows statement itself.
+												// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
+												(opts.dontCheckStatementVisibility
+													// Accept manually created relations (including those imported via Excel):
+													|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
+													|| CONFIG.staClassShows == ti
+													|| LIB.indexBy(showsL, "object", s.id) > -1
+												)
 											// AND fulfill certain conditions:
 											&& (
+												opts.showComments?
+													// In case of a comment, the comment itself is not referenced in the tree:
+														CONFIG.staClassCommentRefersTo == ti
+													&& LIB.isReferencedByHierarchy(s.object)
+												:
 													// related subject and object must be referenced in the tree to be navigable,
 													// also, the statement must not be declared 'hidden':
-													!opts.showComments
 													// cheap tests first:
-													&& ti != CONFIG.staClassCommentRefersTo
+														CONFIG.staClassCommentRefersTo != ti
 													&& CONFIG.hiddenStatements.indexOf(ti) < 0
 													&& LIB.isReferencedByHierarchy(s.subject)
 													&& LIB.isReferencedByHierarchy(s.object)
-													// In case of a comment, the comment itself is not referenced in the tree:
-												|| opts.showComments
-													&& ti == CONFIG.staClassCommentRefersTo
-													&& LIB.isReferencedByHierarchy(s.object)
-											))
+												)
+										)
 									}
 								)
 							);
@@ -1727,13 +1755,13 @@ class CProject {
 		);
 	}
 	// Select format and options with a modal dialog, then export the data:
-	private chooseExportOptions(fmt:string) {
+	private chooseExportOptions(fmt: string) {
 		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ textField('&#x200b;' + i18n.LblProjectName, this.exportParams.projectName, { typ: 'line', handle: exportOptionsClicked })
-			+ textField('&#x200b;' + i18n.LblFileName, this.exportParams.fileName, { typ: 'line', handle: exportOptionsClicked });
+			+ textField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
+			+ textField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
@@ -1915,7 +1943,7 @@ class CProject {
 				opts.lookupTitles = false;  // applies to self.data.get()
 				opts.lookupValues = true;  // applies to self.data.get()
 				// But DO reduce to the language desired.
-				if ( !opts.targetLanguage ) opts.targetLanguage = browser.language;
+				if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
 				opts.createHierarchyRootIfMissing = true;
@@ -1988,7 +2016,7 @@ class CProject {
 					case 'turtle':
 					case 'reqif':
 						// only single language is supported:
-						if ( !opts.targetLanguage ) opts.targetLanguage = browser.language;
+						if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
@@ -3328,7 +3356,9 @@ LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
 	// checks whether a resource is referenced by the hierarchy:
 	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
 	if( !H ) H = app.cache.selectedProject.data.hierarchies;
-	return LIB.iterateNodes( H, (nd:SpecifNode)=>{ return !LIB.references(nd.resource,itm) } )
+	return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });  // seems to work
+//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
+//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
 }
 LIB.collectResourcesByHierarchy = (prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] => {
 	// collect all resources referenced by the given hierarchy:
@@ -3461,4 +3491,24 @@ LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF | CSpecIF | CCache): string 
 LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
+}
+LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): string => {
+	//	if( !pL ) return;
+	// look for a property serving as title:
+	let idx = LIB.titleIdx(pL);
+	if (idx > -1) {  // found!
+	/*	// Remove all formatting for the title, as the app's format shall prevail.
+		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+		// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+		if( moduleManager.ready.indexOf( 'diff' )>-1 )
+			return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
+
+		// For now, let's try without replacements; so far this function is called before the filters are applied,
+		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+//		console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
+		let ti = LIB.languageValueOf(pL[idx].values[0], opts);
+		if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
+	};
+	return '';
 }

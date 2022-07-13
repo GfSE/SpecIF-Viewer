@@ -154,7 +154,7 @@ moduleManager.construct({
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//		var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
 									+ radioField( i18n.LblStatementClass, staClasses, {handle:myFullName+'.filterClicked()'} )
-									+ textField( i18n.TabFilter,'',{typ:'line', handle:myFullName+'.filterClicked()'} )
+									+ textField( i18n.TabFilter,[''],{typ:'line', handle:myFullName+'.filterClicked()'} )
 									+	'</div></div>'
 									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
 					//				+ '</td><td style="padding-left:0.4em">'

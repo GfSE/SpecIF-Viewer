@@ -21,9 +21,9 @@ interface GraphOptions {
 }
 app.statementsGraph = function Graph() {
 	// For a selected SpecIF resorce, draw a graph of all statements and related resources.
-	// All statements of the same type are grouped to make the reading easier.
-	// Incoming relations (where the selected resource is object of the statement) are positioned at the upper left half,
-	// outgoing relations (where the selected resource is subject of the statement) are positioned at the lower right half
+	// - Group all statements of the same type to make the reading easier.
+	// - Position incoming relations (where the selected resource is object of the statement) at the upper left half,
+	//   and outgoing relations (where the selected resource is subject of the statement) at the lower right half
 	var self:any = {};
 	self.init = () => {};
 	self.clear = () => {};
@@ -423,7 +423,7 @@ app.statementsGraph = function Graph() {
          * @param stm the given statement
          * @returns the title of the statement.
          */
-        function getStatementTitle(stm) {
+        function getStatementTitle(stm):string {
 			// Try to get it from a title property:
 			if( stm.properties ) {
 				for(var n=0; n<stm.properties.length; n++)
@@ -521,7 +521,7 @@ app.statementsGraph = function Graph() {
          * @returns json object of the statements with titles for statements, subjects and objects
          */
         function collectStatementsByType(res) {
-			let stC = {}, cid, oid, sid;
+			let stC = {}, cid:string, oid:string, sid:string;
 			specifData.statements.forEach((st: SpecifStatement) =>{
 				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
 				oid = st.object.id || st.object;

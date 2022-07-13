@@ -114,7 +114,7 @@ class CPropertyToShow implements SpecifProperty {
 	get( options: any): string {
 		let opts = $.extend({
 				titleLinking: false,
-				targetLanguage: browser.language,
+				targetLanguage: this.selPrj.language,
 				titleLinkTargets: CONFIG.titleLinkTargets,
 				clickableElements: false,
 				linkifyURLs: false,
@@ -129,7 +129,7 @@ class CPropertyToShow implements SpecifProperty {
 
 	/*	if (typeof (opts) != 'object') opts = {};
 		if (typeof (opts.titleLinking) != 'boolean') opts.titleLinking = false;
-		if (!opts.targetLanguage) opts.targetLanguage = browser.language;
+		if (!opts.targetLanguage) opts.targetLanguage = this.selPrj.language;
 		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.titleLinkTargets;
 
 		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
@@ -515,6 +515,7 @@ class CPropertyToShow implements SpecifProperty {
 class CResourceToShow {
 	id: string;
 	class: SpecifKey;
+	private selPrj: CProject;
 	private cData: CCache;
 	private rC: SpecifResourceClass;
 	isHeading: boolean;
@@ -529,7 +530,8 @@ class CResourceToShow {
 	constructor(el: SpecifResource) {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
-		this.cData = app.cache.selectedProject.data;
+		this.selPrj = app.cache.selectedProject;
+		this.cData = this.selPrj.data;
 
 		this.id = el.id;
 		this['class'] = el['class'];
@@ -641,7 +643,7 @@ class CResourceToShow {
 		// Create HTML for a list entry:
 
 		var opts = options ? simpleClone(options) : {};
-		opts.targetLanguage = browser.language;
+		opts.targetLanguage = this.selPrj.language;
 		opts.titleLinking
 			= opts.clickableElements
 			= opts.linkifyURLs
@@ -776,18 +778,16 @@ class CResourcesToShow {
 	// and not an update of the resource as such.
 	// Some logic is applied to minimize the screen flickering;
 	// for example the DOM is only changed if the data has really changed.
-	private opts = {
-		lookupTitles: true,
-		targetLanguage: browser.language
-	};
-	values: CResourceToShow[];
+//	private selPrj: CProject;
+	list: CResourceToShow[];
 
 	constructor() {
-		this.values = [];
+//		this.selPrj = app.cache.selectedProject;
+		this.list = [];
 	}
 	push(r: SpecifResource): boolean {
 		// append a resource to the list:
-		this.values.push(new CResourceToShow(r));
+		this.list.push(new CResourceToShow(r));
 		return true;  // a change has been effected
 	}
 	append(rL: SpecifResource[]) {
@@ -798,17 +798,17 @@ class CResourcesToShow {
 		return true;  // a change has been effected
 	}
 	set(idx:number, r: SpecifResource): boolean {
-		if (this.values[idx].isEqual(r)) {
+		if (this.list[idx].isEqual(r)) {
 			// assume that no change has happened:
 //			console.debug('object.set: no change');
 			return false;  // no change
 		};
-		this.values[idx] = new CResourceToShow(r);
+		this.list[idx] = new CResourceToShow(r);
 		return true;		// has changed
 	}
 	update(rL: SpecifResource[]): boolean {
-		// update this.values with rL and return 'true' if a change has been effected:
-		if (rL.length == this.values.length) {
+		// update this.list with rL and return 'true' if a change has been effected:
+		if (rL.length == this.list.length) {
 			// there is a chance no change is necessary:
 			var chg = false;
 			for (var i = rL.length - 1; i > -1; i--)
@@ -818,7 +818,7 @@ class CResourcesToShow {
 		}
 		else {
 			// there will be a change anyways:
-			this.values.length = 0;
+			this.list.length = 0;
 			this.append(rL);
 			return true;
 		};
@@ -826,29 +826,29 @@ class CResourcesToShow {
 	updateSelected(r: SpecifResource): boolean {
 		// update the first item (= selected resource), if it exists, or create it;
 		// return 'true' if a change has been effected:
-		if (this.values.length > 0)
+		if (this.list.length > 0)
 			return this.set(0,r);
 		else
 			return this.push(r);
 	}
 	selected(): CResourceToShow {
 		// return the selected resource; it is the first in the list by design:
-		return this.values[0];
+		return this.list[0];
 	}
 	exists(rId: string): boolean {
-		for (var i = this.values.length - 1; i > -1; i--)
-			if (this.values[i].id == rId) return true;
+		for (var i = this.list.length - 1; i > -1; i--)
+			if (this.list[i].id == rId) return true;
 		return false;
 	}
 	render(): string {
 		// generate HTML representing the resource list:
-		if (this.values.length < 1)
+		if (this.list.length < 1)
 			return '<div class="notice-default" >' + i18n.MsgNoMatchingObjects + '</div>';
 		// else:
 		var rL = '';
 		// render list of resources
-		this.values.forEach((v: CResourceToShow) => {
-			rL += v ? v.listEntry(this.opts) : '';
+		this.list.forEach((v: CResourceToShow) => {
+			rL += v ? v.listEntry() : '';
 		});
 		return rL;	// return rendered resource list
 	}
@@ -1094,7 +1094,7 @@ class CFileWithContent implements IFileWithContent {
 				// see https://www.quirksmode.org/dom/events/
 				clkEl.addEventListener("dblclick",
 					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
-					function () {
+					function() {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
 						// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
@@ -1113,12 +1113,12 @@ class CFileWithContent implements IFileWithContent {
 				// Show the description of the element under the cursor to the left:
 				clkEl.addEventListener("mouseover",
 					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
-					function () {
+					function() {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
 							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
-							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: browser.language }),
+							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: app.cache.selectedProject.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
@@ -1136,7 +1136,8 @@ class CFileWithContent implements IFileWithContent {
 					}
 				);
 				clkEl.addEventListener("mouseout",
-					function () {
+					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
+					function() {
 						//	evt.target.setAttribute("style", "cursor:default;"); 
 						$("#details").empty();
 						app.specs.showTree.set();
@@ -1444,7 +1445,7 @@ moduleManager.construct({
 		}
 	}  */
 
-	self.updateTree = function ( opts:any, spc?:SpecifNodes ):void {
+	self.updateTree = ( opts:any, spc?:SpecifNodes ):void => {
 		// Load the SpecIF hierarchies to a jqTree,
 		// a dialog (tab) with the tree (#hierarchy) must be visible.
 
@@ -1477,7 +1478,7 @@ moduleManager.construct({
 
 	// The module entry;
 	// called by the parent's view controller:
-	self.show = function( opts:any ):void {
+	self.show = ( opts:any ):void => {
 //		console.debug( CONFIG.specifications, 'show', opts );
 		self.selPrj = app.cache.selectedProject;
 
@@ -1513,7 +1514,7 @@ moduleManager.construct({
 		if (self.cData.length("hierarchy")>0 ) {
 			// ToDo: Get the hierarchies one by one, so that the first is shown as quickly as possible;
 			// each might be coming from a different source (in future):
-			self.selPrj.readItems( 'hierarchy', "all", {reload:true} )
+			self.selPrj.readItems('hierarchy', self.selPrj.hierarchies, {reload:true} )
 			.then( 
 				(rsp)=>{
 //					console.debug('load',rsp);
@@ -1648,7 +1649,7 @@ moduleManager.construct({
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(textField( txtLbl, '', {typ:'area'} )) );
+				form.append( $(textField( txtLbl, [''], {typ:'area'} )) );
 				return form 
 			},
 			buttons: [{
@@ -2061,7 +2062,7 @@ moduleManager.construct({
 								()=>{  
 									// undefined parameters will be replaced by default value:
 									self.parent.updateTree({
-										targetLanguage: browser.language,
+										targetLanguage: app.cache.selectedProject.language,
 										lookupTitles: true
 									});
 									self.parent.doRefresh({forced:true})
@@ -2106,13 +2107,13 @@ moduleManager.construct({
 	self.staCre = false;
 	self.staDel = false;
 		
-	self.init = function (): boolean {
+	self.init = (): boolean => {
 		return true;
 	}
-	self.hide = function():void {
+	self.hide = ():void =>{
 		$( self.view ).empty()
 	};
-	self.show = function( opts?:any ):void {
+	self.show = ( opts?:any ):void =>{
 		self.parent.showLeft.set();
 		self.parent.showTree.set();
 		selPrj = app.cache.selectedProject;
@@ -2120,7 +2121,7 @@ moduleManager.construct({
 
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
-		opts.targetLanguage = self.targetLanguage = browser.language;
+		opts.targetLanguage = self.targetLanguage = selPrj.language;
 		opts.lookupTitles = self.lookupTitles = true;
 	//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
@@ -2148,7 +2149,7 @@ moduleManager.construct({
 			//	item: nd.ref
 			}); 
 
-		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(cacheData)} )
+		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges()} )
 		.then( 
 			(sL:SpecifStatement[])=>{
 				// sL is the list of statements involving the selected resource.
@@ -2350,26 +2351,28 @@ moduleManager.construct({
 				})
 			})
 			
-			function notListed(L: SpecifStatement[], s: SpecifResource, t: SpecifResource ):boolean {
-				for( var i=L.length-1;i>-1;i--  ) {
-					if( L[i].subject.id==s.id && L[i].object.id==t.id ) return false;
+			function notListed(L: SpecifStatement[], s: SpecifResource, o: SpecifResource ):boolean {
+				for( var l of L  ) {
+					if( l.subject.id==s.id && l.object.id==o.id ) return false;
 				};
 				return true;
 			}
 		};
-		function aDiagramWithoutShowsStatementsForEdges(dta: CCache): boolean {
+		function aDiagramWithoutShowsStatementsForEdges(): boolean {
 			// Return true, if there is at least one diagram, for which statements do not have 'shows' statements (older transformators);
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
 			let res: SpecifResource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
-			return LIB.iterateNodes(dta.hierarchies,
-				(nd:SpecifNode): boolean => {
+			// ToDo: first do selPrj.readItems('hierarchy','all') with promise anditerate with results ...
+			return LIB.iterateNodes(
+				cacheData.get('hierarchy',selPrj.hierarchies),
+				(nd: SpecifNode): boolean => {
 					// get the referenced resource:
-					res = LIB.itemByKey(dta.resources, nd.resource);
+					res = cacheData.get('resource', [nd.resource])[0];
 					// find the property defining the type:
-					pV = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
+					pV = LIB.valuesByTitle(res, CONFIG.propClassType, cacheData);
 					// Remember whether at least one diagram has been found:
-					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, dta)) < 0;
+					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram
@@ -2444,10 +2447,11 @@ moduleManager.construct({
 		let graphOptions: GraphOptions = {
 				index: 0,
 				canvas: self.view.substr(1),	// without leading hash
-			titleProperties: CONFIG.titleProperties,
-			onDoubleClick: (evt: any) => {
-	//				console.debug('Double Click on:',evt);
-					if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
+				titleProperties: CONFIG.titleProperties,
+				onDoubleClick: (evt: any) => {
+//					console.debug('Double Click on:',evt);
+				//	if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
+					if (typeof (evt.target.resource) == 'string')
 						app[myName].relatedItemClicked(evt.target.resource,evt.target.statement);
 						// changing the tree node triggers an event, by which 'self.refresh' will be called.
 				},
@@ -2559,7 +2563,7 @@ moduleManager.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.linkResource = function():void {
+	self.linkResource = ():void =>{
 		// enter edit mode: load the edit template:
 		// The button to which this function is bound is enabled only if the current user has edit permission.
 
@@ -2575,7 +2579,7 @@ moduleManager.construct({
 			throw Error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.");
 		};
 	}; 
-	self.toggleModeStaDel = function():void {
+	self.toggleModeStaDel = ():void =>{
 		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
 //		console.debug( 'toggle delete statement mode:', modeStaDel);
@@ -2583,7 +2587,7 @@ moduleManager.construct({
 		renderStatements( net );
 		$(self.view).prepend(linkBtns());
 	};
-	self.relatedItemClicked = function( rId:string, sId:string ):void {
+	self.relatedItemClicked = ( rId:string, sId:string ):void =>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
 //		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, LIB.itemById( app.cache.selectedProject.data.statements, sId ) );
 		if( modeStaDel ) {

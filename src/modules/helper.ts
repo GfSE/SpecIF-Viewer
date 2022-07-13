@@ -18,13 +18,16 @@ interface IFieldOptions {
 	handle?: string;  // event handler
 	description?: string; // further explanation in a popup
 }
-function textField(tag: string, val: string, opts?: IFieldOptions): string {  
+function textField(tag: string, valL: string[], opts?: IFieldOptions): string {  
 	// assemble a form for text input or display:
 //	console.debug('textField 1',tag,val,typ,fn);
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
 
-	val = typeof(val)=='string'? LIB.noCode( val ) : '';
+	if (valL.length > 0)
+		valL = LIB.forAll(valL, (v:string) => { return LIB.noCode(v); });
+	if (valL.length<1)
+		valL = [''];
 
 	let fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0)? ' oninput="' + opts.handle + '"' : '',
 		sH = simpleHash(tag),
@@ -46,23 +49,48 @@ function textField(tag: string, val: string, opts?: IFieldOptions): string {
 		default:
 			throw Error("Invalid display option '"+opts.tagPos+"' when showing a textField");
 	};
-	switch( opts.typ ) {
+	// valL has at least one item:
+/*	fG += '<div class="' + aC +'" >';
+	valL.forEach(
+		(v:string, i:number) => {
+			switch (opts.typ) {
+				case 'line':
+					fG += '<div>'
+						+ (v.indexOf('\n') < 0 ? '<input type="text" id="field' + sH + i + '" class="form-control"' + fn + ' value="' + v + '" />'
+							: '<textarea id="field' + sH + i + '" class="form-control" rows="2"' + fn + '>' + v + '</textarea>')
+						+ '</div>';
+					break;
+				case 'area':
+					fG += '<div>' +
+						'<textarea id="field' + sH + i + '" class="form-control" rows="7"' + fn + '>' + v + '</textarea>' +
+						'</div>';
+					break;
+				default:
+					// display the value:
+					fG += '<div id="field' + sH + i + '" >' + v + '</div>';
+			};
+		}
+	);
+	fG += 	'</div></div>';  */
+	// For now, just take care of the first value:
+	let val = valL[0];
+	switch (opts.typ) {
 		case 'line':
-			fG += 	'<div class="'+aC+'">'
-				+		(val.indexOf('\n')<0? '<input type="text" id="field'+sH+'" class="form-control"'+fn+' value="'+val+'" />'
-						: '<textarea id="field'+sH+'" class="form-control" rows="2"'+fn+'>'+val+'</textarea>')
-				+	'</div>'; 
+			fG += '<div class="' + aC + '">'
+				+ (val.indexOf('\n') < 0 ? '<input type="text" id="field' + sH + '" class="form-control"' + fn + ' value="' + val + '" />'
+					: '<textarea id="field' + sH + '" class="form-control" rows="2"' + fn + '>' + val + '</textarea>')
+				+ '</div>';
 			break;
 		case 'area':
-			fG += 	'<div class="'+aC+'">' +
-						'<textarea id="field'+sH+'" class="form-control" rows="7"'+fn+'>'+val+'</textarea>' +
-					'</div>'; 
+			fG += '<div class="' + aC + '">' +
+				'<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>' +
+				'</div>';
 			break;
 		default:
 			// display the value:
-			fG += 	'<div id="field'+sH+'" class="'+aC+'" >'+val+'</div>';
+			fG += '<div id="field' + sH + '" class="' + aC + '" >' + val + '</div>';
 	};
-	fG += 	'</div>';
+	fG += '</div>';
 	return fG;
 }
 function setTextValue( tag:string, val:string ):void {
@@ -514,14 +542,14 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 		throw Error("Invalid value: '" + val + "' must be a multi-language text.");
 
 	let lVs = val.filter((v: any): boolean => {
-		return v.language && opts && opts.targetLanguage == v.language;
+		return v.language && opts && opts.targetLanguage.toLowerCase() == v.language.toLowerCase();
 	});
 	// lVs should have none or one elements; any additional ones are simply ignored:
 	if (lVs.length > 0) return lVs[0].text;
 
 	// next try a little less stringently:
 	lVs = val.filter((v: any): boolean => {
-		return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0, 2) == v.language.slice(0, 2);
+		return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0, 2).toLowerCase() == v.language.slice(0, 2).toLowerCase();
 	});
 	// lVs should have none or one elements; any additional ones are simply ignored:
 	if (lVs.length > 0) return lVs[0].text;
@@ -530,7 +558,7 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 	return val[0].text;
 }
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
-	// for display, any vocabulary term is always translated tp the selected language:
+	// for display, any vocabulary term is always translated to the selected language:
 	return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
 //	return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
 }
@@ -634,7 +662,7 @@ LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
 	//	return undefined
 }
 LIB.references = (n: SpecifKey, k: SpecifKey): boolean => {
-	// true, if n references el.
+	// true, if n references k.
 	return LIB.isKey(k) && LIB.isKey(n) && k.id == n.id && (!n.revision || k.revision == n.revision);
 }
 LIB.referenceIndex = (L: SpecifKey[], k: SpecifKey): number => {
@@ -785,15 +813,15 @@ LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 }
 LIB.uncacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 	// remove the item e from a list L:
-	let n = typeof(e)=='object'? LIB.indexById( L, e.id ) : L.indexOf(e);
+	let n = LIB.isKey(e)? LIB.indexByKey( L, e ) : L.indexOf(e);
 	if( n>-1 ) L.splice(n,1);  // remove, if found
 	return n;
 }
 LIB.uncacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 	// remove the items es from a list L:
-	let done = true;
-	es.forEach((e) => { done = done && LIB.uncacheE(L, e) > -1 });
-	return done;
+	let ok = true;
+	es.forEach((e) => { ok = ok && LIB.uncacheE(L, e) > -1 });
+	return ok;
 }
 	
 // http://stackoverflow.com/questions/10726909/random-alpha-numeric-string-in-javascript

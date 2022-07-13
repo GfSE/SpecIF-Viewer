@@ -149,7 +149,7 @@ moduleManager.construct({
 				selectResClass(opts)
 				.then(
 					(rC:SpecifResourceClass)=>{ 
-						app.cache.selectedProject.createResource(rC)
+						app.cache.selectedProject.makeEmptyResource(rC)
 						.then( 
 							(r:SpecifResource)=>{
 //								console.debug( '#', opts.mode, r );
@@ -175,7 +175,7 @@ moduleManager.construct({
 				);
 			/*	.then(
 					(rC: SpecifResourceClass) => {
-						return app.cache.selectedProject.createResource(rC)
+						return app.cache.selectedProject.makeEmptyResource(rC)
 				})
 				.then(
 					(r: SpecifResource) => {
@@ -329,7 +329,11 @@ moduleManager.construct({
 //							console.debug( 'editPrp', LIB.languageValueOf(p.value,opts) );
 							return textField(
 								ti,
-								p.values.length > 0 ? LIB.languageValueOf(p.values[0], opts) : '',  // only first value for the time being ...
+								//	p.values.length > 0 ? LIB.languageValueOf(p.values[0], opts) : '',  // only first value for the time being ...
+								LIB.forAll(
+									p.values,
+									(v: SpecifMultiLanguageText) => { return LIB.languageValueOf(v, opts); }
+								),
 								// - open an input line, if it is a title or has a specified length lower than the threshold
 								// - open an input text-area, otherwise
 								{
@@ -344,7 +348,8 @@ moduleManager.construct({
 						self.dialogForm.addField( ti, p.dT );
 						return textField(
 							ti,
-							p.values.length > 0 ? p.values[0] as string : '',
+						//	p.values.length > 0 ? p.values[0] as string : '',
+							p.values as string[],
 							{
 								typ: 'line', handle: myFullName + '.check()',
 								description: (p.pC.description ? LIB.languageValueOf(p.pC.description, opts) : '')

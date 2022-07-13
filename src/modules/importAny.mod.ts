@@ -110,8 +110,8 @@ moduleManager.construct({
  
 	self.clear = function():void {
 		$('input[type=file]').val( '' );  // otherwise choosing the same file twice does not create a change event in Chrome
-		setTextValue(i18n.LblFileName,'');
-		setTextValue(i18n.LblProjectName,'');
+		setTextValue(i18n.LblFileName,['']);
+		setTextValue(i18n.LblProjectName,['']);
 	//	self.projectL.length = 0;  // list of projects
 		self.file = {name: ''};
 		self.projectName = '';
@@ -224,7 +224,7 @@ moduleManager.construct({
 				
 				if( app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} ) ) {
 					// Show the name of the specified import file:
-					let rF = textField(i18n.LblFileName,self.file.name);
+					let rF = textField(i18n.LblFileName,[self.file.name]);
 					$("#formNames").html( rF );
 					// Take fileName as project name:
 					self.projectName = self.file.name.fileName();	
@@ -302,10 +302,10 @@ moduleManager.construct({
 		app[self.format.name].init( self.format.opts );
 
 		// show the file name:
-		let rF = textField(i18n.LblFileName,'');
+		let rF = textField(i18n.LblFileName,['']);
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += textField(i18n.LblProjectName, self.projectName, { typ:'line', handle:myFullName + '.enableActions()' });
+			rF += textField(i18n.LblProjectName, [self.projectName], { typ:'line', handle:myFullName + '.enableActions()' });
 
 		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
@@ -369,15 +369,15 @@ moduleManager.construct({
 		// check if file-type is eligible:
 //		console.debug('pickFiles',f.name,self.format);
 
-		if( app[self.format.name].verify( f ) ) {
+		if (app[self.format.name].verify(f)) {
 			self.file = f;
-		//	self.projectL.length = 0;  // https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+			//	self.projectL.length = 0;  // https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 
-			setTextValue(i18n.LblFileName, f.name);
+			setTextValue(i18n.LblFileName, [f.name]);
 
 			if( self.format.id=='xls' && getTextLength(i18n.LblProjectName)<1 ) {
 				self.projectName = self.file.name.fileName();	// propose fileName as project name
-				setTextValue( i18n.LblProjectName, self.projectName );
+				setTextValue( i18n.LblProjectName, [self.projectName] );
 				setFocus( i18n.LblProjectName );
 			};
 
