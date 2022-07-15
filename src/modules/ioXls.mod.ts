@@ -605,10 +605,10 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					pTi = cell? (cell.v as string).trim() : '';
 					// Process only columns with title, skip the others:
 					if (pTi) {
-						// 1. A native property will be used, if possible, so no propertyClass is created:
+						// 1. A native property will be used if possible, so no propertyClass is created:
 						if (CONFIG.nativeProperties.has(pTi))
 							continue;
-						// 2. Find out, whether its a (previously created) enumerated dataType:
+						// 2. Find out, whether it is a (previously created) enumerated dataType:
 						pC = itemByTitle( specifData.propertyClasses as Item[], pTi );
 						if (pC && pC.id) {
 							dT = itemById(specifData.dataTypes as Item[], pC.dataType as string);

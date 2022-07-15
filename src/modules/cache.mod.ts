@@ -2128,9 +2128,12 @@ class CProject {
 						rP = propByTitle(r, pT, this.data);
 //					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(valByTitle( r, pT, this.data )));
 					if (!LIB.hasContent(valByTitle(r, pT, this.data))
+						// the existing resource must have a similar property:
+						// ToDo: If the property isn't there, but the propertyClass is listed with the resourceClass,
+						//       then copy the whole property.
+						&& rP
 						// dataTypes must be compatible:
 						&& this.compatibleDT(dataTypeOf(this.data, rP['class']), dataTypeOf(prj, nP['class']))) {
-						//	&& this.typeIsCompatible( 'dataType', dataTypeOf(this.data,rP['class']), dataTypeOf(prj,nP['class']) ).status==0 ) {
 						rP.value = nP.value;
 					};
 				};
