@@ -242,56 +242,76 @@ class CCache {
 		// Return the statementClass' title:
 		return LIB.titleOf(LIB.itemByKey(this.statementClasses, e['class']), opts);
 	}
-	instanceTitleOf(el: SpecifInstance, opts?: any): string {
-		// Get the title of a resource or a statement;
-		// ... from the properties or a replacement value in case of default.
-		// 'el' is an original element without 'classifyProps()'.
-		// It is assumed that the classes are always cached.
-		if (typeof (el) != 'object') throw Error('First input parameter is invalid');
-		if (!(el.properties || el['class'])) return '';
+	instanceTitleOf(el: SpecifInstance, opts: any): string {
+		// Return the title of the resource or statement 
+		// - in the language defined in opts
+		// - add the icon, if opts.addIcon is true
+		// - if no title is found and opts.neverEmpty is true, the id is returned
+		var self = this;
+		return function (el: SpecifInstance, opts: any): string {
+			// Get the title of a resource or a statement;
+			// ... from the properties or a replacement value in case of default.
+			// 'el' is an original element without 'classifyProps()'.
+			// It is assumed that the classes are always cached.
+			if (typeof (el) != 'object') throw Error('First input parameter is invalid');
+			if (!(el.properties || el['class'])) return '';
 
-		// Lookup titles only in case of a resource serving as heading or in case of a statement:
-		let localOpts;
-		// @ts-ignore - of course resources have no subject, that's why we ask
-		if (el.subject) {
-			// it is a statement
-			localOpts = opts;
-		}
-		else {
-			// it is a resource
-			localOpts = {
-				targetLanguage: opts.targetLanguage,
-				lookupTitles: opts.lookupTitles && LIB.itemByKey(this.resourceClasses, el['class']).isHeading
+			// Lookup titles only in case of a resource serving as heading or in case of a statement:
+			let resOpts;
+			// @ts-ignore - of course resources have no subject, that's why we ask
+			if (el.subject) {
+				// it is a statement
+				resOpts = opts;
+			}
+			else {
+				// it is a resource
+				resOpts = {
+					targetLanguage: opts.targetLanguage,
+					lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading
+				};
 			};
-		};
-		let ti = LIB.getTitleFromProperties(el.properties, localOpts);
+			let ti = LIB.getTitleFromProperties(el.properties, resOpts);
 
-		// In case of a resource, we never want to lookup a title,
-		// however in case of a statement, we do:
-		// @ts-ignore - of course resources have no subject, that's why we ask
-		if (el.subject) {
-			// it is a statement
-			if (!ti)
-				// take the class' title by default:
-				ti = this.staClassTitleOf(el as SpecifStatement, opts);
-		}
-		else {
-			// it is a resource
-			if (opts && opts.addIcon && CONFIG.addIconToInstance && ti)
-				ti = LIB.addIcon(ti, LIB.itemByKey(this.resourceClasses, el['class']).icon);
-		};
+			// In case of a resource, we never want to lookup a title,
+			// however in case of a statement, we do:
+			// @ts-ignore - of course resources have no subject, that's why we ask
+			if (el.subject) {
+				// it is a statement
+				if (!ti)
+					// take the class' title by default:
+					ti = self.staClassTitleOf(el as SpecifStatement, opts);
+			}
+			else {
+				// it is a resource
+				if (opts && opts.addIcon && CONFIG.addIconToInstance && ti)
+					ti = LIB.addIcon(ti, LIB.itemByKey(self.resourceClasses, el['class']).icon);
+			};
 
-// 		console.debug('instanceTitleOf',el,opts,ti);
-		return typeof (ti) == 'string' ? ti.stripHTML() : ti;
+			// 			console.debug('instanceTitleOf',el,opts,ti);
+			return ti.stripHTML();
+		}(el, opts) || (opts.neverEmpty ? el.id : '');
 	}
-	resourceByTitle(ti: string, opts?: any): SpecifResource | undefined {
+	resourcesByTitle(ti: string, opts: any) {
 		if (ti) {
-			// given the title of a resource, return the instance itself;
-			// if a title has multiple languages, the behavior may be different in each case:
-			for (var ice of this.resources)
-				if (this.instanceTitleOf(ice, opts) == ti) return ice;   // return list item
-		};
-		// else return undefined
+			/*	// given the title of a resource, return the instance itself;
+				// if a title has multiple languages, the behavior may be different in each case:
+				for (var ice of this.resources)
+					if (this.instanceTitleOf(ice, opts) == ti) return ice;   // return list item */
+			return this.resources.filter(
+				(r) => {
+					if (opts.taregtLanguage == 'any') {
+						for (var v of LIB.valuesByTitle(r, [CONFIG.propClassTitle], this.propertyClasses))
+							// v of class CONFIG.propClassTitle is always a multiLanguageText:
+							if ( v.text==ti ) return true;
+						return false;
+					}
+					else
+						return this.instanceTitleOf(r, opts) == ti
+				}
+			) as SpecifResource[];
+		}
+		else
+			return [] as SpecifResource[];
 	}
 	clear(ctg?:string):void {
 		if (ctg)
@@ -741,19 +761,19 @@ class CProject {
 							// multiple folders with the same name but different description in different locations of the hierarchy.
 							// The title of the resource class signifies the main (abstract) type for model integration,
 							// whereas the property with a class title CONFIG.propClassType (dcterms:type) is used to store the type of the original notation.
-							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(nR, nD)) > -1
-								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, nD)) < 0
+							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(nR, nD.resourceClasses)) > -1
+								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, [CONFIG.propClassType], nD.propertyClasses)) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								eR = this.data.resourceByTitle(LIB.getTitleFromProperties(nR.properties, opts), opts) as SpecifResource;
+								eR = this.data.resourcesByTitle(LIB.getTitleFromProperties(nR.properties, opts), opts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
 //								console.debug('~1',nR,eR?eR:'');
 								if (eR
-									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(eR, CONFIG.propClassType, dta)) < 0
-									&& LIB.resClassTitleOf(nR, nD) == LIB.resClassTitleOf(eR, dta)
-								//	&& LIB.valuesByTitle(nR,CONFIG.propClassType,nD)==LIB.valuesByTitle(eR,CONFIG.propClassType,dta)
+									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(eR, [CONFIG.propClassType], dta.propertyClasses)) < 0
+									&& LIB.resClassTitleOf(nR, nD.resourceClasses) == LIB.resClassTitleOf(eR, dta.resourceClasses)
+								//	&& LIB.valuesByTitle(nR,[CONFIG.propClassType],nD.propertyClasses)==LIB.valuesByTitle(eR,[CONFIG.propClassType],dta.propertyClasses)
 								) {
 //									console.debug('~2',eR,nR);
 									// There is an item with the same title and type,
@@ -866,7 +886,7 @@ class CProject {
 		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
 		return new Promise(
 			(resolve) => {
-				//				console.debug('createItems', ctg, itmL );
+//				console.debug('createItems', ctg, itmL );
 				switch (ctg) {
 					case 'hierarchy':
 						// Update the project's remembering list;
@@ -1136,7 +1156,12 @@ class CProject {
 
 	private hookStatements(): void {
 		var self = this,
-			dta = this.data;
+			dta = this.data,
+			opts = {
+				targetLanguage: 'any',
+				lookupTitles: false,
+				addIcon: false
+			};
 //		console.debug('hookStatements',dta);
 		// For all statements with a loose end, hook the resource
 		// specified by title or by a property titled dcterms:identifier:
@@ -1146,12 +1171,11 @@ class CProject {
 			// it is assumed that only one end is loose:
 			if (st.subjectToFind) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
-				let s, sL = itemsByVisibleId(st.subjectToFind);
-				if (sL.length > 0)
-					s = sL[0];
-				else
-					// Find the resource with the given title:
-					s = dta.resourceByTitle(st.subjectToFind);
+				let sL = itemsByVisibleId(st.subjectToFind),
+					s = sL.length > 0?
+							sL[0]
+						:	// Find the resource with the given title:
+							dta.resourcesByTitle(st.subjectToFind,opts)[0];
 //				console.debug('hookStatements subject',s);
 				if (s) {
 					st.subject = LIB.keyOf(s);
@@ -1161,12 +1185,17 @@ class CProject {
 			};
 			if (st.objectToFind) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
-				let o, oL = itemsByVisibleId(st.objectToFind);
+				let oL = itemsByVisibleId(st.objectToFind),
+					o = oL.length > 0 ?
+							oL[0]
+						:	// Find the resource with the given title:
+							dta.resourcesByTitle(st.objectToFind, opts)[0];
+			/*	let o, oL = itemsByVisibleId(st.objectToFind);
 				if (oL.length > 0)
 					o = oL[0];
 				else
 					// Find the resource with the given title:
-					o = dta.resourceByTitle(st.objectToFind);
+					o = dta.resourceByTitle(st.objectToFind,opts); */
 //				console.debug('hookStatements object',o);
 				if (o) {
 					st.object = LIB.keyOf(o);
@@ -1188,7 +1217,7 @@ class CProject {
 					// loop to find the *first' occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.contains(vocabulary.property.specif(LIB.propTitleOf(p, dta)))
+						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(p, dta.propertyClasses)))
 							&& LIB.languageValueOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
 					};
@@ -1204,7 +1233,7 @@ class CProject {
 					// loop to find the *first' occurrence:
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.contains(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], dta))))
+						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], dta.propertyClasses))))
 							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: self.language })
 					};
 				};
@@ -1262,13 +1291,13 @@ class CProject {
 				nR = dta.resources[n];
 				rR = dta.resources[r];
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(rR, dta)) > -1
+				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(rR, dta.resourceClasses)) > -1
 					&& this.equalR(rR, nR)
-					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, CONFIG.propClassType, dta)) < 0
-					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(rR, CONFIG.propClassType, dta)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, [CONFIG.propClassType], dta.propertyClasses)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(rR, [CONFIG.propClassType], dta.propertyClasses)) < 0
 				) {
 					// Are equal, so remove the duplicate resource:
-//					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, CONFIG.propClassType, dta ) );
+//					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, [CONFIG.propClassType], dta.propertyClasses ) );
 					this.substituteR(dta, rR, nR, { rescueProperties: true });
 					console.info("Resource with id=" + nR.id + " has been removed because it is a duplicate of id=" + rR.id);
 					dta.resources.splice(n, 1);
@@ -1306,13 +1335,13 @@ class CProject {
 		];
 		var r: SpecifResource = LIB.itemByKey(dta.resources, dta.hierarchies[0].resource),
 			rC: SpecifResourceClass = LIB.itemByKey(dta.resourceClasses, r['class']),
-			pVL: SpecifValues = LIB.valuesByTitle(r, CONFIG.propClassType, dta),
+			pVL: SpecifValues = LIB.valuesByTitle(r, [CONFIG.propClassType], dta.propertyClasses),
 
 			// true, if there is a 'single' hierarchy and if it is a hierarchyRoot:
 			singleHierarchyRoot = dta.hierarchies.length == 1
 				&& ( rC && CONFIG.hierarchyRoots.indexOf(rC.title) > -1
-					|| pVL && pVL.length > 0 && CONFIG.hierarchyRoots.indexOf(pVL[0]) > -1);
-		/*	prp: SpecifProperty = itemByTitle(r.properties, CONFIG.propClassType),
+					|| pVL.length > 0 && CONFIG.hierarchyRoots.indexOf(pVL[0]) > -1);
+		/*	prp: SpecifProperty = LIB.itemByTitle(r.properties, CONFIG.propClassType),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 			// or by the title of the resourceClass:
 			singleHierarchyRoot = dta.hierarchies.length == 1
@@ -1353,8 +1382,8 @@ class CProject {
 								// get the referenced resource:
 								res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 								// find the property defining the type:
-								pVs = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
-								if (Array.isArray(pVs) && pVs.length > 0) {
+								pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta.propertyClasses);
+								if (pVs.length > 0) {
 									pV = LIB.languageValueOf(pVs[0], { targetLanguage: self.language });
 									// collect all nodes to delete, there should be only one:
 									if (pV == r2c.folder )
@@ -1382,7 +1411,7 @@ class CProject {
 										// 4. Create a new combined folder:
 										let newD: SpecIF = {
 											id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
-											$schema: 'https://specif.de/v1.0/schema.json',
+											$schema: 'https://specif.de/v1.1/schema.json',
 											dataTypes: [
 												standardTypes.get('dataType', { id: "DT-ShortString" }) as SpecifDataType,
 												standardTypes.get('dataType', { id: "DT-Text" }) as SpecifDataType
@@ -1473,9 +1502,9 @@ class CProject {
 						// get the referenced resource:
 						res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 						// check, whether it is a glossary:
-						pVs = LIB.valuesByTitle(res, CONFIG.propClassType, dta);
+						pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta.propertyClasses);
 						// collect all items to delete, there should be only one:
-						if (Array.isArray(pVs) && pVs.length > 0
+						if (pVs.length > 0
 							&& CONFIG.resClassGlossary == LIB.languageValueOf(pVs[0], { targetLanguage: self.language })) {
 								delL.push(nd)
 						}	;
@@ -1496,7 +1525,7 @@ class CProject {
 							if (diagramL.length > 0) {
 								let newD: any = {
 									id: 'Create Glossary ' + new Date().toISOString(),
-									$schema: 'https://specif.de/v1.0/schema.json',
+									$schema: 'https://specif.de/v1.1/schema.json',
 									dataTypes: [
 										standardTypes.get('dataType', { id: "DT-ShortString" }),
 										standardTypes.get('dataType', { id: "DT-Text" })
@@ -1533,8 +1562,8 @@ class CProject {
 					// a resource is a diagram, if it's type has a title 'SpecIF:Diagram':
 					// .. or if it has a property dcterms:type with value 'SpecIF:Diagram':
 					// .. or if it has at least one statement with title 'SpecIF:shows':
-					return LIB.resClassTitleOf(r, dta) == CONFIG.resClassDiagram
-						|| LIB.valuesByTitle(r, CONFIG.propClassType, dta) == CONFIG.resClassDiagram
+					return LIB.resClassTitleOf(r, dta.resourceClasses) == CONFIG.resClassDiagram
+						|| LIB.valuesByTitle(r, [CONFIG.propClassType], dta.propertyClasses) == CONFIG.resClassDiagram
 						|| dta.get(
 							"statement",
 							(s: SpecifStatement) => {
@@ -2218,7 +2247,7 @@ class CProject {
 			&& this.data.instanceTitleOf(refE, opts) == this.data.instanceTitleOf(newE, opts);
 
 	/*	if (LIB.equalKey(refE['class'], newE['class'])
-			&& LIB.instanceTitleOf(refE, opts, dta) == LIB.instanceTitleOf(newE, opts, dta)
+			&& LIB.instanceTitleOf(refE, opts) == LIB.instanceTitleOf(newE, opts)
 			)
 				return true;
 
@@ -2226,7 +2255,7 @@ class CProject {
 
 		// being equal to the content of property CONFIG.propClassType is not considered equal
 		// (for example BPMN endEvents which don't have a genuine title):
-		let typ = LIB.valuesByTitle(refE, CONFIG.propClassType, dta),
+		let typ = LIB.valuesByTitle(refE, [CONFIG.propClassType], dta.propertyClasses),
 			rgT = RE.splitNamespace.exec(typ);
 		// rgT[2] contains the type without namespace (works also, if there is no namespace).
 		return (!rgT || rgT[2] != refE.title);  */
@@ -2530,10 +2559,13 @@ class CProject {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let pT = LIB.propTitleOf(nP, prj),
+					let pT = LIB.propTitleOf(nP, prj.propertyClasses),
 						rP = LIB.propByTitle(refE, pT, this.data);
-//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valuesByTitle( refE, pT, this.data )));
-					if (!LIB.hasContent(LIB.valuesByTitle(refE, pT, this.data))
+//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valuesByTitle( refE, pT, this.data.propertyClasses )));
+					if (!LIB.hasContent(LIB.valuesByTitle(refE, [pT], this.data.propertyClasses))
+						// resource r must have a corresponding property
+						// ToDo: Copy the whole property, if it is defined in the resourceClass, but not instantiated
+						&& rP
 						// dataTypes must be compatible:
 						&& this.compatibleDT(LIB.dataTypeOf(rP['class'], this.data), LIB.dataTypeOf(nP['class'], prj))) {
 						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(rP['class'],this.data), LIB.dataTypeOf(nP['class'],prj) ).status==0 ) {
@@ -3442,55 +3474,55 @@ LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCac
 				// else create a new one from the propertyClass:
 				prp = LIB.createProp(pC);
 				itm.properties.push(prp);
-				return prp
+				return prp;
 		};
 	};
 //	return undefined
 }
-LIB.valuesByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCache): SpecifValues|undefined => {
-	// Return the value of a resource's (or statement's) property with title pN:
+LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], pCs: SpecifPropertyClass[]): SpecifValues => {
+	// Return the values of a resource's (or statement's) property with a title listed in pNs:
 //	console.debug('valuesByTitle',dta,itm,pN);
 	if( itm.properties ) {
 		let pC;
 		for (var i = itm.properties.length - 1; i > -1; i--) {
-			pC = LIB.itemByKey(dta.propertyClasses, itm.properties[i]['class']);
-			if (pC && pC.title == pN)
+			pC = LIB.itemByKey(pCs, itm.properties[i]['class']);
+			if (pC && pNs.includes(pC.title) )
 				return itm.properties[i].values;
 		}
 	};
-//	return undefined
-}
-LIB.titleIdx = (pL: SpecifProperty[]|undefined, dta?: SpecIF|CSpecIF|CCache): number =>{
-	// Find the index of the property to be used as title.
-	// The result depends on the current user - only the properties with read permission are taken into consideration.
-	// This works for title strings and multi-language title objects.
-
-	// The first property which is found in the list of headings or titles is chosen:
-	if( pL ) {
-		if( !dta ) dta = app.cache.selectedProject.data;
-		let pt;
-		for( var a=0,A=pL.length;a<A;a++ ) {
-			pt = vocabulary.property.specif( LIB.propTitleOf(pL[a],dta) );
-			// Check the configured headings and titles:
-			if( CONFIG.titleProperties.indexOf( pt )>-1 ) return a;
-		};
-	};
-	return -1;
+	return [];
 }
 // staClassTitle() is now a method of CCache as it is applied only to data already cached,
 // which is not the case with resClassTitleOf() and propTitleOf().
-LIB.resClassTitleOf = (e: SpecifResource, prj?: SpecIF | CSpecIF | CCache, opts?: any): string => {
-	if (!prj) prj = app.cache.selectedProject.data;
-	return LIB.titleOf(LIB.itemByKey(prj.resourceClasses, e['class']), opts);
+LIB.resClassTitleOf = (e: SpecifResource, rCs?: SpecifResourceClass[], opts?: any): string => {
+	if (!rCs) rCs = app.cache.selectedProject.data.resourceClasses;
+	return LIB.titleOf(LIB.itemByKey(rCs, e['class']), opts);
 }
-LIB.propTitleOf = (prp: SpecifProperty, prj: SpecIF | CSpecIF | CCache): string => {
+LIB.propTitleOf = (prp: SpecifProperty, pCs:SpecifPropertyClass[]): string => {
 	// get the title of a property as defined by itself or it's class:
-	let pC = LIB.itemByKey(prj.propertyClasses, prp['class']);
+	let pC = LIB.itemByKey(pCs, prp['class']);
 	return pC ? pC.title : undefined;
 }
 LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
+}
+LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
+	// Find the index of the property to be used as title.
+	// The result depends on the current user - only the properties with read permission are taken into consideration.
+	// This works for title strings and multi-language title objects.
+
+	// The first property which is found in the list of headings or titles is chosen:
+	if (pL) {
+		if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
+		let pt;
+		for (var a = 0, A = pL.length; a < A; a++) {
+			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a], pCs));
+			// Check the configured headings and titles:
+			if (CONFIG.titleProperties.indexOf(pt) > -1) return a;
+		};
+	};
+	return -1;
 }
 LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): string => {
 	//	if( !pL ) return;

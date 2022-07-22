@@ -570,7 +570,7 @@ class CSpecIF implements SpecIF {
 			function titlePropertyMissing(el: any): boolean {
 				if (Array.isArray(el.properties))
 					for (var i = el.properties.length - 1; i > -1; i--) {
-						let ti = LIB.propTitleOf(el.properties[i], self);
+						let ti = LIB.propTitleOf(el.properties[i], self.propertyClasses);
 						if (CONFIG.titleProperties.indexOf(ti) > -1)
 							// SpecIF assumes that any title property *replaces* the element's title,
 							// so we just look for the case of *no* title property.
@@ -583,7 +583,7 @@ class CSpecIF implements SpecIF {
 			function descPropertyMissing(el:any): boolean {
 				if (Array.isArray(el.properties))
 					for (var i = el.properties.length - 1; i > -1; i--) {
-						if (CONFIG.descProperties.indexOf(LIB.propTitleOf(el.properties[i], self)) > -1)
+						if (CONFIG.descProperties.indexOf(LIB.propTitleOf(el.properties[i], self.propertyClasses)) > -1)
 							// SpecIF assumes that any description property *replaces* the resource's description,
 							// so we just look for the case of a resource description and *no* description property.
 							// There is no consideration of the content.

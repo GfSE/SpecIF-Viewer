@@ -490,6 +490,24 @@ LIB.isKey = (el: any): boolean => {
 LIB.isString = (el:any): boolean => {
 	return typeof (el) == 'string';
 }
+LIB.isIsoDate = (val: string): boolean => {
+	return RE.IsoDate.test(val);
+/*	To do this, checker must be loaded at initialization time:
+	return checker.checkSchema(
+		{ value: val },
+		{
+			schema: {
+				"$id": "https://specif.de/v1.1/dateTime/schema#",
+				"$schema": "http://json-schema.org/draft-04/schema#",
+			//	"$schema": "https://json-schema.org/draft/2019-09/schema#",
+				"type": "object",
+				"properties": {
+					"value": { "type": "string", "format": "date-time" }
+				}
+			}
+		}
+	).status > 0 */
+}
 LIB.isEqualStringL = (refL: any[], newL: any[]): boolean => {
 		// return true, if both lists have equal members:
 		// no or empty lists are allowed and considerated equal:
@@ -535,7 +553,6 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 	// Return the value in the specified target language .. or the first value in the list by default.
 
 	// if opts.targetLanguage is undefined, keep all language options:
-	//	if (typeof(val)=='string' || !(opts && opts.targetLanguage)) return val;
 	if (!(opts && opts.targetLanguage)) return val;
 
 	if (!LIB.isMultiLanguageText(val))

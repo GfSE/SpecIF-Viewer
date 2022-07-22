@@ -51,7 +51,7 @@ class DialogForm {
 						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
 					break;
 				case SpecifDataTypeEnum.DateTime:
-					ok = val.length < 1 || RE.IsoDate.test(val);
+					ok = val.length < 1 || LIB.isIsoDate(val);
 				// no need to check enumeration
 			};
 			setTextState(cPs.label, ok ? 'has-success' : 'has-error');
@@ -524,8 +524,9 @@ moduleManager.construct({
 		// 1. Update the title:
 		if (toEdit.title.dT.type == SpecifDataTypeEnum.String) {
 			// Update the title; it must be of dataType "xs:string":
-			let val = textValue(prpTitle(toEdit.title)).stripHTML() || ("Title of " + self.newRes.id);
-			self.newRes.properties.push({ class: LIB.keyOf(toEdit.title.pC), values: [LIB.makeMultiLanguageText(val)] });
+			let val = textValue(prpTitle(toEdit.title)).stripHTML();
+			if( val )
+				self.newRes.properties.push({ class: LIB.keyOf(toEdit.title.pC), values: [LIB.makeMultiLanguageText(val)] });
 		}
 		else
 			console.warn('Datatype of Title is ' + toEdit.title.dT.type + ', but not ' + SpecifDataTypeEnum.String);

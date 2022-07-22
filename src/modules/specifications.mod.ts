@@ -553,13 +553,13 @@ class CResourceToShow {
 		// and moved from this.other to this.title resp. this.descriptions:
 
 		// a) Find and set the configured title:
-		let a = LIB.titleIdx(this.other, this.cData);
+		let a = LIB.titleIdx(this.other, this.cData.propertyClasses);
 		if (a > -1) {  // found!
 			this.title = this.other.splice(a, 1)[0];
 		}
-		else
+	/*	else
 			throw Error("Did not find a title for resource with id:"+this.id);
-	/*	else {
+		else {
 			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
 			// there is no title propertyClass;
 			// then create a property without class.
@@ -1461,14 +1461,14 @@ moduleManager.construct({
 		return;
 
 		// -----------------
-		function toChild( iE ) {
+		function toChild( iE:SpecifNode ) {
 			// transform SpecIF hierarchy to jqTree:
 			let r:SpecifResource = LIB.itemByKey( self.cData.resources, iE.resource );
 //			console.debug('toChild',iE.resource,r);
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: self.cData.instanceTitleOf(r,opts,self.cData),
+				name: self.cData.instanceTitleOf(r, $.extend({}, opts, {neverEmpty:true})),
 				ref: iE.resource
 			};
 			oE.children = LIB.forAll( iE.nodes, toChild );
@@ -1516,7 +1516,7 @@ moduleManager.construct({
 			// each might be coming from a different source (in future):
 			self.selPrj.readItems('hierarchy', self.selPrj.hierarchies, {reload:true} )
 			.then( 
-				(rsp)=>{
+				(rsp:SpecifNode)=>{
 //					console.debug('load',rsp);
 					// undefined parameters will be replaced by default value:
 					self.updateTree( opts, rsp );
@@ -1771,7 +1771,7 @@ moduleManager.construct({
 		if( !self.parent.tree.selectedNode ) self.parent.tree.selectFirstNode();
 //		console.debug(CONFIG.objectList, 'show', self.parent.tree.selectedNode);
 
-		var nL; // list of hierarchy nodes, must survive the promise
+		var nL:jqTreeNode[]; // list of hierarchy nodes, must survive the promise
 
 		getNextResources()
 		.then( 
@@ -1840,7 +1840,7 @@ moduleManager.construct({
 			$( self.view ).prepend( actionBtns() );
 			app.busy.reset();
 		}
-		function handleErr(err):void {
+		function handleErr(err: xhrMessage):void {
 			LIB.stdError( err );
 			app.busy.reset();
 		}
@@ -1891,7 +1891,7 @@ moduleManager.construct({
 					return false
 				}  */
 		//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.upd))
+			if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
 				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
 						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoEdit+'</button>'
 			else
@@ -1906,7 +1906,7 @@ moduleManager.construct({
 
 			// The delete button is shown, if a hierarchy entry can be deleted.
 			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-			if (app.title != i18n.LblReader && (!selRes.permissions || selRes.permissions.del) && selRes.isUserInstantiated() )
+			if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.del) */ && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
@@ -2216,7 +2216,7 @@ moduleManager.construct({
 			// cache the minimal representation of a resource;
 			// r may be a resource or a key pointing to a resource;
 			// note that the sequence of items in L is always maintained:
-			LIB.cacheE(L, { id: r.id, title: cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true })) });
+			LIB.cacheE(L, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
 		}
 		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
@@ -2370,9 +2370,9 @@ moduleManager.construct({
 					// get the referenced resource:
 					res = cacheData.get('resource', [nd.resource])[0];
 					// find the property defining the type:
-					pV = LIB.valuesByTitle(res, CONFIG.propClassType, cacheData);
+					pV = LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData.propertyClasses);
 					// Remember whether at least one diagram has been found:
-					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData)) < 0;
+					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData.resourceClasses)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram

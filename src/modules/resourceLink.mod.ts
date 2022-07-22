@@ -215,7 +215,8 @@ moduleManager.construct({
 //		console.debug('click!', radioValue( i18n.LblStatementClass ));
 		self.selectedStatementClass = self.eligibleSCL[ radioValue( i18n.LblStatementClass ) ];
 		setFocus(i18n.TabFilter); 
-		let	eligibleRs = '',
+		let eligibleRs = '',
+			// a search string for filtering the list of resources; is updated upon entry in the modal dialog field:
 			searchStr = textValue(i18n.TabFilter),
 			reTi = new RegExp( searchStr.escapeRE(), 'i' );  // don't use 'gi' - works only every other time.
 
@@ -232,7 +233,7 @@ moduleManager.construct({
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
-							let ti = pData.instanceTitleOf(res,opts);
+							let ti = pData.instanceTitleOf(res, $.extend({}, opts, {neverEmpty:true}));
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
 								eligibleRs += '<div id="cand-'+i+'" class="candidates" onclick="'+myFullName+'.itemClicked(\''+i+'\')">'+ti+'</div>'
@@ -298,15 +299,17 @@ moduleManager.construct({
 			btn.disabled = true
 		}; 
 	};
-	self.saveStatement = (dir: any): Promise<SpecifItem> =>{
+	self.saveStatement = (dir: any): Promise<void> =>{
 //		console.debug('saveStatement',selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
-		return app.cache.selectedProject.createItems( 'statement', {
-									id: LIB.genID('S-'),
-									class: self.selectedStatementClass,
-									subject: (dir.secondAs == 'object' ? selRes : self.selectedCandidate.resource),
-									object: (dir.secondAs == 'object' ? self.selectedCandidate.resource : selRes),
-									changedAt: new Date().toISOString()
-								}
+		return app.cache.selectedProject.createItems(
+					'statement',
+					[{
+						id: LIB.genID('S-'),
+						class: self.selectedStatementClass,
+						subject: (dir.secondAs == 'object' ? selRes : self.selectedCandidate.resource),
+						object: (dir.secondAs == 'object' ? self.selectedCandidate.resource : selRes),
+						changedAt: new Date().toISOString()
+					}]
 		)
 	};
 	return self

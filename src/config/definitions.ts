@@ -455,10 +455,10 @@ const CONFIG:any = {};
 	// for example in ioXls.ts.
 	// The key is the property class' title, the value the native property's name plus the data type and validity test applying to both:
 	CONFIG.nativeProperties = new Map([
-		["dcterms:created",	 { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["dcterms:modified", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
-		["SpecIF:changedAt", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && RE.IsoDate.test(val) } }],
+		["dcterms:created",	 { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
+		["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
+		["dcterms:modified", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
+		["SpecIF:changedAt", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
 		["dcterms:creator",  { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
 		["SpecIF:createdBy", { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
 		["SpecIF:changedBy", { name: "changedBy", type: "xs:string", check: function (): boolean { return true } }]
