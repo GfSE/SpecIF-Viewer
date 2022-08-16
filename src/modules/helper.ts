@@ -975,6 +975,7 @@ String.prototype.makeHTML = function(opts?:any):string {
 	return aRet.join('');
 }
 String.prototype.xmlChar2utf8 = function():string {
+		// Convert html numeric character encoding to utf8
 		this = this.replace(/&#x([0-9a-fA-F]+);/g, function(match, numStr) {
 			return String.fromCharCode(parseInt(numStr, 16))
 		});
@@ -982,6 +983,35 @@ String.prototype.xmlChar2utf8 = function():string {
 			return String.fromCharCode(parseInt(numStr, 10))
 		})
 } */
+/**
+ * Convert all forbidden chars to html unicode
+ * @param str String to be checked
+ * @returns {string} cleaned string
+ */
+/*	function cleanStringFromForbiddenChars(str) {
+		str = xmlChar2utf8(str);
+		let i = str.length,
+			aRet = [];
+		while (i--) {
+			let iC = str[i].charCodeAt(0);
+			if (iC < 65 || iC > 127 || (iC > 90 && iC < 97)) aRet[i] = '&#' + iC + ';';
+			else aRet[i] = str[i]
+		};
+		return aRet.join('')
+	} */
+
+LIB.xmlChar2utf8 = (str: string):string => {
+	// Convert html numeric character encoding to utf8
+	// @ts-ignore - match is not used, but must me declared anyhow.
+	str = str.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
+		return String.fromCharCode(parseInt(numStr, 16))
+	});
+	// @ts-ignore - match is not used, but must me declared anyhow.
+	return str.replace(/&#([0-9]+);/g, function (match, numStr) {
+		return String.fromCharCode(parseInt(numStr, 10))
+	})
+}
+
 
 LIB.toHTML = (str: string): string => {
 	// Escape HTML characters and convert js/json control characters (new line etc.) to HTML-tags:

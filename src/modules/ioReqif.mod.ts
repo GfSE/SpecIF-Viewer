@@ -93,7 +93,7 @@ moduleManager.construct({
 						};
 						// XML data is valid:
 						// @ts-ignore - transformReqif2Specif() is loaded at runtime
-						let result = transformReqif2Specif(dta, { translateTitle2Specif: vocabulary.property.specif });
+						let result = transformReqif2Specif(dta, { translateTitle: vocabulary.property.specif });
 						if (result.status != 0) {
 							//console.debug(dta)
 							zDO.reject(result);
@@ -171,7 +171,7 @@ moduleManager.construct({
                 if( validateXML(str) ) {
 					// transformReqif2Specif gibt string zurück
 					// @ts-ignore - transformReqif2Specif() is loaded at runtime
-				var result = transformReqif2Specif(str, { translateTitle2Specif: vocabulary.property.specif });
+				var result = transformReqif2Specif(str, { translateTitle: vocabulary.property.specif });
 				if (result.status == 0)
 					zDO.resolve(result.response)
 				else
@@ -226,136 +226,24 @@ moduleManager.construct({
 		// ------------------------------------------------------------------------------
 		// PREPARATION
 		//
-		// SpecIF has a number of *optional* items which are *required* for ReqIF;
+		// SpecIF has *optional* items which are *required* for ReqIF;
 		// these are complemented in the following.
-		//    - Add title properties of resources and statements
-		//    - Add description properties of resources and statements
+		//    - XHTML-formatted text has a special data type
 		//    - Add hierarchy root
-
-	/*	Missing title and description properties are now added during import:
-	 	
-	 	// Are there resources with description, but without description property?
-		// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
-		// In this case, add a description property to hold the description as required by ReqIF:
-			function addDescProperty( ctg:string, eC ):void {
-				// eC is a resourceClass or statementClass;
-				// get all instances of eC:
-			//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
-
-				// list of elements, i.e. resources or statements
-				let eL = ctg=='statementClass'? 
-							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
-						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
-//				console.debug( 'addDescProperty', eC, eL );
-				
-					function descPropertyNeeded(r) {
-						if( r.description && r.description.length>0 ) {
-							if( Array.isArray( r.properties ) )
-								for (var i = r.properties.length - 1; i > -1; i--) {
-										if( CONFIG.descProperties.indexOf( LIB.propTitleOf(r.properties[i],pr.propertyClasses) )>-1 )
-											// SpecIF assumes that any description property *replaces* the resource's description,
-											// so we just look for the case of a resource description and *no* description property.
-											// There is no consideration of the content.
-											// It is expected that descriptions with multiple languages have been reduced, before.
-											return false; // description property is available
-								};
-							return true; // no array or no description property
-						};
-						return false; // no description, thus no property needed
-					}
-				// for every instance of the given class:
-				eL.forEach( (el)=>{
-					if( descPropertyNeeded(el) ) {
-						// There is an attempt to add the types in every loop ... which is hardly efficient.
-						// However, that way they are only added, if needed.
-
-						console.info("Adding a description property for ReqIF to element with id '"+el.id+"'");
-						
-						// a. add property class, if not yet defined:
-						standardTypes.addTo("propertyClass","PC-Description",pr);
-						
-						// b. add dataType, if not yet defined:
-						standardTypes.addTo("dataType","DT-Text",pr);
-						
-						// c. Add propertyClass to element class:
-						addPCReference( eC, "PC-Description" );
-						
-						// d. Add description property to element;
-						addP( el, {
-								class: "PC-Description",
-								value: el.description
-						});
-					};
-				});
-			};
-		pr.resourceClasses.forEach( (rC)=>{ addDescProperty('resourceClass',rC) });
-		pr.statementClasses.forEach( (sC)=>{ addDescProperty('statementClass',sC) });
-//		console.debug('pr',simpleClone(pr));
-		
-		// If missing, add a title property:
-			function addTitleProperty( ctg:string, eC ):void {
-				// get all instances of this resourceClass:
-
-				// list of elements, i.e. resources or statements
-				let eL = ctg=='statementClass'? 
-							pr.statements.filter( function(sta) { return sta['class']==eC.id } )
-						: 	pr.resources.filter( function(res) { return res['class']==eC.id } );
-//				console.debug( 'addTitleProperty', eC, eL );
-				
-					function titlePropertyNeeded(r):boolean {
-							if( Array.isArray( r.properties ) )
-								for ( var i = r.properties.length-1; i>-1; i-- ) {
-										let ti = LIB.propTitleOf(r.properties[i],pr.propertyClasses);
-										if( CONFIG.titleProperties.indexOf( ti )>-1 )
-											// SpecIF assumes that any title property *replaces* the element's title,
-											// so we just look for the case of *no* title property.
-											// There is no consideration of the content.
-											// It is expected that titles with multiple languages have been reduced, before.
-											return false; // title property is available
-								};
-							return true;
-					}
-				// for every instance of the given class:
-				eL.forEach( (el)=>{
-					if( titlePropertyNeeded(el) ) {
-						// There is an attempt to add the types in every loop ... which is hardly efficient.
-						// However, that way they are only added, if needed.
-
-						console.info("Adding a title property for ReqIF to element with id '"+el.id+"'");
-						
-						// a. add property class, if not yet defined:
-						standardTypes.addTo("propertyClass","PC-Name",pr);
-						
-						// b. add dataType, if not yet defined:
-						standardTypes.addTo("dataType","DT-ShortString",pr);
-						
-						// c. Add propertyClass to element class:
-						addPCReference( eC, "PC-Name" );
-						
-						// d. Add title property to element;
-						addP( el, {
-								class: "PC-Name",
-								// no title is required in case of statements; it's class' title applies by default:
-								value: el.title || eC.title
-						});
-					};
-				});
-			};
-		pr.resourceClasses.forEach( (rC)=>{ addTitleProperty('resourceClass',rC) });
-		pr.statementClasses.forEach( (sC)=>{ addTitleProperty('statementClass',sC) });  */
 
 		// ReqIF does not allow media objects other than PNG.
 		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
 		// ToDo!
 
-		// Text may be XHTML-formatted, even in a property of dataType 'xs:string'.
+		// Text may be XHTML-formatted, even if it is not properly assigned in attribute 'format'.
 		// So change all propertyClasses of dataType 'xs:string' to 'xhtml', 
 		// if XHTML-formatted text exists in at least one instance.
+
 			function specializeClassToFormattedText(ctg: string, eC: SpecifResourceClass | SpecifStatementClass): void {
 				// get all instances of eC:
 				//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
 
-					function withHtml(L: SpecifResource[]|SpecifStatement[], id: string): boolean {
+					function withHtml(L: SpecifResource[] | SpecifStatement[], k: SpecifKey): boolean {
 						// for all elements (resources or statements) in list L, 
 						// check whether a property of the given propertyClass id
 						// has HTML content; a single occurrence is sufficient: 
@@ -364,7 +252,7 @@ moduleManager.construct({
 							if( l.properties )
 								for( prp of l.properties ) {
 									// check only the property with the specified class:
-									if( prp['class'].id==id && LIB.isHTML(prp.values[0]) ) return true;
+									if (LIB.equalKey(prp['class'], k) && LIB.isHTML(prp.values[0]) ) return true;
 								};
 						};
 						return false;
@@ -373,21 +261,22 @@ moduleManager.construct({
 				if( eC.propertyClasses ) {
 					// list elements, i.e. resources or statements, of a certain class:
 					let eL = ctg=='statementClass'? 
-								pr.statements.filter( (sta) => { return sta['class'].id==eC.id } )
-							: 	pr.resources.filter( (res) => { return res['class'].id==eC.id } ),
+							pr.statements.filter((sta) => { return LIB.references(sta['class'], eC ) } )
+							: pr.resources.filter((res) => { return LIB.references(res['class'], eC ) } ),
 						pC;
 //					console.debug( 'specializeClassToFormattedText', eC, eL );
 
-					eC.propertyClasses.forEach( (pCid)=>{
-						pC = LIB.itemById( pr.propertyClasses, pCid );
+					eC.propertyClasses.forEach( (pCk)=>{
+						pC = LIB.itemByKey( pr.propertyClasses, pCk );
 						// Has any given property value of the listed resources or statements XHTML-content:
-						if ((LIB.itemById(pr.dataTypes, pC.dataType).type == SpecifDataTypeEnum.String) && withHtml(eL, pCid)) {
+						if ((LIB.itemByKey(pr.dataTypes, pC.dataType).type == SpecifDataTypeEnum.String) && withHtml(eL, pCk)) {
 //							console.debug( 'specializeClassToFormattedText', eC, pC );
-							console.info("Specializing propertyClass for formatted text to element with title '"+pCid+"'");
-							// specialize propertyClass to "DT-FormattedText"; this is perhaps too radical, 
+							console.info("Specializing propertyClass for formatted text to element with title '"+pCk.id+"'");
+							// specialize propertyClass to "DT-Text"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
-							pC.dataType = "DT-FormattedText";
-							standardTypes.addTo("dataType","DT-FormattedText",pr);
+							pC.dataType = LIB.makeKey("DT-Text");
+							pC.format = "xhtml";
+							standardTypes.addTo("dataType",pC.dataType,pr);
 						};
 					});
 				};
@@ -421,66 +310,78 @@ moduleManager.construct({
 		
 		// 1. Transform dataTypes:
 		if (pr.dataTypes)
-			pr.dataTypes.forEach( (dT: SpecifDataType) =>{
+			pr.dataTypes.forEach((dT: SpecifDataType) => {
+				if (dT.enumeration) {
+					// Limitation: Whereas SpecIF may have enumerated values of any dataType except xs:boolean,
+					// ReqIF only has one specific DATATYPE ENUMERATION with implicit data-type string.
+					// So, all SpecIF enumerations are mapped to the single ReqIF ENUMERATION.
+					xml += '<DATATYPE-DEFINITION-ENUMERATION ' + commonAttsOf(dT) + '>' +
+						'<SPECIFIED-VALUES>';
+					dT.enumeration.forEach((val, i) => {
+						xml += '<ENUM-VALUE IDENTIFIER="' + val.id + '" LONG-NAME="' + val.value + '" LAST-CHANGE="' + dateTime(dT) + '" >' +
+							'<PROPERTIES><EMBEDDED-VALUE KEY="' + i + '" OTHER-CONTENT="" /></PROPERTIES>' +
+							'</ENUM-VALUE>';
+					});
+					xml += '</SPECIFIED-VALUES>' +
+						'</DATATYPE-DEFINITION-ENUMERATION>';
+					return;
+				};
+				// else:
 				switch (dT.type) {
 					case SpecifDataTypeEnum.Boolean:
-						xml += '<DATATYPE-DEFINITION-BOOLEAN '+commonAttsOf( dT )+'/>';
+						xml += '<DATATYPE-DEFINITION-BOOLEAN ' + commonAttsOf(dT) + '/>';
 						break;
 					case SpecifDataTypeEnum.Integer:
-						xml += '<DATATYPE-DEFINITION-INTEGER '+commonAttsOf( dT )
-									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxInteger)
-									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minInteger)
-								+'" />';
+						xml += '<DATATYPE-DEFINITION-INTEGER ' + commonAttsOf(dT)
+							+ ' MAX="' + (typeof (dT.maxInclusive) == 'number' ? dT.maxInclusive : CONFIG.maxInteger)
+							+ '" MIN="' + (typeof (dT.minInclusive) == 'number' ? dT.minInclusive : CONFIG.minInteger)
+							+ '" />';
 						break;
 					case SpecifDataTypeEnum.Double:
-						xml += '<DATATYPE-DEFINITION-REAL '+commonAttsOf( dT )
-									+' MAX="'+(typeof(dT.maxInclusive)=='number'? dT.maxInclusive : CONFIG.maxReal)
-									+'" MIN="'+(typeof(dT.minInclusive)=='number'? dT.minInclusive : CONFIG.minReal)
-									+'" ACCURACY="'+(typeof(dT.fractionDigits)=='number'? dT.fractionDigits : CONFIG.maxAccuracy)
-								+'" />';
+						xml += '<DATATYPE-DEFINITION-REAL ' + commonAttsOf(dT)
+							+ ' MAX="' + (typeof (dT.maxInclusive) == 'number' ? dT.maxInclusive : CONFIG.maxReal)
+							+ '" MIN="' + (typeof (dT.minInclusive) == 'number' ? dT.minInclusive : CONFIG.minReal)
+							+ '" ACCURACY="' + (typeof (dT.fractionDigits) == 'number' ? dT.fractionDigits : CONFIG.maxAccuracy)
+							+ '" />';
 						break;
+					case SpecifDataTypeEnum.DateTime:
+						xml += '<DATATYPE-DEFINITION-DATE ' + commonAttsOf(dT) + '/>';
+						break;
+					case SpecifDataTypeEnum.AnyUri:
+					case SpecifDataTypeEnum.Duration:
+						// Remember that pr is supposed to arrive with a single selected language, here:
+						let info = JSON.stringify({ SpecIF_DataType: dT.type });
+						if (LIB.isMultiLanguageText(dT.description) && dT.description.length>0)
+							dT.description[0].text += '\n' + info
+						else
+							dT.description = LIB.makeMultiLanguageText(info);
+						// no break
 					case SpecifDataTypeEnum.String:
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
-					case 'xhtml':
-						xml += '<DATATYPE-DEFINITION-XHTML '+commonAttsOf( dT )+'/>';
-						break;
-					case 'xs:enumeration':
-						xml += '<DATATYPE-DEFINITION-ENUMERATION '+commonAttsOf( dT )+'>' +
-								'<SPECIFIED-VALUES>';
-						dT.values.forEach( (val,i) =>{
-							xml += '<ENUM-VALUE IDENTIFIER="'+val.id+'" LONG-NAME="'+val.value+'" LAST-CHANGE="'+dateTime(dT)+'" >' +
-									 '<PROPERTIES><EMBEDDED-VALUE KEY="'+i+'" OTHER-CONTENT="" /></PROPERTIES>' +
-								   '</ENUM-VALUE>';
-						});
-						xml += 	'</SPECIFIED-VALUES>' +
-								'</DATATYPE-DEFINITION-ENUMERATION>';
-						break;
-					case SpecifDataTypeEnum.DateTime:
-						xml += '<DATATYPE-DEFINITION-DATE '+commonAttsOf( dT )+'/>';
-						break;
-					default: 
-						console.error('Error: unknown dataType: ',dT.type)
-				}
+					default:
+						console.error('Error: unknown dataType: '+dT.type);
+				};
 			});
 		xml +=  '</DATATYPES>'
 			+	'<SPEC-TYPES>';
 			
-		// 2. Separate SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs, collect OBJECTS:
+		// 2. Separate resourceClasses to make SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs, 
+		//    and collect resources to make OBJECTS:
 		let separated = {
 			objTypes: [],
 			spcTypes: [],
 			objects: []
 		};
 
-			function prepObj( n ):void {
-				let r = LIB.itemById(pr.resources,n.resource),
-					rC = LIB.itemById(pr.resourceClasses,r['class']);
+			function prepObj(n: SpecifNode): void {
+				let r = LIB.itemByKey(pr.resources,n.resource),
+					rC = LIB.itemByKey(pr.resourceClasses,r['class']);
 				// a) Collect resourceClass without duplication:
 				if( LIB.indexById(separated.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
-						let anc = LIB.itemById(pr.resourceClasses,rC['extends']);
+						let anc = LIB.itemByKex(pr.resourceClasses,rC['extends']);
 						if( Array.isArray(anc.propertyClasses) ) {
 							if ( Array.isArray(rC.propertyClasses) ) 
 								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);
@@ -504,22 +405,22 @@ moduleManager.construct({
 					iterate( n, prepObj );
 				});
 		});
-//		console.debug( 'after collecting referenced resources: ', separated );
+		console.debug( 'after collecting referenced resources: ', xml, separated );
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( (h) =>{
 			// The resources referenced at the lowest level of hierarchies 
 			// are SPECIFICATIONS in terms of ReqIF.
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:
-			let hR = LIB.itemById( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
-				hC = LIB.itemById( pr.resourceClasses, hR['class'] );	// it's class
+			let hR = LIB.itemByKey( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
+				hC = LIB.itemByKey( pr.resourceClasses, hR['class'] );	// it's class
 			
 			if( LIB.indexBy( separated.objects, 'class', hC.id )>-1 ) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
 				hC.id = 'HC-'+hC.id;
 				// ToDo: If somebody uses interitance with 'extends' in case of a hierarchy root classes, 
-				// we need to update all affected 'extend' properties. There is a minor chance, though.
+				// we need to update all affected 'extend' properties. There is rather improbable, though.
 			};
 			// Collect hierarchy root's class without duplication:
 			if( LIB.indexById(separated.spcTypes,hC.id)<0 )
@@ -623,15 +524,15 @@ moduleManager.construct({
 			function dateTime(e: SpecifItem): string {
 				return e.changedAt || pr.createdAt || date
 			}
-			function commonAttsOf( e ):string {
-				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? e.title.stripHTML().escapeXML() : '') + '" DESC="' + (e.description ? e.description.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+			function commonAttsOf( e:SpecifItem ):string {
+				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? e.title.stripHTML().escapeXML() : '') + '" DESC="' + (e.description && e.description[0] && e.description[0].text ? e.description[0].text.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
-			function attrTypesOf( eC ):string { 
-				// eC: resourceClass or statementClass
-				if( !eC || !eC.propertyClasses || eC.propertyClasses.length<1 ) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
+			function attrTypesOf(eC: SpecifResourceClass | SpecifStatementClass): string {
+				if (!eC.propertyClasses || eC.propertyClasses.length < 1) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
+				// else
 				var xml='<SPEC-ATTRIBUTES>';
 				eC.propertyClasses.forEach( (pC) =>{
-					pC = LIB.itemById( pr.propertyClasses, pC );  // replace id by the item itself
+					pC = LIB.itemByKey( pr.propertyClasses, pC );  // replace id by the item itself
 					// SpecIF resourceClasses and statementClasses may share propertyClasses,
 					// but in ReqIF every type has its own ATTRIBUTE-DEFINITIONs.
 					// Issue: The attribute-definition ids are different from those on import, as the propertyClasses are consolidated/deduplicated;
@@ -642,39 +543,39 @@ moduleManager.construct({
 					switch (LIB.itemById(pr.dataTypes, pC.dataType).type) {
 						case SpecifDataTypeEnum.Boolean:
 							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataType+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataTyp.ide+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-BOOLEAN>'
 							break;
 						case SpecifDataTypeEnum.Integer:
 							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-INTEGER>'
 							break;
 						case SpecifDataTypeEnum.Double:
 							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-REAL>'
 							break;
 						case SpecifDataTypeEnum.String:
 							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-STRING>'
 							break;
 						case 'xhtml':
 							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+pC.dataType+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-XHTML>'
 							break;
 						case 'xs:enumeration':
 							// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
 							// The property 'dataType.multiple' is invisible for the server. 
 							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" MULTI-VALUED="'+multipleChoice(pC,pr)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-ENUMERATION>'
 							break;
 						case SpecifDataTypeEnum.DateTime:
 							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
+								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
 								+	'</ATTRIBUTE-DEFINITION-DATE>'
 							break;
 					};

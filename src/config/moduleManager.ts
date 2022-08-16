@@ -52,7 +52,7 @@ interface IApp {
 	statements: IModule;
 	filter: IModule;
 	reports: IModule; 
-	statementsGraph?: IModule;
+	vicinityGraph?: IModule;
 	importAny: IModule;
 	ioSpecif: IModule;
 	ioReqif?: IModule;
@@ -622,7 +622,7 @@ var app:IApp,
 				case 'bpmn2specif':			getScript( loadPath+'vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
 				case 'archimate2specif':	getScript( loadPath+'vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
 				case 'reqif2specif':		getScript( loadPath+'vendor/assets/javascripts/reqif2specif.js' ); return true;
-				case 'statementsGraph': 	loadM( 'graphViz' );
+				case 'vicinityGraph': 		loadM( 'graphViz' );
 											getScript( loadPath+'modules/graph.js' ); return true;
 		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
 										//	loadM( 'dataTableButtons' );

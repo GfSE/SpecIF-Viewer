@@ -87,7 +87,7 @@ class App {
 					label: i18n.TabRelations,
 					selectedBy: '#selectStatements',// DOM element in parent's selector to choose this view
 					children: [{
-						name: 'statementsGraph'
+						name: 'vicinityGraph'
 						// no view
 					}]
 				},{

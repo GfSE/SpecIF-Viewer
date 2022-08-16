@@ -69,7 +69,7 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.' + myName,
-	//	pData: CCache,			// the cached data
+	//	cData: CCache,			// the cached data
 		opts: any,				// the processing options
 		toEdit: CResourceToShow;	// the resource with classified properties to edit
 
@@ -138,7 +138,7 @@ moduleManager.construct({
 	self.show = (options: any) => {
 
 		self.clear();
-	//	pData = app.cache.selectedProject.data;
+	//	cData = app.cache.selectedProject.data;
 		opts = simpleClone(options);
 		if (self.parent.tree.selectedNode)
 			opts.selNodeId = self.parent.tree.selectedNode.id;
@@ -231,7 +231,7 @@ moduleManager.construct({
 
 		function editResource(res: SpecifResource, opts:any):void {
 			// Edit/update the resources properties:
-//			console.debug( 'editResource', res, simpleClone(pData.resourceClasses) );
+//			console.debug( 'editResource', res, simpleClone(cData.resourceClasses) );
 			// complete and sort the properties according to their role (title, descriptions, ..):
 			toEdit = new CResourceToShow( res );
 			let ti = i18n.lookup(CONFIG.propClassTitle);
@@ -405,7 +405,7 @@ moduleManager.construct({
 							if( resClasses.length>1 ) {
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection
-//								console.debug('#2',simpleClone(pData.resourceClasses));
+//								console.debug('#2',simpleClone(cData.resourceClasses));
 								// @ts-ignore - BootstrapDialog() is loaded at runtime
 								new BootstrapDialog({
 									title: i18n.MsgSelectResClass,

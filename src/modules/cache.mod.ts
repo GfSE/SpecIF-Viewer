@@ -362,7 +362,9 @@ class CProject {
 	createdAt?: SpecifDateTime;
 	// @ts-ignore - initialized by this.setMeta()
 	createdBy?: SpecifCreatedBy;
-	// remember the ids of all types and classes, so they can be exported, even if they have no instances (yet):
+	// remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
+	// store all keys without revision, as it can change:
+	// ToDo: Reconsider! Can projects share classes, but use different revision levels?
 	dataTypes: SpecifKey[];
 	propertyClasses: SpecifKey[];
 	resourceClasses: SpecifKey[];
@@ -888,15 +890,19 @@ class CProject {
 			(resolve) => {
 //				console.debug('createItems', ctg, itmL );
 				switch (ctg) {
+					case 'dataType':
+					case 'propertyClass':
+					case 'resourceClass':
+					case 'statementClass':
 					case 'hierarchy':
 						// Update the project's remembering list;
 						// but don't keep the revision, as it can change:
-						LIB.cacheL(this.hierarchies, LIB.forAll(itmL, (el: SpecifNode) => { return { id: el.id } }));
+						let listName = standardTypes.listName.get(ctg);
+						LIB.cacheL(this[listName], LIB.forAll(itmL, (el: SpecifNode) => { return { id: el.id } }));
 					// no break
 					//	case 'node':
 					//	case 'resource':
 					//	case 'statement':
-					// no break
 					default:
 						// if current user can create an item, he has the other permissions, as well:
 						//		addPermissions( item );
@@ -1026,7 +1032,7 @@ class CProject {
 					//	case 'hierarchy':
 					// no break
 					default:
-						//						console.debug('updateItems - cache', ctg );
+//						console.debug('updateItems - cache', ctg );
 						itmL.forEach(updateCh)
 						this.data.put(ctg, itmL)
 				};
@@ -1087,33 +1093,29 @@ class CProject {
 			(resolve, reject) => {
 				// Do not delete types which are in use;
 				switch (ctg) {
-					/*	case 'class':
-						case 'dataType':
-						case 'resourceClass':
-						case 'statementClass':	
-							if( Array.isArray(itmL) ) return null;	// not yet supported
-							if( isInUse(ctg,item) ) {
-								reject({status:972, statusText:i18n.Err400TypeIsInUse});
-								return;
-							};
-							// no break;  */
+					case 'dataType':
+					case 'propertyClass':
+					case 'resourceClass':
+					case 'statementClass':	
+				/*		if( Array.isArray(itmL) ) return null;	// not yet supported
+						if( isInUse(ctg,item) ) {
+							reject({status:972, statusText:i18n.Err400TypeIsInUse});
+							return;
+						};
+						// no break;  */
 					case "hierarchy":
-					case "node":
 						// delete also the respective keys remembered by the project;
 						// a node can also be a hierarchy - in this case remove it as well;
 						// disregard the revision:
-						for( var i of itmL )
-							LIB.uncacheE(this.hierarchies, { id: i.id });
-					// no break;
-					case "resource":
-					case "statement":
-						//						console.debug('deleteItems',ctg,itmL);
+						let listName = standardTypes.listName.get(ctg);
+						for (var i of itmL)
+							LIB.uncacheE(this[listName], { id: i.id });
+						// no break; 
+					default:
+//						console.debug('deleteItems',ctg,itmL);
 						if (this.data.delete(ctg, itmL))
 							break;
 						reject({ status: 999, statusText: 'One or more items of ' + ctg + ' not found and thus not deleted.' });
-						return;
-					default:
-						reject({ status: 999, statusText: 'Category ' + ctg + ' is unknown; one or more items could not be deleted.' });
 						return;
 				};
 				resolve();
@@ -1247,7 +1249,7 @@ class CProject {
 		if (!opts || !opts.deduplicate) return;
 
 		let dta = this.data,
-			r: number, n: number, rR: SpecifResource, nR: SpecifResource;
+			lst: SpecifItem[], r: number, n: number;
 //		console.debug('deduplicate',simpleClone(dta));
 
 		// 1. Deduplicate equal types having different ids;
@@ -1255,52 +1257,44 @@ class CProject {
 		// whereas the second in a pair is removed.
 		this.types.forEach((ty) => {
 			// @ts-ignore - indexing by string works fine
-			let lst = dta[ty.listName];
-			// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-			if (Array.isArray(lst))
-				// skip last loop, as no duplicates can be found:
-				// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-				for (n = lst.length - 1; n > 0; n--) {
-					for (r = 0; r < n; r++) {
-//						console.debug( '##', lst[r],lst[n],ty.isEqual(lst[r],lst[n]) );
-						// Do it for all types:
-						// @ts-ignore - this addressing is perfectly fine and the list names are defined.
-						if (ty.isEqual(lst[r], lst[n])) {
-							// Are equal, so substitute it's ids by the original item:
-							// @ts-ignore - this addressing is perfectly fine and the list names are defined.
-							ty.substitute(dta, lst[r], lst[n]);
-							// @ts-ignore - this addressing with a string is perfectly supported
-							console.info(ty.category + " with id=" + lst[n].id + " and title=" + lst[n].title + " has been removed because it is a duplicate of id=" + lst[r].id);
-							// ... and remove the duplicate item:
-							// @ts-ignore - this addressing is perfectly fine and the list names are defined.
-							lst.splice(n, 1);
-							// skip the remaining iterations of the inner loop:
-							break;
-						};
+			lst = dta.get(ty.category,this[ty.listName]);
+			// skip last loop, as no duplicates can be found:
+			for (n = lst.length - 1; n > 0; n--) {
+				for (r = 0; r < n; r++) {
+//					console.debug( '##', lst[r],lst[n],ty.isEqual(lst[r],lst[n]) );
+					// Do it for all types:
+					if (ty.isEqual(lst[r], lst[n])) {
+						// Are equal, so substitute it's ids by the original item:
+						ty.substitute(dta, lst[r], lst[n]);
+						console.info(ty.category + " with id=" + lst[n].id + " has been removed because it is a duplicate of id=" + lst[r].id);
+						// ... and remove the duplicate item:
+						this.deleteItems(ty.category,[LIB.keyOf(lst[n])]);
+						// skip the remaining iterations of the inner loop:
+						break;
 					};
 				};
+			};
 		});
 //		console.debug( 'deduplicate 1', simpleClone(dta) );
 
 		// 2. Remove duplicate resources:
+		lst = dta.get('resource','all');
 		// skip last loop, as no duplicates can be found:
-		for (n = dta.resources.length - 1; n > 0; n--) {
+		for (n = lst.length - 1; n > 0; n--) {
 			for (r = 0; r < n; r++) {
 				// Do it for all model-elements and diagrams,
 				// but exclude process gateways and generated events for optional branches:
-				nR = dta.resources[n];
-				rR = dta.resources[r];
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(rR, dta.resourceClasses)) > -1
-					&& this.equalR(rR, nR)
-					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, [CONFIG.propClassType], dta.propertyClasses)) < 0
-					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(rR, [CONFIG.propClassType], dta.propertyClasses)) < 0
+				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(lst[r], dta.resourceClasses)) > -1
+					&& this.equalR(lst[r] as SpecifResource, lst[n] as SpecifResource)
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(lst[n], [CONFIG.propClassType], dta.propertyClasses)) < 0
+					&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(lst[r], [CONFIG.propClassType], dta.propertyClasses)) < 0
 				) {
 					// Are equal, so remove the duplicate resource:
 //					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, [CONFIG.propClassType], dta.propertyClasses ) );
-					this.substituteR(dta, rR, nR, { rescueProperties: true });
-					console.info("Resource with id=" + nR.id + " has been removed because it is a duplicate of id=" + rR.id);
-					dta.resources.splice(n, 1);
+					this.substituteR(dta, lst[r] as SpecifResource, lst[n] as SpecifResource, { rescueProperties: true });
+					console.info("Resource with id=" + lst[n].id + " and class=" + (lst[n] as SpecifResource)['class'] + " has been removed because it is a duplicate of id=" + lst[r].id);
+					this.deleteItems('resource', [LIB.keyOf(lst[n])]);
 					// skip the remaining iterations of the inner loop:
 					break;
 				};
@@ -1309,15 +1303,16 @@ class CProject {
 //		console.debug( 'deduplicate 2', simpleClone(dta) );
 
 		// 3. Remove duplicate statements:
+		lst = dta.get('statement', 'all');
 		// skip last loop, as no duplicates can be found:
-		for (n = dta.statements.length - 1; n > 0; n--) {
+		for (n = lst.length - 1; n > 0; n--) {
 			for (r = 0; r < n; r++) {
 				// Do it for all statements:
-				if (this.equalS(dta.statements[r], dta.statements[n])) {
+				if (this.equalS(lst[r] as SpecifStatement, lst[n] as SpecifStatement)) {
 					// Are equal, so remove the duplicate statement:
 					// @ts-ignore - the elements are defined
-					console.info("Statement with id=" + dta.statements[n].id + " and class=" + dta.statements[n]['class'] + " has been removed because it is a duplicate of id=" + dta.statements[r].id);
-					dta.statements.splice(n, 1);
+					console.info("Statement with id=" + lst[n].id + " and class=" + (lst[n] as SpecifStatement)['class'] + " has been removed because it is a duplicate of id=" + lst[r].id);
+					this.deleteItems('statement', [LIB.keyOf(lst[n])]);
 					// skip the remaining iterations of the inner loop:
 					break;
 				};
@@ -1400,7 +1395,7 @@ class CProject {
 
 						// 2. Delete any existing folders:
 						//    (Alternative: Keep folder and delete only the children.)
-						self.deleteItems('node', delL)
+						self.deleteItems('hierarchy', delL)
 							.then(
 								() => {
 									// Create a folder with all respective objects (e.g. diagrams):
@@ -1518,7 +1513,7 @@ class CProject {
 				);
 				// 1.2 Delete now:
 //				console.debug('createFolderWithGlossary',delL,diagramL);
-				self.deleteItems('node', delL)
+				self.deleteItems('hierarchy', delL)
 					.then(
 						() => {
 							// 2. Create a new combined glossary:
@@ -2057,13 +2052,14 @@ class CProject {
 						reject();
 						return; // should never arrive here
 				};
-//				console.debug( "storeAs", opts );
+//				console.debug( "storeAs", simpleClone(self), opts );
 
 				self.read(opts).then(
 					(expD) => {
 //						console.debug('storeAs', expD, opts);
 						let fName = self.exportParams.fileName;
 						expD.title = LIB.makeMultiLanguageText(self.exportParams.projectName);
+						if (opts.targetLanguage) expD.language = opts.targetLanguage;
 
 						// A) Processing for 'html':
 						if (opts.format == 'html') {

@@ -15,7 +15,7 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.'+myName,
-		pData: CCache,			// the cached data
+		cData: CCache,			// the cached data
 		selRes:SpecifResource,	// the currently selected resource
 		opts:any;				// the processing options
 
@@ -48,7 +48,7 @@ moduleManager.construct({
 	self.show = ( options:any ):void =>{
 
 		self.clear();
-		pData = app.cache.selectedProject.data;
+		cData = app.cache.selectedProject.data;
 		opts = simpleClone( options );
 		opts.lookupTitles = true;
 		opts.targetLanguage = browser.language;
@@ -100,7 +100,7 @@ moduleManager.construct({
 			
 			// 3. collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
-			LIB.iterateNodes( pData.hierarchies, 
+			LIB.iterateNodes( cData.hierarchies, 
 				(nd:SpecifNode)=>{
 					LIB.cacheE( self.allResources, nd.resource );
 					// self.allResources contains the resource ids
@@ -114,7 +114,7 @@ moduleManager.construct({
 					// Sort the resources:
 					LIB.sortBy( 
 						list, 
-						(el: SpecifResource)=>{ return pData.instanceTitleOf(el,opts) }
+						(el: SpecifResource)=>{ return cData.instanceTitleOf(el,opts) }
 					);
 					self.allResources = list;
 					// now self.allResources contains the full resources
@@ -233,7 +233,7 @@ moduleManager.construct({
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {
-							let ti = pData.instanceTitleOf(res, $.extend({}, opts, {neverEmpty:true}));
+							let ti = cData.instanceTitleOf(res, $.extend({}, opts, {neverEmpty:true}));
 							if( reTi.test(ti) ) 
 								// then add an entry in the selection list:
 								eligibleRs += '<div id="cand-'+i+'" class="candidates" onclick="'+myFullName+'.itemClicked(\''+i+'\')">'+ti+'</div>'
@@ -273,9 +273,9 @@ moduleManager.construct({
 			// show the statement to create in a popup:
 			// @ts-ignore - btn is defined
 			btn.setAttribute("data-toggle","popover");
-			btn.setAttribute("title", "'"+pData.instanceTitleOf(selRes,opts) +"' "
+			btn.setAttribute("title", "'"+cData.instanceTitleOf(selRes,opts) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ pData.instanceTitleOf(self.selectedCandidate.resource,opts) +"'" )
+										+ cData.instanceTitleOf(self.selectedCandidate.resource,opts) +"'" )
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute
@@ -290,9 +290,9 @@ moduleManager.construct({
 		//	btn.prop('disabled', false);
 			// show the statement to create in a popup:
 			btn.setAttribute("data-toggle","popover");
-			btn.setAttribute("title", "'"+pData.instanceTitleOf(self.selectedCandidate.resource,opts) +"' "
+			btn.setAttribute("title", "'"+cData.instanceTitleOf(self.selectedCandidate.resource,opts) +"' "
 										+ LIB.titleOf(self.selectedStatementClass,opts) +" '"
-										+ pData.instanceTitleOf(selRes,opts) +"'" ) 
+										+ cData.instanceTitleOf(selRes,opts) +"'" ) 
 		}
 		else {
 			// @ts-ignore - .disabled is an accessible attribute

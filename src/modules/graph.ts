@@ -6,7 +6,21 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
-interface GraphOptions {
+interface IGraphResource {
+	id: SpecifId;
+	title: string;
+}
+interface IGraphStatement {
+	id: SpecifId;
+	title: string;
+	subject: string;
+	object: string;
+}
+interface IGraph {
+	resources: IGraphResource[];
+	statements: IGraphStatement[];
+}
+interface IGraphOptions {
 	canvas: string;
 	index?: number;
 	titleProperties?: string[];
@@ -19,8 +33,8 @@ interface GraphOptions {
 	fontSize?: string;
 	onDoubleClick?: Function;
 }
-app.statementsGraph = function Graph() {
-	// For a selected SpecIF resorce, draw a graph of all statements and related resources.
+app.vicinityGraph = function() {
+	// For a selected SpecIF resource, draw a graph of all statements and related resources.
 	// - Group all statements of the same type to make the reading easier.
 	// - Position incoming relations (where the selected resource is object of the statement) at the upper left half,
 	//   and outgoing relations (where the selected resource is subject of the statement) at the lower right half
@@ -29,14 +43,14 @@ app.statementsGraph = function Graph() {
 	self.clear = () => {};
 	self.hide = () => {};
 
-	self.show = function (specifData: SpecIF, opts:GraphOptions ):void {
+	self.show = function (graphData: IGraph, opts:IGraphOptions ):void {
 		// Accepts data-sets according to v0.10.4 or v0.11.2 and later.
 
 		// Check for missing options:
 		if (!opts || !opts.canvas)
 			throw Error("Graphing of local semantic net of a resource misses specification of 'canvas'."); // minimum requirement
 
-		if( !opts.index || opts.index>specifData.resources.length-1 ) opts.index = 0;
+		if( !opts.index || opts.index>graphData.resources.length-1 ) opts.index = 0;
 		if( !opts.titleProperties ) opts.titleProperties = [];
 		if( !opts.lineLength ) opts.lineLength = 22;
 		if( !opts.focusColor ) opts.focusColor = '#6ca0dc';
@@ -47,16 +61,26 @@ app.statementsGraph = function Graph() {
 		if( !opts.fontSize ) opts.fontSize = '14px';
 
 		// All required parameters are available, so we can begin:
-		let relations = collectStatementsByType( specifData.resources[opts.index] );
+		let relations = collectStatementsByType( graphData.resources[opts.index] );
 //		console.debug('init relations',relations);
 		// if there are no relations, do not create a graph:
 		if ( !relations ) return;
 
+		type IPos = {
+			x: number;
+			y: number;
+			alpha?: number;
+		}
+		type ICnt = {
+			types: number;
+			sources: number;
+			targets: number;
+        }
 		let nodesData = [],
 			edgeData = [];
 
 		let relProp = countRelationTypesAndEdges(relations),
-			idx = pushMainNode( specifData.resources[opts.index] );  // returns always 1
+			idx = pushMainNode( graphData.resources[opts.index] );  // returns always 1
 		for(var entry in relations) {
 			// an iteration per relation type,
 			// first the inbound relations, i.e. where the node in focus is target:
@@ -99,7 +123,7 @@ app.statementsGraph = function Graph() {
 				}
 			},
 			manipulation: {
-				"enabled": false
+				enabled: false
 			},
 			physics: {
 				enabled: false
@@ -135,7 +159,7 @@ app.statementsGraph = function Graph() {
 				// else, open or close the cluster depending in its state:
 				if (network.clustering.isCluster(prms.nodes[0])) {
 					let releaseOptions = {
-						releaseFunction: function (clusterPosition, containedNodesPositions) {
+						releaseFunction: function (clusterPosition:IPos, containedNodesPositions) {
 							let newPositions = {};
 							let dist, offset;
 							let i = 0;
@@ -206,7 +230,7 @@ app.statementsGraph = function Graph() {
          * @param str The String that hast to be wrapped
          * @returns {string} the wrapped string
          */
-        function wrap( str, maxLen ) {
+        function wrap( str:string, maxLen:number ) {
             if ( str.length<maxLen+1 ) return str;
 			// separate title into single words:
 			let words = str.match(/[^-\s]+[-\s]{0,}/g),  // don't like '*/', even if it is correct and working
@@ -254,9 +278,9 @@ app.statementsGraph = function Graph() {
          * @param offset the offset angle [rad] to start the placement
          * @returns {{x: number, y: number, alpha: number}}
          */
-		function calculateNodePosition(i, sector, count, parentPos, dist, offset) {
+		function calculateNodePosition(i:number, sector:number, count:number, parentPos:IPos, dist:number, offset:number) {
 
-			let pos = {x: 0, y: 0, alpha: 0};
+			let pos:IPos = {x: 0, y: 0, alpha: 0};
 			if (!dist) dist = 200;
 			let r = dist;
 			// alternate distance of neighboring nodes:
@@ -282,7 +306,7 @@ app.statementsGraph = function Graph() {
          * @param isTarget A bool that represents if it is a object or a subject relationship
          * @returns {*}
          */
-        function pushChildNodesAndEdges(idx, children, relProp, inbound) {
+        function pushChildNodesAndEdges(idx:number, children, relProp:ICnt, inbound:boolean):number {
 			// the number of edges for the current half sector (inbound resp outbound):
 			let edges = inbound? relProp.sources:relProp.targets;
 			// the index for the relations in the current sector:
@@ -305,7 +329,8 @@ app.statementsGraph = function Graph() {
 					children[0].statement,
 					inbound);
 				idx++
-            } else {
+			}
+			else {
 				// there are several nodes related by the same type and same direction,
 				// so there will be a cluster node:
                 let pos = calculateNodePosition( sectorIdx, Math.PI, edges, {x:0, y:0}, 300, offs );
@@ -345,13 +370,13 @@ app.statementsGraph = function Graph() {
          * @param edgeLabel The edge label
          * @param pos the pos of the new node
          */
-		function pushNodeAndEdge(idx, parentId, child, pos, rel, inbound) {
+		function pushNodeAndEdge(idx:number, parentId:string, child, pos:IPos, rel, inbound:boolean):void {
 			// include always idx, as the same element can be shown several times and childID must be unique:
 			let childId = child.id? idx+'='+child.id:idx;
 			nodesData.push({
 				// cluster nodes don't have id nor label:
 				id: childId,
-				label: child.title? wrap( getResourceTitle(child), opts.lineLength ):"",
+				label: wrap( getResourceTitle(child), opts.lineLength ),
 				x: pos.x,
 				y: pos.y,
 				color: child.id? opts.nodeColor:opts.clusterColor,
@@ -375,7 +400,7 @@ app.statementsGraph = function Graph() {
          * @param resource = node in Focus
          * @returns {number} next index
          */
-        function pushMainNode( res ) {
+		function pushMainNode(res: IGraphResource) {
             nodesData.push(
                 {
                     id: 0,
@@ -390,32 +415,14 @@ app.statementsGraph = function Graph() {
             return 1
         }
 
-		/**
-         * If the resource type of a resource has an icon this function returns the icon
-         * @param type resource type
-         * @returns {string} The resource icon or an empty string
-         */
-        function getIconForResourceClass(type) {
-			if( specifData.resourceClasses )
-				for(var i = specifData.resourceClasses.length-1; i>-1; i--)
-					if (specifData.resourceClasses[i].id === type)
-						return specifData.resourceClasses[i].icon ? xmlChar2utf8(specifData.resourceClasses[i].icon) + " " : "";
-			return ""
-        }
-
         /**
          * Returns a string representing the title of a resource with the given id.
          * @param id the id of a resource
          * @returns {string} title of the resource with icon, if available
          */
-        function getResourceTitle(res) {
-			if( res.properties ) {
-				for(var n=0; n<res.properties.length; n++)
-					if (opts.titleProperties.includes(res.properties[n].title))
-						return getIconForResourceClass(res['class']) + xmlChar2utf8(res.properties[n].value)
-            };
-            if( res.title ) return getIconForResourceClass(res['class']) + xmlChar2utf8(res.title);
-            return // undefined
+		function getResourceTitle(res: IGraphResource):string {
+            if( res.title ) return LIB.xmlChar2utf8(res.title);
+			return '';
         }
 
         /**
@@ -423,24 +430,9 @@ app.statementsGraph = function Graph() {
          * @param stm the given statement
          * @returns the title of the statement.
          */
-        function getStatementTitle(stm):string {
-			// Try to get it from a title property:
-			if( stm.properties ) {
-				for(var n=0; n<stm.properties.length; n++)
-					if (opts.titleProperties.includes(stm.properties[n].title))
-						return xmlChar2utf8(stm.properties[n].value)
-            };
-			// else, try:
-            if( stm.title ) return xmlChar2utf8(stm.title);
-			// finally, get it from the class:
-			if( specifData.statementClasses ) {
-				let i = specifData.statementClasses.length;
-				while (i--) {
-					if (specifData.statementClasses[i].id === stm['class'])
-						return xmlChar2utf8(specifData.statementClasses[i].title)
-				}
-			};
-            return // undefined
+		function getStatementTitle(stm: IGraphStatement):string {
+            if( stm.title ) return LIB.xmlChar2utf8(stm.title);
+			return '';
         }
 
         /**
@@ -448,49 +440,16 @@ app.statementsGraph = function Graph() {
          * @param id the id of the item
          * @returns the item for the id or undefined if there is none
          */
-        function resourceById(id) {
-            for(var i = specifData.resources.length-1; i>-1; i--)
-                if (specifData.resources[i].id === id) return specifData.resources[i];
+        function resourceById(id:SpecifId) {
+            for(var i = graphData.resources.length-1; i>-1; i--)
+                if (graphData.resources[i].id === id) return graphData.resources[i];
 			return // undefined
         }
     /*    function statementById(id) {
-            for(var i = specifData.statements.length-1; i>-1; i--)
-                if (specifData.statements[i].id === id) return specifData.statements[i];
+            for(var i = graphData.statements.length-1; i>-1; i--)
+                if (graphData.statements[i].id === id) return graphData.statements[i];
 			return // undefined
         } */
-
-        /**
-         * converts all forbidden chars to html unicode
-         * @param str String to be checked
-         * @returns {string} cleaned string
-         */
-	/*	function cleanStringFromForbiddenChars(str) {
-            str = xmlChar2utf8(str);
-            let i = str.length,
-                aRet = [];
-            while (i--) {
-                let iC = str[i].charCodeAt(0);
-                if (iC < 65 || iC > 127 || (iC > 90 && iC < 97)) aRet[i] = '&#' + iC + ';';
-                else aRet[i] = str[i]
-            };
-            return aRet.join('')
-        } */
-
-        /**
-         * Converts html numeric character encoding to utf8
-         * @param str String to be checked
-         * @returns {string} cleaned string
-         */
-        function xmlChar2utf8 (str) {
-			// @ts-ignore - match is not used, but must me declared anyhow.
-			str = str.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
-                return String.fromCharCode(parseInt(numStr, 16))
-            });
-			// @ts-ignore - match is not used, but must me declared anyhow.
-            return str.replace(/&#([0-9]+);/g, function (match, numStr) {
-                return String.fromCharCode(parseInt(numStr, 10))
-            })
-        }
 
         /**
          * Returns an object containing two properties:
@@ -502,7 +461,7 @@ app.statementsGraph = function Graph() {
          * @returns {{types: number, edges: number}}
          */
         function countRelationTypesAndEdges(rels) {
-            let cnt = {types: 0, sources: 0, targets: 0};
+            let cnt:ICnt = {types: 0, sources: 0, targets: 0};
             for(let entry in rels) {
                 if (rels.hasOwnProperty(entry)) {
                         if (rels[entry].targets.length) cnt.targets++;
@@ -520,12 +479,11 @@ app.statementsGraph = function Graph() {
          * @param object The resource, where the relations are to
          * @returns json object of the statements with titles for statements, subjects and objects
          */
-        function collectStatementsByType(res) {
+        function collectStatementsByType(res:IGraphResource) {
 			let stC = {}, cid:string, oid:string, sid:string;
-			specifData.statements.forEach((st: SpecifStatement) =>{
-				// SpecIF v0.10.x: subject/object without revision, v0.11.y: with revision
-				oid = st.object.id || st.object;
-				sid = st.subject.id || st.subject;
+			graphData.statements.forEach((st: IGraphStatement) =>{
+				oid = st.object;
+				sid = st.subject;
 
 				if ( sid === res.id || oid === res.id) {
 					// all statements having the same title are clustered:

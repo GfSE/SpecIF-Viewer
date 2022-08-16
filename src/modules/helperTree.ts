@@ -12,15 +12,15 @@ interface JQuery {
 interface jqTreeNode {
 	id: string;
 	name: string;
-	order: string;
+	order?: string;
 	ref: any;
-	parent: jqTreeNode;
+	parent?: jqTreeNode;
 	children: jqTreeNode[];
-	is_open: boolean;
-	getLevel: Function;
-	getPreviousNode: Function;
-	getNextNode: Function;
-	getNextSibling: Function;
+	is_open?: boolean;
+	getLevel?: Function;
+	getPreviousNode?: Function;
+	getNextNode?: Function;
+	getNextSibling?: Function;
 }
 interface jqTreeState {
 	open_nodes: string[];

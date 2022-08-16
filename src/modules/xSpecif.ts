@@ -122,7 +122,7 @@ class CSpecIF implements SpecIF {
 	}
 	private check(spD: SpecIF, opts?: any): Promise<SpecIF> {
 		// Check the SpecIF data for schema compliance and consistency;
-		// 'this' isn't modified, so it shall be invoked before 'toInt' is called:
+		// 'this' isn't modified, so it shall be invoked before ingesting the data using 'toInt':
 		return new Promise(
 			(resolve, reject) => {
 

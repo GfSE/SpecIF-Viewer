@@ -5,7 +5,11 @@
     "\\src\\config",
     "\\src\\config\\locales",
     "\\src\\modules",
-    "\\src\\types"
+    "\\src\\types",
+    "\\src\\vendor",
+    "\\src\\vendor\\assets",
+    "\\src\\vendor\\assets\\javascripts",
+    "\\src\\vendor\\assets\\stylesheets"
   ],
   "PreviewInSolutionExplorer": false
 }

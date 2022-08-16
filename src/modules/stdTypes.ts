@@ -147,10 +147,8 @@ class StandardTypes {
 			return this.listName.get(ctg) as string;
 		throw Error("Invalid category '"+ctg+"'");
 	} */
-	addTo(ctg: string, key: SpecifKey, dta?: SpecIF): void {
+	addTo(ctg: string, key: SpecifKey, dta: SpecIF): void {
 		// Add an element (e.g. class) to it's list, if not yet defined:
-		// @ts-ignore - missing properties not needed, here:
-		if (!dta) dta = app.cache.selectedProject.data;
 
 		// 1. Get the name of the list, e.g. 'dataType' -> 'dataTypes':
 		// @ts-ignore - yes, the result can be undefined:

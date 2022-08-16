@@ -196,7 +196,6 @@ class CPropertyToShow implements SpecifProperty {
 					let m = $1.toLowerCase(), cR: SpecifResource, ti: string, rC:SpecifResourceClass, target: SpecifResource;
 					// is ti a title of any resource?
 					app.specs.tree.iterate((nd: jqTreeNode) => {
-					//	cR = LIB.itemByKey(app.cache.selectedProject.data.resources, nd.ref);
 						cR = LIB.itemByKey(this.cData.resources, nd.ref);
 						// avoid self-reflection:
 						//	if(ob.id==cR.id) return true;
@@ -204,7 +203,6 @@ class CPropertyToShow implements SpecifProperty {
 						if (!ti || m != ti.toLowerCase()) return true;  // continue searching
 
 						// disregard link targets which aren't diagrams nor model elements:
-					//	rC = LIB.itemByKey(app.cache.selectedProject.data.resourceClasses, cR['class']);
 						rC = LIB.itemByKey(this.cData.resourceClasses, cR['class']);
 						if (opts.titleLinkTargets.indexOf(rC.title) < 0) return true;  // continue searching
 
@@ -213,6 +211,7 @@ class CPropertyToShow implements SpecifProperty {
 						return false; // found, stop searching!
 					});
 					// replace it with a link in case of a match:
+					// @ts-ignore - target may be undefined, indeed:
 					if (target)
 						return lnk(target, $1);
 					// The dynamic link has NOT been matched/replaced, so mark it:
@@ -239,7 +238,7 @@ class CPropertyToShow implements SpecifProperty {
 		- an external hyperlink is to be included
 	*/
 		if (typeof (opts) != 'object') opts = {};
-	//	if (opts.projId == undefined) opts.projId = app.cache.selectedProject.id;
+	//	if (opts.projId == undefined) opts.projId = selPrj.id;
 	//	if( opts.rev==undefined ) opts.rev = 0;
 		if (opts.imgClass == undefined) opts.imgClass = 'forImage'	// regular size
 
@@ -517,12 +516,12 @@ class CResourceToShow {
 	class: SpecifKey;
 	private selPrj: CProject;
 	private cData: CCache;
-	private rC: SpecifResourceClass;
+	rC: SpecifResourceClass;
 	isHeading: boolean;
 	order: string;
 	revision?: string;
 	replaces?: string[];
-	title: CPropertyToShow;
+	title?: CPropertyToShow;
 	descriptions: CPropertyToShow[];
 	other: CPropertyToShow[];
 	changedAt: string;
@@ -782,7 +781,6 @@ class CResourcesToShow {
 	list: CResourceToShow[];
 
 	constructor() {
-//		this.selPrj = app.cache.selectedProject;
 		this.list = [];
 	}
 	push(r: SpecifResource): boolean {
@@ -856,9 +854,9 @@ class CResourcesToShow {
 class CFileWithContent implements IFileWithContent {
 	// @ts-ignore - presence of 'title' is checked by the schema on import
 	title: string;
-	description?: SpecifMultiLanguageText[];
-/*	private selPrj: CProject;
-	private cData: CCache; */
+	description?: SpecifMultiLanguageText;
+	private selPrj: CProject;
+	private cData: CCache; 
 	// @ts-ignore - presence of 'type' is checked by the schema on import
 	type: string;
 	blob?: Blob;
@@ -871,8 +869,8 @@ class CFileWithContent implements IFileWithContent {
 	changedAt: string;
 	changedBy?: string;
 	constructor(f: IFileWithContent) {
-	/*	this.selPrj = app.cache.selectedProject;
-		this.cData = this.selPrj.data; */
+		this.selPrj = app.cache.selectedProject;
+		this.cData = this.selPrj.data; 
 
 		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
@@ -978,6 +976,7 @@ class CFileWithContent implements IFileWithContent {
 		}, opts.timelag);
 	}
 	private showSvg(opts: any): void {
+		var self = this;
 		// Read and render SVG:
 		LIB.blob2text(this, displaySVGeverywhere, opts.timelag)
 		return;
@@ -1000,14 +999,17 @@ class CFileWithContent implements IFileWithContent {
 				if (L[i].title.indexOf(ti) > -1) return L[i];   // return list item
 			//	return undefined
 		}
-		//	function displaySVGeverywhere(r,fTi,fTy) {
+		interface svgDescriptor {
+			locs: HTMLCollectionOf<Element>,
+			img: string
+        }
 		function displaySVGeverywhere(r: string, fTi: string): void {
 			// Load pixel images embedded in SVG,
 			// see: https://stackoverflow.com/questions/6249664/does-svg-support-embedding-of-bitmap-images
 			// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
 			// see: https://css-tricks.com/probably-dont-base64-svg/
 			// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
-			let svg = {
+			let svg:svgDescriptor = {
 					// the locations where the svg shall be added:
 					locs: document.getElementsByClassName(tagId(fTi)),
 					// the SVG image with or without embedded images:
@@ -1028,7 +1030,7 @@ class CFileWithContent implements IFileWithContent {
 				if (mL[2].startsWith('data:')) continue;
 				// avoid transformation of redundant images:
 				if (LIB.indexById(dataURLs, mL[2]) > -1) continue;
-				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
+				ef = itemBySimilarTitle(self.cData.files, mL[2]);
 				if (ef && ef.blob) {
 					pend++;
 //					console.debug('SVG embedded file',mL[2],ef,pend);
@@ -1059,7 +1061,7 @@ class CFileWithContent implements IFileWithContent {
 			};
 			return;
 
-			function displayAll(svg): void {
+			function displayAll(svg: svgDescriptor): void {
 				Array.from(svg.locs,
 					(loc) => {
 						loc.innerHTML = svg.img;
@@ -1069,7 +1071,7 @@ class CFileWithContent implements IFileWithContent {
 			}
 		}
 		// see http://tutorials.jenkov.com/svg/scripting.html
-		function registerClickEls(svg): void {
+		function registerClickEls(svg:any): void {
 			if (!CONFIG.clickableModelElements || CONFIG.clickElementClasses.length < 1) return;
 //			console.debug('registerClickEls',svg);
 			addViewBoxIfMissing(svg);
@@ -1086,7 +1088,7 @@ class CFileWithContent implements IFileWithContent {
 				svg.clkEls = svg.clkEls.concat(Array.from(svg.getElementsByClassName(cl)));
 			});
 //			console.debug(svg.clkEls, typeof(svg.clkEls))
-			svg.clkEls.forEach((clkEl) => {
+			svg.clkEls.forEach((clkEl:Element) => {
 				// set cursor for clickable elements:
 				clkEl.setAttribute("style", "cursor:pointer;");
 
@@ -1117,8 +1119,8 @@ class CFileWithContent implements IFileWithContent {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
-							clsPrp = new CResourceToShow(itemBySimilarId(app.cache.selectedProject.data.resources, eId)),
-							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: app.cache.selectedProject.language }),
+							clsPrp = new CResourceToShow(itemBySimilarId(self.cData.resources, eId)),
+							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: self.selPrj.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
@@ -1151,7 +1153,7 @@ class CFileWithContent implements IFileWithContent {
 				// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 				if (CONFIG.selectCorrespondingDiagramFirst) {
 					// replace the id of a resource by the id of a diagram carrying the same title:
-					let cacheData = app.cache.selectedProject.data,
+					let cacheData = self.cData,
 						ti = cacheData.instanceTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
@@ -1174,7 +1176,7 @@ class CFileWithContent implements IFileWithContent {
 			// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
 			// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
 			// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
-			function addViewBoxIfMissing(svg): void {
+			function addViewBoxIfMissing(svg:any): void {
 				let el;
 				for (var i = 0, I = svg.childNodes.length; i < I; i++) {
 					el = svg.childNodes[i];
@@ -1294,10 +1296,15 @@ moduleManager.construct({
 							parent?: string;
 							predecessor?: string;
                         }
-						function moveNode(movedNd, target: ITargetNode ):void {
+						function moveNode(movedNd: jqTreeNode, target: ITargetNode ):void {
 //								console.debug( 'move: ', movedNd.name, target );
-								let chd = new Date().toISOString();
-								app.cache.selectedProject.createItems( 'node', toSpecIF(movedNd,target) )
+								let chd = new Date().toISOString(),
+									h: INodeWithPosition = toSpecIF(movedNd);
+								// Add predecessor or parent:
+								// @ts-ignore - index is ok:
+								for (var p in target) { h[p] = target[p].id };
+
+								self.selPrj.createItems( 'node', [h] )
 								.then( 
 									()=>{
 										self.tree.numberize();
@@ -1310,7 +1317,7 @@ moduleManager.construct({
 								);
 								return;
 
-								function toSpecIF(mNd: jqTreeNode, tgt: ITargetNode): INodeWithPosition {
+								function toSpecIF(mNd: jqTreeNode):SpecifNode {
 									// transform from jqTree node to SpecIF node:
 									var nd: INodeWithPosition = {
 										//	id: LIB.genID('N-'),
@@ -1320,17 +1327,13 @@ moduleManager.construct({
 										},
 										ch = mNd.children.map( toSpecIF );
 									if( ch.length>0 ) nd.nodes = ch;
-									// copy predecessor or parent:
-									if (tgt)
-										// @ts-ignore - index is ok:
-										for (var p in tgt) { nd[p] = tgt[p].id };
 									return nd;
 								}
 							}
 						
 						app.busy.set();
 						// 1. Delete the moved node with all its children:
-						app.cache.selectedProject.deleteItems( 'node', [LIB.keyOf(event.move_info.moved_node)] )
+						self.selPrj.deleteItems( 'node', [LIB.keyOf(event.move_info.moved_node)] )
 						.then( 
 							()=>{
 //								console.debug('delete node done',event)
@@ -1455,23 +1458,23 @@ moduleManager.construct({
 
 		// Replace the tree:
 		self.tree.saveState();
-		self.tree.set( LIB.forAll(spc, toChild) );
+		self.tree.set( LIB.forAll( spc, toJqTree) );
 		self.tree.numberize();
 		self.tree.restoreState();
 		return;
 
 		// -----------------
-		function toChild( iE:SpecifNode ) {
+		function toJqTree( iE:SpecifNode ) {
 			// transform SpecIF hierarchy to jqTree:
 			let r:SpecifResource = LIB.itemByKey( self.cData.resources, iE.resource );
-//			console.debug('toChild',iE.resource,r);
+//			console.debug('toJqTree',iE.resource,r);
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				name: self.cData.instanceTitleOf(r, $.extend({}, opts, {neverEmpty:true})),
-				ref: iE.resource
+				ref: iE.resource,
+				children: LIB.forAll( iE.nodes, toJqTree )
 			};
-			oE.children = LIB.forAll( iE.nodes, toChild );
 			return oE;
 		}
 	};
@@ -1796,7 +1799,7 @@ moduleManager.construct({
 		
 		function getNextResources():Promise<SpecifResource[]> {
 			var nd = self.parent.tree.selectedNode,
-				oL = [];  // id list of the resources to view
+				oL:SpecifKey[] = [];  // id list of the resources to view
 			nL = [];  // list of hierarchy nodes
 					
 			getPermissions();
@@ -1808,19 +1811,19 @@ moduleManager.construct({
 					project: selPrj.id,
 					view: self.view.substr(1),	// remove leading hash
 					node: nd.id,
-					item: nd.ref
+					item: nd.ref.id
 				}); 
 
 			// lazy loading: only a few resources are loaded from the server starting with the selected node
 			// only visible tree nodes are collected in oL (excluding those in closed folders ..), 
 			// so the main column corresponds with the tree.
 			for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
-				oL.push( nd.ref );  // nd.ref is the id of a resource to show
+				oL.push( nd.ref );  // nd.ref is the key of a resource to show
 				nL.push( nd );
 				nd = nd.getNextNode();   // get next visible tree node
 			};
 
-			return app.cache.selectedProject.readItems( 'resource', oL )
+			return selPrj.readItems( 'resource', oL ) as Promise<SpecifResource[]>
 		}
 		function renderNextResources(rL: SpecifResource[]): void {
 			// Format the titles with numbering:
@@ -1922,10 +1925,10 @@ moduleManager.construct({
 			
 				// using the cached allClasses:
 				// a) identify the resource and statement types which can be created by the current user:
-				app.cache.selectedProject.data.resourceClasses.forEach( (rC)=>{
+				selPrj.data.resourceClasses.forEach( (rC)=>{
 					// list all resource types, for which the current user has permission to create new instances
 					// ... and which allow manual instantiation:
-					// store the type's id as it is invariant, when app.cache.selectedProject.data.allClasses is updated
+					// store the type's id as it is invariant, when selPrj.data.allClasses is updated
 				//	if( rC.cre && (!rC.instantiation || rC.instantiation.indexOf('user')>-1) )
 					// ToDo: Respect the current user's privileges:
 					if( !rC.instantiation || rC.instantiation.indexOf(SpecifInstantiation.User)>-1 )
@@ -1935,9 +1938,9 @@ moduleManager.construct({
 				self.resCre = self.resCreClasses.length>0
 			};
 			
-			/*	self.filCre = app.cache.selectedProject.data.cre;
-				let cT = itemByName( app.cache.selectedProject.data.resourceClasses, CONFIG.resClassComment ),
-					rT = itemByName( app.cache.selectedProject.data.statementClasses, CONFIG.staClassCommentRefersTo );
+			/*	self.filCre = selPrj.data.cre;
+				let cT = itemByName( selPrj.data.resourceClasses, CONFIG.resClassComment ),
+					rT = itemByName( selPrj.data.statementClasses, CONFIG.staClassCommentRefersTo );
 				self.cmtCre = ( self.typesComment && self.typesComment.available() && cT.cre && rT.cre );
 				self.cmtDel = ( self.typesComment && self.typesComment.available() && cT.del && rT.del )  */
 
@@ -2032,10 +2035,10 @@ moduleManager.construct({
 			// in other words: If a user wants to potentially delete statements which are shown by a diagram to be deleted,
 			// it is necessary to provide "shows" statements also for statements.
 			// ?? ToDo: delete the resource with all other references ...
-			app.cache.selectedProject.deleteItems( "resource", {id:resId} )
+			selPrj.deleteItems( "resource", {id:resId} )
 				.catch( LIB.stdError );
 			// Delete all statements related to this resource:
-			app.cache.selectedProject.readStatementsOf( {id:resId} )
+			selPrj.readStatementsOf( {id:resId} )
 				.then( 
 					(staL)=>{
 						console.debug( 'delRes statements', staL);
@@ -2052,17 +2055,17 @@ moduleManager.construct({
 			self.parent.tree.selectNode( nd.getNextSibling() ); 
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
-			app.cache.selectedProject.deleteItems( 'node', [LIB.keyOf(nd)] )
+			selPrj.deleteItems( 'node', [LIB.keyOf(nd)] )
 				.then( 
 					()=>{
 						// If a diagram has been deleted, build a new glossary with elements 
 						// which are shown by any of the remaining diagrams:
-						app.cache.selectedProject.createFolderWithGlossary({addGlossary:true} )
+						selPrj.createFolderWithGlossary({addGlossary:true} )
 							.then( 
 								()=>{  
 									// undefined parameters will be replaced by default value:
 									self.parent.updateTree({
-										targetLanguage: app.cache.selectedProject.language,
+										targetLanguage: selPrj.language,
 										lookupTitles: true
 									});
 									self.parent.doRefresh({forced:true})
@@ -2099,7 +2102,7 @@ moduleManager.construct({
 		selPrj: CProject,
 		cacheData: CCache,		// the cached data
 		selRes: SpecifResource,		// the currently selected resource
-		net: any,
+		net: IGraph,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
 	// Permissions for resources and statements:
@@ -2177,7 +2180,7 @@ moduleManager.construct({
 						// Now get the titles with icon of the resources,
 						// as the sequence of list items in net.resources is maintained, 
 						// the selected resource will be the first element in the list: 
-						rResL.forEach( (r)=>{ cacheMinRes( net.resources, r ) });
+						rResL.forEach( (r)=>{ cacheMinRes( net, r ) });
 					
 						// finally add the 'mentions' statements:
 						getMentionsRels(selRes,opts)
@@ -2212,19 +2215,20 @@ moduleManager.construct({
 			LIB.stdError(xhr);
 			app.busy.reset();
 		}
-		function cacheMinRes(L:SpecifResource[],r:SpecifResource|SpecifKey):void {
+		function cacheMinRes(N:IGraph,r:SpecifResource|SpecifKey):void {
 			// cache the minimal representation of a resource;
-			// r may be a resource or a key pointing to a resource;
-			// note that the sequence of items in L is always maintained:
-			LIB.cacheE(L, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
+			// r may be a resource or a key pointing to a resource,
+			// where the sequence of items in L is always maintained.
+			// @ts-ignore - in the first run when a key is specified, the result of instanceTitleOf() is undefined - it will be added in the second run
+			LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
 		}
-		function cacheMinSta(L:SpecifStatement[],s:SpecifStatement):void {
+		function cacheMinSta(N:IGraph,s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement;
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			LIB.cacheE(L, { id: s.id, title: LIB.titleOf(s, opts) || cacheData.staClassTitleOf(s, opts), subject: s.subject.id, object: s.object.id} );
+			LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || cacheData.staClassTitleOf(s, opts), subject: s.subject.id, object: s.object.id } );
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2232,26 +2236,19 @@ moduleManager.construct({
 			// but the 'mentions' statements, generated for display only, *have* a native title property for simplicity reasons 
 			// (so that no statementClass is needed).
 
-			// 1. skip hidden statements;
+			// 1. Skip hidden statements;
 			// hiddenStatements holds the vocabulary terms, so the title shall *not* be translated to the targetLanguage.
 			// @ts-ignore - property 'title' is used on purpose for the mentions statements generated for display
 			if (CONFIG.hiddenStatements.includes(s.title || cacheData.staClassTitleOf(s, {})) ) return;
 
-			// 2. store the statements in the net:
-			cacheMinSta( net.statements, s );
+			// 2. Store the statements in the net:
+			cacheMinSta( net, s );
 //			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
-			// 3. collect the related resource:
-			if (LIB.references(nd.ref, s.subject)) {
-				// the selected node is a subject, so the related resource is an object,
-				// list it, but only once:
-				cacheMinRes( net.resources, s.object );
-			}
-			else {
-				// the related resource is a subject,
-				// list it, but only once:
-				cacheMinRes( net.resources, s.subject );
-			}
+			// 3. Collect the related resource:
+			//    If the selected node is a subject, the related resource is an object ... and vice versa;
+			//    list it, but only once:
+			cacheMinRes( net, LIB.references(nd.ref, s.subject) ? s.object : s.subject);
 		}
 		function getMentionsRels(selR: SpecifResource, opts: any):Promise<any[]> {
 			// selR is the currently selected resource.
@@ -2280,7 +2277,7 @@ moduleManager.construct({
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check permissions, here:
 					pend++;
-					app.cache.selectedProject.readItems('resource', [nd.ref] )
+					selPrj.readItems('resource', [nd.ref] )
 					.then( 
 						(rL:SpecifItem[])=>{   
 							// refR is a resource referenced in a hierarchy
@@ -2307,6 +2304,7 @@ moduleManager.construct({
 											if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
 												// these are minimal statements only just for displaying the statement graph:
 												staL.push({
+													// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
 													title: CONFIG.staClassMentions,
 													//	class:	LIB.makeKey("SC-mentions"),
 													subject: selR,
@@ -2327,6 +2325,7 @@ moduleManager.construct({
 											if (selPatt.test( LIB.languageValueOf(p.values[0], localOpts) ) && notListed( staL,refR,selR ) ) {
 												// these are minimal statements only just for displaying the statement graph:
 												staL.push({
+													// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
 													title: CONFIG.staClassMentions,
 													//	class: LIB.makeKey("SC-mentions"),
 													subject: refR,
@@ -2368,7 +2367,7 @@ moduleManager.construct({
 				cacheData.get('hierarchy',selPrj.hierarchies),
 				(nd: SpecifNode): boolean => {
 					// get the referenced resource:
-					res = cacheData.get('resource', [nd.resource])[0];
+					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
 					// find the property defining the type:
 					pV = LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData.propertyClasses);
 					// Remember whether at least one diagram has been found:
@@ -2412,11 +2411,11 @@ moduleManager.construct({
 			self.staCreClasses.objectClasses.length = 0;
 
 			// a) identify the resource and statement types which can be created by the current user:
-			app.cache.selectedProject.data.statementClasses.forEach( 
+			selPrj.data.statementClasses.forEach( 
 				(sC)=>{
 					// list all statement types, for which the current user has permission to create new instances:
 					// ... and which allow user instantiation:
-					// store the classes' ids as it is invariant, when app.cache.selectedProject.data.allClasses is updated
+					// store the classes' ids as it is invariant, when selPrj.data.allClasses is updated
 //					console.debug('staCreClasses',sC,res['class']);
 				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
 					if (!sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User)>-1 ) {
@@ -2444,7 +2443,7 @@ moduleManager.construct({
 
 //		console.debug('renderStatements',net);
 
-		let graphOptions: GraphOptions = {
+		let graphOptions: IGraphOptions = {
 				index: 0,
 				canvas: self.view.substr(1),	// without leading hash
 				titleProperties: CONFIG.titleProperties,
@@ -2460,7 +2459,7 @@ moduleManager.construct({
 		if( modeStaDel )
 			graphOptions.nodeColor = '#ef9a9a';
 //		console.debug('showStaGraph',net,graphOptions);
-		app.statementsGraph.show(net, graphOptions);
+		app.vicinityGraph.show(net, graphOptions);
 
 		$(self.view).prepend('<div style="position:absolute;left:4px;z-index:900">'
 			+ (modeStaDel? '<span class="notice-danger" >' + i18n.MsgClickToDeleteRel 
@@ -2589,11 +2588,11 @@ moduleManager.construct({
 	};
 	self.relatedItemClicked = ( rId:string, sId:string ):void =>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
-//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, LIB.itemById( app.cache.selectedProject.data.statements, sId ) );
+//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, LIB.itemById( selPrj.data.statements, sId ) );
 		if( modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
-			app.cache.selectedProject.deleteItems('statement', [LIB.makeKey(sId)] )
+			selPrj.deleteItems('statement', [LIB.makeKey(sId)] )
 			.then(
 				self.parent.doRefresh({forced:true}),
 				LIB.stdError
