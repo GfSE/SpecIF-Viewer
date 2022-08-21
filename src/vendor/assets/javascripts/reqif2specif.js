@@ -262,17 +262,26 @@ function extractProperties(specAttributes) {
 	return list;
 
     function extractSpecIfProperty(property) {
-        let specifProperty = {};
-    /*  // Provide the id, even though it is not required by SpecIF:
-        // The attribute-value id is not required by ReqIF, 
-        // ToDo: check wether it *may* be specified, at all ...  
-        specifProperty.id = property.getAttribute("IDENTIFIER"); */
+        let specifProperty = {}, pC, dT;
+        /*  // Provide the id, even though it is not required by SpecIF:
+            // The attribute-value id is not required by ReqIF, 
+            // ToDo: check wether it *may* be specified, at all ...  
+            specifProperty.id = property.getAttribute("IDENTIFIER"); */
         specifProperty['class'] = property.getElementsByTagName("DEFINITION")[0].children[0].innerHTML;
-	/*  ToDo: Check whether ReaIF ATTRIBUTES can have an individual LONG-NAME ..
-        if( property.getAttribute("LONG-NAME") ) 
-            specifProperty.title = options.translateTitle2Specif( property.getAttribute("LONG-NAME") ); */
-        if( property.getAttribute("THE-VALUE") ) 
+        /*  ToDo: Check whether ReaIF ATTRIBUTES can have an individual LONG-NAME ..
+            if( property.getAttribute("LONG-NAME") ) 
+                specifProperty.title = options.translateTitle2Specif( property.getAttribute("LONG-NAME") ); */
+        if (property.getAttribute("THE-VALUE")) {
             specifProperty.value = property.getAttribute("THE-VALUE");
+
+            pC = itemById(xhr.response.propertyClasses, specifProperty['class']);
+            dT = itemById(xhr.response.dataTypes, pC.dataType);
+//          console.debug('maxL', dT, pC, specifProperty.value, specifProperty.value.length);
+            if( typeof(dT.maxLength)=='number' && dT.maxLength < specifProperty.value.length ) {
+                console.warn("Truncated ReqIF Attribute with value '" + specifProperty.value + "' to the specified maxLength of " + dT.maxLength + " characters");
+                specifProperty.value = specifProperty.value.substring(0, dT.maxLength);
+            };
+        }
         // XHTML:
         else if( property.getElementsByTagName("THE-VALUE")[0] ) 
             specifProperty.value = removeNamespace(property.getElementsByTagName("THE-VALUE")[0].innerHTML);

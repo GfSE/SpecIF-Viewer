@@ -533,6 +533,7 @@ moduleManager.construct({
 					case 'replace':
 						opts.deduplicate = true;
 						opts.addGlossary = true;
+						opts.addUnreferencedResources = true;
 						opts.collectProcesses = false;
 						app.cache.create( dta, opts )
 							.progress( setProgress )

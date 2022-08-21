@@ -392,6 +392,11 @@ class CProject {
 						this.createFolderWithGlossary(opts)
 							.then(finalize, cDO.reject);
 					};
+					if (opts.addUnreferencedResources) {
+						pend++;
+						this.createFolderWithUnreferencedResources(opts)
+							.then(finalize, cDO.reject);
+					};
 				},
 				cDO.reject
 			/*	(xhr) => {
@@ -642,13 +647,10 @@ class CProject {
 				// ToDo: Save changes from deduplication to the server.
 //				console.debug('#5',simpleClone(dta),opts);
 				self.createFolderWithResourcesByType(opts)
-					.then(
-						() => {
-							self.createFolderWithGlossary(opts)
-								.then(aDO.resolve, aDO.reject)
-						},
-						aDO.reject
-					);
+				.then( () => { return self.createFolderWithGlossary(opts) })
+				.then( () => { return self.createFolderWithUnreferencedResources(opts) })
+				.then( aDO.resolve )
+				.catch( aDO.reject );
 			};
 		}
 	}
@@ -934,6 +936,61 @@ class CProject {
 						changedAt: tim
 					}];
 					return fL;
+				}
+			}
+		)
+	};
+	private createFolderWithUnreferencedResources(opts: any): Promise<void> {
+		// Create a folder with a flat list of resources which are not otherwise listed in a hierarchy.
+		let dta = this.data;
+		return new Promise(
+			(resolve, reject) => {
+				if (typeof (opts) != 'object' || !opts.addUnreferencedResources) { resolve(); return; };
+
+				let	apx = simpleHash(this.id),
+					tim = new Date().toISOString(),
+					newD = {
+						id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
+					$schema: 'https://specif.de/v1.0/schema.json',
+					dataTypes: [
+						standardTypes.get('dataType', "DT-ShortString"),
+						standardTypes.get('dataType', "DT-Text")
+					],
+					propertyClasses: [
+						standardTypes.get('propertyClass', "PC-Name"),
+						standardTypes.get('propertyClass', "PC-Description"),
+						standardTypes.get('propertyClass', "PC-Type")
+					],
+					resourceClasses: [
+						standardTypes.get('resourceClass', "RC-Folder")
+					],
+					resources: Folder(),
+					hierarchies: NodeList(this.data.get('resource','all')
+				};
+				//								console.debug('glossary',newD);
+				// use the update function to eliminate duplicate types;
+				// 'opts.addGlossary' must not be true to avoid an infinite loop:
+				this.adopt(newD, { noCheck: true })
+					.done(resolve)
+					.fail(reject);
+				return;
+
+				function Folder(): Resource[] {
+					// Create the resources for folder and subfolders of the glossary:
+					var fL: Resource[] = [{
+						id: "FolderUnreferencedResources-" + apx,
+						class: "RC-Folder",
+						title: CONFIG.resClassGlossary,
+						properties: [{
+							class: "PC-Type",
+							value: "SpecIF:UnreferencedResources"
+						}],
+						changedAt: tim
+					}];
+					return fL;
+				}
+				function NodeList(resources: Resource[]): SpecifNode[] {
+					console.debug('##',resources);
 				}
 			}
 		)
