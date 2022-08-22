@@ -279,7 +279,11 @@ class CSpecIF implements SpecIF {
 		if (spD.rights) this.rights = { title: spD.rights.title, url: spD.rights.url };
 		if (spD.generator) this.generator = spD.generator;
 		if (spD.generatorVersion) this.generatorVersion = spD.generatorVersion;
-		if (spD.createdBy) this.createdBy = spD.createdBy;
+		if (spD.createdBy) {
+			this.createdBy = spD.createdBy;
+			if (spD.createdBy.email && spD.createdBy.email.value)
+				this.createdBy.email = spD.createdBy.email.value;
+		};
 		if (spD.createdAt) this.createdAt = spD.createdAt;
 		if (spD.description) this.description = makeMultiLanguageText(spD.description);
 		if (spD.title) this.title = makeMultiLanguageText(spD.title);
@@ -296,13 +300,7 @@ class CSpecIF implements SpecIF {
 			};
 			if (iE.description) oE.description = makeMultiLanguageText(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
-			switch (typeof (iE.revision)) {
-				case 'number':
-					oE.revision = iE.revision.toString();	// for <v0.10.8
-					break;
-				case 'string':
-					oE.revision = iE.revision
-			};
+			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			if (iE.replaces) oE.replaces = iE.replaces;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
 	//		console.debug('item 2int',iE,oE);
@@ -421,9 +419,10 @@ class CSpecIF implements SpecIF {
 					iE[names.pClasses].forEach((e: any): void => {
 						// Store the pClasses at the top level;
 						// redundant pClasses will be deduplicated, later:
-						self.propertyClasses.push(pC2int(e));
+						let pC = pC2int(e);
+						self.propertyClasses.push(pC);
 						// Add to a list with pClass references, here:
-						oE.propertyClasses.push(LIB.keyOf(e));
+						oE.propertyClasses.push(LIB.keyOf(pC));
 					})
 				};
 			}
@@ -506,13 +505,7 @@ class CSpecIF implements SpecIF {
 			//					: LIB.itemByKey(self.resourceClasses, oE["class"]);
 
 			// revision is a number up until v0.10.6 and a string thereafter:
-			switch (typeof (iE.revision)) {
-				case 'number':
-					oE.revision = iE.revision.toString();	// for <v0.10.8
-					break;
-				case 'string':
-					oE.revision = iE.revision
-			};
+			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			if (iE.replaces) oE.replaces = iE.replaces;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
 
@@ -634,9 +627,9 @@ class CSpecIF implements SpecIF {
 				oE = {
 					id: 'N-' + iR.id,
 					resource: LIB.keyOf( iR ),
-					changedAt: iE.changedAt
+					changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
 				};
-				if (iE.revision) oE.revision = iE.revision.toString();
+				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
 			}
 			else {
@@ -655,7 +648,7 @@ class CSpecIF implements SpecIF {
 				var oE: SpecifNode = {
 						id: iE.id,
 						resource: LIB.makeKey(iE.resource),
-						changedAt: iE.changedAt
+						changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -669,6 +662,7 @@ class CSpecIF implements SpecIF {
 			// The title is usually 'path/filename.ext';
 			// but sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
 			oE.title = iE.title ? makeTitle(iE.title).replace(/\\/g, '/') : iE.id;
+			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			// store the blob and it's type:
 			if (iE.blob) {
 				oE.type = iE.blob.type || iE.type || LIB.attachment2mediaType(oE.title);
