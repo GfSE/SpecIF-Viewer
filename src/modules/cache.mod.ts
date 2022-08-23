@@ -383,20 +383,9 @@ class CProject {
 					pend = standardTypes.iterateLists(
 						(key, value) => {
 							this.createContent(key, nD[value])
-								.then(finalize, cDO.reject);
+								.then( finalize, cDO.reject );
 						}
 					);
-
-					if (opts.addGlossary) {
-						pend++;
-						this.createFolderWithGlossary(opts)
-							.then(finalize, cDO.reject);
-					};
-					if (opts.addUnreferencedResources) {
-						pend++;
-						this.createFolderWithUnreferencedResources(opts)
-							.then(finalize, cDO.reject);
-					};
 				},
 				cDO.reject
 			/*	(xhr) => {
@@ -407,12 +396,25 @@ class CProject {
 
 		function finalize(): void {
 			if (--pend < 1) {
-				cDO.notify(i18n.MsgLoadingFiles, 100);
-				self.hookStatements();
-				self.deduplicate(opts);	// deduplicate equal items
-				// ToDo: Update the server !
+				// must do these operations strictly sequentially:
+				self.createFolderWithGlossary(opts)
+					.then(
+						() => {
+							self.createFolderWithUnreferencedResources(opts)
+								.then(
+									() => {
+										cDO.notify(i18n.MsgLoadingFiles, 100);
+										self.hookStatements();
+										self.deduplicate(opts);	// deduplicate equal items
+										// ToDo: Update the server !
 
-				cDO.resolve()
+										cDO.resolve()
+									},
+									cDO.reject
+								);
+						},
+						cDO.reject
+					);
 			}
 		}
 	}
@@ -647,10 +649,22 @@ class CProject {
 				// ToDo: Save changes from deduplication to the server.
 //				console.debug('#5',simpleClone(dta),opts);
 				self.createFolderWithResourcesByType(opts)
-				.then( () => { return self.createFolderWithGlossary(opts) })
-				.then( () => { return self.createFolderWithUnreferencedResources(opts) })
-				.then( aDO.resolve )
-				.catch( aDO.reject );
+					.then(
+						() => {
+							self.createFolderWithGlossary(opts)
+								.then(
+									() => {
+										self.createFolderWithUnreferencedResources(opts)
+											.then(
+												aDO.resolve,
+												aDO.reject
+											)
+									},
+									aDO.reject
+								)
+						},
+						aDO.reject
+					)
 			};
 		}
 	}
@@ -947,32 +961,82 @@ class CProject {
 			(resolve, reject) => {
 				if (typeof (opts) != 'object' || !opts.addUnreferencedResources) { resolve(); return; };
 
-				let	apx = simpleHash(this.id),
+				let delL: SpecifNode[] = [],
+					resL = dta.get('resource', 'all') as Resource[],
+				//	pV: string,
+					idx: number,
+					apx = simpleHash(this.id),
 					tim = new Date().toISOString(),
-					newD = {
-						id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
-					$schema: 'https://specif.de/v1.0/schema.json',
-					dataTypes: [
-						standardTypes.get('dataType', "DT-ShortString"),
-						standardTypes.get('dataType', "DT-Text")
-					],
-					propertyClasses: [
-						standardTypes.get('propertyClass', "PC-Name"),
-						standardTypes.get('propertyClass', "PC-Description"),
-						standardTypes.get('propertyClass', "PC-Type")
-					],
-					resourceClasses: [
-						standardTypes.get('resourceClass', "RC-Folder")
-					],
-					resources: Folder(),
-					hierarchies: NodeList(this.data.get('resource','all')
-				};
-				//								console.debug('glossary',newD);
-				// use the update function to eliminate duplicate types;
-				// 'opts.addGlossary' must not be true to avoid an infinite loop:
-				this.adopt(newD, { noCheck: true })
-					.done(resolve)
-					.fail(reject);
+
+					// the hierarchies without the folder listing the unreferenced resources:
+					ndL = dta.get("hierarchy", "all").filter(
+						(nd: SpecifNode) => {
+							// a. get the referenced resource:
+						/*	res = dta.get("resource", nd.resource)[0];
+							// Find all respective folders:
+							pV = valByTitle(res, CONFIG.propClassType, dta); 
+							return (pV != "SpecIF:UnreferencedResources")  */
+							idx = indexById(resL, nd.resource);
+							if (idx > -1) {
+							//	pV = valByTitle(resL[idx], CONFIG.propClassType, dta);
+							//	if (pV == "SpecIF:UnreferencedResources") {
+								if (resL[idx].title == "SpecIF:UnreferencedResources") {
+									delL.push(nd);
+									resL.splice(idx, 1);
+									return false
+								};
+								return true
+							};
+							throw Error('Node '+nd.id+' references a resource '+nd.resource+' which is not found.');
+						}
+					);
+
+				LIB.iterateNodes(
+					ndL,
+					(nd: SpecifNode) => {
+						// Delete the resource, as it is referenced:
+						idx = indexById(resL, nd.resource);
+						if (idx > -1)
+							resL.splice(idx, 1);
+						return true  // continue always to the end
+					}
+				);
+
+				// 1.2 Delete now:
+//				console.debug('createFolderWithGlossary',delL,resL);
+				this.deleteContent('node', delL)
+					.then(
+						() => {
+							if (resL.length > 0) {
+								let newD = {
+									id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
+									$schema: 'https://specif.de/v1.0/schema.json',
+									dataTypes: [
+										standardTypes.get('dataType', "DT-ShortString"),
+										standardTypes.get('dataType', "DT-Text")
+									],
+									propertyClasses: [
+										standardTypes.get('propertyClass', "PC-Name"),
+										standardTypes.get('propertyClass', "PC-Description"),
+										standardTypes.get('propertyClass', "PC-Type")
+									],
+									resourceClasses: [
+										standardTypes.get('resourceClass', "RC-Folder")
+									],
+									resources: Folder(),
+									hierarchies: NodeList(resL)
+								};
+//								console.debug('glossary',newD);
+								// use the update function to eliminate duplicate types;
+								// 'opts.addGlossary' must not be true to avoid an infinite loop:
+								this.adopt(newD, { noCheck: true })
+									.done(resolve)
+									.fail(reject);
+							}
+							else
+								resolve();
+						}
+					)
 				return;
 
 				function Folder(): Resource[] {
@@ -980,7 +1044,7 @@ class CProject {
 					var fL: Resource[] = [{
 						id: "FolderUnreferencedResources-" + apx,
 						class: "RC-Folder",
-						title: CONFIG.resClassGlossary,
+						title: "SpecIF:UnreferencedResources",
 						properties: [{
 							class: "PC-Type",
 							value: "SpecIF:UnreferencedResources"
@@ -990,7 +1054,15 @@ class CProject {
 					return fL;
 				}
 				function NodeList(resources: Resource[]): SpecifNode[] {
-					console.debug('##',resources);
+					// Add the folder:
+					let gl: SpecifNode = {
+						id: "H-FolderUnreferencedResources-" + apx,
+						resource: "FolderUnreferencedResources-" + apx,
+						nodes: resources.map((r) => { return { id: 'N-' + r.id, resource: r.id } }),
+						changedAt: tim
+					};
+//					console.debug('##', resources,gl);
+					return [gl];
 				}
 			}
 		)
@@ -1007,7 +1079,8 @@ class CProject {
 				let delL: SpecifNode[] = [],
 					diagramL: Resource[] = [],
 					res: Resource,
-					pV,
+					pV: string,
+					hasGlossaryItems = false,
 					apx = simpleHash(this.id),
 					tim = new Date().toISOString();
 //				console.debug('createFolderWithGlossary',this.hierarchies);
@@ -1017,7 +1090,7 @@ class CProject {
 						// get the referenced resource:
 						res = dta.get("resource", nd.resource)[0];
 						// check, whether it is a glossary:
-						pV = valByTitle(res, CONFIG.propClassType, this.data);
+						pV = valByTitle(res, CONFIG.propClassType, dta);
 						// collect all items to delete, there should be only one:
 						if (pV == CONFIG.resClassGlossary) {
 							delL.push(nd)
@@ -1053,14 +1126,17 @@ class CProject {
 										standardTypes.get('resourceClass', "RC-Folder")
 									],
 									resources: Folders(),
-									hierarchies: NodeList(this.data.resources)
+									hierarchies: NodeList(dta.get('resource', 'all'))
 								};
 //								console.debug('glossary',newD);
 								// use the update function to eliminate duplicate types;
 								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								this.adopt(newD, { noCheck: true })
-									.done(resolve)
-									.fail(reject);
+								if (hasGlossaryItems)
+									this.adopt(newD, { noCheck: true })
+										.done(resolve)
+										.fail(reject)
+								else
+									resolve();
 							}
 							else {
 								resolve();
@@ -1117,11 +1193,29 @@ class CProject {
 					}];
 					// Create a folder resource for every model-element type:
 					CONFIG.modelElementClasses.forEach((mEl: string) => {
+						let desc: string;
+						// ToDo: terrible style - we lose the advantage of the class list here ...
+						switch (mEl) {
+							case "FMC:Actor":
+								desc = i18n.lookup("FMC:ActorDescription");
+								break;
+							case "FMC:State":
+								desc = i18n.lookup("FMC:StateDescription");
+								break;
+							case "FMC:Event":
+								desc = i18n.lookup("FMC:EventDescription");
+								break;
+							case "SpecIF:Collection":
+								desc = i18n.lookup("SpecIF:CollectionDescription");
+						};
 						fL.push({
 							id: "Folder-" + mEl.jsIdOf() + "-" + apx,
 							class: "RC-Folder",
 							title: mEl + 's',  // just adding the 's' is an ugly quickfix ... that works for now.
-							properties: [],
+							properties: desc ? [{
+								class: "PC-Description",
+								value: desc
+							}] : [],
 							changedAt: tim
 						});
 					});
@@ -1180,7 +1274,8 @@ class CProject {
 							for (idx = tL.length - 1; idx > -1; idx--) {
 								if (tL[idx].indexOf(r['class']) > -1) break;
 							};
-							if (idx > -1)
+							if (idx > -1) {
+								hasGlossaryItems = true;
 								gl.nodes[idx].nodes.push({
 									// Create new hierarchy node with reference to the resource:
 									// ID should be the same when the glossary generated multiple times,
@@ -1189,6 +1284,7 @@ class CProject {
 									resource: r.id,
 									changedAt: tim
 								});
+							};
 						}
 					);
 					return [gl];

@@ -441,6 +441,7 @@ function LanguageTextsDe() {
 	self.SpecIF_Outlines =
 	self.SpecIF_Hierarchies = "Gliederungen";
 	self.SpecIF_Glossary = "Modellelemente (Glossar)";
+	self.SpecIF_UnreferencedResources = "Nicht referenzierte Ressourcen (Papierkorb)";
 	self.SpecIF_Collection = "Kollektion oder Gruppe";
 	self.SpecIF_Collections = "Kollektionen und Gruppen";
 	self.SpecIF_CollectionDescription = "Eine '"+self.SpecIF_Collection+"' ist eine logische Gruppierung von '"+self.modelElements+"'.";

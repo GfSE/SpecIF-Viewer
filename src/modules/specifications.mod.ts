@@ -2035,15 +2035,20 @@ moduleManager.construct({
 					()=>{
 						// If a diagram has been deleted, build a new glossary with elements 
 						// which are shown by any of the remaining diagrams:
-						app.cache.selectedProject.createFolderWithGlossary({addGlossary:true} )
+						app.cache.selectedProject.createFolderWithGlossary({addGlossary:true})
 							.then( 
 								()=>{  
-									// undefined parameters will be replaced by default value:
-									pData.updateTree({
-										targetLanguage: browser.language,
-										lookupTitles: true
-									});
-									pData.doRefresh({forced:true})
+									app.cache.selectedProject.createFolderWithUnreferencedResources({addUnreferencedResources:true})
+										.then(
+											() => {
+												pData.updateTree({
+													targetLanguage: browser.language,
+													lookupTitles: true
+												});
+												pData.doRefresh({ forced: true })
+											},
+											LIB.stdError
+										);
 								},
 								LIB.stdError 
 							)

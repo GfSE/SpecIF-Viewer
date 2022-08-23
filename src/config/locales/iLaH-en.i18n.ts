@@ -441,6 +441,7 @@ function LanguageTextsEn() {
 	self.SpecIF_Outlines =
 	self.SpecIF_Hierarchies = "Outlines";
 	self.SpecIF_Glossary = "Model-Elements (Glossary)";
+	self.SpecIF_UnreferencedResources = "Unreferenced Resources (Recycle Bin)";
 	self.SpecIF_Collection = "Collection or Group";
 	self.SpecIF_Collections = "Collections and Groups";
 	self.SpecIF_CollectionDescription = "A '"+self.SpecIF_Collection+"' is a logical grouping of '"+self.modelElements+"'.";

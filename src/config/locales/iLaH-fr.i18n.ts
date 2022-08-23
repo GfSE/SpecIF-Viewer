@@ -441,6 +441,7 @@ function LanguageTextsFr() {
 	self.SpecIF_Outlines =
 	self.SpecIF_Hierarchies = "Arborescences";
 	self.SpecIF_Glossary = "Élements de modèle (Glossaire)";
+	self.SpecIF_UnreferencedResources = "Ressources non référencées (Corbeille)";
 	self.SpecIF_Annotations = "Annotations";
 	self.SpecIF_Collection = "Collection ou Groupe";
 	self.SpecIF_Collections = "Collections et Groupes";
