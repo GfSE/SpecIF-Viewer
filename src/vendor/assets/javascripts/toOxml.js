@@ -198,7 +198,7 @@ function toOxml( data, opts ) {
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 			// Limitation: the innerHTML may not have any tags.
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-			const reSO = '<object([^>]+?)(/>|>([^<]*?)</object>)',
+			const reSO = '<object ([^>]+?)(/>|>(.*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
 		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
@@ -303,7 +303,7 @@ function toOxml( data, opts ) {
 				// get the statements of the resource as table:
 				if( !opts.statementsLabel ) return '';
 				
-				let sts={}, cid, oid, sid, relatedR, noSts=true;
+				let stC={}, cid, oid, sid, relatedR, noSts=true;
 				// Sort statements by type:
 				data.statements.forEach( function(st) {		// all statements
 					// for clustering all statements by title;
@@ -318,25 +318,25 @@ function toOxml( data, opts ) {
 //					console.debug(st,cid,sid,oid);
 					if (sid == r.id || oid == r.id) {    // only statements with Resource r
 						// create a list of statements with that type, unless it exists already:
-						if (!sts[cid]) sts[cid] = { subjects: [], objects: [] };
+						if (!stC[cid]) stC[cid] = { subjects: [], objects: [] };
 						// add the resource to the list, knowing that it can be either subject or object, but not both:
 						if (sid == r.id) {
 							relatedR = itemById(data.resources, oid);
 							if (relatedR) {
-								sts[cid].objects.push(relatedR);
+								stC[cid].objects.push(relatedR);
 								noSts = false;
 							};
 						}
 						else {
 							relatedR = itemById(data.resources, sid);
 							if (relatedR) {
-								sts[cid].subjects.push(relatedR);
+								stC[cid].subjects.push(relatedR);
 								noSts = false;
 							};
 						};
 					};
 				});
-//				console.debug( 'statements', r, sts );
+//				console.debug( 'statements', r, stC );
 				if( noSts ) return '';	// no statements ...
 
 				// else, there are statements to render:
@@ -345,7 +345,7 @@ function toOxml( data, opts ) {
 					sTi, row, cell, resL;
 
 				// build a table of the statements/relations by type:
-				for( cid in sts ) {
+				for( cid in stC ) {
 					// if we have clustered by title:
 					sTi = opts.lookup( cid );
 				/*	// if we have clustered by class:
@@ -353,10 +353,10 @@ function toOxml( data, opts ) {
 					sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 					// 3 columns:
-					if( sts[cid].subjects.length>0 ) {
+					if( stC[cid].subjects.length>0 ) {
 
 						// collect all related resources (here subjects):
-						resL = forAll( sts[cid].subjects, (s)=>{ return { id:s.id, ti:titleOf( s, undefined, opts ) }; });
+						resL = forAll( stC[cid].subjects, (s)=>{ return { id:s.id, ti:titleOf( s, undefined, opts ) }; });
 						
 						cell = '';
 						resL
@@ -407,10 +407,10 @@ function toOxml( data, opts ) {
 						}
 					};
 					
-					if( sts[cid].objects.length>0 ) {
+					if( stC[cid].objects.length>0 ) {
 
 						// collect all related resources (here objects):
-						resL = forAll( sts[cid].objects, (o)=>{ return { id:o.id, ti:titleOf( o, undefined, opts ) }; });
+						resL = forAll( stC[cid].objects, (o)=>{ return { id:o.id, ti:titleOf( o, undefined, opts ) }; });
 						
 						cell = '';
 						resL
@@ -776,44 +776,13 @@ function toOxml( data, opts ) {
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
 
-								// assuming that <b> and <strong> are not nested:
-								if( /<b>|<strong>/.test($2) ) {
-									fmt.font.weight = 'bold';
-									return ''
-								};
-								if( /<\/b>|<\/strong>/.test($2) ) {
-									delete fmt.font.weight;	// simply, since there is only one value so far.
-									return ''
-								};
-								// assuming that <i> and <em> are not nested:
-								if( /<i>|<em>/.test($2) ) {
-									fmt.font.style = 'italic';
-									return '';
-								};
-								if( /<\/i>|<\/em>/.test($2) ) {
-									delete fmt.font.style;	// simply, since there is only one value so far.
-									return '';
-								};
-								// Set the color of the next text span;
-								// Limitation: Only numeric color codes are recognized, so far:
-								let sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
-								if( sp && sp.length>1 ) {
-									fmt.font.color = sp[1].toUpperCase();
-									return '';
-								};
-								if( /<\/span>/.test($2) ) {
-									delete fmt.font.color;
-									return '';
-								};
-								// ToDo: Transform '<span style="text-decoration: underline;">'
-								// Similarly: <u>, see https://www.tutorialspoint.com/How-to-underline-a-text-in-HTML
 								// an internal link (hyperlink, "titleLink"):
 								if( reTitleLink.test($2) ) {
 									p.runs.push(titleLink($2,opts));
 									return '';
 								};
 								// A web link:
-								sp = reLink.exec($2);   
+								let sp = reLink.exec($2);   
 								if( sp && sp.length>2 ) {
 									p.runs.push(parseA( {properties:sp[1],innerHTML:sp[2]} ));
 									return '';
@@ -844,7 +813,40 @@ function toOxml( data, opts ) {
 									p.runs.push(parseObject( {properties:sp[1],innerHTML:sp[3]} ));
 									return ''
 								};
-								console.warn("'",$2,"' has not been transformed because none of the patterns has matched." );
+
+								// assuming that <b> and <strong> are not nested:
+								if (/<b>|<strong>/.test($2)) {
+									fmt.font.weight = 'bold';
+									return ''
+								};
+								if (/<\/b>|<\/strong>/.test($2)) {
+									delete fmt.font.weight;	// simply, since there is only one value so far.
+									return ''
+								};
+								// assuming that <i> and <em> are not nested:
+								if (/<i>|<em>/.test($2)) {
+									fmt.font.style = 'italic';
+									return '';
+								};
+								if (/<\/i>|<\/em>/.test($2)) {
+									delete fmt.font.style;	// simply, since there is only one value so far.
+									return '';
+								};
+								// Set the color of the next text span;
+								// Limitation: Only numeric color codes are recognized, so far:
+								sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
+								if (sp && sp.length > 1) {
+									fmt.font.color = sp[1].toUpperCase();
+									return '';
+								};
+								if (/<\/span>/.test($2)) {
+									delete fmt.font.color;
+									return '';
+								};
+								// ToDo: Transform '<span style="text-decoration: underline;">'
+								// Similarly: <u>, see https://www.tutorialspoint.com/How-to-underline-a-text-in-HTML
+
+								console.warn("'", $2, "' has not been transformed because none of the patterns has matched.");
 								return ''  // consume the matched text
 							});
 							// finally store the remainder:
