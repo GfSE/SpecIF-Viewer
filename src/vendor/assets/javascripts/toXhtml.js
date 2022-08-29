@@ -61,7 +61,7 @@ function toXhtml( data, opts ) {
 	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 	// Limitation: the innerHTML may not have any tags.
 	// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-	const reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+	const reSO = '<object ([^>]+)(/>|>(.*?)</object>)',
 		reSingleObject = new RegExp( reSO, 'g' );
 	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 	// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
