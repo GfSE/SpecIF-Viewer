@@ -601,8 +601,15 @@ moduleManager.construct({
 		self.newRes.changedAt = chD;
 //		console.debug('save',simpleClone(self.newRes));
 
-		app.cache.selectedProject.updateItems('resource', [self.newRes])
-			.then(finalize, LIB.stdError);
+		switch (mode) {
+			case 'update':
+				app.cache.selectedProject.updateItems('resource', [self.newRes])
+					.then(finalize, LIB.stdError);
+				break;
+			default:
+				app.cache.selectedProject.createItems('resource', [self.newRes])
+					.then(finalize, LIB.stdError);
+		};
 
 		// If it is a new item, insert a mode in the hierarchy:
 		switch (mode) {

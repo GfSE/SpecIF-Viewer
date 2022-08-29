@@ -632,7 +632,7 @@ LIB.itemByTitle = (L: ItemWithNativeTitle[],ti:string):any => {
 }
 LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
 	// Return the index of item in L referenced by key k:
-	//  - If an item in list (L) has no specified revision, any reference may not specify a revision.
+	//  - If an item in list (L) has no specified revision, a reference key may not specify a revision.
 	//  - If k has no revision, the item in L having the latest revision applies.
 	//  - If k has a revision, the item in L having an an equal or the next lower revision applies.
 	//  - The uniqueness of keys has been checked, before.

@@ -149,10 +149,11 @@ class CPropertyToShow implements SpecifProperty {
 				ct = this.allValues(opts).replace(/^\s+/, "");
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
+				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
+				ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
 				if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
 					ct = ct.makeHTML(opts);
-				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
 				break;
 			case SpecifDataTypeEnum.DateTime:
@@ -2013,6 +2014,41 @@ moduleManager.construct({
 		.open();
 		return;
 		
+		function delNd(nd: jqTreeNode): void {
+			// Delete the hierarchy node and all it's children. 
+			console.info("Deleting tree object '" + nd.name + "'.");
+
+			// 1. Step away from tbe node to delete:
+			//			console.debug('deleteNode',nd,nd.getNextSibling());
+			self.parent.tree.selectNode(nd.getNextSibling());
+
+			// 2. Delete the hierarchy entry with all its children in cache and server:
+			app.cache.selectedProject.deleteItems('node', [LIB.makeKey(nd)])
+				.then(
+					() => {
+						// If a diagram has been deleted, build a new glossary with elements 
+						// which are shown by any of the remaining diagrams:
+						app.cache.selectedProject.createFolderWithGlossary({ addGlossary: true })
+							.then(
+								() => {
+									app.cache.selectedProject.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
+										.then(
+											() => {
+												self.parent.updateTree({
+													targetLanguage: browser.language,
+													lookupTitles: true
+												});
+												self.parent.doRefresh({ forced: true })
+											},
+											LIB.stdError
+										);
+								},
+								LIB.stdError
+							)
+					},
+					LIB.stdError
+				);
+		}
 	/*	function enableDel( resId ) {
 		// Check, if the specified resource can be deleted.
 		// ToDo: also check permission via self.resources.selected().value.del
@@ -2045,7 +2081,7 @@ moduleManager.construct({
 					},
 					LIB.stdError 
 				);
-		} */
+		} 
 		function delNd(nd: jqTreeNode): void {
 			// Delete the hierarchy node and all it's children. 
 			console.info( "Deleting tree object '"+nd.name+"'." );
@@ -2075,7 +2111,7 @@ moduleManager.construct({
 					},
 					LIB.stdError 
 				);
-		}
+		} */
 	};
 /*	self.deleteResource = ()=>{
 		// Delete the selected resource, all tree nodes and their children.

@@ -495,7 +495,6 @@ class CSpecIF implements SpecIF {
 		}
 		// common for all resources or statements:
 		function a2int(iE:any): SpecifInstance {
-		//	var oE = i2int(iE),
 			var	oE: any = {
 					id: iE.id,
 			//		class: LIB.makeKey(iE.subject ? iE[names.sClass] : iE[names.rClass]),
