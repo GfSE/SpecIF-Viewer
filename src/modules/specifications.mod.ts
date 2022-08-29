@@ -65,10 +65,10 @@ class CPropertyToShow implements Property {
 					ct = i18n.lookup(ct);
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
+				ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
 				if (CONFIG.excludedFromFormatting.indexOf(propTitleOf(this, pData)) < 0)
 					ct = ct.makeHTML(opts);
-				ct = this.renderFile(ct, opts);   // show the diagrams
 				ct = this.titleLinks(ct, opts);
 				break;
 			case TypeEnum.XsDateTime:
