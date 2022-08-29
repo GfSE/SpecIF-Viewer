@@ -710,7 +710,7 @@ const RE:any = {};
 	RE.attrType = /type="([^"]+)"/;
 	RE.attrData = /data="([^"]+)"/;
 
-const reSO = '<object ([^>]+?)(/>|>([^<]*?)</object>)';
+const reSO = '<object ([^>]+?)(/>|>(.*?)</object>)';
 	RE.tagSingleObject = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object ([^>]+?)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.inQuotes = /"(\S[^"]*?\S)"|'(\S[^']*?\S)'/i;  // empty space in the middle allowed, but not as first and last character

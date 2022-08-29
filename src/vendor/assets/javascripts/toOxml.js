@@ -198,7 +198,7 @@ function toOxml( data, opts ) {
 			// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 			// Limitation: the innerHTML may not have any tags.
 			// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-			const reSO = '<object([^>]+?)(/>|>([^<]*?)</object>)',
+			const reSO = '<object ([^>]+?)(/>|>(.*?)</object>)',
 				reSingleObject = new RegExp( reSO, '' );
 		/*	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 			// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
@@ -776,44 +776,13 @@ function toOxml( data, opts ) {
 								// remove the next tag and update the formatting,
 								// $2 can only be one of the following:
 
-								// assuming that <b> and <strong> are not nested:
-								if( /<b>|<strong>/.test($2) ) {
-									fmt.font.weight = 'bold';
-									return ''
-								};
-								if( /<\/b>|<\/strong>/.test($2) ) {
-									delete fmt.font.weight;	// simply, since there is only one value so far.
-									return ''
-								};
-								// assuming that <i> and <em> are not nested:
-								if( /<i>|<em>/.test($2) ) {
-									fmt.font.style = 'italic';
-									return '';
-								};
-								if( /<\/i>|<\/em>/.test($2) ) {
-									delete fmt.font.style;	// simply, since there is only one value so far.
-									return '';
-								};
-								// Set the color of the next text span;
-								// Limitation: Only numeric color codes are recognized, so far:
-								let sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
-								if( sp && sp.length>1 ) {
-									fmt.font.color = sp[1].toUpperCase();
-									return '';
-								};
-								if( /<\/span>/.test($2) ) {
-									delete fmt.font.color;
-									return '';
-								};
-								// ToDo: Transform '<span style="text-decoration: underline;">'
-								// Similarly: <u>, see https://www.tutorialspoint.com/How-to-underline-a-text-in-HTML
 								// an internal link (hyperlink, "titleLink"):
 								if( reTitleLink.test($2) ) {
 									p.runs.push(titleLink($2,opts));
 									return '';
 								};
 								// A web link:
-								sp = reLink.exec($2);   
+								let sp = reLink.exec($2);   
 								if( sp && sp.length>2 ) {
 									p.runs.push(parseA( {properties:sp[1],innerHTML:sp[2]} ));
 									return '';
@@ -844,7 +813,40 @@ function toOxml( data, opts ) {
 									p.runs.push(parseObject( {properties:sp[1],innerHTML:sp[3]} ));
 									return ''
 								};
-								console.warn("'",$2,"' has not been transformed because none of the patterns has matched." );
+
+								// assuming that <b> and <strong> are not nested:
+								if (/<b>|<strong>/.test($2)) {
+									fmt.font.weight = 'bold';
+									return ''
+								};
+								if (/<\/b>|<\/strong>/.test($2)) {
+									delete fmt.font.weight;	// simply, since there is only one value so far.
+									return ''
+								};
+								// assuming that <i> and <em> are not nested:
+								if (/<i>|<em>/.test($2)) {
+									fmt.font.style = 'italic';
+									return '';
+								};
+								if (/<\/i>|<\/em>/.test($2)) {
+									delete fmt.font.style;	// simply, since there is only one value so far.
+									return '';
+								};
+								// Set the color of the next text span;
+								// Limitation: Only numeric color codes are recognized, so far:
+								sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
+								if (sp && sp.length > 1) {
+									fmt.font.color = sp[1].toUpperCase();
+									return '';
+								};
+								if (/<\/span>/.test($2)) {
+									delete fmt.font.color;
+									return '';
+								};
+								// ToDo: Transform '<span style="text-decoration: underline;">'
+								// Similarly: <u>, see https://www.tutorialspoint.com/How-to-underline-a-text-in-HTML
+
+								console.warn("'", $2, "' has not been transformed because none of the patterns has matched.");
 								return ''  // consume the matched text
 							});
 							// finally store the remainder:
