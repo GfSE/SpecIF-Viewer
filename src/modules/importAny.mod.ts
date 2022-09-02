@@ -560,6 +560,7 @@ moduleManager.construct({
 					case 'adopt':
 						opts.deduplicate = true;
 						opts.addGlossary = true;
+						opts.addUnreferencedResources = true;
 						opts.collectProcesses = true;
 						app.cache.selectedProject.adopt( dta, opts )
 							.progress( setProgress )

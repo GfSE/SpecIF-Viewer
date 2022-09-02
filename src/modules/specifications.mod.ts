@@ -1298,39 +1298,40 @@ moduleManager.construct({
 							predecessor?: string;
                         }
 						function moveNode(movedNd: jqTreeNode, target: ITargetNode ):void {
-//								console.debug( 'move: ', movedNd.name, target );
-								let chd = new Date().toISOString(),
-									h: INodeWithPosition = toSpecIF(movedNd);
-								// Add predecessor or parent:
-								// @ts-ignore - index is ok:
-								for (var p in target) { h[p] = target[p].id };
+//							console.debug( 'move: ', movedNd.name, target );
 
-								self.selPrj.createItems( 'node', [h] )
-								.then( 
-									()=>{
-										self.tree.numberize();
-//										console.debug( self.tree.selectedNode.name, event.move_info.moved_node.name );
-										// @ts-ignore - ElementById 'CONFIG.objectList' does exist
-										document.getElementById(CONFIG.objectList).scrollTop = 0;
-										self.refresh();
-									},
-									LIB.stdError 
-								);
-								return;
-
-								function toSpecIF(mNd: jqTreeNode):SpecifNode {
-									// transform from jqTree node to SpecIF node:
-									var nd: INodeWithPosition = {
-										//	id: LIB.genID('N-'),
-											id: mNd.id,
-											resource: mNd.ref,
-											changedAt: chd
-										},
-										ch = mNd.children.map( toSpecIF );
-									if( ch.length>0 ) nd.nodes = ch;
-									return nd;
-								}
+							function toSpecIF(mNd: jqTreeNode): SpecifNode {
+								// transform from jqTree node to SpecIF node:
+								var nd: INodeWithPosition = {
+									//	id: LIB.genID('N-'),
+									id: mNd.id,
+									resource: mNd.ref,
+									changedAt: chd
+								},
+									ch = mNd.children.map(toSpecIF);
+								if (ch.length > 0) nd.nodes = ch;
+								return nd;
 							}
+
+							let chd = new Date().toISOString(),
+								h: INodeWithPosition = toSpecIF(movedNd);
+							// Add predecessor or parent:
+							// @ts-ignore - index is ok:
+							for (var p in target) { h[p] = target[p].id };
+
+							self.selPrj.createItems( 'node', [h] )
+							.then( 
+								()=>{
+									self.tree.numberize();
+//									console.debug( self.tree.selectedNode.name, event.move_info.moved_node.name );
+									// @ts-ignore - ElementById 'CONFIG.objectList' does exist
+									document.getElementById(CONFIG.objectList).scrollTop = 0;
+									self.refresh();
+								},
+								LIB.stdError 
+							);
+							// return;
+						}
 						
 						app.busy.set();
 						// 1. Delete the moved node with all its children:
@@ -1583,6 +1584,8 @@ moduleManager.construct({
 		// Refresh the view;
 		// this routine is called in the following situations:
 		// - user clicks in the tree
+		// - user opens or closes a tree folder
+		// - user moves a node within the tree
 		// - cache update is signalled
 		// --> Don't disturb the user in case of the editing views ('objectEdit', 'linker').
 //		console.debug('doRefresh',parms);
@@ -1591,6 +1594,27 @@ moduleManager.construct({
 	
 		// update the current view:
 		self.ViewControl.selected.show( parms );
+	};
+	self.reworkTree = (): void => {
+	//	app.cache.selectedProject.createFolderWithGlossary({ addGlossary: true })
+		self.selPrj.createFolderWithGlossary({ addGlossary: true })
+			.then(
+				() => {
+				//	app.cache.selectedProject.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
+					self.selPrj.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
+						.then(
+							() => {
+								self.updateTree({
+									targetLanguage: browser.language,
+									lookupTitles: true
+								});
+								self.doRefresh({ forced: true })
+							},
+							LIB.stdError
+						);
+				},
+				LIB.stdError
+			)
 	};
 
 /* ++++++++++++++++++++++++++++++++
@@ -2025,27 +2049,9 @@ moduleManager.construct({
 			// 2. Delete the hierarchy entry with all its children in cache and server:
 			app.cache.selectedProject.deleteItems('node', [LIB.makeKey(nd)])
 				.then(
-					() => {
-						// If a diagram has been deleted, build a new glossary with elements 
-						// which are shown by any of the remaining diagrams:
-						app.cache.selectedProject.createFolderWithGlossary({ addGlossary: true })
-							.then(
-								() => {
-									app.cache.selectedProject.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
-										.then(
-											() => {
-												self.parent.updateTree({
-													targetLanguage: browser.language,
-													lookupTitles: true
-												});
-												self.parent.doRefresh({ forced: true })
-											},
-											LIB.stdError
-										);
-								},
-								LIB.stdError
-							)
-					},
+					// If a diagram has been deleted, build a new glossary with elements 
+					// which are shown by any of the remaining diagrams:
+					self.parent.reworkTree(),
 					LIB.stdError
 				);
 		}

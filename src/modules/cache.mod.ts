@@ -925,7 +925,7 @@ class CProject {
 				function isRoot(nd: INodeWithPosition): boolean {
 					// Return true, if the node is placed in the hierarchies folder as root element:
 					return (!nd.parent
-						&& (!nd.predecessor || LIB.indexByKey(self.hierarchies,nd.predecessor)>-1 )
+						&& (!nd.predecessor || LIB.indexById(self.hierarchies,nd.predecessor)>-1 )
 					);
 				}
 				switch (ctg) {
@@ -1572,7 +1572,7 @@ class CProject {
 				);
 
 				// 1.2 Delete now:
-//				console.debug('createFolderWithGlossary',delL,resL);
+//				console.debug('createFolderWithUnreferencedResources',delL,resL);
 				self.deleteItems('node', delL)
 					.then(
 						() => {
@@ -1666,7 +1666,7 @@ class CProject {
 						if (pVs.length > 0
 							&& CONFIG.resClassGlossary == LIB.languageValueOf(pVs[0], { targetLanguage: self.language })) {
 								delHL.push(nd);
-								// Collect the folder resources of the glossary:
+								// Collect all folder resources of the glossary:
 								delRL.push(nd.resource);
 								for ( var n of nd.nodes )
 									delRL.push( n.resource )
@@ -1686,8 +1686,8 @@ class CProject {
 				self.deleteItems('resource', delRL)
 					.then(
 						() => {
-							// Delete the glossary subtree
-							return self.deleteItems('hierarchy', delHL)
+							// Delete the glossary subtree, can be a root node or not, therefore use 'node':
+							return self.deleteItems('node', delHL)
 						}
 					)
 					.then(

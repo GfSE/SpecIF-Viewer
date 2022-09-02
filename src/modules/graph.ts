@@ -421,8 +421,7 @@ app.vicinityGraph = function() {
          * @returns {string} title of the resource with icon, if available
          */
 		function getResourceTitle(res: IGraphResource):string {
-            if( res.title ) return LIB.xmlChar2utf8(res.title);
-			return '';
+			return res.title? LIB.xmlChar2utf8(res.title) : '';
         }
 
         /**
@@ -431,8 +430,7 @@ app.vicinityGraph = function() {
          * @returns the title of the statement.
          */
 		function getStatementTitle(stm: IGraphStatement):string {
-            if( stm.title ) return LIB.xmlChar2utf8(stm.title);
-			return '';
+			return stm.title? LIB.xmlChar2utf8(stm.title) : '';
         }
 
         /**
