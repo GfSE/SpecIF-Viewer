@@ -521,135 +521,140 @@ class CProject {
 
 		return new Promise(
 			(resolve, reject) => {
-				this.readItems('hierarchy', this.hierarchies, opts)
-					.then(
-						(hL) => {
-							exD.hierarchies = hL as SpecifNode[];
+				// Get the memorized hierarchies of this project - except the folder with unreferenced resources:
+				this.readItems(
+					'hierarchy',
+					this.hierarchies.filter((n: SpecifNode) => { return !n.id.includes("UnreferencedResources"); }),
+					opts
+				)
+				.then(
+					(hL) => {
+						exD.hierarchies = hL as SpecifNode[];
 //							console.debug('1', simpleClone(exD));
-							return this.readItems('resource', LIB.collectResourcesByHierarchy(this.data, hL), opts)
-						}
-					)
-					.then(
-						(rL) => {
-							exD.resources = rL as SpecifResource[];
+						return this.readItems('resource', LIB.collectResourcesByHierarchy(this.data, hL), opts)
+					}
+				)
+				.then(
+					(rL) => {
+						exD.resources = rL as SpecifResource[];
 //							console.debug('2', simpleClone(exD));
-							return this.readItems('statement', flt, opts);
+						return this.readItems('statement', flt, opts);
 
-							function flt(s:SpecifStatement) {
-								let rL = exD.resources;
-								return LIB.indexByKey(rL, s.subject) > -1 && LIB.indexByKey(rL, s.object) > -1
-							}
+						function flt(s:SpecifStatement) {
+							let rL = exD.resources;
+							return LIB.indexByKey(rL, s.subject) > -1 && LIB.indexByKey(rL, s.object) > -1
 						}
-					)
-					.then(
-						(sL) => {
-							exD.statements = sL as SpecifStatement[];
-							// collect the resourceClasses referenced by the resources of this project:
-							// start with the stored resourceClasses of this project in case they have no instances (yet):
-							// @ts-ignore - ts-compiler is very picky, here
-							let rCL: SpecifKey[] = [].concat(this.resourceClasses);
-							// add those actually used by the project - avoiding duplicates, of course:
-							for( var r of exD.resources ) {
-								// assuming all used classes have the same revision
-								LIB.cacheE(rCL, r['class']);
-							};
+					}
+				)
+				.then(
+					(sL) => {
+						exD.statements = sL as SpecifStatement[];
+						// collect the resourceClasses referenced by the resources of this project:
+						// start with the stored resourceClasses of this project in case they have no instances (yet):
+						// @ts-ignore - ts-compiler is very picky, here
+						let rCL: SpecifKey[] = [].concat(this.resourceClasses);
+						// add those actually used by the project - avoiding duplicates, of course:
+						for( var r of exD.resources ) {
+							// assuming all used classes have the same revision
+							LIB.cacheE(rCL, r['class']);
+						};
 //							console.debug('3', simpleClone(exD), rCL);
-							return this.readItems('resourceClass', rCL, opts);
-						}
-					)
-					.then(
-						(rCL) => {
-							exD.resourceClasses = rCL as SpecifResourceClass[];
-							// collect the statementClasses referenced by the resources of this project:
-							// start with the stored statementClasses of this project in case they have no instances (yet):
-							// @ts-ignore - ts-compiler is very picky, here
-							let sCL: SpecifKey[] = [].concat(this.statementClasses);
-							// add those actually used by the project - avoiding duplicates, of course:
-							for (var s of exD.statements ) {
-								// assuming all used classes have the same revision
-								LIB.cacheE(sCL, s['class']);
-							};
+						return this.readItems('resourceClass', rCL, opts);
+					}
+				)
+				.then(
+					(rCL) => {
+						exD.resourceClasses = rCL as SpecifResourceClass[];
+						// collect the statementClasses referenced by the resources of this project:
+						// start with the stored statementClasses of this project in case they have no instances (yet):
+						// @ts-ignore - ts-compiler is very picky, here
+						let sCL: SpecifKey[] = [].concat(this.statementClasses);
+						// add those actually used by the project - avoiding duplicates, of course:
+						for (var s of exD.statements ) {
+							// assuming all used classes have the same revision
+							LIB.cacheE(sCL, s['class']);
+						};
 //							console.debug('4', simpleClone(exD), sCL);
-							return this.readItems('statementClass', sCL, opts);
-						}
-					)
-					.then(
-						(sCL) => {
-							exD.statementClasses = sCL as SpecifStatementClass[];
-							// collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
-							// start with the stored propertyClasses of this project in case they have no references (yet):
-							// @ts-ignore - ts-compiler is very picky, here
-							let pCL: SpecifKey[] = [].concat(this.propertyClasses);
-							// add those actually used by the project - avoiding duplicates, of course:
-							// @ts-ignore - both resourceClasses and statementClasses have a list of propertyClasses:
-							for (var eC of exD.resourceClasses.concat(exD.statementClasses) ) {
-								// assuming all used classes have the same revision
-								for (var pC of eC.propertyClasses) {
-									LIB.cacheE(pCL, pC);
-								};
+						return this.readItems('statementClass', sCL, opts);
+					}
+				)
+				.then(
+					(sCL) => {
+						exD.statementClasses = sCL as SpecifStatementClass[];
+						// collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
+						// start with the stored propertyClasses of this project in case they have no references (yet):
+						// @ts-ignore - ts-compiler is very picky, here
+						let pCL: SpecifKey[] = [].concat(this.propertyClasses);
+						// add those actually used by the project - avoiding duplicates, of course:
+						// @ts-ignore - both resourceClasses and statementClasses have a list of propertyClasses:
+						for (var eC of exD.resourceClasses.concat(exD.statementClasses) ) {
+							// assuming all used classes have the same revision
+							for (var pC of eC.propertyClasses) {
+								LIB.cacheE(pCL, pC);
 							};
+						};
 //							console.debug('5', simpleClone(exD),pCL);
-							return this.readItems('propertyClass', pCL, opts);
+						return this.readItems('propertyClass', pCL, opts);
+					}
+				)
+				.then(
+					(pCL) => {
+						exD.propertyClasses = pCL as SpecifPropertyClass[];
+						// collect the dataTypes referenced by the propertyClasses of this project:
+						// start with the stored dataTypes of this project in case they have no references (yet):
+						// @ts-ignore - ts-compiler is very picky, here
+						let dTL: SpecifKey[] = [].concat(this.dataTypes);
+						// add those actually used by the project - avoiding duplicates, of course:
+						for( var pC of exD.propertyClasses ) {
+							// assuming all used classes have the same revision
+							LIB.cacheE(dTL, pC['dataType']);
 						}
-					)
-					.then(
-						(pCL) => {
-							exD.propertyClasses = pCL as SpecifPropertyClass[];
-							// collect the dataTypes referenced by the propertyClasses of this project:
-							// start with the stored dataTypes of this project in case they have no references (yet):
-							// @ts-ignore - ts-compiler is very picky, here
-							let dTL: SpecifKey[] = [].concat(this.dataTypes);
-							// add those actually used by the project - avoiding duplicates, of course:
-							for( var pC of exD.propertyClasses ) {
-								// assuming all used classes have the same revision
-								LIB.cacheE(dTL, pC['dataType']);
-							}
 
 //							console.debug('6', simpleClone(exD),dTL);
-							return this.readItems('dataType', dTL, opts)
-						}
-					)
-					.then(
-						(dTL) => {
-							exD.dataTypes = dTL as SpecifDataType[];
-							// collect the files referenced by the resource properties of this project:
-							let fL: string[] = [],
-								dT: SpecifDataType;
-							for (var r of exD.resources) {
-								for (var p of r.properties) {
-									dT = LIB.dataTypeOf(p['class'], this.data);
-									if (dT && dT.type == SpecifDataTypeEnum.String) {
-										// Cycle through all values:
-										for (var v of p.values) {
-											// Cycle through all languages of a value:
-											for (var l of v) {
-												// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#specifications
-												let re = /data="([^"]+)"/g,
-													mL;
-												// Get multiple references in a single property:
-												// @ts-ignore - in case of SpecifDataTypeEnum there is a property 'text'
-												while ((mL = re.exec(l.text)) !== null) {
-													// mL[1] is the file title
-													LIB.cacheE(fL, mL[1]);
-												};
+						return this.readItems('dataType', dTL, opts)
+					}
+				)
+				.then(
+					(dTL) => {
+						exD.dataTypes = dTL as SpecifDataType[];
+						// collect the files referenced by the resource properties of this project:
+						let fL: string[] = [],
+							dT: SpecifDataType;
+						for (var r of exD.resources) {
+							for (var p of r.properties) {
+								dT = LIB.dataTypeOf(p['class'], this.data);
+								if (dT && dT.type == SpecifDataTypeEnum.String) {
+									// Cycle through all values:
+									for (var v of p.values) {
+										// Cycle through all languages of a value:
+										for (var l of v) {
+											// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#specifications
+											let re = /data="([^"]+)"/g,
+												mL;
+											// Get multiple references in a single property:
+											// @ts-ignore - in case of SpecifDataTypeEnum there is a property 'text'
+											while ((mL = re.exec(l.text)) !== null) {
+												// mL[1] is the file title
+												LIB.cacheE(fL, mL[1]);
 											};
 										};
 									};
 								};
 							};
+						};
 //							console.debug('7', simpleClone(exD),fL);
-							return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts);
-						}
-					)
-					.then(
-						(fL) => {
-							exD.files = fL as IFileWithContent[];
+						return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts);
+					}
+				)
+				.then(
+					(fL) => {
+						exD.files = fL as IFileWithContent[];
 //							console.debug('8', simpleClone(exD));
-							return exD.get(opts);
-						}
-					)
-					.then(resolve)
-					.catch(reject)
+						return exD.get(opts);
+					}
+				)
+				.then(resolve)
+				.catch(reject)
 
 			/*	// Copy the whole cache (which is acceptable here, as long as only one project is handled ...)
 				pend = standardTypes.iterateLists(
@@ -2364,7 +2369,12 @@ class CProject {
 		return LIB.equalBoolean(refE.multiple, newE.multiple);
 	}
 	private equalPC(refE: SpecifPropertyClass, newE: SpecifPropertyClass): boolean {
-		// return true, if reference and new propertyClass are equal:
+		// return true, if reference and new propertyClass are equal.
+
+		// In Archimate export from ADOIT it may happen, that there are more than 1 propertyDefinitions
+		// with the same data type and name are used by the same resourceClass --> Avoid deduplication.
+
+		// Default values must also be congruent:
 		if (Array.isArray(refE.values) != Array.isArray(newE.values)) return false;
 		return refE.title == newE.title
 			&& LIB.equalKey(refE.dataType, newE.dataType)

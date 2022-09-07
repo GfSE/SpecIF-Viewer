@@ -193,45 +193,66 @@ function Archimate2Specif(xmlString, opts) {
 					let pCId = pr.getAttribute('propertyDefinitionRef'),
 						val = getChildsInnerByTag(pr, 'value');
 
-					// Discover native properties and assign the value to those,
-					// e.g.: Author, Last editor, Creation date, Date of last change.
-					switch (pCId) {
-						case 'AUTHOR':
-							if (val)
+					if (pCId && val)
+						switch (pCId) {
+							// Discover native properties and assign the value to those,
+							// e.g.: Author, Last editor, Creation date, Date of last change.
+							case 'AUTHOR':
+								// used by ADOIT, perhaps others
 								res.createdBy = val;
-							break;
-						case 'CREATION_DATE':
-							if (val)
+								break;
+							case 'CREATION_DATE':
+								// used by ADOIT, perhaps others
 								res.createdAt = makeISODate(val);
-							break;
-						case 'LAST_EDITOR':
-							if (val)
+								break;
+							case 'LAST_EDITOR':
+								// used by ADOIT, perhaps others
 								res.changedBy = val;
-							break;
-						case 'DATE_OF_LAST_CHANGE':
-							if (val)
+								break;
+							case 'DATE_OF_LAST_CHANGE':
+								// used by ADOIT, perhaps others
 								res.changedAt = makeISODate(val);
-							break;
-						default:
-							// Certain Archimate propertyDefinitions are used to hide a view,
-							// namely the ones whose names are listed in opts.hiddenDiagramProperties,
-							// and are thus not transformed to a propertyClass;
-							// properties referencing these can/must be skipped here.
-							// In fact, execution gets here only and the if condition fails, 
-							// only if the property is defined for a view, but set to 'false'.
-							if (indexById(model.propertyClasses, pCId) > -1) {
-								// Add keys to the resourceClass, if not yet present:
-								addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
+								break;
+							default:
+								// Certain Archimate propertyDefinitions are used to hide a view,
+								// namely the ones whose names are listed in opts.hiddenDiagramProperties,
+								// and are thus not transformed to a propertyClass;
+								// properties referencing these can/must be skipped here.
+								// In fact, execution gets here only and the if condition fails, 
+								// only if the property is defined for a view, but set to 'false'.
+								let pCi = indexById(model.propertyClasses, pCId);
+								if ( pCi > -1) {
+									// Due to an error in ADOIT export it has been observed that a property has been listed twice
+									// with different, but substantially equivalent propertyClasses.
+									// So we store a property only, if it's propertyClass is different in terms of title and dataType
+									// than any other property of that element (resource).
+									// Otherwise, upon import equivalent propertyClasses would be deduplicated and the resource res
+									// would have two property values with the same propertyClass, which is not permissible according
+									// to the schema.
+									// If it is necessary to keep all properties, set opts.propertyClassesShallHaveDifferentTitles to 'true'.
+									function isReferenced(cl,pL) {
+										for (var p of pL) if (cl.id==p['class']) return true;
+										return false;
+                                    }
+									let nPC = model.propertyClasses[pCi],
+										pCs = model.propertyClasses
+												.filter(
+													(pC) => { return isReferenced(pC,res.properties) && pC.dataType==nPC.dataType && pC.title==nPC.title}
+												);
+									if (pCs.length < 1) {
+										// This resource res does not have another property with essentially the same propertyClass as nPC, yet
 
-								// Add property to the resource res at hand:
-								if (val)
-									res.properties.push({
-										class: pCId,
-										value: val
-									});
-							};
-					};
+										// Add keys to the resourceClass, if not yet present:
+										addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
 
+										// Add property to the resource res at hand:
+										res.properties.push({
+											class: pCId,
+											value: val
+										});
+									}
+								};
+						};
 				};
 			}
 		);
@@ -478,6 +499,7 @@ function Archimate2Specif(xmlString, opts) {
 				case 'Artifact':
 				case "WorkPackage":
 				case "Deliverable":
+				case "Plateau":
 				case "Outcome":
 				case "Principle":
 				case "Meaning":
