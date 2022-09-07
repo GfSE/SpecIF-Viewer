@@ -74,6 +74,11 @@ function Archimate2Specif(xmlString, opts) {
 		apx = simpleHash(model.id),
 		idResourceClassDiagram = "RC-Diagram",
 		idResourceClassActor = "RC-Actor",
+		idResourceClassState = "RC-State",
+		idResourceClassEvent = "RC-Event",
+		idResourceClassCollection = "RC-Collection",
+		idResourceClassRequirement = "RC-Requirement",
+		idResourceClassFolder = "RC-Folder",
 		hId = 'Archimate-' + apx;
 
 	model["$schema"] = "https://specif.de/v1.0/schema.json";
@@ -188,45 +193,66 @@ function Archimate2Specif(xmlString, opts) {
 					let pCId = pr.getAttribute('propertyDefinitionRef'),
 						val = getChildsInnerByTag(pr, 'value');
 
-					// Discover native properties and assign the value to those,
-					// e.g.: Author, Last editor, Creation date, Date of last change.
-					switch (pCId) {
-						case 'AUTHOR':
-							if (val)
+					if (pCId && val)
+						switch (pCId) {
+							// Discover native properties and assign the value to those,
+							// e.g.: Author, Last editor, Creation date, Date of last change.
+							case 'AUTHOR':
+								// used by ADOIT, perhaps others
 								res.createdBy = val;
-							break;
-						case 'CREATION_DATE':
-							if (val)
+								break;
+							case 'CREATION_DATE':
+								// used by ADOIT, perhaps others
 								res.createdAt = makeISODate(val);
-							break;
-						case 'LAST_EDITOR':
-							if (val)
+								break;
+							case 'LAST_EDITOR':
+								// used by ADOIT, perhaps others
 								res.changedBy = val;
-							break;
-						case 'DATE_OF_LAST_CHANGE':
-							if (val)
+								break;
+							case 'DATE_OF_LAST_CHANGE':
+								// used by ADOIT, perhaps others
 								res.changedAt = makeISODate(val);
-							break;
-						default:
-							// Certain Archimate propertyDefinitions are used to hide a view,
-							// namely the ones whose names are listed in opts.hiddenDiagramProperties,
-							// and are thus not transformed to a propertyClass;
-							// properties referencing these can/must be skipped here.
-							// In fact, execution gets here only and the if condition fails, 
-							// only if the property is defined for a view, but set to 'false'.
-							if (indexById(model.propertyClasses, pCId) > -1) {
-								// Add keys to the resourceClass, if not yet present:
-								addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
+								break;
+							default:
+								// Certain Archimate propertyDefinitions are used to hide a view,
+								// namely the ones whose names are listed in opts.hiddenDiagramProperties,
+								// and are thus not transformed to a propertyClass;
+								// properties referencing these can/must be skipped here.
+								// In fact, execution gets here only and the if condition fails, 
+								// only if the property is defined for a view, but set to 'false'.
+								let pCi = indexById(model.propertyClasses, pCId);
+								if ( pCi > -1) {
+									// Due to an error in ADOIT export it has been observed that a property has been listed twice
+									// with different, but substantially equivalent propertyClasses.
+									// So we store a property only, if it's propertyClass is different in terms of title and dataType
+									// than any other property of that element (resource).
+									// Otherwise, upon import equivalent propertyClasses would be deduplicated and the resource res
+									// would have two property values with the same propertyClass, which is not permissible according
+									// to the schema.
+									// If it is necessary to keep all properties, set opts.propertyClassesShallHaveDifferentTitles to 'true'.
+									function isReferenced(cl,pL) {
+										for (var p of pL) if (cl.id==p['class']) return true;
+										return false;
+                                    }
+									let nPC = model.propertyClasses[pCi],
+										pCs = model.propertyClasses
+												.filter(
+													(pC) => { return isReferenced(pC,res.properties) && pC.dataType==nPC.dataType && pC.title==nPC.title}
+												);
+									if (pCs.length < 1) {
+										// This resource res does not have another property with essentially the same propertyClass as nPC, yet
 
-								// Add property to the resource res at hand:
-								if (val)
-									res.properties.push({
-										class: pCId,
-										value: val
-									});
-							};
-					};
+										// Add keys to the resourceClass, if not yet present:
+										addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
 
+										// Add property to the resource res at hand:
+										res.properties.push({
+											class: pCId,
+											value: val
+										});
+									}
+								};
+						};
 				};
 			}
 		);
@@ -473,25 +499,26 @@ function Archimate2Specif(xmlString, opts) {
 				case 'Artifact':
 				case "WorkPackage":
 				case "Deliverable":
+				case "Plateau":
 				case "Outcome":
 				case "Principle":
 				case "Meaning":
 				case "Value":
-					r['class'] = "RC-State";
+					r['class'] = idResourceClassState;
 					break;
 				case 'BusinessEvent':
 				case 'ApplicationEvent':
 				case 'TechnologyEvent':
 				case 'ImplementationEvent':
-					r['class'] = "RC-Event";
+					r['class'] = idResourceClassEvent;
 					break;
 				case 'Location':
 				case 'Grouping':
-					r['class'] = "RC-Collection";
+					r['class'] = idResourceClassCollection;
 					break;
 				case 'Requirement':
 				case 'Constraint':
-					r['class'] = "RC-Requirement";
+					r['class'] = idResourceClassRequirement;
 					break;
 				default:
 					// The Archimate element with tag  extensionElements  and title  <empty string>  has not been transformed.
@@ -711,7 +738,7 @@ function Archimate2Specif(xmlString, opts) {
 	model.resources.push({
 		id: hId,
 		title: model.title,
-		class: "RC-Folder",
+		class: idResourceClassFolder,
 		properties: [{
 			class: "PC-Name",
 			value: model.title
@@ -739,7 +766,7 @@ function Archimate2Specif(xmlString, opts) {
 		const
 			diagramFolder = {
 				id: "FolderDiagrams-" + apx,
-				class: "RC-Folder",
+				class: idResourceClassFolder,
 				title: opts.strDiagramFolderType,
 				properties: [{
 					class: "PC-Name",
@@ -776,7 +803,7 @@ function Archimate2Specif(xmlString, opts) {
 				// create the folder resource:
 				rL.push({
 					id: idRef,
-					class: "RC-Folder",
+					class: idResourceClassFolder,
 					title: ti,
 					properties: [{
 						class: "PC-Name",
@@ -916,7 +943,7 @@ function Archimate2Specif(xmlString, opts) {
 				changedAt: opts.fileDate
 			};
 			// sort resources according to their type:
-			let idx = [idResourceClassActor,"RC-State","RC-Event","RC-Collection"].indexOf( r['class'] );
+			let idx = [idResourceClassActor,idResourceClassState,idResourceClassEvent,idResourceClassCollection].indexOf( r['class'] );
 			if( idx>-1 )
 				nodeL[0].nodes[1].nodes[idx].nodes.push(nd)
 		}); */
@@ -1010,7 +1037,7 @@ function Archimate2Specif(xmlString, opts) {
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-State",
+			id: idResourceClassState,
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ["auto"],
@@ -1018,7 +1045,7 @@ function Archimate2Specif(xmlString, opts) {
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Event",
+			id: idResourceClassEvent,
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ["auto"],
@@ -1026,7 +1053,7 @@ function Archimate2Specif(xmlString, opts) {
 			icon: "&#11047;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Collection",
+			id: idResourceClassCollection,
 			title: "SpecIF:Collection",
 			instantiation: ["auto"],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
@@ -1034,7 +1061,7 @@ function Archimate2Specif(xmlString, opts) {
 			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Requirement",
+			id: idResourceClassRequirement,
 			title: "IREB:Requirement",
 			description: "A 'Requirement' is a singular documented physical and functional need that a particular design, product or process must be able to perform.",
 			icon: "&#8623;",
@@ -1042,7 +1069,7 @@ function Archimate2Specif(xmlString, opts) {
 			propertyClasses: ["PC-Name","PC-Description","PC-Type"],
 			changedAt: "2021-02-22T08:59:00+02:00"
 		},{
-			id: "RC-Folder",
+			id: idResourceClassFolder,
 			title: opts.strFolderType,
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
@@ -1075,7 +1102,7 @@ function Archimate2Specif(xmlString, opts) {
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassDiagram],
-		//?	objectClasses: [idResourceClassActor, "RC-State", "RC-Event", "RC-Collection", "SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-isSpecializationOf", "SC-serves", "SC-influences", "SC-isAssociatedWith" ],
+		//?	objectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection, "SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-isSpecializationOf", "SC-serves", "SC-influences", "SC-isAssociatedWith" ],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-contains",
@@ -1083,8 +1110,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"], // may hold sub-type UML:Composition or UML:Aggregation
-			subjectClasses: [idResourceClassActor, "RC-State", "RC-Event", "RC-Collection"],
-			objectClasses: [idResourceClassActor, "RC-State", "RC-Event", "RC-Collection"],
+			subjectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+			objectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-writes",
@@ -1092,8 +1119,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: Actor (Role, Function) writes State (Information).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: [idResourceClassActor, "RC-Event"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-reads",
@@ -1101,8 +1128,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: Actor (Role, Function) reads State (Information)",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: [idResourceClassActor, "RC-Event"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 	/*	},{
 			id: "SC-stores",
@@ -1110,23 +1137,23 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: Actor (Role, Function) writes and reads State (Information).",
 			instantiation: ["auto"],
 			subjectClasses: [idResourceClassActor],
-			objectClasses: ["RC-State"],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isComposedOf",
 			title: "UML:Composition",
 			description: "Statement: A state (data-object) is composed of a state",
 			instantiation: ["auto"],
-			subjectClasses: ["RC-State"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassState],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAggregatedBy",
 			title: "UML:Aggregation",
 			description: "Statement: A state (data-object) is aggregated by a state",
 			instantiation: ["auto"],
-			subjectClasses: ["RC-State"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassState],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-realizes",
@@ -1142,8 +1169,8 @@ function Archimate2Specif(xmlString, opts) {
 			title: "SpecIF:isAssignedTo",
 			description: "Statement: The allocation of responsibility, performance of behavior, or execution",
 			instantiation: ["auto"],
-		//?	subjectClasses: [idResourceClassActor, "RC-State", "RC-Event"],
-		//?	objectClasses: [idResourceClassActor, "RC-State", "RC-Event"],
+		//?	subjectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent],
+		//?	objectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent],
 			changedAt: opts.fileDate */
 		},{ 
 			id: "SC-isSpecializationOf",
@@ -1151,8 +1178,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: A state (data-object) is a specialization of a state",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-		//?	subjectClasses: ["RC-State"],
-		//?	objectClasses: ["RC-State"],
+		//?	subjectClasses: [idResourceClassState],
+		//?	objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-serves",
@@ -1169,8 +1196,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: An element affects the implementation or achievement of some motivation element.",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-		//?	subjectClasses: ["RC-State"],
-		//?	objectClasses: [idResourceClassActor,"RC-State"],
+		//?	subjectClasses: [idResourceClassState],
+		//?	objectClasses: [idResourceClassActor,idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAssociatedWith",
@@ -1187,8 +1214,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: [idResourceClassActor, "RC-Event"],
-			objectClasses: [idResourceClassActor, "RC-Event"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassActor, idResourceClassEvent],
 			changedAt: opts.fileDate
 	/*	},{
 			id: "SC-signals",
@@ -1196,8 +1223,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "A FMC:Actor 'signals' a FMC:Event.",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-		//?	subjectClasses: [idResourceClassActor, "RC-Event"],
-		//?	objectClasses: ["RC-Event"],
+		//?	subjectClasses: [idResourceClassActor, idResourceClassEvent],
+		//?	objectClasses: [idResourceClassEvent],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-triggers",
@@ -1205,7 +1232,7 @@ function Archimate2Specif(xmlString, opts) {
 			description: "A temporal or causal relationship between elements.",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
-		//?	subjectClasses: ["RC-Event"],
+		//?	subjectClasses: [idResourceClassEvent],
 		//?	objectClasses: [idResourceClassActor],
 			changedAt: opts.fileDate
 		},{
@@ -1215,7 +1242,7 @@ function Archimate2Specif(xmlString, opts) {
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Note"],
-			objectClasses: [idResourceClassDiagram, idResourceClassActor, "RC-State", "RC-Event", "RC-Collection"],
+			objectClasses: [idResourceClassDiagram, idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
 			changedAt: opts.fileDate  */
 		}]
 	}
