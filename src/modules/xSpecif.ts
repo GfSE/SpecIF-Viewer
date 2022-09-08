@@ -662,6 +662,11 @@ class CSpecIF implements SpecIF {
 					// else: don't add createdBy without data
 				};
 
+				// Delete the folder of UnreferencedResources; it shall not be exported:
+				this.hierarchies = this.hierarchies.filter(
+					(h) => { return !h.id.includes("UnreferencedResources") }
+				);
+
 				// Now start to assemble the SpecIF output:
 				spD.dataTypes = LIB.forAll(this.dataTypes, dT2ext);
 				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
