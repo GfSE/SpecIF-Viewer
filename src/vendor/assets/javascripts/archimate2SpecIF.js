@@ -590,9 +590,10 @@ function Archimate2Specif(xmlString, opts) {
 					switch (rs.getAttribute('accessType')) {
 						case 'Write':
 							s['class'] = "SC-writes";
-							break
+							break;
 						case 'Read':
 							s['class'] = "SC-reads";
+							break;
 						case 'ReadWrite':
 						case 'Access':
 							s['class'] = "SC-stores";
@@ -1140,7 +1141,8 @@ function Archimate2Specif(xmlString, opts) {
 			title: "SpecIF:stores",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information).",
 			instantiation: ["auto"],
-			subjectClasses: [idResourceClassActor],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 	/*	},{
