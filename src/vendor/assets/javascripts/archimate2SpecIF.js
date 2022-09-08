@@ -500,6 +500,7 @@ function Archimate2Specif(xmlString, opts) {
 				case "WorkPackage":
 				case "Deliverable":
 				case "Plateau":
+				case "Gap":
 				case "Outcome":
 				case "Principle":
 				case "Meaning":
@@ -592,6 +593,9 @@ function Archimate2Specif(xmlString, opts) {
 							break
 						case 'Read':
 							s['class'] = "SC-reads";
+						case 'ReadWrite':
+						case 'Access':
+							s['class'] = "SC-stores";
 					};
 					break;
 				case 'Serving':
@@ -607,13 +611,13 @@ function Archimate2Specif(xmlString, opts) {
 					break;
 				// The "uniting" relationships:
 				case 'Composition':
-				//		s['class'] = "SC-isComposedOf";
+				//	s['class'] = "SC-isComposedOf";
 				case 'Aggregation':
-				//		s['class'] = "SC-isAggregatedBy";
+				//	s['class'] = "SC-isAggregatedBy";
 				case 'Realization':
-				//		s['class'] = "SC-realizes";
+				//	s['class'] = "SC-realizes";
 				case 'Assignment':
-				//		s['class'] = "SC-isAssignedTo";
+				//	s['class'] = "SC-isAssignedTo";
 					s['class'] = "SC-contains";
 					break;
 				case 'Specialization':
@@ -1131,7 +1135,7 @@ function Archimate2Specif(xmlString, opts) {
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
-	/*	},{
+		},{
 			id: "SC-stores",
 			title: "SpecIF:stores",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information).",
@@ -1139,7 +1143,7 @@ function Archimate2Specif(xmlString, opts) {
 			subjectClasses: [idResourceClassActor],
 			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
-		},{
+	/*	},{
 			id: "SC-isComposedOf",
 			title: "UML:Composition",
 			description: "Statement: A state (data-object) is composed of a state",

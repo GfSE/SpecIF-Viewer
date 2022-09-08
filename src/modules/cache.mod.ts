@@ -530,14 +530,14 @@ class CProject {
 				.then(
 					(hL) => {
 						exD.hierarchies = hL as SpecifNode[];
-//							console.debug('1', simpleClone(exD));
+//						console.debug('1', simpleClone(exD));
 						return this.readItems('resource', LIB.collectResourcesByHierarchy(this.data, hL), opts)
 					}
 				)
 				.then(
 					(rL) => {
 						exD.resources = rL as SpecifResource[];
-//							console.debug('2', simpleClone(exD));
+//						console.debug('2', simpleClone(exD));
 						return this.readItems('statement', flt, opts);
 
 						function flt(s:SpecifStatement) {
@@ -558,7 +558,7 @@ class CProject {
 							// assuming all used classes have the same revision
 							LIB.cacheE(rCL, r['class']);
 						};
-//							console.debug('3', simpleClone(exD), rCL);
+//						console.debug('3', simpleClone(exD), rCL);
 						return this.readItems('resourceClass', rCL, opts);
 					}
 				)
@@ -574,7 +574,7 @@ class CProject {
 							// assuming all used classes have the same revision
 							LIB.cacheE(sCL, s['class']);
 						};
-//							console.debug('4', simpleClone(exD), sCL);
+//						console.debug('4', simpleClone(exD), sCL);
 						return this.readItems('statementClass', sCL, opts);
 					}
 				)
@@ -593,7 +593,7 @@ class CProject {
 								LIB.cacheE(pCL, pC);
 							};
 						};
-//							console.debug('5', simpleClone(exD),pCL);
+//						console.debug('5', simpleClone(exD),pCL);
 						return this.readItems('propertyClass', pCL, opts);
 					}
 				)
@@ -610,7 +610,7 @@ class CProject {
 							LIB.cacheE(dTL, pC['dataType']);
 						}
 
-//							console.debug('6', simpleClone(exD),dTL);
+//						console.debug('6', simpleClone(exD),dTL);
 						return this.readItems('dataType', dTL, opts)
 					}
 				)
@@ -642,14 +642,14 @@ class CProject {
 								};
 							};
 						};
-//							console.debug('7', simpleClone(exD),fL);
+//						console.debug('7', simpleClone(exD),fL);
 						return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts);
 					}
 				)
 				.then(
 					(fL) => {
 						exD.files = fL as IFileWithContent[];
-//							console.debug('8', simpleClone(exD));
+//						console.debug('8', simpleClone(exD));
 						return exD.get(opts);
 					}
 				)
