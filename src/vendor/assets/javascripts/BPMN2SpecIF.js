@@ -19,12 +19,10 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.title = opts.fileName.split(".")[0];
 	if( typeof(opts.titleLength)!='number' )
 		opts.titleLength = 96;
-	if( typeof(opts.descriptionLength)!='number' )
-		opts.descriptionLength = 8192;
+	if( typeof(opts.textLength)!='number' )
+		opts.textLength = 8192;
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/bpmn+xml";
-	if( typeof(opts.isIE)!='boolean' )
-		opts.isIE = /MSIE |rv:11.0/i.test( navigator.userAgent );
 	
 	if( !opts.strRoleType ) 
 		opts.strRoleType = "SpecIF:Role";
@@ -34,27 +32,13 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strBusinessProcessType = 'SpecIF:BusinessProcess';
 	if( !opts.strBusinessProcessesType ) 
 		opts.strBusinessProcessesType = 'SpecIF:BusinessProcesses';
-	if( !opts.strGlossaryType ) 
-		opts.strGlossaryType = "SpecIF:Glossary";
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramType ) 
 		opts.strDiagramType = "SpecIF:Diagram";
-/*	if( !opts.strDiagramFolderType ) 
-		opts.strDiagramFolderType = "SpecIF:Diagrams"; */
 	if( !opts.strBusinessProcessFolder ) 
 		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
-	if( !opts.strGlossaryFolder ) 
-		opts.strGlossaryFolder = "SpecIF:Glossary";
-	if( !opts.strActorFolder ) 
-		opts.strActorFolder = "FMC:Actors";
-	if( !opts.strStateFolder ) 
-		opts.strStateFolder = "FMC:States";
-	if( !opts.strEventFolder ) 
-		opts.strEventFolder = "FMC:Events";
-/*	if (!opts.strCollectionFolder)
-		opts.strCollectionFolder = "Collections and Groups";
-	if( !opts.strAnnotationFolder ) 
+/*	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
 	if (!opts.strNamespace)
@@ -170,11 +154,11 @@ function BPMN2Specif( xmlString, opts ) {
 		if (el.nodeName.includes("documentation")) {
 			let diag = itemBy(model.resources,'id',diagramId);
 			if( diag && el.innerHTML ) {
-				if( el.innerHTML.length>opts.descriptionLength ) 
+				if( el.innerHTML.length>opts.textLength ) 
 					console.warn('Documentation of collaboration '+diagramId+' has been truncated because it is too long');
 				diag.properties.push({
 					class: "PC-Description",
-					value: el.innerHTML.slice(0,opts.descriptionLength)
+					value: el.innerHTML.slice(0,opts.textLength)
 				})
 			}
 		};		
@@ -285,7 +269,7 @@ function BPMN2Specif( xmlString, opts ) {
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
 					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' 
-						&& nd.innerHTML.length>0 && nd.innerHTML.length<opts.descriptionLength ) 
+						&& nd.innerHTML.length>0 && nd.innerHTML.length<opts.textLength ) 
 							desc = nd.innerHTML
 				});
 				tag = el.nodeName.split(':').pop();	// tag without namespace
@@ -408,11 +392,6 @@ function BPMN2Specif( xmlString, opts ) {
 							Array.from(ch.childNodes, (ref)=>{
 //								console.debug('dataInputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
-								if( opts.isIE ) {
-									console.warn('Omitting dataInputAssociation with id '+ch.getAttribute("id")
-												+', because IE cannot read the object reference.');
-									return
-								};
 								if( ref.tagName.includes('sourceRef') ) {
 									let dS = findStoredResource( ref.innerHTML );  // does not work in IE, not even IE11
 //									console.debug('storeAccessAssociations',ref.innerHTML,dS);
@@ -442,11 +421,6 @@ function BPMN2Specif( xmlString, opts ) {
 							Array.from(ch.childNodes, (ref)=>{
 //								console.debug('dataOutputAssociation.childNode',ref);
 								if( !ref.tagName ) return;
-								if( opts.isIE ) {
-									console.warn('Omitting dataOutputAssociation with id '+ch.getAttribute("id")
-												+', because IE cannot read the object reference.');
-									return
-								};
 								if( ref.tagName.includes('targetRef') ) {
 									let dS = findStoredResource( ref.innerHTML );  // does not work in IE, not even IE11
 									if( dS ) {
@@ -481,9 +455,9 @@ function BPMN2Specif( xmlString, opts ) {
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
 					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' && nd.innerHTML ) {
-						if( nd.innerHTML.length>opts.descriptionLength ) 
+						if( nd.innerHTML.length>opts.textLength ) 
 							console.warn('Documentation of element '+id+' has been truncated because it is too long');
-						desc = nd.innerHTML.slice(0,opts.descriptionLength)
+						desc = nd.innerHTML.slice(0,opts.textLength)
 					}
 				});
 //				console.debug('#2',el,tag,id,title,desc);
@@ -750,7 +724,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.fileDate
 			};
 			// Add a description to the last element, if there is additional information:
-			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.descriptionLength ) 
+			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.textLength ) 
 				ev.properties.push({
 					class: "PC-Description",
 					value: seqF.subject.title+' → '+title	// → = &rarr; = &#8594;
@@ -846,7 +820,7 @@ function BPMN2Specif( xmlString, opts ) {
 		Array.from(ann.childNodes, (txt)=>{
 //			console.debug('textAnnotation.childNode',txt);
 			if( txt.tagName && txt.tagName.includes('text') && txt.innerHTML ) {
-				if( txt.innerHTML.length>opts.descriptionLength )
+				if( txt.innerHTML.length>opts.textLength )
 					console.warn('Text of annotation '+id+' has been truncated because it is too long');
 				model.resources.push({
 					id: id,
@@ -857,7 +831,7 @@ function BPMN2Specif( xmlString, opts ) {
 						value: title
 					},{
 						class: "PC-Description",
-						value: txt.innerHTML.slice(0,opts.descriptionLength)
+						value: txt.innerHTML.slice(0,opts.textLength)
 					}],
 					changedAt: opts.fileDate
 				});
@@ -1058,7 +1032,7 @@ function BPMN2Specif( xmlString, opts ) {
 			title: opts.strDiagramType,
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
-			propertyClasses: ["PC-Name","PC-Description","PC-Diagram","PC-Type","PC-Notation"],
+			propertyClasses: ["PC-Name","PC-Diagram","PC-Description","PC-Type","PC-Notation"],
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
@@ -1218,36 +1192,6 @@ function BPMN2Specif( xmlString, opts ) {
 				value: opts.strBusinessProcessesType
 			}],
 			changedAt: opts.fileDate
-	/*	}, {
-			id: "FolderGlossary-" + apx,
-			class: "RC-Folder",
-			title: opts.strGlossaryFolder,
-			properties: [{
-				class: "PC-Type",
-				value: opts.strGlossaryType
-			}],
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderAct-" + apx,
-			class: "RC-Folder",
-			title: opts.strActorFolder,
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderSta-" + apx,
-			class: "RC-Folder",
-			title: opts.strStateFolder,
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderEvt-" + apx,
-			class: "RC-Folder",
-			title: opts.strEventFolder,
-			changedAt: opts.fileDate
-		}, {
-			id: "FolderNte-" + apx,
-			class: "RC-Folder",
-			title: opts.strAnnotationFolder,
-			properties: [],
-			changedAt: opts.fileDate */
 		}]
 	}
 	

@@ -70,7 +70,7 @@ moduleManager.construct({
 					fileName: fName, 
 					fileDate: fDate, 
 					titleLength: CONFIG.textThreshold,
-					descriptionLength: CONFIG.maxStringLength,
+					textLength: CONFIG.maxStringLength,
 					strGlossaryType: CONFIG.resClassGlossary,
 					strGlossaryFolder: CONFIG.resClassGlossary,
 					strActorFolder: "FMC:Actors",
