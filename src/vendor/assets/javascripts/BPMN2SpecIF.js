@@ -19,8 +19,8 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.title = opts.fileName.split(".")[0];
 	if( typeof(opts.titleLength)!='number' )
 		opts.titleLength = 96;
-	if( typeof(opts.descriptionLength)!='number' )
-		opts.descriptionLength = 8192;
+	if( typeof(opts.textLength)!='number' )
+		opts.textLength = 8192;
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/bpmn+xml";
 	
@@ -154,11 +154,11 @@ function BPMN2Specif( xmlString, opts ) {
 		if (el.nodeName.includes("documentation")) {
 			let diag = itemBy(model.resources,'id',diagramId);
 			if( diag && el.innerHTML ) {
-				if( el.innerHTML.length>opts.descriptionLength ) 
+				if( el.innerHTML.length>opts.textLength ) 
 					console.warn('Documentation of collaboration '+diagramId+' has been truncated because it is too long');
 				diag.properties.push({
 					class: "PC-Description",
-					value: el.innerHTML.slice(0,opts.descriptionLength)
+					value: el.innerHTML.slice(0,opts.textLength)
 				})
 			}
 		};		
@@ -269,7 +269,7 @@ function BPMN2Specif( xmlString, opts ) {
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
 					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' 
-						&& nd.innerHTML.length>0 && nd.innerHTML.length<opts.descriptionLength ) 
+						&& nd.innerHTML.length>0 && nd.innerHTML.length<opts.textLength ) 
 							desc = nd.innerHTML
 				});
 				tag = el.nodeName.split(':').pop();	// tag without namespace
@@ -455,9 +455,9 @@ function BPMN2Specif( xmlString, opts ) {
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
 					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' && nd.innerHTML ) {
-						if( nd.innerHTML.length>opts.descriptionLength ) 
+						if( nd.innerHTML.length>opts.textLength ) 
 							console.warn('Documentation of element '+id+' has been truncated because it is too long');
-						desc = nd.innerHTML.slice(0,opts.descriptionLength)
+						desc = nd.innerHTML.slice(0,opts.textLength)
 					}
 				});
 //				console.debug('#2',el,tag,id,title,desc);
@@ -724,7 +724,7 @@ function BPMN2Specif( xmlString, opts ) {
 				changedAt: opts.fileDate
 			};
 			// Add a description to the last element, if there is additional information:
-			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.descriptionLength ) 
+			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.textLength ) 
 				ev.properties.push({
 					class: "PC-Description",
 					value: seqF.subject.title+' → '+title	// → = &rarr; = &#8594;
@@ -820,7 +820,7 @@ function BPMN2Specif( xmlString, opts ) {
 		Array.from(ann.childNodes, (txt)=>{
 //			console.debug('textAnnotation.childNode',txt);
 			if( txt.tagName && txt.tagName.includes('text') && txt.innerHTML ) {
-				if( txt.innerHTML.length>opts.descriptionLength )
+				if( txt.innerHTML.length>opts.textLength )
 					console.warn('Text of annotation '+id+' has been truncated because it is too long');
 				model.resources.push({
 					id: id,
@@ -831,7 +831,7 @@ function BPMN2Specif( xmlString, opts ) {
 						value: title
 					},{
 						class: "PC-Description",
-						value: txt.innerHTML.slice(0,opts.descriptionLength)
+						value: txt.innerHTML.slice(0,opts.textLength)
 					}],
 					changedAt: opts.fileDate
 				});

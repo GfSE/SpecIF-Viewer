@@ -67,7 +67,7 @@ moduleManager.construct({
 					fileName: fName, 
 					fileDate: fDate, 
 					titleLength: CONFIG.textThreshold,
-					descriptionLength: CONFIG.maxStringLength,
+					textLength: CONFIG.maxStringLength,
 				//	strAnnotationFolder: "SpecIF:Annotations",
 					strRoleType: CONFIG.resClassRole,
 					strConditionType: CONFIG.resClassCondition,

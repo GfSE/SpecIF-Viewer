@@ -524,7 +524,7 @@ class CProject {
 				// Get the memorized hierarchies of this project - except the folder with unreferenced resources:
 				this.readItems(
 					'hierarchy',
-					this.hierarchies.filter((n: SpecifNode) => { return !n.id.includes("UnreferencedResources"); }),
+					this.hierarchies.filter((n: SpecifNode) => { return !n.id.includes("FolderUnreferencedResources-"); }),
 					opts
 				)
 				.then(

@@ -18,9 +18,9 @@ function Archimate2Specif(xmlString, opts) {
 		opts.title = opts.fileName.split(".")[0];
 	if (typeof (opts.titleLength) != 'number')
 		opts.titleLength = 96;
-	/*	if( typeof(opts.descriptionLength)!='number' )
-			opts.descriptionLength = 8192;
-		if( !opts.mimeType ) 
+	if (typeof (opts.textLength) != 'number')
+		opts.textLength = 8192;
+	/*	if( !opts.mimeType ) 
 			opts.mimeType = "application/archimate+xml"; */
 
 	if (!opts.strNamespace)
@@ -90,7 +90,7 @@ function Archimate2Specif(xmlString, opts) {
 	model.resources = [];
 	model.statements = [];
 
-	// Reference the original Archimate Open Exchange file:
+	// Include the original Archimate Open Exchange file:
 	model.files = [ /*{
 		id: 'F-'+simpleHash(opts.fileName),
 		title: opts.fileName,
@@ -104,10 +104,14 @@ function Archimate2Specif(xmlString, opts) {
 		(ch) => {
 			switch (ch.nodeName) {
 				case 'name':
-					model.title = ch.innerHTML;
+					if (ch.innerHTML > opts.titleLength)
+						console.warn('Title of model has been truncated because it is too long');
+					model.title = ch.innerHTML.slice(0, opts.titleLength);
 					break;
 				case 'documentation':
-					model.description = ch.innerHTML
+					if (ch.innerHTML > opts.textLength)
+						console.warn('Description of model has been truncated because it is too long');
+					model.description = ch.innerHTML.slice(0, opts.textLength);
 			}
 		}
 	);
@@ -194,6 +198,11 @@ function Archimate2Specif(xmlString, opts) {
 						val = getChildsInnerByTag(pr, 'value');
 
 					if (pCId && val)
+						if (val > opts.textLength) {
+							console.warn('Property value ' + pCId + ' of element with id ' + res.id + ' has been truncated because it is too long');
+							val = val.slice(0, opts.textLength);
+						};
+
 						switch (pCId) {
 							// Discover native properties and assign the value to those,
 							// e.g.: Author, Last editor, Creation date, Date of last change.
@@ -341,16 +350,20 @@ function Archimate2Specif(xmlString, opts) {
 					(ch) => {
 						switch (ch.nodeName) {
 							case 'name':
-								diag.title = ch.innerHTML;
+								if (ch.innerHTML > opts.titleLength)
+									console.warn('Title of diagram with id ' + diag.id + ' has been truncated because it is too long');
+								diag.title = ch.innerHTML.slice(0, opts.titleLength);
 								diag.properties.push({
 									class: "PC-Name",
-									value: ch.innerHTML
+									value: ch.innerHTML.slice(0, opts.titleLength)
 								});
 								break;
 							case 'documentation':
+								if (ch.innerHTML > opts.textLength)
+									console.warn('Description of diagram with id ' + diag.id + ' has been truncated because it is too long');
 								diag.properties.push({
 									class: "PC-Description",
-									value: ch.innerHTML
+									value: ch.innerHTML.slice(0, opts.textLength)
 								});
 								break;
 							case 'properties':
@@ -535,17 +548,21 @@ function Archimate2Specif(xmlString, opts) {
 					(ch) => {
 						switch (ch.nodeName) {
 							case 'name':
-								r.title = ch.innerHTML;
+								if (ch.innerHTML > opts.titleLength)
+									console.warn('Title of resource with id ' + r.id + ' has been truncated because it is too long');
+								r.title = ch.innerHTML.slice(0, opts.titleLength);
 								r.properties.push({
 									class: "PC-Name",
-									value: ch.innerHTML
-								})
+									value: ch.innerHTML.slice(0, opts.titleLength)
+								});
 								break;
 							case 'documentation':
+								if (ch.innerHTML > opts.textLength)
+									console.warn('Description of resource with id ' + r.id + ' has been truncated because it is too long');
 								r.properties.push({
 									class: "PC-Description",
-									value: ch.innerHTML
-								})
+									value: ch.innerHTML.slice(0, opts.textLength)
+								});
 						};
 					}
 				);
@@ -647,10 +664,18 @@ function Archimate2Specif(xmlString, opts) {
 					(ch) => {
 						switch (ch.nodeName) {
 							case 'name':
-								s.title = ch.innerHTML;
+								if (ch.innerHTML > opts.titleLength)
+									console.warn('Title of statement with id ' + s.id + ' has been truncated because it is too long');
+								s.title = ch.innerHTML.slice(0, opts.titleLength);
 								break;
 							case 'documentation':
-								s.description = ch.innerHTML
+								if (ch.innerHTML > opts.textLength)
+									console.warn('Description of statement with id ' + s.id + ' has been truncated because it is too long');
+								s.description = ch.innerHTML.slice(0, opts.textLength);
+							/*	s.properties.push({
+									class: "PC-Description",
+									value: ch.innerHTML.innerHTML.slice(0, opts.textLength)
+								}); */
 						}
 					}
 				);
@@ -804,7 +829,16 @@ function Archimate2Specif(xmlString, opts) {
 
 			function createFolderWithNode(ch, rL, nL) {
 				let ti = getChildsInnerByTag(ch, "label"),
+					dsc = getChildsInnerByTag(ch, "documentation") || '',
 					idRef = "Folder-" + simpleHash(ti + apx);
+
+				if (ti > opts.titleLength)
+					console.warn('Title of folder with id ' + idRef + ' has been truncated because it is too long');
+				ti = ti.slice(0, opts.titleLength);
+				if (dsc > opts.textLength)
+					console.warn('Description of folder with id ' + idRef + ' has been truncated because it is too long');
+				dsc = dsc.slice(0, opts.textLength);
+
 				// create the folder resource:
 				rL.push({
 					id: idRef,
@@ -815,7 +849,7 @@ function Archimate2Specif(xmlString, opts) {
 						value: ti
 					}, {
 						class: "PC-Description",
-						value: getChildsInnerByTag(ch, "documentation") || ''
+						value: dsc
 					}, {
 						class: "PC-Type",
 						value: opts.strFolderType
