@@ -1323,6 +1323,7 @@ moduleManager.construct({
 							.then( 
 								()=>{
 									self.tree.numberize();
+									self.reworkTree();
 //									console.debug( self.tree.selectedNode.name, event.move_info.moved_node.name );
 									// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 									document.getElementById(CONFIG.objectList).scrollTop = 0;
@@ -1600,21 +1601,19 @@ moduleManager.construct({
 		self.selPrj.createFolderWithGlossary({ addGlossary: true })
 			.then(
 				() => {
-				//	app.cache.selectedProject.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
-					self.selPrj.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
-						.then(
-							() => {
-								self.updateTree({
-									targetLanguage: browser.language,
-									lookupTitles: true
-								});
-								self.doRefresh({ forced: true })
-							},
-							LIB.stdError
-						);
-				},
-				LIB.stdError
+					return self.selPrj.createFolderWithUnreferencedResources({ addUnreferencedResources: true })
+				}
 			)
+			.then(
+				() => {
+					self.updateTree({
+						targetLanguage: browser.language,
+						lookupTitles: true
+					});
+					self.doRefresh({ forced: true })
+				}
+			)
+			.catch(LIB.stdError);
 	};
 
 /* ++++++++++++++++++++++++++++++++

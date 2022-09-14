@@ -553,10 +553,12 @@ class CProject {
 						// start with the stored resourceClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let rCL: SpecifKey[] = [].concat(this.resourceClasses);
-						// add those actually used by the project - avoiding duplicates, of course:
+						// add those actually used by the project - avoiding duplicates, of course;
+						// in fact, this shouldn't happen:
 						for( var r of exD.resources ) {
 							// assuming all used classes have the same revision
 							LIB.cacheE(rCL, r['class']);
+							console.warn('Project with id '+this.id+' references a resource with id '+r.id+', which has a resourceClass not memorized in the project.');
 						};
 //						console.debug('3', simpleClone(exD), rCL);
 						return this.readItems('resourceClass', rCL, opts);
@@ -569,10 +571,12 @@ class CProject {
 						// start with the stored statementClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let sCL: SpecifKey[] = [].concat(this.statementClasses);
-						// add those actually used by the project - avoiding duplicates, of course:
+						// add those actually used by the project - avoiding duplicates, of course;
+						// in fact, this shouldn't happen:
 						for (var s of exD.statements ) {
 							// assuming all used classes have the same revision
 							LIB.cacheE(sCL, s['class']);
+							console.warn('Project with id ' + this.id + ' references a statement with id ' + s.id + ', which has a statementClass not memorized in the project.');
 						};
 //						console.debug('4', simpleClone(exD), sCL);
 						return this.readItems('statementClass', sCL, opts);
@@ -656,23 +660,6 @@ class CProject {
 				.then(resolve)
 				.catch(reject)
 
-			/*	// Copy the whole cache (which is acceptable here, as long as only one project is handled ...)
-				pend = standardTypes.iterateLists(
-					(ctg: string, listName:string) => {
-						this.readItems(ctg, 'all', opts)
-						.then(
-							(values) => {
-								// @ts-ignore - indexing by string works fine
-								exD[listName] = values;
-								if (--pend < 1) {
-									exD.get(opts)
-									.then(resolve, reject)
-								}
-							},
-							reject
-						);
-					}
-				); */
 			} 
 		);
     }
@@ -1158,9 +1145,9 @@ class CProject {
 					case 'node':
 					case "hierarchy":
 						// delete also the respective keys remembered by the project;
-						// a node can also be a hierarchy - in this case remove it as well;
-						// disregard the revision:
-						let listName = standardTypes.listName.get(ctg);
+						// - a node can also be a hierarchy, thus try to remove it as well;
+						// - disregard the revision:
+						let listName = standardTypes.listName.get(ctg=='node'?'hierarchy':ctg);
 						for (var i of itmL)
 							LIB.uncacheE(this[listName], { id: i.id });
 						// no break; 
@@ -1403,7 +1390,7 @@ class CProject {
 					resolve();
 					return;
 				};
-				let apx = simpleHash(this.id),
+				let apx = simpleHash(self.id),
 					tim = new Date().toISOString();
 
 				function resDoesNotExist(rL: any[], res: SpecifResource): boolean {
@@ -1545,17 +1532,15 @@ class CProject {
 					// Get the hierarchies without the folder listing the unreferenced resources:
 					ndL = dta.get("hierarchy", self.hierarchies).filter(
 						(nd: SpecifNode) => {
-							// a. get the referenced resource:
-						/*	res = dta.get("resource", nd.resource)[0];
-							// Find all respective folders:
-							pV = valByTitle(res, CONFIG.propClassType, dta); 
-							return (pV != "SpecIF:UnreferencedResources")  */
+							// Find the referenced resource:
 							idx = LIB.indexByKey(resL, nd.resource);
 							if (idx > -1) {
 								pVs = LIB.valuesByTitle(resL[idx], CONFIG.propClassType, dta.propertyClasses);
 								if (pVs.length > 0
 									&& "SpecIF:UnreferencedResources" == LIB.languageValueOf(pVs[0], { targetLanguage: self.language })) {
+										// List the node of the FolderWithUnreferencedResources for deletion:
 										delL.push(nd);
+										// ... but don't consider it's resource to be an unreferenced resource, itself:
 										resL.splice(idx, 1);
 										return false  // do NOT include nd in ndL
 								};
@@ -1565,10 +1550,10 @@ class CProject {
 						}
 					);
 
+				// Delete all resources from the list, which are referenced in any hierarchy:
 				LIB.iterateNodes(
 					ndL,
 					(nd: SpecifNode) => {
-						// Delete the resource, as it is referenced:
 						idx = LIB.indexByKey(resL, nd.resource);
 						if (idx > -1)
 							resL.splice(idx, 1);
@@ -1576,13 +1561,21 @@ class CProject {
 					}
 				);
 
-				// 1.2 Delete now:
+				// Delete the resource from the list, if it is the FolderUnreferencedResources, itself:
+				resL = resL.filter((r) => {
+					return !r.id.includes("FolderUnreferencedResources-")
+				});
+
 //				console.debug('createFolderWithUnreferencedResources',delL,resL);
+				// 1.2 Delete the node of the FolderWithUnreferencedResources, only if there are no unreferenced resources:
 				self.deleteItems('node', delL)
 					.then(
 						() => {
 							if (resL.length > 0) {
-								let newD:any = {
+								// in alphanumeric order:
+								LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
+
+								let newD: any = {
 									id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
 									$schema: 'https://specif.de/v1.0/schema.json',
 									dataTypes: [
@@ -1687,14 +1680,15 @@ class CProject {
 				// 1.2 Delete now:
 				console.debug('createFolderWithGlossary',delHL,delRL,diagramL);
 
-				// In case of the glossary, not only delete the nodes, but also the referenced resources:
+			/*	// In case of the glossary, not only delete the nodes, but also the referenced resources:
 				self.deleteItems('resource', delRL)
 					.then(
 						() => {
 							// Delete the glossary subtree, can be a root node or not, therefore use 'node':
 							return self.deleteItems('node', delHL)
 						}
-					)
+					) */
+				self.deleteItems('node', delHL)
 					.then(
 						() => {
 							// 2. Create a new combined glossary:
@@ -1790,10 +1784,11 @@ class CProject {
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								// just adding the 's' and 'Description' is an ugly quickfix ... that works for now.
+								// just adding an 's' is an ugly quickfix ... that works for now:
 								values: [LIB.makeMultiLanguageText(eC + 's')]
 							}, {
 								class: LIB.makeKey("PC-Description"),
+								// just adding 'Description' is an ugly quickfix ... that works for now:
 								values: [LIB.makeMultiLanguageText(eC + 'Description')]
 							}, {
 								class: LIB.makeKey("PC-Type"),

@@ -15,8 +15,6 @@ function BPMN2Specif( xmlString, opts ) {
 	if( typeof(opts)!='object' || !opts.fileName ) return null;
 	if( !opts.fileDate ) 
 		opts.fileDate = new Date().toISOString();
-	if( !opts.title ) 
-		opts.title = opts.fileName.split(".")[0];
 	if( typeof(opts.titleLength)!='number' )
 		opts.titleLength = 96;
 	if( typeof(opts.textLength)!='number' )
@@ -96,7 +94,8 @@ function BPMN2Specif( xmlString, opts ) {
 
 	// The project's id and title:
 	model.id = Cs[0].getAttribute("id");
-	model.title = opts.title || Cs[0].nodeName;
+	// A collaboration may have a documentation, but we haven't come across a name:
+	model.title = truncStr(opts.title || opts.fileName.split(".")[0] || Cs[0].nodeName+' "'+model.id+'"', opts.titleLength, 'Name of model');
 	// 1. Additional attributes such as title and description:
 	model.dataTypes = DataTypes();
 	model.propertyClasses = PropertyClasses();
@@ -126,7 +125,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// 2. Represent the diagram itself:
 	model.resources.push({
 		id: diagramId,
-		title: model.title.slice(0,opts.titleLength),
+		title: model.title,
 		class: "RC-Diagram",
 		properties: [{
 			class: "PC-Diagram",
@@ -149,40 +148,41 @@ function BPMN2Specif( xmlString, opts ) {
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
 		if( !el.tagName ) return;
-		let tag = el.tagName.split(':').pop();	// tag without namespace
+		let tag = withoutNamespace(el.tagName),	// tag without namespace
+			res;
 		// 3.1 The documentation of the collaboration (model):
 		if (el.nodeName.includes("documentation")) {
-			let diag = itemBy(model.resources,'id',diagramId);
-			if( diag && el.innerHTML ) {
-				if( el.innerHTML.length>opts.textLength ) 
-					console.warn('Documentation of collaboration '+diagramId+' has been truncated because it is too long');
-				diag.properties.push({
+			res = itemById(model.resources,diagramId);
+			if( res && el.innerHTML ) {
+				res.properties.push({
 					class: "PC-Description",
-					value: el.innerHTML.slice(0,opts.textLength)
+					value: truncStr(el.innerHTML, opts.textLength, 'Documentation of collaboration')
 				})
-			}
+			};
+			return;
 		};		
 		// 3.2 The participating processes;
-		// We transform the participants with their id, but not the processes;
-		// looking at the specs, 
+		// Looking at the specs, 
 		// - there is no process without a participant.
 		// - there can be participants without a process.
 		// see: https://www.omg.org/spec/BPMN/2.0/PDF/
+		// We transform the participants with their id, but not the processes;
+		// thus any process documentation is lost.
 		if (el.nodeName.includes("participant")) {
-			model.resources.push({
+			res = {
 				id: el.getAttribute("id"),
 				process: el.getAttribute("processRef"),  // temporarily store process id
-				// make them unique, but do not take id, as it may be long or misleading (sometimes it contains a wrong tag-name):
-				title: (el.getAttribute("name") || tag+'_'+simpleHash(el.getAttribute("id"))).slice(0,opts.titleLength),  
+				// make them unique, but do not take simply the id, as it may be long or misleading (sometimes it contains a wrong tag-name):
+				title: truncStr((el.getAttribute("name") || tag + '_' + simpleHash(el.getAttribute("id"))), opts.titleLength, 'Name of participant'),
 				class: 'RC-Actor',
 				properties: [{
 					class: "PC-Type",
 					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
-			})
+			}
 		};
-		// 3.3 The messages between the processes:
+		// 3.3 The messages between the participants:
 		if (el.nodeName.includes("messageFlow")) {
 			let oId = el.getAttribute("id"),
 				sRef = el.getAttribute("sourceRef"),
@@ -190,17 +190,17 @@ function BPMN2Specif( xmlString, opts ) {
 //			console.debug('#8',el.nodeName,oId,sRef,tRef);
 				
 			// a. The message data (FMC:State):
-			model.resources.push({
+			res = {
 				id: oId,
-				// no need to give them a unique name; messages and flows are only consolidated if they have equal subject and object:
-				title: (el.getAttribute("name") || tag).slice(0,opts.titleLength),
+				// make them unique, but do not take simply the id:
+				title: truncStr((el.getAttribute("name") || tag + '_' + simpleHash(oId)), opts.titleLength, 'Name of message-flow between participants'),
 				class: 'RC-State',
 				properties: [{
 					class: "PC-Type",
 					value: opts.strNamespace+tag
 				}],
 				changedAt: opts.fileDate
-			});
+			};
 			// b. We assume that the sourceRef and targetRef will be found later on.
 			// c. The writing relation (statement):
 			model.statements.push({
@@ -227,40 +227,119 @@ function BPMN2Specif( xmlString, opts ) {
 				}],
 				changedAt: opts.fileDate
 			})
-		}
+		};
+		// Get the documentation of participant resp. messageFlow:
+		Array.from(el.childNodes, (ch) => {
+			if (ch.nodeName.includes("documentation")) {
+				if (res && ch.innerHTML) {
+					res.properties.push({
+						class: "PC-Description",
+						value: truncStr(ch.innerHTML, opts.textLength, 'Documentation of ' + (res['class'] == "RC-Actor" ? 'participant' : 'message flow') + ' with id ' + res.id)
+					});
+				};
+				return;
+			};
+		})
+		model.resources.push(res);
 	});
+
 	// 4. Parse the processes.
 	// For SpecIF, the participant is declared the container for the processes' model-elements ... 
 	// and the BPMN 'processes' disappear from the semantics.
 	// ToDo: Remove any process having neither contained elements nor messageFlows (e.g. Bizagi 'Hauptprozess').
-
 	let	ctL = [],					// temporary list for containment relations between lanes and model-elements
 		gwL = [];					// temporary list for gateways needing some special attention later
 				
 		function findStoredResource( id ) {
-			let	itm = itemBy(model.resources,'id',id);
+			let	itm = itemById(model.resources,id);
 			if( itm )
 				return itm
 			else
 				console.error("Did not find a resource with id '"+id+"'.")
 		}
-		function analyzeProcess(pr) {
+		function analyzeProcess(prc) {
 			// analyze a process or subprocess and transform all contained model elements;
 			// the container element with a temporary attribute 'project' must be found in model.resources:
 
-			// find the participant representing (or being responsible for) the process:
-			let prId = pr.getAttribute('id'),
-				pa = model.resources.find( (e)=>{ return e.process==prId } ),
+			let prcId = prc.getAttribute('id'),
+				// find the participant representing (or being responsible for) the process:
+				participant = model.resources.find( (e)=>{ return e.process==prcId } ),
 				tag, id, title, desc;
-//			console.debug('process',model.resources,pr,prId,pa);
+//			console.debug('process',model.resources,prc,prcId,participant);
 			// depending on the BPMN generator, the name is supplied in the participant or in the process definition ... or both.
-			// ToDo: pa.title is never used ??
-		//	pa.title = (pa.title || pr.getAttribute('name')).slice(0,opts.titleLength);
-			let chNs = Array.from(pr.childNodes);
+			// ToDo: prc.title is never used ??
+		//	prc.title = truncStr((participant.title || prc.getAttribute('name')), opts.titleLength, 'Name of process');
+			let prcCh = Array.from(prc.childNodes);
 
 			// 4.1 First pass to get the lanes, which do not necessarily come first,
-			//     and the dataStores/dataObjects, so that the input- and outputAssociations can be added in the next pass:
-			chNs.forEach( (el)=>{
+			//     plus the dataStores/dataObjects, so that the input- and outputAssociations can be added in the next pass:
+				function getLane(nd, pId) {
+					//						console.debug('getLane',nd,pId);
+					if (nd.nodeName.includes('lane')) {
+						let ndId = nd.getAttribute("id"),
+							ndName = truncStr(nd.getAttribute("name"), opts.titleLength, 'Name of lane with id ' + ndId);
+						if (ndName) {
+							// define the lane:
+							let lane = {
+								id: ndId,
+								title: ndName,
+								class: 'RC-Actor',
+								properties: [{
+									class: "PC-Type",
+									value: opts.strRoleType
+								}],
+								changedAt: opts.fileDate
+							};
+							// store the containment relation for the lane:
+							model.statements.push({
+								id: pId + '-contains-' + ndId,
+								class: 'SC-contains',
+								subject: pId,	// the process
+								object: ndId,	// the lane
+								changedAt: opts.fileDate
+							});
+							Array.from(nd.childNodes, (nd) => {
+								if (nd.nodeName.includes('documentation')) {
+									lane.properties.unshift({
+										class: "PC-Description",
+										value: truncStr(nd.innerHTML, opts.textLength, 'Documentation of lane id ' + ndId)
+									});
+								};
+								// temporarily store relations for the contained model-elements:
+								if (nd.nodeName.includes('flowNodeRef')) {
+									ctL.push({
+										class: 'SC-contains',
+										subject: ndId, 			// the lane
+										object: nd.innerHTML	// the contained model-element
+									})
+								};
+								/* Nested lanes are possible, as well:
+									  <lane id="dienststelle" name="Dienststelle">
+										<flowNodeRef>approveInvoice</flowNodeRef>
+										<flowNodeRef>Task_1ymb2ic</flowNodeRef>
+										<flowNodeRef>ExclusiveGateway_0loe7o7</flowNodeRef>
+										<flowNodeRef>StartEvent_1tkg7k8</flowNodeRef>
+										<childLaneSet id="LaneSet_1w3soel">
+										  <lane id="Lane_15kot5t" name="Leiter">
+											<flowNodeRef>approveInvoice</flowNodeRef>
+										  </lane>
+										  <lane id="Lane_0jy9eq0" name="Mitarbeiter">
+											<flowNodeRef>Task_1ymb2ic</flowNodeRef>
+											<flowNodeRef>ExclusiveGateway_0loe7o7</flowNodeRef>
+											<flowNodeRef>StartEvent_1tkg7k8</flowNodeRef>
+										  </lane>
+										</childLaneSet>
+									  </lane> */
+								if (nd.nodeName.includes('childLaneSet')) {
+									Array.from(nd.childNodes, (ch) => { getLane(ch, ndId) })
+								};
+							});
+							// store the lane:
+							model.resources.push(lane);
+						}
+					}
+				}
+			prcCh.forEach( (el)=>{
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
 				// else:
@@ -268,75 +347,17 @@ function BPMN2Specif( xmlString, opts ) {
 				title = el.getAttribute("name");
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
-					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' 
-						&& nd.innerHTML.length>0 && nd.innerHTML.length<opts.textLength ) 
+					if ( withoutNamespace(nd.tagName) == 'documentation'
+						&& nd.innerHTML ) 
 							desc = nd.innerHTML
 				});
-				tag = el.nodeName.split(':').pop();	// tag without namespace
+				tag = withoutNamespace(el.nodeName);
 //				console.debug('#1',tag);
-					function getLane(nd,pId) {
-//						console.debug('getLane',nd,pId);
-						if( nd.nodeName.includes('lane') ) {
-							let ndId = nd.getAttribute("id"),
-								ndName = (nd.getAttribute("name")||'').slice(0,opts.titleLength);
-							if( ndName ) {
-								// store the lane:
-								model.resources.push({
-									id: ndId,
-									title: ndName,
-									class: 'RC-Actor',
-									properties: [{
-										class: "PC-Type",
-										value: opts.strRoleType
-									}],
-									changedAt: opts.fileDate
-								});
-								// store the containment relation for the lane:
-								model.statements.push({
-									id: pId + '-contains-' + ndId,
-									class: 'SC-contains',
-									subject: pId,	// the process
-									object: ndId,		// the lane
-									changedAt: opts.fileDate
-								});
-								// temporarily store relations for the contained model-elements:
-								Array.from(nd.childNodes, (nd)=>{
-									if( nd.nodeName.includes('flowNodeRef') ) {
-										ctL.push({
-											class: 'SC-contains',
-											subject: ndId, 			// the lane
-											object: nd.innerHTML	// the contained model-element
-										})
-									};
-									/* Nested lanes are possible, as well:
-										  <lane id="dienststelle" name="Dienststelle">
-											<flowNodeRef>approveInvoice</flowNodeRef>
-											<flowNodeRef>Task_1ymb2ic</flowNodeRef>
-											<flowNodeRef>ExclusiveGateway_0loe7o7</flowNodeRef>
-											<flowNodeRef>StartEvent_1tkg7k8</flowNodeRef>
-											<childLaneSet id="LaneSet_1w3soel">
-											  <lane id="Lane_15kot5t" name="Leiter">
-												<flowNodeRef>approveInvoice</flowNodeRef>
-											  </lane>
-											  <lane id="Lane_0jy9eq0" name="Mitarbeiter">
-												<flowNodeRef>Task_1ymb2ic</flowNodeRef>
-												<flowNodeRef>ExclusiveGateway_0loe7o7</flowNodeRef>
-												<flowNodeRef>StartEvent_1tkg7k8</flowNodeRef>
-											  </lane>
-											</childLaneSet>
-										  </lane> */
-									if( nd.nodeName.includes('childLaneSet') ) {
-										Array.from(nd.childNodes, (ch)=>{ getLane(ch,ndId) })
-									}
-								})
-							}
-						}
-					}
 				switch(tag) {
 					case 'laneSet':
-						// 4.1 Get the laneSets/lanes with their model elements;
+						// 4.1 The laneSet is not represented in SpecIF, but get the lanes with their model elements;
 						//    	note that a 'laneSet' is not mandatory, e.g. BPMNio does not necessarily provide any.
-						Array.from( el.childNodes, (ch)=>{ getLane(ch,pa.id) });
+						Array.from( el.childNodes, (ch)=>{ getLane(ch,participant.id) });
 						break;
 					case 'dataObjectReference':
 					case 'dataStoreReference':
@@ -352,12 +373,9 @@ function BPMN2Specif( xmlString, opts ) {
 						let res = {
 								id: id,
 								// make dataObjects unique per model (should be per participant/process):
-								title: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength),
+								title: truncStr((title || tag + (tag == 'dataObject' ? '_' + apx : '')), opts.titleLength, 'Name of '+tag+' with id '+id),
 								class: "RC-State",
 								properties: [{
-									class: "PC-Name",
-									value: (title || tag+( tag=='dataObject'? '_'+apx : '' )).slice(0,opts.titleLength)
-								},{
 									class: "PC-Type",
 									value: opts.strNamespace+tag
 								}],
@@ -365,13 +383,13 @@ function BPMN2Specif( xmlString, opts ) {
 							};
 						// add a property, if there is content:
 						if( desc ) {
-							res.properties.push({
+							res.properties.unshift({
 								class: "PC-Description",
-								value: desc
+								value: truncStr(desc, opts.textLength, 'Documentation of '+tag+' with id ' + id)
 							})
 						};
 
-						// Now, model-elements with duplicate names are not consolidated, any more;
+						// Now, model-elements with duplicate names are not consolidated any more;
 						// this will be done upon import/adoption/update of the model:
 						model.resources.push( res )
 						break;
@@ -445,19 +463,18 @@ function BPMN2Specif( xmlString, opts ) {
 						}
 					})
 				}
-			chNs.forEach( (el)=>{
+			prcCh.forEach( (el)=>{
 				// quit, if the child node does not have a tag, e.g. if it is '#text':
 				if( !el.tagName ) return;
 				// else:
-				tag = el.tagName.split(':').pop();	// tag without namespace
+				tag = withoutNamespace(el.tagName);
 				id = el.getAttribute("id");
-				title = (el.getAttribute("name")||'').slice(0,opts.titleLength);
+				title = el.getAttribute("name")||'';
 				desc = '';
 				Array.from(el.childNodes, (nd)=>{
-					if( nd.tagName && nd.tagName.split(':').pop() == 'documentation' && nd.innerHTML ) {
-						if( nd.innerHTML.length>opts.textLength ) 
-							console.warn('Documentation of element '+id+' has been truncated because it is too long');
-						desc = nd.innerHTML.slice(0,opts.textLength)
+					if (withoutNamespace(nd.tagName) == 'documentation'
+						&& nd.innerHTML) {
+							desc = nd.innerHTML
 					}
 				});
 //				console.debug('#2',el,tag,id,title,desc);
@@ -488,22 +505,19 @@ function BPMN2Specif( xmlString, opts ) {
 						// Note that a dataInputAssociation may specify a property in lieu of the subprocess.
 						let r = {
 							id: id,
-							// make them unique to avoid consolidation:
-							title: (title || tag+'_'+simpleHash(id)).slice(0,opts.titleLength),
+							// make them unique to avoid consolidation at import:
+							title: truncStr((title || tag + '_' + simpleHash(id)), opts.titleLength, 'Name of '+tag+' with id ' + id),
 							class: "RC-Actor",
 							properties: [{
-								class: "PC-Name",
-								value: (title || tag+'_'+simpleHash(id)).slice(0,opts.titleLength)
-							},{
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
 							changedAt: opts.fileDate
 						};
 						if( desc ) {
-							r.properties.push({
+							r.properties.unshift({
 								class: "PC-Description",
-								value: desc
+								value: truncStr(desc, opts.textLength, 'Documentation of ' + tag + ' with id ' + id)
 							})
 						};
 						if( tag=='subProcess' ) {
@@ -533,12 +547,9 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push({
 							id: id,
 							// no need to make unnamed events unique, the consolidation takes care of the needs of different event types:
-							title: (title || tag).slice(0,opts.titleLength),
+							title: truncStr((title || tag), opts.titleLength, 'Name of ' + tag + ' with id ' + id),
 							class: "RC-Event",
 							properties: [{
-								class: "PC-Name",
-								value: (title || tag).slice(0,opts.titleLength)
-							},{
 								class: "PC-Type",
 								value: opts.strNamespace+tag
 							}],
@@ -546,9 +557,9 @@ function BPMN2Specif( xmlString, opts ) {
 						});
 						// only add a property, if there is content:
 						if( desc ) {
-							model.resources[model.resources.length-1].properties.push({
+							model.resources[model.resources.length-1].properties.unshift({
 								class: "PC-Description",
-								value: desc
+								value: truncStr(desc, opts.textLength, 'Documentation of ' + tag + ' with id ' + id)
 							})
 						};
 
@@ -614,7 +625,7 @@ function BPMN2Specif( xmlString, opts ) {
 									break;
 								case 'exclusiveGateway':
 									// Add the title (condition), if specified:
-									title = (opts.strForkExcGateway+(title? ': '+title : '')).slice(0,opts.titleLength);
+									title = opts.strForkExcGateway + (title ? ': ' + title : '');
 									desc = opts.strForkExcGatewayDesc;
 									// list the gateway for adding an event per option in the next pass:
 									gw.title = title;
@@ -622,7 +633,7 @@ function BPMN2Specif( xmlString, opts ) {
 									break;
 								case 'inclusiveGateway':
 									// Add the title (condition), if specified:
-									title = (opts.strForkIncGateway+(title? ': '+title : '')).slice(0,opts.titleLength);
+									title = opts.strForkIncGateway + (title ? ': ' + title : '');
 									desc = opts.strForkIncGatewayDesc;
 									// list the gateway for adding an event per option in the next pass:
 									gw.title = title;
@@ -631,14 +642,11 @@ function BPMN2Specif( xmlString, opts ) {
 						};
 						model.resources.push({
 							id: id,
-							title: title,
+							title: truncStr(title, opts.titleLength, 'Name of gateway with id ' + id),
 							class: "RC-Actor",
 							properties: [{
-								class: "PC-Name",
-								value: title
-							},{
 								class: "PC-Description",
-								value: desc
+								value: truncStr(desc, opts.textLength, 'Documentation of gateway with id ' + id)
 							}, {
 								class: "PC-Type",
 								value: opts.strNamespace+tag
@@ -650,6 +658,7 @@ function BPMN2Specif( xmlString, opts ) {
 						// will be analyzed in a later pass
 						break;
 					default:
+						// also getting here, when a documentation of the process hase been encountered.
 						console.warn('The BPMN element with tag ',tag,' and title ',title,' has not been transformed.')
 				};
 				// Add a containment relation for every transformed model-element:
@@ -672,12 +681,12 @@ function BPMN2Specif( xmlString, opts ) {
 						}
 					);
 					// In certain cases of data generated by Signavio, 
-					// the participant pa is not associated with the process:
-					if( cL.length<1 && pa ) 
+					// the participant is not associated with the process:
+					if( cL.length<1 && participant ) 
 							model.statements.push({
-								id: pa.id+'-contains-'+id,
+								id: participant.id+'-contains-'+id,
 								class: 'SC-contains',
-								subject: pa.id,
+								subject: participant.id,
 								object: id,
 								changedAt: opts.fileDate
 							})
@@ -693,8 +702,8 @@ function BPMN2Specif( xmlString, opts ) {
 		// That's why the sequenceFlows are parsed separately after collecting all resouces.
 		let	id = el.getAttribute("id"),
 			title = el.getAttribute("name"),
-			tag = el.tagName.split(':').pop(),	// tag without namespace
-			feG = itemBy(gwL,'id',el.getAttribute('sourceRef')), 
+			tag = withoutNamespace(el.tagName),
+			feG = itemById(gwL,el.getAttribute('sourceRef')), 
 			seqF;
 //		console.debug('#3',gwL,el,id,title);
 
@@ -707,27 +716,24 @@ function BPMN2Specif( xmlString, opts ) {
 		if( feG && title ) {
 			seqF = {
 				subject: feG,
-				object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
+				object:  itemById(model.resources,el.getAttribute('targetRef'))
 			};
 			// a. store an event representing the case:
 			let ev = {
 				id: id,
-				title: title,
+				title: truncStr(title, opts.titleLength, 'Name of sequence flow with id ' + id),
 				class: "RC-Event",
 				properties: [{
-					class: "PC-Name",
-					value: title
-				},{
 					class: "PC-Type",
 					value: opts.strConditionType
 				}],
 				changedAt: opts.fileDate
 			};
 			// Add a description to the last element, if there is additional information:
-			if( seqF.subject.title && seqF.subject.title.length+title.length+3<opts.textLength ) 
-				ev.properties.push({
+			if( seqF.subject.title ) 
+				ev.properties.unshift({
 					class: "PC-Description",
-					value: seqF.subject.title+' → '+title	// → = &rarr; = &#8594;
+					value: truncStr((seqF.subject.title + ' → ' + title), opts.textLength, 'Documentation of sequence flow with id ' + id)	// → = &rarr; = &#8594;
 				});
 				
 			model.resources.push( ev );
@@ -761,8 +767,8 @@ function BPMN2Specif( xmlString, opts ) {
 		};
 		// else:
 		seqF = {
-			subject: itemBy(model.resources,'id',el.getAttribute('sourceRef')),
-			object:  itemBy(model.resources,'id',el.getAttribute('targetRef'))
+			subject: itemById(model.resources,el.getAttribute('sourceRef')),
+			object:  itemById(model.resources,el.getAttribute('targetRef'))
 		};
 //		console.debug('seqF',model.resources,el,seqF);
 		if( seqF.subject['class']=='RC-Actor' && seqF.object['class']=='RC-Actor' ) {
@@ -810,33 +816,28 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 
 	// 6. Select all textAnnotations:
-	let taL = []; 	// temporary list of text annotations
+	let annL = []; 	// temporary list of text annotations
 	Array.from(xmlDoc.querySelectorAll("textAnnotation"), (ann)=>{
 //		console.debug('ann',ann);
-		let idx = taL.length+1,
-			id = ann.getAttribute("id"),
-			title = opts.strTextAnnotation + (idx>9? ' '+idx : ' 0'+idx);  // assuming there won't be more than 99 annotations
+		let idx = annL.length+1,
+			id = ann.getAttribute("id");  
 		// even though there should be only one sub-element:
 		Array.from(ann.childNodes, (txt)=>{
 //			console.debug('textAnnotation.childNode',txt);
 			if( txt.tagName && txt.tagName.includes('text') && txt.innerHTML ) {
-				if( txt.innerHTML.length>opts.textLength )
-					console.warn('Text of annotation '+id+' has been truncated because it is too long');
 				model.resources.push({
 					id: id,
-					title: title,
+					// assuming there won't be more than 99 annotations:
+					title: opts.strTextAnnotation + (idx > 9 ? ' ' + idx : ' 0' + idx),
 					class: "RC-Note",
 					properties: [{
-						class: "PC-Name",
-						value: title
-					},{
 						class: "PC-Description",
-						value: txt.innerHTML.slice(0,opts.textLength)
+						value: truncStr(txt.innerHTML, opts.textLength, 'Annotation with id '+id)
 					}],
 					changedAt: opts.fileDate
 				});
 				// memorize all text annotations to include them in the hierarchy:
-				taL.push(id)
+				annL.push(id)
 			}
 		})
 	});
@@ -872,7 +873,7 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 	model.resources.forEach( (r)=>{
 		// only certain resources are model-elements:
-		if( ["RC-Actor","RC-State","RC-Event","RC-Collection"].indexOf(r['class'])>-1 ) {
+		if( ["RC-Actor","RC-State","RC-Event","RC-Collection"].includes(r['class']) ) {
 			model.statements.push({
 				id: model.id+'-shows-'+r.id,
 				class: "SC-shows",
@@ -885,78 +886,13 @@ function BPMN2Specif( xmlString, opts ) {
 	model.statements = model.statements.concat(tempL);
 	tempL.length = 0;
 	
-	// 9. The hierarchy with pointers to all resources:
-	function NodeList(res) {
-		// 9.1 first add the folders:
-		let nL =  [{
-			id: genID("N-"),
-			resource: "FolderProcesses-" + apx,
-			nodes: [{
-				id: genID("N-"),
-				resource: diagramId,
-				nodes: [],
-				changedAt: opts.fileDate
-			}],
-			changedAt: opts.fileDate
-	/*	},{
-			id: genID("N-"),
-			resource: "FolderGlossary-" + apx,
-			nodes: [{
-				id: genID("N-"),
-				resource: "FolderAct-" + apx,
-				nodes: [],
-				changedAt: opts.fileDate
-			},{
-				id: genID("N-"),
-				resource: "FolderSta-" + apx,
-				nodes: [],
-				changedAt: opts.fileDate
-			},{
-				id: genID("N-"),
-				resource: "FolderEvt-" + apx,
-				nodes: [],
-				changedAt: opts.fileDate
-			}],
-			changedAt: opts.fileDate */
-		}];
-	/*	// 9.2 Add Actors, States and Events to the respective folders in alphabetical order:
-		if( res.length>1 )
-			res.sort( (bim, bam)=>{
-						bim = bim.title.toLowerCase();
-						bam = bam.title.toLowerCase();
-						return bim==bam ? 0 : (bim<bam ? -1 : 1) 
-			});
-		res.forEach( (r)=>{ 
-			let nd = {
-				id: genID("N-"),
-				resource: r.id,
-				changedAt: opts.fileDate
-			};
-			// sort resources according to their type:
-			let idx = ["RC-Actor","RC-State","RC-Event"].indexOf( r['class'] );
-			if( idx>-1 )
-				nL[1].nodes[idx].nodes.push(nd)
-		}); */
-		// 9.3 Add text annotations to the model diagram:
-		taL.forEach( (a)=>{ 
-			nL[0].nodes[0].nodes.push({
-				id: genID("N-"),
-				resource: a,
-				changedAt: opts.fileDate
-			})
-		});
-		return nL;
-	}
-/*	// 10. Add the resource for the hierarchy root:
+/*	// 9. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
 		title: model.title,
 		description: model.description,
 		class: "RC-Folder",
 		properties: [{
-			class: "PC-Name",
-			value: model.title
-		},{
 			class: "PC-Description",
 			value: model.description || ''
 		},{
@@ -965,6 +901,70 @@ function BPMN2Specif( xmlString, opts ) {
 		}],
 		changedAt: opts.fileDate
 	}); */
+
+	// 10. The hierarchy with pointers to all resources;
+	//    the glossary is added during import:
+		function NodeList(res) {
+			// 9.1 first add the folders:
+			let nL =  [{
+				id: genID("N-"),
+				resource: "FolderProcesses-" + apx,
+				nodes: [{
+					id: genID("N-"),
+					resource: diagramId,
+					nodes: [],
+					changedAt: opts.fileDate
+				}],
+				changedAt: opts.fileDate
+		/*	},{
+				id: genID("N-"),
+				resource: "FolderGlossary-" + apx,
+				nodes: [{
+					id: genID("N-"),
+					resource: "FolderAct-" + apx,
+					nodes: [],
+					changedAt: opts.fileDate
+				},{
+					id: genID("N-"),
+					resource: "FolderSta-" + apx,
+					nodes: [],
+					changedAt: opts.fileDate
+				},{
+					id: genID("N-"),
+					resource: "FolderEvt-" + apx,
+					nodes: [],
+					changedAt: opts.fileDate
+				}],
+				changedAt: opts.fileDate */
+			}];
+		/*	// 9.2 Add Actors, States and Events to the respective folders in alphabetical order:
+			if( res.length>1 )
+				res.sort( (bim, bam)=>{
+							bim = bim.title.toLowerCase();
+							bam = bam.title.toLowerCase();
+							return bim==bam ? 0 : (bim<bam ? -1 : 1) 
+				});
+			res.forEach( (r)=>{ 
+				let nd = {
+					id: genID("N-"),
+					resource: r.id,
+					changedAt: opts.fileDate
+				};
+				// sort resources according to their type:
+				let idx = ["RC-Actor","RC-State","RC-Event"].indexOf( r['class'] );
+				if( idx>-1 )
+					nL[1].nodes[idx].nodes.push(nd)
+			}); */
+			// 9.3 Add text annotations to the model diagram:
+			annL.forEach( (a)=>{ 
+				nL[0].nodes[0].nodes.push({
+					id: genID("N-"),
+					resource: a,
+					changedAt: opts.fileDate
+				})
+			});
+			return nL;
+		}
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
@@ -1185,9 +1185,6 @@ function BPMN2Specif( xmlString, opts ) {
 			class: "RC-Folder",
 			title: opts.strBusinessProcessFolder,
 			properties: [{
-				class: "PC-Name",
-				value: opts.strBusinessProcessFolder
-			},{
 				class: "PC-Type",
 				value: opts.strBusinessProcessesType
 			}],
@@ -1198,12 +1195,14 @@ function BPMN2Specif( xmlString, opts ) {
 // =======================================
 // some helper functions:	
 
-	function itemBy( L, p, s ) {
-		if( L && p && s ) {
-			// Return the element in list 'L' whose property 'p' equals searchterm 's':
-			for( var i=L.length-1;i>-1;i-- )
-				if( L[i][p]==s ) return L[i]   // return list item
-		}
+	function itemById(L, id) {
+		if (L && id) {
+			// given an ID of an item in a list, return it's index:
+			id = id.trim();
+			for (var l of L)
+				if (l.id == id) return l   // return list item 
+		};
+		//	return; // undefined
 	}
 /*	function indexBy( L, p, s ) {
 		if( L && p && s ) {
@@ -1214,6 +1213,16 @@ function BPMN2Specif( xmlString, opts ) {
 		};
 		return -1
 	} */
+	function withoutNamespace(str) {
+		return (str ? str.split(':').pop() : '');
+    }
+	function truncStr(orig, mxLen, errT) {
+		if (orig && orig.length > mxLen) {
+			console.warn(errT + ' has been truncated because it is too long');
+			return orig.slice(0, mxLen)
+		};
+		return orig;
+	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 	function simpleHash(str) {for(var r=0,i=0;i<str.length;i++)r=(r<<5)-r+str.charCodeAt(i),r&=r;return r};
