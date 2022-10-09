@@ -143,7 +143,7 @@ function editSpecif():IApp {
 		moduleManager.load( self.moduleTree, {done: self.show } );
 	};
 	self.show = function() {
-		console.info( self.title+" started!" );
+		console.info(self.title + " "+CONFIG.appVersion+ " started!" );
 		self.me.read()
 		.then(
 			function() {

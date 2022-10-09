@@ -93,6 +93,7 @@ function embeddedSpecif():IApp {
 		moduleManager.load(self.moduleTree, { done: self.show });
 	};
 	self.show = function() {
+		console.info(self.title + " " + CONFIG.appVersion + " started!");
 		// data and type are valid, but it is necessary to indicate that the data is not zipped:
 		self.ioSpecif.init( {mediaTypeOf: LIB.attachment2mediaType} );
 		self.ioSpecif.verify( {name:'data.specif'} ); 

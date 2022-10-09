@@ -8,17 +8,91 @@
 */
 interface IGraphResource {
 	id: SpecifId;
+	revision?: SpecifRevision;
 	title: string;
 }
-interface IGraphStatement {
-	id: SpecifId;
-	title: string;
-	subject: string;
-	object: string;
+interface IGraphStatement extends IGraphResource {
+	subject: SpecifId;
+	object: SpecifId;
 }
-interface IGraph {
+
+class CGraph {
 	resources: IGraphResource[];
 	statements: IGraphStatement[];
+	constructor(inD: any) {
+		this.resources = inD && Array.isArray(inD.resources) ? LIB.forAll( inD.resources, this.cpyRes ) : [];
+		this.statements = inD && Array.isArray(inD.statements) ? LIB.forAll(inD.statemens, this.cpySta.bind(this) ) : [];
+	}
+	add(inD: any) {
+		if (inD && Array.isArray(inD.resources))
+			LIB.cacheL(this.resources, LIB.forAll(inD.resources, this.cpyRes));
+		if (inD && Array.isArray(inD.statements))
+			LIB.cacheL(this.statements, LIB.forAll(inD.statements, this.cpySta.bind(this)));
+	}
+	private cpyRes(el: IGraphResource): IGraphResource | undefined {
+		return el ? {
+			id: el.id,
+			revision: el.revision,
+			title: el.title ? LIB.xmlChar2utf8(el.title) : ''
+		} : undefined;
+    }
+	private cpySta(el: IGraphStatement): IGraphStatement | undefined {
+		let st = this.cpyRes( el );
+		return st && el.subject && el.object ? Object.assign(st, {
+			subject: el.subject,
+			object: el.object
+		}) : undefined;
+	}
+
+    /**
+    * Return the item for the given id
+    * @param id the id of the item
+    * @returns the item for the id or undefined if there is none
+    */
+    private resourceById(id: SpecifId):IGraphResource {
+		for (var res of this.resources)
+			if (res.id === id) return res;
+		throw Error('Graph node with id '+id+' not found in data structure of class CGraph');
+	}
+/*  private statementById(id) {
+		for(var i = graphData.statements.length-1; i>-1; i--)
+			if (graphData.statements[i].id === id) return this.statements[i];
+		return // undefined
+	} */
+
+    /**
+    * Return an object with pattern {relationtype:{targets:[],sources:[]}} containing all targets and sources
+    * related to the given resource and sorted by statement types
+    * @param object The resource, where the relations are to
+    * @returns json object of the statements with titles for statements, subjects and objects
+    */
+    statementsOrderedByType(resIdx:number) {
+		let res = this.resources[resIdx],
+			stC = {}, cid: string, oid: string, sid: string;
+		this.statements.forEach((st: IGraphStatement) => {
+			oid = st.object;
+			sid = st.subject;
+
+			if (sid === res.id || oid === res.id) {
+				// all statements having the same title are clustered:
+				cid = st.title;
+				/*	// all statements having the same class are clustered:
+					cid = st['class']; */
+				// @ts-ignore - cid as string *can* be used as index:
+				if (!stC[cid]) {
+					// @ts-ignore - cid as string *can* be used as index:
+					stC[cid] = { targets: [], sources: [] }
+				};
+				if (oid === res.id)
+					// @ts-ignore - cid as string *can* be used as index:
+					stC[cid].sources.push({ resource: this.resourceById(sid), statement: st })
+				else
+					// @ts-ignore - cid as string *can* be used as index:
+					stC[cid].targets.push({ resource: this.resourceById(oid), statement: st })
+			}
+		});
+		return stC;
+	}
 }
 interface IGraphOptions {
 	canvas: string;
@@ -43,9 +117,7 @@ app.vicinityGraph = function() {
 	self.clear = () => {};
 	self.hide = () => {};
 
-	self.show = function (graphData: IGraph, opts:IGraphOptions ):void {
-		// Accepts data-sets according to v0.10.4 or v0.11.2 and later.
-
+	self.show = function (graphData: CGraph, opts:IGraphOptions ):void {
 		// Check for missing options:
 		if (!opts || !opts.canvas)
 			throw Error("Graphing of local semantic net of a resource misses specification of 'canvas'."); // minimum requirement
@@ -61,7 +133,7 @@ app.vicinityGraph = function() {
 		if( !opts.fontSize ) opts.fontSize = '14px';
 
 		// All required parameters are available, so we can begin:
-		let relations = collectStatementsByType( graphData.resources[opts.index] );
+		let relations = graphData.statementsOrderedByType( opts.index );
 //		console.debug('init relations',relations);
 		// if there are no relations, do not create a graph:
 		if ( !relations ) return;
@@ -75,9 +147,26 @@ app.vicinityGraph = function() {
 			types: number;
 			sources: number;
 			targets: number;
+		}
+		type INode = {
+			id: number,
+			label: string,
+			x: number,
+			y: number,
+			color: string,
+			font: string,
+			shape: string
         }
-		let nodesData = [],
-			edgeData = [];
+		type IEdge = {
+			id: number,
+			label: string,
+			from: number,
+			to: number,
+			arrows: string,
+			color: string
+		}
+		let nodeL: INode[] = [],
+			edgeL: IEdge[] = [];
 
 		let relProp = countRelationTypesAndEdges(relations),
 			idx = pushMainNode( graphData.resources[opts.index] );  // returns always 1
@@ -98,12 +187,12 @@ app.vicinityGraph = function() {
 					idx = pushChildNodesAndEdges(idx, relations[entry].targets, relProp, false)
 		};
 
-//		console.debug('rawData',nodesData,edgeData);
+//		console.debug('rawData',nodeL,edgeL);
 		let data = {
 			// @ts-ignore - 'vis' is loaded at runtime
-			nodes: new vis.DataSet(nodesData),
+			nodes: new vis.DataSet(nodeL),
 			// @ts-ignore - 'vis' is loaded at runtime
-			edges: new vis.DataSet(edgeData)
+			edges: new vis.DataSet(edgeL)
 		};
 		let options = {
 			autoResize: true,
@@ -132,9 +221,9 @@ app.vicinityGraph = function() {
 
 		// @ts-ignore - 'vis' is loaded at runtime
 		let network = new vis.Network(document.getElementById(opts.canvas), data, options);
-		// Collapse/close a 'large' sub-network:
+		// Collapse/close a 'large' sub-network ("cluster node"):
 		// see https://github.com/GfSE/SpecIF-Graph/blob/master/src/modules/graph.js
-		network.getConnectedNodes("0").forEach(function (connectedNode) {
+		network.getConnectedNodes("0").forEach(function (connectedNode:any) {
 			let neighbours = network.getConnectedNodes(connectedNode);
 			if (neighbours.length > 5) {
 				closeCluster(connectedNode, network);
@@ -159,7 +248,7 @@ app.vicinityGraph = function() {
 				// else, open or close the cluster depending in its state:
 				if (network.clustering.isCluster(prms.nodes[0])) {
 					let releaseOptions = {
-						releaseFunction: function (clusterPosition:IPos, containedNodesPositions) {
+						releaseFunction: function (clusterPosition:IPos, containedNodesPositions:any) {
 							let newPositions = {};
 							let dist, offset;
 							let i = 0;
@@ -205,9 +294,9 @@ app.vicinityGraph = function() {
          * @param node A node that is a cluster
          * @param network the network the node is part of
          */
-        function closeCluster(node, network) {
+        function closeCluster(node:number, network:any) {
             if (node === 0) {
-                network.getConnectedNodes("0").forEach(function (connectedNode) {
+                network.getConnectedNodes("0").forEach(function (connectedNode:number) {
                     closeCluster(connectedNode, network)
                 })
             };
@@ -226,12 +315,13 @@ app.vicinityGraph = function() {
         }
 
         /**
-         * wraps a text after e specific number of chars
+         * wraps a text after e specific number of chars;
+		 * str is undefined in case of a collapsible cluster node.
          * @param str The String that hast to be wrapped
          * @returns {string} the wrapped string
          */
         function wrap( str:string, maxLen:number ) {
-            if ( str.length<maxLen+1 ) return str;
+            if ( !str || str.length<maxLen+1 ) return str || '';
 			// separate title into single words:
 			let words = str.match(/[^-\s]+[-\s]{0,}/g),  // don't like '*/', even if it is correct and working
 				newLine = '\n',
@@ -278,16 +368,15 @@ app.vicinityGraph = function() {
          * @param offset the offset angle [rad] to start the placement
          * @returns {{x: number, y: number, alpha: number}}
          */
-		function calculateNodePosition(i:number, sector:number, count:number, parentPos:IPos, dist:number, offset:number) {
+		function calculateNodePosition(i:number, sector:number, count:number, parentPos:IPos, dist?:number, offset?:number) {
 
 			let pos:IPos = {x: 0, y: 0, alpha: 0};
-			if (!dist) dist = 200;
-			let r = dist;
+			let r = dist || 200;
 			// alternate distance of neighboring nodes:
 			r = (i%2 === 1)? (r/1.2):(r*1.2);
 
 			let segment = sector/count;
-			let alpha = offset - sector/2 + segment*i + segment/2;
+			let alpha = (offset || 0) - sector/2 + segment*i + segment/2;
 			pos.x = parentPos.x + r * Math.cos(alpha);
 			pos.y = parentPos.y + r * Math.sin(alpha);
 			pos.alpha = alpha;
@@ -296,17 +385,17 @@ app.vicinityGraph = function() {
 		}
 
         /**
-         * Pushes one child node and edge in the nodesData and edgeData object
+         * Pushes one child node and edge in the nodeL and edgeL object
          * @param idx The id of the node
-         * @param nodesData The nodesData object
-         * @param edgeData The childData object
+         * @param nodeL The nodeL object
+         * @param edgeL The childData object
          * @param children Array of all connected child nodes
          * @param rel The edge label
          * @param relProp The relation properties object
          * @param isTarget A bool that represents if it is a object or a subject relationship
          * @returns {*}
          */
-        function pushChildNodesAndEdges(idx:number, children, relProp:ICnt, inbound:boolean):number {
+        function pushChildNodesAndEdges(idx:number, children:any, relProp:ICnt, inbound:boolean):number {
 			// the number of edges for the current half sector (inbound resp outbound):
 			let edges = inbound? relProp.sources:relProp.targets;
 			// the index for the relations in the current sector:
@@ -328,126 +417,94 @@ app.vicinityGraph = function() {
 					pos,
 					children[0].statement,
 					inbound);
-				idx++
 			}
 			else {
 				// there are several nodes related by the same type and same direction,
 				// so there will be a cluster node:
                 let pos = calculateNodePosition( sectorIdx, Math.PI, edges, {x:0, y:0}, 300, offs );
 				pushNodeAndEdge(
-					idx,
-					0,
-					{},		// cluster node
-					pos,
-					{title: children[0].statement.title},	// assuming that all have the same title; don't supply id!
-					inbound);
-				let childID = 0;
-				children.forEach(function (child) {
-					let childPos = calculateNodePosition(
-						childID,
-						Math.sqrt(2)*Math.PI,
-						children.length,
+						idx,
+						0,
+						{},		// cluster node
 						pos,
-						160,
-						pos.alpha);
+						{title: children[0].statement.title},	// assuming that all have the same title; don't supply id!
+						inbound
+					);
+				let childID = 0;
+				children.forEach(function (child:any) {
+					let childPos = calculateNodePosition(
+							childID,
+							Math.sqrt(2)*Math.PI,
+							children.length,
+							pos,
+							160,
+							pos.alpha
+						);
 					let childIDString = idx + ":" + childID;
 					pushNodeAndEdge(childIDString, idx, child.resource, childPos, child.statement, false);
 					childID++
 				});
-				idx++
 			};
-			return idx
+			return ++idx
         }
 
         /**
-         * Finally create and push the child and parent node and edge objects into the nodesData and edgeData object
+         * Finally create and push the child and parent node and edge objects into the nodeL and edgeL object
          * @param id The id of the Parent node(main node or helper node)
          * @param sourceID the id of the subject the arrow comes from
          * @param targetID the id of the traget the arrow goes to
-         * @param nodesData The nodeData object
-         * @param edgeData The edgeData object
+         * @param nodeL The node list
+         * @param edgeL The edge list
          * @param res The new node (resource) to show
          * @param edgeLabel The edge label
          * @param pos the pos of the new node
          */
-		function pushNodeAndEdge(idx:number, parentId:string, child, pos:IPos, rel, inbound:boolean):void {
+		function pushNodeAndEdge(idx: number, parentId: number, res: IGraphResource, pos: IPos, rel: IGraphStatement, inbound: boolean): void {
 			// include always idx, as the same element can be shown several times and childID must be unique:
-			let childId = child.id? idx+'='+child.id:idx;
-			nodesData.push({
-				// cluster nodes don't have id nor label:
-				id: childId,
-				label: wrap( getResourceTitle(child), opts.lineLength ),
-				x: pos.x,
-				y: pos.y,
-				color: child.id? opts.nodeColor:opts.clusterColor,
-				shape: child.id? "box":"circle"
-			});
-			// show arrow and label only on edges starting at the node in focus (parentId==0),
+			let childId = res.id ? idx + '=' + res.id : idx;
+			nodeL.push(
+				{
+					// cluster nodes don't have id nor label:
+					id: childId,
+					label: wrap(res.title, opts.lineLength),
+					x: pos.x,
+					y: pos.y,
+					color: res.id ? opts.nodeColor : opts.clusterColor,
+					shape: res.id ? "box" : "circle"
+				} as INode
+			);
+			// show arrows and label only on edges starting at the node in focus (parentId==0),
 			// but not for those in a cluster:
-			let edge = {
+			let edge: IEdge = {
 				from: inbound? childId:parentId,
 				to: inbound? parentId:childId,
 				arrows: parentId==0? "to":"",
 				color: opts.edgeColor,
-				label: parentId==0? getStatementTitle(rel):""
+				label: parentId==0? rel.title : ""
 			};
 			if( rel.id ) edge.id = rel.id;
-			edgeData.push( edge )
+			edgeL.push( edge )
 		}
 
         /**
-         * push the Main Node into the nodesData array
+         * push the Main Node into the nodeL array
          * @param resource = node in Focus
          * @returns {number} next index
          */
 		function pushMainNode(res: IGraphResource) {
-            nodesData.push(
+            nodeL.push(
                 {
                     id: 0,
-                    label: wrap( getResourceTitle(res), opts.lineLength ),
+                    label: wrap( res.title, opts.lineLength ),
                     x: 0,
                     y: 0,
 					color: opts.focusColor,
 					font: opts.fontSize+" "+opts.fontFace+" #fff",
                     shape: "box"
-                }
+                } as INode
             );
             return 1
         }
-
-        /**
-         * Returns a string representing the title of a resource with the given id.
-         * @param id the id of a resource
-         * @returns {string} title of the resource with icon, if available
-         */
-		function getResourceTitle(res: IGraphResource):string {
-			return res.title? LIB.xmlChar2utf8(res.title) : '';
-        }
-
-        /**
-         * Returns the title for a given statement
-         * @param stm the given statement
-         * @returns the title of the statement.
-         */
-		function getStatementTitle(stm: IGraphStatement):string {
-			return stm.title? LIB.xmlChar2utf8(stm.title) : '';
-        }
-
-        /**
-         * Returns the item for the given id
-         * @param id the id of the item
-         * @returns the item for the id or undefined if there is none
-         */
-        function resourceById(id:SpecifId) {
-            for(var i = graphData.resources.length-1; i>-1; i--)
-                if (graphData.resources[i].id === id) return graphData.resources[i];
-			return // undefined
-        }
-    /*    function statementById(id) {
-            for(var i = graphData.statements.length-1; i>-1; i--)
-                if (graphData.statements[i].id === id) return graphData.statements[i];
-			return // undefined
-        } */
 
         /**
          * Returns an object containing two properties:
@@ -458,7 +515,7 @@ app.vicinityGraph = function() {
          * @param rels The relations object
          * @returns {{types: number, edges: number}}
          */
-        function countRelationTypesAndEdges(rels) {
+        function countRelationTypesAndEdges(rels:any) {
             let cnt:ICnt = {types: 0, sources: 0, targets: 0};
             for(let entry in rels) {
                 if (rels.hasOwnProperty(entry)) {
@@ -470,40 +527,7 @@ app.vicinityGraph = function() {
 //			console.debug('countRelationTypesAndEdges',rels,cnt);
             return cnt
         }
-
-        /**
-         * Returns an object with pattern {relationtype:{targets:[],sources:[]}} containing all targets and sources
-         * related to the given resource and sorted by statement types
-         * @param object The resource, where the relations are to
-         * @returns json object of the statements with titles for statements, subjects and objects
-         */
-        function collectStatementsByType(res:IGraphResource) {
-			let stC = {}, cid:string, oid:string, sid:string;
-			graphData.statements.forEach((st: IGraphStatement) =>{
-				oid = st.object;
-				sid = st.subject;
-
-				if ( sid === res.id || oid === res.id) {
-					// all statements having the same title are clustered:
-					cid = getStatementTitle(st);
-				/*	// all statements having the same class are clustered:
-					cid = st['class']; */
-					// @ts-ignore - cid as string 'can' be used as index:
-					if (!stC[cid]) {
-						// @ts-ignore - cid as string 'can' be used as index:
-						stC[cid] = { targets: [], sources: [] }
-					};
-					if ( oid===res.id )
-						// @ts-ignore - cid as string 'can' be used as index:
-						stC[cid].sources.push( {resource:resourceById(sid),statement:st} )
-					else
-						// @ts-ignore - cid as string 'can' be used as index:
-						stC[cid].targets.push( {resource:resourceById(oid),statement:st} )
-				}
-            });
-			return stC;
-        }
     };
-	self.init();
+//	self.init();
 	return self
 }();

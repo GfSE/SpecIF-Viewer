@@ -229,7 +229,7 @@ moduleManager.construct({
 		// SpecIF has *optional* items which are *required* for ReqIF;
 		// these are complemented in the following.
 		//    - XHTML-formatted text has a special data type
-		//    - Add hierarchy root
+		//    - A hierarchy root has already been added before the ReqIF export is called.
 
 		// ReqIF does not allow media objects other than PNG.
 		// Thus, provide a fall-back image with format PNG for XHTML objects pointing to any other media object.
@@ -405,10 +405,10 @@ moduleManager.construct({
 					iterate( n, prepObj );
 				});
 		});
-		console.debug( 'after collecting referenced resources: ', xml, separated );
+//		console.debug( 'after collecting referenced resources: ', xml, separated );
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( (h) =>{
-			// The resources referenced at the lowest level of hierarchies 
+			// The resources referenced at the lowest level of hierarchies (the 'roots')
 			// are SPECIFICATIONS in terms of ReqIF.
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:

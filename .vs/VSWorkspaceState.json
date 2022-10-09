@@ -11,6 +11,6 @@
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\vendor\\assets\\javascripts\\archimate2SpecIF.js",
+  "SelectedNode": "\\src\\modules\\graph.ts",
   "PreviewInSolutionExplorer": false
 }

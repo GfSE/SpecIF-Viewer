@@ -256,12 +256,12 @@ class CPropertyToShow implements SpecifProperty {
 			if (Array.isArray(t) && t.length > 0) return (' ' + t[1]);
 			return '';
 		}
-		function getUrl(str: string): string | undefined {
+		function getUrl(str: string): string {
 			let l = /data="([^"]+)"/.exec(str);  // url in l[1]
 			// return null, because an URL is expected in any case:
 			if (Array.isArray(l) && l.length > 0) return l[1]
-			//						.replace(/\\/g,'/'); // is now handled during import
-			//	return undefined
+		//	return undefined
+			return ''
 		}
 	/*	function getPrp( pnm:string, str:string ):string|undefined {
 			// get the value of XHTML property 'pnm':
@@ -269,13 +269,15 @@ class CPropertyToShow implements SpecifProperty {
 				l = re.exec(str);
 			if( Array.isArray(l)&&l.length>0 ) return l[0];
 		//	return undefined
+			return ''
 		} */
-		function getPrpVal(pnm: string, str: string): string | undefined {
+		function getPrpVal(pnm: string, str: string): string {
 			// get the value of XHTML property 'pnm':
 			let re = new RegExp(pnm + '="([^"]+)"', ''),
 				l = re.exec(str);
 			if (Array.isArray(l) && l.length > 0) return l[1];
-			//	return undefined
+		//	return undefined
+			return ''
 		}
 		function makeStyle(w: string, h: string): string {
 			// compose a style property, if there are such parameters,
@@ -324,11 +326,6 @@ class CPropertyToShow implements SpecifProperty {
 							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
 							+ makeStyle(w2, h2)
 							+ '></div>',
-					/*		// add a button to enlarge the diagram in the top-right corner:
-							'<div class="' + opts.imgClass + ' ' + tagId(u2) + '"'
-							+ makeStyle(w2, h2)
-							+ '></div>',
-					 										*/
 							opts
 						);
 						// Because an image must be added after the enclosing link, for example, the timelag is increased a little:
@@ -399,11 +396,9 @@ class CPropertyToShow implements SpecifProperty {
 						//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
 						d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
 							+ makeStyle(w1, h1)
+				/*			// add a button to enlarge the diagram in the top-right corner:
+							+ '><button class="btn btn-success" style="position:absolute;right:0;z-index:900;" >N</button */
 							+ '></div>';
-				/*		// add a button to enlarge the diagram in the top-right corner:
-				 		d = '<div class="' + opts.imgClass + ' ' + tagId(u1) + '"'
-							+ makeStyle(w1, h1)
-							+ '><button class="btn btn-success" style="position:absolute;right:0;z-index:900;" >N</button></div>'; */
 //						console.debug('img opts',f1,opts);
 						// Add the image as innerHTML:
 						f1.renderImage(opts);
@@ -593,7 +588,7 @@ class CResourceToShow {
 		return (!Array.isArray(this.rC.instantiation)
 			|| this.rC.instantiation.indexOf(SpecifInstantiation.User) > -1)
 	}
-	private renderAttr(lbl: string, val: string, cssCl: string): string {
+	private renderAttr(lbl: string, val?: string, cssCl?: string): string {
 		// show a string value with or without label:
 		// ToDo: Create a class for attributes ..
 		cssCl = cssCl ? ' ' + cssCl : '';
@@ -877,10 +872,10 @@ class CFileWithContent implements IFileWithContent {
 		for (var a in f) this[a] = f[a];
     }
 	hasBlob(): boolean {
-		return this.blob && this.blob.size > 0;
+		return !!this.blob && this.blob.size > 0;
 	}
 	hasDataURL(): boolean {
-		return this.dataURL && this.dataURL.length > 0;
+		return !!this.dataURL && this.dataURL.length > 0;
 	}
 	hasContent(): boolean {
 		return this.hasBlob() || this.hasDataURL();
@@ -902,9 +897,11 @@ class CFileWithContent implements IFileWithContent {
 		// see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 		if (this.hasBlob())
 			LIB.blob2dataURL(this, addL, opts.timelag);
+		else if (this.hasDataURL())
+			// @ts-ignore - the dataURL *is* available as it has just been checked
+			setTimeout(() => { addL(this.dataURL, this.title, this.type) }, opts.timelag);
 		else
-			// assuming that dataURL has content:
-			setTimeout(() => { addL(this.dataURL,this.title,this.type) }, opts.timelag);
+			throw Error( 'Neither Blob nor DataURL found when preparing a download link.' );
 	}
 	renderImage(opts?: any): void {
 
@@ -928,6 +925,7 @@ class CFileWithContent implements IFileWithContent {
 				// add image to DOM using an image-tag with data-URI:
 				Array.from(document.getElementsByClassName(tagId(this.title)),
 					(el) => {
+						// @ts-ignore - existence of dataURL has been checked before
 						let ty = /data:([^;]+);/.exec(this.dataURL);
 						el.innerHTML = '<object data="' + this.dataURL
 							+ '" type="' + (ty[1] || this.type) + '"'
@@ -1099,6 +1097,7 @@ class CFileWithContent implements IFileWithContent {
 					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
 					function() {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
+						// @ts-ignore - nothing wrong with the type of 'this'
 						let eId = this.className.baseVal.split(' ')[1];		// ARCWAY-generated SVG: second class is element id
 						// If there is a diagram with the same name as the resource with eId, show it (unless it is currently shown):
 						eId = correspondingPlan(eId);
@@ -1119,6 +1118,7 @@ class CFileWithContent implements IFileWithContent {
 					function() {
 						// ToDo: So far, this only works with ARCWAY generated SVGs.
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
+						// @ts-ignore - nothing wrong with the type of 'this'
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
 							clsPrp = new CResourceToShow(itemBySimilarId(self.cData.resources, eId)),
 							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: self.selPrj.language }),
@@ -1139,7 +1139,6 @@ class CFileWithContent implements IFileWithContent {
 					}
 				);
 				clkEl.addEventListener("mouseout",
-					// do *not* define the handler using ()=>{}, because 'this' is undefined in the function body:
 					function() {
 						//	evt.target.setAttribute("style", "cursor:default;"); 
 						$("#details").empty();
@@ -2042,7 +2041,7 @@ moduleManager.construct({
 			console.info("Deleting tree object '" + nd.name + "'.");
 
 			// 1. Step away from tbe node to delete:
-			//			console.debug('deleteNode',nd,nd.getNextSibling());
+//			console.debug('deleteNode',nd,nd.getNextSibling());
 			self.parent.tree.selectNode(nd.getNextSibling());
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
@@ -2086,36 +2085,6 @@ moduleManager.construct({
 					},
 					LIB.stdError 
 				);
-		} 
-		function delNd(nd: jqTreeNode): void {
-			// Delete the hierarchy node and all it's children. 
-			console.info( "Deleting tree object '"+nd.name+"'." );
-
-			// 1. Step away from tbe node to delete:
-//			console.debug('deleteNode',nd,nd.getNextSibling());
-			self.parent.tree.selectNode( nd.getNextSibling() ); 
-
-			// 2. Delete the hierarchy entry with all its children in cache and server:
-			selPrj.deleteItems( 'node', [LIB.keyOf(nd)] )
-				.then( 
-					()=>{
-						// If a diagram has been deleted, build a new glossary with elements 
-						// which are shown by any of the remaining diagrams:
-						selPrj.createFolderWithGlossary({addGlossary:true} )
-							.then( 
-								()=>{  
-									// undefined parameters will be replaced by default value:
-									self.parent.updateTree({
-										targetLanguage: selPrj.language,
-										lookupTitles: true
-									});
-									self.parent.doRefresh({forced:true})
-								},
-								LIB.stdError 
-							)
-					},
-					LIB.stdError 
-				);
 		} */
 	};
 /*	self.deleteResource = ()=>{
@@ -2143,7 +2112,7 @@ moduleManager.construct({
 		selPrj: CProject,
 		cacheData: CCache,		// the cached data
 		selRes: SpecifResource,		// the currently selected resource
-		net: IGraph,
+		net: CGraph,
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
 	// Permissions for resources and statements:
@@ -2195,81 +2164,77 @@ moduleManager.construct({
 
 		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges()} )
 		.then( 
-			(sL:SpecifStatement[])=>{
+			(sL: SpecifStatement[]) => {
 				// sL is the list of statements involving the selected resource.
 
 				// First, initialize the list and add the selected resource:
-				net = { resources: [nd.ref], statements: [] };
+				net = new CGraph({ resources: [nd.ref] });
+
 				// Store all related resources while avoiding duplicate entries,
 				// the title attribute will be undefined, 
 				// but we are interested only in the resource id at this point:
-				sL.forEach( cacheNet );
+				sL.forEach(cacheNet);
 
 				// Obtain the titles (labels) of all resources in the list.
 				// The titles may not be defined in a tree node and anyways don't have the icon, 
 				// therefore obtain the title from the referenced resources.
-				// Since the resources are cached, this is not too expensive.
-				selPrj.readItems( 'resource', net.resources )
-				.then( 
-					(rResL:SpecifItem[])=>{   
-						// rResL is a list of the selected plus it's related resources
+				return selPrj.readItems('resource', net.resources)
+			}
+		)
+		.then( 
+			(rResL: SpecifItem[]) => {
+				// rResL is a list of the selected plus it's related resources
 
-						// Assuming that the sequence may be arbitrary:
-						selRes = LIB.itemByKey(rResL,nd.ref);
-						getPermissions( selRes );
+				// Assuming that the sequence may be arbitrary:
+				selRes = LIB.itemByKey(rResL, nd.ref);
+				getPermissions(selRes);
 
-						// Now get the titles with icon of the resources,
-						// as the sequence of list items in net.resources is maintained, 
-						// the selected resource will be the first element in the list: 
-						rResL.forEach( (r)=>{ cacheMinRes( net, r ) });
-					
-						// finally add the 'mentions' statements:
-						getMentionsRels(selRes,opts)
-						.then( 
-							(stL)=>{
-								stL.forEach( cacheNet );
-//								console.debug('local net',stL,net);
-								renderStatements( net );
-								$( self.view ).prepend( linkBtns() ); 
-								app.busy.reset();
-							},
-							handleErr
-						);
-					},
-					handleErr
-				/*	(xhr)=>{
-						switch( xhr.status ) {
-							case 404:   // related resource(s) not found, just ignore it
-								break;
-							default:
-								LIB.stdError(xhr);
-						}
-						app.busy.reset();	
-					} */
-				);
-			},
-			handleErr
+				// Now get the titles with icon of the resources,
+				// as the sequence of list items in net.resources is maintained, 
+				// the selected resource will be the first element in the list: 
+				rResL.forEach((r) => { cacheMinRes(net, r) });
+
+				// finally add the 'mentions' statements:
+				return getMentionsRels(selRes, opts)
+			}
+		)
+		.then( 
+			(stL)=>{
+				if (!modeStaDel)
+					// Only show the 'mentions' relations in regular mode.
+					// Don't show them in deletion mode, because they cannot be deleted like real statements;
+					// remember that the former are internal links within a text property:
+					stL.forEach( cacheNet );
+//				console.debug('local net',stL,net);
+				renderStatements( net );
+				$( self.view ).prepend( linkBtns() ); 
+				app.busy.reset();
+			}
+		)
+		.catch(
+			(xhr: xhrMessage)=> {
+				LIB.stdError(xhr);
+				app.busy.reset();
+			}
 		);
 		return;
 
-		function handleErr(xhr: xhrMessage): void {
-			LIB.stdError(xhr);
-			app.busy.reset();
-		}
-		function cacheMinRes(N:IGraph,r:SpecifResource|SpecifKey):void {
+		function cacheMinRes(N:CGraph,r:SpecifResource|SpecifKey):void {
 			// cache the minimal representation of a resource;
 			// r may be a resource or a key pointing to a resource,
 			// where the sequence of items in L is always maintained.
 			// @ts-ignore - in the first run when a key is specified, the result of instanceTitleOf() is undefined - it will be added in the second run
-			LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
+		//	LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
+			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) }] });
 		}
-		function cacheMinSta(N:IGraph,s:SpecifStatement):void {
+		function cacheMinSta(N:CGraph,s:SpecifStatement):void {
 			// cache the minimal representation of a statement;
 			// s is a statement;
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || cacheData.staClassTitleOf(s, opts), subject: s.subject.id, object: s.object.id } );
+		//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
+			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }]});
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2280,7 +2245,7 @@ moduleManager.construct({
 			// 1. Skip hidden statements;
 			// hiddenStatements holds the vocabulary terms, so the title shall *not* be translated to the targetLanguage.
 			// @ts-ignore - property 'title' is used on purpose for the mentions statements generated for display
-			if (CONFIG.hiddenStatements.includes(s.title || cacheData.staClassTitleOf(s, {})) ) return;
+			if (CONFIG.hiddenStatements.includes(s.title || LIB.staClassTitleOf(s, cacheData.statementClasses, {})) ) return;
 
 			// 2. Store the statements in the net:
 			cacheMinSta( net, s );
@@ -2622,10 +2587,7 @@ moduleManager.construct({
 	self.toggleModeStaDel = ():void =>{
 		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
-//		console.debug( 'toggle delete statement mode:', modeStaDel);
-		$( '#linkBtns' ).remove();
-		renderStatements( net );
-		$(self.view).prepend(linkBtns());
+		self.parent.doRefresh({ forced: true });
 	};
 	self.relatedItemClicked = ( rId:string, sId:string ):void =>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.

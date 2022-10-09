@@ -51,8 +51,8 @@ const CONFIG:any = {};
 	CONFIG.focusColor = '#1690D8';
 
 	// The indices of ..Extensions and ..Types must correspond!
-	// Also, for each entry 'xxx' in officeExtensions provide a corresponding icon file named xxx-icon.png
-	// ToDo: Change to a map.
+	// - Bidirectional mapping is needed ...
+	// Also, for each entry 'xxx' in officeExtensions a corresponding icon file named xxx-icon.png is expected!
 	// ToDo: use https://github.com/jshttp/mime-types
 	CONFIG.imgExtensions = [ 'svg', 'png', 'jpg', 'gif', 'jpeg', 'png' ];
 	CONFIG.imgTypes = [ 'image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/jpeg', 'image/x-png' ];

@@ -78,6 +78,7 @@ class CSpecIF implements SpecIF {
 	$schema = '';
 	title?: SpecifMultiLanguageText = [{ text: '' }];
 	description?: SpecifMultiLanguageText = [{ text: '' }];
+	language?= '';
 	generator? = '';
 	generatorVersion? = '';
 	rights?: any = {};
@@ -118,6 +119,71 @@ class CSpecIF implements SpecIF {
 		);
 	} 
 	get(opts?: any): Promise<SpecIF> {
+		/*	// Add a resource as hierarchyRoot, if needed.
+			// It is assumed,
+			// - that in general SpecIF data do not have a hierarchy root with meta-data.
+			// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+
+				function aHierarchyHasNoRoot(dta: SpecIF): boolean {
+					for (var i = dta.hierarchies.length - 1; i > -1; i--) {
+						let r = LIB.itemByKey(dta.resources, dta.hierarchies[i].resource);
+						if (!r) {
+							throw Error("Hierarchy '"+dta.hierarchies[i].id+"' is corrupt");
+						};
+						let prpV = LIB.valuesByTitle(r, CONFIG.propClassType, dta),
+							rC = LIB.itemByKey(dta.resourceClasses, r['class']);
+						// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
+						// or by the title of the resourceClass:
+						if ((!prpV || CONFIG.hierarchyRoots.indexOf(prpV) < 0)
+							&& (!rC || CONFIG.hierarchyRoots.indexOf(rC.title) < 0))
+							return true;
+					};
+					return false;
+				} 
+			let spD = this;
+			if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
+
+				console.info("Added a hierarchyRoot");
+				standardTypes.addTo("resourceClass", { id: "RC-Folder" }, spD);
+
+				// ToDo: Let the program derive the referenced class ids from the above
+				standardTypes.addTo("propertyClass", { id: "PC-Type" }, spD);
+				standardTypes.addTo("propertyClass", { id: "PC-Description" }, spD);
+				standardTypes.addTo("propertyClass", { id: "PC-Name" }, spD);
+				standardTypes.addTo("dataType", { id: "DT-ShortString" }, spD);
+				standardTypes.addTo("dataType", { id: "DT-Text" }, spD);
+
+				var res: SpecifResource = {
+					id: 'R-' + simpleHash(spD.id),
+					class: LIB.makeKey("RC-Folder"),
+					properties: [{
+						class: { id: "PC-Name" },
+						values: [LIB.makeMultiLanguageText(spD.title)]
+					}, {
+						class: { id: "PC-Type"},
+						values: [LIB.makeMultiLanguageText(CONFIG.resClassOutline)]
+					}],
+					changedAt: spD.createdAt || new Date().toISOString()
+				};
+				// Add a description property only if it has a value:
+				if (spD.description)
+					addP(res, {
+						class: { id: "PC-Description"},
+						values: [spD.description]
+					});
+				spD.resources.push(r2ext(res));
+				// create a new root instance:
+				spD.hierarchies = [{
+					id: "H-" + res.id,
+					resource: LIB.keyOf(res),
+					// .. and add the previous hierarchies as children:
+					nodes: spD.hierarchies,
+					changedAt: res.changedAt
+				}];
+			};  */
+
+		if (opts && opts.v10)
+			return this.toExt_v10(opts);
 		return this.toExt(opts);
 	}
 	private check(spD: SpecIF, opts?: any): Promise<SpecIF> {
@@ -137,8 +203,8 @@ class CSpecIF implements SpecIF {
 					if (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0) {
 						// for data sets according to schema v1.1 and later;
 						// get the constraint checker locally, if started locally in the debug phase:
-						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
-								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
+						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.min.mjs'
+								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.mjs')
 						.then(modChk => {
 							// 2. Get the specified schema file:
 							getSchema();
@@ -762,6 +828,7 @@ class CSpecIF implements SpecIF {
 					};
 
 				if (LIB.multiLanguageTextHasContent(this.description)) spD.description = this.description;
+				if (this.language) spD.language = this.language;
 
 				if (this.rights && this.rights.title && this.rights.url)
 					spD.rights = this.rights;
@@ -794,7 +861,6 @@ class CSpecIF implements SpecIF {
 				};
 
 				// Now start to assemble the SpecIF output:
-
 				spD.dataTypes = LIB.forAll(this.dataTypes, dT2ext);
 				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
 				spD.resourceClasses = LIB.forAll(this.resourceClasses, rC2ext);
@@ -819,92 +885,11 @@ class CSpecIF implements SpecIF {
 				return;
 
 				function finalize() {
-				/*	No need any more, because the project.read operation only returns statements between
-				 *	the listed resources.
-					// Check whether all statements reference resources or statements, which are listed.
-					// As statements can be removed which may be referenced themselves,
-					// the checking must be repeated until no statements are removed any more:
-					let lenBefore: number;
-					do {
-						lenBefore = spD.statements.length;
-						spD.statements = spD.statements.filter(
-							(s) => {
-								return (LIB.indexByKey(spD.resources, s.subject) > -1
-									|| LIB.indexByKey(spD.statements, s.subject) > -1)
-									&& (LIB.indexByKey(spD.resources, s.object) > -1
-										|| LIB.indexByKey(spD.statements, s.object) > -1)
-							}
-						);
-						console.info("Suppressed " + (lenBefore - spD.statements.length) + " statements, because subject or object are not listed.");
-					}
-					while (spD.statements.length < lenBefore);  */
-
-				/*	// Add a resource as hierarchyRoot, if needed.
-					// It is assumed, 
-					// - that in general SpecIF data do not have a hierarchy root with meta-data.
-					// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-					if (opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
-
-						console.info("Added a hierarchyRoot");
-						standardTypes.addTo("resourceClass", { id: "RC-Folder" }, spD);
-
-						// ToDo: Let the program derive the referenced class ids from the above
-						standardTypes.addTo("propertyClass", { id: "PC-Type" }, spD);
-						standardTypes.addTo("propertyClass", { id: "PC-Description" }, spD);
-						standardTypes.addTo("propertyClass", { id: "PC-Name" }, spD);
-						standardTypes.addTo("dataType", { id: "DT-ShortString" }, spD);
-						standardTypes.addTo("dataType", { id: "DT-Text" }, spD);
-
-						var res: SpecifResource = {
-							id: 'R-' + simpleHash(spD.id),
-							class: LIB.makeKey("RC-Folder"),
-							properties: [{
-								class: { id: "PC-Name" },
-								values: [LIB.makeMultiLanguageText(spD.title)]
-							}, {
-								class: { id: "PC-Type"},
-								values: [LIB.makeMultiLanguageText(CONFIG.resClassOutline)]
-							}],
-							changedAt: spD.createdAt || new Date().toISOString()
-						};
-						// Add a description property only if it has a value:
-						if (spD.description)
-							addP(res, {
-								class: { id: "PC-Description"},
-								values: [spD.description]
-							});
-						spD.resources.push(r2ext(res));
-						// create a new root instance:
-						spD.hierarchies = [{
-							id: "H-" + res.id,
-							resource: LIB.keyOf(res),
-							// .. and add the previous hierarchies as children:
-							nodes: spD.hierarchies,
-							changedAt: res.changedAt
-						}];
-					};  */
-
 					// ToDo: schema and consistency check (if we want to detect any programming errors)
 					console.debug('specif.toExt exit',spD);
 					resolve(spD);
 				}
 
-			/*	function aHierarchyHasNoRoot(dta: SpecIF): boolean {
-					for (var i = dta.hierarchies.length - 1; i > -1; i--) {
-						let r = LIB.itemByKey(dta.resources, dta.hierarchies[i].resource);
-						if (!r) {
-							throw Error("Hierarchy '"+dta.hierarchies[i].id+"' is corrupt");
-						};
-						let prpV = LIB.valuesByTitle(r, CONFIG.propClassType, dta),
-							rC = LIB.itemByKey(dta.resourceClasses, r['class']);
-						// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
-						// or by the title of the resourceClass:
-						if ((!prpV || CONFIG.hierarchyRoots.indexOf(prpV) < 0)
-							&& (!rC || CONFIG.hierarchyRoots.indexOf(rC.title) < 0))
-							return true;
-					};
-					return false;
-				} */
 				// common for all items:
 				function i2ext(iE:any) {
 					var oE:any = {
@@ -1203,6 +1188,418 @@ class CSpecIF implements SpecIF {
 									/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
 										resolve(); */
 										reject({status:999,statusText:"Cannot transform file '"+iE.title+"' of type '"+iE.type+"' to an image."})
+								};
+							};
+						}
+					);
+				}
+			}
+		)
+	}
+	private toExt_v10(opts?: any): Promise<SpecIF> {
+		// transform self.data to SpecIF v1.0 following defined options;
+		// a clone is delivered.
+		// if opts.targetLanguage has no value, all available languages are kept.
+
+//		console.debug('toExt_v10', this, opts );
+		// v1.0 uses less multilanguageText, so v1.1+ multilanguageText must be reduced in many places:
+		const myLang = { targetLanguage: opts.targetLanguage || this.language || 'en' };
+		// transform internal data to SpecIF:
+		return new Promise(
+			(resolve, reject) => {
+				var pend = 0,
+					// @ts-ignore - the missing attributes will come below:
+					spD: SpecIF = {
+						id: this.id,
+						title: LIB.languageValueOf(this.title, myLang),
+						$schema: 'https://specif.de/v1.0/schema.json',
+						generator: app.title,
+						generatorVersion: CONFIG.appVersion,
+						createdAt: new Date().toISOString()
+					};
+
+				if (LIB.multiLanguageTextHasContent(this.description)) spD.description = LIB.languageValueOf(this.description, myLang);
+				if (this.language) spD.language = this.language;
+
+				if (this.rights && this.rights.title && this.rights.url)
+					spD.rights = this.rights;
+				else
+					spD.rights = {
+						title: "Creative Commons 4.0 CC BY-SA",
+						url: "https://creativecommons.org/licenses/by-sa/4.0/"
+					};
+
+				if (app.me && app.me.email) {
+					spD.createdBy = {
+						familyName: app.me.lastName,
+						givenName: app.me.firstName,
+						email: { value: app.me.email, type: "text/html" }
+					};
+					if (app.me.organization)
+						spD.createdBy.org = { organizationName: app.me.organization };
+				}
+				else {
+					if (this.createdBy && this.createdBy.email) {
+						spD.createdBy = {
+							familyName: this.createdBy.familyName,
+							givenName: this.createdBy.givenName,
+							email: { value: this.createdBy.email, type: "text/html" }
+						};
+						if (this.createdBy.org && this.createdBy.org.organizationName)
+							spD.createdBy.org = this.createdBy.org;
+					};
+					// else: don't add createdBy without data
+				};
+
+				// Now start to assemble the SpecIF output:
+				spD.dataTypes = LIB.forAll(this.dataTypes, dT2ext);
+				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
+				spD.resourceClasses = LIB.forAll(this.resourceClasses, rC2ext);
+				spD.statementClasses = LIB.forAll(this.statementClasses, sC2ext);
+				spD.files = [];
+				for (var f of this.files) {
+					pend++;
+					f2ext(f)
+						.then(
+							(oF: IFileWithContent) => {
+								spD.files.push(oF);
+								if (--pend < 1) finalize();
+							},
+							reject
+						);
+				};
+				spD.resources = LIB.forAll((this.resources), r2ext);
+				spD.statements = LIB.forAll(this.statements, s2ext);
+				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext);
+
+				if (pend < 1) finalize();  // no files, so finalize right away
+				return;
+
+				function finalize() {
+					// ToDo: schema and consistency check (if we want to detect any programming errors)
+					console.debug('specif.toExt_v10 exit', spD);
+					resolve(spD);
+				}
+
+				// common for all items:
+				function i2ext(iE: any) {
+					var oE: any = {
+						id: iE.id,
+						changedAt: iE.changedAt
+					};
+					// most items must have a title, but resources and statements come without:
+					if (iE.title) oE.title = LIB.titleOf(iE, opts);
+					if (LIB.multiLanguageTextHasContent(iE.description)) oE.description = LIB.languageValueOf(iE.description, myLang);
+					if (iE.revision) oE.revision = iE.revision;
+					if (iE.replaces) oE.replaces = iE.replaces;
+					if (iE.changedBy) oE.changedBy = iE.changedBy;
+					if (iE.createdAt) oE.createdAt = iE.createdAt;
+					if (iE.createdBy) oE.createdBy = iE.createdBy;
+					return oE;
+				}
+				// a data type:
+				function dT2ext(iE: SpecifDataType) {
+					var oE: SpecifDataType = i2ext(iE);
+					switch (iE.type) {
+						case SpecifDataTypeEnum.Double:
+							if (iE.fractionDigits) oE.fractionDigits = iE.fractionDigits;
+						case SpecifDataTypeEnum.Integer:
+							if (typeof (iE.minInclusive) == 'number') oE.minInclusive = iE.minInclusive;
+							if (typeof (iE.maxInclusive) == 'number') oE.maxInclusive = iE.maxInclusive;
+							break;
+						case SpecifDataTypeEnum.String:
+							if (iE.maxLength) oE.maxLength = iE.maxLength;
+					};
+					// Look for enumerated values:
+					// - every dataType except xs:boolean may have enumerated values
+					// - in v1.0 there are only enumerated values of type xs:string, so any other type is lost
+					if (iE.enumeration) {
+						// reduce to the language specified:
+						// @ts-ignore - values does exist with v1.0
+						oE.values = LIB.forAll(iE.enumeration, (v: any) => { return { id: v.id, value: LIB.languageValueOf(v.value, myLang) } });
+						// @ts-ignore - OK with v1.0
+						oE.type = 'xs:enumeration';
+					}
+					else
+						oE.type = iE.type;
+					if (iE.multiple) oE.multiple = true;
+
+					return oE
+				}
+				// a property class:
+				function pC2ext(iE: SpecifPropertyClass) {
+					var oE: SpecifPropertyClass = i2ext(iE);
+					if (iE.values) oE.values = iE.values;  // default values
+					oE.dataType = iE.dataType;
+
+					let dT = LIB.itemByKey(spD.dataTypes, iE.dataType);
+
+					/* With SpecIF, he 'multiple' property should be defined at dataType level
+					*  and can be overridden at propertyType level.
+					*  	dT.multiple 	pT.multiple 	pT.multiple		effect
+					*  ---------------------------------------------------------
+					*	undefined		undefined 		undefined		false
+					* 	false			undefined		undefined		false
+					* 	true			undefined		undefined		true
+					* 	undefined		false			undefined		false
+					* 	false			false			undefined		false
+					* 	true 			false			false			false
+					* 	undefined		true 			true			true
+					* 	false			true 			true			true
+					* 	true 			true 			undefined		true
+					*  Include the property only, if is different from the dataType's: */
+					if (iE.multiple && !dT.multiple) oE.multiple = true;
+					//	else if (iE.multiple == false && dT.multiple) oE.multiple = false
+					return oE
+				}
+				// common for all instance classes:
+				function aC2ext(iE: any) {
+					var oE = i2ext(iE);
+					if (iE.icon) oE.icon = iE.icon;
+					if (iE.instantiation) oE.instantiation = iE.instantiation;
+					// @ts-ignore - index is ok:
+					if (iE._extends) oE['extends'] = iE._extends;
+					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
+					return oE
+				}
+				// a resource class:
+				function rC2ext(iE: SpecifResourceClass) {
+					var oE: SpecifResourceClass = aC2ext(iE) as SpecifResourceClass;
+					// Include "isHeading" in SpecIF only if true:
+					if (iE.isHeading) oE.isHeading = true;
+					return oE
+				}
+				// a statement class:
+				function sC2ext(iE: SpecifStatementClass) {
+					var oE: SpecifStatementClass = aC2ext(iE) as SpecifStatementClass;
+					if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
+					if (iE.subjectClasses && iE.subjectClasses.length > 0) oE.subjectClasses = iE.subjectClasses;
+					if (iE.objectClasses && iE.objectClasses.length > 0) oE.objectClasses = iE.objectClasses;
+					return oE
+				}
+				// a property:
+				function p2ext(iE: SpecifProperty) {
+					// skip empty properties:
+					if (!iE.values || iE.values.length < 1) return;
+
+					// Skip certain properties;
+					// - if a hidden property is defined with value, it is suppressed only if it has this value
+					// - if the value is undefined, the property is suppressed in all cases
+					let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
+					if (Array.isArray(opts.skipProperties)) {
+						for (var sP of opts.skipProperties) {
+							if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.displayValueOf(iE.values[0], opts))) return;
+						};
+					};
+
+					if (iE.values.length > 1)
+						console.warn('When transforming to SpecIF v1.0, only the first value of a property of class ' + iE['class'] + ' has been taken.');
+
+					// @ts-ignore - no 'values' in case of v1.0
+					var oE: SpecifProperty = {
+						class: iE['class']
+					};
+
+					// According to the schema, all property values are represented by a string
+					// and we want to store them as string to avoid inaccuracies by multiple transformations.
+					let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
+					if ([SpecifDataTypeEnum.String,'xhtml'].includes(dT.type)) {
+						// Special treatment of string values:
+						let v = iE.values[0] as SpecifMultiLanguageText;
+						if (opts.targetLanguage) {
+							// Reduce all values to the selected language; is used for
+							// - generation of human readable documents
+							// - formats not supporting multiple languages:
+
+							// Take the first value, as v1.0 supports only one value:
+							let txt = LIB.languageValueOf(v, opts)
+								.replace(/^\s+/, "");   // remove any leading whiteSpace
+
+							if (CONFIG.excludedFromFormatting.includes(pC.title)) {
+								// if it is e.g. a title, remove all formatting:
+								txt = txt
+									.stripHTML();
+							}
+							else {
+								// Transform to HTML, if possible;
+								// especially for publication, for example using WORD format:
+								txt = txt
+									.makeHTML(opts)
+									.replace(/<br ?\/>\n/g, "<br/>");
+								// replace filetypes of linked images:
+								if (opts.allDiagramsAsImage)
+									txt = refDiagramsAsImg(txt);
+							};
+							// @ts-ignore - OK for v1.0
+							oE.value = txt;
+
+							if (LIB.isHTML(txt))
+								// @ts-ignore - OK for v1.0
+								dT.type = 'xhtml'
+							else
+								// Cycle through all languageValues and check for format attribute:
+								for (var l of v) {
+									// @ts-ignore - OK for v1.0
+									if (l.format == 'xhtml') dT.type = 'xhtml';
+									break;
+								};
+						}
+						else {
+							// Keep all languages and possibly replace filetypes of linked images:
+							// @ts-ignore - OK for v1.0
+							oE.value = [];
+							// Cycle through all languages of a value v:
+							// - Keep text and language
+							// - Ignore format, as it is not acceptable for v1.0 here 
+							// - the language attribute is required in v1.0, whereas in v1.1 only if multiple languages are present
+							for (var l of v)
+								// @ts-ignore - OK for v1.0
+								oE.value.push({ text: refDiagramsAsImg(l.text), language: l.language || '?'});
+							//	oE.value.push(l.language ? { text: refDiagramsAsImg(l.text), language: l.language || '?' } : { text: refDiagramsAsImg(l.text) });
+						};
+						return oE;
+					};
+					// else, take the first value, as v1.0 supports only one value:
+					// @ts-ignore - OK for v1.0
+					oE.value = iE.values[0];
+//					console.debug('p2ext',iE,LIB.languageValueOf( iE.value, opts ),oE.value);
+					return oE;
+
+					function refDiagramsAsImg(val: string): string {
+						if (!opts || !opts.allDiagramsAsImage) return val;
+
+						// Replace all links to application files like BPMN by links to SVG images:
+						let replaced = false;
+						// @ts-ignore - $0 is never read, but must be specified anyways
+						val = val.replace(RE.tagObject, ($0: string, $1: string, $2: string) => {
+//							console.debug('#a', $0, $1, $2);
+							if ($1) $1 = $1.replace(RE.attrType, ($4: string, $5: string) => {
+//								console.debug('#b', $4, $5);
+								// ToDo: Further application file formats ... once in use.
+								// ToDo: Use CONFIG.applTypes ... if appropriate.
+								if (["application/bpmn+xml"].indexOf($5) > -1) {
+									replaced = true;
+									return 'type="image/svg+xml"'
+								}
+								else
+									return $4;
+							});
+							// @ts-ignore - $6 is never read, but must be specified anyways
+							if (replaced) $1 = $1.replace(RE.attrData, ($6: string, $7: string) => {
+//								console.debug('#c', $6, $7);
+								return 'data="' + $7.fileName() + '.svg"'
+							});
+							return '<object ' + $1 + $2;
+						});
+						return val;
+					}
+				}
+				// common for all instances:
+				function a2ext(iE: any) {
+					var oE = i2ext(iE);
+//					console.debug('a2ext',iE,opts);
+					// resources and hierarchies usually have individual titles, and so we will not lookup:
+					// @ts-ignore - index is ok:
+					oE['class'] = iE['class'];
+					if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
+
+					//	let pL = opts.showEmptyProperties ? normalizeProperties(iE, spD) : iE.properties;
+					let pL = iE.properties;
+					if (pL && pL.length > 0) oE.properties = LIB.forAll(pL, p2ext);
+					return oE;
+				}
+				// a resource:
+				function r2ext(iE: SpecifResource) {
+					var oE: SpecifResource = a2ext(iE);
+					// a resource title shall never be looked up (translated);
+					// for example in case of the vocabulary the terms would disappear:
+
+					// @ts-ignore - 'title' is required in case of v1.0
+					oE.title = '';
+//					console.debug('resource2ext',iE,oE);
+					return oE;
+				}
+				// a statement:
+				function s2ext(iE: SpecifStatement) {
+					/*	// Skip statements with an open end;
+						// At the end it will be checked, wether all referenced resources resp. statements are listed:
+						if (!iE.subject || iE.subject.id == CONFIG.placeholder
+							|| !iE.object || iE.object.id == CONFIG.placeholder
+						) return;  */
+
+					// The statements usually do use a vocabulary item (and not have an individual title),
+					// so we lookup, if so desired, e.g. when exporting to ePub:
+					var oE: SpecifStatement = a2ext(iE);
+
+					//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
+					oE.subject = iE.subject;
+					oE.object = iE.object;
+
+					return oE;
+				}
+				// a hierarchy node:
+				function n2ext(iN: SpecifNode) {
+					//					console.debug( 'n2ext', iN );
+					// just take the non-redundant properties (omit 'title', for example):
+					let oN: SpecifNode = {
+						id: iN.id,
+						resource: iN.resource,
+						changedAt: iN.changedAt
+					};
+
+					if (iN.nodes && iN.nodes.length > 0)
+						oN.nodes = LIB.forAll(iN.nodes, n2ext);
+					if (iN.revision)
+						oN.revision = iN.revision;
+					return oN
+				}
+				// a file:
+				function f2ext(iE: IFileWithContent): Promise<IFileWithContent> {
+					return new Promise(
+						(resolve, reject) => {
+							//							console.debug('f2ext',iE,opts)
+
+							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.includes(iE.type)) {
+								/*	var oE: IFileWithContent = {
+										id: iE.id,
+										title: iE.title,
+										type: iE.type,
+										changedAt: iE.changedAt
+									};
+									if (iE.revision) oE.revision = iE.revision;
+									if (iE.changedBy) oE.changedBy = iE.changedBy;
+									if (iE.blob) oE.blob = iE.blob;
+									if (iE.dataURL) oE.dataURL = iE.dataURL;
+									resolve(oE); */
+								resolve(iE);
+							}
+							else {
+								// Transform to an image:
+								// Remember to also replace any referencing links in property values!
+								switch (iE.type) {
+									case 'application/bpmn+xml':
+										// Read and render BPMN as SVG:
+										LIB.blob2text(iE, (txt: string) => {
+											bpmn2svg(txt).then(
+												(result) => {
+													let nFileName = iE.title.fileName() + '.svg';
+													resolve({
+														//	blob: new Blob([result.svg], { type: "image/svg+xml; charset=utf-8" }),
+														blob: new Blob([result.svg], { type: "image/svg+xml" }),
+														id: 'F-' + simpleHash(nFileName),
+														title: nFileName,
+														type: 'image/svg+xml',
+														changedAt: iE.changedAt
+													} as IFileWithContent)
+												},
+												reject
+											)
+										});
+										break;
+									default:
+										/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
+											resolve(); */
+										reject({ status: 999, statusText: "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." })
 								};
 							};
 						}

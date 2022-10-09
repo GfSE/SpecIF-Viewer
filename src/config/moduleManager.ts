@@ -561,9 +561,8 @@ var app:IApp,
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
 				// temporary solution with fix for buttonLeft=false:
 				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css');
-		//									getScript(loadPath + 'vendor/assets/javascripts/tree.jquery.js'); return true;
-		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.2/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.2/tree.jquery.js' ); return true;
+		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/jqtree.css" );
+											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/tree.jquery.js' ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
 				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
@@ -576,10 +575,8 @@ var app:IApp,
 		//		case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 		//									getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true;
-		/*		case "markdown": 			import( 'https://cdn.jsdelivr.net/combine/npm/remarkable@2/dist/esm/index.browser.min.js,npm/remarkable@2/dist/esm/linkify.min.js' )
-											.then( (m)=>{ window.markdown = new m.Remarkable('full',{xhtmlOut:true,breaks:true}) });
-											return true;  */
-				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@13/dist/markdown-it.min.js' )
+		//		Consider https://github.com/rsms/markdown-wasm
+				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js' )
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done( ()=>{ window.markdown = window.markdownit({html:true,xhtmlOut:true,breaks:true,linkify:false}) });
 											return true;

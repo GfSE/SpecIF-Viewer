@@ -236,12 +236,6 @@ class CCache {
 		this.hierarchies.unshift(e);
 		return false;
 	}
-	// resClassTitleOf() and propClassTitleOf() are a member of LIB, 
-	// as they are also used for independent SpecIF datasets.
-	staClassTitleOf (e: SpecifStatement, opts?: any): string {
-		// Return the statementClass' title:
-		return LIB.titleOf(LIB.itemByKey(this.statementClasses, e['class']), opts);
-	}
 	instanceTitleOf(el: SpecifInstance, opts: any): string {
 		// Return the title of the resource or statement 
 		// - in the language defined in opts
@@ -257,19 +251,16 @@ class CCache {
 			if (!(el.properties || el['class'])) return '';
 
 			// Lookup titles only in case of a resource serving as heading or in case of a statement:
-			let resOpts;
 			// @ts-ignore - of course resources have no subject, that's why we ask
-			if (el.subject) {
-				// it is a statement
-				resOpts = opts;
-			}
-			else {
-				// it is a resource
-				resOpts = {
-					targetLanguage: opts.targetLanguage,
-					lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading
-				};
-			};
+			let resOpts = el.subject?
+					// it is a statement:
+					opts
+				:
+					// it is a resource:
+					{
+						targetLanguage: opts.targetLanguage,
+						lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading
+					};
 			let ti = LIB.getTitleFromProperties(el.properties, resOpts);
 
 			// In case of a resource, we never want to lookup a title,
@@ -279,7 +270,7 @@ class CCache {
 				// it is a statement
 				if (!ti)
 					// take the class' title by default:
-					ti = self.staClassTitleOf(el as SpecifStatement, opts);
+					ti = LIB.staClassTitleOf(el as SpecifStatement, self.statementClasses, opts);
 			}
 			else {
 				// it is a resource
@@ -524,7 +515,7 @@ class CProject {
 				// Get the memorized hierarchies of this project - except the folder with unreferenced resources:
 				this.readItems(
 					'hierarchy',
-					this.hierarchies.filter((n: SpecifNode) => { return !n.id.includes("FolderUnreferencedResources-"); }),
+					this.hierarchies.filter((n: SpecifKey) => { return !n.id.includes("FolderUnreferencedResources-"); }),
 					opts
 				)
 				.then(
@@ -886,24 +877,6 @@ class CProject {
 					}, aDO.reject);
 			};
 		}
-		/*	function finalize(): void {
-				if (--pend < 1) {
-	//				console.debug('#4',simpleClone(dta),simpleClone(nD));
-					// 4. Finally some house-keeping:
-					self.hookStatements();
-					self.deduplicate(opts);	// deduplicate equal items
-					// ToDo: Save changes from deduplication to the server.
-	//				console.debug('#5',simpleClone(dta),opts);
-					self.createFolderWithResourcesByType(opts)
-						.then(
-							() => {
-								self.createFolderWithGlossary(opts)
-									.then(aDO.resolve, aDO.reject)
-							},
-							aDO.reject
-						);
-				};
-			} */
 	}
 	createItems(ctg: string, itmL: SpecifItem[] | INodeWithPosition[]): Promise<void> {
 		// Create one or more items of a given category in cache and in the remote store (server).
@@ -933,7 +906,7 @@ class CProject {
 					case 'node':
 						for (var el of itmL) {
 							// all nodes to become hierarchy root elements shall be memorized in the selected project:
-							if (isRoot(el))
+							if (isRoot(el as INodeWithPosition))
 								LIB.cacheE(self.hierarchies, { id: el.id } );
 						}
 				//		break;
@@ -1530,7 +1503,7 @@ class CProject {
 					tim = new Date().toISOString(),
 
 					// Get the hierarchies without the folder listing the unreferenced resources:
-					ndL = dta.get("hierarchy", self.hierarchies).filter(
+					ndL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[]).filter(
 						(nd: SpecifNode) => {
 							// Find the referenced resource:
 							idx = LIB.indexByKey(resL, nd.resource);
@@ -1610,7 +1583,7 @@ class CProject {
 					// Create the resources for folder and subfolders of the glossary:
 					return [{
 						id: "FolderUnreferencedResources-" + apx,
-						class: "RC-Folder",
+						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name"),
 							values: [LIB.makeMultiLanguageText("SpecIF:UnreferencedResources")]
@@ -1626,7 +1599,7 @@ class CProject {
 					let gl: SpecifNode = {
 						id: "H-FolderUnreferencedResources-" + apx,
 						resource: LIB.makeKey("FolderUnreferencedResources-" + apx),
-						nodes: resources.map((r) => { return { id: 'N-' + r.id, resource: LIB.keyOf(r) } }),
+						nodes: resources.map((r) => { return { id: 'N-' + r.id, resource: LIB.keyOf(r), changedAt: tim } }),
 						changedAt: tim
 					};
 //					console.debug('##', resources,gl);
@@ -1646,7 +1619,7 @@ class CProject {
 				// 1. Delete any existing glossaries
 				// 1.1 Find all Glossary folders:
 				let delHL: SpecifNode[] = [],
-					delRL: SpecifResource[] = [],
+					delRL: SpecifKey[] = [],
 					diagramL: SpecifResource[] = [],
 					res: SpecifResource,
 					pVs: SpecifValues,
@@ -1677,17 +1650,9 @@ class CProject {
 						return true  // continue to the end
 					}
 				);
-				// 1.2 Delete now:
-				console.debug('createFolderWithGlossary',delHL,delRL,diagramL);
 
-			/*	// In case of the glossary, not only delete the nodes, but also the referenced resources:
-				self.deleteItems('resource', delRL)
-					.then(
-						() => {
-							// Delete the glossary subtree, can be a root node or not, therefore use 'node':
-							return self.deleteItems('node', delHL)
-						}
-					) */
+				// 1.2 Delete now:
+//				console.debug('createFolderWithGlossary',delHL,delRL,diagramL);
 				self.deleteItems('node', delHL)
 					.then(
 						() => {
@@ -1738,7 +1703,7 @@ class CProject {
 							"statement",
 							(s: SpecifStatement) => {
 									// @ts-ignore - subject does exist on a statement
-									return dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.references(s.subject,r)
+									return LIB.staClassTitleOf(s, dta.statementClasses) == CONFIG.staClassShows && LIB.references(s.subject,r)
 								}
 							).length > 0;
 				}
@@ -1834,7 +1799,7 @@ class CProject {
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
 					let staL = dta.get(
 						"statement",
-						(s:SpecifStatement) => { return dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
+						(s: SpecifStatement) => { return LIB.staClassTitleOf(s, dta.statementClasses) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
 					) as SpecifStatement[];
 //					console.debug('gl tL dL',gl,tL,staL);
 
@@ -1899,7 +1864,7 @@ class CProject {
 							// Query: The 'shows' statements of this project's diagrams (only those can be a subject of a 'shows' statement):
 							return this.readItems(
 								'statement',
-								(s: SpecifStatement) => { return dta.staClassTitleOf(s) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) }
+								(s: SpecifStatement) => { return LIB.staClassTitleOf(s, dta.statementClasses) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) }
 							);
 						}
 					)
@@ -1956,12 +1921,12 @@ class CProject {
 		);
 	}
 	// Select format and options with a modal dialog, then export the data:
-	private chooseExportOptions(fmt: string) {
-		const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
+	private renderExportOptions(fmt: string) {
+	/*	const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ textField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
+			+ ['specif', 'specif_v10'].includes(fmt) ? '' : textField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
 			+ textField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
 		switch (fmt) {
 			case 'epub':
@@ -1977,27 +1942,45 @@ class CProject {
 					{ handle: exportOptionsClicked }
 				);
 		};
+		pnl += '</div>'; */
+		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
+			//	+		"<h4>"+i18n.LblOptions+"</h4>"
+			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
+			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : textField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line' }))
+			+ textField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line' });
+		switch (fmt) {
+			case 'epub':
+			case 'oxml':
+				pnl += checkboxField(
+					//	i18n.LblOptions,
+					i18n.modelElements,
+					[
+						{ title: i18n.withStatements, id: 'withStatements', checked: false },
+						{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
+						{ title: i18n.showEmptyProperties, id: 'showEmptyProperties', checked: CONFIG.showEmptyProperties }
+					]
+				);
+		};
 		pnl += '</div>';
-//		console.debug('chooseExportOptions',fmt,pnl);
+//		console.debug('renderExportOptions',fmt,pnl);
 		return pnl;
 	}
 	exportFormatClicked(): void {
 		// Display options depending on selected format:
-		// In case of ReqIF OOXML and ePub, let the user choose the language, if there are more than one:
-		document.getElementById("expOptions").innerHTML = this.chooseExportOptions(radioValue(i18n.LblFormat));
+		// ToDo: In case of ReqIF OOXML and ePub, let the user choose the language, if there are more than one:
+		document.getElementById("expOptions").innerHTML = this.renderExportOptions(radioValue(i18n.LblFormat));
 
 //		console.debug('exportFormatClicked',radioValue( i18n.LblFormat ));
 	}
-	exportOptionsClicked(): void {
+/*	exportOptionsClicked(): void {
 		// Obtain selected options:
 		// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-		this.exportParams = {
-			projectName: textValue('&#x200b;' + i18n.LblProjectName),
-			fileName: textValue('&#x200b;' + i18n.LblFileName) || textValue('&#x200b;' + i18n.LblProjectName) || this.id
-		};
-
+		let prjN = textValue('&#x200b;' + i18n.LblProjectName);
+		this.exportParams.fileName = textValue('&#x200b;' + i18n.LblFileName) || prjN || this.id;
+		if (prjN)
+			this.exportParams.projectName = prjN;
 //		console.debug('exportOptionsClicked',this.title,this.fileName);
-	}
+	} */
 	chooseFormatAndExport() {
 		if (this.exporting) return;
 
@@ -2005,7 +1988,8 @@ class CProject {
 		const exportFormatClicked = 'app.cache.selectedProject.exportFormatClicked()';
 		// @ts-ignore - BootstrapDialog() is loaded at runtime
 		new BootstrapDialog({
-			title: i18n.LblExport + ": '" + this.title + "'",
+		//	title: i18n.LblExport + ": '" + LIB.languageValueOf(this.title, { targetLanguage: this.language }) + "'",
+			title: i18n.LblExport,
 			type: 'type-primary',
 		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
 			size: BootstrapDialog.SIZE_WIDE,  */
@@ -2019,6 +2003,7 @@ class CProject {
 					+ radioField(
 						i18n.LblFormat,
 						[
+							{ title: 'SpecIF v1.0', id: 'specif_v10' },
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.2', id: 'reqif' },
@@ -2033,7 +2018,7 @@ class CProject {
 					+ '</div>'
 				//	+ '<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div id="expOptions" class="col-sm-12" style="padding: 0 4px 0 4px">'
-					+ this.chooseExportOptions('specif')   // parameter must correspond to the checked option above
+					+ this.renderExportOptions('specif')   // parameter must correspond to the checked option above
 					+ '</div>'
 					+ '</div>';
 				return $(form)
@@ -2053,9 +2038,18 @@ class CProject {
 						app.busy.set();
 						message.show(i18n.MsgBrowserSaving, { severity: 'success', duration: CONFIG.messageDisplayTimeShort });
 //						console.debug('options',checkboxValues( i18n.LblOptions ));
+
+						// Obtain selected options:
+						// add 'zero width space' (&#x200b;) to make the label = div-id unique:
+						let prjN = textValue('&#x200b;' + i18n.LblProjectName);
+						this.exportParams.fileName = textValue('&#x200b;' + i18n.LblFileName) || prjN || this.id;
+						if (prjN)
+							this.exportParams.projectName = prjN;
+
 						let options = {
-							format: radioValue(i18n.LblFormat),
-							fileName: this.exportParams.fileName
+							projectName: this.exportParams.projectName,
+							fileName: this.exportParams.fileName,
+							format: radioValue(i18n.LblFormat)
 						};
 						// further options according to the checkboxes:
 						checkboxValues(i18n.modelElements).forEach(
@@ -2064,7 +2058,8 @@ class CProject {
 								options[op] = true
 							}
 						);
-						this.exportAs(options).then(
+						this.exportAs(options)
+						.then(
 						//	app.busy.reset,     --> doesn't work for some reason, 'this' within reset() is undefined ...
 							() =>{ app.busy.reset() },
 							handleError
@@ -2105,15 +2100,19 @@ class CProject {
 					self.exporting = true; // set status to prohibit multiple entry
 
 					switch (opts.format) {
+						case 'specif_v10':
 						//	case 'rdf':
 						case 'turtle':
 						case 'reqif':
+							opts.v10 = true;
+							// no break
 						case 'html':
 						case 'specif':
 							storeAs(opts);
 							break;
 						case 'epub':
 						case 'oxml':
+							opts.v10 = true;
 							publish(opts);
 					};
 			//	}
@@ -2175,7 +2174,7 @@ class CProject {
 							fail: (xhr:xhrMessage) => { app.cache.selectedProject.exporting = false; reject(xhr) }
 						};
 
-						expD.title = LIB.makeMultiLanguageText(self.exportParams.projectName);
+						expD.title = opts.projectName;
 						switch (opts.format) {
 							case 'epub':
 								// @ts-ignore - toEpub() is loaded at runtime
@@ -2191,7 +2190,7 @@ class CProject {
 				);
 			}
 			function storeAs(opts: any): void {
-				if (!opts || ['specif', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0) {
+				if (!opts || ['specif', 'specif_v10', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0) {
 					// programming error!
 					reject({ status: 999, statusText: "Invalid format specified on export" });
 					throw Error("Invalid format specified on export");
@@ -2206,6 +2205,7 @@ class CProject {
 				opts.allDiagramsAsImage = ["html","turtle","reqif"].includes(opts.format);
 
 				switch (opts.format) {
+					case 'specif_v10':
 					case 'specif':
 					case 'html':
 						// export all languages:
@@ -2233,9 +2233,10 @@ class CProject {
 
 				self.read(opts).then(
 					(expD) => {
-//						console.debug('storeAs', expD, opts);
-						let fName = self.exportParams.fileName;
-						expD.title = LIB.makeMultiLanguageText(self.exportParams.projectName);
+//						console.debug('storeAs', simpleClone(expD), opts);
+						let fName = opts.fileName;
+						if( ['html', 'reqif', 'turtle'].includes(opts.format) )
+							expD.title = opts.projectName;
 						if (opts.targetLanguage) expD.language = opts.targetLanguage;
 
 						// A) Processing for 'html':
@@ -2277,6 +2278,7 @@ class CProject {
 
 						// Prepare the output data:
 						switch (opts.format) {
+							case 'specif_v10':
 							case 'specif':
 								fName += ".specif";
 								zName = fName + '.zip';
@@ -2737,10 +2739,10 @@ class CProject {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let pT = LIB.propTitleOf(nP, prj.propertyClasses),
-						rP = LIB.propByTitle(refE, pT, this.data);
-//					console.debug('substituteR 3a',nP,pT,rP,LIB.hasContent(LIB.valuesByTitle( refE, pT, this.data.propertyClasses )));
-					if (!LIB.hasContent(LIB.valuesByTitle(refE, [pT], this.data.propertyClasses))
+					let ti = LIB.propTitleOf(nP, prj.propertyClasses),
+						rP = LIB.propByTitle(refE, ti, this.data);
+//					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( refE, ti, this.data.propertyClasses )));
+					if (!LIB.hasContent(LIB.valuesByTitle(refE, [ti], this.data.propertyClasses))
 						// resource r must have a corresponding property
 						// ToDo: Copy the whole property, if it is defined in the resourceClass, but not instantiated
 						&& rP
@@ -3559,166 +3561,3 @@ moduleManager.construct({
 	*/
 	return self;
 });
-
-//////////////////////////
-// global helper functions:
-LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
-	// checks whether a resource is referenced by the hierarchy:
-	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
-	if( !H ) H = app.cache.selectedProject.data.hierarchies;
-	return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });  // seems to work
-//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
-//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
-}
-LIB.collectResourcesByHierarchy = (prj: SpecIF, H?: SpecifNode[] ):SpecifResource[] => {
-	// collect all resources referenced by the given hierarchy:
-	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
-	if (!H) H = app.cache.selectedProject.data.hierarchies;
-	var rL: SpecifResource[] = [];
-	LIB.iterateNodes(H, (nd: SpecifNode) => { LIB.cacheE(rL, LIB.itemByKey(prj.resources, nd.resource)); return true });
-	return rL;
-}
-LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType =>{
-	// given a propertyClass key, return it's dataType:
-	if ( LIB.isKey(key) ) {
-		let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
-		//       |                            get propertyClass
-		//	     get dataType
-		if (dT)
-			return dT
-		else
-			throw Error("dataType of '" + key.id + "' not found in SpecIF data-set with id " + prj.id);
-	};
-	// else:
-	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
-	return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
-}
-LIB.iterateNodes = (tree: SpecifNode[]|SpecifNode, eFn:Function, lFn?:Function): boolean =>{
-	// Iterate a SpecIF hierarchy or a branch of a hierarchy.
-	// Do NOT use with a tree for display (jqTree).
-	// 1. Execute eFn for every node of the tree as long as eFn returns true;
-	//    return true as a whole, if iterating is finished early.
-	//    For example, if eFn tests for a certain attribute value of a tree node,
-	//    iterateNodes() ends with true, as soon as the test is positive (cont is false).
-	// 2. Call lFn at the end of treating all elements of a folder (list),
-	//    for example to eliminate duplicates.
-	let cont=true;
-	if( Array.isArray( tree ) ) {
-		for( var i=tree.length-1; cont&&(i>-1); i-- ) {
-			cont = !LIB.iterateNodes( tree[i], eFn, lFn );
-		};
-		if( typeof(lFn)=='function' ) lFn( tree );
-	}
-	else {
-		cont = eFn( tree );
-		if( cont && tree.nodes ) {
-			cont = !LIB.iterateNodes( tree.nodes, eFn, lFn );
-		};
-	};
-	return !cont;
-}
-LIB.createProp = (pC: SpecifPropertyClass | SpecifPropertyClass[], key?: SpecifKey): SpecifProperty => {
-	// Create an empty property from the supplied class;
-	// the propertyClass may be supplied by the first parameter
-	// or will be selected from the propertyClasses list using the supplied key:
-	let _pC = Array.isArray(pC)? LIB.itemByKey( pC, key ) : pC;
-//	console.debug('createProp',pC,key);
-	return {
-		class: LIB.keyOf(_pC),
-		// supply default value if available:
-		values: _pC.values || []
-	//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
-	};
-}
-LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCache): SpecifProperty|undefined => {
-	// Return the property of itm with title pN.
-	// If it doesn't exist, create it,
-	// if there is no propertyClass with that title either, return undefined.
-
-	// Look for the propertyClasses pCs of the item's class iC:
-	// ToDo: Add statementClasses, as soon as needed.
-	var iC:SpecifResourceClass = LIB.itemByKey( dta.resourceClasses, itm['class'] ),
-		pC: SpecifPropertyClass,
-		prp: SpecifProperty;
-//	console.debug('propByTitle',dta,itm,pN,iC);
-	for( var i=dta.propertyClasses.length-1;i>-1;i-- ) {
-		pC = dta.propertyClasses[i];
-		if( LIB.indexByKey( iC.propertyClasses, pC )>-1 	// pC is used by the item's class iC
-			&& pC.title==pN ) {						// pC has the specified title
-				// take the existing property, if it exists;
-				// the property's title is not necessarily present:
-				prp = LIB.itemBy(itm.properties,'class',pC);
-				if( prp ) return prp;
-				// else create a new one from the propertyClass:
-				prp = LIB.createProp(pC);
-				itm.properties.push(prp);
-				return prp;
-		};
-	};
-//	return undefined
-}
-LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], pCs: SpecifPropertyClass[]): SpecifValues => {
-	// Return the values of a resource's (or statement's) property with a title listed in pNs:
-//	console.debug('valuesByTitle',dta,itm,pN);
-	if( itm.properties ) {
-		let pC;
-		for (var i = itm.properties.length - 1; i > -1; i--) {
-			pC = LIB.itemByKey(pCs, itm.properties[i]['class']);
-			if (pC && pNs.includes(pC.title) )
-				return itm.properties[i].values;
-		}
-	};
-	return [];
-}
-// staClassTitle() is now a method of CCache as it is applied only to data already cached,
-// which is not the case with resClassTitleOf() and propTitleOf().
-LIB.resClassTitleOf = (e: SpecifResource, rCs?: SpecifResourceClass[], opts?: any): string => {
-	if (!rCs) rCs = app.cache.selectedProject.data.resourceClasses;
-	return LIB.titleOf(LIB.itemByKey(rCs, e['class']), opts);
-}
-LIB.propTitleOf = (prp: SpecifProperty, pCs:SpecifPropertyClass[]): string => {
-	// get the title of a property as defined by itself or it's class:
-	let pC = LIB.itemByKey(pCs, prp['class']);
-	return pC ? pC.title : undefined;
-}
-LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
-	// Pick up the native title of any item except resource and statement;
-	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
-}
-LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
-	// Find the index of the property to be used as title.
-	// The result depends on the current user - only the properties with read permission are taken into consideration.
-	// This works for title strings and multi-language title objects.
-
-	// The first property which is found in the list of headings or titles is chosen:
-	if (pL) {
-		if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
-		let pt;
-		for (var a = 0, A = pL.length; a < A; a++) {
-			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a], pCs));
-			// Check the configured headings and titles:
-			if (CONFIG.titleProperties.indexOf(pt) > -1) return a;
-		};
-	};
-	return -1;
-}
-LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): string => {
-	//	if( !pL ) return;
-	// look for a property serving as title:
-	let idx = LIB.titleIdx(pL);
-	if (idx > -1) {  // found!
-	/*	// Remove all formatting for the title, as the app's format shall prevail.
-		// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
-		// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
-		// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-		if( moduleManager.ready.indexOf( 'diff' )>-1 )
-			return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
-
-		// For now, let's try without replacements; so far this function is called before the filters are applied,
-		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//		console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
-		let ti = LIB.languageValueOf(pL[idx].values[0], opts);
-		if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
-	};
-	return '';
-}

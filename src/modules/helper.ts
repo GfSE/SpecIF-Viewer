@@ -93,8 +93,10 @@ function textField(tag: string, valL: string[], opts?: IFieldOptions): string {
 	fG += '</div>';
 	return fG;
 }
-function setTextValue( tag:string, val:string ):void {
-	let el = document.getElementById('field' + simpleHash(tag));
+function setTextValue( tag:string, valL:string[] ):void {
+	// For now, just take care of the first value:
+	let val = valL[0],
+		el = document.getElementById('field' + simpleHash(tag));
 	if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
 	// @ts-ignore - .value is in fact accessible
 	if( el ) el.value = val;
@@ -267,7 +269,7 @@ function booleanValue( tag:string ):boolean {
 }
 
 function tagId(str:string):string {
-	return 'X-' + simpleHash(str)
+	return 'X-' + simpleHash(str||'')
 }
 function setStyle( sty:string ):void {
 	let css = document.createElement('style');
@@ -371,7 +373,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 				if( msg.length>0 )
 					// the message is a string:
 					break;
-				// delete the message, if an empty string is provided:
+				// remove any past message from the page, if the string is empty:
 				this.hide();
 				return;
 			case 'object': 
@@ -964,6 +966,11 @@ String.prototype.makeHTML = function(opts?:any):string {
 	return this as string;
 } 
 
+/**
+ * Convert all forbidden chars to html unicode
+ * @param str String to be checked
+ * @returns {string} cleaned string
+ */
 /* String.prototype.utf8ToXmlChar = function():string {
 	let i = this.length,
 		aRet = [];
@@ -973,32 +980,7 @@ String.prototype.makeHTML = function(opts?:any):string {
 		else aRet[i] = this[i];
 	};
 	return aRet.join('');
-}
-String.prototype.xmlChar2utf8 = function():string {
-		// Convert html numeric character encoding to utf8
-		this = this.replace(/&#x([0-9a-fA-F]+);/g, function(match, numStr) {
-			return String.fromCharCode(parseInt(numStr, 16))
-		});
-		return this.replace(/&#([0-9]+);/g, function(match, numStr) {
-			return String.fromCharCode(parseInt(numStr, 10))
-		})
 } */
-/**
- * Convert all forbidden chars to html unicode
- * @param str String to be checked
- * @returns {string} cleaned string
- */
-/*	function cleanStringFromForbiddenChars(str) {
-		str = xmlChar2utf8(str);
-		let i = str.length,
-			aRet = [];
-		while (i--) {
-			let iC = str[i].charCodeAt(0);
-			if (iC < 65 || iC > 127 || (iC > 90 && iC < 97)) aRet[i] = '&#' + iC + ';';
-			else aRet[i] = str[i]
-		};
-		return aRet.join('')
-	} */
 
 LIB.xmlChar2utf8 = (str: string):string => {
 	// Convert html numeric character encoding to utf8
@@ -1258,21 +1240,212 @@ LIB.localDateTime = (iso:string):string =>{
 //	return '';
 }
 
+LIB.httpGet = (params:any):void =>{
+	// https://blog.garstasio.com/you-dont-need-jquery/
+	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', params.url, true);
+	if( params.withCredentials ) xhr.withCredentials = true;
+	// https://stackoverflow.com/a/42916772/2214
+	xhr.responseType = params.responseType;
+	xhr.onreadystatechange = function() {
+//		console.debug('xhr',this.readyState,this)
+		if ( this.readyState<4 ) return;
+		if ( this.readyState==4 ) {
+			switch( this.status ) {
+				case 200:
+				case 201:
+					// done:
+					if( typeof(params.done)=="function" ) params.done(this);
+					break;
+				default:
+					// done with error:
+					if( typeof(params.fail)=="function" ) params.fail(this);
+			};
+		};
+		// continue in case of success and error:
+		if( typeof(params.then)=="function" ) params.then();
+	};
+	xhr.send(null);
+}
+
+LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
+	// checks whether a resource is referenced by the hierarchy:
+	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
+	if (!H) H = app.cache.selectedProject.data.hierarchies;
+	return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });  // seems to work
+	//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
+	//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
+}
+LIB.collectResourcesByHierarchy = (prj: SpecIF, H?: SpecifNode[]): SpecifResource[] => {
+	// collect all resources referenced by the given hierarchy:
+	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
+	if (!H) H = app.cache.selectedProject.data.hierarchies;
+	var rL: SpecifResource[] = [];
+	LIB.iterateNodes(H, (nd: SpecifNode) => { LIB.cacheE(rL, LIB.itemByKey(prj.resources, nd.resource)); return true });
+	return rL;
+}
+LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
+	// given a propertyClass key, return it's dataType:
+	if (LIB.isKey(key)) {
+		let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
+		//       |                            get propertyClass
+		//	     get dataType
+		if (dT)
+			return dT
+		else
+			throw Error("dataType of '" + key.id + "' not found in SpecIF data-set with id " + prj.id);
+	};
+	// else:
+	// happens, if filter replaces an enumeration property by its value - property has no class in this case:
+	return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
+}
+LIB.iterateNodes = (tree: SpecifNode[] | SpecifNode, eFn: Function, lFn?: Function): boolean => {
+	// Iterate a SpecIF hierarchy or a branch of a hierarchy.
+	// Do NOT use with a tree for display (jqTree).
+	// 1. Execute eFn for every node of the tree as long as eFn returns true;
+	//    return true as a whole, if iterating is finished early.
+	//    For example, if eFn tests for a certain attribute value of a tree node,
+	//    iterateNodes() ends with true, as soon as the test is positive (cont is false).
+	// 2. Call lFn at the end of treating all elements of a folder (list),
+	//    for example to eliminate duplicates.
+	let cont = true;
+	if (Array.isArray(tree)) {
+		for (var i = tree.length - 1; cont && (i > -1); i--) {
+			cont = !LIB.iterateNodes(tree[i], eFn, lFn);
+		};
+		if (typeof (lFn) == 'function') lFn(tree);
+	}
+	else {
+		cont = eFn(tree);
+		if (cont && tree.nodes) {
+			cont = !LIB.iterateNodes(tree.nodes, eFn, lFn);
+		};
+	};
+	return !cont;
+}
+LIB.createProp = (pC: SpecifPropertyClass | SpecifPropertyClass[], key?: SpecifKey): SpecifProperty => {
+	// Create an empty property from the supplied class;
+	// the propertyClass may be supplied by the first parameter
+	// or will be selected from the propertyClasses list using the supplied key:
+	let _pC = Array.isArray(pC) ? LIB.itemByKey(pC, key) : pC;
+	//	console.debug('createProp',pC,key);
+	return {
+		class: LIB.keyOf(_pC),
+		// supply default value if available:
+		values: _pC.values || []
+		//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
+	};
+}
+LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCache): SpecifProperty | undefined => {
+	// Return the property of itm with title pN.
+	// If it doesn't exist, create it,
+	// if there is no propertyClass with that title either, return undefined.
+
+	// Look for the propertyClasses pCs of the item's class iC:
+	// ToDo: Add statementClasses, as soon as needed.
+	var iC: SpecifResourceClass = LIB.itemByKey(dta.resourceClasses, itm['class']),
+		prp: SpecifProperty;
+//	console.debug('propByTitle',dta,itm,pN,iC);
+	for (var pC of dta.propertyClasses) {
+		if (LIB.indexByKey(iC.propertyClasses, pC) > -1 	// pC is used by the item's class iC
+			&& pC.title == pN) {						// pC has the specified title
+			// take the existing property, if it exists;
+			// the property's title is not necessarily present:
+			prp = LIB.itemBy(itm.properties, 'class', pC);
+			if (prp) return prp;
+			// else create a new one from the propertyClass:
+			prp = LIB.createProp(pC);
+			itm.properties.push(prp);
+			return prp;
+		};
+	};
+	//	return undefined
+}
+LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], pCs: SpecifPropertyClass[]): SpecifValues => {
+	// Return the values of a resource's (or statement's) property with a title listed in pNs:
+//	console.debug('valuesByTitle',dta,itm,pN);
+	if (itm.properties) {
+		let pC;
+		for (var p of itm.properties) {
+			pC = LIB.itemByKey(pCs, p['class']);
+			if (pC && pNs.includes(pC.title))
+				return p.values;
+		};
+	};
+	return [];
+}
+LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
+	// Pick up the native title of any item except resource and statement;
+	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
+}
+LIB.resClassTitleOf = (e: SpecifResource, cL?: SpecifResourceClass[], opts?: any): string => {
+	// Return the resourceClass' title:
+	if (!cL) cL = app.cache.selectedProject.data.resourceClasses;
+	return LIB.titleOf(LIB.itemByKey(cL, e['class']), opts);
+}
+LIB.staClassTitleOf = (e: SpecifStatement, cL?: SpecifStatementClass[], opts?: any): string => {
+	// Return the statementClass' title:
+	if (!cL) cL = app.cache.selectedProject.data.statementClasses;
+	return LIB.titleOf(LIB.itemByKey(cL, e['class']), opts);
+}
+LIB.propTitleOf = (prp: SpecifProperty, cL: SpecifPropertyClass[]): string => {
+	// get the title of a property as defined by itself or it's class:
+	let pC = LIB.itemByKey(cL, prp['class']);
+	return pC ? pC.title : undefined;
+}
+LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
+	// Find the index of the property to be used as title.
+	// The result depends on the current user - only the properties with read permission are taken into consideration.
+	// This works for title strings and multi-language title objects.
+
+	// The first property which is found in the list of headings or titles is chosen:
+	if (pL) {
+		if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
+		let pt;
+		for (var a = 0, A = pL.length; a < A; a++) {
+			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a], pCs));
+			// Check the configured headings and titles:
+			if (CONFIG.titleProperties.indexOf(pt) > -1) return a;
+		};
+	};
+	return -1;
+}
+LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): string => {
+	//	if( !pL ) return;
+	// look for a property serving as title:
+	let idx = LIB.titleIdx(pL);
+	if (idx > -1) {  // found!
+		/*	// Remove all formatting for the title, as the app's format shall prevail.
+			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
+			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
+			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
+			if( moduleManager.ready.indexOf( 'diff' )>-1 )
+				return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
+
+		// For now, let's try without replacements; so far this function is called before the filters are applied,
+		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+		//		console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
+		let ti = LIB.languageValueOf(pL[idx].values[0], opts);
+		if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
+	};
+	return '';
+}
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 function simpleHash(str: string): number {
 	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
 	return r
 }
-function simpleClone( o:any ): any {
+function simpleClone(o: any): any {
 	// "deep" clone
 	// - functions and null are returned 'undefined'
 	// - ToDo: consider cases 'Date', 'String', 'Number', 'Boolean' all being an 'object'
 	//   (however none of these are currently used in this software)
 	// see https://www.w3schools.com/js/js_typeof.asp
-		function cloneProp(p:any) {
-			return ( typeof(p) == 'object' )? simpleClone(p) : p;
-		}
+	function cloneProp(p: any) {
+		return (typeof (p) == 'object') ? simpleClone(p) : p;
+	}
 	if (o != null) {
 		// a Blob is an object, but treat it as a whole further down:
 		if (typeof (o) == 'object' && !(o instanceof Blob)) {
@@ -1301,13 +1474,14 @@ function simpleClone( o:any ): any {
 	};
 	// here, only a 'function' or a 'null' value should arrive ... returning 'undefined'
 }
-function hasUrlParams():boolean {
+
+function hasUrlParams(): boolean {
 	let p = document.URL.split('#');
-	return ( !!p[1] && p[1].length>0 );
-/*	( p[1] && p[1].length>0 ) return '#';
-	p = document.URL.split('?');   no queries, yet
-	if( p[1] && p[1].length>0 ) return '?';
-	return false; */
+	return (!!p[1] && p[1].length > 0);
+	/*	( p[1] && p[1].length>0 ) return '#';
+		p = document.URL.split('?');   no queries, yet
+		if( p[1] && p[1].length>0 ) return '?';
+		return false; */
 }
 /*
 // ToDo: try prms = location.hash
@@ -1363,96 +1537,68 @@ function getUrlParams(opts?: any): IUrlParams {
 */
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
-function getUrlParams(opts?:any):any {
+function getUrlParams(opts?: any): any {
 	// Get the url parameters contained in the 'fragment' according to RFC2396:
-	if( typeof(opts)!='object' ) opts = {};
-	if( typeof(opts.start)!='string' ) opts.start = '#';
-	if( typeof(opts.separator)!='string' ) opts.separator = ';'
+	if (typeof (opts) != 'object') opts = {};
+	if (typeof (opts.start) != 'string') opts.start = '#';
+	if (typeof (opts.separator) != 'string') opts.separator = ';'
 
 	let p = document.URL.split(opts.start);
-	if( !p[1] ) return {};
-	return parse( decodeURI(p[1]) );
+	if (!p[1]) return {};
+	return parse(decodeURI(p[1]));
 
-	function parse( h:string ):any {
-		if( !h ) return {};
-		if ( h.charAt(0) == '/') h = h.substr(1);	// remove leading slash
+	function parse(h: string): any {
+		if (!h) return {};
+		if (h.charAt(0) == '/') h = h.substr(1);	// remove leading slash
 		var pO = {};
 		h.split(opts.separator).forEach(
 			(p: any) => {
 				p = p.split('=');
 				// remove enclosing quotes from the value part:
-				if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
+				if (p[1] && ['"', "'"].indexOf(p[1][0]) > -1) p[1] = p[1].substr(1, p[1].length - 2);
 				// look for specific tokens, only:
-				if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
+				if (CONFIG.urlParamTags.indexOf(p[0]) > -1)
 					// @ts-ignore - indexing is ok:
 					pO[p[0]] = p[1];
 				else
-					console.warn("Unknown URL-Parameter '",p[0],"' found.");
+					console.warn("Unknown URL-Parameter '", p[0], "' found.");
 			}
 		);
 		return pO;
 	}
 }
-function setUrlParams(actSt:any):void {
+function setUrlParams(actSt: any): void {
 	// update browser history, if changed:
-	if( !browser.supportsHtml5History || !actSt ) return;
+	if (!browser.supportsHtml5History || !actSt) return;
 
 	let quO = getUrlParams();
-//	console.debug( 'setUrlParams', quO, actSt );
+	//	console.debug( 'setUrlParams', quO, actSt );
 	// don't update, if unchanged or no project selected:
-	if( quO.project == actSt.project
+	if (quO.project == actSt.project
 		&& quO[CONFIG.keyView] == actSt.view
-		&&	(quO[CONFIG.keyNode] == actSt.node
-			|| !actSt.item 
-			|| quO[CONFIG.keyItem] == actSt.item ) ) {
-//		console.debug('setUrlParams - quit');
+		&& (quO[CONFIG.keyNode] == actSt.node
+			|| !actSt.item
+			|| quO[CONFIG.keyItem] == actSt.item)) {
+		//		console.debug('setUrlParams - quit');
 		return;
 	};
-	
+
 	let path = window.location.pathname.split('/'),  // get the path in pieces
-		newParams = path[path.length-1],   	// last element is 'appname.html' (without URL params)
-		is='=',sep=';';
+		newParams = path[path.length - 1],   	// last element is 'appname.html' (without URL params)
+		is = '=', sep = ';';
 
 	newParams += '#'
-				+ CONFIG.keyView+is+actSt.view
-				+ (actSt.project? sep+CONFIG.keyProject+is+actSt.project : "")
-				+ (actSt.node? sep+CONFIG.keyNode+is+actSt.node : (actSt.item? sep+CONFIG.keyItem+is+actSt.item : ''));
+		+ CONFIG.keyView + is + actSt.view
+		+ (actSt.project ? sep + CONFIG.keyProject + is + actSt.project : "")
+		+ (actSt.node ? sep + CONFIG.keyNode + is + actSt.node : (actSt.item ? sep + CONFIG.keyItem + is + actSt.item : ''));
 
 	// update the browser history:
-	history.pushState('','',newParams);
+	history.pushState('', '', newParams);
 }
-function clearUrlParams():void {
-	if( !browser.supportsHtml5History || !hasUrlParams() ) return;
-	
+function clearUrlParams(): void {
+	if (!browser.supportsHtml5History || !hasUrlParams()) return;
+
 	let path = window.location.pathname.split('/');  // get the path in pieces
-//	console.debug( 'clearUrlParams', path );
-	history.pushState('','',path[path.length-1]);    // last element is 'appname.html' without url parameters;
-}
-LIB.httpGet = (params:any):void =>{
-	// https://blog.garstasio.com/you-dont-need-jquery/
-	// https://www.sitepoint.com/guide-vanilla-ajax-without-jquery/
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', params.url, true);
-	if( params.withCredentials ) xhr.withCredentials = true;
-	// https://stackoverflow.com/a/42916772/2214
-	xhr.responseType = params.responseType;
-	xhr.onreadystatechange = function() {
-//		console.debug('xhr',this.readyState,this)
-		if ( this.readyState<4 ) return;
-		if ( this.readyState==4 ) {
-			switch( this.status ) {
-				case 200:
-				case 201:
-					// done:
-					if( typeof(params.done)=="function" ) params.done(this);
-					break;
-				default:
-					// done with error:
-					if( typeof(params.fail)=="function" ) params.fail(this);
-			};
-		};
-		// continue in case of success and error:
-		if( typeof(params.then)=="function" ) params.then();
-	};
-	xhr.send(null);
+	//	console.debug( 'clearUrlParams', path );
+	history.pushState('', '', path[path.length - 1]);    // last element is 'appname.html' without url parameters;
 }

@@ -15,14 +15,13 @@ moduleManager.construct({
 
 	var mime: string;
 	self.init = function():boolean {
-		mime = undefined;
 		return true;
 	};
 	self.verify = function( f ):boolean {
 	
-			function rdfFile2mediaType( fname:string ):string|undefined {
+			function rdfFile2mediaType( fname:string ):string {
 				if( fname.endsWith('.rdf') || fname.endsWith('.xml') ) return 'application/rdf+xml';
-				return; // undefined
+				return '';
 			}
 				
 		mime = rdfFile2mediaType( f.name );
