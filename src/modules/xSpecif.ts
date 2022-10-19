@@ -203,8 +203,8 @@ class CSpecIF implements SpecIF {
 					if (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0) {
 						// for data sets according to schema v1.1 and later;
 						// get the constraint checker locally, if started locally in the debug phase:
-						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.min.mjs'
-								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.min.mjs')
+						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
+								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
 						.then(modChk => {
 							// 2. Get the specified schema file:
 							getSchema();
@@ -1233,6 +1233,7 @@ class CSpecIF implements SpecIF {
 					spD.createdBy = {
 						familyName: app.me.lastName,
 						givenName: app.me.firstName,
+						// @ts-ignore - correct with v1.0
 						email: { value: app.me.email, type: "text/html" }
 					};
 					if (app.me.organization)
@@ -1243,6 +1244,7 @@ class CSpecIF implements SpecIF {
 						spD.createdBy = {
 							familyName: this.createdBy.familyName,
 							givenName: this.createdBy.givenName,
+							// @ts-ignore - correct with v1.0
 							email: { value: this.createdBy.email, type: "text/html" }
 						};
 						if (this.createdBy.org && this.createdBy.org.organizationName)

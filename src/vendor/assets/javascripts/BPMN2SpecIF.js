@@ -12,7 +12,17 @@
 
 function BPMN2Specif( xmlString, opts ) {
 	"use strict";
-	if( typeof(opts)!='object' || !opts.fileName ) return null;
+
+	const
+		idResourceClassDiagram = "RC-Diagram",
+		idResourceClassActor = "RC-Actor",
+		idResourceClassState = "RC-State",
+		idResourceClassEvent = "RC-Event",
+		idResourceClassCollection = "RC-Collection",
+		idResourceClassFolder = "RC-Folder";
+	//	idStatementClassAccesses = "SC-accesses";
+
+	if (typeof (opts) != 'object' || !opts.fileName) return null;
 	if( !opts.fileDate ) 
 		opts.fileDate = new Date().toISOString();
 	if( typeof(opts.titleLength)!='number' )
@@ -21,8 +31,12 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.textLength = 8192;
 	if( !opts.mimeType ) 
 		opts.mimeType = "application/bpmn+xml";
-	
-	if( !opts.strRoleType ) 
+	if (!opts.strNamespace)
+		opts.strNamespace = "bpmn:";
+
+	if (!opts.modelElementClasses)
+		opts.modelElementClasses = [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection];
+	if (!opts.strRoleType)
 		opts.strRoleType = "SpecIF:Role";
 	if( !opts.strConditionType ) 
 		opts.strConditionType = "SpecIF:Condition";
@@ -39,8 +53,6 @@ function BPMN2Specif( xmlString, opts ) {
 /*	if( !opts.strAnnotationFolder ) 
 		opts.strAnnotationFolder = "SpecIF:Annotations"; */
 
-	if (!opts.strNamespace)
-		opts.strNamespace = "bpmn:";
 	if (!opts.strNotation)
 		opts.strNotation = "BPMN 2.0 Process Diagram";
 	if( !opts.strJoinExcGateway )
@@ -126,7 +138,7 @@ function BPMN2Specif( xmlString, opts ) {
 	model.resources.push({
 		id: diagramId,
 		title: model.title,
-		class: "RC-Diagram",
+		class: idResourceClassDiagram,
 		properties: [{
 			class: "PC-Diagram",
 			value: "<div><p class=\"inline-label\">Model View:</p><p>"+diagRef+"</p></div>"
@@ -141,105 +153,158 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 
 	// ToDo: Choose carefully between using tagName or nodeName,
+	// see: http://aleembawany.com/2009/02/11/tagname-vs-nodename/
 	// see: https://stackoverflow.com/questions/4878484/difference-between-tagname-and-nodename
 	
 	// 3. Analyse the 'collaboration' and get the participating processes plus the exchanged messages.
-	Array.from(Cs[0].childNodes, (el)=>{
+	Array.from(Cs[0].childNodes, (el) => {
 //		console.debug('collaboration element',el);
 		// quit, if the child node does not have a tag, e.g. if it is '#text':
-		if( !el.tagName ) return;
+		if (!el.tagName) return;
 		let tag = withoutNamespace(el.tagName),	// tag without namespace
 			res;
-		// 3.1 The documentation of the collaboration (model):
-		if (el.nodeName.includes("documentation")) {
-			res = itemById(model.resources,diagramId);
-			if( res && el.innerHTML ) {
-				res.properties.push({
-					class: "PC-Description",
-					value: truncStr(el.innerHTML, opts.textLength, 'Documentation of collaboration')
-				})
-			};
-			return;
-		};		
-		// 3.2 The participating processes;
-		// Looking at the specs, 
-		// - there is no process without a participant.
-		// - there can be participants without a process.
-		// see: https://www.omg.org/spec/BPMN/2.0/PDF/
-		// We transform the participants with their id, but not the processes;
-		// thus any process documentation is lost.
-		if (el.nodeName.includes("participant")) {
-			res = {
-				id: el.getAttribute("id"),
-				process: el.getAttribute("processRef"),  // temporarily store process id
-				// make them unique, but do not take simply the id, as it may be long or misleading (sometimes it contains a wrong tag-name):
-				title: truncStr((el.getAttribute("name") || tag + '_' + simpleHash(el.getAttribute("id"))), opts.titleLength, 'Name of participant'),
-				class: 'RC-Actor',
-				properties: [{
-					class: "PC-Type",
-					value: opts.strNamespace+tag
-				}],
-				changedAt: opts.fileDate
-			}
+
+	//	if (el.nodeName.includes("documentation")) {
+		switch (tag) {
+			case "documentation":
+				// 3.1 The documentation of the collaboration (model):
+				res = itemById(model.resources, diagramId);
+				if (res && el.innerHTML) {
+					res.properties.push({
+						class: "PC-Description",
+						value: truncStr(el.innerHTML, opts.textLength, 'Documentation of collaboration')
+					})
+				};
+				return;
+	//	};
+	//	if (el.nodeName.includes("group")) {
+			case "group":
+				// 3.2 Groups - this works with models created by Camunda Modeler:
+						/* Example from Camunda Modeler
+							<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1rvjown" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.4.0">
+								<bpmn:collaboration id="Collaboration_038004f">
+									<bpmn:participant id="Participant_00yr49w" name="lane-1" processRef="Process_002m5kk" />
+									<bpmn:group id="Group_07dtl7v" categoryValueRef="CategoryValue_11tztz5" />
+								</bpmn:collaboration>
+								...
+								<bpmn:category id="Category_1b95mz3">
+									<bpmn:categoryValue id="CategoryValue_11tztz5" value="group-1" />
+								</bpmn:category>
+								...
+							</bpmn:definitions>
+						*/
+				let ref = el.getAttribute("categoryValueRef"),
+					name;
+				Array.from(xmlDoc.querySelectorAll("categoryValue"),  // the categories are ignored
+					(cV) => {
+						// only one categoryValue element has the referenced id:
+						if (cV.getAttribute("id") == ref) name = cV.getAttribute("value")
+					}
+				);
+				model.resources.push({
+					id: el.getAttribute("id"),
+					title: name,
+					class: idResourceClassCollection,
+					properties: [{
+						class: "PC-Type",
+						value: opts.strNamespace + tag
+					}],
+					changedAt: opts.fileDate
+				});
+				return;
+	//	};
+	//	if (el.nodeName.includes("participant")) {
+			case "participant":
+				// 3.3 The participating processes;
+				// Looking at the specs, 
+				// - there is no process without a participant.
+				// - there can be participants without a process.
+				// see: https://www.omg.org/spec/BPMN/2.0/PDF/
+				// We transform the participants with their id, but not the processes;
+				// thus any process documentation is lost.
+				res = {
+					id: el.getAttribute("id"),
+					process: el.getAttribute("processRef"),  // temporarily store process id
+					// make them unique, but do not take simply the id, as it may be long or misleading (sometimes it contains a wrong tag-name):
+					title: truncStr((el.getAttribute("name") || tag + '_' + simpleHash(el.getAttribute("id"))), opts.titleLength, 'Name of participant'),
+					class: 'RC-Actor',
+					properties: [{
+						class: "PC-Type",
+						value: opts.strNamespace + tag
+					}],
+					changedAt: opts.fileDate
+				};
+				break;
+	//	}
+	//	else if (el.nodeName.includes("messageFlow")) {
+			case "messageFlow":
+				// 3.4 The messages between the participants:
+				let oId = el.getAttribute("id"),
+					sRef = el.getAttribute("sourceRef"),
+					tRef = el.getAttribute("targetRef");
+				//			console.debug('#8',el.nodeName,oId,sRef,tRef);
+
+				// a. The message data (FMC:State):
+				res = {
+					id: oId,
+					// make them unique, but do not take simply the id:
+					title: truncStr((el.getAttribute("name") || tag + '_' + simpleHash(oId)), opts.titleLength, 'Name of message-flow between participants'),
+					class: 'RC-State',
+					properties: [{
+						class: "PC-Type",
+						value: opts.strNamespace + tag
+					}],
+					changedAt: opts.fileDate
+				};
+				// b. We assume that the sourceRef and targetRef will be found later on.
+				// c. The writing relation (statement):
+				model.statements.push({
+					id: 'S-' + simpleHash('SpecIF:writes' + sRef + oId),
+					class: 'SC-writes',
+					subject: sRef,
+					object: oId,
+					properties: [{
+						class: "PC-Type",
+						value: opts.strNamespace + "dataOutputAssociation"
+					}],
+					changedAt: opts.fileDate
+				});
+				// d. The reading relation (statement):
+				// ToDo: Is the signalling characteristic well covered? It is not just reading!
+				model.statements.push({
+					id: 'S-' + simpleHash('SpecIF:reads' + tRef + oId),
+					class: 'SC-reads',
+					subject: tRef,
+					object: oId,
+					properties: [{
+						class: "PC-Type",
+						value: opts.strNamespace + "dataInputAssociation"
+					}],
+					changedAt: opts.fileDate
+				});
+				break;
+	//	}
+	//	else {
+			default:
+				// skip all other tags:
+				console.info("BPMN tag " + tag + " has been skipped.");
+				return;
 		};
-		// 3.3 The messages between the participants:
-		if (el.nodeName.includes("messageFlow")) {
-			let oId = el.getAttribute("id"),
-				sRef = el.getAttribute("sourceRef"),
-				tRef = el.getAttribute("targetRef");
-//			console.debug('#8',el.nodeName,oId,sRef,tRef);
-				
-			// a. The message data (FMC:State):
-			res = {
-				id: oId,
-				// make them unique, but do not take simply the id:
-				title: truncStr((el.getAttribute("name") || tag + '_' + simpleHash(oId)), opts.titleLength, 'Name of message-flow between participants'),
-				class: 'RC-State',
-				properties: [{
-					class: "PC-Type",
-					value: opts.strNamespace+tag
-				}],
-				changedAt: opts.fileDate
-			};
-			// b. We assume that the sourceRef and targetRef will be found later on.
-			// c. The writing relation (statement):
-			model.statements.push({
-				id: 'S-'+simpleHash(sRef+oId+'SpecIF:writes'),
-				class: 'SC-writes',
-				subject: sRef,
-				object: oId,
-				properties: [{
-					class: "PC-Type",
-					value: opts.strNamespace+"dataOutputAssociation"
-				}],
-				changedAt: opts.fileDate
-			});
-			// d. The reading relation (statement):
-			// ToDo: Is the signalling characteristic well covered? It is not just reading!
-			model.statements.push({
-				id: 'S-'+simpleHash(tRef+oId+'SpecIF:reads'),
-				class: 'SC-reads',
-				subject: tRef,
-				object: oId,
-				properties: [{
-					class: "PC-Type",
-					value: opts.strNamespace+"dataInputAssociation"
-				}],
-				changedAt: opts.fileDate
-			})
-		};
+		// arrives here only in cases "participant" and "messageFlow"
+		if (!res)
+			throw Error("Programming Error in BPMN2Specif: Resource should be defined ...");
 		// Get the documentation of participant resp. messageFlow:
 		Array.from(el.childNodes, (ch) => {
 			if (ch.nodeName.includes("documentation")) {
 				if (res && ch.innerHTML) {
 					res.properties.push({
 						class: "PC-Description",
-						value: truncStr(ch.innerHTML, opts.textLength, 'Documentation of ' + (res['class'] == "RC-Actor" ? 'participant' : 'message flow') + ' with id ' + res.id)
+						value: truncStr(ch.innerHTML, opts.textLength, 'Documentation of ' + (res['class'] == idResourceClassActor ? 'participant' : 'message flow') + ' with id ' + res.id)
 					});
 				};
 				return;
 			};
-		})
+		});
 		model.resources.push(res);
 	});
 
@@ -274,7 +339,7 @@ function BPMN2Specif( xmlString, opts ) {
 			// 4.1 First pass to get the lanes, which do not necessarily come first,
 			//     plus the dataStores/dataObjects, so that the input- and outputAssociations can be added in the next pass:
 				function getLane(nd, pId) {
-					//						console.debug('getLane',nd,pId);
+//					console.debug('getLane',nd,pId);
 					if (nd.nodeName.includes('lane')) {
 						let ndId = nd.getAttribute("id"),
 							ndName = truncStr(nd.getAttribute("name"), opts.titleLength, 'Name of lane with id ' + ndId);
@@ -291,13 +356,14 @@ function BPMN2Specif( xmlString, opts ) {
 								changedAt: opts.fileDate
 							};
 							// store the containment relation for the lane:
-							model.statements.push({
+							storeContainsStatement(pId, ndId, diagramId)
+						/*	model.statements.push({
 								id: pId + '-contains-' + ndId,
 								class: 'SC-contains',
 								subject: pId,	// the process
 								object: ndId,	// the lane
 								changedAt: opts.fileDate
-							});
+							}); */
 							Array.from(nd.childNodes, (nd) => {
 								if (nd.nodeName.includes('documentation')) {
 									lane.properties.unshift({
@@ -374,7 +440,7 @@ function BPMN2Specif( xmlString, opts ) {
 								id: id,
 								// make dataObjects unique per model (should be per participant/process):
 								title: truncStr((title || tag + (tag == 'dataObject' ? '_' + apx : '')), opts.titleLength, 'Name of '+tag+' with id '+id),
-								class: "RC-State",
+								class: idResourceClassState,
 								properties: [{
 									class: "PC-Type",
 									value: opts.strNamespace+tag
@@ -392,12 +458,13 @@ function BPMN2Specif( xmlString, opts ) {
 						// Now, model-elements with duplicate names are not consolidated any more;
 						// this will be done upon import/adoption/update of the model:
 						model.resources.push( res )
-						break;
+				/*		break;
 					case 'dataObject':
 					case 'dataStore':
 						// nothing
 						break;
-					// skip all other tags for now.
+					default:
+						// skip all other tags here and now; they are analysed elsewhere  */
 				}
 			});
 
@@ -507,7 +574,7 @@ function BPMN2Specif( xmlString, opts ) {
 							id: id,
 							// make them unique to avoid consolidation at import:
 							title: truncStr((title || tag + '_' + simpleHash(id)), opts.titleLength, 'Name of '+tag+' with id ' + id),
-							class: "RC-Actor",
+							class: idResourceClassActor,
 							properties: [{
 								class: "PC-Type",
 								value: opts.strNamespace+tag
@@ -548,7 +615,7 @@ function BPMN2Specif( xmlString, opts ) {
 							id: id,
 							// no need to make unnamed events unique, the consolidation takes care of the needs of different event types:
 							title: truncStr((title || tag), opts.titleLength, 'Name of ' + tag + ' with id ' + id),
-							class: "RC-Event",
+							class: idResourceClassEvent,
 							properties: [{
 								class: "PC-Type",
 								value: opts.strNamespace+tag
@@ -643,7 +710,7 @@ function BPMN2Specif( xmlString, opts ) {
 						model.resources.push({
 							id: id,
 							title: truncStr(title, opts.titleLength, 'Name of gateway with id ' + id),
-							class: "RC-Actor",
+							class: idResourceClassActor,
 							properties: [{
 								class: "PC-Description",
 								value: truncStr(desc, opts.textLength, 'Documentation of gateway with id ' + id)
@@ -664,32 +731,32 @@ function BPMN2Specif( xmlString, opts ) {
 				// Add a containment relation for every transformed model-element:
 				if( addContainment ) {
 					// look, whether the element is contained in a lane:
-					let cL = ctL.filter( (s)=>{return s.object==id} ), 
-						cId;
+					let cL = ctL.filter( (s)=>{return s.object==id} );
 					// use the lane as container, if there is any, or the process otherwise:
 					cL.forEach( 
 						(c)=>{
-							cId = c.subject;
 							// store the containment relation:
-							model.statements.push({
+							storeContainsStatement(c.subject, id, diagramId)
+						/*	model.statements.push({
 								id: cId+'-contains-'+id,
 								class: 'SC-contains',
-								subject: cId,
+								subject: c.subject,
 								object: id,
 								changedAt: opts.fileDate
-							})
+							}) */
 						}
 					);
 					// In certain cases of data generated by Signavio, 
 					// the participant is not associated with the process:
 					if( cL.length<1 && participant ) 
-							model.statements.push({
+						storeContainsStatement(participant.id, id, diagramId)
+						/*	model.statements.push({
 								id: participant.id+'-contains-'+id,
 								class: 'SC-contains',
 								subject: participant.id,
 								object: id,
 								changedAt: opts.fileDate
-							})
+							}) */
 				}
 			})
 		}
@@ -722,7 +789,7 @@ function BPMN2Specif( xmlString, opts ) {
 			let ev = {
 				id: id,
 				title: truncStr(title, opts.titleLength, 'Name of sequence flow with id ' + id),
-				class: "RC-Event",
+				class: idResourceClassEvent,
 				properties: [{
 					class: "PC-Type",
 					value: opts.strConditionType
@@ -785,7 +852,7 @@ function BPMN2Specif( xmlString, opts ) {
 			});
 			return
 		};
-		if ((["RC-Actor","RC-Event"].indexOf(seqF.subject['class'])>-1) && seqF.object['class']=="RC-Event") {
+		if (([idResourceClassActor,idResourceClassEvent].indexOf(seqF.subject['class'])>-1) && seqF.object['class']==idResourceClassEvent) {
 			model.statements.push({
 				id: id,
 			//	class: "SC-signals",
@@ -800,7 +867,7 @@ function BPMN2Specif( xmlString, opts ) {
 			});
 			return
 		};
-		// else: seqF.subject['class']=="RC-Event" && seqF.object['class']=="RC-Actor"
+		// else: seqF.subject['class']==idResourceClassEvent && seqF.object['class']==idResourceClassActor
 		model.statements.push({
 				id: id,
 			//	class: "SC-triggers",
@@ -860,10 +927,69 @@ function BPMN2Specif( xmlString, opts ) {
 			console.warn("Omitted association "+id+", because either the source or more probably the target is missing")
 	});
 
-	// 8. Add the 'diagram shows model-element' statements:
-	let tempL=[];
+	// 8. Collect 'contains' statements using graphical information
+	// 8.1 First get all 'BPMNShape's
+	let shapes = Array.from(xmlDoc.querySelectorAll("BPMNShape"),
+			(sh) => {
+				let bounds,
+					refId = sh.getAttribute('bpmnElement');  // id of the represented model element
+				Array.from(sh.children, (ch) => {
+					if (ch.tagName && ch.tagName.includes('Bounds')) bounds = ch;
+				});
+				return (bounds ?
+					{
+						ref: refId,
+						type: getType(refId),
+						x: parseInt(bounds.getAttribute('x')),
+						y: parseInt(bounds.getAttribute('y')),
+						w: parseInt(bounds.getAttribute('width')),
+						h: parseInt(bounds.getAttribute('height'))
+					} : undefined);
+
+				function getType(id) {
+					let refEl = itemById(model.resources, id);
+					if( refEl ) 
+						for (var prp of refEl.properties)
+							if (prp['class'] == 'PC-Type')
+								return withoutNamespace(prp.value);
+					// else:
+				//	return // undefined
+                }
+			}
+		);
+//	console.debug('shapes',shapes);
+	// 8.2 Then check for shapes contained in those shapes representing a 'group':
+	for (var sh of shapes) {
+		// outer loop:
+		if (sh.type == 'group') {
+			for (var el of shapes) {
+				// inner loop
+				if (el.type != 'group') {
+					if(
+						   sh.x + 1 > el.x
+						&& sh.y + 1 > el.y
+						&& sh.x + sh.w < el.x + el.w + 1
+						&& sh.y + sh.h < el.y + el.h + 1
+					) {
+						storeContainsStatement(el.ref,sh.ref,diagramId)
+					}
+					else if (
+						   sh.x < el.x + 1
+						&& sh.y < el.y + 1
+						&& sh.x + sh.w + 1 > el.x + el.w
+						&& sh.y + sh.h + 1 > el.y + el.h
+					) {
+						storeContainsStatement(sh.ref, el.ref, diagramId)
+					}
+				};
+			};
+		};
+	};
+
+	// 9. Add the 'diagram shows model-element' statements:
 	model.statements.forEach( (s)=>{
-			tempL.push({
+			// elements which are added while looping will *not* be visited:
+			model.statements.push({
 				id: model.id+'-shows-'+s.id,
 				class: "SC-shows",
 				subject: diagramId,
@@ -873,7 +999,7 @@ function BPMN2Specif( xmlString, opts ) {
 	});
 	model.resources.forEach( (r)=>{
 		// only certain resources are model-elements:
-		if( ["RC-Actor","RC-State","RC-Event","RC-Collection"].includes(r['class']) ) {
+		if( opts.modelElementClasses.includes(r['class']) ) {
 			model.statements.push({
 				id: model.id+'-shows-'+r.id,
 				class: "SC-shows",
@@ -883,15 +1009,13 @@ function BPMN2Specif( xmlString, opts ) {
 			})
 		}
 	});
-	model.statements = model.statements.concat(tempL);
-	tempL.length = 0;
 	
-/*	// 9. Add the resource for the hierarchy root:
+/*	// 10. Add the resource for the hierarchy root:
 	model.resources.push({
 		id: hId,
 		title: model.title,
 		description: model.description,
-		class: "RC-Folder",
+		class: idResourceClassFolder,
 		properties: [{
 			class: "PC-Description",
 			value: model.description || ''
@@ -902,15 +1026,15 @@ function BPMN2Specif( xmlString, opts ) {
 		changedAt: opts.fileDate
 	}); */
 
-	// 10. The hierarchy with pointers to all resources;
+	// 11. The hierarchy with pointers to all resources;
 	//    the glossary is added during import:
 		function NodeList(res) {
 			// 9.1 first add the folders:
 			let nL =  [{
-				id: genID("N-"),
+				id: "H-FolderProcesses-" + apx,
 				resource: "FolderProcesses-" + apx,
 				nodes: [{
-					id: genID("N-"),
+					id: "N-" + diagramId,
 					resource: diagramId,
 					nodes: [],
 					changedAt: opts.fileDate
@@ -951,7 +1075,7 @@ function BPMN2Specif( xmlString, opts ) {
 					changedAt: opts.fileDate
 				};
 				// sort resources according to their type:
-				let idx = ["RC-Actor","RC-State","RC-Event"].indexOf( r['class'] );
+				let idx = [idResourceClassActor,idResourceClassState,idResourceClassEvent].indexOf( r['class'] );
 				if( idx>-1 )
 					nL[1].nodes[idx].nodes.push(nd)
 			}); */
@@ -968,7 +1092,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-//	console.debug('BPMN-XML',model);
+	console.debug('BPMN-XML',model);
 	return model;
 	
 // =======================================
@@ -1028,7 +1152,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// The resource classes:
 	function ResourceClasses() {
 		return [{
-			id: "RC-Diagram",
+			id: idResourceClassDiagram,
 			title: opts.strDiagramType,
 			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
@@ -1036,7 +1160,7 @@ function BPMN2Specif( xmlString, opts ) {
 			icon: "&#9635;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Actor",
+			id: idResourceClassActor,
 			title: "FMC:Actor",
 			description: "An 'Actor' is a fundamental model element type representing an active entity, be it an activity, a process step, a function, a system component or a role.",
 			instantiation: ['auto'],
@@ -1044,7 +1168,7 @@ function BPMN2Specif( xmlString, opts ) {
 			icon: "&#9632;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-State",
+			id: idResourceClassState,
 			title: "FMC:State",
 			description: "A 'State' is a fundamental model element type representing a passive entity, be it a value, a condition, an information storage or even a physical shape.",
 			instantiation: ['auto'],
@@ -1052,7 +1176,7 @@ function BPMN2Specif( xmlString, opts ) {
 			icon: "&#9679;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Event",
+			id: idResourceClassEvent,
 			title: "FMC:Event",
 			description: "An 'Event' is a fundamental model element type representing a time reference, a change in condition/value or more generally a synchronisation primitive.",
 			instantiation: ['auto'],
@@ -1060,7 +1184,7 @@ function BPMN2Specif( xmlString, opts ) {
 			icon: "&#11047;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Collection",
+			id: idResourceClassCollection,
 			title: "SpecIF:Collection",
 			instantiation: ['auto'],
 			description: "A 'Collection' is an arbitrary group of resources linked with a SpecIF:contains statement. It corresponds to a 'Group' in BPMN Diagrams.",
@@ -1068,7 +1192,7 @@ function BPMN2Specif( xmlString, opts ) {
 			icon: "&#11034;",
 			changedAt: opts.fileDate
 		},{
-			id: "RC-Folder",
+			id: idResourceClassFolder,
 			title: opts.strFolderType,
 			description: "Folder with title and text for chapters or descriptive paragraphs.",
 			isHeading: true,
@@ -1099,8 +1223,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Statement: Plan shows Model-Element",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Diagram"],
-		//	objectClasses: ["RC-Actor", "RC-State", "RC-Event"],
+			subjectClasses: [idResourceClassDiagram],
+		//?	objectClasses: opts.modelElementClasses.concat(["SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-refewrsTo" ]),
 			changedAt: opts.fileDate
 		},{
 			id: "SC-contains",
@@ -1108,8 +1232,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
-			objectClasses: ["RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
+			subjectClasses: opts.modelElementClasses,
+			objectClasses: opts.modelElementClasses,
 			changedAt: opts.fileDate
 		},{
 			id: "SC-writes",
@@ -1117,8 +1241,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Statement: Actor (Role, Function) writes State (Information)",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor", "RC-Event"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-reads",
@@ -1126,8 +1250,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "Statement: Actor (Role, Function) reads State (Information)",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor", "RC-Event"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-precedes",
@@ -1135,17 +1259,17 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor", "RC-Event"],
-			objectClasses: ["RC-Actor", "RC-Event"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassActor, idResourceClassEvent],
 			changedAt: opts.fileDate
 	/*	},{
-			id: "SC-stores",
-			title: "SpecIF:stores",
+			id: idStatementClassAccesses,
+			title: "SpecIF:accesses",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor"],
-			objectClasses: ["RC-State"],
+			subjectClasses: [idResourceClassActor],
+			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate 
 		},{
 			id: "SC-signals",
@@ -1153,8 +1277,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "A FMC:Actor 'signals' a FMC:Event.",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Actor", "RC-Event"],
-			objectClasses: ["RC-Event"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassEvent],
 			changedAt: opts.fileDate
 		},{
 			id: "SC-triggers",
@@ -1162,8 +1286,8 @@ function BPMN2Specif( xmlString, opts ) {
 			description: "A FMC:Event 'triggers' a FMC:Actor.",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
-			subjectClasses: ["RC-Event"],
-			objectClasses: ["RC-Actor", "RC-Event"],
+			subjectClasses: [idResourceClassEvent],
+			objectClasses: [idResourceClassActor, idResourceClassEvent],
 			changedAt: opts.fileDate */
 		},{ 
 			id: "SC-refersTo",
@@ -1172,7 +1296,7 @@ function BPMN2Specif( xmlString, opts ) {
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Note"],
-			objectClasses: ["RC-Diagram", "RC-Actor", "RC-State", "RC-Event", "RC-Collection"],
+			objectClasses: [idResourceClassDiagram].concat(opts.modelElementClasses),
 			changedAt: opts.fileDate
 		}]
 	}
@@ -1182,7 +1306,7 @@ function BPMN2Specif( xmlString, opts ) {
 		return [{
 			id: "FolderProcesses-" + apx,
 		//	class: "RC-ProcessModel",
-			class: "RC-Folder",
+			class: idResourceClassFolder,
 			title: opts.strBusinessProcessFolder,
 			properties: [{
 				class: "PC-Type",
@@ -1192,9 +1316,6 @@ function BPMN2Specif( xmlString, opts ) {
 		}]
 	}
 	
-// =======================================
-// some helper functions:	
-
 	function itemById(L, id) {
 		if (L && id) {
 			// given an ID of an item in a list, return it's index:
@@ -1202,7 +1323,7 @@ function BPMN2Specif( xmlString, opts ) {
 			for (var l of L)
 				if (l.id == id) return l   // return list item 
 		};
-		//	return; // undefined
+		//	return undefined
 	}
 /*	function indexBy( L, p, s ) {
 		if( L && p && s ) {
@@ -1222,6 +1343,51 @@ function BPMN2Specif( xmlString, opts ) {
 			return orig.slice(0, mxLen)
 		};
 		return orig;
+	}
+	function addStatementIfNotListed(nS) {
+		// In the BPMN transformation, this routine is used only for 'contains' statements.
+		// Two 'contains' statements in opposite direction between two given resources are logically inconsistent.
+		// So, it is refrained from adding a new relationship, if there is one already
+		// for the respective model elements, no matter which direction.
+		// This is OK, because the first entry is based on an explicit relation and
+		// an entry based on graphical analysis is added later.
+		for (var s of model.statements)
+			if (s["class"] == nS["class"]
+				&& (
+					s.subject == nS.subject && s.object == nS.object
+					|| s.subject == nS.object && s.object == nS.subject
+				)
+			)
+				return false; // has not been stored
+		// not found, so add:
+		model.statements.push(nS);
+		return true; // has been stored
+	}
+	function storeContainsStatement(sId, oId, dId) {
+		let stId = "S-" + simpleHash("SC-contains" + sId + oId);
+		addStatementIfNotListed({
+			id: stId,
+			class: "SC-contains",
+			subject: sId,
+			object: oId,
+			changedAt: opts.fileDate
+		});
+	/*	The shows statement is anyways added for all statements at the end of the transformation.
+	 *	if (addStatementIfNotListed({
+				id: stId,
+				class: "SC-contains",
+				subject: sId,
+				object: oId,
+				changedAt: opts.fileDate
+		})) {
+			// A 'contains' statement has been stored, so the statement itself gets a statement that it is shown:
+			model.statements.push({
+				id: "S-" + simpleHash("SC-shows" + dId + stId),
+				class: "SC-shows",
+				subject: dId,
+				object: stId,
+				changedAt: opts.fileDate
+			})}; */
 	}
 	// Make a very simple hash code from a string:
 	// http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/

@@ -683,6 +683,7 @@ LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
 LIB.references = (n: SpecifKey, k: SpecifKey): boolean => {
 	// true, if n references k.
 	return LIB.isKey(k) && LIB.isKey(n) && k.id == n.id && (!n.revision || k.revision == n.revision);
+	// ToDo: in case n.revision is undefined, the result shall be true only if n is the *newest* revision
 }
 LIB.referenceIndex = (L: SpecifKey[], k: SpecifKey): number => {
 	// return the index of the item in L referencing k.

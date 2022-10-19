@@ -342,8 +342,12 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 //								console.debug( 'getVal', cell, dT );
 								if (cell && dT)
 									if (dT.enumeration) {
-										let eV = LIB.itemBy(dT.enumeration, 'value', cell.v);
-										return (eV ? eV.id : "")
+										// Return the id of the enumerated value found in cell.v,
+										// where an enumerated value can only have a single language:
+										for (var eV of dT.enumeration)
+											// @ts-ignore - 'text' exists (only) for dataType 'string'
+											if ((eV.value[0].text || eV.value[0]) == cell.v) return eV.id;
+										return '';
 									};
 									// else:
 									switch (dT.type) {
@@ -485,7 +489,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 													// it will be replaced with a resource key when importing.
 													// Remember to disable the constraint-check on the statement.object.
 													object: LIB.makeKey(CONFIG.placeholder), 
-													objectToFind: oInner[1] || oInner[2],  // for content in double or single quotes
+													objectToFind: oInner[1] || oInner[2],  // content in double or single quotes
 													changedAt: chAt
 												});
 											};

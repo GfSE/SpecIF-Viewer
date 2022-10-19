@@ -278,7 +278,7 @@ class CCache {
 					ti = LIB.addIcon(ti, LIB.itemByKey(self.resourceClasses, el['class']).icon);
 			};
 
-			// 			console.debug('instanceTitleOf',el,opts,ti);
+// 			console.debug('instanceTitleOf',el,opts,ti);
 			return ti.stripHTML();
 		}(el, opts) || (opts.neverEmpty ? el.id : '');
 	}
@@ -678,46 +678,46 @@ class CProject {
 				//       (the case of different id and same content will be covered by deduplicate() at the end)
 				//    b) if same id and same content, just use it (no action)
 				//    c) if same id and different content, save with new id and update all references
-				(nD: CSpecIF) => {
-//					console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
-					this.types.forEach((ty:CElement) => {
+				(newD: CSpecIF) => {
+//					console.debug('adopt #1',simpleClone(self.data),simpleClone(newD));
+					self.types.forEach((ty:CElement) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-						if (Array.isArray(nD[ty.listName])) {
+						if (Array.isArray(newD[ty.listName])) {
 							let itmL: SpecifItem[] = [];
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-							nD[ty.listName].forEach((nT) => {
-								// nT is a type/class in new data
+							newD[ty.listName].forEach((newT) => {
+								// newT is a type/class in new data
 								// types are compared by id:
 								// @ts-ignore - indexing by string works fine
-								let idx = LIB.indexByKey(dta[ty.listName], nT);
+								let idx = LIB.indexByKey(dta[ty.listName], newT);
 								if (idx < 0) {
 									// a) there is no item with the same id
-									itmL.push(nT);
+									itmL.push(newT);
 								}
 								else {
 									// there is an item with the same id.
-									//	if( !ty.isEqual( self.data[ty.listName][idx], nT) ) {
+									//	if( !ty.isEqual( self.data[ty.listName][idx], newT) ) {
 									// @ts-ignore - indexing by string works fine
-									if (!ty.isCompatible(dta[ty.listName][idx], nT, { mode: "include" })) {
+									if (!ty.isCompatible(dta[ty.listName][idx], newT, { mode: "include" })) {
 										// there is an item with the same id and different content.
 										// c) create a new id and update all references:
 										// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-										let alterId = LIB.keyOf(nT);
-										nT.id += '-' + simpleHash(new Date().toISOString());
-										ty.substitute(nD, nT, alterId );
-										itmL.push(nT);
-										console.info("When adopting a project" + (nD.id ? " with id " + nD.id : "")
+										let alterId = LIB.keyOf(newT);
+										newT.id += '-' + simpleHash(new Date().toISOString());
+										ty.substitute(newD, newT, alterId );
+										itmL.push(newT);
+										console.info("When adopting a project" + (newD.id ? " with id " + newD.id : "")
 											+	", a class with same id and incompatible content has been encountered: " + alterId.id
-											+	"; it has been saved with a new identifier " + nT.id + ".");
+											+	"; it has been saved with a new identifier " + newT.id + ".");
 									};
 									// b) no action
 								};
 							});
-							// @ts-ignore - nD[ty.listName] is a valid address
-							console.info((nD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
+							// @ts-ignore - newD[ty.listName] is a valid address
+							console.info((newD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
 							pend++;
-							this.createItems(ty.category, itmL)
+							self.createItems(ty.category, itmL)
 								.then(finalize, aDO.reject);
 						};
 					});
@@ -728,57 +728,62 @@ class CProject {
 						//    c) if different id and same content, adopt existing class and update all references
 						//    d) if different id and different content, save new one and use it.
 						var aDO = $.Deferred(),
-							self = this,  // make the class attributes and methods available within local function 'finalize'
-							dta = this.data,
+							self = self,  // make the class attributes and methods available within local function 'finalize'
+							dta = self.data,
 							pend = 0;
-//						console.debug('adopt #1',simpleClone(self.data),simpleClone(nD));
-						this.types.forEach((ty) => {
+//						console.debug('adopt #1',simpleClone(self.data),simpleClone(newD));
+						self.types.forEach((ty) => {
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-							if (Array.isArray(nD[ty.listName])) {
+							if (Array.isArray(newD[ty.listName])) {
 							};
 						}); */
-//						console.debug('#2',simpleClone(dta),simpleClone(nD));
+//						console.debug('#2',simpleClone(dta),simpleClone(newD));
 
 					// 2. Integrate the instances:
 					//    a) if different title or type, save new one and use it.
 					//    b) if same title and type, just use it and update all references
-					if (Array.isArray(nD.resources)) {
+					if (Array.isArray(newD.resources)) {
 						let itmL: SpecifResource[] = [];
-						nD.resources.forEach((nR: SpecifResource) => {
-							// nR is a resource in the new data
+						newD.resources.forEach((newR: SpecifResource) => {
+							// newR is a resource in the new data
 
 							// Adopt resource with the same key, title and class right away;
 							// obviously there is no need to update any reference:
-							let eR: SpecifResource = LIB.itemByKey(dta.resources, nR);  // resource in the existing data
-							if (eR && this.equalR(eR, nR)) return;
+							let existR: SpecifResource = LIB.itemByKey(dta.resources, newR);  // resource in the existing data
+							if (existR && self.equalR(existR, newR)) return;
 
 							// Adopt a resource, only if it's class belongs to a certain collection of class-titles and is not excluded from deduplication.
 							// The folders are excluded from consolidation, because it may happen that there are
 							// multiple folders with the same name but different description in different locations of the hierarchy.
 							// The title of the resource class signifies the main (abstract) type for model integration,
 							// whereas the property with a class title CONFIG.propClassType (dcterms:type) is used to store the type of the original notation.
-							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(nR, nD.resourceClasses)) > -1
-								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(nR, [CONFIG.propClassType], nD.propertyClasses)) < 0
+
+							// For matching, the title and fundamental type are used. 
+							// The title can have multiple languages - so far only the project's or browser's language (fallback when initializing this.language)
+							// are used, so the matching may lead to different results depending on the language selected.
+							let selOpts = Object.assign({}, opts, { targetLanguage: self.language || newD.language, lookupTitles: true });
+							if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(newR, newD.resourceClasses)) > -1
+								&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD.propertyClasses)) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								eR = this.data.resourcesByTitle(LIB.getTitleFromProperties(nR.properties, opts), opts)[0] as SpecifResource;
+								existR = self.data.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, selOpts), selOpts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
-//								console.debug('~1',nR,eR?eR:'');
-								if (eR
-									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(eR, [CONFIG.propClassType], dta.propertyClasses)) < 0
-									&& LIB.resClassTitleOf(nR, nD.resourceClasses) == LIB.resClassTitleOf(eR, dta.resourceClasses)
-								//	&& LIB.valuesByTitle(nR,[CONFIG.propClassType],nD.propertyClasses)==LIB.valuesByTitle(eR,[CONFIG.propClassType],dta.propertyClasses)
+//								console.debug('~1',newR,existR?existR:'');
+								if (existR
+									&& CONFIG.excludedFromDeduplication.indexOf(LIB.valuesByTitle(existR, [CONFIG.propClassType], dta.propertyClasses)) < 0
+									&& LIB.resClassTitleOf(newR, newD.resourceClasses) == LIB.resClassTitleOf(existR, dta.resourceClasses)
+								//	&& LIB.valuesByTitle(newR,[CONFIG.propClassType],newD.propertyClasses)==LIB.valuesByTitle(existR,[CONFIG.propClassType],dta.propertyClasses)
 								) {
-//									console.debug('~2',eR,nR);
+//									console.debug('~2',existR,newR);
 									// There is an item with the same title and type,
 									// adopt it and update all references:
-									this.substituteR(nD, eR, nR, { rescueProperties: true });
+									self.substituteR(newD, existR, newR, { rescueProperties: true });
 
 									// Memorize the replaced id, if not yet listed:
-									if (!Array.isArray(eR.alternativeIds)) eR.alternativeIds = [];
-									LIB.cacheE(eR.alternativeIds, {id:nR.id,revision:nR.revision,project:nD.id});
+									if (!Array.isArray(existR.alternativeIds)) existR.alternativeIds = [];
+									LIB.cacheE(existR.alternativeIds, {id:newR.id,revision:newR.revision,project:newD.id});
 
 									return;
 								}
@@ -794,61 +799,61 @@ class CProject {
 							// Check, whether the existing model has an element with the same id,
 							// and since it does have a different title or different type (otherwise it would have been substituted above),
 							// assign a new id to the new element:
-							if (LIB.duplicateId(dta, nR.id)) {
+							if (LIB.duplicateId(dta, newR.id)) {
 								let newId = LIB.genID('R-');
 								// first assign new ID to all references:
-								this.substituteR(nD, { id: newId } as SpecifResource, nR);
+								self.substituteR(newD, { id: newId } as SpecifResource, newR);
 								// and then to the resource itself:
-								nR.id = newId;
+								newR.id = newId;
 							};
-//							console.debug('+ resource',nR);
-							itmL.push(nR)
+//							console.debug('+ resource',newR);
+							itmL.push(newR)
 						});
-						console.info((nD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
+						console.info((newD.resources.length - itmL.length) + " resources adopted and " + itmL.length + " added.");
 						pend++;
-						this.createItems('resource', itmL)
+						self.createItems('resource', itmL)
 							.then(finalize, aDO.reject);
 					};
-//					console.debug('#3',simpleClone(dta),simpleClone(nD));
+//					console.debug('#3',simpleClone(dta),simpleClone(newD));
 
 					// 3. Create the remaining items;
-					// this.createItems('statement', nD.statements) could be called, 
+					// self.createItems('statement', newD.statements) could be called, 
 					// but then the new elements would replace the existing ones.
 					// In case of 'adopt' the existing shall prevail!
-					if (Array.isArray(nD.statements)) {
+					if (Array.isArray(newD.statements)) {
 						let itmL: SpecifStatement[] = [];
-						nD.statements.forEach((nS: SpecifStatement) => {
-							// nR is a resource in the new data
+						newD.statements.forEach((nS: SpecifStatement) => {
+							// newR is a resource in the new data
 
 							// Adopt statement with the same id, title and class right away:
 							let eS: SpecifStatement = LIB.itemByKey(dta.statements, nS);  // statement in the existing data
-							if (eS && this.equalS(eS, nS)) return;
+							if (eS && self.equalS(eS, nS)) return;
 							// Else, create new element:
 							itmL.push(nS);
 						});
-						console.info((nD.statements.length - itmL.length) + " statements adopted and " + itmL.length + " added.");
+						console.info((newD.statements.length - itmL.length) + " statements adopted and " + itmL.length + " added.");
 						pend++;
-						this.createItems('statement', itmL)
+						self.createItems('statement', itmL)
 							.then(finalize, aDO.reject);
 					};
 					pend++;
-					this.createItems('hierarchy', nD.hierarchies)
+					self.createItems('hierarchy', newD.hierarchies)
 						.then(finalize, aDO.reject);
 
-					if (Array.isArray(nD.files)) {
+					if (Array.isArray(newD.files)) {
 						let itmL: any[] = [];
-						nD.files.forEach((nF: any) => {
-							// nR is a resource in the new data
+						newD.files.forEach((nF: any) => {
+							// newR is a resource in the new data
 
 							// Adopt equal file right away:
 							let eF: any = LIB.itemByKey(dta.files, nF);  // file in the existing data
-							if (eF && this.equalF(eF, nF)) return;
+							if (eF && self.equalF(eF, nF)) return;
 							// Else, create new element:
 							itmL.push(nF);
 						});
-						console.info((nD.files.length - itmL.length) + " files adopted and " + itmL.length + " added.");
+						console.info((newD.files.length - itmL.length) + " files adopted and " + itmL.length + " added.");
 						pend++;
-						this.createItems('file', itmL)
+						self.createItems('file', itmL)
 							.then(finalize, aDO.reject);
 					};
 				},
@@ -944,7 +949,6 @@ class CProject {
 				// the list of model element instances must include all SpecIF elements which are not remembered by the project:
 				if (itemL == "all" && ['resource', 'statement', 'file', 'node'].includes(ctg))
 					throw Error("Don't request 'all' model element instances, since the result list can be very long!");
-				//	console.warn("Don't request 'all' model element instances, since the result list can be very long!");
 
 				// delay the answer a little, so that the caller can properly process a batch:
 				setTimeout(() => {
@@ -1359,10 +1363,8 @@ class CProject {
 
 		return new Promise(
 			(resolve, reject) => {
-				if (typeof (opts) != 'object') {
-					resolve();
-					return;
-				};
+				if (typeof (opts) != 'object') { resolve(); return; };
+
 				let apx = simpleHash(self.id),
 					tim = new Date().toISOString();
 
@@ -1376,9 +1378,9 @@ class CProject {
 					(r2c) => {
 //						console.debug('rc2c',r2c,opts);
 						if (!opts[r2c.flag]) { resolve(); return; };
-						// Assuming that the folder objects for the respective folder are available
 
-						// 1 Find all resp. folders (e.g. process folder):
+						// Assuming that the folder objects for the respective folder are available
+						// 1. Find all resp. folders (e.g. process folder):
 						let delL: SpecifNode[] = [],
 							creL: any[] = [],
 							res: SpecifResource,
@@ -1443,7 +1445,7 @@ class CProject {
 											.done(() => {
 												// Finally create the node referencing the folder to create:
 												let nd: INodeWithPosition = {
-													id: "H" + r2c.folderNamePrefix + apx,
+													id: "H-" + r2c.folderNamePrefix + apx,
 													resource: { id: r2c.folderNamePrefix + apx },
 													// re-use the nodes with their references to the resources:
 													nodes: LIB.forAll(creL, (pr:any) => { return pr.n; }),
@@ -1639,8 +1641,9 @@ class CProject {
 								delHL.push(nd);
 								// Collect all folder resources of the glossary:
 								delRL.push(nd.resource);
-								for ( var n of nd.nodes )
-									delRL.push( n.resource )
+								if( nd.nodes )
+									for ( var n of nd.nodes )
+										delRL.push( n.resource )
 						}	;
 						// collect all diagrams which are referenced in the hierarchy
 						// for inclusion in the new folders:
@@ -2685,7 +2688,7 @@ class CProject {
 			});
 	}
 	private substituteRef(L: SpecifNodes, rK: SpecifKey, dK: SpecifKey): void {
-		// For all hierarchies, replace any reference to dId by rId;
+		// For all hierarchies, replace any reference to dK by rK;
 		// eliminate double entries in the same folder (together with the children):
 		LIB.iterateNodes(
 			L,
@@ -2693,7 +2696,7 @@ class CProject {
 			(nd: SpecifNode) => { if (LIB.equalKey(nd.resource, dK)) { nd.resource = rK }; return true },
 			// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
 			// for example it is avoided that the same diagram is shown twice if it has been imported twice:
-			(ndL: SpecifNodes) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.indexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
+			(ndL: SpecifNodes) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.referenceIndexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
 		);
 	}
 	private substituteDT(prj: CSpecIF | CCache, refE: SpecifDataType, newE: SpecifDataType,): void {
@@ -2725,7 +2728,7 @@ class CProject {
 		this.substituteProp(prj.statements, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
 	}
 	private substituteR(prj: CSpecIF | CCache, refE: SpecifResource, newE: SpecifResource, opts?: any): void {
-		// Substitute resource newE by refE in all references of newE,
+		// Substitute all references of resource newE by refE,
 		// where refE is always an element of this.data.
 		// But: Rescue any property of newE, if undefined for refE.
 //		console.debug('substituteR',refE,newE,prj.statements);
@@ -2754,14 +2757,14 @@ class CProject {
 				};
 			});
 		};
-		// In the rare case that the ids are identical, there is no need to update the references:
+
+		// In the rare case that the keys are identical, there is no need to update the references:
 		if (LIB.equalKey(refE,newE)) return;
 
 		// 1. Replace the references in all statements:
 		prj.statements.forEach((st: SpecifStatement) => {
-			if (LIB.equalKey(st.object, newE)) { if (st.object.id) { st.object.id = LIB.keyOf(refE) } else { st.object = LIB.keyOf(refE) } };
-			if (LIB.equalKey(st.subject, newE)) { if (st.subject.id) { st.subject.id = LIB.keyOf(refE) } else { st.subject = LIB.keyOf(refE) } }
-			// ToDo: Is the substitution is too simple, if a key is used?
+			if (LIB.equalKey(st.subject, newE)) st.subject = LIB.keyOf(refE);
+			if (LIB.equalKey(st.object, newE)) st.object = LIB.keyOf(refE);
 		});
 
 		// 2. Replace the references in all hierarchies:
@@ -2769,8 +2772,16 @@ class CProject {
 
 		// 3. Make sure all statementClasses allowing newE.class also allow refE.class (the class of the adopted resource):
 		prj.statementClasses.forEach((sC: SpecifStatementClass) => {
-			if (Array.isArray(sC.subjectClasses) && sC.subjectClasses.indexOf(newE['class']) > -1) LIB.cacheE(sC.subjectClasses, refE['class']);
-			if (Array.isArray(sC.objectClasses) && sC.objectClasses.indexOf(newE['class']) > -1) LIB.cacheE(sC.objectClasses, refE['class']);
+			let idx = LIB.referenceIndexBy(sC.subjectClasses, newE['class']);
+			if ( idx > -1) {
+				sC.subjectClasses.splice(idx, 1);
+				LIB.cacheE(sC.subjectClasses, refE['class']);
+			};
+			idx = LIB.referenceIndexBy(sC.objectClasses, newE['class']);
+			if (idx > -1) {
+				sC.objectClasses.splice(idx, 1);
+				LIB.cacheE(sC.objectClasses, refE['class']);
+			};
 		});
 	}
 	abort(): void {
