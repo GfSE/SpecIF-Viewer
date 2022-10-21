@@ -669,11 +669,11 @@ class CSpecIF implements SpecIF {
 			oE.object = LIB.makeKey( iE.object );
 
 			// special feature to import statements to complete,
-			// used for example by the XLS or ReqIF import:
-			// @ts-ignore - subjectToFind is implementation-specific for a-posteriori completion of statements
-			if (iE.subjectToFind) oE.subjectToFind = LIB.makeKey(iE.subjectToFind);
-			// @ts-ignore - objectToFind is implementation-specific for a-posteriori completion of statements
-			if (iE.objectToFind) oE.objectToFind = LIB.makeKey(iE.objectToFind);
+			// used for example by the XLS import:
+		/*	// @ts-ignore - subjectToLink is implementation-specific for a-posteriori completion of statements
+			if (iE.subjectToLink) oE.subjectToLink = iE.subjectToLink;  */
+			// @ts-ignore - objectToLink is implementation-specific for a-posteriori completion of statements
+			if (iE.objectToLink) oE.objectToLink = iE.objectToLink;
 //			console.debug('statement 2int',iE,oE);
 			return oE
 		}

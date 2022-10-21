@@ -2368,7 +2368,7 @@ moduleManager.construct({
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
 			let res: SpecifResource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
-			// ToDo: first do selPrj.readItems('hierarchy','all') with promise anditerate with results ...
+			// ToDo: first do selPrj.readItems('hierarchy',"all") with promise anditerate with results ...
 			return LIB.iterateNodes(
 				cacheData.get('hierarchy',selPrj.hierarchies),
 				(nd: SpecifNode): boolean => {

@@ -489,7 +489,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 													// it will be replaced with a resource key when importing.
 													// Remember to disable the constraint-check on the statement.object.
 													object: LIB.makeKey(CONFIG.placeholder), 
-													objectToFind: oInner[1] || oInner[2],  // content in double or single quotes
+													objectToLink: oInner[1] || oInner[2],  // content in double or single quotes
 													changedAt: chAt
 												});
 											};
@@ -548,7 +548,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							// the resource has been stored, so any statement can be stored, as well:
 							if( stL.length>0 ) {
 								stL.forEach((st) => {
-									st.id = 'S-' + simpleHash(res.id + st['class'].id + st.objectToFind);
+									st.id = 'S-' + simpleHash(res.id + st['class'].id + st.objectToLink);
 									st.subject = LIB.keyOf(res)
 								});
 								specifData.statements = specifData.statements.concat(stL);

@@ -71,14 +71,20 @@ class CCache {
 		// If item is a list, all elements must have the same category.
 		function cacheIfNewerE(L: SpecifItem[], e: SpecifItem): boolean {  // ( list, entry )
 			// Add or update the item e in a list L, if created later:
-			let n = typeof (e) == 'object' ? LIB.indexById(L, e.id) : L.indexOf(e);
+		//	let n = typeof (e) == 'object' ? LIB.indexById(L, e.id) : L.indexOf(e);
+			if (typeof (e) != 'object' || !e.id)
+				throw Error("Cache 'put' operation with old reference (string instead of object with id)");
+			let n = LIB.indexById(L, e.id);
 			// add, if not yet listed:
 			if (n < 0) {
 				L.push(e);
 				return true;
 			};
-			// Update, if newer:
-			if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt))
+			// Update, if newer or when reference 'objectToLink' has been resolved:
+		//	if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt))
+			if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt)
+					|| L[n].objectToLink && !e.objectToLink
+				)
 				L[n] = e;
 			return true;
 		}
@@ -120,7 +126,7 @@ class CCache {
 		// Read items from cache; req can be 
 		// - a list with keys,
 		// - a filter function returning 'true' for all items to select
-		// - a string with 'all' to return all items of the category (DEPRECATED)
+		// - a string with "all" to return all items of the category (DEPRECATED)
 		if (req) {
 			// @ts-ignore - addressing is perfectly ok
 			let itmL = this[standardTypes.listName.get(ctg)];
@@ -143,7 +149,7 @@ class CCache {
 			else if (typeof (req) == 'function') {
 				return simpleClone(itmL.filter(req));
 			}
-			else if (req === 'all') {		// DEPRECATED
+			else if (req === "all") {		// DEPRECATED
 				return simpleClone(itmL);	// return all cached items in a new list
 			};
 		};
@@ -483,28 +489,21 @@ class CProject {
 			if (--pend < 1) {
 				cDO.notify(i18n.MsgLoadingFiles, 100);
 				self.createFolderWithGlossary(opts)
-					.then(() => {
-						self.createFolderWithUnreferencedResources(opts)
-							.then(
-								() => {
-									self.hookStatements();
-									self.deduplicate(opts);
-									cDO.resolve()
-								},
-								cDO.reject);
-					}, cDO.reject);
-			}
+				.then(
+					() => {
+						return self.createFolderWithUnreferencedResources(opts)
+					}
+				)
+				.then(
+					() => {
+						self.hookStatements();
+						self.deduplicate(opts);
+						cDO.resolve();
+					}
+				)
+				.catch( cDO.reject );
+			};
 		}
-		/*	function finalize(): void {
-				if (--pend < 1) {
-					cDO.notify(i18n.MsgLoadingFiles, 100);
-					self.hookStatements();
-					self.deduplicate(opts);	// deduplicate equal items
-					// ToDo: Update the server !
-	
-					cDO.resolve()
-				}
-			} */
 	}
 	read(opts?: any): Promise<SpecIF> {
 		// Extract all items of this project from the cache containing elements of multiple projects
@@ -867,19 +866,24 @@ class CProject {
 				// 4. Finally some house-keeping:
 //				console.debug('#5',simpleClone(dta),opts);
 				self.createFolderWithResourcesByType(opts)
-					.then(() => {
-						self.createFolderWithGlossary(opts)
-							.then(() => {
-								self.createFolderWithUnreferencedResources(opts)
-									.then(() => {
-										self.hookStatements();
-										self.deduplicate(opts);
-										aDO.resolve()
-									},
-									aDO.reject
-									);
-							}, aDO.reject);
-					}, aDO.reject);
+				.then(
+					() => {
+						return self.createFolderWithGlossary(opts)
+					}
+				)
+				.then(
+					() => {
+						return self.createFolderWithUnreferencedResources(opts)
+					}
+				)
+				.then(
+					() => {
+						self.hookStatements();
+						self.deduplicate(opts);
+						aDO.resolve()
+					}
+				)
+				.catch( aDO.reject);
 			};
 		}
 	}
@@ -954,8 +958,8 @@ class CProject {
 				setTimeout(() => {
 					let items = this.data.get(
 						ctg,
-						(itemL == 'all' ?
-							//	(itemL == 'all' && ['dataType','propertyClass','resourceClass','statementClass','hierarchy'].includes(ctg) ?
+						(itemL == "all" ?
+							//	(itemL == "all" && ['dataType','propertyClass','resourceClass','statementClass','hierarchy'].includes(ctg) ?
 							this[standardTypes.listName.get(ctg)]  // only those remembered by the project
 							: itemL)
 					);
@@ -1175,6 +1179,12 @@ class CProject {
 	}
 
 	private hookStatements(): void {
+		// For all statements with a loose end, hook the resource
+		// specified by title or visibleId in a proprietory attribute objectToLink.
+		// - Used by ioXLS.
+		// - ioReqIF may list statements with subjects or objects which are not present in the same SpecIF data-set;
+		//   in contrast to the method used here, the reference is by id.
+		//   Thus upon import, no 'hooking' is needed in case of a data-set originating from ioReqIF.
 		var self = this,
 			dta = this.data,
 			opts = {
@@ -1183,47 +1193,26 @@ class CProject {
 				addIcon: false
 			};
 //		console.debug('hookStatements',dta);
-		// For all statements with a loose end, hook the resource
-		// specified by title or by a property titled dcterms:identifier:
-	//	dta.statements.forEach((st: SpecifStatement) => {
+		let toReplace: SpecifStatement[] = [];
 		(dta.get("statement", "all") as SpecifStatement[]).forEach((st) => {
-			// Check every statement;
-			// it is assumed that only one end is loose:
-			if (st.subjectToFind) {
+			// Check every statement:
+			if (st.objectToLink) {
 				// Find the resource with a value of property titled CONFIG.propClassId:
-				let sL = itemsByVisibleId(st.subjectToFind),
-					s = sL.length > 0?
-							sL[0]
-						:	// Find the resource with the given title:
-							dta.resourcesByTitle(st.subjectToFind,opts)[0];
-//				console.debug('hookStatements subject',s);
-				if (s) {
-					st.subject = LIB.keyOf(s);
-					delete st.subjectToFind;
-					return;
-				};
-			};
-			if (st.objectToFind) {
-				// Find the resource with a value of property titled CONFIG.propClassId:
-				let oL = itemsByVisibleId(st.objectToFind),
+				let oL = itemsByVisibleId(st.objectToLink),
 					o = oL.length > 0 ?
 							oL[0]
 						:	// Find the resource with the given title:
-							dta.resourcesByTitle(st.objectToFind, opts)[0];
-			/*	let o, oL = itemsByVisibleId(st.objectToFind);
-				if (oL.length > 0)
-					o = oL[0];
-				else
-					// Find the resource with the given title:
-					o = dta.resourceByTitle(st.objectToFind,opts); */
+							dta.resourcesByTitle(st.objectToLink, opts)[0];
 //				console.debug('hookStatements object',o);
 				if (o) {
 					st.object = LIB.keyOf(o);
-					delete st.objectToFind;
+					delete st.objectToLink;
+					toReplace.push(st)
 					return;
 				};
 			};
 		});
+		if (toReplace.length > 0) dta.put('statement', toReplace);
 		return;
 
 		function itemsByVisibleId(vId: string): SpecifResource[] {
@@ -1234,7 +1223,7 @@ class CProject {
 				"resource",
 				// filter function:
 				(r: SpecifResource) => {
-					// loop to find the *first' occurrence:
+					// loop to find the *first* occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
 						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(p, dta.propertyClasses)))
@@ -1271,7 +1260,7 @@ class CProject {
 //		console.debug('deduplicate',simpleClone(dta));
 
 		// 1. Deduplicate equal types having different ids;
-		// the first of a equivalent pair in the list is considered the reference or original ... and stays,
+		// the first of an equivalent pair in the list is considered the reference or original ... and stays,
 		// whereas the second in a pair is removed.
 		this.types.forEach((ty) => {
 			// @ts-ignore - indexing by string works fine
@@ -1296,7 +1285,7 @@ class CProject {
 //		console.debug( 'deduplicate 1', simpleClone(dta) );
 
 		// 2. Remove duplicate resources:
-		lst = dta.get('resource','all');
+		lst = dta.get('resource',"all");
 		// skip last loop, as no duplicates can be found:
 		for (n = lst.length - 1; n > 0; n--) {
 			for (r = 0; r < n; r++) {
@@ -1321,7 +1310,7 @@ class CProject {
 //		console.debug( 'deduplicate 2', simpleClone(dta) );
 
 		// 3. Remove duplicate statements:
-		lst = dta.get('statement', 'all');
+		lst = dta.get('statement', "all");
 		// skip last loop, as no duplicates can be found:
 		for (n = lst.length - 1; n > 0; n--) {
 			for (r = 0; r < n; r++) {
@@ -1377,6 +1366,7 @@ class CProject {
 				resourcesToCollect.forEach(
 					(r2c) => {
 //						console.debug('rc2c',r2c,opts);
+						// As soon as resourcesToCollect has >1 entries, we must spawn a promise each ...
 						if (!opts[r2c.flag]) { resolve(); return; };
 
 						// Assuming that the folder objects for the respective folder are available
@@ -1411,7 +1401,7 @@ class CProject {
 
 						// 2. Delete any existing folders:
 						//    (Alternative: Keep folder and delete only the children.)
-						self.deleteItems('hierarchy', delL)
+						self.deleteItems('node', delL)
 							.then(
 								() => {
 									// Create a folder with all respective objects (e.g. diagrams):
@@ -1498,7 +1488,7 @@ class CProject {
 				if (typeof (opts) != 'object' || !opts.addUnreferencedResources) { resolve(); return; };
 
 				let delL: SpecifNode[] = [],
-					resL = dta.get('resource', 'all') as SpecifResource[],
+					resL = dta.get('resource', "all") as SpecifResource[],
 					pVs: string[],
 					idx: number,
 					apx = simpleHash(self.id),
@@ -3288,7 +3278,7 @@ function Project(): IProject {
 	function loadFiles() {
 		// in case of ReqIF Server, only a list of file meta data is delivered,
 		// whereas in case of PouchDB, the files themselves are delivered.
-		return self.readItems( 'file', 'all', {reload:true} )
+		return self.readItems( 'file', "all", {reload:true} )
 	}
 	function loadObjsOf( sp ) {
 		// Cache all resources referenced in the given spec (hierarchy):

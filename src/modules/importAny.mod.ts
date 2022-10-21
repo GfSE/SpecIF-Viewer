@@ -73,7 +73,7 @@ moduleManager.construct({
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			help: "Experimental: "+i18n.MsgImportReqif,
+			help: i18n.MsgImportReqif,
 			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: LIB.attachment2mediaType } 
 	/*	},{
             id: 'rdf',

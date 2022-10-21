@@ -207,12 +207,7 @@ const CONFIG:any = {};
 		// ReqIF 1.0 and 1.1 Implementation Guide:
 		'ReqIF.ChapterName',	// do not remove
 	/*	// DocBridge Resource Director:
-		'DBRD.ChapterName',
-		// Viacar Glossary:
-		'Heading.en',
-		'Heading.de',
-		'Heading.fr',
-		'Heading.es', */
+		'DBRD.ChapterName', */
 		// Other:
 		'Überschrift'
 	];
@@ -531,14 +526,14 @@ const vocabulary = {
 				case "dcterms_author":			// deprecated, for compatibility
 				case "reqif_foreigncreatedby":		oT = "dcterms:creator"; break;
 				case "specif_createdat":			oT = "dcterms:modified"; break;
-			//	case "reqif_foreignmodifiedby":		oT = ""; break;
+			/*	case "reqif_foreignmodifiedby":		oT = ""; break;
 			//	case "reqif_foreigncreatedon":		oT = ""; break;
 			//	case "reqif_foreigncreatedthru":	oT = ""; break;
 			//	case "reqif_fitcriteria":			oT = ""; break;
 			//	case "reqif_prefix":				oT = ""; break;
 			//	case "reqif_associatedfiles":		oT = ""; break;
 			//	case "reqif_project":				oT = ""; break;
-			//	case "reqif_chapternumber":			oT = ""; break;
+			//	case "reqif_chapternumber":			oT = ""; break; */
 				default: oT = iT;
 			};
 			return oT;
