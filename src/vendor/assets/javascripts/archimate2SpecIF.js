@@ -774,7 +774,7 @@ function Archimate2Specif(xmlString, opts) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-	console.debug('Archimate',model);
+//	console.debug('Archimate',model);
 	return model;
 
 
