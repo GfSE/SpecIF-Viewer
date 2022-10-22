@@ -11,6 +11,17 @@
 // Test cases: http://www.opengroup.org/xsd/archimate/3.1/examples/
 function Archimate2Specif(xmlString, opts) {
 	"use strict";
+
+	const
+		idResourceClassDiagram = "RC-Diagram",
+		idResourceClassActor = "RC-Actor",
+		idResourceClassState = "RC-State",
+		idResourceClassEvent = "RC-Event",
+		idResourceClassCollection = "RC-Collection",
+		idResourceClassRequirement = "RC-Requirement",
+		idResourceClassFolder = "RC-Folder",
+		idStatementClassAccesses = "SC-accesses";
+
 	if (typeof (opts) != 'object' || !opts.fileName) return null;
 	if (!opts.fileDate)
 		opts.fileDate = new Date().toISOString();
@@ -23,6 +34,8 @@ function Archimate2Specif(xmlString, opts) {
 
 	if (!opts.strNamespace)
 		opts.strNamespace = "Archimate:";
+	if (!opts.modelElementClasses)
+		opts.modelElementClasses = [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection];
 	if (!opts.resClassOutline)
 		opts.resClassOutline = 'SpecIF:Outline';
 	if (!opts.strFolderType)
@@ -70,14 +83,11 @@ function Archimate2Specif(xmlString, opts) {
 	const
 		//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
-		idResourceClassDiagram = "RC-Diagram",
-		idResourceClassActor = "RC-Actor",
-		idResourceClassState = "RC-State",
-		idResourceClassEvent = "RC-Event",
-		idResourceClassCollection = "RC-Collection",
-		idResourceClassRequirement = "RC-Requirement",
-		idResourceClassFolder = "RC-Folder",
 		hId = 'Archimate-' + apx;
+
+	// Have chosen to prefer 'nodeName' over 'tagName',
+	// see: http://aleembawany.com/2009/02/11/tagname-vs-nodename/
+	// see: https://stackoverflow.com/questions/4878484/difference-between-tagname-and-nodename
 
 	model["$schema"] = "https://specif.de/v1.0/schema.json";
 	model.dataTypes = DataTypes();
@@ -267,9 +277,9 @@ function Archimate2Specif(xmlString, opts) {
 			if (isNotHidden(vi)) {
 
 				let nodeL = [],  // list of nodes for analysis of containment by their coordinates
-					dId = vi.getAttribute('identifier'),
-					diag = {
-						id: dId,
+					diagramId = vi.getAttribute('identifier'),
+					diagram = {
+						id: diagramId,
 						//	title: '',
 						class: idResourceClassDiagram,
 						properties: [],
@@ -291,9 +301,9 @@ function Archimate2Specif(xmlString, opts) {
 							},
 							// even though implicitly, the containment is shown by this diagram:
 							shows: {
-								id: "S-" + simpleHash("SC-shows" + dId + stId),
+								id: "S-" + simpleHash("SC-shows" + diagramId + stId),
 								class: "SC-shows",
-								subject: dId,
+								subject: diagramId,
 								object: stId,
 								changedAt: opts.fileDate
 							}
@@ -313,10 +323,10 @@ function Archimate2Specif(xmlString, opts) {
 					// Only nodes of xsi:type="Element" have an 'elementRef'.
 					// Store a 'shows' relation; it is assumed that the referred resource will be found later on:
 					if (refId) {
-						addStaIfNotListed({
-							id: "S-" + simpleHash("SC-shows" + dId + refId),
+						addStatementIfNotListed({
+							id: "S-" + simpleHash("SC-shows" + diagramId + refId),
 							class: "SC-shows",
-							subject: dId,
+							subject: diagramId,
 							object: refId,
 							changedAt: opts.fileDate
 						});
@@ -342,21 +352,21 @@ function Archimate2Specif(xmlString, opts) {
 					(ch) => {
 						switch (ch.nodeName) {
 							case 'name':
-								diag.title = truncStr(ch.innerHTML, opts.titleLength, 'Title of diagram with id '+diag.id);
-							/*	diag.properties.push({
+								diagram.title = truncStr(ch.innerHTML, opts.titleLength, 'Title of diagram with id '+diagram.id);
+							/*	diagram.properties.push({
 									class: "PC-Name",
-									value: diag.title
+									value: diagram.title
 								}); */
 								break;
 							case 'documentation':
-								diag.properties.push({
+								diagram.properties.push({
 									class: "PC-Description",
-									value: truncStr(ch.innerHTML, opts.textLength, 'Description of diagram with id ' + diag.id)
+									value: truncStr(ch.innerHTML, opts.textLength, 'Description of diagram with id ' + diagram.id)
 								});
 								break;
 							case 'properties':
 								// custom properties:
-								storeOtherProperties(ch, diag);
+								storeOtherProperties(ch, diagram);
 								break;
 							case 'node':
 								// A node is the *graphical* representation of an Element, Note or VisualGroup;
@@ -376,10 +386,10 @@ function Archimate2Specif(xmlString, opts) {
 								// only Relationships have an attribute 'relationshipRef'.
 								let refId = ch.getAttribute('relationshipRef');
 								if (refId)
-									addStaIfNotListed({
-										id: "S-" + simpleHash("SC-shows" + dId + refId),
+									addStatementIfNotListed({
+										id: "S-" + simpleHash("SC-shows" + diagramId + refId),
 										class: "SC-shows",
-										subject: dId,
+										subject: diagramId,
 										object: refId,
 										changedAt: opts.fileDate
 									})
@@ -420,14 +430,14 @@ function Archimate2Specif(xmlString, opts) {
 					};
 				};
 
-				diag.properties.push({
+				diagram.properties.push({
 					class: "PC-Type",
 					value: opts.strDiagramType
 				});
 				// Store the Archimate viewpoint:
 				let vp = vi.getAttribute('viewpoint');
 				if (vp)
-					diag.properties.push({
+					diagram.properties.push({
 						class: "PC-Notation",
 						value: vp
 					});
@@ -435,8 +445,8 @@ function Archimate2Specif(xmlString, opts) {
 				// ToDo: Add image reference to the diagram resource (but we need to export/find the image, first);
 				//       so far, we must add them manually after import. 
 
-				model.resources.push(diag);
-				diagramsDefinedButNotYetReferencedInHierarchy.push(dId);
+				model.resources.push(diagram);
+				diagramsDefinedButNotYetReferencedInHierarchy.push(diagramId);
 			};
 		}
 	);
@@ -597,7 +607,7 @@ function Archimate2Specif(xmlString, opts) {
 							break;
 						case 'ReadWrite':
 						case 'Access':
-							s['class'] = "SC-stores";
+							s['class'] = idStatementClassAccesses;
 					};
 					break;
 				case 'Serving':
@@ -663,7 +673,7 @@ function Archimate2Specif(xmlString, opts) {
 					class: "PC-Type",
 					value: opts.strNamespace + ty
 				});
-				addStaIfNotListed(s);
+				addStatementIfNotListed(s);
 			}
 			else {
 				// Archimate (or at least the tool Archi) allows relations from or to a relation;
@@ -683,16 +693,16 @@ function Archimate2Specif(xmlString, opts) {
 	// graphicallyContainsL holds pairs of contains and shows statements:
 	graphicallyContainsL.forEach(
 		(stPair) => {
-			let equivalentRel = addStaIfNotListed(stPair.contains);
+			let equivalentRel = addStatementIfNotListed(stPair.contains);
 			if (equivalentRel) {
 				// there is already an explicit, but potentially hidden statement, for example one of the 'unites' relations
 				// including realization, composition, aggregation and assignment (the relation may or may not be explicitly shown)
 				// So check, whether it has already a shows relation:
 				stPair.shows.object = equivalentRel.id;
-				addStaIfNotListed(stPair.shows);
+				addStatementIfNotListed(stPair.shows);
 			}
 			else {
-				addStaIfNotListed(stPair.shows);
+				addStatementIfNotListed(stPair.shows);
 				console.info('Added an implicit \'contains\' statement with subject="' + stPair.contains.subject
 					+ '" and object="' + stPair.contains.object + '".');
 			};
@@ -764,7 +774,7 @@ function Archimate2Specif(xmlString, opts) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-//	console.debug('Archimate',model);
+	console.debug('Archimate',model);
 	return model;
 
 
@@ -957,7 +967,7 @@ function Archimate2Specif(xmlString, opts) {
 				changedAt: opts.fileDate
 			};
 			// sort resources according to their type:
-			let idx = [idResourceClassActor,idResourceClassState,idResourceClassEvent,idResourceClassCollection].indexOf( r['class'] );
+			let idx = opts.modelElementClasses.indexOf( r['class'] );
 			if( idx>-1 )
 				nodeL[0].nodes[1].nodes[idx].nodes.push(nd)
 		}); */
@@ -1116,7 +1126,7 @@ function Archimate2Specif(xmlString, opts) {
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassDiagram],
-		//?	objectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection, "SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-isSpecializationOf", "SC-serves", "SC-influences", "SC-isAssociatedWith" ],
+		//?	objectClasses: opts.modelElementClasses.concat(["SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-isSpecializationOf", "SC-serves", "SC-influences", "SC-isAssociatedWith" ]),
 			changedAt: opts.fileDate
 		},{
 			id: "SC-contains",
@@ -1124,8 +1134,8 @@ function Archimate2Specif(xmlString, opts) {
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"], // may hold sub-type UML:Composition or UML:Aggregation
-			subjectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
-			objectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+			subjectClasses: opts.modelElementClasses,
+			objectClasses: opts.modelElementClasses,
 			changedAt: opts.fileDate
 		},{
 			id: "SC-writes",
@@ -1146,8 +1156,8 @@ function Archimate2Specif(xmlString, opts) {
 			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
 		},{
-			id: "SC-stores",
-			title: "SpecIF:stores",
+			id: "SC-accesses",
+			title: "SpecIF:accesses",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1184,8 +1194,8 @@ function Archimate2Specif(xmlString, opts) {
 			title: "SpecIF:isAssignedTo",
 			description: "Statement: The allocation of responsibility, performance of behavior, or execution",
 			instantiation: ["auto"],
-		//?	subjectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent],
-		//?	objectClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent],
+		//?	subjectClasses: opts.modelElementClasses,
+		//?	objectClasses: opts.modelElementClasses,
 			changedAt: opts.fileDate */
 		},{ 
 			id: "SC-isSpecializationOf",
@@ -1257,7 +1267,7 @@ function Archimate2Specif(xmlString, opts) {
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
 			subjectClasses: ["RC-Note"],
-			objectClasses: [idResourceClassDiagram, idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+			objectClasses: [idResourceClassDiagram].concat(opts.modelElementClasses),
 			changedAt: opts.fileDate  */
 		}]
 	}
@@ -1312,7 +1322,7 @@ function Archimate2Specif(xmlString, opts) {
 				&& s.object==item.id ) return true
 		return false;	
 	}
-	function addStaIfNotListed(st) {
+	function addStatementIfNotListed(nS) {
 		// There is a special case: When a principle realizes a goal and the principle is
 		// graphically contained in the goal, there are two 'contains' relationships in
 		// the opposite direction, thus contradictory.
@@ -1321,15 +1331,15 @@ function Archimate2Specif(xmlString, opts) {
 		// This is OK, because the first entry is based on an explicit relation and
 		// an entry based on graphical analysis is added later.
 		for( var s of model.statements ) 
-			if(		s["class"] == st["class"]
+			if(		s["class"] == nS["class"]
 				&&	(
-						s.subject == st.subject && s.object == st.object
-					|| s.subject == st.object && s.object == st.subject
+						s.subject == nS.subject && s.object == nS.object
+					|| s.subject == nS.object && s.object == nS.subject
 					)
 			)
 				return s;
 		// not found, so add:
-		model.statements.push( st );
+		model.statements.push( nS );
 	//	return undefined
 	}
 	function addPropertyClassRefToResourceClassIfNotListed(rCId, pCId) {
