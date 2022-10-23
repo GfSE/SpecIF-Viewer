@@ -369,6 +369,14 @@ function Archimate2Specif(xmlString, opts) {
 								storeOtherProperties(ch, diagram);
 								break;
 							case 'node':
+								// A node is the *graphical* representation of an Element, Note or VisualGroup;
+								// so it is not stored as a SpecIF resource.
+								// However, any implicit relationships through graphical containment 
+								// will be discovered and stored, here:
+								storeShowsAndContainsStatements(ch);
+								// Some tools like ADOIT export a flat list of nodes, so the coordinates must be analysed further down:
+								nodeL.push(ch);
+								break;
 							case 'connection':
 								// A connection is the *graphical* representation of a shown relationship;
 								// so it is not stored as a SpecIF statement.
