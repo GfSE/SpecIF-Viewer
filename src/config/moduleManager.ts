@@ -564,11 +564,11 @@ var app:IApp,
 		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/jqtree.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/tree.jquery.js' ); return true;
 				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js' ); return true;
+				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js' ); return true;
 				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js' ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@8.8.3/dist/bpmn-viewer.production.min.js' ); return true;
+				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js' ); return true;
+				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@10.2.1/dist/bpmn-viewer.production.min.js' ); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
 											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
 		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;

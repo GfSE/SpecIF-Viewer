@@ -1307,11 +1307,13 @@ function Archimate2Specif(xmlString, opts) {
 		return "";
 	}
 	function truncStr(orig, mxLen, errT) {
-		if (orig && orig.length > mxLen) {
+		// ADOIT adds single spaces to empty lines causing trouble for the markdown parser:
+		let str = orig.replace(/^\s\n/gm,'\n');
+		if (str && str.length > mxLen) {
 			console.warn(errT + ' has been truncated because it is too long');
-			return orig.slice(0, mxLen)
+			return str.slice(0, mxLen)
 		};
-		return orig;
+		return str;
 	}
 	function isShown(item) {
 		// Some Archimate structural relationships ("uniting") can be implicit and are accepted:
