@@ -947,7 +947,9 @@ String.prototype.makeHTML = function(opts?:any):string {
 		//	.replace(/(?:<<|&lt;&lt;)/g, '&#xAB;')   // &laquo;
 		//	.replace(/(?:>>|&gt;&gt;)/g, '&#xBB;')  // &raquo;
 			.replace(/--(?:&gt;|>)/g, '&#8594;')   // &rarr;
-			.replace(/(?:&lt;|<)--/g, '&#8592;');  // &larr;
+			.replace(/(?:&lt;|<)--/g, '&#8592;')  // &larr;
+			.replace(/(?:&reg|\(R\))/g, '&#174;')  // registered;
+			.replace(/(?:&copy|\(C\))/g, '&#169;');  // copyright;
 		/*	// Dont't convert markdown, if the text begins and ends with a XHTML tag:
 			if( /^\s*<.+>\s*$/.test(str) )
 				return newS; */
@@ -1434,6 +1436,8 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): stri
 }
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+// also see: https://gist.github.com/iperelivskiy/4110988
+// also see: https://www.partow.net/programming/hashfunctions/index.html
 function simpleHash(str: string): number {
 	for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
 	return r

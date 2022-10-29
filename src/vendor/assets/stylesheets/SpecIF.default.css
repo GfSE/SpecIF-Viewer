@@ -1,10 +1,12 @@
 /* 	CSS for SpecIF Web-Apps.
 	Defines own CSS classes and overrides certain classes of Bootstrap and other libs.
 	Intended to be replaced with a custom file;
-	it is recommended to use a different name and to change path and name in config-XX.js.
-	(C)copyright 2010-2018 enso managers gmbh (http://enso-managers.de)
+	it is recommended to use a different name and to change path and name in definitions.ts.
+	(C)copyright since 2010 enso managers gmbh (http://enso-managers.de)
 	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to support@reqif.de
+	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	Notes:
 	- #4A8C00 SpecIF dark green
@@ -47,22 +49,28 @@ body {
 }
 .pageTitle {
 	font-size: 180%;
-	padding: 0 0 0.3em;
+	margin: 0 0 0.2em;
 }
-.title1,
-.chapterTitle {
+.chapterTitle,
+h1 {
 	font-size: 160%;
-	padding: 0.6em 0 0.4em;
+	margin: 0.6em 0 0.2em;
 }
-.title2,
-.objectTitle {
-	font-size: 130%;
-	padding: 0.4em 0 0.4em;
+.objectTitle,
+h2 {
+	font-size: 140%;
+	margin: 0.4em 0 0.2em;
 }
-.title3,
-.attributeTitle {
-	font-size: 115%;
-	padding: 0.2em 0 0.4em;
+h3 {
+	font-size: 120%;
+	margin: 0.2em 0 0.2em;
+}
+h4 {
+	font-size: 110%;
+	margin: 0 0 0.2em;
+}
+h5, p, ul, ol {
+	margin: 0 0 0.2em;
 }
 .notice-default {
 	font-style:italic;
@@ -78,10 +86,6 @@ body {
 .notice-danger {
 	font-style:italic;
 	color: #a94442;
-}
-p, ul, ol {
-	margin-top: 0;
-	margin-bottom: 8px;
 }
 div.noOverflow {
     height: 100%;

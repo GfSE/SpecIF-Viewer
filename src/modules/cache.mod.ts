@@ -3467,14 +3467,14 @@ moduleManager.construct({
 
 		return true
 	};
-	self.create = (prj: SpecIF, opts: any): JQueryDeferred<void> => {
+	self.create = (dta: SpecIF, opts: any): JQueryDeferred<void> => {
 		// in this implementation, delete existing projects to save memory space:
 		self.projects.length = 0;
 		self.data.clear();
 		// append a project to the list:
 		self.projects.push(new CProject(self.data));
 		self.selectedProject = self.projects[self.projects.length - 1];
-		return self.selectedProject.create(prj, opts);
+		return self.selectedProject.create(dta, opts);
 	};
 	/*	self.update = (prj:SpecIF, opts:any ) => {
 			if (!prj) return;

@@ -583,7 +583,7 @@ moduleManager.construct({
 	}
 
 	function addEnumValueFilters(def: IFilterDefinition): void {
-		// def is like {category: 'enumValue', rCk: resourceClass-key, pCk: propertyClass-key, selected: ['title1','title2']}
+		// def is like {category: 'enumValue', rCk: resourceClass-key, pCk: propertyClass-key, selected: ['chapterTitle','objectTitle']}
 //		console.debug( 'addEnumValueFilters', def );
 
 			function allEnumValues(pC: SpecifPropertyClass, vL: SpecifId[]) {
@@ -699,7 +699,7 @@ moduleManager.construct({
 
 			function addResourceClassFilter( pre?:any ):void {
 				// Add a filter with a checkbox for each 'resourceClass',
-				// pre is a resource with filter settings like {category: 'resourceClass', options: ['title1','title2']}
+				// pre is a resource with filter settings like {category: 'resourceClass', options: ['chapterTitle','objectTitle']}
 				//				console.debug( 'addResourceClassFilter', pre );
 				var oTF: IFilter = {   // the primary filter criterion 'resource type'
 						title: i18n.TabSpecTypes,
