@@ -453,6 +453,7 @@ class CSpecIF implements SpecIF {
 			// resources must have a title, but statements may come without:
 			if (iE.title)
 				oE.title = LIB.cleanValue(iE.title);
+
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.properties && iE.properties.length > 0)
 				oE.properties = LIB.forAll(iE.properties, (e: any): Property => { return p2int(e) });

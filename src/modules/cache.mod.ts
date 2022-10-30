@@ -2013,11 +2013,24 @@ class CProject {
 		// Sort out most cases with minimal computing;
 		// assuming that the types have already been consolidated:
 		let dta = this.data;
-		if (r.title != n.title || resClassTitleOf(r, dta) != resClassTitleOf(n, dta))
+		if (resClassTitleOf(r, dta) != resClassTitleOf(n, dta))
 			return false;
 
-		// Here, both resources have equal titles and class-titles:
+		if (r.title && n.title) {
+			if (r.title != n.title)
+				return false;
+		}
+		else {
+			let opts = {
+				lookupLanguage: true,
+				targetLanguage: browser.language,
+				lookupTitles: true
+			};
+			if (elementTitleOf(r, opts) != elementTitleOf(n, opts))
+				return false;
+		};
 
+		// Here, both resources have equal titles and class-titles:
 		// Only a genuine title will be considered truly equal, but not a default title
 		// being equal to the content of property CONFIG.propClassType is not considered equal
 		// (for example BPMN endEvents which don't have a genuine title):
@@ -2725,7 +2738,7 @@ function titleIdx(pL: Property[], dta?: SpecIF): number {
 	};
 	return -1;
 }
-function elementTitleOf(el: Resource | Statement, opts?:any, dta?:SpecIF): string {
+function elementTitleOf(el: Resource | Statement, opts:any, dta?:SpecIF): string {
 	// Get the title of a resource or a statement;
 	// ... from the properties or a replacement value in case of default.
 	// 'el' is an original element without 'classifyProps()'.
