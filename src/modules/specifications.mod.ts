@@ -2103,6 +2103,7 @@ moduleManager.construct({
 
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
+		opts.lookupLanguage = !!browser.language;
 		opts.targetLanguage = self.targetLanguage = browser.language;
 		opts.lookupTitles = self.lookupTitles = true;
 	//	opts.revisionDate = new Date().toISOString();

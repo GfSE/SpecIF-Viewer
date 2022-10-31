@@ -1264,7 +1264,12 @@ class CProject {
 					// List only resources which are shown on a referenced diagram:
 					let resL = resources.filter((r) => { return indexBy(staL, 'object', r.id) > -1 });
 					// in alphanumeric order:
-					LIB.sortByTitle(resL);
+					LIB.sortBy(
+						resL,
+						(e) => {
+							return languageValueOf(e.title, { lookupLanguage: true, targetLanguage: browser.language })
+						}
+					);
 					// ToDo: consider to sort by the title property via elementTitleOf()
 
 					// Categorize resources:
@@ -2024,7 +2029,7 @@ class CProject {
 			let opts = {
 				lookupLanguage: true,
 				targetLanguage: browser.language,
-				lookupTitles: true
+				lookupTitles: false
 			};
 			if (elementTitleOf(r, opts) != elementTitleOf(n, opts))
 				return false;
@@ -2604,34 +2609,6 @@ function titleOf( item, opts?:any ):string {
 //	console.debug('titleOf',item,opts,ti);
 	if( ti ) return opts&&opts.lookupTitles? i18n.lookup(ti) : ti;
 //	return undefined
-}
-function languageValueOf( val, opts?:any ):string|undefined {
-	// Return the value in the specified target language .. or the first value in the list by default.
-	// 'val' can be a string or a multi-language object;
-	// if opts.lookupLanguage is not true, keep all language options:
-	if( typeof(val)=='string' || !(opts&&opts.lookupLanguage) ) return val;
-	// The value may be undefined:
-	if( val==undefined ) return;
-	if( !Array.isArray(val) ) {
-		// neither a string nor an array is a programming error:
-		throw Error("Invalid value: '"+val+"'");
-	};
-
-	let lVs = val.filter( (v):boolean =>{
-		return opts.targetLanguage == v.language
-	});
-	// lVs should have none or one elements; any additional ones are simply ignored:
-	if( lVs.length>0 ) return lVs[0].text;
-
-	// next try a little less stringently:
-	lVs = val.filter( (v):boolean =>{
-		return opts && opts.targetLanguage && (opts.targetLanguage.slice(0,2) == v.language.slice(0,2));
-	});
-	// lVs should have none or one elements; any additional ones are simply ignored:
-	if( lVs.length>0 ) return lVs[0].text;
-
-	// As a final resourt take the first element in the original list of values:
-	return val[0].text;
 }
 LIB.hasContent = ( pV:string ):boolean =>{
 	// must be a string with the value of the selected language.

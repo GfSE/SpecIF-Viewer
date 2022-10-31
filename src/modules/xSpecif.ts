@@ -450,9 +450,6 @@ class CSpecIF implements SpecIF {
 		// common for all instances:
 		function a2int(iE:any): Instance {
 			var oE = i2int(iE), eC;
-			// resources must have a title, but statements may come without:
-			if (iE.title)
-				oE.title = LIB.cleanValue(iE.title);
 
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.properties && iE.properties.length > 0)
@@ -499,6 +496,14 @@ class CSpecIF implements SpecIF {
 					// no title is required in case of statements; it's class' title applies by default:
 					value: oE.title
 				});
+			};
+
+			// resources must have a title, but statements may come without:
+			if (iE.title)
+				oE.title = LIB.cleanValue(iE.title)
+			else {
+				if (!iE.subject)
+					oE.title = valByTitle(oE, CONFIG.propClassTitle, self);
 			};
 
 //			console.debug('a2int',iE,simpleClone(oE));

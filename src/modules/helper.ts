@@ -434,6 +434,34 @@ function itemBy(L:any[], p:string, s:string ):any {
 			if( L[i][p]==s ) return L[i];   // return list item
 	};
 }
+function languageValueOf(val, opts?: any): string | undefined {
+	// Return the value in the specified target language .. or the first value in the list by default.
+	// 'val' can be a string or a multi-language object;
+	// if opts.lookupLanguage is not true, keep all language options:
+	if (typeof (val) == 'string' || !(opts && opts.lookupLanguage)) return val;
+	// The value may be undefined:
+	if (val == undefined) return;
+	if (!Array.isArray(val)) {
+		// neither a string nor an array is a programming error:
+		throw Error("Invalid value: '" + val + "'");
+	};
+
+	let lVs = val.filter((v): boolean => {
+		return opts.targetLanguage == v.language
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if (lVs.length > 0) return lVs[0].text;
+
+	// next try a little less stringently:
+	lVs = val.filter((v): boolean => {
+		return opts && opts.targetLanguage && (opts.targetLanguage.slice(0, 2) == v.language.slice(0, 2));
+	});
+	// lVs should have none or one elements; any additional ones are simply ignored:
+	if (lVs.length > 0) return lVs[0].text;
+
+	// As a final resourt take the first element in the original list of values:
+	return val[0].text;
+}
 LIB.containsAll = (rL: string[], nL: string[]): boolean =>{
 	for (var i = nL.length - 1; i > -1; i--)
 		if (rL.indexOf(nL[i]) < 0) return false;
@@ -469,11 +497,11 @@ LIB.cmp = ( i:string, a:string ):number =>{
 	a = a.toLowerCase();
 	return i==a? 0 : (i<a? -1 : 1);
 }
-LIB.sortByTitle = ( L:any ):void =>{
+/*LIB.sortByTitle = ( L:any ):void =>{
 	L.sort( 
 		(bim,bam)=>{ return LIB.cmp( bim.title, bam.title ) }
 	);
-}
+} */
 LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
 	L.sort( 
 		(bim, bam) => { return LIB.cmp( fn(bim), fn(bam) ) }
