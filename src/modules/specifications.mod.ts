@@ -2275,7 +2275,7 @@ moduleManager.construct({
 											case TypeEnum.XHTML:	
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if( refPatt.test( p.value ) && notListed( staL, selR, refR ) ) {
+												if (refPatt.test( languageValueOf(p.value, opts) ) && notListed( staL, selR, refR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
@@ -2295,7 +2295,7 @@ moduleManager.construct({
 											case TypeEnum.XHTML:	
 												// add, if the selected resource's title appears in the iterated resource's property ..
 												// and if it is not yet listed:
-												if( selPatt.test( p.value ) && notListed( staL,refR,selR ) ) {
+												if (selPatt.test( languageValueOf(p.value, opts) ) && notListed( staL,refR,selR ) ) {
 													staL.push({
 														title: 	CONFIG.staClassMentions,
 											//			class:	// no class indicates also that the statement cannot be deleted
