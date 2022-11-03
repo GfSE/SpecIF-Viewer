@@ -452,8 +452,17 @@ class CSpecIF implements SpecIF {
 			var oE = i2int(iE), eC;
 
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
+
 			if (iE.properties && iE.properties.length > 0)
 				oE.properties = LIB.forAll(iE.properties, (e: any): Property => { return p2int(e) });
+
+			// resources must have a title, but statements may come without:
+			if (iE.title)
+				oE.title = LIB.cleanValue(iE.title)
+			else {
+				if (!iE.subject)
+					oE.title = valByTitle(oE, CONFIG.propClassTitle, self);
+			};
 
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
@@ -498,14 +507,6 @@ class CSpecIF implements SpecIF {
 				});
 			};
 
-			// resources must have a title, but statements may come without:
-			if (iE.title)
-				oE.title = LIB.cleanValue(iE.title)
-			else {
-				if (!iE.subject)
-					oE.title = valByTitle(oE, CONFIG.propClassTitle, self);
-			};
-
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
@@ -514,7 +515,7 @@ class CSpecIF implements SpecIF {
 					if (Array.isArray(el.properties))
 						for (var i = el.properties.length - 1; i > -1; i--) {
 							let ti = propTitleOf(el.properties[i], self);
-							if (CONFIG.titleProperties.indexOf(ti) > -1)
+							if (CONFIG.titleProperties.includes(ti))
 								// SpecIF assumes that any title property *replaces* the element's title,
 								// so we just look for the case of *no* title property.
 								// There is no consideration of the content.
@@ -529,7 +530,7 @@ class CSpecIF implements SpecIF {
 				if (el.description) {
 					if (Array.isArray(el.properties))
 						for (var i = el.properties.length - 1; i > -1; i--) {
-							if (CONFIG.descProperties.indexOf(propTitleOf(el.properties[i], self)) > -1)
+							if (CONFIG.descProperties.includes(propTitleOf(el.properties[i], self)))
 								// SpecIF assumes that any description property *replaces* the resource's description,
 								// so we just look for the case of a resource description and *no* description property.
 								// There is no consideration of the content.
