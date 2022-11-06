@@ -820,9 +820,7 @@ LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 		L.push(e);
 		return L.length - 1;
 	};
-	// update, if newer:
-//	if ( L[n].changedAt && e.changedAt && new Date(L[n].changedAt)<new Date(e.changedAt) )
-		L[n] = e;
+	L[n] = e;
 	return n;
 }
 LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
@@ -1367,6 +1365,7 @@ LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCac
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], pCs: SpecifPropertyClass[]): SpecifValues => {
 	// Return the values of a resource's (or statement's) property with a title listed in pNs:
+	// ToDo: return the class's default value, if available.
 //	console.debug('valuesByTitle',dta,itm,pN);
 	if (itm.properties) {
 		let pC;
@@ -1462,9 +1461,9 @@ function simpleClone(o: any): any {
 			for (var p in o) {
 				if (Array.isArray(o[p])) {
 					n[p] = [];
-					o[p].forEach((op: any) => {
-						n[p].push(cloneProp(op));
-					});
+					o[p].forEach(
+						(op: any) => { n[p].push(cloneProp(op)); }
+					);
 					continue;
 				};
 				// else

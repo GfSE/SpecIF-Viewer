@@ -542,13 +542,17 @@ class CProject {
 						// collect the resourceClasses referenced by the resources of this project:
 						// start with the stored resourceClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
-						let rCL: SpecifKey[] = [].concat(this.resourceClasses);
+						let rCL: SpecifKey[] = [].concat(this.resourceClasses),
+							rcLen = this.resourceClasses.length;
 						// add those actually used by the project - avoiding duplicates, of course;
 						// in fact, this shouldn't happen:
 						for( var r of exD.resources ) {
 							// assuming all used classes have the same revision
 							LIB.cacheE(rCL, r['class']);
-							console.warn('Project with id '+this.id+' references a resource with id '+r.id+', which has a resourceClass not memorized in the project.');
+							if (rcLen < rCL.length) {
+								console.warn('Project with id ' + this.id + ' references a resource with id ' + r.id + ', which has a resourceClass not memorized in the project.');
+								rcLen = rCL.length;
+							};
 						};
 //						console.debug('3', simpleClone(exD), rCL);
 						return this.readItems('resourceClass', rCL, opts);
@@ -560,13 +564,17 @@ class CProject {
 						// collect the statementClasses referenced by the resources of this project:
 						// start with the stored statementClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
-						let sCL: SpecifKey[] = [].concat(this.statementClasses);
+						let sCL: SpecifKey[] = [].concat(this.statementClasses),
+							scLen = this.statementClasses.length;
 						// add those actually used by the project - avoiding duplicates, of course;
 						// in fact, this shouldn't happen:
 						for (var s of exD.statements ) {
 							// assuming all used classes have the same revision
 							LIB.cacheE(sCL, s['class']);
-							console.warn('Project with id ' + this.id + ' references a statement with id ' + s.id + ', which has a statementClass not memorized in the project.');
+							if (scLen < sCL.length) {
+								console.warn('Project with id ' + this.id + ' references a statement with id ' + s.id + ', which has a statementClass not memorized in the project.');
+								scLen = sCL.length;
+							};
 						};
 //						console.debug('4', simpleClone(exD), sCL);
 						return this.readItems('statementClass', sCL, opts);
@@ -781,7 +789,8 @@ class CProject {
 									self.substituteR(newD, existR, newR, { rescueProperties: true });
 
 									// Memorize the replaced id, if not yet listed:
-									if (!Array.isArray(existR.alternativeIds)) existR.alternativeIds = [];
+									if (!Array.isArray(existR.alternativeIds))
+										existR.alternativeIds = [];
 									LIB.cacheE(existR.alternativeIds, {id:newR.id,revision:newR.revision,project:newD.id});
 
 									return;

@@ -7,28 +7,26 @@
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de
 	License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
-	
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+    .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+
 	Limitations:
-	- Accepts data-sets according to SpecIF v0.10.8 and later.
+	- Accepts data-sets according to SpecIF v1.0.
 	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
-	- There must only be one revision per resource or statement
+	- There must only be one revision per class, resource or statement
 */
 
 function toOxml( data, opts ) {
 	"use strict";
 
-	// Reject versions < 0.10.8:
+	// Reject versions < 1.0:
 	if( data.specifVersion ) {
-		let v = data.specifVersion.split('.'),
-			eTxt = "SpecIF Version < v0.10.8 is not supported.";
-		if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
-			if (typeof(opts.fail)=='function' )
-				opts.fail({status:904,statusText:eTxt});
-			else
-				console.error(eTxt);
-			return;
-		};
+		let eTxt = "SpecIF Version < v1.0 is not supported.";
+		if (typeof(opts.fail)=='function' )
+			opts.fail({status:904,statusText:eTxt});
+		else
+			console.error(eTxt);
+		return;
 	};
 	
 	// Check for missing options:
@@ -175,7 +173,7 @@ function toOxml( data, opts ) {
 			if( opts.addTitleLinks )
 				var reTitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, '' );
 			
-			if( !Array.isArray(opts.hierarchyRoots) ) opts.hierarchyRoots = ['SpecIF:Outline','SpecIF:HierarchyRoot','SpecIF:Hierarchy','SpecIF:BillOfMaterials'];
+		//	if (!Array.isArray(opts.hierarchyRoots)) opts.hierarchyRoots = ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'];
 			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
 			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];
 			// if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
@@ -217,9 +215,10 @@ function toOxml( data, opts ) {
 				+	')',
 				reRun = new RegExp(reR,'g');
 			// Regex to isolate text fragments within a run:
-			const reT = '(.*?)(<br ?/>)',
-				reText = new RegExp(reT,'g'),
-				nbsp = '&#160;'; // non-breakable space
+			const
+				nbsp = '&#160;', // non-breakable space
+				reT = '(.*?)(<br ?/>)',
+				reText = new RegExp(reT, 'g');
 			
 			// All required parameters are available, so we can begin:
 			var oxml = {
@@ -228,18 +227,28 @@ function toOxml( data, opts ) {
 					relations: []
 				};
 			
+			// Create the title:
+			let ti = stripHtml(languageValueOf(data.title));
+			oxml.sections.push(
+				wParagraph({ text: ti, format: { heading:0 } })
+			);
+
 			// For each SpecIF hierarchy, create the paragraphs and add them as subsequent section:
-			data.hierarchies.forEach( function(h) {
-				oxml.sections.push(
-					renderHierarchy( h, opts )
-				);
-			});
+			data.hierarchies.forEach(
+				(h) => {
+					oxml.sections.push(
+						renderHierarchy( h, opts )
+					);
+				}
+			);
 //			console.debug('oxml result',oxml);
 			return oxml;
 			
 			// ---------------
 			function titleOf( itm, pars, opts ) { // resource, parameters, options
-				// render the resource or statement title
+				// return the resource or statement title
+				// - prepared for OXML export
+				// - or as text for further processing (if pars.level is not a number)
 
 				// First, find and set the configured title:
 				let a = titleIdx( itm.properties ), ti;
@@ -258,7 +267,7 @@ function toOxml( data, opts ) {
 				
 				// if itm has a 'subject', it is a statement:
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
-					eC = itemById( cL, itm['class'] );
+					eC = itemById(cL, itm['class']);
 				
 				// lookup titles only, if it is 
 				// - a resource used as heading or 
@@ -277,18 +286,15 @@ function toOxml( data, opts ) {
 					// It is a regular model element:
 					return ti;  // return raw text
 
-				if( pars.level<1 )
-					// It is a heading:
-					return wParagraph( {text: ti, format:{ title:true }} );
-
-				// else: It is a heading:
+				// else: Return a paragraph in internal representation:
+				// SpecIF title has lvl=0,
 				// SpecIF headings are chapter level 2, all others level 3:
-				let lvl = pars.level==1? 1 : (eC.isHeading? 2:3);
+				let lvl = pars.level < 2 ? pars.level : (eC.isHeading? 2:3);
 				// all titles get a bookmark, so that any titleLink has a target:
 				return wParagraph( {text: ti, format:{ heading:lvl, bookmark:pars.nodeId }} );
 				
 				function titleIdx( aL ) {
-					// Find the index of the property to be used as title.
+					// Find the index of the property to be used as resource or statement title.
 					// The result depends on the current user - only the properties with read permission are taken into consideration
 					if( Array.isArray( aL ) )
 						for( var a=0,A=aL.length;a<A;a++ ) {
@@ -485,9 +491,6 @@ function toOxml( data, opts ) {
 						};
 				//	return undefined;
 				}
-			}
-			function propertyClassOf( pCid ) {
-				return itemById(data.propertyClasses,pCid)
 			}
 			function propertiesOf( r, opts ) {
 				// return the values of all resource's properties as oxml:
@@ -1019,7 +1022,8 @@ function toOxml( data, opts ) {
 					// The second transformation step will be done in generateOxml().
 //					console.debug('propertyValueOf',prp,'"',prp.value,'"');
 					if(prp['class']) {
-						let dT = itemById( data.dataTypes, propertyClassOf( prp['class']).dataType );
+						let pC = itemById(data.propertyClasses, prp['class']),
+							dT = itemById(data.dataTypes, pC.dataType);
 						switch( dT.type ) {
 							case opts.dataTypeEnumeration:
 								let ct = '',
@@ -1098,17 +1102,13 @@ function toOxml( data, opts ) {
 				// Iterate a single hierarchy below nd and generate OOXML from the referenced objects;
 				// is called in an outer loop processing all items of the hierarchyRoots folder.
 				
-				// The title and description of the project are ignored;
-				// it is assumed that the hierarchy contains the project title as first node.
-				// ToDo: This behaves differently here than in the browser and other exporters.
-				//       - Among other aspects, opts.hierarchyRoots is not like CONFIG.hierarchyRoots.
-				//       - It may happen that a document will get a title per hierarchy.
-				let r = itemById( data.resources, nd.resource ),
-					rC = itemById( data.resourceClasses, r['class'] ),
+				let r = itemById(data.resources, nd.resource),
+			//		rC = itemById(data.resourceClasses, r['class']),
 					// Is the hierarchyRoot a title or a heading?
 					// lvl==0: title; lvl>0: heading
-					lvl = ( opts.hierarchyRoots.indexOf( valByTitle(r,opts.typeProperty,data) )>-1
-							|| rC && opts.hierarchyRoots.indexOf( rC.title )>-1)? 0 : 1;
+					lvl = 1;
+			/*		lvl = ( opts.hierarchyRoots.includes( valByTitle(r,opts.typeProperty,data) )
+							|| rC && opts.hierarchyRoots.includes( rC.title ))? 0 : 1; */
 				return renderNode( nd, lvl );
 				
 				function renderNode( nd, lvl ) {
@@ -1122,7 +1122,7 @@ function toOxml( data, opts ) {
 							nodeId: nd.id
 						};
 						
-					var ch = 	titleOf( r, params, opts )
+					var ch = titleOf(r, params, opts)
 							+	propertiesOf( r, opts )
 							+	statementsOf( r, opts );
 
@@ -1153,6 +1153,7 @@ function toOxml( data, opts ) {
 				// - align == 'both'|'center'|'end' (default:'start')
 				// - hyperlink to an internal 'bookmark'
 				// - bookmark
+				// - heading, where 0->tile and >0 heading levels until maxHeading
 				let p = '';
 				if( ct.text || ct.picture ) {
 					// ct is an object with property 'text' and individual formatting options ... or a picture.
@@ -1184,7 +1185,7 @@ function toOxml( data, opts ) {
 							lvl = parseInt(fmt.heading,10),
 							pr = '';
 
-						if( fmt.title )
+						if (typeof (lvl) == 'number' && lvl < 1 )
 							pr += '<w:pStyle w:val="title"/>';
 						else if( typeof(lvl)=='number' && lvl>0 ) 
 							pr += '<w:pStyle w:val="heading'+Math.min(lvl,maxHeading)+'" />';
@@ -1424,31 +1425,30 @@ function toOxml( data, opts ) {
 			}
 		}  // end of 'createText'
 
-	// Start processing 'createOxml':	
-//	console.debug('createOxml',data);
-	let i=null, I=null, 
-		file = createText( data, opts );
+		// Start processing 'createOxml':	
+		console.debug('createOxml',data);
+		let file = createText( data, opts );
 
-	file.name = opts.fileName || data.title;
-	file.parts = [];
-	
-	file.parts.push( packGlobalRels() );
-	file.parts.push( packRels(file.relations) );
-	file.parts.push( packDoc(file.sections) );
+		file.name = opts.fileName || data.title;
 
-	// picture content section
-//	console.debug('files',data.files,images,file.relations);
-	let pi = null;
-	for(var a=0,A=file.relations.length;a<A;a++) {
-		if( file.relations[a].category=='image' ) {
-			pi = packImg(a+1,file.relations[a]);
-			if(pi) file.parts.push( pi )
-		}
-	};
+		file.parts = [];
+		file.parts.push( packGlobalRels() );
+		file.parts.push( packRels(file.relations) );
+		file.parts.push( packDoc(file.sections) );
 
-	file.content = packFile( file.parts );
-//	console.debug('file',file);
-	store( file );
+		// picture content section
+//		console.debug('files',data.files,images,file.relations);
+		let pi = null;
+		for(var a=0,A=file.relations.length;a<A;a++) {
+			if( file.relations[a].category=='image' ) {
+				pi = packImg(a+1,file.relations[a]);
+				if(pi) file.parts.push( pi )
+			}
+		};
+
+		file.content = packFile( file.parts );
+//		console.debug('file',file);
+		store( file );
 	}  // end of 'createOxml'
 
 	function packGlobalRels() {
@@ -2721,9 +2721,9 @@ function toOxml( data, opts ) {
 		for( var p in o ) {
 			if( Array.isArray(o[p]) ) {
 				n[p] = [];
-				o[p].forEach( function(op) {
-					n[p].push( clonePr(op) )
-				});
+				o[p].forEach(
+					(op) => { n[p].push( clonePr(op) ) }
+				);
 				continue
 			};
 			// else
@@ -2731,29 +2731,33 @@ function toOxml( data, opts ) {
 		};
 		return n
 	}
-	function itemById(L,id) {
-		if(!L||!id) return // undefined;
-		// given the ID of an element in a list, return the element itself:
-//		id = id.trim();
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].id === id ) return L[i];   // return list item
-		return // undefined
-	}
-	function itemByTitle(L,ln) {
-		if(!L||!ln) return;
-		// given a title of an element in a list, return the element itself:
-		for( var i=L.length-1;i>-1;i-- )
-			if( L[i].title==ln ) return L[i];   // return list item
-		return
-	}
-	function indexById(L,id) {
-		if( L && id ) {
+	function indexById(L, key) {
+		if (L && key) {
 			// given an ID of an item in a list, return it's index:
-			id = id.trim();
-			for( var i=L.length-1;i>-1;i-- )
-				if( L[i].id==id ) return i   // return list index 
+			let id = key.id || key;
+		//	id = id.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				if (L[i].id == id) return i   // return list index 
 		};
 		return -1
+	}
+	function itemById(L,key) {
+		if (L && key) {
+			// given the ID of an element in a list, return the element itself:
+			let id = key.id || key;
+		//	id = id.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				if (L[i].id === id) return L[i];   // return list item
+		};
+	//	return undefined
+	}
+	function itemByTitle(L,ln) {
+		if (L && ln) {
+			// given a title of an element in a list, return the element itself:
+			for (var i = L.length - 1; i > -1; i--)
+				if (L[i].title == ln) return L[i];   // return list item
+		};
+	//	return undefined
 	}
 	function forAll( L, fn ) {
 		// return a new list with the results from applying the specified function to all elements of input list L:
@@ -2775,14 +2779,18 @@ function toOxml( data, opts ) {
 	}
 	function prpTitleOf( prp ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
-		return prp.title || itemById(data.propertyClasses,prp['class']).title
+		return itemById(data.propertyClasses, prp['class']).title
 	}
 	function elTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
-		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
+		return (el.subject ? itemById(data.statementClasses, el['class']).title : '')
 	}
-	function valByTitle(itm,pN,prj) {
+	function languageValueOf(val) {
+		// assuming that only the selected language is available:
+		return (typeof (val) == 'string' ? val : val[0].text)
+	}
+/*	function valByTitle(itm,pN,prj) {
 		// Return the value of a resource's (or statement's) property with title pN:
 		// ToDo: return the class's default value, if available.
 		if( itm.properties ) {
@@ -2792,7 +2800,7 @@ function toOxml( data, opts ) {
 			}
 		};
 	//	return undefined
-	}
+	} */
 	function hasContent( str ) {
 		// check whether str has content or a reference:
 		if( !str ) return false;

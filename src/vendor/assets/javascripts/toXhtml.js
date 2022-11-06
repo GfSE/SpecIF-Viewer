@@ -2,9 +2,11 @@ function toXhtml( data, opts ) {
 	"use strict";
 	// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
 	//
-	// Author: se@enso-managers.de
 	// (C) copyright http://enso-managers.de
+	// Author: se@enso-managers.de
 	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	// We appreciate any correction, comment or contribution via e - mail to maintenance@specif.de
+	//	..or even better as Github issue(https://github.com/GfSE/SpecIF-Viewer/issues)
 	//
 	// Limitations:
 	// - HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
@@ -53,7 +55,8 @@ function toXhtml( data, opts ) {
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 //	console.debug('toXhtml',data,opts);
 
-	const nbsp = '&#160;', // non-breakable space
+	const
+	//	nbsp = '&#160;', // non-breakable space
 		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
 	//	RE_tag = new RegExp( tagStr, 'g' ),
 		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' );
@@ -61,11 +64,12 @@ function toXhtml( data, opts ) {
 	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 	// Limitation: the innerHTML may not have any tags.
 	// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-	const reSO = '<object ([^>]+)(/>|>(.*?)</object>)',
-		reSingleObject = new RegExp( reSO, 'g' );
+	const
+		reSO = '<object ([^>]+)(/>|>(.*?)</object>)',
+		reSingleObject = new RegExp( reSO, 'g' ),
 	// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
 	// .. but nothing useful can be done in a WORD file with the outer object ( for details see below in splitRuns() ).
-	const reNO = '<object([^>]+)>[\\s]*'+reSO+'([\\s\\S]*?)</object>',
+		reNO = '<object([^>]+)>[\\s]*' + reSO + '([\\s\\S]*?)</object>',
 		reNestedObjects = new RegExp( reNO, 'g' );
 
 	// All required parameters are available, so we can begin.
@@ -85,15 +89,17 @@ function toXhtml( data, opts ) {
 	
 	// For each SpecIF hierarchy, create a xhtml-file and add it as subsequent section:
 	const firstHierarchySection = xhtml.sections.length;  // index of the next section number
-	data.hierarchies.forEach( function(h,hi) {
-		pushHeading( h.title, {nodeId: h.id, level: 1} );
-		xhtml.sections.push(
-			xhtmlOf({ 
-				title: escapeXML(data.title),
-				body: renderHierarchy( h, hi, 1 )
-			})
-		)
-	});
+	data.hierarchies.forEach(
+		(h, hi) => {
+			pushHeading( h.title, {nodeId: h.id, level: 1} );
+			xhtml.sections.push(
+				xhtmlOf({ 
+					title: escapeXML(data.title),
+					body: renderHierarchy( h, hi, 1 )
+				})
+			)
+		}
+	);
 
 //	console.debug('xhtml',xhtml);
 	return xhtml
@@ -126,7 +132,7 @@ function toXhtml( data, opts ) {
 			
 		// if itm has a 'subject', it is a statement:
 		let cL = itm.subject? data.statementClasses : data.resourceClasses,
-			eC = itemBy( cL, 'id', itm['class'] );
+			eC = itemById( cL, itm['class'] );
 		
 //		console.debug('titleOf 2',itm,ti,eC);
 		// lookup titles only, if it is 
@@ -203,13 +209,13 @@ function toXhtml( data, opts ) {
 			// if we have clustered by title:
 			sTi = opts.lookup( cid );
 		/*	// we don't have (and don't need) the individual statement, just the class:
-			sTi = opts.lookup( itemBy(data.statementClasses,'id',cid).title ); */
+			sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 			// 3 columns:
 			if( sts[cid].subjects.length>0 ) {
 				ct += '<tr><td>';
 				sts[cid].subjects.forEach( function(s) {
-//					console.debug('s',s,itemBy( data.resourceClasses,'id',s['class']))
+//					console.debug('s',s,itemById( data.resourceClasses,s['class']))
 					ct += '<a href="'+anchorOf( s, hi )+'">'+titleOf( s, undefined, opts )+'</a><br/>'
 				});
 				ct += '</td><td class="statementTitle">'+sTi;
@@ -256,14 +262,11 @@ function toXhtml( data, opts ) {
 			return null
 		}
 	}
-	function propertyClassOf( pCid ) {
-		return itemBy(data.propertyClasses,'id',pCid)
-	}
 	function propertiesOf( r, hi, opts ) {
 		// render the resource's properties with title and value as xhtml:
 		// designed for use also by statements.
 
-	//	let rC = itemBy( data.resourceClasses, 'id', r['class'] );
+	//	let rC = itemById( data.resourceClasses, r['class'] );
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
@@ -339,7 +342,7 @@ function toXhtml( data, opts ) {
 				function pushReferencedFile( f ) {
 					if( f && f.blob ) {
 						// avoid duplicate entries:
-						if( indexBy( xhtml.images, 'title', f.title )<0 ) {
+						if( indexByTitle( xhtml.images, f.title )<0 ) {
 							xhtml.images.push({
 								id: 'F-' + simpleHash(f.title),
 							//	id: f.id,
@@ -448,7 +451,7 @@ function toXhtml( data, opts ) {
 						if( ( ti.indexOf('svg')>-1 ) && opts.preferPng )
 							ti = fileName(ti)+'.png';
 						
-						if( pushReferencedFile( itemBy( data.files, 'title', ti )) )
+						if( pushReferencedFile( itemByTitle( data.files, ti )) )
 							return '<img src="'+fileNameWithPath(ti)+'" style="max-width:100%" alt="'+alt+'" />';
 					};
 					// else:
@@ -505,7 +508,8 @@ function toXhtml( data, opts ) {
 			// return the value of a single property:
 //			console.debug('propertyValueOf',prp,hi);
 			if(prp['class']) {
-				let dT = itemBy( data.dataTypes, 'id', propertyClassOf(prp['class']).dataType );
+				let pC = itemById(data.propertyClasses, prp['class']),
+					dT = itemById(data.dataTypes, pC.dataType);
 				switch( dT.type ) {
 					case opts.dataTypeEnumeration:
 						let ct = '',
@@ -513,7 +517,7 @@ function toXhtml( data, opts ) {
 							st = opts.stereotypeProperties.indexOf(prp.title)>-1,
 							vL = prp.value.split(',');  // in case of ENUMERATION, content carries comma-separated value-IDs
 						for( var v=0,V=vL.length;v<V;v++ ) {
-							eV = itemBy(dT.values,'id',vL[v]);
+							eV = itemById(dT.values,vL[v]);
 							// If 'eV' is an id, replace it by title, otherwise don't change:
 							// Add 'double-angle quotation' in case of SubClass values.
 							if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(eV.value)+'&#x00bb;'):opts.lookup(eV.value))
@@ -535,7 +539,7 @@ function toXhtml( data, opts ) {
 		// write a paragraph for the referenced resource:
 	//	if( !nd.nodes || nd.nodes.length<1 ) return '';
 		
-		let r = itemBy( data.resources, 'id', nd.resource ), // the referenced resource
+		let r = itemById( data.resources, nd.resource ), // the referenced resource
 			params={
 				nodeId: nd.id,
 				level: lvl
@@ -569,27 +573,46 @@ function toXhtml( data, opts ) {
 	}
 
 	// ---------- helper -----------
-	function itemBy( L, p, s ) {
-		if( L && p && s ) {
-			// given the ID of an element in a list, return the element itself:
-		//	s = s.trim();
-			for( var i=L.length-1;i>-1;i-- )
-				if( L[i][p]==s ) return L[i];   // return list item
+/*	function indexById(L, key) {
+		if (L && key) {
+			// given an ID of an item in a list, return it's index:
+			let id = key.id || key;
+			//	id = id.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				if (L[i].id == id) return i   // return list index 
 		};
-		return;
+		return -1
+	} */
+	function itemById(L, key) {
+		if (L && key) {
+			// given the ID of an element in a list, return the element itself:
+			let id = key.id || key;
+			//	id = id.trim();
+			for (var i = L.length - 1; i > -1; i--)
+				if (L[i].id === id) return L[i];   // return list item
+		};
+		//	return undefined
 	}
-	function indexBy( L, p, s ) {
-		if( L && p && s ) {
+	function itemByTitle(L, ln) {
+		if (L && ln) {
+			// given a title of an element in a list, return the element itself:
+			for (var i = L.length - 1; i > -1; i--)
+				if (L[i].title == ln) return L[i];   // return list item
+		};
+		//	return undefined
+	}
+	function indexByTitle( L, s ) {
+		if( L && s ) {
 			// Return the index of an element in list 'L' whose property 'p' equals searchterm 's':
 			// hand in property and searchTerm as string !
 			for( var i=L.length-1;i>-1;i-- )
-				if( L[i][p]==s ) return i;
+				if( L[i].title==s ) return i;
 		};
 		return -1;
 	}
 	function prpTitleOf( prp ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
-		return prp.title || itemBy(data.propertyClasses,'id',prp['class']).title
+		return prp.title || itemById(data.propertyClasses,prp['class']).title
 	}
 	function elTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;

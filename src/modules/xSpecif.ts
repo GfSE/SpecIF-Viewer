@@ -566,23 +566,47 @@ class CSpecIF implements SpecIF {
 			//		class: LIB.makeKey(iE.subject ? iE[names.sClass] : iE[names.rClass]),
 					changedAt: iE.changedAt
 				};
-			//	eC = iE.subject ? LIB.itemByKey(self.statementClasses, oE["class"])
-			//					: LIB.itemByKey(self.resourceClasses, oE["class"]);
+			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
+			if (iE.changedBy) oE.changedBy = iE.changedBy;
+
+			let	eC = iE.subject ? LIB.itemByKey(self.statementClasses, LIB.makeKey(iE[names.sClass]))
+								: LIB.itemByKey(self.resourceClasses, LIB.makeKey(iE[names.rClass]));
 
 			// revision is a number up until v0.10.6 and a string thereafter:
 			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			if (iE.replaces) oE.replaces = iE.replaces;
-			if (iE.changedBy) oE.changedBy = iE.changedBy;
 
 			// resources must have a title, but statements may come without:
-			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.properties && iE.properties.length > 0)
 				oE.properties = LIB.forAll(iE.properties, (e: any): SpecifProperty => { return p2int(e) });
 
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
-			// In this case, add a description property to hold the description as required by SpecIF v1.1:
-			if (iE.description && descPropertyMissing(oE)) {
+			// In this case, add a title and description property each to hold the description as required by SpecIF v1.1:
+			[
+				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, dT: "DT-ShortString", pC: "PC-Name"},
+				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, dT: "DT-Text", pC: "PC-Description"}
+			].forEach(
+				(p) => {
+					if (p.nativePrp && propertyMissing(p.tiL,oE)) {
+						// There is an attempt to add the types in every loop ... which is hardly efficient.
+						// However, that way they are only added, if needed.
+						// a. add dataType, if not yet defined:
+						standardTypes.addTo("dataType", { id: p.dT }, self);
+						// b. add property class, if not yet defined:
+						standardTypes.addTo("propertyClass", { id: p.pC }, self);
+						// c. Add propertyClass to element class:
+						addPCReference(eC, { id: p.pC });
+						// d. Add description property to element;
+						addP(oE, {
+							class: { id: p.pC },
+							values: [makeMultiLanguageText(p.nativePrp) ]
+						});
+						console.info("Added a "+p.name+" property to element with id '" + oE.id + "'");
+					};
+                }
+			);
+		/*	if (iE.description && propertyMissing(CONFIG.descProperties,oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
 				// a. add dataType, if not yet defined:
@@ -590,7 +614,7 @@ class CSpecIF implements SpecIF {
 				// b. add property class, if not yet defined:
 				standardTypes.addTo("propertyClass", { id: "PC-Description" }, self);
 				// c. Add propertyClass to element class:
-				addPCReference(eC(), { id: "PC-Description" });
+				addPCReference(eC, { id: "PC-Description" });
 				// d. Add description property to element;
 				addP(oE, {
 					class: { id: "PC-Description" },
@@ -600,7 +624,7 @@ class CSpecIF implements SpecIF {
 			};
 
 			// Similarly, add a title property if missing:
-			if (iE.title && titlePropertyMissing(oE)) {
+			if (iE.title && propertyMissing(CONFIG.titleProperties,oE)) {
 				// There is an attempt to add the types in every loop ... which is hardly efficient.
 				// However, that way they are only added, if needed.
 				// a. add dataType, if not yet defined:
@@ -608,7 +632,7 @@ class CSpecIF implements SpecIF {
 				// b. add property class, if not yet defined:
 				standardTypes.addTo("propertyClass", { id: "PC-Name"}, self);
 				// c. Add propertyClass to element class:
-				addPCReference(eC(), { id: "PC-Name" });
+				addPCReference(eC, { id: "PC-Name" });
 				// d. Add title property to element;
 				addP(oE, {
 					class: { id:"PC-Name" },
@@ -616,12 +640,12 @@ class CSpecIF implements SpecIF {
 					values: [ makeMultiLanguageText(iE.title) ]
 				});
 				console.info("Added a title property to element with id '" + oE.id + "'");
-			};
+			}; */
 
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
-			function eC(): SpecifResourceClass | SpecifStatementClass {
+		/*	function eC(): SpecifResourceClass | SpecifStatementClass {
 				return iE.subject ? LIB.itemByKey(self.statementClasses, LIB.makeKey(iE[names.sClass]))
 								: LIB.itemByKey(self.resourceClasses, LIB.makeKey(iE[names.rClass]));
             }
@@ -629,7 +653,7 @@ class CSpecIF implements SpecIF {
 				if (Array.isArray(el.properties))
 					for (var i = el.properties.length - 1; i > -1; i--) {
 						let ti = LIB.propTitleOf(el.properties[i], self.propertyClasses);
-						if (CONFIG.titleProperties.indexOf(ti) > -1)
+						if (CONFIG.titleProperties.includes(ti))
 							// SpecIF assumes that any title property *replaces* the element's title,
 							// so we just look for the case of *no* title property.
 							// There is no consideration of the content.
@@ -641,7 +665,7 @@ class CSpecIF implements SpecIF {
 			function descPropertyMissing(el:any): boolean {
 				if (Array.isArray(el.properties))
 					for (var i = el.properties.length - 1; i > -1; i--) {
-						if (CONFIG.descProperties.indexOf(LIB.propTitleOf(el.properties[i], self.propertyClasses)) > -1)
+						if (CONFIG.descProperties.includes(LIB.propTitleOf(el.properties[i], self.propertyClasses)))
 							// SpecIF assumes that any description property *replaces* the resource's description,
 							// so we just look for the case of a resource description and *no* description property.
 							// There is no consideration of the content.
@@ -649,6 +673,17 @@ class CSpecIF implements SpecIF {
 							return false; // description property is available
 					};
 				return true; // no array or no description property
+			} */
+			function propertyMissing(L:string[],el: any): boolean {
+				if (Array.isArray(el.properties))
+					for (var p of el.properties) {
+						if (L.includes(LIB.propTitleOf(p, self.propertyClasses)))
+							// SpecIF assumes that any title/description property *replaces* the resource's native property.
+							// There is no consideration of the content.
+							// It is expected that title/descriptions with multiple languages have been reduced, before.
+							return false; // description property is available
+					};
+				return true; // no array or no title/description property
 			}
 		}
 		// a resource:
