@@ -515,7 +515,7 @@ class CSpecIF implements SpecIF {
 			let pC;
 			for (var a = oE.propertyClasses.length - 1; a > -1; a--) {
 				pC = LIB.itemByKey(self.propertyClasses, oE.propertyClasses[a]);
-				if (CONFIG.headingProperties.indexOf(pC.title) > -1) {
+				if (CONFIG.headingProperties.includes(pC.title)) {
 					oE.isHeading = true;
 					break;
 				};
@@ -921,7 +921,7 @@ class CSpecIF implements SpecIF {
 
 				function finalize() {
 					// ToDo: schema and consistency check (if we want to detect any programming errors)
-					console.debug('specif.toExt exit',spD);
+//					console.debug('specif.toExt exit',spD);
 					resolve(spD);
 				}
 
@@ -1042,7 +1042,7 @@ class CSpecIF implements SpecIF {
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations.
 					let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
-					if (dT.type == SpecifDataTypeEnum.String) {
+					if (dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 						// Special treatment of string values:
 						if (opts.targetLanguage) {
 							// Reduce all values to the selected language; is used for
@@ -1051,29 +1051,35 @@ class CSpecIF implements SpecIF {
 							let txt;
 							// Cycle through all values:
 							for (var v of iE.values) {
-								if (CONFIG.excludedFromFormatting.includes(pC.title)) {
-									// if it is e.g. a title, remove all formatting:
-									txt = LIB.languageValueOf(v, opts)
-										.replace(/^\s+/, "")   // remove any leading whiteSpace
-										.stripHTML();
+								if (RE.vocabularyTerm.test(txt)) {
+									txt = LIB.languageValueOf(v, opts);
+									if( opts.lookupValues ) txt = i18n.lookup(txt);
 								}
 								else {
-									// Transform to HTML, if possible;
-									// especially for publication, for example using WORD format:
-									txt = LIB.languageValueOf(v, opts)
-										.replace(/^\s+/, "")  // remove any leading whiteSpace
-										.makeHTML(opts)
-										.replace(/<br ?\/>\n/g, "<br/>");
-									// replace filetypes of linked images:
-									if (opts.allDiagramsAsImage)
-										txt = refDiagramsAsImg(txt);
+									if (CONFIG.excludedFromFormatting.includes(pC.title)) {
+										// if it is e.g. a title, remove all formatting:
+										txt = LIB.languageValueOf(v, opts)
+											.replace(/^\s+/, "")   // remove any leading whiteSpace
+											.stripHTML();
+									}
+									else {
+										// Transform to HTML, if possible;
+										// especially for publication, for example using WORD format:
+										txt = LIB.languageValueOf(v, opts)
+											.replace(/^\s+/, "")  // remove any leading whiteSpace
+											.makeHTML(opts)
+											.replace(/<br ?\/>\n/g, "<br/>");
+										// replace filetypes of linked images:
+										if (opts.allDiagramsAsImage)
+											txt = refDiagramsAsImg(txt);
+									};
 								};
 								oE.values.push([LIB.makeMultiLanguageText(txt)]);
 							};
 							return oE;
 						};
 						// else, keep all languages and replace filetypes of linked images;
-						// perhaps, this case never occurs (opts.allDiagramsAsImage without opts.targetLanguage):
+						// this is the case when creating specif.html, where opts.allDiagramsAsImage without opts.targetLanguage is set:
 						if (opts.allDiagramsAsImage) {
 							let lL;
 							// Cycle through all values:
@@ -1102,7 +1108,7 @@ class CSpecIF implements SpecIF {
 //								console.debug('#b', $4, $5);
 								// ToDo: Further application file formats ... once in use.
 								// Use CONFIG.applTypes ... once appropriate.
-								if (["application/bpmn+xml"].indexOf($5) > -1) {
+								if (["application/bpmn+xml"].includes($5)) {
 									replaced = true;
 									return 'type="image/svg+xml"'
 								}
@@ -1353,7 +1359,12 @@ class CSpecIF implements SpecIF {
 					if (iE.enumeration) {
 						// reduce to the language specified:
 						// @ts-ignore - values does exist with v1.0
-						oE.values = LIB.forAll(iE.enumeration, (v: any) => { return { id: v.id, value: LIB.languageValueOf(v.value, myLang) } });
+						oE.values = LIB.forAll(
+							iE.enumeration,
+							(v: any) => {
+								return { id: v.id, value: (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(v.value, myLang)): LIB.languageValueOf(v.value, myLang)) }
+							}
+						);
 						// @ts-ignore - OK with v1.0
 						oE.type = 'xs:enumeration';
 					}
@@ -1440,7 +1451,8 @@ class CSpecIF implements SpecIF {
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations.
 					let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
-					if ([SpecifDataTypeEnum.String,'xhtml'].includes(dT.type)) {
+				//	if ([SpecifDataTypeEnum.String,'xhtml'].includes(dT.type)) {
+					if (dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 						// Special treatment of string values:
 						let v = iE.values[0] as SpecifMultiLanguageText;
 						if (opts.targetLanguage) {
@@ -1452,25 +1464,27 @@ class CSpecIF implements SpecIF {
 							let txt = LIB.languageValueOf(v, opts)
 								.replace(/^\s+/, "");   // remove any leading whiteSpace
 
-							if (CONFIG.excludedFromFormatting.includes(pC.title)) {
-								// if it is e.g. a title, remove all formatting:
-								txt = txt
-									.stripHTML();
-							}
-							else {
-								// Transform to HTML, if possible;
-								// especially for publication, for example using WORD format:
-								txt = txt
-									.makeHTML(opts)
-									.replace(/<br ?\/>\n/g, "<br/>");
-								// replace filetypes of linked images:
-								if (opts.allDiagramsAsImage)
-									txt = refDiagramsAsImg(txt);
+							if (!RE.vocabularyTerm.test(txt)) {
+								if (CONFIG.excludedFromFormatting.includes(pC.title)) {
+									// if it is e.g. a title, remove all formatting:
+									txt = txt
+										.stripHTML();
+								}
+								else {
+									// Transform to HTML, if possible;
+									// especially for publication, for example using WORD format:
+									txt = txt
+										.makeHTML(opts)
+										.replace(/<br ?\/>\n/g, "<br/>");
+									// replace filetypes of linked images:
+									if (opts.allDiagramsAsImage)
+										txt = refDiagramsAsImg(txt);
+								};
 							};
 							// @ts-ignore - OK for v1.0
-							oE.value = txt;
+							oE.value = opts.lookupValues? i18n.lookup(txt) : txt;
 
-							if (LIB.isHTML(txt))
+						/*	if (LIB.isHTML(txt))
 								// @ts-ignore - OK for v1.0
 								dT.type = 'xhtml'
 							else
@@ -1479,7 +1493,7 @@ class CSpecIF implements SpecIF {
 									// @ts-ignore - OK for v1.0
 									if (l.format == 'xhtml') dT.type = 'xhtml';
 									break;
-								};
+								}; */
 						}
 						else {
 							// Keep all languages and possibly replace filetypes of linked images:
@@ -1514,7 +1528,7 @@ class CSpecIF implements SpecIF {
 //								console.debug('#b', $4, $5);
 								// ToDo: Further application file formats ... once in use.
 								// ToDo: Use CONFIG.applTypes ... if appropriate.
-								if (["application/bpmn+xml"].indexOf($5) > -1) {
+								if (["application/bpmn+xml"].includes($5)) {
 									replaced = true;
 									return 'type="image/svg+xml"'
 								}

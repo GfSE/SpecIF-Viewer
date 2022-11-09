@@ -378,7 +378,7 @@ class CPropertyToShow implements SpecifProperty {
 
 				// sometimes the application files (BPMN or other) have been replaced by images;
 				// this is for example the case for *.specif.html files:
-				if (!f1.hasContent() && u1 && CONFIG.applExtensions.indexOf(e) > -1) {
+				if (!f1.hasContent() && u1 && CONFIG.applExtensions.includes(e)) {
 					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
 						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
 						f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
@@ -386,7 +386,7 @@ class CPropertyToShow implements SpecifProperty {
 				};
 				// ... cannot happen any more now, is still here for compatibility with older files only.
 
-				if (CONFIG.imgExtensions.indexOf(e) > -1 || CONFIG.applExtensions.indexOf(e) > -1) {
+				if (CONFIG.imgExtensions.includes(e) || CONFIG.applExtensions.includes(e)) {
 					// it is an image, show it:
 					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
 //					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
@@ -407,7 +407,7 @@ class CPropertyToShow implements SpecifProperty {
 						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
 					};
 				}
-				else if (CONFIG.officeExtensions.indexOf(e) > -1) {
+				else if (CONFIG.officeExtensions.includes(e)) {
 					// it is an office file, show an icon plus filename:
 					if (f1.hasContent()) {
 						hasImg = true;
@@ -563,13 +563,13 @@ class CResourceToShow {
 			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; 
 		}; */
 		this.isHeading = this.rC.isHeading
-			|| CONFIG.headingProperties.indexOf(this.rC.title) > -1;
+			|| CONFIG.headingProperties.includes(this.rC.title);
 
 		// b) Check the configured descriptions:
 		// We must iterate backwards, because we alter the list of other.
 		// ToDo: use this.other.filter()
 		for (a = this.other.length - 1; a > -1; a--) {
-			if (CONFIG.descProperties.indexOf(this.other[a].title) > -1) {
+			if (CONFIG.descProperties.includes(this.other[a].title)) {
 				// To keep the original order of the properties, the unshift() method is used.
 				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			};
@@ -586,7 +586,7 @@ class CResourceToShow {
     }
 	isUserInstantiated(): boolean {
 		return (!Array.isArray(this.rC.instantiation)
-			|| this.rC.instantiation.indexOf(SpecifInstantiation.User) > -1)
+			|| this.rC.instantiation.includes(SpecifInstantiation.User))
 	}
 	private renderAttr(lbl: string, val?: string, cssCl?: string): string {
 		// show a string value with or without label:
@@ -642,7 +642,7 @@ class CResourceToShow {
 		opts.titleLinking
 			= opts.clickableElements
 			= opts.linkifyURLs
-			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].indexOf(app.specs.selectedView()) > -1;
+			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView());
 		// ToDo: Consider to make it a user option:
 		opts.unescapeHTMLTags = true;
 		// ToDo: Make it a user option:
@@ -718,7 +718,7 @@ class CResourceToShow {
 //			console.debug('details.descr',prp.value);
 			if( LIB.hasContent(prp.value) ) {
 				var opts = {
-				//		titleLinking: [CONFIG.objectList, CONFIG.objectDetails].indexOf(app.specs.selectedView())>-1,
+				//		titleLinking: [CONFIG.objectList, CONFIG.objectDetails].includes(app.specs.selectedView()),
 						titleLinking: true,
 						clickableElements: true,
 						linkifyURLs: true
@@ -986,7 +986,7 @@ class CFileWithContent implements IFileWithContent {
 			for (var i = L.length - 1; i > -1; i--)
 				// is id a substring of L[i].id?
 				// @ts-ignore - L[i] does exist, if execution gets here
-				if (L[i].id.indexOf(id) > -1) return L[i];   // return list item
+				if (L[i].id.includes(id)) return L[i];   // return list item
 			//	return undefined
 		}
 		function itemBySimilarTitle(L: SpecifItem[], ti: string): SpecifItem|undefined {
@@ -995,7 +995,7 @@ class CFileWithContent implements IFileWithContent {
 			for (var i = L.length - 1; i > -1; i--)
 				// is ti a substring of L[i].title?
 				// @ts-ignore - L[i] does exist, if execution gets here
-				if (L[i].title.indexOf(ti) > -1) return L[i];   // return list item
+				if (L[i].title.includes(ti)) return L[i];   // return list item
 			//	return undefined
 		}
 		interface svgDescriptor {
@@ -1619,7 +1619,7 @@ moduleManager.construct({
 	Functions called by GUI events 
 */
 	self.itemClicked = ( rId:string ):void =>{
-		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].indexOf( self.selectedView() )>-1 ) return;
+		if( ['#'+CONFIG.objectRevisions, '#'+CONFIG.comments].includes( self.selectedView() ) ) return;
 //		console.debug('#0',rId);
 
 		// When a resource is clicked in the list (main row), select it and move it to the top.
@@ -1952,9 +1952,9 @@ moduleManager.construct({
 					// list all resource types, for which the current user has permission to create new instances
 					// ... and which allow manual instantiation:
 					// store the type's id as it is invariant, when selPrj.data.allClasses is updated
-				//	if( rC.cre && (!rC.instantiation || rC.instantiation.indexOf('user')>-1) )
+				//	if( rC.cre && (!rC.instantiation || rC.instantiation.includes('user')) )
 					// ToDo: Respect the current user's privileges:
-					if( !rC.instantiation || rC.instantiation.indexOf(SpecifInstantiation.User)>-1 )
+					if (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User) )
 						self.resCreClasses.push( rC.id )
 				});
 				// b) set the permissions for the edit buttons:
@@ -2381,7 +2381,7 @@ moduleManager.construct({
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram
-						|| CONFIG.diagramTypesHavingShowsStatementsForEdges.indexOf(pV) > -1)
+						|| CONFIG.diagramTypesHavingShowsStatementsForEdges.includes(pV))
 				}
 			) || noDiagramFound;
 		}
@@ -2423,8 +2423,8 @@ moduleManager.construct({
 					// ... and which allow user instantiation:
 					// store the classes' ids as it is invariant, when selPrj.data.allClasses is updated
 //					console.debug('staCreClasses',sC,res['class']);
-				//	if( sC.cre && (!sC.instantiation || sC.instantiation.indexOf('user')>-1) ) 
-					if (!sC.instantiation || sC.instantiation.indexOf(SpecifInstantiation.User)>-1 ) {
+				//	if( sC.cre && (!sC.instantiation || sC.instantiation.includes('user')) )
+					if (!sC.instantiation || sC.instantiation.includes(SpecifInstantiation.User) ) {
 						if (!sC.subjectClasses || LIB.indexByKey(sC.subjectClasses, res['class']) > -1)
 							self.staCreClasses.subjectClasses.push( LIB.keyOf(sC) );	// all statementClasses eligible for the currently selected resource
 						if (!sC.objectClasses || LIB.indexByKey(sC.objectClasses, res['class']) > -1)

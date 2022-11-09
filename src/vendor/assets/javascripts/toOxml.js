@@ -75,7 +75,7 @@ function toOxml( data, opts ) {
 			};
 
 			// If it is a raster image:
-			if ( ['image/png','image/jpg','image/jpeg','image/gif'].indexOf(f.type)>-1 ) {
+			if ( ['image/png','image/jpg','image/jpeg','image/gif'].includes(f.type) ) {
 				// transform the file and continue processing, as soon as all are done:
 				// Convert a raster image to base64:
 					function storeR(ev) {
@@ -101,7 +101,7 @@ function toOxml( data, opts ) {
 			};
 			
 			// If it is a vector image:
-			if ( ['image/svg+xml'].indexOf(f.type)>-1 ) {
+			if ( ['image/svg+xml'].includes(f.type) ) {
 				let pngN = nameOf(f.title)+'.png';
 				// check whether there is already a PNG version of this image:
 				if( itemByTitle( L, pngN ) ) {
@@ -154,18 +154,19 @@ function toOxml( data, opts ) {
 			// Check for missing options:
 			if( typeof(opts)!='object' ) opts = {};
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
+			if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-			if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
+		//	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor','FMC:State','FMC:Event','SpecIF:Collection','SpecIF:Diagram','FMC:Plan'];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
-			// If no label is provided, the respective properties are skipped:
+		/*	// If no label is provided, the respective properties are skipped:
 			if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
 			if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
-			
+		*/
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp
 			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';
 			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
@@ -269,16 +270,16 @@ function toOxml( data, opts ) {
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
 					eC = itemById(cL, itm['class']);
 				
-				// lookup titles only, if it is 
+			/*	// lookup titles only, if it is 
 				// - a resource used as heading or 
 				// - a statement;
 				// those may have vocabulary terms to translate;
 				// whereas individual resources may mean the vocabulary term as such:
 				if( eC&&eC.isHeading || itm.subject )
 					ti = opts.lookup(ti);
-
+			*/
 				// add icon, if specified:
-				ti = (eC&&eC.icon? eC.icon+'  ' : '') + ti;
+				ti = (opts.addIcon&&eC&&eC.icon? eC.icon+'  ' : '') + ti;
 
 //				console.debug('titleOf 2',ti);
 
@@ -299,7 +300,7 @@ function toOxml( data, opts ) {
 					if( Array.isArray( aL ) )
 						for( var a=0,A=aL.length;a<A;a++ ) {
 							// First, check the configured title properties:
-							if( opts.titleProperties.indexOf( prpTitleOf(aL[a]) )>-1 ) return a;
+							if( opts.titleProperties.includes( prpTitleOf(aL[a]) ) ) return a;
 						};
 					return -1;
 				}
@@ -348,13 +349,14 @@ function toOxml( data, opts ) {
 				// else, there are statements to render:
 				// The heading:
 				let ct = wParagraph( {text: opts.statementsLabel, format:{heading: 4}} ),
-					sTi, row, cell, resL;
+					row, cell, resL;
+				//	sTi, row, cell, resL;
 
 				// build a table of the statements/relations by type:
 				for( cid in stC ) {
 					// if we have clustered by title:
-					sTi = opts.lookup( cid );
-				/*	// if we have clustered by class:
+				/*	sTi = opts.lookup( cid );
+					// if we have clustered by class:
 					// we don't have the individual statement's title; so we determine the class to get it's title, instead:
 					sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
@@ -389,7 +391,8 @@ function toOxml( data, opts ) {
 							// The predicate:
 							row += wTableCell({
 									content: wParagraph({
-											text:sTi,
+											text: cid,
+										//	text: sTi,
 											format:{
 												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
@@ -450,7 +453,8 @@ function toOxml( data, opts ) {
 							// The predicate:
 							row += wTableCell({
 									content: wParagraph({
-											text:sTi,
+											text: cid,
+										//	text: sTi,
 											format:{
 												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
@@ -471,25 +475,26 @@ function toOxml( data, opts ) {
 //				console.debug('statementsOf',ct);
 				return wTable( {content:ct,width:100} )
 			}
-			function anchorOf( resId ) {
+			function anchorOf(resId) {
 				// Find the hierarchy node id for a given resource;
 				// the first occurrence is returned:
-				let n, N, ndId;
- 				for( n=0, N=data.hierarchies.length; n<N; n++ ) {
-					ndId = ndByRef( data.hierarchies[n] );
-					if(ndId) return ndId;		// return node id
+				let ndId;
+				for (var h of data.hierarchies) {
+					ndId = ndByRef(h);
+					if (ndId) return ndId;		// return node id
 				};
 				return;	// undefined -> not found
-				
-				function ndByRef( nd ) {
-					if( nd.resource==resId ) return nd.id;
-					let t,T,ndId;
-					if( nd.nodes )
-						for( t=0, T=nd.nodes.length; t<T; t++ ) {
-							ndId = ndByRef( nd.nodes[t] );							
-							if(ndId) return ndId;
+
+				function ndByRef(nd) {
+					if ((nd.resource.id || nd.resource) == resId) return nd.id;
+					if (nd.nodes) {
+						let ndId;
+						for (var n of nd.nodes) {
+							ndId = ndByRef(n);
+							if (ndId) return ndId;
 						};
-				//	return undefined;
+					}
+					//	return undefined;
 				}
 			}
 			function propertiesOf( r, opts ) {
@@ -534,7 +539,8 @@ function toOxml( data, opts ) {
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
 					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-						rt = minEscape( opts.lookup( prpTitleOf(p) ));
+						rt = minEscape( prpTitleOf(p) );
+					//	rt = minEscape( opts.lookup( prpTitleOf(p) ));
 						c3 = '';
 						propertyValueOf( p ).forEach( 
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
@@ -921,12 +927,12 @@ function toOxml( data, opts ) {
 							d = getXhtmlPrp( 'alt', img.properties ) || withoutPath( u ),	// the description
 							e = extOf(u).toLowerCase();	// the file extension
 						
-						if( opts.imgExtensions.indexOf( e )>-1 ) {  
+						if( opts.imgExtensions.includes( e ) ) {  
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
 							let pngF = itemById( imageL, nameOf(u)+'.png' );
 //							console.debug('parseImg *2',u,e,pngF);
-							if( e.indexOf('svg')>-1 && opts.preferPng && pngF ) {
+							if( e.includes('svg') && opts.preferPng && pngF ) {
 							//	t1 = pngF.type;
 								u = pngF.id;
 							};
@@ -947,18 +953,18 @@ function toOxml( data, opts ) {
 
 						let u = getXhtmlPrp( 'data', obj.properties ).replace('\\','/'), 
 							e = extOf(u).toLowerCase(),	// the file extension
-							t = getXhtmlPrp( 'type', obj.properties ) || (opts.imgExtensions.indexOf(e)>-1? "image/"+e : undefined),
+							t = getXhtmlPrp( 'type', obj.properties ) || (opts.imgExtensions.includes(e)? "image/"+e : undefined),
 							d = obj.innerHTML || getXhtmlPrp( 'name', obj.properties ) || withoutPath( u );	// the description
 						
-						if( opts.imgExtensions.indexOf( e )>-1 
-							|| opts.applExtensions.indexOf( e )>-1 
+						if( opts.imgExtensions.includes( e ) 
+							|| opts.applExtensions.includes( e )
 							|| !t ) {
 
 							// It is an image, show it;
 							// if the type is svg, png is preferred and available, replace it:
 							let pngF = itemById( imageL, nameOf(u)+'.png' );
 //							console.debug('parseObject *2',u,e,pngF);
-							if( ( t.indexOf('svg')>-1 || t.indexOf('bpmn')>-1 ) && opts.preferPng && pngF ) {
+							if( ( t.includes('svg') || t.includes('bpmn') ) && opts.preferPng && pngF ) {
 								t = pngF.type;
 								u = pngF.id;
 							};
@@ -997,7 +1003,7 @@ function toOxml( data, opts ) {
 						//		if(ob.id==cR.id) continue;
 
 								// disregard objects whose title is too short:
-								ti = cR.title;
+								ti = titleOf(cR, undefined, Object.assign({}, opts, { addIcon: false }));
 						//		ti = minEscape( cR.title );
 								if( !ti || ti.length<opts.titleLinkMinLength ) continue;
 
@@ -1028,13 +1034,14 @@ function toOxml( data, opts ) {
 							case opts.dataTypeEnumeration:
 								let ct = '',
 									val = null,
-									st = opts.stereotypeProperties.indexOf(prp.title)>-1,
+									st = opts.stereotypeProperties.includes(prp.title),
 									vL = prp.value.split(',');  // in case of xs:enumeration, content carries comma-separated value-IDs
 								for( var v=0,V=vL.length;v<V;v++ ) {
 									val = itemById(dT.values,vL[v]);
 									// If 'val' is an id, replace it by the corresponding value, otherwise don't change:
 									// Add 'double-angle quotation' in case of SubClass values.
-									if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(val.value)+'&#x00bb;'):opts.lookup(val.value))
+									if (val) ct += (v == 0 ? '' : ', ') + (st ? ('&#x00ab;' + val.value + '&#x00bb;') : val.value)
+								//	if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(val.value)+'&#x00bb;'):opts.lookup(val.value))
 									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
 								return [{p:{text:minEscape(ct)}}];
@@ -1042,9 +1049,9 @@ function toOxml( data, opts ) {
 							//	return parseText( opts.lookup(prp.value), opts );
 							case opts.dataTypeXhtml:
 //								console.debug('propertyValueOf - xhtml',prp.value);
-							/*	// The values should have been looked-up by the viewer before delivery:
-								return parseXhtml( prp.value, opts );  */
-								return parseXhtml( opts.lookup(prp.value), opts );
+								// The value has been looked-up by the viewer before delivery:
+								return parseXhtml( prp.value, opts );
+							//	return parseXhtml( opts.lookup(prp.value), opts );
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
@@ -1416,17 +1423,17 @@ function toOxml( data, opts ) {
 				function tcBorders(c) {
 					if( !c.border ) return '';
 					return 	'<w:tcBorders>'
-						+		(!c.border.sides || c.border.sides.indexOf("T")>-1? '<w:top w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>' : '')
-						+		(!c.border.sides || c.border.sides.indexOf("R")>-1? '<w:right w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
-						+		(!c.border.sides || c.border.sides.indexOf("B")>-1? '<w:bottom w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
-						+		(!c.border.sides || c.border.sides.indexOf("L")>-1? '<w:left w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
+						+		(!c.border.sides || c.border.sides.includes("T")? '<w:top w:val="'+(c.border.type||'single')+'" w:sz="'+(c.border.width||4)+'" w:space="0" w:color="'+(c.border.color||'DDDDDD')+'"/>' : '')
+						+		(!c.border.sides || c.border.sides.includes("R")? '<w:right w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
+						+		(!c.border.sides || c.border.sides.includes("B")? '<w:bottom w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
+						+		(!c.border.sides || c.border.sides.includes("L")? '<w:left w:val="' + (c.border.type || 'single') + '" w:sz="' + (c.border.width || 4) + '" w:space="0" w:color="' + (c.border.color || 'DDDDDD') + '"/>' : '')
 						+	'</w:tcBorders>'
 				}
 			}
 		}  // end of 'createText'
 
 		// Start processing 'createOxml':	
-		console.debug('createOxml',data);
+//		console.debug('createOxml',data);
 		let file = createText( data, opts );
 
 		file.name = opts.fileName || data.title;

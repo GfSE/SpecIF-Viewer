@@ -33,7 +33,7 @@ function textField(tag: string, valL: string[], opts?: IFieldOptions): string {
 		sH = simpleHash(tag),
 		fG: string,
 		aC: string;
-	if ( opts.typ && ['line', 'area'].indexOf(opts.typ)>-1 ) 	
+	if (opts.typ && ['line', 'area'].includes(opts.typ) )
 		fG = '<div id="'+sH+'" class="form-group form-active" >'    // input field
 	else
 		fG = '<div class="attribute" >';				// display field
@@ -420,7 +420,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 
 type SpecifItem = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifResource | SpecifStatement | SpecifNode | SpecifFile;
 type SpecifClass = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass;
-type ItemWithNativeTitle = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifNode | SpecifFile;
+type SpecIFItemWithNativeTitle = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifNode | SpecifFile;
 type SpecifInstance = SpecifResource | SpecifStatement;
 LIB.keyOf = (itm: SpecifItem): SpecifKey => {
 	// create a key from an item by selective cloning:
@@ -624,7 +624,7 @@ function indexByTitle(L:any[],ti:string):number {
 	};
 	return -1;
 } */
-LIB.itemByTitle = (L: ItemWithNativeTitle[],ti:string):any => {
+LIB.itemByTitle = (L: SpecIFItemWithNativeTitle[],ti:string):any => {
 	if( L && ti ) {
 		// given a title of an item in a list, return the item itself:
 		for( var l of L )
@@ -1377,7 +1377,7 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], pCs: SpecifPropertyClas
 	};
 	return [];
 }
-LIB.titleOf = (item: ItemWithNativeTitle, opts?: any): string => {
+LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
 }
@@ -1408,7 +1408,7 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): 
 		for (var a = 0, A = pL.length; a < A; a++) {
 			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a], pCs));
 			// Check the configured headings and titles:
-			if (CONFIG.titleProperties.indexOf(pt) > -1) return a;
+			if (CONFIG.titleProperties.includes(pt)) return a;
 		};
 	};
 	return -1;
@@ -1422,7 +1422,7 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): stri
 			// Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
 			// ToDo: Check, whether this is at all called in a context where deletions and insertions are marked ..
 			// (also, change the regex with 'greedy' behavior allowing HTML-tags between deletion marks).
-			if( moduleManager.ready.indexOf( 'diff' )>-1 )
+			if( moduleManager.ready.includes( 'diff' ) )
 				return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
 
 		// For now, let's try without replacements; so far this function is called before the filters are applied,
@@ -1528,9 +1528,9 @@ function getUrlParams(opts?: any): IUrlParams {
 		h.forEach( (p)=>{
 			p = p.split('=');
 			// remove enclosing quotes from the value part:
-			if( p[1] && ['"',"'"].indexOf(p[1][0])>-1 ) p[1] = p[1].substr(1,p[1].length-2);
+			if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substr(1,p[1].length-2);
 			// look for specific tokens, only:
-			if( CONFIG.urlParamTags.indexOf(p[0])>-1 )
+			if( CONFIG.urlParamTags.includes(p[0]) )
 				pO[p[0]] = p[1];
 			else
 				console.warn("Unknown URL-Parameter '",p[0],"' found.");
@@ -1559,9 +1559,9 @@ function getUrlParams(opts?: any): any {
 			(p: any) => {
 				p = p.split('=');
 				// remove enclosing quotes from the value part:
-				if (p[1] && ['"', "'"].indexOf(p[1][0]) > -1) p[1] = p[1].substr(1, p[1].length - 2);
+				if (p[1] && ['"', "'"].includes(p[1][0])) p[1] = p[1].substr(1, p[1].length - 2);
 				// look for specific tokens, only:
-				if (CONFIG.urlParamTags.indexOf(p[0]) > -1)
+				if (CONFIG.urlParamTags.includes(p[0]))
 					// @ts-ignore - indexing is ok:
 					pO[p[0]] = p[1];
 				else

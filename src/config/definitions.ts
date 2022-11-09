@@ -387,6 +387,7 @@ const CONFIG:any = {};
 	CONFIG.titleLinkTargets =
 		CONFIG.modelElementClasses
 		.concat(CONFIG.diagramClasses)
+		.concat(CONFIG.folderClasses)
 		.concat(CONFIG.vocabularyClasses);
 
 	// A list of statement types by title,
@@ -553,8 +554,6 @@ const vocabulary = {
 				case "specif_status":				oT = "ReqIF.ForeignState"; break;
 				case "dcterms_author":			// deprecated, for compatibility
 				case "dcterms_creator":				oT = "ReqIF.ForeignCreatedBy"; break;
-			//	case "specif_createdat":
-			//	case "dcterms_modified":			oT = "ReqIF.ForeignCreatedAt";  // exists?
 				default: oT = iT;
 			};
 			return oT;
@@ -731,5 +730,6 @@ const tokenGroup = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbod
 		// $3: any of the tokens listed in tokenGroup 
 		// $4: the rest of the tag including '>' or '/>'
 
-	RE.splitNamespace = /^(\w+:|\w+\.)?(\w+)$/;
+//	RE.splitVocabularyTerm = /^(\w+:|\w+\.)?(\w+)$/;
+	RE.vocabularyTerm = /^\w+(?:\:|\.)\w+$/;
 

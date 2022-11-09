@@ -1022,7 +1022,7 @@ class CProject {
 			// add the properties in sequence of the propertyClass keys as specified by the instance class:
 			pCkL.forEach((pCk: SpecifKey): void => {
 				// skip hidden properties:
-				if (CONFIG.hiddenProperties.indexOf(pCk.id) > -1) return;
+				if (CONFIG.hiddenProperties.includes(pCk.id)) return;
 				// the full propertyClass referenced by pCk;
 				// pC may, but pCk may not have a revision:
 				pC = LIB.itemByKey(dta.propertyClasses, pCk);
@@ -1350,14 +1350,14 @@ class CProject {
 
 			// true, if there is a 'single' hierarchy and if it is a hierarchyRoot:
 			singleHierarchyRoot = dta.hierarchies.length == 1
-				&& ( rC && CONFIG.hierarchyRoots.indexOf(rC.title) > -1
-					|| pVL.length > 0 && CONFIG.hierarchyRoots.indexOf(pVL[0]) > -1);
+				&& ( rC && CONFIG.hierarchyRoots.includes(rC.title)
+					|| pVL.length > 0 && CONFIG.hierarchyRoots.includes(pVL[0]));
 		/*	prp: SpecifProperty = LIB.itemByTitle(r.properties, CONFIG.propClassType),
 			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 			// or by the title of the resourceClass:
 			singleHierarchyRoot = dta.hierarchies.length == 1
-				&& (prp && CONFIG.hierarchyRoots.indexOf(prp.value) > -1
-					|| rC && CONFIG.hierarchyRoots.indexOf(rC.title) > -1); */
+				&& (prp && CONFIG.hierarchyRoots.includes(prp.value)
+					|| rC && CONFIG.hierarchyRoots.includes(rC.title)); */
 
 		return new Promise(
 			(resolve, reject) => {
@@ -2142,15 +2142,15 @@ class CProject {
 				];
 
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
-				opts.lookupTitles = false;  // applies to self.data.get()
+				opts.lookupTitles = true;  // applies to self.data.get()
 				opts.lookupValues = true;  // applies to self.data.get()
 				// But DO reduce to the language desired.
 				if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
 				opts.makeHTML = true;
 				opts.linkifyURLs = true;
-				opts.createHierarchyRootIfMissing = true;
+			//	opts.createHierarchyRootIfMissing = true;
 				opts.allDiagramsAsImage = true;
-			//	opts.allImagesAsPNG = ["oxml"].indexOf(opts.format) > -1;   .. not yet implemented!!
+			//	opts.allImagesAsPNG = ["oxml"].includes(opts.format);   .. not yet implemented!!
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
 
@@ -2159,17 +2159,17 @@ class CProject {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-							titleLinkTargets: CONFIG.titleLinkTargets,
-							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties),
-							descriptionProperties: CONFIG.descProperties,
-							stereotypeProperties: CONFIG.stereotypeProperties,
-							lookup: i18n.lookup,
+							titleLinkTargets: CONFIG.titleLinkTargets.map((e) => { return i18n.lookup(e) }),
+							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties).map((e) => { return i18n.lookup(e) }),
+							descriptionProperties: CONFIG.descProperties.map((e) => { return i18n.lookup(e) }),
+							stereotypeProperties: CONFIG.stereotypeProperties.map((e) => { return i18n.lookup(e) }),
+						//	lookup: i18n.lookup,	vocabulary terms are now looked up during export (CSpecIF.toExt)
 							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
 						//	hasContent: LIB.hasContent,
-							propertiesLabel: opts.withOtherProperties ? 'SpecIF:Properties' : undefined,
-							statementsLabel: opts.withStatements ? 'SpecIF:Statements' : undefined,
+							propertiesLabel: opts.withOtherProperties ? i18n.lookup('SpecIF:Properties') : undefined,
+							statementsLabel: opts.withStatements ? i18n.lookup('SpecIF:Statements') : undefined,
 							fileName: self.exportParams.fileName,
 							colorAccent1: '0071B9',	// adesso blue
 							done: () => { app.cache.selectedProject.exporting = false; resolve() },
@@ -2223,7 +2223,7 @@ class CProject {
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
-						opts.createHierarchyRootIfMissing = true;
+					//	opts.createHierarchyRootIfMissing = true;
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString();
 						break;
@@ -2438,7 +2438,7 @@ class CProject {
 		// being equal to the content of property CONFIG.propClassType is not considered equal
 		// (for example BPMN endEvents which don't have a genuine title):
 		let typ = LIB.valuesByTitle(refE, [CONFIG.propClassType], dta.propertyClasses),
-			rgT = RE.splitNamespace.exec(typ);
+			rgT = RE.splitVocabularyTerm.exec(typ);
 		// rgT[2] contains the type without namespace (works also, if there is no namespace).
 		return (!rgT || rgT[2] != refE.title);  */
 	}
@@ -2558,7 +2558,7 @@ class CProject {
 			};
 			if (idx < 0) {
 				// The property class in the new data is not found in the existing (reference) data:
-				if (!opts || !opts.mode || ["match", "include"].indexOf(opts.mode) > -1)
+				if (!opts || !opts.mode || ["match", "include"].includes(opts.mode))
 					// the property class is expected and thus an error is signalled:
 					return { status: 964, statusText: "new resourceClass or statementClass '" + newC.id + "' is incompatible (additional propertyClass)" }
 				else

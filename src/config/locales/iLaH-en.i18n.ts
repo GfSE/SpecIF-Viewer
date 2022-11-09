@@ -410,17 +410,6 @@ function LanguageTextsEn() {
 	self.IREB_PerspectiveUser = "User";
 	self.IREB_PerspectiveOperator = "Operator";
 	self.IREB_PerspectiveSystem = "System";
-	self.SpecIF_LifecycleStatusDeprecated = "deprecated";
-	self.SpecIF_LifecycleStatusRejected = "rejected";
-	self.SpecIF_LifecycleStatusInitial = "initial";
-	self.SpecIF_LifecycleStatusDrafted = "drafted";
-	self.SpecIF_LifecycleStatusSubmitted = "submitted";
-	self.SpecIF_LifecycleStatusApproved = "approved";
-	self.SpecIF_LifecycleStatusReady = "ready";
-	self.SpecIF_LifecycleStatusDone = "done";
-	self.SpecIF_LifecycleStatusValidated = "validated";
-	self.SpecIF_LifecycleStatusReleased = "released";
-	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
 	self.SpecIF_DisciplineSystem = "System";
 	self.SpecIF_DisciplineMechanics = "Mechanics";
 	self.SpecIF_DisciplineElectronics = "Electronics";
@@ -519,8 +508,9 @@ function LanguageTextsEn() {
 //	self.SpecIF_SubClass = "SubClass";
 	self.SpecIF_Category = 	self.LblCategory;  
 	self.SpecIF_State =								// DEPRECATED
-	self.SpecIF_LifecycleStatus =
 	self.SpecIF_Status = 	self.LblState;
+	self.SpecIF_ApplicationLifecycleStatus =
+	self.SpecIF_LifecycleStatus = "Lifecycle";
 	self.SpecIF_Priority = 	self.LblPriority;
 	self.SpecIF_Milestone = "Milestone";
 	self.SpecIF_DueDate = "Due date";
@@ -537,6 +527,7 @@ function LanguageTextsEn() {
 //	self.SpecIF_Author = "Author";
 //	self.SpecIF_Authors = "Authors";
 	self.IREB_Stakeholder = "Stakeholder";
+	self.SpecIF_Accountable = "Accountable";
 	self.SpecIF_Responsible = "Responsible";
 	self.SpecIF_Responsibles = "Responsibles";
 	self.SpecIF_UserRole = "User-Role";
@@ -554,22 +545,12 @@ function LanguageTextsEn() {
 	self.ReqIF_WF_CustomerStatus = 'Customer-Status';
 	self.HIS_OemComment =
 	self.ReqIF_WF_CustomerComment = 'Customer-Comment';
+	self.SpecIF_Supplier = "Supplier";
 	self.HIS_SupplierStatus =
-	self.ReqIF_WF_SupplierStatus = 'Supplier-Status';
+	self.ReqIF_WF_SupplierStatus = self.SpecIF_Supplier + '-Status';
 	self.HIS_SupplierComment =
-	self.ReqIF_WF_SupplierComment = 'Supplier-Comment';
-/*
-// attribute names used by DocBridge Resource Director:
-	self.DBRD_ChapterName = 'Title';
-	self.DBRD_Name = 'Title';
-	self.DBRD_Text = 'Text';
-// attribute names used by Atego Exerpt with RIF 1.1a:
-	self.VALUE_Object_Heading =
-	self.Object_Heading = self.ReqIF_Name;
-	self.VALUE_Object_Text =
-	self.Object_Text = self.ReqIF_Text;
-	self.VALUE_Object_ID =
-	self.Object_ID = self.ReqIF_ForeignID; */
+	self.ReqIF_WF_SupplierComment = self.SpecIF_Supplier + '-Comment';
+
 	self.SpecIF_priorityHigh = "high";
 	self.SpecIF_priorityRatherHigh = "rather high";
 	self.SpecIF_priorityMedium = "medium";
@@ -580,28 +561,39 @@ function LanguageTextsEn() {
 	self.SpecIF_sizeM = "medium";
 	self.SpecIF_sizeS = "small";
 	self.SpecIF_sizeXS = "very small";
-	self.SpecIF_rejected =
-	self.SpecIF_statusRejected = "00_rejected";
-	self.SpecIF_initial =
-	self.SpecIF_statusInitial = "10_initial";
-	self.SpecIF_drafted =
-	self.SpecIF_statusDrafted = "20_drafted";
-	self.SpecIF_submitted =
-	self.SpecIF_statusSubmitted = "30_submitted";
-	self.SpecIF_approved =
-	self.SpecIF_statusApproved = "40_approved";
-	self.SpecIF_ready =
-	self.SpecIF_statusReady = "50_ready";
-	self.SpecIF_done =
-	self.SpecIF_statusDone = "60_done";
-	self.SpecIF_validated =
-	self.SpecIF_statusValidated = "70_validated";
-	self.SpecIF_released =
-	self.SpecIF_statusReleased = "80_released";
 	self.SpecIF_deprecated =
-	self.SpecIF_statusDeprecated = "88_deprecated";
+	self.SpecIF_statusDeprecated =
+	self.SpecIF_LifecycleStatusDeprecated = "deprecated";
+	self.SpecIF_rejected =
+	self.SpecIF_statusRejected =
+	self.SpecIF_LifecycleStatusRejected = "rejected";
+	self.SpecIF_initial =
+	self.SpecIF_statusInitial =
+	self.SpecIF_LifecycleStatusInitial = "initial";
+	self.SpecIF_drafted =
+	self.SpecIF_statusDrafted =
+	self.SpecIF_LifecycleStatusDrafted = "drafted";
+	self.SpecIF_submitted =
+	self.SpecIF_statusSubmitted =
+	self.SpecIF_LifecycleStatusSubmitted = "submitted";
+	self.SpecIF_approved =
+	self.SpecIF_statusApproved =
+	self.SpecIF_LifecycleStatusApproved = "approved";
+	self.SpecIF_ready =
+	self.SpecIF_statusReady =
+	self.SpecIF_LifecycleStatusReady = "ready";
+	self.SpecIF_done =
+	self.SpecIF_statusDone =
+	self.SpecIF_LifecycleStatusDone = "done";
+	self.SpecIF_validated =
+	self.SpecIF_statusValidated =
+	self.SpecIF_LifecycleStatusValidated = "validated";
+	self.SpecIF_released =
+	self.SpecIF_statusReleased =
+	self.SpecIF_LifecycleStatusReleased = "released";
 	self.SpecIF_withdrawn =
-	self.SpecIF_statusWithdrawn = "90_withdrawn";
+	self.SpecIF_statusWithdrawn =
+	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
 
 // Messages:
 	self.MsgIntro = 'Are you new here? Read a short <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction</a>, if you like.';

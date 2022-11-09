@@ -34,16 +34,18 @@ function toXhtml( data, opts ) {
 	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
 
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
+	if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
+//	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 	if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'FMC:Plan'];
 	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
 
-	// If no label is provided, the respective properties are skipped:
+/*	// If no label is provided, the respective properties are skipped:
 	if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
-	if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
+	if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );
+*/
 	if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegEx
 	if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegEx
 	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
@@ -126,25 +128,24 @@ function toXhtml( data, opts ) {
 			// In case of a statement, use the class' title by default:
 			ti = elTitleOf(itm);
 		};
-//		console.debug('titleOf 1',itm,ti);
-		ti = escapeXML( ti );
+
+		ti = escapeXML(ti);
 		if( !ti ) return '';
 			
 		// if itm has a 'subject', it is a statement:
 		let cL = itm.subject? data.statementClasses : data.resourceClasses,
 			eC = itemById( cL, itm['class'] );
 		
-//		console.debug('titleOf 2',itm,ti,eC);
-		// lookup titles only, if it is 
+	/*	// lookup titles only, if it is 
 		// - a resource used as heading or 
 		// - a statement;
 		// those may have vocabulary terms to translate;
 		// whereas individual resources may mean the vocabulary term as such:
 		if( eC&&eC.isHeading || itm.subject )
 			ti = opts.lookup(ti);
-
+	*/
 		// add icon, if specified:
-		ti = (eC&&eC.icon? eC.icon+'  ' : '') + ti;
+		ti = (opts.addIcon && eC && eC.icon ? eC.icon + '  ' : '') + ti;
 
 		if( !pars || typeof(pars.level)!='number' || pars.level<1 ) return ti;
 
@@ -202,13 +203,13 @@ function toXhtml( data, opts ) {
 		
 		// else, there are statements to render:
 		// The heading:
-		let ct = '<p class="metaTitle">'+opts.statementsLabel+'</p>',
-			sTi;
+		let ct = '<p class="metaTitle">' + opts.statementsLabel + '</p>';
+	//		sTi;
 		ct += '<table class="statementTable"><tbody>';
 		for( cid in sts ) {
 			// if we have clustered by title:
-			sTi = opts.lookup( cid );
-		/*	// we don't have (and don't need) the individual statement, just the class:
+		/*	sTi = opts.lookup( cid );
+			// we don't have (and don't need) the individual statement, just the class:
 			sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 			// 3 columns:
@@ -218,13 +219,15 @@ function toXhtml( data, opts ) {
 //					console.debug('s',s,itemById( data.resourceClasses,s['class']))
 					ct += '<a href="'+anchorOf( s, hi )+'">'+titleOf( s, undefined, opts )+'</a><br/>'
 				});
-				ct += '</td><td class="statementTitle">'+sTi;
+				ct += '</td><td class="statementTitle">'+cid;
+			//	ct += '</td><td class="statementTitle">'+sTi;
 				ct += '</td><td>'+titleOf( r, undefined, opts );
 				ct += '</td></tr>'
 			};
 			if( sts[cid].objects.length>0 ) {
 				ct += '<tr><td>'+titleOf( r, undefined, opts );
-				ct += '</td><td class="statementTitle">'+sTi+'</td><td>';
+				ct += '</td><td class="statementTitle">' + cid + '</td><td>';
+			//	ct += '</td><td class="statementTitle">'+sTi+'</td><td>';
 				sts[cid].objects.forEach( function(o) {
 					ct += '<a href="'+anchorOf( o, hi )+'">'+titleOf( o, undefined, opts )+'</a><br/>'
 				});
@@ -235,31 +238,28 @@ function toXhtml( data, opts ) {
 	}
 	function anchorOf( res, hi ) {
 		// Find the hierarchy node id for a given resource;
-		// the first occurrence is returned:
-		let m=null, M=null, y=null, n=null, N=null, ndId=null;
-		for( m=0, M=data.hierarchies.length; m<M; m++ ) {
+		// the first occurrence is returned.
+		// - 'hi' is an offset where to start searching.
+		let y, ndId;
+		for( var m=0, M=data.hierarchies.length; m<M; m++ ) {
 			// for all hierarchies starting with the current one 'hi', the index of the top-level loop:
 			y = (m+hi) % M;  
-//			console.debug( 'nodes', m, y, data.hierarchies );
-			if( data.hierarchies[y].nodes )
-				for( n=0, N=data.hierarchies[y].nodes.length; n<N; n++ ) {
-					ndId = nodeByRef( data.hierarchies[y].nodes[n] );
-//					console.debug('ndId',n,ndId);
-					if( ndId ) return ndId		// return node id
-				}
+			ndId = nodeByRef( data.hierarchies[y] );
+			if( ndId ) return ndId		// return node id
 		};
-		return null;	// not found
+		return;	// not found
 		
 		function nodeByRef( nd ) {
-			let ndId=null;
-			if( nd.resource==res.id ) return 'sect'+(y+firstHierarchySection)+'.xhtml#'+nd.id;  // fully qualified anchor including filename
-			if( nd.nodes )
-				for( var t=0, T=nd.nodes.length; t<T; t++ ) {
-					ndId = nodeByRef( nd.nodes[t] );
-//					console.debug('ndId2',n,ndId);
-					if( ndId ) return ndId
+			if ((nd.resource.id || nd.resource) == res.id)
+				return 'sect' + (y + firstHierarchySection) + '.xhtml#' + nd.id;  // fully qualified anchor including filename
+			if (nd.nodes) {
+				let ndId;
+				for (var n of nd.nodes) {
+					ndId = nodeByRef(n);
+					if (ndId) return ndId
 				};
-			return null
+			};
+			return null;
 		}
 	}
 	function propertiesOf( r, hi, opts ) {
@@ -300,7 +300,8 @@ function toXhtml( data, opts ) {
 		other.forEach( function(p) {
 			// the property title or it's class's title:
 			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-				rt = opts.lookup( prpTitleOf(p) );
+				rt = prpTitleOf(p);
+			//	rt = opts.lookup( prpTitleOf(p) );
 				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValueOf( p, hi )+'</td></tr>'
 			}
 		});
@@ -481,11 +482,11 @@ function toXhtml( data, opts ) {
 					for( var x=data.resources.length-1;x>-1;x-- ) {
 						cR = data.resources[x];
 									
-						// avoid self-reflection:
-//						if(ob.id==cR.id) continue;
-
+					/*	// avoid self-reflection:
+						if(ob.id==cR.id) continue;
+					*/
 						// get the pure title text:
-						ti = cR.title;
+						ti = titleOf(cR, undefined, Object.assign({}, opts, { addIcon: false }));
 
 						// disregard objects whose title is too short:
 						if( !ti || ti.length<opts.titleLinkMinLength ) continue;
@@ -520,7 +521,8 @@ function toXhtml( data, opts ) {
 							eV = itemById(dT.values,vL[v]);
 							// If 'eV' is an id, replace it by title, otherwise don't change:
 							// Add 'double-angle quotation' in case of SubClass values.
-							if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(eV.value)+'&#x00bb;'):opts.lookup(eV.value))
+							if (eV) ct += (v == 0 ? '' : ', ') + (st ? ('&#x00ab;' + eV.value + '&#x00bb;') : eV.value)
+						//	if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(eV.value)+'&#x00bb;'):opts.lookup(eV.value))
 							else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 						};
 						return escapeXML( ct );
