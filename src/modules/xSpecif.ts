@@ -1226,9 +1226,12 @@ class CSpecIF implements SpecIF {
 										});
 										break;
 									default:
-									/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
-										resolve(); */
-										reject({status:999,statusText:"Cannot transform file '"+iE.title+"' of type '"+iE.type+"' to an image."})
+										console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
+										resolve({
+											id: 'F-' + simpleHash(iE.title),
+											title: iE.title,
+											changedAt: iE.changedAt
+										} as IFileWithContent)
 								};
 							};
 						}

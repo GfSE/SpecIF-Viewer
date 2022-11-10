@@ -21,8 +21,18 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			pr.files.forEach((f: IFileWithContent) => {
 //				console.debug('zip a file',f);
 				if( f.blob ) {
-
 					pend++;
+
+					LIB.blob2dataURL(f,
+						(r: string) => {
+							// perhaps there is a more elegant way to apply the type to the dataURL,
+							// but it works:
+							f.dataURL = r.replace(/application\/octet-stream/, f.type);
+							delete f.blob;
+							if (--pend < 1) resolve(make(pr));
+						},
+						0
+					);
 				/*	switch( f.type ) {
 						case 'application/bpmn+xml':
 							// The 
@@ -60,18 +70,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 						//	let errT = 'Cannot transform diagram ' + f.title + ' of unknown type: ' + f.type;
 						//	console.warn(errT);
 						//	reject({ status: 999, statusText: errT });
-				*/
-							LIB.blob2dataURL(f,
-								(r: string) => {
-									// perhaps there is a more elegant way to apply the type to the dataURL,
-									// but it works:
-									f.dataURL = r.replace(/application\/octet-stream/, f.type);
-									delete f.blob;
-									if (--pend < 1) resolve(make(pr));
-								},
-								0
-							);
-				//	};
+					};  */
 				};
 			}); 
 		if( pend<1 ) {

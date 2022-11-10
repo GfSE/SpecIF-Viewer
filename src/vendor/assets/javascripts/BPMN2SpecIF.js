@@ -1092,7 +1092,7 @@ function BPMN2Specif( xmlString, opts ) {
 	// Add the tree:
 	model.hierarchies = NodeList(model.resources);
 	
-	console.debug('BPMN-XML',model);
+//	console.debug('BPMN-XML',model);
 	return model;
 	
 // =======================================

@@ -922,7 +922,7 @@ class CFileWithContent implements IFileWithContent {
 
 		if (this.dataURL) {
 			setTimeout(() => {
-				// add image to DOM using an image-tag with data-URI:
+				// add image to DOM using an object-tag with data-URI:
 				Array.from(document.getElementsByClassName(tagId(this.title)),
 					(el) => {
 						// @ts-ignore - existence of dataURL has been checked before

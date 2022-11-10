@@ -2009,8 +2009,8 @@ class CProject {
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.2', id: 'reqif' },
-							//	{ title: 'RDF', id: 'rdf' },
-							{ title: 'Turtle (experimental)', id: 'turtle' },
+						//	{ title: 'RDF', id: 'rdf' },
+						//	{ title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
 							{ title: 'MS Word® (Open XML)', id: 'oxml' }
 						],
