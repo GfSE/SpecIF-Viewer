@@ -2105,11 +2105,11 @@ class CProject {
 						case 'specif_v10':
 						//	case 'rdf':
 						case 'turtle':
-						case 'reqif':
 							opts.v10 = true;
 							// no break
-						case 'html':
+						case 'reqif':
 						case 'specif':
+						case 'html':
 							storeAs(opts);
 							break;
 						case 'epub':
@@ -2159,10 +2159,10 @@ class CProject {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-							titleLinkTargets: CONFIG.titleLinkTargets.map((e) => { return i18n.lookup(e) }),
-							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties).map((e) => { return i18n.lookup(e) }),
-							descriptionProperties: CONFIG.descProperties.map((e) => { return i18n.lookup(e) }),
-							stereotypeProperties: CONFIG.stereotypeProperties.map((e) => { return i18n.lookup(e) }),
+							titleLinkTargets: CONFIG.titleLinkTargets.map((e:string) => { return i18n.lookup(e) }),
+							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties).map((e: string) => { return i18n.lookup(e) }),
+							descriptionProperties: CONFIG.descProperties.map((e: string) => { return i18n.lookup(e) }),
+							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return i18n.lookup(e) }),
 						//	lookup: i18n.lookup,	vocabulary terms are now looked up during export (CSpecIF.toExt)
 							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
@@ -2263,7 +2263,6 @@ class CProject {
 						};
 
 						// B) Processing for all formats except 'html':
-						// @ts-ignore - JSZip() is loaded at runtime
 						let expStr: string,
 							// @ts-ignore - JSZip has been loaded dynamically
 							zipper = new JSZip(),

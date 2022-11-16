@@ -6,6 +6,12 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
+	Limitations:
+	- It is assumed that all text values within the provided SpecIF data set have only a single language,
+	  so a "SpecifMultiLanguageText" array has a single entry only.
+	- SpecIF v1.1 supports multiple values per property, but ReqIF does not. 
+	  For the time being, only the first value is picked for transformation.
+
 	ToDo: escapeXML the content. See toXHTML.
 	ToDo: Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
 */
@@ -160,17 +166,16 @@ moduleManager.construct({
 			});
 		} 
 		else {
-			//try {
 				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
 				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
 
                 // Selected file is not zipped - it is expected to be ReqIF data in XML format.
 			    // Check if data is valid XML:
                 
-				let str = LIB.ab2str(buf);
-                if( validateXML(str) ) {
-					// transformReqif2Specif gibt string zurück
-					// @ts-ignore - transformReqif2Specif() is loaded at runtime
+			let str = LIB.ab2str(buf);
+            if( validateXML(str) ) {
+				// transformReqif2Specif gibt string zurück
+				// @ts-ignore - transformReqif2Specif() is loaded at runtime
 				var result = transformReqif2Specif(str, { translateTitle: vocabulary.property.specif });
 				if (result.status == 0)
 					zDO.resolve(result.response)
@@ -189,12 +194,8 @@ moduleManager.construct({
 				let parser = new DOMParser();
 				let xmlDoc = parser.parseFromString(xml_data,"text/xml");
 				return xmlDoc.getElementsByTagName('parsererror').length<1
-			} 
-			else { 
-				let xmlDoc = new ActiveXObject("Microsoft.XMLDOM");          //compatability for older IE versions
-				xmlDoc.async = false;
-				return (xmlDoc.loadXML(xml_data)? true : false );
 			};
+			throw Error("Browser is too old; it does not offer window.DOMParser.");
 		}
 	};
 		
@@ -239,6 +240,16 @@ moduleManager.construct({
 		// So change all propertyClasses of dataType 'xs:string' to 'xhtml', 
 		// if XHTML-formatted text exists in at least one instance.
 
+			const
+				dTFormattedText = {
+					// DEPRECATED for SpecIF, but needed for ReqIF:
+					id: "DT-FormattedText",
+					title: "XHTML formatted text",
+					description: [{ text: "This dataType is beyond SpecIF; it has been added by ioReqif specifically for the SpecIF to ReqIF transformation." }],
+					type: "xhtml",
+					changedAt: "2020-11-06T08:59:00+02:00"
+				};
+
 			function specializeClassToFormattedText(ctg: string, eC: SpecifResourceClass | SpecifStatementClass): void {
 				// get all instances of eC:
 				//	if( eC.subjectClasses ) .. subjectClasses are mandatory and cannot serve to recognize the category ...
@@ -247,12 +258,11 @@ moduleManager.construct({
 						// for all elements (resources or statements) in list L, 
 						// check whether a property of the given propertyClass id
 						// has HTML content; a single occurrence is sufficient: 
-						let l,prp;
-						for( l of L ) {
+						for( var l of L ) {
 							if( l.properties )
-								for( prp of l.properties ) {
+								for( var prp of l.properties ) {
 									// check only the property with the specified class:
-									if (LIB.equalKey(prp['class'], k) && LIB.isHTML(prp.values[0]) ) return true;
+									if (LIB.equalKey(prp['class'], k) && LIB.isHTML(prp.values[0][0].text) ) return true;
 								};
 						};
 						return false;
@@ -264,7 +274,7 @@ moduleManager.construct({
 							pr.statements.filter((sta) => { return LIB.references(sta['class'], eC ) } )
 							: pr.resources.filter((res) => { return LIB.references(res['class'], eC ) } ),
 						pC;
-//					console.debug( 'specializeClassToFormattedText', eC, eL );
+//					console.debug( 'specializeClassToFormattedText', ctg, eC, eL );
 
 					eC.propertyClasses.forEach( (pCk)=>{
 						pC = LIB.itemByKey( pr.propertyClasses, pCk );
@@ -274,9 +284,10 @@ moduleManager.construct({
 							console.info("Specializing propertyClass for formatted text to element with title '"+pCk.id+"'");
 							// specialize propertyClass to "DT-Text"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
-							pC.dataType = LIB.makeKey("DT-Text");
+							pC.dataType = LIB.makeKey(dTFormattedText.id);
 							pC.format = "xhtml";
-							standardTypes.addTo("dataType",pC.dataType,pr);
+						//	standardTypes.addTo("dataType",pC.dataType,pr);
+							LIB.cacheE(pr.dataTypes, dTFormattedText);
 						};
 					});
 				};
@@ -314,11 +325,11 @@ moduleManager.construct({
 				if (dT.enumeration) {
 					// Limitation: Whereas SpecIF may have enumerated values of any dataType except xs:boolean,
 					// ReqIF only has one specific DATATYPE ENUMERATION with implicit data-type string.
-					// So, all SpecIF enumerations are mapped to the single ReqIF ENUMERATION.
+					// So, SpecIF enumerations of all dataTypes are mapped to the single ReqIF ENUMERATION.
 					xml += '<DATATYPE-DEFINITION-ENUMERATION ' + commonAttsOf(dT) + '>' +
 						'<SPECIFIED-VALUES>';
 					dT.enumeration.forEach((val, i) => {
-						xml += '<ENUM-VALUE IDENTIFIER="' + val.id + '" LONG-NAME="' + val.value + '" LAST-CHANGE="' + dateTime(dT) + '" >' +
+						xml += '<ENUM-VALUE IDENTIFIER="' + val.id + '" LONG-NAME="' + val.value[0].text + '" LAST-CHANGE="' + dateTime(dT) + '" >' +
 							'<PROPERTIES><EMBEDDED-VALUE KEY="' + i + '" OTHER-CONTENT="" /></PROPERTIES>' +
 							'</ENUM-VALUE>';
 					});
@@ -358,6 +369,9 @@ moduleManager.construct({
 						// no break
 					case SpecifDataTypeEnum.String:
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
+						break;
+					case 'xhtml':
+						xml += '<DATATYPE-DEFINITION-XHTML ' + commonAttsOf(dT) + '/>';
 						break;
 					default:
 						console.error('Error: unknown dataType: '+dT.type);
@@ -415,7 +429,7 @@ moduleManager.construct({
 			let hR = LIB.itemByKey( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
 				hC = LIB.itemByKey( pr.resourceClasses, hR['class'] );	// it's class
 			
-			if( LIB.indexBy( separated.objects, 'class', hC.id )>-1 ) {
+			if (LIB.referenceIndexBy(separated.objects, 'class', hC) > -1) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
 				hC.id = 'HC-'+hC.id;
@@ -431,7 +445,7 @@ moduleManager.construct({
 			h.title = hR.title || '';
 			h.description = hR.description || '';
 			// @ts-ignore - index is ok:
-			h['class'] = hC.id;
+			h['class'] = LIB.keyOf(hC);
 			if( hR.properties ) h.properties = hR.properties;
 			// further down, only the resources referenced by the children will be included as OBJECT,
 			// so there is no need to delete the resource originally representing the hierarchy root.
@@ -475,7 +489,7 @@ moduleManager.construct({
 		// 6. Transform resources to OBJECTS:
 		separated.objects.forEach( (r) =>{
 			xml += '<SPEC-OBJECT '+commonAttsOf( r )+'>'
-				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+r['class']+'</SPEC-OBJECT-TYPE-REF></TYPE>'
+				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+r['class'].id+'</SPEC-OBJECT-TYPE-REF></TYPE>'
 				+		attsOf( r )
 				+ '</SPEC-OBJECT>';
 		});
@@ -486,14 +500,14 @@ moduleManager.construct({
 		pr.statements.forEach( (s) =>{
 			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema,
 			// or transform only statements whose subject and object relating to resources:
-			if( LIB.indexById(pr.resources, s.object)>-1 && LIB.indexById(pr.resources, s.subject)>-1 ) {
+			if( LIB.indexByKey(pr.resources, s.object)>-1 && LIB.indexByKey(pr.resources, s.subject)>-1 ) {
 				// SpecIF statements do not require a title, take the class' title by default:
-				if (!s.title) s.title = LIB.itemById(pr.statementClasses, s['class']).title;
+				if (!s.title) s.title = LIB.itemByKey(pr.statementClasses, s['class']).title;
 				xml += '<SPEC-RELATION ' + commonAttsOf(s) + '>'
-					+ '<TYPE><SPEC-RELATION-TYPE-REF>' + s['class'] + '</SPEC-RELATION-TYPE-REF></TYPE>'
+					+ '<TYPE><SPEC-RELATION-TYPE-REF>' + s['class'].id + '</SPEC-RELATION-TYPE-REF></TYPE>'
 					+ attsOf(s)
-					+ '<SOURCE><SPEC-OBJECT-REF>' + s.subject + '</SPEC-OBJECT-REF></SOURCE>'
-					+ '<TARGET><SPEC-OBJECT-REF>' + s.object + '</SPEC-OBJECT-REF></TARGET>'
+					+ '<SOURCE><SPEC-OBJECT-REF>' + s.subject.id + '</SPEC-OBJECT-REF></SOURCE>'
+					+ '<TARGET><SPEC-OBJECT-REF>' + s.object.id + '</SPEC-OBJECT-REF></TARGET>'
 					+ '</SPEC-RELATION>'
 			};
 		});
@@ -504,7 +518,7 @@ moduleManager.construct({
 		pr.hierarchies.forEach( (h) =>{
 			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
 				// @ts-ignore - index is ok:
-				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class']+'</SPECIFICATION-TYPE-REF></TYPE>'
+				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class'].id+'</SPECIFICATION-TYPE-REF></TYPE>'
 				+		attsOf( h )
 				+   	childrenOf( h )
 				+ '</SPECIFICATION>'
@@ -531,53 +545,56 @@ moduleManager.construct({
 				if (!eC.propertyClasses || eC.propertyClasses.length < 1) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
 				// else
 				var xml='<SPEC-ATTRIBUTES>';
-				eC.propertyClasses.forEach( (pC) =>{
-					pC = LIB.itemByKey( pr.propertyClasses, pC );  // replace id by the item itself
+				eC.propertyClasses.forEach((pCk) => {
+					let pC = LIB.itemByKey(pr.propertyClasses, pCk),  // replace id by the item itself
+						dT = LIB.itemByKey(pr.dataTypes, pC.dataType),
+						adId = simpleHash(eC.id + pC.id);
 					// SpecIF resourceClasses and statementClasses may share propertyClasses,
 					// but in ReqIF every type has its own ATTRIBUTE-DEFINITIONs.
 					// Issue: The attribute-definition ids are different from those on import, as the propertyClasses are consolidated/deduplicated;
 					// If this is inacceptable, any propertyClass derived from a ReqIF ATTRIBUTE-DEFINITION must be excluded from deduplication 
 					// - and here the original id must be taken, if the propertyClass is exclusively used by the respective resourceClass (OBJECT-TYPE) or statementClass (RELATION-TYPE).
 					// - If it is changed here, it must be changed for the ATTRIBUTE-DEFINITION-REFs further down, as well.
-					let adId = simpleHash(eC.id+pC.id);
-					switch (LIB.itemById(pr.dataTypes, pC.dataType).type) {
-						case SpecifDataTypeEnum.Boolean:
-							xml += 	'<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>'+pC.dataTyp.ide+'</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-BOOLEAN>'
-							break;
-						case SpecifDataTypeEnum.Integer:
-							xml += 	'<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-INTEGER-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-INTEGER-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-INTEGER>'
-							break;
-						case SpecifDataTypeEnum.Double:
-							xml += 	'<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-REAL-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-REAL-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-REAL>'
-							break;
-						case SpecifDataTypeEnum.String:
-							xml += 	'<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-STRING-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-STRING-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-STRING>'
-							break;
-						case 'xhtml':
-							xml += 	'<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-XHTML-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-XHTML-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-XHTML>'
-							break;
-						case 'xs:enumeration':
-							// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
-							// The property 'dataType.multiple' is invisible for the server. 
-							xml += 	'<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" MULTI-VALUED="'+multipleChoice(pC,pr)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-ENUMERATION>'
-							break;
-						case SpecifDataTypeEnum.DateTime:
-							xml += 	'<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-'+adId+'" LONG-NAME="'+vocabulary.property.reqif(pC.title)+'" LAST-CHANGE="'+dateTime(pC)+'">' 
-								+		'<TYPE><DATATYPE-DEFINITION-DATE-REF>'+pC.dataType.id+'</DATATYPE-DEFINITION-DATE-REF></TYPE>' 
-								+	'</ATTRIBUTE-DEFINITION-DATE>'
-							break;
+					if (dT.enumeration) {
+						// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
+						// The property 'dataType.multiple' is invisible for the server. 
+						xml += '<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" MULTI-VALUED="' + multipleChoice(pC, pr) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+							+ '<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>' + dT.id + '</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>'
+							+ '</ATTRIBUTE-DEFINITION-ENUMERATION>'
+					}
+					else {
+						switch (dT.type) {
+							case SpecifDataTypeEnum.Boolean:
+								xml += '<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+									+ '<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>' + dT.id + '</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>'
+									+ '</ATTRIBUTE-DEFINITION-BOOLEAN>'
+								break;
+							case SpecifDataTypeEnum.Integer:
+								xml += '<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+									+ '<TYPE><DATATYPE-DEFINITION-INTEGER-REF>' + dT.id + '</DATATYPE-DEFINITION-INTEGER-REF></TYPE>'
+									+ '</ATTRIBUTE-DEFINITION-INTEGER>'
+								break;
+							case SpecifDataTypeEnum.Double:
+								xml += '<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+									+ '<TYPE><DATATYPE-DEFINITION-REAL-REF>' + dT.id + '</DATATYPE-DEFINITION-REAL-REF></TYPE>'
+									+ '</ATTRIBUTE-DEFINITION-REAL>'
+								break;
+							case SpecifDataTypeEnum.String:
+								xml += '<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+									+ '<TYPE><DATATYPE-DEFINITION-STRING-REF>' + dT.id + '</DATATYPE-DEFINITION-STRING-REF></TYPE>'
+									+ '</ATTRIBUTE-DEFINITION-STRING>'
+								break;
+							case 'xhtml':
+								xml += '<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+									+ '<TYPE><DATATYPE-DEFINITION-XHTML-REF>' + dT.id + '</DATATYPE-DEFINITION-XHTML-REF></TYPE>'
+									+ '</ATTRIBUTE-DEFINITION-XHTML>'
+								break;
+							case SpecifDataTypeEnum.DateTime:
+								xml += '<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+									+ '<TYPE><DATATYPE-DEFINITION-DATE-REF>' + dT.id + '</DATATYPE-DEFINITION-DATE-REF></TYPE>'
+									+ '</ATTRIBUTE-DEFINITION-DATE>'
+								break;
+						};
 					};
 				});
 				return xml + '</SPEC-ATTRIBUTES>';
@@ -586,104 +603,106 @@ moduleManager.construct({
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
 				var xml='<VALUES>';
 				me.properties.forEach( (prp) =>{
-					let pC = LIB.itemById( pr.propertyClasses, prp['class'] ),
-						dT = LIB.itemById( pr.dataTypes, pC.dataType ),
-						adId = simpleHash(me['class']+prp['class']);
-					switch (dT.type) {
-						case SpecifDataTypeEnum.Boolean:
-							xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
-								+  '</ATTRIBUTE-VALUE-BOOLEAN>'
-							break;
-						case SpecifDataTypeEnum.Integer:
-							xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
-								+  '</ATTRIBUTE-VALUE-INTEGER>'
-							break;
-						case SpecifDataTypeEnum.Double:
-							xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
-								+  '</ATTRIBUTE-VALUE-REAL>'
-							break;
-						case SpecifDataTypeEnum.String:
-							xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + prp.value.stripHTML().escapeXML()+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
-								+  '</ATTRIBUTE-VALUE-STRING>'
-							break;
-						case 'xhtml':
-							// ToDo: Replace or remove XHTML tags not supported by ReqIF
-							// - <img ..>
-	/*	// Transform a single image to an object, because <img..> is not allowed in ReqIF:
-		txt = txt.replace( /<img([^>]+)[\/]{0,1}>/g,
-			function( $0, $1 ){
-				var u = getUrl( $1, 'src' );
-				if( u==null ) return ''
-				var t = getType( $1 );
-				var s = getStyle( $1 );
+					let pC = LIB.itemByKey( pr.propertyClasses, prp['class'] ),
+						dT = LIB.itemByKey( pr.dataTypes, pC.dataType ),
+						adId = simpleHash(me['class'].id+prp['class'].id);
 
-				if( t=='' ) {
-					// Derive mime-type from file extension, as <img> does not have a type attribute,
-					// It is essential for SVG, otherwise the formatting in IE will not be correct.
-					var e = u.fileExt();
-					if( e ) {
-						let ei = CONFIG.imgExtensions.indexOf( e.toLowerCase() ); 
-						if( ei>-1 ) {t = ' type="'+CONFIG.imgTypes[ei]+'"'}
+					if (dT.enumeration) {
+						xml += '<ATTRIBUTE-VALUE-ENUMERATION>'
+							+ '<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
+							+ '<VALUES>';
+						prp.values.forEach((v) => {
+							xml += '<ENUM-VALUE-REF>' + v + '</ENUM-VALUE-REF>';
+						});
+						xml += '</VALUES>'
+							+ '</ATTRIBUTE-VALUE-ENUMERATION>';
 					}
-				};
-				return ('<object data="'+u+'"'+t+s+' >'+u+'</object>');  
-			} 
-		); */
-							// add a xtml namespace and an enclosing <div> bracket, if not yet present:
-							// ToDo: HTML-characters in markup links (label)[http://...] such as '&' are falsely escaped
-							let	hasDiv = RE_hasDiv.test(prp.value),
-								txt =
+					else {
+						switch (dT.type) {
+							case SpecifDataTypeEnum.Boolean:
+								xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="' + prp.values[0] + '">'
+									+ '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
+									+ '</ATTRIBUTE-VALUE-BOOLEAN>'
+								break;
+							case SpecifDataTypeEnum.Integer:
+								xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="' + prp.values[0] + '">'
+									+ '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
+									+ '</ATTRIBUTE-VALUE-INTEGER>'
+								break;
+							case SpecifDataTypeEnum.Double:
+								xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="' + prp.values[0] + '">'
+									+ '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
+									+ '</ATTRIBUTE-VALUE-REAL>'
+								break;
+							case SpecifDataTypeEnum.String:
+								xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + prp.values[0][0].text.stripHTML().escapeXML() + '">'
+									+ '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
+									+ '</ATTRIBUTE-VALUE-STRING>'
+								break;
+							case 'xhtml':
+								// ToDo: Replace or remove XHTML tags not supported by ReqIF
+								// - <img ..>
+								/*	// Transform a single image to an object, because <img..> is not allowed in ReqIF:
+									txt = txt.replace( /<img([^>]+)[\/]{0,1}>/g,
+										function( $0, $1 ){
+											var u = getUrl( $1, 'src' );
+											if( u==null ) return ''
+											var t = getType( $1 );
+											var s = getStyle( $1 );
+						
+											if( t=='' ) {
+												// Derive mime-type from file extension, as <img> does not have a type attribute,
+												// It is essential for SVG, otherwise the formatting in IE will not be correct.
+												var e = u.fileExt();
+												if( e ) {
+													let ei = CONFIG.imgExtensions.indexOf( e.toLowerCase() ); 
+													if( ei>-1 ) {t = ' type="'+CONFIG.imgTypes[ei]+'"'}
+												}
+											};
+											return ('<object data="'+u+'"'+t+s+' >'+u+'</object>');  
+										} 
+									); */
+								// add a xtml namespace and an enclosing <div> bracket, if not yet present:
+								// ToDo: HTML-characters in markup links (label)[http://...] such as '&' are falsely escaped
+								let hasDiv = RE_hasDiv.test(prp.values[0][0].text),
+									txt =
 										// escape text except for HTML tags:
-										LIB.escapeInnerHtml(prp.value)
-										// ReqIF does not support the class attribute:
-										.replace( RE_class, () =>{ 
-											return '';
-										})
-										// ReqIF does not support the target attribute within the anchor tag <a>:
-										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE_aTarget, ($0,$1) =>{
-											return $1;
-										})
-										// ReqIF schema: "Only data, type, width and height are allowed as attributes 
-										// for XHTML object element and type must be set to MIME-Type (if one exists)"
-										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE_objectId, ($0,$1) =>{
-											return $1;
-										})
-										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE_objectName, ($0,$1) =>{
-											return $1;
-										})
-										// Add the namespace to XHTML-tags:
-										// @ts-ignore - $0 is never read, but must be specified anyways
-										.replace( RE.tag, ($0,$1,$2) =>{
-											return $1+ns+':'+$2;
-										});
-							xml += '<ATTRIBUTE-VALUE-XHTML>'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
-								+     '<THE-VALUE>'+(hasDiv?'':'<'+ns+':div>')+txt+(hasDiv?'':'</'+ns+':div>')+'</THE-VALUE>'
-								+  '</ATTRIBUTE-VALUE-XHTML>'
-							break;
-						case 'xs:enumeration':
-							xml += '<ATTRIBUTE-VALUE-ENUMERATION>'
-								+		'<DEFINITION><ATTRIBUTE-DEFINITION-ENUMERATION-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-ENUMERATION-REF></DEFINITION>'
-								+			'<VALUES>'
-							let vL = prp.value.split(',');  // in case of ENUMERATION, value carries comma-separated value-IDs
-							vL.forEach( (v:string) =>{
-								xml += '<ENUM-VALUE-REF>'+v+'</ENUM-VALUE-REF>'
-							});
-							xml += 			'</VALUES>'
-								+	'</ATTRIBUTE-VALUE-ENUMERATION>'
-							break;
-						case SpecifDataTypeEnum.DateTime:
-							xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="'+prp.value+'">'
-								+	  '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-'+adId+'</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
-								+  '</ATTRIBUTE-VALUE-DATE>'
-							break;
+										LIB.escapeInnerHtml(prp.values[0][0].text)
+											// ReqIF does not support the class attribute:
+											.replace(RE_class, () => {
+												return '';
+											})
+											// ReqIF does not support the target attribute within the anchor tag <a>:
+											// @ts-ignore - $0 is never read, but must be specified anyways
+											.replace(RE_aTarget, ($0, $1) => {
+												return $1;
+											})
+											// ReqIF schema: "Only data, type, width and height are allowed as attributes 
+											// for XHTML object element and type must be set to MIME-Type (if one exists)"
+											// @ts-ignore - $0 is never read, but must be specified anyways
+											.replace(RE_objectId, ($0, $1) => {
+												return $1;
+											})
+											// @ts-ignore - $0 is never read, but must be specified anyways
+											.replace(RE_objectName, ($0, $1) => {
+												return $1;
+											})
+											// Add the namespace to XHTML-tags:
+											// @ts-ignore - $0 is never read, but must be specified anyways
+											.replace(RE.tag, ($0, $1, $2) => {
+												return $1 + ns + ':' + $2;
+											});
+								xml += '<ATTRIBUTE-VALUE-XHTML>'
+									+ '<DEFINITION><ATTRIBUTE-DEFINITION-XHTML-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-XHTML-REF></DEFINITION>'
+									+ '<THE-VALUE>' + (hasDiv ? '' : '<' + ns + ':div>') + txt + (hasDiv ? '' : '</' + ns + ':div>') + '</THE-VALUE>'
+									+ '</ATTRIBUTE-VALUE-XHTML>'
+								break;
+							case SpecifDataTypeEnum.DateTime:
+								xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="' + prp.values[0] + '">'
+									+ '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
+									+ '</ATTRIBUTE-VALUE-DATE>'
+								break;
+						};
 					};
 				});
 				return xml + '</VALUES>';
@@ -693,7 +712,7 @@ moduleManager.construct({
 				var xml = '<CHILDREN>'
 					el.nodes.forEach( (ch) =>{
 						xml += '<SPEC-HIERARCHY IDENTIFIER="'+(ch.id||'N-'+ch.resource)+'" LONG-NAME="'+(ch.title||'')+'" LAST-CHANGE="'+(ch.changedAt||el.changedAt)+'">'
-							+		'<OBJECT><SPEC-OBJECT-REF>'+ch.resource+'</SPEC-OBJECT-REF></OBJECT>'
+							+		'<OBJECT><SPEC-OBJECT-REF>'+ch.resource.id+'</SPEC-OBJECT-REF></OBJECT>'
 							+		childrenOf( ch )
 							+ '</SPEC-HIERARCHY>'
 					});
@@ -706,11 +725,10 @@ moduleManager.construct({
 						iterate( n, fn );
 					});
 			}
-			function multipleChoice(pC: SpecifPropertyClass, prj?: SpecIF|CCache): boolean {
-				if (!prj) prj = app.cache.selectedProject.data;
+			function multipleChoice(pC: SpecifPropertyClass, prj: SpecIF): boolean {
 				// return 'true', if either the property type specifies it, or by default its datatype;
 				// if defined, the property type's value supersedes the datatype's value:
-				return (typeof (pC.multiple) == 'boolean' ? pC.multiple : !!LIB.itemById(prj.dataTypes, pC.dataType).multiple)
+				return (typeof (pC.multiple) == 'boolean' ? pC.multiple : !!LIB.itemByKey(prj.dataTypes, pC.dataType).multiple)
 				// Note: specif-check applies the same logic in function 'checkPropValues(..)'
 			}
 	};

@@ -862,7 +862,8 @@ class CSpecIF implements SpecIF {
 						createdAt: new Date().toISOString()
 					};
 
-				if (LIB.multiLanguageTextHasContent(this.description)) spD.description = this.description;
+				// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
+				if (LIB.multiLanguageTextHasContent(this.description)) spD.description = LIB.makeMultiLanguageText(LIB.languageValueOf(this.description, opts));
 				if (this.language) spD.language = this.language;
 
 				if (this.rights && this.rights.title && this.rights.url)
@@ -933,7 +934,8 @@ class CSpecIF implements SpecIF {
 					};
 					// most items must have a title, but resources and statements come without:
 					if (iE.title) oE.title = LIB.titleOf(iE, opts);
-					if (LIB.multiLanguageTextHasContent(iE.description)) oE.description = LIB.languageValueOf(iE.description, opts);
+					// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
+					if (LIB.multiLanguageTextHasContent(iE.description)) oE.description = LIB.makeMultiLanguageText(LIB.languageValueOf(iE.description, opts));
 					if (iE.revision) oE.revision = iE.revision;
 					if (iE.replaces) oE.replaces = iE.replaces;
 					if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -960,7 +962,7 @@ class CSpecIF implements SpecIF {
 					if (iE.enumeration) {
 						if (opts.targetLanguage)
 							// reduce to the language specified:
-							oE.enumeration = LIB.forAll(iE.enumeration, (v:any) => { return { id: v.id, value: LIB.languageValueOf(v.value, opts) } })
+							oE.enumeration = iE.enumeration.map( (v: any) => { return { id: v.id, value: LIB.makeMultiLanguageText(LIB.languageValueOf(v.value, opts)) } })
 						else
 							oE.enumeration = iE.enumeration;
 					};
@@ -1074,7 +1076,7 @@ class CSpecIF implements SpecIF {
 											txt = refDiagramsAsImg(txt);
 									};
 								};
-								oE.values.push([LIB.makeMultiLanguageText(txt)]);
+								oE.values.push(LIB.makeMultiLanguageText(txt));
 							};
 							return oE;
 						};

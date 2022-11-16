@@ -24,7 +24,7 @@ class StandardTypes {
 	},{ 
 		id: "DT-DateTime",  
 		title: "Date or Timestamp",
-		description: [{ text: "Date or Timestamp in ISO-Format" }],
+		description: [{ text: "Date or timestamp in ISO-8601 format" }],
 		type: SpecifDataTypeEnum.DateTime,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
@@ -63,16 +63,9 @@ class StandardTypes {
 		dataType: { id: "DT-Text" },
 		changedAt: "2016-05-26T08:59:00+02:00"
 	}, {
-		// DEPRECATED for SpecIF, but needed for ReqIF:
-		id: "PC-FormattedText",
-		title: CONFIG.propClassDesc,
-		dataType: { id: "DT-FormattedText" },
-		changedAt: "2020-11-06T08:59:00+02:00"
-	}, {
 		id: "PC-Diagram",
 		title: CONFIG.resClassDiagram,
 		dataType: { id: "DT-Text" },
-	//	dataType: "DT-FormattedText",
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "PC-Type",
@@ -90,7 +83,7 @@ class StandardTypes {
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
         id: "RC-Paragraph",
-		title: "SpecIF:Paragraph",
+		title: CONFIG.resClassParagraph,
 		description: [{ text: "Information with title and text for descriptive paragraphs." }],
 		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
 		propertyClasses: [{ id: "PC-Name" },{ id: "PC-Description" }, { id: "PC-Type" }],
@@ -102,7 +95,7 @@ class StandardTypes {
 		instantiation: ['internal'],  // this value is not defined by the schema
 		changedAt: "2022-06-05T18:59:00+01:00"
 	}];  */
-	// The sequence is such that every list's elements have only references to list elements above:
+	// The sequence is such that every list's elements have references only to list elements above:
 	listName = new Map([
 		['dataType', "dataTypes"],
 		['propertyClass', "propertyClasses"],

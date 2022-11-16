@@ -11,6 +11,6 @@
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\vendor\\assets\\javascripts\\BPMN2SpecIF.js",
+  "SelectedNode": "\\src\\modules\\ioReqif.mod.ts",
   "PreviewInSolutionExplorer": false
 }
