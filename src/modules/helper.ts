@@ -581,6 +581,34 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
 	return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
 //	return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
 }
+LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
+	// Return the values of a resource's (or statement's) property with a title listed in pNs;
+	// replace references to enumerated values by the corresponding values:
+	// ToDo: return the class's default value, if available.
+	//	console.debug('valuesByTitle',dta,itm,pN);
+	if (itm.properties) {
+		let dT: SpecifDataType, pC:SpecifPropertyClass;
+		for (var p of itm.properties) {
+			pC = LIB.itemByKey(dta.propertyClasses, p['class']);
+			if (pC && pNs.includes(pC.title)) {
+				dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
+				if (dT) {
+					return dT.enumeration? 
+						p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value }) :
+						p.values
+				}
+				/*	if (dT.enumeration) {
+						return p.values.map((v) => { return LIB.itemById(dT.enumeration, v) })
+					}
+					else {
+						return p.values
+					}
+				}; */
+			};
+		};
+	};
+	return [];
+}
 LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
 	// call indexByKey without revision to get the most recent revision:
 	return L[LIB.indexByKey(L, { id: k.id })];
@@ -1363,20 +1391,6 @@ LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCac
 	};
 	//	return undefined
 }
-LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], pCs: SpecifPropertyClass[]): SpecifValues => {
-	// Return the values of a resource's (or statement's) property with a title listed in pNs:
-	// ToDo: return the class's default value, if available.
-//	console.debug('valuesByTitle',dta,itm,pN);
-	if (itm.properties) {
-		let pC;
-		for (var p of itm.properties) {
-			pC = LIB.itemByKey(pCs, p['class']);
-			if (pC && pNs.includes(pC.title))
-				return p.values;
-		};
-	};
-	return [];
-}
 LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
@@ -1427,7 +1441,7 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): stri
 
 		// For now, let's try without replacements; so far this function is called before the filters are applied,
 		// perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-		//		console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
+//		console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
 		let ti = LIB.languageValueOf(pL[idx].values[0], opts);
 		if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
 	};

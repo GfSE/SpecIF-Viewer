@@ -2375,7 +2375,7 @@ moduleManager.construct({
 					// get the referenced resource:
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
 					// find the property defining the type:
-					pV = LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData.propertyClasses);
+					pV = LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData)[0];
 					// Remember whether at least one diagram has been found:
 					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData.resourceClasses)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;

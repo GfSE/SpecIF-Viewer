@@ -166,11 +166,11 @@ moduleManager.construct({
 			});
 		} 
 		else {
-				// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
-				// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
+			// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
+			// The resulting data before parsing must be a JSON string enclosed in curly brackets "{" and "}".
 
-                // Selected file is not zipped - it is expected to be ReqIF data in XML format.
-			    // Check if data is valid XML:
+            // Selected file is not zipped - it is expected to be ReqIF data in XML format.
+			// Check if data is valid XML:
                 
 			let str = LIB.ab2str(buf);
             if( validateXML(str) ) {
@@ -262,7 +262,7 @@ moduleManager.construct({
 							if( l.properties )
 								for( var prp of l.properties ) {
 									// check only the property with the specified class:
-									if (LIB.equalKey(prp['class'], k) && LIB.isHTML(prp.values[0][0].text) ) return true;
+									if (LIB.equalKey(prp['class'], k) && LIB.isHTML((prp.values[0] as SpecifMultiLanguageText)[0].text) ) return true;
 								};
 						};
 						return false;
@@ -329,7 +329,7 @@ moduleManager.construct({
 					xml += '<DATATYPE-DEFINITION-ENUMERATION ' + commonAttsOf(dT) + '>' +
 						'<SPECIFIED-VALUES>';
 					dT.enumeration.forEach((val, i) => {
-						xml += '<ENUM-VALUE IDENTIFIER="' + val.id + '" LONG-NAME="' + val.value[0].text + '" LAST-CHANGE="' + dateTime(dT) + '" >' +
+						xml += '<ENUM-VALUE IDENTIFIER="' + val.id + '" LONG-NAME="' + (Array.isArray(val.value) ? val.value[0].text : val.value) + '" LAST-CHANGE="' + dateTime(dT) + '" >' +
 							'<PROPERTIES><EMBEDDED-VALUE KEY="' + i + '" OTHER-CONTENT="" /></PROPERTIES>' +
 							'</ENUM-VALUE>';
 					});
@@ -370,6 +370,7 @@ moduleManager.construct({
 					case SpecifDataTypeEnum.String:
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
+					// @ts-ignore - this is only used in ioReqif
 					case 'xhtml':
 						xml += '<DATATYPE-DEFINITION-XHTML ' + commonAttsOf(dT) + '/>';
 						break;
@@ -420,6 +421,7 @@ moduleManager.construct({
 				});
 		});
 //		console.debug( 'after collecting referenced resources: ', xml, separated );
+
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( (h) =>{
 			// The resources referenced at the lowest level of hierarchies (the 'roots')
@@ -446,6 +448,7 @@ moduleManager.construct({
 			h.description = hR.description || '';
 			// @ts-ignore - index is ok:
 			h['class'] = LIB.keyOf(hC);
+			// @ts-ignore - the ReqIF SPECIFICATION root elements *have* properties
 			if( hR.properties ) h.properties = hR.properties;
 			// further down, only the resources referenced by the children will be included as OBJECT,
 			// so there is no need to delete the resource originally representing the hierarchy root.
@@ -498,11 +501,12 @@ moduleManager.construct({
 		
 		// 7. Transform statements to RELATIONs:
 		pr.statements.forEach( (s) =>{
-			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema,
-			// or transform only statements whose subject and object relating to resources:
+			// Skip all statements which relate to statements, which is not accepted by the ReqIF schema;
+			// in other words, transform only statements whose subject and object relating to resources:
 			if( LIB.indexByKey(pr.resources, s.object)>-1 && LIB.indexByKey(pr.resources, s.subject)>-1 ) {
 				// SpecIF statements do not require a title, take the class' title by default:
-				if (!s.title) s.title = LIB.itemByKey(pr.statementClasses, s['class']).title;
+				// @ts-ignore - set the title attribute for the sake of ReqIF
+				s.title = LIB.itemByKey(pr.statementClasses, s['class']).title;
 				xml += '<SPEC-RELATION ' + commonAttsOf(s) + '>'
 					+ '<TYPE><SPEC-RELATION-TYPE-REF>' + s['class'].id + '</SPEC-RELATION-TYPE-REF></TYPE>'
 					+ attsOf(s)
@@ -538,7 +542,8 @@ moduleManager.construct({
 			function dateTime(e: SpecifItem): string {
 				return e.changedAt || pr.createdAt || date
 			}
-			function commonAttsOf( e:SpecifItem ):string {
+			function commonAttsOf(e: SpecifItem): string {
+				// @ts-ignore - title does not always exist, but that's why it is checked: 
 				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? e.title.stripHTML().escapeXML() : '') + '" DESC="' + (e.description && e.description[0] && e.description[0].text ? e.description[0].text.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
 			function attrTypesOf(eC: SpecifResourceClass | SpecifStatementClass): string {
@@ -635,7 +640,7 @@ moduleManager.construct({
 									+ '</ATTRIBUTE-VALUE-REAL>'
 								break;
 							case SpecifDataTypeEnum.String:
-								xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + prp.values[0][0].text.stripHTML().escapeXML() + '">'
+								xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + (prp.values[0] as SpecifMultiLanguageText)[0].text.stripHTML().escapeXML() + '">'
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-STRING>'
 								break;
@@ -664,10 +669,10 @@ moduleManager.construct({
 									); */
 								// add a xtml namespace and an enclosing <div> bracket, if not yet present:
 								// ToDo: HTML-characters in markup links (label)[http://...] such as '&' are falsely escaped
-								let hasDiv = RE_hasDiv.test(prp.values[0][0].text),
+								let hasDiv = RE_hasDiv.test((prp.values[0] as SpecifMultiLanguageText)[0].text),
 									txt =
 										// escape text except for HTML tags:
-										LIB.escapeInnerHtml(prp.values[0][0].text)
+										LIB.escapeInnerHtml((prp.values[0] as SpecifMultiLanguageText)[0].text)
 											// ReqIF does not support the class attribute:
 											.replace(RE_class, () => {
 												return '';

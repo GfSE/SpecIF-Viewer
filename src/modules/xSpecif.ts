@@ -74,17 +74,17 @@ class CSpecifItemNames {
 class CSpecIF implements SpecIF {
 	// Transform a SpecIF data-set of several versions to the internal representation of the SpecIF Viewer/Editor
 	// and also transform it back to a SpecIF data-set of the most recent version.
-	id:SpecifId = '';
-	$schema = '';
-	title?: SpecifMultiLanguageText = [{ text: '' }];
-	description?: SpecifMultiLanguageText = [{ text: '' }];
-	language?= '';
-	generator? = '';
-	generatorVersion? = '';
-	rights?: any = {};
-	// @ts-ignore - will be set by 'toInt()', if available in the input data:
+	// @ts-ignore - id is set in toInt()
+	id: SpecifId;
+	// @ts-ignore - $schema is set in toInt()
+	$schema: string;
+	title?: SpecifMultiLanguageText;
+	description?: SpecifMultiLanguageText;
+	language?: string;
+	generator?: string;
+	generatorVersion?: string;
+	rights?: SpecifRights;
 	createdAt?: SpecifDateTime;
-	// @ts-ignore - will be set by 'toInt()', if available in the input data:
 	createdBy?: SpecifCreatedBy;
 
 	dataTypes: SpecifDataType[] = [];
@@ -109,12 +109,20 @@ class CSpecIF implements SpecIF {
 					this.toInt(spD);
 					resolve(this)
 				}
-				else
-					this.check(spD,opts)
-						.then(
-							(nD) => { this.toInt(nD); resolve(this) },
-							reject
-						)
+				else {
+					// check *after* transformation:
+					this.toInt(spD);
+					this.check(this, opts)
+					.then(
+						() => { resolve(this) },
+						reject
+					)
+				};
+				/*	this.check(spD,opts)
+					.then(
+						(nD) => { this.toInt(nD); resolve(this) },
+						reject
+					) */
 			}
 		);
 	} 
@@ -186,21 +194,21 @@ class CSpecIF implements SpecIF {
 			return this.toExt_v10(opts);
 		return this.toExt(opts);
 	}
-	private check(spD: SpecIF, opts?: any): Promise<SpecIF> {
+	private check(spD?: SpecIF, opts?: any): Promise<SpecIF> {
 		// Check the SpecIF data for schema compliance and consistency;
-		// 'this' isn't modified, so it shall be invoked before ingesting the data using 'toInt':
+		if (!spD) spD = this;
 		return new Promise(
 			(resolve, reject) => {
 
 				let checker: any;
 
-				if (typeof (spD) == 'object') {
+				if (this.isValid(spD)) {
 					// 1. Get the "official" routine for checking schema and constraints
 					//    - where already loaded checking routines are replaced by the newly loaded ones
 					//    - use $.ajax() with options since it is more flexible than $.getScript
 					//    - the first (relative) URL is for debugging within a local clone of Github
 					//    - both of the other (absolute) URLs are for a production environment
-					if (spD['$schema'] && spD['$schema'].indexOf('v1.0') < 0) {
+					if (spD['$schema'] && !spD['$schema'].includes('v1.0')) {
 						// for data sets according to schema v1.1 and later;
 						// get the constraint checker locally, if started locally in the debug phase:
 						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
@@ -354,6 +362,7 @@ class CSpecIF implements SpecIF {
 		if (spD.description) this.description = makeMultiLanguageText(spD.description);
 		if (spD.title) this.title = makeMultiLanguageText(spD.title);
 		this.id = spD.id;
+		this.$schema = 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json';
 		return;
 
 //		console.debug('specif.toInt',simpleClone(this));
@@ -504,24 +513,27 @@ class CSpecIF implements SpecIF {
 			// If "iE.isHeading" is defined, use it:
 			if (typeof (iE.isHeading) == 'boolean') {
 				oE.isHeading = iE.isHeading;
-				return oE
-			};
-			// else: take care of older data without "isHeading":
-			if (iE.title == 'SpecIF:Heading') {
+			}
+			else if (iE.title == 'SpecIF:Heading') {
+				// take care of older data without "isHeading":
 				oE.isHeading = true;
-				return oE
-			};
-			// else: look for a property class being configured in CONFIG.headingProperties
-			let pC;
-			for (var a = oE.propertyClasses.length - 1; a > -1; a--) {
-				pC = LIB.itemByKey(self.propertyClasses, oE.propertyClasses[a]);
-				if (CONFIG.headingProperties.includes(pC.title)) {
-					oE.isHeading = true;
-					break;
+			}
+			else {
+				// look for a property class being configured in CONFIG.headingProperties:
+				let pC;
+				for (var a = oE.propertyClasses.length - 1; a > -1; a--) {
+					pC = LIB.itemByKey(self.propertyClasses, oE.propertyClasses[a]);
+					if (CONFIG.headingProperties.includes(pC.title)) {
+						oE.isHeading = true;
+						break;
+					};
 				};
 			};
 //			console.debug('resourceClass 2int',iE,oE);
-			return oE
+			if (oE.propertyClasses.length >0 )
+				return oE;
+			console.warn('Skipping the resourceClass with id="' + iE.id + '" on import, because it does not specify any propertyClasses.');
+			// return undefined ... and the element will not be listed in the list of resourceClasses
 		}
 		// a statementClass:
 		function sC2int(iE:any): SpecifStatementClass {
@@ -1011,7 +1023,12 @@ class CSpecIF implements SpecIF {
 					var oE: SpecifResourceClass = aC2ext(iE) as SpecifResourceClass;
 					// Include "isHeading" in SpecIF only if true:
 					if (iE.isHeading) oE.isHeading = true;
-					return oE
+					// resourceClasses must have a list of propertyClasses with at least one element:
+					if (Array.isArray(oE.propertyClasses) && oE.propertyClasses.length > 0)
+						return oE;
+					// else (shouldn't arrive here, at all):
+					console.error('Skipping resourceClass with id="'+iE.id+'" on export, because it does not specify any propertyClasses.');
+					// return undefined ... and the element will not be listed in the list of resourceClasses
 				}
 				// a statement class:
 				function sC2ext(iE: SpecifStatementClass) {
