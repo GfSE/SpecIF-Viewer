@@ -577,7 +577,8 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 	return val[0].text;
 }
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
-	// for display, any vocabulary term is always translated to the selected language:
+	// for display, any vocabulary term is always translated to the selected language;
+	// a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
 	return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
 //	return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
 }
@@ -608,6 +609,19 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
 		};
 	};
 	return [];
+}
+LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
+	// Has the class of res a title listed in pNs?
+	return pNs.includes(LIB.resClassTitleOf(r, dta.resourceClasses));
+}
+LIB.hasResType = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache, opts?: any): boolean => {
+	// Has res a type property with a value listed in pNs? 
+	// It is assumed that a type property has no more than one value, so the first is taken if available. 
+	let pVs = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
+	if (pVs.length > 0) {
+		return pNs.includes(LIB.displayValueOf(pVs[0], Object.assign({ targetLanguage: 'default' }, opts)))
+	};
+	return false;
 }
 LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
 	// call indexByKey without revision to get the most recent revision:

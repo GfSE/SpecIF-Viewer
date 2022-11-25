@@ -55,7 +55,6 @@ function transformReqif2Specif(reqifDoc,options) {
         console.info('Project title assembled from ReqIF SPECIFICATION roots');
     };
 
-
 //  console.info(xhr);
     return xhr;
 
