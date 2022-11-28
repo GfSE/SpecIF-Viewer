@@ -110,10 +110,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.hid = 'H-' + simpleHash(pN + wsN)	// the hierarchy ID of the folder carrying all resources of the selected sheet
 			this.range = this.data["!ref"]; 	// e.g. A1:C25
 			if (this.range) {
-				// only if the sheet has content:
-				this.firstCell = new Coord(this.range.split(":")[0]);
-				this.lastCell = new Coord(this.range.split(":")[1]);
-				this.isValid = true;
+				let splittedRange = this.range.split(":");
+				if (splittedRange.length > 1) {
+					// only if the sheet has content:
+					this.firstCell = new Coord(splittedRange[0]);
+					this.lastCell = new Coord(splittedRange[1]);
+					this.isValid = true;
+				};
 			};
 		}
 	}

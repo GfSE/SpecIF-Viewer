@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.0.M",
+	CONFIG.appVersion = "1.0.N",
 	CONFIG.specifVersion = "1.0";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -363,9 +363,12 @@ const CONFIG:any = {};
 		CONFIG.resClassProcess,
 		"Archimate:Viewpoint"
 	];
-	// A list of resourceClasses representing Model Diagrams, specified by resourceClass title:
+	// A list of resourceClasses representing Model Diagrams;
+	// these are used as title of a diagram's class and/or as a value of a type property:
 	CONFIG.diagramClasses = [
 		CONFIG.resClassDiagram,
+		CONFIG.resClassProcess,
+		"Archimate:Viewpoint",
 		"FMC:Plan",			// equivalent
 		"SpecIF:View"		// deprecated
 	];
