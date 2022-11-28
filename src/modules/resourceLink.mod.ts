@@ -228,8 +228,8 @@ moduleManager.construct({
 					// no reflexive statements are allowed:
 					res.id!=selRes.id
 					// res is not eligible, if it is already related with selRes by a statement of the same class:
-					&& LIB.indexBy(sL, 'subject', LIB.keyOf(res))<0
-					&& LIB.indexBy(sL, 'object', LIB.keyOf(res))<0
+					&& LIB.referenceIndexBy(sL, 'subject', res)<0
+					&& LIB.referenceIndexBy(sL, 'object', res)<0
 					// res must be eligible as subject or object and contain the searchStr:
 					&& ( candidateMayBeObject( self.selectedStatementClass, res )
 						|| candidateMayBeSubject( self.selectedStatementClass, res ) )) {

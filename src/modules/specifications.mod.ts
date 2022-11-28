@@ -2375,13 +2375,14 @@ moduleManager.construct({
 					// get the referenced resource:
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
 					// find the property defining the type:
-					pV = LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData)[0];
+			//		pV = LIB.displayValueOf(LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData)[0],opts);
 					// Remember whether at least one diagram has been found:
 					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData.resourceClasses)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram
-						|| CONFIG.diagramTypesHavingShowsStatementsForEdges.includes(pV))
+						|| LIB.hasResType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, cacheData));
+			//			|| CONFIG.diagramTypesHavingShowsStatementsForEdges.includes(pV))
 				}
 			) || noDiagramFound;
 		}

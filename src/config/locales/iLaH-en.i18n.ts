@@ -451,6 +451,7 @@ function LanguageTextsEn() {
 	self.SpecIF_satisfies =
 	self.IREB_satisfies = "satisfies";
 	self.SpecIF_modifies =
+	self.SpecIF_accesses =
 	self.archimate_accesses =
 	self.SpecIF_stores = "writes and reads";
 	self.SpecIF_reads = "reads";

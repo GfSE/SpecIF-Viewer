@@ -175,7 +175,7 @@ class CSpecIF implements SpecIF {
 				};
 				// Add a description property only if it has a value:
 				if (spD.description)
-					addP(res, {
+					LIB.addProp(res, {
 						class: { id: "PC-Description"},
 						values: [spD.description]
 					});
@@ -608,9 +608,9 @@ class CSpecIF implements SpecIF {
 						// b. add property class, if not yet defined:
 						standardTypes.addTo("propertyClass", { id: p.pC }, self);
 						// c. Add propertyClass to element class:
-						addPCReference(eC, { id: p.pC });
+						LIB.addPCReference(eC, { id: p.pC });
 						// d. Add description property to element;
-						addP(oE, {
+						LIB.addProp(oE, {
 							class: { id: p.pC },
 							values: [makeMultiLanguageText(p.nativePrp) ]
 						});
@@ -626,9 +626,9 @@ class CSpecIF implements SpecIF {
 				// b. add property class, if not yet defined:
 				standardTypes.addTo("propertyClass", { id: "PC-Description" }, self);
 				// c. Add propertyClass to element class:
-				addPCReference(eC, { id: "PC-Description" });
+				LIB.addPCReference(eC, { id: "PC-Description" });
 				// d. Add description property to element;
-				addP(oE, {
+				LIB.addProp(oE, {
 					class: { id: "PC-Description" },
 					values: [ makeMultiLanguageText(iE.description) ]
 				});
@@ -644,9 +644,9 @@ class CSpecIF implements SpecIF {
 				// b. add property class, if not yet defined:
 				standardTypes.addTo("propertyClass", { id: "PC-Name"}, self);
 				// c. Add propertyClass to element class:
-				addPCReference(eC, { id: "PC-Name" });
+				LIB.addPCReference(eC, { id: "PC-Name" });
 				// d. Add title property to element;
-				addP(oE, {
+				LIB.addProp(oE, {
 					class: { id:"PC-Name" },
 					// no title is required in case of statements; it's class' title applies by default:
 					values: [ makeMultiLanguageText(iE.title) ]

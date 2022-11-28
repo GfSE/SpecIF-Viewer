@@ -1875,9 +1875,9 @@ class CProject {
 		//   the resource is found in the cache, but the comment is not.
 		//   --> set 'showComments' to true
 		// - It is assumed that the hierarchies contain only model-elements shown on a visible diagram,
-		//   so only stetements are returned only for visible resources.
-		// - In addirion, only statements are returned which are shown on a visible diagram.
-		//   (perhaps both checks are not necessary, as visible statements only referto vosible resources ...)
+		//   so only stetements are returned for visible resources.
+		// - In addition, only statements are returned which are shown on a visible diagram.
+		//   (perhaps both checks are not necessary, as visible statements only referto visible resources ...)
 
 		if (typeof (opts) != 'object') opts = {};
 		let dta = this.data,
@@ -1913,32 +1913,37 @@ class CProject {
 									(s) => {
 										let sC = LIB.itemByKey(sCL, s['class']) as SpecifStatementClass,
 											ti = LIB.titleOf(sC);
-										return (
-												// statement must be visible on a diagram referenced in a hierarchy
-												// or be a shows statement itself.
-												// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
-												(opts.dontCheckStatementVisibility
-													// Accept manually created relations (including those imported via Excel):
-													|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
-													|| CONFIG.staClassShows == ti
-													|| LIB.indexBy(showsL, "object", s.id) > -1
-												)
-											// AND fulfill certain conditions:
-											&& (
-												opts.showComments?
-													// In case of a comment, the comment itself is not referenced in the tree:
-														CONFIG.staClassCommentRefersTo == ti
-													&& LIB.isReferencedByHierarchy(s.object)
-												:
-													// related subject and object must be referenced in the tree to be navigable,
-													// also, the statement must not be declared 'hidden':
-													// cheap tests first:
-														CONFIG.staClassCommentRefersTo != ti
-													&& CONFIG.hiddenStatements.indexOf(ti) < 0
-													&& LIB.isReferencedByHierarchy(s.subject)
-													&& LIB.isReferencedByHierarchy(s.object)
-												)
-										)
+										if (ti)
+											return (
+													// statement must be visible on a diagram referenced in a hierarchy
+													// or be a shows statement itself.
+													// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
+													(opts.dontCheckStatementVisibility
+														// Accept manually created relations (including those imported via Excel):
+														|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
+														|| CONFIG.staClassShows == ti
+														// Accept, if statement s is shown by a diagram in the hierarchy:
+														|| LIB.referenceIndexBy(showsL, "object", s) > -1
+													)
+												// AND fulfill certain conditions:
+												&& (
+													opts.showComments?
+														// In case of a comment, the comment itself is not referenced in the tree:
+															CONFIG.staClassCommentRefersTo == ti
+														&& LIB.isReferencedByHierarchy(s.object)
+													:
+														// related subject and object must be referenced in the tree to be navigable,
+														// also, the statement must not be declared 'hidden':
+														// cheap tests first:
+															CONFIG.staClassCommentRefersTo != ti
+														&& CONFIG.hiddenStatements.indexOf(ti) < 0
+														&& LIB.isReferencedByHierarchy(s.subject)
+														&& LIB.isReferencedByHierarchy(s.object)
+													)
+											);
+										// else
+										console.error("When searching for statements of resource '" + res.id + "' no title was found for statement '" + s.id + "'.");
+										return false
 									}
 								)
 							);

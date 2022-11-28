@@ -579,8 +579,8 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
 	// for display, any vocabulary term is always translated to the selected language;
 	// a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
-	return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
-//	return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
+//	return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
+	return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
 	// Return the values of a resource's (or statement's) property with a title listed in pNs;
@@ -774,24 +774,6 @@ LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
 				return l; // return list item
 	};
 };
-/*
-function indexBy(L:any[], p:string, s:string ):number {
-	if( L && p && s ) {
-		// Return the index of an element in list 'L' whose property 'p' equals searchterm 's';
-		// where s can be a string or a key:
-		for (var i = L.length - 1; i > -1; i--)
-			if( typeof (s)=='string' && L[i][p] == s ) return i; // return list index
-	};
-	return -1;
-}
-function itemBy(L:any[], p:string, s:string ):any {
-	if( L && p && s ) {
-		// Return the element in list 'L' whose property 'p' equals searchterm 's';
-		// where s can be a string or a key:
-		for (var i = L.length - 1; i > -1; i--)
-			if( typeof(s)=='string' && L[i][p] == s ) return L[i]; // return list item
-	};
-} */
 LIB.containsById = (cL:any[], L: SpecifItem|SpecifItem[] ):boolean =>{
 	if (!cL || !L) throw Error("Missing Input Parameter");
 	// return true, if all items in L are contained in cL (cachedList),
@@ -820,6 +802,26 @@ LIB.containsById = (cL:any[], L: SpecifItem|SpecifItem[] ):boolean =>{
 		if (refL.indexOf(newL[i]) < 0) return false;
 	return true;
 } */
+LIB.addPCReference = (eC: SpecifResourceClass | SpecifStatementClass, key: SpecifKey): void => {
+	// Add the propertyClass-id to an element class (eC), if not yet defined:
+	if (Array.isArray(eC.propertyClasses)) {
+		// Avoid duplicates:
+		if (LIB.indexById(eC.propertyClasses, key.id) < 0
+			|| LIB.indexByKey(eC.propertyClasses, key) < 0)
+			eC.propertyClasses.unshift(key);
+		// else: reference with equal id and revision is already present.
+	}
+	else {
+		eC.propertyClasses = [key];
+	};
+}
+LIB.addProp = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void => {
+	// Add the property to an element (el):
+	if (Array.isArray(el.properties))
+		el.properties.unshift(prp);
+	else
+		el.properties = [prp];
+}
 LIB.cmp = ( i:string, a:string ):number =>{
 	if( !i ) return -1;
 	if( !a ) return 1;

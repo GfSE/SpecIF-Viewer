@@ -172,26 +172,6 @@ class StandardTypes {
 	}
 };
 
-function addPCReference(eC: SpecifResourceClass | SpecifStatementClass, key: SpecifKey): void {
-	// Add the propertyClass-id to an element class (eC), if not yet defined:
-	if (Array.isArray(eC.propertyClasses)) {
-		// Avoid duplicates:
-		if ( LIB.indexById(eC.propertyClasses, key.id) < 0
-			|| LIB.indexByKey(eC.propertyClasses, key) <0 )
-			eC.propertyClasses.unshift(key);
-		// else: reference with equal id and revision is already present.
-	}
-	else {
-		eC.propertyClasses = [key];
-	};
-}
-function addP(el:SpecifResource|SpecifStatement, prp: SpecifProperty): void {
-	// Add the property to an element (el):
-	if (Array.isArray(el.properties))
-		el.properties.unshift(prp);
-	else
-		el.properties = [prp];
-}
 
 /*  ToDo: REWORK FOR v0.10.8:
 	// The standard types for comments:
