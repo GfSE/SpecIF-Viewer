@@ -1353,20 +1353,11 @@ class CProject {
 		const resourcesToCollect = [
 			{ type: CONFIG.resClassProcess, flag: "collectProcesses", folder: CONFIG.resClassProcesses, folderNamePrefix: "FolderProcesses-" }
 		];
-		var r: SpecifResource = dta.get('resource', dta.hierarchies[0].resource),
-			rC: SpecifResourceClass = dta.get('resourceClass', r['class']),
-			pVL: SpecifValues = LIB.valuesByTitle(r, [CONFIG.propClassType], dta),
-
+	/*	var r = dta.get('resource', [dta.hierarchies[0].resource])[0] as SpecifResource,
 			// true, if there is a 'single' hierarchy and if it is a hierarchyRoot:
 			singleHierarchyRoot = dta.hierarchies.length == 1
-				&& ( rC && CONFIG.hierarchyRoots.includes(rC.title)
-					|| pVL.length > 0 && CONFIG.hierarchyRoots.includes(pVL[0]));
-		/*	prp: SpecifProperty = LIB.itemByTitle(r.properties, CONFIG.propClassType),
-			// the type of the hierarchy root can be specified by a property titled CONFIG.propClassType
-			// or by the title of the resourceClass:
-			singleHierarchyRoot = dta.hierarchies.length == 1
-				&& (prp && CONFIG.hierarchyRoots.includes(prp.value)
-					|| rC && CONFIG.hierarchyRoots.includes(rC.title)); */
+				&& (LIB.hasResClass(r, CONFIG.hierarchyRoots, dta)
+					|| LIB.hasResType(r, CONFIG.hierarchyRoots, dta));  */
 
 		return new Promise(
 			(resolve, reject) => {
@@ -1459,12 +1450,12 @@ class CProject {
 													nodes: LIB.forAll(creL, (pr:any) => { return pr.n; }),
 													changedAt: tim
 												};
-												// Insert the hierarchy node as first element of a hierarchy root 
+											/*	// Insert the hierarchy node as first element of a hierarchy root 
 												// - if it is present and
 												// - if there is only one hierarchy root
 												// or as first element at root level, otherwise:
 												if (singleHierarchyRoot)
-													nd.parent = dta.hierarchies[0].id;
+													nd.parent = dta.hierarchies[0].id;  */
 												self.createItems('node', [nd])
 													.then(resolve, reject);
 											})

@@ -2367,7 +2367,7 @@ moduleManager.construct({
 			// Return true, if there is at least one diagram, for which statements do not have 'shows' statements (older transformators);
 			// return false, if all resources 'and' visible statements have 'shows' statements for all diagrams (newer tranformators).
 			// Corner case: No diagram at all returns true, also.
-			let res: SpecifResource, pV: string, isNotADiagram: boolean, noDiagramFound = true;
+			let res: SpecifResource, isNotADiagram: boolean, noDiagramFound = true;
 			// ToDo: first do selPrj.readItems('hierarchy',"all") with promise anditerate with results ...
 			return LIB.iterateNodes(
 				cacheData.get('hierarchy',selPrj.hierarchies),
@@ -2375,14 +2375,12 @@ moduleManager.construct({
 					// get the referenced resource:
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
 					// find the property defining the type:
-			//		pV = LIB.displayValueOf(LIB.valuesByTitle(res, [CONFIG.propClassType], cacheData)[0],opts);
 					// Remember whether at least one diagram has been found:
 					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData.resourceClasses)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram
 						|| LIB.hasResType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, cacheData));
-			//			|| CONFIG.diagramTypesHavingShowsStatementsForEdges.includes(pV))
 				}
 			) || noDiagramFound;
 		}

@@ -383,20 +383,21 @@ moduleManager.construct({
 			
 		// 2. Separate resourceClasses to make SPEC-OBJECT-TYPEs and SPECIFICATION-TYPEs, 
 		//    and collect resources to make OBJECTS:
-		let separated = {
-			objTypes: [],
-			spcTypes: [],
-			objects: []
+		class separatedHierarchyClasses {
+			objTypes: SpecifResourceClass[] = [];
+			spcTypes: SpecifResourceClass[] = [];
+			objects: SpecifResource[] = []
 		};
+		let separatedHC = new separatedHierarchyClasses;
 
 			function prepObj(n: SpecifNode): void {
-				let r = LIB.itemByKey(pr.resources,n.resource),
-					rC = LIB.itemByKey(pr.resourceClasses,r['class']);
+				let r = LIB.itemByKey(pr.resources,n.resource) as SpecifResource,
+					rC = LIB.itemByKey(pr.resourceClasses, r['class']) as SpecifResourceClass;
 				// a) Collect resourceClass without duplication:
-				if( LIB.indexById(separated.objTypes,rC.id)<0 ) {
+				if( LIB.indexById(separatedHC.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
-					if( rC['extends'] ) {
-						let anc = LIB.itemByKex(pr.resourceClasses,rC['extends']);
+					if( rC['_extends'] ) {
+						let anc = LIB.itemByKex(pr.resourceClasses,rC['_extends']);
 						if( Array.isArray(anc.propertyClasses) ) {
 							if ( Array.isArray(rC.propertyClasses) ) 
 								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);
@@ -405,12 +406,12 @@ moduleManager.construct({
 						};
 					};
 					// ToDo: Support multi-level inheritance
-					separated.objTypes.push( rC );
+					separatedHC.objTypes.push( rC );
 				};
 				// b) Collect resource without duplication:
-				if( LIB.indexById(separated.objects,r.id)<0 ) 
+				if( LIB.indexById(separatedHC.objects,r.id)<0 ) 
 					// ToDo: Sort properties according to the propertyClasses
-					separated.objects.push( r );
+					separatedHC.objects.push( r );
 			}
 		// First, collect all resources referenced by the hierarchies,
 		// ignore the hierarchy roots here, they are handled further down:
@@ -420,7 +421,7 @@ moduleManager.construct({
 					iterate( n, prepObj );
 				});
 		});
-//		console.debug( 'after collecting referenced resources: ', xml, separated );
+//		console.debug( 'after collecting referenced resources: ', xml, separatedHC );
 
 		// Then, have a look at the hierarchy roots:
 		pr.hierarchies.forEach( (h) =>{
@@ -428,10 +429,10 @@ moduleManager.construct({
 			// are SPECIFICATIONS in terms of ReqIF.
 			// If a resourceClass is shared between a ReqIF OBJECT and a ReqIF SPECIFICATION, 
 			// it must have a different id:
-			let hR = LIB.itemByKey( pr.resources, h.resource ),			// the resource referenced by this hierarchy root
-				hC = LIB.itemByKey( pr.resourceClasses, hR['class'] );	// it's class
+			let hR = LIB.itemByKey( pr.resources, h.resource ) as SpecifResource,			// the resource referenced by this hierarchy root
+				hC = LIB.itemByKey( pr.resourceClasses, hR['class'] ) as SpecifResourceClass;	// it's class
 			
-			if (LIB.referenceIndexBy(separated.objects, 'class', hC) > -1) {
+			if (LIB.referenceIndexBy(separatedHC.objects, 'class', hC) > -1) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
 				hC.id = 'HC-'+hC.id;
@@ -439,13 +440,13 @@ moduleManager.construct({
 				// we need to update all affected 'extend' properties. There is rather improbable, though.
 			};
 			// Collect hierarchy root's class without duplication:
-			if( LIB.indexById(separated.spcTypes,hC.id)<0 )
-				separated.spcTypes.push( hC );
+			if( LIB.indexById(separatedHC.spcTypes,hC.id)<0 )
+				separatedHC.spcTypes.push( hC );
 			
 			// add the resources attributes to the hierarchy root:
 			h.id = hR.id;  // the resource's id takes precedence
-			h.title = hR.title || '';
-			h.description = hR.description || '';
+		//	h.title = hR.title || '';
+		//	h.description = hR.description || '';
 			// @ts-ignore - index is ok:
 			h['class'] = LIB.keyOf(hC);
 			// @ts-ignore - the ReqIF SPECIFICATION root elements *have* properties
@@ -453,10 +454,10 @@ moduleManager.construct({
 			// further down, only the resources referenced by the children will be included as OBJECT,
 			// so there is no need to delete the resource originally representing the hierarchy root.
 		});
-//		console.debug( 'reqSort', separated );
+//		console.debug( 'reqSort', separatedHC );
 		
 		// 3. Transform resourceClasses to OBJECT-TYPES:
-		separated.objTypes.forEach( (oT) =>{
+		separatedHC.objTypes.forEach( (oT) =>{
 			xml += '<SPEC-OBJECT-TYPE '+commonAttsOf( oT )+'>'
 				+		attrTypesOf( oT )
 				+ '</SPEC-OBJECT-TYPE>';
@@ -481,7 +482,7 @@ moduleManager.construct({
 			});
 		
 		// 5. Write SPECIFICATION-TYPES:
-		separated.spcTypes.forEach( (hC) =>{
+		separatedHC.spcTypes.forEach( (hC) =>{
 			xml += '<SPECIFICATION-TYPE '+commonAttsOf( hC )+'>'
 				+		attrTypesOf( hC )
 				+  '</SPECIFICATION-TYPE>';
@@ -490,7 +491,7 @@ moduleManager.construct({
 			+	'<SPEC-OBJECTS>';
 		
 		// 6. Transform resources to OBJECTS:
-		separated.objects.forEach( (r) =>{
+		separatedHC.objects.forEach( (r:SpecifResource) =>{
 			xml += '<SPEC-OBJECT '+commonAttsOf( r )+'>'
 				+		'<TYPE><SPEC-OBJECT-TYPE-REF>'+r['class'].id+'</SPEC-OBJECT-TYPE-REF></TYPE>'
 				+		attsOf( r )
@@ -523,6 +524,7 @@ moduleManager.construct({
 			xml += '<SPECIFICATION '+commonAttsOf( h )+'>'
 				// @ts-ignore - index is ok:
 				+		'<TYPE><SPECIFICATION-TYPE-REF>'+h['class'].id+'</SPECIFICATION-TYPE-REF></TYPE>'
+				// @ts-ignore - here, the hierarchy roots may have properties (taken from the hierarchy root's resource):
 				+		attsOf( h )
 				+   	childrenOf( h )
 				+ '</SPECIFICATION>'

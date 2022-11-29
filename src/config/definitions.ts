@@ -359,7 +359,7 @@ const CONFIG:any = {};
 		CONFIG.resClassProcess,
 		"Archimate:Viewpoint"
 	];
-	// A list of resourceClasses representing Model Diagrams, specified by resourceClass title;
+	// A list of resourceClasses representing Model Diagrams;
 	// these are used as title of a diagram's class and/or as a value of a type property:
 	CONFIG.diagramClasses = [
 		CONFIG.resClassDiagram,
