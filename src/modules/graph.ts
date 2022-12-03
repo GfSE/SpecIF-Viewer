@@ -52,7 +52,7 @@ class CGraph {
     private resourceById(id: SpecifId):IGraphResource {
 		for (var res of this.resources)
 			if (res.id === id) return res;
-		throw Error('Graph node with id '+id+' not found in data structure of class CGraph');
+		throw Error('Resource with id '+id+' not found in data structure of class CGraph');
 	}
 /*  private statementById(id) {
 		for(var i = graphData.statements.length-1; i>-1; i--)

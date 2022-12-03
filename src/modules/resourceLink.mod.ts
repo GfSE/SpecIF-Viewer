@@ -221,7 +221,7 @@ moduleManager.construct({
 			reTi = new RegExp( searchStr.escapeRE(), 'i' );  // don't use 'gi' - works only every other time.
 
 		// among all statements of the originally selected resource (selRes), filter all those of the given class:
-		let sL = self.selResStatements.filter((s: SpecifStatement) => { return LIB.equalKey(s['class'], self.selectedStatementClass); });
+		let sL = self.selResStatements.filter((s: SpecifStatement) => { return LIB.references(s['class'], self.selectedStatementClass); });
 		self.allResources.forEach( 
 			(res:SpecifResource,i:number)=>{
 				if( 
@@ -305,9 +305,10 @@ moduleManager.construct({
 					'statement',
 					[{
 						id: LIB.genID('S-'),
-						class: self.selectedStatementClass,
-						subject: (dir.secondAs == 'object' ? selRes : self.selectedCandidate.resource),
-						object: (dir.secondAs == 'object' ? self.selectedCandidate.resource : selRes),
+						// For the time being, the revision is *never* specified here, so that it persists even after a class update:
+						class: LIB.makeKey(self.selectedStatementClass.id),
+						subject: LIB.makeKey(dir.secondAs == 'object' ? selRes.id : self.selectedCandidate.resource.id),
+						object: LIB.makeKey(dir.secondAs == 'object' ? self.selectedCandidate.resource.id : selRes.id),
 						changedAt: new Date().toISOString()
 					}]
 		)

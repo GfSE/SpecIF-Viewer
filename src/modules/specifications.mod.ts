@@ -2185,15 +2185,14 @@ moduleManager.construct({
 			(rResL: SpecifItem[]) => {
 				// rResL is a list of the selected plus it's related resources
 
-				// Assuming that the sequence may be arbitrary:
-				selRes = LIB.itemByKey(rResL, nd.ref);
-				getPermissions(selRes);
-
-				// Now get the titles with icon of the resources,
+				// Get the titles with icon of the resources,
 				// as the sequence of list items in net.resources is maintained, 
 				// the selected resource will be the first element in the list: 
 				rResL.forEach((r) => { cacheMinRes(net, r) });
 
+				// Assuming that the sequence may be arbitrary:
+				selRes = LIB.itemByKey(rResL, nd.ref);
+				getPermissions(selRes);
 				// finally add the 'mentions' statements:
 				return getMentionsRels(selRes, opts)
 			}
@@ -2254,7 +2253,8 @@ moduleManager.construct({
 			// 3. Collect the related resource:
 			//    If the selected node is a subject, the related resource is an object ... and vice versa;
 			//    list it, but only once:
-			cacheMinRes( net, LIB.references(nd.ref, s.subject) ? s.object : s.subject);
+			cacheMinRes(net, (nd.ref.id==s.subject.id ? s.object : s.subject));
+		//	cacheMinRes( net, LIB.references(nd.ref, s.subject) ? s.object : s.subject);
 		}
 		function getMentionsRels(selR: SpecifResource, opts: any):Promise<any[]> {
 			// selR is the currently selected resource.

@@ -422,6 +422,9 @@ type SpecifItem = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | S
 type SpecifClass = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass;
 type SpecIFItemWithNativeTitle = SpecifDataType | SpecifPropertyClass | SpecifResourceClass | SpecifStatementClass | SpecifNode | SpecifFile;
 type SpecifInstance = SpecifResource | SpecifStatement;
+LIB.isKey = (el: any): boolean => {
+	return typeof (el) == 'object' && el.id;
+}
 LIB.keyOf = (itm: SpecifItem): SpecifKey => {
 	// create a key from an item by selective cloning:
 	return itm.revision ? { id: itm.id, revision: itm.revision } : { id: itm.id };
@@ -431,9 +434,9 @@ LIB.makeKey = (el: any): SpecifKey => {
 	// and support the case where a full key has already been used:
 	return typeof (el) == 'string' ? { id: el } : LIB.keyOf(el);
 }
-LIB.makeKeyL = (L: any[]): SpecifKeys => {
+/* LIB.makeKeyL = (L: any[]): SpecifKeys => {
 	return LIB.forAll(L, (el: any): SpecifKey => { return LIB.makeKey(el) });
-}
+} */
 LIB.containsAllKeys = (refL: SpecifKeys, newL: SpecifKeys): boolean => {
 	// return true, if all elements of newL are contained in refL;
 	// sequence does not matter:
@@ -485,9 +488,6 @@ LIB.equalValues = (refVL: SpecifValues, newVL: SpecifValues): boolean => {
 }
 LIB.equalBoolean = (rB: boolean, nB: boolean): boolean => {
 	return (rB && nB || !rB && !nB);
-}
-LIB.isKey = (el: any): boolean => {
-	return typeof (el)=='object' && el.id;
 }
 LIB.isString = (el:any): boolean => {
 	return typeof (el) == 'string';

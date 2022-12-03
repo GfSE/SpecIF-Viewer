@@ -2180,10 +2180,10 @@ class CProject {
 					(expD:SpecIF) => {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
-							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 							titleLinkTargets: CONFIG.titleLinkTargets.map((e:string) => { return i18n.lookup(e) }),
 							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties).map((e: string) => { return i18n.lookup(e) }),
 							descriptionProperties: CONFIG.descProperties.map((e: string) => { return i18n.lookup(e) }),
+							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return i18n.lookup(e) }),
 						//	lookup: i18n.lookup,	vocabulary terms are now looked up during export (CSpecIF.toExt)
 							showEmptyProperties: opts.showEmptyProperties,

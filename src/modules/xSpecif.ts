@@ -222,7 +222,9 @@ class CSpecIF implements SpecIF {
 						.catch(handleError);
 					}
 					else {
-						// for data sets up until schema v1.0:
+						throw Error("Inexpected check of SpecIF data set < v1.1");
+				/*		// for data sets up until schema v1.0;
+						// not any more needed, because the import data is checked *after* transformation to v1.1:
 						$.ajax({
 							dataType: "script",
 							cache: true,
@@ -235,8 +237,8 @@ class CSpecIF implements SpecIF {
 							// @ts-ignore - 'CCheck' has just been loaded dynamically:
 							checker = new CCheck();
 						})
-						.fail(handleError);
-					}
+						.fail(handleError); */
+					} 
 				}
 				else {
 					reject({ status: 999, statusText: 'No SpecIF data to check' });
@@ -437,7 +439,10 @@ class CSpecIF implements SpecIF {
 			var oE: any = i2int(iE);
 			oE.title = makeTitle(iE.title);  // an input file may have titles which are not from the SpecIF vocabulary.
 
-			oE.dataType = LIB.makeKey(iE.dataType);
+			// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
+			// ToDo: Reconsider once we have a backend with multiple revisions ...
+		//	oE.dataType = LIB.makeKey(iE.dataType);
+			oE.dataType = LIB.makeKey(iE.dataType.id || iE.dataType);
 			let dT: SpecifDataType = LIB.itemByKey(self.dataTypes, oE.dataType);
 //			console.debug('pC2int',iE,dT);
 
@@ -480,13 +485,19 @@ class CSpecIF implements SpecIF {
 			// Up until v0.10.5, the pClasses themselves are listed, starting v0.10.6 references are listed:
 			if (Array.isArray(iE[names.pClasses]) && iE[names.pClasses].length > 0) {
 				if (typeof (iE[names.pClasses][0]) == 'object' && iE[names.pClasses][0].dataType == undefined) {
-					// it is a propertyClass reference according to v1.1:
-					oE.propertyClasses = iE.propertyClasses;
+					// It is a propertyClass reference according to v1.1:
+					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+					// ToDo: Reconsider once we have a backend with multiple revisions ...
+					oE.propertyClasses = iE.propertyClasses.map((pC) => { return LIB.makeKey(pC.id) });
+				//	oE.propertyClasses = iE.propertyClasses;
 				}
 				else if (typeof (iE[names.pClasses][0]) == 'string') {
 					// it is a propertyClass reference according to v1.0 (and some versions before that);
 					// make a list of pClasses according to v1.1:
-					oE.propertyClasses = LIB.makeKeyL(iE[names.pClasses]);
+					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+					// ToDo: Reconsider once we have a backend with multiple revisions ...
+					oE.propertyClasses = iE[names.pClasses].map((el: any): SpecifKey => { return LIB.makeKey(el.id || el) });
+				//	oE.propertyClasses = LIB.makeKeyL(iE[names.pClasses]);
 				}
 				else {
 					// it is a full-fledged propertyClass in one of the oldest SpecIF versions:
@@ -497,7 +508,10 @@ class CSpecIF implements SpecIF {
 						let pC = pC2int(e);
 						self.propertyClasses.push(pC);
 						// Add to a list with pClass references, here:
-						oE.propertyClasses.push(LIB.keyOf(pC));
+						// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+						// ToDo: Reconsider once we have a backend with multiple revisions ...
+						oE.propertyClasses.push(LIB.makeKey(pC.id));
+					//	oE.propertyClasses.push(LIB.keyOf(pC));
 					})
 				};
 			}
@@ -539,10 +553,14 @@ class CSpecIF implements SpecIF {
 		function sC2int(iE:any): SpecifStatementClass {
 			var oE: SpecifStatementClass = aC2int(iE);
 			if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
+			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+			// ToDo: Reconsider once we have a backend with multiple revisions ...
 			if (iE[names.sbjClasses])
-				oE.subjectClasses = LIB.makeKeyL(iE[names.sbjClasses]);
+				oE.subjectClasses = iE[names.sbjClasses].map( (el: any): SpecifKey => { return LIB.makeKey(el.id || el) });
+			//	oE.subjectClasses = LIB.makeKeyL(iE[names.sbjClasses]);
 			if (iE[names.objClasses])
-				oE.objectClasses = LIB.makeKeyL(iE[names.objClasses]);
+				oE.objectClasses = iE[names.objClasses].map( (el: any): SpecifKey => { return LIB.makeKey(el.id || el) });
+			//	oE.objectClasses = LIB.makeKeyL(iE[names.objClasses]);
 //			console.debug('statementClass 2int',iE,oE);
 			return oE
 		}
@@ -560,9 +578,12 @@ class CSpecIF implements SpecIF {
 			// @ts-ignore - 'values'will be added later:
 			var oE: SpecifProperty = {
 					// no id
-					class: LIB.makeKey(iE[names.pClass])
+					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+					// ToDo: Reconsider once we have a backend with multiple revisions ...
+					class: LIB.makeKey(iE[names.pClass].id || iE[names.pClass])
+				//	class: LIB.makeKey(iE[names.pClass])
 				},
-				dT: SpecifDataType = LIB.dataTypeOf(oE["class"], self);
+				dT = LIB.dataTypeOf(oE["class"], self);
 //			console.debug('p2int', iE, dT);
 
 			oE.values = makeValues(iE, dT);
@@ -594,24 +615,24 @@ class CSpecIF implements SpecIF {
 
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
-			// In this case, add a title and description property each to hold the description as required by SpecIF v1.1:
+			// In this case, add a title and description property each as required by SpecIF v1.1 (no more native title and description):
 			[
-				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, dT: "DT-ShortString", pC: "PC-Name"},
-				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, dT: "DT-Text", pC: "PC-Description"}
+				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, dTid: "DT-ShortString", pCid: "PC-Name"},
+				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, dTid: "DT-Text", pCid: "PC-Description"}
 			].forEach(
 				(p) => {
 					if (p.nativePrp && propertyMissing(p.tiL,oE)) {
 						// There is an attempt to add the types in every loop ... which is hardly efficient.
 						// However, that way they are only added, if needed.
 						// a. add dataType, if not yet defined:
-						standardTypes.addTo("dataType", { id: p.dT }, self);
+						standardTypes.addTo("dataType", { id: p.dTid }, self);
 						// b. add property class, if not yet defined:
-						standardTypes.addTo("propertyClass", { id: p.pC }, self);
+						standardTypes.addTo("propertyClass", { id: p.pCid }, self);
 						// c. Add propertyClass to element class:
-						LIB.addPCReference(eC, { id: p.pC });
+						LIB.addPCReference(eC, { id: p.pCid });
 						// d. Add description property to element;
 						LIB.addProp(oE, {
-							class: { id: p.pC },
+							class: { id: p.pCid },
 							values: [makeMultiLanguageText(p.nativePrp) ]
 						});
 						console.info("Added a "+p.name+" property to element with id '" + oE.id + "'");
@@ -701,14 +722,18 @@ class CSpecIF implements SpecIF {
 		// a resource:
 		function r2int(iE: any): SpecifResource {
 			var oE: SpecifResource = a2int(iE) as SpecifResource;
-			oE['class'] = LIB.makeKey(iE[names.rClass]);
+			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+			// ToDo: Reconsider once we have a backend with multiple revisions ...
+			oE['class'] = LIB.makeKey(iE[names.rClass].id || iE[names.rClass]);
 //			console.debug('resource 2int',iE,simpleClone(oE));
 			return oE
 		}
 		// a statement:
 		function s2int(iE:any): SpecifStatement {
 			var oE: SpecifStatement = a2int(iE) as SpecifStatement;
-			oE['class'] = LIB.makeKey( iE[names.sClass] );
+			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+			// ToDo: Reconsider once we have a backend with multiple revisions ...
+			oE['class'] = LIB.makeKey(iE[names.sClass].id || iE[names.sClass] );
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
 			//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
@@ -731,8 +756,11 @@ class CSpecIF implements SpecIF {
 			if (names.hClasses) {
 				// up until v0.10.6, transform hierarchy root to a regular resource:
 				var iR = a2int(iE) as SpecifResource;
+				// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+				// ToDo: Reconsider once we have a backend with multiple revisions ...
 				// @ts-ignore - if execution gets here, 'names.hClass' is defined:
-				iR['class'] = LIB.makeKey(iE[names.hClass]);
+				iR['class'] = LIB.makeKey(iE[names.hClass].id || iE[names.hClass]);
+			//	iR['class'] = LIB.makeKey(iE[names.hClass]);
 				self.resources.push(iR);
 
 				// ... and add a link to the hierarchy:
@@ -759,7 +787,9 @@ class CSpecIF implements SpecIF {
 			function n2int(iE:any): SpecifNode {
 				var oE: SpecifNode = {
 						id: iE.id,
-						resource: LIB.makeKey(iE.resource),
+						// For the time being, suppress any revision to make sure that a resource update doesn't destroy the reference.
+						// ToDo: Reconsider once we have a backend with multiple revisions ...
+						resource: LIB.makeKey(iE.resource.id || iE.resource),
 						changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;

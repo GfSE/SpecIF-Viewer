@@ -525,8 +525,11 @@ moduleManager.construct({
 		if (toEdit.title.dT.type == SpecifDataTypeEnum.String) {
 			// Update the title; it must be of dataType "xs:string":
 			let val = textValue(prpTitle(toEdit.title)).stripHTML();
-			if( val )
-				self.newRes.properties.push({ class: LIB.keyOf(toEdit.title.pC), values: [LIB.makeMultiLanguageText(val)] });
+			if (val)
+				// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+				// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+				// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+				self.newRes.properties.push({ class: LIB.makeKey(toEdit.title.pC.id), values: [LIB.makeMultiLanguageText(val)] });
 		}
 		else
 			console.warn('Datatype of Title is ' + toEdit.title.dT.type + ', but not ' + SpecifDataTypeEnum.String);
@@ -543,13 +546,19 @@ moduleManager.construct({
 				// In case of a diagram, the value is stored intermediately in the respective toEdit property when the user uploads a new file;
 				// p.values is empthy, if the diagram has been removed while editing:
 				if (p.pC.title == CONFIG.propClassDiagram && p.values.length > 0) {
-					self.newRes.properties.push({ class: LIB.keyOf(p.pC), values: p.values });
+					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: p.values });
 					return;
 				};
 
 				let val = textValue(prpTitle(p));
 				if (LIB.hasContent(val))
-					self.newRes.properties.push({ class: LIB.keyOf(p.pC), values: [LIB.makeMultiLanguageText(val)] });
+					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
 			}
 			else
 				console.warn('Datatype of Description is ' + p.dT.type + ', but not ' + SpecifDataTypeEnum.String);
@@ -575,7 +584,10 @@ moduleManager.construct({
 					valL = val ? [val] : [];
 				};
 				if (valL.length > 0)
-					self.newRes.properties.push({ class: LIB.keyOf(p.pC), values: valL });
+					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: valL });
 				return;
 			};
 
@@ -585,16 +597,16 @@ moduleManager.construct({
 				case SpecifDataTypeEnum.String:
 					val = textValue(prpTitle(p));
 					if (LIB.hasContent(val))
-						self.newRes.properties.push({ class: LIB.keyOf(p.pC), values: [LIB.makeMultiLanguageText(val)] });
+						self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
 					break;
 				case SpecifDataTypeEnum.Boolean:
 					val = booleanValue(prpTitle(p)).toString();
-					self.newRes.properties.push({ class: LIB.keyOf(p.pC), values: [val] });
+					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [val] });
 					break;
 				default:
 					val = textValue(prpTitle(p));
 					if (LIB.hasContent(val))
-						self.newRes.properties.push({ class: LIB.keyOf(p.pC), values: [val] });
+						self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [val] });
 			};
 		});
 
