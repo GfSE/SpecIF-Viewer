@@ -350,7 +350,7 @@ class CPropertyToShow implements SpecifProperty {
 //		console.debug('fileRef.toGUI 1: ', txt);
 
 		// 2. transform a single object to link+object resp. link+image:
-		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
+		txt = txt.replace(RE.tagSingleObjects,   //  comprehensive tag or tag pair
 			// @ts-ignore - $2 is never read, but must be specified anyways
 			($0, $1, $2, $3) => {
 			//	var pairedImgExists = ( url )=>{
@@ -506,6 +506,130 @@ class CPropertyToShow implements SpecifProperty {
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	}
+/*	editForm(dialogForm?: CCheckDialogInput): string {
+		// Return a form element for a property;
+
+		let opts = {
+				lookupTitles: true,
+				targetLanguage: browser.language,
+				imgClass: 'forImagePreview'
+			},
+			ti = LIB.titleOf(this, opts);
+
+		// create radio-buttons or checkboxes, if it is an enumerated dataType:
+		if (this.dT.enumeration) {
+			// entryL is the list of entries for an input field with checkboxes or radio-buttons, 
+			// depending on whether multiple values are allowed or not:
+			let entryL = LIB.forAll(
+				this.dT.enumeration,
+				(eV: SpecifEnumeratedValue) => {
+					let val = this.dT.type == SpecifDataTypeEnum.String ? i18n.lookup(LIB.languageValueOf(eV.value, opts)) : eV.value;
+					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
+				}
+			);
+
+//			console.debug('Enumeration', this, ti, entryL);
+			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple)
+				return checkboxField(
+					ti,
+					entryL,
+					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '') }
+				);
+			else
+				return radioField(
+					ti,
+					entryL,
+					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '') }
+				);
+		};
+
+		// create an input field depending on the property's dataType;
+		// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
+		switch (this.dT.type) {
+			case SpecifDataTypeEnum.Boolean:
+				// - no input checking needed
+				// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
+//				console.debug('xs:boolean',ti,this);
+				return booleanField(
+					ti,
+					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
+					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '') }
+				);
+			case SpecifDataTypeEnum.String:
+				if (this.pC.title == CONFIG.propClassDiagram) {
+					// it is a diagram reference (thus a XHTML-formatted field):
+					return this.editDiagramForm(opts)
+				}
+				else {
+					// add parameters to check this input field:
+					if (dialogForm) dialogForm.addField(ti, this.dT);
+					// it is a text;
+					// in case of xhtml, it may contain a diagram reference, 
+					// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
+//					console.debug( 'editForm', LIB.languageValueOf(this.value,opts) );
+					return textField(
+						ti,
+						//	this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '',  // only first value for the time being ...
+						LIB.forAll(
+							this.values,
+							(v: SpecifMultiLanguageText) => { return LIB.languageValueOf(v, opts); }
+						),
+						// - open an input line, if it is a title or has a specified length lower than the threshold
+						// - open an input text-area, otherwise
+						{
+							typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+							handle: myFullName + '.check()',
+							description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '')
+						}
+					);
+				};
+			default:
+				// add parameters to check this input field:
+				if(dialogForm) dialogForm.addField(ti, this.dT);
+				return textField(
+					ti,
+					//	this.values.length > 0 ? this.values[0] as string : '',
+					this.values as string[],
+					{
+						typ: 'line',
+						handle: myFullName + '.check()',
+						description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '')
+					}
+				);
+		};
+	}
+	private editDiagramForm(opts: any) {
+//		console.debug('editDiagram',this);
+		return '<div class="form-group form-active" >'
+			+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
+			+ '<div class="attribute-value">'
+
+			// Add diagram buttons:
+			// this['class'] is used to identify the property; 
+			// it is supposed to be unique in the resource's properties
+			// and at most one resource is edited in this session at any point in time.
+			+ '<div class="btn-group btn-group-sm pull-right" >'
+		//	+ ( !this.permissions || this.permissions.upd?
+				+ '<span class="btn btn-default btn-fileinput">'
+				+ '<span>' + i18n.IcoEdit + '</span>'
+				+ '<input id="file' + simpleHash(this['class'].id) + '" type="file" onchange="' + myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
+				+ '</span>' 
+		//		 : '')
+		//	+ ( !this.permissions || this.permissions.del?
+				+ '<button class="btn btn-danger" data-toggle="popover" '
+				+ 'onclick="' + myFullName + '.removeDiagram(\'' + this['class'].id + '\')" title="' + i18n.LblDelete + '">' + i18n.IcoDelete + '</button>'
+		//		 : '')
+			+ '</div>'
+
+			// Add a container based on the propertyClass (which should be unique and since there is usually no property-id), 
+			// so that the user can update and delete the diagram later on:
+			+ '<div id="' + tagId(this['class'].id) + '">'
+			+	this.renderFile(this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '', opts)
+			+ '</div>'
+
+			+ '</div>'
+			+ '</div>';
+	} */
 }
 class CResourceToShow {
 	id: string;
@@ -541,7 +665,8 @@ class CResourceToShow {
 		this.descriptions = [];
 
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = LIB.forAll(el.properties, (pr:SpecifProperty) => { return new CPropertyToShow(pr) });
+	//	this.other = LIB.forAll(el.properties, (pr: SpecifProperty) => { return this.newProperty(pr) });
+		this.other = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToShow(pr) });
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
@@ -581,6 +706,9 @@ class CResourceToShow {
 			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
+/*	newProperty(p: SpecifProperty) {
+		return new CPropertyToShow(p);
+    } */
 	isEqual(res: SpecifResource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
@@ -2103,8 +2231,8 @@ moduleManager.construct({
 });
 // Construct the controller for displaying the statements ('Statement View'):
 moduleManager.construct({
-	view:'#'+CONFIG.relations
-}, (self:IModule) =>{
+	view: '#' + CONFIG.relations
+}, (self: IModule) => {
 	// Render the statements of a selected resource:
 
 	var myName = self.loadAs,
@@ -2116,124 +2244,124 @@ moduleManager.construct({
 		modeStaDel = false;	// controls what the resource links in the statements view will do: jump or delete statement
 
 	// Permissions for resources and statements:
-	self.staCreClasses = {subjectClasses:[],objectClasses:[]};  // all statement classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
+	self.staCreClasses = { subjectClasses: [], objectClasses: [] };  // all statement classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
 	self.staCre = false;
 	self.staDel = false;
-		
+
 	self.init = (): boolean => {
 		return true;
 	}
-	self.hide = ():void =>{
-		$( self.view ).empty()
+	self.hide = (): void => {
+		$(self.view).empty()
 	};
-	self.show = ( opts?:any ):void =>{
+	self.show = (opts?: any): void => {
 		self.parent.showLeft.set();
 		self.parent.showTree.set();
 		selPrj = app.cache.selectedProject;
 		cacheData = selPrj.data;
 
 		// Select the language options at project level:
-		if( typeof( opts ) != 'object' ) opts = {};
+		if (typeof (opts) != 'object') opts = {};
 		opts.targetLanguage = self.targetLanguage = selPrj.language;
 		opts.lookupTitles = self.lookupTitles = true;
-	//	opts.revisionDate = new Date().toISOString();
+		//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
-	//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
-	
+		//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
+
 		// The tree knows the selected resource; if not take the first:
-		if( !self.parent.tree.selectedNode ) self.parent.tree.selectFirstNode();
+		if (!self.parent.tree.selectedNode) self.parent.tree.selectFirstNode();
 		// quit, because the tree is empty:
-		if( !self.parent.tree.selectedNode ) { self.parent.emptyTab( self.view ); return };
+		if (!self.parent.tree.selectedNode) { self.parent.emptyTab(self.view); return };
 
 		// else: the tree has entries:
 		app.busy.set();
-	//	$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
+		//	$( self.view ).html( '<div class="notice-default" >'+i18n.MsgLoading+'</div>' );
 
 		// ToDo: Redraw only if the selected node has changed, to avoid a flicker.
 		var nd = self.parent.tree.selectedNode;
-						
+
 		// Update browser history, if it is a view change or item selection, 
 		// but not navigation in the browser history:
-		if( !opts.urlParams ) 
+		if (!opts.urlParams)
 			setUrlParams({
 				project: selPrj.id,
 				view: self.view.substr(1),	// without leading hash
 				node: nd.id
-			//	item: nd.ref
-			}); 
+				//	item: nd.ref
+			});
 
-		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges()} )
-		.then( 
-			(sL: SpecifStatement[]) => {
-				// sL is the list of statements involving the selected resource.
+		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges() })
+			.then(
+				(sL: SpecifStatement[]) => {
+					// sL is the list of statements involving the selected resource.
 
-				// First, initialize the list and add the selected resource:
-				net = new CGraph({ resources: [nd.ref] });
+					// First, initialize the list and add the selected resource:
+					net = new CGraph({ resources: [nd.ref] });
 
-				// Store all related resources while avoiding duplicate entries,
-				// the title attribute will be undefined, 
-				// but we are interested only in the resource id at this point:
-				sL.forEach(cacheNet);
+					// Store all related resources while avoiding duplicate entries,
+					// the title attribute will be undefined, 
+					// but we are interested only in the resource id at this point:
+					sL.forEach(cacheNet);
 
-				// Obtain the titles (labels) of all resources in the list.
-				// The titles may not be defined in a tree node and anyways don't have the icon, 
-				// therefore obtain the title from the referenced resources.
-				return selPrj.readItems('resource', net.resources)
-			}
-		)
-		.then( 
-			(rResL: SpecifItem[]) => {
-				// rResL is a list of the selected plus it's related resources
+					// Obtain the titles (labels) of all resources in the list.
+					// The titles may not be defined in a tree node and anyways don't have the icon, 
+					// therefore obtain the title from the referenced resources.
+					return selPrj.readItems('resource', net.resources)
+				}
+			)
+			.then(
+				(rResL: SpecifItem[]) => {
+					// rResL is a list of the selected plus it's related resources
 
-				// Get the titles with icon of the resources,
-				// as the sequence of list items in net.resources is maintained, 
-				// the selected resource will be the first element in the list: 
-				rResL.forEach((r) => { cacheMinRes(net, r) });
+					// Get the titles with icon of the resources,
+					// as the sequence of list items in net.resources is maintained, 
+					// the selected resource will be the first element in the list: 
+					rResL.forEach((r) => { cacheMinRes(net, r) });
 
-				// Assuming that the sequence may be arbitrary:
-				selRes = LIB.itemByKey(rResL, nd.ref);
-				getPermissions(selRes);
-				// finally add the 'mentions' statements:
-				return getMentionsRels(selRes, opts)
-			}
-		)
-		.then( 
-			(stL)=>{
-				if (!modeStaDel)
-					// Only show the 'mentions' relations in regular mode.
-					// Don't show them in deletion mode, because they cannot be deleted like real statements;
-					// remember that the former are internal links within a text property:
-					stL.forEach( cacheNet );
-//				console.debug('local net',stL,net);
-				renderStatements( net );
-				$( self.view ).prepend( linkBtns() ); 
-				app.busy.reset();
-			}
-		)
-		.catch(
-			(xhr: xhrMessage)=> {
-				LIB.stdError(xhr);
-				app.busy.reset();
-			}
-		);
+					// Assuming that the sequence may be arbitrary:
+					selRes = LIB.itemByKey(rResL, nd.ref);
+					getPermissions(selRes);
+					// finally add the 'mentions' statements:
+					return getMentionsRels(selRes, opts)
+				}
+			)
+			.then(
+				(stL) => {
+					if (!modeStaDel)
+						// Only show the 'mentions' relations in regular mode.
+						// Don't show them in deletion mode, because they cannot be deleted like real statements;
+						// remember that the former are internal links within a text property:
+						stL.forEach(cacheNet);
+					//				console.debug('local net',stL,net);
+					renderStatements(net);
+					$(self.view).prepend(linkBtns());
+					app.busy.reset();
+				}
+			)
+			.catch(
+				(xhr: xhrMessage) => {
+					LIB.stdError(xhr);
+					app.busy.reset();
+				}
+			);
 		return;
 
-		function cacheMinRes(N:CGraph,r:SpecifResource|SpecifKey):void {
+		function cacheMinRes(N: CGraph, r: SpecifResource | SpecifKey): void {
 			// cache the minimal representation of a resource;
 			// r may be a resource or a key pointing to a resource,
 			// where the sequence of items in L is always maintained.
 			// @ts-ignore - in the first run when a key is specified, the result of instanceTitleOf() is undefined - it will be added in the second run
-		//	LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
+			//	LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
 			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) }] });
 		}
-		function cacheMinSta(N:CGraph,s:SpecifStatement):void {
+		function cacheMinSta(N: CGraph, s: SpecifStatement): void {
 			// cache the minimal representation of a statement;
 			// s is a statement;
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-		//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
-			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }]});
+			//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
+			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] });
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2244,31 +2372,31 @@ moduleManager.construct({
 			// 1. Skip hidden statements;
 			// hiddenStatements holds the vocabulary terms, so the title shall *not* be translated to the targetLanguage.
 			// @ts-ignore - property 'title' is used on purpose for the mentions statements generated for display
-			if (CONFIG.hiddenStatements.includes(s.title || LIB.staClassTitleOf(s, cacheData.statementClasses, {})) ) return;
+			if (CONFIG.hiddenStatements.includes(s.title || LIB.staClassTitleOf(s, cacheData.statementClasses, {}))) return;
 
 			// 2. Store the statements in the net:
-			cacheMinSta( net, s );
-//			console.debug( 'cacheNet 1', s, simpleClone(net) );
+			cacheMinSta(net, s);
+			//			console.debug( 'cacheNet 1', s, simpleClone(net) );
 
 			// 3. Collect the related resource:
 			//    If the selected node is a subject, the related resource is an object ... and vice versa;
 			//    list it, but only once:
-			cacheMinRes(net, (nd.ref.id==s.subject.id ? s.object : s.subject));
-		//	cacheMinRes( net, LIB.references(nd.ref, s.subject) ? s.object : s.subject);
+			cacheMinRes(net, (nd.ref.id == s.subject.id ? s.object : s.subject));
+			//	cacheMinRes( net, LIB.references(nd.ref, s.subject) ? s.object : s.subject);
 		}
-		function getMentionsRels(selR: SpecifResource, opts: any):Promise<any[]> {
+		function getMentionsRels(selR: SpecifResource, opts: any): Promise<any[]> {
 			// selR is the currently selected resource.
-			
-			return new Promise( (resolve,reject):void =>{	
+
+			return new Promise((resolve, reject): void => {
 				// Search all resource text properties and detect where another resource's title is referenced.
 				// Only findings with marks for dynamic linking are taken.
 				// Add a statement for each finding for display; do not save any of these statements in the server.
-				if( !CONFIG.findMentionedObjects || !selR ) 
+				if (!CONFIG.findMentionedObjects || !selR)
 					resolve([]);
-//				console.debug('getMentionsRels',selR,opts);
-			/*	// There is no need to have a statementClass ... at least currently:
-				var rT = itemByName( cacheData.statementClasses, CONFIG.staClassMentions );
-				if( !rT ) return;  */
+				//				console.debug('getMentionsRels',selR,opts);
+				/*	// There is no need to have a statementClass ... at least currently:
+					var rT = itemByName( cacheData.statementClasses, CONFIG.staClassMentions );
+					if( !rT ) return;  */
 
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
@@ -2276,35 +2404,35 @@ moduleManager.construct({
 					selTi = cacheData.instanceTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
-					selPatt = new RegExp( (CONFIG.titleLinkBegin+selTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
+					selPatt = new RegExp((CONFIG.titleLinkBegin + selTi + CONFIG.titleLinkEnd).escapeRE(), "i");
 
 				// Iterate the tree ... 
 				self.parent.tree.iterate((nd: jqTreeNode) => {
 					// The server delivers a tree with nodes referencing only resources for which the user has read permission,
 					// so there is no need to check permissions, here:
 					pend++;
-					selPrj.readItems('resource', [nd.ref] )
-					.then( 
-						(rL:SpecifItem[])=>{   
-							// refR is a resource referenced in a hierarchy
-							let refR = rL[0] as SpecifResource,
-								refTi = cacheData.instanceTitleOf(refR, localOpts),
-								dT: SpecifDataType;
-//							console.debug('self.parent.tree.iterate',refR,refTi,pend);
-							if( refTi && refTi.length>CONFIG.titleLinkMinLength-1 && refR.id!=selR.id ) {
-								// ToDo: Search in a native description field ... not only in properties ...
+					selPrj.readItems('resource', [nd.ref])
+						.then(
+							(rL: SpecifItem[]) => {
+								// refR is a resource referenced in a hierarchy
+								let refR = rL[0] as SpecifResource,
+									refTi = cacheData.instanceTitleOf(refR, localOpts),
+									dT: SpecifDataType;
+								//							console.debug('self.parent.tree.iterate',refR,refTi,pend);
+								if (refTi && refTi.length > CONFIG.titleLinkMinLength - 1 && refR.id != selR.id) {
+									// ToDo: Search in a native description field ... not only in properties ...
 
-								// 1. The titles of other resource's found in the selected resource's texts 
-								//    result in a 'this mentions other' statement (selected resource is subject):
-								refPatt = new RegExp( (CONFIG.titleLinkBegin+refTi+CONFIG.titleLinkEnd).escapeRE(), "i" );
-							//	if( selR.properties )
-									selR.properties.forEach( (p)=>{
+									// 1. The titles of other resource's found in the selected resource's texts 
+									//    result in a 'this mentions other' statement (selected resource is subject):
+									refPatt = new RegExp((CONFIG.titleLinkBegin + refTi + CONFIG.titleLinkEnd).escapeRE(), "i");
+									//	if( selR.properties )
+									selR.properties.forEach((p) => {
 										// assuming that the dataTypes are always cached:
 										dT = LIB.dataTypeOf(p['class'], cacheData);
 										// considering only text-properties except enumerated values,
 										// because it is not expected that type information references instance data
 										// and also we would need to explicitly look up the enumerated value, first:
-										if (dT && dT.type==SpecifDataTypeEnum.String && !dT.enumeration) {
+										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 											// add, if the iterated resource's title appears in the selected resource's property ..
 											// and if it is not yet listed:
 											if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
@@ -2319,16 +2447,16 @@ moduleManager.construct({
 											}
 										}
 									});
-								// 2. The selected resource's title found in other resource's texts 
-								//    result in a 'other mentions this' statement (selected resource is object):
-							//	if (refR.properties)
+									// 2. The selected resource's title found in other resource's texts 
+									//    result in a 'other mentions this' statement (selected resource is object):
+									//	if (refR.properties)
 									refR.properties.forEach((p) => {
 										// assuming that the dataTypes are always cached:
 										dT = LIB.dataTypeOf(p['class'], cacheData);
 										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 											// add, if the selected resource's title appears in the iterated resource's property ..
 											// and if it is not yet listed:
-											if (selPatt.test( LIB.languageValueOf(p.values[0], localOpts) ) && notListed( staL,refR,selR ) ) {
+											if (selPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {
 												// these are minimal statements only just for displaying the statement graph:
 												staL.push({
 													// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
@@ -2340,25 +2468,25 @@ moduleManager.construct({
 											}
 										}
 									});
-							};
-							if(--pend < 1) {
-							/*	if (staL.length > 1)
-									cacheData.put(
-										'statementClass',
-										standardTypes.get('statementClass', LIB.makeKey("SC-mentions"))
-									);  */
-								resolve(staL)
-							};
-						},
-						reject
-					);
+								};
+								if (--pend < 1) {
+									/*	if (staL.length > 1)
+											cacheData.put(
+												'statementClass',
+												standardTypes.get('statementClass', LIB.makeKey("SC-mentions"))
+											);  */
+									resolve(staL)
+								};
+							},
+							reject
+						);
 					return true;
 				})
 			})
-			
-			function notListed(L: SpecifStatement[], s: SpecifResource, o: SpecifResource ):boolean {
-				for( var l of L  ) {
-					if( l.subject.id==s.id && l.object.id==o.id ) return false;
+
+			function notListed(L: SpecifStatement[], s: SpecifResource, o: SpecifResource): boolean {
+				for (var l of L) {
+					if (l.subject.id == s.id && l.object.id == o.id) return false;
 				};
 				return true;
 			}
@@ -2370,7 +2498,7 @@ moduleManager.construct({
 			let res: SpecifResource, isNotADiagram: boolean, noDiagramFound = true;
 			// ToDo: first do selPrj.readItems('hierarchy',"all") with promise anditerate with results ...
 			return LIB.iterateNodes(
-				cacheData.get('hierarchy',selPrj.hierarchies),
+				cacheData.get('hierarchy', selPrj.hierarchies),
 				(nd: SpecifNode): boolean => {
 					// get the referenced resource:
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
@@ -2384,87 +2512,85 @@ moduleManager.construct({
 				}
 			) || noDiagramFound;
 		}
-	}; 
+	};
 
-	function linkBtns():string {
-		if( !selRes ) return '';
+	function linkBtns(): string {
+		if (!selRes) return '';
 		var rB = '<div id="linkBtns" class="btn-group" style="position:absolute;top:4px;right:4px;z-index:900">';
 
-		if (modeStaDel) 
-			return rB+'<button class="btn btn-default" onclick="'+myFullName+'.toggleModeStaDel()" >'+i18n.BtnCancel+'</button></div>';
+		if (modeStaDel)
+			return rB + '<button class="btn btn-default" onclick="' + myFullName + '.toggleModeStaDel()" >' + i18n.BtnCancel + '</button></div>';
 
-//		console.debug( 'linkBtns', self.staCre );
+		//		console.debug( 'linkBtns', self.staCre );
 
-		if( app.title!=i18n.LblReader && self.staCre )
-			rB += '<button class="btn btn-success" onclick="'+myFullName+'.linkResource()" '
-					+'data-toggle="popover" title="'+i18n.LblAddRelation+'" >'+i18n.IcoAdd+'</button>';
+		if (app.title != i18n.LblReader && self.staCre)
+			rB += '<button class="btn btn-success" onclick="' + myFullName + '.linkResource()" '
+				+ 'data-toggle="popover" title="' + i18n.LblAddRelation + '" >' + i18n.IcoAdd + '</button>';
 		else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoAdd+'</button>';
+			rB += '<button disabled class="btn btn-default" >' + i18n.IcoAdd + '</button>';
 
-		if( app.title!=i18n.LblReader && net.statements.length>0 /* && (!selRes.permissions || selRes.permissions.del) */ )
-			rB += '<button class="btn btn-danger '+(modeStaDel?'active':'')+'" onclick="'+myFullName+'.toggleModeStaDel()" '
-					+'data-toggle="popover" title="'+i18n.LblDeleteRelation+'" >'+i18n.IcoDelete+'</button>';
+		if (app.title != i18n.LblReader && net.statements.length > 0 /* && (!selRes.permissions || selRes.permissions.del) */)
+			rB += '<button class="btn btn-danger ' + (modeStaDel ? 'active' : '') + '" onclick="' + myFullName + '.toggleModeStaDel()" '
+				+ 'data-toggle="popover" title="' + i18n.LblDeleteRelation + '" >' + i18n.IcoDelete + '</button>';
 		else
-			rB += '<button disabled class="btn btn-default" >'+i18n.IcoDelete+'</button>';
+			rB += '<button disabled class="btn btn-default" >' + i18n.IcoDelete + '</button>';
 
-		return rB+'</div>';	// return rendered buttons for display
+		return rB + '</div>';	// return rendered buttons for display
 	}
-	function getPermissions( res:SpecifResource ):void {
+	function getPermissions(res: SpecifResource): void {
 		// No permissions beyond read, if it is the viewer:
-		if( app.title!=i18n.LblReader && res ) {
+		if (app.title != i18n.LblReader && res) {
 			self.staCreClasses.subjectClasses.length = 0;
 			self.staCreClasses.objectClasses.length = 0;
 
 			// a) identify the resource and statement types which can be created by the current user:
-			selPrj.data.statementClasses.forEach( 
-				(sC)=>{
+			selPrj.data.statementClasses.forEach(
+				(sC) => {
 					// list all statement types, for which the current user has permission to create new instances:
 					// ... and which allow user instantiation:
 					// store the classes' ids as it is invariant, when selPrj.data.allClasses is updated
-//					console.debug('staCreClasses',sC,res['class']);
-				//	if( sC.cre && (!sC.instantiation || sC.instantiation.includes('user')) )
-					if (!sC.instantiation || sC.instantiation.includes(SpecifInstantiation.User) ) {
+					//					console.debug('staCreClasses',sC,res['class']);
+					//	if( sC.cre && (!sC.instantiation || sC.instantiation.includes('user')) )
+					if (!sC.instantiation || sC.instantiation.includes(SpecifInstantiation.User)) {
 						if (!sC.subjectClasses || LIB.indexByKey(sC.subjectClasses, res['class']) > -1)
-							self.staCreClasses.subjectClasses.push( LIB.keyOf(sC) );	// all statementClasses eligible for the currently selected resource
+							self.staCreClasses.subjectClasses.push(LIB.keyOf(sC));	// all statementClasses eligible for the currently selected resource
 						if (!sC.objectClasses || LIB.indexByKey(sC.objectClasses, res['class']) > -1)
-							self.staCreClasses.objectClasses.push( LIB.keyOf(sC) );		// all statementClasses eligible for the currently selected resource
+							self.staCreClasses.objectClasses.push(LIB.keyOf(sC));		// all statementClasses eligible for the currently selected resource
 					};
 				}
 			);
 			// b) set the permissions for the edit buttons:
-			self.staCre = self.staCreClasses.subjectClasses.length>0 || self.staCreClasses.objectClasses.length>0;
+			self.staCre = self.staCreClasses.subjectClasses.length > 0 || self.staCreClasses.objectClasses.length > 0;
 		};
-//		console.debug('permissions',res,self.staCreClasses,self.staCre);
+		//		console.debug('permissions',res,self.staCreClasses,self.staCre);
 	}
-	function renderStatements( net:any ):void {
+	function renderStatements(net: CGraph): void {
 		// net contains resources and statements as a SpecIF data-set for graph rendering,
 		// where the selected resource is the first element in the resources list.
 
-		if( net.statements.length<1 ) {
-			$( self.view ).html( '<div class="notice-default">'+i18n.MsgNoRelatedObjects+'</div>' );
+		if (net.statements.length < 1) {
+			$(self.view).html('<div class="notice-default">' + i18n.MsgNoRelatedObjects + '</div>');
 			modeStaDel = false;
 			return;
 		};
 
-//		console.debug('renderStatements',net);
+		//		console.debug('renderStatements',net);
 
-		let graphOptions: IGraphOptions = {
-				index: 0,
+		let graphOptions = new CGraphOptions({
 				canvas: self.view.substr(1),	// without leading hash
 				titleProperties: CONFIG.titleProperties,
 				onDoubleClick: (evt: any) => {
 //					console.debug('Double Click on:',evt);
-				//	if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
+					//	if( evt.target.resource && (typeof(evt.target.resource)=='string') ) 
 					if (typeof (evt.target.resource) == 'string')
-						app[myName].relatedItemClicked(evt.target.resource,evt.target.statement);
-						// changing the tree node triggers an event, by which 'self.refresh' will be called.
+						app[myName].relatedItemClicked(evt.target.resource, evt.target.statement);
 				},
-				focusColor: CONFIG.focusColor
-			};
-		if( modeStaDel )
-			graphOptions.nodeColor = '#ef9a9a';
+				focusColor: CONFIG.focusColor,
+				nodeColor: modeStaDel ? '#ef9a9a' : '#afcbef'
+			});
 //		console.debug('showStaGraph',net,graphOptions);
-		app.vicinityGraph.show(net, graphOptions);
+
+		net.show(graphOptions);
 
 		$(self.view).prepend('<div style="position:absolute;left:4px;z-index:900">'
 			+ (modeStaDel? '<span class="notice-danger" >' + i18n.MsgClickToDeleteRel 

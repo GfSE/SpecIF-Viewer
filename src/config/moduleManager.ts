@@ -52,7 +52,7 @@ interface IApp {
 	statements: IModule;
 	filter: IModule;
 	reports: IModule; 
-	vicinityGraph?: IModule;
+//	vicinityGraph?: IModule;
 	importAny: IModule;
 	ioSpecif: IModule;
 	ioReqif?: IModule;
@@ -276,7 +276,7 @@ var app:IApp,
 			else
 				callWhenReady = undefined;
 
-			L.forEach((e) => { loadM(e) });
+			L.forEach((e) => { loadModule(e) });
 		}
 	};
 	function register( mod:string ):boolean {
@@ -312,111 +312,116 @@ var app:IApp,
 		ld(tr);
 		return;
 
-			function ld(e: IModule): void {
-				// else, the module is described by an object with a property 'name':
-				// append the view to the parent view, where
-				// - the visibility of the view shall be controlled by the parent's ViewControl
-				if (e.view && e.parent) {
-					let c = e.viewClass ? 'class="' + e.viewClass + '" ' : '',
-						d = '<div id="' + e.view.substring(1) + '" ' + c + ' style="display:none;"></div>';
-					//					console.debug('l.view',e,c,d);
-					$(e.parent.view).append(d);
-				};
-				// load a module in case of elements with a name:
-				// (lazy loading is not yet implemented)
-				if (e.name && !e.lazy)
-					loadM(e.name);
-				if (e.children) {
-					// in certain cases prepare for controlling the children's views:
-					if (e.selector) {
-						//						console.debug('l.selector',e);
-						// The element has children and a selector, so add the view controller:
-						e.ViewControl = new ViewControl();
+		function ld(e: IModule): void {
+			// else, the module is described by an object with a property 'name':
+			// append the view to the parent view, where
+			// - the visibility of the view shall be controlled by the parent's ViewControl
+			if (e.view && e.parent) {
+				let c = e.viewClass ? 'class="' + e.viewClass + '" ' : '',
+					d = '<div id="' + e.view.substring(1) + '" ' + c + ' style="display:none;"></div>';
+//				console.debug('l.view',e,c,d);
+				$(e.parent.view).append(d);
+			};
+			// load a module in case of elements with a name:
+			// (lazy loading is not yet implemented)
+			if (e.name /* && !e.lazy */) {
+				loadModule(e);
+			};
+			if (e.children) {
+				loadChildren(e);
+			};
+			return;
 
-						// ... and create a corresponding visual selector for the children's views,
-						// if it has not been defined manually:
-						//						console.debug('s',e.selector,$(e.selector),$(e.selector).length);
-						if ($(e.selector).length < 1) {
-							let s = '';
+			function loadChildren(e: IModule): void {
+				// in certain cases prepare for controlling the children's views:
+				if (e.selector) {
+//					console.debug('l.selector',e);
+					// The element has children and a selector, so add the view controller:
+					e.ViewControl = new ViewControl();
+
+					// ... and create a corresponding visual selector for the children's views,
+					// if it has not been defined manually:
+//					console.debug('s',e.selector,$(e.selector),$(e.selector).length);
+					if ($(e.selector).length < 1) {
+						let s = '';
+						switch (e.selectorType) {
+							case 'btns':
+								s = '<div id="' + e.selector.substring(1) + '" class="btn-group" ></div>';
+								break;
+							//	case 'tabs':
+							default:
+								s = '<ul id="' + e.selector.substring(1) + '" role="tablist" class="nav nav-tabs"></ul>'
+						};
+						$(e.view).append(s);
+					};
+
+					// Then care for the entries in the view controller and in the visual selector:
+					let id = null, lbl = null;
+					e.children.forEach(function (ch) {
+						if (ch.view) {
+							if (!ch.selectedBy) {
+								// only one of them is present:
+								throw Error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
+							};
+							// else, both 'view' and 'selectedBy' are present:
+
+							// Add the child's view to the view controller;
+							// the elements of ViewControl are a subset of the elements of children, namely those with a view:
+							e.ViewControl.add(ch);
+
+							// Add a view selector element for the child (button resp. tab):
+							id = ch.selectedBy.substring(1);	// without '#'
+							lbl = ch.label || id;
+//							console.debug('e',e,ch,id,lbl);
 							switch (e.selectorType) {
 								case 'btns':
-									s = '<div id="' + e.selector.substring(1) + '" class="btn-group" ></div>';
+									$(e.selector).append(
+										'<button id="' + id + '" type="button" class="btn btn-default" onclick="moduleManager.show({view:\'' + ch.view + '\'})" >' + lbl + '</button>'
+									);
 									break;
 							//	case 'tabs':
 								default:
-									s = '<ul id="' + e.selector.substring(1) + '" role="tablist" class="nav nav-tabs"></ul>'
+									$(e.selector).append(
+										'<li id="' + id + '" onclick="moduleManager.show({view:\'' + ch.view + '\'})"><a>' + lbl + '</a></li>'
+									);
 							};
-							$(e.view).append(s);
 						};
-
-						// Then care for the entries in the view controller and in the visual selector:
-						let id = null, lbl = null;
-						e.children.forEach(function (ch) {
-							if (ch.view) {
-								if (!ch.selectedBy) {
-									// only one of them is present:
-									throw Error("Module '" + ch.name + "' must have both properties 'view' and 'selectedBy' or none.");
-								};
-								// else, both 'view' and 'selectedBy' are present:
-
-								// Add the child's view to the view controller;
-								// the elements of ViewControl are a subset of the elements of children, namely those with a view:
-								e.ViewControl.add(ch);
-
-								// Add a view selector element for the child (button resp. tab):
-								id = ch.selectedBy.substring(1);	// without '#'
-								lbl = ch.label || id;
-								//								console.debug('e',e,ch,id,lbl);
-								switch (e.selectorType) {
-									case 'btns':
-										$(e.selector).append(
-											'<button id="' + id + '" type="button" class="btn btn-default" onclick="moduleManager.show({view:\'' + ch.view + '\'})" >' + lbl + '</button>'
-										);
-										break;
-									//	case 'tabs':
-									default:
-										$(e.selector).append(
-											'<li id="' + id + '" onclick="moduleManager.show({view:\'' + ch.view + '\'})"><a>' + lbl + '</a></li>'
-										);
-								};
+						if (ch.action) {
+							if (!ch.selectedBy) {
+								// only one of them is present:
+								throw Error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
 							};
-							if (ch.action) {
-								if (!ch.selectedBy) {
-									// only one of them is present:
-									throw Error("Module '" + ch.name + "' must have both properties 'action' and 'selectedBy' or none.");
-								};
-								// Add a view selector element for the child (only button is implemented):
-								id = ch.selectedBy.substring(1);	// without '#'
-								lbl = ch.label || id;
-								switch (e.selectorType) {
-									case 'btns':
-										$(e.selector).append(
-											'<button id="' + id + '" type="button" class="btn btn-default" onclick="' + ch.action + '" >' + lbl + '</button>'
-										);
-										break;
-									default:
-										throw Error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
-								};
+							// Add a view selector element for the child (only button is implemented):
+							id = ch.selectedBy.substring(1);	// without '#'
+							lbl = ch.label || id;
+							switch (e.selectorType) {
+								case 'btns':
+									$(e.selector).append(
+										'<button id="' + id + '" type="button" class="btn btn-default" onclick="' + ch.action + '" >' + lbl + '</button>'
+									);
+									break;
+								default:
+									throw Error("Action'" + lbl + "' needs a parent selector of type 'btns'.");
 							};
-						});
-					};
-					// finally load all the children, as well:
-					e.children.forEach((c) => {
-						c.parent = e;
-						ld(c);
+						};
 					});
 				};
+				// finally load all the children, as well:
+				e.children.forEach((c) => {
+					c.parent = e;
+					ld(c);
+				});
 			}
-
+		}
 	};
 	self.construct = ( defs:IModule, constructorFn:Function ):void =>{
 		// Construct controller and view of a module.
-		// This routine is called by the respective module in the code file, once loaded with 'loadH'/'loadM',
-		// make sure that 'setReady' is not called in 'loadM', if 'construct' is used.
+		// This routine is called by the respective module in the code file, once loaded with 'loadH'/'loadModule',
+		// make sure that 'setReady' is not called in 'loadModule', if 'construct' is used.
 		// Or, the routine is called explicitly to construct a module without loading a dedicated file.
 
 		// find module by name or by view somewhere in the complete module tree of the app:
-		let mo = findM(self.tree,defs.name||defs.view);
+		let mo = findModule(self.tree,defs.name||defs.view);
 		if(!mo)
 			throw Error(defs.name? "'"+defs.name+"' is not a defined module name" : "'"+defs.view+"' is not a defined view");
 
@@ -456,7 +461,7 @@ var app:IApp,
 			throw Error("Undefined target view.");
 //		console.debug('moduleManager.show',params);
 
-		let mo = findM(self.tree, params.view);
+		let mo = findModule(self.tree, params.view);
 		if( !mo || !mo.parent.ViewControl )
 			throw Error("'"+params.view+"' is not a defined view");
 
@@ -507,7 +512,7 @@ var app:IApp,
 	};
 	return self;
 
-	function initH( h: IModule ): void {
+	function initModuleTree( h: IModule ): void {
 		// initialize the hierarchy of modules;
 		// where h can be a module or an array of modules
 		// ... and a module can have children:
@@ -523,7 +528,7 @@ var app:IApp,
 			it(h);
 		};
 	}
-	function findM( tr:IModule[]|IModule, token:string ):IModule|undefined {
+	function findModule( tr:IModule[]|IModule, token:string ):IModule|undefined {
 		// find the module with the given token in the module hierarchy 'tr':
 		let m:IModule|undefined = undefined;
 		if( Array.isArray(tr) ) {
@@ -540,136 +545,145 @@ var app:IApp,
 			// by design: name without '#' and view with '#'
 			if( e.name==token || e.view==token ) return e;
 			if( e.children ) {
-				let m = findM(e.children,token);
+				let m = findModule(e.children,token);
 				if( m ) return m;
 			};
 		//	return undefined;
 		}
 	}
-	function loadM( mod:string ):boolean {
-		if( register( mod ) ) {
+	function loadModule(mod: IModule | string): void {
+		var module: any = typeof (mod) == 'string' ? { name: mod } : mod;
+
+		if (register(module.name)) {
 			// Load the module, if registration went well:
-//			console.debug('loadM',mod);
-			switch( mod ) {
+			loadAfterRequiredModules(module,ldM)
+		};
+		return;
+
+		function ldM(mod:string):boolean {
+			switch (mod) {
 				// 3rd party:
-		//		case "font":				getCss("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
+			//	case "font":				getCss("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"); setReady(mod); return true;
 				case "font":				getCss("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.1/font/bootstrap-icons.css"); setReady(mod); return true;
-				case "bootstrap":			getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" );
-											getCss( "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js' ); return true;
-				case "bootstrapDialog":		getCss( "https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js' ); return true;
+				case "bootstrap":			getCss("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css");
+											getCss("https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css");
+											getScript('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js'); return true;
+				case "bootstrapDialog":		getCss("https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css");
+											getScript('https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js'); return true;
+
+			//	case "tree":				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/jqtree.css" );
 				// temporary solution with fix for buttonLeft=false:
 				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css');
-		//		case "tree": 				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/jqtree.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/tree.jquery.js' ); return true;
-				case "fileSaver": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js' ); return true;
-				case "zip": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js' ); return true;
-				case "jsonSchema": 			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js' ); return true;
+											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/tree.jquery.js'); return true;
+				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
+				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
+				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
-				case "excel": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js' ); return true;
-				case "bpmnViewer":			getScript( 'https://unpkg.com/bpmn-js@10.2.1/dist/bpmn-viewer.production.min.js' ); return true;
+				case "excel": getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
+				case "bpmnViewer": getScript('https://unpkg.com/bpmn-js@10.2.1/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
-											getScript( 'https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js' ); return true;
-		//		case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
-		//		case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
-		//									getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
-		//		case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true;
-		//		Consider https://github.com/rsms/markdown-wasm
-				case "markdown": 			getScript( 'https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js' )
-											// @ts-ignore - 'window.markdown' is defined, if loaded
-											.done( ()=>{ window.markdown = window.markdownit({html:true,xhtmlOut:true,breaks:true,linkify:false}) });
-											return true;
+					getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js'); return true;
+			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
+				case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
+											getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
+				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
+
+				//	Consider https://github.com/rsms/markdown-wasm
+				case "markdown": getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
+					// @ts-ignore - 'window.markdown' is defined, if loaded
+					.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
+					return true;
 
 				// libraries:
-		//		case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
-				case "types":				getScript( loadPath+'types/specif.types.js'); return true;
-				case "i18n": 				switch( browser.language.slice(0,2) ) {
-												case 'de':  getScript( loadPath+'config/locales/iLaH-de.i18n.js' )
-															.done( ()=>{ i18n = LanguageTextsDe() } ); break;
-												case 'fr':  getScript( loadPath+'config/locales/iLaH-fr.i18n.js' )
-															.done( ()=>{ i18n = LanguageTextsFr() } ); break;
-												default:	getScript( loadPath+'config/locales/iLaH-en.i18n.js' )
-															.done( ()=>{ i18n = LanguageTextsEn() } )
-											};
-											return true;
-				case "mainCSS":				getCss( loadPath+'vendor/assets/stylesheets/SpecIF.default.css' ); setReady(mod); return true;
-				case "stdTypes":			getScript(loadPath + 'modules/stdTypes.js')
-											.done(() => { standardTypes = new StandardTypes(); });
-											return true;
-				case "helper": 				getScript( loadPath+'modules/helper.js' )
-											.done(() => { message = new Message(); });
-											return true;
-				case "helperTree": 			getScript( loadPath+'modules/helperTree.js' ); return true;
-				case "xSpecif":				getScript( loadPath+'modules/xSpecif.js' ); return true;
-				case "cache": 				getScript( loadPath+'modules/cache.mod.js' ); return true;
-				case "profileAnonymous":	getScript( loadPath+'modules/profileAnonymous.mod.js' ); return true;
-		/*		case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
+			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
+				case "types": getScript(loadPath + 'types/specif.types.js'); return true;
+				case "i18n": switch (browser.language.slice(0, 2)) {
+								case 'de': getScript(loadPath + 'config/locales/iLaH-de.i18n.js')
+									.done(() => { i18n = LanguageTextsDe() }); break;
+								case 'fr': getScript(loadPath + 'config/locales/iLaH-fr.i18n.js')
+									.done(() => { i18n = LanguageTextsFr() }); break;
+								default: getScript(loadPath + 'config/locales/iLaH-en.i18n.js')
+									.done(() => { i18n = LanguageTextsEn() })
+							};
+							return true;
+				case "mainCSS": getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
+				case "stdTypes": getScript(loadPath + 'modules/stdTypes.js')
+								.done(() => { standardTypes = new StandardTypes(); });
+								return true;
+				case "helper": getScript(loadPath + 'modules/helper.js')
+								.done(() => { message = new CMessage(); });
+								return true;
+				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
+				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
+				case "cache": getScript(loadPath + 'modules/cache.mod.js'); return true;
+				case "profileAnonymous": getScript(loadPath + 'modules/profileAnonymous.mod.js'); return true;
+			/*	case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( loadPath+'modules/user-0.92.44.mod.html', function() {setReady(mod)} ); return true;
-				case "projects":			loadM( 'toEpub' );
+				case "projects":			loadModule( 'toEpub' );
 											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
-				case 'toHtml': 				getScript( loadPath+'modules/toHtml.js' ); return true;
-				case "toXhtml": 			getScript( loadPath+'vendor/assets/javascripts/toXhtml.js' ); return true;
-				case "toEpub": 				loadM( 'toXhtml' );
-											getScript( loadPath+'vendor/assets/javascripts/toEpub.js' ); return true;
-				case "toOxml":				// the loading of fileSaver is attached here for all exports:
-											loadM('fileSaver');
-											getScript( loadPath+'vendor/assets/javascripts/toOxml.js' ); return true;
-				case "toTurtle":			getScript( loadPath+'vendor/assets/javascripts/specif2turtle.js' ); return true;
-				case 'bpmn2specif':			getScript( loadPath+'vendor/assets/javascripts/BPMN2SpecIF.js' ); return true;
-				case 'archimate2specif':	getScript( loadPath+'vendor/assets/javascripts/archimate2SpecIF.js' ); return true;
-				case 'reqif2specif':		getScript( loadPath+'vendor/assets/javascripts/reqif2specif.js' ); return true;
-				case 'vicinityGraph': 		loadM( 'graphViz' );
-											getScript( loadPath+'modules/graph.js' ); return true;
-		/*		case CONFIG.objectTable:  	loadM( 'dataTable' );
-										//	loadM( 'dataTableButtons' );
+				case 'generateClasses': getScript(loadPath + 'modules/generateClasses.js'); return true;
+				case 'toHtml': getScript(loadPath + 'modules/toHtml.js'); return true;
+				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
+				case "toEpub": loadModule('toXhtml');
+								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
+				case "toOxml":	// the loading of fileSaver is attached here for all exports:
+								loadModule('fileSaver');
+								getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
+				case "toTurtle": getScript(loadPath + 'vendor/assets/javascripts/specif2turtle.js'); return true;
+				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
+				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;
+				case 'reqif2specif': getScript(loadPath + 'vendor/assets/javascripts/reqif2specif.js'); return true;
+				case 'vicinityGraph': loadModule('graphViz');
+								getScript(loadPath + 'modules/graph.js'); return true;
+			/*	case CONFIG.objectTable:  	loadModule( 'dataTable' );
+										//	loadModule( 'dataTableButtons' );
 											getScript( loadPath+'modules/objectTable-0.93.1.js' ); return true;
-				case "serverPouch":			loadM('pouchDB');
+				case "serverPouch":			loadModule('pouchDB');
 											getScript(loadPath + 'modules/serverPouch.mod.js'); return true; */
 
 				// constructors/modules:
-				case "about":				getScript( loadPath+'modules/about.mod.js' ); return true;
-				case 'importAny':			loadM( 'zip' );
-											loadM('jsonSchema');
-											getScript( loadPath+'modules/importAny.mod.js' ); return true;
-				case 'ioSpecif':			getScript( loadPath+'modules/ioSpecif.mod.js' ); return true;
-				case 'ioReqif': 			loadM( 'reqif2specif' );
-											getScript( loadPath+'modules/ioReqif.mod.js' ); return true;
-		//		case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
-				case 'ioXls': 				loadM( 'excel' );
-											getScript( loadPath+'modules/ioXls.mod.js' ); return true;
-				case 'ioBpmn':				loadM( 'bpmn2specif' );
-											loadM( 'bpmnViewer' );
-											getScript( loadPath+'modules/ioBpmn.mod.js' ); return true;
-				case 'ioArchimate':			loadM( 'archimate2specif' );
-											getScript( loadPath+'modules/ioArchimate.mod.js' ); return true;
+				case "about": getScript(loadPath + 'modules/about.mod.js'); return true;
+				case 'importAny': loadModule('zip');
+								loadModule('jsonSchema');
+								getScript(loadPath + 'modules/importAny.mod.js'); return true;
+				case 'ioSpecif': getScript(loadPath + 'modules/ioSpecif.mod.js'); return true;
+				case 'ioReqif': loadModule('reqif2specif');
+								getScript(loadPath + 'modules/ioReqif.mod.js'); return true;
+			//	case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
+				case 'ioXls': loadModule('excel');
+								getScript(loadPath + 'modules/ioXls.mod.js'); return true;
+				case 'ioBpmn': loadModule('bpmn2specif');
+								loadModule('bpmnViewer');
+								getScript(loadPath + 'modules/ioBpmn.mod.js'); return true;
+				case 'ioArchimate': loadModule('archimate2specif');
+								getScript(loadPath + 'modules/ioArchimate.mod.js'); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
-		/*		case CONFIG.users:		//	loadM( 'mainCSS' );
+			/*	case CONFIG.users:		//	loadModule( 'mainCSS' );
 											$('#'+mod).load( "./modules/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
 				case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
-										//	loadM( 'mainCSS' );
-										//	loadM( 'cache' );
-											loadM( 'stdTypes' );
+										//	loadModule( 'mainCSS' );
+										//	loadModule( 'cache' );
+											loadModule( 'stdTypes' );
 											$('#'+mod).load( "./modules/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
-		*/
+			*/
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
-										//	loadM( 'stdTypes' );
-										//	loadM( 'diff' );
-											getScript( loadPath+'modules/specifications.mod.js' ); return true;
+							//	loadModule( 'stdTypes' );
+							//	loadModule( 'diff' );
+								getScript(loadPath + 'modules/specifications.mod.js'); return true;
 
 				// sub-modules of module 'specifications':
-				case CONFIG.reports: 		getScript( loadPath+'modules/reports.mod.js' ); return true;
-				case CONFIG.objectFilter:  	getScript( loadPath+'modules/filter.mod.js' ); return true;
-				case CONFIG.resourceEdit:	// loadM( 'xhtmlEditor' );
-											getScript( loadPath+'modules/resourceEdit.mod.js' ); return true;
-				case CONFIG.resourceLink:	getScript( loadPath+'modules/resourceLink.mod.js' ); return true;
-		//		case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
+				case CONFIG.reports: getScript(loadPath + 'modules/reports.mod.js'); return true;
+				case CONFIG.objectFilter: getScript(loadPath + 'modules/filter.mod.js'); return true;
+				case CONFIG.resourceEdit:
+								// loadModule( 'xhtmlEditor' );
+								getScript(loadPath + 'modules/resourceEdit.mod.js'); return true;
+				case CONFIG.resourceLink: getScript(loadPath + 'modules/resourceLink.mod.js'); return true;
+			//	case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
 
-				default:					console.warn( "Module loader: Module '"+mod+"' is unknown." ); return false;
+				default: console.warn("Module loader: Module '" + mod + "' is unknown."); return false;
 			};
-		};
-		return false;
+		}
 
 		// Add cache-busting on version-change to all files from this development project,
 		// i.e. all those having a relative URL.
@@ -700,7 +714,14 @@ var app:IApp,
 				return $.ajax( settings );
 			else
 				// call 'setReady' from here:
-				return $.ajax( settings ).done( ()=>{setReady(mod)} );
+				return $.ajax( settings ).done( ()=>{setReady(module.name)} );
+		}
+		function loadAfterRequiredModules(mod: IModule, fn: Function): void {
+			// start the loading of the modules not before all required modules are ready:
+			if (!Array.isArray(mod.requires) || LIB.containsAllStrings( self.ready, mod.requires ))
+				fn(mod.name)
+			else
+				setTimeout(function () { loadAfterRequiredModules(mod, fn) }, 33);
 		}
 	}
 	function setReady( mod:string ):void {
@@ -716,7 +737,7 @@ var app:IApp,
 
 		if( self.registered.length === self.ready.length ) {
 			// All modules have been loaded:
-			initH( self.tree );
+			initModuleTree( self.tree );
 			console.info( "All "+self.ready.length+" modules loaded --> ready!" );
 			if (typeof (callWhenReady) == 'function')
 				callWhenReady()

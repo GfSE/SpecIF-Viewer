@@ -100,7 +100,8 @@ function editSpecif():IApp {
 					label: i18n.TabReports,
 					selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 				},{
-					name: CONFIG.resourceEdit
+					name: CONFIG.resourceEdit,
+					requires: [CONFIG.specifications]	// load not before the specified modules are ready
 					// no loadAs, so name will be used for the controller object
 					// no view; just modal dialogs will be used
 					// no selector
@@ -123,6 +124,9 @@ function editSpecif():IApp {
 					name: 'toOxml'
 				},{
 					name: 'toTurtle'
+				},{
+					// generate SpecIF classes from the SpecIF vocabulary:			
+					name: 'generateClasses'
 				}]
 			},{
 				name: 'about',

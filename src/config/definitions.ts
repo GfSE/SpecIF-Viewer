@@ -155,6 +155,7 @@ const CONFIG:any = {};
 	CONFIG.resClassXlsRow = 'XLS:Resource';
 	CONFIG.resClassOutline = 'SpecIF:Outline';
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
+	CONFIG.resClassOntology = "W3C:Ontology";
 	CONFIG.resClassProcess = 'SpecIF:BusinessProcess';
 	CONFIG.resClassProcesses = 'SpecIF:BusinessProcesses';
 	CONFIG.resClassCondition = "SpecIF:Condition";
@@ -193,9 +194,11 @@ const CONFIG:any = {};
 	CONFIG.hierarchyRoots = [
 		CONFIG.resClassOutline, // do not remove
 		CONFIG.resClassGlossary,
+		CONFIG.resClassOntology,
 		'SpecIF:HierarchyRoot',
 		'SpecIF:Hierarchy',
-		'SpecIF:BillOfMaterials'
+		'SpecIF:BillOfMaterials',
+		"W3C:Vocabulary"
 	];
 
 	// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
@@ -708,7 +711,7 @@ const RE:any = {};
 	RE.attrData = /data="([^"]+)"/;
 
 const reSO = '<object ([^>]+?)(/>|>(.*?)</object>)';
-	RE.tagSingleObject = new RegExp( reSO, 'g' );
+	RE.tagSingleObjects = new RegExp( reSO, 'g' );
 	RE.tagNestedObjects = new RegExp( '<object ([^>]+?)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
 	RE.inQuotes = /"(\S[^"]*?\S)"|'(\S[^']*?\S)'/i;  // empty space in the middle allowed, but not as first and last character
 
@@ -724,13 +727,13 @@ const tagStr = "(<\\/?)([a-z]{1,10}(?: [^<>]+)?\\/?>)";
 		// $2: start of opening tag '<' or closing tag '</'
 		// $3: rest of the tag including '>' or '/>'
 
-const tokenGroup = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|tfoot|th|td)";
-	RE.escapedHtmlTag = new RegExp("&(?:lt|#60);(\\/?)" + tokenGroup + "(.*?\\/?)&(?:gt|#62);", "g");
-//	RE.htmlTag = new RegExp("(<\\/?)" + tokenGroup + "(.*?\\/?)>", "g");
-	RE.innerHtmlTag = new RegExp("([\\s\\S]*?)(<\\/?)" + tokenGroup + "((?: [^<>]+)?\\/?>)", 'g');
+const tagsHtml = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|tfoot|th|td)";
+	RE.escapedHtmlTag = new RegExp("&(?:lt|#60);(\\/?)" + tagsHtml + "(.*?\\/?)&(?:gt|#62);", "g");
+//	RE.htmlTag = new RegExp("(<\\/?)" + tagsHtml + "(.*?\\/?)>", "g");
+	RE.innerHtmlTag = new RegExp("([\\s\\S]*?)(<\\/?)" + tagsHtml + "((?: [^<>]+)?\\/?>)", 'g');
 		// $1: inner text (before the next tag)
 		// $2: start of opening tag '<' or closing tag '</'
-		// $3: any of the tokens listed in tokenGroup 
+		// $3: any of the tokens listed in tagsHtml 
 		// $4: the rest of the tag including '>' or '/>'
 
 //	RE.splitVocabularyTerm = /^(\w+:|\w+\.)?(\w+)$/;

@@ -309,6 +309,9 @@ class CSpecIF implements SpecIF {
 		let self = this,
 			names = new CSpecifItemNames(spD.specifVersion);
 
+		console.info("References are imported *without* revision to ascertain that updates of the referenced element do not break the link."
+					+" (References without revision always relate to the latest revision of the referenced element.)");
+
 		// Differences when using forAll() instead of [..].map():
 		// - tolerates missing input list (not all are mandatory for SpecIF)
 		// - suppresses undefined list items in the result, so in effect forAll() is a combination of .map() and .filter().
@@ -736,9 +739,8 @@ class CSpecIF implements SpecIF {
 			oE['class'] = LIB.makeKey(iE[names.sClass].id || iE[names.sClass] );
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
-			//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
-			oE.subject = LIB.makeKey( iE.subject );
-			oE.object = LIB.makeKey( iE.object );
+			oE.subject = LIB.makeKey(iE.subject.id || iE.subject );
+			oE.object = LIB.makeKey(iE.object.id || iE.object );
 
 			// special feature to import statements to complete,
 			// used for example by the XLS import:
@@ -1209,7 +1211,6 @@ class CSpecIF implements SpecIF {
 					// so we lookup, if so desired, e.g. when exporting to ePub:
 					var oE: SpecifStatement = a2ext(iE);
 
-				//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 					oE.subject = iE.subject;
 					oE.object = iE.object;
 
@@ -1634,7 +1635,6 @@ class CSpecIF implements SpecIF {
 					// so we lookup, if so desired, e.g. when exporting to ePub:
 					var oE: SpecifStatement = a2ext(iE);
 
-					//	if( iE.isUndirected ) oE.isUndirected = iE.isUndirected;
 					oE.subject = iE.subject;
 					oE.object = iE.object;
 

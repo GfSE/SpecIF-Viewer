@@ -276,6 +276,60 @@ function setStyle( sty:string ):void {
 	css.innerHTML = sty;
 	document.head.appendChild(css); // append to head
 }
+interface IDialogField {
+	label: string;
+	dataType: SpecifDataType;
+}
+class CCheckDialogInput {
+	// Construct an object performing the key-by-key input checking on an input form;
+	// on a key-stroke check *all* fields and return the overall result.
+
+	list: IDialogField[];  // the list of parameter-sets, each for checking a certain input field.
+	constructor() {
+		this.list = [] as IDialogField[];
+	}
+	addField(elementId: string, dT: SpecifDataType): void {
+		// Add a parameter-set for checking an input field;
+		// - 'elementId' is the id of the HTML input element
+		// - 'dataType' is the dataType of the property
+		this.list.push({ label: elementId, dataType: dT });
+	};
+	check(): boolean {
+		// Perform tests on all registered input fields; is designed to be called on every key-stroke.
+		let val: string, ok: boolean, allOk = true;
+		this.list.forEach((cPs) => {
+			// cPs holds the parameters for checking a single property resp. input field.
+			// Get the input value:
+			val = textValue(cPs.label);
+			// Perform the test depending on the type:
+			switch (cPs.dataType.type) {
+				case SpecifDataTypeEnum.String:
+					//	case 'xhtml':
+					ok = cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
+					break;
+				case SpecifDataTypeEnum.Double:
+					ok = val.length < 1
+						|| RE.Real(cPs.dataType.fractionDigits).test(val)
+						&& !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
+						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
+					break;
+				case SpecifDataTypeEnum.Integer:
+					ok = val.length < 1
+						|| RE.Integer.test(val)
+						&& !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
+						&& !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
+					break;
+				case SpecifDataTypeEnum.DateTime:
+					ok = val.length < 1 || LIB.isIsoDate(val);
+				// no need to check enumeration
+			};
+			setTextState(cPs.label, ok ? 'has-success' : 'has-error');
+			allOk = allOk && ok;
+//			console.debug( 'CCheckDialogInput.check: ', cPs, val );
+		});
+		return allOk;
+	}
+}
 
 class xhrMessage {
 	status: number;
@@ -344,7 +398,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 	if( typeof(cb)=='function' ) cb();
 };
 // standard message box:
- class Message {
+ class CMessage {
 	// construct a message-box:
 	pend: number;
 
@@ -530,7 +584,7 @@ LIB.hasContent = (pV: string): boolean => {
 		|| /^.{0,2}(?:no entry|empty).{0,2}$/.test(pV.toLowerCase())
 	) return false;
 	return pV.stripHTML().length > 0
-		|| RE.tagSingleObject.test(pV) // covers nested object tags, as well
+		|| RE.tagSingleObjects.test(pV) // covers nested object tags, as well
 		|| RE.tagImg.test(pV)
 		|| RE.tagA.test(pV)
 }
@@ -797,11 +851,11 @@ LIB.containsById = (cL:any[], L: SpecifItem|SpecifItem[] ):boolean =>{
 		return true;
 	}
 } */
-/* LIB.containsAllStrings = (refL: string[], newL: string[]): boolean => {
+LIB.containsAllStrings = (refL: string[], newL: string[]): boolean => {
 	for (var i = newL.length - 1; i > -1; i--)
 		if (refL.indexOf(newL[i]) < 0) return false;
 	return true;
-} */
+}
 LIB.addPCReference = (eC: SpecifResourceClass | SpecifStatementClass, key: SpecifKey): void => {
 	// Add the propertyClass-id to an element class (eC), if not yet defined:
 	if (Array.isArray(eC.propertyClasses)) {
@@ -1057,7 +1111,7 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
 	str = str.replace(RE.innerHtmlTag, function ($0, $1, $2, $3, $4) {
 		// $1: inner text (before the next tag)
 		// $2: start of opening tag '<' or closing tag '</'
-		// $3: any of the tokens listed in tokenGroup (see definitions.ts)
+		// $3: any of the tokens listed in tagsHtml (see definitions.ts)
 		// $4: the rest of the tag including '>' or '/>'
 //		console.debug('escapeInner', $0, $1, $2, $3, $4);
 

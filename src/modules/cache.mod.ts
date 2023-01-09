@@ -348,8 +348,6 @@ class CProject {
 	// @ts-ignore - initialized by this.setMeta()
 	id: SpecifId;
 	// @ts-ignore - initialized by this.setMeta()
-	revision?: SpecifRevision;
-	// @ts-ignore - initialized by this.setMeta()
 	title?: SpecifMultiLanguageText;
 	// @ts-ignore - initialized by this.setMeta()
 	description?: SpecifMultiLanguageText;
@@ -361,8 +359,8 @@ class CProject {
 	createdAt?: SpecifDateTime;
 	// @ts-ignore - initialized by this.setMeta()
 	createdBy?: SpecifCreatedBy;
-	// remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
-	// store all keys without revision, as it can change:
+	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
+	// store all keys without revision, so that the referenced elements can be updated without breaking the link:
 	// ToDo: Reconsider! Can projects share classes, but use different revision levels?
 	dataTypes: SpecifKey[];
 	propertyClasses: SpecifKey[];
@@ -2018,6 +2016,21 @@ class CProject {
 		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
 			size: BootstrapDialog.SIZE_WIDE,  */
 			message: () => {
+				let formats =
+					[
+						{ title: 'SpecIF v1.0', id: 'specif_v10' },
+						{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
+						{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
+						{ title: 'ReqIF v1.2', id: 'reqif' },
+						//	{ title: 'RDF', id: 'rdf' },
+						//	{ title: 'Turtle (experimental)', id: 'turtle' },
+						{ title: 'ePub v2', id: 'epub' },
+						{ title: 'MS Word® (Open XML)', id: 'oxml' }
+					];
+				// add an option to generate class definitions, if there is a SpecIF ontology found in the hierarchies:
+				if( moduleManager.isReady('generateClasses') )
+					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specif-classes' });
+
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
 				//	+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div class="col-sm-12" style="padding: 0 4px 0 4px">'
@@ -2026,16 +2039,7 @@ class CProject {
 					+ "<p>" + i18n.MsgExport + "</p>"
 					+ radioField(
 						i18n.LblFormat,
-						[
-							{ title: 'SpecIF v1.0', id: 'specif_v10' },
-							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
-							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
-							{ title: 'ReqIF v1.2', id: 'reqif' },
-						//	{ title: 'RDF', id: 'rdf' },
-						//	{ title: 'Turtle (experimental)', id: 'turtle' },
-							{ title: 'ePub v2', id: 'epub' },
-							{ title: 'MS Word® (Open XML)', id: 'oxml' }
-						],
+						formats,
 						{ handle: exportFormatClicked }  // options depend on format
 					)
 					+ '</div>'
@@ -2125,7 +2129,7 @@ class CProject {
 
 					switch (opts.format) {
 						case 'specif_v10':
-						//	case 'rdf':
+					//	case 'rdf':
 						case 'turtle':
 							opts.v10 = true;
 							// no break
@@ -2302,6 +2306,8 @@ class CProject {
 						// Prepare the output data:
 						switch (opts.format) {
 							case 'specif_v10':
+								fName += ".v10";
+								// no break
 							case 'specif':
 								fName += ".specif";
 								zName = fName + '.zip';
@@ -3165,7 +3171,7 @@ function Project(): IProject {
 								// It is possible that a file has been updated, so a referencing resource must be updated, as well.
 								// ToDo: Analyse whether a referenced file has really been updated.
 								if( RE.tagNestedObjects.test(nV)
-									||  RE.tagSingleObject.test(nV) ) return true;
+									||  RE.tagSingleObjects.test(nV) ) return true;
 								break;
 							default:
 								if( rA.value!=nA.value ) return true
