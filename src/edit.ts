@@ -103,10 +103,10 @@ function editSpecif():IApp {
 					name: CONFIG.resourceEdit,
 					requires: [CONFIG.specifications]	// load not before the specified modules are ready
 					// no loadAs, so name will be used for the controller object
-					// no view; just modal dialogs will be used
+					// no view; just a modal dialog will be used
 					// no selector
-					// the view will be called by pressing an item action button; the function to call
-					//   is added manually in view 'CONFIG.specifications'.
+					// The modal dialog will be called by pressing an item action button; 
+					//   the function to call is added manually in view 'CONFIG.specifications'.
 				},{
 					name: CONFIG.resourceLink
 					// as above

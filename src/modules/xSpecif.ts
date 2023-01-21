@@ -211,7 +211,7 @@ class CSpecIF implements SpecIF {
 					if (spD['$schema'] && !spD['$schema'].includes('v1.0')) {
 						// for data sets according to schema v1.1 and later;
 						// get the constraint checker locally, if started locally in the debug phase:
-						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
+						import(window.location.href.startsWith('file:/') ? '../../SpecIF/schema-and-checker/check/CCheck.mjs'
 								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
 						.then(modChk => {
 							// 2. Get the specified schema file:
@@ -273,7 +273,7 @@ class CSpecIF implements SpecIF {
 						reject(rc);
 					}
 					else
-						throw Error( 'Standard routines checkSchema and checkConstraints are not available.' );
+						throw Error( 'Standard routines checkSchema and/or checkConstraints are not available.' );
 				}
 				function handleError(xhr: xhrMessage) {
 					switch (xhr.status) {
@@ -477,7 +477,7 @@ class CSpecIF implements SpecIF {
 			var oE: any = i2int(iE);
 			oE.title = makeTitle(iE.title);
 
-			if (iE['extends']) oE._extends = iE['extends'];	// 'extends' is a reserved word starting with ES5
+			if (iE['extends']) oE['extends'] = LIB.makeKey(iE['extends'].id || iE['extends']);	// 'extends' is a reserved word starting with ES5
 			if (iE.icon) oE.icon = iE.icon;
 			if (iE.creation) oE.instantiation = iE.creation;	// deprecated, for compatibility
 			if (iE.instantiation) oE.instantiation = iE.instantiation;
@@ -491,8 +491,7 @@ class CSpecIF implements SpecIF {
 					// It is a propertyClass reference according to v1.1:
 					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 					// ToDo: Reconsider once we have a backend with multiple revisions ...
-					oE.propertyClasses = iE.propertyClasses.map((pC) => { return LIB.makeKey(pC.id) });
-				//	oE.propertyClasses = iE.propertyClasses;
+					oE.propertyClasses = iE.propertyClasses.map((pC: SpecifKey) => { return LIB.makeKey(pC.id) });
 				}
 				else if (typeof (iE[names.pClasses][0]) == 'string') {
 					// it is a propertyClass reference according to v1.0 (and some versions before that);
@@ -514,7 +513,6 @@ class CSpecIF implements SpecIF {
 						// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 						// ToDo: Reconsider once we have a backend with multiple revisions ...
 						oE.propertyClasses.push(LIB.makeKey(pC.id));
-					//	oE.propertyClasses.push(LIB.keyOf(pC));
 					})
 				};
 			}
@@ -524,7 +522,7 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a resource class:
-		function rC2int(iE: SpecifResourceClass): SpecifResourceClass {
+		function rC2int(iE: SpecifResourceClass): SpecifResourceClass|undefined {
 			var oE: any = aC2int(iE);
 
 			// If "iE.isHeading" is defined, use it:
@@ -550,7 +548,7 @@ class CSpecIF implements SpecIF {
 			if (oE.propertyClasses.length >0 )
 				return oE;
 			console.warn('Skipping the resourceClass with id="' + iE.id + '" on import, because it does not specify any propertyClasses.');
-			// return undefined ... and the element will not be listed in the list of resourceClasses
+		// return undefined ... and the element will not be listed in the list of resourceClasses
 		}
 		// a statementClass:
 		function sC2int(iE:any): SpecifStatementClass {
@@ -597,16 +595,18 @@ class CSpecIF implements SpecIF {
 		}
 		// common for all resources or statements:
 		function a2int(iE:any): SpecifInstance {
+			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
+			// ToDo: Reconsider once we have a backend with multiple revisions ...
+			let eCkey = iE.subject ? LIB.makeKey(iE[names.sClass].id || iE[names.sClass])
+									: LIB.makeKey(iE[names.rClass].id || iE[names.rClass]);
+
 			var	oE: any = {
 					id: iE.id,
-			//		class: LIB.makeKey(iE.subject ? iE[names.sClass] : iE[names.rClass]),
+					class: eCkey,
 					changedAt: iE.changedAt
 				};
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
-
-			let	eC = iE.subject ? LIB.itemByKey(self.statementClasses, LIB.makeKey(iE[names.sClass]))
-								: LIB.itemByKey(self.resourceClasses, LIB.makeKey(iE[names.rClass]));
 
 			// revision is a number up until v0.10.6 and a string thereafter:
 			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
@@ -620,123 +620,69 @@ class CSpecIF implements SpecIF {
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
 			// In this case, add a title and description property each as required by SpecIF v1.1 (no more native title and description):
 			[
-				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, dTid: "DT-ShortString", pCid: "PC-Name"},
-				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, dTid: "DT-Text", pCid: "PC-Description"}
+				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, dTid: "DT-Text", pCid: "PC-Description" },
+				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, dTid: "DT-ShortString", pCid: "PC-Name"}
 			].forEach(
-				(p) => {
-					if (p.nativePrp && propertyMissing(p.tiL,oE)) {
-						// There is an attempt to add the types in every loop ... which is hardly efficient.
-						// However, that way they are only added, if needed.
-						// a. add dataType, if not yet defined:
-						standardTypes.addTo("dataType", { id: p.dTid }, self);
-						// b. add property class, if not yet defined:
-						standardTypes.addTo("propertyClass", { id: p.pCid }, self);
-						// c. Add propertyClass to element class:
-						LIB.addPCReference(eC, { id: p.pCid });
-						// d. Add description property to element;
+				(pD) => {
+					if (pD.nativePrp && propertyMissing(pD.tiL, oE)) {
+						// Add title resp. description property to element:
 						LIB.addProp(oE, {
-							class: { id: p.pCid },
-							values: [makeMultiLanguageText(p.nativePrp) ]
+							class: { id: getPropertyClassId(pD, eCkey) },
+							values: [makeMultiLanguageText(pD.nativePrp) ]
 						});
-						console.info("Added a "+p.name+" property to element with id '" + oE.id + "'");
+						console.info("Added a "+pD.name+" property to element with id '" + oE.id + "'");
 					};
                 }
 			);
-		/*	if (iE.description && propertyMissing(CONFIG.descProperties,oE)) {
-				// There is an attempt to add the types in every loop ... which is hardly efficient.
-				// However, that way they are only added, if needed.
-				// a. add dataType, if not yet defined:
-				standardTypes.addTo("dataType", { id: "DT-Text" }, self);
-				// b. add property class, if not yet defined:
-				standardTypes.addTo("propertyClass", { id: "PC-Description" }, self);
-				// c. Add propertyClass to element class:
-				LIB.addPCReference(eC, { id: "PC-Description" });
-				// d. Add description property to element;
-				LIB.addProp(oE, {
-					class: { id: "PC-Description" },
-					values: [ makeMultiLanguageText(iE.description) ]
-				});
-				console.info("Added a description property to element with id '" + oE.id + "'");
-			};
-
-			// Similarly, add a title property if missing:
-			if (iE.title && propertyMissing(CONFIG.titleProperties,oE)) {
-				// There is an attempt to add the types in every loop ... which is hardly efficient.
-				// However, that way they are only added, if needed.
-				// a. add dataType, if not yet defined:
-				standardTypes.addTo("dataType", { id: "DT-ShortString" }, self);
-				// b. add property class, if not yet defined:
-				standardTypes.addTo("propertyClass", { id: "PC-Name"}, self);
-				// c. Add propertyClass to element class:
-				LIB.addPCReference(eC, { id: "PC-Name" });
-				// d. Add title property to element;
-				LIB.addProp(oE, {
-					class: { id:"PC-Name" },
-					// no title is required in case of statements; it's class' title applies by default:
-					values: [ makeMultiLanguageText(iE.title) ]
-				});
-				console.info("Added a title property to element with id '" + oE.id + "'");
-			}; */
 
 //			console.debug('a2int',iE,simpleClone(oE));
 			return oE
 
-		/*	function eC(): SpecifResourceClass | SpecifStatementClass {
-				return iE.subject ? LIB.itemByKey(self.statementClasses, LIB.makeKey(iE[names.sClass]))
-								: LIB.itemByKey(self.resourceClasses, LIB.makeKey(iE[names.rClass]));
-            }
-			function titlePropertyMissing(el: any): boolean {
-				if (Array.isArray(el.properties))
-					for (var i = el.properties.length - 1; i > -1; i--) {
-						let ti = LIB.propTitleOf(el.properties[i], self.propertyClasses);
-						if (CONFIG.titleProperties.includes(ti))
-							// SpecIF assumes that any title property *replaces* the element's title,
-							// so we just look for the case of *no* title property.
-							// There is no consideration of the content.
-							// It is expected that titles with multiple languages have been reduced, before.
-							return false; // title property is available
-					};
-				return true;
-			}
-			function descPropertyMissing(el:any): boolean {
-				if (Array.isArray(el.properties))
-					for (var i = el.properties.length - 1; i > -1; i--) {
-						if (CONFIG.descProperties.includes(LIB.propTitleOf(el.properties[i], self.propertyClasses)))
-							// SpecIF assumes that any description property *replaces* the resource's description,
-							// so we just look for the case of a resource description and *no* description property.
-							// There is no consideration of the content.
-							// It is expected that descriptions with multiple languages have been reduced, before.
-							return false; // description property is available
-					};
-				return true; // no array or no description property
-			} */
 			function propertyMissing(L:string[],el: any): boolean {
 				if (Array.isArray(el.properties))
 					for (var p of el.properties) {
-						if (L.includes(LIB.propTitleOf(p, self.propertyClasses)))
+						if (L.includes(LIB.propTitleOf(p['class'], self.propertyClasses)))
 							// SpecIF assumes that any title/description property *replaces* the resource's native property.
 							// There is no consideration of the content.
 							// It is expected that title/descriptions with multiple languages have been reduced, before.
-							return false; // description property is available
+							return false; // title resp. description property is available
 					};
 				return true; // no array or no title/description property
+			}
+			function getPropertyClassId(pDef:any, iCk: any): string {
+				// Return the id of a suitable propertyClass - if there is none, create it:
+				// - pDef.tiL is a list of suitable propertyClass titles
+				// - eCk is the key of an resource resp statement class
+				// --> to decide whether the class has a propertyClass with a title listed in pDef.tiL.
+
+				let iC = LIB.itemByKey((iE.subject ? self.statementClasses : self.resourceClasses), iCk);
+
+				// First check whether there is a suitable propertyClass:
+				for (var pCk of iC.propertyClasses) {
+					let pC = LIB.itemByKey(self.propertyClasses, pCk);
+					if (pC && pDef.tiL.includes(pC.title))
+						return pC.id
+				};
+				// No suitable propertyClass is listed in iC.propertyClasses, so create what's needed:
+
+				// a. add dataType, if not yet defined:
+				standardTypes.addTo("dataType", { id: pDef.dTid }, self);
+				// b. add property class, if not yet defined:
+				standardTypes.addTo("propertyClass", { id: pDef.pCid }, self);
+				// c. Add propertyClass to element class:
+				LIB.addPCReference(iC, { id: pDef.pCid });
+				return pDef.pCid
 			}
 		}
 		// a resource:
 		function r2int(iE: any): SpecifResource {
 			var oE: SpecifResource = a2int(iE) as SpecifResource;
-			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
-			// ToDo: Reconsider once we have a backend with multiple revisions ...
-			oE['class'] = LIB.makeKey(iE[names.rClass].id || iE[names.rClass]);
 //			console.debug('resource 2int',iE,simpleClone(oE));
 			return oE
 		}
 		// a statement:
 		function s2int(iE:any): SpecifStatement {
 			var oE: SpecifStatement = a2int(iE) as SpecifStatement;
-			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
-			// ToDo: Reconsider once we have a backend with multiple revisions ...
-			oE['class'] = LIB.makeKey(iE[names.sClass].id || iE[names.sClass] );
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
 			oE.subject = LIB.makeKey(iE.subject.id || iE.subject );
@@ -777,7 +723,10 @@ class CSpecIF implements SpecIF {
 			else {
 				// starting v0.10.8:
 				oE = i2int(iE);
-				oE.resource = LIB.makeKey( iE.resource )
+				oE.resource = LIB.makeKey(iE.resource.id || iE.resource);
+				// only for internal use - not needed for external imports:
+				if (iE.predecessor)
+					oE.predecessor = LIB.makeKey(iE.predecessor.id || iE.predecessor);
 			};
 
 			// SpecIF allows resource references with id alone or with a key (id+revision):
@@ -1046,7 +995,7 @@ class CSpecIF implements SpecIF {
 					if (iE.icon) oE.icon = iE.icon;
 					if (iE.instantiation) oE.instantiation = iE.instantiation;
 					// @ts-ignore - index is ok:
-					if (iE._extends) oE['extends'] = iE._extends;
+					if (iE['extends']) oE['extends'] = iE['extends'];
 					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
 					return oE
 				}
@@ -1459,7 +1408,7 @@ class CSpecIF implements SpecIF {
 					if (iE.icon) oE.icon = iE.icon;
 					if (iE.instantiation) oE.instantiation = iE.instantiation;
 					// @ts-ignore - index is ok:
-					if (iE._extends) oE['extends'] = iE._extends;
+					if (iE['extends']) oE['extends'] = iE['extends'];
 					if (iE.propertyClasses && iE.propertyClasses.length > 0) oE.propertyClasses = iE.propertyClasses;
 					return oE
 				}

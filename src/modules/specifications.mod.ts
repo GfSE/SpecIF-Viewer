@@ -506,130 +506,6 @@ class CPropertyToShow implements SpecifProperty {
 //		console.debug('fileRef.toGUI result: ', txt);
 		return txt
 	}
-/*	editForm(dialogForm?: CCheckDialogInput): string {
-		// Return a form element for a property;
-
-		let opts = {
-				lookupTitles: true,
-				targetLanguage: browser.language,
-				imgClass: 'forImagePreview'
-			},
-			ti = LIB.titleOf(this, opts);
-
-		// create radio-buttons or checkboxes, if it is an enumerated dataType:
-		if (this.dT.enumeration) {
-			// entryL is the list of entries for an input field with checkboxes or radio-buttons, 
-			// depending on whether multiple values are allowed or not:
-			let entryL = LIB.forAll(
-				this.dT.enumeration,
-				(eV: SpecifEnumeratedValue) => {
-					let val = this.dT.type == SpecifDataTypeEnum.String ? i18n.lookup(LIB.languageValueOf(eV.value, opts)) : eV.value;
-					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
-				}
-			);
-
-//			console.debug('Enumeration', this, ti, entryL);
-			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple)
-				return checkboxField(
-					ti,
-					entryL,
-					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '') }
-				);
-			else
-				return radioField(
-					ti,
-					entryL,
-					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '') }
-				);
-		};
-
-		// create an input field depending on the property's dataType;
-		// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
-		switch (this.dT.type) {
-			case SpecifDataTypeEnum.Boolean:
-				// - no input checking needed
-				// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
-//				console.debug('xs:boolean',ti,this);
-				return booleanField(
-					ti,
-					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
-					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '') }
-				);
-			case SpecifDataTypeEnum.String:
-				if (this.pC.title == CONFIG.propClassDiagram) {
-					// it is a diagram reference (thus a XHTML-formatted field):
-					return this.editDiagramForm(opts)
-				}
-				else {
-					// add parameters to check this input field:
-					if (dialogForm) dialogForm.addField(ti, this.dT);
-					// it is a text;
-					// in case of xhtml, it may contain a diagram reference, 
-					// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//					console.debug( 'editForm', LIB.languageValueOf(this.value,opts) );
-					return textField(
-						ti,
-						//	this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '',  // only first value for the time being ...
-						LIB.forAll(
-							this.values,
-							(v: SpecifMultiLanguageText) => { return LIB.languageValueOf(v, opts); }
-						),
-						// - open an input line, if it is a title or has a specified length lower than the threshold
-						// - open an input text-area, otherwise
-						{
-							typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
-							handle: myFullName + '.check()',
-							description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '')
-						}
-					);
-				};
-			default:
-				// add parameters to check this input field:
-				if(dialogForm) dialogForm.addField(ti, this.dT);
-				return textField(
-					ti,
-					//	this.values.length > 0 ? this.values[0] as string : '',
-					this.values as string[],
-					{
-						typ: 'line',
-						handle: myFullName + '.check()',
-						description: (this.pC.description ? LIB.languageValueOf(this.pC.description, opts) : '')
-					}
-				);
-		};
-	}
-	private editDiagramForm(opts: any) {
-//		console.debug('editDiagram',this);
-		return '<div class="form-group form-active" >'
-			+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
-			+ '<div class="attribute-value">'
-
-			// Add diagram buttons:
-			// this['class'] is used to identify the property; 
-			// it is supposed to be unique in the resource's properties
-			// and at most one resource is edited in this session at any point in time.
-			+ '<div class="btn-group btn-group-sm pull-right" >'
-		//	+ ( !this.permissions || this.permissions.upd?
-				+ '<span class="btn btn-default btn-fileinput">'
-				+ '<span>' + i18n.IcoEdit + '</span>'
-				+ '<input id="file' + simpleHash(this['class'].id) + '" type="file" onchange="' + myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
-				+ '</span>' 
-		//		 : '')
-		//	+ ( !this.permissions || this.permissions.del?
-				+ '<button class="btn btn-danger" data-toggle="popover" '
-				+ 'onclick="' + myFullName + '.removeDiagram(\'' + this['class'].id + '\')" title="' + i18n.LblDelete + '">' + i18n.IcoDelete + '</button>'
-		//		 : '')
-			+ '</div>'
-
-			// Add a container based on the propertyClass (which should be unique and since there is usually no property-id), 
-			// so that the user can update and delete the diagram later on:
-			+ '<div id="' + tagId(this['class'].id) + '">'
-			+	this.renderFile(this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '', opts)
-			+ '</div>'
-
-			+ '</div>'
-			+ '</div>';
-	} */
 }
 class CResourceToShow {
 	id: string;
@@ -665,7 +541,6 @@ class CResourceToShow {
 		this.descriptions = [];
 
 		// create a new list by copying the elements (do not copy the list ;-):
-	//	this.other = LIB.forAll(el.properties, (pr: SpecifProperty) => { return this.newProperty(pr) });
 		this.other = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToShow(pr) });
 
 		// Now, all properties are listed in this.other;
@@ -706,9 +581,6 @@ class CResourceToShow {
 			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
-/*	newProperty(p: SpecifProperty) {
-		return new CPropertyToShow(p);
-    } */
 	isEqual(res: SpecifResource): boolean {
 		return res && this.id == res.id && this.changedAt == res.changedAt;
     }
@@ -2360,8 +2232,8 @@ moduleManager.construct({
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
-			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.staClassTitleOf(s, cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] });
+			//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
+			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] });
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2372,7 +2244,7 @@ moduleManager.construct({
 			// 1. Skip hidden statements;
 			// hiddenStatements holds the vocabulary terms, so the title shall *not* be translated to the targetLanguage.
 			// @ts-ignore - property 'title' is used on purpose for the mentions statements generated for display
-			if (CONFIG.hiddenStatements.includes(s.title || LIB.staClassTitleOf(s, cacheData.statementClasses, {}))) return;
+			if (CONFIG.hiddenStatements.includes(s.title || LIB.classTitleOf(s['class'], cacheData.statementClasses, {}))) return;
 
 			// 2. Store the statements in the net:
 			cacheMinSta(net, s);
@@ -2504,11 +2376,11 @@ moduleManager.construct({
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
 					// find the property defining the type:
 					// Remember whether at least one diagram has been found:
-					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.resClassTitleOf(res, cacheData.resourceClasses)) < 0;
+					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.classTitleOf(res['class'], cacheData.resourceClasses)) < 0;
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram
-						|| LIB.hasResType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, cacheData));
+						|| LIB.hasType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, cacheData));
 				}
 			) || noDiagramFound;
 		}

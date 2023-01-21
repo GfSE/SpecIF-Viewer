@@ -276,7 +276,7 @@ class CCache {
 				// it is a statement
 				if (!ti)
 					// take the class' title by default:
-					ti = LIB.staClassTitleOf(el as SpecifStatement, self.statementClasses, opts);
+					ti = LIB.classTitleOf(el['class'], self.statementClasses, opts);
 			}
 			else {
 				// it is a resource
@@ -770,8 +770,8 @@ class CProject {
 							// are used, so the matching may lead to different results depending on the language selected.
 							let selOpts = Object.assign({}, opts, { targetLanguage: self.language || newD.language, lookupTitles: true });
 							if ( LIB.hasResClass(newR, CONFIG.modelElementClasses.concat(CONFIG.diagramClasses),newD)
-								&& !LIB.hasResType(newR, CONFIG.excludedFromDeduplication, newD, opts)
-						//	if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(newR, newD.resourceClasses)) > -1
+								&& !LIB.hasType(newR, CONFIG.excludedFromDeduplication, newD, opts)
+						//	if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(newR['class'], newD.resourceClasses)) > -1
 						//		&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD)[0])) < 0
 							) {
 								// Check for an exsiting resource with the same title:
@@ -781,8 +781,8 @@ class CProject {
 								// and is less restrictive than the class ID:
 //								console.debug('~1',newR,existR?existR:'');
 								if (existR
-									&& !LIB.hasResType(existR, CONFIG.excludedFromDeduplication, dta, opts)
-									&& LIB.resClassTitleOf(newR, newD.resourceClasses) == LIB.resClassTitleOf(existR, dta.resourceClasses)
+									&& !LIB.hasType(existR, CONFIG.excludedFromDeduplication, dta, opts)
+									&& LIB.classTitleOf(newR['class'], newD.resourceClasses) == LIB.classTitleOf(existR['class'], dta.resourceClasses)
 						//			&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(existR, [CONFIG.propClassType], dta)[0])) < 0
 						//			&& LIB.valuesByTitle(newR,[CONFIG.propClassType],newD)==LIB.valuesByTitle(existR,[CONFIG.propClassType],dta)
 								) {
@@ -913,7 +913,7 @@ class CProject {
 				function isRoot(nd: INodeWithPosition): boolean {
 					// Return true, if the node is placed in the hierarchies folder as root element:
 					return (!nd.parent
-						&& (!nd.predecessor || LIB.indexById(self.hierarchies,nd.predecessor)>-1 )
+						&& (!nd.predecessor || LIB.indexByKey(self.hierarchies, LIB.makeKey(nd.predecessor))>-1 )
 					);
 				}
 				switch (ctg) {
@@ -930,7 +930,7 @@ class CProject {
 						for (var el of itmL) {
 							// all nodes to become hierarchy root elements shall be memorized in the selected project:
 							if (isRoot(el as INodeWithPosition))
-								LIB.cacheE(self.hierarchies, { id: el.id } );
+								LIB.cacheE(self.hierarchies, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }) );
 						}
 				//		break;
 				//	case 'file':
@@ -1021,7 +1021,7 @@ class CProject {
 				iC = LIB.itemByKey(iCs, el['class']);
 
 			// from the instance class including the extended class, build the list of propertyClass keys:
-			pCkL = iC._extends ? LIB.itemByKey(iCs, iC._extends).propertyClasses : [];
+			pCkL = iC['extends'] ? LIB.itemByKey(iCs, iC['extends']).propertyClasses : [];
 			pCkL = pCkL.concat(iC.propertyClasses);
 
 			// add the properties in sequence of the propertyClass keys as specified by the instance class:
@@ -1165,20 +1165,28 @@ class CProject {
 		return new Promise(
 			(resolve, reject) => {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
-				var res: SpecifResource;
+				var res: SpecifResource,
+					resC: SpecifResourceClass;
 
 				this.readItems('resourceClass', [LIB.keyOf(rC)], { reload: true })
 					.then(
 						(rCL: SpecifItem[]) => {
 							// return an empty resource instance of the given type:
+							resC = rCL[0] as SpecifResourceClass;
 							res = {
 								id: LIB.genID('R-'),
-								class: LIB.makeKey(rCL[0].id),
-								//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
+								class: LIB.makeKey(resC.id),
+							//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
 								properties: [],
 								changedAt: new Date().toISOString()
 							};
-							return this.readItems('propertyClass', rC.propertyClasses, { reload: true })
+							return this.readItems('resourceClass', (resC['extends'] ? [resC['extends']] : []), { reload: true })
+						}
+					)
+					.then(
+						(rCL: SpecifItem[]) => {
+							// rCL is empty, if there is no extended resourceClass
+							return this.readItems('propertyClass', (rCL.length > 0 ? (rCL[0] as SpecifResourceClass).propertyClasses.concat(resC.propertyClasses) : resC.propertyClasses), { reload: true })
 						}
 					)
 					.then(
@@ -1240,7 +1248,7 @@ class CProject {
 					// loop to find the *first* occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(p, dta.propertyClasses)))
+						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(p['class'], dta.propertyClasses)))
 							&& LIB.languageValueOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
 					};
@@ -1256,7 +1264,7 @@ class CProject {
 					// loop to find the *first' occurrence:
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(r.properties[a], dta.propertyClasses))))
+						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(r.properties[a]['class'], dta.propertyClasses))))
 							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: self.language })
 					};
 				};
@@ -1306,10 +1314,10 @@ class CProject {
 				// Do it for all model-elements and diagrams,
 				// but exclude process gateways and generated events for optional branches:
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.resClassTitleOf(lst[r], dta.resourceClasses)) > -1
+				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(lst[r]['class'], dta.resourceClasses)) > -1
 					&& this.equalR(lst[r] as SpecifResource, lst[n] as SpecifResource)
-					&& !LIB.hasResType(lst[r], CONFIG.excludedFromDeduplication, dta, opts)
-					&& !LIB.hasResType(lst[n], CONFIG.excludedFromDeduplication, dta, opts)
+					&& !LIB.hasType(lst[r], CONFIG.excludedFromDeduplication, dta, opts)
+					&& !LIB.hasType(lst[n], CONFIG.excludedFromDeduplication, dta, opts)
 				//	&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(lst[n], [CONFIG.propClassType], dta)[0])) < 0
 				//	&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(lst[r], [CONFIG.propClassType], dta)[0])) < 0
 				) {
@@ -1355,7 +1363,7 @@ class CProject {
 			// true, if there is a 'single' hierarchy and if it is a hierarchyRoot:
 			singleHierarchyRoot = dta.hierarchies.length == 1
 				&& (LIB.hasResClass(r, CONFIG.hierarchyRoots, dta)
-					|| LIB.hasResType(r, CONFIG.hierarchyRoots, dta));  */
+					|| LIB.hasType(r, CONFIG.hierarchyRoots, dta));  */
 
 		return new Promise(
 			(resolve, reject) => {
@@ -1392,8 +1400,8 @@ class CProject {
 								// find the property defining the type:
 								pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta);
 								if (pVs.length > 0) {
-									pV = LIB.languageValueOf(pVs[0], { targetLanguage: self.language });
-									// collect all nodes to delete, there should be only one:
+									pV = LIB.languageValueOf(pVs[0], { targetLanguage: 'default' });
+									// collect all existing folders of the respective type; there can be 0..n:
 									if (pV == r2c.folder )
 										delL.push(nd);
 									// collect all elements for the new folder,
@@ -1406,8 +1414,18 @@ class CProject {
 						);
 //						console.debug('createFolderWithResourcesByType',delL,creL);
 
+					/*	// 2. Create or re-use the node for the respective folder 
+						//    but only if there are entries:
+						if (creL.length > 0) {
+							if (thisFL.length > 0) {
+
+							}
+							else {
+
+                            }
+						}; */
+
 						// 2. Delete any existing folders:
-						//    (Alternative: Keep folder and delete only the children.)
 						self.deleteItems('node', delL)
 							.then(
 								() => {
@@ -1435,11 +1453,11 @@ class CProject {
 											statementClasses: [],
 											resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
 											statements: [],
-											hierarchies: []
+											hierarchies: NodeList(r2c,creL)
 										};
 										// use the update function to eliminate duplicate types:
 										self.adopt(newD, {noCheck:true})
-											.done(() => {
+										/*	.done(() => {
 												// Finally create the node referencing the folder to create:
 												let nd: INodeWithPosition = {
 													id: "H-" + r2c.folderNamePrefix + apx,
@@ -1448,15 +1466,16 @@ class CProject {
 													nodes: LIB.forAll(creL, (pr:any) => { return pr.n; }),
 													changedAt: tim
 												};
-											/*	// Insert the hierarchy node as first element of a hierarchy root 
+												// Insert the hierarchy node as first element of a hierarchy root 
 												// - if it is present and
 												// - if there is only one hierarchy root
 												// or as first element at root level, otherwise:
-												if (singleHierarchyRoot)
-													nd.parent = dta.hierarchies[0].id;  */
+											//	if (singleHierarchyRoot)
+											//		nd.parent = dta.hierarchies[0].id; 
 												self.createItems('node', [nd])
 													.then(resolve, reject);
-											})
+											}) */
+											.done(resolve)
 											.fail(reject);
 									}
 									else {
@@ -1469,7 +1488,7 @@ class CProject {
 				);
 				return;
 
-				function Folder(fId: string, ti: string): SpecifResource[] {
+				function Folder(fId: string, ti: string, ty?: string): SpecifResource[] {
 					return [{
 						id: fId,
 						class: LIB.makeKey("RC-Folder"),
@@ -1478,10 +1497,21 @@ class CProject {
 							values: [LIB.makeMultiLanguageText(ti)]
 						}, {
 							class: LIB.makeKey("PC-Type" ),
-							values: [LIB.makeMultiLanguageText(CONFIG.resClassProcesses)]
+							values: [LIB.makeMultiLanguageText(ty||ti)]
 						}],
 						changedAt: tim
 					}];
+				}
+				function NodeList(r2c:any,creL:any[]): INodeWithPosition[] {
+					// Add the folder:
+					let gl: INodeWithPosition = {
+						id: "H-" + r2c.folderNamePrefix + apx,
+						resource: { id: r2c.folderNamePrefix + apx },
+						// re-use the nodes with their references to the resources:
+						nodes: LIB.forAll(creL, (pr: any) => { return pr.n; }),
+						changedAt: tim
+					};
+					return [gl];
 				}
 			}
 		)
@@ -1494,39 +1524,36 @@ class CProject {
 			(resolve, reject) => {
 				if (typeof (opts) != 'object' || !opts.addUnreferencedResources) { resolve(); return; };
 
-				let delL: SpecifNode[] = [],
+				let unRL: SpecifNode[] = [],
 					resL = dta.get('resource', "all") as SpecifResource[],
-					pVs: string[],
-					idx: number,
 					apx = simpleHash(self.id),
 					tim = new Date().toISOString(),
 
 					// Get the hierarchies without the folder listing the unreferenced resources:
-					ndL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[]).filter(
-						(nd: SpecifNode) => {
-							// Find the referenced resource:
-							idx = LIB.indexByKey(resL, nd.resource);
-							if (idx > -1) {
-								pVs = LIB.valuesByTitle(resL[idx], CONFIG.propClassType, dta);
-								if (pVs.length > 0
-									&& "SpecIF:UnreferencedResources" == LIB.languageValueOf(pVs[0], { targetLanguage: self.language })) {
+					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[])
+						.filter(
+							(nd: SpecifNode) => {
+								// Find the referenced resource:
+								let idx = LIB.indexByKey(resL, nd.resource);
+								if (idx > -1) {
+									if (LIB.hasType(resL[idx], [CONFIG.resClassUnreferencedResource], dta, opts)) {
 										// List the node of the FolderWithUnreferencedResources for deletion:
-										delL.push(nd);
+										unRL.push(nd);
 										// ... but don't consider it's resource to be an unreferenced resource, itself:
 										resL.splice(idx, 1);
-										return false  // do NOT include nd in ndL
+										return false  // do NOT include nd in hL
+									};
+									return true  // include nd in hL
 								};
-								return true  // include nd in ndL
-							};
-							throw Error('Node '+nd.id+' references a resource '+nd.resource.id+' which is not found.');
-						}
-					);
+								throw Error('Node '+nd.id+' references a resource '+nd.resource.id+' which is not found.');
+							}
+						);
 
-				// Delete all resources from the list, which are referenced in any hierarchy:
+				// Delete all resources from resL, which are referenced in any hierarchy:
 				LIB.iterateNodes(
-					ndL,
+					hL,
 					(nd: SpecifNode) => {
-						idx = LIB.indexByKey(resL, nd.resource);
+						let idx = LIB.indexByKey(resL, nd.resource);
 						if (idx > -1)
 							resL.splice(idx, 1);
 						return true  // continue always to the end
@@ -1539,69 +1566,84 @@ class CProject {
 				});
 
 //				console.debug('createFolderWithUnreferencedResources',delL,resL);
-				// 1.2 Delete the node of the FolderWithUnreferencedResources, only if there are no unreferenced resources:
-				self.deleteItems('node', delL)
-					.then(
-						() => {
-							if (resL.length > 0) {
-								// in alphanumeric order:
-								LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
-
-								let newD: any = {
-									id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
-									$schema: 'https://specif.de/v1.0/schema.json',
-									dataTypes: [
-										standardTypes.get('dataType', { id: "DT-ShortString" }),
-										standardTypes.get('dataType', { id: "DT-Text" })
-									],
-									propertyClasses: [
-										standardTypes.get('propertyClass', { id: "PC-Name" }),
-										standardTypes.get('propertyClass', { id: "PC-Description" }),
-										standardTypes.get('propertyClass', { id: "PC-Type" })
-									],
-									resourceClasses: [
-										standardTypes.get('resourceClass', { id: "RC-Folder" })
-									],
-									resources: Folder(),
-									hierarchies: NodeList(resL)
-								};
-//								console.debug('glossary',newD);
-								// use the update function to eliminate duplicate types;
-								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								self.adopt(newD, { noCheck: true })
-									.done(resolve)
-									.fail(reject);
-							}
-							else
-								resolve();
-						}
-					)
-				return;
+				// 2. Create or re - use the node of the FolderWithUnreferencedResources,
+				//    but only if there are no unreferenced resources:
+				if (resL.length > 0) {
+					// There are unreferenced resources, so create or reuse a folder to collect them.
+					if (unRL.length > 0)
+						// First delete the hierarchy with folder and all references,
+						// then create it with the new list of unreferenced resources.
+						self.deleteItems('node', unRL)
+							.then(
+								() => { return self.createItems('node', NodeList(resL)) }
+							)
+							.then(resolve)
+							.catch(reject)
+					else {
+						// create a new folder:
+						let newD: any = {
+							id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
+							$schema: 'https://specif.de/v1.1/schema.json',
+							dataTypes: [
+								standardTypes.get('dataType', { id: "DT-ShortString" }),
+								standardTypes.get('dataType', { id: "DT-Text" })
+							],
+							propertyClasses: [
+								standardTypes.get('propertyClass', { id: "PC-Name" }),
+								standardTypes.get('propertyClass', { id: "PC-Description" }),
+								standardTypes.get('propertyClass', { id: "PC-Type" })
+							],
+							resourceClasses: [
+								standardTypes.get('resourceClass', { id: "RC-Folder" })
+							],
+							resources: Folder(),
+							hierarchies: NodeList(resL)
+						};
+//						console.debug('glossary',newD);
+						// use the update function to eliminate duplicate types;
+						// 'opts.addGlossary' must not be true to avoid an infinite loop:
+						self.adopt(newD as SpecIF, { noCheck: true })
+							.done(resolve)
+							.fail(reject);
+                    }
+				}
+				else {
+					// There are no unreferenced resources, so delete the folder if present.
+					if (unRL.length > 0)
+						self.deleteItems('node', unRL)
+							.then(resolve, reject)
+					else
+						resolve();
+				};
+				return; 
 
 				function Folder(): SpecifResource[] {
-					// Create the resources for folder and subfolders of the glossary:
+					// Create the folder resource for the unreferenced resources:
 					return [{
 						id: "FolderUnreferencedResources-" + apx,
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name"),
-							values: [LIB.makeMultiLanguageText("SpecIF:UnreferencedResources")]
+							values: [LIB.makeMultiLanguageText(CONFIG.resClassUnreferencedResource)]
 						}, {
 							class: LIB.makeKey("PC-Type"),
-							values: [LIB.makeMultiLanguageText("SpecIF:UnreferencedResources")]
+							values: [LIB.makeMultiLanguageText(CONFIG.resClassUnreferencedResource)]
 						}],
 						changedAt: tim
 					}];
 				}
-				function NodeList(resources: SpecifResource[]): SpecifNode[] {
+				function NodeList(resources: SpecifResource[]): INodeWithPosition[] {
+					// in alphanumeric order:
+					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
+
 					// Add the folder:
-					let gl: SpecifNode = {
+					let gl: INodeWithPosition = {
 						id: "H-FolderUnreferencedResources-" + apx,
+						predecessor: hL[hL.length - 1].id,   // add as last hierarchy
 						resource: LIB.makeKey("FolderUnreferencedResources-" + apx),
 						nodes: resources.map((r) => { return { id: 'N-' + r.id, resource: LIB.keyOf(r), changedAt: tim } }),
 						changedAt: tim
 					};
-//					console.debug('##', resources,gl);
 					return [gl];
 				}
 			}
@@ -1617,47 +1659,51 @@ class CProject {
 
 				// 1. Delete any existing glossaries
 				// 1.1 Find all Glossary folders:
-				let delHL: SpecifNode[] = [],
+				let glL: SpecifNode[] = [],		// glossary folders to keep
+					delGL: SpecifNode[] = [],	// old glossary folders to replace
 					delRL: SpecifKey[] = [],
 					diagramL: SpecifResource[] = [],
-					res: SpecifResource,
 				//	pVs: SpecifValues,
 					apx = simpleHash(self.id),
-					tim = new Date().toISOString();
+					tim = new Date().toISOString(),
+					lastContentH: SpecifNode,
+					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[])
+						.filter(
+							(nd: SpecifNode) => {
+								// Find the referenced resource:
+								let res = dta.get("resource", [nd.resource])[0] as SpecifResource;
+								// Remember the last hierarchy with original content:
+								if (res && !LIB.hasType(res, [CONFIG.resClassGlossary, CONFIG.resClassUnreferencedResource], dta, opts))
+									lastContentH = nd;
+								// Include all original hierarchies, i.e. those except the generated ones:
+								return res && !LIB.hasType(res, [CONFIG.resClassUnreferencedResource], dta, opts);
+							}
+						);
+
 //				console.debug('createFolderWithGlossary',self.hierarchies);
 				LIB.iterateNodes(
-					dta.get("hierarchy",self.hierarchies),
+					hL,
 					(nd: SpecifNode): boolean => {
 						// get the referenced resource:
-						res = dta.get("resource", [nd.resource])[0] as SpecifResource;
+						let res = dta.get("resource", [nd.resource])[0] as SpecifResource;
+
 						// check, whether it is a glossary:
-						if (LIB.hasResType(res, [CONFIG.resClassGlossary], dta, opts)) {
-							// collect all items to delete, there should be only one:
-							delHL.push(nd);
-							// Collect all folder resources of the glossary:
-							delRL.push(nd.resource);
-							if (nd.nodes)
-								for (var n of nd.nodes)
-									delRL.push(n.resource)
-						};
-					/*	pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta);
-						if (pVs.length > 0) {
-							if (LIB.isMultiLanguageText(pVs[0])) {
-								if (CONFIG.resClassGlossary == LIB.languageValueOf(pVs[0], { targetLanguage: self.language })) {
-									delHL.push(nd);
-									// Collect all folder resources of the glossary:
-									delRL.push(nd.resource);
-									if (nd.nodes)
-										for (var n of nd.nodes)
-											delRL.push(n.resource)
-								}
-							}
+						if (LIB.hasType(res, [CONFIG.resClassGlossary], dta, opts)) {
+							// delete any older glossary folders; 
+							// the subordinated nodes are automatically deleted, as well:
+							delGL.push(nd);
+							if (nd.resource.id == "FolderGlossary-" + apx)
+								// Keep current glossary folders, there should be only one:
+								glL.push(nd)
 							else {
-								// look up the enumerated value:
-								let pC = LIB.itemByKey(dta.propertyClasses, pVs[0]['class']),
-									dT = LIB.itemByKey(dta.dataTypes, pC.dataType);
-                            }
-						}; */
+								// Delete the referenced resources:
+								delRL.push(nd.resource);
+								if (nd.nodes)
+									for (var ch of nd.nodes)
+										delRL.push(ch.resource);
+							}
+						};
+
 						// collect all diagrams which are referenced in the hierarchy
 						// as (only) the shown elements shall be included in the glossary:
 						if (isDiagram(res)) {
@@ -1666,10 +1712,73 @@ class CProject {
 						return true  // continue to the end
 					}
 				);
+//				console.debug('createFolderWithGlossary', glL, delGL, diagramL);
 
-				// 1.2 Delete now:
-//				console.debug('createFolderWithGlossary',delHL,delRL,diagramL);
-				self.deleteItems('node', delHL)
+				// 1.2 (Re-)Create the glossary:
+				if (diagramL.length > 0) {
+					self.deleteItems('node', delGL)
+						.then(
+							() => {
+								return self.deleteItems('resource', delRL);
+							}
+						)
+						.then(
+							() => {
+								if (glL.length > 0) {
+									// Add the glossary items to the existing folder:
+									self.createItems('node', NodeList(lastContentH))
+										.then(resolve, reject)
+								}
+								else {
+									// create a new folder with the glossary entries:
+									let newD: any = {
+										id: 'Create Glossary ' + new Date().toISOString(),
+										$schema: 'https://specif.de/v1.1/schema.json',
+										dataTypes: [
+											standardTypes.get('dataType', LIB.makeKey("DT-ShortString")),
+											standardTypes.get('dataType', LIB.makeKey("DT-Text"))
+										],
+										propertyClasses: [
+											standardTypes.get('propertyClass', LIB.makeKey("PC-Name")),
+											standardTypes.get('propertyClass', LIB.makeKey("PC-Description")),
+											standardTypes.get('propertyClass', LIB.makeKey("PC-Type"))
+										],
+										resourceClasses: [
+											standardTypes.get('resourceClass', LIB.makeKey("RC-Folder"))
+										],
+										statementClasses: [],
+										resources: Folders(),
+										statements: [],
+										hierarchies: NodeList(lastContentH)
+									};
+//									console.debug('glossary',newD);
+									// use the update function to eliminate duplicate types;
+									// 'opts.addGlossary' must not be true to avoid an infinite loop:
+									self.adopt(newD as SpecIF, { noCheck: true })
+										.done(resolve)
+										.fail(reject);
+								}
+
+							}
+						)
+						.catch(	reject )
+				}
+				else {
+					// There are no diagrams, so there is no glossary;
+					// delete any current or older glossary, for example if the last diagram has been deleted from the project.
+					// No problem, if the list is empty:
+					self.deleteItems('node', delGL.concat(glL))
+						.then(
+							() => {
+								return self.deleteItems('resource', delRL);
+                            }
+						)
+						.then(resolve)
+						.catch(reject)
+				};
+
+//				console.debug('createFolderWithGlossary',glL,delRL,diagramL);
+			/*	self.deleteItems('node', glL)
 					.then(
 						() => {
 							// 2. Create a new combined glossary:
@@ -1706,7 +1815,7 @@ class CProject {
 							}
 						}
 					)
-					.catch( reject );
+					.catch( reject ); */
 				return;
 
 				function isDiagram(r: SpecifResource): boolean {
@@ -1715,12 +1824,12 @@ class CProject {
 					// - if it has a property dcterms:type with value 'SpecIF:Diagram', or
 					// - if it has at least one statement with title 'SpecIF:shows':
 					return LIB.hasResClass(r, CONFIG.diagramClasses, dta)
-						|| LIB.hasResType(r, CONFIG.diagramClasses, dta, opts)
+						|| LIB.hasType(r, CONFIG.diagramClasses, dta, opts)
 						|| dta.get(
 							"statement",
 							(s: SpecifStatement) => {
 									// @ts-ignore - subject does exist on a statement
-									return LIB.staClassTitleOf(s, dta.statementClasses) == CONFIG.staClassShows && LIB.references(s.subject,r)
+									return LIB.classTitleOf(s['class'], dta.statementClasses) == CONFIG.staClassShows && LIB.references(s.subject,r)
 								}
 							).length > 0;
 				}
@@ -1781,10 +1890,11 @@ class CProject {
 					};
 					return fL;
 				}
-				function NodeList(): SpecifNode[] {
+				function NodeList(lastContentH:SpecifNode): INodeWithPosition[] {
 					// a. Add the folders:
-					let gl: SpecifNode = {
+					let gl: INodeWithPosition = {
 						id: "H-FolderGlossary-" + apx,
+						predecessor: lastContentH.id,	// add as last hierarchy
 						resource: LIB.makeKey("FolderGlossary-" + apx),
 						nodes: [],
 						changedAt: tim
@@ -1816,7 +1926,7 @@ class CProject {
 					// b. list all statements typed SpecIF:shows of diagrams found in the hierarchy:
 					let staL = dta.get(
 						"statement",
-						(s: SpecifStatement) => { return LIB.staClassTitleOf(s, dta.statementClasses) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
+						(s: SpecifStatement) => { return LIB.classTitleOf(s['class'], dta.statementClasses) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
 					) as SpecifStatement[];
 //					console.debug('gl tL dL',gl,tL,staL);
 
@@ -1881,7 +1991,7 @@ class CProject {
 							// Query: The 'shows' statements of this project's diagrams (only those can be a subject of a 'shows' statement):
 							return this.readItems(
 								'statement',
-								(s: SpecifStatement) => { return LIB.staClassTitleOf(s, dta.statementClasses) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) }
+								(s: SpecifStatement) => { return LIB.classTitleOf(s['class'], dta.statementClasses) == CONFIG.staClassShows && LIB.isReferencedByHierarchy(s.subject) }
 							);
 						}
 					)
@@ -2769,7 +2879,7 @@ class CProject {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let ti = LIB.propTitleOf(nP, prj.propertyClasses),
+					let ti = LIB.propTitleOf(nP['class'], prj.propertyClasses),
 						rP = LIB.propByTitle(refE, ti, this.data);
 //					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( refE, ti, this.data )));
 					if (!LIB.hasContent(LIB.displayValueOf(LIB.valuesByTitle(refE, [ti], this.data)[0],opts))

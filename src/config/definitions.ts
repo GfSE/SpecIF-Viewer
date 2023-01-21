@@ -153,6 +153,7 @@ const CONFIG:any = {};
 	CONFIG.resClassDiagram = 'SpecIF:Diagram';
 //	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';
+	CONFIG.resClassUnreferencedResource = "SpecIF:UnreferencedResources";
 	CONFIG.resClassOutline = 'SpecIF:Outline';
 	CONFIG.resClassGlossary = 'SpecIF:Glossary';
 	CONFIG.resClassOntology = "W3C:Ontology";

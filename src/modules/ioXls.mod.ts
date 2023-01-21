@@ -399,16 +399,14 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								changedAt: chAt
 							};
 
-						let c:number, C:number,
+						let c: number, C: number,
 							cell: ICell,
 							val: string,
-						//	rC,
+							//	rC,
 							pC: SpecifPropertyClass,
 							dT: SpecifDataType, id,
 							stL: SpecifStatement[] = [],
-							pTi: string,
-							obL:string[],
-							oInner:string[];
+							pTi: string;
 						for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
 							cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
 							pTi = cell ? (cell.v as string).trim() : '';
@@ -441,7 +439,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								pC = LIB.itemById( specifData.propertyClasses as SpecifItem[], propClassId(ws.name+c) );
 //								console.debug('create p',c,cellName(c,row),cell,rC,pC);
 								if( pC ) {
-									// it is a specifically created property type (with neither native nor enumerated dataType):
+									// It is a specifically created property type (with neither native nor enumerated dataType):
 									dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[],pC.dataType);
 									val = getVal( dT, cell );
 
@@ -455,7 +453,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 										console.warn('Text of cell '+cellName(c,row)+' on sheet '+sh.name+' has been truncated because it is too long')
 									};
 //									console.debug( 'other than enumerated dataType',cell,pC,dT,val,typeof(val) );
-									// Inclule the property only if it has a significant value:
+									// Include the property only if it has a significant value:
 									if( val ) 
 										res.properties.push({
 											class: LIB.keyOf(pC),
@@ -465,7 +463,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								else {
 									pC = LIB.itemByTitle( specifData.propertyClasses as SpecifItem[], pTi );
 									if( pC ) {
-										// it is a property with enumerated dataType; only a defined value will be used.
+										// It is a property with enumerated dataType; only a defined value will be used.
 										// Thus, if a cell contains a value which is not listed in the type, it will be ignored:
 										val = getVal(LIB.itemByKey(specifData.dataTypes as SpecifItem[],pC.dataType), cell );
 //										console.debug( 'enumerated dataType',cell,pTi,pC,val,typeof(val) );
@@ -478,24 +476,35 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 											console.warn('Suppressed undefined enumerated value in cell ' + cellName(c, row)+' of worksheet '+ws.name);
 									}
 									else {
-										// it is a statement:
-										obL = cell.w.split(",");  // cell.w is always a string
+										// It is a statement:
+										let obL = cell.w.split(",");  // cell.w is always a string
+										// If there is no comma, obL has just one element. 
+										if (obL.length < 2)
+											// See whether semicolons are used as a separator, instead:
+											obL = cell.w.split(";");
 //										console.debug('createRes - statement',pTi,obL);
-										obL.forEach( (ob:string)=>{
-											oInner = RE.inQuotes.exec( ob );
-											if( oInner && oInner.length>2 ) {
+										obL.forEach((ob: string) => {
+											let oInner:string[] = RE.inQuotes.exec(ob),
+												obj2l:string;
+											if (oInner && oInner.length > 2) {
+												// a string in quotes has been found
+												obj2l = oInner[1] || oInner[2];
+											}
+											else {
+												obj2l = ob.trim();
+											};
+											if (obj2l.length > CONFIG.titleLinkMinLength-1)
 												stL.push({
-											//		id: undefined,  	// defined further down, when the resource's id has been determined
-													class: LIB.makeKey(staClassId( pTi )),	// make id from column title
-											//		subject: undefined,	// defined further down, when the resource's id has been determined
+												//	id: undefined,  	// defined further down, when the resource's id has been determined
+													class: LIB.makeKey(staClassId(pTi)),	// make id from column title
+												//	subject: undefined,	// defined further down, when the resource's id has been determined
 													// just an object placeholder for passing the schema-check,
 													// it will be replaced with a resource key when importing.
 													// Remember to disable the constraint-check on the statement.object.
-													object: LIB.makeKey(CONFIG.placeholder), 
-													objectToLink: oInner[1] || oInner[2],  // content in double or single quotes
+													object: LIB.makeKey(CONFIG.placeholder),
+													objectToLink: obj2l,  // content in double or single quotes
 													changedAt: chAt
 												});
-											};
 										});
 									};
 								};

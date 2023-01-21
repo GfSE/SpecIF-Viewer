@@ -82,9 +82,9 @@ function textField(tag: string, valL: string[], opts?: IFieldOptions): string {
 				+ '</div>';
 			break;
 		case 'area':
-			fG += '<div class="' + aC + '">' +
-				'<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>' +
-				'</div>';
+			fG += '<div class="' + aC + '">'
+				+ '<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>'
+				+ '</div>';
 			break;
 		default:
 			// display the value:
@@ -184,13 +184,13 @@ function radioField(tag: string, entries: IBox[], opts?: IFieldOptions): string 
 		found = temp;
 	});
 	// render options:
-	let tp:string,
-		nm = simpleHash(tag);
 	entries.forEach( (e,i)=>{
-		tp = ( e.type )?'&#160;('+e.type+')':'';   // add type in brackets, if available
 		rB +=			'<label>'
-			+				'<input type="radio" name="radio'+nm+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-			+				'<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
+			+				'<input type="radio" name="radio'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
+			+				'<span ' + (e.description ? ('data-toggle="popover" title="' + LIB.displayValueOf(e.description, { targetLanguage: browser.language }) + '" ') : '') + '>'
+			+					e.title
+			+					( e.type? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
+			+				'</span>'
 			+			'</label><br />'
 	});
 	rB +=			'</div>'
@@ -666,10 +666,10 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
 }
 LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
 	// Has the class of res a title listed in pNs?
-	return pNs.includes(LIB.resClassTitleOf(r, dta.resourceClasses));
+	return pNs.includes(LIB.classTitleOf(r['class'], dta.resourceClasses));
 }
-LIB.hasResType = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache, opts?: any): boolean => {
-	// Has res a type property with a value listed in pNs? 
+LIB.hasType = (r: SpecifResource | SpecifStatement, pNs: string[], dta: SpecIF | CSpecIF | CCache, opts?: any): boolean => {
+	// Has the resource or statement a type property with a value listed in pNs? 
 	// It is assumed that a type property has no more than one value, so the first is taken if available. 
 	let pVs = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
 	if (pVs.length > 0) {
@@ -911,19 +911,31 @@ LIB.addIcon = (str: string, ic: string): string =>{
 	return str;
 }
 LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
-	// add or update the item e in a list L:
-	let n = typeof(e)=='object'? LIB.indexById( L, e.id ) : L.indexOf(e);
+	// add or update the item e in a list L,
+	// where the list can have string elements or objects with id:
+	let n = typeof (e)=='string' ? L.indexOf(e) : LIB.indexById( L, e.id );
 	// add, if not yet listed:
 	if (n < 0) {
-		L.push(e);
-		return L.length - 1;
+		// insert. if not found:
+		if (e.predecessor) {
+			n = typeof (e.predecessor) == 'string' ? L.indexOf(e.predecessor) : LIB.indexById(L, e.predecessor.id);
+			if (n > -1) {
+				delete e.predecessor;
+				L.splice(n + 1, 0, e);
+				return n+1;
+			}
+		};
+		L.unshift(e);
+		return 0;
 	};
+	// update, if found:
 	L[n] = e;
 	return n;
 }
 LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
 	// add or update the items es in a list L:
-	es.forEach((e) => { LIB.cacheE(L, e) })
+	for (var i = es.length - 1; i > -1; i--)
+		LIB.cacheE(L, es[i]);
 	// this operation cannot fail:
 	return true;
 }
@@ -1465,19 +1477,13 @@ LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
 	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
 }
-LIB.resClassTitleOf = (e: SpecifResource, cL?: SpecifResourceClass[], opts?: any): string => {
-	// Return the resourceClass' title:
-	if (!cL) cL = app.cache.selectedProject.data.resourceClasses;
-	return LIB.titleOf(LIB.itemByKey(cL, e['class']), opts);
+LIB.classTitleOf = (eCkey: SpecifKey, cL?: SpecifClass[], opts?: any): string => {
+	// Return the resourceClass' resp. statementClass' title:
+	return LIB.titleOf(LIB.itemByKey(cL, eCkey), opts);
 }
-LIB.staClassTitleOf = (e: SpecifStatement, cL?: SpecifStatementClass[], opts?: any): string => {
-	// Return the statementClass' title:
-	if (!cL) cL = app.cache.selectedProject.data.statementClasses;
-	return LIB.titleOf(LIB.itemByKey(cL, e['class']), opts);
-}
-LIB.propTitleOf = (prp: SpecifProperty, cL: SpecifPropertyClass[]): string => {
-	// get the title of a property as defined by itself or it's class:
-	let pC = LIB.itemByKey(cL, prp['class']);
+LIB.propTitleOf = (pCkey: SpecifKey, cL: SpecifPropertyClass[]): string => {
+	// get the title of a property as defined by it's class:
+	let pC = LIB.itemByKey(cL, pCkey);
 	return pC ? pC.title : undefined;
 }
 LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
@@ -1490,7 +1496,7 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): 
 		if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
 		let pt;
 		for (var a = 0, A = pL.length; a < A; a++) {
-			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a], pCs));
+			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a]['class'], pCs));
 			// Check the configured headings and titles:
 			if (CONFIG.titleProperties.includes(pt)) return a;
 		};

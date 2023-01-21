@@ -163,12 +163,13 @@ class StandardTypes {
 					dta[lN].unshift( item );
 			}
 			else {
+				// create the list with the item:
 				// @ts-ignore - index is ok:
 				dta[lN] = [item];
 			};
 		}
 		else
-			throw Error("Can't find item with key '"+key.id+"' and revision '"+key.revision+"' in standard types.")
+			throw Error("Can't find item with id '"+key.id+"' and revision '"+key.revision+"' in standard types.")
 	}
 };
 

@@ -156,8 +156,8 @@ class CResourceToEdit {
 //	changedAt: string;
 //	changedBy?: string;
 	constructor(el: SpecifResource) {
-		// @ts-ignore - index is ok:
-	//	for (var a in el) this[a] = el[a];
+	/*	// @ts-ignore - index is ok:
+		for (var a in el) this[a] = el[a]; */
 
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
@@ -180,7 +180,7 @@ class CResourceToEdit {
 		this.newFiles = [];
 	}
 	editForm(opts: any): void {
-	// Edit/update the resources' properties:
+	// Edit/update the resources' properties with a modal dialog:
 //	console.debug( 'editResource', r2edit, simpleClone(cData.resourceClasses) );
 		if (this.properties.length > 0) {
 
@@ -336,21 +336,12 @@ moduleManager.construct({
 }, (self: IModule) => {
 	"use strict";
 
-	let myName = self.loadAs,
-	//	cData: CCache,			// the cached data
-		opts: any;				// the processing options
-
-//	self.newFiles = [];			// collect uploaded files before committing the change
-//	self.dialogForm = new CCheckDialogInput();
-
 	self.init = (): boolean => {
 //		console.debug('resourceEdit.init')
 		self.clear();
 		return true;
 	};
 	self.clear = (): void => {
-//		self.newFiles.length = 0;
-//		self.dialogForm = new CCheckDialogInput();
 	};
 
 	// The choice of modal dialog buttons:
@@ -405,69 +396,69 @@ moduleManager.construct({
 	self.show = (opts: any) => {
 
 		self.clear();
-	//	cData = app.cache.selectedProject.data;
-		let localOpts = Object.assign({
-				myFullName: 'app.' + myName +'.toEdit'
-			},opts);
-	//	localOpts.dialogForm = self.dialogForm;
-		if (self.parent.tree.selectedNode)
-			localOpts.selNodeId = self.parent.tree.selectedNode.id;
+		self.localOpts = Object.assign({
+				myFullName: 'app.' + self.loadAs + '.toEdit'   // myName = self.loadAs
+			}, opts);
 
-//		console.debug('resourceEdit.show',localOpts);
-		switch (localOpts.mode) {
+		if (self.parent.tree.selectedNode)
+			self.localOpts.selNodeId = self.parent.tree.selectedNode.id;
+
+//		console.debug('resourceEdit.show',self.localOpts);
+		switch (self.localOpts.mode) {
 			case 'create':
-				selectResClass(localOpts)
-				.then(
+				selectResClass(self.localOpts)
+			/*	.then(
 					(rC:SpecifResourceClass)=>{ 
 						app.cache.selectedProject.makeEmptyResource(rC)
 						.then( 
 							(r:SpecifResource)=>{
-//								console.debug( '#', localOpts.mode, r );
+//								console.debug( '#', self.localOpts.mode, r );
 								self.newRes = r;
-								localOpts.dialogTitle = i18n.MsgCreateResource+' ('+rC.title+')';
-								if( localOpts.selNodeId )
-									localOpts.msgBtns = [
+								self.localOpts.dialogTitle = i18n.MsgCreateResource+' ('+rC.title+')';
+								if( self.localOpts.selNodeId )
+									self.localOpts.msgBtns = [
 										msgBtns.cancel,
 										msgBtns.insertAfter,
 										msgBtns.insertBelow
 									]
 								else
-									localOpts.msgBtns = [
+									self.localOpts.msgBtns = [
 										msgBtns.cancel,
 										msgBtns.insert
 									];
 								self.toEdit = new CResourceToEdit(r);
-								self.toEdit.editForm(localOpts)
+								self.toEdit.editForm(self.localOpts)
 							},
 							LIB.stdError
 						);
 					},
 					LIB.stdError
-				);
-			/*	.then(
+				); */
+				.then(
 					(rC: SpecifResourceClass) => {
+					//	self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageValueOf(rC.title) + ')';
+						self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + rC.title + ')';
 						return app.cache.selectedProject.makeEmptyResource(rC)
 				})
 				.then(
 					(r: SpecifResource) => {
-//						console.debug( '#', localOpts.mode, r );
+//						console.debug( '#', self.localOpts.mode, r );
 						self.newRes = r;
-						localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageValueOf(rC.title) + ')';
-						if (localOpts.selNodeId)
-							localOpts.msgBtns = [
+						if (self.localOpts.selNodeId)
+							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.insertAfter,
 								msgBtns.insertBelow
 							]
 						else
-							localOpts.msgBtns = [
+							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.insert
 							];
 						self.toEdit = new CResourceToEdit(r);
-						self.toEdit.editForm(localOpts)
+						self.toEdit.editForm(self.localOpts)
 				})
-				.catch ( LIB.stdError ); */
+				.catch ( LIB.stdError ); 
 				break;
 			case 'clone':
 			case 'update':
@@ -478,24 +469,24 @@ moduleManager.construct({
 					(rL:SpecifItem[])=>{
 						// create a clone to collect the changed values before committing:
 						self.newRes = rL[0];
-						if( localOpts.mode=='clone' ) {
+						if( self.localOpts.mode=='clone' ) {
 							self.newRes.id = LIB.genID('R-');
-							localOpts.dialogTitle = i18n.MsgCloneResource,
-							localOpts.msgBtns = [
+							self.localOpts.dialogTitle = i18n.MsgCloneResource,
+							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.insertAfter,
 								msgBtns.insertBelow
 							]
 						}
 						else {
-							localOpts.dialogTitle = i18n.MsgUpdateResource;
-							localOpts.msgBtns = [
+							self.localOpts.dialogTitle = i18n.MsgUpdateResource;
+							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.update
 							]
 						}; 
 						self.toEdit = new CResourceToEdit(self.newRes);
-						self.toEdit.editForm(localOpts)
+						self.toEdit.editForm(self.localOpts)
 					},
 					LIB.stdError
 				);
@@ -576,100 +567,6 @@ moduleManager.construct({
 		// - If the original resource had different languages, take care of them;
 		// - The new values must not replace any original multi-language property values!
 
-	/*	// A resource must have at least a property with it's title (SpecIF v1.1).
-		// - self.toEdit has all properties according to the resource class, it provides the structure for the collection of input data
-		// - the input data is however stored in self.newRes ... which will be saved in the end.
-		self.newRes.properties = [];
-
-		// 1. Update the title:
-		if (self.toEdit.title.dT.type == SpecifDataTypeEnum.String) {
-			// Update the title; it must be of dataType "xs:string":
-			let val = textValue(prpTitle(self.toEdit.title)).stripHTML();
-			if (val)
-				// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-				// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-				// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-				self.newRes.properties.push({ class: LIB.makeKey(self.toEdit.title.pC.id), values: [LIB.makeMultiLanguageText(val)] });
-		}
-		else
-			console.warn('Datatype of Title is ' + self.toEdit.title.dT.type + ', but not ' + SpecifDataTypeEnum.String);
-//		console.debug('#1', self.toEdit, self.newRes);
-
-		// 2. Update the properties serving as description; it is assumed it is of dataType "xs:string":
-		self.toEdit.descriptions.forEach( (p: CPropertyToShow):void => {
-
-			if (p.dT.type == SpecifDataTypeEnum.String) {
-				// get the new or unchanged input value of the property from the input field;
-				// description properties used to reference a diagram (p.pC.title == CONFIG.propClassDiagram) are included:
-//				console.debug('desc',prpTitle(p),textValue(prpTitle(p)))
-
-				// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
-				// p.values is empthy, if the diagram has been removed while editing:
-				if (p.pC.title == CONFIG.propClassDiagram && p.values.length > 0) {
-					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: p.values });
-					return;
-				};
-
-				let val = textValue(prpTitle(p));
-				if (LIB.hasContent(val))
-					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
-			}
-			else
-				console.warn('Datatype of Description is ' + p.dT.type + ', but not ' + SpecifDataTypeEnum.String);
-
-//			console.debug( 'save',mode, p, getP( p ) );
-		});
-
-		// 3. Update all other attributes:
-		self.toEdit.other.forEach( (p: CPropertyToShow):void => {
-			// Get the new or unchanged input value of the property from the input field:
-
-			// In case of enumeration:
-			if (p.dT.enumeration) {
-				let valL: string[];
-//				console.debug('xs:enumeration',p,pC,separatedValues,vals);
-				if (typeof (p.pC.multiple) == 'boolean' ? p.pC.multiple : p.dT.multiple) {
-//					console.debug( '*', p, checkboxValues(prpTitle(p) ));
-					valL = checkboxValues(prpTitle(p));
-				}
-				else {
-//					console.debug( '+',p,radioValue( prpTitle(p) ));
-					let val = radioValue(prpTitle(p));
-					valL = val ? [val] : [];
-				};
-				if (valL.length > 0)
-					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: valL });
-				return;
-			};
-
-			// Otherwise take the value itself:
-			let val: string;
-			switch (p.dT.type) {
-				case SpecifDataTypeEnum.String:
-					val = textValue(prpTitle(p));
-					if (LIB.hasContent(val))
-						self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
-					break;
-				case SpecifDataTypeEnum.Boolean:
-					val = booleanValue(prpTitle(p)).toString();
-					self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [val] });
-					break;
-				default:
-					val = textValue(prpTitle(p));
-					if (LIB.hasContent(val))
-						self.newRes.properties.push({ class: LIB.makeKey(p.pC.id), values: [val] });
-			};
-		}); */
-
 		let pend = 2, // minimally 2 calls with promise
 			chD = new Date().toISOString();
 
@@ -696,12 +593,12 @@ moduleManager.construct({
 				break;
 			case 'insertAfter':
 				pend++;
-				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: opts.selNodeId } as INodeWithPosition ])
+				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: opts.selNodeId } as INodeWithPosition ])
+				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 		};
 

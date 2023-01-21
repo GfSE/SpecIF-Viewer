@@ -870,7 +870,7 @@ interface SpecifResourceClass {
      * @type {SpecifKey}
      * @memberof SpecifResourceClass
      */
-    _extends?: SpecifKey;
+    extends?: SpecifKey;
     /**
      * 
      * @type {SpecifIcon}
