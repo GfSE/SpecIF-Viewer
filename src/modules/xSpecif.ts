@@ -787,13 +787,17 @@ class CSpecIF implements SpecIF {
 						switch (dT.type) {
 							// we are using the transformed dataTypes, but the base dataTypes are still original;
 							case SpecifDataTypeEnum.String:
-								// For SpecIF >v1.0, it is always a multilanguageText:
-									return LIB.forAll(val,
-										(singleLang: any) => {
-											// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-											singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
-											return singleLang;
-										})
+								// To make the import more robust, string values are transformed to a multiLanguageText:
+								if (typeof (val) == 'string')
+									return LIB.makeMultiLanguageText(LIB.uriBack2slash(LIB.cleanValue(val)));
+
+								// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
+								return LIB.forAll(val,
+									(singleLang: any) => {
+										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+										singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
+										return singleLang;
+									});
 							case SpecifDataTypeEnum.DateTime:
 								return LIB.addTimezoneIfMissing(LIB.cleanValue(val));
 							default:

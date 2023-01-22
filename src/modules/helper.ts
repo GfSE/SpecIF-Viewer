@@ -614,6 +614,9 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
 	if (!LIB.isMultiLanguageText(val))
 		throw Error("Invalid value: '" + val + "' must be a multi-language text.");
 
+	// ... is a multiLanguageText, but may be empty:
+	if (val.length < 1) return '';
+
 	let lVs = val.filter((v: any): boolean => {
 		return v.language && opts && opts.targetLanguage.toLowerCase() == v.language.toLowerCase();
 	});
