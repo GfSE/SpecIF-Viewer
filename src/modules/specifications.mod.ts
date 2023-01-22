@@ -2446,7 +2446,7 @@ moduleManager.construct({
 			return;
 		};
 
-		//		console.debug('renderStatements',net);
+//		console.debug('renderStatements',net);
 
 		let graphOptions = new CGraphOptions({
 				canvas: self.view.substr(1),	// without leading hash

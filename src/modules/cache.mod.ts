@@ -71,7 +71,6 @@ class CCache {
 		// If item is a list, all elements must have the same category.
 		function cacheIfNewerE(L: SpecifItem[], e: SpecifItem): boolean {  // ( list, entry )
 			// Add or update the item e in a list L, if created later:
-		//	let n = typeof (e) == 'object' ? LIB.indexById(L, e.id) : L.indexOf(e);
 			if (typeof (e) != 'object' || !e.id)
 				throw Error("Cache 'put' operation with old reference (string instead of object with id)");
 			let n = LIB.indexById(L, e.id);
@@ -81,7 +80,6 @@ class CCache {
 				return true;
 			};
 			// Update, if newer or when reference 'objectToLink' has been resolved:
-		//	if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt))
 			if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt)
 					|| L[n].objectToLink && !e.objectToLink
 				)
@@ -215,7 +213,10 @@ class CCache {
 			(ndL: SpecifNode[]) => {
 				// @ts-ignore - e.predecessor is defined:
 				let i = LIB.indexById(ndL as SpecifItem[], e.predecessor);
-				if (i > -1) ndL.splice(i + 1, 0, e);
+				if (i > -1) {
+					delete e.predecessor;
+					ndL.splice(i + 1, 0, e);
+				};
 			}
 		))
 			return true;
@@ -227,6 +228,9 @@ class CCache {
 			(nd: SpecifNode) => {
 				if (nd.id == e['parent']) {
 					if (!Array.isArray(nd.nodes)) nd.nodes = [];
+
+					delete e['parent'];
+
 					// we will not find a predecessor at this point any more,
 					// so insert as first element of the children:
 					nd.nodes.unshift(e);
@@ -930,8 +934,8 @@ class CProject {
 						for (var el of itmL) {
 							// all nodes to become hierarchy root elements shall be memorized in the selected project:
 							if (isRoot(el as INodeWithPosition))
-								LIB.cacheE(self.hierarchies, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }) );
-						}
+								LIB.cacheE(self.hierarchies, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }));
+						};
 				//		break;
 				//	case 'file':
 				//	case 'resource':
@@ -1387,20 +1391,18 @@ class CProject {
 						// Assuming that the folder objects for the respective folder are available
 						// 1. Find all resp. folders (e.g. process folder):
 						let delL: SpecifNode[] = [],
-							creL: any[] = [],
-							res: SpecifResource,
-							pVs: SpecifValues,
-							pV: string;
+							creL: any[] = [];
 //						console.debug('createFolderWithResourcesByType',dta.hierarchies,opts);
 						LIB.iterateNodes(
 							dta.get("hierarchy", self.hierarchies),
 							(nd: SpecifNode) => {
 								// get the referenced resource:
-								res = dta.get("resource", [nd.resource])[0] as SpecifResource;
-								// find the property defining the type:
-								pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta);
+								let res = dta.get("resource", [nd.resource])[0] as SpecifResource,
+									// find the property defining the type:
+									pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta);
+
 								if (pVs.length > 0) {
-									pV = LIB.languageValueOf(pVs[0], { targetLanguage: 'default' });
+									let pV = LIB.languageValueOf(pVs[0], { targetLanguage: 'default' });
 									// collect all existing folders of the respective type; there can be 0..n:
 									if (pV == r2c.folder )
 										delL.push(nd);
@@ -1413,17 +1415,6 @@ class CProject {
 							}
 						);
 //						console.debug('createFolderWithResourcesByType',delL,creL);
-
-					/*	// 2. Create or re-use the node for the respective folder 
-						//    but only if there are entries:
-						if (creL.length > 0) {
-							if (thisFL.length > 0) {
-
-							}
-							else {
-
-                            }
-						}; */
 
 						// 2. Delete any existing folders:
 						self.deleteItems('node', delL)
@@ -1776,46 +1767,6 @@ class CProject {
 						.then(resolve)
 						.catch(reject)
 				};
-
-//				console.debug('createFolderWithGlossary',glL,delRL,diagramL);
-			/*	self.deleteItems('node', glL)
-					.then(
-						() => {
-							// 2. Create a new combined glossary:
-							if (diagramL.length > 0) {
-								let newD: any = {
-									id: 'Create Glossary ' + new Date().toISOString(),
-									$schema: 'https://specif.de/v1.1/schema.json',
-									dataTypes: [
-										standardTypes.get('dataType', LIB.makeKey("DT-ShortString")),
-										standardTypes.get('dataType', LIB.makeKey("DT-Text"))
-									],
-									propertyClasses: [
-										standardTypes.get('propertyClass', LIB.makeKey("PC-Name" )),
-										standardTypes.get('propertyClass', LIB.makeKey("PC-Description" )),
-										standardTypes.get('propertyClass', LIB.makeKey("PC-Type" ))
-									],
-									resourceClasses: [
-										standardTypes.get('resourceClass', LIB.makeKey("RC-Folder" ))
-									],
-									statementClasses: [],
-									resources: Folders(),
-									statements: [],
-									hierarchies: NodeList()
-								};
-//								console.debug('glossary',newD);
-								// use the update function to eliminate duplicate types;
-								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								self.adopt(newD as SpecIF, { noCheck: true })
-									.done(resolve)
-									.fail(reject);
-							}
-							else {
-								resolve();
-							}
-						}
-					)
-					.catch( reject ); */
 				return;
 
 				function isDiagram(r: SpecifResource): boolean {

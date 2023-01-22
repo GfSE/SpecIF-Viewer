@@ -376,7 +376,7 @@ class CSpecIF implements SpecIF {
 		function i2int(iE:any) {
 			var oE: any = {
 				id: iE.id,
-				changedAt: iE.changedAt
+				changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 			};
 			if (iE.description) oE.description = makeMultiLanguageText(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
@@ -603,7 +603,7 @@ class CSpecIF implements SpecIF {
 			var	oE: any = {
 					id: iE.id,
 					class: eCkey,
-					changedAt: iE.changedAt
+					changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 				};
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -715,7 +715,7 @@ class CSpecIF implements SpecIF {
 				oE = {
 					id: 'N-' + iR.id,
 					resource: LIB.keyOf( iR ),
-					changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
+					changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 				};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -741,7 +741,7 @@ class CSpecIF implements SpecIF {
 						// For the time being, suppress any revision to make sure that a resource update doesn't destroy the reference.
 						// ToDo: Reconsider once we have a backend with multiple revisions ...
 						resource: LIB.makeKey(iE.resource.id || iE.resource),
-						changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
+						changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -779,7 +779,31 @@ class CSpecIF implements SpecIF {
 		function makeValues(iE: any, dT: SpecifDataType): SpecifValues {
 			if (Array.isArray(iE.values)) {
 				// it is SpecIF > v1.0:
-				return iE.values;
+				return iE.values.map(
+					(val) => {
+						if (dT.enumeration) {
+							return val;
+						};
+						switch (dT.type) {
+							// we are using the transformed dataTypes, but the base dataTypes are still original;
+							case SpecifDataTypeEnum.String:
+								// For SpecIF >v1.0, it is always a multilanguageText:
+									return LIB.forAll(val,
+										(singleLang: any) => {
+											// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+											singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
+											return singleLang;
+										})
+							case SpecifDataTypeEnum.DateTime:
+								return LIB.addTimezoneIfMissing(LIB.cleanValue(val));
+							default:
+								// According to the schema, all property values are represented by a string
+								// and internally they are stored as string as well to avoid inaccuracies
+								// by multiple transformations:
+								return LIB.cleanValue(val);
+						};
+					}
+				);
 			};
 			if (LIB.isString(iE.value) || LIB.isMultiLanguageText(iE.value)) {
 				// it is SpecIF < v1.1:
@@ -796,9 +820,6 @@ class CSpecIF implements SpecIF {
 							// starting v1.1 they are separate list items:
 							let vL: string[] = LIB.cleanValue(iE.value).split(',');
 							return LIB.forAll(vL, (v: string) => { return v.trim() });
-				/*			let nL = LIB.forAll(vL, (v: string) => { return v.trim() })
-							console.debug('makeValues',iE.value,nL);
-							return nL; */
 						}
 						else {
 							let vL = Array.isArray(iE.value) ?
@@ -806,16 +827,18 @@ class CSpecIF implements SpecIF {
 								LIB.forAll(iE.value,
 									(val: any) => {
 										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-										val.text = LIB.uriBack2slash(val.text);
+										val.text = LIB.uriBack2slash(LIB.cleanValue(val.text));
 										return val;
 									})
 								// single language:
 								// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-								: LIB.uriBack2slash(iE.value);
+								: LIB.uriBack2slash(LIB.cleanValue(iE.value));
 							// @ts-ignore - dT is in fact a string:
 							return [makeMultiLanguageText(vL, dT.type)];
 						};
 					// break - all branches end with return;
+					case SpecifDataTypeEnum.DateTime:
+						return [LIB.addTimezoneIfMissing(LIB.cleanValue(iE.value))];
 					default:
 						// According to the schema, all property values are represented by a string
 						// and internally they are stored as string as well to avoid inaccuracies
