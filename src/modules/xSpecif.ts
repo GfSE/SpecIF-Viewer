@@ -546,9 +546,8 @@ class CSpecIF implements SpecIF {
 			};
 //			console.debug('resourceClass 2int',iE,oE);
 			if (oE.propertyClasses.length >0 )
-				return oE;
-			console.warn('Skipping the resourceClass with id="' + iE.id + '" on import, because it does not specify any propertyClasses.');
-		// return undefined ... and the element will not be listed in the list of resourceClasses
+				console.warn('The resourceClass with id="' + iE.id + '" does not specify any propertyClasses.');
+			return oE;
 		}
 		// a statementClass:
 		function sC2int(iE:any): SpecifStatementClass {
