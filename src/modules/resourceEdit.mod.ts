@@ -39,13 +39,13 @@ class CPropertyToEdit extends CPropertyToShow  {
 
 //			console.debug('Enumeration', this, ti, entryL);
 			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple)
-				return checkboxField(
+				return makeCheckboxForm(
 					ti,
 					entryL,
 					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '') }
 				);
 			else
-				return radioField(
+				return makeRadioForm(
 					ti,
 					entryL,
 					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '') }
@@ -59,7 +59,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 				// - no input checking needed
 				// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
 //				console.debug('xs:boolean',ti,this);
-				return booleanField(
+				return makeBooleanForm(
 					ti,
 					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
 					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '') }
@@ -77,7 +77,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 					// in case of xhtml, it may contain a diagram reference, 
 					// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
 //					console.debug( 'editForm', LIB.languageValueOf(this.value,localOpts) );
-					return textField(
+					return makeTextForm(
 						ti,
 						//	this.values.length > 0 ? LIB.languageValueOf(this.values[0], localOpts) : '',  // only first value for the time being ...
 						LIB.forAll(
@@ -97,7 +97,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 				// add parameters to check this input field:
 				if (opts && opts.dialogForm)
 					opts.dialogForm.addField(ti, this.dT);
-				return textField(
+				return makeTextForm(
 					ti,
 					//	this.values.length > 0 ? this.values[0] as string : '',
 					this.values as string[],
@@ -514,7 +514,7 @@ moduleManager.construct({
 								//	message: (thisDlg)=>{
 									message: () => {
 										var form = '<form id="attrInput" role="form" >'
-												+ radioField( i18n.LblResourceClass, resClasses )
+												+ makeRadioForm( i18n.LblResourceClass, resClasses )
 												+ '</form>';
 										return $( form );
 									},

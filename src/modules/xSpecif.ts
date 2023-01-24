@@ -450,8 +450,11 @@ class CSpecIF implements SpecIF {
 //			console.debug('pC2int',iE,dT);
 
 			// The default values:
-			if (iE.value || iE.values)
-				oE.values = makeValues(iE, dT);
+			if (iE.value || iE.values) {
+				let vL = makeValues(iE, dT);
+				if (vL.length > 0)
+					oE.values = vL;
+			};
 		/*	// SpecIF <v1.1:
 			if (iE.value)
 				switch (dT.type) {
@@ -574,23 +577,28 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a property:
-		function p2int(iE: any): SpecifProperty {
-			// @ts-ignore - 'values'will be added later:
-			var oE: SpecifProperty = {
+		function p2int(iE: any): SpecifProperty|undefined {
+			if (Array.isArray(iE.values) && iE.values.length > 0 || iE.value) {
+				// @ts-ignore - 'values'will be added later:
+				var oE: SpecifProperty = {
 					// no id
 					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 					// ToDo: Reconsider once we have a backend with multiple revisions ...
 					class: LIB.makeKey(iE[names.pClass].id || iE[names.pClass])
-				//	class: LIB.makeKey(iE[names.pClass])
+					//	class: LIB.makeKey(iE[names.pClass])
 				},
-				dT = LIB.dataTypeOf(oE["class"], self);
-//			console.debug('p2int', iE, dT);
+					dT = LIB.dataTypeOf(oE["class"], self);
+				//			console.debug('p2int', iE, dT);
 
-			oE.values = makeValues(iE, dT);
+				oE.values = makeValues(iE, dT);
 
-			// properties do not have their own revision and change info
-//			console.debug('propValue 2int',iE,pT,oE);
-			return oE
+//				console.debug('propValue 2int',iE,pT,oE);
+				// In rare cases it may happen that a property list has just undefined values or empty strings;
+				// we just want properties with at least one valid value:
+				if (oE.values.length > 0)
+					return oE;
+			};
+			// return undefined --> the property will be skipped as a whole.
 		}
 		// common for all resources or statements:
 		function a2int(iE:any): SpecifInstance {
@@ -613,7 +621,7 @@ class CSpecIF implements SpecIF {
 
 			// resources must have a title, but statements may come without:
 			if (iE.properties && iE.properties.length > 0)
-				oE.properties = LIB.forAll(iE.properties, (e: any): SpecifProperty => { return p2int(e) });
+				oE.properties = LIB.forAll(iE.properties, (e: any): SpecifProperty|undefined => { return p2int(e) });
 
 	 		// Are there resources with description, but without description property?
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
@@ -771,44 +779,60 @@ class CSpecIF implements SpecIF {
 		// utilities:
 		function makeTitle(ti: any): string {
 			// In <v1.1, titles can be simple strings or multi-language text objects;
-			// in >v1.0, native titles can only be stings (in fact SpecifText).
+			// in >v1.0, native titles can only be strings (in fact SpecifText).
 			// So, in case of multi-language text, choose the default language:
 			return LIB.cleanValue( typeof(ti)=='string'? ti : ti[0].text );
 		}
-		function makeValues(iE: any, dT: SpecifDataType): SpecifValues {
-			if (Array.isArray(iE.values)) {
-				// it is SpecIF > v1.0:
-				return iE.values.map(
-					(val) => {
-						if (dT.enumeration) {
-							return val;
-						};
-						switch (dT.type) {
-							// we are using the transformed dataTypes, but the base dataTypes are still original;
-							case SpecifDataTypeEnum.String:
-								// To make the import more robust, string values are transformed to a multiLanguageText:
-								if (typeof (val) == 'string')
-									return LIB.makeMultiLanguageText(LIB.uriBack2slash(LIB.cleanValue(val)));
+		function makeValues(prp: any, dT: SpecifDataType): SpecifValues {
+			if (Array.isArray(prp.values)) {
+				// it is SpecIF > v1.0;
+				// for all items in the value list of property prp
+				return LIB.forAll(
+					prp.values,
+					(val:SpecifValue) => {
+						if (val) {
+							if (dT.enumeration) {
+								return val;
+							};
 
-								// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
-								return LIB.forAll(val,
-									(singleLang: any) => {
-										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-										singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
-										return singleLang;
-									});
-							case SpecifDataTypeEnum.DateTime:
-								return LIB.addTimezoneIfMissing(LIB.cleanValue(val));
-							default:
-								// According to the schema, all property values are represented by a string
-								// and internally they are stored as string as well to avoid inaccuracies
-								// by multiple transformations:
-								return LIB.cleanValue(val);
+							switch (dT.type) {
+								// we are using the transformed dataTypes, but the base dataTypes are still original;
+								case SpecifDataTypeEnum.String:
+									// Values of type xs:string are permitted by the schema, but not by the constraints.
+									// To make the import more robust, string values are transformed to a multiLanguageText:
+									if (typeof (val) == 'string')
+										return LIB.makeMultiLanguageText(LIB.uriBack2slash(LIB.cleanValue(val)));
+
+									// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
+									return LIB.forAll(
+										val,
+										(singleLang: any) => {
+											// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+											singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
+											return singleLang;
+										}
+									);
+								case SpecifDataTypeEnum.DateTime:
+									return LIB.addTimezoneIfMissing(LIB.cleanValue(val));
+								case SpecifDataTypeEnum.Boolean:
+									if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
+										return "true";
+									if (CONFIG.valuesFalse.includes(LIB.cleanValue(val)))
+										return "false";
+									console.warn('Unknown boolean value '+ LIB.cleanValue(val) + ' skipped.');
+									break;
+								default:
+									// According to the schema, all property values are represented by a string
+									// and internally they are stored as string as well to avoid inaccuracies
+									// by multiple transformations:
+									return LIB.cleanValue(val);
+							};
 						};
+					//	return;  // undefined --> no element in the returned array
 					}
 				);
 			};
-			if (LIB.isString(iE.value) || LIB.isMultiLanguageText(iE.value)) {
+			if (LIB.isString(prp.value) || LIB.isMultiLanguageText(prp.value)) {
 				// it is SpecIF < v1.1:
 				switch (dT.type) {
 					// we are using the transformed dataTypes, but the base dataTypes are still original;
@@ -821,36 +845,45 @@ class CSpecIF implements SpecIF {
 						if (dT.enumeration) {
 							// in SpecIF <1.1 multiple enumeration ids were in a comma-separated list;
 							// starting v1.1 they are separate list items:
-							let vL: string[] = LIB.cleanValue(iE.value).split(',');
+							let vL: string[] = LIB.cleanValue(prp.value).split(',');
 							return LIB.forAll(vL, (v: string) => { return v.trim() });
 						}
 						else {
-							let vL = Array.isArray(iE.value) ?
+							let vL = Array.isArray(prp.value) ?
 								// multiple languages:
-								LIB.forAll(iE.value,
+								LIB.forAll(
+									prp.value,
 									(val: any) => {
 										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
 										val.text = LIB.uriBack2slash(LIB.cleanValue(val.text));
 										return val;
-									})
+									}
+								)
 								// single language:
 								// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-								: LIB.uriBack2slash(LIB.cleanValue(iE.value));
+								: LIB.uriBack2slash(LIB.cleanValue(prp.value));
 							// @ts-ignore - dT is in fact a string:
 							return [makeMultiLanguageText(vL, dT.type)];
 						};
 					// break - all branches end with return;
 					case SpecifDataTypeEnum.DateTime:
-						return [LIB.addTimezoneIfMissing(LIB.cleanValue(iE.value))];
+						return [LIB.addTimezoneIfMissing(LIB.cleanValue(prp.value))];
+					case SpecifDataTypeEnum.Boolean:
+						if (CONFIG.valuesTrue.includes(LIB.cleanValue(prp.value)))
+							return ["true"];
+						if (CONFIG.valuesFalse.includes(LIB.cleanValue(prp.value)))
+							return ["false"];
+						console.warn('Unknown boolean value ' + LIB.cleanValue(prp.value) + ' skipped.');
+						return [];
 					default:
 						// According to the schema, all property values are represented by a string
 						// and internally they are stored as string as well to avoid inaccuracies
 						// by multiple transformations:
-						return [LIB.cleanValue(iE.value)];
+						return [LIB.cleanValue(prp.value)];
 				};
 			}
 			else
-				throw Error("Invalid property with class " + iE[names.pClass] + ".");
+				throw Error("Invalid property with class " + prp[names.pClass] + ".");
 		}
 		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {
 			return (typeof (iE) == 'string' ?
@@ -882,8 +915,11 @@ class CSpecIF implements SpecIF {
 					};
 
 				// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
-				if (LIB.multiLanguageTextHasContent(this.description)) spD.description = LIB.makeMultiLanguageText(LIB.languageValueOf(this.description, opts));
-				if (this.language) spD.language = this.language;
+				if (LIB.multiLanguageTextHasContent(this.description))
+					spD.description = LIB.makeMultiLanguageText(LIB.languageValueOf(this.description, opts));
+
+				if (this.language)
+					spD.language = this.language;
 
 				if (this.rights && this.rights.title && this.rights.url)
 					spD.rights = this.rights;

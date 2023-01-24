@@ -13,14 +13,14 @@
 const LIB: any = {};
 interface IFieldOptions {
 	tagPos?: string;  // 'left', 'none' ('above')
-	typ?: string;     // 'line', 'area' for textField
+	typ?: string;     // 'line', 'area' for makeTextForm
 	classes?: string; // CSS classes
 	handle?: string;  // event handler
 	description?: string; // further explanation in a popup
 }
-function textField(tag: string, valL: string[], opts?: IFieldOptions): string {  
+function makeTextForm(tag: string, valL: string[], opts?: IFieldOptions): string {  
 	// assemble a form for text input or display:
-//	console.debug('textField 1',tag,val,typ,fn);
+//	console.debug('makeTextForm 1',tag,val,typ,fn);
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
 
@@ -47,7 +47,7 @@ function textField(tag: string, valL: string[], opts?: IFieldOptions): string {
 			aC = 'attribute-value';
 			break;
 		default:
-			throw Error("Invalid display option '"+opts.tagPos+"' when showing a textField");
+			throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
 	};
 	// valL has at least one item:
 /*	fG += '<div class="' + aC +'" >';
@@ -155,7 +155,7 @@ interface IBox {
 	checked?: boolean;
 	type?: string;
 }
-function radioField(tag: string, entries: IBox[], opts?: IFieldOptions): string {
+function makeRadioForm(tag: string, entries: IBox[], opts?: IFieldOptions): string {
 	// assemble an input field for a set of radio buttons:
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof(opts.tagPos) != 'string') opts.tagPos = 'left';
@@ -173,7 +173,7 @@ function radioField(tag: string, entries: IBox[], opts?: IFieldOptions): string 
 				+		'<div class="attribute-value radio" >';
 			break;
 		default:
-			throw Error("Invalid display option '" + opts.tagPos + "' when showing a radioField");
+			throw Error("Invalid display option '" + opts.tagPos + "' when showing a radio form");
 	};
 	// zero or one checked entry is allowed:
 	let found = false, temp:boolean; 
@@ -201,7 +201,7 @@ function radioValue( tag:string ):string {
 	// get the selected radio button, it is the index number as string:
 	return $('input[name="radio' + simpleHash(tag)+'"]:checked').attr('value') || '';	// works even if none is checked
 }
-function checkboxField(tag: string, entries: IBox[], opts?: IFieldOptions): string {
+function makeCheckboxForm(tag: string, entries: IBox[], opts?: IFieldOptions): string {
 	// assemble an input field for a set of checkboxes:
 	if (!opts) opts = {} as IFieldOptions;
 	if (typeof(opts.tagPos)!='string') opts.tagPos = 'left';
@@ -219,7 +219,7 @@ function checkboxField(tag: string, entries: IBox[], opts?: IFieldOptions): stri
 				+		'<div class="attribute-value checkbox" >';
 			break;
 		default:
-			throw Error("Invalid display option '" + opts.tagPos + "' when showing a checkboxField");
+			throw Error("Invalid display option '" + opts.tagPos + "' when showing a checkbox form");
 	};
 	// render options:
 	let tp: string, nm = simpleHash(tag);
@@ -248,8 +248,8 @@ function checkboxValues( tag:string ):string[] {
 	}; */
 	return resL;
 }
-function booleanField( tag:string, val:boolean, opts?:any ):string {
-//	console.debug('booleanField',tag,val);
+function makeBooleanForm( tag:string, val:boolean, opts?:any ):string {
+//	console.debug('makeBooleanForm',tag,val);
 	let fn:string;
 	if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )	
 			fn = ' onclick="'+opts.handle+'"'
@@ -1508,11 +1508,10 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): 
 	// This works for title strings and multi-language title objects.
 
 	// The first property which is found in the list of headings or titles is chosen:
-	if (pL) {
+	if (Array.isArray(pL) && pL.length>0) {
 		if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
-		let pt;
 		for (var a = 0, A = pL.length; a < A; a++) {
-			pt = vocabulary.property.specif(LIB.propTitleOf(pL[a]['class'], pCs));
+			let pt = vocabulary.property.specif(LIB.propTitleOf(pL[a]['class'], pCs));
 			// Check the configured headings and titles:
 			if (CONFIG.titleProperties.includes(pt)) return a;
 		};
@@ -1593,58 +1592,6 @@ function hasUrlParams(): boolean {
 		if( p[1] && p[1].length>0 ) return '?';
 		return false; */
 }
-/*
-// ToDo: try prms = location.hash
-// see: https://www.w3schools.com/jsref/prop_loc_hash.asp
-class IUrlParams {
-//	uid?: string;
-	import?: string;
-	mode?: string;
-	project?: string;
-	item?: string;
-	node?: string;
-	view?: string;
-}
-	// Keys for the query parameters - if changed, existing links will end up in default view:
-//	CONFIG.keyUId = 'uid';	// userId
-	CONFIG.keyImport = 'import';
-	CONFIG.keyMode = 'mode';
-	CONFIG.keyProject = 'project';	// projectId
-	CONFIG.keyItem = 'item';
-	CONFIG.keyNode = 'node';
-	CONFIG.keyView = 'view';	// dialog
-	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyMode,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
-
-function getUrlParams(opts?: any): IUrlParams {
-	// Get the url parameters contained in the 'fragment' according to RFC2396:
-	if( typeof(opts)!='object' ) opts = {};
-	if( typeof(opts.start)!='string' ) opts.start = '#';
-	if( typeof(opts.separator)!='string' ) opts.separator = ';'
-
-	let p = document.URL.split(opts.start);
-	if( !p[1] ) return {};
-	p = decodeURI(p[1]);
-	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
-	return parse( p );
-
-	function parse( h:string ):object {
-		if( !h ) return {};
-		var pO = new IUrlParams;
-		h = h.split(opts.separator);
-		h.forEach( (p)=>{
-			p = p.split('=');
-			// remove enclosing quotes from the value part:
-			if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substr(1,p[1].length-2);
-			// look for specific tokens, only:
-			if( CONFIG.urlParamTags.includes(p[0]) )
-				pO[p[0]] = p[1];
-			else
-				console.warn("Unknown URL-Parameter '",p[0],"' found.");
-		});
-		return pO;
-	}
-}
-*/
 // ToDo: try prms = location.hash
 // see: https://www.w3schools.com/jsref/prop_loc_hash.asp
 function getUrlParams(opts?: any): any {
@@ -1712,3 +1659,53 @@ function clearUrlParams(): void {
 	//	console.debug( 'clearUrlParams', path );
 	history.pushState('', '', path[path.length - 1]);    // last element is 'appname.html' without url parameters;
 }
+/*
+class CUrlParams {
+//	uid?: string;
+	import?: string;
+	mode?: string;
+	project?: string;
+	item?: string;
+	node?: string;
+	view?: string;
+}
+	// Keys for the query parameters - if changed, existing links will end up in default view:
+//	CONFIG.keyUId = 'uid';	// userId
+	CONFIG.keyImport = 'import';
+	CONFIG.keyMode = 'mode';
+	CONFIG.keyProject = 'project';	// projectId
+	CONFIG.keyItem = 'item';
+	CONFIG.keyNode = 'node';
+	CONFIG.keyView = 'view';	// dialog
+	CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyMode,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
+
+function getUrlParams(opts?: any): IUrlParams {
+	// Get the url parameters contained in the 'fragment' according to RFC2396:
+	if( typeof(opts)!='object' ) opts = {};
+	if( typeof(opts.start)!='string' ) opts.start = '#';
+	if( typeof(opts.separator)!='string' ) opts.separator = ';'
+
+	let p = document.URL.split(opts.start);
+	if( !p[1] ) return {};
+	p = decodeURI(p[1]);
+	if( p[0]=='/' ) p = p.substr(1);	// remove leading slash
+	return parse( p );
+
+	function parse( h:string ):object {
+		if( !h ) return {};
+		var pO = new IUrlParams;
+		h = h.split(opts.separator);
+		h.forEach( (p)=>{
+			p = p.split('=');
+			// remove enclosing quotes from the value part:
+			if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substr(1,p[1].length-2);
+			// look for specific tokens, only:
+			if( CONFIG.urlParamTags.includes(p[0]) )
+				pO[p[0]] = p[1];
+			else
+				console.warn("Unknown URL-Parameter '",p[0],"' found.");
+		});
+		return pO;
+	}
+}
+*/

@@ -294,17 +294,18 @@ class CCache {
 	}
 	resourcesByTitle(ti: string, opts: any) {
 		if (ti) {
-			/*	// given the title of a resource, return the instance itself;
-				// if a title has multiple languages, the behavior may be different in each case:
-				for (var ice of this.resources)
-					if (this.instanceTitleOf(ice, opts) == ti) return ice;   // return list item */
+			// given the title of a resource, return the instance itself:
 			return this.resources.filter(
 				(r) => {
 					if (opts.targetLanguage == 'any') {
-						for (var v of LIB.valuesByTitle(r, [CONFIG.propClassTitle], this)[0]) {
-							// property.values[0] of class CONFIG.propClassTitle should be a multiLanguageText;
-							// v is a single languageValue:
-							if (v.text == ti) return true;
+					//	let tiVL = LIB.valuesByTitle(r, [CONFIG.propClassTitle], this);
+						let tiVL = LIB.valuesByTitle(r, CONFIG.titleProperties, this);
+						// length od tiVL should be 0..1, but certainly not any more than 1 title property per resource!
+						if (tiVL.length > 0)
+							for (var v of tiVL[0]) {
+								// the property of class CONFIG.propClassTitle should be a multiLanguageText;
+								// v is a single languageValue:
+								if (v.text == ti) return true;
 						};
 						return false;
 					}
@@ -2009,12 +2010,12 @@ class CProject {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ ['specif', 'specif_v10'].includes(fmt) ? '' : textField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
-			+ textField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
+			+ ['specif', 'specif_v10'].includes(fmt) ? '' : makeTextForm('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
+			+ makeTextForm('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
-				pnl += checkboxField(
+				pnl += makeCheckboxForm(
 					//	i18n.LblOptions,
 					i18n.modelElements,
 					[
@@ -2029,12 +2030,12 @@ class CProject {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : textField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line' }))
-			+ textField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line' });
+			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextForm('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line' }))
+			+ makeTextForm('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line' });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
-				pnl += checkboxField(
+				pnl += makeCheckboxForm(
 					//	i18n.LblOptions,
 					i18n.modelElements,
 					[
@@ -2098,7 +2099,7 @@ class CProject {
 					+ '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
 				//	+ "<h4>"+i18n.LblFormat+"</h4>"
 					+ "<p>" + i18n.MsgExport + "</p>"
-					+ radioField(
+					+ makeRadioForm(
 						i18n.LblFormat,
 						formats,
 						{ handle: exportFormatClicked }  // options depend on format

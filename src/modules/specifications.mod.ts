@@ -1675,7 +1675,7 @@ moduleManager.construct({
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(textField( txtLbl, [''], {typ:'area'} )) );
+				form.append( $(makeTextForm( txtLbl, [''], {typ:'area'} )) );
 				return form 
 			},
 			buttons: [{

@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.1.a",
+	CONFIG.appVersion = "1.1.b",
 	CONFIG.specifVersion = "1.1";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -446,6 +446,7 @@ const CONFIG:any = {};
 		"SpecIF:inheritsFrom",
 		"SpecIF:refersTo",
 		"SpecIF:sameAs",
+		"SpecIF:accesses"
 		"Archimate:accesses"
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;
@@ -487,8 +488,8 @@ const CONFIG:any = {};
 	]);
 
 	// values for boolean 'true' and 'false':
-	CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui'];
-	CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non'];
+	CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', 'True'];
+	CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', 'False'];
 
 /*	// values for priority:
 	CONFIG.valuesPriority = [
