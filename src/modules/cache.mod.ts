@@ -1253,7 +1253,7 @@ class CProject {
 					// loop to find the *first* occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(p['class'], dta.propertyClasses)))
+						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
 							&& LIB.languageValueOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
 					};
@@ -1269,7 +1269,7 @@ class CProject {
 					// loop to find the *first' occurrence:
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.propTitleOf(r.properties[a]['class'], dta.propertyClasses))))
+						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(r.properties[a]['class'], dta.propertyClasses))))
 							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: self.language })
 					};
 				};
@@ -2084,14 +2084,14 @@ class CProject {
 						{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 						{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 						{ title: 'ReqIF v1.2', id: 'reqif' },
-						//	{ title: 'RDF', id: 'rdf' },
-						//	{ title: 'Turtle (experimental)', id: 'turtle' },
+					//	{ title: 'RDF', id: 'rdf' },
+					//	{ title: 'Turtle (experimental)', id: 'turtle' },
 						{ title: 'ePub v2', id: 'epub' },
 						{ title: 'MS Word® (Open XML)', id: 'oxml' }
 					];
 				// add an option to generate class definitions, if there is a SpecIF ontology found in the hierarchies:
-				if( moduleManager.isReady('generateClasses') )
-					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specif-classes' });
+				if( moduleManager.isReady('generateClasses') && hasOntology() )
+					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
 
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
 				//	+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
@@ -2112,6 +2112,16 @@ class CProject {
 					+ '</div>'
 					+ '</div>';
 				return $(form)
+
+				function hasOntology(): boolean {
+					let hL = self.data.get("hierarchy", self.hierarchies) as SpecifNode[];
+					for (var h of hL) {
+						let r = self.data.get("resource", [h.resource]) as SpecifResource[];
+						if (LIB.hasType(r, [CONFIG.resClassOntology], self.data))
+							return true;
+					};
+					return false;
+                }
 			},
 			buttons: [
 				{
@@ -2198,6 +2208,7 @@ class CProject {
 						case 'reqif':
 						case 'specif':
 						case 'html':
+						case 'specifClasses':
 							storeAs(opts);
 							break;
 						case 'epub':
@@ -2251,7 +2262,6 @@ class CProject {
 							descriptionProperties: CONFIG.descProperties.map((e: string) => { return i18n.lookup(e) }),
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return i18n.lookup(e) }),
-						//	lookup: i18n.lookup,	vocabulary terms are now looked up during export (CSpecIF.toExt)
 							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
@@ -2280,7 +2290,7 @@ class CProject {
 				);
 			}
 			function storeAs(opts: any): void {
-				if (!opts || ['specif', 'specif_v10', 'html', 'reqif', 'turtle'].indexOf(opts.format) < 0) {
+				if (!opts || ['specif', 'specif_v10', 'html', 'reqif', 'turtle', 'specifClasses'].indexOf(opts.format) < 0) {
 					// programming error!
 					reject({ status: 999, statusText: "Invalid format specified on export" });
 					throw Error("Invalid format specified on export");
@@ -2315,6 +2325,7 @@ class CProject {
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString();
 						break;
+					case 'specifClasses':
 					default:
 						reject();
 						return; // should never arrive here
@@ -2831,7 +2842,7 @@ class CProject {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
-					let ti = LIB.propTitleOf(nP['class'], prj.propertyClasses),
+					let ti = LIB.classTitleOf(nP['class'], prj.propertyClasses),
 						rP = LIB.propByTitle(refE, ti, this.data);
 //					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( refE, ti, this.data )));
 					if (!LIB.hasContent(LIB.displayValueOf(LIB.valuesByTitle(refE, [ti], this.data)[0],opts))

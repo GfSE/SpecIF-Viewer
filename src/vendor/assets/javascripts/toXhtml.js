@@ -36,16 +36,11 @@ function toXhtml( data, opts ) {
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
 	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-//	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 	if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'FMC:Plan'];
 	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 	if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
 
-/*	// If no label is provided, the respective properties are skipped:
-	if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
-	if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );
-*/
 	if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegEx
 	if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegEx
 	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
@@ -136,14 +131,6 @@ function toXhtml( data, opts ) {
 		let cL = itm.subject? data.statementClasses : data.resourceClasses,
 			eC = itemById( cL, itm['class'] );
 		
-	/*	// lookup titles only, if it is 
-		// - a resource used as heading or 
-		// - a statement;
-		// those may have vocabulary terms to translate;
-		// whereas individual resources may mean the vocabulary term as such:
-		if( eC&&eC.isHeading || itm.subject )
-			ti = opts.lookup(ti);
-	*/
 		// add icon, if specified:
 		ti = (opts.addIcon && eC && eC.icon ? eC.icon + '  ' : '') + ti;
 
@@ -207,10 +194,6 @@ function toXhtml( data, opts ) {
 	//		sTi;
 		ct += '<table class="statementTable"><tbody>';
 		for( cid in sts ) {
-			// if we have clustered by title:
-		/*	sTi = opts.lookup( cid );
-			// we don't have (and don't need) the individual statement, just the class:
-			sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 			// 3 columns:
 			if( sts[cid].subjects.length>0 ) {
@@ -301,7 +284,6 @@ function toXhtml( data, opts ) {
 			// the property title or it's class's title:
 			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
 				rt = prpTitleOf(p);
-			//	rt = opts.lookup( prpTitleOf(p) );
 				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValueOf( p, hi )+'</td></tr>'
 			}
 		});
@@ -522,7 +504,6 @@ function toXhtml( data, opts ) {
 							// If 'eV' is an id, replace it by title, otherwise don't change:
 							// Add 'double-angle quotation' in case of SubClass values.
 							if (eV) ct += (v == 0 ? '' : ', ') + (st ? ('&#x00ab;' + eV.value + '&#x00bb;') : eV.value)
-						//	if( eV ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(eV.value)+'&#x00bb;'):opts.lookup(eV.value))
 							else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 						};
 						return escapeXML( ct );

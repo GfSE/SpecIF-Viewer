@@ -156,17 +156,12 @@ function toOxml( data, opts ) {
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-		//	if( typeof(opts.lookup)!='function' ) opts.lookup = function(str) { return str };
 			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor','FMC:State','FMC:Event','SpecIF:Collection','SpecIF:Diagram','FMC:Plan'];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
 			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
-		/*	// If no label is provided, the respective properties are skipped:
-			if( opts.propertiesLabel ) opts.propertiesLabel = opts.lookup( opts.propertiesLabel );	
-			if( opts.statementsLabel ) opts.statementsLabel = opts.lookup( opts.statementsLabel );	
-		*/
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp
 			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';
 			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
@@ -270,14 +265,6 @@ function toOxml( data, opts ) {
 				let cL = itm.subject? data.statementClasses : data.resourceClasses,
 					eC = itemById(cL, itm['class']);
 				
-			/*	// lookup titles only, if it is 
-				// - a resource used as heading or 
-				// - a statement;
-				// those may have vocabulary terms to translate;
-				// whereas individual resources may mean the vocabulary term as such:
-				if( eC&&eC.isHeading || itm.subject )
-					ti = opts.lookup(ti);
-			*/
 				// add icon, if specified:
 				ti = (opts.addIcon&&eC&&eC.icon? eC.icon+'  ' : '') + ti;
 
@@ -350,15 +337,9 @@ function toOxml( data, opts ) {
 				// The heading:
 				let ct = wParagraph( {text: opts.statementsLabel, format:{heading: 4}} ),
 					row, cell, resL;
-				//	sTi, row, cell, resL;
 
 				// build a table of the statements/relations by type:
 				for( cid in stC ) {
-					// if we have clustered by title:
-				/*	sTi = opts.lookup( cid );
-					// if we have clustered by class:
-					// we don't have the individual statement's title; so we determine the class to get it's title, instead:
-					sTi = opts.lookup( itemById(data.statementClasses,cid).title ); */
 
 					// 3 columns:
 					if( stC[cid].subjects.length>0 ) {
@@ -392,7 +373,6 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content: wParagraph({
 											text: cid,
-										//	text: sTi,
 											format:{
 												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
@@ -454,7 +434,6 @@ function toOxml( data, opts ) {
 							row += wTableCell({
 									content: wParagraph({
 											text: cid,
-										//	text: sTi,
 											format:{
 												font: { style: 'italic', color:opts.colorAccent1 },
 												align:'center',
@@ -540,7 +519,6 @@ function toOxml( data, opts ) {
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
 					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
 						rt = minEscape( prpTitleOf(p) );
-					//	rt = minEscape( opts.lookup( prpTitleOf(p) ));
 						c3 = '';
 						propertyValueOf( p ).forEach( 
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
@@ -1041,17 +1019,14 @@ function toOxml( data, opts ) {
 									// If 'val' is an id, replace it by the corresponding value, otherwise don't change:
 									// Add 'double-angle quotation' in case of SubClass values.
 									if (val) ct += (v == 0 ? '' : ', ') + (st ? ('&#x00ab;' + val.value + '&#x00bb;') : val.value)
-								//	if( val ) ct += (v==0?'':', ')+(st?('&#x00ab;'+opts.lookup(val.value)+'&#x00bb;'):opts.lookup(val.value))
 									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
 								return [{p:{text:minEscape(ct)}}];
 							case opts.dataTypeString:
-							//	return parseText( opts.lookup(prp.value), opts );
 							case opts.dataTypeXhtml:
 //								console.debug('propertyValueOf - xhtml',prp.value);
 								// The value has been looked-up by the viewer before delivery:
 								return parseXhtml( prp.value, opts );
-							//	return parseXhtml( opts.lookup(prp.value), opts );
 						}
 					};
 					// for all other dataTypes or when there is no dataType:

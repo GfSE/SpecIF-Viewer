@@ -848,29 +848,24 @@ class CResourcesToShow {
 	}
 }
 class CFileWithContent implements IFileWithContent {
+	// @ts-ignore - presence of 'id' is checked by the schema on import
+	id: string;
 	// @ts-ignore - presence of 'title' is checked by the schema on import
 	title: string;
 	description?: SpecifMultiLanguageText;
-	private selPrj: CProject;
-	private cData: CCache; 
 	// @ts-ignore - presence of 'type' is checked by the schema on import
 	type: string;
 	blob?: Blob;
 	dataURL?: string;
-	// @ts-ignore - presence of 'id' is checked by the schema on import
-	id: string;
 	replaces?: string[];
 	revision?: string;
 	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
 	changedAt: string;
 	changedBy?: string;
 	constructor(f: IFileWithContent) {
-		this.selPrj = app.cache.selectedProject;
-		this.cData = this.selPrj.data; 
-
 		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
-    }
+	}
 	hasBlob(): boolean {
 		return !!this.blob && this.blob.size > 0;
 	}
@@ -1029,7 +1024,7 @@ class CFileWithContent implements IFileWithContent {
 				if (mL[2].startsWith('data:')) continue;
 				// avoid transformation of redundant images:
 				if (LIB.indexById(dataURLs, mL[2]) > -1) continue;
-				ef = itemBySimilarTitle(self.cData.files, mL[2]);
+				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
 				if (ef && ef.blob) {
 					pend++;
 //					console.debug('SVG embedded file',mL[2],ef,pend);
@@ -1120,8 +1115,9 @@ class CFileWithContent implements IFileWithContent {
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 						// @ts-ignore - nothing wrong with the type of 'this'
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
-							clsPrp = new CResourceToShow(itemBySimilarId(self.cData.resources, eId)),
-							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: self.selPrj.language }),
+							selPrj = app.cache.selectedProject,
+							clsPrp = new CResourceToShow(itemBySimilarId(selPrj.data.resources, eId)),
+							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
@@ -1153,7 +1149,7 @@ class CFileWithContent implements IFileWithContent {
 				// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 				if (CONFIG.selectCorrespondingDiagramFirst) {
 					// replace the id of a resource by the id of a diagram carrying the same title:
-					let cacheData = self.cData,
+					let cacheData = app.cache.selectedProject.data,
 						ti = cacheData.instanceTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
@@ -2376,7 +2372,7 @@ moduleManager.construct({
 					res = cacheData.get('resource', [nd.resource])[0] as SpecifResource;
 					// find the property defining the type:
 					// Remember whether at least one diagram has been found:
-					isNotADiagram = CONFIG.diagramClasses.indexOf(LIB.classTitleOf(res['class'], cacheData.resourceClasses)) < 0;
+					isNotADiagram = !CONFIG.diagramClasses.includes(LIB.classTitleOf(res['class'], cacheData.resourceClasses));
 					noDiagramFound = noDiagramFound && isNotADiagram;
 					// continue (return true) until a diagram is found *without* ShowsStatementsForEdges:
 					return (isNotADiagram

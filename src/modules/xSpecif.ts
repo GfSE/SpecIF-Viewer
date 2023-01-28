@@ -585,14 +585,12 @@ class CSpecIF implements SpecIF {
 					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 					// ToDo: Reconsider once we have a backend with multiple revisions ...
 					class: LIB.makeKey(iE[names.pClass].id || iE[names.pClass])
-					//	class: LIB.makeKey(iE[names.pClass])
 				},
 					dT = LIB.dataTypeOf(oE["class"], self);
-				//			console.debug('p2int', iE, dT);
+//					console.debug('p2int', iE, dT);
 
 				oE.values = makeValues(iE, dT);
 
-//				console.debug('propValue 2int',iE,pT,oE);
 				// In rare cases it may happen that a property list has just undefined values or empty strings;
 				// we just want properties with at least one valid value:
 				if (oE.values.length > 0)
@@ -648,7 +646,7 @@ class CSpecIF implements SpecIF {
 			function propertyMissing(L:string[],el: any): boolean {
 				if (Array.isArray(el.properties))
 					for (var p of el.properties) {
-						if (L.includes(LIB.propTitleOf(p['class'], self.propertyClasses)))
+						if (L.includes(LIB.classTitleOf(p['class'], self.propertyClasses)))
 							// SpecIF assumes that any title/description property *replaces* the resource's native property.
 							// There is no consideration of the content.
 							// It is expected that title/descriptions with multiple languages have been reduced, before.
@@ -813,7 +811,8 @@ class CSpecIF implements SpecIF {
 										}
 									);
 								case SpecifDataTypeEnum.DateTime:
-									return LIB.addTimezoneIfMissing(LIB.cleanValue(val));
+									return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
+								//	return LIB.addTimezoneIfMissing(addColonToTimezoneIfMissing(LIB.cleanValue(val)))
 								case SpecifDataTypeEnum.Boolean:
 									if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
 										return "true";
@@ -868,6 +867,7 @@ class CSpecIF implements SpecIF {
 					// break - all branches end with return;
 					case SpecifDataTypeEnum.DateTime:
 						return [LIB.addTimezoneIfMissing(LIB.cleanValue(prp.value))];
+					//	return [LIB.addTimezoneIfMissing(addColonToTimezoneIfMissing(LIB.cleanValue(prp.value)))];
 					case SpecifDataTypeEnum.Boolean:
 						if (CONFIG.valuesTrue.includes(LIB.cleanValue(prp.value)))
 							return ["true"];
@@ -884,6 +884,17 @@ class CSpecIF implements SpecIF {
 			}
 			else
 				throw Error("Invalid property with class " + prp[names.pClass] + ".");
+
+		/*	.. is already repaired in Archimate2Specif
+		 	function addColonToTimezoneIfMissing(tim: string): string {
+				// ADOIT (an Archimate-Tool) exports timezones without a colon:
+				return tim.replace(
+							/(\d\+|\d-)(\d\d)(\d\d)$/,
+							// @ts-ignore - 'match' is not used but must be specified anyways:
+							(match, $1, $2, $3) => {
+								return $1 + $2 + ':' + $3;
+						});
+            } */
 		}
 		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {
 			return (typeof (iE) == 'string' ?
@@ -1384,7 +1395,7 @@ class CSpecIF implements SpecIF {
 
 				function finalize() {
 					// ToDo: schema and consistency check (if we want to detect any programming errors)
-					console.debug('specif.toExt_v10 exit', spD);
+//					console.debug('specif.toExt_v10 exit', spD);
 					resolve(spD);
 				}
 

@@ -343,7 +343,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								// A single cell however, can have a more specific dataType.
 								// Malicious content will be removed upon import.
 //								console.debug( 'getVal', cell, dT );
-								if (cell && dT)
+								if (cell && cell.v && dT)
 									if (dT.enumeration) {
 										// Return the id of the enumerated value found in cell.v,
 										// where an enumerated value can only have a single language:
@@ -409,7 +409,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							pTi: string;
 						for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
 							cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
-							pTi = cell ? (cell.v as string).trim() : '';
+							pTi = cell&&cell.v ? (cell.v as string).trim() : '';
 							// skip the column, if it has no title (value in the first row):
 							if ( !pTi ) continue;
 
@@ -614,7 +614,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
 					// Check whether it is an enumerated dataType:
 					cell = ws.data[ cellName(c,ws.firstCell.row) ];
-					pTi = cell? (cell.v as string).trim() : '';
+					pTi = cell&&cell.v? (cell.v as string).trim() : '';
 					// Process only columns with title, skip the others:
 					if (pTi) {
 						// 1. A native property will be used, if possible, so no propertyClass is created:

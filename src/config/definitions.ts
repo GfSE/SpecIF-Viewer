@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.1.b",
+	CONFIG.appVersion = "1.1.c",
 	CONFIG.specifVersion = "1.1";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -376,7 +376,8 @@ const CONFIG:any = {};
 		CONFIG.resClassOutline,
 		CONFIG.resClassFolder
 	];
-	CONFIG.vocabularyClasses = [
+	CONFIG.ontologyClasses = [
+		"SpecIF:TermDataType",
 		"SpecIF:TermResourceClass",
 		"SpecIF:TermStatementClass",
 		"SpecIF:TermPropertyClass",
@@ -395,7 +396,7 @@ const CONFIG:any = {};
 		CONFIG.modelElementClasses
 		.concat(CONFIG.diagramClasses)
 		.concat(CONFIG.folderClasses)
-		.concat(CONFIG.vocabularyClasses);
+		.concat(CONFIG.ontologyClasses);
 
 	// A list of statement types by title,
 	// is used for example to recognize a statement to create when importing an xls sheet:
@@ -446,7 +447,7 @@ const CONFIG:any = {};
 		"SpecIF:inheritsFrom",
 		"SpecIF:refersTo",
 		"SpecIF:sameAs",
-		"SpecIF:accesses"
+		"SpecIF:accesses",
 		"Archimate:accesses"
 	];
 /*	// List of lists with equivalent resource types, e.g. in different notations or standards;

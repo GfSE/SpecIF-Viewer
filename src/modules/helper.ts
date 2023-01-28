@@ -667,19 +667,6 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
 	};
 	return [];
 }
-LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
-	// Has the class of res a title listed in pNs?
-	return pNs.includes(LIB.classTitleOf(r['class'], dta.resourceClasses));
-}
-LIB.hasType = (r: SpecifResource | SpecifStatement, pNs: string[], dta: SpecIF | CSpecIF | CCache, opts?: any): boolean => {
-	// Has the resource or statement a type property with a value listed in pNs? 
-	// It is assumed that a type property has no more than one value, so the first is taken if available. 
-	let pVs = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
-	if (pVs.length > 0) {
-		return pNs.includes(LIB.displayValueOf(pVs[0], Object.assign({ targetLanguage: 'default' }, opts)))
-	};
-	return false;
-}
 LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
 	// call indexByKey without revision to get the most recent revision:
 	return L[LIB.indexByKey(L, { id: k.id })];
@@ -1491,16 +1478,35 @@ LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCac
 }
 LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
 	// Pick up the native title of any item except resource and statement;
-	return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
+	if( item )
+		return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
+	// else: return undefined
 }
 LIB.classTitleOf = (eCkey: SpecifKey, cL?: SpecifClass[], opts?: any): string => {
-	// Return the resourceClass' resp. statementClass' title:
-	return LIB.titleOf(LIB.itemByKey(cL, eCkey), opts);
+	// Return the item's class title,
+	// where item can be a resource, a statement or a property:
+	let item = LIB.itemByKey(cL, eCkey);
+	return LIB.titleOf(item, opts);
 }
-LIB.propTitleOf = (pCkey: SpecifKey, cL: SpecifPropertyClass[]): string => {
+/*LIB.propTitleOf = (pCkey: SpecifKey, cL: SpecifPropertyClass[]): string => {
 	// get the title of a property as defined by it's class:
 	let pC = LIB.itemByKey(cL, pCkey);
 	return pC ? pC.title : undefined;
+}*/
+LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
+	// Has the class of res a title listed in pNs?
+	return pNs.includes(LIB.classTitleOf(r['class'], dta.resourceClasses));
+}
+LIB.hasType = (r: SpecifResource | SpecifStatement, pNs: string[], dta: SpecIF | CSpecIF | CCache, opts?: any): boolean => {
+	// Has the resource or statement a type property with a value listed in pNs? 
+	// It is assumed that a type property has no more than one value, so the first is taken if available. 
+	if (r) {
+		let pVs = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
+		if (pVs.length > 0) {
+			return pNs.includes(LIB.displayValueOf(pVs[0], Object.assign({ targetLanguage: 'default' }, opts)))
+		};
+	};
+	return false;
 }
 LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
 	// Find the index of the property to be used as title.
@@ -1511,7 +1517,7 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): 
 	if (Array.isArray(pL) && pL.length>0) {
 		if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
 		for (var a = 0, A = pL.length; a < A; a++) {
-			let pt = vocabulary.property.specif(LIB.propTitleOf(pL[a]['class'], pCs));
+			let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
 			// Check the configured headings and titles:
 			if (CONFIG.titleProperties.includes(pt)) return a;
 		};

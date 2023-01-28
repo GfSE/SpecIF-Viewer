@@ -238,7 +238,7 @@ function Archimate2Specif(xmlString, opts) {
 									// than any other property of that element (resource).
 									// Otherwise, upon import equivalent propertyClasses would be deduplicated and the resource res
 									// would have two property values with the same propertyClass, which is not permissible according
-									// to the schema.
+									// to the SpecIF schema.
 									// If it is necessary to keep all properties, set opts.propertyClassesShallHaveDifferentTitles to 'true'.
 									function isReferenced(cl, pL) {
 										for (var p of pL) if (cl.id == p['class']) return true;
@@ -256,10 +256,19 @@ function Archimate2Specif(xmlString, opts) {
 										addPropertyClassRefToResourceClassIfNotListed(res['class'], pCId);
 
 										// Add property to the resource res at hand:
-										res.properties.push({
-											class: pCId,
-											value: val
-										});
+										switch (nPC.dataType) {
+											case "DT-DateTime":
+												res.properties.push({
+													class: pCId,
+													value: makeISODate(val)
+												});
+												break;
+											default: 
+												res.properties.push({
+													class: pCId,
+													value: val
+												});
+                                        }
 									}
 								};
 						};
@@ -1386,11 +1395,12 @@ function Archimate2Specif(xmlString, opts) {
 		return ((!sC.subjectClasses || sC.subjectClasses.includes(subC))
 			&& (!sC.objectClasses || sC.objectClasses.includes(obC)));
 	}
-	function makeISODate(dt) {
+	function makeISODate(str) {
 		// repair faulty time-zone from ADOIT (add missing colon between hours and minutes):
-		return dt.replace(
-				/(.+\+\d{2})(\d{2})$/,
-				($0,$1,$2) => { return $1+':'+$2; }
-			)
+		return str.replace(
+			/(\d\+|\d-)(\d\d)(\d\d)$/,
+			(match, $1, $2, $3) => {
+				return $1 + $2 + ':' + $3;
+			});
 	}
 }
