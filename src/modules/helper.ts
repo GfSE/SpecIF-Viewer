@@ -643,7 +643,7 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
 	// Return the values of a resource's (or statement's) property with a title listed in pNs;
 	// replace references to enumerated values by the corresponding values:
 	// ToDo: return the class's default value, if available.
-	//	console.debug('valuesByTitle',dta,itm,pN);
+//	console.debug('valuesByTitle',dta,itm,pN);
 	if (itm.properties) {
 		let dT: SpecifDataType, pC:SpecifPropertyClass;
 		for (var p of itm.properties) {
@@ -652,20 +652,26 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
 				dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
 				if (dT) {
 					return dT.enumeration? 
-						p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value }) :
-						p.values
+						p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value })
+						: p.values
 				}
-				/*	if (dT.enumeration) {
-						return p.values.map((v) => { return LIB.itemById(dT.enumeration, v) })
-					}
-					else {
-						return p.values
-					}
-				}; */
 			};
 		};
 	};
 	return [];
+}
+LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] => {
+	// List the enumerated values of a dataType.
+	// - If a dataType is handed in, take it.
+	// - Otherwise look it up from the list of dataTypes.
+	// @ts-ignore - when dTk.type exists, it is assumed that dTk is a dataType
+	var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.cache.selectedProject.data.get('dataType', 'all')), dTk),
+		oL = [];
+	if (dT.enumeration)
+		for (var v of dT.enumeration) {
+			oL.push(LIB.languageValueOf(v.value, { targetLanguage: 'default' }));
+		};
+	return oL;
 }
 LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
 	// call indexByKey without revision to get the most recent revision:
@@ -1451,7 +1457,7 @@ LIB.createProp = (pC: SpecifPropertyClass | SpecifPropertyClass[], key?: SpecifK
 		//	permissions: pC.permissions||{cre:true,rea:true,upd:true,del:true}
 	};
 }
-LIB.propByTitle = (itm: SpecifResource, pN: string, dta: SpecIF | CSpecIF | CCache): SpecifProperty | undefined => {
+LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCache): SpecifProperty | undefined => {
 	// Return the property of itm with title pN.
 	// If it doesn't exist, create it,
 	// if there is no propertyClass with that title either, return undefined.
@@ -1482,11 +1488,11 @@ LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
 		return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
 	// else: return undefined
 }
-LIB.classTitleOf = (eCkey: SpecifKey, cL?: SpecifClass[], opts?: any): string => {
+LIB.classTitleOf = (iCkey: SpecifKey, cL?: SpecifClass[], opts?: any): string => {
 	// Return the item's class title,
 	// where item can be a resource, a statement or a property:
-	let item = LIB.itemByKey(cL, eCkey);
-	return LIB.titleOf(item, opts);
+	let iC = LIB.itemByKey(cL, iCkey);
+	return LIB.titleOf(iC, opts);
 }
 /*LIB.propTitleOf = (pCkey: SpecifKey, cL: SpecifPropertyClass[]): string => {
 	// get the title of a property as defined by it's class:

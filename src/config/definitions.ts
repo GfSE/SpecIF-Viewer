@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-	CONFIG.appVersion = "1.1.c",
+	CONFIG.appVersion = "1.1.d",
 	CONFIG.specifVersion = "1.1";
 	CONFIG.imgURL = './vendor/assets/images';
 	CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -149,9 +149,10 @@ const CONFIG:any = {};
 	CONFIG.propClassTitle = "dcterms:title";
 	CONFIG.propClassDesc = "dcterms:description";
 	CONFIG.propClassType = "dcterms:type";
+	CONFIG.propClassLifecycleStatus = 'SpecIF:LifecycleStatus';
+	CONFIG.propClassDomain = "SpecIF:Domain";
 	CONFIG.propClassDiagram = 
 	CONFIG.resClassDiagram = 'SpecIF:Diagram';
-//	CONFIG.propClassXlsCol = 'XLS:Property';
 	CONFIG.resClassXlsRow = 'XLS:Resource';
 	CONFIG.resClassUnreferencedResource = "SpecIF:UnreferencedResources";
 	CONFIG.resClassOutline = 'SpecIF:Outline';

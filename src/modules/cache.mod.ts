@@ -2016,8 +2016,7 @@ class CProject {
 			case 'epub':
 			case 'oxml':
 				pnl += makeCheckboxForm(
-					//	i18n.LblOptions,
-					i18n.modelElements,
+					i18n.LblOptions,
 					[
 						{ title: i18n.withStatements, id: 'withStatements', checked: false },
 						{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
@@ -2030,20 +2029,31 @@ class CProject {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextForm('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line' }))
-			+ makeTextForm('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line' });
+			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextForm('&#x200b;' + i18n.LblProjectName, [(fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName)], { typ: 'line' }))
+			+ makeTextForm('&#x200b;' + i18n.LblFileName, [(fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName)], { typ: 'line' });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
 				pnl += makeCheckboxForm(
-					//	i18n.LblOptions,
-					i18n.modelElements,
+					i18n.LblOptions,
 					[
 						{ title: i18n.withStatements, id: 'withStatements', checked: false },
 						{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
 						{ title: i18n.showEmptyProperties, id: 'showEmptyProperties', checked: CONFIG.showEmptyProperties }
 					]
 				);
+				break;
+			case 'specifClasses':
+				let domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain'));
+				if (domains.length>0)
+					pnl += makeCheckboxForm(
+						i18n.LblOptions,
+						domains.map(
+							(d: string) => {
+								return { title: d, id: d.jsIdOf(), checked: false }
+							}
+						)
+					);
 		};
 		pnl += '</div>';
 //		console.debug('renderExportOptions',fmt,pnl);
@@ -2116,8 +2126,8 @@ class CProject {
 				function hasOntology(): boolean {
 					let hL = self.data.get("hierarchy", self.hierarchies) as SpecifNode[];
 					for (var h of hL) {
-						let r = self.data.get("resource", [h.resource]) as SpecifResource[];
-						if (LIB.hasType(r, [CONFIG.resClassOntology], self.data))
+						let rL = self.data.get("resource", [h.resource]) as SpecifResource[];
+						if (rL.length>0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], self.data))
 							return true;
 					};
 					return false;
@@ -2152,7 +2162,7 @@ class CProject {
 							format: radioValue(i18n.LblFormat)
 						};
 						// further options according to the checkboxes:
-						checkboxValues(i18n.modelElements).forEach(
+						checkboxValues(i18n.LblOptions).forEach(
 							(op: string) => {
 								// @ts-ignore - indexing is valid: 
 								options[op] = true
@@ -2326,6 +2336,7 @@ class CProject {
 						opts.revisionDate = new Date().toISOString();
 						break;
 					case 'specifClasses':
+						break;
 					default:
 						reject();
 						return; // should never arrive here
@@ -2385,6 +2396,12 @@ class CProject {
 								fName += ".specif";
 								zName = fName + '.zip';
 								expStr = JSON.stringify(expD);
+								break;
+							case 'specifClasses':
+								fName += ".specif";
+								zName = fName + '.zip';
+								expStr = JSON.stringify(app.generateSpecifClasses(expD,opts));
+								console.debug('expStr', expStr);
 								break;
 							case 'reqif':
 								fName += ".reqif";

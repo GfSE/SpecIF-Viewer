@@ -890,8 +890,10 @@ function toOxml( data, opts ) {
 							// Limitation: Any text will be ignored, if an object is found ...
 						else	
 							run = {text: lnk.innerHTML};
-							
-						run.format = {hyperlink:{ external: getXhtmlPrp( 'href', lnk.properties ).replace('\\','/') }};
+
+						let l = getXhtmlPrp('href', lnk.properties);
+						if (l)
+							run.format = {hyperlink:{ external: l.replace('\\','/') }};
 
 //						console.debug('parseA',run);
 						return run

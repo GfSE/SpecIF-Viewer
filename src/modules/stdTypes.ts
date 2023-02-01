@@ -10,15 +10,15 @@
 class StandardTypes {
 	dataTypes:SpecifDataType[] = [{
 		id: "DT-ShortString",
-		title: "String [" + CONFIG.textThreshold + "]" ,
-		description: [{ text: "String with length " + CONFIG.textThreshold }],
+		title: "Short string" ,
+		description: [{ text: "Unformatted character string with length " + CONFIG.textThreshold + '.'}],
 		type: SpecifDataTypeEnum.String,
 		maxLength: CONFIG.textThreshold,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{
 		id: "DT-Text",
 		title: "Plain or formatted Text",
-		description: [{ text: "A text string, plain, or formatted with XHTML or markdown" }],
+		description: [{ text: "A text string, plain, or formatted by means of XHTML or markdown with 'infinite' length." }],
 		type: SpecifDataTypeEnum.String,
 		changedAt: "2021-02-14T08:59:00+02:00"
 	},{ 

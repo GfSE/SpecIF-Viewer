@@ -52,10 +52,10 @@ class CPropertyToShow implements SpecifProperty {
 		//	this.enumIdL = simpleClone(prp.values);  // keep original values for resourceEdit
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
-			this.values = this.lookupEnumeratedValues();
+			this.values = this.listEnumeratedValues();
 		};
 	}
-	private lookupEnumeratedValues() {
+	private listEnumeratedValues() {
 		// replace identifiers of enumerated values by their value as defined in the dataType:
 		var oL: SpecifValues = [];
 		for( var v of this.values ) {
