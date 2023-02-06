@@ -2045,7 +2045,7 @@ moduleManager.construct({
 				.then(
 					// If a diagram has been deleted, build a new glossary with elements 
 					// which are shown by any of the remaining diagrams:
-					self.parent.reworkTree(),
+					self.parent.reworkTree,
 					LIB.stdError
 				);
 		}
@@ -2590,7 +2590,7 @@ moduleManager.construct({
 			// but delete only a statement which is stored in the server, i.e. if it is cached:
 			selPrj.deleteItems('statement', [LIB.makeKey(sId)] )
 			.then(
-				self.parent.doRefresh({forced:true}),
+				() => { self.parent.doRefresh({ forced: true }) },
 				LIB.stdError
 			);
 		}

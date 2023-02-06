@@ -333,20 +333,29 @@ class CCheckDialogInput {
 
 class xhrMessage {
 	status: number;
-	statusText?: string;
+	statusText: string;
 	responseType?: string;
 	responseText?: string;
-	constructor(st: number, sTxt?: string, rTyp?: string, rTxt?: string) {
+	constructor(st: number, sTxt: string, rTyp?: string, rTxt?: string) {
 		this.status = st;
 		this.statusText = sTxt;
 		this.responseType = rTyp;
 		this.responseText = rTxt;
 	}
+	asString():string {
+		return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + this.responseText : ")")
+    }
+	log(): void {
+		console.log(this.asString());
+    }
+	warn(): void {
+		console.warn(this.asString());
+	}
 }
-// standard error handler:
-LIB.logMsg = (xhr: xhrMessage): void =>{
+/*LIB.logMsg = (xhr: xhrMessage): void =>{
 	console.log(xhr.statusText + " (" + xhr.status + (xhr.responseType == 'text' ? "): " + xhr.responseText : ")"));
-}
+}*/
+// standard error handler:
 LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 //	console.debug('stdError',xhr);
 	// clone, as xhr.responseText ist read-only:
@@ -356,7 +365,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 		case 0:
 		case 200:
 		case 201:
-			return; // some server calls end up in the fail trail, even though all went well.
+			return;
 		case 401:  // unauthorized
 			app.me.logout();
 			break;
@@ -393,8 +402,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 		default:
 			message.show( xhr );
 	};
-	// log original values:
-	LIB.logMsg(xhr);
+	xhrCl.log();
 	if( typeof(cb)=='function' ) cb();
 };
 // standard message box:
@@ -443,7 +451,7 @@ LIB.stdError = (xhr: xhrMessage, cb?:Function): void =>{
 					msg = (msg.statusText || i18n.Error)
 						+ " (" + msg.status
 						+ ( msg.responseText ? "): " + msg.responseText : ")");
-					break;
+					break;  // the switch, not the if ;-)
 				};
 			default:
 				console.error(msg, ' is an invalid message.');

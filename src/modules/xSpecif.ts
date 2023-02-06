@@ -348,8 +348,8 @@ class CSpecIF implements SpecIF {
 			);
 		}
 		catch (e) {
-			let txt = "Error when importing the project '" + spD.title + "'";
-			console.log(txt);
+			let txt = "Error when importing the project '" + LIB.displayValueOf(spD.title, {targetLanguage:spD.language||browser.language}) + "'.";
+			console.warn(txt);
 			message.show({ status: 999, statusText: txt }, { severity: 'danger' });
 			return; // undefined 
 		};
@@ -541,7 +541,7 @@ class CSpecIF implements SpecIF {
 				let pC;
 				for (var a = oE.propertyClasses.length - 1; a > -1; a--) {
 					pC = LIB.itemByKey(self.propertyClasses, oE.propertyClasses[a]);
-					if (CONFIG.headingProperties.includes(pC.title)) {
+					if (pC && CONFIG.headingProperties.includes(pC.title)) {
 						oE.isHeading = true;
 						break;
 					};

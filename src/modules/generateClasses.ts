@@ -14,9 +14,32 @@
 
 app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
     console.debug('generateSpecifClasses', pr, opts);
-    let localOpts = Object.assign({ SpecIF_LifecycleStatusReleased: true},opts);
+    let localOpts = Object.assign({ SpecIF_LifecycleStatusReleased: true }, opts),
+        primitiveDataTypes = new Map([
+            ["RC-DataTypeString", SpecifDataTypeEnum.String],
+            ["RC-DataTypeBoolean", SpecifDataTypeEnum.Boolean],
+            ["RC-DataTypeInteger", SpecifDataTypeEnum.Integer],
+            ["RC-DataTypeReal", SpecifDataTypeEnum.Double],
+            ["RC-DataTypeTimestamp", SpecifDataTypeEnum.DateTime],
+            ["RC-DataTypeDuration", SpecifDataTypeEnum.Duration],
+            ["RC-DataTypeAnyURI", SpecifDataTypeEnum.AnyUri],
+        ]),
+        dTDomains = LIB.itemById(pr.dataTypes, "DT-Domain"),
+        allDomains = dTDomains.enumeration.map(
+            (v: SpecifEnumeratedValue) => LIB.languageValueOf(v.value, { targetLanguage: "default" })
+        ),
+        selDomains = allDomains.filter((d: string) => { return opts[d.jsIdOf()] } ),
+        prTi = "P-SpecifClasses";
+
+    if (selDomains.length < 1)
+        message.show("No domain selected, so no classes will be generated.", { severity: 'warning'});
+
+    // add the domains to the project title:
+    selDomains.forEach((d: string) => { prTi += '-' + d.jsIdOf()});
+
+    console.debug('#', dTDomains, allDomains, selDomains, prTi);
     return {
-        "id": "P-SpecifClasses",
+        "id": prTi,
         "$schema": "https://specif.de/v1.1/schema.json",
         "title": [
             {
@@ -25,7 +48,7 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
         ],
         "description": [
             {
-                "text": "A set of SpecIF Classes derived from a SpecIF Ontology."
+                "text": "A set of SpecIF Classes derived from a SpecIF Ontology for the domains ..."
             }
         ],
         "generator": app.title,
@@ -35,17 +58,17 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
             "title": "Creative Commons 4.0 CC BY-SA",
             "url": "https://creativecommons.org/licenses/by-sa/4.0/"
         },
-        "dataTypes": makeClasses("F-DataTypes", "RC-DataType", createDT) as SpecifDataType[],
-        "propertyClasses": makeClasses("F-TermsPropertyClass", "RC-TermPropertyClass", createPC) as SpecifPropertyClass[],
-        "resourceClasses": makeClasses("F-TermsResourceClass", "RC-TermResourceClass", createRC) as SpecifResourceClass[],
-        "statementClasses": [],
+        "dataTypes": makeClasses("F-DataTypes", Array.from(primitiveDataTypes.keys()), createDT) as SpecifDataType[],
+        "propertyClasses": makeClasses("F-TermsPropertyClass", ["RC-TermPropertyClass"], createPC) as SpecifPropertyClass[],
+        "resourceClasses": makeClasses("F-TermsResourceClass", ["RC-TermResourceClass"], createRC) as SpecifResourceClass[],
+        "statementClasses": makeClasses("F-TermsStatementClass", ["RC-TermStatementClass"], createSC) as SpecifStatementClass[],
         "resources": [],
         "statements": [],
         "files": [],
         "hierarchies": []
     };
 
-    function makeClasses(folderId:string, rCId:string, createFn:Function) {
+    function makeClasses(folderId:string, rCIdL:string[], createFn:Function) {
         // Take the resources listed in the hierarchy only ... and in that sequence:
 
         // 1. Find the folder with ResourceClass terms:
@@ -59,7 +82,7 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
                 )
                 .filter(
                     // 3. Keep only those with selected domain abd lifecycleStatus:
-                    r => keepSelected(r, rCId)
+                    r => keepSelected(r, rCIdL)
                 );
             // 4. Create a class per term:
             rCL = LIB.forAll(rCL, createFn);
@@ -67,8 +90,8 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
         return rCL as SpecifItem[];
     }
     function belongsToSelectedDomain(el: SpecifItem):boolean {
-        let selDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain],pr);
-        for (var d of selDomains) {
+        let myDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain],pr);
+        for (var d of myDomains) {
             if (opts[LIB.displayValueOf(d, { targetLanguage: 'default' }).jsIdOf()])
                 return true;
         };
@@ -101,36 +124,52 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
         ))
         return idL;
     }
-    function keepSelected(r: SpecifResource, cId: string): boolean {
+    function keepSelected(r: SpecifResource, cIdL: string[]): boolean {
         // True, if specified per domain abd lifecycleStatus ..
         // or if it is referenced by another class:
-        return r['class'].id == cId  // even though it always should be the case
+        return cIdL.includes(r['class'].id)  // even though it always should be the case
             && (hasSelectedStatus(r, localOpts) && belongsToSelectedDomain(r)
                 || isRequired(r));
     }
+    function getStatementsOfClass(r:SpecifResource, clTi:string) {
+        // Find the statements of the class with title clTi referencing the given term:
+        return pr.statements.filter(
+            (st: SpecifStatement) => {
+                return LIB.classTitleOf(st['class'], pr.statementClasses) == clTi
+                    && st.subject.id == r.id;
+            }
+        ) as SpecifStatement[];
+    }
     function createDT(r: SpecifResource) {
-        let ty = LIB.valuesByTitle(r, ["SpecIF:DataType"], pr);
-//      console.debug('createDT',r,ty);
-        if (ty.length < 1 || !LIB.isMultiLanguageText(ty[0]) ) {
-            console.warn("Skipped the dataType with id " + r.id + ", because it has no dataType property.");
-            return;
-        }
+        // Find the "hasDataType" statement for the given propertyClass term:
+        let stL = getStatementsOfClass(r, "SpecIF:hasEnumValue"),
+            oL = stL.map(
+                (st: SpecifStatement) => {
+                    return LIB.itemById(pr.resources,st.object.id)
+                }
+            ),
+            enumL = oL.map(
+                (o:SpecifResource, idx:number) => {
+                    let eV = LIB.valuesByTitle(o, [CONFIG.propClassTitle], pr)[0];
+                    return {
+                        id: r.id + '-' + idx.toString(),
+                        value: eV
+                    }
+                }
+            );
+//      console.debug('createDT',r,stL,oL,enumL);
         return Object.assign(
-            createItem(r),
+            createItem(r, 'DT-'),
             {
-                // add the references per propertyClass:
-                type: ty[0][0].text  // first value, first language
+                // add the primitive dataType:
+                type: primitiveDataTypes.get(r["class"].id),
+                enumeration: enumL.length>0? enumL : undefined
             }
         ) as SpecifDataType;
     }
     function createPC(r: SpecifResource) {
         // Find the "hasDataType" statement for the given propertyClass term:
-        let stL = pr.statements.filter(
-            (st: SpecifStatement) => {
-                return LIB.classTitleOf(st['class'], pr.statementClasses) == "SpecIF:hasDataType"
-                    && st.subject.id == r.id;
-            }
-        ) as SpecifStatement[];
+        let stL = getStatementsOfClass(r, "SpecIF:hasDataType");
         if (stL.length < 1) {
             console.warn("Skipped the propertyClass with id "+r.id+", because it has no data type relation.");
             return;
@@ -139,7 +178,7 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
             console.warn("The propertyClass with id " + r.id + "has more than one data type relation.");
 
         return Object.assign(
-            createItem(r),
+            createItem(r, 'PC-'),
             {
                 // add the reference to the dataType:
                 dataType: stL[0].object
@@ -148,16 +187,28 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
     }
     function createRC(r: SpecifResource) {
         return Object.assign(
-            createItem(r),
+            createItem(r, 'RC-'),
             {
                 // add the references per propertyClass:
                 propertyClasses: [{ id: "PC-1" }]
             }
         ) as SpecifResourceClass;
     }
-    function createItem(r:SpecifResource) {
-        // We take the resource's title as title 
-        // and the title without namespace as distinctive portion of the id.
+    function createSC(r: SpecifResource) {
+//      console.debug('createSC',r);
+        return Object.assign(
+            createItem(r,'SC-'),
+            {
+                // add the references per propertyClass:
+                propertyClasses: [{ id: "PC-1" }]
+                // add the eligible subjectClasses and objectClasses:
+            }
+        ) as SpecifDataType;
+    }
+    function createItem(r:SpecifResource,prefix:string) {
+        // Create the attributes common to all classes;
+        // - take the resource's title as title
+        // - and the title without namespace as distinctive portion of the id.
         // ToDo: There is a potential problem - in case of equal terms with different namespace we end up with a duplicate id.
         let ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),
             ti2 = ti.split(':').pop(),  // remove namespace
@@ -165,7 +216,7 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
         if (dscL.length > 1)
             console.info("Only the fist value of the description property will be used for the class generated from " + r.id + " with title " + ti + ".");
         return {
-            id: 'RC-' + (ti2 || r.id).jsIdOf(),
+            id: prefix + (ti2 || r.id).jsIdOf(),
             revision: opts.rev,
             title: ti,
             description: (dscL.length > 0 ? dscL[0] : undefined), // only the first property value is taken for the class description

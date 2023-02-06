@@ -1167,6 +1167,7 @@ class CProject {
 		// Create an empty form (resource instance) for the resource class rC:
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
 		// and https://javascript.info/promise-chaining
+		// ToDo: So far, only one level of inheritance is supported!
 		return new Promise(
 			(resolve, reject) => {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
@@ -2584,7 +2585,7 @@ class CProject {
 				case SpecifDataTypeEnum.Double:
 					// to be compatible, the new 'fractionDigits' must be lower or equal:
 					if (refC.fractionDigits < newC.fractionDigits) {
-						LIB.logMsg({ status: 952, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
+						new xhrMessage(952, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;
 					};
 				// else: go on ...
@@ -2592,14 +2593,14 @@ class CProject {
 					// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 //					console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
 					if (refC.maxInclusive < newC.maxInclusive || refC.minInclusive > newC.minInclusive) {
-						LIB.logMsg({ status: 953, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
+						new xhrMessage(953, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;
 					};
 					break;
 				case SpecifDataTypeEnum.String:
 //					console.debug( refC.maxLength>newC.maxLength-1 );
 					if (refC.maxLength && (newC.maxLength == undefined || refC.maxLength < newC.maxLength)) {
-						LIB.logMsg({ status: 951, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
+						new xhrMessage(951, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;;
 					};
 					break;
@@ -2628,14 +2629,14 @@ class CProject {
 				idx = LIB.indexById(refC.enumeration, newC.enumeration[v].id);
 				// a. The id of the new 'enumeration' must be present in the present one:
 				if (idx < 0) {
-					LIB.logMsg({ status: 954, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
+					new xhrMessage( 954, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();
 					return false;
 				};
 			/*	//  b. the values must be equal; distinguish between data types:
 			 	// - SpecifDataTypeEnum.String: multiLanguage text (ToDo:  needs rework!)
 				// - all others: string
 				if (refC.enumeration[idx].value != newC.enumeration[v].value) { 
-					LIB.logMsg({ status: 955, statusText: "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" });
+					new xhrMessage( 955, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();
 					return false;
 				}; */
 			};
@@ -2646,7 +2647,7 @@ class CProject {
 		if (this.equalPC(refC, newC))
 			return true;
 		// else:
-		LIB.logMsg({ status: 956, statusText: "new propertyClass '" + newC.id + "' is incompatible" });
+		new xhrMessage(956, "new propertyClass '" + newC.id + "' is incompatible" ).log();
 		return false;
 
 	/*	// A resourceClass or statementClass is incompatible, if it has an equally-named property class with a different dataType
@@ -2738,30 +2739,30 @@ class CProject {
 		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
-		LIB.logMsg({ status: 963, statusText: "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
+		new xhrMessage( 963, "new resourceClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
 		return false;
 	}
 	private compatibleSC(refC: SpecifStatementClass, newC: SpecifStatementClass, opts?:any): boolean {
 		if (refC.title != newC.title) {
-			LIB.logMsg({ status: 961, statusText: "new statementClass '" + newC.id + "' is incompatible; titles don't match" });
+			new xhrMessage( 961, "new statementClass '" + newC.id + "' is incompatible; titles don't match" ).log();
 			return false;
         }
 		// To be compatible, all subjectClasses of newC must be contained in the subjectClasses of refC;
 		// no subjectClasses means that all resourceClasses are permissible as subject.
 		if (!this.compatibleECReferences(refC.subjectClasses, newC.subjectClasses) ) {
-			LIB.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" });
+			new xhrMessage( 962, "new statementClass '" + newC.id + "' is incompatible; subjectClasses don't match" ).log();
 			return false;
 		};
 		// ... and similarly for the objectClasses:
 		if (!this.compatibleECReferences(refC.objectClasses, newC.objectClasses)) {
-			LIB.logMsg({ status: 962, statusText: "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" });
+			new xhrMessage( 962, "new statementClass '" + newC.id + "' is incompatible; objectClasses don't match" ).log();
 			return false;
 		};
 		// else: so far everything is OK, but go on checking ... (no break!)
 		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
-		LIB.logMsg({ status: 963, statusText: "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" });
+		new xhrMessage( 963, "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
 		return false;
 	}
 	// Substritutions:

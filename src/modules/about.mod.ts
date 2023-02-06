@@ -51,7 +51,7 @@ moduleManager.construct({
 		+	'</p>'
 		+	'<p>Version: '+CONFIG.appVersion+' supporting SpecIF up to version '+CONFIG.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
-		+	'<h4>Features</h4>'
+		+	'<h3>Features</h3>'
 		+		'<ul>'
 		+		  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
 		+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
@@ -76,7 +76,7 @@ moduleManager.construct({
 		+ (isEditor && moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
 		+ (isEditor && moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
 		+		'</ul>'
-		+	'<h4>Compatibility</h4>'
+		+	'<h3>Compatibility</h3>'
 		+		'<ul>'
 		+		  "<li>Mozilla Firefox</li>"
 		+		  "<li>Google Chromium and Chrome</li>"
@@ -87,7 +87,7 @@ moduleManager.construct({
 		+		'</ul>'
 		+	'</div>'
 		+	'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
-		+	'<h4>Support</h4>'
+		+	'<h3>Support</h3>'
 		+	'<p>'
 		+		'In case you discover a conceptual inconsistency, a software bug or a flaw in documentation,'
 		+		' we appreciate if you open an <a href="https://github.com/GfSE/SpecIF-Viewer/issues" target="_blank">issue</a>'
@@ -95,7 +95,7 @@ moduleManager.construct({
 		+		' <a href="mailto:maintenance@specif.de">maintenance(at)specif.de</a>.'
 		+		' We are highly interested to supply high-quality concepts and useful software.'
 		+	'</p>'
-		+	'<h4>Credits and License Information</h4>'
+		+	'<h3>Credits and License Information</h3>'
 		+	'<p>The SpecIF web-apps have been built with the open source components listed below. These are fine pieces of software'
 		+		' and we gratefully thank the contributors for their effort.'
 	/*	+		' Our policy is to donate 12% of our revenues made with'
