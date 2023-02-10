@@ -975,34 +975,63 @@ class CProject {
 
 				// delay the answer a little, so that the caller can properly process a batch:
 				setTimeout(() => {
-					let items = this.data.get(
-						ctg,
-						(itemL == "all" ?
-							//	(itemL == "all" && ['dataType','propertyClass','resourceClass','statementClass','hierarchy'].includes(ctg) ?
-							this[standardTypes.listName.get(ctg)]  // only those remembered by the project
-							: itemL)
-					);
-					// Normalize the properties if desired:
-					if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
-						items.forEach((itm: any) => {
-							// classes are alwways cached, so we can use this.data:
-							itm.properties = normalizeProperties(itm, this.data)
-						})
+					let items: SpecifItem[] = [],
+						toGet: SpecifKey[] = itemL == "all" ?
+									// @ts-ignore- index type is ok
+									this[standardTypes.listName.get(ctg)]  // only those remembered by the project
+									: itemL;
+
+					if (opts.withExtendedClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
+						// Special case: Item can have an extended class and it is requested:
+						items = getClassesWithParents(ctg, toGet, this.data);
+					}
+					else {
+						// Normal case: Item can't have an extended class or is requested without:
+						items = this.data.get(
+							ctg,
+							toGet
+						);
+						// Normalize the properties if desired:
+						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
+							items.forEach((itm: any) => {
+								// classes are alwways cached, so we can use this.data:
+								itm.properties = normalizeProperties(itm, this.data)
+							})
+						}
 					};
-//					console.debug('readItems',opts,items)
+
+//					console.debug('readItems',opts,items);
 					resolve(items);
 				}, opts.timelag);
 				//	};
 			}
 		);
 
+		function getClassesWithParents(ctg: string, toGet: SpecifKey[], dta: CCache) {
+			// Applies to resourceClasses and statementClasses.
+			let resL: SpecifItem[] = [];
+			do {
+				let rL = dta.get(ctg, toGet);
+				toGet = [];
+				for (var c of rL) {
+					// @ts-ignore - checking for extends, because it doesn't exist on all elements
+					if (c.extends) {
+						// The propoerties of the extending (parent's) class first:
+						// @ts-ignore - checking for extends, because it doesn't exist on all elements
+						toGet.unshift(c.extends);
+					};
+				};
+				resL = rL.concat(resL);
+			} while (toGet.length > 0);
+			return resL;
+        }
 		function normalizeProperties(el: SpecifInstance, dta: CCache): SpecifProperty[] {
 			// el: original instance (resource or statement)
 			// Create a list of properties in the sequence of propertyClasses of the respective class.
 			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
 			// Property classes must be unique!
 
-			// check uniqueness of property classes:
+			// Check uniqueness of property classes:
 			if (el.properties) {
 				let idL: string[] = [],
 					pCid: string;
@@ -1015,31 +1044,32 @@ class CProject {
 				});
 			};
 
-			let pCkL: SpecifKeys, // keys of propertyClasses
-				pC: SpecifPropertyClass,
-				p: SpecifProperty,
+			let pCkL: SpecifKeys[] = [], // keys of propertyClasses
+				pCL: SpecifPropertyClass[],
 				nL: SpecifProperty[] = [],  // normalized property list
 				// iCs: instance class list (resourceClasses or statementClasses),
 				// the existence of subject (or object) let's us recognize that it is a statement:
 				// @ts-ignore - existance of subject signifies whether it is a resource or statement
-				iCs = el.subject ? dta.statementClasses : dta.resourceClasses,
-				iC = LIB.itemByKey(iCs, el['class']);
+				ctg = (el.subject ? "statementClass" : "resourceClass"),
+				iCs = getClassesWithParents(ctg, [el["class"]], dta);
 
-			// from the instance class including the extended class, build the list of propertyClass keys:
-			pCkL = iC['extends'] ? LIB.itemByKey(iCs, iC['extends']).propertyClasses : [];
-			pCkL = pCkL.concat(iC.propertyClasses);
+			// From the instance class including the extended class, build the list of propertyClass keys:
+			for (var iC of iCs)
+				pCkL = pCkL.concat(iC.propertyClasses);
 
-			// add the properties in sequence of the propertyClass keys as specified by the instance class:
-			pCkL.forEach((pCk: SpecifKey): void => {
+			// The full propertyClasses referenced by pCk;
+			// pC may and pCk may not have a revision:
+			pCL = dta.get("propertyClass", pCkL);
+			// assuming that the property classes are unique:
+
+			// Add the properties in sequence of the propertyClass keys as specified by the instance class:
+			pCL.forEach((pC: SpecifPropertyClass): void => {
 				// skip hidden properties:
-				if (CONFIG.hiddenProperties.includes(pCk.id)) return;
-				// the full propertyClass referenced by pCk;
-				// pC may, but pCk may not have a revision:
-				pC = LIB.itemByKey(dta.propertyClasses, pCk);
-				// assuming that the property classes are unique:
-				p = theListItemReferencingByClass(el.properties, pC);
+				if (CONFIG.hiddenProperties.includes(pC.title)) return;
+
+				let p = theListItemReferencingByClass(el.properties, pC);
 				// take the original property if it exists or create an empty one, otherwise:
-				nL.push(p || { class: pCk, values: [] })
+				nL.push(p || { class: LIB.makeKey(pC.id), values: [] })
 			});
 			//			console.debug('normalizeProps result',simpleClone(nL));
 			return nL; // normalized property list
@@ -1049,7 +1079,7 @@ class CProject {
 					// Return the item in list 'L' whose class references pC:
 					for (var l of L)
 						if (LIB.references(l['class'], cl)) return l; // return list item
-				};
+				}
 			}
 		}
 	}
@@ -1075,9 +1105,9 @@ class CProject {
 						itmL.forEach(updateCh)
 						this.data.put(ctg, itmL)
 				};
-				resolve();
+				resolve()
 			}
-		);
+		)
 	}
 	deleteItems(ctg: string, itmL: SpecifKey[]): Promise<void> {
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
@@ -1159,40 +1189,40 @@ class CProject {
 						reject({ status: 999, statusText: 'One or more items of ' + ctg + ' not found and thus not deleted.' });
 						return;
 				};
-				resolve();
+				resolve()
 			}
-		);
+		)
 	};
 	makeEmptyResource(rC: SpecifResourceClass): Promise<SpecifResource> {
 		// Create an empty form (resource instance) for the resource class rC:
 		// see https://codeburst.io/a-simple-guide-to-es6-promises-d71bacd2e13a
 		// and https://javascript.info/promise-chaining
-		// ToDo: So far, only one level of inheritance is supported!
 		return new Promise(
 			(resolve, reject) => {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
 				var res: SpecifResource,
 					resC: SpecifResourceClass;
 
-				this.readItems('resourceClass', [LIB.keyOf(rC)], { reload: true })
+				this.readItems('resourceClass', [LIB.keyOf(rC)], { withExtendedClasses: true, reload: true })
 					.then(
 						(rCL: SpecifItem[]) => {
+//							console.debug('makeEmptyResource resourceClasses', rCL);
 							// return an empty resource instance of the given type:
 							resC = rCL[0] as SpecifResourceClass;
 							res = {
 								id: LIB.genID('R-'),
 								class: LIB.makeKey(resC.id),
-							//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
+								//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
 								properties: [],
 								changedAt: new Date().toISOString()
 							};
-							return this.readItems('resourceClass', (resC['extends'] ? [resC['extends']] : []), { reload: true })
-						}
-					)
-					.then(
-						(rCL: SpecifItem[]) => {
-							// rCL is empty, if there is no extended resourceClass
-							return this.readItems('propertyClass', (rCL.length > 0 ? (rCL[0] as SpecifResourceClass).propertyClasses.concat(resC.propertyClasses) : resC.propertyClasses), { reload: true })
+							let pCL = [];
+							for (var rC of rCL)
+								if (Array.isArray((rC as SpecifResourceClass).propertyClasses))
+									for (var pC of (rC as SpecifResourceClass).propertyClasses)
+										pCL.push(pC);
+//							console.debug('makeEmptyResource propertyClasses', pCL);
+							return this.readItems('propertyClass', pCL, { reload: true })
 						}
 					)
 					.then(
@@ -1261,7 +1291,7 @@ class CProject {
 					return false
 				//	return visibleIdOf(r) == vId
 				}
-			) as SpecifResource[];
+			) as SpecifResource[]
 
 		/*	function visibleIdOf(r: SpecifResource): string | undefined {
 				if (r && r.properties) {
@@ -1305,10 +1335,10 @@ class CProject {
 						// ... and remove the duplicate item:
 						this.deleteItems(ty.category,[LIB.keyOf(lst[n])]);
 						// skip the remaining iterations of the inner loop:
-						break;
-					};
-				};
-			};
+						break
+					}
+				}
+			}
 		});
 //		console.debug( 'deduplicate 1', simpleClone(dta) );
 
@@ -1333,9 +1363,9 @@ class CProject {
 					console.info("Resource with id=" + lst[n].id + " and class=" + (lst[n] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
 					this.deleteItems('resource', [LIB.keyOf(lst[n])]);
 					// skip the remaining iterations of the inner loop:
-					break;
-				};
-			};
+					break
+				}
+			}
 		};
 //		console.debug( 'deduplicate 2', simpleClone(dta) );
 
@@ -1351,9 +1381,9 @@ class CProject {
 					console.info("Statement with id=" + lst[n].id + " and class=" + (lst[n] as SpecifStatement)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
 					this.deleteItems('statement', [LIB.keyOf(lst[n])]);
 					// skip the remaining iterations of the inner loop:
-					break;
-				};
-			};
+					break
+				}
+			}
 		};
 //		console.debug( 'deduplicate 3', simpleClone(dta) );
 	//	return undefined
@@ -1472,11 +1502,11 @@ class CProject {
 											.fail(reject);
 									}
 									else {
-										resolve();
-									};
+										resolve()
+									}
 								},
 								reject
-							);
+							)
 					}
 				);
 				return;
@@ -1493,7 +1523,7 @@ class CProject {
 							values: [LIB.makeMultiLanguageText(ty||ti)]
 						}],
 						changedAt: tim
-					}];
+					}]
 				}
 				function NodeList(r2c:any,creL:any[]): INodeWithPosition[] {
 					// Add the folder:
@@ -1504,7 +1534,7 @@ class CProject {
 						nodes: LIB.forAll(creL, (pr: any) => { return pr.n; }),
 						changedAt: tim
 					};
-					return [gl];
+					return [gl]
 				}
 			}
 		)

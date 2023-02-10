@@ -541,7 +541,7 @@ class CResourceToShow {
 		this.descriptions = [];
 
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToShow(pr) });
+		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p) });
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
@@ -572,7 +572,7 @@ class CResourceToShow {
 			if (CONFIG.descProperties.includes(this.other[a].title)) {
 				// To keep the original order of the properties, the unshift() method is used.
 				this.descriptions.unshift(this.other.splice(a, 1)[0]);
-			};
+			}
 		};
 
 	/*	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
@@ -1186,8 +1186,8 @@ class CFileWithContent implements IFileWithContent {
 							h = el.getAttribute('height').replace(/px$/, '');
 						el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
 						return;
-					};
-				};
+					}
+				}
 			}
 		}
 	}
@@ -1206,7 +1206,7 @@ class CFileWithContent implements IFileWithContent {
 						console.error('BPMN-Viewer could not deliver SVG', err);
 					}
 				);
-		}, opts.timelag);
+		}, opts.timelag)
 	}
 }
 
@@ -1558,8 +1558,8 @@ moduleManager.construct({
 				// Warn, if there are no resource classes for user instantiation:
 				message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
 				return;
-			};
-		};
+			}
+		}
 	};
 
 	// Multiple refresh requests in a short time are consolidated to a single refresh at the end.

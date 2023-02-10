@@ -548,7 +548,7 @@ class CSpecIF implements SpecIF {
 				};
 			};
 //			console.debug('resourceClass 2int',iE,oE);
-			if (oE.propertyClasses.length >0 )
+			if (oE.propertyClasses.length <0 )
 				console.warn('The resourceClass with id="' + iE.id + '" does not specify any propertyClasses.');
 			return oE;
 		}

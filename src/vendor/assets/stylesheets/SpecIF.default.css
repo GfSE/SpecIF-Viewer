@@ -49,28 +49,28 @@ body {
 }
 .pageTitle {
 	font-size: 180%;
-	margin: 0 0 0.2em;
+	margin: 0 0 0.3em;  /* the enveloping pageHeader has a padding of 0.3em at the top */
 }
 .chapterTitle,
 h1 {
 	font-size: 160%;
-	margin: 0.6em 0 0.2em;
+	margin: 0.9em 0 0.3em;
 }
 .objectTitle,
 h2 {
 	font-size: 140%;
-	margin: 0.4em 0 0.2em;
+	margin: 0.6em 0 0.3em;
 }
 h3 {
 	font-size: 120%;
-	margin: 0.2em 0 0.2em;
+	margin: 0.3em 0 0.3em;
 }
 h4 {
 	font-size: 110%;
-	margin: 0 0 0.2em;
+	margin: 0 0 0.3em;
 }
-h5, p, ul, ol {
-	margin: 0 0 0.2em;
+h5, h6, p, ul, ol {
+	margin: 0 0 0.3em;
 }
 .notice-default {
 	font-style:italic;

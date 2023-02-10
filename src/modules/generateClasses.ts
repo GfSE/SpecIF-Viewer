@@ -210,13 +210,15 @@ app.generateSpecifClasses = function(pr: SpecIF, opts?: any): SpecIF {
         // - take the resource's title as title
         // - and the title without namespace as distinctive portion of the id.
         // ToDo: There is a potential problem - in case of equal terms with different namespace we end up with a duplicate id.
-        let ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),
+        let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], pr),
+            ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),
             ti2 = ti.split(':').pop(),  // remove namespace
             dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], pr);
         if (dscL.length > 1)
             console.info("Only the fist value of the description property will be used for the class generated from " + r.id + " with title " + ti + ".");
         return {
-            id: prefix + (ti2 || r.id).jsIdOf(),
+            // Take the specified identifier if available or build one with the title ... :
+            id: visIdL && visIdL.length > 0 ? LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' }) : (prefix + (ti2 || r.id).jsIdOf()),
             revision: opts.rev,
             title: ti,
             description: (dscL.length > 0 ? dscL[0] : undefined), // only the first property value is taken for the class description
