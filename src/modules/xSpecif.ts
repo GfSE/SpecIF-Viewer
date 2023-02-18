@@ -1078,7 +1078,7 @@ class CSpecIF implements SpecIF {
 					// Include "isHeading" in SpecIF only if true:
 					if (iE.isHeading) oE.isHeading = true;
 					// resourceClasses must have a list of propertyClasses with at least one element:
-					if (Array.isArray(oE.propertyClasses) && oE.propertyClasses.length > 0)
+					if (Array.isArray(oE.propertyClasses) && oE.propertyClasses.length > 0 || LIB.isKey(oE.extends))
 						return oE;
 					// else (shouldn't arrive here, at all):
 					console.error('Skipping resourceClass with id="'+iE.id+'" on export, because it does not specify any propertyClasses.');
@@ -1523,11 +1523,25 @@ class CSpecIF implements SpecIF {
 						class: iE['class']
 					};
 
+
 					// According to the schema, all property values are represented by a string
 					// and we want to store them as string to avoid inaccuracies by multiple transformations.
 					let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
+
+					// Multiple enum values are accepted in SpecIF 1.0:
+					// @ts-ignore - 'xs:enumeration' is ok for v1.0
+					if (dT.type == 'xs:enumeration') {
+						// @ts-ignore - 'value' is ok for v1.0
+						oE.value = "";
+						for (var v of iE.values) {
+							// @ts-ignore - 'value' is ok for v1.0
+							oE.value += (oE.value.length>0? ", ":"") + v
+						};
+						return oE
+					};
+
 				//	if ([SpecifDataTypeEnum.String,'xhtml'].includes(dT.type)) {
-					if (dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+					if (dT.type == SpecifDataTypeEnum.String) {
 						// Special treatment of string values:
 						let v = iE.values[0] as SpecifMultiLanguageText;
 						if (opts.targetLanguage) {
@@ -1537,7 +1551,7 @@ class CSpecIF implements SpecIF {
 
 							// Take the first value, as v1.0 supports only one value:
 							let txt = LIB.languageValueOf(v, opts)
-								.replace(/^\s+/, "");   // remove any leading whiteSpace
+										.replace(/^\s+/, "");   // remove any leading whiteSpace
 
 							if (!RE.vocabularyTerm.test(txt)) {
 								if (CONFIG.excludedFromFormatting.includes(pC.title)) {
@@ -1580,7 +1594,7 @@ class CSpecIF implements SpecIF {
 							// - the language attribute is required in v1.0, whereas in v1.1 only if multiple languages are present
 							for (var l of v)
 								// @ts-ignore - OK for v1.0
-								oE.value.push({ text: refDiagramsAsImg(l.text), language: l.language || '?'});
+								oE.value.push(l.language ? { text: refDiagramsAsImg(l.text), language: l.language } : { text: refDiagramsAsImg(l.text) });
 							//	oE.value.push(l.language ? { text: refDiagramsAsImg(l.text), language: l.language || '?' } : { text: refDiagramsAsImg(l.text) });
 						};
 						return oE;

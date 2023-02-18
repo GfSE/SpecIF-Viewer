@@ -31,7 +31,10 @@
 	The server or the server interface lib is responsible for analysing the project and for collecting the data.
 */		
 
-// Limitation: Works only, if a project does not use multiple revisions of a resourceClass and propertyClass:
+/* Limitations:
+ * - Works only, if a project does not use multiple revisions of a resourceClass and propertyClass
+ * - PropertyClasses of extended classes are ignored.
+ */
 interface ReportDataset {
 	label: string,
 	id: string,
@@ -130,14 +133,16 @@ moduleManager.construct({
 						datasets: []
 					};
 				cData.resourceClasses.forEach( ( rC:SpecifResourceClass ) =>{
-					// Add a counter for each resourceClass
-					if( CONFIG.excludedFromTypeFiltering.indexOf(rC.title)<0 )
+					// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
+					if (CONFIG.excludedFromTypeFiltering.indexOf(rC.title) < 0
+						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes("auto") || rC.instantiation.includes("user"))) {
 						rCR.datasets.push({
-							label: LIB.titleOf(rC,opts),
+							label: LIB.titleOf(rC, opts),
 							id: rC.id,
 							count: 0,
-							color: CONFIG.focusColor 
+							color: CONFIG.focusColor
 						})
+					}
 				});
 				self.list.push(rCR)
 			}

@@ -653,7 +653,8 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
 	// ToDo: return the class's default value, if available.
 //	console.debug('valuesByTitle',dta,itm,pN);
 	if (itm.properties) {
-		let dT: SpecifDataType, pC:SpecifPropertyClass;
+		let dT: SpecifDataType,
+			pC: SpecifPropertyClass;
 		for (var p of itm.properties) {
 			pC = LIB.itemByKey(dta.propertyClasses, p['class']);
 			if (pC && pNs.includes(pC.title)) {
@@ -930,7 +931,7 @@ LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 			}
 		};
 		L.push(e);
-		return 0;
+		return L.length - 1;
 	};
 	// update, if found:
 	L[n] = e;
@@ -1225,10 +1226,10 @@ LIB.trimJson = (str: string): string => {
 	return str.substring( str.indexOf('{'), str.lastIndexOf('}')+1 )
 };
 LIB.isTrue = (str: string): boolean =>{
-	return CONFIG.valuesTrue.indexOf(str.toLowerCase().trim()) > -1;
+	return str && CONFIG.valuesTrue.indexOf(str.toLowerCase().trim()) > -1;
 }
 LIB.isFalse = (str: string): boolean =>{
-	return CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
+	return str && CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
 }
 
 /*
@@ -1401,18 +1402,34 @@ LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
 	// checks whether a resource is referenced by the hierarchy:
 	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
 	if (!H) H = app.cache.selectedProject.data.hierarchies;
-	return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });  // seems to work
+	return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });
 	//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
 	//	return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
 }
-LIB.collectResourcesByHierarchy = (prj: SpecIF, H?: SpecifNode[]): SpecifResource[] => {
+LIB.referencedResources = (rL: SpecIFResource[], h: SpecifNode[]): SpecifResource[] => {
 	// collect all resources referenced by the given hierarchy:
 	// ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
-	if (!H) H = app.cache.selectedProject.data.hierarchies;
-	var rL: SpecifResource[] = [];
-	LIB.iterateNodes(H, (nd: SpecifNode) => { LIB.cacheE(rL, LIB.itemByKey(prj.resources, nd.resource)); return true });
-	return rL;
+	var crL: SpecifResource[] = [];
+	LIB.iterateNodes(h, (nd: SpecifNode) => { LIB.cacheE(crL, LIB.itemByKey(rL, nd.resource)); return true });
+	return crL;
 }
+LIB.referencedResourcesByClass = (rL: SpecIFResource[], h: SpecifNode[], rCIdL: string[]): SpecifResource[] => {
+	let crL: SpecifResource[] = [];
+	(LIB.iterateNodes(
+		h,
+		(nd: SpecifNode) => {
+			// Replace ids by their elements:
+			let r = LIB.itemById(rL, nd.resource.id);
+			// Collect those resources having a class in the list:
+			if (r && rCIdL.includes(r['class'].id)) {
+				crL.push(r)
+			};
+			return true; // continue to iterate
+		}
+	))
+	return crL;
+}
+
 LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
 	// given a propertyClass key, return it's dataType:
 	if (LIB.isKey(key)) {
@@ -1439,7 +1456,8 @@ LIB.iterateNodes = (tree: SpecifNode[] | SpecifNode, eFn: Function, lFn?: Functi
 	//    for example to eliminate duplicates.
 	let cont = true;
 	if (Array.isArray(tree)) {
-		for (var i = tree.length - 1; cont && (i > -1); i--) {
+	//	for (var i = tree.length - 1; cont && (i > -1); i--) {
+		for (var i = 0, I = tree.length; cont && (i < I); i++) {
 			cont = !LIB.iterateNodes(tree[i], eFn, lFn);
 		};
 		if (typeof (lFn) == 'function') lFn(tree);

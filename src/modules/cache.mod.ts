@@ -526,7 +526,7 @@ class CProject {
 					(hL) => {
 						exD.hierarchies = hL as SpecifNode[];
 //						console.debug('1', simpleClone(exD));
-						return this.readItems('resource', LIB.collectResourcesByHierarchy(this.data, hL), opts)
+						return this.readItems('resource', LIB.referencedResources(this.data.resources, hL), opts)
 					}
 				)
 				.then(
