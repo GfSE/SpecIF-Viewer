@@ -1,9 +1,9 @@
-/*!	SpecIF: Generate Specif classes from the vocabulary.
-	Dependencies: -
-	(C)copyright enso managers gmbh (http://www.enso-managers.de)
-	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-	Author: se@enso-managers.de, Berlin
-	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+/*!    SpecIF: Generate Specif classes from the Ontology.
+    Dependencies: -
+    (C)copyright enso managers gmbh (http://www.enso-managers.de)
+    License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+    Author: se@enso-managers.de, Berlin
+    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
@@ -235,8 +235,8 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 dT = {
                     id: "DT-Real" + (minR ? "-GE" + minR : "") + (maxR ? "-LE" + maxR : "") + (frD ? "-FD" + frD : ""),
                     title: "Real Value" + (minR ? " >=" + minR : "") + (maxR ? " <=" + maxR : "") + (frD? " "+frD+"digits" : ""),
-                    minInclusive: minI ? parseFloat(minR) : undefined,
-                    maxInclusive: maxI ? parseFloat(maxR) : undefined,
+                    minInclusive: minR ? parseFloat(minR) : undefined,
+                    maxInclusive: maxR ? parseFloat(maxR) : undefined,
                     fractionDigits: frD ? parseInt(frD) : undefined
                 };
                 break;
@@ -345,12 +345,13 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
 
             if (elP['class'].id == "RC-TermResourceClass") {
                 if (LIB.indexById(generated.rCL, prep.id) < 0)
-                    // an entry in the list with the terms describing the referenced resourceClass resp. statementClass:
+                    // an entry in the list with the terms describing the referenced resourceClass:
                     LIB.cacheE(rCL, elP)
             }
             else {
+                // the class is "RC-TermStatementClass":
                 if (LIB.indexById(generated.sCL, prep.id) < 0)
-                    // an entry in the list with the terms describing the referenced resourceClass resp. statementClass:
+                    // an entry in the list with the terms describing the referenced statementClass:
                     LIB.cacheE(required.sCL, elP)
             }
         };
@@ -369,7 +370,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         // Create a statementClass for the TermStatementClass r:
 
         let
-            // In case of the statements a list of propertyClasses is optional and most often not used:
+            // In case of statementClasses a list of propertyClasses is optional and most often not used:
             pCL = pCsOf(r),
             // The eligible subjectClasses:
             sCL = sCsOf(r, "SpecIF:isEligibleAsSubject"),
