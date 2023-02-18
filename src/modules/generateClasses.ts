@@ -208,14 +208,15 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 dT = {
                     id: "DT-String" + (maxLen ? "-LE" + maxLen : "") + (enumL.length > 0 ? "-ENUM" + coreOf(r.id) : ""),
                     title: (enumL.length > 0 ? ti : "String" + (maxLen? " <=" + maxLen : "")),
-                    description: [{ text: "Text string" + (enumL.length > 0? " enumerated values for "+ti : (maxLen ? " with maximum length " + maxLen : "")) }],
+                    description: [{ text: "Text string" + (enumL.length > 0? " with enumerated values for "+ti : (maxLen ? " with maximum length " + maxLen : "")) }],
                     maxLength: maxLen? parseInt(maxLen) : undefined
                 };
                 break;
             case SpecifDataTypeEnum.Boolean:
                 dT = {
                     id: "DT-Boolean",
-                    title: "Boolean Value"
+                    title: "Boolean Value",
+                    description: [{ text: "A Boolean value." }]
                 };
                 break;
             case SpecifDataTypeEnum.Integer:
@@ -224,7 +225,8 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 dT = {
                     id: "DT-Integer" + (minI ? "-GE" + minI : "") + (maxI ? "-LE" + maxI : ""),
                     title: "Integer Value" + (minI ? " >=" + minI : "") + (maxI ? " <=" + maxI : ""),
-                    minInclusive: minI? parseInt(minI) : undefined,
+                    description: [{ text: "A numerical integer value" + (minI && maxI ? " with minimum value " + minI + " and maximum value " + maxI : (minI ? " with minimum value " + minI : (maxI ? " with maximum value " + maxI : "")))+"." }],
+                    minInclusive: minI ? parseInt(minI) : undefined,
                     maxInclusive: maxI ? parseInt(maxI) : undefined
                 };
                 break;
@@ -235,6 +237,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 dT = {
                     id: "DT-Real" + (minR ? "-GE" + minR : "") + (maxR ? "-LE" + maxR : "") + (frD ? "-FD" + frD : ""),
                     title: "Real Value" + (minR ? " >=" + minR : "") + (maxR ? " <=" + maxR : "") + (frD? " "+frD+"digits" : ""),
+                    description: [{ text: "A numerical floating point number (double precision)" + (minR && maxR ? " with minimum value " + minR + " and maximum value " + maxR : (minR ? " with minimum value " + minR : (maxR ? " with maximum value " + maxR : ""))) + (frD? " having no more than "+frD+" digits" : "")+"." }],
                     minInclusive: minR ? parseFloat(minR) : undefined,
                     maxInclusive: maxR ? parseFloat(maxR) : undefined,
                     fractionDigits: frD ? parseInt(frD) : undefined
@@ -244,11 +247,22 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 dT = {
                     id: "DT-DateTime",
                     title: "Date/Time",
-                    description: [[{ text: "Date or timestamp in ISO-8601 format"}]]
+                    description: [{ text: "Date or timestamp in ISO-8601 format."}]
                 };
                 break;
             case SpecifDataTypeEnum.Duration:
+                dT = {
+                    id: "DT-Duration",
+                    title: "Duration",
+                    description: [{ text: "A duration as defined by the ISO 8601 ABNF for 'duration'." }]
+                };
+                break;
             case SpecifDataTypeEnum.AnyUri:
+                dT = {
+                    id: "DT-AnyUri",
+                    title: "Universal Resource Identifier (URI)",
+                    description: [{ text: "A universal resource identifier (URI), according to RFC3986." }]
+                };
         };
         dT.type = ty;
         if (enumL.length > 0 )

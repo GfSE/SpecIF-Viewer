@@ -1,4 +1,4 @@
-/*    Configuration Parameters for Interactive-Spec (Interaktives Lastenheft)
+/*  Configuration Parameters for Interactive-Spec (Interaktives Lastenheft)
     Dependencies: none
     (C)copyright enso managers gmbh (http://www.enso-managers.de)
     Author: se@enso-managers.de, Berlin
