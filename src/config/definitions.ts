@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.e",
+    CONFIG.appVersion = "1.1.f",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -28,10 +28,10 @@ const CONFIG:any = {};
 //    CONFIG.maxInteger = 32767;
     CONFIG.minInteger = -2147483648;
     CONFIG.maxInteger = 2147483647;
-    CONFIG.minReal = -10000000.0;
-    CONFIG.maxReal = 10000000.0;
-    CONFIG.maxAccuracy = 9;        // max decimals of real numbers
-    CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
+//    CONFIG.minReal = -10000000.0;
+//    CONFIG.maxReal = 10000000.0;
+//    CONFIG.maxAccuracy = 9;        // max decimals of real numbers
+//    CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
     CONFIG.maxTitleLength =      // truncate longer titles (modules specifications.mod.ts)
     CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
     CONFIG.treeMaxTitleLength = 48;  // truncate longer titles in the tree (module specifications.mod.ts)

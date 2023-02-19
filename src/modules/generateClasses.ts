@@ -52,15 +52,19 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
     selDomains.forEach((d: string) => { spId += '-' + d.jsIdOf() });
     console.debug('#', dTDomains, allDomains, selDomains, spId);
 
+    class CGenerated {
+        dTL: SpecifDataType[] = [];  // is filled by the function creating the propertyClasses, as there are no explicit dataTypes in a SpecIF Ontology.
+        pCL: SpecifPropertyClass[] = [];
+        rCL: SpecifResourceClass[] = [];
+        sCL: SpecifStatementClass[] = []
+    }
     let
         required = {
             sCL: []  // list of referenced but missing instances of termStatementClass
         },
 
         // Intermediate storage of the generated classes:
-        generated = {
-            dTL: []  // is filled by the function creating the propertyClasses, as there are no explicit dataTypes in a SpecIF Ontology.
-        };
+        generated = new CGenerated;
 
     // Start to generate:
     generated.pCL = makeClasses(Array.from(primitiveDataTypes.keys()), createPC) as SpecifPropertyClass[];
@@ -107,7 +111,8 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
     };
 
     function makeClasses(rCIdL:string[], createFn:Function) {
-        // Take the resources listed in the hierarchy and filter the selected ones:
+        // Take the resources listed in the hierarchy and filter the selected ones.
+        // ToDo: Better a method to CGenerated.
 
         let rCL: SpecifItem[] = [],  // the result list
             // 1. Find the terms of the classes listed in rCIdL:
@@ -179,7 +184,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
 
         // Find any assigned enumerated values;
         // these are defined by related propertyValues:
-        let ty = primitiveDataTypes.get(r["class"].id), // get the primitive dataType implied by the term's class
+        let ty = primitiveDataTypes.get(r["class"].id) as SpecifDataTypeEnum, // get the primitive dataType implied by the term's class
             ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),  // title (only used for dataTypes with enumerated values)
             stL = statementsByClass(r, "SpecIF:hasEnumValue"),  // all statements pointing to enumerated values
             oL = stL.map(
@@ -205,6 +210,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         switch (ty) {
             case SpecifDataTypeEnum.String:
                 let maxLen = valueByTitle(r, "SpecIF:StringMaxLength");
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-String" + (maxLen ? "-LE" + maxLen : "") + (enumL.length > 0 ? "-ENUM" + coreOf(r.id) : ""),
                     title: (enumL.length > 0 ? ti : "String" + (maxLen? " <=" + maxLen : "")),
@@ -213,6 +219,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 };
                 break;
             case SpecifDataTypeEnum.Boolean:
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-Boolean",
                     title: "Boolean Value",
@@ -222,6 +229,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             case SpecifDataTypeEnum.Integer:
                 let maxI = valueByTitle(r, "SpecIF:IntegerMaxInclusive"),
                     minI = valueByTitle(r, "SpecIF:IntegerMinInclusive");
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-Integer" + (minI ? "-GE" + minI : "") + (maxI ? "-LE" + maxI : ""),
                     title: "Integer Value" + (minI ? " >=" + minI : "") + (maxI ? " <=" + maxI : ""),
@@ -234,6 +242,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 let frD = valueByTitle(r, "SpecIF:RealFractionDigits"),
                     maxR = valueByTitle(r, "SpecIF:RealMaxInclusive"),
                     minR = valueByTitle(r, "SpecIF:RealMinInclusive");
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-Real" + (minR ? "-GE" + minR : "") + (maxR ? "-LE" + maxR : "") + (frD ? "-FD" + frD : ""),
                     title: "Real Value" + (minR ? " >=" + minR : "") + (maxR ? " <=" + maxR : "") + (frD? " "+frD+"digits" : ""),
@@ -244,6 +253,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 };
                 break;
             case SpecifDataTypeEnum.DateTime:
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-DateTime",
                     title: "Date/Time",
@@ -251,6 +261,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 };
                 break;
             case SpecifDataTypeEnum.Duration:
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-Duration",
                     title: "Duration",
@@ -258,6 +269,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 };
                 break;
             case SpecifDataTypeEnum.AnyUri:
+                // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-AnyUri",
                     title: "Universal Resource Identifier (URI)",
@@ -295,7 +307,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             }
         ) as SpecifPropertyClass;
     }
-    function pCsOf(el:SpecifItem) {
+    function pCsOf(el:SpecifResource) {
         // Return a list of propertyClasses which are related by "SpecIF:hasProperty"
         // to el (the resourceClass resp. statementClass to be generated):
 
@@ -340,9 +352,9 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             }
         ) as SpecifResourceClass;
     }
-    function sCsOf(el: SpecifItem, cl: string) {
+    function sCsOf(el: SpecifResource, cl: string) {
         // Return a list of resourceClasses and/or statementClasses which are related 
-        // to el (the statementClass to be generated) by the given statementClass cl:
+        // to term el (the statementClass to be generated) by the given statementClass cl:
 
         let sL = statementsByClass(el, cl), // list of statements of the specified class
             iCL: SpecifResourceClass[] = [],  // the result list

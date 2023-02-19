@@ -30,11 +30,11 @@ class StandardTypes {
 	},{ 
 		id: "DT-Boolean",
 		title: "Boolean",
-		description: [{ text: "The Boolean data type." }],
+		description: [{ text: "A Boolean value." }],
 		type: SpecifDataTypeEnum.Boolean,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
-		id: "DT-Integer",
+		id: "DT-Integer-GE" + CONFIG.minInteger + "-LE" + CONFIG.maxInteger,
 		title: "Integer",
 		description: [{ text: "A numerical integer value from -2147483648 to 2147483647 (32 bit)." }],
 		type: SpecifDataTypeEnum.Integer,
@@ -46,9 +46,9 @@ class StandardTypes {
 		title: "Real",
 		description: [{ text: "A floating point number (double)." }],
 		type: SpecifDataTypeEnum.Double,
-		fractionDigits: CONFIG.maxAccuracy,
-		minInclusive: CONFIG.minReal,
-		maxInclusive: CONFIG.maxReal,
+	//	fractionDigits: CONFIG.maxAccuracy,
+	//	minInclusive: CONFIG.minReal,
+	//	maxInclusive: CONFIG.maxReal,
 		changedAt: "2021-02-14T08:59:00+02:00"
 	}];
 	propertyClasses:SpecifPropertyClass[] = [{
