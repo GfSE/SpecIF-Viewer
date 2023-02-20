@@ -511,7 +511,7 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
-            switch (iT.specifIdOf().toLowerCase()) {
+            switch (iT.toSpecifId().toLowerCase()) {
                 case "_berschrift":
                 case "name":
                 case "title":
@@ -554,7 +554,7 @@ const vocabulary = {
         reqif: function (iT: string): string {
             // Target language: ReqIF
             var oT = '';
-            switch (iT.specifIdOf().toLowerCase()) {
+            switch (iT.toSpecifId().toLowerCase()) {
                 case "dcterms_title":                oT = "ReqIF.Name"; break;
                 case "dcterms_description":            oT = "ReqIF.Text"; break;
                 case "dcterms_identifier":            oT = "ReqIF.ForeignId"; break;
@@ -576,7 +576,7 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
-            switch (iT.specifIdOf().toLowerCase()) {
+            switch (iT.toSpecifId().toLowerCase()) {
                 case 'actors':
                 case 'actor':
                 case 'akteure':
@@ -630,7 +630,7 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
-            switch (iT.specifIdOf().toLowerCase()) {
+            switch (iT.toSpecifId().toLowerCase()) {
                 default: oT = iT
             };
             return oT;

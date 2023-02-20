@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
      Attention: 
-    - Do NOT minify this module with the Google Closure Compiler. At least the RegExp in jsIdOf() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
+    - Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
 */ 
 
 const LIB: any = {};
@@ -982,8 +982,9 @@ function genID() {
 
 // Add new operations to the String.prototype:
 interface String {
-    jsIdOf: Function;
-    specifIdOf: Function;
+    toJsId: Function;
+    toSpecifId: Function;
+    toCamelCase: Function;
     linkifyURLs: Function;
     ctrl2HTML: Function;
     stripHTML: Function;
@@ -999,12 +1000,38 @@ interface String {
     fileName: Function;
     fileExt: Function;
 }
+String.prototype.toCamelCase = function():string {
+    let str = this.replace(/[^a-z0-9 \:\.]/ig, ''), parts, res = '';
+    // Check for separators in the sequence of priority:
+    if (str.includes(':'))
+        parts = str.split(':')
+    else if (str.includes('.'))
+        parts = str.split('.')
+    else if (str.includes(' '))
+        parts = str.split(' ')
+    else
+        return this;
+
+    for (let p of parts) {
+        p = p.replace(/[ \.]/g, ''); // remove any other separator (which shouldn't be there, but to tolerate any meaningless user input)
+        for (let i = 0, I = p.length; i < I; i++) res += i == 0 ? p[i].toUpperCase() : p[i].toLowerCase();
+    };
+    return res
+/*// see: https://stackoverflow.com/questions/2970525/converting-any-string-into-camel-case
+    return this
+//        .replace(/[^a-z ]/ig, '')
+        .replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function (match, index) {
+            if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
+            return index === 0 ? match.toLowerCase() : match.toUpperCase();
+        }
+    ); */
+};
 // Make a valid js variable/property name; replace disallowed characters by '_':
-String.prototype.jsIdOf = function():string {
+String.prototype.toJsId = function():string {
     return this.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' );
 };
 // Make an id conforming with ReqIF and SpecIF:
-String.prototype.specifIdOf = function():string {
+String.prototype.toSpecifId = function():string {
     return ( /[0-9]/.test(this[0])? '_':'' ) + this.replace( /[^_0-9a-zA-Z]/g, '_' );
 };
 /*

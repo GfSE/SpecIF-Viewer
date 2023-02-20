@@ -11,8 +11,8 @@ function LanguageTextsFr() {
 	self.lookup = function (lb: string, pA: string): string {
 		// replace a variable '~A' with pA, if available:
 		if (lb) {
-			// jsIdOf(): first replace '.' '-' '(' ')' and white-space by '_'
-			let res = self[lb.jsIdOf()] || lb;
+			// toJsId(): first replace '.' '-' '(' ')' and white-space by '_'
+			let res = self[lb.toJsId()] || lb;
 			if (pA) return res.replace(/~A/, pA);
 			return res;
 		};

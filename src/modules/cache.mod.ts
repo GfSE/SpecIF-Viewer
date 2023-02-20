@@ -1854,7 +1854,7 @@ class CProject {
 					// Create a folder resource for every model-element type:
 					for( var eC of CONFIG.modelElementClasses) {
 						fL.push({
-							id: "Folder-" + eC.jsIdOf() + "-" + apx,
+							id: "Folder-" + eC.toJsId() + "-" + apx,
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
@@ -1885,8 +1885,8 @@ class CProject {
 					// Create a hierarchy node for each folder per model-element type
 					for (var mEl of CONFIG.modelElementClasses) {
 						gl.nodes.push({
-							id: "N-Folder-" + mEl.jsIdOf() + "-" + apx,
-							resource: LIB.makeKey("Folder-" + mEl.jsIdOf() + "-" + apx),
+							id: "N-Folder-" + mEl.toJsId() + "-" + apx,
+							resource: LIB.makeKey("Folder-" + mEl.toJsId() + "-" + apx),
 							nodes: [],
 							changedAt: tim
 						});
@@ -2081,7 +2081,7 @@ class CProject {
 						i18n.LblOptions,
 						domains.map(
 							(d: string) => {
-								return { title: d, id: d.jsIdOf(), checked: false }
+								return { title: d, id: d.toJsId(), checked: false }
 							}
 						)
 					);

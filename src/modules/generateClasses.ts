@@ -45,13 +45,13 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         ),
 
         // The selected domains for generating classes:
-        selDomains = allDomains.filter((d: string) => { return opts[d.jsIdOf()] });
+        selDomains = allDomains.filter((d: string) => { return opts[d.toJsId()] });
 
     if (selDomains.length < 1)
         message.show("No domain selected, so no classes will be generated.", { severity: 'warning'});
 
     // add the domains to the id of the generated data set:
-    selDomains.forEach((d: string) => { spId += '-' + d.jsIdOf() });
+    selDomains.forEach((d: string) => { spId += '-' + d.toJsId() });
     console.debug('#', dTDomains, allDomains, selDomains, spId);
 
     class CGenerated {
@@ -64,9 +64,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         required = {
             sCL: []  // list of referenced but missing instances of termStatementClass
         },
-
-        // Intermediate storage of the generated classes:
-        generated = new CGenerated;
+        generated = new CGenerated;  // Intermediate storage of the generated classes
 
     // Start to generate:
     generated.pCL = makeClasses(Array.from(primitiveDataTypes.keys()), createPC) as SpecifPropertyClass[];
@@ -113,7 +111,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
     };
 
     function makeClasses(rCIdL:string[], createFn:Function) {
-        // Take the resources listed in the hierarchy and filter the selected ones.
+        // Take the resources listed in the hierarchy, filter the selected ones and generate a class for each.
         // ToDo: Better a method to CGenerated.
 
         let rCL: SpecifItem[] = [],  // the result list
@@ -121,17 +119,15 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             idL = LIB.referencedResourcesByClass(pr.resources, pr.hierarchies, rCIdL) as SpecifResource[];
 
         if (idL.length > 0) {
-            rCL = idL
-                .filter(
-                    // 2. Keep only those with selected domain and lifecycleStatus:
-                    (r: SpecifResource) => filterSelected(r)
-                );
+            let tL = idL
+                // 2. Keep only those with selected domain and lifecycleStatus:
+                .filter( isSelected );
             // 3. Create a class per term:
-            rCL = LIB.forAll(rCL, createFn);
+            rCL = LIB.forAll(tL, createFn);
         };
         return rCL as SpecifItem[];
 
-        function filterSelected(r: SpecifResource): boolean {
+        function isSelected(r: SpecifResource): boolean {
             let localOpts = Object.assign({ SpecIF_LifecycleStatusReleased: true }, opts);
             // True, if specified per domain abd lifecycleStatus ..
             // or if it is referenced by another class:
@@ -140,27 +136,27 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
 
             function hasSelectedDomain(el: SpecifItem): boolean {
                 let myDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain], pr);
-                for (var d of myDomains) {
-                    if (opts[LIB.displayValueOf(d, { targetLanguage: 'default' }).jsIdOf()])
+                for (let d of myDomains) {
+                    if (opts[LIB.displayValueOf(d, { targetLanguage: 'default' }).toJsId()])
                         return true;
                 };
                 return false;
             }
             function hasSelectedStatus(el: SpecifItem, opts: any): boolean {
                 let selStatus = LIB.valuesByTitle(el, [CONFIG.propClassLifecycleStatus], pr);
-                for (var s of selStatus) {
-                    if (opts[LIB.displayValueOf(s, { targetLanguage: 'default' }).jsIdOf()])
+                for (let s of selStatus) {
+                    if (opts[LIB.displayValueOf(s, { targetLanguage: 'default' }).toJsId()])
                         return true;
                 };
                 return false;
             }
         }
     }
-    function statementsByClass(r:SpecifResource, clTi:string) {
-        // Find the statements of the class with title clTi referencing the given term r:
+    function statementsByClass(r:SpecifResource, ti:string) {
+        // Find the statements of the class with title ti referencing the given term r as subject or object:
         return pr.statements.filter(
             (st: SpecifStatement) => {
-                return LIB.classTitleOf(st['class'], pr.statementClasses) == clTi
+                return LIB.classTitleOf(st['class'], pr.statementClasses) == ti
                     && (st.subject.id == r.id || st.object.id == r.id);
             }
         ) as SpecifStatement[];
@@ -170,14 +166,21 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         let pVL = LIB.valuesByTitle(el, [ti], pr);
         return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
     }
+    function distinctiveCoreOf(ti:string): string {
+        return ti.toCamelCase();
+//        let pcs = r.id.split("-");
+//        return pcs.length > 1 ? pcs[1] : r.id
+    }
     function makeIdAndTitle(r: SpecifResource, pfx: string) {
         // Make an id and a title for the class generated for the term r
         // - use the identifier provided by the user or generate it using the title
         let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], pr),
-            ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),
-            ti2 = ti.split(':').pop();  // remove namespace .. this can result in identical ids for different terms !!
+            ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' });
+//            ti2 = ti.split(':').pop();  // remove namespace .. this can result in identical ids for different terms !!
         return {
-            id: visIdL && visIdL.length > 0 ? LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' }) : (pfx + (ti2 || r.id).jsIdOf()),
+            id: visIdL && visIdL.length > 0 ?
+                  LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' })
+                : (pfx + distinctiveCoreOf(ti)),
             title: ti
         }
     }
@@ -200,7 +203,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 (o: SpecifResource, idx: number) => {
                     let eV = LIB.valuesByTitle(o, [CONFIG.propClassTitle], pr)[0];
                     return {
-                        id: 'V-'+ coreOf(r.id) + '-' + idx.toString(),
+                        id: 'V-'+ distinctiveCoreOf(ti) + '-' + idx.toString(),
                         value: eV
                     }
                 }
@@ -214,7 +217,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 let maxLen = valueByTitle(r, "SpecIF:StringMaxLength");
                 // @ts-ignore - missing attributes come further down
                 dT = {
-                    id: "DT-String" + (maxLen ? "-LE" + maxLen : "") + (enumL.length > 0 ? "-ENUM" + coreOf(r.id) : ""),
+                    id: "DT-String" + (maxLen ? "-LE" + maxLen : ""),
                     title: (enumL.length > 0 ? ti : "String" + (maxLen? " <=" + maxLen : "")),
                     description: [{ text: "Text string" + (enumL.length > 0? " with enumerated values for "+ti : (maxLen ? " with maximum length " + maxLen : "")) }],
                     maxLength: maxLen? parseInt(maxLen) : undefined
@@ -279,17 +282,14 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                 };
         };
         dT.type = ty;
-        if (enumL.length > 0 )
-            dT.enumeration = enumL;
+        if (enumL.length > 0) {
+            dT.id += "-Enum" + distinctiveCoreOf(ti);
+            dT.enumeration = enumL
+        };
         dT.revision = opts.rev;
         dT.changedAt = r.changedAt;
         LIB.cacheE(generated.dTL, dT); // store avoiding duplicates
         return LIB.makeKey(dT);  // the key as reference for the generated propertyClass
-
-        function coreOf(id: string): string {
-            let pcs= id.split("-");
-            return pcs.length > 1 ? pcs[1] : id
-        }
     }
     function createPC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:
@@ -311,7 +311,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
     }
     function pCsOf(el:SpecifResource) {
         // Return a list of propertyClasses which are related by "SpecIF:hasProperty"
-        // to el (the resourceClass resp. statementClass to be generated):
+        // to el (the term describing the resourceClass resp. statementClass to be generated):
 
         let pCL: SpecifPropertyClass[] = [
             // All created resourceClasses shall have these two propertyClasses (by title),
@@ -322,7 +322,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             tL: SpecifResource[] = [];  // list of referenced instances of termPropertyClass
 
         let pL = statementsByClass(el, "SpecIF:hasProperty");
-        for (var p of pL) {
+        for (let p of pL) {
             let elP = LIB.itemByKey(pr.resources, p.object),
                 prep = makeIdAndTitle(elP, "PC-"); // need the id only, here
 //            console.debug('pCsOf', elP, LIB.valuesByTitle(elP, ["dcterms:identifier"], pr));
@@ -331,7 +331,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             // an entry in the list with the terms describing the referenced propertyClass:
             LIB.cacheE(tL, elP)
         };
-        console.debug('pCsOf', pL, pCL, tL);
+//        console.debug('pCsOf', pL, pCL, tL);
 
         // Ascertain that all referenced propertyClasses will be available.
         // Thus, generate the referenced propertyClasses together with the dataTypes;
@@ -362,7 +362,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             iCL: SpecifResourceClass[] = [],  // the result list
             rCL: SpecifResource[] = [];  // list of referenced instances of termResourceClass
 
-        for (var s of sL) {
+        for (let s of sL) {
             // We are interested only in statements where *other* statementClasses are eligible as objectClasses or statementClasses:
             if (el.id == s.subject.id) continue;
 
@@ -383,7 +383,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
                     LIB.cacheE(required.sCL, elP)
             }
         };
-        console.debug('sCsOf', el, sL, iCL,rCL,required.sCL);
+//        console.debug('sCsOf', el, sL, iCL,rCL,required.sCL);
 
         // Ascertain that all referenced resourceClasses will be available.
         // Any missing statementClasses are collected in required.sCL until the end of the generation 
