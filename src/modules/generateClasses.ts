@@ -21,6 +21,8 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
     - ToDo: complete the list ...
 */
     console.debug('generateSpecifClasses', pr, opts);
+    // pr is a SpecIF data set with classes and instances defining an Ontology. The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
+    // opts contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
 
     let
         spId = "P-SpecifClasses",  // id of the SpecIF data set with the generated classes, will be complemented with the selected domains
