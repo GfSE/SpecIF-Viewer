@@ -134,7 +134,7 @@ moduleManager.construct({
 					};
 				cData.resourceClasses.forEach( ( rC:SpecifResourceClass ) =>{
 					// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
-					if (CONFIG.excludedFromTypeFiltering.indexOf(rC.title) < 0
+					if ( !CONFIG.excludedFromTypeFiltering.includes(rC.title)
 						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes("auto") || rC.instantiation.includes("user"))) {
 						rCR.datasets.push({
 							label: LIB.titleOf(rC, opts),

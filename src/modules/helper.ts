@@ -1009,11 +1009,15 @@ String.prototype.toCamelCase = function():string {
         parts = str.split('.')
     else if (str.includes(' '))
         parts = str.split(' ')
+    else if (str.includes('-'))
+        parts = str.split('-')
+    else if (str.includes('_'))
+        parts = str.split('_')
     else
         return this;
 
     for (let p of parts) {
-        p = p.replace(/[ \.]/g, ''); // remove any other separator (which shouldn't be there, but to tolerate any meaningless user input)
+        p = p.replace(/[ _\-\.]/g, ''); // remove any other separator (which shouldn't be there, but to tolerate any meaningless user input)
         for (let i = 0, I = p.length; i < I; i++) res += i == 0 ? p[i].toUpperCase() : p[i].toLowerCase();
     };
     return res

@@ -36,7 +36,7 @@ class StandardTypes {
 	},{ 
 		id: "DT-Integer-GE" + CONFIG.minInteger + "-LE" + CONFIG.maxInteger,
 		title: "Integer",
-		description: [{ text: "A numerical integer value from -2147483648 to 2147483647 (32 bit)." }],
+		description: [{ text: "A numerical integer value from " + CONFIG.minInteger + " to " + CONFIG.maxInteger +"." }],
 		type: SpecifDataTypeEnum.Integer,
 		minInclusive: CONFIG.minInteger,
 		maxInclusive: CONFIG.maxInteger,

@@ -87,7 +87,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 						// - open an input line, if it is a title or has a specified length lower than the threshold
 						// - open an input text-area, otherwise
 						{
-							typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+							typ: (CONFIG.descProperties.includes(ti) || CONFIG.commentProperties.includes(ti) ? 'area' : 'line'),
+						//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
 							handle: opts.myFullName + '.check()',
 							description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '')
 						}

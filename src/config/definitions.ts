@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.f",
+    CONFIG.appVersion = "1.1.g",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -270,6 +270,11 @@ const CONFIG:any = {};
         // RIF 1.1a Atego Exerpt:
         'Object Text',
     //    'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
+    ];
+
+    CONFIG.commentProperties = [
+        "ReqIF-WF.CustomerComment",
+        "ReqIF-WF.SupplierComment"
     ];
 
     CONFIG.stereotypeProperties = [

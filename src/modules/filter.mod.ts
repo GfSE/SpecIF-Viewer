@@ -709,7 +709,8 @@ moduleManager.construct({
 						options: [] 
 				};
 				(cData.get("resourceClass", prj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
-					if (CONFIG.excludedFromTypeFiltering.indexOf(rC.title) < 0) {
+					if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
+							&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes("auto") || rC.instantiation.includes("user"))) {
 						oTF.options.push({
 							title: LIB.titleOf(rC, displayOptions),
 							id: rC.id,

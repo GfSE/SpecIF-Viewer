@@ -1207,8 +1207,8 @@ class CProject {
 					.then(
 						(rCL: SpecifItem[]) => {
 //							console.debug('makeEmptyResource resourceClasses', rCL);
-							// return an empty resource instance of the given type:
-							resC = rCL[0] as SpecifResourceClass;
+							// return an empty resource instance of the given type; 
+							resC = rCL.pop() as SpecifResourceClass;  // the parent class is first, the selected class last
 							res = {
 								id: LIB.genID('R-'),
 								class: LIB.makeKey(resC.id),

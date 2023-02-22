@@ -283,7 +283,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         };
         dT.type = ty;
         if (enumL.length > 0) {
-            dT.id += "-Enum" + distinctiveCoreOf(ti);
+            dT.id += "-" + distinctiveCoreOf(ti);
             dT.enumeration = enumL
         };
         dT.revision = opts.rev;
