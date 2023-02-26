@@ -156,10 +156,10 @@ function toOxml( data, opts ) {
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor','FMC:State','FMC:Event','SpecIF:Collection','SpecIF:Diagram','FMC:Plan'];
+			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
 			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
-			if( !opts.descriptionProperties ) opts.descriptionProperties = ['dcterms:description','SpecIF:Diagram'];
+			if (!opts.descriptionProperties) opts.descriptionProperties = ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'];
 			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
 		
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp

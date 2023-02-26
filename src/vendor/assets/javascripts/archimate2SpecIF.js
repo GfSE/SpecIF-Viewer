@@ -43,7 +43,7 @@ function Archimate2Specif(xmlString, opts) {
 	if (!opts.strDiagramType)
 		opts.strDiagramType = opts.strNamespace + "Viewpoint";
 	if (!opts.strDiagramFolderType)
-		opts.strDiagramFolderType = "SpecIF:Diagrams";
+		opts.strDiagramFolderType = "SpecIF:Views";
 	//	if( !opts.strAnnotationFolder ) 
 	//		opts.strAnnotationFolder = "Text Annotations";
 	//	if( !opts.strRoleType ) 
@@ -1055,8 +1055,8 @@ function Archimate2Specif(xmlString, opts) {
 	function ResourceClasses() {
 		return [{
 			id: idResourceClassDiagram,
-			title: "SpecIF:Diagram",
-			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
+			title: "SpecIF:View",
+			description: "A 'View' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ["user"],
 			propertyClasses: ["PC-Name","PC-Description","PC-Diagram","PC-Type","PC-Notation"],
 			icon: "&#9635;",

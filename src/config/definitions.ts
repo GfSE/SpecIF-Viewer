@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.g",
+    CONFIG.appVersion = "1.1.h",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -153,8 +153,8 @@ const CONFIG:any = {};
     CONFIG.propClassType = "dcterms:type";
     CONFIG.propClassLifecycleStatus = 'SpecIF:LifecycleStatus';
     CONFIG.propClassDomain = "SpecIF:Domain";
-    CONFIG.propClassDiagram = 
-    CONFIG.resClassDiagram = 'SpecIF:Diagram';
+    CONFIG.propClassDiagram = 'SpecIF:Diagram'
+    CONFIG.resClassDiagram = 'SpecIF:View';
     CONFIG.resClassXlsRow = 'XLS:Resource';
     CONFIG.resClassUnreferencedResource = "SpecIF:UnreferencedResources";
     CONFIG.resClassOutline = 'SpecIF:Outline';
@@ -617,7 +617,8 @@ const vocabulary = {
                 case 'schmerzpunkt':
                 case 'schmerzpunkte':                oT = "SpecIF:PainPoint"; break;
                 case 'specif_view':
-                case 'fmc_plan':                    oT = CONFIG.resClassDiagram; break;
+                case 'fmc_plan': 
+                case 'specif_diagram':              oT = CONFIG.resClassDiagram; break;
                 case 'specif_folder':                oT = CONFIG.resClassFolder; break;
                 case 'specif_hierarchyroot':
                 case 'specif_hierarchy':            oT = CONFIG.resClassOutline; break;
@@ -717,21 +718,24 @@ const RE:any = {};
 // c) A single object to link+object resp. link+image:
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //            <object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
-    RE.tagA = new RegExp( '<a ([^>]+)>([\\s\\S]*?)</a>', 'g' );
-    RE.tagImg = new RegExp('<img ([^>]+)/>', 'g');
+const tagA = '<a ([^>]+)>([\\s\\S]*?)</a>',
+      tagImg = '<img ([^>]+)/>';
+    RE.tagA = new RegExp( tagA, 'g' );
+    RE.tagImg = new RegExp( tagImg, 'g');
     RE.tagObject = /<object ([^>]+?)(\/>|>)/g;
     RE.attrType = /type="([^"]+)"/;
     RE.attrData = /data="([^"]+)"/;
 
-const reSO = '<object ([^>]+?)(/>|>(.*?)</object>)';
-    RE.tagSingleObjects = new RegExp( reSO, 'g' );
-    RE.tagNestedObjects = new RegExp( '<object ([^>]+?)>[\\s]*'+reSO+'([\\s\\S]*?)</object>', 'g' );
-    RE.inQuotes = /"(\S[^"]*?\S)"|'(\S[^']*?\S)'/i;  // empty space in the middle allowed, but not as first and last character
+const tagSO = '<object ([^>]+?)(/>|>(.*?)</object>)',
+      tagNO = '<object ([^>]+?)>[\\s]*' + tagSO + '([\\s\\S]*?)</object>';
+    RE.tagSingleObjects = new RegExp( tagSO, 'g' );
+    RE.tagNestedObjects = new RegExp( tagNO, 'g' );
 
 const inBr = "\\((\\S[^\\)]*?\\S)\\)|\\[(\\S[^\\]]*?\\S)\\]"; // empty space in the middle allowed, but not as first and last character
 //    RE.inBrackets = new RegExp( inBr, 'i');
     RE.inBracketsAtEnd = new RegExp(inBr + "$", 'i');
     RE.withoutBracketsAtEnd = /^(.*?)\s+(\(\S[^\)]*?\S\)|\[\S[^\]]*?\S\])$/i;
+    RE.inQuotes = /"(\S[^"]*?\S)"|'(\S[^']*?\S)'/i;  // empty space in the middle allowed, but not as first and last character
 
 const tagStr = "(<\\/?)([a-z]{1,10}(?: [^<>]+)?\\/?>)";
     RE.tag = new RegExp( tagStr, 'g' );

@@ -7,18 +7,10 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
+app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined {
 /*  Generate SpecIF classes for ontology terms which
     - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
     - or are referenced by others selected by domain and lifecyclestatus
-
-    The following constraints/conventions apply:
-    - Don't generate a class from a deprecated term.
-    - A TermPropertyClass has exactly one "SpecIF:hasDataType" statement.
-    - In a set of classes (per domain, but also when multiple domains are combined),
-      there shall not be the same term with different namespaces
-      ToDo: Remove that limitation, because it may happen, e.g. dcterms.type and rdf.type.
-    - ToDo: complete the list ...
 */
     console.debug('generateSpecifClasses', pr, opts);
     // pr is a SpecIF data set with classes and instances defining an Ontology. The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
@@ -47,8 +39,15 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         // The selected domains for generating classes:
         selDomains = allDomains.filter((d: string) => { return opts[d.toJsId()] });
 
-    if (selDomains.length < 1)
-        message.show("No domain selected, so no classes will be generated.", { severity: 'warning'});
+    if ( !checkConstraintsOntology(pr) ) {
+        message.show("The Ontology violates one or more constraints, so no classes will be generated. Please see the browser log for details.", { severity: 'error' });
+        return
+    };
+
+    if (selDomains.length < 1) {
+        message.show("No domain selected, so no classes will be generated.", { severity: 'warning' });
+        return
+    };
 
     // add the domains to the id of the generated data set:
     selDomains.forEach((d: string) => { spId += '-' + d.toJsId() });
@@ -67,9 +66,9 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         generated = new CGenerated;  // Intermediate storage of the generated classes
 
     // Start to generate:
-    generated.pCL = makeClasses(Array.from(primitiveDataTypes.keys()), createPC) as SpecifPropertyClass[];
-    generated.rCL = makeClasses(["RC-TermResourceClass"], createRC) as SpecifResourceClass[];
-    generated.sCL = makeClasses(["RC-TermStatementClass"], createSC) as SpecifStatementClass[];
+    LIB.cacheL( generated.pCL, makeClasses(Array.from(primitiveDataTypes.keys()), createPC) as SpecifPropertyClass[] );
+    LIB.cacheL( generated.rCL, makeClasses(["RC-TermResourceClass"], createRC) as SpecifResourceClass[] );
+    LIB.cacheL( generated.sCL, makeClasses(["RC-TermStatementClass"], createSC) as SpecifStatementClass[] );
 
     // Referenced statementClasses are generated at the end to avoid endless recursion:
     while (required.sCL.length > 0) {
@@ -156,6 +155,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         // Find the statements of the class with title ti referencing the given term r as subject or object:
         return pr.statements.filter(
             (st: SpecifStatement) => {
+                // better use 'instanceTitleOf', but it is not available, here:
                 return LIB.classTitleOf(st['class'], pr.statementClasses) == ti
                     && (st.subject.id == r.id || st.object.id == r.id);
             }
@@ -168,15 +168,12 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
     }
     function distinctiveCoreOf(ti:string): string {
         return ti.toCamelCase();
-//        let pcs = r.id.split("-");
-//        return pcs.length > 1 ? pcs[1] : r.id
     }
     function makeIdAndTitle(r: SpecifResource, pfx: string) {
         // Make an id and a title for the class generated for the term r
         // - use the identifier provided by the user or generate it using the title
         let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], pr),
             ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' });
-//            ti2 = ti.split(':').pop();  // remove namespace .. this can result in identical ids for different terms !!
         return {
             id: visIdL && visIdL.length > 0 ?
                   LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' })
@@ -286,10 +283,23 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             dT.id += "-" + distinctiveCoreOf(ti);
             dT.enumeration = enumL
         };
-        dT.revision = opts.rev;
+        dT.revision = valueByTitle(r, "SpecIF:Revision") || r.revision;
         dT.changedAt = r.changedAt;
+
+        if (opts.adoptOntologyDataTypes) {
+            // if selected by an option, replace the generated dataType by an equivalent one of the Ontology itself:
+            dT = adoptOntologyDataType(dT) || dT
+        };
+
         LIB.cacheE(generated.dTL, dT); // store avoiding duplicates
         return LIB.makeKey(dT);  // the key as reference for the generated propertyClass
+
+        function adoptOntologyDataType(d: SpecifDataType) {
+            for ( let dT of pr.dataTypes) {
+                if( LIB.equalDT(d,dT) ) return dT
+            }
+            // return undefined
+        }
     }
     function createPC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:
@@ -341,13 +351,15 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         return pCL
     }
     function createRC(r: SpecifResource) {
+        let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], pr);
+//        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
+
         // Create a resourceClass for the TermResourceClass r:
         return Object.assign(
             createItem(r, 'RC-'),
             {
-                // "PC-isHeading"
+                instantiation: iL.map((ins:SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isHeading: LIB.isTrue(valueByTitle(r, "SpecIF:isHeading")),
-                // "PC-Icon"
                 icon: valueByTitle(r, "SpecIF:Icon"),
                 // the references per propertyClass:
                 propertyClasses: pCsOf(r)
@@ -398,6 +410,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         // Create a statementClass for the TermStatementClass r:
 
         let
+            iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], pr),
             // In case of statementClasses a list of propertyClasses is optional and most often not used:
             pCL = pCsOf(r),
             // The eligible subjectClasses:
@@ -409,9 +422,8 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
         return Object.assign(
             createItem(r, 'SC-'),
             {
-                // "PC-isUndirected"
+                instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isUndirected: LIB.isTrue(valueByTitle(r, "SpecIF:isUndirected")),
-                // "PC-Icon"
                 icon: valueByTitle(r, "SpecIF:Icon"),
                 // the eligible subjectClasses and objectClasses:
                 subjectClasses: sCL.length > 0 ? sCL : undefined,
@@ -421,22 +433,68 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF {
             }
         ) as SpecifDataType;
     }
+    function extCOf(el: SpecifResource,pfx:string) {
+        // Return a resourceClass resp. statementClass which is related by "SpecIF:isSpecializationOf"
+        // to el (the term describing the resourceClass resp. statementClass to be generated):
+        if (['RC-', 'SC-'].includes(pfx) ) {
+
+            let sL = statementsByClass(el, "SpecIF:isSpecializationOf");
+            if (sL.length > 1) {
+                console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
+                // see: https://stackoverflow.com/questions/31547315/is-it-an-antipattern-to-set-an-array-length-in-javascript
+                sL.length = 1
+            };
+
+            // We are interested only in statements where *other* resources resp. statements are the object:
+            if (sL.length > 0 && el.id != sL[0].object.id) {
+                let term = LIB.itemByKey(pr.resources, sL[0].object),
+                    prep = makeIdAndTitle(term, pfx); // need the id only, here
+
+                // Ascertain that the referenced resourceClass resp. statementClass will be available;
+                // if it exist already due to correct selection, there will be no duplicate:
+                switch (pfx) {
+                    case 'RC-':
+                        LIB.cacheE(generated.rCL, createRC(term));
+                        break;
+                    case 'SC-':
+                        LIB.cacheE(generated.sCL, createSC(term));
+                };
+
+                return LIB.makeKey(prep.id)
+            }
+            // return undefined
+        }
+        // return undefined
+    }
     function createItem(r:SpecifResource, prefix:string) {
         // Create the attributes common to all classes except dataType;
         // - take the resource's title as title
         // - and the title without namespace as distinctive portion of the id.
         // ToDo: There is a potential problem - in case of equal terms with different namespace we end up with a duplicate id.
-        let prep = makeIdAndTitle(r,prefix),
+        let prep = makeIdAndTitle(r, prefix),
             dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], pr);
         if (dscL.length > 1)
             console.info("Only the fist value of the description property will be used for the class generated from " + r.id + " with title " + prep.title + ".");
         return {
             // Take the specified identifier if available or build one with the title ... :
             id: prep.id,
-            revision: opts.rev,
+            revision: valueByTitle(r, "SpecIF:Revision") || r.revision,
+            extends: extCOf(r,prefix),
             title: prep.title,
             description: (dscL.length > 0 ? dscL[0] : undefined), // only the first property value is taken for the class description
             changedAt: r.changedAt
         } as SpecifClass;
+    }
+    function checkConstraintsOntology(dta:SpecIF): boolean {
+    /*  Check the following constraints / conventions:
+        - Don't generate a class from a deprecated term.
+        - A TermPropertyClass has exactly one "SpecIF:hasDataType" statement.
+        - A TermResourceClass or TermStatementClass may not have >1 statements with title "SpecIF:isSpecializationOf"
+        - Chains of "isSpecializationOf" relations must not be circular.
+        - Chains of "isEligibleAsSubject" relations must not be circular.
+        - Chains of "isEligibleAsObject" relations must not be circular.
+        - ToDo: complete the list ...
+    */
+        return true
     }
 }

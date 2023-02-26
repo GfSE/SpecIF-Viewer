@@ -402,7 +402,7 @@ class CProject {
 
 		//	Create a table of types and relevant attributes:	
 		this.types = [
-			new CElement('dataType', this.equalDT.bind(this), this.compatibleDT.bind(this), this.substituteDT.bind(this)),
+			new CElement('dataType', LIB.equalDT, this.compatibleDT.bind(this), this.substituteDT.bind(this)),
 			new CElement('propertyClass', this.equalPC.bind(this), this.compatiblePC.bind(this), this.substitutePC.bind(this)),
 			new CElement('resourceClass', this.equalRC.bind(this), this.compatibleRC.bind(this), this.substituteRC.bind(this)),
 			new CElement('statementClass', this.equalSC.bind(this), this.compatibleSC.bind(this), this.substituteSC.bind(this))
@@ -954,11 +954,64 @@ class CProject {
 			}
 		);
 	}
+	private readClassesWithParents(ctg: string, toGet: SpecifKey[]) {
+		// Applies to resourceClasses and statementClasses;
+		// classes are always cached, so there is no need for a call with promise.
+		let resL: SpecifItem[] = [];
+		do {
+			let rL = this.data.get(ctg, toGet);
+			toGet = [];
+			for (var c of rL) {
+				// @ts-ignore - checking for extends, because it doesn't exist on all elements
+				if (c.extends) {
+					// The propoerties of the extending (parent's) class first:
+					// @ts-ignore - checking for extends, because it doesn't exist on all elements
+					toGet.unshift(c.extends);
+				};
+			};
+			resL = rL.concat(resL);
+		} while (toGet.length > 0);
+		return resL;
+	}
+	private readExtendedClasses(ctg: string, toGet: SpecifKey[]) {
+		// Applies to resourceClasses and statementClasses;
+		// classes are always cached, so there is no need for a call with promise.
+		let self = this,
+			resL: SpecifItem[] = [];
+		for (var clk of toGet) {
+			resL.push( extendClass(clk) )
+		};
+		return resL;
+
+		function extendClass(k:SpecifKey) {
+			let res = {} as SpecifItem;
+			self.readClassesWithParents(ctg, [k])
+				// A list with classes is returned, the ancestors first and the requested class last.
+				// - Starting with most elderly, copy to and potentially overwrite the attributes of res
+				// - Also the list of eligible subjectClasses and objectClasses are overwritten,
+				//   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
+				// - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
+				.forEach(
+					(cl:SpecifItem) => {
+						for (let att in cl) {
+						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+								LIB.cacheL(res[att], cl[att])
+							else
+								res[att] = cl[att]
+                        }
+					}
+				);
+			delete res.extends;
+			return res
+        }
+	}
 	readItems(ctg: string, itemL: SpecifKey[] | Function | string, opts?: any): Promise<SpecifItem[]> {
 		// Read one or more items of a given category either from cache or from the permanent store (server), otherwise:
 //		console.debug('readItems', ctg, item, opts);
 		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
 		if (!opts) opts = { reload: false, timelag: 10 };
+		let self = this;
 
 		return new Promise(
 			(resolve) => {
@@ -981,10 +1034,14 @@ class CProject {
 									this[standardTypes.listName.get(ctg)]  // only those remembered by the project
 									: itemL;
 
-					if (opts.withExtendedClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
-						// Special case: Item can have an extended class and it is requested:
-						items = getClassesWithParents(ctg, toGet, this.data);
+					if (opts.extendClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
+						// Special case: Extend the classes:
+						items = this.readExtendedClasses(ctg, toGet);
 					}
+				/*	else if (opts.withExtendedClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
+						// Special case: Add the extended classes to the list:
+						items = this.readClassesWithParents(ctg, toGet);
+					}  */
 					else {
 						// Normal case: Item can't have an extended class or is requested without:
 						items = this.data.get(
@@ -995,7 +1052,7 @@ class CProject {
 						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
 							items.forEach((itm: any) => {
 								// classes are alwways cached, so we can use this.data:
-								itm.properties = normalizeProperties(itm, this.data)
+								itm.properties = normalizeProperties(itm)
 							})
 						}
 					};
@@ -1007,25 +1064,7 @@ class CProject {
 			}
 		);
 
-		function getClassesWithParents(ctg: string, toGet: SpecifKey[], dta: CCache) {
-			// Applies to resourceClasses and statementClasses.
-			let resL: SpecifItem[] = [];
-			do {
-				let rL = dta.get(ctg, toGet);
-				toGet = [];
-				for (var c of rL) {
-					// @ts-ignore - checking for extends, because it doesn't exist on all elements
-					if (c.extends) {
-						// The propoerties of the extending (parent's) class first:
-						// @ts-ignore - checking for extends, because it doesn't exist on all elements
-						toGet.unshift(c.extends);
-					};
-				};
-				resL = rL.concat(resL);
-			} while (toGet.length > 0);
-			return resL;
-        }
-		function normalizeProperties(el: SpecifInstance, dta: CCache): SpecifProperty[] {
+		function normalizeProperties(el: SpecifInstance): SpecifProperty[] {
 			// el: original instance (resource or statement)
 			// Create a list of properties in the sequence of propertyClasses of the respective class.
 			// Use those provided by the instance's properties and fill in missing ones with default (no) values.
@@ -1044,22 +1083,16 @@ class CProject {
 				});
 			};
 
-			let pCkL: SpecifKeys[] = [], // keys of propertyClasses
+			let nL: SpecifProperty[] = [],  // normalized property list
 				pCL: SpecifPropertyClass[],
-				nL: SpecifProperty[] = [],  // normalized property list
 				// iCs: instance class list (resourceClasses or statementClasses),
 				// the existence of subject (or object) let's us recognize that it is a statement:
 				// @ts-ignore - existance of subject signifies whether it is a resource or statement
 				ctg = (el.subject ? "statementClass" : "resourceClass"),
-				iCs = getClassesWithParents(ctg, [el["class"]], dta);
+				iCs = self.readExtendedClasses(ctg, [el["class"]]);
 
-			// From the instance class including the extended class, build the list of propertyClass keys:
-			for (var iC of iCs)
-				pCkL = pCkL.concat(iC.propertyClasses);
-
-			// The full propertyClasses referenced by pCk;
-			// pC may and pCk may not have a revision:
-			pCL = dta.get("propertyClass", pCkL);
+			// Obtain the full propertyClasses referenced by iCs[0]:
+			pCL = self.data.get("propertyClass", iCs[0].propertyClasses);
 			// assuming that the property classes are unique:
 
 			// Add the properties in sequence of the propertyClass keys as specified by the instance class:
@@ -1200,29 +1233,22 @@ class CProject {
 		return new Promise(
 			(resolve, reject) => {
 				// Get the class's permissions. So far, it's property permissions are not loaded ...
-				var res: SpecifResource,
-					resC: SpecifResourceClass;
+				var res: SpecifResource;
 
-				this.readItems('resourceClass', [LIB.keyOf(rC)], { withExtendedClasses: true, reload: true })
+				this.readItems('resourceClass', [LIB.keyOf(rC)], { extendClasses: true, reload: true })
 					.then(
 						(rCL: SpecifItem[]) => {
 //							console.debug('makeEmptyResource resourceClasses', rCL);
 							// return an empty resource instance of the given type; 
-							resC = rCL.pop() as SpecifResourceClass;  // the parent class is first, the selected class last
 							res = {
 								id: LIB.genID('R-'),
-								class: LIB.makeKey(resC.id),
+								class: LIB.makeKey(rCL[0].id),
 								//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
 								properties: [],
 								changedAt: new Date().toISOString()
 							};
-							let pCL = [];
-							for (var rC of rCL)
-								if (Array.isArray((rC as SpecifResourceClass).propertyClasses))
-									for (var pC of (rC as SpecifResourceClass).propertyClasses)
-										pCL.push(pC);
 //							console.debug('makeEmptyResource propertyClasses', pCL);
-							return this.readItems('propertyClass', pCL, { reload: true })
+							return this.readItems('propertyClass', rCL[0].propertyClasses, { reload: true })
 						}
 					)
 					.then(
@@ -1803,8 +1829,8 @@ class CProject {
 
 				function isDiagram(r: SpecifResource): boolean {
 					// a resource is a diagram, 
-					// - if it's type has a title 'SpecIF:Diagram',
-					// - if it has a property dcterms:type with value 'SpecIF:Diagram', or
+					// - if it's type has a title 'SpecIF:View',
+					// - if it has a property dcterms:type with value 'SpecIF:View', or
 					// - if it has at least one statement with title 'SpecIF:shows':
 					return LIB.hasResClass(r, CONFIG.diagramClasses, dta)
 						|| LIB.hasType(r, CONFIG.diagramClasses, dta, opts)
@@ -2367,6 +2393,7 @@ class CProject {
 						opts.revisionDate = new Date().toISOString();
 						break;
 					case 'specifClasses':
+						opts.adoptOntologyDataTypes = true;
 						break;
 					default:
 						reject();
@@ -2490,31 +2517,8 @@ class CProject {
 	}
 
 	// Equality Checks:
-	private equalDT(refE: SpecifDataType, newE: SpecifDataType): boolean {
-		// return true, if reference and new dataType are equal:
-		if (refE.type != newE.type) return false;
-		// Perhaps we must also look at the title ..
-		switch( refE.type ) {
-			case SpecifDataTypeEnum.Double:
-				if( refE.fractionDigits != newE.fractionDigits ) return false;
-				break;
-			case SpecifDataTypeEnum.Integer:
-				if( refE.minInclusive != newE.minInclusive || refE.maxInclusive != newE.maxInclusive ) return false;
-				break;
-			case SpecifDataTypeEnum.String:
-				if( refE.maxLength != newE.maxLength ) return false;
-		};
-		if( !Array.isArray(refE.enumeration) && !Array.isArray(newE.enumeration) ) return true;
-		if( Array.isArray(refE.enumeration) != Array.isArray(newE.enumeration)
-			|| refE.enumeration.length != newE.enumeration.length ) return false;
-		// refE and newE have a property 'enumeration' with equal length:
-		for( var i = newE.enumeration.length - 1; i > -1; i-- )
-			// assuming that the values don't matter:
-			if( LIB.indexById(refE.enumeration, newE.enumeration[i].id) < 0 ) return false;
-		// the list of enumerated values *is* equal,
-		// finally the multiple flag must be equal:
-		return LIB.equalBoolean(refE.multiple, newE.multiple);
-	}
+	// equalDT is now part of LIB
+
 	private equalPC(refE: SpecifPropertyClass, newE: SpecifPropertyClass): boolean {
 		// return true, if reference and new propertyClass are equal.
 

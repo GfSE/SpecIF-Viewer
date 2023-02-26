@@ -49,10 +49,11 @@ moduleManager.construct({
 
 		self.clear();
 		cData = app.cache.selectedProject.data;
-		opts = simpleClone( options );
-		opts.lookupTitles = true;
-		opts.targetLanguage = browser.language;
-		opts.addIcon = true;
+		opts = Object.assign({}, options, {
+			lookupTitles: true,
+			targetLanguage: browser.language,
+			addIcon: true
+		});
 
 		app.cache.selectedProject.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
 		.then( 
@@ -79,7 +80,7 @@ moduleManager.construct({
 			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach(
 				(sCk:SpecifKey) => { LIB.cacheE(self.eligibleSCL, sCk) } // avoid duplicates
 			);
-			app.cache.selectedProject.readItems( 'statementClass', self.eligibleSCL )
+			app.cache.selectedProject.readItems('statementClass', self.eligibleSCL, { extendClasses: true } )
 			.then( 
 				(list:SpecifItem[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
@@ -211,7 +212,10 @@ moduleManager.construct({
 /* ++++++++++++++++++++++++++++++++
 	Functions called by GUI events 
 */
-	self.filterClicked = ():void =>{
+	self.filterClicked = (): void => {
+		// Either the selector for statementClass (link type) has been clicked or an entry has been made to the text filter;
+		// both have an influence on the resources listed ... to choose the other link partner.
+
 //		console.debug('click!', radioValue( i18n.LblStatementClass ));
 		self.selectedStatementClass = self.eligibleSCL[ radioValue( i18n.LblStatementClass ) ];
 		setFocus(i18n.TabFilter); 

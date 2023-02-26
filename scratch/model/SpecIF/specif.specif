@@ -39,9 +39,9 @@
         "changedAt": "2018-05-10T11:54:00+01:00"
     }],
     "resourceClasses": [{
-        "id": "RC-Diagram",
-        "title": "SpecIF:Diagram",
-        "description": "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
+        "id": "RC-SpecifView",
+        "title": "SpecIF:View",
+        "description": "A 'View' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
         "instantiation": ["user"],
         "icon": "&#9635;",
         "propertyClasses": ["PC-Name","PC-Description","PC-Diagram","PC-Type"],

@@ -132,7 +132,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			//			: '')
 			+ '</div>'
 
-			// Add a container based on the propertyClass (which should be unique and since there is usually no property-id),
+			// Add a container based on the propertyClass (since there is no property-id, while the propertyClass should be unique),
 			// so that the user can update and delete the diagram later on:
 			+ '<div id="' + tagId(this['class'].id) + '">'
 			+ this.renderFile(this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '', opts)

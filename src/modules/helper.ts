@@ -43,7 +43,7 @@ function makeTextForm(tag: string, valL: string[], opts?: IFieldOptions): string
             aC = 'attribute-wide';
             break;
         case 'left':
-            fG += '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag +'</div>';
+            fG += '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag +'</div>';
             aC = 'attribute-value';
             break;
         default:
@@ -169,7 +169,7 @@ function makeRadioForm(tag: string, entries: IBox[], opts?: IFieldOptions): stri
             break;
         case 'left': 
             rB =     '<div class="form-group '+(opts.classes||'')+'">'
-                +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag + '</div>'
+                +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
                 +        '<div class="attribute-value radio" >';
             break;
         default:
@@ -187,7 +187,8 @@ function makeRadioForm(tag: string, entries: IBox[], opts?: IFieldOptions): stri
     entries.forEach( (e,i)=>{
         rB +=            '<label>'
             +                '<input type="radio" name="radio'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            +                '<span ' + (e.description ? ('data-toggle="popover" title="' + LIB.displayValueOf(e.description, { targetLanguage: browser.language }) + '" ') : '') + '>'
+            +                '<span ' + (e.description ? ('data-toggle="popover" title="' + LIB.displayValueOf(e.description, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '') + '>'
+        //    +                 '<span ' + (e.description ? ('data-toggle="popover" title="' + e.description.stripHTML() + '" ') : '') + '>'
             +                    e.title
             +                    ( e.type? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
             +                '</span>'
@@ -215,19 +216,21 @@ function makeCheckboxForm(tag: string, entries: IBox[], opts?: IFieldOptions): s
             break;
         case 'left': 
             cB =     '<div class="form-group '+(opts.classes||'')+'">'
-                +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag + '</div>'
+                +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
                 +        '<div class="attribute-value checkbox" >';
             break;
         default:
             throw Error("Invalid display option '" + opts.tagPos + "' when showing a checkbox form");
     };
     // render options:
-    let tp: string, nm = simpleHash(tag);
     entries.forEach( (e,i)=>{
-        tp = e.type?'&#160;('+e.type+')':'';   // add type in brackets, if available
         cB +=            '<label>'
-            +                '<input type="checkbox" name="checkbox'+nm+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            +                '<span '+(e.description? ('data-toggle="popover" title="'+e.description+'" '):'')+'>'+e.title+tp+'</span>'
+            +                '<input type="checkbox" name="checkbox'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
+            +                   '<span ' + (e.description ? ('data-toggle="popover" title="' + LIB.displayValueOf(e.description, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '') + '>'
+        //    +                   '<span ' + (e.description ? ('data-toggle="popover" title="' + e.description.stripHTML() + '" ') : '') + '>'
+            +                       e.title
+            +                       (e.type ? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
+            +                   '</span>'
             +            '</label><br />'
     });
     cB +=            '</div>'
@@ -255,7 +258,7 @@ function makeBooleanForm( tag:string, val:boolean, opts?:any ):string {
             fn = ' onclick="'+opts.handle+'"'
     else     fn = '';
     return     '<div class="form-group form-active">'
-        +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description + '" ') : '') + '>' + tag + '</div>'
+        +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
         +        '<div class="attribute-value checkbox" >'
         +            '<label>'
         + '<input type="checkbox" name="boolean' + simpleHash(tag)+'"'+(val?' checked':'')+fn+' />'
@@ -551,6 +554,31 @@ LIB.equalValues = (refVL: SpecifValues, newVL: SpecifValues): boolean => {
 LIB.equalBoolean = (rB: boolean, nB: boolean): boolean => {
     return (rB && nB || !rB && !nB);
 }
+LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean => {
+    // return true, if reference and new dataType are equal:
+    if (refE.type != newE.type) return false;
+    // Perhaps we must also look at the title ..
+    switch (refE.type) {
+        case SpecifDataTypeEnum.Double:
+            if (refE.fractionDigits != newE.fractionDigits) return false;
+            // no break;
+        case SpecifDataTypeEnum.Integer:
+            if (refE.minInclusive != newE.minInclusive || refE.maxInclusive != newE.maxInclusive) return false;
+            break;
+        case SpecifDataTypeEnum.String:
+            if (refE.maxLength != newE.maxLength) return false;
+    };
+    if (!Array.isArray(refE.enumeration) && !Array.isArray(newE.enumeration)) return true;
+    if (Array.isArray(refE.enumeration) != Array.isArray(newE.enumeration)
+        || refE.enumeration.length != newE.enumeration.length) return false;
+    // refE and newE have a property 'enumeration' with equal length:
+    for (var i = newE.enumeration.length - 1; i > -1; i--)
+        // assuming that the values don't matter:
+        if (LIB.indexById(refE.enumeration, newE.enumeration[i].id) < 0) return false;
+    // the list of enumerated values *is* equal,
+    // finally the multiple flag must be equal:
+    return LIB.equalBoolean(refE.multiple, newE.multiple)
+}
 LIB.isString = (el:any): boolean => {
     return typeof (el) == 'string';
 }
@@ -645,7 +673,13 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     // for display, any vocabulary term is always translated to the selected language;
     // a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
 //    return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
-    return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
+//    return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
+    if (LIB.isMultiLanguageText(val)) {
+        let v = LIB.languageValueOf(val, opts);
+        if( opts.lookupValues ) v = i18n.lookup(v);
+        return opts.stripHTML ? v.stripHTML() : v
+    };
+    return val
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
     // Return the values of a resource's (or statement's) property with a title listed in pNs;
@@ -939,8 +973,8 @@ LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
 }
 LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
     // add or update the items es in a list L:
-    for (var i = es.length - 1; i > -1; i--)
-        LIB.cacheE(L, es[i]);
+    for (var e of es)
+        LIB.cacheE(L, e);
     // this operation cannot fail:
     return true;
 }

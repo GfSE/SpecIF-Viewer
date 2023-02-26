@@ -14,7 +14,7 @@ function BPMN2Specif( xmlString, opts ) {
 	"use strict";
 
 	const
-		idResourceClassDiagram = "RC-Diagram",
+		idResourceClassDiagram = "RC-SpecifView",
 		idResourceClassActor = "RC-Actor",
 		idResourceClassState = "RC-State",
 		idResourceClassEvent = "RC-Event",
@@ -47,7 +47,7 @@ function BPMN2Specif( xmlString, opts ) {
 	if( !opts.strFolderType ) 
 		opts.strFolderType = "SpecIF:Heading";
 	if( !opts.strDiagramType ) 
-		opts.strDiagramType = "SpecIF:Diagram";
+		opts.strDiagramType = "SpecIF:View";
 	if( !opts.strBusinessProcessFolder ) 
 		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
 /*	if( !opts.strAnnotationFolder ) 
@@ -1154,7 +1154,7 @@ function BPMN2Specif( xmlString, opts ) {
 		return [{
 			id: idResourceClassDiagram,
 			title: opts.strDiagramType,
-			description: "A 'Diagram' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
+			description: "A 'View' is a graphical model view with a specific communication purpose, e.g. a business process or system composition.",
 			instantiation: ['user'],
 			propertyClasses: ["PC-Name","PC-Diagram","PC-Description","PC-Type","PC-Notation"],
 			icon: "&#9635;",

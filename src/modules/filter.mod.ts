@@ -124,15 +124,14 @@ moduleManager.construct({
 
 	// Construct a Regex to isolate content from XHTML-tags:
 	const
-		reA = '<a([^>]+)>([\\s\\S]*?)</a>',
 		// A single comprehensive <img .../>:
-		reI = '<img([^>]+)/>',
+	//	reI = '<img ([^>]+)/>',
 		// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 		// Limitation: the innerHTML may not have any tags.
 		// The [^<] assures that just the single object is matched. With [\\s\\S] also nested objects match for some reason.
-		reSO = '<object([^>]+)(/>|>([^<]*?)</object>)',
+	//	reSO = '<object ([^>]+)(/>|>([^<]*?)</object>)',
 		// Two nested objects, where the inner is a comprehensive <object .../> or a tag pair <object ...>..</object>:
-		reNO = '<object([^>]+)>[\\s]*' + reSO + '([\\s\\S]*)</object>',
+	//	reNO = '<object ([^>]+)>[\\s]*' + reSO + '([\\s\\S]*)</object>',
 		reR = '([\\s\\S]*?)('
 			+ '<b>|</b>|<i>|</i>|<em>|</em>|<span[^>]*>|</span>|<br ?/>'
 			+ '|<div[^>]*>|</div>|<div ?/>'
@@ -142,11 +141,11 @@ moduleManager.construct({
 			+ '|<li[^>]*>|</li>'
 			+ '|<table[^>]*>|<thead[^>]*>|<tbody[^>]*>|<tfoot[^>]*>|<tr[^>]*>|<tr[^>]*>|<th[^>]*>|<td[^>]*>'
 			+ '|</table>|</thead>|</tbody>|</tfoot>|</tr>|</tr>|</th>|</td>'
-			+ '|' + reA
-			+ '|' + reI
+			+ '|' + tagA
+			+ '|' + tagImg
 			// The nested object pattern must be checked before the single object pattern:
-			+ '|' + reNO
-			+ '|' + reSO
+			+ '|' + tagNO
+			+ '|' + tagSO
 			//		+	(opts.addTitleLinks? '|'+opts.titleLinkBegin+'.+?'+opts.titleLinkEnd : '')
 			+ ')',
 		reRun = new RegExp(reR, 'g');
@@ -710,7 +709,7 @@ moduleManager.construct({
 				};
 				(cData.get("resourceClass", prj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
 					if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
-							&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes("auto") || rC.instantiation.includes("user"))) {
+						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
 						oTF.options.push({
 							title: LIB.titleOf(rC, displayOptions),
 							id: rC.id,
