@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-app.generateSpecifClasses = function (ontologies: SpecIF, opts?: any): SpecIF|undefined {
+function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined {
 /*  Generate SpecIF classes for ontology terms which
     - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
     - or are referenced by others selected by domain and lifecyclestatus
