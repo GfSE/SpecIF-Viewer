@@ -74,10 +74,11 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
         pCL: SpecifPropertyClass[] = [];
         rCL: SpecifResourceClass[] = [];
         sCL: SpecifStatementClass[] = []
+        // ToDo: all making functions below as methods
     }
     let
         required = {
-            sCL: []  // list of referenced but missing instances of termStatementClass
+            sTL: []  // list of referenced but missing instances of termStatementClass
         },
         generated = new CGenerated;  // Intermediate storage of the generated classes
 
@@ -92,14 +93,14 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
         { resultL: generated.sCL, classes: ["RC-TermStatementClass"], fn: createSC }
     ].forEach(
         (step) => { LIB.cacheL(step.resultL, makeClasses(step.classes, step.fn)); }
-    )
+    );
 
     // Referenced statementClasses are generated at the end to avoid endless recursion:
-    while (required.sCL.length > 0) {
-        let sCL = [].concat(required.sCL);
-        required.sCL.length = 0;
+    while (required.sTL.length > 0) {
+        let sCL = [].concat(required.sTL);
+        required.sTL.length = 0;
         LIB.cacheL(generated.sCL, sCL.map(createSC));
-        console.debug('required sCL', simpleClone(generated.sCL), simpleClone(required.sCL));
+        console.debug('required sCL', simpleClone(generated.sCL), simpleClone(required.sTL));
     };
 
     // We are done, so we can return the result:
@@ -359,13 +360,13 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
 
         let pL = statementsByClass(el, "SpecIF:hasProperty");
         for (let p of pL) {
-            let elP = LIB.itemByKey(ontologies.resources, p.object),
-                prep = makeIdAndTitle(elP, "PC-"); // need the id only, here
-//            console.debug('pCsOf', elP, LIB.valuesByTitle(elP, ["dcterms:identifier"], ontologies));
+            let term = LIB.itemByKey(ontologies.resources, p.object),
+                prep = makeIdAndTitle(term, "PC-"); // need the id only, here
+//            console.debug('pCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], ontologies));
             // an entry in the propertyClasses of the resourceClass resp statementClass to generate:
             LIB.cacheE(pCL, { id: prep.id });
             // an entry in the list with the terms describing the referenced propertyClass:
-            LIB.cacheE(tL, elP)
+            LIB.cacheE(tL, term)
         };
 //        console.debug('pCsOf', pL, pCL, tL);
 
@@ -404,27 +405,27 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
             // We are interested only in statements where *other* statementClasses are eligible as objectClasses or statementClasses:
             if (el.id == s.subject.id) continue;
 
-            let elP = LIB.itemByKey(ontologies.resources, s.subject),
-                prep = makeIdAndTitle(elP, elP['class'].id == "RC-TermResourceClass"? "RC-" : "SC-"); // need the id only, here
-//            console.debug('sCsOf', elP, LIB.valuesByTitle(elP, ["dcterms:identifier"], ontologies));
+            let term = LIB.itemByKey(ontologies.resources, s.subject),
+                prep = makeIdAndTitle(term, term['class'].id == "RC-TermResourceClass"? "RC-" : "SC-"); // need the id only, here
+//            console.debug('sCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], ontologies));
             LIB.cacheE(iCL, { id: prep.id })
 
-            if (elP['class'].id == "RC-TermResourceClass") {
+            if (term['class'].id == "RC-TermResourceClass") {
                 if (LIB.indexById(generated.rCL, prep.id) < 0)
                     // an entry in the list with the terms describing the referenced resourceClass:
-                    LIB.cacheE(rCL, elP)
+                    LIB.cacheE(rCL, term)
             }
             else {
                 // the class is "RC-TermStatementClass":
                 if (LIB.indexById(generated.sCL, prep.id) < 0)
                     // an entry in the list with the terms describing the referenced statementClass:
-                    LIB.cacheE(required.sCL, elP)
+                    LIB.cacheE(required.sTL, term)
             }
         };
-//        console.debug('sCsOf', el, sL, iCL,rCL,required.sCL);
+//        console.debug('sCsOf', el, sL, iCL,rCL,required.sTL);
 
         // Ascertain that all referenced resourceClasses will be available.
-        // Any missing statementClasses are collected in required.sCL until the end of the generation 
+        // Any missing statementClasses are collected in required.sTL until the end of the generation 
         // ... to avoid infinite recursion, because statementClasses can reference statementClasses.
         // Thus, generate only the referenced resourceClasses immediately;
         // if they exist already due to correct selection, duplicates are avoided:
