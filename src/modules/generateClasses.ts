@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined {
+app.generateSpecifClasses = function (ontologies: SpecIF, opts?: any): SpecIF|undefined {
 /*  Generate SpecIF classes for ontology terms which
     - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
     - or are referenced by others selected by domain and lifecyclestatus
@@ -15,19 +15,17 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
     // pr is a SpecIF data set with classes and instances defining an Ontology. The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
     // opts contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
 
-    // Make a local copy to avoid side-effects:
-    let ontologies = simpleClone(pr);
-
-    // Filter all hierarchies having a property of "dcterms:type" with value "W3C:Ontology":
+    // Filter all hierarchies having a property of "dcterms:type" with value "W3C:Ontology";
+    // there is a side-effect on the data handed-in, but in case of the SpecIF Viewer/Editor, this isn't harmful.
     ontologies.hierarchies = ontologies.hierarchies.filter(
         (h: SpecifNode) => {
             let r = LIB.itemByKey(ontologies.resources, h.resource);
             return valueByTitle(r, "dcterms:type") == "W3C:Ontology"
         }
     );
-    console.debug('generateSpecifClasses', ontologies, opts);
+//    console.debug('generateSpecifClasses', ontologies, opts);
 
-    if (ontologies.length < 1) {
+    if (ontologies.hierarchies.length < 1) {
         message.show("No ontology found, so no classes will be generated.", { severity: 'warning' });
         return
     };
@@ -67,7 +65,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
 
     // add the domains to the id of the generated data set:
     selDomains.forEach((d: string) => { spId += '-' + d.toJsId() });
-    console.debug('#', dTDomains, allDomains, selDomains, spId);
+//    console.debug('#', dTDomains, allDomains, selDomains, spId);
 
     class CGenerated {
         dTL: SpecifDataType[] = [];  // is filled by the function creating the propertyClasses, as there are no explicit dataTypes in a SpecIF Ontology.
@@ -100,7 +98,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
         let sCL = [].concat(required.sTL);
         required.sTL.length = 0;
         LIB.cacheL(generated.sCL, sCL.map(createSC));
-        console.debug('required sCL', simpleClone(generated.sCL), simpleClone(required.sTL));
+//        console.debug('required sCL', simpleClone(generated.sCL), simpleClone(required.sTL));
     };
 
     // We are done, so we can return the result:
@@ -233,7 +231,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
                 }
             ),
             dT = {} as SpecifDataType;
-        console.debug('createDT', r, stL, oL, enumL);
+//        console.debug('createDT', r, stL, oL, enumL);
 
         // Look for any parameters per primitive data type:
         switch (ty) {
@@ -330,7 +328,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
     }
     function createPC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:
-        console.debug('createPC', r);
+//        console.debug('createPC', r);
 
         // 1. Create the dataType, unless it exists already:
         let dTk = createDT(r),
@@ -444,7 +442,7 @@ app.generateSpecifClasses = function (pr: SpecIF, opts?: any): SpecIF|undefined 
             sCL = sCsOf(r, "SpecIF:isEligibleAsSubject"),
             // The eligible objectClasses:
             oCL = sCsOf(r, "SpecIF:isEligibleAsObject");
-        console.debug('createSC', r, pCL, sCL, oCL);
+//        console.debug('createSC', r, pCL, sCL, oCL);
 
         return Object.assign(
             createItem(r, 'SC-'),
