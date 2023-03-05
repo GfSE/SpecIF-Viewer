@@ -1688,7 +1688,7 @@ class CProject {
 					// Add the folder:
 					let gl: INodeWithPosition = {
 						id: "H-FolderUnreferencedResources-" + apx,
-						predecessor: hL[hL.length - 1].id,   // add as last hierarchy
+						predecessor: hL.length>0? hL[hL.length - 1].id : undefined,   // add as last hierarchy
 						resource: LIB.makeKey("FolderUnreferencedResources-" + apx),
 						nodes: resources.map((r) => { return { id: 'N-' + r.id, resource: LIB.keyOf(r), changedAt: tim } }),
 						changedAt: tim
@@ -1903,7 +1903,7 @@ class CProject {
 					// a. Add the folders:
 					let gl: INodeWithPosition = {
 						id: "H-FolderGlossary-" + apx,
-						predecessor: lastContentH.id,	// add as last hierarchy
+						predecessor: lastContentH? lastContentH.id : undefined,	// add as last hierarchy
 						resource: LIB.makeKey("FolderGlossary-" + apx),
 						nodes: [],
 						changedAt: tim

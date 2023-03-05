@@ -11,9 +11,10 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
 /*  Generate SpecIF classes for ontology terms which
     - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
     - or are referenced by others selected by domain and lifecyclestatus
+
+    - 'ontologies' is a SpecIF data set with classes and instances defining an Ontology. The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
+    - 'opts' contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
 */
-    // pr is a SpecIF data set with classes and instances defining an Ontology. The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
-    // opts contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
 
     // Filter all hierarchies having a property of "dcterms:type" with value "W3C:Ontology";
     // there is a side-effect on the data handed-in, but in case of the SpecIF Viewer/Editor, this isn't harmful.
@@ -24,7 +25,6 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
         }
     );
 //    console.debug('generateSpecifClasses', ontologies, opts);
-
     if (ontologies.hierarchies.length < 1) {
         message.show("No ontology found, so no classes will be generated.", { severity: 'warning' });
         return
@@ -82,9 +82,6 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
 
     // Generate in 3 steps;
     // note that referenced propertyClasses and resourceClasses are generated as soon as they are identified:
-/*    LIB.cacheL( generated.pCL, makeClasses(Array.from(primitiveDataTypes.keys()), createPC) );
-    LIB.cacheL( generated.rCL, makeClasses(["RC-TermResourceClass"], createRC) );
-    LIB.cacheL( generated.sCL, makeClasses(["RC-TermStatementClass"], createSC) ); */
     [
         { resultL: generated.pCL, classes: Array.from(primitiveDataTypes.keys()), fn: createPC },
         { resultL: generated.rCL, classes: ["RC-TermResourceClass"], fn: createRC },

@@ -1274,19 +1274,20 @@ moduleManager.construct({
 					// when a node is opened, but not when an opened node receives an open command
 					():void =>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
-//						console.debug('tree.open',event);
+//						console.debug('tree.open');
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'close':
 					// when a node is closed, but not when a closed node receives a close command
 					():void =>{  // The clicked node is 'event.node', but we don't care
 						// refresh is only needed in document view:
-//						console.debug('tree.close',event);
+//						console.debug('tree.close');
 						if( self.selectedView()=='#'+CONFIG.objectList ) self.refresh()
 					},
 				'move':
 					(event:any):void =>{
 						// event: A node, potentially with children, has been moved by drag'n'drop.
+//						console.debug('tree.move',event);
 
 						interface ITargetNode {
 							parent?: string;
@@ -1338,14 +1339,12 @@ moduleManager.construct({
 								// 2. Move the entry including any sub-tree to the new position
 								//  - Update the server, where the tree entries get new ids.
 								//  - Update the moved tree entries with the new id corresponding with the server.
-								let are = /after/,
-									ire = /inside/;
-								if( are.test(event.move_info.position) ) {
+								if (/after/.test(event.move_info.position) ) {
 									// (a) event.move_info.position=='position after': 
 									//     The node is dropped between two nodes.
 									moveNode( event.move_info.moved_node, {predecessor:event.move_info.target_node} );
 								}
-								else if (ire.test(event.move_info.position)) {
+								else if (/inside/.test(event.move_info.position)) {
 									// (b) event.move_info.position=='position inside': 
 									//     The node is dropped on a target node without children or before the first node in a folder.
 									moveNode( event.move_info.moved_node, {parent:event.move_info.target_node} );
@@ -1524,41 +1523,21 @@ moduleManager.construct({
 
 					// all hierarchies have been loaded;
 					// try to select the requested node:
-					if( uP && uP.node ) {
+					if (uP && uP[CONFIG.keyNode] ) {
 						nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
 					};
 					// node has priority over item (usually only one of them is specified ;-):
-					if( !nd && uP && uP.item ) {
+					if (!nd && uP && uP[CONFIG.keyItem] ) {
 						nd = self.tree.selectNodeByRef( uP[CONFIG.keyItem] )
 					};
 					// if none is specified, take the node which is already selected:
 					if( !nd ) nd = self.tree.selectedNode;
 					// no or unknown resource specified; select first node:
 					if( !nd ) nd = self.tree.selectFirstNode();
-					if (nd) {
-						self.tree.openNode(nd);
-					}
-					else {
-						// tree is empty:
-						if (!self.resCre) {
-							// Warn, if there are no resource classes for user instantiation:
-							message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
-							return;
-						};
-					};
+					if( nd ) self.tree.openNode(nd)
 				},
 				LIB.stdError
-			);
-		}
-		else {
-			// the project has no spec:
-			$( self.view ).html( '<div class="notice-danger">'+i18n.MsgNoSpec+'</div>' );
-			app.busy.reset();
-			if (!self.resCre) {
-				// Warn, if there are no resource classes for user instantiation:
-				message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
-				return;
-			}
+			)
 		}
 	};
 
@@ -1589,7 +1568,7 @@ moduleManager.construct({
 	//	$('#specNotice').empty();
 	
 		// update the current view:
-		self.ViewControl.selected.show( parms );
+		self.ViewControl.selected.show( parms )
 	};
 	self.reworkTree = (): void => {
 	//	app.cache.selectedProject.createFolderWithGlossary({ addGlossary: true })
@@ -1608,7 +1587,7 @@ moduleManager.construct({
 					self.doRefresh({ forced: true })
 				}
 			)
-			.catch(LIB.stdError);
+			.catch(LIB.stdError)
 	};
 
 /* ++++++++++++++++++++++++++++++++
@@ -1643,7 +1622,7 @@ moduleManager.construct({
 			}
 		};
 		if( self.selectedView() != '#'+CONFIG.objectList ) 
-			moduleManager.show({ view: '#'+CONFIG.objectList });
+			moduleManager.show({ view: '#'+CONFIG.objectList })
 	};
 /*	self.addComment = ()=>{
 //		console.debug( 'addComment', self.tree.selectedNode );
@@ -1795,6 +1774,8 @@ moduleManager.construct({
 
 		var nL:jqTreeNode[]; // list of hierarchy nodes, must survive the promise
 
+		getPermissions();
+
 		getNextResources()
 		.then( 
 			renderNextResources,
@@ -1815,14 +1796,17 @@ moduleManager.construct({
 			}
 		);
 		return;
-		
+/*		if (!self.resCre) {
+			// Warn, if there are no resource classes for user instantiation:
+			message.show(i18n.MsgNoObjectTypeForManualCreation, { duration: CONFIG.messageDisplayTimeLong });
+			return;
+		}
+*/
 		function getNextResources():Promise<SpecifResource[]> {
 			var nd = self.parent.tree.selectedNode,
 				oL:SpecifKey[] = [];  // id list of the resources to view
 			nL = [];  // list of hierarchy nodes
 					
-			getPermissions();
-			
 			// Update browser history, if it is a view change or item selection, 
 			// but not navigation in the browser history:
 			if( nd && !(opts && opts.urlParams) ) 
