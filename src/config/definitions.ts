@@ -372,20 +372,20 @@ const CONFIG:any = {};
         "Archimate:Viewpoint"
     ];
     // A list of resourceClasses representing Model Diagrams;
-    // these are used as title of a diagram's class and/or as a value of a type property:
+    // these are used as title of a diagram's class:
     CONFIG.diagramClasses = [
         CONFIG.resClassDiagram,
         CONFIG.resClassProcess,
         "Archimate:Viewpoint",
         "FMC:Plan",            // equivalent
-        "SpecIF:View"        // deprecated
+        "SpecIF:Diagram"        // deprecated
     ];
     CONFIG.folderClasses = [
         CONFIG.resClassOutline,
         CONFIG.resClassFolder
     ];
     CONFIG.ontologyClasses = [
-        "SpecIF:TermDataType",
+        // ToDo: Derive from SpecIF Ontology
         "SpecIF:TermResourceClass",
         "SpecIF:TermStatementClass",
         "SpecIF:TermPropertyClass",
@@ -395,6 +395,7 @@ const CONFIG:any = {};
     // is used for example to build a glossary;
     // it is expected that a plural of any list element exists ( element+'s' ):
     CONFIG.modelElementClasses = [
+        // ToDo: Derive from SpecIF Ontology
         'FMC:Actor',
         'FMC:State',
         'FMC:Event',
@@ -409,6 +410,7 @@ const CONFIG:any = {};
     // A list of statement types by title,
     // is used for example to recognize a statement to create when importing an xls sheet:
     CONFIG.statementClasses = [
+        // ToDo: Derive from SpecIF Ontology
         'IREB:refines',
         'IREB:refinedBy',
         'oslc_rm:satisfies',
@@ -468,7 +470,7 @@ const CONFIG:any = {};
     // for example in ioXls.ts.
     // The key is the property class' title, the value the native property's name plus the data type and validity test applying to both:
     CONFIG.nativeProperties = new Map([
-        ["dcterms:created",     { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
+        ["dcterms:created",  { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
         ["SpecIF:createdAt", { name: "createdAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
         ["dcterms:modified", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
         ["SpecIF:changedAt", { name: "changedAt", type: "xs:dateTime", check: function (val: string): boolean { return val.length > 0 && LIB.isIsoDate(val) } }],
@@ -476,8 +478,9 @@ const CONFIG:any = {};
         ["SpecIF:createdBy", { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
         ["SpecIF:changedBy", { name: "changedBy", type: "xs:string", check: function (): boolean { return true } }]
     ]);
-    // see: https://www.fileformat.info/info/unicode/char/2702/fontsupport.htm
     CONFIG.icons = new Map([
+        // see: https://www.fileformat.info/info/unicode/char/2702/fontsupport.htm
+        // ToDo: Derive from SpecIF Ontology
         ['FMC:Actor',"&#9632;"],
         ['FMC:State',"&#9679;"],
         ['FMC:Event',"&#11047;"],
@@ -496,9 +499,9 @@ const CONFIG:any = {};
     //    ["IR:Annotation", "&#x27A4;"]        // BLACK RIGHTWARDS ARROWHEAD
     ]);
 
-    // values for boolean 'true' and 'false':
-    CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', 'True'];
-    CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', 'False'];
+    // string values for boolean 'true' and 'false':
+    CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', '1', 'True'];
+    CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', '0', 'False'];
 
 /*    // values for priority:
     CONFIG.valuesPriority = [
@@ -511,6 +514,7 @@ const CONFIG:any = {};
 
 const vocabulary = {
     // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
+    // ToDo: Derive from SpecIF Ontology
     property: {
         // for properyTypes and properties:
         specif: function (iT: string): string {

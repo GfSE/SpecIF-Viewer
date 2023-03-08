@@ -10,7 +10,7 @@
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
 */
 
-function BPMN2Specif( xmlString, opts ) {
+function BPMN2Specif( xmlString, options ) {
 	"use strict";
 
 	const
@@ -22,8 +22,44 @@ function BPMN2Specif( xmlString, opts ) {
 		idResourceClassFolder = "RC-Folder";
 	//	idStatementClassAccesses = "SC-accesses";
 
-	if (typeof (opts) != 'object' || !opts.fileName) return null;
-	if( !opts.fileDate ) 
+	if (typeof (options) != 'object' || !options.fileName) return null;
+
+	let opts = Object.assign(
+		{
+			fileDate: new Date().toISOString(),
+			titleLength: 96,
+			textLength: 8192,
+			mimeType: "application/bpmn+xml",
+			strNamespace: "bpmn:",
+			modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+			strRoleType: "SpecIF:Role",
+			strConditionType: "SpecIF:Condition",
+			strBusinessProcessType: 'SpecIF:BusinessProcess',
+			strBusinessProcessesType: 'SpecIF:BusinessProcesses',
+			strFolderType: "SpecIF:Heading",
+			strDiagramType: "SpecIF:View",
+			strBusinessProcessFolder: "SpecIF:BusinessProcesses",
+		//	strAnnotationFolder: "SpecIF:Annotations",
+			strNotation: "BPMN 2.0 Process Diagram",
+			strJoinExcGateway: "Joining Exclusive Gateway",
+			strJoinExcGatewayDesc: "Wait for any *one* incoming branch to continue.",
+			strJoinParGateway: "Joining Parallel Gateway",
+			strJoinParGatewayDesc: "Wait for *all* incoming branches to continue.",
+			strJoinIncGateway: "Joining Inclusive Gateway",
+			strJoinIncGatewayDesc: "Wait for *all active* incoming branches to continue.",
+			strForkEvtGateway: "Forking (exclusive) Event Gateway",
+			strForkEvtGatewayDesc: "The first of the following events to occur will prevail.",
+			strForkExcGateway: "Forking Exclusive Gateway",
+			strForkExcGatewayDesc: "Evaluate the condidition and signal the respective event.",
+			strForkParGateway: "Forking Parallel Gateway",
+			strForkParGatewayDesc: "Forward control to *all* outgoing branches.",
+			strForkIncGateway: "Forking Inclusive Gateway",
+			strForkIncGatewayDesc: "Evaluate all condiditions and signal the respective events.",
+			strTextAnnotation: "Text Annotation"
+		},
+		options
+	);
+/*	if (!opts.fileDate)
 		opts.fileDate = new Date().toISOString();
 	if( typeof(opts.titleLength)!='number' )
 		opts.titleLength = 96;
@@ -50,8 +86,8 @@ function BPMN2Specif( xmlString, opts ) {
 		opts.strDiagramType = "SpecIF:View";
 	if( !opts.strBusinessProcessFolder ) 
 		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
-/*	if( !opts.strAnnotationFolder ) 
-		opts.strAnnotationFolder = "SpecIF:Annotations"; */
+//	if( !opts.strAnnotationFolder ) 
+//		opts.strAnnotationFolder = "SpecIF:Annotations";
 
 	if (!opts.strNotation)
 		opts.strNotation = "BPMN 2.0 Process Diagram";
@@ -84,7 +120,7 @@ function BPMN2Specif( xmlString, opts ) {
 	if( !opts.strForkIncGatewayDesc ) 
 		opts.strForkIncGatewayDesc = "Evaluate all condiditions and signal the respective events.";
 	if( !opts.strTextAnnotation ) 
-		opts.strTextAnnotation = "Text Annotation";
+		opts.strTextAnnotation = "Text Annotation"; */
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");

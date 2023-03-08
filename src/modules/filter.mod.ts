@@ -115,7 +115,7 @@ moduleManager.construct({
 
 	let myName = self.loadAs,
 		myFullName = 'app.' + myName,
-		prj: CProject,
+		selPrj: CProject,
 		cData: CCache,
 		displayOptions: any;
 
@@ -195,13 +195,13 @@ moduleManager.construct({
 //		console.debug( 'filter.show', opts, self.filters );
 		$('#filterNotice').empty();
 
-		prj = app.cache.selectedProject;
-		cData = prj.data;
+		selPrj = app.cache.selectedProject;
+		cData = selPrj.data;
 
 		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {
-			targetLanguage: prj.language,
-			lookupTitles: true,
+			targetLanguage: selPrj.language,
+		//	lookupTitles: true,
 			lookupValues: true
 		};
 
@@ -220,7 +220,7 @@ moduleManager.construct({
 		// but not navigation in the browser history:
 		if (!opts.urlParams)
 			setUrlParams({
-				project: prj.id,
+				project: selPrj.id,
 				view: self.view.substr(1)	// remove leading hash
 			});
 
@@ -251,10 +251,10 @@ moduleManager.construct({
 			return;  // nothing to do ...
 		};
 		//		console.debug('filter something to do',tr);
-		doFilter();
+		doFilter(tr);
 	};
 
-	function doFilter(): void {
+	function doFilter(tree): void {
 		// Get every resource referenced in the hierarchy tree and try whether it is a match.
 		app.busy.set();
 		//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
@@ -262,14 +262,14 @@ moduleManager.construct({
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend = 0, h: CResourceToShow, hitCnt = 0;
-		self.parent.tree.iterate(
+		tree.iterate(
 			(nd: jqTreeNode) => {
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
-				prj.readItems('resource', [nd.ref])
+				selPrj.readItems('resource', [nd.ref])
 					.then(
 						(rL) => {
 							h = match(new CResourceToShow(rL[0] as SpecifResource));
@@ -334,7 +334,7 @@ moduleManager.construct({
 					p: CPropertyToShow;
 
 				// Remember: As CPropertyToShow, all enumerated values of p have already been looked up ...
-				if (matchStr(res.title)) return true;
+				if (matchStr(res.title,res.isHeading)) return true;
 				for (p of res.descriptions)
 					if (matchStr(p)) return true;
 				for (p of res.other) {
@@ -344,18 +344,15 @@ moduleManager.construct({
 				};
 				return false;  // not found
 
-				function matchStr(prp: CPropertyToShow): boolean {
+				function matchStr(prp: CPropertyToShow, isHeading?:boolean): boolean {
 //					console.debug('matchStr',prp,prp.get());
-					return patt.test(prp.get(displayOptions));
-					/*	// ToDo: ckeck for enumerated value and get it from the dataType
-						switch( prp.dT.type ) {
-							case SpecifDataTypeEnum.String:
-								if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions).stripHTML() )) return true;
-								break;
-							default:
-								if( patt.test( LIB.languageValueOf(prp.values[0], displayOptions) )) return true;
-						};
-						return false; */
+					// In case of a title, the value shall only be looked up in case of a heading
+					// - Certain folder titles are specified with a vocabulary term --> lookup
+					// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
+					let localOptions = simpleClone(displayOptions);
+					localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
+
+					return patt.test(prp.get(localOptions));
 				}
 			}
 			function matchPropValue(f: IFilter): boolean {
@@ -461,7 +458,7 @@ moduleManager.construct({
 								// @ts-ignore - in this case it is defined
 								let rgxS = new RegExp(f.searchString.escapeRE(), isChecked(f.options, SearchOption.caseSensitive) ? 'g' : 'gi');
 
-								res.title.values = markValL(res.title, rgxS);
+								res.title.values = markValL(res.title, rgxS, res.isHeading);
 								res.descriptions = res.descriptions.map((rp: CPropertyToShow) => {
 									rp.values = markValL(rp, rgxS);
 									return rp;
@@ -485,11 +482,17 @@ moduleManager.construct({
 				};
 				return; // undefined
 
-				function markValL(prp:CPropertyToShow, re: RegExp): SpecifValues {
+				function markValL(prp:CPropertyToShow, re: RegExp, isHeading?:boolean): SpecifValues {
 					//	return [LIB.makeMultiLanguageText(mark(LIB.languageValueOf(valL[0], displayOptions), re))];
 					let mV:string;
 					return prp.values.map((v) => {
-						mV = mark(LIB.displayValueOf(v, displayOptions), re);
+						// In case of a title, the value shall only be looked up in case of a heading
+						// - Certain folder titles are specified with a vocabulary term --> lookup
+						// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
+						let localOptions = simpleClone(displayOptions);
+						localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
+
+						mV = mark(LIB.displayValueOf(v, localOptions), re);
 						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageText(mV) : mV;
 					});
 
@@ -672,7 +675,7 @@ moduleManager.construct({
 					title: i18n.LblStringMatch,  // this filter is available for all projects independently of their data-structure
 					category: FilterCategory.textSearch,
 					primary: true,
-					scope: prj.id,
+					scope: selPrj.id,
 					searchString: pre&&pre.searchString? pre.searchString : '',
 					options: [
 						{ id: SearchOption.wordBeginnings, title: i18n.LblWordBeginnings, checked: pre && pre.options.indexOf(SearchOption.wordBeginnings)>-1 },
@@ -704,10 +707,10 @@ moduleManager.construct({
 						title: i18n.TabSpecTypes,
 						category: FilterCategory.resourceClass,
 						primary: true,
-						scope: prj.id,
+						scope: selPrj.id,
 						options: [] 
 				};
-				(cData.get("resourceClass", prj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
+				(cData.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
 					if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
 						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
 						oTF.options.push({

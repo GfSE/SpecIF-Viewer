@@ -127,19 +127,6 @@ class CPropertyToShow implements SpecifProperty {
 			options
 		);
 
-	/*	if (typeof (opts) != 'object') opts = {};
-		if (typeof (opts.titleLinking) != 'boolean') opts.titleLinking = false;
-		if (!opts.targetLanguage) opts.targetLanguage = this.selPrj.language;
-		if (!Array.isArray(opts.titlelLinkTargets)) opts.titleLinkTargets = CONFIG.titleLinkTargets;
-
-		if (typeof (opts.clickableElements) != 'boolean') opts.clickableElements = false;
-		if (typeof (opts.linkifyURLs) != 'boolean') opts.linkifyURLs = false;
-		// some environments escape the tags on export, e.g. camunda / in|flux:
-		if (typeof (opts.unescapeHTMLTags) != 'boolean') opts.unescapeHTMLTags = false;
-		// markup to HTML:
-		if (typeof (opts.makeHTML) != 'boolean') opts.makeHTML = false;
-		if (typeof (opts.lookupValues) != 'boolean') opts.lookupValues = false; */
-
 		// Malicious content has been removed upon import ( specif.toInt() ).
 		let ct: string;
 //		console.debug('*',this,this.dT);
@@ -609,7 +596,7 @@ class CResourceToShow {
 		let ti = LIB.languageValueOf(this.title.values[0], opts);
 		if (this.isHeading) {
 			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
-			// whereas the individual elements may mean the vocabulary term as such (example: vocabulary):
+			// whereas the individual elements may mean the vocabulary term as such (example: vocabulary/ontology):
 			if (opts && opts.lookupTitles)
 				ti = i18n.lookup(ti);
 			// it is assumed that a heading never has an icon:

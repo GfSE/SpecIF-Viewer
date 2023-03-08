@@ -9,7 +9,7 @@
 // Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format;
 // see also: https://pubs.opengroup.org/architecture/archimate31-exchange-file-format-guide/.
 // Test cases: http://www.opengroup.org/xsd/archimate/3.1/examples/
-function Archimate2Specif(xmlString, opts) {
+function Archimate2Specif(xmlString, options) {
 	"use strict";
 
 	const
@@ -22,15 +22,42 @@ function Archimate2Specif(xmlString, opts) {
 		idResourceClassFolder = "RC-Folder",
 		idStatementClassAccesses = "SC-accesses";
 
-	if (typeof (opts) != 'object' || !opts.fileName) return null;
-	if (!opts.fileDate)
+	if (typeof (options) != 'object' || !options.fileName) return null;
+
+	let opts = Object.assign(
+		{
+			fileDate: new Date().toISOString(),
+			titleLength: 96,
+			textLength: 8192,
+		//	mimeType: "application/archimate+xml",
+			strNamespace: "Archimate:",
+			modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+			resClassOutline: 'SpecIF:Outline',
+			strFolderType: "SpecIF:Heading",
+			strDiagramType: strNamespace + "Viewpoint",
+			strDiagramFolderType: "SpecIF:Views",
+	//		strAnnotationFolder: "Text Annotations",
+	//		strRoleType: "SpecIF:Role",  
+			hiddenDiagramProperties: [],
+			// if false, only shown elements are included
+			includeAllElements: true,
+			// if true, consolidation on SpecIF import is precluded
+			propertyClassesShallHaveDifferentTitles: false,
+			// if false, statementClasses are altered to support all used statements
+			// if true, all statements not supported by it's statementClass are ignored
+			transformPermissibleStatementsOnly: false
+		},
+		options
+	);
+
+/*	if (!fileDate)
 		opts.fileDate = new Date().toISOString();
 	if (typeof (opts.titleLength) != 'number')
 		opts.titleLength = 96;
 	if (typeof (opts.textLength) != 'number')
 		opts.textLength = 8192;
-	/*	if( !opts.mimeType ) 
-			opts.mimeType = "application/archimate+xml"; */
+//	if( !opts.mimeType ) 
+//			opts.mimeType = "application/archimate+xml";
 
 	if (!opts.strNamespace)
 		opts.strNamespace = "Archimate:";
@@ -60,7 +87,7 @@ function Archimate2Specif(xmlString, opts) {
 	if (typeof (opts.transformPermissibleStatementsOnly) != 'boolean')
 		// if false, statementClasses are altered to support all used statements
 		// if true, all statements not supported by it's statementClass are ignored
-		opts.transformPermissibleStatementsOnly = false;
+		opts.transformPermissibleStatementsOnly = false; */
 
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
