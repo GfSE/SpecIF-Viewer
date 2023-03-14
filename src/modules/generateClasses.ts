@@ -173,13 +173,18 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
             }
         }
     }
-    function statementsByClass(r:SpecifResource, ti:string) {
+    interface SubjectObjectSelector {
+        asSubject?: boolean,
+        asObject?: boolean
+    }
+    function statementsByClass(r: SpecifResource, ti: string, selector: SubjectObjectSelector) {
         // Find the statements of the class with title ti referencing the given term r as subject or object:
         return ontologies.statements.filter(
             (st: SpecifStatement) => {
                 // better use 'instanceTitleOf', but it is not available, here:
                 return LIB.classTitleOf(st['class'], ontologies.statementClasses) == ti
-                    && (st.subject.id == r.id || st.object.id == r.id);
+                    && (selector.asSubject && st.subject.id == r.id
+                        || selector.asObject && st.object.id == r.id);
             }
         ) as SpecifStatement[];
     }
@@ -210,7 +215,7 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
         // these are defined by related propertyValues:
         let ty = primitiveDataTypes.get(r["class"].id) as SpecifDataTypeEnum, // get the primitive dataType implied by the term's class
             ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),  // title (only used for dataTypes with enumerated values)
-            stL = statementsByClass(r, "SpecIF:hasEnumValue"),  // all statements pointing to enumerated values
+            stL = statementsByClass(r, "SpecIF:hasEnumValue", { asSubject: true }),  // all statements pointing to enumerated values
             oL = stL.map(
                 (st: SpecifStatement) => {
                     return LIB.itemById(ontologies.resources, st.object.id)
@@ -353,7 +358,7 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
             ],  // the result list
             tL: SpecifResource[] = [];  // list of referenced instances of termPropertyClass
 
-        let pL = statementsByClass(el, "SpecIF:hasProperty");
+        let pL = statementsByClass(el, "SpecIF:hasProperty", { asSubject: true });
         for (let p of pL) {
             let term = LIB.itemByKey(ontologies.resources, p.object),
                 prep = makeIdAndTitle(term, "PC-"); // need the id only, here
@@ -393,11 +398,8 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
         // to term el (the statementClass to be generated) by the given statementClass cl:
 
         let iCL: SpecifResourceClass[] = [],  // the result list
-            sL = statementsByClass(el, cl) // list of statements of the specified class
-                // We are interested only in statements where *other* statementClasses are eligible as objectClasses or statementClasses:
-                .filter(
-                    (s) => { return el.id != s.subject.id }
-                );
+            // We are interested only in statements where *other* statementClasses are eligible as subjectClasses:
+            sL = statementsByClass(el, cl, { asObject: true }); // list of statements of the specified class
 
         for (let s of sL) {
             let term = LIB.itemByKey(ontologies.resources, s.subject),
@@ -458,11 +460,9 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
         // to el (the term describing the resourceClass resp. statementClass to be generated):
         if (['RC-', 'SC-'].includes(pfx) ) {
 
-            let sL = statementsByClass(el, "SpecIF:isSpecializationOf")
+            let
                 // We are interested only in statements where *other* resources resp. statements are the object:
-                .filter(
-                    (s) => { return el.id != s.object.id }
-                );
+                sL = statementsByClass(el, "SpecIF:isSpecializationOf", { asSubject: true });
 
             if (sL.length > 1) {
                 console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
@@ -475,7 +475,7 @@ function generateSpecifClasses(ontologies: SpecIF, opts?: any): SpecIF|undefined
                     prep = makeIdAndTitle(term, pfx); // need the id only, here
 
                 // Ascertain that the referenced resourceClass resp. statementClass will be available;
-                // if it exist already due to correct selection, there will be no duplicate:
+                // if it exists already due to correct selection, there will be no duplicate:
                 switch (pfx) {
                     case 'RC-':
                         LIB.cacheE(generated.rCL, createRC(term));
