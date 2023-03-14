@@ -224,7 +224,7 @@ moduleManager.construct({
 				
 				if( app[self.format.name].verify( {name:urlP[CONFIG.keyImport]} ) ) {
 					// Show the name of the specified import file:
-					let rF = makeTextForm(i18n.LblFileName,[self.file.name]);
+					let rF = makeTextField(i18n.LblFileName,[self.file.name]);
 					$("#formNames").html( rF );
 					// Take fileName as project name:
 					self.projectName = self.file.name.fileName();	
@@ -302,10 +302,10 @@ moduleManager.construct({
 		app[self.format.name].init( self.format.opts );
 
 		// show the file name:
-		let rF = makeTextForm(i18n.LblFileName,['']);
+		let rF = makeTextField(i18n.LblFileName,['']);
 		if( fId=='xls' )
 			// create input form for the project name:
-			rF += makeTextForm(i18n.LblProjectName, [self.projectName], { typ:'line', handle:myFullName + '.enableActions()' });
+			rF += makeTextField(i18n.LblProjectName, [self.projectName], { typ:'line', handle:myFullName + '.enableActions()' });
 
 		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
@@ -481,7 +481,7 @@ moduleManager.construct({
 						message: function (thisDlg) {
 							// ToDo: error message, if no specification type is found.
 							let form = $('<form id="attrInput" role="form" class="form-horizontal" ></form>');
-							form.append( makeRadioForm( 'Import Mode', modes ) );
+							form.append( makeRadioField( 'Import Mode', modes ) );
 							return form },
 						buttons: [{
 								label: i18n.BtnCancel,

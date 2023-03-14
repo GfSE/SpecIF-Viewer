@@ -15,7 +15,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		super(p);
     }
 	
-	editForm(opts:any): string {
+	editField(opts:any): string {
 		// Return a form element for a property;
 
 		let localOpts = Object.assign({
@@ -39,16 +39,16 @@ class CPropertyToEdit extends CPropertyToShow  {
 
 //			console.debug('Enumeration', this, ti, entryL);
 			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple)
-				return makeCheckboxForm(
+				return makeCheckboxField(
 					ti,
 					entryL,
-					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '') }
+					{ description: this.pC.description }
 				);
 			else
-				return makeRadioForm(
+				return makeRadioField(
 					ti,
 					entryL,
-					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '') }
+					{ description: this.pC.description }
 				);
 		};
 
@@ -59,15 +59,15 @@ class CPropertyToEdit extends CPropertyToShow  {
 				// - no input checking needed
 				// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
 //				console.debug('xs:boolean',ti,this);
-				return makeBooleanForm(
+				return makeBooleanField(
 					ti,
 					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
-					{ description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '') }
+					{ description: this.pC.description }
 				);
 			case SpecifDataTypeEnum.String:
 				if (this.pC.title == CONFIG.propClassDiagram) {
-					// it is a diagram reference (thus an XHTML-formatted field):
-					return this.editDiagramForm(localOpts)
+					// it is a diagram reference (thus an XHTML-formatted text field):
+					return this.makeDiagramField(localOpts)
 				}
 				else {
 					// add parameters to check this input field:
@@ -76,8 +76,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 					// it is a text;
 					// in case of xhtml, it may contain a diagram reference, 
 					// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//					console.debug( 'editForm', LIB.languageValueOf(this.value,localOpts) );
-					return makeTextForm(
+//					console.debug( 'editField', LIB.languageValueOf(this.value,localOpts) );
+					return makeTextField(
 						ti,
 						//	this.values.length > 0 ? LIB.languageValueOf(this.values[0], localOpts) : '',  // only first value for the time being ...
 						LIB.forAll(
@@ -90,7 +90,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 							typ: (CONFIG.descProperties.includes(ti) || CONFIG.commentProperties.includes(ti) ? 'area' : 'line'),
 						//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
 							handle: opts.myFullName + '.check()',
-							description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '')
+							description: this.pC.description
 						}
 					);
 				};
@@ -98,18 +98,18 @@ class CPropertyToEdit extends CPropertyToShow  {
 				// add parameters to check this input field:
 				if (opts && opts.dialogForm)
 					opts.dialogForm.addField(ti, this.dT);
-				return makeTextForm(
+				return makeTextField(
 					ti,
 					//	this.values.length > 0 ? this.values[0] as string : '',
 					this.values as string[],
 					{
 						typ: 'line', handle: opts.myFullName + '.check()',
-						description: (this.pC.description ? LIB.languageValueOf(this.pC.description, localOpts) : '')
+						description: this.pC.description
 					}
 				);
 		};
 	}
-	private editDiagramForm(opts: any) {
+	private makeDiagramField(opts: any) {
 		//					console.debug('editDiagram',this);
 		return '<div class="form-group form-active" >'
 			+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
@@ -203,7 +203,7 @@ class CResourceToEdit {
 					// @ts-ignore - object $('#app') is only theoretically undefined ...
 					var form = '<div style="max-height:' + ($('#app').outerHeight(true) - 190) + 'px; overflow:auto" >';
 					this.properties.forEach(
-						(p) => { form += p.editForm(localOpts); }
+						(p) => { form += p.editField(localOpts); }
 					);
 					form += '</div>';
 					return $(form);
@@ -515,7 +515,7 @@ moduleManager.construct({
 								//	message: (thisDlg)=>{
 									message: () => {
 										var form = '<form id="attrInput" role="form" >'
-												+ makeRadioForm( i18n.LblResourceClass, resClasses )
+												+ makeRadioField( i18n.LblResourceClass, resClasses )
 												+ '</form>';
 										return $( form );
 									},

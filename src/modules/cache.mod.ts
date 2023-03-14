@@ -2067,12 +2067,12 @@ class CProject {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ ['specif', 'specif_v10'].includes(fmt) ? '' : makeTextForm('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
-			+ makeTextForm('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
+			+ ['specif', 'specif_v10'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
+			+ makeTextField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
-				pnl += makeCheckboxForm(
+				pnl += makeCheckboxField(
 					i18n.LblOptions,
 					[
 						{ title: i18n.withStatements, id: 'withStatements', checked: false },
@@ -2086,12 +2086,12 @@ class CProject {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextForm('&#x200b;' + i18n.LblProjectName, [(fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName)], { typ: 'line' }))
-			+ makeTextForm('&#x200b;' + i18n.LblFileName, [(fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName)], { typ: 'line' });
+			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, [(fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName)], { typ: 'line' }))
+			+ makeTextField('&#x200b;' + i18n.LblFileName, [(fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName)], { typ: 'line' });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
-				pnl += makeCheckboxForm(
+				pnl += makeCheckboxField(
 					i18n.LblOptions,
 					[
 						{ title: i18n.withStatements, id: 'withStatements', checked: false },
@@ -2103,7 +2103,7 @@ class CProject {
 			case 'specifClasses':
 				let domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain'));
 				if (domains.length>0)
-					pnl += makeCheckboxForm(
+					pnl += makeCheckboxField(
 						i18n.LblOptions,
 						domains.map(
 							(d: string) => {
@@ -2166,7 +2166,7 @@ class CProject {
 					+ '<div class="panel panel-default panel-options" style="margin-bottom:4px">'
 				//	+ "<h4>"+i18n.LblFormat+"</h4>"
 					+ "<p>" + i18n.MsgExport + "</p>"
-					+ makeRadioForm(
+					+ makeRadioField(
 						i18n.LblFormat,
 						formats,
 						{ handle: exportFormatClicked }  // options depend on format

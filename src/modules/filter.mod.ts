@@ -251,10 +251,10 @@ moduleManager.construct({
 			return;  // nothing to do ...
 		};
 		//		console.debug('filter something to do',tr);
-		doFilter(tr);
+		doFilter();
 	};
 
-	function doFilter(tree): void {
+	function doFilter(): void {
 		// Get every resource referenced in the hierarchy tree and try whether it is a match.
 		app.busy.set();
 		//	$('#hitlist').html( '<div class="notice-default" >'+i18n.MsgSearching+'</div>' );
@@ -262,7 +262,7 @@ moduleManager.construct({
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend = 0, h: CResourceToShow, hitCnt = 0;
-		tree.iterate(
+		self.parent.tree.iterate(
 			(nd: jqTreeNode) => {
 				pend++;
 //				console.debug('tree.iterate',pend,nd.ref);
@@ -764,12 +764,12 @@ moduleManager.construct({
 	}; */
 	function renderTextFilterSettings( flt:IFilter ):string {
 		// render a single panel for text search settings:
-		return makeTextForm(flt.title, [flt.searchString], { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
+		return makeTextField(flt.title, [flt.searchString], { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
 			+	renderEnumFilterSettings( flt );
 	}
 	function renderEnumFilterSettings( flt:IFilter ):string {
 		// render a single panel for enum filter settings:
-		return makeCheckboxForm(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
+		return makeCheckboxField(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
 	}
 /*	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };

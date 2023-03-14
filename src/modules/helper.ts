@@ -13,14 +13,17 @@
 const LIB: any = {};
 interface IFieldOptions {
     tagPos?: string;  // 'left', 'none' ('above')
-    typ?: string;     // 'line', 'area' for makeTextForm
+    typ?: string;     // 'line', 'area' for makeTextField
     classes?: string; // CSS classes
     handle?: string;  // event handler
     description?: string; // further explanation in a popup
 }
-function makeTextForm(tag: string, valL: string[], opts?: IFieldOptions): string {  
-    // assemble a form for text input or display:
-//    console.debug('makeTextForm 1',tag,val,typ,fn);
+function popoverString( dsc:any ):string {
+    return (dsc ? (' data-toggle="popover" title="' + LIB.displayValueOf(dsc, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '')
+}
+function makeTextField(tag: string, valL: string[], opts?: IFieldOptions): string {  
+    // assemble a dialog field for text input or display:
+//    console.debug('makeTextField 1',tag,val,typ,fn);
     if (!opts) opts = {} as IFieldOptions;
     if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
 
@@ -43,7 +46,7 @@ function makeTextForm(tag: string, valL: string[], opts?: IFieldOptions): string
             aC = 'attribute-wide';
             break;
         case 'left':
-            fG += '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag +'</div>';
+            fG += '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag +'</div>';
             aC = 'attribute-value';
             break;
         default:
@@ -155,7 +158,7 @@ interface IBox {
     checked?: boolean;
     type?: string;
 }
-function makeRadioForm(tag: string, entries: IBox[], opts?: IFieldOptions): string {
+function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): string {
     // assemble an input field for a set of radio buttons:
     if (!opts) opts = {} as IFieldOptions;
     if (typeof(opts.tagPos) != 'string') opts.tagPos = 'left';
@@ -169,7 +172,8 @@ function makeRadioForm(tag: string, entries: IBox[], opts?: IFieldOptions): stri
             break;
         case 'left': 
             rB =     '<div class="form-group '+(opts.classes||'')+'">'
-                +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
+                + '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag + '</div>'
+            //    +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
                 +        '<div class="attribute-value radio" >';
             break;
         default:
@@ -187,7 +191,7 @@ function makeRadioForm(tag: string, entries: IBox[], opts?: IFieldOptions): stri
     entries.forEach( (e,i)=>{
         rB +=            '<label>'
             +                '<input type="radio" name="radio'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            +                '<span ' + (e.description ? ('data-toggle="popover" title="' + LIB.displayValueOf(e.description, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '') + '>'
+            + '<span ' + popoverString(e.description) + '>'
         //    +                 '<span ' + (e.description ? ('data-toggle="popover" title="' + e.description.stripHTML() + '" ') : '') + '>'
             +                    e.title
             +                    ( e.type? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
@@ -202,7 +206,7 @@ function radioValue( tag:string ):string {
     // get the selected radio button, it is the index number as string:
     return $('input[name="radio' + simpleHash(tag)+'"]:checked').attr('value') || '';    // works even if none is checked
 }
-function makeCheckboxForm(tag: string, entries: IBox[], opts?: IFieldOptions): string {
+function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): string {
     // assemble an input field for a set of checkboxes:
     if (!opts) opts = {} as IFieldOptions;
     if (typeof(opts.tagPos)!='string') opts.tagPos = 'left';
@@ -216,7 +220,7 @@ function makeCheckboxForm(tag: string, entries: IBox[], opts?: IFieldOptions): s
             break;
         case 'left': 
             cB =     '<div class="form-group '+(opts.classes||'')+'">'
-                +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
+                + '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag + '</div>'
                 +        '<div class="attribute-value checkbox" >';
             break;
         default:
@@ -226,7 +230,7 @@ function makeCheckboxForm(tag: string, entries: IBox[], opts?: IFieldOptions): s
     entries.forEach( (e,i)=>{
         cB +=            '<label>'
             +                '<input type="checkbox" name="checkbox'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            +                   '<span ' + (e.description ? ('data-toggle="popover" title="' + LIB.displayValueOf(e.description, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '') + '>'
+            + '<span ' + popoverString(e.description) + '>'
         //    +                   '<span ' + (e.description ? ('data-toggle="popover" title="' + e.description.stripHTML() + '" ') : '') + '>'
             +                       e.title
             +                       (e.type ? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
@@ -245,20 +249,17 @@ function checkboxValues( tag:string ):string[] {
         // @ts-ignore - .value is in fact accessible
         resL.push(el.value);
     });
-/*    for( var i=0, I=chd.length; i<I; i++ ) {    // chd is an object, not an array
-        // @ts-ignore - .value is in fact accessible
-        resL.push( chd[i].value );
-    }; */
     return resL;
 }
-function makeBooleanForm( tag:string, val:boolean, opts?:any ):string {
-//    console.debug('makeBooleanForm',tag,val);
+function makeBooleanField( tag:string, val:boolean, opts?:any ):string {
+    // assemble an input field for a boolean value:
+//    console.debug('makeBooleanField',tag,val);
     let fn:string;
     if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )    
             fn = ' onclick="'+opts.handle+'"'
     else     fn = '';
     return     '<div class="form-group form-active">'
-        +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
+        + '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag + '</div>'
         +        '<div class="attribute-value checkbox" >'
         +            '<label>'
         + '<input type="checkbox" name="boolean' + simpleHash(tag)+'"'+(val?' checked':'')+fn+' />'
@@ -680,6 +681,9 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
         return opts.stripHTML ? v.stripHTML() : v
     };
     return val
+/*    let v = LIB.isMultiLanguageText(val) ? LIB.languageValueOf(val, opts) : val;
+    if (opts.lookupValues) v = i18n.lookup(v);
+    return opts.stripHTML ? v.stripHTML() : v; */
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
     // Return the values of a resource's (or statement's) property with a title listed in pNs;
