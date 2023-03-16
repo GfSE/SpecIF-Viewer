@@ -2458,7 +2458,9 @@ class CProject {
 							case 'specifClasses':
 								fName += ".specif";
 								zName = fName + '.zip';
-								expStr = JSON.stringify(generateSpecifClasses(expD,opts));
+								expStr = JSON.stringify(
+									new COntology(expD).generateSpecifClasses(opts)
+								);
 								console.debug('expStr', expStr);
 								break;
 							case 'reqif':
