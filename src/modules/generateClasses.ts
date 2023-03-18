@@ -519,10 +519,10 @@ class COntology {
     }
     private makeIdAndTitle(r: SpecifResource, pfx: string) {
         // Make an id and a title for the class generated for term r
-        // - use the identifier provided by the user or generate it using the title
         let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], this.ontology),
             ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' });
         return {
+            // Use the identifier provided by the user or generate it using the title:
             id: visIdL && visIdL.length > 0 ?
                 LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' })
                 : (pfx + this.distinctiveCoreOf(ti)),

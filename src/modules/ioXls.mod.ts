@@ -303,7 +303,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			}
 			function isBool(cell: ICell): boolean {
 //				console.debug('isBool',cell);
-				return cell && (cell.t == 'b' || cell.t == 's' && (isTrue(cell.v as string) || isFalse(cell.v as string) ) );
+				return cell && (cell.t == 'b' || cell.t == 's' && (LIB.isTrue(cell.v as string) || LIB.isFalse(cell.v as string) ) );
 			}
 			function isStr(cell: ICell): boolean {
 				// @ts-ignore - in this case cell.v is a string and has a length:
@@ -383,7 +383,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 										case SpecifDataTypeEnum.Boolean:
 											switch (cell.t) {
 												case "b": return (cell.v as boolean).toString();
-												case "s": return isTrue(cell.v as string).toString();
+												case "s": return LIB.isTrue(cell.v as string).toString();
 											};
 									};
 								return '';
@@ -692,7 +692,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						pC = defaultC;
 					};
 					// Assign a longer text field for descriptions:
-					if( CONFIG.descProperties.indexOf( pTi )>-1 ) pC = 'Text';
+					if( CONFIG.descProperties.includes( pTi ) ) pC = 'Text';
 
 					// Assign a longer text field for columns with cells having a longer text;
 					if (pC == 'ShortString') {   // specifically 'ShortString', not defaultC !!
@@ -732,7 +732,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					if( sTi ) {
 						sTi = sTi.w || sTi.v;
 						// Add statementClass, if it is declared as such and if it is not yet listed:
-						if( sTi && LIB.indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.indexOf( sTi )>-1 ) {
+						if( sTi && LIB.indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.includes( sTi ) ) {
 							sC = new StaClass( sTi );
 //							console.debug( 'getStaClasses', sTi, sC );
 							sCL.push( sC )
@@ -778,13 +778,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	// 1. Create the project:
 	// @ts-ignore - Basetypes() has not all required attributes of SpecIF; they are added later on
 	var specifData:SpecIF = new BaseTypes();
-	specifData.id = 'XLS-' + pN.specifIdOf();
+	specifData.id = 'XLS-' + pN.toSpecifId();
 	specifData.title = LIB.makeMultiLanguageText(pN);
 	specifData.generator = "xslx2specif";
 	specifData.$schema = 'https://specif.de/v1.1/schema.json';
 	// the root folder resource:
 	specifData.resources.push({
-		id: 'R-' + pN.specifIdOf(),
+		id: 'R-' + pN.toSpecifId(),
 		class: LIB.makeKey("RC-Folder"),
 		properties: [{
 			class: LIB.makeKey("PC-Name"),
@@ -798,8 +798,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	// 2. Create the specification (hierarchy root) for the file:
 	specifData.hierarchies.push({
-		id: 'H-' + pN.specifIdOf(),
-		resource: LIB.makeKey('R-' + pN.specifIdOf() ),
+		id: 'H-' + pN.toSpecifId(),
+		resource: LIB.makeKey('R-' + pN.toSpecifId() ),
 		nodes: [],
 		changedAt: chAt
 	});
@@ -821,12 +821,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 }	// end of xlsx2specif
 
-	function isTrue(str: string): boolean {
-		return CONFIG.valuesTrue.indexOf(str.toLowerCase().trim()) > -1;
-	}
-	function isFalse(str: string): boolean {
-		return CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
-	}
 	function inBracketsAtEnd(str:string):string|undefined {
 		// Extract resourceClass in (round brackets) or [square brackets]:
 	//	let resL = /\s*(?:\(|\[)([a-zA-Z0-9:_\-].+?)(?:\)|\])$/.exec( pN );

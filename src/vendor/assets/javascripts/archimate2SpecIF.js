@@ -1,4 +1,4 @@
-/*!	Transform an Open Group Archimate Open Exchange File to SpecIF
+/*!	Transform an Open Group ArchiMate Open Exchange File to SpecIF
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
@@ -6,7 +6,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-// Parse the Archimate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format;
+// Parse the ArchiMate Open-Exchange file (XML) and extract both model-elements and semantic relations in SpecIF Format;
 // see also: https://pubs.opengroup.org/architecture/archimate31-exchange-file-format-guide/.
 // Test cases: http://www.opengroup.org/xsd/archimate/3.1/examples/
 function Archimate2Specif(xmlString, options) {
@@ -24,17 +24,18 @@ function Archimate2Specif(xmlString, options) {
 
 	if (typeof (options) != 'object' || !options.fileName) return null;
 
-	let opts = Object.assign(
+	let nameSpace = "ArchiMate:",
+		opts = Object.assign(
 		{
 			fileDate: new Date().toISOString(),
 			titleLength: 96,
 			textLength: 8192,
 		//	mimeType: "application/archimate+xml",
-			strNamespace: "Archimate:",
+			strNamespace: nameSpace,
 			modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
 			resClassOutline: 'SpecIF:Outline',
 			strFolderType: "SpecIF:Heading",
-			strDiagramType: strNamespace + "Viewpoint",
+			strDiagramType: nameSpace + "Viewpoint",
 			strDiagramFolderType: "SpecIF:Views",
 	//		strAnnotationFolder: "Text Annotations",
 	//		strRoleType: "SpecIF:Role",  
@@ -60,7 +61,7 @@ function Archimate2Specif(xmlString, options) {
 //			opts.mimeType = "application/archimate+xml";
 
 	if (!opts.strNamespace)
-		opts.strNamespace = "Archimate:";
+		opts.strNamespace = "ArchiMate:";
 	if (!opts.modelElementClasses)
 		opts.modelElementClasses = [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection];
 	if (!opts.resClassOutline)
@@ -110,7 +111,7 @@ function Archimate2Specif(xmlString, options) {
 	const
 		//	nbsp = '&#160;', // non-breakable space
 		apx = simpleHash(model.id),
-		hId = 'Archimate-' + apx;
+		hId = 'ArchiMate-' + apx;
 
 	// Have chosen to prefer 'nodeName' over 'tagName',
 	// see: http://aleembawany.com/2009/02/11/tagname-vs-nodename/
@@ -187,7 +188,7 @@ function Archimate2Specif(xmlString, options) {
 				};
 			}
 			else
-				console.warn("Skipping Archimate propertyDefinition of type '" + ty + "'.");
+				console.warn("Skipping ArchiMate propertyDefinition of type '" + ty + "'.");
 		}
 	);
 //	console.debug('propertyDefinitions', propertyDefinitions, model.propertyClasses);

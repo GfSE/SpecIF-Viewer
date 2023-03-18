@@ -341,8 +341,8 @@ const CONFIG:any = {};
         'bpmn:intermediateThrowEvent',
         'bpmn:intermediateCatchEvent',
         'bpmn:callActivity',
-        "Archimate:OrJunction",
-        "Archimate:AndJunction"
+        "ArchiMate:OrJunction",
+        "ArchiMate:AndJunction"
     ];
 
     CONFIG.clickableModelElements = true;        // diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
@@ -366,17 +366,17 @@ const CONFIG:any = {};
 */
     // A list of resources representing model diagram types, specified by a property with title CONFIG.propClassType,
     // where all relations themselves have a "SpecIF:shows" relation.
-    // The (older) diagrams from ARCWAY don't have, but the BPMN and Archimate diagrams have:
+    // The (older) diagrams from ARCWAY don't have, but the BPMN and ArchiMate diagrams have:
     CONFIG.diagramTypesHavingShowsStatementsForEdges = [
         CONFIG.resClassProcess,
-        "Archimate:Viewpoint"
+        "ArchiMate:Viewpoint"
     ];
     // A list of resourceClasses representing Model Diagrams;
     // these are used as title of a diagram's class:
     CONFIG.diagramClasses = [
         CONFIG.resClassDiagram,
         CONFIG.resClassProcess,
-        "Archimate:Viewpoint",
+        "ArchiMate:Viewpoint",
         "FMC:Plan",            // equivalent
         "SpecIF:Diagram"        // deprecated
     ];
@@ -388,7 +388,13 @@ const CONFIG:any = {};
         // ToDo: Derive from SpecIF Ontology
         "SpecIF:TermResourceClass",
         "SpecIF:TermStatementClass",
-        "SpecIF:TermPropertyClass",
+        "SpecIF:TermPropertyClassString",
+        "SpecIF:TermPropertyClassBoolean",
+        "SpecIF:TermPropertyClassInteger",
+        "SpecIF:TermPropertyClassReal",
+        "SpecIF:TermPropertyClassTimestamp",
+        "SpecIF:TermPropertyClassDuration",
+        "SpecIF:TermPropertyClassAnyUri",
         "SpecIF:TermPropertyValue"
     ];
     // A list with all model-element types by title,
@@ -458,7 +464,7 @@ const CONFIG:any = {};
         "SpecIF:refersTo",
         "SpecIF:sameAs",
         "SpecIF:accesses",
-        "Archimate:accesses"
+        "ArchiMate:accesses"
     ];
 /*    // List of lists with equivalent resource types, e.g. in different notations or standards;
     // The term appearing in the first position of an equivalence list is the preferred one:

@@ -1295,10 +1295,10 @@ LIB.trimJson = (str: string): string => {
     return str.substring( str.indexOf('{'), str.lastIndexOf('}')+1 )
 };
 LIB.isTrue = (str: string): boolean =>{
-    return str && CONFIG.valuesTrue.indexOf(str.toLowerCase().trim()) > -1;
+    return str && CONFIG.valuesTrue.includes(str.toLowerCase().trim());
 }
 LIB.isFalse = (str: string): boolean =>{
-    return str && CONFIG.valuesFalse.indexOf(str.toLowerCase().trim()) > -1;
+    return str && CONFIG.valuesFalse.includes(str.toLowerCase().trim());
 }
 
 /*

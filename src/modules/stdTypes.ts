@@ -34,7 +34,7 @@ class StandardTypes {
 		type: SpecifDataTypeEnum.Boolean,
 		changedAt: "2016-05-26T08:59:00+02:00"
 	},{ 
-		id: "DT-Integer-GE" + CONFIG.minInteger + "-LE" + CONFIG.maxInteger,
+		id: "DT-Integer",
 		title: "Integer",
 		description: [{ text: "A numerical integer value from " + CONFIG.minInteger + " to " + CONFIG.maxInteger +"." }],
 		type: SpecifDataTypeEnum.Integer,
