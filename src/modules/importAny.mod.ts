@@ -52,14 +52,16 @@ moduleManager.construct({
 			name:'ioSpecif',
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
-			help: i18n.MsgImportSpecif,	
+			extensions: ".specif, .specifz, .specif.zip",
+			help: i18n.MsgImportSpecif,
 			opts: { mediaTypeOf: LIB.attachment2mediaType }
 		},{
 			id:'xml',	
 			name:'ioArchimate',	
 			desc:'Archimate Open Exchange',
-			label:'Archimate®',
-//			help: i18n.MsgImportArchimate, 
+			label:'ArchiMate®',
+			extensions: ".xml",
+//			help: i18n.MsgImportArchimate,
 			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
 			opts: { mediaTypeOf: LIB.attachment2mediaType } 
 		},{
@@ -67,12 +69,14 @@ moduleManager.construct({
 			name:'ioBpmn',
 			desc:'Business Process',
 			label:'BPMN',
+			extensions: ".bpmn",
 			help: i18n.MsgImportBpmn
 		},{
 			id:'reqif',	
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
+			extensions: ".reqif, .reqifz",
 			help: i18n.MsgImportReqif,
 			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: LIB.attachment2mediaType } 
 	/*	},{
@@ -80,19 +84,22 @@ moduleManager.construct({
             name: 'ioRdf',
             desc: 'Resource Description Format',
             label: 'RDF',
+			extensions: "",
             help: 'ToDo' */
 		},{ 
 			id:'xls',
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
+			extensions: ".xlsx, .xls, .csv",
 			help: i18n.MsgImportXls,
 			opts: { dontCheck: ["statement.object"] }
 		},{
 			id:'mm',
 			name:'ioMm',
 			desc:'Freemind Mindmap',
-			label:'MM',	
+			label: 'MM',
+			extensions: ".mm",
 			help: i18n.MsgImportMm
 		}];
 	// list of projects to check whether the project is already existent in the server.
@@ -135,10 +142,7 @@ moduleManager.construct({
 				+	'<div class="attribute-value" >'
 				+		'<div id="formatSelector" class="btn-group" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
-				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput" style="margin: 0 0 0.8em 0" >'
-				+			'<span>'+i18n.BtnFileSelect+'</span>'
-				+			'<input id="importFile" type="file" onchange="'+myFullName+'.pickFiles()" />'
-				+		'</div>'
+				+		'<div id="fileSelectBtn" class="btn btn-default btn-fileinput" style="margin: 0 0 0.8em 0" ></div>'
 				+   '</div>'
 			+	'</div>'
 			+	'<form id="formNames" class="form-horizontal" role="form"></form>'
@@ -309,6 +313,12 @@ moduleManager.construct({
 
 		$('#helpImport').html( self.format.help ); 
 		$("#formNames").html( rF );
+
+		$("#fileSelectBtn").html(
+			  '<span>' + i18n.BtnFileSelect + '</span>'
+			+ '<input id="importFile" type="file" accept="'+self.format.extensions+'" onchange="' + myFullName + '.pickFiles()" />'
+		);
+
 		self.enableActions();
 	};
 
