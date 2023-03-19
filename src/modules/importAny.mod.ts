@@ -136,9 +136,9 @@ moduleManager.construct({
 //		console.debug('import.init',self);
 
 		let h = 
-			'<div style="max-width:768px;">'
+			'<div style="max-width:768px; margin-top:1em">'
 			+	'<div class="fileSelect" style="display:none;" >'
-				+	'<div class="attribute-label" ></div>'	// empty column to the left
+				+   '<div class="attribute-label" style="vertical-align:top; font-size:140%; padding-top:0.2em" >' + i18n.LblImport + '</div>'	// column to the left
 				+	'<div class="attribute-value" >'
 				+		'<div id="formatSelector" class="btn-group" style="margin: 0 0 0.4em 0" ></div>'
 				+		'<div id="helpImport" style="margin: 0 0 0.4em 0" ></div>'
@@ -203,7 +203,7 @@ moduleManager.construct({
 			return
 		};  */
 		
-		$('#pageTitle').html( i18n.LblImport );
+		$('#pageTitle').html( app.title );
 		
 			function getFormat(fN:string):object|undefined {
 //				console.debug('getFormat',fN.indexOf('.specif'),fN.indexOf('.xls'));

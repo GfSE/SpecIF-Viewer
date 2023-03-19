@@ -123,7 +123,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 			//	+		( !this.permissions || this.permissions.upd?
 			+ '<span class="btn btn-default btn-fileinput">'
 			+ '<span>' + i18n.IcoEdit + '</span>'
-			+ '<input id="file' + simpleHash(this['class'].id) + '" type="file" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
+			+ '<input id="file' + simpleHash(this['class'].id)
+								+ '" type="file" accept=".svg,.png,.jpg" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
 			+ '</span>'
 			//			: '')
 			//	+		( !this.permissions || this.permissions.del?

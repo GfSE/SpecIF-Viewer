@@ -734,7 +734,7 @@ function LanguageTextsDe() {
 //	self.LblProjectAdministration = 'Typen & Rechte';   // for the browser tabs - no HTML!
 //	self.LblSpecifications = 'Inhalte';
 	self.LblReader = 'SpecIF Leser';
-	self.LblEditor = 'SpecIF Editor';
+	self.LblEditor = 'SpecIF Modellintegrator und Editor';
 //	self.LblSupport = 'Unterstützung';
 //	self.AppHome = self.IcoHome+'&#160;'+self.LblHome;
 //	self.AppSystemAdministration = 	self.IcoSystemAdministration+'&#160;Interaktives Lastenheft: '+	self.LblSystemAdministration;

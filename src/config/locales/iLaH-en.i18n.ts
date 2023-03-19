@@ -734,7 +734,7 @@ function LanguageTextsEn() {
 //	self.LblProjectAdministration = 'Types & Permissions';   // for the browser tabs - no HTML!
 //	self.LblSpecifications = 'Content';
 	self.LblReader = 'SpecIF Reader';
-	self.LblEditor = 'SpecIF Editor';
+	self.LblEditor = 'SpecIF Model-Integrator and Editor';
 //	self.LblSupport = 'Support';
 //	self.AppHome = 	self.IcoHome+'&#160;'+	self.LblHome;
 //	self.AppSystemAdministration = 	self.IcoSystemAdministration+'&#160;Interactive Spec: '+	self.LblSystemAdministration;
