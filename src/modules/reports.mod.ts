@@ -287,7 +287,7 @@ moduleManager.construct({
 //		console.debug('report panels', self.list);
 		// we must go through the tree because not all resources may be cached,
 		// but we must avoid to evaluate every resource more than once:
-		let pend = 0, visitedR: SpecifKey[] = [];
+		let pend = 0, visitedR: SpecifKeys = [];
 		self.parent.tree.iterate((nd: jqTreeNode) => {
 			if( visitedR.includes(nd.ref) ) return; 
 			// not yet evaluated:

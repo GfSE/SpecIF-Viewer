@@ -7,6 +7,10 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
+interface INodeWithPosition extends SpecifNode {
+	parent?: string;
+	predecessor?: string;
+}
 class CSpecifItemNames {
 	// SpecIF item names for all supported import versions 
 	rClasses: string;
@@ -78,6 +82,7 @@ class CSpecIF implements SpecIF {
 	id: SpecifId;
 	// @ts-ignore - $schema is set in toInt()
 	$schema: string;
+//	context?: string;
 	title?: SpecifMultiLanguageText;
 	description?: SpecifMultiLanguageText;
 	language?: string;
@@ -281,7 +286,7 @@ class CSpecIF implements SpecIF {
 						case 404:
 							// @ts-ignore - 'specifVersion' is defined for versions <1.0
 							let v = spD.specifVersion ? 'version ' + spD.specifVersion : 'with Schema ' + spD['$schema'];
-							xhr = { status: 903, statusText: 'SpecIF ' + v + ' is not supported by the program!' };
+							xhr = new xhrMessage ( 903, 'SpecIF ' + v + ' is not supported by the program!' );
 						// no break
 						default:
 							reject(xhr);
@@ -369,6 +374,8 @@ class CSpecIF implements SpecIF {
 		if (spD.title) this.title = makeMultiLanguageText(spD.title);
 		this.id = spD.id;
 		this.$schema = 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json';
+	/*	// Namespace for JSON-LD:
+		this.context = spD['@Context'] || "http://purl.org/dc/terms/"; */
 		return;
 
 //		console.debug('specif.toInt',simpleClone(this));
@@ -704,9 +711,9 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a hierarchy:
-		function h2int(iE: any): SpecifNode {
+		function h2int(iE: any): INodeWithPosition {
 			// the properties are stored with a resource, while the hierarchy is stored as a node with reference to that resource:
-			var oE: SpecifNode;
+			var oE: INodeWithPosition;
 			if (names.hClasses) {
 				// up until v0.10.6, transform hierarchy root to a regular resource:
 				var iR = a2int(iE) as SpecifResource;
@@ -918,6 +925,7 @@ class CSpecIF implements SpecIF {
 				var pend = 0,
 					// @ts-ignore - the missing attributes will come below:
 					spD: SpecIF = {
+				//		'@Context': this.context,
 						id: this.id,
 						title: LIB.languageValueOf(this.title, opts),
 						$schema: 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json',

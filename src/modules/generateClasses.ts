@@ -36,7 +36,6 @@ class COntology {
                 return this.valueByTitle(r, "dcterms:type") == "W3C:Ontology"
             }
         );
-        //    console.debug('generateSpecifClasses', ontology, this.options);
         if (ontology.hierarchies.length < 1) {
             message.show("No ontology found, so no classes will be generated.", { severity: 'warning' });
             return
@@ -110,16 +109,21 @@ class COntology {
 
         // We are done, so we can return the result:
         return {
+		//	'@Context': this.context,
             "id": spId,
             "$schema": "https://specif.de/v1.1/schema.json",
             "title": [
                 {
-                    "text": "SpecIF Classes for " + selDomains.toString()
+                    "text": "SpecIF Classes for " + selDomains.toString(),
+                    "format": SpecifTextFormat.Plain,
+                    "language": "en"
                 }
             ],
             "description": [
                 {
-                    "text": "A set of SpecIF Classes derived from a SpecIF Ontology for the domain" + (selDomains.length < 2 ? " " : "s ") + selDomains.toString() + "."
+                    "text": "A set of SpecIF Classes derived from a SpecIF Ontology for the domain" + (selDomains.length < 2 ? " " : "s ") + selDomains.toString() + ".",
+                    "format": SpecifTextFormat.Plain,
+                    "language": "en"
                 }
             ],
             "generator": app.title,
@@ -485,14 +489,16 @@ class COntology {
     }
     private checkConstraintsOntology(dta: SpecIF): boolean {
         /*  Check the following constraints / conventions:
-            - Don't generate a class from a deprecated term.
-            - A TermPropertyClass has exactly one "SpecIF:hasDataType" statement.
+            - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
+            - A TermResourceClass must have at least one propertyClass, either self or inherited from an extended class
             - A TermResourceClass or TermStatementClass may not have >1 statements with title "SpecIF:isSpecializationOf"
             - Chains of "isSpecializationOf" relations must not be circular.
             - Chains of "isEligibleAsSubject" relations must not be circular.
             - Chains of "isEligibleAsObject" relations must not be circular.
             - ToDo: complete the list ...
         */
+        // A TermResourceClass or TermStatementClass may not have > 1 statements with title "SpecIF:isSpecializationOf":
+
         return true
     }
 

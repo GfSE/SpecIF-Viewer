@@ -90,9 +90,9 @@ function embeddedSpecif():IApp {
 		// React on Browser Back/Forward buttons:
 		window.addEventListener("hashchange", self.show );
 
-		moduleManager.load(self.moduleTree, { done: self.show });
+		moduleManager.load(self.moduleTree, { done: self.login });
 	};
-	self.show = function() {
+	self.login = function() {
 		console.info(self.title + " " + CONFIG.appVersion + " started!");
 		// data and type are valid, but it is necessary to indicate that the data is not zipped:
 		self.ioSpecif.init( {mediaTypeOf: LIB.attachment2mediaType} );
@@ -111,17 +111,29 @@ function embeddedSpecif():IApp {
 				self.cache.create( newD, opts )
 				.done( function() {
 					message.show( i18n.lookup( 'MsgImportSuccessful', newD.title ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
-					setTimeout( function() {
-							// change view to browse the content:
-							moduleManager.show({ view: '#'+CONFIG.specifications /*, urlParams:urlP */ });
-							self.busy.reset();
-						}, 
+					setTimeout(
+						self.show,
 						CONFIG.showTimelag 
 					);
 				})
 				.fail( LIB.stdError );
 			})
 			.fail( LIB.stdError );  
+	};
+	self.show = function () {
+		var uP = getUrlParams(), v: string;
+		if (!self.cache.selectedProject
+			|| !self.cache.selectedProject.isLoaded()
+			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self.cache.selectedProject.id
+			|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length > 0)
+			// - no project is loaded
+			// - a project id is found in the URL parameters and it differs from the one of the loaded project
+			// - an URL parameter 'import' has been found:
+			v = '#' + CONFIG.specifications
+		else
+			v = '#' + (uP[CONFIG.keyView] || CONFIG.specifications);
+		//				console.debug( 'app.show', uP, v );
+		moduleManager.show({ view: v, urlParams: uP });
 	};
 	self.logout = function() {
 		self.me.logout();

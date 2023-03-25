@@ -15,23 +15,18 @@ function toXhtml( data, opts ) {
 	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
 	// - There must only be one revision per resource or statement
 
-	// Reject versions < 0.10.8:
-	if( data.specifVersion ) {
-		let v = data.specifVersion.split('.');
-		if( v.length<2 || (10000*parseInt(v[0],10)+100*parseInt(v[1],10)+parseInt(v[2]||0,10))<1008 ) {
-			if (typeof(opts.fail)=='function' )
-				opts.fail({status:904,statusText:"SpecIF Version < v0.10.8 is not supported."})
-			else
-				console.error("SpecIF Version < v0.10.8 is not supported.");
-			return
-		}
+	// Reject versions < 1.0:
+	if (data.specifVersion) {
+		let eTxt = "SpecIF Version < v1.0 is not supported.";
+		if (typeof (opts.fail) == 'function')
+			opts.fail({ status: 904, statusText: eTxt })
+		else
+			console.error(eTxt);
+		return
 	};
 	
 	// Check for missing options:
 	if( typeof(opts)!='object' ) opts = {};
-	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
-	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
-	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
 
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 	if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
@@ -56,7 +51,11 @@ function toXhtml( data, opts ) {
 	//	nbsp = '&#160;', // non-breakable space
 		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
 	//	RE_tag = new RegExp( tagStr, 'g' ),
-		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' );
+		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' ),
+
+		dataTypeString = 'xs:string',
+		dataTypeXhtml = 'xhtml',
+		dataTypeEnumeration = 'xs:enumeration';
 
 	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 	// Limitation: the innerHTML may not have any tags.
@@ -494,7 +493,7 @@ function toXhtml( data, opts ) {
 				let pC = itemById(data.propertyClasses, prp['class']),
 					dT = itemById(data.dataTypes, pC.dataType);
 				switch( dT.type ) {
-					case opts.dataTypeEnumeration:
+					case dataTypeEnumeration:
 						let ct = '',
 							eV = null,
 							st = opts.stereotypeProperties.indexOf(prp.title)>-1,
@@ -507,9 +506,9 @@ function toXhtml( data, opts ) {
 							else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 						};
 						return escapeXML( ct );
-					case opts.dataTypeString:
+					case dataTypeString:
 					//	return titleLinks( escapeXML( prp.value ), hi, opts );
-					case opts.dataTypeXhtml:
+					case dataTypeXhtml:
 						return titleLinks( fileRef( escapeInner(prp.value), opts ), hi, opts );
 				}
 			};

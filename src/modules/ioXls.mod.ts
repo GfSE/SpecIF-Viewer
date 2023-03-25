@@ -176,7 +176,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		description: SpecifMultiLanguageText;
 		icon?: string;
 		instantiation: SpecifInstantiation[];
-		propertyClasses: SpecifKey[];
+		propertyClasses: SpecifKeys;
 		changedAt: string;
 		constructor(nm: string, ti: string) {
 			this.id = nm;
@@ -604,7 +604,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				// build a list of propertyClasses for the given worksheet;
 				// a complete propertyClass is added to pCL per column which is not titled with a statement title
 				// and a corresponding list of propertyClass ids is returned for the resourceClass.
-				var pCs: SpecifKey[] = [], // list of propertyClass keys found on this worksheet
+				var pCs: SpecifKeys = [], // list of propertyClass keys found on this worksheet
 					pC: SpecifPropertyClass,
 					dT: SpecifDataType,
 					c: number, C: number,

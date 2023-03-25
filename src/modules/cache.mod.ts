@@ -27,10 +27,6 @@ enum RoleEnum {
 	Reader,
 	Anybody
 }
-interface INodeWithPosition extends SpecifNode {
-	parent?: string;
-	predecessor?: string;
-}
 interface IFileWithContent extends SpecifFile {
 	blob?: Blob;
 	dataURL?: string;
@@ -57,7 +53,7 @@ class CCache {
 		// @ts-ignore - index is ok:
 		return this[standardTypes.listName.get(ctg)].length;
 	}
-	has(ctg: string, rL: SpecifKey[]): boolean {
+	has(ctg: string, rL: SpecifKeys): boolean {
 		// @ts-ignore - index is ok:
 		let L = this[standardTypes.listName.get(ctg)];
 		for (var i = rL.length - 1; i > -1;i--) {
@@ -120,7 +116,7 @@ class CCache {
 				throw Error("Invalid category '" + ctg + "'.");
 		};
 	}
-	get(ctg: string, req: SpecifKey[] | Function | string): SpecifItem[] {
+	get(ctg: string, req: SpecifKeys | Function | string): SpecifItem[] {
 		// Read items from cache; req can be 
 		// - a list with keys,
 		// - a filter function returning 'true' for all items to select
@@ -153,7 +149,7 @@ class CCache {
 		};
 		return [];
 	}
-	delete(ctg: string, itemL: SpecifKey[] ): boolean | undefined {
+	delete(ctg: string, itemL: SpecifKeys ): boolean | undefined {
 		switch (ctg) {
 			case 'hierarchy':
 			case 'dataType':
@@ -343,13 +339,14 @@ class CElement {
 	}
 }
 interface IExportParams {
-	fileName: string,
-	projectName: string
+	fileName: string;
+	projectName: string;
 }
 class CProject {
 	// Applies the project data (SpecIF data-set) to the respective data sources
 	// - Common Cache (for all locally known projects)
 	// - assigned Server(s)
+//	context: string;
 	// @ts-ignore - initialized by this.setMeta()
 	id: SpecifId;
 	// @ts-ignore - initialized by this.setMeta()
@@ -367,11 +364,11 @@ class CProject {
 	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
 	// store all keys without revision, so that the referenced elements can be updated without breaking the link:
 	// ToDo: Reconsider! Can projects share classes, but use different revision levels?
-	dataTypes: SpecifKey[];
-	propertyClasses: SpecifKey[];
-	resourceClasses: SpecifKey[];
-	statementClasses: SpecifKey[];
-	hierarchies: SpecifKey[];
+	dataTypes: SpecifKeys;
+	propertyClasses: SpecifKeys;
+	resourceClasses: SpecifKeys;
+	statementClasses: SpecifKeys;
+	hierarchies: SpecifKeys;
 	// @ts-ignore - initialized by this.setMeta()
 	language: string;
 	data: CCache;
@@ -413,6 +410,7 @@ class CProject {
 	};
 	private setMeta(spD: SpecIF): void {
 		// store a project's individual data apart from the common cache:
+	//	this.context = spD.context;
 		this.id = spD.id;
 		this.title = spD.title;
 		this.description = spD.description;
@@ -444,6 +442,7 @@ class CProject {
 		// retrieve a project's individual data apart from the common cache;
 		// a new SpecIF data set is created, so this shall be called before the data is retrieved from the cache:
 		var spD = new CSpecIF();
+	//	spD.context = this.context;
 		spD.id = this.id;
 		spD.title = this.title;
 		spD.description = this.description;
@@ -547,7 +546,7 @@ class CProject {
 						// collect the resourceClasses referenced by the resources of this project:
 						// start with the stored resourceClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
-						let rCL: SpecifKey[] = [].concat(this.resourceClasses),
+						let rCL: SpecifKeys = [].concat(this.resourceClasses),
 							rcLen = this.resourceClasses.length;
 						// add those actually used by the project - avoiding duplicates, of course;
 						// in fact, this shouldn't happen:
@@ -569,7 +568,7 @@ class CProject {
 						// collect the statementClasses referenced by the resources of this project:
 						// start with the stored statementClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
-						let sCL: SpecifKey[] = [].concat(this.statementClasses),
+						let sCL: SpecifKeys = [].concat(this.statementClasses),
 							scLen = this.statementClasses.length;
 						// add those actually used by the project - avoiding duplicates, of course;
 						// in fact, this shouldn't happen:
@@ -591,7 +590,7 @@ class CProject {
 						// collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
 						// start with the stored propertyClasses of this project in case they have no references (yet):
 						// @ts-ignore - ts-compiler is very picky, here
-						let pCL: SpecifKey[] = [].concat(this.propertyClasses);
+						let pCL: SpecifKeys = [].concat(this.propertyClasses);
 						// add those actually used by the project - avoiding duplicates, of course:
 						// @ts-ignore - both resourceClasses and statementClasses have a list of propertyClasses:
 						for (var eC of exD.resourceClasses.concat(exD.statementClasses) ) {
@@ -610,7 +609,7 @@ class CProject {
 						// collect the dataTypes referenced by the propertyClasses of this project:
 						// start with the stored dataTypes of this project in case they have no references (yet):
 						// @ts-ignore - ts-compiler is very picky, here
-						let dTL: SpecifKey[] = [].concat(this.dataTypes);
+						let dTL: SpecifKeys = [].concat(this.dataTypes);
 						// add those actually used by the project - avoiding duplicates, of course:
 						for( var pC of exD.propertyClasses ) {
 							// assuming all used classes have the same revision
@@ -954,7 +953,7 @@ class CProject {
 			}
 		);
 	}
-	private readClassesWithParents(ctg: string, toGet: SpecifKey[]) {
+	private readClassesWithParents(ctg: string, toGet: SpecifKeys) {
 		// Applies to resourceClasses and statementClasses;
 		// classes are always cached, so there is no need for a call with promise.
 		let resL: SpecifItem[] = [];
@@ -973,18 +972,18 @@ class CProject {
 		} while (toGet.length > 0);
 		return resL;
 	}
-	private readExtendedClasses(ctg: string, toGet: SpecifKey[]) {
+	private readExtendedClasses(ctg: string, toGet: SpecifKeys) {
 		// Applies to resourceClasses and statementClasses;
 		// classes are always cached, so there is no need for a call with promise.
 		let self = this,
-			resL: SpecifItem[] = [];
+			resL = [];
 		for (var clk of toGet) {
 			resL.push( extendClass(clk) )
 		};
 		return resL;
 
 		function extendClass(k:SpecifKey) {
-			let res = {} as SpecifItem;
+			let res = {} as SpecifResourceClass|SpecifStatementClass;
 			self.readClassesWithParents(ctg, [k])
 				// A list with classes is returned, the ancestors first and the requested class last.
 				// - Starting with most elderly, copy to and potentially overwrite the attributes of res
@@ -992,12 +991,15 @@ class CProject {
 				//   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
 				// - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
 				.forEach(
-					(cl:SpecifItem) => {
+					(cl: SpecifItem) => {
 						for (let att in cl) {
 						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+							// @ts-ignore - indexing an object with a string is perfectly OK
 							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+								// @ts-ignore - indexing an object with a string is perfectly OK
 								LIB.cacheL(res[att], cl[att])
 							else
+								// @ts-ignore - indexing an object with a string is perfectly OK
 								res[att] = cl[att]
                         }
 					}
@@ -1006,7 +1008,7 @@ class CProject {
 			return res
         }
 	}
-	readItems(ctg: string, itemL: SpecifKey[] | Function | string, opts?: any): Promise<SpecifItem[]> {
+	readItems(ctg: string, itemL: SpecifKeys | Function | string, opts?: any): Promise<SpecifItem[]> {
 		// Read one or more items of a given category either from cache or from the permanent store (server), otherwise:
 //		console.debug('readItems', ctg, item, opts);
 		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
@@ -1029,7 +1031,7 @@ class CProject {
 				// delay the answer a little, so that the caller can properly process a batch:
 				setTimeout(() => {
 					let items: SpecifItem[] = [],
-						toGet: SpecifKey[] = itemL == "all" ?
+						toGet: SpecifKeys = itemL == "all" ?
 									// @ts-ignore- index type is ok
 									this[standardTypes.listName.get(ctg)]  // only those remembered by the project
 									: itemL;
@@ -1092,7 +1094,7 @@ class CProject {
 				iCs = self.readExtendedClasses(ctg, [el["class"]]);
 
 			// Obtain the full propertyClasses referenced by iCs[0]:
-			pCL = self.data.get("propertyClass", iCs[0].propertyClasses);
+			pCL = self.data.get("propertyClass", iCs[0].propertyClasses) as SpecifPropertyClass[];
 			// assuming that the property classes are unique:
 
 			// Add the properties in sequence of the propertyClass keys as specified by the instance class:
@@ -1111,7 +1113,7 @@ class CProject {
 				if (L && cl) {
 					// Return the item in list 'L' whose class references pC:
 					for (var l of L)
-						if (LIB.references(l['class'], cl)) return l; // return list item
+						if (LIB.references(l['class'], cl)) return l // return list item
 				}
 			}
 		}
@@ -1142,7 +1144,7 @@ class CProject {
 			}
 		)
 	}
-	deleteItems(ctg: string, itmL: SpecifKey[]): Promise<void> {
+	deleteItems(ctg: string, itmL: SpecifKeys): Promise<void> {
 		// ctg is a member of [dataType, resourceClass, statementClass, propertyClass, resource, statement, hierarchy]
 		/*			function isInUse( ctg, itm ) {
 							function dTIsInUse( L, dT ) {
@@ -1237,7 +1239,7 @@ class CProject {
 
 				this.readItems('resourceClass', [LIB.keyOf(rC)], { extendClasses: true, reload: true })
 					.then(
-						(rCL: SpecifItem[]) => {
+						(rCL) => {
 //							console.debug('makeEmptyResource resourceClasses', rCL);
 							// return an empty resource instance of the given type; 
 							res = {
@@ -1248,7 +1250,7 @@ class CProject {
 								changedAt: new Date().toISOString()
 							};
 //							console.debug('makeEmptyResource propertyClasses', pCL);
-							return this.readItems('propertyClass', rCL[0].propertyClasses, { reload: true })
+							return this.readItems('propertyClass', (rCL[0] as SpecifResourceClass).propertyClasses, { reload: true })
 						}
 					)
 					.then(
@@ -1376,7 +1378,7 @@ class CProject {
 				// Do it for all model-elements and diagrams,
 				// but exclude process gateways and generated events for optional branches:
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(lst[r]['class'], dta.resourceClasses)) > -1
+				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).includes(LIB.classTitleOf((lst[r] as SpecifResource)['class'], dta.resourceClasses))
 					&& this.equalR(lst[r] as SpecifResource, lst[n] as SpecifResource)
 					&& !LIB.hasType(lst[r], CONFIG.excludedFromDeduplication, dta, opts)
 					&& !LIB.hasType(lst[n], CONFIG.excludedFromDeduplication, dta, opts)
@@ -1710,7 +1712,7 @@ class CProject {
 				// 1.1 Find all Glossary folders:
 				let glL: SpecifNode[] = [],		// glossary folders to keep
 					delGL: SpecifNode[] = [],	// old glossary folders to replace
-					delRL: SpecifKey[] = [],
+					delRL: SpecifKeys = [],
 					diagramL: SpecifResource[] = [],
 				//	pVs: SpecifValues,
 					apx = simpleHash(self.id),
@@ -2063,26 +2065,6 @@ class CProject {
 	}
 	// Select format and options with a modal dialog, then export the data:
 	private renderExportOptions(fmt: string) {
-	/*	const exportOptionsClicked = 'app.cache.selectedProject.exportOptionsClicked()';
-		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
-			//	+		"<h4>"+i18n.LblOptions+"</h4>"
-			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ ['specif', 'specif_v10'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, [this.exportParams.projectName], { typ: 'line', handle: exportOptionsClicked })
-			+ makeTextField('&#x200b;' + i18n.LblFileName, [this.exportParams.fileName], { typ: 'line', handle: exportOptionsClicked });
-		switch (fmt) {
-			case 'epub':
-			case 'oxml':
-				pnl += makeCheckboxField(
-					i18n.LblOptions,
-					[
-						{ title: i18n.withStatements, id: 'withStatements', checked: false },
-						{ title: i18n.withOtherProperties, id: 'withOtherProperties', checked: false },
-						{ title: i18n.showEmptyProperties, id: 'showEmptyProperties', checked: CONFIG.showEmptyProperties }
-					],
-					{ handle: exportOptionsClicked }
-				);
-		};
-		pnl += '</div>'; */
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
@@ -2728,7 +2710,7 @@ class CProject {
 		};
 		return { status: 0 };  */
 	}
-	private compatiblePCReferences(rCL: SpecifKey[] | undefined, nCL: SpecifKey[] | undefined, opts?: any): boolean {
+	private compatiblePCReferences(rCL: SpecifKeys | undefined, nCL: SpecifKeys | undefined, opts?: any): boolean {
 		// to be used for a resourceClass' or statementClass' propertyClasses
 		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default
 		if (Array.isArray(rCL) && Array.isArray(nCL)) {
@@ -2750,7 +2732,7 @@ class CProject {
 				return !Array.isArray(rCL) && !Array.isArray(nCL);
 		};
 	}
-	private compatibleECReferences(rCL: SpecifKey[] | undefined, nCL: SpecifKey[] | undefined, opts?: any): boolean {
+	private compatibleECReferences(rCL: SpecifKeys | undefined, nCL: SpecifKeys | undefined, opts?: any): boolean {
 		// to be used for a statementClass's subjectClasses and objectClasses;
 		// if any of these arrays is missing, subjects or objects of any class are allowed:
 		if (!opts || !opts.mode) opts = { mode: "match" }; // most restrictive by default

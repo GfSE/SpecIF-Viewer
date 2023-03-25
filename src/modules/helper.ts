@@ -16,9 +16,9 @@ interface IFieldOptions {
     typ?: string;     // 'line', 'area' for makeTextField
     classes?: string; // CSS classes
     handle?: string;  // event handler
-    description?: string; // further explanation in a popup
+    description?: SpecifValue; // further explanation in a popup
 }
-function popoverString( dsc:any ):string {
+function popoverString(dsc?: SpecifValue ):string {
     return (dsc ? (' data-toggle="popover" title="' + LIB.displayValueOf(dsc, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '')
 }
 function makeTextField(tag: string, valL: string[], opts?: IFieldOptions): string {  
@@ -154,7 +154,7 @@ function getTextLength( tag:string ):number {
 interface IBox {
     id: string;
     title: string;
-    description?: string;
+    description?: SpecifValue;
     checked?: boolean;
     type?: string;
 }
@@ -335,6 +335,7 @@ class CCheckDialogInput {
     }
 }
 
+// see: https://javascript.info/xmlhttprequest
 class xhrMessage {
     status: number;
     statusText: string;
@@ -680,7 +681,7 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
         if( opts.lookupValues ) v = i18n.lookup(v);
         return opts.stripHTML ? v.stripHTML() : v
     };
-    return val
+    return val as string
 /*    let v = LIB.isMultiLanguageText(val) ? LIB.languageValueOf(val, opts) : val;
     if (opts.lookupValues) v = i18n.lookup(v);
     return opts.stripHTML ? v.stripHTML() : v; */
@@ -824,14 +825,14 @@ LIB.references = (n: SpecifKey, k: SpecifKey): boolean => {
     return LIB.isKey(k) && LIB.isKey(n) && k.id == n.id && (!n.revision || k.revision == n.revision);
     // ToDo: in case n.revision is undefined, the result shall be true only if n is the *newest* revision
 }
-LIB.referenceIndex = (L: SpecifKey[], k: SpecifKey): number => {
+LIB.referenceIndex = (L: SpecifKeys, k: SpecifKey): number => {
     // return the index of the item in L referencing k.
     // Note that indexByKey does the inverse: it returns the index of the list item which is referenced by k.
     for (var i = L.length-1; i > -1; i--)
         if (LIB.references(L[i], k)) return i;
     return -1;
 }
-/* LIB.referenceItem = (N: SpecifKey[], k: SpecifKey): number => {
+/* LIB.referenceItem = (N: SpecifKeys, k: SpecifKey): number => {
     // return the item in N referencing k.
     let i = LIB.referenceIndex(N, k);
     if (i > -1) return N[i]; // return the latest revision
@@ -1475,14 +1476,14 @@ LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
 }
-LIB.referencedResources = (rL: SpecIFResource[], h: SpecifNode[]): SpecifResource[] => {
+LIB.referencedResources = (rL: SpecifResource[], h: SpecifNode[]): SpecifResource[] => {
     // collect all resources referenced by the given hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
     var crL: SpecifResource[] = [];
     LIB.iterateNodes(h, (nd: SpecifNode) => { LIB.cacheE(crL, LIB.itemByKey(rL, nd.resource)); return true });
     return crL;
 }
-LIB.referencedResourcesByClass = (rL: SpecIFResource[], h: SpecifNode[], rCIdL: string[]): SpecifResource[] => {
+LIB.referencedResourcesByClass = (rL: SpecifResource[], h: SpecifNode[], rCIdL: string[]): SpecifResource[] => {
     let crL: SpecifResource[] = [];
     (LIB.iterateNodes(
         h,
@@ -1577,7 +1578,7 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
     };
     //    return undefined
 }
-LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
+LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string|undefined => {
     // Pick up the native title of any item except resource and statement;
     if( item )
         return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
@@ -1740,9 +1741,12 @@ function setUrlParams(actSt: any): void {
     // don't update, if unchanged or no project selected:
     if (quO.project == actSt.project
         && quO[CONFIG.keyView] == actSt.view
-        && (quO[CONFIG.keyNode] == actSt.node
+        && quO[CONFIG.keyNode] == actSt.node
+    /*    && (quO[CONFIG.keyNode] == actSt.node
             || !actSt.item
-            || quO[CONFIG.keyItem] == actSt.item)) {
+            || quO[CONFIG.keyItem] == actSt.item
+           )  */
+    ) {
         //        console.debug('setUrlParams - quit');
         return;
     };

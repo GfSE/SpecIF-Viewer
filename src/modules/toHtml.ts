@@ -123,7 +123,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+				'document.head.appendChild(link);'
 			+			'}'
 			+		'let pend = 4;'
-			+		'getScript("https://code.jquery.com/jquery-3.6.3.min.js");'
+			+		'getScript("https://code.jquery.com/jquery-3.6.4.min.js");'
 			+		'getScript(cdn+"config/definitions.js?" + Date.now().toString());'
 			+		'getScript(cdn+"config/moduleManager.js?" + Date.now().toString());'
 			+		'getScript(cdn+"embedded.js?" + Date.now().toString());'

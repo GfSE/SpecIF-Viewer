@@ -16,20 +16,35 @@
 	- There must only be one revision per class, resource or statement
 */
 
-function toOxml( data, opts ) {
+function toOxml( data, options ) {
 	"use strict";
 
 	// Reject versions < 1.0:
 	if( data.specifVersion ) {
 		let eTxt = "SpecIF Version < v1.0 is not supported.";
 		if (typeof(opts.fail)=='function' )
-			opts.fail({status:904,statusText:eTxt});
+			opts.fail({status:904,statusText:eTxt})
 		else
 			console.error(eTxt);
-		return;
+		return
 	};
 	
-	// Check for missing options:
+	let opts = Object.assign(
+		{
+			//	colorAccent1: '5B9BD5',   // original Office
+			colorAccent1: 'CB0A1B',  // GfSE red-brown
+
+			//	linkNotUnderlined: false,
+			preferPng: true,
+			imageResolution: 8, // 10 dots per mm = ~256 dpi
+			marginTop: 25, // mm
+			marginRight: 25, // mm
+			marginBottom: 40, // mm
+			marginLeft: 25 // mm
+		},
+		options
+	);
+/*	// Check for missing options:
 	if( typeof(opts)!='object' ) opts = {};
 	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
 	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
@@ -45,17 +60,21 @@ function toOxml( data, opts ) {
 	if( typeof(opts.marginLeft)!='number' ) opts.marginLeft = 25; // mm
 	if( typeof(opts.marginRight)!='number' ) opts.marginRight = 25; // mm
 	if( typeof(opts.marginTop)!='number' ) opts.marginTop = 25; // mm
-	if( typeof(opts.marginBottom)!='number' ) opts.marginBottom = 40; // mm
+	if( typeof(opts.marginBottom)!='number' ) opts.marginBottom = 40; // mm */
 //	console.debug('toOxml',data,opts);
 
 	const startRID = 7,		// first relationship index for images
 		maxHeading = 4,  	// Headings from 1 to maxHeading are defined
 		pageHeight = 298,
 		pageWidth = 210,	// mm for A4
-		columnWidth = pageWidth-opts.marginLeft-opts.marginRight,
-		columnHeight = pageHeight-opts.marginTop-opts.marginBottom,
-		twips = 56.692913385826;  // twips per mm
-	
+		columnWidth = pageWidth - opts.marginLeft - opts.marginRight,
+		columnHeight = pageHeight - opts.marginTop - opts.marginBottom,
+		twips = 56.692913385826,  // twips per mm
+
+		dataTypeString = 'xs:string',
+		dataTypeXhtml = 'xhtml',
+		dataTypeEnumeration = 'xs:enumeration';
+
 	// Create a local list of images, which can be used in OXML:
 	// - Take any raster image right away,
 	// - If SVG, look if there is a sibling (same filename) of type PNG. If so take it.
@@ -148,13 +167,35 @@ function toOxml( data, opts ) {
 	function createOxml() {
 		// create the file content as OXML:
 
-		function createText( data, opts ) {
+		function createText( data, options ) {
 			// Accepts data-sets according to SpecIF v0.10.8 and later.
 
-			// Check for missing options:
+			let opts = Object.assign(
+				{
+					showEmptyProperties: false,
+					addIcon: true,
+				//	clickableElements = false,
+					hasContent: hasContent,
+					titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
+					titleProperties: ['dcterms:title'],
+					typeProperty: 'dcterms:type',
+					descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
+					stereotypeProperties: ['UML:Stereotype'],
+				//	hierarchyRoots: ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'],
+					imgExtensions: [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ],
+					applExtensions: [ 'bpmn' ],
+
+					titleLinkBegin: '\\[\\[',		// escape javascript AND RegExp
+					titleLinkEnd: '\\]\\]',
+					titleLinkMinLength: 3
+				},
+				options
+			);
+		/*	// Check for missing options:
 			if( typeof(opts)!='object' ) opts = {};
 			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
 			if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
+		//	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
 			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
 			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'];
 			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
@@ -164,15 +205,15 @@ function toOxml( data, opts ) {
 		
 			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp
 			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';
-			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;	
-			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
+			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;
+		//	if (!Array.isArray(opts.hierarchyRoots)) opts.hierarchyRoots = ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'];
+			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
+			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];*/
+
+			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength > 0;
 			if( opts.addTitleLinks )
 				var reTitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, '' );
 			
-		//	if (!Array.isArray(opts.hierarchyRoots)) opts.hierarchyRoots = ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'];
-			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
-			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];
-			// if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
 
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
@@ -678,27 +719,51 @@ function toOxml( data, opts ) {
 							function parseRows(str) {
 								return str.replace(/<tr[^>]*>([\s\S]*?)<\/tr>/g, function($0,$1) {
 									var cs = [];
-									$1 = $1.replace(/<th[^\/>]*>([\s\S]*?)<\/th>|<th[^>]*\/>/g, function($0,$1) {
-											// a <th ...>content</td> or empty <th ... /> tag,
-											// where the content is in $1, if provided:
-//											console.debug('th',$0,'|',$1);
-											// the 'th' cell with it's content
-											// $1 is undefined in case of <th/>
-											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp ), format:{font:{weight:'bold'}}}, border:{style:'single'}} );
-											return '';
-											});
-									$1 = $1.replace(/<td[^\/>]*>([\s\S]*?)<\/td>|<td[^>]*\/>/g, function($0,$1) {
-											// a <td ...>content</td> or empty <td ... /> tag,
-											// where the content is in $1, if provided:
-//											console.debug('td',$0,'|',$1);
-											// the 'td' cell with it's content
-											// $1 is undefined in case of <td/>
-											cs.push({ p: { text: ($1? ($1.trim() || nbsp) : nbsp )}, border:{style:'single'}} )
-											return ''
-											});
+									$1 = $1.replace(/<th([^\/>]*)>([\s\S]*?)<\/th>|<th[^>]*\/>/g,
+												(match, sty, txt) => {
+													// a <th ...>content</td> or empty <th ... /> tag,
+													// where the content is in txt, if provided:
+		//											console.debug('td',$0,'|',sty,'|',txt);
+													// the 'th' cell with it's content
+													// txt is undefined in case of <th/>
+													cs.push({
+														p: {
+															text: (txt ? (txt.trim() || nbsp) : nbsp),
+															// parse <th style="text-align:center"> --> format:{font:{weight:'bold'},align:'center'}
+															format: { font: { weight: 'bold' }, align: al(sty) }
+														},
+														border: { style: 'single' }
+													});
+													return '';
+												}
+									);
+									$1 = $1.replace(/<td([^\/>]*)>([\s\S]*?)<\/td>|<td[^>]*\/>/g,
+												(match, sty, txt) => {
+													// a <td ...>content</td> or empty <td ... /> tag,
+													// where the content is in txt, if provided:
+		//											console.debug('td',$0,'|',sty,'|',txt);
+													// the 'td' cell with it's content
+													// txt is undefined in case of <td/>
+													cs.push({
+														p: {
+															text: (txt ? (txt.trim() || nbsp) : nbsp),
+															// parse <td style="text-align:center"> --> format:{align:'center'}
+															format: { align: al(sty) }
+														},
+														border: { style: 'single' }
+													});
+													return ''
+												}
+									);
 									// the row with it's content:
 									tbl.rows.push( {cells: cs} );
 									return ''
+
+									function al(sty) {
+										// identify values of XHTML text-align attributes:
+										return sty.includes('center') ? 'center' : (sty.includes('right') ? 'right' : undefined)
+
+									}
 								})
 							}
 						});
@@ -971,33 +1036,32 @@ function toOxml( data, opts ) {
 					// Find the dynamic link pattern and extract the content:
 					let lk = reTitleLink.exec(str);
 					if( lk && lk.length>1 ) {
-							// in certain situations, just remove the dynamic linking pattern from the text:
-							if( !opts.addTitleLinks || lk[1].length<opts.titleLinkMinLength ) 
-								return {text:lk[1]};
+						// in certain situations, just remove the dynamic linking pattern from the text:
+						if( !opts.addTitleLinks || lk[1].length<opts.titleLinkMinLength ) 
+							return {text:lk[1]};
 							
-							let m=lk[1].toLowerCase(), cR, ti, rC;
-							// is ti a title of any resource?
-							for( var x=data.resources.length-1;x>-1;x-- ) {
-								cR = data.resources[x];	
-								// avoid self-reflection:
-						//		if(ob.id==cR.id) continue;
+						let m=lk[1].toLowerCase(), ti, rC;
+						// is ti a title of any resource?
+						for( var cR of data.resources ) {
+							// avoid self-reflection:
+					//		if(ob.id==cR.id) continue;
 
-								// disregard objects whose title is too short:
-								ti = titleOf(cR, undefined, Object.assign({}, opts, { addIcon: false }));
-						//		ti = minEscape( cR.title );
-								if( !ti || ti.length<opts.titleLinkMinLength ) continue;
+							// disregard objects whose title is too short:
+							ti = titleOf(cR, undefined, Object.assign({}, opts, { addIcon: false }));
+					//		ti = minEscape( cR.title );
+							if( !ti || ti.length<opts.titleLinkMinLength ) continue;
 
-								// disregard link targets which aren't diagrams nor model elements:
-								rC = itemById(data.resourceClasses, cR['class']);
-								if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
+							// disregard link targets which aren't diagrams nor model elements:
+							rC = itemById(data.resourceClasses, cR['class']);
+							if (opts.titleLinkTargets.indexOf(rC.title) < 0) continue;
 
-								// if the titleLink content equals a resource's title, return a text run with hyperlink:
-								if(m==ti.toLowerCase())
-									return {text:lk[1],format:{hyperlink:{internal:anchorOf(cR.id)}}};
-							};
-							// The dynamic link has NOT been matched/replaced, so mark it:
-							return {text:lk[1],color:"82020"}
+							// if the titleLink content equals a resource's title, return a text run with hyperlink:
+							if(m==ti.toLowerCase())
+								return {text:lk[1],format:{hyperlink:{internal:anchorOf(cR.id)}}};
 						};
+						// The dynamic link has NOT been matched/replaced, so mark it:
+						return {text:lk[1],color:"82020"}
+					};
 					// should never arrive here
 					throw Error("SpecIF to WORD: Invalid title link.");
 				}
@@ -1011,7 +1075,7 @@ function toOxml( data, opts ) {
 						let pC = itemById(data.propertyClasses, prp['class']),
 							dT = itemById(data.dataTypes, pC.dataType);
 						switch( dT.type ) {
-							case opts.dataTypeEnumeration:
+							case dataTypeEnumeration:
 								let ct = '',
 									val = null,
 									st = opts.stereotypeProperties.includes(prp.title),
@@ -1024,8 +1088,8 @@ function toOxml( data, opts ) {
 									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
 								return [{p:{text:minEscape(ct)}}];
-							case opts.dataTypeString:
-							case opts.dataTypeXhtml:
+							case dataTypeString:
+							case dataTypeXhtml:
 //								console.debug('propertyValueOf - xhtml',prp.value);
 								// The value has been looked-up by the viewer before delivery:
 								return parseXhtml( prp.value, opts );

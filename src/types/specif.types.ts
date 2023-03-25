@@ -1050,7 +1050,7 @@ interface SpecifStatementClass {
      * @type {SpecifKey}
      * @memberof SpecifStatementClass
      */
-    _extends?: SpecifKey;
+    extends?: SpecifKey;
     /**
      * 
      * @type {SpecifIcon}

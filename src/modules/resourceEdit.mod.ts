@@ -110,7 +110,18 @@ class CPropertyToEdit extends CPropertyToShow  {
 		};
 	}
 	private makeDiagramField(opts: any) {
-		//					console.debug('editDiagram',this);
+		function imgExts() {
+			let str = '';
+			CONFIG.imgExtensions.forEach(
+				(ext: string, idx: number): void => {
+					// CONFIG.imgExtensions may have duplicate entries:
+					str += (idx < 1 ? '.' + ext : (str.includes(ext) ? '' : ',.' + ext))
+				}
+			);
+			return str
+		}
+
+//		console.debug('editDiagram',this);
 		return '<div class="form-group form-active" >'
 			+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
 			+ '<div class="attribute-value">'
@@ -124,7 +135,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			+ '<span class="btn btn-default btn-fileinput">'
 			+ '<span>' + i18n.IcoEdit + '</span>'
 			+ '<input id="file' + simpleHash(this['class'].id)
-								+ '" type="file" accept=".svg,.png,.jpg" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
+			+		'" type="file" accept="' + imgExts() + '" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
 			+ '</span>'
 			//			: '')
 			//	+		( !this.permissions || this.permissions.del?

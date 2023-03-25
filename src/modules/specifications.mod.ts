@@ -53,7 +53,7 @@ class CPropertyToShow implements SpecifProperty {
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
 			this.values = this.listEnumeratedValues();
-		};
+		}
 	}
 	private listEnumeratedValues() {
 		// replace identifiers of enumerated values by their value as defined in the dataType:
@@ -62,7 +62,7 @@ class CPropertyToShow implements SpecifProperty {
 			oL.push(LIB.itemById(this.dT.enumeration, v).value);
 		};
 //		console.debug('#2', simpleClone(oL));
-		return oL;
+		return oL
 	}
 	private allValues(opts: any): string {
 		// Return all values in the language specified;
@@ -152,7 +152,7 @@ class CPropertyToShow implements SpecifProperty {
 	/*	// Add 'double-angle quotation' in case of stereotype values:
 		if( CONFIG.stereotypeProperties.indexOf(this.title)>-1 )
 			ct = '&#x00ab;'+ct+'&#x00bb;'; */
-		return ct;
+		return ct
 	}
 
 	private titleLinks(str: string, opts: any): string {
@@ -241,7 +241,7 @@ class CPropertyToShow implements SpecifProperty {
 		function getType(str: string): string {
 			let t = /(type="[^"]+")/.exec(str);
 			if (Array.isArray(t) && t.length > 0) return (' ' + t[1]);
-			return '';
+			return ''
 		}
 		function getUrl(str: string): string {
 			let l = /data="([^"]+)"/.exec(str);  // url in l[1]
@@ -269,8 +269,8 @@ class CPropertyToShow implements SpecifProperty {
 		function makeStyle(w: string, h: string): string {
 			// compose a style property, if there are such parameters,
 			// return empty string, otherwise:
-			return (h || w) ? ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + '"' : '';
-		//	return ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + ' position:relative;"';
+			return (h || w) ? ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + '"' : ''
+		//	return ' style="' + (h ? 'height:' + h + '; ' : '') + (w ? 'width:' + w + '; ' : '') + ' position:relative;"'
 		}
 
 		// Prepare a file reference for viewing and editing:
@@ -316,7 +316,7 @@ class CPropertyToShow implements SpecifProperty {
 							opts
 						);
 						// Because an image must be added after the enclosing link, for example, the timelag is increased a little:
-						f2.renderImage($.extend({}, opts, { timelag: opts.timelag * 1.2 }));
+						f2.renderImage($.extend({}, opts, { timelag: opts.timelag * 1.2 }))
 					}
 					else {
 						// nothing to display, so ignore f2:
@@ -324,14 +324,13 @@ class CPropertyToShow implements SpecifProperty {
 						// first add the element to which the attachment will be added:
 						repStrings.push('<span class="' + tagId(u1) + '"></span>');
 						// now add the download link with file as data-URL:
-						f1.renderDownloadLink(d, opts);
+						f1.renderDownloadLink(d, opts)
 					};
-					return 'aBra§kadabra' + (repStrings.length - 1) + '§';
-
+					return 'aBra§kadabra' + (repStrings.length - 1) + '§'
 				}
 				else {
 					return '<div class="notice-danger" >File missing: ' + d + '</div>'
-				};
+				}
 			}
 		);
 //		console.debug('fileRef.toGUI 1: ', txt);
@@ -569,7 +568,7 @@ class CResourceToShow {
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
 	isEqual(res: SpecifResource): boolean {
-		return res && this.id == res.id && this.changedAt == res.changedAt;
+		return res && this.id == res.id && this.changedAt == res.changedAt
     }
 	isUserInstantiated(): boolean {
 		return (!Array.isArray(this.rC.instantiation)
@@ -585,7 +584,7 @@ class CResourceToShow {
 
 		// assemble a label:value pair resp. a wide value field for display:
 		val = (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >' : '<div class="attribute-wide" >') + val + '</div>';
-		return '<div class="attribute' + cssCl + '">' + val + '</div>';
+		return '<div class="attribute' + cssCl + '">' + val + '</div>'
 	}
 	renderTitle(opts?: any): string {
 //		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
@@ -604,7 +603,7 @@ class CResourceToShow {
 		};
 		// else: is not a heading:
 		// take title and add icon, if configured:
-		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this.rC.icon) : ti) + '</div>';
+		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this.rC.icon) : ti) + '</div>'
 	}
 	renderChangeInfo(): string {
 		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
@@ -618,7 +617,7 @@ class CResourceToShow {
 					+ this.renderAttr(i18n.LblModifiedBy, this.changedBy, 'attribute-condensed');
 			//	default: no change info!			
 		};
-		return chI;
+		return chI
 	}
 	listEntry(options?: any): string {
 		if (!this.id) return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
@@ -691,7 +690,7 @@ class CResourceToShow {
 		rO += '</div>'	// end of content-other
 			+ '</div>';  // end of listEntry
 
-		return rO;  // return rendered resource for display
+		return rO  // return rendered resource for display
 	}
 /*	self.details = function() {
 		// for the list view, where title and text are shown in the main column and the others to the right.
@@ -764,19 +763,19 @@ class CResourcesToShow {
 	list: CResourceToShow[];
 
 	constructor() {
-		this.list = [];
+		this.list = []
 	}
 	push(r: SpecifResource): boolean {
 		// append a resource to the list:
 		this.list.push(new CResourceToShow(r));
-		return true;  // a change has been effected
+		return true  // a change has been effected
 	}
 	append(rL: SpecifResource[]) {
 		// append a list of resources:
 		rL.forEach((r) => {
 			this.push(r);
 		});
-		return true;  // a change has been effected
+		return true  // a change has been effected
 	}
 	set(idx:number, r: SpecifResource): boolean {
 		if (this.list[idx].isEqual(r)) {
@@ -785,7 +784,7 @@ class CResourcesToShow {
 			return false;  // no change
 		};
 		this.list[idx] = new CResourceToShow(r);
-		return true;		// has changed
+		return true		// has changed
 	}
 	update(rL: SpecifResource[]): boolean {
 		// update this.list with rL and return 'true' if a change has been effected:
@@ -801,8 +800,8 @@ class CResourcesToShow {
 			// there will be a change anyways:
 			this.list.length = 0;
 			this.append(rL);
-			return true;
-		};
+			return true
+		}
 	}
 	updateSelected(r: SpecifResource): boolean {
 		// update the first item (= selected resource), if it exists, or create it;
@@ -810,7 +809,7 @@ class CResourcesToShow {
 		if (this.list.length > 0)
 			return this.set(0,r);
 		else
-			return this.push(r);
+			return this.push(r)
 	}
 	selected(): CResourceToShow {
 		// return the selected resource; it is the first in the list by design:
@@ -819,7 +818,7 @@ class CResourcesToShow {
 	exists(rId: string): boolean {
 		for (var i = this.list.length - 1; i > -1; i--)
 			if (this.list[i].id == rId) return true;
-		return false;
+		return false
 	}
 	render(): string {
 		// generate HTML representing the resource list:
@@ -831,7 +830,7 @@ class CResourcesToShow {
 		this.list.forEach((v: CResourceToShow) => {
 			rL += v ? v.listEntry() : '';
 		});
-		return rL;	// return rendered resource list
+		return rL	// return rendered resource list
 	}
 }
 class CFileWithContent implements IFileWithContent {
@@ -883,7 +882,7 @@ class CFileWithContent implements IFileWithContent {
 			// @ts-ignore - the dataURL *is* available as it has just been checked
 			setTimeout(() => { addL(this.dataURL, this.title, this.type) }, opts.timelag);
 		else
-			throw Error( 'Neither Blob nor DataURL found when preparing a download link.' );
+			throw Error( 'Neither Blob nor DataURL found when preparing a download link.' )
 	}
 	renderImage(opts?: any): void {
 
@@ -935,8 +934,8 @@ class CFileWithContent implements IFileWithContent {
 				this.showBpmn(opts);
 				break;
 			default:
-				console.warn('Cannot show diagram ' + this.title + ' of unknown type: ', this.type);
-		};
+				console.warn('Cannot show diagram ' + this.title + ' of unknown type: ', this.type)
+		}
 	//	return undefined;
 	// end of renderImage()
 	};
@@ -954,10 +953,9 @@ class CFileWithContent implements IFileWithContent {
 						(el)=>{el.innerHTML = '<img src="'+r+'" type="'+fTy+'" alt="'+fTi+'" style="background-color:#DDD;"/>'} */
 				}
 			);
-		}, opts.timelag);
+		}, opts.timelag)
 	}
 	private showSvg(opts: any): void {
-		var self = this;
 		// Read and render SVG:
 		LIB.blob2text(this, displaySVGeverywhere, opts.timelag)
 		return;
@@ -980,9 +978,9 @@ class CFileWithContent implements IFileWithContent {
 				if (L[i].title.includes(ti)) return L[i];   // return list item
 			//	return undefined
 		}
-		interface svgDescriptor {
-			locs: HTMLCollectionOf<Element>,
-			img: string
+		interface imgDescriptor {
+			locs: HTMLCollectionOf<Element>;
+			img: string;
         }
 		function displaySVGeverywhere(r: string, fTi: string): void {
 			// Load pixel images embedded in SVG,
@@ -990,7 +988,7 @@ class CFileWithContent implements IFileWithContent {
 			// see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
 			// see: https://css-tricks.com/probably-dont-base64-svg/
 			// view-source:https://dev.w3.org/SVG/profiles/1.1F2/test/svg/struct-image-04-t.svg
-			let svg:svgDescriptor = {
+			let svg:imgDescriptor = {
 					// the locations where the svg shall be added:
 					locs: document.getElementsByClassName(tagId(fTi)),
 					// the SVG image with or without embedded images:
@@ -1031,24 +1029,24 @@ class CFileWithContent implements IFileWithContent {
 								// replace only if dataURL is available:
 								return dURL ? $1 + dURL.val + $3 : "";
 							});
-							displayAll(svg);
-						};
-					});
-				};
+							displayAll(svg)
+						}
+					})
+				}
 			};
 			if (pend < 1) {
 				// there are no embedded images, so display right away:
-				displayAll(svg);
+				displayAll(svg)
 			};
 			return;
 
-			function displayAll(svg: svgDescriptor): void {
+			function displayAll(svg: imgDescriptor): void {
 				Array.from(svg.locs,
 					(loc) => {
 						loc.innerHTML = svg.img;
 						if (opts && opts.clickableElements) registerClickEls(loc)
 					}
-				);
+				)
 			}
 		}
 		// see http://tutorials.jenkov.com/svg/scripting.html
@@ -1127,7 +1125,7 @@ class CFileWithContent implements IFileWithContent {
 						$("#details").empty();
 						app.specs.showTree.set();
 					}
-				);
+				)
 			});
 			return svg;
 
@@ -1153,7 +1151,7 @@ class CFileWithContent implements IFileWithContent {
 						};
 					};
 				};
-				return id;	// no corresponding diagram found
+				return id	// no corresponding diagram found
 			}
 			// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
 			// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
@@ -1208,14 +1206,14 @@ moduleManager.construct({
 
 	self.selectedView = ():string =>{
 //		console.debug('selectedView',self.ViewControl.selected.view);
-		return self.ViewControl.selected.view;
+		return self.ViewControl.selected.view
 	};
 	self.emptyTab = ( tab:string ):void =>{
 		app.busy.reset();
 	//	$( '#specNotice' ).empty();
 		// but show the buttons anyways, so the user can create the first resource:
 	//	$( '#specActions' ).empty();
-		$( tab ).empty();
+		$( tab ).empty()
 	};
 
 	// standard module interface:
@@ -1368,7 +1366,7 @@ moduleManager.construct({
 		self.tree.clear();
 		refreshReqCnt = 0;
 		app.cache.clear();
-		app.busy.reset();
+		app.busy.reset()
 	};
 	// module entry 'self.show()' see further down
 	// module exit;
@@ -1376,7 +1374,7 @@ moduleManager.construct({
 	self.hide = ():void =>{
 //		console.debug( 'specs.hide' );
 		// don't delete the page with $(self.view).empty(), as the structure is built in init()
-		app.busy.reset();
+		app.busy.reset()
 	}; 
 
 /*	function handleError(xhr:xhrMessage):void {
@@ -1459,7 +1457,7 @@ moduleManager.construct({
 				ref: iE.resource,
 				children: LIB.forAll( iE.nodes, toJqTree )
 			};
-			return oE;
+			return oE
 		}
 	};
 
@@ -1597,7 +1595,7 @@ moduleManager.construct({
 			// @ts-ignore - ElementById 'CONFIG.objectList' does exist
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
-			self.tree.openNode();
+			self.tree.openNode()
 			// opening a node triggers an event, by which 'self.refresh' will be called.
 		}
 		else {
@@ -1728,7 +1726,7 @@ moduleManager.construct({
 	self.init = (): boolean => {
 		return true;
 	};
-	self.clear = ():void =>{
+	self.clear = ():void => {
 	//	selectResource(null);
 		self.resources.init();
 	//	self.comments.init();
@@ -1779,7 +1777,7 @@ moduleManager.construct({
 				}
 				else {
 					handleErr( err );
-				};
+				}
 			}
 		);
 		return;
@@ -1791,26 +1789,26 @@ moduleManager.construct({
 */
 		function getNextResources():Promise<SpecifResource[]> {
 			var nd = self.parent.tree.selectedNode,
-				oL:SpecifKey[] = [];  // id list of the resources to view
+				oL:SpecifKeys = [];  // id list of the resources to view
 			nL = [];  // list of hierarchy nodes
 					
 			// Update browser history, if it is a view change or item selection, 
-			// but not navigation in the browser history:
-			if( nd && !(opts && opts.urlParams) ) 
+			// but not navigation in the browser history (i.e. opts.urlParams is set):
+			if( nd && !opts.urlParams)
 				setUrlParams({
 					project: selPrj.id,
 					view: self.view.substr(1),	// remove leading hash
-					node: nd.id,
-					item: nd.ref.id
+					node: nd.id
+					// item: nd.ref.id
 				}); 
 
 			// lazy loading: only a few resources are loaded from the server starting with the selected node
 			// only visible tree nodes are collected in oL (excluding those in closed folders ..), 
 			// so the main column corresponds with the tree.
-			for( var i=0, I=CONFIG.objToGetCount; i<I && nd; i++ ) {
+			for( var i=CONFIG.objToGetCount-1; nd && i>-1; i-- ) {
 				oL.push( nd.ref );  // nd.ref is the key of a resource to show
 				nL.push( nd );
-				nd = nd.getNextNode();   // get next visible tree node
+				nd = nd.getNextNode()   // get next visible tree node
 			};
 
 			return selPrj.readItems( 'resource', oL ) as Promise<SpecifResource[]>
@@ -1831,11 +1829,11 @@ moduleManager.construct({
 			// the currently selected resource:
 			selRes = self.resources.selected();
 			$( self.view ).prepend( actionBtns() );
-			app.busy.reset();
+			app.busy.reset()
 		}
 		function handleErr(err: xhrMessage):void {
 			LIB.stdError( err );
-			app.busy.reset();
+			app.busy.reset()
 		}
 		function actionBtns():string {
 			// render buttons:
@@ -1958,13 +1956,13 @@ moduleManager.construct({
 //			console.debug('#',mode);
 			// the resource editor has no 'official' view and is thus not controlled by ViewControl,
 			// therefore we call show() directly:
-			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} );
+			app[CONFIG.resourceEdit].show( {eligibleResourceClasses:self.resCreClasses,mode:mode} )
 		}
 		else {
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
-			throw Error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.");
-		};
+			throw Error("\'editResource\' clicked, but module '"+CONFIG.resourceEdit+"' is not ready.")
+		}
 	}; 
 	self.deleteNode = ():void =>{
 		// Delete the selected node and its children.
@@ -1984,7 +1982,7 @@ moduleManager.construct({
 				label: i18n.BtnDeleteObjectRef,
 				action: (thisDlg: any)=>{
 					delNd( self.parent.tree.selectedNode );
-					thisDlg.close();
+					thisDlg.close()
 				}
 		/*	},{
 				label: i18n.BtnDeleteObject,
@@ -2064,9 +2062,9 @@ moduleManager.construct({
 		self.parent.tree.selectNodeByRef( LIB.makeKey(rId) );
 		// changing the tree node triggers an event, by which 'self.refresh' will be called.
 		// @ts-ignore - ElementById 'CONFIG.objectList' does exist
-		document.getElementById(CONFIG.objectList).scrollTop = 0;
+		document.getElementById(CONFIG.objectList).scrollTop = 0
 	};
-	return self;
+	return self
 });
 // Construct the controller for displaying the statements ('Statement View'):
 moduleManager.construct({
@@ -2088,7 +2086,7 @@ moduleManager.construct({
 	self.staDel = false;
 
 	self.init = (): boolean => {
-		return true;
+		return true
 	}
 	self.hide = (): void => {
 		$(self.view).empty()
@@ -2120,13 +2118,13 @@ moduleManager.construct({
 		var nd = self.parent.tree.selectedNode;
 
 		// Update browser history, if it is a view change or item selection, 
-		// but not navigation in the browser history:
-		if (!opts.urlParams)
+		// but not navigation in the browser history (i.e. opts.urlParams is set):
+		if (nd && !opts.urlParams)
 			setUrlParams({
 				project: selPrj.id,
 				view: self.view.substr(1),	// without leading hash
 				node: nd.id
-				//	item: nd.ref
+				//	item: nd.ref.id
 			});
 
 		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges() })
@@ -2174,7 +2172,7 @@ moduleManager.construct({
 					//				console.debug('local net',stL,net);
 					renderStatements(net);
 					$(self.view).prepend(linkBtns());
-					app.busy.reset();
+					app.busy.reset()
 				}
 			)
 			.catch(
@@ -2191,7 +2189,7 @@ moduleManager.construct({
 			// where the sequence of items in L is always maintained.
 			// @ts-ignore - in the first run when a key is specified, the result of instanceTitleOf() is undefined - it will be added in the second run
 			//	LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
-			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) }] });
+			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) }] })
 		}
 		function cacheMinSta(N: CGraph, s: SpecifStatement): void {
 			// cache the minimal representation of a statement;
@@ -2200,7 +2198,7 @@ moduleManager.construct({
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
 			//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
-			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] });
+			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] })
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
@@ -2220,7 +2218,7 @@ moduleManager.construct({
 			// 3. Collect the related resource:
 			//    If the selected node is a subject, the related resource is an object ... and vice versa;
 			//    list it, but only once:
-			cacheMinRes(net, (nd.ref.id == s.subject.id ? s.object : s.subject));
+			cacheMinRes(net, (nd.ref.id == s.subject.id ? s.object : s.subject))
 			//	cacheMinRes( net, LIB.references(nd.ref, s.subject) ? s.object : s.subject);
 		}
 		function getMentionsRels(selR: SpecifResource, opts: any): Promise<any[]> {
@@ -2319,7 +2317,7 @@ moduleManager.construct({
 							},
 							reject
 						);
-					return true;
+					return true
 				})
 			})
 
@@ -2327,7 +2325,7 @@ moduleManager.construct({
 				for (var l of L) {
 					if (l.subject.id == s.id && l.object.id == o.id) return false;
 				};
-				return true;
+				return true
 			}
 		};
 		function aDiagramWithoutShowsStatementsForEdges(): boolean {
@@ -2349,7 +2347,7 @@ moduleManager.construct({
 					return (isNotADiagram
 						|| LIB.hasType(res, CONFIG.diagramTypesHavingShowsStatementsForEdges, cacheData));
 				}
-			) || noDiagramFound;
+			) || noDiagramFound
 		}
 	};
 
@@ -2374,7 +2372,7 @@ moduleManager.construct({
 		else
 			rB += '<button disabled class="btn btn-default" >' + i18n.IcoDelete + '</button>';
 
-		return rB + '</div>';	// return rendered buttons for display
+		return rB + '</div>'	// return rendered buttons for display
 	}
 	function getPermissions(res: SpecifResource): void {
 		// No permissions beyond read, if it is the viewer:
@@ -2399,8 +2397,8 @@ moduleManager.construct({
 				}
 			);
 			// b) set the permissions for the edit buttons:
-			self.staCre = self.staCreClasses.subjectClasses.length > 0 || self.staCreClasses.objectClasses.length > 0;
-		};
+			self.staCre = self.staCreClasses.subjectClasses.length > 0 || self.staCreClasses.objectClasses.length > 0
+		}
 		//		console.debug('permissions',res,self.staCreClasses,self.staCre);
 	}
 	function renderStatements(net: CGraph): void {
@@ -2434,7 +2432,7 @@ moduleManager.construct({
 		$(self.view).prepend('<div style="position:absolute;left:4px;z-index:900">'
 			+ (modeStaDel? '<span class="notice-danger" >' + i18n.MsgClickToDeleteRel 
 						: '<span class="notice-default" >' + i18n.MsgClickToNavigate )
-			+ '</span></div>');
+			+ '</span></div>')
 	}
 /*	function renderStatementsTable( sGL, opts ) {
 		// Render a table with all statements grouped by type:
@@ -2546,12 +2544,12 @@ moduleManager.construct({
 		/*	// ToDo: Lazy loading, 
 			// Load the edit module, if not yet available:  */
 			throw Error("\'linkResource\' clicked, but module '"+CONFIG.resourceLink+"' is not ready.");
-		};
+		}
 	}; 
 	self.toggleModeStaDel = ():void =>{
 		// modeStaDel controls what the resource links in the statement view will do: jump or delete statement
 		modeStaDel = !modeStaDel;  // toggle delete mode for statements
-		self.parent.doRefresh({ forced: true });
+		self.parent.doRefresh({ forced: true })
 	};
 	self.relatedItemClicked = ( rId:string, sId:string ):void =>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
@@ -2573,5 +2571,5 @@ moduleManager.construct({
 			document.getElementById(CONFIG.objectList).scrollTop = 0;
 		};
 	};
-	return self;
+	return self
 });

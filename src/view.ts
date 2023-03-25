@@ -123,29 +123,30 @@ function viewSpecif():IApp {
 		// React on Browser Back/Forward buttons:
 		window.addEventListener("hashchange", self.show );
 
-		moduleManager.load(self.moduleTree, { done: self.show });
+		moduleManager.load(self.moduleTree, { done: self.login });
 	};
-	self.show = function():void {
+	self.login = function ():void {
 		console.info(self.title + " " + CONFIG.appVersion + " started!");
 		self.me.read()
 		.then(
-			function() {
-				var uP = getUrlParams(), v:string;
-				if( !self.cache.selectedProject
-					|| !self.cache.selectedProject.isLoaded()
-					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=self.cache.selectedProject.data.id
-					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
-					// - no project is loaded
-					// - a project id is found in the URL parameters and it differs from the one of the loaded project
-					// - an URL parameter 'import' has been found:
-					v = '#'+ CONFIG.importAny
-				else
-					v = '#'+ (uP[CONFIG.keyView] || CONFIG.specifications);
-//				console.debug( 'app.view', uP, v );
-				moduleManager.show({view:v,urlParams:uP});
-			},
+			self.show,
 			self.logout
 		);
+	};
+	self.show = function ():void {
+		var uP = getUrlParams(), v: string;
+		if (!self.cache.selectedProject
+			|| !self.cache.selectedProject.isLoaded()
+			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self.cache.selectedProject.id
+			|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length > 0)
+			// - no project is loaded
+			// - a project id is found in the URL parameters and it differs from the one of the loaded project
+			// - an URL parameter 'import' has been found:
+			v = '#' + CONFIG.importAny
+		else
+			v = '#' + (uP[CONFIG.keyView] || CONFIG.specifications);
+		//		console.debug( 'app.show', uP, v );
+		moduleManager.show({ view: v, urlParams: uP });
 	};
 	self.export = function():void {
 		if (self.cache.selectedProject && self.cache.selectedProject.isLoaded() )
