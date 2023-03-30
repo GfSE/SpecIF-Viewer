@@ -485,15 +485,15 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 //										console.debug('createRes - statement',pTi,obL);
 										obL.forEach((ob: string) => {
 											let oInner:string[] = RE.inQuotes.exec(ob),
-												obj2l:string;
+												res2l:string;
 											if (oInner && oInner.length > 2) {
 												// a string in quotes has been found
-												obj2l = oInner[1] || oInner[2];
+												res2l = oInner[1] || oInner[2];
 											}
 											else {
-												obj2l = ob.trim();
+												res2l = ob.trim();
 											};
-											if (obj2l.length > CONFIG.titleLinkMinLength-1)
+											if (res2l.length > CONFIG.titleLinkMinLength-1)
 												stL.push({
 												//	id: undefined,  	// defined further down, when the resource's id has been determined
 													class: LIB.makeKey(staClassId(pTi)),	// make id from column title
@@ -502,9 +502,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 													// it will be replaced with a resource key when importing.
 													// Remember to disable the constraint-check on the statement.object.
 													object: LIB.makeKey(CONFIG.placeholder),
-													objectToLink: obj2l,  // content in double or single quotes
+													resourceToLink: res2l,  // content in double or single quotes
 													changedAt: chAt
-												});
+												} as IIncompleteStatement );
 										});
 									};
 								};
@@ -560,7 +560,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							// the resource has been stored, so any statement can be stored, as well:
 							if( stL.length>0 ) {
 								stL.forEach((st) => {
-									st.id = 'S-' + simpleHash(res.id + st['class'].id + st.objectToLink);
+									st.id = 'S-' + simpleHash(res.id + st['class'].id + st.resourceToLink);
 									st.subject = LIB.keyOf(res)
 								});
 								specifData.statements = specifData.statements.concat(stL);

@@ -11,6 +11,19 @@
 */ 
 
 const LIB: any = {};
+
+interface INodeWithPosition extends SpecifNode {
+    parent?: string;
+    predecessor?: string;
+}
+// For example, ioXLS uses incomplete links which are late attached using hookStatements:
+interface IIncompleteStatement extends SpecifStatement {
+    resourceToLink: string; // is the title of a resource
+}
+interface IFileWithContent extends SpecifFile {
+    blob?: Blob;
+    dataURL?: string;
+}
 interface IFieldOptions {
     tagPos?: string;  // 'left', 'none' ('above')
     typ?: string;     // 'line', 'area' for makeTextField
@@ -556,7 +569,7 @@ LIB.equalValues = (refVL: SpecifValues, newVL: SpecifValues): boolean => {
 LIB.equalBoolean = (rB: boolean, nB: boolean): boolean => {
     return (rB && nB || !rB && !nB);
 }
-LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean => {
+LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean =>{
     // return true, if reference and new dataType are equal:
     if (refE.type != newE.type) return false;
     // Perhaps we must also look at the title ..
@@ -581,7 +594,56 @@ LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean => {
     // finally the multiple flag must be equal:
     return LIB.equalBoolean(refE.multiple, newE.multiple)
 }
-LIB.isString = (el:any): boolean => {
+LIB.equalPC = (refE: SpecifPropertyClass, newE: SpecifPropertyClass): boolean =>{
+    // return true, if reference and new propertyClass are equal.
+
+    // In Archimate export from ADOIT it may happen, that there are more than 1 propertyDefinitions
+    // with the same data type and name are used by the same resourceClass --> Avoid deduplication.
+
+    // Default values must also be congruent:
+    if (Array.isArray(refE.values) != Array.isArray(newE.values)) return false;
+    return refE.title == newE.title
+        && LIB.equalKey(refE.dataType, newE.dataType)
+        && (!Array.isArray(refE.values) && !Array.isArray(newE.values)
+            || LIB.equalValues(refE.values, newE.values))
+        && LIB.equalBoolean(refE.multiple, newE.multiple);
+}
+LIB.equalRC = (refE: SpecifResourceClass, newE: SpecifResourceClass): boolean =>{
+    // return true, if reference and new resourceClass are equal:
+    return refE.title == newE.title
+        && LIB.equalBoolean(refE.isHeading, newE.isHeading)
+        && LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
+    //	&& LIB.equalKeyL( refE.instantiation, newE.instantiation )
+    // --> the instantiation setting of the reference shall prevail
+}
+LIB.equalSC = (refE: SpecifStatementClass, newE: SpecifStatementClass): boolean =>{
+    // return true, if reference and new statementClass are equal:
+    return refE.title == newE.title
+        && LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
+        && eqSCL(refE.subjectClasses, newE.subjectClasses)
+        && eqSCL(refE.objectClasses, newE.objectClasses)
+        && LIB.isEqualStringL(refE.instantiation, newE.instantiation);
+
+    function eqSCL(rL: any, nL: any): boolean {
+        //			console.debug('eqSCL',rL,nL);
+        // return true, if both lists have equal members,
+        // in this case we allow also less specified statementClasses
+        // (for example, when a statement is created from an Excel sheet):
+        if (!Array.isArray(nL)) return true;
+        // no or empty lists are allowed and considerated equal:
+        return LIB.equalKeyL(rL, nL);
+        /*	let rArr = Array.isArray(rL) && rL.length > 0,
+                nArr = Array.isArray(nL) && nL.length > 0;
+            if (!rArr && nArr
+                || rL.length != nL.length) return false;
+            // the sequence may differ:
+            for (var i = rL.length - 1; i > -1; i--)
+                if (LIB.indexByKey(nL, rL[i]) < 0) return false;
+            return true; */
+    }
+}
+
+LIB.isString = (el: any): boolean => {
     return typeof (el) == 'string';
 }
 LIB.isIsoDate = (val: string): boolean => {
@@ -937,14 +999,14 @@ LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
         (bim, bam) => { return LIB.cmp( fn(bim), fn(bam) ) }
     );
 }
-LIB.forAll = ( L:any[], fn:(arg0:any,idx:number)=>any ):any[] =>{
+LIB.forAll = ( L:any[], fn:(el:any,idx:number)=>any ):any[] =>{
     // return a new list with the results from applying the specified function to all items of input list L;
     // differences when compared to Array.map():
     // - tolerates missing L
     // - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
     if(!L) return [];
     var nL:any[] = [];
-    L.forEach( (e,i)=>{ var r=fn(e,i); if(r) nL.push(r) } );
+    L.forEach( (el,idx)=>{ var r=fn(el,idx); if(r) nL.push(r) } );
     return nL;
 }
 
@@ -1073,9 +1135,10 @@ String.prototype.toCamelCase = function():string {
 String.prototype.toJsId = function():string {
     return this.replace( /[-:\.\,\s\(\)\[\]\/\\#�%]/g, '_' );
 };
-// Make an id conforming with ReqIF and SpecIF:
+// Make an id conforming with SpecIF v1.0+:
+// ToDo: Check ReqIF compatibility
 String.prototype.toSpecifId = function():string {
-    return ( /[0-9]/.test(this[0])? '_':'' ) + this.replace( /[^_0-9a-zA-Z]/g, '_' );
+    return (/[^_a-zA-Z]/.test(this[0]) ? '_' : '') + this.replace( /[^_a-zA-Z0-9.-]/g, '_' );
 };
 /*
 function truncate(l:number):string {

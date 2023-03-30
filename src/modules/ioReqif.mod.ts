@@ -26,10 +26,10 @@ moduleManager.construct({
 		zipped:boolean,
 //		template,	// a new Id is given and user is asked to input a project-name
 		opts:any,
-		errNoOptions: xhrMessage = { status: 896, statusText: 'No options or no mediaTypes defined.' },
-		errNoReqifFile: xhrMessage = { status: 897, statusText: 'No ReqIF file in the reqifz container.' },
+		errNoOptions = new xhrMessage( 896, 'No options or no mediaTypes defined.' ),
+		errNoReqifFile = new xhrMessage( 897, 'No ReqIF file in the reqifz container.' ),
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
-		errInvalidXML: xhrMessage = { status: 898, statusText: 'ReqIF data is not valid XML.' };
+		errInvalidXML = new xhrMessage( 898, 'ReqIF data is not valid XML.' );
 		
 	self.init = (options:any):boolean =>{
 		mime = undefined;

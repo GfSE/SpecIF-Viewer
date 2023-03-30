@@ -7,10 +7,6 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-interface INodeWithPosition extends SpecifNode {
-	parent?: string;
-	predecessor?: string;
-}
 class CSpecifItemNames {
 	// SpecIF item names for all supported import versions 
 	rClasses: string;
@@ -247,7 +243,7 @@ class CSpecIF implements SpecIF {
 					} 
 				}
 				else {
-					reject({ status: 999, statusText: 'No SpecIF data to check' });
+					reject(new xhrMessage( 999, 'No SpecIF data to check' ));
 				};
 				return;
 
@@ -356,7 +352,7 @@ class CSpecIF implements SpecIF {
 		catch (e) {
 			let txt = "Error when importing the project '" + LIB.displayValueOf(spD.title, {targetLanguage:spD.language||browser.language}) + "'.";
 			console.warn(txt);
-			message.show({ status: 999, statusText: txt }, { severity: 'danger' });
+			message.show(new xhrMessage( 999, txt ), { severity: 'danger' });
 			return; // undefined 
 		};
 
@@ -694,8 +690,8 @@ class CSpecIF implements SpecIF {
 			return oE
 		}
 		// a statement:
-		function s2int(iE:any): SpecifStatement {
-			var oE: SpecifStatement = a2int(iE) as SpecifStatement;
+		function s2int(iE:any): IIncompleteStatement {
+			var oE = a2int(iE) as IIncompleteStatement;
 			// SpecIF allows subjects and objects with id alone or with  a key (id+revision):
 			// keep original and normalize to id+revision for display:
 			oE.subject = LIB.makeKey(iE.subject.id || iE.subject );
@@ -705,8 +701,7 @@ class CSpecIF implements SpecIF {
 			// used for example by the XLS import:
 		/*	// @ts-ignore - subjectToLink is implementation-specific for a-posteriori completion of statements
 			if (iE.subjectToLink) oE.subjectToLink = iE.subjectToLink;  */
-			// @ts-ignore - objectToLink is implementation-specific for a-posteriori completion of statements
-			if (iE.objectToLink) oE.objectToLink = iE.objectToLink;
+			if (iE.resourceToLink) oE.resourceToLink = iE.resourceToLink;
 //			console.debug('statement 2int',iE,oE);
 			return oE
 		}
@@ -1747,7 +1742,7 @@ class CSpecIF implements SpecIF {
 									default:
 										/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
 											resolve(); */
-										reject({ status: 999, statusText: "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." })
+										reject(new xhrMessage( 999, "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." ))
 								};
 							};
 						}

@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.j",
+    CONFIG.appVersion = "1.1.k",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -176,7 +176,7 @@ const CONFIG:any = {};
 
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement in various tabs
-
+    
     // All property titles which denote a property as identifier in another context.
     // Is necessary in certain use-cases such as updating content via Excel-sheet.
     // The value of the first element found in idProperties will be used to form the internal id.

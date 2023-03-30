@@ -74,7 +74,7 @@ class COntology {
         };
 
         // add the domains to the id of the generated data set:
-        selDomains.forEach((d: string) => { spId += '-' + d.toJsId() });
+        selDomains.forEach((d: string) => { spId += '-' + d.toCamelCase() });
         //    console.debug('#', dTDomains, allDomains, selDomains, spId);
 
         // List of referenced but missing instances of termStatementClass:
@@ -194,10 +194,12 @@ class COntology {
         // Create a dataType for the TermPropertyClass r:
         let self = this;
 
-        // Find any assigned enumerated values;
-        // these are defined by related propertyValues:
         let ty = this.primitiveDataTypes.get(r["class"].id) as SpecifDataTypeEnum, // get the primitive dataType implied by the term's class
-            ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' }),  // title (only used for dataTypes with enumerated values)
+            // make sure that in case of a dataType with enumerated values, the ids correspond to the ids of the dataTypes:
+            prep = this.makeIdAndTitle(r, "PC-"),  // only used for dataTypes with enumerated values - must have prefix DT-, so that the replacement works ..
+            dtId = prep.id.replace(/^PC-/, "DT-"), // also
+            vId = prep.id.replace(/^PC-/, "V-"),   // also
+            // Find any assigned enumerated values; these are defined by related propertyValues:
             stL = this.statementsByClass(r, "SpecIF:hasEnumValue", { asSubject: true }),  // all statements pointing to enumerated values
             oL = stL.map(
                 (st: SpecifStatement) => {
@@ -210,7 +212,7 @@ class COntology {
                 (o: SpecifResource, idx: number) => {
                     let eV = LIB.valuesByTitle(o, [CONFIG.propClassTitle], this.ontology)[0];
                     return {
-                        id: 'V-' + this.distinctiveCoreOf(ti) + '-' + idx.toString(),
+                        id: vId + '-' + idx.toString(),
                         value: eV
                     }
                 }
@@ -225,8 +227,8 @@ class COntology {
                 // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-String" + (maxLen ? "-LE" + maxLen : ""),
-                    title: (enumL.length > 0 ? ti : "String" + (maxLen ? " <=" + maxLen : "")),
-                    description: [{ text: "Text string" + (enumL.length > 0 ? " with enumerated values for " + ti : (maxLen ? " with maximum length " + maxLen : "")) }],
+                    title: "String" + (maxLen ? " <=" + maxLen : ""),
+                    description: [{ text: "Text string" + (enumL.length > 0 ? " with enumerated values for " + prep.title : (maxLen ? " with maximum length " + maxLen : "")) }],
                     maxLength: maxLen ? parseInt(maxLen) : undefined
                 };
                 break;
@@ -290,7 +292,10 @@ class COntology {
         };
         dT.type = ty;
         if (enumL.length > 0) {
-            dT.id += "-" + this.distinctiveCoreOf(ti);
+            // In case of a dataType with enumerated values the title of the propertyClass is borrowed for the id,
+            // and the parameters added above can be omitted:
+            dT.id = dtId;
+            dT.title = prep.title;
             dT.enumeration = enumL
         };
         dT.revision = this.valueByTitle(r, "SpecIF:Revision") || r.revision;
@@ -319,6 +324,7 @@ class COntology {
         let dTk = this.createDT(r),
             defaultVs = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.ontology);
 
+        // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
             this.createItem(r, 'PC-'),
             {
@@ -360,7 +366,8 @@ class COntology {
         let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.ontology);
         //        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
 
-        // Create a resourceClass for the TermResourceClass r:
+        // Create a resourceClass for the TermResourceClass r;
+        // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
             this.createItem(r, 'RC-'),
             {
@@ -420,6 +427,7 @@ class COntology {
             oCL = this.sCsOf(r, "SpecIF:isEligibleAsObject");
         //        console.debug('createSC', r, pCL, sCL, oCL);
 
+        // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
             this.createItem(r, 'SC-'),
             {
@@ -477,16 +485,20 @@ class COntology {
             dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.ontology);
         if (dscL.length > 1)
             console.info("Only the fist value of the description property will be used for the class generated from " + r.id + " with title " + prep.title + ".");
+
+        // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return {
             // Take the specified identifier if available or build one with the title ... :
             id: prep.id,
             revision: this.valueByTitle(r, "SpecIF:Revision") || r.revision,
             extends: this.extCOf(r, prefix),
             title: prep.title,
+            // ToDo: Consider to complement the multilanguageText with format and language:
             description: (dscL.length > 0 ? dscL[0] : undefined), // only the first property value is taken for the class description
             changedAt: r.changedAt
         } as SpecifClass;
     }
+    // @ts-ignore
     private checkConstraintsOntology(dta: SpecIF): boolean {
         /*  Check the following constraints / conventions:
             - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
@@ -530,7 +542,7 @@ class COntology {
         return {
             // Use the identifier provided by the user or generate it using the title:
             id: visIdL && visIdL.length > 0 ?
-                LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' })
+                LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' }).toSpecifId()
                 : (pfx + this.distinctiveCoreOf(ti)),
             title: ti
         }

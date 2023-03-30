@@ -27,10 +27,6 @@ enum RoleEnum {
 	Reader,
 	Anybody
 }
-interface IFileWithContent extends SpecifFile {
-	blob?: Blob;
-	dataURL?: string;
-}
 class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;
@@ -75,9 +71,9 @@ class CCache {
 				L.push(e);
 				return true;
 			};
-			// Update, if newer or when reference 'objectToLink' has been resolved:
+			// Update, if newer or when reference 'resourceToLink' has been resolved:
 			if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt)
-					|| L[n].objectToLink && !e.objectToLink
+				|| (L[n] as IIncompleteStatement).resourceToLink && !(e as IIncompleteStatement).resourceToLink
 				)
 				L[n] = e;
 			return true;
@@ -400,9 +396,9 @@ class CProject {
 		//	Create a table of types and relevant attributes:	
 		this.types = [
 			new CElement('dataType', LIB.equalDT, this.compatibleDT.bind(this), this.substituteDT.bind(this)),
-			new CElement('propertyClass', this.equalPC.bind(this), this.compatiblePC.bind(this), this.substitutePC.bind(this)),
-			new CElement('resourceClass', this.equalRC.bind(this), this.compatibleRC.bind(this), this.substituteRC.bind(this)),
-			new CElement('statementClass', this.equalSC.bind(this), this.compatibleSC.bind(this), this.substituteSC.bind(this))
+			new CElement('propertyClass', LIB.equalPC, this.compatiblePC.bind(this), this.substitutePC.bind(this)),
+			new CElement('resourceClass', LIB.equalRC, this.compatibleRC.bind(this), this.substituteRC.bind(this)),
+			new CElement('statementClass', LIB.equalSC, this.compatibleSC.bind(this), this.substituteSC.bind(this))
 		];
 	};
 	isLoaded(): boolean {
@@ -425,14 +421,20 @@ class CProject {
 		};
 		// remember the hierarchies associated with this projects - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
-		for (var h of spD.hierarchies ) this.hierarchies.push({ id: h.id });
-	//	this.hierarchies = forAll(spD.hierarchies, (h) => { return { id: h.id } });
+	/*	//	this.hierarchies = forAll(spD.hierarchies, (h) => { return { id: h.id } });
+		for (var h of spD.hierarchies) this.hierarchies.push({ id: h.id });
 		// similarly remember the sets of classes and dataTypes,
 		// so that all will be re-expoerted, even if the project has no instances (yet):
 		for (var r of spD.resourceClasses ) this.resourceClasses.push({ id: r.id });
 		for (var s of spD.statementClasses ) this.statementClasses.push({ id: s.id });
 		for (var p of spD.propertyClasses) this.propertyClasses.push({ id: p.id });
-		for (var d of spD.dataTypes ) this.dataTypes.push({ id: d.id });
+		for (var d of spD.dataTypes ) this.dataTypes.push({ id: d.id }); */
+		["hierarchies", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
+			(list) => {
+				// @ts-ignore - indexing by string is perfectly ok.
+				for (var p of spD[list]) this[list].push({ id: p.id });
+			}
+		);
 	/*	this.myRole = i18n.LblRoleProjectAdmin;
 		this.cre = this.data.upd = this.data.del = app.title != i18n.LblReader;
 		this.locked = app.title == i18n.LblReader; 
@@ -927,7 +929,7 @@ class CProject {
 					case 'statementClass':
 						// Update the project's remembering list;
 						// but don't keep the revision, as it can change:
-						LIB.cacheL(self[standardTypes.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifNode) => { return { id: el.id } }));
+						LIB.cacheL(self[standardTypes.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
 						break;
 					case 'hierarchy':
 					case 'node':
@@ -976,14 +978,14 @@ class CProject {
 		// Applies to resourceClasses and statementClasses;
 		// classes are always cached, so there is no need for a call with promise.
 		let self = this,
-			resL = [];
+			resL: any = [];
 		for (var clk of toGet) {
 			resL.push( extendClass(clk) )
 		};
 		return resL;
 
 		function extendClass(k:SpecifKey) {
-			let res = {} as SpecifResourceClass|SpecifStatementClass;
+			let res:any = {};
 			self.readClassesWithParents(ctg, [k])
 				// A list with classes is returned, the ancestors first and the requested class last.
 				// - Starting with most elderly, copy to and potentially overwrite the attributes of res
@@ -1221,7 +1223,7 @@ class CProject {
 //						console.debug('deleteItems',ctg,itmL);
 						if (this.data.delete(ctg, itmL))
 							break;
-						reject({ status: 999, statusText: 'One or more items of ' + ctg + ' not found and thus not deleted.' });
+						reject( new xhrMessage( 999, 'One or more items of ' + ctg + ' not found and thus not deleted.' ));
 						return;
 				};
 				resolve()
@@ -1266,7 +1268,7 @@ class CProject {
 
 	private hookStatements(): void {
 		// For all statements with a loose end, hook the resource
-		// specified by title or visibleId in a proprietory attribute objectToLink.
+		// specified by title or visibleId in a proprietory attribute resourceToLink.
 		// - Used by ioXLS.
 		// - ioReqIF may list statements with subjects or objects which are not present in the same SpecIF data-set;
 		//   in contrast to the method used here, the reference is by id.
@@ -1280,24 +1282,27 @@ class CProject {
 			};
 //		console.debug('hookStatements',dta);
 		let toReplace: SpecifStatement[] = [];
-		(dta.get("statement", "all") as SpecifStatement[]).forEach((st) => {
-			// Check every statement:
-			if (st.objectToLink) {
-				// Find the resource with a value of property titled CONFIG.propClassId:
-				let oL = itemsByVisibleId(st.objectToLink),
-					o = oL.length > 0 ?
-							oL[0]
-						:	// Find the resource with the given title:
-							dta.resourcesByTitle(st.objectToLink, opts)[0];
-//				console.debug('hookStatements object',o);
-				if (o) {
-					st.object = LIB.keyOf(o);
-					delete st.objectToLink;
-					toReplace.push(st)
-					return;
+		(dta.get("statement", "all") as IIncompleteStatement[]).forEach(
+			(st) => {
+				// Check every statement, if it is incomplete:
+				if (st.resourceToLink) {
+					// Find the resource with a value of property titled CONFIG.propClassId:
+					let oL = itemsByVisibleId(st.resourceToLink),
+						o = oL.length > 0 ?
+								oL[0]
+							:	// Find the resource with the given title:
+								dta.resourcesByTitle(st.resourceToLink, opts)[0];
+	//				console.debug('hookStatements object',o);
+					if (o) {
+						st.object = LIB.keyOf(o);
+						// @ts-ignore - resourceToLink shall be deleted, so that st becomes a SpecifStatement
+						delete st.resourceToLink;
+						toReplace.push(st)
+						return;
+					};
 				};
-			};
-		});
+			}
+		);
 		if (toReplace.length > 0) dta.put('statement', toReplace);
 		return;
 
@@ -2242,7 +2247,7 @@ class CProject {
 
 			if (self.exporting) {
 				// prohibit multiple entry
-				reject({ status: 999, statusText: "Export in process, please wait a little while" });
+				reject(new xhrMessage( 999, "Export in process, please wait a little while" ));
 			}
 			else {
 			//	if (self.data.exp) { // check permission
@@ -2275,7 +2280,7 @@ class CProject {
 			function publish(opts: any): void {
 				if (!opts || ['epub', 'oxml'].indexOf(opts.format) < 0) {
 					// programming error!
-					reject({ status: 999, statusText: "Invalid format specified on export" });
+					reject(new xhrMessage(999, "Invalid format specified on export" ));
 					throw Error("Invalid format specified on export");
 				};
 
@@ -2341,7 +2346,7 @@ class CProject {
 			function storeAs(opts: any): void {
 				if (!opts || ['specif', 'specif_v10', 'html', 'reqif', 'turtle', 'specifClasses'].indexOf(opts.format) < 0) {
 					// programming error!
-					reject({ status: 999, statusText: "Invalid format specified on export" });
+					reject(new xhrMessage( 999, "Invalid format specified on export" ));
 					throw Error("Invalid format specified on export");
 				};
 
@@ -2501,56 +2506,7 @@ class CProject {
 	}
 
 	// Equality Checks:
-	// equalDT is now part of LIB
-
-	private equalPC(refE: SpecifPropertyClass, newE: SpecifPropertyClass): boolean {
-		// return true, if reference and new propertyClass are equal.
-
-		// In Archimate export from ADOIT it may happen, that there are more than 1 propertyDefinitions
-		// with the same data type and name are used by the same resourceClass --> Avoid deduplication.
-
-		// Default values must also be congruent:
-		if (Array.isArray(refE.values) != Array.isArray(newE.values)) return false;
-		return refE.title == newE.title
-			&& LIB.equalKey(refE.dataType, newE.dataType)
-			&& (!Array.isArray(refE.values) && !Array.isArray(newE.values)
-				|| LIB.equalValues(refE.values, newE.values))
-			&& LIB.equalBoolean(refE.multiple, newE.multiple);
-	}
-	private equalRC(refE: SpecifResourceClass, newE: SpecifResourceClass): boolean {
-		// return true, if reference and new resourceClass are equal:
-		return refE.title == newE.title
-			&& LIB.equalBoolean(refE.isHeading, newE.isHeading)
-			&& LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
-		//	&& LIB.equalKeyL( refE.instantiation, newE.instantiation )
-		// --> the instantiation setting of the reference shall prevail
-	}
-	private equalSC(refE: SpecifStatementClass, newE: SpecifStatementClass): boolean {
-		// return true, if reference and new statementClass are equal:
-		return refE.title == newE.title
-			&& LIB.equalKeyL(refE.propertyClasses, newE.propertyClasses)
-			&& eqSCL(refE.subjectClasses, newE.subjectClasses)
-			&& eqSCL(refE.objectClasses, newE.objectClasses)
-			&& LIB.isEqualStringL(refE.instantiation, newE.instantiation);
-
-		function eqSCL(rL: any, nL: any): boolean {
-//			console.debug('eqSCL',rL,nL);
-			// return true, if both lists have equal members,
-			// in this case we allow also less specified statementClasses
-			// (for example, when a statement is created from an Excel sheet):
-			if (!Array.isArray(nL)) return true;
-			// no or empty lists are allowed and considerated equal:
-			return LIB.equalKeyL(rL,nL);
-		/*	let rArr = Array.isArray(rL) && rL.length > 0,
-				nArr = Array.isArray(nL) && nL.length > 0;
-			if (!rArr && nArr
-				|| rL.length != nL.length) return false;
-			// the sequence may differ:
-			for (var i = rL.length - 1; i > -1; i--)
-				if (LIB.indexByKey(nL, rL[i]) < 0) return false;
-			return true; */
-		}
-	}
+	// equalDT, equalPC, equalRC and equalSC are now part of LIB
 
 	private equalR(refE: SpecifResource, newE: SpecifResource): boolean {
 		// Return true, if reference and new resource are equal.
@@ -2662,7 +2618,7 @@ class CProject {
         }
 	}
 	private compatiblePC(refC: SpecifPropertyClass, newC: SpecifPropertyClass): boolean {
-		if (this.equalPC(refC, newC))
+		if (LIB.equalPC(refC, newC))
 			return true;
 		// else:
 		new xhrMessage(956, "new propertyClass '" + newC.id + "' is incompatible" ).log();

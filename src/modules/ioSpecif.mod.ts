@@ -19,9 +19,9 @@ moduleManager.construct({
 		opts:any;
 		
 	const 
-		errNoOptions:xhrMessage = { status: 899, statusText: 'Programming flaw: No options or no mediaTypes defined.' },
-		errNoSpecif:xhrMessage = { status: 901, statusText: 'No SpecIF file in the specifz container.' },
-		errInvalidJson:xhrMessage = { status: 900, statusText: 'SpecIF data is not valid JSON.' };
+		errNoOptions = new xhrMessage( 899, 'Programming flaw: No options or no mediaTypes defined.' ),
+		errNoSpecif = new xhrMessage( 901, 'No SpecIF file in the specifz container.' ),
+		errInvalidJson = new xhrMessage( 900, 'SpecIF data is not valid JSON.' );
 		
 	self.init = (options:any):boolean => {
 		opts = options;

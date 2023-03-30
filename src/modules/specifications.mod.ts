@@ -230,6 +230,11 @@ class CPropertyToShow implements SpecifProperty {
 	//	if( opts.rev==undefined ) opts.rev = 0;
 		if (opts.imgClass == undefined) opts.imgClass = 'forImage'	// regular size
 
+		let re = {
+			xhtmlAttrType: /(type="[^"]+")/,
+			xhtmlAttrData: /data="([^"]+)"/
+		};
+		
 	/*	function addFilePath( u ) {
 			if( /^https?:\/\/|^mailto:/i.test( u ) ) {
 				// don't change an external link starting with 'http://', 'https://' or 'mailto:'
@@ -239,28 +244,20 @@ class CPropertyToShow implements SpecifProperty {
 			return URL.createObjectURL( LIB.itemById( this.cData.files, u ).blob );
 		}  */
 		function getType(str: string): string {
-			let t = /(type="[^"]+")/.exec(str);
+			let t = re.xhtmlAttrType.exec(str);
 			if (Array.isArray(t) && t.length > 0) return (' ' + t[1]);
 			return ''
 		}
 		function getUrl(str: string): string {
-			let l = /data="([^"]+)"/.exec(str);  // url in l[1]
+			let l = re.xhtmlAttrData.exec(str);  // url in l[1]
 			// return null, because an URL is expected in any case:
 			if (Array.isArray(l) && l.length > 0) return l[1]
 		//	return undefined
 			return ''
 		}
-	/*	function getPrp( pnm:string, str:string ):string|undefined {
+		function getAttr(anm: string, str: string): string {
 			// get the value of XHTML property 'pnm':
-			let re = new RegExp( pnm+'="([^"]+)"', '' ),
-				l = re.exec(str);
-			if( Array.isArray(l)&&l.length>0 ) return l[0];
-		//	return undefined
-			return ''
-		} */
-		function getPrpVal(pnm: string, str: string): string {
-			// get the value of XHTML property 'pnm':
-			let re = new RegExp(pnm + '="([^"]+)"', ''),
+			let re = new RegExp(anm + '="([^"]+)"', ''),
 				l = re.exec(str);
 			if (Array.isArray(l) && l.length > 0) return l[1];
 		//	return undefined
@@ -287,8 +284,8 @@ class CPropertyToShow implements SpecifProperty {
 					//	h1 = getPrp("height", $1 ),
 					u2 = getUrl($2), 		// the preview image
 					//	t2 = getType( $2 ),
-					w2 = getPrpVal("width", $2),
-					h2 = getPrpVal("height", $2),
+					w2 = getAttr("width", $2),
+					h2 = getAttr("height", $2),
 					d = $4 || u1;		// If there is no description, use the name of the link object
 
 //				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
@@ -346,8 +343,8 @@ class CPropertyToShow implements SpecifProperty {
 
 				let u1 = getUrl($1),
 					t1 = getType($1),
-					w1 = getPrpVal("width", $1),
-					h1 = getPrpVal("height", $1);
+					w1 = getAttr("width", $1),
+					h1 = getAttr("height", $1);
 
 				let e = u1? u1.fileExt() : undefined;
 				if (!e) return $0     // no change, if no extension found
@@ -455,7 +452,7 @@ class CPropertyToShow implements SpecifProperty {
 		// 3. process a single link:
 		txt = txt.replace(RE.tagA,
 			($0, $1, $2) => {
-				var u1 = getPrpVal('href', $1),
+				var u1 = getAttr('href', $1),
 					e = u1? u1.fileExt() : undefined;
 //				console.debug( $1, $2, u1, e );
 				if (!e) return $0     // no change, if no extension found
