@@ -1137,7 +1137,8 @@ String.prototype.toJsId = function():string {
 };
 // Make an id conforming with SpecIF v1.0+:
 // ToDo: Check ReqIF compatibility
-String.prototype.toSpecifId = function():string {
+String.prototype.toSpecifId = function (): string {
+    // Mirror the pattern for SpecifId defined in schema.json
     return (/[^_a-zA-Z]/.test(this[0]) ? '_' : '') + this.replace( /[^_a-zA-Z0-9.-]/g, '_' );
 };
 /*

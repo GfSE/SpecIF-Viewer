@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.k",
+    CONFIG.appVersion = "1.1.l",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -21,8 +21,8 @@ const CONFIG:any = {};
     CONFIG.messageDisplayTimeShort = 4000;
     CONFIG.messageDisplayTimeNormal = 8000;
     CONFIG.messageDisplayTimeLong = 12000;
-    CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms). The faster the browser and processor, the shorter the time may be chosen.
-    CONFIG.imageRenderingTimelag = 160;  // timelag between building the DOM and inserting the images
+    CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms)
+    CONFIG.imageRenderingTimelag = 120;  // timelag between building the DOM and inserting the images
     CONFIG.showTimelag = 400;
 //    CONFIG.minInteger = -32768;
 //    CONFIG.maxInteger = 32767;
@@ -526,7 +526,7 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
-            switch (iT.toSpecifId().toLowerCase()) {
+            switch (iT.toJsId().toLowerCase()) {
                 case "_berschrift":
                 case "name":
                 case "title":
@@ -569,7 +569,7 @@ const vocabulary = {
         reqif: function (iT: string): string {
             // Target language: ReqIF
             var oT = '';
-            switch (iT.toSpecifId().toLowerCase()) {
+            switch (iT.toJsId().toLowerCase()) {
                 case "dcterms_title":                oT = "ReqIF.Name"; break;
                 case "dcterms_description":            oT = "ReqIF.Text"; break;
                 case "dcterms_identifier":            oT = "ReqIF.ForeignId"; break;
@@ -591,7 +591,7 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
-            switch (iT.toSpecifId().toLowerCase()) {
+            switch (iT.toJsId().toLowerCase()) {
                 case 'actors':
                 case 'actor':
                 case 'akteure':
@@ -646,7 +646,7 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
-            switch (iT.toSpecifId().toLowerCase()) {
+            switch (iT.toJsId().toLowerCase()) {
                 default: oT = iT
             };
             return oT;

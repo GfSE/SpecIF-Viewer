@@ -94,7 +94,9 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		resClass: string;
 		hid: string;
 		range: string;
+		// @ts-ignore - the isValid-flag is only true, if firstCell and lastCell are defined:
 		firstCell: Coord;
+		// @ts-ignore - the isValid-flag is only true, if firstCell and lastCell are defined:
 		lastCell: Coord;
 		isValid = false;
 		constructor(wsN: string) {
@@ -405,7 +407,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							//	rC,
 							pC: SpecifPropertyClass,
 							dT: SpecifDataType, id,
-							stL: SpecifStatement[] = [],
+							stL: IIncompleteStatement[] = [],
 							pTi: string;
 						for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
 							cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
@@ -634,6 +636,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						};
 						// 3. It is neither a native nor an enumerated dataType, 
 						//    so we find out which dataType is appropriate:
+						// @ts-ignore - yes, pC may be undefined, that's why there is an if-block further down:
 						pC = getPropClass(c);
 						// .. and create the propertyClass:
 						if( pC ) { 

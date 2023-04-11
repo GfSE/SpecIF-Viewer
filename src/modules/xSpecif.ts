@@ -920,6 +920,8 @@ class CSpecIF implements SpecIF {
 				var pend = 0,
 					// @ts-ignore - the missing attributes will come below:
 					spD: SpecIF = {
+						// @ts-ignore - no harm, this does not violate the schema
+						'@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
 				//		'@Context': this.context,
 						id: this.id,
 						title: LIB.languageValueOf(this.title, opts),
