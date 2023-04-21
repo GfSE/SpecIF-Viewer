@@ -1,5 +1,6 @@
-
-function embeddedSpecif():IApp {
+// @ts-ignore - only one of the files defining SpecifApp will be loaded at runtime
+function SpecifApp():IApp {
+	"use strict";
 
 	// construct main app:
 	var self:any = {};
@@ -27,7 +28,8 @@ function embeddedSpecif():IApp {
 				loadAs: 'me'					// the name of the controller object to construct
 				// no view
 			},{
-				name: 'cache'
+				name: 'cache',
+				loadAs: 'projects'
 				// no view
 			},{
 				name: 'ioSpecif'
@@ -108,7 +110,7 @@ function embeddedSpecif():IApp {
 						addGlossary: false,
 						collectProcesses: false
 					};
-				self.cache.create( newD, opts )
+				self.projects.create( newD, opts )
 				.done( function() {
 					message.show( i18n.lookup( 'MsgImportSuccessful', newD.title ), {severity:"success",duration:CONFIG.messageDisplayTimeShort} );
 					setTimeout(
@@ -122,9 +124,9 @@ function embeddedSpecif():IApp {
 	};
 	self.show = function () {
 		var uP = getUrlParams(), v: string;
-		if (!self.cache.selectedProject
-			|| !self.cache.selectedProject.isLoaded()
-			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self.cache.selectedProject.id
+		if (!self.projects.selected
+			|| !self.projects.selected.isLoaded()
+			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self.projects.selected.id
 			|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length > 0)
 			// - no project is loaded
 			// - a project id is found in the URL parameters and it differs from the one of the loaded project
@@ -139,9 +141,8 @@ function embeddedSpecif():IApp {
 		self.me.logout();
 		self.hide();
 	};
-	self.hide = function() {
-		// hide the app and show the login dialog:
-		// ToDo
+	self.hide = function () {
+		// not needed in case of embedded SpecIF
 	};
 	self.init();
 	return self;

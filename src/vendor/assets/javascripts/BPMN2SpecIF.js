@@ -1134,7 +1134,7 @@ function BPMN2Specif( xmlString, options ) {
 // =======================================
 // called functions:	
 
-	// The dataTypes should correspond to stdTypes.ts:
+	// The dataTypes should correspond to standards.ts:
 	function DataTypes() {
 		return [{
 			id: "DT-ShortString",
@@ -1155,7 +1155,7 @@ function BPMN2Specif( xmlString, options ) {
 		}]
 	}
 	
-	// The property classes should correspond to stdTypes.ts:
+	// The property classes should correspond to standards.ts:
 	function PropertyClasses() {
 		return [{
 			id: "PC-Name",

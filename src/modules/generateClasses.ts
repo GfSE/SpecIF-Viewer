@@ -49,7 +49,7 @@ class COntology {
     }
 
     generateSpecifClasses(opts?: any): SpecIF | undefined {
-        /*  Generate SpecIF classes for ontology terms which
+        /*  Generate SpecIF classes for ontology terms (represented as SpecIF resources of the ontology) which
             - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
             - or are referenced by others selected by domain and lifecyclestatus
         
@@ -108,42 +108,62 @@ class COntology {
         };
 
         // We are done, so we can return the result:
-        return {
-            // @ts-ignore
-            '@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
-		//	'@Context': this.context,
-            "id": spId,
-            "$schema": "https://specif.de/v1.1/schema.json",
-            "title": [
-                {
-                    "text": "SpecIF Classes for " + selDomains.toString(),
-                    "format": SpecifTextFormat.Plain,
-                    "language": "en"
-                }
-            ],
-            "description": [
-                {
-                    "text": "A set of SpecIF Classes derived from a SpecIF Ontology for the domain" + (selDomains.length < 2 ? " " : "s ") + selDomains.toString() + ".",
-                    "format": SpecifTextFormat.Plain,
-                    "language": "en"
-                }
-            ],
-            "generator": app.title,
-            "generatorVersion": CONFIG.appVersion,
-            "createdAt": new Date().toISOString(),
-            "rights": {
-                "title": "Creative Commons 4.0 CC BY-SA",
-                "url": "https://creativecommons.org/licenses/by-sa/4.0/"
-            },
-            "dataTypes": this.generated.dTL,
-            "propertyClasses": this.generated.pCL,
-            "resourceClasses": this.generated.rCL,
-            "statementClasses": this.generated.sCL,
-            "resources": [],
-            "statements": [],
-            "files": [],
-            "hierarchies": []
+        return Object.assign(
+            app.standards.makeTemplate(),
+            {
+                "id": spId,
+                "title": [
+                    {
+                        "text": "SpecIF Classes for " + selDomains.toString(),
+                        "format": SpecifTextFormat.Plain,
+                        "language": "en"
+                    }
+                ],
+                "description": [
+                    {
+                        "text": "A set of SpecIF Classes derived from a SpecIF Ontology for the domain" + (selDomains.length < 2 ? " " : "s ") + selDomains.toString() + ".",
+                        "format": SpecifTextFormat.Plain,
+                        "language": "en"
+                    }
+                ],
+                "dataTypes": this.generated.dTL,
+                "propertyClasses": this.generated.pCL,
+                "resourceClasses": this.generated.rCL,
+                "statementClasses": this.generated.sCL
+            }
+        )
+    }
+    exportOntologyClasses(/* opts?: any*/): SpecIF | undefined {
+        /* Return a SpecIF data set with all classes of the ontology */
+
+        if (!this.ontology) {
+            message.show("No valid ontology loaded.", { severity: 'error' });
+            return
         };
+        return Object.assign(
+            app.standards.makeTemplate(),
+            {
+                "id": "P-SpecifClasses-Ontology",
+                "title": [
+                    {
+                        "text": "SpecIF Classes of the Ontology",
+                        "format": SpecifTextFormat.Plain,
+                        "language": "en"
+                    }
+                ],
+                "description": [
+                    {
+                        "text": "A set of SpecIF Classes used for a SpecIF Ontology.",
+                        "format": SpecifTextFormat.Plain,
+                        "language": "en"
+                    }
+                ],
+                "dataTypes": this.ontology.dataTypes,
+                "propertyClasses": this.ontology.propertyClasses,
+                "resourceClasses": this.ontology.resourceClasses,
+                "statementClasses": this.ontology.statementClasses
+            }
+        )
     }
 
     // ---------------- Invoked methods ---------------------

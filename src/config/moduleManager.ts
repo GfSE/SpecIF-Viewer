@@ -39,6 +39,7 @@ interface IModuleManager {
 interface IApp {
 	title: string;
 	busy: State;
+	standards: CStandards;
 	cache: IProjects;
 	init(): boolean;
 	show(): void;
@@ -193,7 +194,7 @@ var app:IApp,
 	browser:Browser,
 	i18n: any,
 	message: any,
-	standardTypes:StandardTypes,
+//	standardTypes:StandardTypes,
 	moduleManager:IModuleManager = function() {
 		/* Supports two types of modules:
 		   1. Libraries
@@ -213,7 +214,7 @@ var app:IApp,
 	let callWhenReady:Function|undefined,
 		loadPath = './';
 
-	self.init = ( appName:string, opts?:any ):void =>{
+	self.init = ( opts?:any ):void =>{
 
 		// identify browser capabilities:
 		browser = new Browser();
@@ -239,26 +240,27 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper','helperTree','stdTypes',"xSpecif",'bootstrapDialog','mainCSS'];
+			let modL = ['helper','helperTree','standards',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
 					done: () => {
 						// Create and initialize the app,
-						// appName is 'editSpecif' found in edit.ts, for example:
-						// @ts-ignore - index value appName as string is valid:
-						window.app = window[appName]();
+						app = window['SpecifApp']();
 
 						// Add a global spinner with state control;
 						// all actions are deactivated as long as the app is busy.
 						// - 'pageActions' are at the top of the page and can be initiated independently of the app's state
 						// - 'contentActions' appear on the content pane (the shown tab) depending on the app's state
 						// - 'elementActions' apply to a single list entry in the content pane (tab)
-						window.app.busy = new State({
+						app.busy = new State({
 							showWhenSet: ['#spinner'],
 							hideWhenSet: ['.pageActions', '.contentActions']
 						//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
 						});
+
+						// module 'standards' (with class CStandards) must be loaded before:
+						app.standards = new CStandards();
 
 						// Make sure page divs are resized, if the browser window is changed in size:
 						bindResizer();
@@ -595,6 +597,7 @@ var app:IApp,
 					return true;
 
 				// libraries:
+				case "mainCSS": getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
 			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
 				case "types": getScript(loadPath + 'types/specif.types.js'); return true;
 				case "i18n": switch (browser.language.slice(0, 2)) {
@@ -606,13 +609,11 @@ var app:IApp,
 									.done(() => { i18n = LanguageTextsEn() })
 							};
 							return true;
-				case "mainCSS": getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
-				case "stdTypes": getScript(loadPath + 'modules/stdTypes.js')
-								.done(() => { standardTypes = new StandardTypes(); });
-								return true;
 				case "helper": getScript(loadPath + 'modules/helper.js')
-								.done(() => { message = new CMessage(); });
-								return true;
+					.done(() => { message = new CMessage(); });
+					return true;
+				case "standards": getScript(loadPath + 'modules/standards.js'); return true;
+				case "Ontology": getOntology(); return true;
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
 				case "cache": getScript(loadPath + 'modules/cache.mod.js'); return true;
@@ -664,11 +665,11 @@ var app:IApp,
 				case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 										//	loadModule( 'mainCSS' );
 										//	loadModule( 'cache' );
-											loadModule( 'stdTypes' );
+											loadModule( 'standards' );
 											$('#'+mod).load( "./modules/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 			*/
 				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
-							//	loadModule( 'stdTypes' );
+							//	loadModule( 'standards' );
 							//	loadModule( 'diff' );
 								getScript(loadPath + 'modules/specifications.mod.js'); return true;
 
@@ -714,7 +715,24 @@ var app:IApp,
 				return $.ajax( settings );
 			else
 				// call 'setReady' from here:
-				return $.ajax( settings ).done( ()=>{setReady(module.name)} );
+				return $.ajax(settings)
+						.done(() => { setReady(module.name) });
+		}
+		function getOntology() {
+			LIB.httpGet({
+				url: (window.location.href.startsWith('file:/') ? '../../SpecIF-Class-Definitions/vocabulary/SpecIF-Ontology.specif'
+					: 'https://specif.de/v' + CONFIG.specifVersion + '/Ontology.specif.zip'),
+				responseType: 'arraybuffer',
+				withCredentials: false,
+				done: (xhr: XMLHttpRequest) => {
+					let ont = JSON.parse(LIB.ab2str(xhr.response));
+					console.debug('Ontology loaded: ',ont);
+					app.ontology = new COntology(ont);
+					setReady(module.name)
+				},
+				fail: LIB.stdError
+			//	fail: () => { console.error('Failed loading ' + module.name) }
+			})
 		}
 		function loadAfterRequiredModules(mod: IModule, fn: Function): void {
 			// start the loading of the modules not before all required modules are ready:

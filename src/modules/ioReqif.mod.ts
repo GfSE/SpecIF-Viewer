@@ -286,7 +286,7 @@ moduleManager.construct({
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = LIB.makeKey(dTFormattedText.id);
 							pC.format = "xhtml";
-						//	standardTypes.addTo("dataType",pC.dataType,pr);
+						//	app.standards.addTo("dataType",pC.dataType,pr);
 							LIB.cacheE(pr.dataTypes, dTFormattedText);
 						};
 					});
@@ -396,8 +396,8 @@ moduleManager.construct({
 				// a) Collect resourceClass without duplication:
 				if( LIB.indexById(separatedHC.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
-					if( rC['_extends'] ) {
-						let anc = LIB.itemByKex(pr.resourceClasses,rC['_extends']);
+					if( rC['extends'] ) {
+						let anc = LIB.itemByKex(pr.resourceClasses,rC['extends']);
 						if( Array.isArray(anc.propertyClasses) ) {
 							if ( Array.isArray(rC.propertyClasses) ) 
 								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);
@@ -740,7 +740,7 @@ moduleManager.construct({
 			}
 	};
 	self.abort = ():void =>{
-//		app.cache.abort();
+//		app.projects.abort();
 //		server.project().cancelImport();
 		self.abortFlag = true;
 	};

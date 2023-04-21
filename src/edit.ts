@@ -1,5 +1,6 @@
-
-function editSpecif():IApp {
+// @ts-ignore - only one of the files defining SpecifApp will be loaded at runtime
+function SpecifApp():IApp {
+	"use strict";
 
 	// construct main app:
 	var self:any = {};
@@ -25,7 +26,8 @@ function editSpecif():IApp {
 				loadAs: 'me'					// the name of the controller object to construct
 				// no view
 			},{
-				name: 'cache'
+				name: 'cache',
+				loadAs: 'projects'
 				// no view
 			/*	children: [{
 					name: 'serverPouch',
@@ -156,9 +158,9 @@ function editSpecif():IApp {
 	};
 	self.show = function():void {
 		var uP = getUrlParams(), v:string;
-		if( !self.cache.selectedProject
-			|| !self.cache.selectedProject.isLoaded()
-			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=self.cache.selectedProject.id
+		if( !self[CONFIG.projects].selected
+			|| !self[CONFIG.projects].selected.isLoaded()
+			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject]!=self[CONFIG.projects].selected.id
 			|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
 			// - no project is loaded
 			// - a project id is found in the URL parameters and it differs from the one of the loaded project
@@ -170,8 +172,8 @@ function editSpecif():IApp {
 		moduleManager.show({view:v,urlParams:uP});
 	};
 	self.export = function (): void {
-		if (self.cache.selectedProject && self.cache.selectedProject.isLoaded())
-			self.cache.selectedProject.chooseFormatAndExport();
+		if (self[CONFIG.projects].selected && self[CONFIG.projects].selected.isLoaded())
+			self[CONFIG.projects].selected.chooseFormatAndExport();
 		else
 			message.show(i18n.MsgNoProjectLoaded, { severity: 'warning', duration: CONFIG.messageDisplayTimeShort });
 	};

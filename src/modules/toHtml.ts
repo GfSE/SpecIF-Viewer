@@ -110,7 +110,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+				'var el = document.createElement("script");'
 			+				'el.onload = function () {'
 			+					'if (--pend < 1)'
-			+						'moduleManager.init("embeddedSpecif", {path:cdn});' 	
+			+						'moduleManager.init({path:cdn});' 	
 			+				'};'
 			+				'el.src = url;'
 			+				'document.body.appendChild(el)'

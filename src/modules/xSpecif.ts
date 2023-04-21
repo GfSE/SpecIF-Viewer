@@ -101,7 +101,7 @@ class CSpecIF implements SpecIF {
 	}
 	isValid(spD?: any): boolean {
 		if (!spD) spD = this;
-		return typeof (spD.id) == 'string' && spD.id.length > 0;
+		return typeof (spD.id) == 'string' && spD.id.length > 0
 	}
 	set(spD: any, opts?: any): Promise<CSpecIF> {
 		return new Promise(
@@ -125,7 +125,7 @@ class CSpecIF implements SpecIF {
 						reject
 					) */
 			}
-		);
+		)
 	} 
 	get(opts?: any): Promise<SpecIF> {
 		/*	// Add a resource as hierarchyRoot, if needed.
@@ -153,14 +153,14 @@ class CSpecIF implements SpecIF {
 			if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
 
 				console.info("Added a hierarchyRoot");
-				standardTypes.addTo("resourceClass", { id: "RC-Folder" }, spD);
+				app.standards.addTo("resourceClass", { id: "RC-Folder" }, spD);
 
 				// ToDo: Let the program derive the referenced class ids from the above
-				standardTypes.addTo("propertyClass", { id: "PC-Type" }, spD);
-				standardTypes.addTo("propertyClass", { id: "PC-Description" }, spD);
-				standardTypes.addTo("propertyClass", { id: "PC-Name" }, spD);
-				standardTypes.addTo("dataType", { id: "DT-ShortString" }, spD);
-				standardTypes.addTo("dataType", { id: "DT-Text" }, spD);
+				app.standards.addTo("propertyClass", { id: "PC-Type" }, spD);
+				app.standards.addTo("propertyClass", { id: "PC-Description" }, spD);
+				app.standards.addTo("propertyClass", { id: "PC-Name" }, spD);
+				app.standards.addTo("dataType", { id: "DT-ShortString" }, spD);
+				app.standards.addTo("dataType", { id: "DT-Text" }, spD);
 
 				var res: SpecifResource = {
 					id: 'R-' + simpleHash(spD.id),
@@ -296,7 +296,7 @@ class CSpecIF implements SpecIF {
 						withCredentials: false,
 						done: handleResult,
 						fail: handleError
-					});
+					})
 				}
 			}
 		);
@@ -305,7 +305,7 @@ class CSpecIF implements SpecIF {
 		if (!this.isValid(spD)) return;
 
 		// transform SpecIF to internal data;
-		// no data of app.cache is modified.
+		// no data of app.projects is modified.
 		// It is assumed that spD has passed the schema and consistency check.
 //		console.debug('set',simpleClone(spD));
 		let self = this,
@@ -675,9 +675,9 @@ class CSpecIF implements SpecIF {
 				// No suitable propertyClass is listed in iC.propertyClasses, so create what's needed:
 
 				// a. add dataType, if not yet defined:
-				standardTypes.addTo("dataType", { id: pDef.dTid }, self);
+				app.standards.addTo("dataType", { id: pDef.dTid }, self);
 				// b. add property class, if not yet defined:
-				standardTypes.addTo("propertyClass", { id: pDef.pCid }, self);
+				app.standards.addTo("propertyClass", { id: pDef.pCid }, self);
 				// c. Add propertyClass to element class:
 				LIB.addPCReference(iC, { id: pDef.pCid });
 				return pDef.pCid
@@ -909,7 +909,7 @@ class CSpecIF implements SpecIF {
         }
 	}
 	private toExt(opts?: any): Promise<SpecIF> {
-		// transform self.data to SpecIF following defined options;
+		// transform self.cache to SpecIF following defined options;
 		// a clone is delivered.
 		// if opts.targetLanguage has no value, all available languages are kept.
 
@@ -1084,7 +1084,7 @@ class CSpecIF implements SpecIF {
 					// Include "isHeading" in SpecIF only if true:
 					if (iE.isHeading) oE.isHeading = true;
 					// resourceClasses must have a list of propertyClasses with at least one element:
-					if (Array.isArray(oE.propertyClasses) && oE.propertyClasses.length > 0 || LIB.isKey(oE.extends))
+					if (Array.isArray(oE.propertyClasses) && oE.propertyClasses.length > 0 || LIB.isKey(oE['extends']))
 						return oE;
 					// else (shouldn't arrive here, at all):
 					console.error('Skipping resourceClass with id="'+iE.id+'" on export, because it does not specify any propertyClasses.');
@@ -1319,7 +1319,7 @@ class CSpecIF implements SpecIF {
 		)
 	}
 	private toExt_v10(opts?: any): Promise<SpecIF> {
-		// transform self.data to SpecIF v1.0 following defined options;
+		// transform self.cache to SpecIF v1.0 following defined options;
 		// a clone is delivered.
 		// if opts.targetLanguage has no value, all available languages are kept.
 

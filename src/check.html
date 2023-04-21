@@ -34,7 +34,7 @@ let fileName = /.*\/([^.?#]*)(?:\.html)?(?:#.*)?$/.exec( window.location.href )[
 		var el = document.createElement('script');
 		el.onload = function() {
 						if( --pend<1 )
-							moduleManager.init( fileName+"Specif" ); 	// convention followed within 'fileName.js'
+							moduleManager.init();
 					};
 		el.src = url;
 		document.body.appendChild(el)

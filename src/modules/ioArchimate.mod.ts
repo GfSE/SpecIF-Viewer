@@ -58,7 +58,7 @@ moduleManager.construct({
 		self.abortFlag = false;
 		bDO = $.Deferred();
 
-		bDO.notify('Transforming Archimate Open Exchange to SpecIF',10); 
+	//	bDO.notify('Transforming Archimate Open Exchange to SpecIF',10); 
 		// @ts-ignore - Archimate2Specif() is loaded at runtime
 		data = Archimate2Specif( LIB.ab2str(buf),
 							{ 
@@ -75,12 +75,12 @@ moduleManager.construct({
 		if( typeof(data)=='object' && data.id )
 			bDO.resolve( data )
 		else
-			bDO.reject({ status:999, statusText:'Input file could not be transformed to SpecIF'});
+			bDO.reject(new xhrMessage(999, 'Input file could not be transformed to SpecIF'));
 
 		return bDO;
 	};
 	self.abort = function():void {
-		app.cache.abort();
+		app.projects.abort();
 		self.abortFlag = true;
 	};
 	return self;

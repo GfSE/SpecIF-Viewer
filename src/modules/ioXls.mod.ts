@@ -51,7 +51,7 @@ moduleManager.construct({
 		self.abortFlag = false;
 		var xDO = $.Deferred();
 		
-		xDO.notify('Transforming Excel to SpecIF',10); 
+	//	xDO.notify('Transforming Excel to SpecIF',10); 
 		// Transform the XLSX-data to SpecIF:
 		let data = xslx2specif(buf, self.parent.projectName, fDate);
 		xDO.resolve( data );
@@ -62,7 +62,7 @@ moduleManager.construct({
 	 	console.debug('toXls',pr)
 	}; */
 	self.abort = function():void {
-		app.cache.abort();
+		app.projects.abort();
 		self.abortFlag = true
 	};
 	return self;
@@ -128,20 +128,20 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		hierarchies: SpecifNode[];
 		constructor() {
 			this.dataTypes = [
-				standardTypes.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
-				standardTypes.get("dataType", { id: "DT-Text" }) as SpecifDataType,
-				standardTypes.get("dataType", { id: "DT-DateTime" }) as SpecifDataType,
-				standardTypes.get("dataType", { id: "DT-Boolean" }) as SpecifDataType,
-				standardTypes.get("dataType", { id: "DT-Integer" }) as SpecifDataType,
-				standardTypes.get("dataType", { id: "DT-Real" }) as SpecifDataType
+				app.standards.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
+				app.standards.get("dataType", { id: "DT-Text" }) as SpecifDataType,
+				app.standards.get("dataType", { id: "DT-DateTime" }) as SpecifDataType,
+				app.standards.get("dataType", { id: "DT-Boolean" }) as SpecifDataType,
+				app.standards.get("dataType", { id: "DT-Integer" }) as SpecifDataType,
+				app.standards.get("dataType", { id: "DT-Real" }) as SpecifDataType
 			];
 			this.propertyClasses = [
-				standardTypes.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
-				standardTypes.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
-				standardTypes.get("propertyClass", { id: "PC-Type" }) as SpecifPropertyClass
+				app.standards.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
+				app.standards.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
+				app.standards.get("propertyClass", { id: "PC-Type" }) as SpecifPropertyClass
 			];
 			this.resourceClasses = [
-				standardTypes.get("resourceClass", { id: "RC-Folder" }) as SpecifResourceClass
+				app.standards.get("resourceClass", { id: "RC-Folder" }) as SpecifResourceClass
 			];
 			// user-created instances are not checked for visibility:
 			this.resourceClasses[0].instantiation = [SpecifInstantiation.User];

@@ -325,8 +325,8 @@ moduleManager.construct({
 	function checkState():void {
 		// in this case only the project name must have a length>0:
 		let pnl = getTextLength(i18n.LblProjectName)>0;
-		// it may happen that this module is initialized (and thus this routine executed), before app.cache is loaded:
-		cacheLoaded = typeof(app.cache)=='object' && typeof(app.cache.selectedProject)=='object' && app.cache.selectedProject.isLoaded();	
+		// it may happen that this module is initialized (and thus this routine executed), before app.projects is loaded:
+		cacheLoaded = typeof(app.projects)=='object' && typeof(app.projects.selected)=='object' && app.projects.selected.isLoaded();	
 		allValid = self.file && self.file.name.length>0 && (self.format.id!='xls' || pnl);
 		setTextState( i18n.LblProjectName, pnl?'has-success':'has-error' );
 	};
@@ -420,7 +420,7 @@ moduleManager.construct({
 						.done( handleResult )
 						.fail( handleError )
 			};
-			rdr.readAsArrayBuffer( f );
+			rdr.readAsArrayBuffer( f )
 		}
 	};
 
@@ -433,7 +433,7 @@ moduleManager.construct({
 			moduleManager.show({ view: '#' + (app.title=="check"? CONFIG.importAny : (urlP && urlP[CONFIG.keyView]? urlP[CONFIG.keyView] : CONFIG.specifications)), urlParams: urlP })
 		},
 			CONFIG.showTimelag
-		);
+		)
 	}
 	function handleError(xhr: xhrMessage): void {
 //		console.debug( 'handleError', xhr );
@@ -511,7 +511,7 @@ moduleManager.construct({
 											// no break
 										case 'replace':
 											setProgress('Creating project',20); 
-											app.cache.selectedProject.create( dta )
+											app.projects.selected.create( dta )
 												.progress( setProgress )
 												.done( terminateWithSuccess )
 												.fail( handleError );
@@ -519,11 +519,11 @@ moduleManager.construct({
 										case 'update':
 											// First, load the project for comparison:
 											setProgress('Updating project',20); 
-											app.cache.selectedProject.read({id:dta.id}, {reload:true})	// reload from server
+											app.projects.selected.read({id:dta.id}, {reload:true})	// reload from server
 												.done( function(refD) {
 //													console.debug('specif.update',refD,dta)
 													// ... then start to save the new or updated elements:
-													app.cache.selectedProject.update( dta, 'extend' )
+													app.projects.selected.update( dta, 'extend' )
 														.progress( setProgress )
 														.done( terminateWithSuccess )
 														.fail( handleError )
@@ -553,7 +553,7 @@ moduleManager.construct({
 						opts.addGlossary = true;
 						opts.addUnreferencedResources = true;
 						opts.collectProcesses = false;
-						app.cache.create( dta, opts )
+						app.projects.create( dta, opts )
 							.progress( setProgress )
 							.done( handleNext )
 							.fail( handleError );
@@ -562,7 +562,7 @@ moduleManager.construct({
 						opts.deduplicate = true;
 						opts.addGlossary = true;
 						opts.collectProcesses = false;
-						app.cache.update(dta, opts)
+						app.projects.update(dta, opts)
 							.progress(setProgress)
 							.done(handleNext)
 							.fail(handleError)
@@ -572,7 +572,7 @@ moduleManager.construct({
 						opts.addGlossary = true;
 						opts.addUnreferencedResources = true;
 						opts.collectProcesses = true;
-						app.cache.selectedProject.adopt( dta, opts )
+						app.projects.selected.adopt( dta, opts )
 							.progress( setProgress )
 							.done( handleNext )
 							.fail( handleError )
@@ -586,7 +586,7 @@ moduleManager.construct({
 	self.abort = function():void {
 		console.info('abort pressed');
 		app[self.format.name].abort();
-		app.cache.selectedProject.abort();
+		app.projects.selected.abort();
 	};
 	return self;
 });

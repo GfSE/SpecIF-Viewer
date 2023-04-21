@@ -87,8 +87,8 @@ moduleManager.construct({
 	// standard module entry:
 	self.show = function(opts:any) {
 //		console.debug('reports.show');
-		prj = app.cache.selectedProject;
-		cData = prj.data;
+		prj = app.projects.selected;
+		cData = prj.cache;
 		self.parent.showLeft.reset();  // no panel to the left
 
 		// Language options have been selected at project level:

@@ -195,8 +195,8 @@ moduleManager.construct({
 //		console.debug( 'filter.show', opts, self.filters );
 		$('#filterNotice').empty();
 
-		selPrj = app.cache.selectedProject;
-		cData = selPrj.data;
+		selPrj = app.projects.selected;
+		cData = selPrj.cache;
 
 		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {

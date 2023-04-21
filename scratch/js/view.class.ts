@@ -144,11 +144,11 @@ class App {
 		this.me.read()
 		.then(
 			function() {
-				function thisCache() { return this.cache } // closure
+				function thisCache() { return this.projects } // closure
 				var uP = getUrlParams(), v;
-				if (!thisCache.selectedProject
-					|| !thisCache.selectedProject.isLoaded()
-					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != thisCache.selectedProject.data.id
+				if (!thisCache.selected
+					|| !thisCache.selected.isLoaded()
+					|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != thisCache.selected.cache.id
 					|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length>0 )
 					// - no project is loaded
 					// - a project id is found in the URL parameters and it differs from the one of the loaded project
@@ -163,9 +163,9 @@ class App {
 		);
 	}
 	export() {
-		if( !this.cache.selectedProject || !this.cache.selectedProject.data.id )
+		if( !this.projects.selected || !this.projects.selected.cache.id )
 			message.show( i18n.MsgNoProjectLoaded, {severity:'warning', duration:CONFIG.messageDisplayTimeShort} );
-		this.cache.selectedProject.export();
+		this.projects.selected.export();
 	}
 /*	updateMe() {
 		this.me.beginUpdate();

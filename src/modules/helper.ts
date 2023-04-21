@@ -775,7 +775,7 @@ LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] =
     // - If a dataType is handed in, take it.
     // - Otherwise look it up from the list of dataTypes.
     // @ts-ignore - when dTk.type exists, it is assumed that dTk is a dataType
-    var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.cache.selectedProject.data.get('dataType', 'all')), dTk),
+    var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.projects.selected.cache.get('dataType', 'all')), dTk),
         oL = [];
     if (dT.enumeration)
         for (var v of dT.enumeration) {
@@ -1234,11 +1234,11 @@ String.prototype.makeHTML = function(opts?:any):string {
 
 LIB.xmlChar2utf8 = (str: string):string => {
     // Convert html numeric character encoding to utf8
-    // @ts-ignore - match is not used, but must me declared anyhow.
+    // @ts-ignore - match is not used, but must be declared anyhow.
     str = str.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
         return String.fromCharCode(parseInt(numStr, 16))
     });
-    // @ts-ignore - match is not used, but must me declared anyhow.
+    // @ts-ignore - match is not used, but must be declared anyhow.
     return str.replace(/&#([0-9]+);/g, function (match, numStr) {
         return String.fromCharCode(parseInt(numStr, 10))
     })
@@ -1535,7 +1535,7 @@ LIB.httpGet = (params:any):void =>{
 LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
     // checks whether a resource is referenced by the hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
-    if (!H) H = app.cache.selectedProject.data.hierarchies;
+    if (!H) H = app.projects.selected.cache.hierarchies;
     return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, itm); });  // doesn'twork
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
@@ -1681,7 +1681,7 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): 
 
     // The first property which is found in the list of headings or titles is chosen:
     if (Array.isArray(pL) && pL.length>0) {
-        if (!pCs) pCs = app.cache.selectedProject.data.propertyClasses;
+        if (!pCs) pCs = app.projects.selected.cache.propertyClasses;
         for (var a = 0, A = pL.length; a < A; a++) {
             let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
             // Check the configured headings and titles:

@@ -44,7 +44,7 @@ moduleManager.construct({
 		return xml;
 	}; */
 	self.abort = function():void {
-//		app.cache.abort();
+//		app.projects.abort();
 		self.abortFlag = true
 	};
 	return self;

@@ -174,8 +174,8 @@ class CResourceToEdit {
 
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
-		this.selPrj = app.cache.selectedProject;
-		this.cData = this.selPrj.data;
+		this.selPrj = app.projects.selected;
+		this.cData = this.selPrj.cache;
 
 	//	this.id = el.id;
 	//	this['class'] = el['class'];
@@ -422,7 +422,7 @@ moduleManager.construct({
 				selectResClass(self.localOpts)
 			/*	.then(
 					(rC:SpecifResourceClass)=>{ 
-						app.cache.selectedProject.makeEmptyResource(rC)
+						app.projects.selected.makeEmptyResource(rC)
 						.then( 
 							(r:SpecifResource)=>{
 //								console.debug( '#', self.localOpts.mode, r );
@@ -451,7 +451,7 @@ moduleManager.construct({
 					(rC: SpecifResourceClass) => {
 					//	self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageValueOf(rC.title) + ')';
 						self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + rC.title + ')';
-						return app.cache.selectedProject.makeEmptyResource(rC)
+						return app.projects.selected.makeEmptyResource(rC)
 				})
 				.then(
 					(r: SpecifResource) => {
@@ -477,7 +477,7 @@ moduleManager.construct({
 			case 'update':
 //				console.debug('~',nd);
 				// get the selected resource:
-				app.cache.selectedProject.readItems('resource', [self.parent.tree.selectedNode.ref], { showEmptyProperties: true } )
+				app.projects.selected.readItems('resource', [self.parent.tree.selectedNode.ref], { showEmptyProperties: true } )
 				.then( 
 					(rL:SpecifItem[])=>{
 						// create a clone to collect the changed values before committing:
@@ -509,7 +509,7 @@ moduleManager.construct({
 		function selectResClass(opts: any): Promise<SpecifResourceClass> {
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
-				app.cache.selectedProject.readItems('resourceClass', LIB.forAll(opts.eligibleResourceClasses, (rCId:SpecifId) => { return LIB.makeKey(rCId) }))
+				app.projects.selected.readItems('resourceClass', LIB.forAll(opts.eligibleResourceClasses, (rCId:SpecifId) => { return LIB.makeKey(rCId) }))
 				.then( 
 					(rCL)=>{
 						if( rCL.length>0 ) {
@@ -589,11 +589,11 @@ moduleManager.construct({
 
 		switch (mode) {
 			case 'update':
-				app.cache.selectedProject.updateItems('resource', [self.newRes])
+				app.projects.selected.updateItems('resource', [self.newRes])
 					.then(finalize, LIB.stdError);
 				break;
 			default:
-				app.cache.selectedProject.createItems('resource', [self.newRes])
+				app.projects.selected.createItems('resource', [self.newRes])
 					.then(finalize, LIB.stdError);
 		};
 
@@ -601,22 +601,22 @@ moduleManager.construct({
 		switch (mode) {
 			case 'insert':
 				pend++;
-				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD } as SpecifNode])
+				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD } as SpecifNode])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
+				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.cache.selectedProject.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
+				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 		};
 
 		// has no effect, if newFiles is empty:
-		app.cache.selectedProject.createItems( 'file', self.toEdit.getNewFiles() )
+		app.projects.selected.createItems( 'file', self.toEdit.getNewFiles() )
 			.then( finalize, LIB.stdError );
 		return;
 			

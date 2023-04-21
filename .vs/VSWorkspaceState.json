@@ -11,6 +11,6 @@
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\config\\moduleManager.ts",
+  "SelectedNode": "\\src\\embedded.ts",
   "PreviewInSolutionExplorer": false
 }

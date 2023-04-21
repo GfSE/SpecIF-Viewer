@@ -37,8 +37,8 @@ class CPropertyToShow implements SpecifProperty {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
 
-		this.selPrj = app.cache.selectedProject;
-		this.cData = this.selPrj.data;
+		this.selPrj = app.projects.selected;
+		this.cData = this.selPrj.cache;
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
 		this.dT = this.cData.get("dataType", [this.pC['dataType']])[0] as SpecifDataType;
@@ -508,8 +508,8 @@ class CResourceToShow {
 	constructor(el: SpecifResource) {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
-		this.selPrj = app.cache.selectedProject;
-		this.cData = this.selPrj.data;
+		this.selPrj = app.projects.selected;
+		this.cData = this.selPrj.cache;
 
 		this.id = el.id;
 		this['class'] = el['class'];
@@ -1006,7 +1006,7 @@ class CFileWithContent implements IFileWithContent {
 				if (mL[2].startsWith('data:')) continue;
 				// avoid transformation of redundant images:
 				if (LIB.indexById(dataURLs, mL[2]) > -1) continue;
-				ef = itemBySimilarTitle(app.cache.selectedProject.data.files, mL[2]);
+				ef = itemBySimilarTitle(app.projects.selected.cache.files, mL[2]);
 				if (ef && ef.blob) {
 					pend++;
 //					console.debug('SVG embedded file',mL[2],ef,pend);
@@ -1097,7 +1097,7 @@ class CFileWithContent implements IFileWithContent {
 						//	evt.target.setAttribute("style", "stroke:red;"); 	// works, but is not beautiful
 						// @ts-ignore - nothing wrong with the type of 'this'
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
-							selPrj = app.cache.selectedProject,
+							selPrj = app.projects.selected,
 							clsPrp = new CResourceToShow(itemBySimilarId(selPrj.data.resources, eId)),
 							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
 							dsc = '';
@@ -1131,7 +1131,7 @@ class CFileWithContent implements IFileWithContent {
 				// This routine checks whether there is a plan with the same name to show that plan instead of the element.
 				if (CONFIG.selectCorrespondingDiagramFirst) {
 					// replace the id of a resource by the id of a diagram carrying the same title:
-					let cacheData = app.cache.selectedProject.data,
+					let cacheData = app.projects.selected.cache,
 						ti = cacheData.instanceTitleOf(itemBySimilarId(cacheData.resources, id), opts),
 						rT: SpecifResourceClass;
 					for (var i = cacheData.resources.length - 1; i > -1; i--) {
@@ -1353,7 +1353,7 @@ moduleManager.construct({
 			hideWhenSet: ['#details']
 		});
 	//	self.typesComment = null;
-	//	self.typesComment = new StdTypes( app.cache.selectedProject.data, new CommentTypes() );  // types needed for commenting, defined in stdTypes-*.js
+	//	self.typesComment = new StdTypes( app.projects.selected.cache, new CommentTypes() );  // types needed for commenting, defined in stdTypes-*.js
 	//	self.dmp = new diff_match_patch();	// to compare the revisions and mark changes
 		refreshReqCnt = 0;
 		
@@ -1362,7 +1362,7 @@ moduleManager.construct({
 	self.clear = ():void =>{
 		self.tree.clear();
 		refreshReqCnt = 0;
-		app.cache.clear();
+		app.projects.clear();
 		app.busy.reset()
 	};
 	// module entry 'self.show()' see further down
@@ -1393,12 +1393,12 @@ moduleManager.construct({
 			}
 		if( !nd ) { noPerms(); return };
 		
-		var r = LIB.itemById( app.cache.selectedProject.data.resources, nd.ref );
+		var r = LIB.itemById( app.projects.selected.cache.resources, nd.ref );
 		if( r ) {
 			// self.resCre is set when resCreClasses are filled ...
 			self.resCln = self.resCreClasses.indexOf( r['class'] )>-1;
 			// give permission to an admin, anyway:
-//			self.resCln = ( LIB.indexById( self.resCreClasses, r['class'] )>-1 || me.isAdmin(app.cache.selectedProject.data) )
+//			self.resCln = ( LIB.indexById( self.resCreClasses, r['class'] )>-1 || me.isAdmin(app.projects.selected.cache) )
 
 			// Set the permissions to enable or disable the create statement buttons;
 			// a statement can be created, if the selected resource's type is listed in subjectClasses or objectClasses of any statementClass:
@@ -1408,7 +1408,7 @@ moduleManager.construct({
 					// iterate all statements for which the user has instantiation rights
 					var creR = null;  
 					self.staCreClasses.forEach( function(sT) {   
-						creR = LIB.itemById( app.cache.selectedProject.data.statementClasses, sT );
+						creR = LIB.itemById( app.projects.selected.cache.statementClasses, sT );
 //						console.debug( 'mayHaveStatements', self.staCreClasses[s], creR, selR['class'] );
 						if( 
 							// if creation mode is not specified or 'user' is listed, the statement may be applied to this resource:
@@ -1462,12 +1462,12 @@ moduleManager.construct({
 	// called by the parent's view controller:
 	self.show = ( opts:any ):void => {
 //		console.debug( CONFIG.specifications, 'show', opts );
-		self.selPrj = app.cache.selectedProject;
+		self.selPrj = app.projects.selected;
 
 		if (!(self.selPrj && self.selPrj.isLoaded()))
 			throw Error("No selected project on entry of spec.show()");
 
-		self.cData = self.selPrj.data;
+		self.cData = self.selPrj.cache;
 
 		$('#pageTitle').html(LIB.languageValueOf(self.selPrj.title, { targetLanguage: self.selPrj.language }));
 		app.busy.set();
@@ -1553,7 +1553,7 @@ moduleManager.construct({
 		self.ViewControl.selected.show( parms )
 	};
 	self.reworkTree = (): void => {
-	//	app.cache.selectedProject.createFolderWithGlossary({ addGlossary: true })
+	//	app.projects.selected.createFolderWithGlossary({ addGlossary: true })
 		self.selPrj.createFolderWithGlossary({ addGlossary: true })
 			.then(
 				() => {
@@ -1614,7 +1614,7 @@ moduleManager.construct({
 		
 		var newC = {}, 
 			newId = LIB.genID('R-');
-		app.cache.selectedProject.initResource( cT )
+		app.projects.selected.initResource( cT )
 			.done( function(rsp) {
 				// returns an initialized resource of the requested type:
 				newC = rsp;
@@ -1647,7 +1647,7 @@ moduleManager.construct({
 //					newC.title = ....	// an instance-specific name (or title)
 
 //					console.info( 'saving comment', newC );
-					app.cache.selectedProject.createItems( 'resource', newC )
+					app.projects.selected.createItems( 'resource', newC )
 						.done( function(newO) {
 							var newR = {
 								subject: { id: newId, revision: 0 },
@@ -1657,7 +1657,7 @@ moduleManager.construct({
 //								description: ''
 							};
 //							console.info( 'saving statement', newR );
-							app.cache.selectedProject.createItems( 'statement', newR )
+							app.projects.selected.createItems( 'statement', newR )
 								.done( self.refresh )
 								.fail( handleError )
 						})
@@ -1673,17 +1673,17 @@ moduleManager.construct({
 //		console.debug('delComment',id);
 		app.busy.set();
 		var pend=2;
-		app.cache.selectedProject.readStatementsOf({id:el}) // {showComments:true} ?
+		app.projects.selected.readStatementsOf({id:el}) // {showComments:true} ?
 			.done( function(rL) {
 				// delete all statements of the comment - should just be one, currently:
 //				console.debug('deleteComment',rL.statements,el);
-				app.cache.selectedProject.deleteItems('statement',rL)
+				app.projects.selected.deleteItems('statement',rL)
 					.done( function(dta, textStatus, xhr) { 
 						if( --pend<1 ) self.refresh()
 					})
 					.fail( handleError );
 				// and delete the resource, as well:
-				app.cache.selectedProject.deleteItems('resource',[LIB.makeKey(el)])
+				app.projects.selected.deleteItems('resource',[LIB.makeKey(el)])
 					.done( function(dta, textStatus, xhr) { 
 						if( --pend<1 ) self.refresh()
 					})
@@ -1716,7 +1716,7 @@ moduleManager.construct({
 //	self.cmtCre = false;
 //	self.cmtDel = false;
 
-	self.resources = new CResourcesToShow(); 	// flat-listed resources for display, is a small subset of app.cache.selectedProject.data.resources
+	self.resources = new CResourcesToShow(); 	// flat-listed resources for display, is a small subset of app.projects.selected.cache.resources
 //	self.comments = new CResourcesToShow();  	// flat-listed comments for display
 //	self.files = new Files();			// files for display
 		
@@ -1739,7 +1739,7 @@ moduleManager.construct({
 
 		self.parent.showLeft.set();
 		self.parent.showTree.set();
-		selPrj = app.cache.selectedProject;
+		selPrj = app.projects.selected;
 	//	cacheData = selPrj.data;
 		
 		// Select the language options at project level:
@@ -1910,7 +1910,7 @@ moduleManager.construct({
 			
 				// using the cached allClasses:
 				// a) identify the resource and statement types which can be created by the current user:
-				selPrj.data.resourceClasses.forEach( (rC)=>{
+				selPrj.cache.resourceClasses.forEach( (rC)=>{
 					// list all resource types, for which the current user has permission to create new instances
 					// ... and which allow manual instantiation:
 					// store the type's id as it is invariant, when selPrj.data.allClasses is updated
@@ -2007,7 +2007,7 @@ moduleManager.construct({
 			self.parent.tree.selectNode(nd.getNextSibling());
 
 			// 2. Delete the hierarchy entry with all its children in cache and server:
-			app.cache.selectedProject.deleteItems('node', [LIB.makeKey(nd)])
+			app.projects.selected.deleteItems('node', [LIB.makeKey(nd)])
 				.then(
 					// If a diagram has been deleted, build a new glossary with elements 
 					// which are shown by any of the remaining diagrams:
@@ -2091,8 +2091,8 @@ moduleManager.construct({
 	self.show = (opts?: any): void => {
 		self.parent.showLeft.set();
 		self.parent.showTree.set();
-		selPrj = app.cache.selectedProject;
-		cacheData = selPrj.data;
+		selPrj = app.projects.selected;
+		cacheData = selPrj.cache;
 
 		// Select the language options at project level:
 		if (typeof (opts) != 'object') opts = {};
@@ -2307,7 +2307,7 @@ moduleManager.construct({
 									/*	if (staL.length > 1)
 											cacheData.put(
 												'statementClass',
-												standardTypes.get('statementClass', LIB.makeKey("SC-mentions"))
+												app.standards.get('statementClass', LIB.makeKey("SC-mentions"))
 											);  */
 									resolve(staL)
 								};
@@ -2378,7 +2378,7 @@ moduleManager.construct({
 			self.staCreClasses.objectClasses.length = 0;
 
 			// a) identify the resource and statement types which can be created by the current user:
-			selPrj.data.statementClasses.forEach(
+			selPrj.cache.statementClasses.forEach(
 				(sC) => {
 					// list all statement types, for which the current user has permission to create new instances:
 					// ... and which allow user instantiation:

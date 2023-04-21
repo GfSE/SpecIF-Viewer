@@ -1011,7 +1011,7 @@ function Archimate2Specif(xmlString, options) {
 		return nodeL
 	};
 
-	// The dataTypes:
+	// The dataTypes should correspond to standards.ts:
 	function DataTypes() {
 		return [{
 			id: "DT-ShortString",
@@ -1049,7 +1049,7 @@ function Archimate2Specif(xmlString, options) {
 		}]
 	}
 	
-	// The property classes:
+	// The property classes should correspond to standards.ts:
 	function PropertyClasses() {
 		return [{
 			id: "PC-Name",
@@ -1079,7 +1079,7 @@ function Archimate2Specif(xmlString, options) {
 		}]
 	}
 	
-	// The resource classes:
+	// The resource classes should correspond to standards.ts:
 	function ResourceClasses() {
 		return [{
 			id: idResourceClassDiagram,
@@ -1152,7 +1152,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate  */
 		}]
 	}
-	// The statement classes.
+	// The statement classes should correspond to standards.ts;
 	// Archimate is not very precise about relations, so in many cases there is no specification
 	// of eligible resourceClasses or statementClasses for subjects and objects (deactivated with //?):
 	function StatementClasses() {

@@ -40,18 +40,18 @@ class CCache {
 	files: IFileWithContent[] = [];
 	constructor(opts:any) {
 		this.cacheInstances = opts.cacheInstances;
-	/*	for (var le of standardTypes.listName.keys())
+	/*	for (var le of app.standards.listName.keys())
 			// @ts-ignore - index is ok:
-			this[standardTypes.listName.get(le)] = []; */
+			this[app.standards.listName.get(le)] = []; */
 	}
 	length(ctg: string): number {
 		// Return the number of cached items per category:
 		// @ts-ignore - index is ok:
-		return this[standardTypes.listName.get(ctg)].length;
+		return this[app.standards.listName.get(ctg)].length;
 	}
 	has(ctg: string, rL: SpecifKeys): boolean {
 		// @ts-ignore - index is ok:
-		let L = this[standardTypes.listName.get(ctg)];
+		let L = this[app.standards.listName.get(ctg)];
 		for (var i = rL.length - 1; i > -1;i--) {
 			if (LIB.indexByKey(L, rL[i]) < 0) return false;
 		};
@@ -92,13 +92,13 @@ class CCache {
 			case 'resourceClass':
 			case 'statementClass':
 				// @ts-ignore - indexing is perfectly ok
-				return fn(this[standardTypes.listName.get(ctg)], item);
+				return fn(this[app.standards.listName.get(ctg)], item);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances) {
 					// @ts-ignore - indexing is perfectly ok
-					return fn(this[standardTypes.listName.get(ctg)], item);
+					return fn(this[app.standards.listName.get(ctg)], item);
 				};
 				return true;
 			case 'node':
@@ -119,7 +119,7 @@ class CCache {
 		// - a string with "all" to return all items of the category (DEPRECATED)
 		if (req) {
 			// @ts-ignore - addressing is perfectly ok
-			let itmL = this[standardTypes.listName.get(ctg)];
+			let itmL = this[app.standards.listName.get(ctg)];
 
 			if (Array.isArray(req)) {
 				let allFound = true, i = 0, I = req.length, idx: number;
@@ -153,13 +153,13 @@ class CCache {
 			case 'resourceClass':
 			case 'statementClass':
 				// @ts-ignore - addressing is perfectly ok
-				return LIB.uncacheL(this[standardTypes.listName.get(ctg)], itemL);
+				return LIB.uncacheL(this[app.standards.listName.get(ctg)], itemL);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances)
 					// @ts-ignore - addressing is perfectly ok
-					return LIB.uncacheL(this[standardTypes.listName.get(ctg)], itemL);
+					return LIB.uncacheL(this[app.standards.listName.get(ctg)], itemL);
 				return true;
 			case 'node':
 				itemL.forEach((el):void => { delNodes(this.hierarchies, el) })
@@ -312,12 +312,12 @@ class CCache {
 	clear(ctg?:string):void {
 		if (ctg)
 			// @ts-ignore - in this branch it is not undefined:
-			this[standardTypes.listName.get(ctg)].length = 0
+			this[app.standards.listName.get(ctg)].length = 0
 		else
 			// clear all lists, if undefined:
-			for (var le of standardTypes.listName.keys())
+			for (var le of app.standards.listName.keys())
 				// @ts-ignore - shouldn't be undefined:
-				this[standardTypes.listName.get(le)].length = 0;
+				this[app.standards.listName.get(le)].length = 0;
     }
 }
 class CElement {
@@ -328,7 +328,7 @@ class CElement {
 	substitute: Function;
 	constructor(ctg: string, eqF: Function, compF: Function, subsF: Function) {
 		this.category = ctg;
-		this.listName = standardTypes.listName.get(ctg) as string;
+		this.listName = app.standards.listName.get(ctg) as string;
 		this.isEqual = eqF;
 		this.isCompatible = compF;
 		this.substitute = subsF;
@@ -367,7 +367,7 @@ class CProject {
 	hierarchies: SpecifKeys;
 	// @ts-ignore - initialized by this.setMeta()
 	language: string;
-	data: CCache;
+	cache: CCache;
 /*	server: URL // or servers ??
  	myRole = i18n.LblRoleProjectAdmin;
 	cre;
@@ -388,7 +388,7 @@ class CProject {
 		this.statementClasses = [];
 		this.hierarchies = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
 		// The common cache for all local projects:
-		this.data = cData;
+		this.cache = cData;
 	//	this.exp = true;
 		this.exporting = false;		// prevent concurrent exports
 		this.abortFlag = false;
@@ -436,7 +436,7 @@ class CProject {
 			}
 		);
 	/*	this.myRole = i18n.LblRoleProjectAdmin;
-		this.cre = this.data.upd = this.data.del = app.title != i18n.LblReader;
+		this.cre = this.cache.upd = this.cache.del = app.title != i18n.LblReader;
 		this.locked = app.title == i18n.LblReader; 
 		this.exp = true; */
 	};
@@ -465,7 +465,7 @@ class CProject {
 
 		this.abortFlag = false;
 
-//		console.debug('app.cache.selectedProject.data.create',newD);
+//		console.debug('app.projects.selected.cache.create',newD);
 
 		new CSpecIF().set(newD,opts)
 			.then(
@@ -475,7 +475,7 @@ class CProject {
 					// at the same time the cache is updated.
 					cDO.notify(i18n.MsgLoadingTypes, 30);
 					this.setMeta(nD);
-					pend = standardTypes.iterateLists(
+					pend = app.standards.iterateLists(
 						(ctg: string, listName: string) => {
 							// @ts-ignore - the indexing works fine:
 							this.createItems(ctg, nD[listName])
@@ -527,7 +527,7 @@ class CProject {
 					(hL) => {
 						exD.hierarchies = hL as SpecifNode[];
 //						console.debug('1', simpleClone(exD));
-						return this.readItems('resource', LIB.referencedResources(this.data.resources, hL), opts)
+						return this.readItems('resource', LIB.referencedResources(this.cache.resources, hL), opts)
 					}
 				)
 				.then(
@@ -630,7 +630,7 @@ class CProject {
 							dT: SpecifDataType;
 						for (var r of exD.resources) {
 							for (var p of r.properties) {
-								dT = LIB.dataTypeOf(p['class'], this.data);
+								dT = LIB.dataTypeOf(p['class'], this.cache);
 								if (dT && dT.type == SpecifDataTypeEnum.String) {
 									// Cycle through all values:
 									for (var v of p.values) {
@@ -680,7 +680,7 @@ class CProject {
 
 		var aDO = $.Deferred(),
 			self = this,  // make the class attributes and methods available within local function 'finalize'
-			dta = this.data,
+			dta = this.cache,
 			pend = 0;
 
 		new CSpecIF().set(newD,opts)
@@ -692,7 +692,7 @@ class CProject {
 				//    b) if same id and same content, just use it (no action)
 				//    c) if same id and different content, save with new id and update all references
 				(newD: CSpecIF) => {
-//					console.debug('adopt #1',simpleClone(self.data),simpleClone(newD));
+//					console.debug('adopt #1',simpleClone(self.cache),simpleClone(newD));
 					self.types.forEach((ty:CElement) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 						if (Array.isArray(newD[ty.listName])) {
@@ -709,7 +709,7 @@ class CProject {
 								}
 								else {
 									// there is an item with the same id.
-									//	if( !ty.isEqual( self.data[ty.listName][idx], newT) ) {
+									//	if( !ty.isEqual( self.cache[ty.listName][idx], newT) ) {
 									// @ts-ignore - indexing by string works fine
 									if (!ty.isCompatible(dta[ty.listName][idx], newT, { mode: "include" })) {
 										// there is an item with the same id and different content.
@@ -742,9 +742,9 @@ class CProject {
 						//    d) if different id and different content, save new one and use it.
 						var aDO = $.Deferred(),
 							self = self,  // make the class attributes and methods available within local function 'finalize'
-							dta = self.data,
+							dta = self.cache,
 							pend = 0;
-//						console.debug('adopt #1',simpleClone(self.data),simpleClone(newD));
+//						console.debug('adopt #1',simpleClone(self.cache),simpleClone(newD));
 						self.types.forEach((ty) => {
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 							if (Array.isArray(newD[ty.listName])) {
@@ -781,7 +781,7 @@ class CProject {
 						//		&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD)[0])) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								existR = self.data.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, selOpts), selOpts)[0] as SpecifResource;
+								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, selOpts), selOpts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
@@ -929,7 +929,7 @@ class CProject {
 					case 'statementClass':
 						// Update the project's remembering list;
 						// but don't keep the revision, as it can change:
-						LIB.cacheL(self[standardTypes.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
+						LIB.cacheL(self[app.standards.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
 						break;
 					case 'hierarchy':
 					case 'node':
@@ -950,7 +950,7 @@ class CProject {
 			 		i.createdAt = new Date().toISOString();
 					i.createdBy = i.changedBy; 
 				}; */
-				self.data.put(ctg, itmL);
+				self.cache.put(ctg, itmL);
 				resolve();
 			}
 		);
@@ -960,14 +960,14 @@ class CProject {
 		// classes are always cached, so there is no need for a call with promise.
 		let resL: SpecifItem[] = [];
 		do {
-			let rL = this.data.get(ctg, toGet);
+			let rL = this.cache.get(ctg, toGet);
 			toGet = [];
 			for (var c of rL) {
 				// @ts-ignore - checking for extends, because it doesn't exist on all elements
-				if (c.extends) {
+				if (c['extends']) {
 					// The propoerties of the extending (parent's) class first:
 					// @ts-ignore - checking for extends, because it doesn't exist on all elements
-					toGet.unshift(c.extends);
+					toGet.unshift(c['extends']);
 				};
 			};
 			resL = rL.concat(resL);
@@ -1006,7 +1006,7 @@ class CProject {
                         }
 					}
 				);
-			delete res.extends;
+			delete res['extends'];
 			return res
         }
 	}
@@ -1035,7 +1035,7 @@ class CProject {
 					let items: SpecifItem[] = [],
 						toGet: SpecifKeys = itemL == "all" ?
 									// @ts-ignore- index type is ok
-									this[standardTypes.listName.get(ctg)]  // only those remembered by the project
+									this[app.standards.listName.get(ctg)]  // only those remembered by the project
 									: itemL;
 
 					if (opts.extendClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
@@ -1048,14 +1048,14 @@ class CProject {
 					}  */
 					else {
 						// Normal case: Item can't have an extended class or is requested without:
-						items = this.data.get(
+						items = this.cache.get(
 							ctg,
 							toGet
 						);
 						// Normalize the properties if desired:
 						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
 							items.forEach((itm: any) => {
-								// classes are alwways cached, so we can use this.data:
+								// classes are alwways cached, so we can use this.cache:
 								itm.properties = normalizeProperties(itm)
 							})
 						}
@@ -1096,7 +1096,7 @@ class CProject {
 				iCs = self.readExtendedClasses(ctg, [el["class"]]);
 
 			// Obtain the full propertyClasses referenced by iCs[0]:
-			pCL = self.data.get("propertyClass", iCs[0].propertyClasses) as SpecifPropertyClass[];
+			pCL = self.cache.get("propertyClass", iCs[0].propertyClasses) as SpecifPropertyClass[];
 			// assuming that the property classes are unique:
 
 			// Add the properties in sequence of the propertyClass keys as specified by the instance class:
@@ -1140,7 +1140,7 @@ class CProject {
 					default:
 //						console.debug('updateItems - cache', ctg );
 						itmL.forEach(updateCh)
-						this.data.put(ctg, itmL)
+						this.cache.put(ctg, itmL)
 				};
 				resolve()
 			}
@@ -1184,12 +1184,12 @@ class CProject {
 							}
 		//				console.debug('isInUse',ctg,itmL);
 						switch( ctg ) {
-							case 'dataType':		return dTIsInUse(self.data.allClasses,itm);
+							case 'dataType':		return dTIsInUse(self.cache.allClasses,itm);
 							case 'resourceClass':
 							case 'statementClass':	return aCIsInUse(ctg,itm);
-							case 'class':			return pCIsInUse(self.data.resources,itm)
-														|| pCIsInUse(self.data.hierarchies,itm)
-														|| pCIsInUse(self.data.statements,itm);
+							case 'class':			return pCIsInUse(self.cache.resources,itm)
+														|| pCIsInUse(self.cache.hierarchies,itm)
+														|| pCIsInUse(self.cache.statements,itm);
 						};
 						return false
 					}  */
@@ -1214,14 +1214,14 @@ class CProject {
 						// delete also the respective keys remembered by the project;
 						// - a node can also be a hierarchy, thus try to remove it as well;
 						// - disregard the revision:
-						let listName = standardTypes.listName.get(ctg=='node'?'hierarchy':ctg);
+						let listName = app.standards.listName.get(ctg=='node'?'hierarchy':ctg);
 						for (var i of itmL)
 							LIB.uncacheE(this[listName], { id: i.id });
 						// no break; 
 				//	case 'file':
 					default:
 //						console.debug('deleteItems',ctg,itmL);
-						if (this.data.delete(ctg, itmL))
+						if (this.cache.delete(ctg, itmL))
 							break;
 						reject( new xhrMessage( 999, 'One or more items of ' + ctg + ' not found and thus not deleted.' ));
 						return;
@@ -1274,7 +1274,7 @@ class CProject {
 		//   in contrast to the method used here, the reference is by id.
 		//   Thus upon import, no 'hooking' is needed in case of a data-set originating from ioReqIF.
 		var self = this,
-			dta = this.data,
+			dta = this.cache,
 			opts = {
 				targetLanguage: 'any',
 				lookupTitles: false,
@@ -1328,8 +1328,8 @@ class CProject {
 
 		/*	function visibleIdOf(r: SpecifResource): string | undefined {
 				if (r && r.properties) {
-				//	let prj = app.cache.selectedProject.data;
-				//	let prj = this.data;
+				//	let prj = app.projects.selected.cache;
+				//	let prj = this.cache;
 					// loop to find the *first' occurrence:
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
@@ -1346,7 +1346,7 @@ class CProject {
 		// ToDo: update the server.
 		if (!opts || !opts.deduplicate) return;
 
-		let dta = this.data,
+		let dta = this.cache,
 			lst: SpecifItem[], r: number, n: number;
 //		console.debug('deduplicate',simpleClone(dta));
 
@@ -1424,7 +1424,7 @@ class CProject {
 	private createFolderWithResourcesByType(opts: any): Promise<void> {
 		// Collect all business processes, requirements etc according to 'resourcesToCollect':
 		let self = this,
-			dta = this.data;
+			dta = this.cache;
 		const resourcesToCollect = [
 			{ type: CONFIG.resClassProcess, flag: "collectProcesses", folder: CONFIG.resClassProcesses, folderNamePrefix: "FolderProcesses-" }
 		];
@@ -1495,16 +1495,16 @@ class CProject {
 											id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
 											$schema: 'https://specif.de/v1.1/schema.json',
 											dataTypes: [
-												standardTypes.get('dataType', { id: "DT-ShortString" }) as SpecifDataType,
-												standardTypes.get('dataType', { id: "DT-Text" }) as SpecifDataType
+												app.standards.get('dataType', { id: "DT-ShortString" }) as SpecifDataType,
+												app.standards.get('dataType', { id: "DT-Text" }) as SpecifDataType
 											],
 											propertyClasses: [
-												standardTypes.get('propertyClass', { id: "PC-Name" }) as SpecifPropertyClass,
-												standardTypes.get('propertyClass', { id: "PC-Description" }) as SpecifPropertyClass,
-												standardTypes.get('propertyClass', { id: "PC-Type" }) as SpecifPropertyClass
+												app.standards.get('propertyClass', { id: "PC-Name" }) as SpecifPropertyClass,
+												app.standards.get('propertyClass', { id: "PC-Description" }) as SpecifPropertyClass,
+												app.standards.get('propertyClass', { id: "PC-Type" }) as SpecifPropertyClass
 											],
 											resourceClasses: [
-												standardTypes.get('resourceClass', { id: "RC-Folder" }) as SpecifResourceClass
+												app.standards.get('resourceClass', { id: "RC-Folder" }) as SpecifResourceClass
 											],
 											statementClasses: [],
 											resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
@@ -1575,7 +1575,7 @@ class CProject {
 	private createFolderWithUnreferencedResources(opts: any): Promise<void> {
 		// Create a folder with a flat list of resources which are not otherwise listed in a hierarchy.
 		let self = this,
-			dta = this.data;
+			dta = this.cache;
 		return new Promise(
 			(resolve, reject) => {
 				if (typeof (opts) != 'object' || !opts.addUnreferencedResources) { resolve(); return; };
@@ -1641,16 +1641,16 @@ class CProject {
 							id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
 							$schema: 'https://specif.de/v1.1/schema.json',
 							dataTypes: [
-								standardTypes.get('dataType', { id: "DT-ShortString" }),
-								standardTypes.get('dataType', { id: "DT-Text" })
+								app.standards.get('dataType', { id: "DT-ShortString" }),
+								app.standards.get('dataType', { id: "DT-Text" })
 							],
 							propertyClasses: [
-								standardTypes.get('propertyClass', { id: "PC-Name" }),
-								standardTypes.get('propertyClass', { id: "PC-Description" }),
-								standardTypes.get('propertyClass', { id: "PC-Type" })
+								app.standards.get('propertyClass', { id: "PC-Name" }),
+								app.standards.get('propertyClass', { id: "PC-Description" }),
+								app.standards.get('propertyClass', { id: "PC-Type" })
 							],
 							resourceClasses: [
-								standardTypes.get('resourceClass', { id: "RC-Folder" })
+								app.standards.get('resourceClass', { id: "RC-Folder" })
 							],
 							resources: Folder(),
 							hierarchies: NodeList(resL)
@@ -1708,7 +1708,7 @@ class CProject {
 	createFolderWithGlossary(opts: any): Promise<void> {
 //		console.debug('createFolderWithGlossary');
 		let self = this,
-			dta = this.data;
+			dta = this.cache;
 		return new Promise(
 			(resolve, reject) => {
 				if (typeof (opts) != 'object' || !opts.addGlossary) { resolve(); return; };
@@ -1791,16 +1791,16 @@ class CProject {
 										id: 'Create Glossary ' + new Date().toISOString(),
 										$schema: 'https://specif.de/v1.1/schema.json',
 										dataTypes: [
-											standardTypes.get('dataType', LIB.makeKey("DT-ShortString")),
-											standardTypes.get('dataType', LIB.makeKey("DT-Text"))
+											app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+											app.standards.get('dataType', LIB.makeKey("DT-Text"))
 										],
 										propertyClasses: [
-											standardTypes.get('propertyClass', LIB.makeKey("PC-Name")),
-											standardTypes.get('propertyClass', LIB.makeKey("PC-Description")),
-											standardTypes.get('propertyClass', LIB.makeKey("PC-Type"))
+											app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+											app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+											app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
 										],
 										resourceClasses: [
-											standardTypes.get('resourceClass', LIB.makeKey("RC-Folder"))
+											app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 										],
 										statementClasses: [],
 										resources: Folders(),
@@ -1995,7 +1995,7 @@ class CProject {
 		//   (perhaps both checks are not necessary, as visible statements only referto visible resources ...)
 
 		if (typeof (opts) != 'object') opts = {};
-		let dta = this.data,
+		let dta = this.cache,
 			sCL: SpecifStatementClass[],
 			showsL: SpecifStatement[];
 		return new Promise(
@@ -2123,7 +2123,7 @@ class CProject {
 		if (this.exporting) return;
 
 		var self = this;
-		const exportFormatClicked = 'app.cache.selectedProject.exportFormatClicked()';
+		const exportFormatClicked = 'app.projects.selected.exportFormatClicked()';
 		// @ts-ignore - BootstrapDialog() is loaded at runtime
 		new BootstrapDialog({
 		//	title: i18n.LblExport + ": '" + LIB.languageValueOf(this.title, { targetLanguage: this.language }) + "'",
@@ -2168,10 +2168,10 @@ class CProject {
 				return $(form)
 
 				function hasOntology(): boolean {
-					let hL = self.data.get("hierarchy", self.hierarchies) as SpecifNode[];
+					let hL = self.cache.get("hierarchy", self.hierarchies) as SpecifNode[];
 					for (var h of hL) {
-						let rL = self.data.get("resource", [h.resource]) as SpecifResource[];
-						if (rL.length>0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], self.data))
+						let rL = self.cache.get("resource", [h.resource]) as SpecifResource[];
+						if (rL.length>0 && LIB.hasType(rL[0], [CONFIG.resClassOntology], self.cache))
 							return true;
 					};
 					return false;
@@ -2250,7 +2250,7 @@ class CProject {
 				reject(new xhrMessage( 999, "Export in process, please wait a little while" ));
 			}
 			else {
-			//	if (self.data.exp) { // check permission
+			//	if (self.cache.exp) { // check permission
 					self.exporting = true; // set status to prohibit multiple entry
 
 					switch (opts.format) {
@@ -2295,8 +2295,8 @@ class CProject {
 				];
 
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
-				opts.lookupTitles = true;  // applies to self.data.get()
-				opts.lookupValues = true;  // applies to self.data.get()
+				opts.lookupTitles = true;  // applies to self.cache.get()
+				opts.lookupValues = true;  // applies to self.cache.get()
 				// But DO reduce to the language desired.
 				if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
 				opts.makeHTML = true;
@@ -2324,8 +2324,8 @@ class CProject {
 							statementsLabel: opts.withStatements ? i18n.lookup('SpecIF:Statements') : undefined,
 							fileName: self.exportParams.fileName,
 							colorAccent1: '0071B9',	// adesso blue
-							done: () => { app.cache.selectedProject.exporting = false; resolve() },
-							fail: (xhr:xhrMessage) => { app.cache.selectedProject.exporting = false; reject(xhr) }
+							done: () => { app.projects.selected.exporting = false; resolve() },
+							fail: (xhr:xhrMessage) => { app.projects.selected.exporting = false; reject(xhr) }
 						};
 
 						expD.title = opts.projectName;
@@ -2518,7 +2518,7 @@ class CProject {
 		// assuming that the types have already been consolidated:
 		let opts = { targetLanguage: this.language };
 		return LIB.equalKey(refE['class'], newE['class'])
-			&& this.data.instanceTitleOf(refE, opts) == this.data.instanceTitleOf(newE, opts);
+			&& this.cache.instanceTitleOf(refE, opts) == this.cache.instanceTitleOf(newE, opts);
 
 	/*	if (LIB.equalKey(refE['class'], newE['class'])
 			&& LIB.instanceTitleOf(refE, opts) == LIB.instanceTitleOf(newE, opts)
@@ -2539,7 +2539,7 @@ class CProject {
 		// Model-elements are only equal, if they have the same class.
 		// ToDo: Also, if a property with title CONFIG.propClassType has the same value?
 		return LIB.equalKey(refE['class'], newE['class'])
-		//	&& this.data.instanceTitleOf(refE, opts) == this.data.instanceTitleOf(newE, opts)
+		//	&& this.cache.instanceTitleOf(refE, opts) == this.cache.instanceTitleOf(newE, opts)
 			&& LIB.equalKey(refE.subject, newE.subject)
 			&& LIB.equalKey(refE.object, newE.object);
 	}
@@ -2821,7 +2821,7 @@ class CProject {
 	}
 	private substituteR(prj: CSpecIF | CCache, refE: SpecifResource, newE: SpecifResource, opts?: any): void {
 		// Substitute all references of resource newE by refE,
-		// where refE is always an element of this.data.
+		// where refE is always an element of this.cache.
 		// But: Rescue any property of newE, if undefined for refE.
 //		console.debug('substituteR',refE,newE,prj.statements);
 
@@ -2835,15 +2835,15 @@ class CProject {
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
 					let ti = LIB.classTitleOf(nP['class'], prj.propertyClasses),
-						rP = LIB.propByTitle(refE, ti, this.data);
-//					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( refE, ti, this.data )));
-					if (!LIB.hasContent(LIB.displayValueOf(LIB.valuesByTitle(refE, [ti], this.data)[0],opts))
+						rP = LIB.propByTitle(refE, ti, this.cache);
+//					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( refE, ti, this.cache )));
+					if (!LIB.hasContent(LIB.displayValueOf(LIB.valuesByTitle(refE, [ti], this.cache)[0],opts))
 						// resource r must have a corresponding property
 						// ToDo: Copy the whole property, if it is defined in the resourceClass, but not instantiated
 						&& rP
 						// dataTypes must be compatible:
-						&& this.compatibleDT(LIB.dataTypeOf(rP['class'], this.data), LIB.dataTypeOf(nP['class'], prj))) {
-						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(rP['class'],this.data), LIB.dataTypeOf(nP['class'],prj) ).status==0 ) {
+						&& this.compatibleDT(LIB.dataTypeOf(rP['class'], this.cache), LIB.dataTypeOf(nP['class'], prj))) {
+						//	&& this.typeIsCompatible( 'dataType', LIB.dataTypeOf(rP['class'],this.cache), LIB.dataTypeOf(nP['class'],prj) ).status==0 ) {
 						rP.values = nP.values;
 					};
 				};
@@ -2912,11 +2912,11 @@ function Project(): IProject {
 			default:
 				opts = {reload: false}
 		};
-//		console.debug( 'cache.read', opts, self.data.id, prj );
+//		console.debug( 'cache.read', opts, self.cache.id, prj );
 	
 		var pDO = $.Deferred();
 		// Read from cache in certain cases:
-		if( self.data.isLoaded && !opts.reload && ( !prj || prj.id==self.data.id ) ) {
+		if( self.cache.isLoaded && !opts.reload && ( !prj || prj.id==self.cache.id ) ) {
 			// return the loaded project:
 			pDO.resolve( self );
 			return pDO
@@ -3027,8 +3027,8 @@ function Project(): IProject {
 		return uDO
 
 		function classesAreCompatible( ctg:string, mode ) {
-			let tL = standardTypes.listName.get(ctg),
-				aL = self.data[tL],
+			let tL = app.standards.listName.get(ctg),
+				aL = self.cache[tL],
 				nL = newD[tL];
 			// true, if every element in nL is compatibly present in aL or if it can be added:
 			let j:number, rC;
@@ -3066,9 +3066,9 @@ function Project(): IProject {
 			// Is commonly used for resource and statement classes with their propertyClasses.
 			let rL, nL, rT;
 			switch( ctg ) {
-				case 'dataType': rL = self.data.dataTypes; nL = newD.dataTypes; break;
-				case 'resourceClass': rL = self.data.resourceClasses; nL = newD.resourceClasses; break;
-				case 'statementClass': rL = self.data.statementClasses; nL = newD.statementClasses; break;
+				case 'dataType': rL = self.cache.dataTypes; nL = newD.dataTypes; break;
+				case 'resourceClass': rL = self.cache.resourceClasses; nL = newD.resourceClasses; break;
+				case 'statementClass': rL = self.cache.statementClasses; nL = newD.statementClasses; break;
 				default: return null //should never arrive here
 			};
 			nL.forEach( (nT)=>{
@@ -3135,7 +3135,7 @@ function Project(): IProject {
 					// insert at the position similarly to the new type;
 					// if p==-1, then it will be inserted at the first position:
 					r.propertyClasses.splice( p+1, 0, nPCs[idx] );
-					server.project({id:self.data.id}).allClasses({id:r.id}).class(nPCs[idx]).create()
+					server.project({id:self.cache.id}).allClasses({id:r.id}).class(nPCs[idx]).create()
 						.done( ()=>{
 							// Type creation must be completed before starting to update the elements:
 							if( ++idx<nPCs.length ) addNewPC( r, nPCs, idx );
@@ -3208,8 +3208,8 @@ function Project(): IProject {
 						// no update, if there is no corresponding property in the new data:
 						if( !nA ) continue;
 						// in all other cases compare the value:
-						let oT = LIB.itemById( app.cache.selectedProject.data.resourceClasses, n['class'] ),  // applies to both r and n
-							rDT = LIB.dataTypeOf( rA['class'], app.cache.selectedProject.data ),
+						let oT = LIB.itemById( app.projects.selected.cache.resourceClasses, n['class'] ),  // applies to both r and n
+							rDT = LIB.dataTypeOf( rA['class'], app.projects.selected.cache ),
 							nDT = LIB.dataTypeOf( nA['class'], newD );
 						if( rDT.type!=nDT.type ) return null;  // fatal error, they must be equal!
 						switch( nDT.type ) {
@@ -3294,7 +3294,7 @@ function Project(): IProject {
 								// whereas it delivers 404, if it is an admin.
 								// Thus: If 403 is delivered and the user has read access according to the resourceClass,
 								// do as if 404 had been delivered.
-								var pT = LIB.itemById(app.cache.selectedProject.data.allClasses,nI['class']);
+								var pT = LIB.itemById(app.projects.selected.cache.allClasses,nI['class']);
 //								console.debug('403 instead of 404',nI,pT);
 								if( !pT.rea || !pT.cre ) { uDO.reject(xhr); return };
 								// else the server should have delivered 404, so go on ...
@@ -3349,7 +3349,7 @@ function Project(): IProject {
 					message.show( i18n.MsgOutlineAdded, {severity:'info', duration:CONFIG.messageDisplayTimeShort} );
 			//		self.deleteItems('hierarchy',aI.children);		// can be be prohibited by removing the permission, but it is easily forgotten to change the role ...
 					newIds(nI);
-					server.project(app.cache.selectedProject.data).specification(nI).createChildren()
+					server.project(app.projects.selected.cache).specification(nI).createChildren()
 						.done( ()=>{
 							if( --pend<1 ) updateNext( ctg )
 						})
@@ -3372,7 +3372,7 @@ function Project(): IProject {
 		// get all resources of the specified type: qu is {type: class}
 	//	if( !reload ) {
 			// collect all resources with the queried type:
-			var oL = LIB.forAll( self.data.resources, (o)=>{ return o['class']==qu.type?o:null } ),
+			var oL = LIB.forAll( self.cache.resources, (o)=>{ return o['class']==qu.type?o:null } ),
 				dO = $.Deferred();
 			dO.resolve( oL );
 			return dO
@@ -3385,7 +3385,7 @@ function Project(): IProject {
 	}
 	function loadObjsOf( sp ) {
 		// Cache all resources referenced in the given spec (hierarchy):
-		if( !sp ) { sp = self.data.selectedHierarchy };
+		if( !sp ) { sp = self.cache.selectedHierarchy };
 //		console.debug( 'loadObjsOf', sp );
 
 		var cDO = $.Deferred();
@@ -3401,7 +3401,7 @@ function Project(): IProject {
 					.done( (rsp)=>{
 						// continue caching, if the project hasn't been left, meanwhile:
 						if( sp ) {  // sp is null, if the project has been left.
-							LIB.cacheL( self.data.resources, rsp );
+							LIB.cacheL( self.cache.resources, rsp );
 
 							if( cI<sp.flatL.length ) {
 								rL = sp.flatL.slice(cI,cI+CONFIG.objToGetCount),  // object list; slice just extracts and does not change original list
@@ -3410,7 +3410,7 @@ function Project(): IProject {
 								return
 							} 
 							else {
-								cDO.resolve( self.data.resources );
+								cDO.resolve( self.cache.resources );
 								return
 							}
 						}
@@ -3430,7 +3430,7 @@ function Project(): IProject {
 	function loadRelsOf( sp ) {
 		// Check all referenced resources and get their statements.  Cache the results.
 		// Not efficient, but effective and without alternative in light of the server API.
-		if( !sp ) { sp = self.data.selectedHierarchy };
+		if( !sp ) { sp = self.cache.selectedHierarchy };
 //		console.debug( 'loadRelsOf', sp );
 
 		var rDO = $.Deferred();
@@ -3446,12 +3446,12 @@ function Project(): IProject {
 							loadRels( {id:sp.flatL[cI]} )
 						} 
 						else {
-							rDO.resolve( self.data.statements )
+							rDO.resolve( self.cache.statements )
 						}
 					})
 					.fail( rDO.reject )
 			}
-		if( sp && sp.flatL.length && self.data.statementClasses.length>0 ) {
+		if( sp && sp.flatL.length && self.cache.statementClasses.length>0 ) {
 			var cI=0;  // current index
 			loadRels( {id:sp.flatL[cI]} )
 		} 
@@ -3469,15 +3469,15 @@ function Project(): IProject {
 			default: return null
 		};
 		var dO = $.Deferred(),
-			pend = self.data.hierarchies.length;
-		for( var i=self.data.hierarchies.length-1; i>-1; i-- ) {
-			fn( self.data.hierarchies[i] )
+			pend = self.cache.hierarchies.length;
+		for( var i=self.cache.hierarchies.length-1; i>-1; i-- ) {
+			fn( self.cache.hierarchies[i] )
 				.done(()=>{
 					if(--pend<1) dO.resolve()
 				})
 				.fail( dO.reject )
 		};
-		if( self.data.hierarchies.length<1 ) dO.resolve();
+		if( self.cache.hierarchies.length<1 ) dO.resolve();
 		return dO;
 	}
 	function autoLoad( aU ) {
@@ -3542,8 +3542,8 @@ function Project(): IProject {
 // This will be merged with the basic declaration of IModule in moduleManager.ts:
 // interface IModule {
 interface IProjects extends IModule {
-	data: CCache;
-	projects: CProject[];
+	cache: CCache;
+	list: CProject[];
 	selectedProject: CProject;
 	init: Function;
 	create: Function;
@@ -3561,9 +3561,9 @@ moduleManager.construct({
 	// initialization is at the end of this constructor.
 	self.init = (): boolean => {
 		// initialize/clear all variables:
-		self.data = new CCache({cacheInstances:true});
-		self.projects = [];
-		self.selectedProject = undefined;
+		self.cache = new CCache({cacheInstances:true});
+		self.list = [];
+		self.selected = undefined;
 
 	/*	autoLoadId = undefined;  // stop any autoLoad chain
 		autoLoadCb = undefined;  */
@@ -3572,12 +3572,12 @@ moduleManager.construct({
 	};
 	self.create = (dta: SpecIF, opts: any): JQueryDeferred<void> => {
 		// in this implementation, delete existing projects to save memory space:
-		self.projects.length = 0;
-		self.data.clear();
+		self.list.length = 0;
+		self.cache.clear();
 		// append a project to the list:
-		self.projects.push(new CProject(self.data));
-		self.selectedProject = self.projects[self.projects.length - 1];
-		return self.selectedProject.create(dta, opts);
+		self.list.push(new CProject(self.cache));
+		self.selected = self.list[self.list.length - 1];
+		return self.selected.create(dta, opts);
 	};
 	/*	self.update = (prj:SpecIF, opts:any ) => {
 			if (!prj) return;

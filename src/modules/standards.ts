@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-class StandardTypes {
+class CStandards {
 	dataTypes:SpecifDataType[] = [{
 		id: "DT-ShortString",
 		title: "Short string" ,
@@ -170,6 +170,33 @@ class StandardTypes {
 		}
 		else
 			throw Error("Can't find item with id '"+key.id+"' and revision '"+key.revision+"' in standard types.")
+	}
+	makeTemplate(/* opts?: any*/): SpecIF {
+		/* Return a SpecIF data set with all classes of the ontology */
+		return {
+			// @ts-ignore
+			'@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
+			//	'@Context': this.context,
+			"id": "",
+			"$schema": "https://specif.de/v1.1/schema.json",
+			"title": [],
+			"description": [],
+			"generator": app.title,
+			"generatorVersion": CONFIG.appVersion,
+			"createdAt": new Date().toISOString(),
+			"rights": {
+				"title": "Creative Commons 4.0 CC BY-SA",
+				"url": "https://creativecommons.org/licenses/by-sa/4.0/"
+			},
+			"dataTypes": [],
+			"propertyClasses": [],
+			"resourceClasses": [],
+			"statementClasses": [],
+			"resources": [],
+			"statements": [],
+			"files": [],
+			"hierarchies": []
+		}
 	}
 };
 

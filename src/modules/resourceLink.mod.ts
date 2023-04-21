@@ -48,14 +48,14 @@ moduleManager.construct({
 	self.show = ( options:any ):void =>{
 
 		self.clear();
-		cData = app.cache.selectedProject.data;
+		cData = app.projects.selected.cache;
 		opts = Object.assign({}, options, {
 			lookupTitles: true,
 			targetLanguage: browser.language,
 			addIcon: true
 		});
 
-		app.cache.selectedProject.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
+		app.projects.selected.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
 		.then( 
 			(rL:SpecifItem[])=>{
 				selRes = rL[0] as SpecifResource;
@@ -80,7 +80,7 @@ moduleManager.construct({
 			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach(
 				(sCk:SpecifKey) => { LIB.cacheE(self.eligibleSCL, sCk) } // avoid duplicates
 			);
-			app.cache.selectedProject.readItems('statementClass', self.eligibleSCL, { extendClasses: true } )
+			app.projects.selected.readItems('statementClass', self.eligibleSCL, { extendClasses: true } )
 			.then( 
 				(list:SpecifItem[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
@@ -90,7 +90,7 @@ moduleManager.construct({
 			);
 
 			// 2. collect all statements of the originally selected resource to exclude them from selection:
-			app.cache.selectedProject.readStatementsOf( LIB.keyOf(selRes) )
+			app.projects.selected.readStatementsOf( LIB.keyOf(selRes) )
 			.then(
 				(list:SpecifStatement[])=>{
 					self.selResStatements = list;
@@ -108,7 +108,7 @@ moduleManager.construct({
 					return true // iterate the whole tree
 				}
 			);
-			app.cache.selectedProject.readItems( 'resource', self.allResources )
+			app.projects.selected.readItems( 'resource', self.allResources )
 			.then( 
 				(list:SpecifItem[])=>{
 					
@@ -316,7 +316,7 @@ moduleManager.construct({
 		if (self.selectedStatementClass.propertyClasses && self.selectedStatementClass.propertyClasses.length > 0) {
 			// show a dialog to edit the property values:
 		};
-		return app.cache.selectedProject.createItems(
+		return app.projects.selected.createItems(
 			'statement',
 			[sta]
 		);
