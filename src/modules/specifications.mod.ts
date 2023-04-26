@@ -1098,7 +1098,7 @@ class CFileWithContent implements IFileWithContent {
 						// @ts-ignore - nothing wrong with the type of 'this'
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
 							selPrj = app.projects.selected,
-							clsPrp = new CResourceToShow(itemBySimilarId(selPrj.data.resources, eId)),
+							clsPrp = new CResourceToShow(itemBySimilarId(selPrj.cache.resources, eId)),
 							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
@@ -1740,7 +1740,7 @@ moduleManager.construct({
 		self.parent.showLeft.set();
 		self.parent.showTree.set();
 		selPrj = app.projects.selected;
-	//	cacheData = selPrj.data;
+	//	cacheData = selPrj.cache;
 		
 		// Select the language options at project level:
 		if( typeof( opts ) != 'object' ) opts = {};
@@ -1913,7 +1913,7 @@ moduleManager.construct({
 				selPrj.cache.resourceClasses.forEach( (rC)=>{
 					// list all resource types, for which the current user has permission to create new instances
 					// ... and which allow manual instantiation:
-					// store the type's id as it is invariant, when selPrj.data.allClasses is updated
+					// store the type's id as it is invariant, when selPrj.cache.allClasses is updated
 				//	if( rC.cre && (!rC.instantiation || rC.instantiation.includes('user')) )
 					// ToDo: Respect the current user's privileges:
 					if (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User) )
@@ -1923,9 +1923,9 @@ moduleManager.construct({
 				self.resCre = self.resCreClasses.length>0
 			};
 			
-			/*	self.filCre = selPrj.data.cre;
-				let cT = itemByName( selPrj.data.resourceClasses, CONFIG.resClassComment ),
-					rT = itemByName( selPrj.data.statementClasses, CONFIG.staClassCommentRefersTo );
+			/*	self.filCre = selPrj.cache.cre;
+				let cT = itemByName( selPrj.cache.resourceClasses, CONFIG.resClassComment ),
+					rT = itemByName( selPrj.cache.statementClasses, CONFIG.staClassCommentRefersTo );
 				self.cmtCre = ( self.typesComment && self.typesComment.available() && cT.cre && rT.cre );
 				self.cmtDel = ( self.typesComment && self.typesComment.available() && cT.del && rT.del )  */
 
@@ -2382,7 +2382,7 @@ moduleManager.construct({
 				(sC) => {
 					// list all statement types, for which the current user has permission to create new instances:
 					// ... and which allow user instantiation:
-					// store the classes' ids as it is invariant, when selPrj.data.allClasses is updated
+					// store the classes' ids as it is invariant, when selPrj.cache.allClasses is updated
 					//					console.debug('staCreClasses',sC,res['class']);
 					//	if( sC.cre && (!sC.instantiation || sC.instantiation.includes('user')) )
 					if (!sC.instantiation || sC.instantiation.includes(SpecifInstantiation.User)) {
@@ -2550,7 +2550,7 @@ moduleManager.construct({
 	};
 	self.relatedItemClicked = ( rId:string, sId:string ):void =>{
 		// Depending on the delete statement mode ('modeStaDel'), either select the clicked resource or delete the statement.
-//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, LIB.itemById( selPrj.data.statements, sId ) );
+//		console.debug( 'relatedItemClicked', rId, sId, modeStaDel, LIB.itemById( selPrj.cache.statements, sId ) );
 		if( modeStaDel ) {
 			// Delete the statement between the selected resource and rId;
 			// but delete only a statement which is stored in the server, i.e. if it is cached:

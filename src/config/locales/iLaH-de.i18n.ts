@@ -542,15 +542,28 @@ function LanguageTextsDe() {
 	self.IR_opposes = "lehnt ab";
 	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
 // for oem-supplier agreement as defined by the "Hersteller-Initiative-Software":
-	self.HIS_OemStatus =
-	self.ReqIF_WF_CustomerStatus = 'Status Kunde';
-	self.HIS_OemComment =
-	self.ReqIF_WF_CustomerComment = 'Kommentar Kunde';
+	self.SpecIF_Customer = "Kunde";
 	self.SpecIF_Supplier = "Lieferant";
+	self.HIS_OemStatus =
+	self.ReqIF_WF_CustomerStatus = self.LblState +' '+ self.SpecIF_Customer;
+	self.HIS_OemComment =
+	self.ReqIF_WF_CustomerComment = self.SpecIF_Comment + ' ' + self.SpecIF_Customer;
 	self.HIS_SupplierStatus =
-	self.ReqIF_WF_SupplierStatus = 'Status ' + self.SpecIF_Supplier;
+	self.ReqIF_WF_SupplierStatus = self.LblState + ' ' + self.SpecIF_Supplier;
 	self.HIS_SupplierComment =
-	self.ReqIF_WF_SupplierComment = 'Kommentar ' + self.SpecIF_Supplier;
+	self.ReqIF_WF_SupplierComment = self.SpecIF_Comment + ' ' + self.SpecIF_Supplier;
+	self.ReqIF_WF_CustomerStatus_ToEvaluate = 'zu evaluieren';
+	self.ReqIF_WF_CustomerStatus_ToBeClarified = 'zu klären';
+	self.ReqIF_WF_CustomerStatus_NotAccepted = 'nicht akzeptiert';
+	self.ReqIF_WF_CustomerStatus_Accepted = 'akzeptiert';
+	self.ReqIF_WF_CustomerStatus_NotToEvaluate = 'nicht zu evaluieren';
+	self.ReqIF_WF_CustomerStatus_ProposedToDiscard = 'zu löschen';
+	self.ReqIF_WF_CustomerStatus_Discarded = 'gelöscht';
+	self.ReqIF_WF_SupplierStatus_ToBeClarified = 'zu klären';
+	self.ReqIF_WF_SupplierStatus_AgreedWithComment = 'zugestimmmt mit Kommentar';
+	self.ReqIF_WF_SupplierStatus_Agreed = 'zugestimmt';
+	self.ReqIF_WF_SupplierStatus_NotAgreed = 'nicht zugestimmt';
+	self.ReqIF_WF_SupplierStatus_DiscardedDeployed = 'auf Anforderung gelöscht';
 
 	self.SpecIF_priorityHigh = "hoch";
 	self.SpecIF_priorityRatherHigh = "eher hoch";

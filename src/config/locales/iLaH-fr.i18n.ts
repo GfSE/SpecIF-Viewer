@@ -542,15 +542,28 @@ function LanguageTextsFr() {
 	self.IR_opposes = "retoques";
 	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
 // for oem-supplier agreement as defined by the "Hersteller-Initiative-Software":
-	self.HIS_OemStatus =
-	self.ReqIF_WF_CustomerStatus = self.LblState + ' de Client';
-	self.HIS_OemComment =
-	self.ReqIF_WF_CustomerComment = self.SpecIF_Comment + ' de Client';
+	self.SpecIF_Customer = "Client";
 	self.SpecIF_Supplier = "Fournisseur";
+	self.HIS_OemStatus =
+	self.ReqIF_WF_CustomerStatus = self.LblState + ' de ' + self.SpecIF_Customer;
+	self.HIS_OemComment =
+	self.ReqIF_WF_CustomerComment = self.SpecIF_Comment + ' de ' + self.SpecIF_Customer;
 	self.HIS_SupplierStatus =
 	self.ReqIF_WF_SupplierStatus = self.LblState + ' de ' + self.SpecIF_Supplier;
 	self.HIS_SupplierComment =
 	self.ReqIF_WF_SupplierComment = self.SpecIF_Comment + ' de ' + self.SpecIF_Supplier;
+	self.ReqIF_WF_CustomerStatus_ToEvaluate = 'pour évaluer';
+	self.ReqIF_WF_CustomerStatus_ToBeClarified = 'à éclaircir';
+	self.ReqIF_WF_CustomerStatus_NotAccepted = 'non acceptée';
+	self.ReqIF_WF_CustomerStatus_Accepted = 'acceptée';
+	self.ReqIF_WF_CustomerStatus_NotToEvaluate = 'not to evaluate';
+	self.ReqIF_WF_CustomerStatus_ProposedToDiscard = "proposé d'écarter";
+	self.ReqIF_WF_CustomerStatus_Discarded = 'écarté';
+	self.ReqIF_WF_SupplierStatus_ToBeClarified = 'à éclaircir';
+	self.ReqIF_WF_SupplierStatus_AgreedWithComment = 'acceptée avec commentaire';
+	self.ReqIF_WF_SupplierStatus_Agreed = 'acceptée';
+	self.ReqIF_WF_SupplierStatus_NotAgreed = 'non acceptée';
+	self.ReqIF_WF_SupplierStatus_DiscardedDeployed = 'écarté sur demande';
 
 	self.SpecIF_priorityHigh = "haut";
 	self.SpecIF_priorityRatherHigh = "plutôt haut";

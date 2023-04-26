@@ -281,60 +281,62 @@ class CResourceToEdit {
 	getEditedProperties(): SpecifProperty[] {
 		// Get all property values from the form:
 		let editedProps: SpecifProperty[] = [];
-		this.properties.forEach((p: CPropertyToEdit): void => {
-			// Get the new or unchanged input value of the property from the input field:
+		this.properties.forEach(
+			(p: CPropertyToEdit): void => {
+				// Get the new or unchanged input value of the property from the input field:
 
-			// In case of enumeration:
-			if (p.dT.enumeration) {
-				let valL: string[];
-				//				console.debug('xs:enumeration',p,pC,separatedValues,vals);
-				if (typeof (p.pC.multiple) == 'boolean' ? p.pC.multiple : p.dT.multiple) {
-//					console.debug( '*', p, checkboxValues(prpTitle(p) ));
-					valL = checkboxValues(prpTitle(p));
-				}
-				else {
-//					console.debug( '+',p,radioValue( prpTitle(p) ));
-					let val = radioValue(prpTitle(p));
-					valL = val ? [val] : [];
-				};
-				if (valL.length > 0)
-					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-					editedProps.push({ class: LIB.makeKey(p.pC.id), values: valL });
-				return;
-			};
-
-			// Otherwise take the value itself:
-			let val: string;
-			switch (p.dT.type) {
-				case SpecifDataTypeEnum.String:
-					if (p.pC.title == CONFIG.propClassDiagram) {
-						// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
-						// p.values is empthy, if the diagram has been removed while editing:
-						if (p.values.length > 0)
-							// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-							// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-							// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-							editedProps.push({ class: LIB.makeKey(p.pC.id), values: p.values });
+				// In case of enumeration:
+				if (p.dT.enumeration) {
+					let valL: string[];
+					//				console.debug('xs:enumeration',p,pC,separatedValues,vals);
+					if (typeof (p.pC.multiple) == 'boolean' ? p.pC.multiple : p.dT.multiple) {
+	//					console.debug( '*', p, checkboxValues(prpTitle(p) ));
+						valL = checkboxValues(prpTitle(p));
 					}
 					else {
-						// property isn't of type diagram:
+	//					console.debug( '+',p,radioValue( prpTitle(p) ));
+						let val = radioValue(prpTitle(p));
+						valL = val ? [val] : [];
+					};
+					if (valL.length > 0)
+						// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+						// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+						// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+						editedProps.push({ class: LIB.makeKey(p.pC.id), values: valL });
+					return;
+				};
+
+				// Otherwise take the value itself:
+				let val: string;
+				switch (p.dT.type) {
+					case SpecifDataTypeEnum.String:
+						if (p.pC.title == CONFIG.propClassDiagram) {
+							// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
+							// p.values is empthy, if the diagram has been removed while editing:
+							if (p.values.length > 0)
+								// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+								// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+								// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+								editedProps.push({ class: LIB.makeKey(p.pC.id), values: p.values });
+						}
+						else {
+							// property isn't of type diagram:
+							val = textValue(prpTitle(p));
+							if (LIB.hasContent(val))
+								editedProps.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
+						};
+						break;
+					case SpecifDataTypeEnum.Boolean:
+						val = booleanValue(prpTitle(p)).toString();
+						editedProps.push({ class: LIB.makeKey(p.pC.id), values: [val] });
+						break;
+					default:
 						val = textValue(prpTitle(p));
 						if (LIB.hasContent(val))
-							editedProps.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
-					};
-					break;
-				case SpecifDataTypeEnum.Boolean:
-					val = booleanValue(prpTitle(p)).toString();
-					editedProps.push({ class: LIB.makeKey(p.pC.id), values: [val] });
-					break;
-				default:
-					val = textValue(prpTitle(p));
-					if (LIB.hasContent(val))
-						editedProps.push({ class: LIB.makeKey(p.pC.id), values: [val] });
-			};
-		});
+							editedProps.push({ class: LIB.makeKey(p.pC.id), values: [val] });
+				};
+			}
+		);
 		return editedProps;
 
 		function prpTitle(p: CPropertyToShow) {
@@ -511,7 +513,7 @@ moduleManager.construct({
 			return new Promise((resolve, reject) => {
 				app.projects.selected.readItems('resourceClass', LIB.forAll(opts.eligibleResourceClasses, (rCId:SpecifId) => { return LIB.makeKey(rCId) }))
 				.then( 
-					(rCL)=>{
+					(rCL:SpecifResourceClass[])=>{
 						if( rCL.length>0 ) {
 							// Get the title to display:
 							let resClasses = LIB.forAll(rCL, (rC: SpecifResourceClass) => { rC.title = LIB.titleOf(rC, { lookupTitles: true }); return rC });

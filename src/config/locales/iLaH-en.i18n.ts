@@ -542,15 +542,28 @@ function LanguageTextsEn() {
 	self.IR_opposes = "opposes";
 	self.IR_inheritsFrom = 	self.SpecIF_inheritsFrom;
 // for oem-supplier agreement as defined by the "Hersteller-Initiative-Software":
-	self.HIS_OemStatus =
-	self.ReqIF_WF_CustomerStatus = 'Customer-Status';
-	self.HIS_OemComment =
-	self.ReqIF_WF_CustomerComment = 'Customer-Comment';
+	self.SpecIF_Customer = "Customer";
 	self.SpecIF_Supplier = "Supplier";
+	self.HIS_OemStatus =
+	self.ReqIF_WF_CustomerStatus = self.SpecIF_Customer +'-'+ self.LblState;
+	self.HIS_OemComment =
+	self.ReqIF_WF_CustomerComment = self.SpecIF_Customer+'-'+self.SpecIF_Comment;
 	self.HIS_SupplierStatus =
-	self.ReqIF_WF_SupplierStatus = self.SpecIF_Supplier + '-Status';
+	self.ReqIF_WF_SupplierStatus = self.SpecIF_Supplier+'-'+self.LblState;
 	self.HIS_SupplierComment =
-	self.ReqIF_WF_SupplierComment = self.SpecIF_Supplier + '-Comment';
+	self.ReqIF_WF_SupplierComment = self.SpecIF_Supplier+'-'+self.SpecIF_Comment;
+	self.ReqIF_WF_CustomerStatus_ToEvaluate = 'to evaluate';
+	self.ReqIF_WF_CustomerStatus_ToBeClarified = 'to be clarified';
+	self.ReqIF_WF_CustomerStatus_NotAccepted = 'not accepted';
+	self.ReqIF_WF_CustomerStatus_Accepted = 'accepted';
+	self.ReqIF_WF_CustomerStatus_NotToEvaluate = 'not to evaluate';
+	self.ReqIF_WF_CustomerStatus_ProposedToDiscard = 'proposed to discard';
+	self.ReqIF_WF_CustomerStatus_Discarded = 'discarded';
+	self.ReqIF_WF_SupplierStatus_ToBeClarified = 'to be clarified';
+	self.ReqIF_WF_SupplierStatus_AgreedWithComment = 'agreed with comment';
+	self.ReqIF_WF_SupplierStatus_Agreed = 'agreed';
+	self.ReqIF_WF_SupplierStatus_NotAgreed = 'not agreed';
+	self.ReqIF_WF_SupplierStatus_DiscardedDeployed = 'discarded deployed';
 
 	self.SpecIF_priorityHigh = "high";
 	self.SpecIF_priorityRatherHigh = "rather high";
