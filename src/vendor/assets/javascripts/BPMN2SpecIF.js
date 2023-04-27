@@ -888,7 +888,7 @@ function BPMN2Specif( xmlString, options ) {
 			});
 			return
 		};
-		if (([idResourceClassActor,idResourceClassEvent].indexOf(seqF.subject['class'])>-1) && seqF.object['class']==idResourceClassEvent) {
+		if (([idResourceClassActor,idResourceClassEvent].includes(seqF.subject['class'])) && seqF.object['class']==idResourceClassEvent) {
 			model.statements.push({
 				id: id,
 			//	class: "SC-signals",

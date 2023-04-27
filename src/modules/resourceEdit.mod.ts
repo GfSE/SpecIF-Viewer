@@ -106,8 +106,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 						typ: 'line', handle: opts.myFullName + '.check()',
 						description: this.pC.description
 					}
-				);
-		};
+				)
+		}
 	}
 	private makeDiagramField(opts: any) {
 		function imgExts() {
@@ -222,8 +222,8 @@ class CResourceToEdit {
 				},
 				buttons: opts.msgBtns
 			})
-			.open();
-		};
+			.open()
+		}
 	}
 	check(): void {
 		// called on every key-input;
@@ -276,7 +276,7 @@ class CResourceToEdit {
 	}
 	getNewFiles(): CFileWithContent[] {
 		// ToDo: Check whether all files are in fact referenced by a property.
-		return this.newFiles;
+		return this.newFiles
     }
 	getEditedProperties(): SpecifProperty[] {
 		// Get all property values from the form:
@@ -366,6 +366,7 @@ moduleManager.construct({
 			label: i18n.BtnCancel,
 			action: (thisDlg: any) => {
 //				console.debug('action cancelled');
+				self.parent.doRefresh({ forced: true });  // re-install event-handlers on SVG-elements
 				thisDlg.close();
 			}
 		},
@@ -422,33 +423,6 @@ moduleManager.construct({
 		switch (self.localOpts.mode) {
 			case 'create':
 				selectResClass(self.localOpts)
-			/*	.then(
-					(rC:SpecifResourceClass)=>{ 
-						app.projects.selected.makeEmptyResource(rC)
-						.then( 
-							(r:SpecifResource)=>{
-//								console.debug( '#', self.localOpts.mode, r );
-								self.newRes = r;
-								self.localOpts.dialogTitle = i18n.MsgCreateResource+' ('+rC.title+')';
-								if( self.localOpts.selNodeId )
-									self.localOpts.msgBtns = [
-										msgBtns.cancel,
-										msgBtns.insertAfter,
-										msgBtns.insertBelow
-									]
-								else
-									self.localOpts.msgBtns = [
-										msgBtns.cancel,
-										msgBtns.insert
-									];
-								self.toEdit = new CResourceToEdit(r);
-								self.toEdit.editForm(self.localOpts)
-							},
-							LIB.stdError
-						);
-					},
-					LIB.stdError
-				); */
 				.then(
 					(rC: SpecifResourceClass) => {
 					//	self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageValueOf(rC.title) + ')';
@@ -473,7 +447,7 @@ moduleManager.construct({
 						self.toEdit = new CResourceToEdit(r);
 						self.toEdit.editForm(self.localOpts)
 				})
-				.catch ( LIB.stdError ); 
+				.catch( LIB.stdError ); 
 				break;
 			case 'clone':
 			case 'update':
@@ -504,7 +478,7 @@ moduleManager.construct({
 						self.toEdit.editForm(self.localOpts)
 					},
 					LIB.stdError
-				);
+				)
 		};
 		return;
 
@@ -553,16 +527,16 @@ moduleManager.construct({
 							else {
 								// exactly one class, so we can continue immediately:
 								resolve( resClasses[0] );
-							};
+							}
 						}
 						else {
 							// ToDo: Don't enable the 'create resource' button, if there are no eligible resourceClasses ..
-							reject({status:999,statusText:"No resource class defined for manual creation of a resource."});
+							reject({status:999,statusText:"No resource class defined for manual creation of a resource."})
 						};
 					},
 					reject
-				);
-			});
+				)
+			})
 		}
 	};
 	self.hide = ()=>{
@@ -596,7 +570,7 @@ moduleManager.construct({
 				break;
 			default:
 				app.projects.selected.createItems('resource', [self.newRes])
-					.then(finalize, LIB.stdError);
+					.then(finalize, LIB.stdError)
 		};
 
 		// If it is a new item, insert a mode in the hierarchy:
@@ -614,7 +588,7 @@ moduleManager.construct({
 			case 'insertBelow':
 				pend++;
 				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
-					.then( finalize, LIB.stdError );
+					.then( finalize, LIB.stdError )
 		};
 
 		// has no effect, if newFiles is empty:
@@ -647,14 +621,15 @@ moduleManager.construct({
 //							console.debug('nd after',selNd,self.parent.tree.selectedNode)
 						//	self.parent.tree.selectNode( selNd.getNextSibling() ); 
 							self.parent.tree.selectNode( selNd.getNextNode() );
-					};
-				} else {
+					}
+				}
+				else {
 					// we get here only after creating the first node of a tree:
 					self.parent.tree.selectFirstNode();
 				};
-				self.parent.doRefresh({forced:true});
-			};
+				self.parent.doRefresh({forced:true})
+			}
 		}
 	};
-	return self;
+	return self
 })

@@ -3236,7 +3236,7 @@ function Project(): IProject {
 								// It is possible that a file has been updated, so a referencing resource must be updated, as well.
 								// ToDo: Analyse whether a referenced file has really been updated.
 								if( RE.tagNestedObjects.test(nV)
-									||  RE.tagSingleObjects.test(nV) ) return true;
+									||  RE.tagSingleObject.test(nV) ) return true;
 								break;
 							default:
 								if( rA.value!=nA.value ) return true

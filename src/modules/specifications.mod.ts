@@ -333,7 +333,7 @@ class CPropertyToShow implements SpecifProperty {
 //		console.debug('fileRef.toGUI 1: ', txt);
 
 		// 2. transform a single object to link+object resp. link+image:
-		txt = txt.replace(RE.tagSingleObjects,   //  comprehensive tag or tag pair
+		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
 			// @ts-ignore - $2 is never read, but must be specified anyways
 			($0, $1, $2, $3) => {
 			//	var pairedImgExists = ( url )=>{

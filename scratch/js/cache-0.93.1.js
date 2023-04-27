@@ -1781,7 +1781,7 @@ RE.tagNestedObjects = new RegExp( '<object([^>]+)>[\\s\\S]*?<object([^>]+)(\/>|>
 //      For example, the ARCWAY Cockpit export uses this pattern:
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" name=\"27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\"/>
 //			<object data=\"files_and_images\\27420ffc0000c3a8013ab527ca1b71f5.svg\" type=\"image/svg+xml\">27420ffc0000c3a8013ab527ca1b71f5.svg</object>
-RE.tagSingleObjects = new RegExp( '<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)', 'g' );
+RE.tagSingleObject = new RegExp( '<object([^>]+)(\/>|>([\\s\\S]*?)<\/object>)', 'g' );
 RE.tagA = new RegExp( '<a([^>]+)>([\\s\\S]*?)<\/a>', 'g' );
 
 // Transform SpecIF data to internal data structures ... and vice-versa:
@@ -2052,7 +2052,7 @@ function Specif( pr ) {
 				console.debug( '*', iE.longName, iE.content );
 			if( CONFIG.descriptionAttributes.indexOf(iE.longName)>-1 ) {
 				// identify referenced files and list them:
-				let o = RE.tagSingleObjects.exec( iE.content ); 
+				let o = RE.tagSingleObject.exec( iE.content ); 
 //				let o = /<object([^>]+)(\/>|>([^<]*?)<\/object>)/g.exec( iE.content );
 				if( o && o.length>2 ) {
 					cacheE( self.files, {
@@ -2951,7 +2951,7 @@ var fileRef = {
 			
 		// 2. transform a single object to link+object resp. link+image:
 //		txt = txt.replace( /<object([^>]+)(\/>|>[^<]*<\/object>)/g,   //  comprehensive tag or tag pair
-		txt = txt.replace( RE.tagSingleObjects,   //  comprehensive tag or tag pair
+		txt = txt.replace( RE.tagSingleObject,   //  comprehensive tag or tag pair
 			function( $0, $1, $2, $3 ){ 
 //				var pairedImgExists = function( url ) {
 //					// ToDo: check actually ...

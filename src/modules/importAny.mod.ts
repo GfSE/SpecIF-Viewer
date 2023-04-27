@@ -176,9 +176,9 @@ moduleManager.construct({
 				+	'<div class="attribute-value" >'+i18n.MsgIntro+'</div>'
 			+	'</div>'
 		+	'</div>';
-	//	if(self.selector)
-	//		$(self.selector).after( h );
-	//	else
+	/*	if(self.selector)
+			$(self.selector).after( h );
+		else */
 			$(self.view).prepend( h );
 
 		self.clear();
@@ -251,8 +251,8 @@ moduleManager.construct({
 						},
 						fail: handleError
 					});
-					return;
-				};
+					return
+				}
 			};
 			// otherwise:
 			message.show( i18n.lookup('ErrInvalidFileType',self.file.name), {severity:'error'} );
@@ -288,7 +288,7 @@ moduleManager.construct({
 	// called by the modules view management:
 	self.hide = function():void {
 //		console.debug( 'importAny.hide' )
-		app.busy.reset();
+		app.busy.reset()
 	};
 	
 	self.setFormat = function ( fId:string ):void {
@@ -346,7 +346,8 @@ moduleManager.construct({
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("replaceBtn").disabled = !allValid || !cacheLoaded;
-		} catch(e) {
+		}
+		catch (e) {
 			console.error("importAny: enabling actions has failed ("+e+").");
 		};
 	};
@@ -369,7 +370,8 @@ moduleManager.construct({
 			document.getElementById("replaceBtn").disabled = st || !allValid || !cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("cancelBtn").disabled = !st;
-		} catch(e) {
+		}
+		catch (e) {
 			console.error("importAny: setting state 'importing' has failed ("+e+").");
 		};
 	}

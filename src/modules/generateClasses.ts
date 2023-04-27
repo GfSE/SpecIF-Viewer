@@ -133,7 +133,7 @@ class COntology {
             }
         )
     }
-    exportOntologyClasses(/* opts?: any*/): SpecIF | undefined {
+    exportOntologyClasses(opts?: any): SpecIF | undefined {
         /* Return a SpecIF data set with all classes of the ontology */
 
         if (!this.ontology) {
@@ -141,7 +141,7 @@ class COntology {
             return
         };
         return Object.assign(
-            app.standards.makeTemplate(),
+            opts.delta ? {} : app.standards.makeTemplate(),
             {
                 "id": "P-SpecifClasses-Ontology",
                 "title": [

@@ -284,7 +284,7 @@ var app:IApp,
 	function register( mod:string ):boolean {
 		// return true, if mod has been successfully registered and is ready to load
 		// return false, if mod is already registered and there is no need to load it
-		if( self.registered.indexOf(mod)>-1 ) {
+		if( self.registered.includes(mod) ) {
 			console.warn( "WARNING: Did not reload module '"+mod+"'." );
 			return false;
 		};
@@ -451,7 +451,7 @@ var app:IApp,
 		// Set the module to 'ready', if registered, ignore otherwise.
 		// If a module is constructed explicitly and not as a result of file loading, it is not registered.
 		// In that case it does not have a name, so the condition is in fact redundant:
-		if( defs.name && self.registered.indexOf(defs.name)>-1 )
+		if( defs.name && self.registered.includes(defs.name) )
 			setReady( defs.name )
 
 		// the module will be initialized within setReady() once all modules are loaded.
@@ -510,7 +510,7 @@ var app:IApp,
 		self.tree.ViewControl.hide()
 	}; */
 	self.isReady = ( mod:string ):boolean =>{
-		return self.ready.indexOf( mod ) >-1
+		return self.ready.includes( mod )
 	};
 	return self;
 
@@ -527,8 +527,8 @@ var app:IApp,
 			}
 
 		if( h ) {
-			it(h);
-		};
+			it(h)
+		}
 	}
 	function findModule( tr:IModule[]|IModule, token:string ):IModule|undefined {
 		// find the module with the given token in the module hierarchy 'tr':
@@ -549,7 +549,7 @@ var app:IApp,
 			if( e.children ) {
 				let m = findModule(e.children,token);
 				if( m ) return m;
-			};
+			}
 		//	return undefined;
 		}
 	}
@@ -662,13 +662,13 @@ var app:IApp,
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 			/*	case CONFIG.users:		//	loadModule( 'mainCSS' );
 											$('#'+mod).load( "./modules/users-0.92.41.mod.html", function() {setReady(mod)} ); return true;
-				case CONFIG.project:		// if( self.registered.indexOf(CONFIG.specifications)>-1 ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
+				case CONFIG.project:		// if( self.registered.includes(CONFIG.specifications) ) { console.warn( "modules: Modules '"+CONFIG.specifications+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 										//	loadModule( 'mainCSS' );
 										//	loadModule( 'cache' );
 											loadModule( 'standards' );
 											$('#'+mod).load( "./modules/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 			*/
-				case CONFIG.specifications: // if( self.registered.indexOf(CONFIG.project)>-1 ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
+				case CONFIG.specifications: // if( self.registered.includes(CONFIG.project) ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
 							//	loadModule( 'standards' );
 							//	loadModule( 'diff' );
 								getScript(loadPath + 'modules/specifications.mod.js'); return true;
@@ -683,7 +683,7 @@ var app:IApp,
 			//	case CONFIG.files: 			getScript( loadPath+'modules/files-0.93.1.js'); return true;
 
 				default: console.warn("Module loader: Module '" + mod + "' is unknown."); return false;
-			};
+			}
 		}
 
 		// Add cache-busting on version-change to all files from this development project,
@@ -695,7 +695,7 @@ var app:IApp,
 		function bust(url: string): string {
 			return url + (url.startsWith(loadPath) ? "?" + CONFIG.appVersion : "");
         }
-		function getCss( url:string ):void {
+		function getCss( url:string ) {
 			$('head').append('<link rel="stylesheet" type="text/css" href="'+bust(url)+'" />' );
 			// Do not call 'setReady', because 'getCss' is almost always called in conjunction 
 			// with 'getScript' which is taking care of 'setReady'; 
@@ -712,16 +712,15 @@ var app:IApp,
 			// Use $.ajax() with options since it is more flexible than $.getScript:
 			if( url.indexOf('.mod.')>0 )
 				// 'setReady' is called by 'construct':
-				return $.ajax( settings );
+				return $.ajax( settings )
 			else
 				// call 'setReady' from here:
 				return $.ajax(settings)
-						.done(() => { setReady(module.name) });
+						.done(() => { setReady(module.name) })
 		}
 		function getOntology() {
 			LIB.httpGet({
-				url: (window.location.href.startsWith('file:/') ? '../../SpecIF-Class-Definitions/vocabulary/SpecIF-Ontology.specif'
-					: 'https://specif.de/v' + CONFIG.specifVersion + '/Ontology.specif.zip'),
+				url: loadPath + 'vendor/config/Ontology.specif.zip',
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {
