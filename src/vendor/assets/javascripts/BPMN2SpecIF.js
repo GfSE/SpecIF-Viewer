@@ -59,68 +59,6 @@ function BPMN2Specif( xmlString, options ) {
 		},
 		options
 	);
-/*	if (!opts.fileDate)
-		opts.fileDate = new Date().toISOString();
-	if( typeof(opts.titleLength)!='number' )
-		opts.titleLength = 96;
-	if( typeof(opts.textLength)!='number' )
-		opts.textLength = 8192;
-	if( !opts.mimeType ) 
-		opts.mimeType = "application/bpmn+xml";
-	if (!opts.strNamespace)
-		opts.strNamespace = "bpmn:";
-
-	if (!opts.modelElementClasses)
-		opts.modelElementClasses = [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection];
-	if (!opts.strRoleType)
-		opts.strRoleType = "SpecIF:Role";
-	if( !opts.strConditionType ) 
-		opts.strConditionType = "SpecIF:Condition";
-	if( !opts.strBusinessProcessType ) 
-		opts.strBusinessProcessType = 'SpecIF:BusinessProcess';
-	if( !opts.strBusinessProcessesType ) 
-		opts.strBusinessProcessesType = 'SpecIF:BusinessProcesses';
-	if( !opts.strFolderType ) 
-		opts.strFolderType = "SpecIF:Heading";
-	if( !opts.strDiagramType ) 
-		opts.strDiagramType = "SpecIF:View";
-	if( !opts.strBusinessProcessFolder ) 
-		opts.strBusinessProcessFolder = "SpecIF:BusinessProcesses";
-//	if( !opts.strAnnotationFolder ) 
-//		opts.strAnnotationFolder = "SpecIF:Annotations";
-
-	if (!opts.strNotation)
-		opts.strNotation = "BPMN 2.0 Process Diagram";
-	if( !opts.strJoinExcGateway )
-		opts.strJoinExcGateway = "Joining Exclusive Gateway";
-	if( !opts.strJoinExcGatewayDesc ) 
-		opts.strJoinExcGatewayDesc = "Wait for any *one* incoming branch to continue.";
-	if( !opts.strJoinParGateway ) 
-		opts.strJoinParGateway = "Joining Parallel Gateway";
-	if( !opts.strJoinParGatewayDesc ) 
-		opts.strJoinParGatewayDesc = "Wait for *all* incoming branches to continue.";
-	if( !opts.strJoinIncGateway ) 
-		opts.strJoinIncGateway = "Joining Inclusive Gateway";
-	if( !opts.strJoinIncGatewayDesc ) 
-		opts.strJoinIncGatewayDesc = "Wait for *all active* incoming branches to continue.";
-	if( !opts.strForkEvtGateway ) 
-		opts.strForkEvtGateway = "Forking (exclusive) Event Gateway";
-	if( !opts.strForkEvtGatewayDesc ) 
-		opts.strForkEvtGatewayDesc = "The first of the following events to occur will prevail.";
-	if( !opts.strForkExcGateway ) 
-		opts.strForkExcGateway = "Forking Exclusive Gateway";
-	if( !opts.strForkExcGatewayDesc ) 
-		opts.strForkExcGatewayDesc = "Evaluate the condidition and signal the respective event.";
-	if( !opts.strForkParGateway ) 
-		opts.strForkParGateway = "Forking Parallel Gateway";
-	if( !opts.strForkParGatewayDesc ) 
-		opts.strForkParGatewayDesc = "Forward control to *all* outgoing branches.";
-	if( !opts.strForkIncGateway ) 
-		opts.strForkIncGateway = "Forking Inclusive Gateway";
-	if( !opts.strForkIncGatewayDesc ) 
-		opts.strForkIncGatewayDesc = "Evaluate all condiditions and signal the respective events.";
-	if( !opts.strTextAnnotation ) 
-		opts.strTextAnnotation = "Text Annotation"; */
 	
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, "text/xml");

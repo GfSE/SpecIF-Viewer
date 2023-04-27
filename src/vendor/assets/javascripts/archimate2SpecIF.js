@@ -51,45 +51,6 @@ function Archimate2Specif(xmlString, options) {
 		options
 	);
 
-/*	if (!fileDate)
-		opts.fileDate = new Date().toISOString();
-	if (typeof (opts.titleLength) != 'number')
-		opts.titleLength = 96;
-	if (typeof (opts.textLength) != 'number')
-		opts.textLength = 8192;
-//	if( !opts.mimeType ) 
-//			opts.mimeType = "application/archimate+xml";
-
-	if (!opts.strNamespace)
-		opts.strNamespace = "ArchiMate:";
-	if (!opts.modelElementClasses)
-		opts.modelElementClasses = [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection];
-	if (!opts.resClassOutline)
-		opts.resClassOutline = 'SpecIF:Outline';
-	if (!opts.strFolderType)
-		opts.strFolderType = "SpecIF:Heading";
-	if (!opts.strDiagramType)
-		opts.strDiagramType = opts.strNamespace + "Viewpoint";
-	if (!opts.strDiagramFolderType)
-		opts.strDiagramFolderType = "SpecIF:Views";
-	//	if( !opts.strAnnotationFolder ) 
-	//		opts.strAnnotationFolder = "Text Annotations";
-	//	if( !opts.strRoleType ) 
-	//		opts.strRoleType = "SpecIF:Role";  
-
-	if (!Array.isArray(opts.hiddenDiagramProperties))
-		opts.hiddenDiagramProperties = [];
-	if (typeof (opts.includeAllElements) != 'boolean')
-		// if false, only shown elements are included
-		opts.includeAllElements = true;  
-	if (typeof (opts.propertyClassesShallHaveDifferentTitles) != 'boolean')
-		// if true, consolidation on SpecIF import is precluded
-		opts.propertyClassesShallHaveDifferentTitles = false;
-	if (typeof (opts.transformPermissibleStatementsOnly) != 'boolean')
-		// if false, statementClasses are altered to support all used statements
-		// if true, all statements not supported by it's statementClass are ignored
-		opts.transformPermissibleStatementsOnly = false; */
-
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
 	//	console.debug('xml',xmlDoc);
