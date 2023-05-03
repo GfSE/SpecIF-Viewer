@@ -21,6 +21,14 @@ interface IMe extends IModule {
 	isAdmin(): boolean;
 	isGeneralAdmin(): boolean;
 }
+/* class CProjectRole {
+	project: SpecifId = '';
+	role: string = '';
+	constructor(prj: SpecifId, rl: string) {
+		this.project = prj;
+		this.role = rl
+	}
+} */
 moduleManager.construct({
 	name: 'profileAnonymous'
 }, function(self:IMe) {
@@ -29,14 +37,25 @@ moduleManager.construct({
 	self.init = function():boolean {
 //		console.debug('me.init',opt);
 		self.clear();
+
+		// list with projects and roles of the current user:
+		self.projectRoles = [
+			{
+				id: "anyProject", // default
+				role: "Reader"
+			}
+		];
+
 		return true;
 	};
 	self.clear = function():void {
 		self.loggedin = false;
-		self.generalAdmin = false; 	// current user is global admin?
-		self.projectRoles = []; 	// list with projects and roles of the current user.
+		self.userName = "Anonymous";
+		self.userPassword = "";
+		self.administrator = false; 	// current user is global admin?
+		self.projectRoles = [];
 	};
-	self.login = function():Promise<void> {
+	self.login = function():Promise<IMe> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
 		if( app.server ) 
 			return app.server.login( CONFIG.userNameAnonymous, CONFIG.passwordAnonymous )   // server must have a user profile with these credentials
@@ -52,18 +71,34 @@ moduleManager.construct({
 		return new Promise( 
 			(resolve)=>{
 				self.loggedin = true;
-				resolve();
+				resolve(self)
 			}
 		)
 	};
-	self.logout = function():void {
-		self.loggedin = false;
-//		server.logout()
+	self.myRole = function(prj: SpecifId): string | undefined {
+		// first look for the specified project:
+		let pR = LIB.itemById(self.projectRoles, prj);
+		if (pR) return pR.role;
+
+		// finally look for a default:
+		pR = LIB.itemById(self.projectRoles, 'anyProject');
+		if (pR) return pR.role;
+
+		// return undefined
 	};
-	self.read = function (): Promise<void> {
+/*	self.read = function (): Promise<IMe> {
 //		console.debug('me.read');
-		return self.login()
-/*		-- originally: --
+		return new Promise(
+			(resolve,reject) => {
+				if (self.loggedin)
+					resolve(self)
+				else {
+					self.clear();
+					reject()
+                }
+			}
+		)
+		-- originally: --
 		return server.me().read()
 		.done( function(rsp) {
 			self.projectRoles = rsp.projectRoles;
@@ -80,19 +115,15 @@ moduleManager.construct({
 					message.show( xhr );					
 					self.logout();
 			}
-		})  */
+		}) 
+	}; */
+	self.logout = function (): void {
+		self.loggedin = false;
+		//		server.logout()
 	};
-	self.isGeneralAdmin = function():boolean {
+	self.isAdministrator = function():boolean {
 		// The current user is generalAdmin:
-		return self.generalAdmin
+		return self.administrator
 	};
-	self.isAdmin = function():boolean { 
-		// The current user is projectAdmin for the specified project or generalAdmin:
-		return self.generalAdmin
-	};
-/*	self.adminCnt = function() { 
-		// return the number of times, where the current user is project admin or generalAdmin:
-		return 0
-	};
-*/	return self;
+	return self;
 });

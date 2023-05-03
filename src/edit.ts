@@ -150,15 +150,26 @@ function SpecifApp():IApp {
 
 		moduleManager.load( self.moduleTree, {done: self.login } );
 	};
-	self.login = function ():void {
+	self.login = function () {
 		console.info(self.title + " " + CONFIG.appVersion + " started!");
-		self.me.read()
+		self.me.login()
 		.then(
-			self.show,
+			(me: IMe) => {
+				// as long as we don't have a user/identity management,
+				// set a default user role for this app:
+				me.projectRoles = [
+					{
+						id: "anyProject", // default
+						role: "Editor"
+					}
+				];
+
+				self.show()
+			},
 			self.logout
-		);
+		)
 	};
-	self.show = function():void {
+	self.show = function() {
 		var uP = getUrlParams(), v:string;
 		if( !self[CONFIG.projects].selected
 			|| !self[CONFIG.projects].selected.isLoaded()
@@ -173,7 +184,7 @@ function SpecifApp():IApp {
 //		console.debug( 'app.show', uP, v );
 		moduleManager.show({view:v,urlParams:uP});
 	};
-	self.export = function (): void {
+	self.export = function () {
 		if (self[CONFIG.projects].selected && self[CONFIG.projects].selected.isLoaded())
 			self[CONFIG.projects].selected.chooseFormatAndExport();
 		else

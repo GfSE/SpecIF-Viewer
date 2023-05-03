@@ -152,17 +152,14 @@ moduleManager.construct({
 					//	message: (thisDlg)=>{
 						message: () =>{
 							var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
-									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
-					//		var form = '<table style="width:100%"><tbody><tr style="vertical-align:top"><td style="width:50%; padding-right:0.4em">'
-									+ makeRadioField( i18n.LblStatementClass, staClasses, {handle:myFullName+'.filterClicked()'} )
-									+ makeTextField( i18n.TabFilter,[''],{typ:'line', handle:myFullName+'.filterClicked()'} )
-									+	'</div></div>'
-									+	'<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
-					//				+ '</td><td style="padding-left:0.4em">'
-									+ '<div id="resCandidates" style="max-height:'+($('#app').outerHeight(true)-220)+'px; overflow:auto" >'
-									+ '</div>'
-									+ '</div></div>'
-					//				+ '</td></tr></tbody></table>';
+								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+								+ makeRadioField(i18n.LblStatementClass, staClasses, { handle: myFullName + '.filterClicked()' })
+								+ makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()' })
+								+ '</div></div>'
+								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+								+ '<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" >'
+								+ '</div>'
+								+ '</div></div>';
 							return $( form ) 
 						},
 						buttons: [{

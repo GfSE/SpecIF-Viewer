@@ -22,7 +22,8 @@ moduleManager.construct({
 		self.clear()
 	};
 	self.show = function( opts?:any ):void {
-		const isEditor = app.title==i18n.LblEditor,
+		const isEditor = app.title == i18n.LblEditor,
+			isReviewer = app.title == i18n.LblReviewer,
 			padding = '16px'; // = margin-right of logo, see css
 
 		// Update browser history, if it is a view change or item selection, 
@@ -35,7 +36,7 @@ moduleManager.construct({
 		$('#pageTitle').html( app.title );
 		$('#about').html(
 			'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
-		+   '<p>An app for your web-browser to view'+(isEditor? ', edit':'')+' and transform system specifications.</p>'
+			+ '<p>An app for your web-browser to ' + (isEditor ? 'edit and transform' : (isReviewer? 'review' : 'view'))+' system specifications.</p>'
 		+	'<p>SpecIF is the \'Specification Integration Facility\'. It\'s purpose is to combine partial specifications from different tools in a single model to allow</p>'
 		+	'<ul>'
 		+	'<li>to search, navigate and audit partial results in a common context,</li>'
@@ -52,18 +53,23 @@ moduleManager.construct({
 		+	'<p>Version: '+CONFIG.appVersion+' supporting SpecIF up to version '+CONFIG.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
 		+	'<h3>Features</h3>'
-		+		'<ul>'
-		+		  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
-		+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
-	// So far, editing is needed in case of Achimate for manually adding the diagrams ..
-		+ (isEditor && moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
-		+ (moduleManager.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
-		+ (moduleManager.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
-		+		  "<li>Import from an URL or the local file system</li>"
+		+ '<ul>'
+			+ (isReviewer ?
+				  "<li>Display SpecIF data embedded in an HTML-file</li>"
+				: 
+				  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
+				+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
+			// So far, editing is needed in case of Achimate for manually adding the diagrams ..
+				+ (isEditor && moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
+				+ (moduleManager.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
+				+ (moduleManager.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
+				+ "<li>Import from an URL or the local file system</li>"
+			)
 		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
 		+		  "<li>Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)</li>"
 		+ (isEditor? "<li>Create, clone and update resources with an input form derived from the respective resource class</li>":"")
 		+ (isEditor? "<li>Move single nodes and subtrees in the hierarchy by drag'n'drop</li>":"")
+		+ (isReviewer ? "<li>Edit properties for review status and comment according to the Stakeholder Request Clarification (SRC) process by prostep IVIP</li>" : "")
 		+		  "<li>Inspect the semantic net ('statements')</li>"
 		+ (isEditor? "<li>Create statements according to the options defined in the statement classes</li>":"")
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")

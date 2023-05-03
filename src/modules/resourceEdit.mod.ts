@@ -11,10 +11,17 @@
 // In effect the loading of this module is deferred until all modules listed in its requires list are loaded.
 // In this case CPropertyToShow is defined in the module named CONFIG.specifications.
 class CPropertyToEdit extends CPropertyToShow  {
-	constructor(p: SpecifProperty) {
-		super(p);
-    }
+
+	constructor(p: SpecifProperty, res: SpecifResource) {
+		super(p, res);
+	}
 	
+	private dispOpts() {
+		let opts = { hint: this.pC.description } as IFieldOptions;
+		if ( !this.pC.permissions.U )
+			opts.typ = 'display';
+		return opts
+	}
 	editField(opts:any): string {
 		// Return a form element for a property;
 
@@ -29,6 +36,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		if (this.dT.enumeration) {
 			// entryL is the list of entries for an input field with checkboxes or radio-buttons, 
 			// depending on whether multiple values are allowed or not:
+			// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
 			let entryL = LIB.forAll(
 				this.dT.enumeration,
 				(eV: SpecifEnumeratedValue) => {
@@ -42,13 +50,13 @@ class CPropertyToEdit extends CPropertyToShow  {
 				return makeCheckboxField(
 					ti,
 					entryL,
-					{ description: this.pC.description }
+					this.dispOpts()
 				);
 			else
 				return makeRadioField(
 					ti,
 					entryL,
-					{ description: this.pC.description }
+					this.dispOpts()
 				);
 		};
 
@@ -57,12 +65,11 @@ class CPropertyToEdit extends CPropertyToShow  {
 		switch (this.dT.type) {
 			case SpecifDataTypeEnum.Boolean:
 				// - no input checking needed
-				// - a boolean property is never a SpecIF 'enumeration' (because it is already an enumeration by nature)
 //				console.debug('xs:boolean',ti,this);
 				return makeBooleanField(
 					ti,
 					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
-					{ description: this.pC.description }
+					this.dispOpts()
 				);
 			case SpecifDataTypeEnum.String:
 				if (this.pC.title == CONFIG.propClassDiagram) {
@@ -70,47 +77,83 @@ class CPropertyToEdit extends CPropertyToShow  {
 					return this.makeDiagramField(localOpts)
 				}
 				else {
+					if (this.pC.permissions.U) {
+						// add parameters to check this input field:
+						// it is a text;
+						// in case of xhtml, it may contain a diagram reference, 
+						// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
+//						console.debug( 'editField', LIB.languageValueOf(this.value,localOpts) );
+						if (opts && opts.dialogForm)
+							opts.dialogForm.addField(ti, this.dT);
+						return makeTextField(
+							ti,
+						/*	LIB.forAll(
+								this.values,
+								(v: SpecifMultiLanguageText) => { return LIB.languageValueOf(v, localOpts); }
+							), */
+							this.get(localOpts),
+							// - open an input text-area, if it is a description property
+							// - open an input line, otherwise
+							{
+								typ: (CONFIG.descProperties.includes(ti) || CONFIG.commentProperties.includes(ti) ? 'area' : 'line'),
+								//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+								handle: opts.myFullName + '.check()',
+								hint: this.pC.description
+							}
+						)
+					}
+					else {
+						// No update permission - just show the property:
+						return makeTextField(
+							ti,
+							this.get(localOpts),
+							{
+								typ: 'display',
+								hint: this.pC.description
+							}
+						)
+                    }
+				};
+			default:
+				if (this.pC.permissions.U) {
 					// add parameters to check this input field:
 					if (opts && opts.dialogForm)
 						opts.dialogForm.addField(ti, this.dT);
-					// it is a text;
-					// in case of xhtml, it may contain a diagram reference, 
-					// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//					console.debug( 'editField', LIB.languageValueOf(this.value,localOpts) );
 					return makeTextField(
 						ti,
-						//	this.values.length > 0 ? LIB.languageValueOf(this.values[0], localOpts) : '',  // only first value for the time being ...
-						LIB.forAll(
-							this.values,
-							(v: SpecifMultiLanguageText) => { return LIB.languageValueOf(v, localOpts); }
-						),
-						// - open an input line, if it is a title or has a specified length lower than the threshold
-						// - open an input text-area, otherwise
+					/*	this.values as string[], */
+						this.get(localOpts),
 						{
-							typ: (CONFIG.descProperties.includes(ti) || CONFIG.commentProperties.includes(ti) ? 'area' : 'line'),
-						//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+							typ: 'line',
 							handle: opts.myFullName + '.check()',
-							description: this.pC.description
+							hint: this.pC.description
 						}
-					);
-				};
-			default:
-				// add parameters to check this input field:
-				if (opts && opts.dialogForm)
-					opts.dialogForm.addField(ti, this.dT);
-				return makeTextField(
-					ti,
-					//	this.values.length > 0 ? this.values[0] as string : '',
-					this.values as string[],
-					{
-						typ: 'line', handle: opts.myFullName + '.check()',
-						description: this.pC.description
-					}
-				)
+					)
+				}
+				else {
+					// No update permission - just show the property:
+					return makeTextField(
+						ti,
+						this.get(localOpts),
+						{
+							typ: 'display',
+							hint: this.pC.description
+						}
+					)
+                }
 		}
+	}
+	private renderImg(opts:any) {
+		// Add a container based on the propertyClass (since there is no property-id, 
+		// while the propertyClass should be unique),
+		// so that the user can update and delete the diagram later on:
+		return '<div id="' + tagId(this['class'].id) + '">'
+			+ this.renderFile(this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '', opts)
+			+ '</div>'
 	}
 	private makeDiagramField(opts: any) {
 		function imgExts() {
+			// image extensions to filter for file input
 			let str = '';
 			CONFIG.imgExtensions.forEach(
 				(ext: string, idx: number): void => {
@@ -122,39 +165,43 @@ class CPropertyToEdit extends CPropertyToShow  {
 		}
 
 //		console.debug('editDiagram',this);
-		return '<div class="form-group form-active" >'
-			+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
-			+ '<div class="attribute-value">'
+		if (this.pC.permissions.U) {
+			return '<div class="form-group form-active" >'
+				+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
+				+ '<div class="attribute-value">'
 
-			// Add diagram update and delete buttons:
-			// this['class'] is used to identify the property; 
-			// it is supposed to be unique in the resource's properties
-			// and at most one resource is edited in this session at any point in time.
-			+ '<div class="btn-group btn-group-sm pull-right" >'
-			//	+		( !this.permissions || this.permissions.upd?
-			+ '<span class="btn btn-default btn-fileinput">'
-			+ '<span>' + i18n.IcoEdit + '</span>'
-			+ '<input id="file' + simpleHash(this['class'].id)
-			+		'" type="file" accept="' + imgExts() + '" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
-			+ '</span>'
-			//			: '')
-			//	+		( !this.permissions || this.permissions.del?
-			+ '<button class="btn btn-danger" data-toggle="popover" '
-			+ 'onclick="' + opts.myFullName + '.removeDiagram(\'' + this['class'].id + '\')" title="' + i18n.LblDelete + '">' + i18n.IcoDelete + '</button>'
-			//			: '')
-			+ '</div>'
-
-			// Add a container based on the propertyClass (since there is no property-id, while the propertyClass should be unique),
-			// so that the user can update and delete the diagram later on:
-			+ '<div id="' + tagId(this['class'].id) + '">'
-			+ this.renderFile(this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '', opts)
-			+ '</div>'
-			+ '</div>'
-			+ '</div>';
+				// Add diagram update and delete buttons:
+				// this['class'] is used to identify the property; 
+				// it is supposed to be unique in the resource's properties
+				// and at most one resource is edited in this session at any point in time.
+				+ '<div class="btn-group btn-group-sm pull-right" >'
+				//	+		( !this.pC.permissions || this.pC.permissions.upd?
+				+ '<span class="btn btn-default btn-fileinput">'
+				+ '<span>' + i18n.IcoEdit + '</span>'
+				+ '<input id="file' + simpleHash(this['class'].id)
+				+ '" type="file" accept="' + imgExts() + '" onchange="' + opts.myFullName + '.updateDiagram(\'' + this['class'].id + '\')" />'
+				+ '</span>'
+				//			: '')
+				//	+		( !this.pC.permissions || this.pC.permissions.del?
+				+ '<button class="btn btn-danger" data-toggle="popover" '
+				+ 'onclick="' + opts.myFullName + '.removeDiagram(\'' + this['class'].id + '\')" title="' + i18n.LblDelete + '">' + i18n.IcoDelete
+				+ '</button>'
+				//			: '')
+				+ '</div>'
+				+ this.renderImg(opts)
+				+ '</div>'
+				+ '</div>'
+		}
+		else {
+			return '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
+				+ '<div class="attribute-value">'
+				+ this.renderImg(opts)
+				+ '</div>'
+        }
 	}
 }
 class CResourceToEdit {
-//	id: string;
+	id: string;
 //	class: SpecifKey;
 	private selPrj: CProject;
 	private cData: CCache;
@@ -177,7 +224,7 @@ class CResourceToEdit {
 		this.selPrj = app.projects.selected;
 		this.cData = this.selPrj.cache;
 
-	//	this.id = el.id;
+		this.id = el.id;
 	//	this['class'] = el['class'];
 		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
 	/*	this.isHeading = false; // will be set further down if appropriate
@@ -189,7 +236,7 @@ class CResourceToEdit {
 		this.changedBy = el.changedBy; */
 
 		this.dialogForm = new CCheckDialogInput();
-		this.properties = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToEdit(pr) });
+		this.properties = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToEdit(pr,this) });
 		this.newFiles = [];
 	}
 	editForm(opts: any): void {
@@ -285,16 +332,20 @@ class CResourceToEdit {
 			(p: CPropertyToEdit): void => {
 				// Get the new or unchanged input value of the property from the input field:
 
+				// skip properties without update permission:
+				if (!p.pC.permissions.U)
+					return;
+
 				// In case of enumeration:
 				if (p.dT.enumeration) {
 					let valL: string[];
-					//				console.debug('xs:enumeration',p,pC,separatedValues,vals);
+//					console.debug('xs:enumeration',p,pC,separatedValues,vals);
 					if (typeof (p.pC.multiple) == 'boolean' ? p.pC.multiple : p.dT.multiple) {
-	//					console.debug( '*', p, checkboxValues(prpTitle(p) ));
+//						console.debug( '*', p, checkboxValues(prpTitle(p) ));
 						valL = checkboxValues(prpTitle(p));
 					}
 					else {
-	//					console.debug( '+',p,radioValue( prpTitle(p) ));
+//						console.debug( '+',p,radioValue( prpTitle(p) ));
 						let val = radioValue(prpTitle(p));
 						valL = val ? [val] : [];
 					};
@@ -559,7 +610,15 @@ moduleManager.construct({
 		let pend = 2, // minimally 2 calls with promise
 			chD = new Date().toISOString();
 
-		self.newRes.properties = self.toEdit.getEditedProperties();
+		// replace all properties with update permission:
+		self.toEdit.getEditedProperties().forEach(
+			(nP: SpecifProperty) => {
+				let i = LIB.indexBy(self.newRes.properties, 'class', nP['class']);
+				if (i > -1) self.newRes.properties.splice(i, 1, nP)
+				else throw Error('Programming error: Edited property does not replace an existing')
+            }
+		);
+
 		self.newRes.changedAt = chD;
 //		console.debug('save',simpleClone(self.newRes));
 

@@ -24,13 +24,13 @@ const CONFIG:any = {};
     CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms)
     CONFIG.imageRenderingTimelag = 240;  // timelag between building the DOM and inserting the images
     CONFIG.showTimelag = 400;
-//    CONFIG.minInteger = -32768;
-//    CONFIG.maxInteger = 32767;
-    CONFIG.minInteger = -2147483648;
-    CONFIG.maxInteger = 2147483647;
-//    CONFIG.minReal = -10000000.0;
-//    CONFIG.maxReal = 10000000.0;
-    CONFIG.maxAccuracy = 9;        // max decimals of real numbers
+//    CONFIG.minInteger = -32768;  // for ReqIF Export
+//    CONFIG.maxInteger = 32767;  // for ReqIF Export
+    CONFIG.minInteger = -2147483648;  // for ReqIF Export
+    CONFIG.maxInteger = 2147483647;  // for ReqIF Export
+    CONFIG.minReal = -1.7976931348623157E+308;  // for ReqIF Export
+    CONFIG.maxReal = 1.7976931348623157E+308;  // for ReqIF Export
+    CONFIG.maxAccuracy = 9;        // max decimals of real numbers .. for ReqIF Export
     CONFIG.maxStringLength = 16384;  // max. length of formatted or unformatted strings
     CONFIG.maxTitleLength =      // truncate longer titles (modules specifications.mod.ts)
     CONFIG.textThreshold = 256;  // for longer strings a text area is offered for editing.
@@ -508,6 +508,12 @@ const CONFIG:any = {};
     // string values for boolean 'true' and 'false':
     CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', '1', 'True'];
     CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', '0', 'False'];
+
+/*    CONFIG.categoriesWithPermission = [
+        'propertyClass',
+        'resourceClass',
+        'statementClass'
+    ]; */
 
 /*    // values for priority:
     CONFIG.valuesPriority = [

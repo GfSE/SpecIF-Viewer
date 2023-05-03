@@ -764,7 +764,7 @@ moduleManager.construct({
 	}; */
 	function renderTextFilterSettings( flt:IFilter ):string {
 		// render a single panel for text search settings:
-		return makeTextField(flt.title, [flt.searchString], { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
+		return makeTextField(flt.title, flt.searchString, { tagPos:'none', typ:'line', handle:myFullName+'.goClicked()'} )
 			+	renderEnumFilterSettings( flt );
 	}
 	function renderEnumFilterSettings( flt:IFilter ):string {

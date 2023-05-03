@@ -11,9 +11,11 @@
 	  so a "SpecifMultiLanguageText" array has a single entry only.
 	- SpecIF v1.1 supports multiple values per property, but ReqIF does not. 
 	  For the time being, only the first value is picked for transformation.
-
-	ToDo: escapeXML the content. See toXHTML.
-	ToDo: Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
+	
+	ToDo: 
+	- escapeXML the content. See toXHTML.ts.
+	- transform dataType anyURI to xhtml
+	- Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
 */
 
 // Constructor for ReqIF import and export:
@@ -160,10 +162,10 @@ moduleManager.construct({
 								console.error(errNoOptions.statusText);
 								// but import anyways:
 								zDO.resolve( resL );
-							};
-					});
-				};
-			});
+							}
+					})
+				}
+			})
 		} 
 		else {
 			// Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
@@ -181,7 +183,6 @@ moduleManager.construct({
 					zDO.resolve(result.response)
 				else
 					zDO.reject(result);
-
 			}
 			else {
 				zDO.reject(errInvalidXML);
@@ -262,8 +263,9 @@ moduleManager.construct({
 							if( l.properties )
 								for( var prp of l.properties ) {
 									// check only the property with the specified class:
-									if (LIB.equalKey(prp['class'], k) && LIB.isHTML((prp.values[0] as SpecifMultiLanguageText)[0].text) ) return true;
-								};
+									if (LIB.equalKey(prp['class'], k) && LIB.isHTML((prp.values[0] as SpecifMultiLanguageText)[0].text))
+										return true;
+								}
 						};
 						return false;
 					}
@@ -288,9 +290,9 @@ moduleManager.construct({
 							pC.format = "xhtml";
 						//	app.standards.addTo("dataType",pC.dataType,pr);
 							LIB.cacheE(pr.dataTypes, dTFormattedText);
-						};
-					});
-				};
+						}
+					})
+				}
 			}
 		pr.resourceClasses.forEach( (rC)=>{ specializeClassToFormattedText('resourceClass',rC) });
 		pr.statementClasses.forEach( (sC)=>{ specializeClassToFormattedText('statementClass',sC) });
@@ -310,7 +312,7 @@ moduleManager.construct({
 			+		'<COMMENT></COMMENT>'
 			+		'<CREATION-TIME>'+date+'</CREATION-TIME>'
 			+		'<REQ-IF-TOOL-ID></REQ-IF-TOOL-ID>'
-			+		'<REQ-IF-VERSION>1.2</REQ-IF-VERSION>'
+			+		'<REQ-IF-VERSION>1.0</REQ-IF-VERSION>'  // schema checks for 1.0
 			+		'<SOURCE-TOOL-ID>'+(pr.generator || '')+'</SOURCE-TOOL-ID>'
 			+		'<TITLE>'+pr.title+'</TITLE>'
 			+	  '</REQ-IF-HEADER>'
@@ -344,12 +346,14 @@ moduleManager.construct({
 						break;
 					case SpecifDataTypeEnum.Integer:
 						xml += '<DATATYPE-DEFINITION-INTEGER ' + commonAttsOf(dT)
+							// MAX, MIN is checked by the schema:
 							+ ' MAX="' + (typeof (dT.maxInclusive) == 'number' ? dT.maxInclusive : CONFIG.maxInteger)
 							+ '" MIN="' + (typeof (dT.minInclusive) == 'number' ? dT.minInclusive : CONFIG.minInteger)
 							+ '" />';
 						break;
 					case SpecifDataTypeEnum.Double:
 						xml += '<DATATYPE-DEFINITION-REAL ' + commonAttsOf(dT)
+							// MAX, MIN, ACCURACY is checked by the schema:
 							+ ' MAX="' + (typeof (dT.maxInclusive) == 'number' ? dT.maxInclusive : CONFIG.maxReal)
 							+ '" MIN="' + (typeof (dT.minInclusive) == 'number' ? dT.minInclusive : CONFIG.minReal)
 							+ '" ACCURACY="' + (typeof (dT.fractionDigits) == 'number' ? dT.fractionDigits : CONFIG.maxAccuracy)
@@ -368,6 +372,7 @@ moduleManager.construct({
 							dT.description = LIB.makeMultiLanguageText(info);
 						// no break
 					case SpecifDataTypeEnum.String:
+						// MAX-LENGTH is mandatory according to https://www.prostep.org/fileadmin/downloads/PSI_ImplementationGuide_ReqIF_V1-7.pdf
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
 					// @ts-ignore - this is only used in ioReqif
@@ -376,7 +381,7 @@ moduleManager.construct({
 						break;
 					default:
 						console.error('Error: unknown dataType: '+dT.type);
-				};
+				}
 			});
 		xml +=  '</DATATYPES>'
 			+	'<SPEC-TYPES>';
@@ -418,8 +423,8 @@ moduleManager.construct({
 		pr.hierarchies.forEach( (h) =>{
 			if( h.nodes )
 				h.nodes.forEach( (n) =>{
-					iterate( n, prepObj );
-				});
+					iterate( n, prepObj )
+				})
 		});
 //		console.debug( 'after collecting referenced resources: ', xml, separatedHC );
 
@@ -601,10 +606,10 @@ moduleManager.construct({
 									+ '<TYPE><DATATYPE-DEFINITION-DATE-REF>' + dT.id + '</DATATYPE-DEFINITION-DATE-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-DATE>'
 								break;
-						};
-					};
+						}
+					}
 				});
-				return xml + '</SPEC-ATTRIBUTES>';
+				return xml + '</SPEC-ATTRIBUTES>'
 			}
 			function attsOf(me: SpecifResource | SpecifStatement): string {
 				if( !me || !me.properties || me.properties.length<1 ) return '<VALUES></VALUES>';
@@ -709,10 +714,10 @@ moduleManager.construct({
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-DATE>'
 								break;
-						};
-					};
+						}
+					}
 				});
-				return xml + '</VALUES>';
+				return xml + '</VALUES>'
 			}
 			function childrenOf( el:SpecifNode ):string {
 				if( !el.nodes || el.nodes.length<1 ) return ''

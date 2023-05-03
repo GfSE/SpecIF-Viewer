@@ -130,11 +130,11 @@ function SpecifApp():IApp {
 	};
 	self.login = function ():void {
 		console.info(self.title + " " + CONFIG.appVersion + " started!");
-		self.me.read()
-		.then(
-			self.show,
-			self.logout
-		);
+		self.me.login()
+			.then(
+				self.show,
+				self.logout
+			)
 	};
 	self.show = function ():void {
 		var uP = getUrlParams(), v: string;
@@ -152,19 +152,19 @@ function SpecifApp():IApp {
 		moduleManager.show({ view: v, urlParams: uP });
 	};
 	self.export = function():void {
-		if (self.projects.selected && self.projects.selected.isLoaded() )
-			self.projects.selected.chooseFormatAndExport();
+		if (self[CONFIG.projects].selected && self[CONFIG.projects].selected.isLoaded())
+			self[CONFIG.projects].selected.chooseFormatAndExport();
 		else
 			message.show(i18n.MsgNoProjectLoaded, { severity: 'warning', duration: CONFIG.messageDisplayTimeShort });
 	};
 /*	self.updateMe = function() {
 		self.me.beginUpdate();
 	}; */
-	self.logout = function():void {
+	self.logout = function() {
 		self.me.logout();
 		self.hide();
 	};
-	self.hide = function():void {
+	self.hide = function() {
 		// hide the app and show the login dialog:
 		// ToDo
 	};

@@ -636,7 +636,7 @@ function LanguageTextsDe() {
 	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';
 	self.MsgImportBpmn = 'Zulässiger Dateityp *.bpmn. Inhalte müssen den Schemata für BPMN 2.0 XML entsprechen. Der Import kann bis zu einigen Minuten dauern.';
 	self.MsgImportXls = 'Zulässige Dateitypen sind *.xls, *.xlsx und *.csv. Der Import kann bei sehr großen Dateien mehrere Minuten dauern.';
-	self.MsgExport = 'Es wird eine zip-gepackte Datei im gewählten Format erzeugt. Der Export dauert meist einige Sekunden und im Falle sehr großer Dateien mehrere Minuten; Ihr Web-Browser wird die Datei gemäß Voreinstellungen speichern.';
+	self.MsgExport = 'Es wird eine Datei im gewählten Format erzeugt. Der Export dauert meist einige Sekunden und im Falle sehr großer Dateien mehrere Minuten; Ihr Web-Browser speichert die Datei gemäß Voreinstellungen.';
 	self.MsgLoading = 'Lade soeben ...';
 	self.MsgSearching = 'Suche weiter ...';
 	self.MsgObjectsProcessed = '~A Ressourcen analysiert.';
@@ -747,6 +747,7 @@ function LanguageTextsDe() {
 //	self.LblProjectAdministration = 'Typen & Rechte';   // for the browser tabs - no HTML!
 //	self.LblSpecifications = 'Inhalte';
 	self.LblReader = 'SpecIF Leser';
+	self.LblReviewer = 'SpecIF Lieferanten-Abstimmung';
 	self.LblEditor = 'SpecIF Modellintegrator und Editor';
 //	self.LblSupport = 'Unterstützung';
 //	self.AppHome = self.IcoHome+'&#160;'+self.LblHome;

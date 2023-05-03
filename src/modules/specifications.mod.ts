@@ -5,16 +5,9 @@
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
-*/
 
-interface ISpecs extends IModule {
-	selectedView(): string;
-	emptyTab(tab: string): void;
-	updateTree: Function;
-	refresh: Function;
-	doRefresh: Function;
-	itemClicked: Function;
-}
+	ToDo: This module is lousy coding with lots of historical burden --> redo!
+*/
 
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin.escapeRE() + '(.+?)' + CONFIG.titleLinkEnd.escapeRE(), 'g');
 class CPropertyToShow implements SpecifProperty {
@@ -23,25 +16,42 @@ class CPropertyToShow implements SpecifProperty {
 	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
 	class: SpecifKey;
-	private selPrj: CProject;
 	private cData: CCache;  // the classes are always available in the cache, not necessarily the instances
+	selPrj: CProject;
 	pC: SpecifPropertyClass;
 	dT: SpecifDataType;
 	replaces?: string[];
 	revision?: string;
-	// @ts-ignore - presence of 'value' is checked by the schema on import
+	// ToDo: Check use of default values - here it is used differently
 	values: SpecifValues;
 	enumIdL?: SpecifValues;
 
-	constructor(prp: SpecifProperty) {
+	constructor(prp: SpecifProperty, res:SpecifResource) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
 
+		this.cData = app.projects.cache;
 		this.selPrj = app.projects.selected;
-		this.cData = this.selPrj.cache;
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
-		this.dT = this.cData.get("dataType", [this.pC['dataType']])[0] as SpecifDataType;
+		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
+
+		// Get the propertyClass' permissions:
+		let iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.pC.id);
+		if (iPrm)
+			this.pC.permissions = iPrm.permissions
+		else {
+			iPrm = LIB.itemById(this.selPrj.myItemPermissions, res.rC.id);
+			if (iPrm)
+				this.pC.permissions = iPrm.permissions
+			else {
+				iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.selPrj.id);
+				if (iPrm)
+					this.pC.permissions = iPrm.permissions
+				else
+					this.pC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+			}
+		};
 
 		// by default, use the propertyClass' title:
 		// An input data-set may have titles which are not from the SpecIF vocabulary;
@@ -52,6 +62,7 @@ class CPropertyToShow implements SpecifProperty {
 		//	this.enumIdL = simpleClone(prp.values);  // keep original values for resourceEdit
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
+			// ToDo: Check use of default values - here it is used differently
 			this.values = this.listEnumeratedValues();
 		}
 	}
@@ -496,7 +507,8 @@ class CResourceToShow {
 	private selPrj: CProject;
 	private cData: CCache;
 	rC: SpecifResourceClass;
-	isHeading: boolean;
+	hasPropertyWithUpdatePermission = false;
+	isHeading = false; // will be set in the constructor if appropriate
 	order: string;
 	revision?: string;
 	replaces?: string[];
@@ -514,7 +526,6 @@ class CResourceToShow {
 		this.id = el.id;
 		this['class'] = el['class'];
 		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
-		this.isHeading = false; // will be set further down if appropriate
 		this.revision = el.revision;
 		this.order = el.order;
 		this.revision = el.revision;
@@ -523,8 +534,47 @@ class CResourceToShow {
 		this.changedBy = el.changedBy;
 		this.descriptions = [];
 
+		// Get the resourceClass' permissions:
+		let iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.rC.id);
+		if (iPrm)
+			this.rC.permissions = iPrm.permissions
+		else {
+			iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.selPrj.id);
+			if (iPrm)
+				this.rC.permissions = iPrm.permissions
+			else
+				this.rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+		};
+
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p) });
+		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p,this) });
+
+		// Find out, whether there is at least one property with update permission,
+		// so that the actionBtns can be activated/deactivated
+		// - note that the list of properties is incomplete, but we must iterate *all* propertyClasses. 
+		for ( var pC of this.cData.get('propertyClass',this.rC.propertyClasses) ) {
+			// Get the propertyClass' permissions:
+			let iPrm = LIB.itemById(this.selPrj.myItemPermissions, pC.id);
+			if (iPrm)
+				pC.permissions = iPrm.permissions
+			else {
+				iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.rC.id);
+				if (iPrm)
+					pC.permissions = iPrm.permissions
+				else {
+					iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.selPrj.id);
+					if (iPrm)
+						pC.permissions = iPrm.permissions
+					else
+						pC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+				}
+			};
+
+			if (pC.permissions.U) {
+				this.hasPropertyWithUpdatePermission = true;
+				break
+			}
+		};
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
@@ -571,19 +621,19 @@ class CResourceToShow {
 		return (!Array.isArray(this.rC.instantiation)
 			|| this.rC.instantiation.includes(SpecifInstantiation.User))
 	}
-	private renderAttr(lbl: string, val?: string, cssCl?: string): string {
-		// show a string value with or without label:
-		// ToDo: Create a class for attributes ..
+	private renderAttr(lbl: string, val: string, cssCl?: string): string {
+		// Show an attribute or SpecifProperty value with or without label:
 		cssCl = cssCl ? ' ' + cssCl : '';
-		if (typeof (val) == 'string')
-			val = LIB.noCode(val)
-		else val = '';
 
-		// assemble a label:value pair resp. a wide value field for display:
-		val = (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >' : '<div class="attribute-wide" >') + val + '</div>';
-		return '<div class="attribute' + cssCl + '">' + val + '</div>'
+		return '<div class="attribute' + cssCl + '">'
+				// assemble a label:value pair resp. a wide value field for display:
+				+ (lbl ? '<div class="attribute-label" >' + lbl + '</div><div class="attribute-value" >'
+						: '<div class="attribute-wide" >')
+				+ val
+				+ '</div>'
+				+ '</div>'
 	}
-	renderTitle(opts?: any): string {
+	private renderTitle(opts?: any): string {
 //		console.debug('renderTitle', simpleClone(this), simpleClone(this.title),opts);
 		if (!this.title || !this.title.values) return '';
 		// Remove all formatting for the title, as the app's format shall prevail.
@@ -602,7 +652,7 @@ class CResourceToShow {
 		// take title and add icon, if configured:
 		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this.rC.icon) : ti) + '</div>'
 	}
-	renderChangeInfo(): string {
+	private renderChangeInfo(): string {
 		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
 		var chI = '';
 		switch (app.specs.selectedView()) {
@@ -617,9 +667,11 @@ class CResourceToShow {
 		return chI
 	}
 	listEntry(options?: any): string {
-		if (!this.id) return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
-		// Create HTML for a list entry:
+		// for the list view, where title and text are shown in the main column and the others to the right.
+		if (!this.id)
+			return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
 
+		// Create HTML for a list entry:
 		var opts = options ? simpleClone(options) : {};
 		opts.targetLanguage = this.selPrj.language;
 		opts.titleLinking
@@ -654,7 +706,8 @@ class CResourceToShow {
 		// 1.2 The description properties:
 		this.descriptions.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
-				rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
+			//	rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
+				rO += this.renderAttr('', prp.get(opts))
 			}
 		});
 		rO += '</div>'  // end of content-main
@@ -679,7 +732,7 @@ class CResourceToShow {
 		this.other.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
 				rO += this.renderAttr(LIB.titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
-			};
+			}
 		});
 		// 3.2 The type info:
 		// 3.3 The change info depending on selectedView:
@@ -690,7 +743,6 @@ class CResourceToShow {
 		return rO  // return rendered resource for display
 	}
 /*	self.details = function() {
-		// for the list view, where title and text are shown in the main column and the others to the right.
 		if( !this.id ) return '<div class="notice-default">'+i18n.MsgNoObject+'</div>';
 	
 		// Create HTML for a detail view:
@@ -1192,6 +1244,14 @@ class CFileWithContent implements IFileWithContent {
 	}
 }
 
+interface ISpecs extends IModule {
+	selectedView(): string;
+	emptyTab(tab: string): void;
+	updateTree: Function;
+	refresh: Function;
+	doRefresh: Function;
+	itemClicked: Function;
+}
 // Construct the specifications controller:
 moduleManager.construct({
 	name: CONFIG.specifications
@@ -1632,7 +1692,7 @@ moduleManager.construct({
 			type: 'type-success',
 			message: function (thisDlg) {
 				var form = $('<form id="attrInput" role="form" ></form>');
-				form.append( $(makeTextField( txtLbl, [''], {typ:'area'} )) );
+				form.append( $(makeTextField( txtLbl, '', {typ:'area'} )) );
 				return form 
 			},
 			buttons: [{
@@ -1711,7 +1771,7 @@ moduleManager.construct({
 	// Permissions for resources:
 	self.resCreClasses = [];  // all resource classes, of which the user can create new instances. Identifiers are stored, as they are invariant when the cache is updated.
 	self.resCre = false; 	// controls whether resp. button is enabled; true if the user has permission to create resources of at least one type.
-	self.resCln = false;	//  " , true if the user has permission to create a resource like the selected one.
+//	self.resCln = false;	//  " , true if the user has permission to create a resource like the selected one.
 //	self.filCre = false;
 //	self.cmtCre = false;
 //	self.cmtDel = false;
@@ -1756,7 +1816,7 @@ moduleManager.construct({
 
 		var nL:jqTreeNode[]; // list of hierarchy nodes, must survive the promise
 
-		getPermissions();
+		getPermissionsPrj();
 
 		getNextResources()
 		.then( 
@@ -1825,6 +1885,7 @@ moduleManager.construct({
 			};
 			// the currently selected resource:
 			selRes = self.resources.selected();
+
 			$( self.view ).prepend( actionBtns() );
 			app.busy.reset()
 		}
@@ -1869,17 +1930,19 @@ moduleManager.construct({
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoClone+'</button>';
 
 			// Add the update and delete buttons depending on the current user's permissions for the selected resource:
-			/*	function propUpd() {
-					// check whether at least one property is editable:
-					console.debug('#',selRes);
-					if( selRes.other )
-						for( var a=selRes.other.length-1;a>-1;a-- ) {
-							if( !selRes.other[a].permissions || selRes.other[a].permissions.upd ) return true   // true, if at least one property is editable
-						};
+			/*	function propU() {
+					// check whether at least one property is editable;
+					// return true, if at least one property is editable:
+					console.debug('propU',selRes);
+					for (var pC of selPrj.cache.get( 'propertyClass', selRes.rC.propertyClasses )) {
+						if (pC.permissions.U ) return true   
+					};
 					return false
-				}  */
-		//	if( propUpd() )    // relevant is whether at least one property is editable, obj.upd is not of interest here. No hierarchy-related permission needed.
-			if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
+				} */
+			// Relevant is whether at least one property is editable,
+			// res.pC.permissions.U is not of interest here.No hierarchy - related permission needed.
+			if ( selRes.hasPropertyWithUpdatePermission )
+			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
 				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
 						+'data-toggle="popover" title="'+i18n.LblUpdateObject+'" >'+i18n.IcoEdit+'</button>'
 			else
@@ -1892,9 +1955,11 @@ moduleManager.construct({
 			else */
 				rB += '<button disabled class="btn btn-default" >'+i18n.IcoComment+'</button>';
 
-			// The delete button is shown, if a hierarchy entry can be deleted.
-			// The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-			if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.del) */ && selRes.isUserInstantiated() )
+			// The delete button is shown, if the selected resource (=hierarchy entry) can be deleted.
+			// - Glossary items shall not be deleted; they are usually not userInstantiated.
+			// - The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
+			if (selRes.rC.permissions.D && selRes.isUserInstantiated())
+			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.del) */ && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
 			else
@@ -1903,22 +1968,40 @@ moduleManager.construct({
 //			console.debug('actionBtns',rB+'</div>');
 			return rB+'</div>'	// return rendered buttons for display
 		};
-		function getPermissions():void {
+		function getPermissionsPrj():void {
 			// No permissions beyond read, if it is the viewer:
 			if( app.title!=i18n.LblReader ) {
-				self.resCreClasses.length = 0;
 			
-				// using the cached allClasses:
-				// a) identify the resource and statement types which can be created by the current user:
-				selPrj.cache.resourceClasses.forEach( (rC)=>{
-					// list all resource types, for which the current user has permission to create new instances
-					// ... and which allow manual instantiation:
-					// store the type's id as it is invariant, when selPrj.cache.allClasses is updated
-				//	if( rC.cre && (!rC.instantiation || rC.instantiation.includes('user')) )
-					// ToDo: Respect the current user's privileges:
-					if (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User) )
-						self.resCreClasses.push( rC.id )
-				});
+				// a) identify the resource and statement types which can be created by the current user;
+				//    the cache is directly accessed, because all classes are permanently cached:
+				self.resCreClasses.length = 0;
+				selPrj.cache.get(
+					'resourceClass',
+					selPrj.resourceClasses  // only the classes used by this project
+				)
+				.forEach(
+					(rC:SpecifResourceClass) => {
+						// list all resource types, for which the current user has permission to create new instances
+						// ... and which allow manual instantiation:
+						// store the type's id as it is invariant, when selPrj.cache.allClasses is updated
+
+						// Respect the current user's privileges:
+						let iPrm = LIB.itemById(selPrj.myItemPermissions, rC.id);
+						if (iPrm)
+							rC.permissions = iPrm.permissions
+						else {
+							iPrm = LIB.itemById(selPrj.myItemPermissions, selPrj.id);
+							if (iPrm)
+								rC.permissions = iPrm.permissions
+							else
+								rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+						};
+
+//						console.debug('objectList.getPermissionsPrj',rC,rC.instantiation, rC.permissions);
+						if (rC.permissions.C && (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User)))
+							self.resCreClasses.push(rC.id);
+					}
+				);
 				// b) set the permissions for the edit buttons:
 				self.resCre = self.resCreClasses.length>0
 			};

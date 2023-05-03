@@ -103,7 +103,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 			+		'</div>'
 			+	'<script type="text/javascript">'
 			+		'var cdn = \''+pars.cdn+'\','
-			+ 			'data = \''+pr+'\';'
+			+ 			'blob = \''+pr+'\';'
 					// Get four fundamental libraries in parallel, then initialize the moduleManager using 'moduleManager.init' ..
 					// see https://www.sitepoint.com/community/t/window-load-function-getscript-not-jquery/195657/3
 			+			'function getScript(url) {'

@@ -623,13 +623,13 @@ var app:IApp,
 				case "projects":			loadModule( 'toEpub' );
 											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
 				case 'generateClasses': getScript(loadPath + 'modules/generateClasses.js'); return true;
-				case 'toHtml': getScript(loadPath + 'modules/toHtml.js'); return true;
+				case 'toHtml': // the loading of fileSaver is attached here for all exports:
+								loadModule('fileSaver');
+								getScript(loadPath + 'modules/toHtml.js'); return true;
 				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
 				case "toEpub": loadModule('toXhtml');
 								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
-				case "toOxml":	// the loading of fileSaver is attached here for all exports:
-								loadModule('fileSaver');
-								getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
+				case "toOxml":	getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
 				case "toTurtle": getScript(loadPath + 'vendor/assets/javascripts/specif2turtle.js'); return true;
 				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
 				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;

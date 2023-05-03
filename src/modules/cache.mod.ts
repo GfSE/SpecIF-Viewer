@@ -20,13 +20,50 @@
 	- No error handling - it is left to the calling layers
 */
 
-enum RoleEnum {
-	Administrator,
-	Manager,
-	Editor,
-	Reader,
-	Anybody
+interface IPermissions {
+	C: boolean; // create item
+	R: boolean; // read item
+	U: boolean; // update item
+	D: boolean; // delete item
+	A: boolean; // administer item's permissions, so modify the other attributes of this 
 }
+class CItemPermissions {
+	id: SpecifId;
+	permissions: IPermissions;
+	constructor(elId:string,prm: string) {
+		this.id = elId;
+		this.permissions = {
+			C: prm.includes('C'),
+			R: prm.includes('R'),
+			U: prm.includes('U'),
+			D: prm.includes('D'),
+			A: prm.includes('A')
+		}
+    }
+}
+class CRole {
+	id: string;
+	itemPermissions: CItemPermissions[] = [];
+	constructor(roleName: string) {
+		this.id = roleName;
+	}
+	setItemPermissions(elId: string, prm: string) {
+		LIB.cacheE(this.itemPermissions, new CItemPermissions(elId, prm));
+		return this  // make it chainable
+    }
+	removeItemPermissions(elId: string) {
+		LIB.uncacheE(this.itemPermissions, { id: elId });
+		return this
+	}
+}
+const StandardRoles = [
+	"Manager",
+	"Editor",
+	"Customer",
+	"Supplier",
+	"Reviewer",
+	"Reader"
+];
 class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;
@@ -357,14 +394,20 @@ class CProject {
 	createdAt?: SpecifDateTime;
 	// @ts-ignore - initialized by this.setMeta()
 	createdBy?: SpecifCreatedBy;
+
+	// all project roles with permissions:
+	roles: CRole[] = [];
+	// the permissions of the current user:
+	myItemPermissions: CItemPermissions[] = [];
+
 	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
 	// store all keys without revision, so that the referenced elements can be updated without breaking the link:
 	// ToDo: Reconsider! Can projects share classes, but use different revision levels?
-	dataTypes: SpecifKeys;
-	propertyClasses: SpecifKeys;
-	resourceClasses: SpecifKeys;
-	statementClasses: SpecifKeys;
-	hierarchies: SpecifKeys;
+	dataTypes: SpecifKeys = [];
+	propertyClasses: SpecifKeys = [];
+	resourceClasses: SpecifKeys = [];
+	statementClasses: SpecifKeys = [];
+	hierarchies: SpecifKeys = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
 	// @ts-ignore - initialized by this.setMeta()
 	language: string;
 	cache: CCache;
@@ -382,11 +425,6 @@ class CProject {
 	types: CElement[];
 
 	constructor(cData: CCache) {
-		this.dataTypes = [];
-		this.propertyClasses = [];
-		this.resourceClasses = [];
-		this.statementClasses = [];
-		this.hierarchies = [];    	// reference the specifications (aka hierarchies, outlines) of the project.
 		// The common cache for all local projects:
 		this.cache = cData;
 	//	this.exp = true;
@@ -411,6 +449,7 @@ class CProject {
 		this.title = spD.title;
 		this.description = spD.description;
 		this.language = spD.language || browser.language;
+
 		this.generator = spD.generator;
 		this.generatorVersion = spD.generatorVersion;
 		this.createdAt = spD.createdAt;
@@ -421,24 +460,44 @@ class CProject {
 		};
 		// remember the hierarchies associated with this projects - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
-	/*	//	this.hierarchies = forAll(spD.hierarchies, (h) => { return { id: h.id } });
-		for (var h of spD.hierarchies) this.hierarchies.push({ id: h.id });
-		// similarly remember the sets of classes and dataTypes,
-		// so that all will be re-expoerted, even if the project has no instances (yet):
-		for (var r of spD.resourceClasses ) this.resourceClasses.push({ id: r.id });
-		for (var s of spD.statementClasses ) this.statementClasses.push({ id: s.id });
-		for (var p of spD.propertyClasses) this.propertyClasses.push({ id: p.id });
-		for (var d of spD.dataTypes ) this.dataTypes.push({ id: d.id }); */
 		["hierarchies", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
 			(list) => {
 				// @ts-ignore - indexing by string is perfectly ok.
 				for (var p of spD[list]) this[list].push({ id: p.id });
 			}
 		);
-	/*	this.myRole = i18n.LblRoleProjectAdmin;
-		this.cre = this.cache.upd = this.cache.del = app.title != i18n.LblReader;
-		this.locked = app.title == i18n.LblReader; 
+	/*	this.locked = app.title == i18n.LblReader; 
 		this.exp = true; */
+
+		if (spD.roles) {
+			// In future, the roles and permissions are imported with the project:
+			this.roles = spD.roles
+		}
+		else {
+			// ... but for the time being, they are created, here:
+			this.roles.push(
+				new CRole('Editor')
+					.setItemPermissions(spD.id, 'CRUD')
+			);
+			this.roles.push(
+				new CRole('Customer')
+					.setItemPermissions(spD.id, 'CRUD')
+					.setItemPermissions("PC-SupplierStatus", 'R')
+					.setItemPermissions("PC-SupplierComment", 'R')
+			);
+			this.roles.push(
+				new CRole('Supplier')
+					.setItemPermissions(spD.id, 'R')
+			//		.setItemPermissions("PC-CustomerStatus", 'RU')
+			//		.setItemPermissions("PC-CustomerComment", 'RU')
+					.setItemPermissions("PC-SupplierStatus", 'RU')
+					.setItemPermissions("PC-SupplierComment", 'RU')
+			)
+		};
+
+		// find the itemPermissions of the current user for this project:
+		let role = LIB.itemById(this.roles, app.me.myRole(spD.id));
+		if (role) this.myItemPermissions = role.itemPermissions;
 	};
 	private getMeta(): CSpecIF {
 		// retrieve a project's individual data apart from the common cache;
@@ -1060,6 +1119,14 @@ class CProject {
 							})
 						}
 					};
+
+				/*	// add the permissions:
+					if (CONFIG.categoriesWithPermission.includes(ctg))
+						items.forEach(
+							(item) => {
+								item.permissions = {}
+                            }
+						); */
 
 //					console.debug('readItems',opts,items);
 					resolve(items);
@@ -2073,8 +2140,8 @@ class CProject {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
 			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
-			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, [(fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName)], { typ: 'line' }))
-			+ makeTextField('&#x200b;' + i18n.LblFileName, [(fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName)], { typ: 'line' });
+			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, (fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName), { typ: 'line' }))
+			+ makeTextField('&#x200b;' + i18n.LblFileName, (fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName), { typ: 'line' });
 		switch (fmt) {
 			case 'epub':
 			case 'oxml':
@@ -2132,17 +2199,22 @@ class CProject {
 		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
 			size: BootstrapDialog.SIZE_WIDE,  */
 			message: () => {
-				let formats =
-					[
-						{ title: 'SpecIF v1.0', id: 'specif_v10' },
-						{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
-						{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
-						{ title: 'ReqIF v1.2', id: 'reqif' },
-					//	{ title: 'RDF', id: 'rdf' },
-					//	{ title: 'Turtle (experimental)', id: 'turtle' },
-						{ title: 'ePub v2', id: 'epub' },
-						{ title: 'MS Word® (Open XML)', id: 'oxml' }
-					];
+				// export is available for Editor and Reviewer:
+				let formats = app.title == i18n.LblEditor ?
+						[
+							{ title: 'SpecIF v1.0', id: 'specif_v10' },
+							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
+							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
+							{ title: 'ReqIF v1.0', id: 'reqif' },
+							//	{ title: 'RDF', id: 'rdf' },
+							//	{ title: 'Turtle (experimental)', id: 'turtle' },
+							{ title: 'ePub v2', id: 'epub' },
+							{ title: 'MS Word® (Open XML)', id: 'oxml' }
+						]
+					:
+						[
+							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
+						];
 				// add an option to generate class definitions, if there is a SpecIF ontology found in the hierarchies:
 				if( moduleManager.isReady('generateClasses') && hasOntology() )
 					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
@@ -2162,7 +2234,7 @@ class CProject {
 					+ '</div>'
 				//	+ '<div id="expOptions" class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px">'
 					+ '<div id="expOptions" class="col-sm-12" style="padding: 0 4px 0 4px">'
-					+ this.renderExportOptions('specif')   // parameter must correspond to the checked option above
+					+ this.renderExportOptions(app.title == i18n.LblEditor ?'specif':'html')   // parameter must correspond to the checked option above
 					+ '</div>'
 					+ '</div>';
 				return $(form)
@@ -2399,7 +2471,8 @@ class CProject {
 						// A) Processing for 'html':
 						if (opts.format == 'html') {
 							// find the fully qualified path of the content delivery server to fetch the viewer modules:
-							opts.cdn = window.location.href.substr(0, window.location.href.lastIndexOf("/") + 1);
+							opts.cdn = window.cdn  // in case the calling app is itself html with embedded SpecIF
+									||	window.location.href.substr(0, window.location.href.lastIndexOf("/") + 1);
 
 							toHtmlDoc(expD, opts).then(
 								(dta) =>{
@@ -3575,8 +3648,8 @@ moduleManager.construct({
 		self.list.length = 0;
 		self.cache.clear();
 		// append a project to the list:
-		self.list.push(new CProject(self.cache));
-		self.selected = self.list[self.list.length - 1];
+		self.selected = new CProject(self.cache);
+		self.list.push( self.selected );
 		return self.selected.create(dta, opts);
 	};
 	/*	self.update = (prj:SpecIF, opts:any ) => {

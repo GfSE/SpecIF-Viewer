@@ -29,21 +29,16 @@ interface IFieldOptions {
     typ?: string;     // 'line', 'area' for makeTextField
     classes?: string; // CSS classes
     handle?: string;  // event handler
-    description?: SpecifValue; // further explanation in a popup
+    hint?: SpecifValue; // further explanation in a popup
 }
-function popoverString(dsc?: SpecifValue ):string {
+function popOver(dsc?: SpecifValue ):string {
     return (dsc ? (' data-toggle="popover" title="' + LIB.displayValueOf(dsc, { targetLanguage: browser.language, stripHTML: true }) + '" ') : '')
 }
-function makeTextField(tag: string, valL: string[], opts?: IFieldOptions): string {  
+function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {  
     // assemble a dialog field for text input or display:
 //    console.debug('makeTextField 1',tag,val,typ,fn);
     if (!opts) opts = {} as IFieldOptions;
     if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
-
-    if (valL.length > 0)
-        valL = LIB.forAll(valL, (v:string) => { return LIB.noCode(v); });
-    if (valL.length<1)
-        valL = [''];
 
     let fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0)? ' oninput="' + opts.handle + '"' : '',
         sH = simpleHash(tag),
@@ -59,37 +54,14 @@ function makeTextField(tag: string, valL: string[], opts?: IFieldOptions): strin
             aC = 'attribute-wide';
             break;
         case 'left':
-            fG += '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag +'</div>';
+            fG += '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag +'</div>';
             aC = 'attribute-value';
             break;
         default:
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
-    // valL has at least one item:
-/*    fG += '<div class="' + aC +'" >';
-    valL.forEach(
-        (v:string, i:number) => {
-            switch (opts.typ) {
-                case 'line':
-                    fG += '<div>'
-                        + (v.indexOf('\n') < 0 ? '<input type="text" id="field' + sH + i + '" class="form-control"' + fn + ' value="' + v + '" />'
-                            : '<textarea id="field' + sH + i + '" class="form-control" rows="2"' + fn + '>' + v + '</textarea>')
-                        + '</div>';
-                    break;
-                case 'area':
-                    fG += '<div>' +
-                        '<textarea id="field' + sH + i + '" class="form-control" rows="7"' + fn + '>' + v + '</textarea>' +
-                        '</div>';
-                    break;
-                default:
-                    // display the value:
-                    fG += '<div id="field' + sH + i + '" >' + v + '</div>';
-            };
-        }
-    );
-    fG +=     '</div></div>';  */
-    // For now, just take care of the first value:
-    let val = valL[0];
+
+    val = LIB.noCode(val);
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
@@ -109,10 +81,9 @@ function makeTextField(tag: string, valL: string[], opts?: IFieldOptions): strin
     fG += '</div>';
     return fG;
 }
-function setTextValue( tag:string, valL:string[] ):void {
+function setTextValue( tag:string, val:string ):void {
     // For now, just take care of the first value:
-    let val = valL[0],
-        el = document.getElementById('field' + simpleHash(tag));
+    let el = document.getElementById('field' + simpleHash(tag));
     if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
     // @ts-ignore - .value is in fact accessible
     if( el ) el.value = val;
@@ -175,18 +146,32 @@ function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): str
     // assemble an input field for a set of radio buttons:
     if (!opts) opts = {} as IFieldOptions;
     if (typeof(opts.tagPos) != 'string') opts.tagPos = 'left';
-    if (typeof(opts.classes) != 'string') opts.classes = 'form-active';
-    let rB: string,
+
+    switch (opts.typ) {
+        case 'display':
+            return '<div class="attribute ' + (opts.classes || '') + '">'
+                + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
+                + '<div class="attribute-value" >'
+                + function () {
+                    let vals = '';
+                    entries.forEach((e) => {
+                        vals += (e.checked ? (vals.length>0 ? ', ' : '') + e.title : '')
+                    });
+                    return vals;
+                }()
+                + '</div>'
+                + '</div>';
+    };
+
+    // radiobuttons to edit the value:
+    let rB = '<div class="form-group form-active ' + (opts.classes || '') + '">',
         fn = ( typeof(opts.handle)=='string' && opts.handle.length>0 )?    ' onclick="'+opts.handle+'"' : '';
     switch( opts.tagPos ) {
         case 'none': 
-            rB =     '<div class="form-group '+(opts.classes||'')+'">'
-                +        '<div class="radio" >';
+            rB +=        '<div class="radio" >';
             break;
         case 'left': 
-            rB =     '<div class="form-group '+(opts.classes||'')+'">'
-                + '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag + '</div>'
-            //    +        '<div class="attribute-label"' + (opts.description ? (' data-toggle="popover" title="' + opts.description.stripHTML() + '" ') : '') + '>' + tag + '</div>'
+            rB += '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
                 +        '<div class="attribute-value radio" >';
             break;
         default:
@@ -204,8 +189,7 @@ function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): str
     entries.forEach( (e,i)=>{
         rB +=            '<label>'
             +                '<input type="radio" name="radio'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            + '<span ' + popoverString(e.description) + '>'
-        //    +                 '<span ' + (e.description ? ('data-toggle="popover" title="' + e.description.stripHTML() + '" ') : '') + '>'
+            + '<span ' + popOver(e.description) + '>'
             +                    e.title
             +                    ( e.type? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
             +                '</span>'
@@ -223,17 +207,32 @@ function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): 
     // assemble an input field for a set of checkboxes:
     if (!opts) opts = {} as IFieldOptions;
     if (typeof(opts.tagPos)!='string') opts.tagPos = 'left';
-    if (typeof(opts.classes) != 'string') opts.classes = 'form-active';
-    let cB: string,
+
+    switch (opts.typ) {
+        case 'display':
+            return '<div class="attribute ' + (opts.classes || '') + '">'
+                + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
+                + '<div class="attribute-value" >'
+                +   function () {
+                        let vals = '';
+                        entries.forEach((e) => {
+                            vals += (e.checked ? (vals.length > 0 ? ', ' : '') + e.title : '')
+                        });
+                        return vals;
+                    }()
+                + '</div>'
+                + '</div>';
+    };
+
+    // checkbox to edit the values:
+    let cB = '<div class="form-group form-active ' + (opts.classes || '') + '">',
         fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0) ? ' onclick="' + opts.handle + '"' : '';
     switch( opts.tagPos ) {
         case 'none': 
-            cB =     '<div class="form-group '+(opts.classes||'')+'">'
-                +        '<div class="checkbox" >';
+            cB +=        '<div class="checkbox" >';
             break;
         case 'left': 
-            cB =     '<div class="form-group '+(opts.classes||'')+'">'
-                + '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag + '</div>'
+            cB += '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
                 +        '<div class="attribute-value checkbox" >';
             break;
         default:
@@ -243,8 +242,7 @@ function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): 
     entries.forEach( (e,i)=>{
         cB +=            '<label>'
             +                '<input type="checkbox" name="checkbox'+simpleHash(tag)+'" value="'+(e.id||i)+'"'+(e.checked?' checked':'')+fn+' />'
-            + '<span ' + popoverString(e.description) + '>'
-        //    +                   '<span ' + (e.description ? ('data-toggle="popover" title="' + e.description.stripHTML() + '" ') : '') + '>'
+            + '<span ' + popOver(e.description) + '>'
             +                       e.title
             +                       (e.type ? '&#160;(' + e.type + ')' : '')   // add type in brackets, if available
             +                   '</span>'
@@ -264,21 +262,29 @@ function checkboxValues( tag:string ):string[] {
     });
     return resL;
 }
-function makeBooleanField( tag:string, val:boolean, opts?:any ):string {
+function makeBooleanField( tag:string, val:boolean, opts?: IFieldOptions ):string {
     // assemble an input field for a boolean value:
+    if (!opts) opts = {} as IFieldOptions;
 //    console.debug('makeBooleanField',tag,val);
-    let fn:string;
-    if( opts && typeof(opts.handle)=='string' && opts.handle.length>0 )    
-            fn = ' onclick="'+opts.handle+'"'
-    else     fn = '';
-    return     '<div class="form-group form-active">'
-        + '<div class="attribute-label"' + popoverString(opts.description) + '>' + tag + '</div>'
-        +        '<div class="attribute-value checkbox" >'
-        +            '<label>'
-        + '<input type="checkbox" name="boolean' + simpleHash(tag)+'"'+(val?' checked':'')+fn+' />'
-        +            '</label><br />'
-        +        '</div>'
-        +    '</div>'
+    let fn = '';
+    if( typeof(opts.handle)=='string' && opts.handle.length>0 )    
+        fn = ' onclick="' + opts.handle + '"';
+    switch (opts.typ) {
+        case 'display':
+            return '<div class="attribute">'
+                + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
+                + '<div class="attribute-value">' + (val ? 'true' : 'false') + '</div>'
+                + '</div>';
+        default:
+            return '<div class="form-group form-active">'
+                + '<div class="attribute-label"' + popOver(opts.hint) + '>' + tag + '</div>'
+                + '<div class="attribute-value checkbox" >'
+                + '<label>'
+                + '<input type="checkbox" name="boolean' + simpleHash(tag) + '"' + (val ? ' checked' : '') + fn + ' />'
+                + '</label><br />'
+                + '</div>'
+                + '</div>'
+    }
 }
 function booleanValue( tag:string ):boolean {
     let chd = $('input[name="boolean' + simpleHash(tag)+'"]:checked');
@@ -787,6 +793,26 @@ LIB.mostRecent = (L: SpecifItem[], k: SpecifKey): SpecifItem => {
     // call indexByKey without revision to get the most recent revision:
     return L[LIB.indexByKey(L, { id: k.id })];
 }
+LIB.duplicateId = (dta: any, id: string): boolean => {
+    // check whether there is an item with the same id in dta:
+    if (dta.id == id) return true;
+    for (var i in dta) {
+        if (Array.isArray(dta[i])) {
+            for (var j = dta[i].length - 1; j > -1; j--) {
+                if (LIB.duplicateId(dta[i][j], id)) return true;
+            };
+        };
+    };
+    return false;
+}
+LIB.indexBy = (L: any[], lbl: string, val: string): number => {
+    if (L && ti) {
+        // given a title of an item in a list, return it's index:
+        for (var i = L.length - 1; i > -1; i--)
+            if (L[i][lbl] == val) return i   // return list index
+    };
+    return -1;
+}
 LIB.indexById = (L:any[],id:string):number => {
     if( L && id ) {
         // given an ID of an item in a list, return it's index:
@@ -805,20 +831,7 @@ LIB.itemById = (L:any[],id:string):any => {
             if( L[i].id==id ) return L[i]   // return list item
     };
 }
-LIB.duplicateId = (dta: any, id: string): boolean => {
-    // check whether there is an item with the same id in dta:
-    if (dta.id == id) return true;
-    for (var i in dta) {
-        if (Array.isArray(dta[i])) {
-            for (var j = dta[i].length - 1; j > -1; j--) {
-                if (LIB.duplicateId(dta[i][j], id)) return true;
-            };
-        };
-    };
-    return false;
-}
-/*
-function indexByTitle(L:any[],ti:string):number {
+/*LIB.indexByTitle = (L: SpecIFItemWithNativeTitle[],ti:string):number => {
     if( L && ti ) {
         // given a title of an item in a list, return it's index:
         for( var i=L.length-1;i>-1;i-- )
