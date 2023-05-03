@@ -145,8 +145,6 @@ interface IBox {
 function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): string {
     // assemble an input field for a set of radio buttons:
     if (!opts) opts = {} as IFieldOptions;
-    if (typeof(opts.tagPos) != 'string') opts.tagPos = 'left';
-    if (typeof(opts.classes) != 'string') opts.classes = 'form-active';
 
     switch (opts.typ) {
         case 'display':
@@ -165,6 +163,8 @@ function makeRadioField(tag: string, entries: IBox[], opts?: IFieldOptions): str
     };
 
     // radiobuttons to edit the value:
+    if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
+    if (typeof (opts.classes) != 'string') opts.classes = 'form-active';
     let rB = '<div class="form-group ' + (opts.classes || '') + '">',
         fn = ( typeof(opts.handle)=='string' && opts.handle.length>0 )?    ' onclick="'+opts.handle+'"' : '';
     switch( opts.tagPos ) {
@@ -207,8 +207,6 @@ function radioValue( tag:string ):string {
 function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): string {
     // assemble an input field for a set of checkboxes:
     if (!opts) opts = {} as IFieldOptions;
-    if (typeof(opts.tagPos)!='string') opts.tagPos = 'left';
-    if (typeof(opts.classes)!='string') opts.classes = 'form-active';
 
     switch (opts.typ) {
         case 'display':
@@ -227,6 +225,8 @@ function makeCheckboxField(tag: string, entries: IBox[], opts?: IFieldOptions): 
     };
 
     // checkbox to edit the values:
+    if (typeof (opts.tagPos) != 'string') opts.tagPos = 'left';
+    if (typeof (opts.classes) != 'string') opts.classes = 'form-active';
     let cB = '<div class="form-group ' + (opts.classes || '') + '">',
         fn = (typeof (opts.handle) == 'string' && opts.handle.length > 0) ? ' onclick="' + opts.handle + '"' : '';
     switch( opts.tagPos ) {
