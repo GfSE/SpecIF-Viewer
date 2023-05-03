@@ -636,7 +636,7 @@ function LanguageTextsFr() {
 	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip et *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
 	self.MsgImportBpmn = "Type de fichier valide est *.bpmn. Le contenu doit correspondre au schéma BPMN 2.0 XML. Le téléchargement peut durer quelques minutes.";
 	self.MsgImportXls = "Types de fichiers valides: *.xls, *.xlsx et *.csv. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
-	self.MsgExport = "Un fichier zip-comprimé au format choisi sera créé. Le téléchargement peut durer quelques minutes dans le cas de très gros projets; le navigateur va enregistrer le fichier comme configuré.";
+	self.MsgExport = "Un fichier au format choisi sera créé. L'exportation prend quelques secondes ou jusqu'à plusieurs minutes dans le cas de fichiers très volumineux; votre navigateur web enregistrera le fichier en fonction de ses paramètres.";
 	self.MsgLoading = 'Téléchargement en cours ...';
 	self.MsgSearching = 'Recherche en cours ...';
 	self.MsgObjectsProcessed = '~A ressources analysé. ';
