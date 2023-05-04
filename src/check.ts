@@ -75,9 +75,9 @@ function SpecifApp():IApp {
 	};
 	self.show = function () {
 		var uP = getUrlParams(), v: string;
-		if (!self.projects.selected
-			|| !self.projects.selected.isLoaded()
-			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self.projects.selected.id
+		if (!self[CONFIG.projects].selected
+			|| !self[CONFIG.projects].selected.isLoaded()
+			|| uP[CONFIG.keyProject] && uP[CONFIG.keyProject] != self[CONFIG.projects].selected.id
 			|| uP[CONFIG.keyImport] && uP[CONFIG.keyImport].length > 0)
 			// - no project is loaded
 			// - a project id is found in the URL parameters and it differs from the one of the loaded project
@@ -89,8 +89,8 @@ function SpecifApp():IApp {
 		moduleManager.show({ view: v, urlParams: uP });
 	};
 	self.export = function (): void {
-		if (self.projects.selected && self.projects.selected.isLoaded())
-			self.projects.selected.chooseFormatAndExport();
+		if (self[CONFIG.projects].selected && self[CONFIG.projects].selected.isLoaded())
+			self[CONFIG.projects].selected.chooseFormatAndExport();
 		else
 			message.show(i18n.MsgNoProjectLoaded, { severity: 'warning', duration: CONFIG.messageDisplayTimeShort });
 	};

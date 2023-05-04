@@ -253,7 +253,7 @@ class CItemPermissions {
     item: SpecifId;
     permissions: IPermissions;
     constructor(iId: string, prm: string) {
-        this.id = iId;
+        this.item = iId;
         this.permissions = {
             C: prm.includes('C'),
             R: prm.includes('R'),
@@ -264,7 +264,9 @@ class CItemPermissions {
     }
 }
 class CRole {
-    id: string;
+    id: SpecifId;
+    title?: string;
+    description?: SpecifMultiLanguageText;
     itemPermissions: CItemPermissions[] = [];
     constructor(roleName: string) {
         this.id = roleName;

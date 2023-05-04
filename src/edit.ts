@@ -159,7 +159,7 @@ function SpecifApp():IApp {
 				// set a default user role for this app:
 				me.projectRoles = [
 					{
-						id: "anyProject", // default
+						project: "any", // default
 						role: "Editor"
 					}
 				];

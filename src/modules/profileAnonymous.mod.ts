@@ -41,7 +41,7 @@ moduleManager.construct({
 		// list with projects and roles of the current user:
 		self.projectRoles = [
 			{
-				id: "anyProject", // default
+				project: "any", // default
 				role: "Reader"
 			}
 		];
@@ -77,11 +77,11 @@ moduleManager.construct({
 	};
 	self.myRole = function(prj: SpecifId): string | undefined {
 		// first look for the specified project:
-		let pR = LIB.itemById(self.projectRoles, prj);
+		let pR = LIB.itemBy(self.projectRoles, 'project', prj);
 		if (pR) return pR.role;
 
 		// finally look for a default:
-		pR = LIB.itemById(self.projectRoles, 'anyProject');
+		pR = LIB.itemBy(self.projectRoles, 'project' 'any');
 		if (pR) return pR.role;
 
 		// return undefined

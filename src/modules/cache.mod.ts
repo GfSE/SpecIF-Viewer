@@ -430,7 +430,11 @@ class CProject {
 			this.roles = spD.roles
 		}
 		else {
-			// ... but for the time being, they are created, here:
+			// ... but by default, they are created, here:
+			this.roles.push(
+				new CRole('Manager')
+					.setItemPermissions(spD.id, 'A')
+			);
 			this.roles.push(
 				new CRole('Editor')
 					.setItemPermissions(spD.id, 'CRUD')
@@ -444,10 +448,14 @@ class CProject {
 			this.roles.push(
 				new CRole('Supplier')
 					.setItemPermissions(spD.id, 'R')
-			//		.setItemPermissions("PC-CustomerStatus", 'RU')
-			//		.setItemPermissions("PC-CustomerComment", 'RU')
+					//		.setItemPermissions("PC-CustomerStatus", 'RU')
+					//		.setItemPermissions("PC-CustomerComment", 'RU')
 					.setItemPermissions("PC-SupplierStatus", 'RU')
 					.setItemPermissions("PC-SupplierComment", 'RU')
+			);
+			this.roles.push(
+				new CRole('Reader')
+					.setItemPermissions(spD.id, 'R')
 			)
 		};
 
@@ -496,7 +504,7 @@ class CProject {
 							this.createItems(ctg, nD[listName])
 								.then(finalize, cDO.reject);
 						}
-					);
+					)
 				},
 				cDO.reject
 			/*	(xhr) => {
@@ -523,7 +531,7 @@ class CProject {
 					}
 				)
 				.catch( cDO.reject );
-			};
+			}
 		}
 	}
 	read(opts?: any): Promise<SpecIF> {
@@ -595,7 +603,7 @@ class CProject {
 							if (scLen < sCL.length) {
 								console.warn('Project with id ' + this.id + ' references a statement with id ' + s.id + ', which has a statementClass not memorized in the project.');
 								scLen = sCL.length;
-							};
+							}
 						};
 //						console.debug('4', simpleClone(exD), sCL);
 						return this.readItems('statementClass', sCL, opts);
@@ -614,7 +622,7 @@ class CProject {
 							// assuming all used classes have the same revision
 							for (var pC of eC.propertyClasses) {
 								LIB.cacheE(pCL, pC);
-							};
+							}
 						};
 //						console.debug('5', simpleClone(exD),pCL);
 						return this.readItems('propertyClass', pCL, opts);
@@ -631,7 +639,7 @@ class CProject {
 						for( var pC of exD.propertyClasses ) {
 							// assuming all used classes have the same revision
 							LIB.cacheE(dTL, pC['dataType']);
-						}
+						};
 
 //						console.debug('6', simpleClone(exD),dTL);
 						return this.readItems('dataType', dTL, opts)
@@ -659,11 +667,11 @@ class CProject {
 											while ((mL = re.exec(l.text)) !== null) {
 												// mL[1] is the file title
 												LIB.cacheE(fL, mL[1]);
-											};
-										};
-									};
-								};
-							};
+											}
+										}
+									}
+								}
+							}
 						};
 //						console.debug('7', simpleClone(exD),fL);
 						return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts);

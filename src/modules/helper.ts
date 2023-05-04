@@ -823,7 +823,7 @@ LIB.itemById = (L:any[],id:string):any => {
         id = id.trim();
         for( var i=L.length-1;i>-1;i-- )
             if( L[i].id==id ) return L[i]   // return list item
-    };
+    }
 }
 /*LIB.indexByTitle = (L: SpecIFItemWithNativeTitle[],ti:string):number => {
     if( L && ti ) {
@@ -838,7 +838,7 @@ LIB.itemByTitle = (L: SpecIFItemWithNativeTitle[],ti:string):any => {
         // given a title of an item in a list, return the item itself:
         for( var l of L )
             if( l.title==ti ) return l;   // return list item
-    };
+    }
     // else return undefined
 }
 LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
@@ -980,7 +980,7 @@ LIB.addPCReference = (eC: SpecifResourceClass | SpecifStatementClass, key: Speci
     }
     else {
         eC.propertyClasses = [key];
-    };
+    }
 }
 LIB.addProp = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void => {
     // Add the property to an element (el):
@@ -999,12 +999,12 @@ LIB.cmp = ( i:string, a:string ):number =>{
 LIB.sortByTitle = ( L:any ):void =>{
     L.sort( 
         (bim:any,bam:any)=>{ return LIB.cmp( bim.title, bam.title ) }
-    );
+    )
 }
 LIB.sortBy = ( L:any[], fn:(arg0:object)=>string ):void =>{
     L.sort( 
         (bim, bam) => { return LIB.cmp( fn(bim), fn(bam) ) }
-    );
+    )
 }
 LIB.forAll = ( L:any[], fn:(el:any,idx:number)=>any ):any[] =>{
     // return a new list with the results from applying the specified function to all items of input list L;
