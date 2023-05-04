@@ -20,50 +20,6 @@
 	- No error handling - it is left to the calling layers
 */
 
-interface IPermissions {
-	C: boolean; // create item
-	R: boolean; // read item
-	U: boolean; // update item
-	D: boolean; // delete item
-	A: boolean; // administer item's permissions, so modify the other attributes of this 
-}
-class CItemPermissions {
-	id: SpecifId;
-	permissions: IPermissions;
-	constructor(elId:string,prm: string) {
-		this.id = elId;
-		this.permissions = {
-			C: prm.includes('C'),
-			R: prm.includes('R'),
-			U: prm.includes('U'),
-			D: prm.includes('D'),
-			A: prm.includes('A')
-		}
-    }
-}
-class CRole {
-	id: string;
-	itemPermissions: CItemPermissions[] = [];
-	constructor(roleName: string) {
-		this.id = roleName;
-	}
-	setItemPermissions(elId: string, prm: string) {
-		LIB.cacheE(this.itemPermissions, new CItemPermissions(elId, prm));
-		return this  // make it chainable
-    }
-	removeItemPermissions(elId: string) {
-		LIB.uncacheE(this.itemPermissions, { id: elId });
-		return this
-	}
-}
-const StandardRoles = [
-	"Manager",
-	"Editor",
-	"Customer",
-	"Supplier",
-	"Reviewer",
-	"Reader"
-];
 class CCache {
 	// Common Cache for all locally handled projects (SpecIF data-sets)
 	cacheInstances: boolean;

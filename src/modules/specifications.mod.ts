@@ -9,6 +9,15 @@
 	ToDo: This module is lousy coding with lots of historical burden --> redo!
 */
 
+/* const StandardRoles = [
+	"Manager",
+	"Editor",
+	"Customer",
+	"Supplier",
+	"Reviewer",
+	"Reader"
+]; */
+
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin.escapeRE() + '(.+?)' + CONFIG.titleLinkEnd.escapeRE(), 'g');
 class CPropertyToShow implements SpecifProperty {
 	id?: string;
@@ -37,15 +46,15 @@ class CPropertyToShow implements SpecifProperty {
 		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
 
 		// Get the propertyClass' permissions:
-		let iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.pC.id);
+		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.pC.id);
 		if (iPrm)
 			this.pC.permissions = iPrm.permissions
 		else {
-			iPrm = LIB.itemById(this.selPrj.myItemPermissions, res.rC.id);
+			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', res.rC.id);
 			if (iPrm)
 				this.pC.permissions = iPrm.permissions
 			else {
-				iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.selPrj.id);
+				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
 				if (iPrm)
 					this.pC.permissions = iPrm.permissions
 				else
@@ -535,11 +544,11 @@ class CResourceToShow {
 		this.descriptions = [];
 
 		// Get the resourceClass' permissions:
-		let iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.rC.id);
+		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
 		if (iPrm)
 			this.rC.permissions = iPrm.permissions
 		else {
-			iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.selPrj.id);
+			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
 			if (iPrm)
 				this.rC.permissions = iPrm.permissions
 			else
@@ -554,15 +563,15 @@ class CResourceToShow {
 		// - note that the list of properties is incomplete, but we must iterate *all* propertyClasses. 
 		for ( var pC of this.cData.get('propertyClass',this.rC.propertyClasses) ) {
 			// Get the propertyClass' permissions:
-			let iPrm = LIB.itemById(this.selPrj.myItemPermissions, pC.id);
+			let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', pC.id);
 			if (iPrm)
 				pC.permissions = iPrm.permissions
 			else {
-				iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.rC.id);
+				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
 				if (iPrm)
 					pC.permissions = iPrm.permissions
 				else {
-					iPrm = LIB.itemById(this.selPrj.myItemPermissions, this.selPrj.id);
+					iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
 					if (iPrm)
 						pC.permissions = iPrm.permissions
 					else
@@ -1986,11 +1995,11 @@ moduleManager.construct({
 						// store the type's id as it is invariant, when selPrj.cache.allClasses is updated
 
 						// Respect the current user's privileges:
-						let iPrm = LIB.itemById(selPrj.myItemPermissions, rC.id);
+						let iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', rC.id);
 						if (iPrm)
 							rC.permissions = iPrm.permissions
 						else {
-							iPrm = LIB.itemById(selPrj.myItemPermissions, selPrj.id);
+							iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', selPrj.id);
 							if (iPrm)
 								rC.permissions = iPrm.permissions
 							else

@@ -807,14 +807,6 @@ LIB.duplicateId = (dta: any, id: string): boolean => {
     };
     return false;
 }
-LIB.indexBy = (L: any[], lbl: string, val: string): number => {
-    if (L && ti) {
-        // given a title of an item in a list, return it's index:
-        for (var i = L.length - 1; i > -1; i--)
-            if (L[i][lbl] == val) return i   // return list index
-    };
-    return -1;
-}
 LIB.indexById = (L:any[],id:string):number => {
     if( L && id ) {
         // given an ID of an item in a list, return it's index:

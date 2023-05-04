@@ -10,6 +10,9 @@
  * OD 2021-11-22:
  * This is a manual excerpt of the generated file containing just the SpecIF interfaces and types.
  * Some corrections and optimizations have been made.
+ * 
+ * OD 2023-05-03:
+ * Roles and permissions added, which will be part of SpecIF v1.2
  */
 
 /**
@@ -233,6 +236,47 @@ interface SpecIF {
      * @memberof SpecIF
      */
     files?: Array<SpecifFile>;
+}
+
+/**
+ * Some interface and type definitions for user roles and permissions.
+ * New for SpecIF v1.2
+ */
+interface IPermissions {
+    C: boolean; // create item
+    R: boolean; // read item
+    U: boolean; // update item
+    D: boolean; // delete item
+    A: boolean; // administer item's permissions, so modify the other attributes of this 
+}
+class CItemPermissions {
+    item: SpecifId;
+    permissions: IPermissions;
+    constructor(iId: string, prm: string) {
+        this.id = iId;
+        this.permissions = {
+            C: prm.includes('C'),
+            R: prm.includes('R'),
+            U: prm.includes('U'),
+            D: prm.includes('D'),
+            A: prm.includes('A')
+        }
+    }
+}
+class CRole {
+    id: string;
+    itemPermissions: CItemPermissions[] = [];
+    constructor(roleName: string) {
+        this.id = roleName;
+    }
+    setItemPermissions(elId: string, prm: string) {
+        LIB.cacheE(this.itemPermissions, new CItemPermissions(elId, prm));
+        return this  // make it chainable
+    }
+    removeItemPermissions(elId: string) {
+        LIB.uncacheE(this.itemPermissions, { id: elId });
+        return this
+    }
 }
 
 /**
