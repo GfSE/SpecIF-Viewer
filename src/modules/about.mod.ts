@@ -36,7 +36,7 @@ moduleManager.construct({
 		$('#pageTitle').html( app.title );
 		$('#about').html(
 			'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
-			+ '<p>An app for your web-browser to ' + (isEditor ? 'edit and transform' : (isReviewer? 'review' : 'view'))+' system specifications.</p>'
+			+ '<p>An app for your web-browser to ' + (isEditor ? 'integrate, edit and transform' : (isReviewer? 'review' : 'view'))+' system specifications.</p>'
 		+	'<p>SpecIF is the \'Specification Integration Facility\'. It\'s purpose is to combine partial specifications from different tools in a single model to allow</p>'
 		+	'<ul>'
 		+	'<li>to search, navigate and audit partial results in a common context,</li>'
@@ -58,9 +58,9 @@ moduleManager.construct({
 				  "<li>Display SpecIF data embedded in an HTML-file</li>"
 				: 
 				  "<li>Import 'specif' and 'specif.zip' file with schema and consistency check</li>"
-				+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file <em>(experimental)</em></li>":"")
+				+ (moduleManager.isReady('ioReqif')? "<li>Import 'reqif' and 'reqifz' file</li>":"")
 			// So far, editing is needed in case of Achimate for manually adding the diagrams ..
-				+ (isEditor && moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file <em>(experimental)</em></li>":"")
+				+ (isEditor && moduleManager.isReady('ioArchimate')? "<li>Import Archimate Open-Exchange file</li>":"")
 				+ (moduleManager.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
 				+ (moduleManager.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
 				+ "<li>Import from an URL or the local file system</li>"
@@ -179,20 +179,27 @@ moduleManager.construct({
 		+			'<td>DataTables is a highly flexible tool adding advanced interaction controls to any HTML table ... '
 		+				'<a href="http://www.datatables.net" target="_blank">more</a></td>'
 		+			'<td><a href="http://www.datatables.net/license/mit" target="_blank">MIT</a></td>'
-		+		'</tr>'  */
+		+		'</tr>'  
 		+		'<tr>'
 		+			'<td>Font Awesome</td>'
 		+			'<td></td>'
 		+			'<td>Font Awesome gives you scalable vector icons that can instantly be customized — size, color, drop shadow, '
 		+				'and anything that can be done with the power of CSS ... <a href="https://fontawesome.com/v4.7/" target="_blank">more</a></td>'
 		+			'<td><a href="https://fontawesome.com/v4.7/license/" target="_blank">SIL OFL 1.1</a></td>'
-		+		'</tr>'
+		+		'</tr>' */
 		+		'<tr>'
 		+			'<td>jQuery</td>'
 		+			'<td></td>'
-		+			'<td>jQuery makes things like HTML document traversal and manipulation, event handling, animation, and Ajax '
-		+				'much simpler ... <a href="https://jquery.com/" target="_blank">more</a></td>'
+		+			'<td>jQuery makes things like HTML document traversal and manipulation, event handling, animation '
+		+				'and Ajax much simpler ... <a href="https://jquery.com/" target="_blank">more</a></td>'
 		+			'<td><a href="https://jquery.org/license/" target="_blank">MIT</a></td>'
+		+		'</tr>'
+		+		'<tr>'
+		+			'<td>Bootstrap Icons</td>'
+		+			'<td></td>'
+		+			'<td>Free, high quality, open source icon library with over 1,800 icons. '
+		+				'Use them with or without Bootstrap in any project ... <a href="https://icons.getbootstrap.com/" target="_blank">more</a></td>'
+		+			'<td><a href="https://github.com/twbs/bootstrap/blob/master/LICENSE" target="_blank">MIT</a></td>'
 		+		'</tr>'
 		+		'<tr>'
 		+			'<td>Bootstrap</td>'

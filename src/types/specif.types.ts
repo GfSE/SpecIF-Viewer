@@ -247,37 +247,57 @@ interface IPermissions {
     R: boolean; // read item
     U: boolean; // update item
     D: boolean; // delete item
-    A: boolean; // administer item's permissions, so modify the other attributes of this 
+//    A: boolean; // administer item's permissions, so modify the other attributes of this 
 }
-class CItemPermissions {
-    item: SpecifId;
+interface IProjectRole {
+    project: SpecifId;  // the project reference, use 'any' as default value to cover all remaining projects
+    role: string;  // the name of the role
+}
+interface IItemPermissions {
+    item: SpecifId;  // the item reference
     permissions: IPermissions;
-    constructor(iId: string, prm: string) {
+}
+class CItemPermissions implements IItemPermissions {
+    item: SpecifId;  // the item reference
+    permissions: IPermissions;
+    constructor(iId: SpecifId, prm: string) {
         this.item = iId;
         this.permissions = {
             C: prm.includes('C'),
             R: prm.includes('R'),
             U: prm.includes('U'),
             D: prm.includes('D'),
-            A: prm.includes('A')
+//            A: prm.includes('A')
         }
     }
 }
-class CRole {
+interface IRole {
     id: SpecifId;
     title?: string;
     description?: SpecifMultiLanguageText;
-    itemPermissions: CItemPermissions[] = [];
+    itemPermissions: IItemPermissions[];
+}
+class CRole implements IRole {
+    id: SpecifId;
+    title?: string;
+    description?: SpecifMultiLanguageText;
+    itemPermissions: IItemPermissions[] = [];
     constructor(roleName: string) {
         this.id = roleName;
     }
-    setItemPermissions(elId: string, prm: string) {
-        LIB.cacheE(this.itemPermissions, new CItemPermissions(elId, prm));
+    setItemPermissions(iId: SpecifId, prm: string) {
+        let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
+        if (idx > -1)
+            this.itemPermissions[idx] = new CItemPermissions(iId, prm)
+        else
+            this.itemPermissions.push(new CItemPermissions(iId, prm));
         return this  // make it chainable
     }
-    removeItemPermissions(elId: string) {
-        LIB.uncacheE(this.itemPermissions, { id: elId });
-        return this
+    removeItemPermissions(iId: SpecifId) {
+        let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
+        if (idx>-1)
+            this.itemPermissions.splice(idx,1)
+        return this  // make it chainable
     }
 }
 

@@ -95,7 +95,7 @@ function toOxml( data, options ) {
 
 			// If it is a raster image:
 			if ( ['image/png','image/jpg','image/jpeg','image/gif'].includes(f.type) ) {
-				// transform the file and continue processing, as soon as all are done:
+				// transform the file to Base64 and continue processing, as soon as all are done:
 				// Convert a raster image to base64:
 					function storeR(ev) {
 //						console.debug('raster',pend);
@@ -109,10 +109,14 @@ function toOxml( data, options ) {
 				pend++;
 				let img = new Image();   
 				img.addEventListener('load', storeR, false ); // 'loadend' does not work in Chrome
+
 				const reader = new FileReader();
-				reader.addEventListener('loadend', function(e) {
-					img.src = e.target.result
-				});
+				reader.addEventListener(
+					'loadend',
+					function (e) {
+						img.src = e.target.result
+					}
+				);
 				reader.readAsDataURL(f.blob);
 		
 				console.info("File '"+f.title+"' made available as Base64");
@@ -148,9 +152,12 @@ function toOxml( data, options ) {
 				img.addEventListener('load', storeV, false ) // 'loadend' does not work in Chrome
 
 				const reader = new FileReader();
-				reader.addEventListener('loadend', function(e) {
-					img.src = 'data:image/svg+xml,' + encodeURIComponent( e.target.result );
-				});
+				reader.addEventListener(
+					'loadend',
+					function (e) {
+						img.src = 'data:image/svg+xml,' + encodeURIComponent( e.target.result );
+					}
+				);
 				reader.readAsText(f.blob);
 
 				console.info("File '"+f.title+"' transformed to PNG and made available as Base64");

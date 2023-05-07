@@ -353,7 +353,7 @@ class CProject {
 
 	// all project roles with permissions:
 	roles: CRole[] = [];
-	// the permissions of the current user:
+	// the permissions of the current user, selected at login by his/her role:
 	myItemPermissions: CItemPermissions[] = [];
 
 	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
@@ -426,24 +426,18 @@ class CProject {
 		this.exp = true; */
 
 		if (spD.roles) {
-			// In future, the roles and permissions are imported with the project:
+			// In future, the roles and permissions may be imported with the project:
 			this.roles = spD.roles
 		}
 		else {
-			// ... but by default, they are created, here:
-			this.roles.push(
+			// ... but by default, they are created here:
+		/*	this.roles.push(
 				new CRole('Manager')
 					.setItemPermissions(spD.id, 'A')
-			);
+			); */
 			this.roles.push(
-				new CRole('Editor')
-					.setItemPermissions(spD.id, 'CRUD')
-			);
-			this.roles.push(
-				new CRole('Customer')
-					.setItemPermissions(spD.id, 'CRUD')
-					.setItemPermissions("PC-SupplierStatus", 'R')
-					.setItemPermissions("PC-SupplierComment", 'R')
+				new CRole('Reader')
+					.setItemPermissions(spD.id, 'R')
 			);
 			this.roles.push(
 				new CRole('Supplier')
@@ -454,8 +448,14 @@ class CProject {
 					.setItemPermissions("PC-SupplierComment", 'RU')
 			);
 			this.roles.push(
-				new CRole('Reader')
-					.setItemPermissions(spD.id, 'R')
+				new CRole('Customer')
+					.setItemPermissions(spD.id, 'CRUD')
+					.setItemPermissions("PC-SupplierStatus", 'R')
+					.setItemPermissions("PC-SupplierComment", 'R')
+			);
+			this.roles.push(
+				new CRole('Editor')
+					.setItemPermissions(spD.id, 'CRUD')
 			)
 		};
 
@@ -2097,7 +2097,7 @@ class CProject {
 					)
 					.catch(reject);
 			}
-		);
+		)
 	}
 	// Select format and options with a modal dialog, then export the data:
 	private renderExportOptions(fmt: string) {
@@ -2118,6 +2118,20 @@ class CProject {
 					]
 				);
 				break;
+			case 'html':
+				// Choice of role only in case of the Editor: 
+				if (app.title == i18n.LblEditor) {
+					pnl += makeRadioField(
+						i18n.LblOptions,
+						// a radio button for each of the roles of the selected project:
+						this.roles.map(
+							(r,i) => {
+								return { title: "for role '"+r.id+"'", id: r.id, checked: i<1 }
+                            }
+						)
+					)
+				};
+				break;
 			case 'specifClasses':
 				let domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain'));
 				if (domains.length>0)
@@ -2128,7 +2142,7 @@ class CProject {
 								return { title: d, id: d.toJsId(), checked: false }
 							}
 						)
-					);
+					)
 		};
 		pnl += '</div>';
 //		console.debug('renderExportOptions',fmt,pnl);
@@ -2241,13 +2255,26 @@ class CProject {
 							fileName: this.exportParams.fileName,
 							format: radioValue(i18n.LblFormat)
 						};
-						// further options according to the checkboxes:
-						checkboxValues(i18n.LblOptions).forEach(
-							(op: string) => {
-								// @ts-ignore - indexing is valid: 
-								options[op] = true
-							}
-						);
+
+						// Retrieve further options:
+						switch (options.format) {
+							case 'html':
+								if (app.title == i18n.LblEditor) {
+									options.role = radioValue(i18n.LblOptions)
+								}
+								else
+									// in case this is an HTML to create an HTML, adopt the same role:
+									options.role = window.role || 'Supplier';
+								break;
+							default:
+								checkboxValues(i18n.LblOptions).forEach(
+									(op: string) => {
+										// @ts-ignore - indexing is valid: 
+										options[op] = true
+									}
+								);
+						};
+
 						this.exportAs(options)
 						.then(
 						//	app.busy.reset,     --> doesn't work for some reason, 'this' within reset() is undefined ...
@@ -2438,11 +2465,12 @@ class CProject {
 							opts.cdn = window.cdn  // in case the calling app is itself html with embedded SpecIF
 									||	window.location.href.substr(0, window.location.href.lastIndexOf("/") + 1);
 
-							toHtmlDoc(expD, opts).then(
+							toHtmlDoc(expD, opts)
+							.then(
 								(dta) =>{
 									let blob = new Blob([dta], { type: "text/html; charset=utf-8" });
 									// @ts-ignore - saveAs() is loaded at runtime
-									saveAs(blob, fName + '.specif.html');
+									saveAs(blob, fName + '.'+opts.role+'.specif.html');
 									self.exporting = false;
 									resolve();
 								},

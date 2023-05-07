@@ -161,7 +161,7 @@ function SpecifApp():IApp {
 					{
 						project: "any", // default
 						role: "Editor"
-					}
+					} as IProjectRole
 				];
 
 				self.show()

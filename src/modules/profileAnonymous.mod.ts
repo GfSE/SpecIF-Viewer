@@ -15,13 +15,15 @@
 // This will be merged with the basic declaration of IModule in moduleManager.ts:
 // interface IModule {
 interface IMe extends IModule {
-	login(): Promise<void>;
+	userName: string;
+	administrator: boolean;
+	projectRoles: IProjectRole[];
+	login(): Promise<IMe>;
 	logout(): void;
-	read(): Promise<void>;
-	isAdmin(): boolean;
-	isGeneralAdmin(): boolean;
+	myRole(prj: SpecifId): string;
+	isAdministrator(): boolean;
 }
-/* class CProjectRole {
+/* class CProjectRole implements IProjectRole {
 	project: SpecifId = '';
 	role: string = '';
 	constructor(prj: SpecifId, rl: string) {
@@ -43,7 +45,7 @@ moduleManager.construct({
 			{
 				project: "any", // default
 				role: "Reader"
-			}
+			} as IProjectRole
 		];
 
 		return true;
@@ -75,16 +77,15 @@ moduleManager.construct({
 			}
 		)
 	};
-	self.myRole = function(prj: SpecifId): string | undefined {
+	self.myRole = function(prj: SpecifId): string {
 		// first look for the specified project:
 		let pR = LIB.itemBy(self.projectRoles, 'project', prj);
 		if (pR) return pR.role;
 
 		// finally look for a default:
-		pR = LIB.itemBy(self.projectRoles, 'project' 'any');
+		pR = LIB.itemBy(self.projectRoles, 'project', 'any');
 		if (pR) return pR.role;
-
-		// return undefined
+		throw Error('User profile of '+self.userName+' has no role.')
 	};
 /*	self.read = function (): Promise<IMe> {
 //		console.debug('me.read');
