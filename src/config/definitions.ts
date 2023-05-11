@@ -47,8 +47,9 @@ const CONFIG:any = {};
     CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
     CONFIG.findMentionedObjects = true;    // looks for resource titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
     CONFIG.titleLinking = true;  // add internal links to all substrings in description properties which match resource titles
-    CONFIG.titleLinkBegin = '[[';  // marks the beginning of any internal link, shall not be composed of ", <, >
-    CONFIG.titleLinkEnd = ']]';  // marks the end of any internal link, shall not be composed of ", <, >
+    // the following two strings are escaped twice to build a regex via 'new regex(CONFIG.titleLinkBegin+(.*?)+CONFIG.titleLinkEnd,i)'
+    CONFIG.titleLinkBegin = '\\[\\[';  // marks the beginning of any internal link, shall not be composed of ", <, >
+    CONFIG.titleLinkEnd = '\\]\\]([^\\]]|$)';  // marks the end of any internal link, shall not be composed of ", <, >
     CONFIG.titleLinkMinLength = 3;  // min title length, so that it is considered for dynamic linking
     CONFIG.focusColor = '#1690D8';
 

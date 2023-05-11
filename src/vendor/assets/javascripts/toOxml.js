@@ -46,9 +46,6 @@ function toOxml( data, options ) {
 	);
 /*	// Check for missing options:
 	if( typeof(opts)!='object' ) opts = {};
-	if( !opts.dataTypeString ) opts.dataTypeString = 'xs:string';
-	if( !opts.dataTypeXhtml ) opts.dataTypeXhtml = 'xhtml';
-	if( !opts.dataTypeEnumeration ) opts.dataTypeEnumeration = 'xs:enumeration';
 
 //	if( !opts.colorAccent1 ) opts.colorAccent1 = '5B9BD5';   // original Office
 	if( !opts.colorAccent1 ) opts.colorAccent1 = 'CB0A1B';  // GfSE red-brown
@@ -71,6 +68,7 @@ function toOxml( data, options ) {
 		columnHeight = pageHeight - opts.marginTop - opts.marginBottom,
 		twips = 56.692913385826,  // twips per mm
 
+		// SpecIF v1.0 dataTypes
 		dataTypeString = 'xs:string',
 		dataTypeXhtml = 'xhtml',
 		dataTypeEnumeration = 'xs:enumeration';

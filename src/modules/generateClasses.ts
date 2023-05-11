@@ -189,7 +189,7 @@ class COntology {
 
         function isSelected(r: SpecifResource): boolean {
             let localOpts = Object.assign({ SpecIF_LifecycleStatusReleased: true }, self.options);
-            // True, if specified per domain abd lifecycleStatus ..
+            // True, if specified per domain and lifecycleStatus ..
             // or if it is referenced by another class:
             return hasSelectedStatus(r)
                 && hasSelectedDomain(r);

@@ -18,7 +18,7 @@
 	"Reader"
 ]; */
 
-RE.titleLink = new RegExp(CONFIG.titleLinkBegin.escapeRE() + '(.+?)' + CONFIG.titleLinkEnd.escapeRE(), 'g');
+RE.titleLink = new RegExp(CONFIG.titleLinkBegin + '(.+?)' + CONFIG.titleLinkEnd, 'g');
 class CPropertyToShow implements SpecifProperty {
 	id?: string;
 	title?: SpecifMultiLanguageText[] | string;
@@ -183,10 +183,14 @@ class CPropertyToShow implements SpecifProperty {
 		// - Titles shorter than 4 characters are ignored
 		// - see: https://www.mediawiki.org/wiki/Help:Links
 
+		// When editing text fields, the dynamic linking pattern shall be preserved:
+		if (opts.keepTitleLinkingPatterns)
+			return str;
+
 		// in certain situations, just remove the dynamic linking pattern from the text:
 		if (!CONFIG.titleLinking || !opts.titleLinking)
 			// @ts-ignore - $0 is never read, but must be specified anyways
-			return str.replace(RE.titleLink, ($0, $1) => { return $1 });
+			return str.replace(RE.titleLink, (match, $1, $2) => { return $1+$2 });
 
 	/*	let date1 = new Date();
 		let n1 = date1.getTime(); */
@@ -197,11 +201,15 @@ class CPropertyToShow implements SpecifProperty {
 			replaced = false;
 			str = str.replace(RE.titleLink,
 				// @ts-ignore - $0 is never read, but must be specified anyways
-				($0, $1) => {
+				(match, $1, $2) => {
 					replaced = true;
 					// disregard links being too short:
-					if ($1.length < CONFIG.titleLinkMinLength) return $1;
-					let m = $1.toLowerCase(), cR: SpecifResource, ti: string, rC:SpecifResourceClass, target: SpecifResource;
+					if ($1.length < CONFIG.titleLinkMinLength) return $1+$2;
+					let m = $1.toLowerCase(),
+						cR: SpecifResource,
+						ti: string,
+						rC: SpecifResourceClass,
+						target: SpecifResource;
 					// is ti a title of any resource?
 					app.specs.tree.iterate((nd: jqTreeNode) => {
 						cR = LIB.itemByKey(this.cData.resources, nd.ref);
@@ -221,9 +229,9 @@ class CPropertyToShow implements SpecifProperty {
 					// replace it with a link in case of a match:
 					// @ts-ignore - target may be undefined, indeed:
 					if (target)
-						return lnk(target, $1);
+						return lnk(target, $1)+$2;
 					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">' + $1 + '</span>'
+					return '<span style="color:#D82020">' + $1 + '</span>+$2'
 				}
 			)
 		} while (replaced);
@@ -2330,7 +2338,7 @@ moduleManager.construct({
 					selTi = cacheData.instanceTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
-					selPatt = new RegExp((CONFIG.titleLinkBegin + selTi + CONFIG.titleLinkEnd).escapeRE(), "i");
+					selPatt = new RegExp((CONFIG.titleLinkBegin + selTi.escapeRE() + CONFIG.titleLinkEnd), "i");
 
 				// Iterate the tree ... 
 				self.parent.tree.iterate((nd: jqTreeNode) => {
@@ -2344,32 +2352,34 @@ moduleManager.construct({
 								let refR = rL[0] as SpecifResource,
 									refTi = cacheData.instanceTitleOf(refR, localOpts),
 									dT: SpecifDataType;
-								//							console.debug('self.parent.tree.iterate',refR,refTi,pend);
+//								console.debug('self.parent.tree.iterate',refR,refTi,pend);
 								if (refTi && refTi.length > CONFIG.titleLinkMinLength - 1 && refR.id != selR.id) {
 									// ToDo: Search in a native description field ... not only in properties ...
 
 									// 1. The titles of other resource's found in the selected resource's texts 
 									//    result in a 'this mentions other' statement (selected resource is subject):
-									refPatt = new RegExp((CONFIG.titleLinkBegin + refTi + CONFIG.titleLinkEnd).escapeRE(), "i");
+									refPatt = new RegExp((CONFIG.titleLinkBegin + refTi.escapeRE() + CONFIG.titleLinkEnd), "i");
 									//	if( selR.properties )
 									selR.properties.forEach((p) => {
-										// assuming that the dataTypes are always cached:
-										dT = LIB.dataTypeOf(p['class'], cacheData);
-										// considering only text-properties except enumerated values,
-										// because it is not expected that type information references instance data
-										// and also we would need to explicitly look up the enumerated value, first:
-										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
-											// add, if the iterated resource's title appears in the selected resource's property ..
-											// and if it is not yet listed:
-											if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
-												// these are minimal statements only just for displaying the statement graph:
-												staL.push({
-													// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
-													title: CONFIG.staClassMentions,
-													//	class:	LIB.makeKey("SC-mentions"),
-													subject: selR,
-													object: refR
-												});
+										if (p.values.length > 0) {
+											// assuming that the dataTypes are always cached:
+											dT = LIB.dataTypeOf(p['class'], cacheData);
+											// considering only text-properties except enumerated values,
+											// because it is not expected that type information references instance data
+											// and also we would need to explicitly look up the enumerated value, first:
+											if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+												// add, if the iterated resource's title appears in the selected resource's property ..
+												// and if it is not yet listed:
+												if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
+													// these are minimal statements only just for displaying the statement graph:
+													staL.push({
+														// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
+														title: CONFIG.staClassMentions,
+														//	class:	LIB.makeKey("SC-mentions"),
+														subject: selR,
+														object: refR
+													});
+												}
 											}
 										}
 									});

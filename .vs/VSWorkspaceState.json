@@ -1,6 +1,7 @@
 {
   "ExpandedNodes": [
     "",
+    "\\scratch\\js",
     "\\src",
     "\\src\\config",
     "\\src\\config\\locales",
@@ -11,5 +12,6 @@
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
+  "SelectedNode": "\\src\\embedded.ts",
   "PreviewInSolutionExplorer": false
 }

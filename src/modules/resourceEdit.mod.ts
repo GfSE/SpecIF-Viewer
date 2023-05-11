@@ -25,8 +25,10 @@ class CPropertyToEdit extends CPropertyToShow  {
 	editField(opts:any): string {
 		// Return a form element for a property;
 
-		let localOpts = Object.assign({
+		let
+			localOpts = Object.assign({
 				lookupTitles: true,
+				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
 				targetLanguage: browser.language,
 				imgClass: 'forImagePreview'
 			},opts),
@@ -610,7 +612,16 @@ moduleManager.construct({
 		let pend = 2, // minimally 2 calls with promise
 			chD = new Date().toISOString();
 
-		// replace all properties with update permission:
+		// Remove properties without value:
+		self.newRes.properties = LIB.forAll(
+			self.newRes.properties,
+			(p) => {
+				if( p.values.length>0 )
+					return p
+            }
+		);
+
+		// Replace all properties with update permission:
 		self.toEdit.getEditedProperties().forEach(
 			(nP: SpecifProperty) => {
 				let i = LIB.indexBy(self.newRes.properties, 'class', nP['class']);

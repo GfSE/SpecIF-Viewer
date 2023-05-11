@@ -2513,7 +2513,7 @@ class CProject {
 								expStr = JSON.stringify(
 									new COntology(expD).generateSpecifClasses(opts)
 								);
-								console.debug('expStr', expStr);
+//								console.debug('expStr', expStr);
 								break;
 							case 'reqif':
 								fName += ".reqif";

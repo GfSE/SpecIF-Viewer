@@ -117,7 +117,8 @@ function SpecifApp():IApp {
 			.then(
 				(me: IMe) => {
 					// as long as we don't have a user/identity management,
-					// set a default user role for this app:
+					// set a default user role for this app;
+					// window.role has a value because this is executed as HTML with embedded SpecIF:
 					me.projectRoles = [
 						{
 							project: "any", // default
