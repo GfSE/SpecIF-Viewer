@@ -259,12 +259,12 @@ function Archimate2Specif(xmlString, options) {
 												});
                                         }
 									}
-								};
-						};
-					};
-				};
+								}
+						}
+					}
+				}
 			}
-		);
+		)
 	}
 
 	Array.from(xmlDoc.querySelectorAll("view"),

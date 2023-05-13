@@ -3630,6 +3630,9 @@ moduleManager.construct({
 		self.list = [];
 		self.selected = undefined;
 
+		// module 'standards' (with class CStandards) must be loaded before:
+		app.standards = new CStandards();
+
 	/*	autoLoadId = undefined;  // stop any autoLoad chain
 		autoLoadCb = undefined;  */
 

@@ -164,7 +164,7 @@ class CPropertyToShow implements SpecifProperty {
 				ct = this.titleLinks(ct, opts);
 				break;
 			case SpecifDataTypeEnum.DateTime:
-				ct = LIB.localDateTime(this.values[0]);   // multiple values not yet supported
+				ct = opts.localDateTime? LIB.localDateTime(this.values[0]) : this.values[0];   // multiple values not yet supported
 				break;
 			default:
 				ct = this.allValues(opts);
@@ -701,6 +701,7 @@ class CResourceToShow {
 		opts.makeHTML = true;
 		opts.lookupValues = true;
 		opts.lookupTitles = true;
+		opts.localDateTime = true;
 		opts.rev = this.revision;
 
 		var rO = '<div class="listEntry">'

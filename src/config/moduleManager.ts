@@ -240,7 +240,7 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper','helperTree','standards',"xSpecif",'bootstrapDialog','mainCSS'];
+			let modL = ['helper','helperTree',"xSpecif",'bootstrapDialog','mainCSS'];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
@@ -258,9 +258,6 @@ var app:IApp,
 							hideWhenSet: ['.pageActions', '.contentActions']
 						//	hideWhenSet: ['.pageActions','.contentActions','.elementActions']
 						});
-
-						// module 'standards' (with class CStandards) must be loaded before:
-						app.standards = new CStandards();
 
 						// Make sure page divs are resized, if the browser window is changed in size:
 						bindResizer();
@@ -616,7 +613,10 @@ var app:IApp,
 				case "Ontology": getOntology(); return true;
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
-				case "cache": getScript(loadPath + 'modules/cache.mod.js'); return true;
+				case "cache":
+				//	loadModule("Ontology");
+					loadModule('standards');
+					getScript(loadPath + 'modules/cache.mod.js'); return true;
 				case "profileAnonymous": getScript(loadPath + 'modules/profileAnonymous.mod.js'); return true;
 			/*	case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( loadPath+'modules/user-0.92.44.mod.html', function() {setReady(mod)} ); return true;
@@ -669,7 +669,6 @@ var app:IApp,
 											$('#'+mod).load( "./modules/project-0.92.45.mod.html", function() {setReady(mod)} ); return true;
 			*/
 				case CONFIG.specifications: // if( self.registered.includes(CONFIG.project) ) { console.warn( "modules: Modules '"+CONFIG.project+"' and '"+mod+"' cannot be used in the same app." ); return false; }
-							//	loadModule( 'standards' );
 							//	loadModule( 'diff' );
 								getScript(loadPath + 'modules/specifications.mod.js'); return true;
 
@@ -720,7 +719,7 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-				url: loadPath + 'vendor/config/Ontology.specif.zip',
+				url: loadPath + 'config/Ontology.specif.zip',
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {

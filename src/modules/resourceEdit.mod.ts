@@ -351,11 +351,11 @@ class CResourceToEdit {
 						let val = radioValue(prpTitle(p));
 						valL = val ? [val] : [];
 					};
-					if (valL.length > 0)
-						// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-						// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-						// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-						editedProps.push({ class: LIB.makeKey(p.pC.id), values: valL });
+
+					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+					editedProps.push({ class: LIB.makeKey(p.pC.id), values: valL });
 					return;
 				};
 
@@ -366,17 +366,16 @@ class CResourceToEdit {
 						if (p.pC.title == CONFIG.propClassDiagram) {
 							// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
 							// p.values is empthy, if the diagram has been removed while editing:
-							if (p.values.length > 0)
-								// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-								// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-								// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-								editedProps.push({ class: LIB.makeKey(p.pC.id), values: p.values });
+
+							// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+							// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+							// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+							editedProps.push({ class: LIB.makeKey(p.pC.id), values: p.values });
 						}
 						else {
 							// property isn't of type diagram:
 							val = textValue(prpTitle(p));
-							if (LIB.hasContent(val))
-								editedProps.push({ class: LIB.makeKey(p.pC.id), values: [LIB.makeMultiLanguageText(val)] });
+							editedProps.push({ class: LIB.makeKey(p.pC.id), values: (LIB.hasContent(val)? [LIB.makeMultiLanguageText(val)] : []) });
 						};
 						break;
 					case SpecifDataTypeEnum.Boolean:
@@ -385,11 +384,11 @@ class CResourceToEdit {
 						break;
 					default:
 						val = textValue(prpTitle(p));
-						if (LIB.hasContent(val))
-							editedProps.push({ class: LIB.makeKey(p.pC.id), values: [val] });
+						editedProps.push({ class: LIB.makeKey(p.pC.id), values: (LIB.hasContent(val)? [val] : []) });
 				};
 			}
 		);
+//		console.debug('editedProps', editedProps)
 		return editedProps;
 
 		function prpTitle(p: CPropertyToShow) {
@@ -612,21 +611,21 @@ moduleManager.construct({
 		let pend = 2, // minimally 2 calls with promise
 			chD = new Date().toISOString();
 
-		// Remove properties without value:
-		self.newRes.properties = LIB.forAll(
-			self.newRes.properties,
-			(p) => {
-				if( p.values.length>0 )
-					return p
-            }
-		);
-
-		// Replace all properties with update permission:
+		// Replace all properties - only those with update permission are returned:
 		self.toEdit.getEditedProperties().forEach(
 			(nP: SpecifProperty) => {
 				let i = LIB.indexBy(self.newRes.properties, 'class', nP['class']);
 				if (i > -1) self.newRes.properties.splice(i, 1, nP)
 				else throw Error('Programming error: Edited property does not replace an existing')
+            }
+		);
+
+		// Remove properties without value:
+		self.newRes.properties = LIB.forAll(
+			self.newRes.properties,
+			(p: SpecifProperty) => {
+				if( p.values.length>0 )
+					return p
             }
 		);
 

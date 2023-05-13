@@ -61,7 +61,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
 
-    val = LIB.noCode(val);
+    val = LIB.noCode(val) || '';  // dateTime properties can be undefined ... perhaps others as well. 
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
