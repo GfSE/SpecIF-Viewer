@@ -240,7 +240,7 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper','helperTree',"xSpecif",'bootstrapDialog','mainCSS'];
+			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'generateClasses', "xSpecif"];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
@@ -614,7 +614,7 @@ var app:IApp,
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
 				case "cache":
-				//	loadModule("Ontology");
+					loadModule("Ontology");
 					loadModule('standards');
 					getScript(loadPath + 'modules/cache.mod.js'); return true;
 				case "profileAnonymous": getScript(loadPath + 'modules/profileAnonymous.mod.js'); return true;
@@ -650,7 +650,7 @@ var app:IApp,
 				case 'ioSpecif': getScript(loadPath + 'modules/ioSpecif.mod.js'); return true;
 				case 'ioReqif': loadModule('reqif2specif');
 								getScript(loadPath + 'modules/ioReqif.mod.js'); return true;
-			//	case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
+			//	case 'ioRdf': 	getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': loadModule('excel');
 								getScript(loadPath + 'modules/ioXls.mod.js'); return true;
 				case 'ioBpmn': loadModule('bpmn2specif');
@@ -719,7 +719,8 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-				url: loadPath + 'config/Ontology.specif.zip',
+			//	url: loadPath + 'config/Ontology.specif.zip',
+				url: 'https://specif.de/v1.2/Ontology.specif',
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {

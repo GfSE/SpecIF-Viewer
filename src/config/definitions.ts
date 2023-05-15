@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.p",
+    CONFIG.appVersion = "1.1.q",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -24,8 +24,6 @@ const CONFIG:any = {};
     CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms)
     CONFIG.imageRenderingTimelag = 240;  // timelag between building the DOM and inserting the images
     CONFIG.showTimelag = 400;
-//    CONFIG.minInteger = -32768;  // for ReqIF Export
-//    CONFIG.maxInteger = 32767;  // for ReqIF Export
     CONFIG.minInteger = -2147483648;  // for ReqIF Export
     CONFIG.maxInteger = 2147483647;  // for ReqIF Export
     CONFIG.minReal = -1.7976931348623157E+308;  // for ReqIF Export

@@ -8,7 +8,7 @@
 */
 
 class COntology {
-    ontology: SpecIF;
+    data: SpecIF;
     allDomains = [];
     // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology: 
     primitiveDataTypes = new Map([
@@ -20,28 +20,28 @@ class COntology {
         ["RC-TermPropertyClassDuration", SpecifDataTypeEnum.Duration],
         ["RC-TermPropertyClassAnyURI", SpecifDataTypeEnum.AnyUri]
     ]);
-    options: any;
-    required: any;
-    generated: any;
+    private options: any;
+    private required: any;
+    private generated: any;
 
-    constructor(ontology: SpecIF) {
-        // 'ontology' is a SpecIF data set with classes and instances defining an Ontology.The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
-        this.ontology = ontology;
+    constructor(dta: SpecIF) {
+        // 'dta' is a SpecIF data set with classes and instances defining an Ontology.The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
+        this.data = dta;
 
         // Filter all hierarchies having a property of "dcterms:type" with value "W3C:Ontology";
         // there is a side-effect on the data handed-in, but in case of the SpecIF Viewer/Editor, this isn't harmful.
-        ontology.hierarchies = ontology.hierarchies.filter(
+        dta.hierarchies = dta.hierarchies.filter(
             (h: SpecifNode) => {
-                let r = LIB.itemByKey(ontology.resources, h.resource);
+                let r = LIB.itemByKey(dta.resources, h.resource);
                 return this.valueByTitle(r, "dcterms:type") == "W3C:Ontology"
             }
         );
-        if (ontology.hierarchies.length < 1) {
+        if (dta.hierarchies.length < 1) {
             message.show("No ontology found, so no classes will be generated.", { severity: 'warning' });
             return
         };
         // Make a list of all defined domains in the SpecIF Ontology:
-        let dTDomains = LIB.itemById(this.ontology.dataTypes, "DT-Domain");
+        let dTDomains = LIB.itemById(this.data.dataTypes, "DT-Domain");
         this.allDomains = dTDomains.enumeration.map(
             (v: SpecifEnumeratedValue) => LIB.languageValueOf(v.value, { targetLanguage: "default" })
         );
@@ -63,7 +63,7 @@ class COntology {
             // The selected domains for generating classes:
             selDomains = this.allDomains.filter((d: string) => { return this.options[d.toJsId()] });
 
-        if (!this.checkConstraintsOntology(this.ontology)) {
+        if (!this.checkConstraintsOntology(this.data)) {
             message.show("The Ontology violates one or more constraints, so no classes will be generated. Please see the browser log for details.", { severity: 'error' });
             return
         };
@@ -107,9 +107,10 @@ class COntology {
             //        console.debug('required sCL', simpleClone(this.generated.sCL), simpleClone(this.required.sTL));
         };
 
-        // We are done, so we can return the result:
+        // Finally return the result:
+        // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
         return Object.assign(
-            app.standards.makeTemplate(),
+            opts.delta ? {} : this.makeTemplate(),
             {
                 "id": spId,
                 "title": [
@@ -136,12 +137,14 @@ class COntology {
     exportOntologyClasses(opts?: any): SpecIF | undefined {
         /* Return a SpecIF data set with all classes of the ontology */
 
-        if (!this.ontology) {
+        if (!this.data) {
             message.show("No valid ontology loaded.", { severity: 'error' });
             return
         };
+
+        // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
         return Object.assign(
-            opts.delta ? {} : app.standards.makeTemplate(),
+            opts.delta ? {} : this.makeTemplate(),
             {
                 "id": "P-SpecifClasses-Ontology",
                 "title": [
@@ -158,12 +161,39 @@ class COntology {
                         "language": "en"
                     }
                 ],
-                "dataTypes": this.ontology.dataTypes,
-                "propertyClasses": this.ontology.propertyClasses,
-                "resourceClasses": this.ontology.resourceClasses,
-                "statementClasses": this.ontology.statementClasses
+                "dataTypes": this.data.dataTypes,
+                "propertyClasses": this.data.propertyClasses,
+                "resourceClasses": this.data.resourceClasses,
+                "statementClasses": this.data.statementClasses
             }
         )
+    }
+    makeTemplate(/* opts?: any*/): SpecIF {
+        /* Return a SpecIF data set with all classes of the ontology */
+        return {
+            // @ts-ignore
+            '@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
+            //	'@Context': this.context,
+            "id": "",
+            "$schema": "https://specif.de/v1.1/schema.json",
+            "title": [],
+            "description": [],
+            "generator": app.title,
+            "generatorVersion": CONFIG.appVersion,
+            "createdAt": new Date().toISOString(),
+            "rights": {
+                "title": "Creative Commons 4.0 CC BY-SA",
+                "url": "https://creativecommons.org/licenses/by-sa/4.0/"
+            },
+            "dataTypes": [],
+            "propertyClasses": [],
+            "resourceClasses": [],
+            "statementClasses": [],
+            "resources": [],
+            "statements": [],
+            "files": [],
+            "hierarchies": []
+        }
     }
 
     // ---------------- Invoked methods ---------------------
@@ -176,7 +206,7 @@ class COntology {
 
         let rCL: SpecifItem[] = [],  // the result list
             // 1. Find the terms of the classes listed in rCIdL:
-            idL = LIB.referencedResourcesByClass(this.ontology.resources, this.ontology.hierarchies, rCIdL) as SpecifResource[];
+            idL = LIB.referencedResourcesByClass(this.data.resources, this.data.hierarchies, rCIdL) as SpecifResource[];
 
         if (idL.length > 0) {
             let tL = idL
@@ -195,7 +225,7 @@ class COntology {
                 && hasSelectedDomain(r);
 
             function hasSelectedDomain(el: SpecifItem): boolean {
-                let myDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain], self.ontology);
+                let myDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain], self.data);
                 for (let d of myDomains) {
                     if (self.options[LIB.displayValueOf(d, { targetLanguage: 'default' }).toJsId()])
                         return true;
@@ -203,7 +233,7 @@ class COntology {
                 return false;
             }
             function hasSelectedStatus(el: SpecifItem): boolean {
-                let selStatus = LIB.valuesByTitle(el, [CONFIG.propClassLifecycleStatus], self.ontology);
+                let selStatus = LIB.valuesByTitle(el, [CONFIG.propClassLifecycleStatus], self.data);
                 for (let s of selStatus) {
                     if (localOpts[LIB.displayValueOf(s, { targetLanguage: 'default' }).toJsId()])
                         return true;
@@ -225,14 +255,14 @@ class COntology {
             stL = this.statementsByClass(r, "SpecIF:hasEnumValue", { asSubject: true }),  // all statements pointing to enumerated values
             oL = stL.map(
                 (st: SpecifStatement) => {
-                    return LIB.itemById(this.ontology.resources, st.object.id)
+                    return LIB.itemById(this.data.resources, st.object.id)
                 }
             ),  // the objects of those statements are the enumerated values
 
             // Create the entries of the list 'enumeration':
             enumL = oL.map(
                 (o: SpecifResource, idx: number) => {
-                    let eV = LIB.valuesByTitle(o, [CONFIG.propClassTitle], this.ontology)[0];
+                    let eV = LIB.valuesByTitle(o, [CONFIG.propClassTitle], this.data)[0];
                     return {
                         id: vId + '-' + idx.toString(),
                         value: eV
@@ -332,7 +362,7 @@ class COntology {
         return LIB.makeKey(dT);  // the key as reference for the generated propertyClass
 
         function adoptOntologyDataType(d: SpecifDataType) {
-            for (let dT of self.ontology.dataTypes) {
+            for (let dT of self.data.dataTypes) {
                 if (LIB.equalDT(d, dT)) return dT
             }
             // return undefined
@@ -344,7 +374,7 @@ class COntology {
 
         // 1. Create the dataType, unless it exists already:
         let dTk = this.createDT(r),
-            defaultVs = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.ontology);
+            defaultVs = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.data);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
@@ -370,9 +400,9 @@ class COntology {
 
         let pL = this.statementsByClass(el, "SpecIF:hasProperty", { asSubject: true });
         for (let p of pL) {
-            let term = LIB.itemByKey(this.ontology.resources, p.object),
+            let term = LIB.itemByKey(this.data.resources, p.object),
                 prep = this.makeIdAndTitle(term, "PC-"); // need the id only, here
-            //            console.debug('pCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.ontology));
+            //            console.debug('pCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             // an entry in the propertyClasses of the resourceClass resp statementClass to generate:
             LIB.cacheE(pCL, { id: prep.id });
             // Ascertain that all referenced propertyClasses will be available.
@@ -385,7 +415,7 @@ class COntology {
         return pCL
     }
     private createRC(r: SpecifResource) {
-        let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.ontology);
+        let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data);
         //        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
 
         // Create a resourceClass for the TermResourceClass r;
@@ -410,9 +440,9 @@ class COntology {
             sL = this.statementsByClass(el, cl, { asObject: true }); // list of statements of the specified class
 
         for (let s of sL) {
-            let term = LIB.itemByKey(this.ontology.resources, s.subject),
+            let term = LIB.itemByKey(this.data.resources, s.subject),
                 prep = this.makeIdAndTitle(term, term['class'].id == "RC-TermResourceClass" ? "RC-" : "SC-"); // need the id only, here
-            //            console.debug('sCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.ontology));
+            //            console.debug('sCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             LIB.cacheE(iCL, { id: prep.id })
 
             if (this.options.includeEligibleSubjectClassesAndObjectClasses) {
@@ -440,7 +470,7 @@ class COntology {
         // Create a statementClass for the TermStatementClass r:
 
         let
-            iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.ontology),
+            iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
             // In case of statementClasses a list of propertyClasses is optional and most often not used:
             pCL = this.pCsOf(r),
             // The eligible subjectClasses:
@@ -480,7 +510,7 @@ class COntology {
             };
 
             if (sL.length > 0) {
-                let term = LIB.itemByKey(this.ontology.resources, sL[0].object),
+                let term = LIB.itemByKey(this.data.resources, sL[0].object),
                     prep = this.makeIdAndTitle(term, pfx); // need the id only, here
 
                 // Ascertain that the referenced resourceClass resp. statementClass will be available;
@@ -504,7 +534,7 @@ class COntology {
         // - take the resource's title as title
         // - and the title without namespace as distinctive portion of the id.
         let prep = this.makeIdAndTitle(r, prefix),
-            dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.ontology);
+            dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.data);
         if (dscL.length > 1)
             console.info("Only the fist value of the description property will be used for the class generated from " + r.id + " with title " + prep.title + ".");
 
@@ -540,18 +570,18 @@ class COntology {
         // Find the statements of the class with title ti referencing the given term r as subject or object:
         // - if opts.asSubject, then all statements where r is the subject are selected
         // - if opts.asObject, then all statements where r is the object are selected
-        return this.ontology.statements.filter(
+        return this.data.statements.filter(
             (st: SpecifStatement) => {
                 // better use 'instanceTitleOf', but it is not available, here:
-                return LIB.classTitleOf(st['class'], this.ontology.statementClasses) == ti
+                return LIB.classTitleOf(st['class'], this.data.statementClasses) == ti
                     && (opts.asSubject && st.subject.id == r.id
                         || opts.asObject && st.object.id == r.id);
             }
-        ) as SpecifStatement[];
+        ) as SpecifStatement[]
     }
     private valueByTitle(el: SpecifResource, ti: string): string {
         // Return the value of el's property with title ti:
-        let pVL = LIB.valuesByTitle(el, [ti], this.ontology);
+        let pVL = LIB.valuesByTitle(el, [ti], this.data);
         return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
     }
     private distinctiveCoreOf(ti: string): string {
@@ -559,8 +589,13 @@ class COntology {
     }
     private makeIdAndTitle(r: SpecifResource, pfx: string) {
         // Make an id and a title for the class generated for term r
-        let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], this.ontology),
-            ti = LIB.getTitleFromProperties(r.properties, { targetLanguage: 'default' });
+        let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], this.data),
+            // In general we don't, but in case of the ontology we know that the resource title
+            // is given in a property with class id "PC-Name" (which has a title "dcterms:title").
+            // Therefore we can get the title in a simple way:
+            prp = LIB.itemBy(r.properties, 'class', { id: "PC-Name" }),
+            ti = LIB.languageValueOf(prp.values[0], { targetLanguage: 'default' });
+
         return {
             // Use the identifier provided by the user or generate it using the title:
             id: visIdL && visIdL.length > 0 ?

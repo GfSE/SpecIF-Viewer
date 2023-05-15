@@ -934,7 +934,7 @@ LIB.indexBy = (L: any[], p: string, k: SpecifKey | string): number => {
 };
 LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
     if (L && p && k) {
-        // Return the element in list 'L' whose property 'p' equals key 'k':
+        // Return the element in list 'L' whose property 'p' equals key 'k' od id 'k' (in case of a string):
         // ToDo: true, only if n is the latest revision in case k.revision is undefined ...
         for (var l of L)
             if (LIB.isKey(k) ? LIB.references(k, l[p]) : l[p] == k)
@@ -1655,7 +1655,7 @@ LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string|undefined =>
         return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
     // else: return undefined
 }
-LIB.classTitleOf = (iCkey: SpecifKey, cL?: SpecifClass[], opts?: any): string => {
+LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {
     // Return the item's class title,
     // where item can be a resource, a statement or a property:
     let iC = LIB.itemByKey(cL, iCkey);
@@ -1677,7 +1677,7 @@ LIB.hasType = (r: SpecifResource | SpecifStatement, pNs: string[], dta: SpecIF |
         let pVs = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
         if (pVs.length > 0) {
             return pNs.includes(LIB.displayValueOf(pVs[0], Object.assign({ targetLanguage: 'default' }, opts)))
-        };
+        }
     };
     return false;
 }
@@ -1693,7 +1693,7 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): 
             let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
             // Check the configured headings and titles:
             if (CONFIG.titleProperties.includes(pt)) return a;
-        };
+        }
     };
     return -1;
 }

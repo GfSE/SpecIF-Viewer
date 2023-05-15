@@ -371,13 +371,9 @@ function LanguageTextsEn() {
 	self.SpecIF_Views = "Schematics";	// deprecated
 	self.FMC_Plan = "Schematic";
 	self.FMC_Plans = "Schematics";
-	self.SpecIF_Object = 
 	self.SpecIF_Resource = "Resource";
-	self.SpecIF_Objects = 
 	self.SpecIF_Resources = "Resources";
-	self.SpecIF_Relation = 
 	self.SpecIF_Statement = "Statement";
-	self.SpecIF_Relations = 
 	self.SpecIF_Statements = "Statements";
 	self.SpecIF_Property = "Property";
 	self.SpecIF_Properties = "Properties";
@@ -532,6 +528,7 @@ function LanguageTextsEn() {
 	self.SpecIF_Responsible = "Responsible";
 	self.SpecIF_Responsibles = "Responsibles";
 	self.SpecIF_UserRole = "User-Role";
+	self.SpecIF_Authorization = "Authorization";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
 	self.SpecIF_Annotations =
@@ -608,6 +605,8 @@ function LanguageTextsEn() {
 	self.SpecIF_withdrawn =
 	self.SpecIF_statusWithdrawn =
 	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
+	self.SpecIF_LifecycleStatusEquivalent = "equivalent";
+	self.SpecIF_LifecycleStatusExperimental = "experimental";
 
 // Messages:
 	self.MsgIntro = 'Are you new here? Read a short <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction</a>, if you like.';
@@ -631,6 +630,7 @@ function LanguageTextsEn() {
 	self.MsgCreateStatement = "Create a statement";
 	self.MsgOtherProject = "Late response; another project has been selected meanwhile";
 	self.MsgWaitPermissions = 'Please wait while loading the permissions.';
+	self.MsgForRole = 'for ' + self.SpecIF_UserRole;
 /*	self.MsgImportReqif = 'Permissible filetypes are *.reqifz, *.reqif, *.zip and *.xml. The content must conform with the ReqIF 1.0+, RIF 1.1a or RIF 1.2 schemata. The import may take several minutes for very large files.'; */
 	self.MsgImportReqif = 'Permissible filetypes are *.reqif or *.reqifz. The content must conform with the ReqIF 1.0+ schemata. The import may take several minutes for very large files.';
 	self.MsgImportSpecif = 'Permissible filetypes are *.specif, *.specif.zip and *.specifz. The content must conform with the SpecIF 0.10.4+ schemata. In case of large files, the import may take a couple of minutes.';

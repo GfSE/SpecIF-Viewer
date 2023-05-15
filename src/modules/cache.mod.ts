@@ -2092,7 +2092,7 @@ class CProject {
 										return false
 									}
 								)
-							);
+							)
 						}
 					)
 					.catch(reject);
@@ -2122,11 +2122,11 @@ class CProject {
 				// Choice of role only in case of the Editor: 
 				if (app.title == i18n.LblEditor) {
 					pnl += makeRadioField(
-						i18n.LblOptions,
+						i18n.lookup('SpecIF:Authorization'),
 						// a radio button for each of the roles of the selected project:
 						this.roles.map(
 							(r,i) => {
-								return { title: "for role '"+r.id+"'", id: r.id, checked: i<1 }
+								return { title: i18n.lookup('MsgForRole')+" '"+r.id+"'", id: r.id, checked: i<1 }
                             }
 						)
 					)
@@ -2260,7 +2260,7 @@ class CProject {
 						switch (options.format) {
 							case 'html':
 								if (app.title == i18n.LblEditor) {
-									options.role = radioValue(i18n.LblOptions)
+									options.role = radioValue(i18n.lookup('SpecIF:Authorization'))
 								}
 								else
 									// in case this is an HTML to create an HTML, adopt the same role:
@@ -2469,8 +2469,9 @@ class CProject {
 							.then(
 								(dta) =>{
 									let blob = new Blob([dta], { type: "text/html; charset=utf-8" });
+									// Add the role to the filename except for 'Reader' (default):
 									// @ts-ignore - saveAs() is loaded at runtime
-									saveAs(blob, fName + '.'+opts.role+'.specif.html');
+									saveAs(blob, fName + (opts.role=='Reader'? '':'.'+opts.role)+'.specif.html');
 									self.exporting = false;
 									resolve();
 								},
@@ -3630,7 +3631,6 @@ moduleManager.construct({
 		self.list = [];
 		self.selected = undefined;
 
-		// module 'standards' (with class CStandards) must be loaded before:
 		app.standards = new CStandards();
 
 	/*	autoLoadId = undefined;  // stop any autoLoad chain

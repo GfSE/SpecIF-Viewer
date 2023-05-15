@@ -371,13 +371,9 @@ function LanguageTextsDe() {
 	self.SpecIF_Views = "Diagramme";	// deprecated
 	self.FMC_Plan = "Plan";
 	self.FMC_Plans = "Pläne";
-	self.SpecIF_Object = 
 	self.SpecIF_Resource = "Ressource";
-	self.SpecIF_Objects = 
 	self.SpecIF_Resources = "Ressourcen";
-	self.SpecIF_Relation = 
 	self.SpecIF_Statement = "Relation (Aussage)";
-	self.SpecIF_Relations = 
 	self.SpecIF_Statements = "Relationen (Aussagen)";
 	self.SpecIF_Property = "Attribut";
 	self.SpecIF_Properties = "Attribute";
@@ -532,6 +528,7 @@ function LanguageTextsDe() {
 	self.SpecIF_Responsible = "Verantwortlicher";
 	self.SpecIF_Responsibles = "Verantwortliche";
 	self.SpecIF_UserRole = "Nutzerrolle";
+	self.SpecIF_Authorization = "Berechtigung";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
 	self.SpecIF_Annotations =
@@ -608,6 +605,8 @@ function LanguageTextsDe() {
 	self.SpecIF_withdrawn =
 	self.SpecIF_statusWithdrawn =
 	self.SpecIF_LifecycleStatusWithdrawn = "zurückgezogen";
+	self.SpecIF_LifecycleStatusEquivalent = "äquivalent";
+	self.SpecIF_LifecycleStatusExperimental = "experimental";
 
 // Messages:
 	self.MsgIntro = 'Sind Sie neu hier? Lesen Sie eine kurze <a href="' + CONFIG.QuickStartGuideDe + '" target="_blank" rel="noopener">Einführung</a>, wenn Sie mögen.';
@@ -631,6 +630,7 @@ function LanguageTextsDe() {
 	self.MsgCreateStatement = "Relation (Aussage) anlegen";
 	self.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 	self.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
+	self.MsgForRole = 'für ' + self.SpecIF_UserRole;
 /*	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.'; */
 	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqif oder *.reqifz. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
 	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';

@@ -8,7 +8,30 @@
 */
 
 class CStandards {
-	dataTypes:SpecifDataType[] = [{
+	// @ts-ignore - initialized below
+	dataTypes: SpecifDataType[];
+	// @ts-ignore - initialized below
+	propertyClasses: SpecifPropertyClass[];
+	// @ts-ignore - initialized below
+	resourceClasses: SpecifResourceClass[];
+	constructor() {
+		// Get all classes of the domain 'Base':
+		let oC = app.ontology.generateSpecifClasses({ Base: true, adoptOntologyDataTypes: true, delta: true });
+//		console.debug('oC', oC);
+		['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
+			// @ts-ignore - indexing is fine
+			(li) => { this[li] = oC[li] }
+		);
+
+		// In addition we need some more dataTypes which are not covered by a propertyClass, yet:
+		["DT-Boolean", "DT-Integer", "DT-Real", "DT-DateTime", "DT-Duration", "DT-AnyURI"].forEach(
+			(id) => { this.dataTypes.push( LIB.itemById( app.ontology.data.dataTypes, id ) ) }
+		);
+
+//		console.debug('CS',simpleClone(this));
+	};
+
+/*	dataTypes:SpecifDataType[] = [{
 		id: "DT-ShortString",
 		title: "Short string" ,
 		description: [{ text: "Unformatted character string with length " + CONFIG.textThreshold + '.'}],
@@ -89,7 +112,7 @@ class CStandards {
 		propertyClasses: [{ id: "PC-Name" },{ id: "PC-Description" }, { id: "PC-Type" }],
 		changedAt: "2020-12-04T18:59:00+01:00"
 	}];
-/*	statementClasses: SpecifStatementClass[] = [{
+	statementClasses: SpecifStatementClass[] = [{
 		id: "SC-mentions",
 		title: CONFIG.staClassMentions,
 		instantiation: ['internal'],  // this value is not defined by the schema
@@ -170,33 +193,6 @@ class CStandards {
 		}
 		else
 			throw Error("Can't find item with id '"+key.id+"' and revision '"+key.revision+"' in standard types.")
-	}
-	makeTemplate(/* opts?: any*/): SpecIF {
-		/* Return a SpecIF data set with all classes of the ontology */
-		return {
-			// @ts-ignore
-			'@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
-			//	'@Context': this.context,
-			"id": "",
-			"$schema": "https://specif.de/v1.1/schema.json",
-			"title": [],
-			"description": [],
-			"generator": app.title,
-			"generatorVersion": CONFIG.appVersion,
-			"createdAt": new Date().toISOString(),
-			"rights": {
-				"title": "Creative Commons 4.0 CC BY-SA",
-				"url": "https://creativecommons.org/licenses/by-sa/4.0/"
-			},
-			"dataTypes": [],
-			"propertyClasses": [],
-			"resourceClasses": [],
-			"statementClasses": [],
-			"resources": [],
-			"statements": [],
-			"files": [],
-			"hierarchies": []
-		}
 	}
 };
 

@@ -123,9 +123,6 @@ function SpecifApp():IApp {
 				name: 'toOxml'
 			}, {
 				name: 'toTurtle'
-			}, {
-				// generate SpecIF classes from the SpecIF vocabulary:			
-				name: 'generateClasses'
 			}]
 		}, {
 			name: 'about',

@@ -371,13 +371,9 @@ function LanguageTextsFr() {
 	self.SpecIF_Views = "Diagrammes";	// deprecated
 	self.FMC_Plan = "Plan";
 	self.FMC_Plans = "Plans";
-	self.SpecIF_Object = 
 	self.SpecIF_Resource = "Ressource";
-	self.SpecIF_Objects = 
 	self.SpecIF_Resources = "Ressources";
-	self.SpecIF_Relation = 
 	self.SpecIF_Statement = "Affirmation";
-	self.SpecIF_Relations = 
 	self.SpecIF_Statements = "Affirmations";
 	self.SpecIF_Property = "Attribut";
 	self.SpecIF_Properties = "Attributs";
@@ -532,6 +528,7 @@ function LanguageTextsFr() {
 	self.SpecIF_Responsible = "Responsable global";
 	self.SpecIF_Responsibles = "Responsables";
 	self.SpecIF_UserRole = "Rôle";
+	self.SpecIF_Authorization = "Autorisation";
 // attribute names used by the Interaction Room:
 	self.IR_Annotation = "Annotation";
 	self.SpecIF_Annotations =
@@ -608,6 +605,8 @@ function LanguageTextsFr() {
 	self.SpecIF_withdrawn =
 	self.SpecIF_statusWithdrawn =
 	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
+	self.SpecIF_LifecycleStatusEquivalent = "équivalent";
+	self.SpecIF_LifecycleStatusExperimental = "expérimental";
 
 // Messages:
 	self.MsgIntro = 'Vous êtes nouveau ici? Lisez une brève <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction en anglais</a>, si vous le souhaitez.';
@@ -631,6 +630,7 @@ function LanguageTextsFr() {
 	self.MsgCreateStatement = "Créer une affirmation";
 	self.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
 	self.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
+	self.MsgForRole = 'pour ' + self.SpecIF_UserRole;
 /*	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers."; */
 	self.MsgImportReqif = "Types de fichiers valides: *.reqif ou *.reqifz. Le contenu doit correspondre au schéma ReqIF 1.0+. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
 	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip et *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";
