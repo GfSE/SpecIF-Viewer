@@ -294,6 +294,7 @@ function LanguageTextsFr() {
 //	self.FnRemove =
 	self.FnDelete = self.IcoDelete;
 
+/*
 // ReqIF attribute names (replace any '.' by '_', so 'ReqIF.Text' becomes 'ReqIF_Text ):
 	self.ReqIF_ForeignID = 'Identifiant';
 	self.ReqIF_ChapterName = 'Titre';
@@ -607,6 +608,7 @@ function LanguageTextsFr() {
 	self.SpecIF_LifecycleStatusWithdrawn = "withdrawn";
 	self.SpecIF_LifecycleStatusEquivalent = "équivalent";
 	self.SpecIF_LifecycleStatusExperimental = "expérimental";
+*/
 
 // Messages:
 	self.MsgIntro = 'Vous êtes nouveau ici? Lisez une brève <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction en anglais</a>, si vous le souhaitez.';

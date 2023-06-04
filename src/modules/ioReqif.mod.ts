@@ -178,7 +178,8 @@ moduleManager.construct({
             if( validateXML(str) ) {
 				// transformReqif2Specif gibt string zurück
 				// @ts-ignore - transformReqif2Specif() is loaded at runtime
-				var result = transformReqif2Specif(str, { translateTitle: vocabulary.property.specif });
+				var result = transformReqif2Specif(str);
+			//	var result = transformReqif2Specif(str, { translateTitle: vocabulary.property.specif });
 				if (result.status == 0)
 					zDO.resolve(result.response)
 				else
@@ -366,10 +367,10 @@ moduleManager.construct({
 					case SpecifDataTypeEnum.Duration:
 						// Remember that pr is supposed to arrive with a single selected language, here:
 						let info = JSON.stringify({ SpecIF_DataType: dT.type });
-						if (LIB.isMultiLanguageText(dT.description) && dT.description.length>0)
+						if (LIB.isMultiLanguageValue(dT.description) && dT.description.length>0)
 							dT.description[0].text += '\n' + info
 						else
-							dT.description = LIB.makeMultiLanguageText(info);
+							dT.description = LIB.makeMultiLanguageValue(info);
 						// no break
 					case SpecifDataTypeEnum.String:
 						// MAX-LENGTH is mandatory according to https://www.prostep.org/fileadmin/downloads/PSI_ImplementationGuide_ReqIF_V1-7.pdf

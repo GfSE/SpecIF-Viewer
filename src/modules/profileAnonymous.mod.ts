@@ -52,8 +52,8 @@ moduleManager.construct({
 	};
 	self.clear = function():void {
 		self.loggedin = false;
-		self.userName = "Anonymous";
-		self.userPassword = "";
+		self.userName = CONFIG.userNameAnonymous;
+		self.userPassword = CONFIG.passwordAnonymous;
 		self.administrator = false; 	// current user is global admin?
 		self.projectRoles = [];
 	};

@@ -240,7 +240,7 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'generateClasses', "xSpecif"];
+			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'generateClasses', 'standards', "xSpecif"];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
@@ -615,7 +615,7 @@ var app:IApp,
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
 				case "cache":
 					loadModule("Ontology");
-					loadModule('standards');
+				//	loadModule('standards');
 					getScript(loadPath + 'modules/cache.mod.js'); return true;
 				case "profileAnonymous": getScript(loadPath + 'modules/profileAnonymous.mod.js'); return true;
 			/*	case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
@@ -725,7 +725,7 @@ var app:IApp,
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {
 					let ont = JSON.parse(LIB.ab2str(xhr.response));
-					console.debug('Ontology loaded: ',ont);
+//					console.debug('Ontology loaded: ',ont);
 					app.ontology = new COntology(ont);
 					setReady(module.name)
 				},

@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-class COntology {
+class CGenerateClasses {
     data: SpecIF;
     allDomains = [];
     // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology: 
@@ -43,7 +43,7 @@ class COntology {
         // Make a list of all defined domains in the SpecIF Ontology:
         let dTDomains = LIB.itemById(this.data.dataTypes, "DT-Domain");
         this.allDomains = dTDomains.enumeration.map(
-            (v: SpecifEnumeratedValue) => LIB.languageValueOf(v.value, { targetLanguage: "default" })
+            (v: SpecifEnumeratedValue) => LIB.languageTextOf(v.value, { targetLanguage: "default" })
         );
         this.options = {};
     }
@@ -134,42 +134,8 @@ class COntology {
             }
         )
     }
-    exportOntologyClasses(opts?: any): SpecIF | undefined {
-        /* Return a SpecIF data set with all classes of the ontology */
-
-        if (!this.data) {
-            message.show("No valid ontology loaded.", { severity: 'error' });
-            return
-        };
-
-        // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
-        return Object.assign(
-            opts.delta ? {} : this.makeTemplate(),
-            {
-                "id": "P-SpecifClasses-Ontology",
-                "title": [
-                    {
-                        "text": "SpecIF Classes of the Ontology",
-                        "format": SpecifTextFormat.Plain,
-                        "language": "en"
-                    }
-                ],
-                "description": [
-                    {
-                        "text": "A set of SpecIF Classes used for a SpecIF Ontology.",
-                        "format": SpecifTextFormat.Plain,
-                        "language": "en"
-                    }
-                ],
-                "dataTypes": this.data.dataTypes,
-                "propertyClasses": this.data.propertyClasses,
-                "resourceClasses": this.data.resourceClasses,
-                "statementClasses": this.data.statementClasses
-            }
-        )
-    }
     makeTemplate(/* opts?: any*/): SpecIF {
-        /* Return a SpecIF data set with all classes of the ontology */
+        /* Return an empty SpecIF data set */
         return {
             // @ts-ignore
             '@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
@@ -248,7 +214,7 @@ class COntology {
 
         let ty = this.primitiveDataTypes.get(r["class"].id) as SpecifDataTypeEnum, // get the primitive dataType implied by the term's class
             // make sure that in case of a dataType with enumerated values, the ids correspond to the ids of the dataTypes:
-            prep = this.makeIdAndTitle(r, "PC-"),  // only used for dataTypes with enumerated values - must have prefix DT-, so that the replacement works ..
+            prep = this.makeIdAndTitle(r, "PC-"),  // only used for dataTypes with enumerated values
             dtId = prep.id.replace(/^PC-/, "DT-"), // also
             vId = prep.id.replace(/^PC-/, "V-"),   // also
             // Find any assigned enumerated values; these are defined by related propertyValues:
@@ -420,9 +386,11 @@ class COntology {
 
         // Create a resourceClass for the TermResourceClass r;
         // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
+        let pfx = 'RC-'
         return Object.assign(
-            this.createItem(r, 'RC-'),
+            this.createItem(r, pfx),
             {
+                extends: this.extCOf(r, pfx),
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
@@ -480,9 +448,11 @@ class COntology {
         //        console.debug('createSC', r, pCL, sCL, oCL);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
+        let pfx = 'SC-'
         return Object.assign(
-            this.createItem(r, 'SC-'),
+            this.createItem(r, pfx),
             {
+                extends: this.extCOf(r, pfx),
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
@@ -543,7 +513,6 @@ class COntology {
             // Take the specified identifier if available or build one with the title ... :
             id: prep.id,
             revision: this.valueByTitle(r, "SpecIF:Revision") || r.revision,
-            extends: this.extCOf(r, prefix),
             title: prep.title,
             // ToDo: Consider to complement the multilanguageText with format and language:
             description: (dscL.length > 0 ? dscL[0] : undefined), // only the first property value is taken for the class description
@@ -554,6 +523,7 @@ class COntology {
     private checkConstraintsOntology(dta: SpecIF): boolean {
         /*  Check the following constraints / conventions:
             - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
+            - A term must have a property "PC-Term" with the name of the term (the title contains the name in national languages)
             - A TermResourceClass must have at least one propertyClass, either self or inherited from an extended class
             - A TermResourceClass or TermStatementClass may not have >1 statements with title "SpecIF:isSpecializationOf"
             - Chains of "isSpecializationOf" relations must not be circular.
@@ -591,15 +561,15 @@ class COntology {
         // Make an id and a title for the class generated for term r
         let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], this.data),
             // In general we don't, but in case of the ontology we know that the resource title
-            // is given in a property with class id "PC-Name" (which has a title "dcterms:title").
+            // is given in a property with class id "PC-Term" (which has a title "dcterms:title").
             // Therefore we can get the title in a simple way:
-            prp = LIB.itemBy(r.properties, 'class', { id: "PC-Name" }),
-            ti = LIB.languageValueOf(prp.values[0], { targetLanguage: 'default' });
+            prp = LIB.itemBy(r.properties, 'class', { id: "PC-Term" }),
+            ti = LIB.languageTextOf(prp.values[0], { targetLanguage: 'default' });
 
         return {
-            // Use the identifier provided by the user or generate it using the title:
+            // Use the identifier provided by the user or by default generate it using the title:
             id: visIdL && visIdL.length > 0 ?
-                LIB.languageValueOf(visIdL[0], { targetLanguage: 'default' }).toSpecifId()
+                LIB.languageTextOf(visIdL[0], { targetLanguage: 'default' }).toSpecifId()
                 : (pfx + this.distinctiveCoreOf(ti)),
             title: ti
         }

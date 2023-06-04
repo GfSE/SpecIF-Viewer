@@ -93,8 +93,8 @@ moduleManager.construct({
 
 		// Language options have been selected at project level:
 		opts.targetLanguage = prj.language;
-		opts.lookupTitles =
-		opts.lookupValues = true;
+	//	opts.lookupTitles = true;
+	//	opts.lookupValues = true;
 
 		self.list = [];
 

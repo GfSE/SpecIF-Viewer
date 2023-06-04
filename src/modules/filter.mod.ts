@@ -200,9 +200,9 @@ moduleManager.construct({
 
 		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {
-			targetLanguage: selPrj.language,
 		//	lookupTitles: true,
-			lookupValues: true
+		//	lookupValues: true,
+			targetLanguage: selPrj.language
 		};
 
 		// build filter list from the specTypes when executed for the first time:
@@ -334,7 +334,7 @@ moduleManager.construct({
 					p: CPropertyToShow;
 
 				// Remember: As CPropertyToShow, all enumerated values of p have already been looked up ...
-				if (matchStr(res.title,res.isHeading)) return true;
+				if (matchStr(res.title,res.rC.isHeading)) return true;
 				for (p of res.descriptions)
 					if (matchStr(p)) return true;
 				for (p of res.other) {
@@ -350,7 +350,7 @@ moduleManager.construct({
 					// - Certain folder titles are specified with a vocabulary term --> lookup
 					// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
 					let localOptions = simpleClone(displayOptions);
-					localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
+				//	localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
 
 					return patt.test(prp.get(localOptions));
 				}
@@ -458,7 +458,7 @@ moduleManager.construct({
 								// @ts-ignore - in this case it is defined
 								let rgxS = new RegExp(f.searchString.escapeRE(), isChecked(f.options, SearchOption.caseSensitive) ? 'g' : 'gi');
 
-								res.title.values = markValL(res.title, rgxS, res.isHeading);
+								res.title.values = markValL(res.title, rgxS, res.rC.isHeading);
 								res.descriptions = res.descriptions.map((rp: CPropertyToShow) => {
 									rp.values = markValL(rp, rgxS);
 									return rp;
@@ -483,17 +483,17 @@ moduleManager.construct({
 				return; // undefined
 
 				function markValL(prp:CPropertyToShow, re: RegExp, isHeading?:boolean): SpecifValues {
-					//	return [LIB.makeMultiLanguageText(mark(LIB.languageValueOf(valL[0], displayOptions), re))];
+					//	return [LIB.makeMultiLanguageValue(mark(LIB.languageTextOf(valL[0], displayOptions), re))];
 					let mV:string;
 					return prp.values.map((v) => {
 						// In case of a title, the value shall only be looked up in case of a heading
 						// - Certain folder titles are specified with a vocabulary term --> lookup
 						// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
 						let localOptions = simpleClone(displayOptions);
-						localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
+					//	localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
 
 						mV = mark(LIB.displayValueOf(v, localOptions), re);
-						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageText(mV) : mV;
+						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageValue(mV) : mV;
 					});
 
 						function mark(txt: string, re: RegExp): string {
@@ -596,7 +596,7 @@ moduleManager.construct({
 					for( var v of dT.enumeration ) {
 						// the checkboxes for the secondary filter selector per enum value:
 					/*	var box: IBox = {
-								title: i18n.lookup( LIB.languageValueOf( v.value, displayOptions )), 
+								title: i18n.lookup( LIB.languageTextOf( v.value, displayOptions )), 
 								id: v.id,
 								checked: vL.includes(v.id)
 					//			checked: true
@@ -604,7 +604,7 @@ moduleManager.construct({
 					//	if( vL ) { box.checked = vL.includes( v.id ) };
 						boxes.push( box ) */
 						boxes.push({
-							title: i18n.lookup(LIB.languageValueOf(v.value, displayOptions)),
+							title: i18n.lookup(LIB.languageTextOf(v.value, displayOptions)),
 							id: v.id,
 							checked: vL.includes(v.id)
 						})

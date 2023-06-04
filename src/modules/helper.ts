@@ -561,7 +561,7 @@ LIB.equalValue = (refV: SpecifValue, newV: SpecifValue): boolean => {
     if (typeof (refV) != typeof (newV)) return false;
     if (LIB.isString(refV))
         return refV == newV;
-    if (LIB.isMultiLanguageText(refV))
+    if (LIB.isMultiLanguageValue(refV))
         // @ts-ignore - these attributes are defined with SpecifMultiLanguageText
         return refV.text == newV.text && refV.language == newV.language && refV.format == newV.format;
     return false;
@@ -696,30 +696,67 @@ LIB.hasContent = (pV: string): boolean => {
         || RE.tagImg.test(pV)
         || RE.tagA.test(pV)
 }
-LIB.isMultiLanguageText = (L: any[]): boolean => {
+LIB.isMultiLanguageValue = (L: any[]): boolean => {
     if (Array.isArray(L)) {
         let hasMultipleLanguages = L.length > 1;
-        for (var lE of L) {
-            // SpecifMultilanguageText is a list of objects {text:"the text value", language:"IETF language tag"}
-            if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && (typeof (lE.language) != "string" || lE.language.length < 2))) return false;
-        };
+        for (var i = L.length - 1; i > -1; i--) {
+            let lE = L[i];
+            // SpecifMultilanguageText is a list of objects {text:"the text value", language:"IETF language tag"}.
+            // If there are multiple language values, all except the first (=default) must have a language property:
+            if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && i>0 && (typeof (lE.language) != "string" || lE.language.length < 2)))
+                return false;
+        }
         return true;
     };
     return false;
 }
-LIB.multiLanguageTextHasContent = (L: any[]): boolean => {
-    return L && L.length > 0 && LIB.isMultiLanguageText(L) && LIB.hasContent(L[0]["text"]);
+LIB.multiLanguageValueHasContent = (L: any[]): boolean => {
+    return L && L.length > 0 && LIB.isMultiLanguageValue(L) && LIB.hasContent(L[0]["text"]);
 }
-LIB.makeMultiLanguageText = (el:any): SpecifMultiLanguageText => {
-    return typeof (el) == 'string' ? [{ text: el }] : (LIB.isMultiLanguageText( el )? el : undefined );
+LIB.makeMultiLanguageValue = (el: any, opts?: any): SpecifMultiLanguageText => {
+    if (typeof (el) == 'string') {
+        return opts && opts.language ? [{ text: el, language: opts.language }] : [{ text: el }];
+    };
+    return  LIB.isMultiLanguageValue( el )? el : undefined;
 }
-LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
-    // Return the value in the specified target language .. or the first value in the list by default.
+LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifLanguageText | undefined => {
+    // Return the language value in the specified target language .. or the first value in the list by default.
+
+    if (!LIB.isMultiLanguageValue(val))
+        throw Error("Invalid value: '" + val + "' must be a multi-language text.");
+
+    // ... is a multiLanguageText, but may be empty:
+    if (val.length < 1) return;
+
+    let lVs = val.filter((v: any): boolean => {
+        return v.language && opts && opts.targetLanguage.toLowerCase() == v.language.toLowerCase();
+    });
+    // lVs should have none or one elements; any additional ones are simply ignored:
+    if (lVs.length > 0) return lVs[0];
+
+    // next try a little less stringently:
+    lVs = val.filter((v: any): boolean => {
+        return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0, 2).toLowerCase() == v.language.slice(0, 2).toLowerCase();
+    });
+    // lVs should have none or one elements; any additional ones are simply ignored:
+    if (lVs.length > 0) return lVs[0];
+
+    if (opts && opts.dontReturnDefaultValue)
+        return;
+
+    // As a final resourt take the first element in the original list of values:
+    return val[0]
+}
+LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
+    // Return the text in the specified target language .. or in the first value in the list by default.
 
     // if opts.targetLanguage is undefined, keep all language options:
     if (!(opts && opts.targetLanguage)) return val;
 
-    if (!LIB.isMultiLanguageText(val))
+    let langV = LIB.languageValueOf(val, opts);
+    return (langV ? langV['text'] : '');
+
+/*    if (!LIB.isMultiLanguageValue(val))
         throw Error("Invalid value: '" + val + "' must be a multi-language text.");
 
     // ... is a multiLanguageText, but may be empty:
@@ -739,22 +776,18 @@ LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLan
     if (lVs.length > 0) return lVs[0].text;
 
     // As a final resourt take the first element in the original list of values:
-    return val[0].text;
+    return val[0].text;  */
 }
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
-    // for display, any vocabulary term is always translated to the selected language;
+    // for display, any vocabulary term is translated to the selected language;
     // a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
-//    return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
-//    return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
-    if (LIB.isMultiLanguageText(val)) {
-        let v = LIB.languageValueOf(val, opts);
-        if( opts.lookupValues ) v = i18n.lookup(v);
+//    return LIB.isMultiLanguageValue(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageTextOf(val, opts)) : LIB.languageTextOf(val, opts)) : val;
+    if (LIB.isMultiLanguageValue(val)) {
+        let v = LIB.languageTextOf(val, opts);
+        if (opts.lookupValues) v = app.ontology.getLocalName(v,opts);
         return opts.stripHTML ? v.stripHTML() : v
     };
     return val as string
-/*    let v = LIB.isMultiLanguageText(val) ? LIB.languageValueOf(val, opts) : val;
-    if (opts.lookupValues) v = i18n.lookup(v);
-    return opts.stripHTML ? v.stripHTML() : v; */
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
     // Return the values of a resource's (or statement's) property with a title listed in pNs;
@@ -787,7 +820,7 @@ LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] =
         oL = [];
     if (dT.enumeration)
         for (var v of dT.enumeration) {
-            oL.push(LIB.languageValueOf(v.value, { targetLanguage: 'default' }));
+            oL.push(LIB.languageTextOf(v.value, { targetLanguage: 'default' }));
         };
     return oL;
 }
@@ -807,6 +840,41 @@ LIB.duplicateId = (dta: any, id: string): boolean => {
     };
     return false;
 }
+LIB.indexBy = (L: any[], p: string, k: SpecifKey | string): number => {
+    if (L && p && k) {
+        // Return the index of an element in list 'L' whose property 'p' is referenced by key 'k':
+        // ToDo: true, only if n is the *latest* revision in case k.revision is undefined ...
+        for (var i = L.length - 1; i > -1; i--)
+            if (LIB.isKey(k) ? LIB.references(k, L[i][p]) : L[i][p] == k)
+                return i; // return list index
+    };
+    return -1;
+};
+LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
+    if (L && p && k) {
+        // Return the element in list 'L' whose property 'p' equals key 'k' od id 'k' (in case of a string):
+        // ToDo: true, only if n is the *latest* revision in case k.revision is undefined ...
+        for (var l of L)
+            if (LIB.isKey(k) ? LIB.references(k, l[p]) : l[p] == k)
+                return l; // return list item
+    };
+};
+/* LIB.indexBy = (L: any[], p: string, st: string): number => {
+    if (L && p && st ) {
+        // given a title of an item in a list, return it's index:
+        for( var i=L.length-1;i>-1;i-- )
+            if( L[i][p]==st ) return i   // return list index
+    };
+    return -1;
+}
+LIB.itemBy = (L: any[], p: string, st: string): any => {
+    if (L && p && st) {
+        // given a title of an item in a list, return the item itself:
+        for (var l of L)
+            if (l[p] == st) return l;   // return list item
+    }
+    // else return undefined
+}*/
 LIB.indexById = (L:any[],id:string):number => {
     if( L && id ) {
         // given an ID of an item in a list, return it's index:
@@ -921,25 +989,6 @@ LIB.referenceItemBy = (L: any[], p: string, k: SpecifKey) => {
     //    console.debug('##',L,p,k,i);
     if (i > -1) return L[i];
     //    return undefined
-};
-LIB.indexBy = (L: any[], p: string, k: SpecifKey | string): number => {
-    if (L && p && k) {
-        // Return the index of an element in list 'L' whose property 'p' is referenced by key 'k':
-        // ToDo: true, only if n is the latest revision in case k.revision is undefined ...
-        for (var i = L.length - 1; i > -1; i--)
-            if (LIB.isKey(k) ? LIB.references(k, L[i][p]) : L[i][p] == k)
-                return i; // return list index
-    };
-    return -1;
-};
-LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
-    if (L && p && k) {
-        // Return the element in list 'L' whose property 'p' equals key 'k' od id 'k' (in case of a string):
-        // ToDo: true, only if n is the latest revision in case k.revision is undefined ...
-        for (var l of L)
-            if (LIB.isKey(k) ? LIB.references(k, l[p]) : l[p] == k)
-                return l; // return list item
-    };
 };
 LIB.containsById = (cL:any[], L: SpecifItem|SpecifItem[] ):boolean =>{
     if (!cL || !L) throw Error("Missing Input Parameter");
@@ -1649,11 +1698,11 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
     };
     //    return undefined
 }
-LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string|undefined => {
+LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
     // Pick up the native title of any item except resource and statement;
     if( item )
-        return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
-    // else: return undefined
+        return (opts&&opts.lookupValues? app.ontology.getLocalName(item.title, opts) : item.title);
+    throw Error("Programming error: Input parameter 'item' is not defined");
 }
 LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {
     // Return the item's class title,
@@ -1677,30 +1726,33 @@ LIB.hasType = (r: SpecifResource | SpecifStatement, pNs: string[], dta: SpecIF |
         let pVs = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
         if (pVs.length > 0) {
             return pNs.includes(LIB.displayValueOf(pVs[0], Object.assign({ targetLanguage: 'default' }, opts)))
-        }
+        };
+        return false;
     };
-    return false;
+    throw Error("Programming Error: No resource or statement specified");
+    // return false;
 }
-LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
+LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs: SpecifPropertyClass[]): number => {
     // Find the index of the property to be used as title.
     // The result depends on the current user - only the properties with read permission are taken into consideration.
     // This works for title strings and multi-language title objects.
 
     // The first property which is found in the list of headings or titles is chosen:
     if (Array.isArray(pL) && pL.length>0) {
-        if (!pCs) pCs = app.projects.selected.cache.propertyClasses;
+    //    if (!pCs) pCs = app.projects.selected.cache.propertyClasses;
         for (var a = 0, A = pL.length; a < A; a++) {
-            let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
+         //   let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
+            let pt = LIB.classTitleOf(pL[a]['class'], pCs);
             // Check the configured headings and titles:
             if (CONFIG.titleProperties.includes(pt)) return a;
         }
     };
     return -1;
 }
-LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): string => {
+LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPropertyClass[], opts: any): string => {
     //    if( !pL ) return;
     // look for a property serving as title:
-    let idx = LIB.titleIdx(pL);
+    let idx = LIB.titleIdx(pL,pCs);
     if (idx > -1) {  // found!
         /*    // Remove all formatting for the title, as the app's format shall prevail.
             // Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
@@ -1711,9 +1763,9 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): stri
 
         // For now, let's try without replacements; so far this function is called before the filters are applied,
         // perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
-        let ti = LIB.languageValueOf(pL[idx].values[0], opts);
-        if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
+//        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageTextOf( pL[idx].value,op ) );
+        let ti = LIB.languageTextOf(pL[idx].values[0], opts);
+        if (ti) return /* opts && opts.lookupTitles ? i18n.lookup(ti) : */ ti;
     };
     return '';
 }

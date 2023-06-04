@@ -18,7 +18,7 @@ function transformReqif2Specif(reqifDoc,options) {
 	const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
 	
     if( typeof(options)!='object' ) options = {};
-    if( typeof(options.translateTitle)!='function' ) options.translateTitle = function(ti) {return ti};
+//    if( typeof(options.translateTitle)!='function' ) options.translateTitle = function(ti) {return ti};
 
     const xmlDoc = parse(reqifDoc);
 
@@ -124,7 +124,8 @@ function extractPropertyClasses(xmlSpecTypes) {
         let propertyClasses = Object.entries(specAttributeMap).map( entry => { 
             let propertyClass = {
                 id: entry[0],
-                title: options.translateTitle( entry[1].title ),
+                title: entry[1].title,
+            //    title: options.translateTitle(entry[1].title),
                 dataType: entry[1].dataType,
                 changedAt: entry[1].changedAt
             };

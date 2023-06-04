@@ -29,9 +29,9 @@ class CPropertyToEdit extends CPropertyToShow  {
 			localOpts = Object.assign({
 				lookupTitles: true,
 				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
-				targetLanguage: browser.language,
+				targetLanguage: this.selRes.language,
 				imgClass: 'forImagePreview'
-			},opts),
+			}, opts),
 			ti = LIB.titleOf(this, localOpts);
 
 		// create radio-buttons or checkboxes, if it is an enumerated dataType:
@@ -42,7 +42,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 			let entryL = LIB.forAll(
 				this.dT.enumeration,
 				(eV: SpecifEnumeratedValue) => {
-					let val = this.dT.type == SpecifDataTypeEnum.String ? i18n.lookup(LIB.languageValueOf(eV.value, localOpts)) : eV.value;
+					let val = this.dT.type == SpecifDataTypeEnum.String ? LIB.languageTextOf(eV.value, localOpts) : eV.value;
+				//	let val = this.dT.type == SpecifDataTypeEnum.String ? i18n.lookup(LIB.languageTextOf(eV.value, localOpts)) : eV.value;
 					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
 				}
 			);
@@ -53,13 +54,13 @@ class CPropertyToEdit extends CPropertyToShow  {
 					ti,
 					entryL,
 					this.dispOpts()
-				);
+				)
 			else
 				return makeRadioField(
 					ti,
 					entryL,
 					this.dispOpts()
-				);
+				)
 		};
 
 		// create an input field depending on the property's dataType;
@@ -84,15 +85,11 @@ class CPropertyToEdit extends CPropertyToShow  {
 						// it is a text;
 						// in case of xhtml, it may contain a diagram reference, 
 						// as there is no obligation to provide a separate property belonging to CONFIG.diagramClasses:
-//						console.debug( 'editField', LIB.languageValueOf(this.value,localOpts) );
+//						console.debug( 'editField', LIB.languageTextOf(this.value,localOpts) );
 						if (opts && opts.dialogForm)
 							opts.dialogForm.addField(ti, this.dT);
 						return makeTextField(
 							ti,
-						/*	LIB.forAll(
-								this.values,
-								(v: SpecifMultiLanguageText) => { return LIB.languageValueOf(v, localOpts); }
-							), */
 							this.get(localOpts),
 							// - open an input text-area, if it is a description property
 							// - open an input line, otherwise
@@ -123,7 +120,6 @@ class CPropertyToEdit extends CPropertyToShow  {
 						opts.dialogForm.addField(ti, this.dT);
 					return makeTextField(
 						ti,
-					/*	this.values as string[], */
 						this.get(localOpts),
 						{
 							typ: 'line',
@@ -150,7 +146,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// while the propertyClass should be unique),
 		// so that the user can update and delete the diagram later on:
 		return '<div id="' + tagId(this['class'].id) + '">'
-			+ this.renderFile(this.values.length > 0 ? LIB.languageValueOf(this.values[0], opts) : '', opts)
+			+ this.renderFile(this.values.length > 0 ? LIB.languageTextOf(this.values[0], opts) : '', opts)
 			+ '</div>'
 	}
 	private makeDiagramField(opts: any) {
@@ -201,6 +197,95 @@ class CPropertyToEdit extends CPropertyToShow  {
 				+ '</div>'
         }
 	}
+/*	private getTitle(): string {
+		return LIB.titleOf(this, { lookupTitles: true, targetLanguage: this.selRes.language })
+	} */
+	getEditedValue(): SpecifProperty {
+		// Get the new or unchanged input value of the property from the input field:
+
+		// skip properties without update permission:
+		if (!this.pC.permissions.U)
+			return;
+
+		// In case of enumeration:
+		if (this.dT.enumeration) {
+			let valL: string[];
+//			console.debug('xs:enumeration',p,pC,separatedValues,vals);
+			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple) {
+//				console.debug( '*', p, checkboxValues(this.title ));
+				valL = checkboxValues(this.title);
+			}
+			else {
+//				console.debug( '+',p,radioValue( this.title ));
+				let val = radioValue(this.title);
+				valL = val ? [val] : [];
+			};
+
+			// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+			// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+			// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+			return { class: LIB.makeKey(this.pC.id), values: valL };
+		};
+
+		// Otherwise take the value itself:
+		let val: string;
+		switch (this.dT.type) {
+			case SpecifDataTypeEnum.String:
+				if (this.pC.title == CONFIG.propClassDiagram) {
+					// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
+					// this.values is empthy, if the diagram has been removed while editing:
+
+					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
+					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
+					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
+					return { class: LIB.makeKey(this.pC.id), values: this.values };
+				}
+				else {
+					// property isn't of type diagram:
+					console.debug('editedProp', this.title, this);
+					val = textValue(this.title);
+					if (LIB.hasContent(val)) {
+						// Create a multiLanguageText only if the propertyClass is declared accordingly.
+						// - For the time being by the list CONFIG.multiLanguageProperties
+						// - Later with a boolean attribute 'multiLanguage' of the propertyClass itself
+						// Note: Don't use this.title, as it may be replaced by a localized text:
+						if (CONFIG.multiLanguageProperties.includes(this.pC.title) ) {
+							// Update just the current language:
+							if (this.values.length > 0 && LIB.multiLanguageValueHasContent(this.values[0])) {
+								// - If the original property has different languages, take care of them;
+								//   the new value must only replace a value of the same language!
+								// - Don't overwrite a default value, but create a new language value with the given language at hand
+								let langV = LIB.languageValueOf(this.values[0], { targetLanguage: this.selRes.language, dontReturnDefaultValue: true });
+								if (langV) {
+									// language found, thus update:
+									langV.text = val;
+									langV.language = this.selRes.language;
+								}
+								else {
+									// language not found, so append:
+									this.values[0].push({ text: val, language: this.selRes.language } as SpecifLanguageText);
+								};
+								return { class: LIB.makeKey(this.pC.id), values: this.values };
+							};
+
+							// else: create a new multiLanguageValue list with a single entry:
+							return { class: LIB.makeKey(this.pC.id), values: [[{ text: val, language: this.selRes.language } as SpecifLanguageText]] };
+						};
+
+						// else: create a new multiLanguageValue list with a single entry without language tag:
+						return { class: LIB.makeKey(this.pC.id), values: [[{ text: val } as SpecifLanguageText]] };
+					};
+					// no input value:
+					return { class: LIB.makeKey(this.pC.id), values: [] };
+				};
+			case SpecifDataTypeEnum.Boolean:
+				val = booleanValue(this.title).toString();
+				return { class: LIB.makeKey(this.pC.id), values: [val] };
+			default:
+				val = textValue(this.title);
+				return { class: LIB.makeKey(this.pC.id), values: (LIB.hasContent(val) ? [val] : []) };
+		};
+	}
 }
 class CResourceToEdit {
 	id: string;
@@ -208,7 +293,7 @@ class CResourceToEdit {
 	private selPrj: CProject;
 	private cData: CCache;
 	rC: SpecifResourceClass;
-//	isHeading: boolean;
+	language: string;
 //	order: string;
 //	revision?: string;
 //	replaces?: string[];
@@ -229,8 +314,8 @@ class CResourceToEdit {
 		this.id = el.id;
 	//	this['class'] = el['class'];
 		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
-	/*	this.isHeading = false; // will be set further down if appropriate
-		this.revision = el.revision;
+		this.language = el.language || this.selPrj.language;
+	/*	this.revision = el.revision;
 		this.order = el.order;
 		this.revision = el.revision;
 		this.replaces = el.replaces;
@@ -258,7 +343,8 @@ class CResourceToEdit {
 				size: BootstrapDialog.SIZE_WIDE,
 				// initialize the dialog;
 				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
-				onshown: () => { setFocus(i18n.lookup(CONFIG.propClassTitle)); this.check() },
+				onshown: () => { setFocus(CONFIG.propClassTitle); this.check() },
+			//	onshown: () => { setFocus(i18n.lookup(CONFIG.propClassTitle)); this.check() },
 			//	message: (thisDlg)=>{
 				message: () => {
 					// @ts-ignore - object $('#app') is only theoretically undefined ...
@@ -299,7 +385,7 @@ class CResourceToEdit {
 				// all diagrams should be in self.toEdit.descriptions, but there may be exceptions in older data:
 				// ToDo: Check whether *all* diagram resources are sorted into self.toEdit.descriptions as member of CONFIG.diagramClasses
 				LIB.itemBy(this.properties, 'class', LIB.makeKey(cId))
-					.values = [LIB.makeMultiLanguageText('<object data="' + fName + '" type="' + fType + '">' + fName + '</object>')];
+					.values = [LIB.makeMultiLanguageValue('<object data="' + fName + '" type="' + fType + '">' + fName + '</object>')];
 				// store the diagram file itself:
 				this.newFiles.push(newFile);
 				// @ts-ignore - document.getElementById is only theoretically undefined ...
@@ -329,71 +415,15 @@ class CResourceToEdit {
     }
 	getEditedProperties(): SpecifProperty[] {
 		// Get all property values from the form:
-		let editedProps: SpecifProperty[] = [];
-		this.properties.forEach(
-			(p: CPropertyToEdit): void => {
-				// Get the new or unchanged input value of the property from the input field:
-
-				// skip properties without update permission:
-				if (!p.pC.permissions.U)
-					return;
-
-				// In case of enumeration:
-				if (p.dT.enumeration) {
-					let valL: string[];
-//					console.debug('xs:enumeration',p,pC,separatedValues,vals);
-					if (typeof (p.pC.multiple) == 'boolean' ? p.pC.multiple : p.dT.multiple) {
-//						console.debug( '*', p, checkboxValues(prpTitle(p) ));
-						valL = checkboxValues(prpTitle(p));
-					}
-					else {
-//						console.debug( '+',p,radioValue( prpTitle(p) ));
-						let val = radioValue(prpTitle(p));
-						valL = val ? [val] : [];
-					};
-
-					// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-					// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-					// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-					editedProps.push({ class: LIB.makeKey(p.pC.id), values: valL });
-					return;
-				};
-
-				// Otherwise take the value itself:
-				let val: string;
-				switch (p.dT.type) {
-					case SpecifDataTypeEnum.String:
-						if (p.pC.title == CONFIG.propClassDiagram) {
-							// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
-							// p.values is empthy, if the diagram has been removed while editing:
-
-							// The class reference to pC must not have a revision, if the reference in propertyClasses of rC hasn't a revision.
-							// For the time being, the revision is *never* specified here, perhaps the same reference (with or without revision) 
-							// as used in the propertyClasses of rC needs to be applied (ToDo?) 
-							editedProps.push({ class: LIB.makeKey(p.pC.id), values: p.values });
-						}
-						else {
-							// property isn't of type diagram:
-							val = textValue(prpTitle(p));
-							editedProps.push({ class: LIB.makeKey(p.pC.id), values: (LIB.hasContent(val)? [LIB.makeMultiLanguageText(val)] : []) });
-						};
-						break;
-					case SpecifDataTypeEnum.Boolean:
-						val = booleanValue(prpTitle(p)).toString();
-						editedProps.push({ class: LIB.makeKey(p.pC.id), values: [val] });
-						break;
-					default:
-						val = textValue(prpTitle(p));
-						editedProps.push({ class: LIB.makeKey(p.pC.id), values: (LIB.hasContent(val)? [val] : []) });
-				};
-			}
+		let editedProps: SpecifProperty[] = LIB.forAll(
+			this.properties,
+			(p: CPropertyToEdit) => {
+				return p.getEditedValue();  // those without permissions are returned undefined and are suppressed
+            }
 		);
 //		console.debug('editedProps', editedProps)
 		return editedProps;
 
-		function prpTitle(p: CPropertyToShow) {
-			return LIB.titleOf(p, { lookupTitles: true, targetLanguage: browser.language })
-		}
 	}
 }
 
@@ -477,7 +507,7 @@ moduleManager.construct({
 				selectResClass(self.localOpts)
 				.then(
 					(rC: SpecifResourceClass) => {
-					//	self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageValueOf(rC.title) + ')';
+					//	self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageTextOf(rC.title) + ')';
 						self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + rC.title + ')';
 						return app.projects.selected.makeEmptyResource(rC)
 				})
@@ -604,10 +634,6 @@ moduleManager.construct({
 		// It may happen that an existing resource and thus 'self.newRes' does not have 
 		// a 'properties' list yet, even though it's class defines propertyClasses.
 
-		// ToDo: 
-		// - If the original resource had different languages, take care of them;
-		// - The new values must not replace any original multi-language property values!
-
 		let pend = 2, // minimally 2 calls with promise
 			chD = new Date().toISOString();
 
@@ -669,8 +695,8 @@ moduleManager.construct({
 			if(--pend<1) {
 				// update the tree because the title may have changed:
 				self.parent.updateTree({
-					lookupTitles: true,
-					targetLanguage: browser.language
+				//	lookupTitles: true,
+					targetLanguage: self.newRes.language || browser.language
 				});
 				// get the selected node:
 				let selNd = self.parent.tree.selectedNode;

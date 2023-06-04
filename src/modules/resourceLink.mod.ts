@@ -50,7 +50,7 @@ moduleManager.construct({
 		self.clear();
 		cData = app.projects.selected.cache;
 		opts = Object.assign({}, options, {
-			lookupTitles: true,
+		//	lookupTitles: true,
 			targetLanguage: browser.language,
 			addIcon: true
 		});

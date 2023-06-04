@@ -12,8 +12,8 @@ const CONFIG:any = {};
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
     CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
-//    CONFIG.userNameAnonymous = 'anonymous'; // as configured in the server
-//    CONFIG.passwordAnonymous = 'keyless'; // as configured in the server
+    CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
+    CONFIG.passwordAnonymous = ''; // as configured in the server
     CONFIG.placeholder = 'to-be-replaced';
     CONFIG.notAssigned = 'notAssigned';
 //    CONFIG.loginTimeout = 3000;
@@ -147,6 +147,7 @@ const CONFIG:any = {};
     // The following can have an i18n label in the translation files:
     CONFIG.dataTypeComment = 'Datatype for comment text';
     CONFIG.propClassId = "dcterms:identifier";
+    CONFIG.propClassTerm = "SpecIF:Term";
     CONFIG.propClassTitle = "dcterms:title";
     CONFIG.propClassDesc = "dcterms:description";
     CONFIG.propClassType = "dcterms:type";
@@ -174,21 +175,22 @@ const CONFIG:any = {};
     CONFIG.staClassMentions = 'SpecIF:mentions';
 
 /////////////////////////////////////////////////
-// Lists controlling the visibility and arrangement in various tabs
+// Lists controlling the visibility and arrangement based on the semantics;
+// but use the ontology for looking up or translating terms.
     
     // All property titles which denote a property as identifier in another context.
     // Is necessary in certain use-cases such as updating content via Excel-sheet.
     // The value of the first element found in idProperties will be used to form the internal id.
     CONFIG.idProperties = [
-        'dcterms:identifier',
-        'DC.identifier',
+        'dcterms:identifier'
+    /*    'DC.identifier',
         'ReqIF.ForeignID',
         // RIF 1.1a Atego Exerpt:
         'Object Identifier',
         'VALUE-Object Identifier',
         'id',
         'ID',
-        'Identifier'
+        'Identifier' */
     ];
 
     // A list of resourceClasses serving as hierarchyRoot with meta-data;
@@ -207,27 +209,27 @@ const CONFIG:any = {};
     // If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
     // it is considered a heading (chapter title) and will be included in the outline numbering.
     // Also, this property will be used for the title when displaying the resource.
-    CONFIG.headingProperties = [
+    CONFIG.headings =
+        CONFIG.hierarchyRoots
+        .concat([
         CONFIG.resClassOutline, // do not remove
-        CONFIG.resClassFolder,    // do not remove
-        // ReqIF 1.0 and 1.1 Implementation Guide:
+        CONFIG.resClassFolder    // do not remove
+    /*    // ReqIF 1.0 and 1.1 Implementation Guide:
         'ReqIF.ChapterName',    // do not remove
-    /*    // DocBridge Resource Director:
-        'DBRD.ChapterName', */
+        // DocBridge Resource Director:
+        'DBRD.ChapterName',
         // Other:
-        'Überschrift'
-    ];
+        'Überschrift'  */
+    ]);
 
     // The content of the property with a title in this list will be used for the title when displaying the resource:
     // The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
     // For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name',
     // the value of the latter will be the title of the resource.
-    CONFIG.titleProperties = 
-        CONFIG.headingProperties
-        .concat([
-        // Dublin core:
+    CONFIG.titleProperties = [
         CONFIG.propClassTitle,
-        'DC.title',
+        CONFIG.propClassTerm
+ /*       'DC.title',
         // ReqIF 1.0 and 1.1 Implementation Guide:
         'ReqIF.Name',
         // RIF 1.1a Atego Exerpt:
@@ -240,25 +242,25 @@ const CONFIG:any = {};
         'Name',
         // carhs SafetyWissen:
         'carhs.Title.en',
-        'carhs.Title.de',*/
+        'carhs.Title.de',
         // Other:
         'Title',
-        'Titel'
-    ]);
+        'Titel'  */
+    ];
 
     // The content of all properties with a title in this list will be concatenated to form the description when displaying the resource:
     CONFIG.descProperties = [
         // Dublin core:
         CONFIG.propClassDesc,
-        'DC.description',
-        CONFIG.propClassDiagram,
+        CONFIG.propClassDiagram
+/*        'DC.description',
         // ReqIF 1.0 and 1.1 Implementation Guide:
         'ReqIF.Text',
         // General:
         'Beschreibung',
         'Description',
         'Diagramm',
-    /*    // DocBride Resource Director:
+        // DocBride Resource Director:
         'DBRD.Text',
         'Preview',
         // carhs SafetyWissen:
@@ -271,6 +273,15 @@ const CONFIG:any = {};
     //    'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
     ];
 
+    CONFIG.multiLanguageProperties = [
+        CONFIG.propClassTitle,
+        CONFIG.propClassDesc,
+        CONFIG.propClassDiagram,
+        "SpecIF:LocalName"
+    ]
+    .concat(CONFIG.descProperties)
+
+    // those will get a larger edit field, just like the description properties:
     CONFIG.commentProperties = [
         "ReqIF-WF.CustomerComment",
         "ReqIF-WF.SupplierComment"
@@ -596,6 +607,13 @@ const vocabulary = {
         specif: function (iT: string): string {
             // Target language: SpecIF
             var oT = '';
+
+            // 1. Look for preferred term in the Ontology:
+
+            // 2. Transform local name to ontology term:
+            // ontology.findTermForLocalName({resourceClass:iT})
+
+            // 3. Finally some additional mappings:
             switch (iT.toJsId().toLowerCase()) {
                 case 'actors':
                 case 'actor':

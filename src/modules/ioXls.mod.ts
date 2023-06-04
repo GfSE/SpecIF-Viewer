@@ -182,10 +182,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		changedAt: string;
 		constructor(nm: string, ti: string) {
 			this.id = nm;
-			this.title = vocabulary.resource.specif(ti);
+			this.title = ti;
+		//	this.title = vocabulary.resource.specif(ti);
 			let ic = CONFIG.icons.get(this.title);
 			if (ic) this.icon = ic;
-			this.description = LIB.makeMultiLanguageText('For resources specified per line of an excel sheet');
+			this.description = LIB.makeMultiLanguageValue('For resources specified per line of an excel sheet');
 			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
 			this.propertyClasses = [];
 			this.changedAt = chAt;
@@ -202,9 +203,10 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	//	propertyClasses: SpecifPropertyClass[];  --> no individual statement names used here
 		changedAt: string;
 		constructor(ti: string) {
-			this.title = vocabulary.statement.specif(ti);
+			this.title = ti;
+		//	this.title = vocabulary.statement.specif(ti);
 			this.id = staClassId(this.title);
-			this.description = LIB.makeMultiLanguageText('For statements created by columns whose title is declared as a statement');
+			this.description = LIB.makeMultiLanguageValue('For statements created by columns whose title is declared as a statement');
 			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
 			// No subjectClasses or objectClasses means all are allowed.
 			// Cannot specify any, as we don't know the resourceClasses.
@@ -271,7 +273,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							if( cell&&cell.t=='s'&&cell.v )
 								dT.enumeration.push({
 									id: dT.id+'-'+r,
-									value: LIB.makeMultiLanguageText(cell.v as string)
+									value: LIB.makeMultiLanguageValue(cell.v as string)
 								});
 						};
 					};
@@ -459,7 +461,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									if( val ) 
 										res.properties.push({
 											class: LIB.keyOf(pC),
-											values: [(dT.type == SpecifDataTypeEnum.String)? LIB.makeMultiLanguageText(val) : val]
+											values: [(dT.type == SpecifDataTypeEnum.String)? LIB.makeMultiLanguageValue(val) : val]
 										});
 								}
 								else {
@@ -577,7 +579,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name"),
-							values: [LIB.makeMultiLanguageText(sh.name)]
+							values: [LIB.makeMultiLanguageValue(sh.name)]
 						}],
 						changedAt: chAt
 					};
@@ -669,12 +671,14 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 					// Skip, if there is no column heading or if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
-					if (!pTi || CONFIG.statementClasses.indexOf( vocabulary.statement.specif(pTi) )>-1 ) return;
+					if (!pTi || CONFIG.statementClasses.indexOf( pTi )>-1 ) return;
+				//	if (!pTi || CONFIG.statementClasses.indexOf(vocabulary.statement.specif(pTi)) > -1) return;
 					// else, it is a property:
 
 					// Only one property shall be the resource's title;
 					// the first one found shall prevail:
-					let xTi = vocabulary.property.specif(pTi),  // translate the title to standard term
+					let xTi = pTi,  // translate the title to standard term
+				//	let xTi = vocabulary.property.specif(pTi),  // translate the title to standard term
 						isNoTi = xTi != CONFIG.propClassTitle;
 					if ( noTitleFound || isNoTi ) {
 						pTi = xTi;
@@ -782,7 +786,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	// @ts-ignore - Basetypes() has not all required attributes of SpecIF; they are added later on
 	var specifData:SpecIF = new BaseTypes();
 	specifData.id = 'XLS-' + pN.toSpecifId();
-	specifData.title = LIB.makeMultiLanguageText(pN);
+	specifData.title = LIB.makeMultiLanguageValue(pN);
 	specifData.generator = "xslx2specif";
 	specifData.$schema = 'https://specif.de/v1.1/schema.json';
 	// the root folder resource:
@@ -791,10 +795,10 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		class: LIB.makeKey("RC-Folder"),
 		properties: [{
 			class: LIB.makeKey("PC-Name"),
-			values: [ LIB.makeMultiLanguageText(pN )]
+			values: [ LIB.makeMultiLanguageValue(pN )]
 		}, {
 			class: LIB.makeKey("PC-Type"),
-			values: [ LIB.makeMultiLanguageText(CONFIG.resClassOutline )]
+			values: [ LIB.makeMultiLanguageValue(CONFIG.resClassOutline )]
 		}],
 		changedAt: chAt
 	});

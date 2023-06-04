@@ -20,13 +20,13 @@
 
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin + '(.+?)' + CONFIG.titleLinkEnd, 'g');
 class CPropertyToShow implements SpecifProperty {
-	id?: string;
-	title?: SpecifMultiLanguageText[] | string;
+	title: string;
 	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
 	class: SpecifKey;
 	private cData: CCache;  // the classes are always available in the cache, not necessarily the instances
 	selPrj: CProject;
+	selRes: CResourceToShow; // in fact it is CResourceToShow
 	pC: SpecifPropertyClass;
 	dT: SpecifDataType;
 	replaces?: string[];
@@ -35,12 +35,13 @@ class CPropertyToShow implements SpecifProperty {
 	values: SpecifValues;
 	enumIdL?: SpecifValues;
 
-	constructor(prp: SpecifProperty, res:SpecifResource) {
+	constructor(prp: SpecifProperty, res:CResourceToShow) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
 
 		this.cData = app.projects.cache;
 		this.selPrj = app.projects.selected;
+		this.selRes = res;
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
 		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
@@ -64,14 +65,14 @@ class CPropertyToShow implements SpecifProperty {
 
 		// by default, use the propertyClass' title:
 		// An input data-set may have titles which are not from the SpecIF vocabulary;
-		// replace the result with a preferred vocabulary term:
-		this.title = vocabulary.property.specif(this.pC.title);
+		// do not yet replace the result with a preferred vocabulary term:
+		this.title = LIB.titleOf(this.pC, { targetLanguage: 'default' });
 
 		if (this.dT.enumeration) {
 		//	this.enumIdL = simpleClone(prp.values);  // keep original values for resourceEdit
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
-			// ToDo: Check use of default values - here it is used differently
+			// ToDo: Check use of default values
 			this.values = this.listEnumeratedValues();
 		}
 	}
@@ -95,19 +96,21 @@ class CPropertyToShow implements SpecifProperty {
 						let v: SpecifMultiLanguageText;
 						this.values.forEach((id) => {
 							v = LIB.itemById(this.dT.enumeration, id).value;
-							str += LIB.languageValueOf(v, opts);
+							str += LIB.languageTextOf(v, opts);
 						});
 					}
 					else */
 				this.values.forEach(
 					(v: any, i: number) => {
-						lV = LIB.languageValueOf(v, opts);
-						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? i18n.lookup(lV) : lV );
+						lV = LIB.languageTextOf(v, opts);
+						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? app.ontology.getLocalName(lV,opts) : lV );
+					//	str += (i < 1 ? '' : ', ') + lV;
 					});
-				return str;
+				// remove any leading whiteSpace:
+				return str.replace(/^\s+/, "");
 			};
 			// else
-			throw Error("When displaying a property value, a target language must be specified.");
+			throw Error("When displaying a property value with dataType string, a target language must be specified.");
 		};
 		// else, all data types except string:
 		this.values.forEach((v: any, i: number) => { str += (i<1? '' : ', ') + v; });
@@ -117,7 +120,7 @@ class CPropertyToShow implements SpecifProperty {
 				eV;
 			console.debug('enumValueOf',dT,val,opts);
 			dT.enumeration.forEach( (v,i)=>{
-				eV = LIB.languageValueOf( LIB.itemById(dT.enumeration,v).value, opts );
+				eV = LIB.languageTextOf( LIB.itemById(dT.enumeration,v).value, opts );
 				// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
 				// For example, when an object is from a search hitlist or from a revision list,
 				// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
@@ -134,6 +137,7 @@ class CPropertyToShow implements SpecifProperty {
 	get( options: any): string {
 		let opts = $.extend({
 				titleLinking: false,
+				lookupValues: false,
 				targetLanguage: this.selPrj.language,
 				titleLinkTargets: CONFIG.titleLinkTargets,
 				clickableElements: false,
@@ -141,8 +145,7 @@ class CPropertyToShow implements SpecifProperty {
 				// some environments escape the tags on export, e.g. camunda / in|flux:
 				unescapeHTMLTags: false,
 				// markup to HTML:
-				makeHTML: false,
-				lookupValues: false
+				makeHTML: false
 			},
 			options
 		);
@@ -152,8 +155,7 @@ class CPropertyToShow implements SpecifProperty {
 //		console.debug('*',this,this.dT);
 		switch (this.dT.type) {
 			case SpecifDataTypeEnum.String:
-				// remove any leading whiteSpace:
-				ct = this.allValues(opts).replace(/^\s+/, "");
+				ct = this.allValues(opts);
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
@@ -230,8 +232,8 @@ class CPropertyToShow implements SpecifProperty {
 					// @ts-ignore - target may be undefined, indeed:
 					if (target)
 						return lnk(target, $1)+$2;
-					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">' + $1 + '</span>+$2'
+					// The dynamic link has NOT been matched/replaced, so remove the titleLink pattern and mark it:
+					return '<span style="color:#D82020">' + $1 + '</span>'+$2
 				}
 			)
 		} while (replaced);
@@ -525,7 +527,7 @@ class CResourceToShow {
 	private cData: CCache;
 	rC: SpecifResourceClass;
 	hasPropertyWithUpdatePermission = false;
-	isHeading = false; // will be set in the constructor if appropriate
+	language: string;
 	order: string;
 	revision?: string;
 	replaces?: string[];
@@ -544,12 +546,17 @@ class CResourceToShow {
 		this['class'] = el['class'];
 		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
 		this.revision = el.revision;
+		this.language = el.language || this.selPrj.language;
 		this.order = el.order;
 		this.revision = el.revision;
 		this.replaces = el.replaces;
 		this.changedAt = el.changedAt;
 		this.changedBy = el.changedBy;
 		this.descriptions = [];
+		// Initially all properties are stored in other;
+		// further down the title and description properties are identified and moved:
+		// create a new list by copying the elements (do not copy the list ;-):
+		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this) });
 
 		// Get the resourceClass' permissions:
 		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
@@ -563,14 +570,12 @@ class CResourceToShow {
 				this.rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
 		};
 
-		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p,this) });
-
 		// Find out, whether there is at least one property with update permission,
 		// so that the actionBtns can be activated/deactivated
-		// - note that the list of properties is incomplete, but we must iterate *all* propertyClasses. 
+		// - note that the list of properties is often incomplete, but we must iterate *all* propertyClasses. 
 		for ( var pC of this.cData.get('propertyClass',this.rC.propertyClasses) ) {
-			// Get the propertyClass' permissions:
+			// Get the propertyClass' permissions;
+			// the permissions can be temporarily stored in pC, because it is a clone:
 			let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', pC.id);
 			if (iPrm)
 				pC.permissions = iPrm.permissions
@@ -587,6 +592,7 @@ class CResourceToShow {
 				}
 			};
 
+			// this is what we want after all the analysis, before:
 			if (pC.permissions.U) {
 				this.hasPropertyWithUpdatePermission = true;
 				break
@@ -612,23 +618,18 @@ class CResourceToShow {
 			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
 			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; 
 		}; */
-		this.isHeading = this.rC.isHeading
-			|| CONFIG.headingProperties.includes(this.rC.title);
 
 		// b) Check the configured descriptions:
 		// We must iterate backwards, because we alter the list of other.
 		// ToDo: use this.other.filter()
 		for (a = this.other.length - 1; a > -1; a--) {
+			// to decide whether it is a description, use the original title of the resp. propertyClass
 			if (CONFIG.descProperties.includes(this.other[a].title)) {
 				// To keep the original order of the properties, the unshift() method is used.
 				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			}
 		};
 
-	/*	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-		//    there is no description propertyClass;
-		if (this.descriptions.length < 1 && el.description )
-			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
 	isEqual(res: SpecifResource): boolean {
@@ -656,12 +657,8 @@ class CResourceToShow {
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
 		// Assuming that a title property has only a single value:
-		let ti = LIB.languageValueOf(this.title.values[0], opts);
-		if (this.isHeading) {
-			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
-			// whereas the individual elements may mean the vocabulary term as such (example: vocabulary/ontology):
-			if (opts && opts.lookupTitles)
-				ti = i18n.lookup(ti);
+		let ti = LIB.displayValueOf(this.title.values[0], opts);
+		if (this.rC.isHeading) {
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>';
 		};
@@ -690,7 +687,6 @@ class CResourceToShow {
 
 		// Create HTML for a list entry:
 		var opts = options ? simpleClone(options) : {};
-		opts.targetLanguage = this.selPrj.language;
 		opts.titleLinking
 			= opts.clickableElements
 			= opts.linkifyURLs
@@ -699,8 +695,9 @@ class CResourceToShow {
 		opts.unescapeHTMLTags = true;
 		// ToDo: Make it a user option:
 		opts.makeHTML = true;
-		opts.lookupValues = true;
 		opts.lookupTitles = true;
+		opts.lookupValues = true;
+		opts.targetLanguage = this.language;
 		opts.localDateTime = true;
 		opts.rev = this.revision;
 
@@ -1169,7 +1166,7 @@ class CFileWithContent implements IFileWithContent {
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
 							selPrj = app.projects.selected,
 							clsPrp = new CResourceToShow(itemBySimilarId(selPrj.cache.resources, eId)),
-							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
+							ti = LIB.languageTextOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
@@ -1547,7 +1544,7 @@ moduleManager.construct({
 
 		self.cData = self.selPrj.cache;
 
-		$('#pageTitle').html(LIB.languageValueOf(self.selPrj.title, { targetLanguage: self.selPrj.language }));
+		$('#pageTitle').html(LIB.languageTextOf(self.selPrj.title, { targetLanguage: self.selPrj.language }));
 		app.busy.set();
 	//	$( self.view ).html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
 	//	$('#specNotice').empty();
@@ -1558,7 +1555,7 @@ moduleManager.construct({
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
 		self.targetLanguage = opts.targetLanguage = self.selPrj.language;
-		opts.lookupTitles = true;
+	//	opts.lookupTitles = true;
 				
 		// Initialize the tree, unless
 		// - URL parameters are specified where the project is equal to the loaded one
@@ -1641,8 +1638,8 @@ moduleManager.construct({
 			.then(
 				() => {
 					self.updateTree({
-						targetLanguage: browser.language,
-						lookupTitles: true
+					//	lookupTitles: true,
+						targetLanguage: self.selPrj.language
 					});
 					self.doRefresh({ forced: true })
 				}
@@ -2198,7 +2195,7 @@ moduleManager.construct({
 		// Select the language options at project level:
 		if (typeof (opts) != 'object') opts = {};
 		opts.targetLanguage = self.targetLanguage = selPrj.language;
-		opts.lookupTitles = self.lookupTitles = true;
+		opts.lookupTitles = true;
 		//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
 		//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
@@ -2371,7 +2368,7 @@ moduleManager.construct({
 											if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
+												if (refPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
 													// these are minimal statements only just for displaying the statement graph:
 													staL.push({
 														// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
@@ -2393,7 +2390,7 @@ moduleManager.construct({
 										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 											// add, if the selected resource's title appears in the iterated resource's property ..
 											// and if it is not yet listed:
-											if (selPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {
+											if (selPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {
 												// these are minimal statements only just for displaying the statement graph:
 												staL.push({
 													// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class

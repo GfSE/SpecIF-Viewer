@@ -253,10 +253,10 @@ class CCache {
 				:
 					// it is a resource:
 					{
-						targetLanguage: opts.targetLanguage,
-						lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading
+					//	lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading,
+						targetLanguage: opts.targetLanguage
 					};
-			let ti = LIB.getTitleFromProperties(el.properties, resOpts);
+			let ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, resOpts);
 
 			// In case of a resource, we never want to lookup a title,
 			// however in case of a statement, we do:
@@ -411,8 +411,8 @@ class CProject {
 		this.createdAt = spD.createdAt;
 		this.createdBy = spD.createdBy;
 		this.exportParams = {
-			projectName: LIB.languageValueOf(this.title, { targetLanguage: this.language }),
-			fileName: LIB.languageValueOf(this.title, { targetLanguage: this.language })
+			projectName: LIB.languageTextOf(this.title, { targetLanguage: this.language }),
+			fileName: LIB.languageTextOf(this.title, { targetLanguage: this.language })
 		};
 		// remember the hierarchies associated with this projects - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
@@ -726,6 +726,7 @@ class CProject {
 								// types are compared by id:
 								// @ts-ignore - indexing by string works fine
 								let idx = LIB.indexByKey(dta[ty.listName], newT);
+							//	let idx = LIB.indexBy(dta[ty.listName], 'title', newT.title);   // does certainly not yield a good result in case of dataTypes
 								if (idx < 0) {
 									// a) there is no item with the same id
 									itmL.push(newT);
@@ -797,14 +798,18 @@ class CProject {
 							// For matching, the title and fundamental type are used. 
 							// The title can have multiple languages - so far only the project's or browser's language (fallback when initializing this.language)
 							// are used, so the matching may lead to different results depending on the language selected.
-							let selOpts = Object.assign({}, opts, { targetLanguage: self.language || newD.language, lookupTitles: true });
+							let selOpts = Object.assign(
+								{},
+								opts,
+								{ targetLanguage: self.language || newD.language /*, lookupTitles: true */ }
+							);
 							if ( LIB.hasResClass(newR, CONFIG.modelElementClasses.concat(CONFIG.diagramClasses),newD)
 								&& !LIB.hasType(newR, CONFIG.excludedFromDeduplication, newD, opts)
 						//	if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(newR['class'], newD.resourceClasses)) > -1
 						//		&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD)[0])) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, selOpts), selOpts)[0] as SpecifResource;
+								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, newD.propertyClasses, selOpts), selOpts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
@@ -1155,7 +1160,8 @@ class CProject {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
 		function updateCh(itm: SpecifItem): void {
 			itm.changedAt = new Date().toISOString();
-			itm.changedBy = app.me.userName;
+			if (app.me.userName != CONFIG.userNameAnonymous )
+				itm.changedBy = app.me.userName;
 		}
 
 		return new Promise(
@@ -1307,8 +1313,8 @@ class CProject {
 		var self = this,
 			dta = this.cache,
 			opts = {
+			//	lookupTitles: false,
 				targetLanguage: 'any',
-				lookupTitles: false,
 				addIcon: false
 			};
 //		console.debug('hookStatements',dta);
@@ -1349,7 +1355,7 @@ class CProject {
 					for (var p of r.properties ) {
 						// Check the configured ids:
 						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
-							&& LIB.languageValueOf(p.values[0], { targetLanguage: self.language }) == vId)
+							&& LIB.languageTextOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
 					};
 					return false
@@ -1365,7 +1371,7 @@ class CProject {
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
 						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(r.properties[a]['class'], dta.propertyClasses))))
-							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: self.language })
+							return LIB.languageTextOf(r.properties[a].values[0], { targetLanguage: self.language })
 					};
 				};
 				//	return undefined
@@ -1498,7 +1504,7 @@ class CProject {
 									pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta);
 
 								if (pVs.length > 0) {
-									let pV = LIB.languageValueOf(pVs[0], { targetLanguage: 'default' });
+									let pV = LIB.languageTextOf(pVs[0], { targetLanguage: 'default' });
 									// collect all existing folders of the respective type; there can be 0..n:
 									if (pV == r2c.folder )
 										delL.push(nd);
@@ -1581,10 +1587,10 @@ class CProject {
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name" ),
-							values: [LIB.makeMultiLanguageText(ti)]
+							values: [LIB.makeMultiLanguageValue(ti)]
 						}, {
 							class: LIB.makeKey("PC-Type" ),
-							values: [LIB.makeMultiLanguageText(ty||ti)]
+							values: [LIB.makeMultiLanguageValue(ty||ti)]
 						}],
 						changedAt: tim
 					}]
@@ -1711,17 +1717,17 @@ class CProject {
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name"),
-							values: [LIB.makeMultiLanguageText(CONFIG.resClassUnreferencedResource)]
+							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResource)]
 						}, {
 							class: LIB.makeKey("PC-Type"),
-							values: [LIB.makeMultiLanguageText(CONFIG.resClassUnreferencedResource)]
+							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResource)]
 						}],
 						changedAt: tim
 					}];
 				}
 				function NodeList(resources: SpecifResource[]): INodeWithPosition[] {
 					// in alphanumeric order:
-					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
+					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
 
 					// Add the folder:
 					let gl: INodeWithPosition = {
@@ -1908,10 +1914,10 @@ class CProject {
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								values: [ LIB.makeMultiLanguageText(CONFIG.resClassGlossary) ]
+								values: [LIB.makeMultiLanguageValue(i18n.lookup(CONFIG.resClassGlossary), { language: browser.language }) ]
 							}, {
 								class: LIB.makeKey("PC-Type"),
-								values: [ LIB.makeMultiLanguageText(CONFIG.resClassGlossary) ]
+								values: [ LIB.makeMultiLanguageValue(CONFIG.resClassGlossary) ]
 							}],
 							changedAt: tim
 						}];
@@ -1923,14 +1929,14 @@ class CProject {
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
 								// just adding an 's' is an ugly quickfix ... that works for now:
-								values: [LIB.makeMultiLanguageText(eC + 's')]
+								values: [LIB.makeMultiLanguageValue(i18n.lookup(eC + 's'), { language: browser.language })]
 							}, {
 								class: LIB.makeKey("PC-Description"),
 								// just adding 'Description' is an ugly quickfix ... that works for now:
-								values: [LIB.makeMultiLanguageText(eC + 'Description')]
+								values: [LIB.makeMultiLanguageValue(i18n.lookup(eC + 'Description'), { language: browser.language })]
 							}, {
 								class: LIB.makeKey("PC-Type"),
-								values: [LIB.makeMultiLanguageText(CONFIG.resClassFolder)]
+								values: [LIB.makeMultiLanguageValue(CONFIG.resClassFolder)]
 							}],
 							changedAt: tim
 						});
@@ -1986,7 +1992,7 @@ class CProject {
 						(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
 					) as SpecifResource[];
 					// in alphanumeric order:
-					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
+					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
 
 					// Categorize resources:
 					resL.forEach(
@@ -2171,7 +2177,7 @@ class CProject {
 		const exportFormatClicked = 'app.projects.selected.exportFormatClicked()';
 		// @ts-ignore - BootstrapDialog() is loaded at runtime
 		new BootstrapDialog({
-		//	title: i18n.LblExport + ": '" + LIB.languageValueOf(this.title, { targetLanguage: this.language }) + "'",
+		//	title: i18n.LblExport + ": '" + LIB.languageTextOf(this.title, { targetLanguage: this.language }) + "'",
 			title: i18n.LblExport,
 			type: 'type-primary',
 		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
@@ -2358,8 +2364,7 @@ class CProject {
 				];
 
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
-				opts.lookupTitles = true;  // applies to self.cache.get()
-				opts.lookupValues = true;  // applies to self.cache.get()
+			//	opts.lookupValues = true;  // applies to self.cache.get()
 				// But DO reduce to the language desired.
 				if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
 				opts.makeHTML = true;
@@ -2375,7 +2380,7 @@ class CProject {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
 							titleLinkTargets: CONFIG.titleLinkTargets.map((e:string) => { return i18n.lookup(e) }),
-							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties).map((e: string) => { return i18n.lookup(e) }),
+							titleProperties: CONFIG.titleProperties.map((e: string) => { return i18n.lookup(e) }),
 							descriptionProperties: CONFIG.descProperties.map((e: string) => { return i18n.lookup(e) }),
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
 							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return i18n.lookup(e) }),
@@ -2417,8 +2422,8 @@ class CProject {
 //				console.debug( "storeAs", opts );
 
 				// keep vocabulary terms:
-				opts.lookupTitles = false;
-				opts.lookupValues = false;
+			//	opts.lookupTitles = false;
+			//	opts.lookupValues = false;
 				opts.allDiagramsAsImage = ["html","turtle","reqif"].includes(opts.format);
 
 				switch (opts.format) {
@@ -2512,7 +2517,7 @@ class CProject {
 								fName += ".specif";
 								zName = fName + '.zip';
 								expStr = JSON.stringify(
-									new COntology(expD).generateSpecifClasses(opts)
+									new CGenerateClasses(expD).generateSpecifClasses(opts)
 								);
 //								console.debug('expStr', expStr);
 								break;

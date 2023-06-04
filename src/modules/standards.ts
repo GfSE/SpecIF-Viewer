@@ -25,7 +25,8 @@ class CStandards {
 
 		// In addition we need some more dataTypes which are not covered by a propertyClass, yet:
 		["DT-Boolean", "DT-Integer", "DT-Real", "DT-DateTime", "DT-Duration", "DT-AnyURI"].forEach(
-			(id) => { this.dataTypes.push( LIB.itemById( app.ontology.data.dataTypes, id ) ) }
+			(id) => { LIB.cacheE(this.dataTypes, LIB.itemByKey( app.ontology.data.dataTypes, LIB.makeKey(id) )) }
+		//	(id) => { this.dataTypes.push(LIB.itemById(app.ontology.data.dataTypes, id)) }
 		);
 
 //		console.debug('CS',simpleClone(this));
@@ -146,7 +147,7 @@ class CStandards {
 			if (chAt) item.changedAt = chAt;
 			return item;
 		};
-		throw Error("No standard type with id '" + key.id + "' and revision '" + key.id +"' of category '"+ctg+"'");
+		throw Error("No standard type with id '" + key.id + "' and revision '" + key.revision +"' of category '"+ctg+"'");
 	}
 /*	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
 		var item: SpecifItem = LIB.itemByTitle(this[this.listName.get(ctg)], ti);
@@ -165,6 +166,7 @@ class CStandards {
 	} */
 	addTo(ctg: string, key: SpecifKey, dta: SpecIF): void {
 		// Add an element (e.g. class) to it's list, if not yet defined:
+		// ToDo: Check for revision! It can happen that a class is considered available, but a reference with revision fails.
 
 		// 1. Get the name of the list, e.g. 'dataType' -> 'dataTypes':
 		// @ts-ignore - yes, the result can be undefined:
@@ -195,6 +197,70 @@ class CStandards {
 			throw Error("Can't find item with id '"+key.id+"' and revision '"+key.revision+"' in standard types.")
 	}
 };
+
+class COntology extends CGenerateClasses {
+	constructor(ont: SpecIF) {
+		super(ont)
+	}
+	getTerm(term: string): SpecifResource | undefined {
+		for (var r of this.data.resources) {
+			// find the property with title CONFIG.propClassTerm: 
+			let termL = LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data);
+			// return the resource representing the specified term;
+			// the term does not have different languages:
+			if (termL.length > 0 && LIB.languageTextOf(termL[0], {targetLanguage: "default"}) == term)
+				return r
+		}
+	}
+	getLocalName(term: string, opts: any): string {
+		let r = this.getTerm(term);
+		if (r) {
+			// return the name in the local language specifed:
+			let lnL = LIB.valuesByTitle(r, [(opts.plural? "SpecIF:LocalTermPlural":"SpecIF:LocalTerm")], this.data);
+			if (lnL.length > 0) {
+//					console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
+				return LIB.languageTextOf(lnL[0], opts)
+			}
+		};
+//		console.debug('#0', opts, term);
+		// else, return the input value:
+		return term;
+    }
+/*    getOntologyClasses(opts?: any): SpecIF | undefined {
+		// Return a SpecIF data set with all classes of the ontology
+	
+		if (!this.data) {
+			message.show("No valid ontology loaded.", { severity: 'error' });
+			return
+		};
+	
+		// @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
+		return Object.assign(
+			opts.delta ? {} : this.makeTemplate(),
+			{
+				"id": "P-SpecifClasses-Ontology",
+				"title": [
+					{
+						"text": "SpecIF Classes of the Ontology",
+						"format": SpecifTextFormat.Plain,
+						"language": "en"
+					}
+				],
+				"description": [
+					{
+						"text": "A set of SpecIF Classes used for a SpecIF Ontology.",
+						"format": SpecifTextFormat.Plain,
+						"language": "en"
+					}
+				],
+				"dataTypes": this.data.dataTypes,
+				"propertyClasses": this.data.propertyClasses,
+				"resourceClasses": this.data.resourceClasses,
+				"statementClasses": this.data.statementClasses
+			}
+		)
+	}  */
+}
 
 
 /*  ToDo: REWORK FOR v0.10.8:
