@@ -578,20 +578,21 @@ var app:IApp,
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
-				case "excel": getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
-				case "bpmnViewer": getScript('https://unpkg.com/bpmn-js@11.5.0/dist/bpmn-viewer.production.min.js'); return true;
+				case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
+			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@11.5.0/dist/bpmn-viewer.production.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.0/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
-					getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js'); return true;
+											getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js'); return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
 				case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 											getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
 				//	Consider https://github.com/rsms/markdown-wasm
-				case "markdown": getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
-					// @ts-ignore - 'window.markdown' is defined, if loaded
-					.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
-					return true;
+				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
+											// @ts-ignore - 'window.markdown' is defined, if loaded
+											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
+											return true;
 
 				// libraries:
 				case "mainCSS": getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
@@ -610,6 +611,7 @@ var app:IApp,
 					.done(() => { message = new CMessage(); });
 					return true;
 				case "standards": getScript(loadPath + 'modules/standards.js'); return true;
+				case 'generateClasses': getScript(loadPath + 'modules/generateClasses.js'); return true;
 				case "Ontology": getOntology(); return true;
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
@@ -622,7 +624,6 @@ var app:IApp,
 				case "user":				$('#'+mod ).load( loadPath+'modules/user-0.92.44.mod.html', function() {setReady(mod)} ); return true;
 				case "projects":			loadModule( 'toEpub' );
 											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
-				case 'generateClasses': getScript(loadPath + 'modules/generateClasses.js'); return true;
 				case 'toHtml': // the loading of fileSaver is attached here for all exports:
 								loadModule('fileSaver');
 								getScript(loadPath + 'modules/toHtml.js'); return true;

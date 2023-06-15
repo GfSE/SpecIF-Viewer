@@ -242,7 +242,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 				}
 				else {
 					// property isn't of type diagram:
-					console.debug('editedProp', this.title, this);
+//					console.debug('editedProp', this.title, this);
 					val = textValue(this.title);
 					if (LIB.hasContent(val)) {
 						// Create a multiLanguageText only if the propertyClass is declared accordingly.

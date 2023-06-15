@@ -138,9 +138,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.propertyClasses = [
 				app.standards.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
 				app.standards.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
+				app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
 				app.standards.get("propertyClass", { id: "PC-Type" }) as SpecifPropertyClass
 			];
 			this.resourceClasses = [
+				app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
 				app.standards.get("resourceClass", { id: "RC-Folder" }) as SpecifResourceClass
 			];
 			// user-created instances are not checked for visibility:
@@ -162,7 +164,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		changedAt: string;
 		constructor (nm: string, ti: string, dT: string) {
 			this.id = propClassId(nm);
-			//	ti = vocabulary.property.specif(ti); has already be translated before calling
 			this.title = ti;
 			this.dataType = LIB.makeKey('DT-' + dT);		// like baseTypes[i].id
 			this.changedAt = chAt;
@@ -183,7 +184,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		constructor(nm: string, ti: string) {
 			this.id = nm;
 			this.title = ti;
-		//	this.title = vocabulary.resource.specif(ti);
 			let ic = CONFIG.icons.get(this.title);
 			if (ic) this.icon = ic;
 			this.description = LIB.makeMultiLanguageValue('For resources specified per line of an excel sheet');
@@ -204,7 +204,6 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		changedAt: string;
 		constructor(ti: string) {
 			this.title = ti;
-		//	this.title = vocabulary.statement.specif(ti);
 			this.id = staClassId(this.title);
 			this.description = LIB.makeMultiLanguageValue('For statements created by columns whose title is declared as a statement');
 			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
@@ -672,13 +671,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					// Skip, if there is no column heading or if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
 					if (!pTi || CONFIG.statementClasses.indexOf( pTi )>-1 ) return;
-				//	if (!pTi || CONFIG.statementClasses.indexOf(vocabulary.statement.specif(pTi)) > -1) return;
 					// else, it is a property:
 
 					// Only one property shall be the resource's title;
 					// the first one found shall prevail:
 					let xTi = pTi,  // translate the title to standard term
-				//	let xTi = vocabulary.property.specif(pTi),  // translate the title to standard term
 						isNoTi = xTi != CONFIG.propClassTitle;
 					if ( noTitleFound || isNoTi ) {
 						pTi = xTi;

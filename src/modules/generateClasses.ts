@@ -1,4 +1,4 @@
-/*!    SpecIF: Generate Specif classes from the Ontology.
+﻿/*!    SpecIF: Generate Specif classes from the Ontology.
     Dependencies: -
     (C)copyright enso managers gmbh (http://www.enso-managers.de)
     License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
@@ -7,7 +7,8 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-class CGenerateClasses {
+
+class COntology {
     data: SpecIF;
     allDomains = [];
     // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology: 
@@ -45,9 +46,166 @@ class CGenerateClasses {
         this.allDomains = dTDomains.enumeration.map(
             (v: SpecifEnumeratedValue) => LIB.languageTextOf(v.value, { targetLanguage: "default" })
         );
+        this.makeStatementsIsNamespace();
         this.options = {};
     }
 
+    getTermResource(term: string): SpecifResource | undefined {
+        for (var r of this.data.resources) {
+            // find the property with title CONFIG.propClassTerm: 
+            let termL = LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data);
+            // return the resource representing the specified term;
+            // the term does not have different languages:
+            if (termL.length > 0 && LIB.languageTextOf(termL[0], { targetLanguage: "default" }) == term)
+                return r
+        }
+    }
+    localize(term: string, opts: any): string {
+        // Translate an ontology term to the selected local language:
+        let r = this.getTermResource(term);
+        if (r) {
+            // return the name in the local language specifed:
+            let lnL = LIB.valuesByTitle(r, [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
+            if (lnL.length > 0) {
+                //					console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
+                return LIB.languageTextOf(lnL[0], opts)
+            }
+        };
+        //		console.debug('#0', opts, term);
+        // else, return the input value:
+        return term;
+    }
+    globalize(term: string): string {
+        // Translate a local name to the ontology term;
+        // if several are found, select the one with the most confirmed lifecycle status.
+
+        // no need to look for a vocabulary term, if it *is* one:
+        if( RE.vocabularyTerm.test(term) )
+            return term;
+
+        // Iterate through all terms:
+        let rC: SpecifResourceClass[];
+        let termL = this.data.resources.filter(
+            (r) => {
+                // is it a term?
+                rC = LIB.itemByKey(this.data.resourceClasses, r['class']);
+                if (CONFIG.ontologyClasses.includes(LIB.titleOf(rC))) {
+                    // look for local terms:
+                    let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm"], this.data)
+                    for (let v of tVL) {
+                        // check all values:
+                        for (var l of v ) {
+                            // check all languages:
+                            if (l.text.toLowerCase() == term.toLowerCase() ) return true
+                        }
+                    };
+
+                    // look fpr local terms in plural
+                    tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTermPlural"], this.data)
+                    for (let v of tVL) {
+                        // check all values:
+                        for (var l of v) {
+                            // check all languages:
+                            if (l.text.toLowerCase() == term.toLowerCase()) return true
+                        }
+                    }
+                }
+                return false;
+            }
+        );
+//        console.debug('globalize',termL);
+        switch (termL.length) {
+            case 0:
+                return term;
+            case 1:
+                return LIB.languageTextOf(termL[0], { targetLanguage: "default" });
+            default:
+                // search for the most confirmed term:
+                for( let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"] )
+                    for (let t of termL) {
+                        if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status)
+                            return this.valueByTitle(t, "SpecIF:Term");
+                    };
+
+                // no global term with sufficient lifecycle status found:
+                return term;
+        }
+    }
+    getPreferredTerm(term: string): string {
+        // Among synonyms, get the preferred (released) term:
+
+        // Shortcut for preferred vocabulary terms (dcterms are always preferred, if they exist):
+        if (term.startsWith('dcterms:'))
+            return term;
+
+        let r = this.getTermResource(term);
+        if (r) {
+            // If the term is itself released/preferred, just return it:
+            if (this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased")
+                return term;
+
+            // Collect all synonyms (relation can be in any direction):
+            let
+                stL = this.statementsByClass(r, "SpecIF:isSynonymOf", { asSubject: true, asObject: true }),
+                // the resources related by those statements are synonym terms:
+                rsL = stL.map(
+                    (st: SpecifStatement) => {
+                        return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
+                    }
+                ),
+                // Find the released (preferred) term:
+                synL = rsL.filter(
+                    (r:SpecifResource) => {
+                       return this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased";
+                    }
+                );
+//            console.debug('getPreferredTerm', r, stL, rsL, synL);
+            if (synL.length < 1)
+                return term;
+
+            if (synL.length > 1)
+                console.warn('Multiple equivalent terms are released: ', synL.map((s)=>{return s.id}).toString());
+
+            console.debug('Preferred term found: ' + term + ' → ', this.valueByTitle(synL[0], "SpecIF:Term"));
+            return this.valueByTitle(synL[0], "SpecIF:Term")
+        };
+        // else, return the input value:
+        return term;
+    }
+/*    getOntologyClasses(opts?: any): SpecIF | undefined {
+            // Return a SpecIF data set with all classes of the ontology
+    
+            if (!this.data) {
+                message.show("No valid ontology loaded.", { severity: 'error' });
+                return
+            };
+    
+            // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
+            return Object.assign(
+                opts.delta ? {} : this.makeTemplate(),
+                {
+                    "id": "P-SpecifClasses-Ontology",
+                    "title": [
+                        {
+                            "text": "SpecIF Classes of the Ontology",
+                            "format": SpecifTextFormat.Plain,
+                            "language": "en"
+                        }
+                    ],
+                    "description": [
+                        {
+                            "text": "A set of SpecIF Classes used for a SpecIF Ontology.",
+                            "format": SpecifTextFormat.Plain,
+                            "language": "en"
+                        }
+                    ],
+                    "dataTypes": this.data.dataTypes,
+                    "propertyClasses": this.data.propertyClasses,
+                    "resourceClasses": this.data.resourceClasses,
+                    "statementClasses": this.data.statementClasses
+                }
+            )
+        }  */
     generateSpecifClasses(opts?: any): SpecIF | undefined {
         /*  Generate SpecIF classes for ontology terms (represented as SpecIF resources of the ontology) which
             - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
@@ -164,6 +322,59 @@ class CGenerateClasses {
 
     // ---------------- Invoked methods ---------------------
 
+    private makeStatementsIsNamespace(): void {
+        // Relate one of the defined namespaces to each term using a statement 'isNamespace'.
+
+        let item = LIB.itemBy(this.data.statementClasses, "title", "SpecIF:isNamespace");
+        if (item) {
+
+            // 1. Delete all existing statements 'isNamespace':
+            for (var i = this.data.statements.length - 1; i > -1; i--) {
+                if (LIB.classTitleOf(this.data.statements[i]['class'], this.data.statementClasses) == "SpecIF:isNamespace")
+                    this.data.statements.splice(i,1)
+            };
+
+            // 2. Create all statements 'isNamespace':
+            let allNamespaces = this.data.resources.filter(
+                (r) => {
+                    return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
+                }
+            ).map(
+                (r) => {
+                    return this.valueByTitle(r, "dcterms:title")
+                }
+            );
+            for (var r of this.data.resources) {
+                if (CONFIG.ontologyClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
+                    let term = this.valueByTitle(r, "SpecIF:Term"),
+                        match = RE.splitVocabularyTerm.exec(term);
+                    let stC = LIB.makeKey(item);
+                    let nsFound = false;
+                    if (Array.isArray(match) && match[1]) {
+                        // the term has a namespace:
+                        for (let ns of allNamespaces) {
+                            if (match[1] == ns) {
+                                this.data.statements.push({
+                                    id: LIB.genID('S-'),
+                                    class: stC,
+                                    subject: LIB.makeKey(ns),
+                                    object: LIB.makeKey(r)
+                                } as SpecifStatement);
+                                nsFound = true;
+                                break
+                            }
+                        };
+                        if (!nsFound)
+                            console.warn("No namespace found for " + r.id)
+                    }
+                    else
+                        console.warn("No namespace given for " + r.id)
+                }
+            }
+        }
+        else
+            console.warn("No statementClass 'SpecIF:isNamespace'")
+    }
     private makeClasses(rCIdL: string[], createFn: Function) {
         // Take the resources listed in the hierarchy, filter the selected ones and generate a class for each.
         // ToDo: Better a method to CGenerated.
@@ -524,6 +735,8 @@ class CGenerateClasses {
         /*  Check the following constraints / conventions:
             - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
             - A term must have a property "PC-Term" with the name of the term (the title contains the name in national languages)
+            - A term name *must* have a name-space separated by ':' or '.', whereas a localTerm must *not*.
+            - A term should have a relation 'SpecIF:isNamespace' with a namespace amd *must* not have more than one.
             - A TermResourceClass must have at least one propertyClass, either self or inherited from an extended class
             - A TermResourceClass or TermStatementClass may not have >1 statements with title "SpecIF:isSpecializationOf"
             - Chains of "isSpecializationOf" relations must not be circular.
@@ -575,4 +788,149 @@ class CGenerateClasses {
         }
     }
 }
+/*
+// =============================================
+// to be replaced by ontology content:
+const vocabulary = {
+    // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
+    // ToDo: Derive from SpecIF Ontology
+    property: {
+        // for properyTypes and properties:
+        specif: function (iT: string): string {
+            // Target language: SpecIF
+            var oT = '';
+            switch (iT.toJsId().toLowerCase()) {
+                case "_berschrift":
+                case "name":
+                case "title":
+                case "titel":
+                case "dc_title":
+                case "specif_heading":            //  has been used falsely as property title
+                case "reqif_chaptername":
+                case "reqif_name": oT = CONFIG.propClassTitle; break;
+                case "description":
+                case "beschreibung":
+                case "text":
+                case "dc_description":
+                //    case "reqif_changedescription":
+                case "reqif_description":
+                case "reqif_text": oT = CONFIG.propClassDesc; break;
+                case "reqif_revision": oT = "SpecIF:Revision"; break;
+                case "specif_stereotype":        // deprecated, for compatibility, not to confound with "UML:Stereotype"
+                case "specif_subclass":            // deprecated, for compatibility
+                case "reqif_category": oT = CONFIG.propClassType; break;
+                case 'specif_id':                // deprecated, for compatibility
+                case "reqif_foreignid": oT = CONFIG.propClassId; break;
+                case "specif_state":            // deprecated, for compatibility
+                case "reqif_foreignstate": oT = "SpecIF:Status"; break;
+                case "dc_author":
+                case "dcterms_author":            // deprecated, for compatibility
+                case "reqif_foreigncreatedby": oT = "dcterms:creator"; break;
+                case "specif_createdat": oT = "dcterms:modified"; break;
+                //    case "reqif_foreignmodifiedby":        oT = ""; break;
+                //    case "reqif_foreigncreatedon":        oT = ""; break;
+                //    case "reqif_foreigncreatedthru":    oT = ""; break;
+                //    case "reqif_fitcriteria":            oT = ""; break;
+                //    case "reqif_prefix":                oT = ""; break;
+                //    case "reqif_associatedfiles":        oT = ""; break;
+                //    case "reqif_project":                oT = ""; break;
+                //    case "reqif_chapternumber":            oT = ""; break; 
+                default: oT = iT;
+            };
+            return oT;
+        }, 
+        reqif: function (iT: string): string {
+            // Target language: ReqIF
+            var oT = '';
+            switch (iT.toJsId().toLowerCase()) {
+                case "dcterms_title": oT = "ReqIF.Name"; break;
+                case "dcterms_description": oT = "ReqIF.Text"; break;
+                case "dcterms_identifier": oT = "ReqIF.ForeignId"; break;
+                case "specif_heading": oT = "ReqIF.ChapterName"; break;    // for compatibility
+                case "specif_category":
+                case "dcterms_type": oT = "ReqIF.Category"; break;
+                case "specif_revision": oT = "ReqIF.Revision"; break;
+                case "specif_state":            // deprecated, for compatibility
+                case "specif_status": oT = "ReqIF.ForeignState"; break;
+                case "dcterms_author":            // deprecated, for compatibility
+                case "dcterms_creator": oT = "ReqIF.ForeignCreatedBy"; break;
+                default: oT = iT;
+            };
+            return oT;
+        }
+    },
+    resource: {
+        // for resourceClasses and resources:
+        specif: function (iT: string): string {
+            // Target language: SpecIF
+            var oT = '';
 
+            // 1. Look for preferred term in the Ontology:
+
+            // 2. Transform local name to ontology term:
+            // ontology.findTermForLocalName({resourceClass:iT})
+
+            // 3. Finally some additional mappings:
+            switch (iT.toJsId().toLowerCase()) {
+                case 'actors':
+                case 'actor':
+                case 'akteure':
+                case 'akteur': oT = "FMC:Actor"; break;
+                case 'states':
+                case 'state':
+                case 'zustände':
+                case 'zustand': oT = "FMC:State"; break;
+                case 'events':
+                case 'event':
+                case 'ereignisse':
+                case 'ereignis': oT = "FMC:Event"; break;
+                case 'anforderungen':
+                case 'anforderung':
+                case 'requirements':
+                case 'requirement':
+                case 'specif_requirement': oT = "IREB:Requirement"; break;
+                case 'merkmale':
+                case 'merkmal':
+                case 'features':
+                case 'feature': oT = "SpecIF:Feature"; break;
+                case 'annotations':
+                case 'annotationen':
+                case 'annotation': oT = "IR:Annotation"; break;
+                case 'userstory':
+                case 'userstories':
+                case 'user_stories':
+                case 'user_story': oT = 'SpecIF:UserStory'; break;
+                case 'painpoint':
+                case 'painpoints':
+                case 'pain_point':
+                case 'pain_points':
+                case 'schmerzpunkt':
+                case 'schmerzpunkte': oT = "SpecIF:PainPoint"; break;
+                case 'specif_view':
+                case 'fmc_plan':
+                case 'specif_diagram': oT = CONFIG.resClassDiagram; break;
+                case 'specif_folder': oT = CONFIG.resClassFolder; break;
+                case 'specif_hierarchyroot':
+                case 'specif_hierarchy': oT = CONFIG.resClassOutline; break;
+                default: oT = iT;
+            };
+            return oT;
+            //    },
+            //    reqif: function( iT:string ):string {
+                    // no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
+            //        return iT
+        }
+    },
+    statement: {
+        // for statementClasses and statements:
+        specif: function (iT: string): string {
+            // Target language: SpecIF
+            var oT = '';
+            switch (iT.toJsId().toLowerCase()) {
+                default: oT = iT
+            };
+            return oT;
+        }
+    } 
+};
+*/

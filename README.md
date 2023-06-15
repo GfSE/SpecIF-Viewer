@@ -12,7 +12,7 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Import 'reqif' an 'reqifz' file (experimental)
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
-- Import Archimate Open-Exchange (experimental)
+- Import ArchiMate Open-Exchange (experimental)
 - Import from an URL or the local file system
 - Browse the content ('resources') along the supplied hierarchy
 - Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)

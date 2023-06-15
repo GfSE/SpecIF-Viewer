@@ -9,15 +9,10 @@
 	ToDo: This module is lousy coding with lots of historical burden --> redo!
 */
 
-/* const StandardRoles = [
-	"Manager",
-	"Editor",
-	"Customer",
-	"Supplier",
-	"Reviewer",
-	"Reader"
-]; */
+// ============= LAYOUT ========================
 
+
+// ============= CONTENT ========================
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin + '(.+?)' + CONFIG.titleLinkEnd, 'g');
 class CPropertyToShow implements SpecifProperty {
 	title: string;
@@ -103,7 +98,7 @@ class CPropertyToShow implements SpecifProperty {
 				this.values.forEach(
 					(v: any, i: number) => {
 						lV = LIB.languageTextOf(v, opts);
-						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? app.ontology.getLocalName(lV,opts) : lV );
+						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? app.ontology.localize(lV,opts) : lV );
 					//	str += (i < 1 ? '' : ', ') + lV;
 					});
 				// remove any leading whiteSpace:
@@ -212,7 +207,8 @@ class CPropertyToShow implements SpecifProperty {
 						ti: string,
 						rC: SpecifResourceClass,
 						target: SpecifResource;
-					// is ti a title of any resource?
+
+					// Check if ti is a title of any resource:
 					app.specs.tree.iterate((nd: jqTreeNode) => {
 						cR = LIB.itemByKey(this.cData.resources, nd.ref);
 						// avoid self-reflection:
@@ -657,10 +653,14 @@ class CResourceToShow {
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
 		// Assuming that a title property has only a single value:
-		let ti = LIB.displayValueOf(this.title.values[0], opts);
+	//	let ti = LIB.languageTextOf(this.title.values[0], opts);
+
+		// The resource title is the value of the title property;
+		// lookup the title value only if the element is a heading (folder named after a term, but not an ontology term itself):
+		let ti = LIB.displayValueOf(this.title.values[0], Object.assign({}, opts, { lookupValues: this.rC.isHeading }));
 		if (this.rC.isHeading) {
 			// it is assumed that a heading never has an icon:
-			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>';
+			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>'
 		};
 		// else: is not a heading:
 		// take title and add icon, if configured:
@@ -680,26 +680,27 @@ class CResourceToShow {
 		};
 		return chI
 	}
-	listEntry(options?: any): string {
+	listEntry(): string {
 		// for the list view, where title and text are shown in the main column and the others to the right.
 		if (!this.id)
 			return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
 
 		// Create HTML for a list entry:
-		var opts = options ? simpleClone(options) : {};
-		opts.titleLinking
-			= opts.clickableElements
-			= opts.linkifyURLs
-			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView());
-		// ToDo: Consider to make it a user option:
-		opts.unescapeHTMLTags = true;
-		// ToDo: Make it a user option:
-		opts.makeHTML = true;
-		opts.lookupTitles = true;
-		opts.lookupValues = true;
-		opts.targetLanguage = this.language;
-		opts.localDateTime = true;
-		opts.rev = this.revision;
+		const clickable = ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView()),
+			opts = {
+				titleLinking: clickable,
+				clickableElements: clickable,
+				linkifyURLs: clickable,
+				// ToDo: Consider to make it a user option:
+				unescapeHTMLTags: true,
+				// ToDo: Make it a user option:
+				makeHTML: true,
+				lookupTitles: true,
+				lookupValues: true,
+				targetLanguage: this.language,
+				localDateTime: true,
+				rev: this.revision
+			};
 
 		var rO = '<div class="listEntry">'
 			+ '<div class="content-main">';

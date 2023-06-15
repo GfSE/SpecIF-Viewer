@@ -18,7 +18,6 @@ function transformReqif2Specif(reqifDoc,options) {
 	const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
 	
     if( typeof(options)!='object' ) options = {};
-//    if( typeof(options.translateTitle)!='function' ) options.translateTitle = function(ti) {return ti};
 
     const xmlDoc = parse(reqifDoc);
 
@@ -125,7 +124,6 @@ function extractPropertyClasses(xmlSpecTypes) {
             let propertyClass = {
                 id: entry[0],
                 title: entry[1].title,
-            //    title: options.translateTitle(entry[1].title),
                 dataType: entry[1].dataType,
                 changedAt: entry[1].changedAt
             };
@@ -268,9 +266,9 @@ function extractProperties(specAttributes) {
             // ToDo: check wether it *may* be specified, at all ...  
             specifProperty.id = property.getAttribute("IDENTIFIER"); */
         specifProperty['class'] = property.getElementsByTagName("DEFINITION")[0].children[0].innerHTML;
-        /*  ToDo: Check whether ReqIF ATTRIBUTES can have an individual LONG-NAME ..
-            if( property.getAttribute("LONG-NAME") ) 
-                specifProperty.title = options.translateTitle2Specif( property.getAttribute("LONG-NAME") ); */
+
+        //  ToDo: Check whether ReqIF ATTRIBUTES can have an individual LONG-NAME ..
+
         if (property.getAttribute("THE-VALUE")) {
             specifProperty.value = property.getAttribute("THE-VALUE");
 

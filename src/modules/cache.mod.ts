@@ -1354,7 +1354,8 @@ class CProject {
 					// loop to find the *first* occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
+					//	if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
+						if (CONFIG.idProperties.includes(LIB.classTitleOf(p['class'], dta.propertyClasses))
 							&& LIB.languageTextOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
 					};
@@ -1538,9 +1539,11 @@ class CProject {
 											propertyClasses: [
 												app.standards.get('propertyClass', { id: "PC-Name" }) as SpecifPropertyClass,
 												app.standards.get('propertyClass', { id: "PC-Description" }) as SpecifPropertyClass,
+												app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
 												app.standards.get('propertyClass', { id: "PC-Type" }) as SpecifPropertyClass
 											],
 											resourceClasses: [
+												app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
 												app.standards.get('resourceClass', { id: "RC-Folder" }) as SpecifResourceClass
 											],
 											statementClasses: [],
@@ -1629,7 +1632,7 @@ class CProject {
 								// Find the referenced resource:
 								let idx = LIB.indexByKey(resL, nd.resource);
 								if (idx > -1) {
-									if (LIB.hasType(resL[idx], [CONFIG.resClassUnreferencedResource], dta, opts)) {
+									if (LIB.hasType(resL[idx], [CONFIG.resClassUnreferencedResources], dta, opts)) {
 										// List the node of the FolderWithUnreferencedResources for deletion:
 										unRL.push(nd);
 										// ... but don't consider it's resource to be an unreferenced resource, itself:
@@ -1684,9 +1687,11 @@ class CProject {
 							propertyClasses: [
 								app.standards.get('propertyClass', { id: "PC-Name" }),
 								app.standards.get('propertyClass', { id: "PC-Description" }),
+								app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
 								app.standards.get('propertyClass', { id: "PC-Type" })
 							],
 							resourceClasses: [
+								app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
 								app.standards.get('resourceClass', { id: "RC-Folder" })
 							],
 							resources: Folder(),
@@ -1717,10 +1722,10 @@ class CProject {
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name"),
-							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResource)]
+							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResources)]
 						}, {
 							class: LIB.makeKey("PC-Type"),
-							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResource)]
+							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResources)]
 						}],
 						changedAt: tim
 					}];
@@ -1766,10 +1771,10 @@ class CProject {
 								// Find the referenced resource:
 								let res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 								// Remember the last hierarchy with original content:
-								if (res && !LIB.hasType(res, [CONFIG.resClassGlossary, CONFIG.resClassUnreferencedResource], dta, opts))
+								if (res && !LIB.hasType(res, [CONFIG.resClassGlossary, CONFIG.resClassUnreferencedResources], dta, opts))
 									lastContentH = nd;
 								// Include all original hierarchies, i.e. those except the generated ones:
-								return res && !LIB.hasType(res, [CONFIG.resClassUnreferencedResource], dta, opts);
+								return res && !LIB.hasType(res, [CONFIG.resClassUnreferencedResources], dta, opts);
 							}
 						);
 
@@ -1834,9 +1839,11 @@ class CProject {
 										propertyClasses: [
 											app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
 											app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+											app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
 											app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
 										],
 										resourceClasses: [
+											app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
 											app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 										],
 										statementClasses: [],
@@ -1909,12 +1916,13 @@ class CProject {
 					} */
 				function Folders(): SpecifResource[] {
 					// Create the resources for folder and subfolders of the glossary:
+					let term = app.ontology.getTermResource(CONFIG.resClassGlossary);
 					var fL: SpecifResource[] = [{
 							id: "FolderGlossary-" + apx,
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								values: [LIB.makeMultiLanguageValue(i18n.lookup(CONFIG.resClassGlossary), { language: browser.language }) ]
+								values: LIB.valuesByTitle(term, ["SpecIF:LocalTerm"], app.ontology.data)
 							}, {
 								class: LIB.makeKey("PC-Type"),
 								values: [ LIB.makeMultiLanguageValue(CONFIG.resClassGlossary) ]
@@ -1922,18 +1930,17 @@ class CProject {
 							changedAt: tim
 						}];
 					// Create a folder resource for every model-element type:
-					for( var eC of CONFIG.modelElementClasses) {
+					for (var eC of CONFIG.modelElementClasses) {
+						term = app.ontology.getTermResource(eC);
 						fL.push({
 							id: "Folder-" + eC.toJsId() + "-" + apx,
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								// just adding an 's' is an ugly quickfix ... that works for now:
-								values: [LIB.makeMultiLanguageValue(i18n.lookup(eC + 's'), { language: browser.language })]
+								values: LIB.valuesByTitle(term, ["SpecIF:LocalTermPlural"], app.ontology.data)
 							}, {
 								class: LIB.makeKey("PC-Description"),
-								// just adding 'Description' is an ugly quickfix ... that works for now:
-								values: [LIB.makeMultiLanguageValue(i18n.lookup(eC + 'Description'), { language: browser.language })]
+								values: LIB.valuesByTitle(term, ["dcterms:description"], app.ontology.data)
 							}, {
 								class: LIB.makeKey("PC-Type"),
 								values: [LIB.makeMultiLanguageValue(CONFIG.resClassFolder)]
@@ -2517,7 +2524,7 @@ class CProject {
 								fName += ".specif";
 								zName = fName + '.zip';
 								expStr = JSON.stringify(
-									new CGenerateClasses(expD).generateSpecifClasses(opts)
+									new COntology(expD).generateSpecifClasses(opts)
 								);
 //								console.debug('expStr', expStr);
 								break;

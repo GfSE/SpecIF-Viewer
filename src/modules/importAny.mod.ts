@@ -58,11 +58,11 @@ moduleManager.construct({
 		},{
 			id:'xml',	
 			name:'ioArchimate',	
-			desc:'Archimate Open Exchange',
+			desc:'ArchiMate Open Exchange',
 			label:'ArchiMate®',
 			extensions: ".xml",
 //			help: i18n.MsgImportArchimate,
-			help: "Experimental: Import an Archimate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
+			help: "Experimental: Import an ArchiMate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
 			opts: { mediaTypeOf: LIB.attachment2mediaType } 
 		},{
 			id:'bpmn',

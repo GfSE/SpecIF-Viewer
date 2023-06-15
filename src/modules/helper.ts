@@ -784,7 +784,7 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
 //    return LIB.isMultiLanguageValue(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageTextOf(val, opts)) : LIB.languageTextOf(val, opts)) : val;
     if (LIB.isMultiLanguageValue(val)) {
         let v = LIB.languageTextOf(val, opts);
-        if (opts.lookupValues) v = app.ontology.getLocalName(v,opts);
+        if (opts.lookupValues) v = app.ontology.localize(v,opts);
         return opts.stripHTML ? v.stripHTML() : v
     };
     return val as string
@@ -806,8 +806,8 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
                         p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value })
                         : p.values
                 }
-            };
-        };
+            }
+        }
     };
     return [];
 }
@@ -1589,7 +1589,7 @@ LIB.httpGet = (params:any):void =>{
 }
 
 LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
-    // checks whether a resource is referenced by the hierarchy:
+    // Check whether a resource is referenced by the hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
     if (!H) H = app.projects.selected.cache.hierarchies;
     return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });
@@ -1597,13 +1597,14 @@ LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
 }
 LIB.referencedResources = (rL: SpecifResource[], h: SpecifNode[]): SpecifResource[] => {
-    // collect all resources referenced by the given hierarchy:
+    // Collect all resources referenced by the given hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
     var crL: SpecifResource[] = [];
     LIB.iterateNodes(h, (nd: SpecifNode) => { LIB.cacheE(crL, LIB.itemByKey(rL, nd.resource)); return true });
     return crL;
 }
 LIB.referencedResourcesByClass = (rL: SpecifResource[], h: SpecifNode[], rCIdL: string[]): SpecifResource[] => {
+    // Collect all resources from a hierarchy which belong to one of the classes in rCIdL. 
     let crL: SpecifResource[] = [];
     (LIB.iterateNodes(
         h,
@@ -1621,7 +1622,7 @@ LIB.referencedResourcesByClass = (rL: SpecifResource[], h: SpecifNode[], rCIdL: 
 }
 
 LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
-    // given a propertyClass key, return it's dataType:
+    // Given a propertyClass key, return it's dataType:
     if (LIB.isKey(key)) {
         let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
         //       |                            get propertyClass
@@ -1701,7 +1702,7 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
 LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
     // Pick up the native title of any item except resource and statement;
     if( item )
-        return (opts&&opts.lookupValues? app.ontology.getLocalName(item.title, opts) : item.title);
+        return (opts&&opts.lookupValues? app.ontology.localize(item.title, opts) : item.title);
     throw Error("Programming error: Input parameter 'item' is not defined");
 }
 LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {
@@ -1765,7 +1766,8 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPrope
         // perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageTextOf( pL[idx].value,op ) );
         let ti = LIB.languageTextOf(pL[idx].values[0], opts);
-        if (ti) return /* opts && opts.lookupTitles ? i18n.lookup(ti) : */ ti;
+     //   if (ti) return /* opts && opts.lookupTitles ? i18n.lookup(ti) : */ ti;
+        if (ti) return (opts && opts.lookupValues ? app.ontology.localize(item.title, opts) : ti);
     };
     return '';
 }

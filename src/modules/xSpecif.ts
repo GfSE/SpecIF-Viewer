@@ -805,13 +805,15 @@ class CSpecIF implements SpecIF {
 			// in >v1.0, native titles can only be strings (in fact SpecifText).
 			// So, in case of multi-language text, choose the default language:
 			let str = LIB.cleanValue(typeof (ti) == 'string' ? ti : ti[0].text);
-
-			// shortcut for preferred vocabulary terms:
-			if (str.startsWith('dcterms:')) return str;
+//			console.debug('makeTitle 1', ti, str);
 
 			// find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
+			str = app.ontology.globalize(str);
+//			console.debug('makeTitle 2', str);
 
 			// find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
+			str = app.ontology.getPreferredTerm(str);
+//			console.debug('makeTitle 3', str);
 
 			// ba default just keep it:
 			return str;
@@ -919,17 +921,6 @@ class CSpecIF implements SpecIF {
 			}
 			else
 				throw Error("Invalid property with class " + prp[names.pClass] + ".");
-
-		/*	.. is already repaired in Archimate2Specif
-		 	function addColonToTimezoneIfMissing(tim: string): string {
-				// ADOIT (an Archimate-Tool) exports timezones without a colon:
-				return tim.replace(
-							/(\d\+|\d-)(\d\d)(\d\d)$/,
-							// @ts-ignore - 'match' is not used but must be specified anyways:
-							(match, $1, $2, $3) => {
-								return $1 + $2 + ':' + $3;
-						});
-            } */
 		}
 		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {
 			return (typeof (iE) == 'string' ?
