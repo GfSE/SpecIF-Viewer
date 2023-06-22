@@ -12,7 +12,7 @@
 // In this case CPropertyToShow is defined in the module named CONFIG.specifications.
 class CPropertyToEdit extends CPropertyToShow  {
 
-	constructor(p: SpecifProperty, res: SpecifResource) {
+	constructor(p: SpecifProperty, res: CResourceToEdit) {
 		super(p, res);
 	}
 	
@@ -42,8 +42,9 @@ class CPropertyToEdit extends CPropertyToShow  {
 			let entryL = LIB.forAll(
 				this.dT.enumeration,
 				(eV: SpecifEnumeratedValue) => {
-					let val = this.dT.type == SpecifDataTypeEnum.String ? LIB.languageTextOf(eV.value, localOpts) : eV.value;
-				//	let val = this.dT.type == SpecifDataTypeEnum.String ? i18n.lookup(LIB.languageTextOf(eV.value, localOpts)) : eV.value;
+					// - LIB.languageTextOf returns the value in the local language ... or a vocabulary term
+					// - a returned vocabulary term is then localized using the ontology.
+					let val = this.dT.type == SpecifDataTypeEnum.String ? app.ontology.localize(LIB.languageTextOf(eV.value, localOpts), localOpts) : eV.value;
 					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
 				}
 			);
@@ -207,17 +208,26 @@ class CPropertyToEdit extends CPropertyToShow  {
 		if (!this.pC.permissions.U)
 			return;
 
+		let
+			localOpts = {
+				lookupTitles: true,
+				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
+				targetLanguage: this.selRes.language,
+				imgClass: 'forImagePreview'
+			},
+			ti = LIB.titleOf(this, localOpts);
+
 		// In case of enumeration:
 		if (this.dT.enumeration) {
 			let valL: string[];
 //			console.debug('xs:enumeration',p,pC,separatedValues,vals);
 			if (typeof (this.pC.multiple) == 'boolean' ? this.pC.multiple : this.dT.multiple) {
 //				console.debug( '*', p, checkboxValues(this.title ));
-				valL = checkboxValues(this.title);
+				valL = checkboxValues(ti);
 			}
 			else {
 //				console.debug( '+',p,radioValue( this.title ));
-				let val = radioValue(this.title);
+				let val = radioValue(ti);
 				valL = val ? [val] : [];
 			};
 
@@ -242,8 +252,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 				}
 				else {
 					// property isn't of type diagram:
-//					console.debug('editedProp', this.title, this);
-					val = textValue(this.title);
+//					console.debug('editedProp', ti, this);
+					val = textValue(ti);
 					if (LIB.hasContent(val)) {
 						// Create a multiLanguageText only if the propertyClass is declared accordingly.
 						// - For the time being by the list CONFIG.multiLanguageProperties
@@ -279,10 +289,10 @@ class CPropertyToEdit extends CPropertyToShow  {
 					return { class: LIB.makeKey(this.pC.id), values: [] };
 				};
 			case SpecifDataTypeEnum.Boolean:
-				val = booleanValue(this.title).toString();
+				val = booleanValue(ti).toString();
 				return { class: LIB.makeKey(this.pC.id), values: [val] };
 			default:
-				val = textValue(this.title);
+				val = textValue(ti);
 				return { class: LIB.makeKey(this.pC.id), values: (LIB.hasContent(val) ? [val] : []) };
 		};
 	}
@@ -291,7 +301,7 @@ class CResourceToEdit {
 	id: string;
 //	class: SpecifKey;
 	private selPrj: CProject;
-	private cData: CCache;
+//	private cData: CCache;
 	rC: SpecifResourceClass;
 	language: string;
 //	order: string;
@@ -309,11 +319,11 @@ class CResourceToEdit {
 		// add missing (empty) properties and classify properties into title, descriptions and other;
 		// for resources.
 		this.selPrj = app.projects.selected;
-		this.cData = this.selPrj.cache;
+//		this.cData = this.selPrj.cache;
 
 		this.id = el.id;
 	//	this['class'] = el['class'];
-		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
 		this.language = el.language || this.selPrj.language;
 	/*	this.revision = el.revision;
 		this.order = el.order;
@@ -331,9 +341,13 @@ class CResourceToEdit {
 //	console.debug( 'editResource', r2edit, simpleClone(cData.resourceClasses) );
 		if (this.properties.length > 0) {
 
-			let localOpts = Object.assign({
-				dialogForm: this.dialogForm,
-			}, opts);
+			let localOpts = {
+					lookupTitles: true,
+					targetLanguage: this.language
+				},
+				editOpts = Object.assign({
+					dialogForm: this.dialogForm,
+				}, opts);
 
 			// @ts-ignore - BootstrapDialog() is loaded at runtime
 			new BootstrapDialog({
@@ -343,14 +357,13 @@ class CResourceToEdit {
 				size: BootstrapDialog.SIZE_WIDE,
 				// initialize the dialog;
 				// set focus to first field, the title, and do a first check on the initial data (should be ok ;-)
-				onshown: () => { setFocus(CONFIG.propClassTitle); this.check() },
-			//	onshown: () => { setFocus(i18n.lookup(CONFIG.propClassTitle)); this.check() },
+				onshown: () => { setFocus(app.ontology.localize(CONFIG.propClassTitle,localOpts)); this.check() },
 			//	message: (thisDlg)=>{
 				message: () => {
 					// @ts-ignore - object $('#app') is only theoretically undefined ...
 					var form = '<div style="max-height:' + ($('#app').outerHeight(true) - 190) + 'px; overflow:auto" >';
 					this.properties.forEach(
-						(p) => { form += p.editField(localOpts); }
+						(p) => { form += p.editField(editOpts); }
 					);
 					form += '</div>';
 					return $(form);

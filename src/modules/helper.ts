@@ -1702,7 +1702,15 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
 LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
     // Pick up the native title of any item except resource and statement;
     if( item )
-        return (opts&&opts.lookupValues? app.ontology.localize(item.title, opts) : item.title);
+        return (opts && opts.lookupTitles ?
+            (opts.targetLanguage ?
+                app.ontology.localize(item.title, opts)
+                : (opts.targetNamespace ?
+                    app.ontology.changeNamespace(item.title, opts)
+                    : item.title
+                )
+            )
+            : item.title);
     throw Error("Programming error: Input parameter 'item' is not defined");
 }
 LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {

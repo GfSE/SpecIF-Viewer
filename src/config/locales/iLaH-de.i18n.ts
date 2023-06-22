@@ -632,7 +632,7 @@ function LanguageTextsDe() {
 	self.MsgCreateStatement = "Relation (Aussage) anlegen";
 	self.MsgOtherProject = "Verspätete Antwort; inzwischen wurde ein anderes Projekt gewählt.";
 	self.MsgWaitPermissions = 'Rechte werden geladen - es ist gleich soweit.';
-	self.MsgForRole = 'für ' + self.SpecIF_UserRole;
+	self.MsgForRole = 'für Rolle ';
 /*	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqifz, *.reqif, *.zip und *.xml. Inhalte müssen den Schemata für ReqIF 1.0+, RIF 1.1a oder RIF 1.2 entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.'; */
 	self.MsgImportReqif = 'Zulässige Dateitypen sind *.reqif oder *.reqifz. Inhalte müssen den Schemata für ReqIF 1.0+ entsprechen. Der Import dauert meist einige Sekunden und bei sehr großen Dateien mehrere Minuten.';
 	self.MsgImportSpecif = 'Zulässige Dateitypen sind *.specif, *.specif.zip und *.specifz. Inhalte müssen den Schemata für SpecIF 0.10.4+ entsprechen. Bei großen Dateien kann der Import einige Minuten dauern.';

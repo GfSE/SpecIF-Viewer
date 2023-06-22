@@ -263,27 +263,28 @@ class CItemPermissions implements IItemPermissions {
     constructor(iId: SpecifId, prm: string) {
         this.item = iId;
         this.permissions = {
+//            A: prm.includes('A'),
             C: prm.includes('C'),
             R: prm.includes('R'),
             U: prm.includes('U'),
-            D: prm.includes('D'),
-//            A: prm.includes('A')
+            D: prm.includes('D')
         }
     }
 }
 interface IRole {
     id: SpecifId;
-    title?: string;
+    title: string;
     description?: SpecifMultiLanguageText;
     itemPermissions: IItemPermissions[];
 }
 class CRole implements IRole {
     id: SpecifId;
-    title?: string;
+    title: string;
     description?: SpecifMultiLanguageText;
     itemPermissions: IItemPermissions[] = [];
     constructor(roleName: string) {
-        this.id = roleName;
+        this.id = roleName.toSpecifId();
+        this.title = roleName;
     }
     setItemPermissions(iId: SpecifId, prm: string) {
         let idx = LIB.indexBy(this.itemPermissions, 'item', iId);

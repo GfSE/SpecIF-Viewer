@@ -62,13 +62,18 @@ class COntology {
     }
     localize(term: string, opts: any): string {
         // Translate an ontology term to the selected local language:
-        let r = this.getTermResource(term);
-        if (r) {
-            // return the name in the local language specifed:
-            let lnL = LIB.valuesByTitle(r, [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
-            if (lnL.length > 0) {
-                //					console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
-                return LIB.languageTextOf(lnL[0], opts)
+
+        if (RE.vocabularyTerm.test(term)) {
+            let r = this.getTermResource(term);
+            if (r) {
+                // return the name in the local language specifed:
+                let lnL = LIB.valuesByTitle(r, [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
+                if (lnL.length > 0) {
+                    //					console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
+                    let newT = LIB.languageTextOf(lnL[0], opts);
+                //    console.info('Local term found: ' + term + ' → ' + newT);
+                    return newT
+                }
             }
         };
         //		console.debug('#0', opts, term);
@@ -114,22 +119,19 @@ class COntology {
             }
         );
 //        console.debug('globalize',termL);
-        switch (termL.length) {
-            case 0:
-                return term;
-            case 1:
-                return LIB.languageTextOf(termL[0], { targetLanguage: "default" });
-            default:
-                // search for the most confirmed term:
-                for( let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"] )
-                    for (let t of termL) {
-                        if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status)
-                            return this.valueByTitle(t, "SpecIF:Term");
-                    };
-
-                // no global term with sufficient lifecycle status found:
-                return term;
-        }
+        if (termL.length>0) {
+            // search for the most confirmed term:
+            for( let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"] )
+                for (let t of termL) {
+                    if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status) {
+                        let newT = this.valueByTitle(t, "SpecIF:Term");
+                        console.info('Global term found: ' + term + ' → ' + newT);
+                        return newT;
+                    }
+                }
+        };
+        // no global term with sufficient lifecycle status found:
+        return term;
     }
     getPreferredTerm(term: string): string {
         // Among synonyms, get the preferred (released) term:
@@ -166,8 +168,52 @@ class COntology {
             if (synL.length > 1)
                 console.warn('Multiple equivalent terms are released: ', synL.map((s)=>{return s.id}).toString());
 
-            console.debug('Preferred term found: ' + term + ' → ', this.valueByTitle(synL[0], "SpecIF:Term"));
-            return this.valueByTitle(synL[0], "SpecIF:Term")
+            let newT = this.valueByTitle(synL[0], "SpecIF:Term");
+            console.info('Preferred term found: ' + term + ' → ' + newT);
+            return newT
+        };
+        // else, return the input value:
+        return term;
+    }
+    changeNamespace(term: string, opts:any): string {
+        // Given a term, try mapping it to the target namespace.
+        if (!opts.targetNamespace)
+            return term;
+
+        let r = this.getTermResource(term);
+        if (r) {
+            // look for a synonym relation pointing to a term with the specified target namespace:
+
+            // If the term itself belongs to the desired namespace, just return it:
+            if (term.startsWith(opts.targetNamespace))
+                return term;
+
+            // Collect all synonyms (relation can be in any direction):
+            let
+                stL = this.statementsByClass(r, "SpecIF:isSynonymOf", { asSubject: true, asObject: true }),
+                // the resources related by those statements are synonym terms:
+                rsL = stL.map(
+                    (st: SpecifStatement) => {
+                        return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
+                    }
+                ),
+                // Find the term with the desired namespace, either released or equivalent:
+                synL = rsL.filter(
+                    (r: SpecifResource) => {
+                        return this.valueByTitle(r, "SpecIF:Term").startsWith(opts.targetNamespace)
+                            && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:LifecycleStatus"))
+                    }
+                );
+            //            console.debug('changeNamespace', r, stL, rsL, synL);
+            if (synL.length < 1)
+                return term;
+
+            if (synL.length > 1)
+                console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((s) => { return s.id }).toString());
+
+            let newT = this.valueByTitle(synL[0], "SpecIF:Term");
+            console.info('Term with desired namespace found: ' + term + ' → ' + newT);
+            return newT
         };
         // else, return the input value:
         return term;
@@ -322,59 +368,6 @@ class COntology {
 
     // ---------------- Invoked methods ---------------------
 
-    private makeStatementsIsNamespace(): void {
-        // Relate one of the defined namespaces to each term using a statement 'isNamespace'.
-
-        let item = LIB.itemBy(this.data.statementClasses, "title", "SpecIF:isNamespace");
-        if (item) {
-
-            // 1. Delete all existing statements 'isNamespace':
-            for (var i = this.data.statements.length - 1; i > -1; i--) {
-                if (LIB.classTitleOf(this.data.statements[i]['class'], this.data.statementClasses) == "SpecIF:isNamespace")
-                    this.data.statements.splice(i,1)
-            };
-
-            // 2. Create all statements 'isNamespace':
-            let allNamespaces = this.data.resources.filter(
-                (r) => {
-                    return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
-                }
-            ).map(
-                (r) => {
-                    return this.valueByTitle(r, "dcterms:title")
-                }
-            );
-            for (var r of this.data.resources) {
-                if (CONFIG.ontologyClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
-                    let term = this.valueByTitle(r, "SpecIF:Term"),
-                        match = RE.splitVocabularyTerm.exec(term);
-                    let stC = LIB.makeKey(item);
-                    let nsFound = false;
-                    if (Array.isArray(match) && match[1]) {
-                        // the term has a namespace:
-                        for (let ns of allNamespaces) {
-                            if (match[1] == ns) {
-                                this.data.statements.push({
-                                    id: LIB.genID('S-'),
-                                    class: stC,
-                                    subject: LIB.makeKey(ns),
-                                    object: LIB.makeKey(r)
-                                } as SpecifStatement);
-                                nsFound = true;
-                                break
-                            }
-                        };
-                        if (!nsFound)
-                            console.warn("No namespace found for " + r.id)
-                    }
-                    else
-                        console.warn("No namespace given for " + r.id)
-                }
-            }
-        }
-        else
-            console.warn("No statementClass 'SpecIF:isNamespace'")
-    }
     private makeClasses(rCIdL: string[], createFn: Function) {
         // Take the resources listed in the hierarchy, filter the selected ones and generate a class for each.
         // ToDo: Better a method to CGenerated.
@@ -787,6 +780,59 @@ class COntology {
             title: ti
         }
     }
+    private makeStatementsIsNamespace(): void {
+        // Relate one of the defined namespaces to each term using a statement 'isNamespace'.
+
+        let item = LIB.itemBy(this.data.statementClasses, "title", "SpecIF:isNamespace");
+        if (item) {
+
+            // 1. Delete all existing statements 'isNamespace':
+            for (var i = this.data.statements.length - 1; i > -1; i--) {
+                if (LIB.classTitleOf(this.data.statements[i]['class'], this.data.statementClasses) == "SpecIF:isNamespace")
+                    this.data.statements.splice(i, 1)
+            };
+
+            // 2. Create all statements 'isNamespace':
+            let allNamespaces = this.data.resources.filter(
+                (r) => {
+                    return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
+                }
+            ).map(
+                (r) => {
+                    return this.valueByTitle(r, "dcterms:title")
+                }
+            );
+            for (var r of this.data.resources) {
+                if (CONFIG.ontologyClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
+                    let term = this.valueByTitle(r, "SpecIF:Term"),
+                        match = RE.splitVocabularyTerm.exec(term),
+                        stC = LIB.makeKey(item),
+                        noNs = true;
+                    if (Array.isArray(match) && match[1]) {
+                        // the term has a namespace:
+                        for (let ns of allNamespaces) {
+                            if (match[1] == ns) {
+                                this.data.statements.push({
+                                    id: LIB.genID('S-'),
+                                    class: stC,
+                                    subject: LIB.makeKey(ns),
+                                    object: LIB.makeKey(r)
+                                } as SpecifStatement);
+                                noNs = false;
+                                break
+                            }
+                        };
+                        if (noNs)
+                            console.warn("No namespace found for " + r.id)
+                    }
+                    else
+                        console.warn("No namespace given for " + r.id)
+                }
+            }
+        }
+        else
+            console.warn("No statementClass 'SpecIF:isNamespace'")
+    }
 }
 /*
 // =============================================
@@ -835,25 +881,6 @@ const vocabulary = {
                 //    case "reqif_associatedfiles":        oT = ""; break;
                 //    case "reqif_project":                oT = ""; break;
                 //    case "reqif_chapternumber":            oT = ""; break; 
-                default: oT = iT;
-            };
-            return oT;
-        }, 
-        reqif: function (iT: string): string {
-            // Target language: ReqIF
-            var oT = '';
-            switch (iT.toJsId().toLowerCase()) {
-                case "dcterms_title": oT = "ReqIF.Name"; break;
-                case "dcterms_description": oT = "ReqIF.Text"; break;
-                case "dcterms_identifier": oT = "ReqIF.ForeignId"; break;
-                case "specif_heading": oT = "ReqIF.ChapterName"; break;    // for compatibility
-                case "specif_category":
-                case "dcterms_type": oT = "ReqIF.Category"; break;
-                case "specif_revision": oT = "ReqIF.Revision"; break;
-                case "specif_state":            // deprecated, for compatibility
-                case "specif_status": oT = "ReqIF.ForeignState"; break;
-                case "dcterms_author":            // deprecated, for compatibility
-                case "dcterms_creator": oT = "ReqIF.ForeignCreatedBy"; break;
                 default: oT = iT;
             };
             return oT;
@@ -919,17 +946,6 @@ const vocabulary = {
             //    reqif: function( iT:string ):string {
                     // no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
             //        return iT
-        }
-    },
-    statement: {
-        // for statementClasses and statements:
-        specif: function (iT: string): string {
-            // Target language: SpecIF
-            var oT = '';
-            switch (iT.toJsId().toLowerCase()) {
-                default: oT = iT
-            };
-            return oT;
         }
     } 
 };

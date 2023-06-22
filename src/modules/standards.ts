@@ -222,7 +222,7 @@ CONFIG.propClassDesc = "dcterms:description";
 CONFIG.propClassType = "dcterms:type";
 CONFIG.propClassLifecycleStatus = 'SpecIF:LifecycleStatus';
 CONFIG.propClassDomain = "SpecIF:Domain";
-CONFIG.propClassDiagram = 'SpecIF:Diagram'
+CONFIG.propClassDiagram = 
 CONFIG.resClassDiagram = 'SpecIF:View';
 CONFIG.resClassXlsRow = 'XLS:Resource';
 CONFIG.resClassUnreferencedResources = "SpecIF:UnreferencedResources";
@@ -304,7 +304,7 @@ CONFIG.titleProperties = [
            // RIF 1.1a Atego Exerpt:
            'Object Heading',
    //        'VALUE-Object Heading',   // 'VALUE-' is now removed right at the beginning
-   /*        // DocBridge Resource Director:
+           // DocBridge Resource Director:
            'DBRD.Name',
            // ARCWAY Cockpit Copilot:
            'Objektüberschrift',
@@ -580,5 +580,3 @@ CONFIG.icons = new Map([
 // string values for boolean 'true' and 'false':
 CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', '1', 'True'];
 CONFIG.valuesFalse = ['false', 'no', 'falsch', 'nein', 'faux', 'non', '0', 'False'];
-
-

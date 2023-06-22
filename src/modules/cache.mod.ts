@@ -1002,7 +1002,7 @@ class CProject {
 		} while (toGet.length > 0);
 		return resL;
 	}
-	private readExtendedClasses(ctg: string, toGet: SpecifKeys) {
+	readExtendedClasses(ctg: string, toGet: SpecifKeys) {
 		// Applies to resourceClasses and statementClasses;
 		// classes are always cached, so there is no need for a call with promise.
 		let self = this,
@@ -1013,29 +1013,29 @@ class CProject {
 		return resL;
 
 		function extendClass(k:SpecifKey) {
-			let res:any = {};
+			let rC:any = {};
 			self.readClassesWithParents(ctg, [k])
 				// A list with classes is returned, the ancestors first and the requested class last.
-				// - Starting with most elderly, copy to and potentially overwrite the attributes of res
+				// - Starting with most elderly, copy to and potentially overwrite the attributes of rC
 				// - Also the list of eligible subjectClasses and objectClasses are overwritten,
 				//   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
 				// - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
 				.forEach(
 					(cl: SpecifItem) => {
 						for (let att in cl) {
-						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(rC[att]))
 							// @ts-ignore - indexing an object with a string is perfectly OK
-							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(rC[att]))
 								// @ts-ignore - indexing an object with a string is perfectly OK
-								LIB.cacheL(res[att], cl[att])
+								LIB.cacheL(rC[att], cl[att])
 							else
 								// @ts-ignore - indexing an object with a string is perfectly OK
-								res[att] = cl[att]
+								rC[att] = cl[att]
                         }
 					}
 				);
-			delete res['extends'];
-			return res
+			delete rC['extends'];
+			return rC
         }
 	}
 	readItems(ctg: string, itemL: SpecifKeys | Function | string, opts?: any): Promise<SpecifItem[]> {
@@ -2135,7 +2135,7 @@ class CProject {
 				// Choice of role only in case of the Editor: 
 				if (app.title == i18n.LblEditor) {
 					pnl += makeRadioField(
-						i18n.lookup('SpecIF:Authorization'),
+						app.ontology.localize('SpecIF:Permissions', { targetLanguage: browser.language }),
 						// a radio button for each of the roles of the selected project:
 						this.roles.map(
 							(r,i) => {
@@ -2273,7 +2273,7 @@ class CProject {
 						switch (options.format) {
 							case 'html':
 								if (app.title == i18n.LblEditor) {
-									options.role = radioValue(i18n.lookup('SpecIF:Authorization'))
+									options.role = radioValue(app.ontology.localize('SpecIF:Permissions', { targetLanguage: browser.language }))
 								}
 								else
 									// in case this is an HTML to create an HTML, adopt the same role:
@@ -2438,15 +2438,27 @@ class CProject {
 					case 'specif':
 					case 'html':
 						// export all languages:
-						opts.targetLanguage = undefined;
+						opts.lookupTitles = false;
+						opts.lookupValues = false;
+					//	opts.targetLanguage = undefined;
 						// keep all revisions:
 					//	opts.revisionDate = undefined;
 						break;
+					case 'reqif':
+						opts.lookupTitles = true;
+						opts.targetNamespace = "ReqIF.";
+						// XHTML is supported:
+						opts.makeHTML = true;
+						opts.linkifyURLs = true;
+						//	opts.createHierarchyRootIfMissing = true;
+						// take newest revision:
+						opts.revisionDate = new Date().toISOString();
+						break;
 				//	case 'rdf':
 					case 'turtle':
-					case 'reqif':
 						// only single language is supported:
-						if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
+						opts.lookupTitles = true;
+						opts.targetLanguage = self.language;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;

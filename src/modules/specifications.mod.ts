@@ -9,10 +9,6 @@
 	ToDo: This module is lousy coding with lots of historical burden --> redo!
 */
 
-// ============= LAYOUT ========================
-
-
-// ============= CONTENT ========================
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin + '(.+?)' + CONFIG.titleLinkEnd, 'g');
 class CPropertyToShow implements SpecifProperty {
 	title: string;
@@ -540,7 +536,7 @@ class CResourceToShow {
 
 		this.id = el.id;
 		this['class'] = el['class'];
-		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
 		this.revision = el.revision;
 		this.language = el.language || this.selPrj.language;
 		this.order = el.order;

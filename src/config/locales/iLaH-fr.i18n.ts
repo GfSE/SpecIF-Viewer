@@ -632,7 +632,7 @@ function LanguageTextsFr() {
 	self.MsgCreateStatement = "Créer une affirmation";
 	self.MsgOtherProject = "Response tardive; entre temps, un autre projet a été choisi.";
 	self.MsgWaitPermissions = 'Téléchargement des autorisations en cours ...';
-	self.MsgForRole = 'pour ' + self.SpecIF_UserRole;
+	self.MsgForRole = 'pour rôle ';
 /*	self.MsgImportReqif = "Types de fichiers valides: *.reqifz, *.reqif, *.zip et *.xml. Le contenu doit correspondre au schéma ReqIF 1.0+, RIF 1.1a ou RIF 1.2. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers."; */
 	self.MsgImportReqif = "Types de fichiers valides: *.reqif ou *.reqifz. Le contenu doit correspondre au schéma ReqIF 1.0+. Le téléchargement peut durer quelques minutes dans le cas de très gros fichiers.";
 	self.MsgImportSpecif = "Types de fichiers valides:  *.specif, *.specif.zip et *.specifz. Le contenu doit correspondre au schéma SpecIF 0.10.4+. En cas de très gros fichiers, le téléchargement peut durer quelques minutes.";

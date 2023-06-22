@@ -720,8 +720,9 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-			//	url: loadPath + 'config/Ontology.specif.zip',
-				url: 'https://specif.de/v1.2/Ontology.specif',
+			//	url: 'https://specif.de/v1.2/Ontology.specif',
+				url: window.location.href.startsWith('file:/') ? '../../SpecIF/vocabulary/Ontology.specif'
+					: 'https://specif.de/v1.2/Ontology.specif',
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {
