@@ -10,8 +10,9 @@
 
 class COntology {
     data: SpecIF;
-    allDomains = [];
-    // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology: 
+    allDomains: string[] = [];
+    allNamespaces: string[] = [];
+    // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology:
     primitiveDataTypes = new Map([
         ["RC-TermPropertyClassString", SpecifDataTypeEnum.String],
         ["RC-TermPropertyClassBoolean", SpecifDataTypeEnum.Boolean],
@@ -41,11 +42,24 @@ class COntology {
             message.show("No ontology found, so no classes will be generated.", { severity: 'warning' });
             return
         };
+
         // Make a list of all defined domains in the SpecIF Ontology:
         let dTDomains = LIB.itemById(this.data.dataTypes, "DT-Domain");
         this.allDomains = dTDomains.enumeration.map(
             (v: SpecifEnumeratedValue) => LIB.languageTextOf(v.value, { targetLanguage: "default" })
         );
+
+        // Make a list of all namespaces:
+        this.allNamespaces = this.data.resources.filter(
+            (r) => {
+                return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
+            }
+        ).map(
+            (r) => {
+                return this.valueByTitle(r, "SpecIF:Term")
+            }
+        );
+
         this.makeStatementsIsNamespace();
         this.options = {};
     }
@@ -69,9 +83,9 @@ class COntology {
                 // return the name in the local language specifed:
                 let lnL = LIB.valuesByTitle(r, [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
                 if (lnL.length > 0) {
-                    //					console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
+                //	console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
                     let newT = LIB.languageTextOf(lnL[0], opts);
-                //    console.info('Local term found: ' + term + ' → ' + newT);
+                //    console.info('Local term assigned: ' + term + ' → ' + newT);
                     return newT
                 }
             }
@@ -96,7 +110,7 @@ class COntology {
                 rC = LIB.itemByKey(this.data.resourceClasses, r['class']);
                 if (CONFIG.ontologyClasses.includes(LIB.titleOf(rC))) {
                     // look for local terms:
-                    let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm"], this.data)
+                    let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm"], this.data);
                     for (let v of tVL) {
                         // check all values:
                         for (var l of v ) {
@@ -105,8 +119,8 @@ class COntology {
                         }
                     };
 
-                    // look fpr local terms in plural
-                    tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTermPlural"], this.data)
+                    // look for local terms in plural
+                    tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTermPlural"], this.data);
                     for (let v of tVL) {
                         // check all values:
                         for (var l of v) {
@@ -114,8 +128,8 @@ class COntology {
                             if (l.text.toLowerCase() == term.toLowerCase()) return true
                         }
                     }
-                }
-                return false;
+                };
+                return false
             }
         );
 //        console.debug('globalize',termL);
@@ -125,7 +139,7 @@ class COntology {
                 for (let t of termL) {
                     if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status) {
                         let newT = this.valueByTitle(t, "SpecIF:Term");
-                        console.info('Global term found: ' + term + ' → ' + newT);
+                        console.info('Global term assigned: ' + term + ' → ' + newT);
                         return newT;
                     }
                 }
@@ -169,7 +183,7 @@ class COntology {
                 console.warn('Multiple equivalent terms are released: ', synL.map((s)=>{return s.id}).toString());
 
             let newT = this.valueByTitle(synL[0], "SpecIF:Term");
-            console.info('Preferred term found: ' + term + ' → ' + newT);
+            console.info('Preferred term assigned: ' + term + ' → ' + newT);
             return newT
         };
         // else, return the input value:
@@ -177,8 +191,11 @@ class COntology {
     }
     changeNamespace(term: string, opts:any): string {
         // Given a term, try mapping it to the target namespace.
-        if (!opts.targetNamespace)
-            return term;
+
+        if (!opts.targetNamespace || !this.allNamespaces.includes(opts.targetNamespace)) {
+            console.warn("No namespace specified or ontology does not include the specified namespace: "+term);
+            return term
+        };
 
         let r = this.getTermResource(term);
         if (r) {
@@ -212,7 +229,7 @@ class COntology {
                 console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((s) => { return s.id }).toString());
 
             let newT = this.valueByTitle(synL[0], "SpecIF:Term");
-            console.info('Term with desired namespace found: ' + term + ' → ' + newT);
+            console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
             return newT
         };
         // else, return the input value:
@@ -781,7 +798,8 @@ class COntology {
         }
     }
     private makeStatementsIsNamespace(): void {
-        // Relate one of the defined namespaces to each term using a statement 'isNamespace'.
+        // Relate one of the defined namespaces to each term using a statement 'isNamespace';
+        // upon return the literal namespace given in the term and the relation to the namespace resource are consistent.
 
         let item = LIB.itemBy(this.data.statementClasses, "title", "SpecIF:isNamespace");
         if (item) {
@@ -793,24 +811,15 @@ class COntology {
             };
 
             // 2. Create all statements 'isNamespace':
-            let allNamespaces = this.data.resources.filter(
-                (r) => {
-                    return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
-                }
-            ).map(
-                (r) => {
-                    return this.valueByTitle(r, "dcterms:title")
-                }
-            );
             for (var r of this.data.resources) {
                 if (CONFIG.ontologyClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
                     let term = this.valueByTitle(r, "SpecIF:Term"),
-                        match = RE.splitVocabularyTerm.exec(term),
-                        stC = LIB.makeKey(item),
-                        noNs = true;
+                        match = RE.splitVocabularyTerm.exec(term);
                     if (Array.isArray(match) && match[1]) {
+                        let stC = LIB.makeKey(item),
+                            noNs = true;
                         // the term has a namespace:
-                        for (let ns of allNamespaces) {
+                        for (let ns of this.allNamespaces) {
                             if (match[1] == ns) {
                                 this.data.statements.push({
                                     id: LIB.genID('S-'),
@@ -831,7 +840,7 @@ class COntology {
             }
         }
         else
-            console.warn("No statementClass 'SpecIF:isNamespace'")
+            console.warn("No statementClass 'SpecIF:isNamespace' defined")
     }
 }
 /*

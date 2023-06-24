@@ -293,7 +293,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 			function isDateTime(cell: ICell): boolean {
 //				console.debug('isDateTime:',cell);
-				return cell && (cell.t == 'd' || cell.t == 's' && LIB.isIsoDate(cell.v as string) );
+				return cell && (cell.t == 'd' || cell.t == 's' && LIB.isIsoDateTime(cell.v as string) );
 			}
 		/*	function isNumber(cell: ICell ):boolean {
 				return cell && (cell.t == 'n' || cell.t == 's' && RE.Number.test(cell.v as string));
@@ -370,7 +370,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												case "s":
 													// Can only get here in case of a native property;
 													// the value will be checked later on, so there is no need to log a warning.
-													if (LIB.isIsoDate(cell.v))
+													if (LIB.isIsoDateTime(cell.v))
 														return cell.v as string;
 												//	console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
 													return '';

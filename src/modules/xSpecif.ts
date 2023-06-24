@@ -380,7 +380,8 @@ class CSpecIF implements SpecIF {
 		function i2int(iE:any) {
 			var oE: any = {
 				id: iE.id,
-				changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
+				changedAt: iE.changedAt
+			//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 			};
 			if (iE.description) oE.description = makeMultiLanguageText(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
@@ -615,7 +616,8 @@ class CSpecIF implements SpecIF {
 			var	oE: any = {
 					id: iE.id,
 					class: eCkey,
-					changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
+					changedAt: iE.changedAt
+				//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 				};
 			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -745,7 +747,8 @@ class CSpecIF implements SpecIF {
 				oE = {
 					id: 'N-' + iR.id,
 					resource: LIB.keyOf( iR ),
-					changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
+					changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
+				//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 				};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -771,7 +774,8 @@ class CSpecIF implements SpecIF {
 						// For the time being, suppress any revision to make sure that a resource update doesn't destroy the reference.
 						// ToDo: Reconsider once we have a backend with multiple revisions ...
 						resource: LIB.makeKey(iE.resource.id || iE.resource),
-						changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
+						changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
+					//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -848,8 +852,8 @@ class CSpecIF implements SpecIF {
 										}
 									);
 								case SpecifDataTypeEnum.DateTime:
-									return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
-								//	return LIB.addTimezoneIfMissing(addColonToTimezoneIfMissing(LIB.cleanValue(val)))
+									return LIB.cleanValue(val)
+								//	return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
 								case SpecifDataTypeEnum.Boolean:
 									if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
 										return "true";
@@ -903,8 +907,8 @@ class CSpecIF implements SpecIF {
 						};
 					// break - all branches end with return;
 					case SpecifDataTypeEnum.DateTime:
-						return [LIB.addTimezoneIfMissing(LIB.cleanValue(prp.value))];
-					//	return [LIB.addTimezoneIfMissing(addColonToTimezoneIfMissing(LIB.cleanValue(prp.value)))];
+						return [LIB.cleanValue(prp.value)];
+					//	return [LIB.addTimezoneIfMissing(LIB.cleanValue(prp.value))];
 					case SpecifDataTypeEnum.Boolean:
 						if (CONFIG.valuesTrue.includes(LIB.cleanValue(prp.value)))
 							return ["true"];
