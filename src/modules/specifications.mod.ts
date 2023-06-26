@@ -503,7 +503,7 @@ class CPropertyToShow implements SpecifProperty {
 //		console.debug('fileRef.toGUI 3: ', txt);
 
 		// Now, at the end, replace the placeholders with the respective strings,
-		txt = txt.replace(/aBra§kadabra([0-9]+)§/g,
+		txt = txt.replace(/aBra§kadabra(\d+)§/g,
 			// @ts-ignore - $0 is never read, but must be specified anyways
 			($0, $1) => {
 				return repStrings[$1]
@@ -809,9 +809,9 @@ class CResourceToShow {
 		txt = stripHTML(txt);
 		// Finally re-insert the deletions and insertions with their tags:
 		// ToDo: Remove any HTML-tags within insertions and deletions
-		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
-		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
-		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
+		if(mL.length) txt = txt.replace( /abRakad@bra(\d+)#/g, function( $0, $1 ) { return mL[$1] });
+		if(iL.length) txt = txt.replace( /siM§alabim(\d+)#/g, function( $0, $1 ) { return iL[$1] });
+		if(dL.length) txt = txt.replace( /hoKu§pokus(\d+)#/g, function( $0, $1 ) { return dL[$1] });
 		return txt
 	}  */
 class CResourcesToShow {

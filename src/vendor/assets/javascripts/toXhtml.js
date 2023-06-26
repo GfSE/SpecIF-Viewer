@@ -42,7 +42,7 @@ function toXhtml( data, opts ) {
 	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
 	if( typeof(opts.RE)!='object' ) opts.RE = {};
 	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
-	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
+	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', '');
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
 		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
 //	console.debug('toXhtml',data,opts);

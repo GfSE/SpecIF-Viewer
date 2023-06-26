@@ -240,7 +240,7 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'generateClasses', 'standards', "xSpecif"];
+			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'ioOntology', 'standards', "xSpecif"];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
@@ -611,7 +611,7 @@ var app:IApp,
 					.done(() => { message = new CMessage(); });
 					return true;
 				case "standards": getScript(loadPath + 'modules/standards.js'); return true;
-				case 'generateClasses': getScript(loadPath + 'modules/generateClasses.js'); return true;
+				case 'ioOntology': getScript(loadPath + 'modules/ioOntology.js'); return true;
 				case "Ontology": getOntology(); return true;
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;

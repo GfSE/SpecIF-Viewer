@@ -214,7 +214,7 @@ class CSpecIF implements SpecIF {
 						// get the constraint checker locally, if started locally in the debug phase:
 					//	import(window.location.href.startsWith('file:/') ? '../../SpecIF/schema-and-checker/check/CCheck.mjs'
 						import(window.location.href.startsWith('file:/') ? '../../SpecIF-Schema/check/CCheck.mjs'
-								: 'https://specif.de/v' + /\/(?:v|specif-)([0-9]+\.[0-9]+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
+								: 'https://specif.de/v' + /\/(?:v|specif-)(\d+\.\d+)\//.exec(spD['$schema'])[1] + '/CCheck.mjs')
 						.then(modChk => {
 							// 2. Get the specified schema file:
 							getSchema();

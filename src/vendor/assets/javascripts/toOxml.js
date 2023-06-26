@@ -223,7 +223,7 @@ function toOxml( data, options ) {
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			const reB = '([\\s\\S]*?)'
-				+	'(<h[^>]*>[^<]*</h[0-9]+>'
+				+	'(<h[^>]*>[^<]*</h\d+>'
 				+	'|<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
@@ -691,7 +691,7 @@ function toOxml( data, options ) {
 								return ''
 							});
 							// g) a heading:
-							$2 = $2.replace(/<h([0-9]+)[^>]*>([\s\S]*?)<\/h[0-9]+>/, function($0,$1,$2) {
+							$2 = $2.replace(/<h(\d+)[^>]*>([\s\S]*?)<\/h\d+>/, function($0,$1,$2) {
 								bL.push( {p:{ text:$2.trim(), format:{heading:$1} }} );
 								return ''
 							});
@@ -891,7 +891,7 @@ function toOxml( data, options ) {
 								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
-								sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
+								sp = /<span[^>]+?"color: ?#([\da-fA-F]{6})"[^>]*>/.exec($2);
 								if (sp && sp.length > 1) {
 									fmt.font.color = sp[1].toUpperCase();
 									return '';
@@ -2889,7 +2889,7 @@ function toOxml( data, options ) {
 		if( !s ) return '';
 		let el = document.createElement('div');
 		// first unescape all HTML entities:
-		return s.replace(/\&#?[0-9a-z]+;/gi, function (enc) {
+		return s.replace(/\&#?[\da-z]+;/gi, function (enc) {
 					el.innerHTML = enc;
 					return el.innerText
 				})

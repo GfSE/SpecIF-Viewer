@@ -151,10 +151,10 @@ CONFIG.showEmptyProperties = false;
 /////////////////////////////////////////////////
 // Regular expressions:
 const RE:any = {};
-    RE.Id = /^[_a-zA-Z]{1}[_a-zA-Z0-9.-]*$/;    // compliant with ReqIF and SpecIF
-//    RE.Email = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i;
+    RE.Id = /^[_a-zA-Z]{1}[_a-zA-Z\d.-]*$/;    // compliant with ReqIF and SpecIF
+//    RE.Email = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])|(([a-zA-Z\-\d]+\.)+[a-zA-Z]{2,}))$/i;
 //    RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
-    RE.Email = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
+    RE.Email = /^[A-Z\d._%+-]+@[A-Z\d.-]+\.[A-Z]{2,4}$/i;
 
 /*  see: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime
  *  RE.DateTime = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
@@ -175,15 +175,16 @@ const RE:any = {};
 
     const     chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // �������
             chars_fr = '\u00c0\u00e0\u00c2\u00e2\u00c7\u00e7\u00c8\u00e8\u00c9\u00e9\u00ca\u00ea\u00d4\u00f4\u00d9\u00f9\u00db\u00fb\u00cb\u00eb'; // ��������������������
-//    const    chars_icon = "&#[0-9]{1,5};|&#x[0-9]{1,4};|&[a-zA-Z]{1,6};|[^0-9a-zA-Z"+chars_de+chars_fr+"&\"'\\s\\\\/]{1,6}";
+//    const    chars_icon = "&#\d{1,5};|&#x\d{1,4};|&[a-zA-Z]{1,6};|[^\da-zA-Z"+chars_de+chars_fr+"&\"'\\s\\\\/]{1,6}";
     //                HTML-encoded chars ...
     //                                               OR all except alphanumerical characters (allowing not-escaped unicode chars)
 //    RE.Icon = new RegExp( '^('+chars_icon+')$', '');
     // corresponding to SpecIF schema v0.10.0+:
-    RE.Icon = new RegExp( '^(&#[0-9]{1,5};|&#x[0-9]{1,4};|&[a-zA-Z]{1,6};|[@$%#*_\u007B\u20AC\u00A3\u00A5\u00A7]{1,1}[0-9a-zA-Z@$%#*_\u007D\u20AC\u00A3\u00A5\u00A7]{0,6})$', '');
+    RE.Icon = new RegExp( '^(&#\d{1,5};|&#x\d{1,4};|&[a-zA-Z]{1,6};|[@$%#*_\u007B\u20AC\u00A3\u00A5\u00A7]{1,1}[\da-zA-Z@$%#*_\u007D\u20AC\u00A3\u00A5\u00A7]{0,6})$', '');
 
     // Various datatypes:
-    RE.IsoDateTime = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;
+//    RE.IsoDateTime = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;
+RE.IsoDateTime = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|30|31)(?:T([0-1]\d|2[0-4]):([0-5]\d):([0-5]\d(?:\.\d{1,3})?)(\+(0\d|11|12):([0-5]\d)|-(0\d|11|12):([0-5]\d)|Z)?)?$/;
 /*    RE.hasTimezone =/(Z|\+\d{2}(:\d{2})?|\-\d{2}(:\d{2})?)$/  */
     // see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
     // /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
@@ -193,8 +194,8 @@ const RE:any = {};
         let mult = (typeof(decimals)=='number'&&decimals>0)? '{1,'+Math.floor(decimals)+'}':'+';
         return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' );
     };
-//    RE.CSV = /^[\s\-,_#&$�0-9a-zA-Z]+$/;   // works!
-    RE.CSV = new RegExp( '^[\\s\\-,_#&$�0-9a-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values
+//    RE.CSV = /^[\s\-,_#&$�\da-zA-Z]+$/;   // works!
+    RE.CSV = new RegExp( '^[\\s\\-,_#&$�\da-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values
 
 // Regexes to identify XHTML tags for objects and links:
 // a) Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.

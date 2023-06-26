@@ -2207,7 +2207,7 @@ class CProject {
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
 						];
 				// add an option to generate class definitions, if there is a SpecIF ontology found in the hierarchies:
-				if( moduleManager.isReady('generateClasses') && hasOntology() )
+				if( moduleManager.isReady('ioOntology') && hasOntology() )
 					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
 
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'

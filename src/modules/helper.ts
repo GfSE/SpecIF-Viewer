@@ -1159,7 +1159,7 @@ interface String {
     fileExt: Function;
 }
 String.prototype.toCamelCase = function():string {
-    let str = this.replace(/[^a-z0-9 \:\.]/ig, ''), parts, res = '';
+    let str = this.replace(/[^a-z\d \:\.]/ig, ''), parts, res = '';
     // Check for separators in the sequence of priority:
     if (str.includes(':'))
         parts = str.split(':')
@@ -1196,7 +1196,7 @@ String.prototype.toJsId = function():string {
 // ToDo: Check ReqIF compatibility
 String.prototype.toSpecifId = function (): string {
     // Mirror the pattern for SpecifId defined in schema.json
-    return (/[^_a-zA-Z]/.test(this[0]) ? '_' : '') + this.replace( /[^_a-zA-Z0-9.-]/g, '_' );
+    return (/[^_a-zA-Z]/.test(this[0]) ? '_' : '') + this.replace( /[^_a-zA-Z\d.-]/g, '_' );
 };
 /*
 function truncate(l:number):string {
@@ -1292,11 +1292,11 @@ String.prototype.makeHTML = function(opts?:any):string {
 LIB.xmlChar2utf8 = (str: string):string => {
     // Convert html numeric character encoding to utf8
     // @ts-ignore - match is not used, but must be declared anyhow.
-    str = str.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
+    str = str.replace(/&#x([\da-fA-F]+);/g, function (match, numStr) {
         return String.fromCharCode(parseInt(numStr, 16))
     });
     // @ts-ignore - match is not used, but must be declared anyhow.
-    return str.replace(/&#([0-9]+);/g, function (match, numStr) {
+    return str.replace(/&#(\d+);/g, function (match, numStr) {
         return String.fromCharCode(parseInt(numStr, 10))
     })
 }
@@ -1362,7 +1362,7 @@ String.prototype.unescapeHTMLTags = function():string {
 String.prototype.unescapeHTMLEntities = function():string {
     // unescape HTML encoded entities (characters):
     var el = document.createElement('div');
-    return LIB.noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
+    return LIB.noCode(this.replace(/\&#?x?[\da-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
         return el.innerText;
     }));

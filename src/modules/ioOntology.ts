@@ -43,6 +43,11 @@ class COntology {
             return
         };
 
+        if (!this.checkConstraintsOntology()) {
+            message.show("The Ontology violates one or more constraints, so no classes will be generated. Please see the browser log for details.", { severity: 'error' });
+            return
+        };
+
         // Make a list of all defined domains in the SpecIF Ontology:
         let dTDomains = LIB.itemById(this.data.dataTypes, "DT-Domain");
         this.allDomains = dTDomains.enumeration.map(
@@ -283,11 +288,6 @@ class COntology {
 
             // The selected domains for generating classes:
             selDomains = this.allDomains.filter((d: string) => { return this.options[d.toJsId()] });
-
-        if (!this.checkConstraintsOntology(this.data)) {
-            message.show("The Ontology violates one or more constraints, so no classes will be generated. Please see the browser log for details.", { severity: 'error' });
-            return
-        };
 
         if (selDomains.length < 1) {
             message.show("No domain selected, so no classes will be generated.", { severity: 'warning' });
@@ -741,7 +741,7 @@ class COntology {
         } as SpecifClass;
     }
     // @ts-ignore
-    private checkConstraintsOntology(dta: SpecIF): boolean {
+    private checkConstraintsOntology(): boolean {
         /*  Check the following constraints / conventions:
             - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
             - A term must have a property "PC-Term" with the name of the term (the title contains the name in national languages)

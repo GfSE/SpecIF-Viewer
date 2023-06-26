@@ -81,7 +81,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		row: number;
 		constructor(addr: string) {
 			// create a coordinate from a cell name: 'C4' becomes {col:3,row:4}
-			let res = addr.match(/([A-Z]+)([0-9]+)/);  // res[1] is column name, res[2] is line index
+			let res = addr.match(/([A-Z]+)(\d+)/);  // res[1] is column name, res[2] is line index
 			if ( !Array.isArray(res) || !res[1] || !res[2] )
 				throw Error("Incomplete input data: Cell without address!");
 			this.col = colIdx(res[1]);
@@ -827,7 +827,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	function inBracketsAtEnd(str:string):string|undefined {
 		// Extract resourceClass in (round brackets) or [square brackets]:
-	//	let resL = /\s*(?:\(|\[)([a-zA-Z0-9:_\-].+?)(?:\)|\])$/.exec( pN );
+	//	let resL = /\s*(?:\(|\[)([a-zA-Z\d:_\-].+?)(?:\)|\])$/.exec( pN );
 		let resL = RE.inBracketsAtEnd.exec(str);
 		if (Array.isArray(resL) && resL.length > 1)
 			return resL[1] || resL[2];
