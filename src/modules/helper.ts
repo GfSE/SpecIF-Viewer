@@ -706,7 +706,7 @@ LIB.isMultiLanguageValue = (L: any[]): boolean => {
             // If there are multiple language values, all except the first (=default) must have a language property:
             if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && i>0 && (typeof (lE.language) != "string" || lE.language.length < 2)))
                 return false;
-        }
+        };
         return true;
     };
     return false;
@@ -723,8 +723,10 @@ LIB.makeMultiLanguageValue = (el: any, opts?: any): SpecifMultiLanguageText => {
 LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifLanguageText | undefined => {
     // Return the language value in the specified target language .. or the first value in the list by default.
 
-    if (!LIB.isMultiLanguageValue(val))
-        throw Error("Invalid value: '" + val + "' must be a multi-language text.");
+    if (!LIB.isMultiLanguageValue(val)) {
+        console.error("Value must be a multi-language text: ",val);
+        throw Error("Programming Error: Value must be a multi-language text.")
+    };
 
     // ... is a multiLanguageText, but may be empty:
     if (val.length < 1) return;
