@@ -782,7 +782,8 @@ class CSpecIF implements SpecIF {
 			// In <v1.1, titles can be simple strings or multi-language text objects;
 			// in >v1.0, native titles can only be strings (in fact SpecifText).
 			// So, in case of multi-language text, choose the default language:
-			return LIB.cleanValue( typeof(ti)=='string'? ti : ti[0].text );
+			let str = LIB.cleanValue(typeof (ti) == 'string' ? ti : ti[0].text);
+			return vocabulary.property.specif(str)
 		}
 		function makeValues(prp: any, dT: SpecifDataType): SpecifValues {
 			if (Array.isArray(prp.values)) {

@@ -228,7 +228,8 @@ class CResourceToEdit {
 
 		this.id = el.id;
 	//	this['class'] = el['class'];
-		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
+	//	this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
 	/*	this.isHeading = false; // will be set further down if appropriate
 		this.revision = el.revision;
 		this.order = el.order;

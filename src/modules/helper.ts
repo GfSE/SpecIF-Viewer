@@ -699,9 +699,10 @@ LIB.hasContent = (pV: string): boolean => {
 LIB.isMultiLanguageText = (L: any[]): boolean => {
     if (Array.isArray(L)) {
         let hasMultipleLanguages = L.length > 1;
-        for (var lE of L) {
-            // SpecifMultilanguageText is a list of objects {text:"the text value", language:"IETF language tag"}
-            if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && (typeof (lE.language) != "string" || lE.language.length < 2))) return false;
+        for (var i = L.length - 1; i > -1; i--) {
+            let lE = L[i];
+            if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && i > 0 && (typeof (lE.language) != "string" || lE.language.length < 2)))
+                return false;
         };
         return true;
     };

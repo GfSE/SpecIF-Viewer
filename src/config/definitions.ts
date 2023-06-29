@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.p",
+    CONFIG.appVersion = "1.1.p.2",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
@@ -150,11 +150,12 @@ const CONFIG:any = {};
     CONFIG.dataTypeComment = 'Datatype for comment text';
     CONFIG.propClassId = "dcterms:identifier";
     CONFIG.propClassTitle = "dcterms:title";
+    CONFIG.propClassTerm = "SpecIF:Term";
     CONFIG.propClassDesc = "dcterms:description";
     CONFIG.propClassType = "dcterms:type";
     CONFIG.propClassLifecycleStatus = 'SpecIF:LifecycleStatus';
     CONFIG.propClassDomain = "SpecIF:Domain";
-    CONFIG.propClassDiagram = 'SpecIF:Diagram'
+    CONFIG.propClassDiagram =
     CONFIG.resClassDiagram = 'SpecIF:View';
     CONFIG.resClassXlsRow = 'XLS:Resource';
     CONFIG.resClassUnreferencedResource = "SpecIF:UnreferencedResources";
@@ -229,6 +230,7 @@ const CONFIG:any = {};
         .concat([
         // Dublin core:
         CONFIG.propClassTitle,
+        CONFIG.propClassTerm,
         'DC.title',
         // ReqIF 1.0 and 1.1 Implementation Guide:
         'ReqIF.Name',
@@ -548,7 +550,14 @@ const vocabulary = {
                 case "dc_description":
             //    case "reqif_changedescription":
                 case "reqif_description":
-                case "reqif_text":                    oT = CONFIG.propClassDesc; break;
+                case "reqif_text":
+                    oT = CONFIG.propClassDesc;
+                    break;
+                case 'specif_view':
+                case 'fmc_plan':
+                case 'specif_diagram':
+                    oT = CONFIG.propClassDiagram;
+                    break;
                 case "reqif_revision":                oT = "SpecIF:Revision"; break;
                 case "specif_stereotype":        // deprecated, for compatibility, not to confound with "UML:Stereotype"
                 case "specif_subclass":            // deprecated, for compatibility

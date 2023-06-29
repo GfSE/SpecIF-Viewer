@@ -231,7 +231,7 @@ class CPropertyToShow implements SpecifProperty {
 					if (target)
 						return lnk(target, $1)+$2;
 					// The dynamic link has NOT been matched/replaced, so mark it:
-					return '<span style="color:#D82020">' + $1 + '</span>+$2'
+					return '<span style="color:#D82020">' + $1 + '</span>'+$2
 				}
 			)
 		} while (replaced);
@@ -542,7 +542,8 @@ class CResourceToShow {
 
 		this.id = el.id;
 		this['class'] = el['class'];
-		this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
+	//	this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
 		this.revision = el.revision;
 		this.order = el.order;
 		this.revision = el.revision;
