@@ -557,10 +557,11 @@ class CProject {
 					(rL) => {
 						exD.resources = rL as SpecifResource[];
 //						console.debug('2', simpleClone(exD));
+
+						// In a first step collect all statements relating two resources which are referenced in a hierarchy:
 						return this.readItems('statement', flt, opts);
 
 						function flt(s:SpecifStatement) {
-							let rL = exD.resources;
 							return LIB.indexByKey(rL, s.subject) > -1 && LIB.indexByKey(rL, s.object) > -1
 						}
 					}
@@ -568,6 +569,25 @@ class CProject {
 				.then(
 					(sL) => {
 						exD.statements = sL as SpecifStatement[];
+//						console.debug('3', simpleClone(exD));
+
+						// In a second step get all statements relating a statement and a resource or statement.
+						// As of today, there are only "shows" statements between a diagram resource (as subject) and a statement (as object),
+						// but the constraints allow a statement with any resource or statement as subject or object,
+						// so the general case is assumed.
+						// ToDo: In fact, this step must be repeated until no more statements are found.
+						return this.readItems('statement', flt, opts);
+
+						function flt(s: SpecifStatement) {
+							let L = exD.resources.concat(sL);
+							return LIB.indexByKey(L, s.subject) > -1 && LIB.indexByKey(sL, s.object) > -1
+								|| LIB.indexByKey(sL, s.subject) > -1 && LIB.indexByKey(L, s.object) > -1
+						}
+					}
+				)
+				.then(
+					(sL) => {
+						exD.statements = exD.statements.concat(sL as SpecifStatement[]);
 						// collect the resourceClasses referenced by the resources of this project:
 						// start with the stored resourceClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
@@ -583,7 +603,7 @@ class CProject {
 								rcLen = rCL.length;
 							};
 						};
-//						console.debug('3', simpleClone(exD), rCL);
+//						console.debug('4', simpleClone(exD), rCL);
 						return this.readItems('resourceClass', rCL, opts);
 					}
 				)
@@ -605,7 +625,7 @@ class CProject {
 								scLen = sCL.length;
 							}
 						};
-//						console.debug('4', simpleClone(exD), sCL);
+//						console.debug('5', simpleClone(exD), sCL);
 						return this.readItems('statementClass', sCL, opts);
 					}
 				)
@@ -624,7 +644,7 @@ class CProject {
 								LIB.cacheE(pCL, pC);
 							}
 						};
-//						console.debug('5', simpleClone(exD),pCL);
+//						console.debug('6', simpleClone(exD),pCL);
 						return this.readItems('propertyClass', pCL, opts);
 					}
 				)
@@ -641,7 +661,7 @@ class CProject {
 							LIB.cacheE(dTL, pC['dataType']);
 						};
 
-//						console.debug('6', simpleClone(exD),dTL);
+//						console.debug('7', simpleClone(exD),dTL);
 						return this.readItems('dataType', dTL, opts)
 					}
 				)
@@ -673,14 +693,14 @@ class CProject {
 								}
 							}
 						};
-//						console.debug('7', simpleClone(exD),fL);
+//						console.debug('8', simpleClone(exD),fL);
 						return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts);
 					}
 				)
 				.then(
 					(fL) => {
 						exD.files = fL as IFileWithContent[];
-//						console.debug('8', simpleClone(exD));
+//						console.debug('9', simpleClone(exD));
 						return exD.get(opts);
 					}
 				)
@@ -726,7 +746,6 @@ class CProject {
 								// types are compared by id:
 								// @ts-ignore - indexing by string works fine
 								let idx = LIB.indexByKey(dta[ty.listName], newT);
-							//	let idx = LIB.indexBy(dta[ty.listName], 'title', newT.title);   // does certainly not yield a good result in case of dataTypes
 								if (idx < 0) {
 									// a) there is no item with the same id
 									itmL.push(newT);
