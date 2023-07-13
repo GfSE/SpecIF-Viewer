@@ -65,13 +65,14 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
-                + (val.indexOf('\n') < 0 ? '<input type="text" id="field' + sH + '" class="form-control"' + fn + ' value="' + val + '" />'
-                    : '<textarea id="field' + sH + '" class="form-control" rows="2"' + fn + '>' + val + '</textarea>')
+                + (val.includes('\n') ?
+                    '<textarea id="field' + sH + '" class="form-control" rows="2"' + fn + '>' + val + '</textarea>'
+                    : '<input type="text" id="field' + sH + '" class="form-control"' + fn + ' value="' + val + '" />')
                 + '</div>';
             break;
         case 'area':
             fG += '<div class="' + aC + '">'
-                + '<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>'
+                +   '<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>'
                 + '</div>';
             break;
         default:
@@ -84,7 +85,10 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
 function setTextValue( tag:string, val:string ):void {
     // For now, just take care of the first value:
     let el = document.getElementById('field' + simpleHash(tag));
-    if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
+    if (el && el.nodeName && el.nodeName.toLowerCase() == 'div') {
+        el.innerHTML = val;
+        return
+    };
     // @ts-ignore - .value is in fact accessible
     if( el ) el.value = val;
 }
@@ -120,7 +124,7 @@ function textValue( tag:string ):string {
     // get the input value:
     try {
         // @ts-ignore - .value is in fact accessible
-        return LIB.noCode(document.getElementById('field' + simpleHash(tag)).value) || '';
+        return LIB.noCode(document.getElementById('field' + simpleHash(tag)).value).escapeJSON() || '';
     } catch(e) {
         return '';
     }
@@ -1151,6 +1155,7 @@ interface String {
     stripCtrl: Function;
     makeHTML: Function;
     escapeRE: Function;
+    escapeJSON: Function;
     escapeXML: Function;
     escapeHTML: Function;
     escapeHTMLTags: Function;
@@ -1264,7 +1269,8 @@ String.prototype.makeHTML = function(opts?:any):string {
             // don't interpret the '+' as list item, but do so with '�' and '•',
             // transform arrows assembled by characters to special arrow characters:
             // @ts-ignore - 'window.markdown' is defined, if loaded
-            return window.markdown.render(newS
+            return window.markdown.render(
+                newS
                 .replace(/\+ /g, '&#x2b; ') // don't transform '+' to list item
             //    .replace(/� /g, '* ')
                 .replace(/• /g, '* ')
@@ -1338,7 +1344,12 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
-//String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
+String.prototype.escapeJSON = function () {
+    return this.replace(/["\\]/g, '\\$&')    // $& means the whole matched string
+            .replace(/\u000A/g, '\\n')
+            .replace(/\u0009/g, '\\t')
+            .replace(/\[\u0000-\u001F]/g, '')
+};
 
 String.prototype.escapeXML = function():string {
 // escape XML characters:
@@ -1777,7 +1788,7 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPrope
 //        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageTextOf( pL[idx].value,op ) );
         let ti = LIB.languageTextOf(pL[idx].values[0], opts);
      //   if (ti) return /* opts && opts.lookupTitles ? i18n.lookup(ti) : */ ti;
-        if (ti) return (opts && opts.lookupValues ? app.ontology.localize(item.title, opts) : ti);
+        if (ti) return (opts && opts.lookupValues ? app.ontology.localize(ti, opts) : ti);
     };
     return '';
 }

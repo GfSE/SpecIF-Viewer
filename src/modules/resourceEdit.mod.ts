@@ -12,8 +12,8 @@
 // In this case CPropertyToShow is defined in the module named CONFIG.specifications.
 class CPropertyToEdit extends CPropertyToShow  {
 
-	constructor(p: SpecifProperty, res: CResourceToEdit) {
-		super(p, res);
+	constructor(p: SpecifProperty, rC: SpecifResourceClass) {
+		super(p, rC);
 	}
 	
 	private dispOpts() {
@@ -29,7 +29,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			localOpts = Object.assign({
 				lookupTitles: true,
 				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
-				targetLanguage: this.selRes.language,
+				targetLanguage: this.selPrj.language,
 				imgClass: 'forImagePreview'
 			}, opts),
 			ti = LIB.titleOf(this, localOpts);
@@ -95,8 +95,8 @@ class CPropertyToEdit extends CPropertyToShow  {
 							// - open an input text-area, if it is a description property
 							// - open an input line, otherwise
 							{
-								typ: (CONFIG.descProperties.includes(ti) || CONFIG.commentProperties.includes(ti) ? 'area' : 'line'),
-								//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.indexOf(ti) > -1) ? 'line' : 'area',
+								typ: (CONFIG.descProperties.includes(this.pC.title) || CONFIG.commentProperties.includes(this.pC.title) ? 'area' : 'line'),
+								//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.includes(this.pC.title)) ? 'line' : 'area',
 								handle: opts.myFullName + '.check()',
 								hint: this.pC.description
 							}
@@ -198,10 +198,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 				+ '</div>'
         }
 	}
-/*	private getTitle(): string {
-		return LIB.titleOf(this, { lookupTitles: true, targetLanguage: this.selRes.language })
-	} */
-	getEditedValue(): SpecifProperty {
+	getEditedValue(opts:any): SpecifProperty {
 		// Get the new or unchanged input value of the property from the input field:
 
 		// skip properties without update permission:
@@ -209,12 +206,12 @@ class CPropertyToEdit extends CPropertyToShow  {
 			return;
 
 		let
-			localOpts = {
+			localOpts = Object.assign({
 				lookupTitles: true,
 				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
-				targetLanguage: this.selRes.language,
+				targetLanguage: this.selPrj.language,
 				imgClass: 'forImagePreview'
-			},
+			}, opts),
 			ti = LIB.titleOf(this, localOpts);
 
 		// In case of enumeration:
@@ -262,24 +259,25 @@ class CPropertyToEdit extends CPropertyToShow  {
 						if (CONFIG.multiLanguageProperties.includes(this.pC.title) ) {
 							// Update just the current language:
 							if (this.values.length > 0 && LIB.multiLanguageValueHasContent(this.values[0])) {
-								// - If the original property has different languages, take care of them;
+								// - If the original property has multiple languages, take care of them;
 								//   the new value must only replace a value of the same language!
 								// - Don't overwrite a default value, but create a new language value with the given language at hand
-								let langV = LIB.languageValueOf(this.values[0], { targetLanguage: this.selRes.language, dontReturnDefaultValue: true });
+								let langV = LIB.languageValueOf(this.values[0], { targetLanguage: localOpts.targetLanguage, dontReturnDefaultValue: true });
 								if (langV) {
 									// language found, thus update:
 									langV.text = val;
-									langV.language = this.selRes.language;
+									langV.language = localOpts.targetLanguage;
 								}
 								else {
 									// language not found, so append:
-									this.values[0].push({ text: val, language: this.selRes.language } as SpecifLanguageText);
+									// @ts-ignore - this is of type SpecifDataTypeEnum.String, so we can push a new language value
+									this.values[0].push({ text: val, language: localOpts.targetLanguage } as SpecifLanguageText);
 								};
 								return { class: LIB.makeKey(this.pC.id), values: this.values };
 							};
 
 							// else: create a new multiLanguageValue list with a single entry:
-							return { class: LIB.makeKey(this.pC.id), values: [[{ text: val, language: this.selRes.language } as SpecifLanguageText]] };
+							return { class: LIB.makeKey(this.pC.id), values: [[{ text: val, language: localOpts.targetLanguage } as SpecifLanguageText]] };
 						};
 
 						// else: create a new multiLanguageValue list with a single entry without language tag:
@@ -333,7 +331,7 @@ class CResourceToEdit {
 		this.changedBy = el.changedBy; */
 
 		this.dialogForm = new CCheckDialogInput();
-		this.properties = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToEdit(pr,this) });
+		this.properties = LIB.forAll(el.properties, (pr: SpecifProperty) => { return new CPropertyToEdit(pr,this.rC) });
 		this.newFiles = [];
 	}
 	editForm(opts: any): void {
@@ -431,7 +429,7 @@ class CResourceToEdit {
 		let editedProps: SpecifProperty[] = LIB.forAll(
 			this.properties,
 			(p: CPropertyToEdit) => {
-				return p.getEditedValue();  // those without permissions are returned undefined and are suppressed
+				return p.getEditedValue({targetLanguage:this.language});  // those without permissions are returned undefined and are suppressed
             }
 		);
 //		console.debug('editedProps', editedProps)
@@ -520,7 +518,6 @@ moduleManager.construct({
 				selectResClass(self.localOpts)
 				.then(
 					(rC: SpecifResourceClass) => {
-					//	self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + LIB.languageTextOf(rC.title) + ')';
 						self.localOpts.dialogTitle = i18n.MsgCreateResource + ' (' + rC.title + ')';
 						return app.projects.selected.makeEmptyResource(rC)
 				})

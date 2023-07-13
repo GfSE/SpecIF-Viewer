@@ -313,7 +313,7 @@ class CCache {
 				this[app.standards.listName.get(le)].length = 0;
     }
 }
-class CElement {
+class CItem {
 	category: string;
 	listName: string;
 	isEqual: Function;
@@ -325,6 +325,44 @@ class CElement {
 		this.isEqual = eqF;
 		this.isCompatible = compF;
 		this.substitute = subsF;
+	}
+}
+class CItemPermissions implements SpecifItemPermissions {
+	item: SpecifId;  // the item reference
+	permissions: SpecifPermissions;
+	constructor(iId: SpecifId, prm: string) {
+		this.item = iId;
+		this.permissions = {
+			//            A: prm.includes('A'),
+			C: prm.includes('C'),
+			R: prm.includes('R'),
+			U: prm.includes('U'),
+			D: prm.includes('D')
+		}
+	}
+}
+class CRole implements SpecifRole {
+	id: SpecifId;
+	title: string;
+	description?: SpecifMultiLanguageText;
+	itemPermissions: SpecifItemPermissions[] = [];
+	constructor(roleName: string) {
+		this.id = roleName.toSpecifId();
+		this.title = roleName;
+	}
+	setItemPermissions(iId: SpecifId, prm: string) {
+		let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
+		if (idx > -1)
+			this.itemPermissions[idx] = new CItemPermissions(iId, prm)
+		else
+			this.itemPermissions.push(new CItemPermissions(iId, prm));
+		return this  // make it chainable
+	}
+	removeItemPermissions(iId: SpecifId) {
+		let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
+		if (idx > -1)
+			this.itemPermissions.splice(idx, 1)
+		return this  // make it chainable
 	}
 }
 interface IExportParams {
@@ -352,7 +390,7 @@ class CProject {
 	createdBy?: SpecifCreatedBy;
 
 	// all project roles with permissions:
-	roles: CRole[] = [];
+	roles: SpecifRole[] = [];
 	// the permissions of the current user, selected at login by his/her role:
 	myItemPermissions: CItemPermissions[] = [];
 
@@ -378,7 +416,7 @@ class CProject {
 	exportParams: IExportParams;
 	exporting: boolean;		// prevent concurrent exports
 	abortFlag: boolean;
-	types: CElement[];
+	types: CItem[];
 
 	constructor(cData: CCache) {
 		// The common cache for all local projects:
@@ -389,10 +427,10 @@ class CProject {
 
 		//	Create a table of types and relevant attributes:	
 		this.types = [
-			new CElement('dataType', LIB.equalDT, this.compatibleDT.bind(this), this.substituteDT.bind(this)),
-			new CElement('propertyClass', LIB.equalPC, this.compatiblePC.bind(this), this.substitutePC.bind(this)),
-			new CElement('resourceClass', LIB.equalRC, this.compatibleRC.bind(this), this.substituteRC.bind(this)),
-			new CElement('statementClass', LIB.equalSC, this.compatibleSC.bind(this), this.substituteSC.bind(this))
+			new CItem('dataType', LIB.equalDT, this.compatibleDT.bind(this), this.substituteDT.bind(this)),
+			new CItem('propertyClass', LIB.equalPC, this.compatiblePC.bind(this), this.substitutePC.bind(this)),
+			new CItem('resourceClass', LIB.equalRC, this.compatibleRC.bind(this), this.substituteRC.bind(this)),
+			new CItem('statementClass', LIB.equalSC, this.compatibleSC.bind(this), this.substituteSC.bind(this))
 		];
 	};
 	isLoaded(): boolean {
@@ -736,7 +774,7 @@ class CProject {
 				//    c) if same id and different content, save with new id and update all references
 				(newD: CSpecIF) => {
 //					console.debug('adopt #1',simpleClone(self.cache),simpleClone(newD));
-					self.types.forEach((ty:CElement) => {
+					self.types.forEach((ty:CItem) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 						if (Array.isArray(newD[ty.listName])) {
 							let itmL: SpecifItem[] = [];

@@ -17,7 +17,7 @@ class CPropertyToShow implements SpecifProperty {
 	class: SpecifKey;
 	private cData: CCache;  // the classes are always available in the cache, not necessarily the instances
 	selPrj: CProject;
-	selRes: CResourceToShow; // in fact it is CResourceToShow
+//	selRes: CResourceToShow; // in fact it is CResourceToShow
 	pC: SpecifPropertyClass;
 	dT: SpecifDataType;
 	replaces?: string[];
@@ -26,13 +26,13 @@ class CPropertyToShow implements SpecifProperty {
 	values: SpecifValues;
 	enumIdL?: SpecifValues;
 
-	constructor(prp: SpecifProperty, res:CResourceToShow) {
+	constructor(prp: SpecifProperty, rC:SpecifResourceClass) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
 
 		this.cData = app.projects.cache;
 		this.selPrj = app.projects.selected;
-		this.selRes = res;
+//		this.selRes = res;
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
 		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
@@ -42,7 +42,7 @@ class CPropertyToShow implements SpecifProperty {
 		if (iPrm)
 			this.pC.permissions = iPrm.permissions
 		else {
-			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', res.rC.id);
+			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', rC.id);
 			if (iPrm)
 				this.pC.permissions = iPrm.permissions
 			else {
@@ -50,7 +50,7 @@ class CPropertyToShow implements SpecifProperty {
 				if (iPrm)
 					this.pC.permissions = iPrm.permissions
 				else
-					this.pC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+					this.pC.permissions = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissions
 			}
 		};
 
@@ -548,7 +548,7 @@ class CResourceToShow {
 		// Initially all properties are stored in other;
 		// further down the title and description properties are identified and moved:
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this) });
+		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this.rC) });
 
 		// Get the resourceClass' permissions:
 		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
@@ -559,13 +559,13 @@ class CResourceToShow {
 			if (iPrm)
 				this.rC.permissions = iPrm.permissions
 			else
-				this.rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+				this.rC.permissions = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissions
 		};
 
 		// Find out, whether there is at least one property with update permission,
 		// so that the actionBtns can be activated/deactivated
 		// - note that the list of properties is often incomplete, but we must iterate *all* propertyClasses. 
-		for ( var pC of this.cData.get('propertyClass',this.rC.propertyClasses) ) {
+		for (var pC of this.cData.get('propertyClass', this.rC.propertyClasses) as SpecifPropertyClass[]) {
 			// Get the propertyClass' permissions;
 			// the permissions can be temporarily stored in pC, because it is a clone:
 			let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', pC.id);
@@ -580,7 +580,7 @@ class CResourceToShow {
 					if (iPrm)
 						pC.permissions = iPrm.permissions
 					else
-						pC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+						pC.permissions = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissions
 				}
 			};
 
@@ -2006,7 +2006,7 @@ moduleManager.construct({
 							if (iPrm)
 								rC.permissions = iPrm.permissions
 							else
-								rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+								rC.permissions = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissions
 						};
 
 //						console.debug('objectList.getPermissionsPrj',rC,rC.instantiation, rC.permissions);

@@ -196,24 +196,6 @@ function toOxml( data, options ) {
 				},
 				options
 			);
-		/*	// Check for missing options:
-			if( typeof(opts)!='object' ) opts = {};
-			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
-			if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
-		//	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'];
-			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
-			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
-			if (!opts.descriptionProperties) opts.descriptionProperties = ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'];
-			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
-		
-			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp
-			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';
-			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;
-		//	if (!Array.isArray(opts.hierarchyRoots)) opts.hierarchyRoots = ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'];
-			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
-			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];*/
 
 			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength > 0;
 			if( opts.addTitleLinks )
@@ -1273,7 +1255,7 @@ function toOxml( data, options ) {
 						tg = 'r:id="rId' + pushReferencedUrl(ct.format.hyperlink.external) + '"'
 					else
 						// Interestingly enough, Word only supports internal links up to 40 chars:
-						tg = 'w:anchor="' + limit(ct.format.hyperlink.internal) + '"';
+						tg = 'w:anchor="' + limit40(ct.format.hyperlink.internal) + '"';
 					return '<w:hyperlink ' + tg + '><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>' + r + '</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
@@ -1312,7 +1294,7 @@ function toOxml( data, options ) {
 				if( ct.format && ct.format.bookmark ) {
 					let bmId = 'bm-'+ hashCode(ct.format.bookmark);
 					// MS-Word supports internal links only up to 40 chars:
-					return '<w:bookmarkStart w:id="'+bmId+'" w:name="'+limit(ct.format.bookmark)+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
+					return '<w:bookmarkStart w:id="'+bmId+'" w:name="'+limit40(ct.format.bookmark)+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
 				};
 				// else, just the content:
 				return r;  
@@ -1328,7 +1310,7 @@ function toOxml( data, options ) {
 					// default:
 					return '';
 				}
-				function limit(e) {
+				function limit40(e) {
 					// MS Word truncates internal links to 40 characters resulting in links which are not unique;
 					// so longer ones are hashed to assure uniqueness.
 					// Link is unique for length<41, so don't change it:
@@ -1355,20 +1337,21 @@ function toOxml( data, options ) {
 				// return when there is no content: 
 				if( !ct || ct.picture || typeof(ct)=='object' && !ct.text ) return // undefined;  
 //				console.debug('wText',ct);
+
 				// ct is a string with length>0, an array ct.text or an object ct.text with length>0:
 				// in case of an array:
-				if( Array.isArray(ct.text) ) {
+				if( Array.isArray(ct.text) ) {  // evaluates also if ct.text is undefined
 					let str = '';
 					// the array may hold fragments of text or line-breaks:
 					ct.text.forEach( function(c) {
-						if (c.str) str += '<w:t xml:space="preserve">' + c.str + '</w:t>';
+						if (c.str) str += '<w:t' + (ct.format && (ct.format.hyperlink || ct.format.bookmark)? '':' xml:space="preserve"')+'>' + c.str + '</w:t>';
 						// see http://officeopenxml.com/WPtextSpecialContent-break.php
 						if( c['break']=='line' ) str += '<w:br/>'
 					});
 					return str;
 				};
 				// else, in case of string or 'ct.text' with string:
-				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>';
+				return '<w:t' + (ct.format && (ct.format.hyperlink || ct.format.bookmark)? '' : ' xml:space="preserve"') + '>' + (ct.text || ct) + '</w:t>';
 			}
 			function wPict( ct ) {
 //				console.debug('wPict',ct,imageL);

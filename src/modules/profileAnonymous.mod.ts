@@ -17,13 +17,13 @@
 interface IMe extends IModule {
 	userName: string;
 	administrator: boolean;
-	projectRoles: IProjectRole[];
+	projectRoles: SpecifProjectRole[];
 	login(): Promise<IMe>;
 	logout(): void;
 	myRole(prj: SpecifId): string;
 	isAdministrator(): boolean;
 }
-/* class CProjectRole implements IProjectRole {
+/* class CProjectRole implements SpecifProjectRole {
 	project: SpecifId = '';
 	role: string = '';
 	constructor(prj: SpecifId, rl: string) {
@@ -45,7 +45,7 @@ moduleManager.construct({
 			{
 				project: "any", // default
 				role: "Reader"
-			} as IProjectRole
+			} as SpecifProjectRole
 		];
 
 		return true;

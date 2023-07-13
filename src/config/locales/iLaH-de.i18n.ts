@@ -307,7 +307,7 @@ function LanguageTextsDe() {
 	self.ReqIF_ForeignModifiedBy = 	self.LblModifiedBy;
 	self.ReqIF_Revision = 	self.LblRevision;
 	self.ReqIF_Description = 	self.LblDescription;
-	self.ReqIF_ChangeDescription = 'änderungs-Beschreibung';
+	self.ReqIF_ChangeDescription = 'Änderungs-Beschreibung';
 	self.ReqIF_Project = 	self.LblProject;
 	self.ReqIF_ForeignState = 	self.LblState;
 	self.ReqIF_Category = 	self.LblCategory;

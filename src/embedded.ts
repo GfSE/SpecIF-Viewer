@@ -123,7 +123,7 @@ function SpecifApp():IApp {
 						{
 							project: "any", // default
 							role: window.role || "Supplier"
-						} as IProjectRole
+						} as SpecifProjectRole
 					];
 
 					// data and type are valid, but it is necessary to indicate that the data is not zipped:

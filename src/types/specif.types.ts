@@ -98,6 +98,12 @@ interface SpecifProject {
     createdBy?: SpecifCreatedBy;
     /**
      * 
+     * @type {Array<SpecifRole>}
+     * @memberof SpecifProject
+     */
+    roles?: Array<SpecifRole>;
+    /**
+     * 
      * @type {string}
      * @memberof SpecifProject
      */
@@ -184,6 +190,12 @@ interface SpecIF {
     createdBy?: SpecifCreatedBy;
     /**
      * 
+     * @type {Array<SpecifRole>}
+     * @memberof SpecifProject
+     */
+    roles?: Array<SpecifRole>;
+    /**
+     * 
      * @type {string}
      * @memberof Specif
      */
@@ -242,64 +254,55 @@ interface SpecIF {
  * Some interface and type definitions for user roles and permissions.
  * New for SpecIF v1.2
  */
-interface IPermissions {
+interface SpecifPermissions {
     C: boolean; // create item
     R: boolean; // read item
     U: boolean; // update item
     D: boolean; // delete item
 //    A: boolean; // administer item's permissions, so modify the other attributes of this 
 }
-interface IProjectRole {
+interface SpecifItemPermissions {
+    item: SpecifId;  // the item reference, at this time any dataType, propertyClass, resourceClass or statementClass can be referenced
+    permissions: SpecifPermissions;
+}
+interface SpecifRole {
+    id: SpecifId;
+    title: string;
+    description?: SpecifMultiLanguageText;
+    itemPermissions: Array<SpecifItemPermissions>;
+}
+interface SpecifProjectRole {
     project: SpecifId;  // the project reference, use 'any' as default value to cover all remaining projects
-    role: string;  // the name of the role
+    role: SpecifId;  // the id of the role
 }
-interface IItemPermissions {
-    item: SpecifId;  // the item reference
-    permissions: IPermissions;
+interface Person {
+    /**
+     * 
+     * @type {string}
+     * @memberof Person
+     */
+    familyName?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Person
+     */
+    givenName?: string;
+    /**
+     * 
+     * @type {SpecifOrg}
+     * @memberof Person
+     */
+    org?: SpecifOrg;
+    /**
+     * 
+     * @type {string}
+     * @memberof Person
+     */
+    email: string;
 }
-class CItemPermissions implements IItemPermissions {
-    item: SpecifId;  // the item reference
-    permissions: IPermissions;
-    constructor(iId: SpecifId, prm: string) {
-        this.item = iId;
-        this.permissions = {
-//            A: prm.includes('A'),
-            C: prm.includes('C'),
-            R: prm.includes('R'),
-            U: prm.includes('U'),
-            D: prm.includes('D')
-        }
-    }
-}
-interface IRole {
-    id: SpecifId;
-    title: string;
-    description?: SpecifMultiLanguageText;
-    itemPermissions: IItemPermissions[];
-}
-class CRole implements IRole {
-    id: SpecifId;
-    title: string;
-    description?: SpecifMultiLanguageText;
-    itemPermissions: IItemPermissions[] = [];
-    constructor(roleName: string) {
-        this.id = roleName.toSpecifId();
-        this.title = roleName;
-    }
-    setItemPermissions(iId: SpecifId, prm: string) {
-        let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
-        if (idx > -1)
-            this.itemPermissions[idx] = new CItemPermissions(iId, prm)
-        else
-            this.itemPermissions.push(new CItemPermissions(iId, prm));
-        return this  // make it chainable
-    }
-    removeItemPermissions(iId: SpecifId) {
-        let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
-        if (idx>-1)
-            this.itemPermissions.splice(idx,1)
-        return this  // make it chainable
-    }
+interface SpecifUser extends Person {
+    projectRoles: Array<SpecifProjectRole>
 }
 
 /**
@@ -339,32 +342,7 @@ type SpecifAlternativeIds = Array<SpecifAlternativeId>
  * @export
  * @interface SpecifCreatedBy
  */
-interface SpecifCreatedBy {
-    /**
-     * 
-     * @type {string}
-     * @memberof SpecifCreatedBy
-     */
-    familyName?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SpecifCreatedBy
-     */
-    givenName?: string;
-    /**
-     * 
-     * @type {SpecifOrg}
-     * @memberof SpecifCreatedBy
-     */
-    org?: SpecifOrg;
-    /**
-     * 
-     * @type {string}
-     * @memberof SpecifCreatedBy
-     */
-    email: string;
-}
+type SpecifCreatedBy = Person;
 
 /**
  * 
@@ -402,6 +380,12 @@ interface SpecifDataType {
      * @memberof SpecifDataType
      */
     replaces?: SpecifReplaces;
+    /**
+     * 
+     * @type {SpecifPermissions}
+     * @memberof SpecifDataType
+     */
+    permissions?: SpecifPermissions;
     /**
      * 
      * @type {string}
@@ -708,6 +692,12 @@ interface SpecifNode {
     replaces?: SpecifReplaces;
     /**
      * 
+     * @type {SpecifPermissions}
+     * @memberof SpecifNode
+     */
+    permissions?: SpecifPermissions;
+    /**
+     * 
      * @type {SpecifDateTime}
      * @memberof SpecifNode
      */
@@ -796,6 +786,12 @@ interface SpecifPropertyClass {
      * @memberof SpecifPropertyClass
      */
     multiple?: boolean;
+    /**
+     * 
+     * @type {SpecifPermissions}
+     * @memberof SpecifPropertyClass
+     */
+    permissions?: SpecifPermissions;
     /**
      * 
      * @type {SpecifValues}
@@ -956,6 +952,12 @@ interface SpecifResourceClass {
      * @memberof SpecifResourceClass
      */
     instantiation?: Array<SpecifInstantiation>;
+    /**
+     * 
+     * @type {SpecifPermissions}
+     * @memberof SpecifResourceClass
+     */
+    permissions?: SpecifPermissions;
     /**
      * 
      * @type {SpecifKeys}
@@ -1136,6 +1138,12 @@ interface SpecifStatementClass {
      * @memberof SpecifStatementClass
      */
     isUndirected?: boolean;
+    /**
+     * 
+     * @type {SpecifPermissions}
+     * @memberof SpecifStatementClass
+     */
+    permissions?: SpecifPermissions;
     /**
      * 
      * @type {SpecifKeys}
