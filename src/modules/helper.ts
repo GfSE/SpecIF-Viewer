@@ -61,7 +61,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
 
-    val = LIB.noCode(val) || '';  // dateTime properties can be undefined ... perhaps others as well. 
+    val = LIB.noCode(val).unescapeJSON() || '';  // dateTime properties can be undefined ... perhaps others as well. 
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
@@ -82,6 +82,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
     return fG;
 }
 function setTextValue( tag:string, val:string ):void {
+    val = LIB.noCode(val).unescapeJSON() || '';
     // For now, just take care of the first value:
     let el = document.getElementById('field' + simpleHash(tag));
     if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
@@ -120,7 +121,7 @@ function textValue( tag:string ):string {
     // get the input value:
     try {
         // @ts-ignore - .value is in fact accessible
-        return LIB.noCode(document.getElementById('field' + simpleHash(tag)).value) || '';
+        return LIB.noCode(document.getElementById('field' + simpleHash(tag)).value).escapeJSON() || '';
     } catch(e) {
         return '';
     }
@@ -1100,6 +1101,8 @@ interface String {
     stripCtrl: Function;
     makeHTML: Function;
     escapeRE: Function;
+    escapeJSON: Function;
+    unescapeJSON: Function;
     escapeXML: Function;
     escapeHTML: Function;
     escapeHTMLTags: Function;
@@ -1287,7 +1290,17 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
-//String.prototype.escapeJSON = function() { return this.replace(/["]/g, '\\$&') }; // $& means the whole matched string
+String.prototype.escapeJSON = function () {
+    return this.replace(/["\\]/g, '\\$&')    // $& means the whole matched string
+            .replace(/\u000A/g, '\n')
+            .replace(/\u0009/g, '\t')
+            .replace(/\[\u0000-\u001F]/g, '')
+};
+String.prototype.unescapeJSON = function () {
+    return this.replace(/\\"/g, '"')
+            .replace(/\n/g, '&#x0A;')
+            .replace(/\t/g, '&#x09;')
+};
 
 String.prototype.escapeXML = function():string {
 // escape XML characters:
@@ -1311,7 +1324,7 @@ String.prototype.unescapeHTMLTags = function():string {
 };
 // see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
 String.prototype.unescapeHTMLEntities = function():string {
-    // unescape HTML encoded entities (characters):
+    // unescape HTML encoded characters:
     var el = document.createElement('div');
     return LIB.noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
