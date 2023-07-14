@@ -156,13 +156,8 @@ const RE:any = {};
 //    RE.Email = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;  // http://www.w3resource.com/javascript/form/javascript-sample-registration-form-validation.php
     RE.Email = /^[A-Z\d._%+-]+@[A-Z\d.-]+\.[A-Z]{2,4}$/i;
 
-/*  see: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime
- *  RE.DateTime = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
- */
-
     // Reliably recognize an URI, not validate an URI:
-    // text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
-    RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]*?)*(\?[^\s#]+?)?(#\S+?)?)(\.\s|:\s|\s|\.<|:<|<|\.$|:$|$)/g;
+RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]*?)*(\?[^\s#]+?)?(#\S*?)?)($|\s|\.\s|:\s|\.<|:<|<|\.$)/gm;
 //             $1: Begins with start of text or space or tag end
 //                     $2: complete link
 //                      $3: "http(s)://" or "www."
@@ -173,6 +168,7 @@ const RE:any = {};
 //                                                                                                                 $8: 0..1 fragment=page anchor (hash)
 //                                                                                                                          $9: ends with space or .space or .end or end
 
+    // text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
     const     chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // �������
             chars_fr = '\u00c0\u00e0\u00c2\u00e2\u00c7\u00e7\u00c8\u00e8\u00c9\u00e9\u00ca\u00ea\u00d4\u00f4\u00d9\u00f9\u00db\u00fb\u00cb\u00eb'; // ��������������������
 //    const    chars_icon = "&#\d{1,5};|&#x\d{1,4};|&[a-zA-Z]{1,6};|[^\da-zA-Z"+chars_de+chars_fr+"&\"'\\s\\\\/]{1,6}";
@@ -188,6 +184,10 @@ RE.IsoDateTime = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|30|31)(?:T([0-1]\d|2[
 /*    RE.hasTimezone =/(Z|\+\d{2}(:\d{2})?|\-\d{2}(:\d{2})?)$/  */
     // see also http://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime#3143231:
     // /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
+/*  see: https://stackoverflow.com/questions/3143070/javascript-regex-iso-datetime
+ *  RE.DateTime = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/
+ */
+
 //    RE.Number = /^-?\d+(?:(?:.|,){1}\d+){0,1}(?:e-?\d+)?$/;
     RE.Integer = /^(-?[1-9]\d*|0)$/;
     RE.Real = function( decimals:number ) {
