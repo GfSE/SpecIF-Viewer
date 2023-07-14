@@ -61,7 +61,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
 
-    val = LIB.noCode(val) || '';  // dateTime properties can be undefined ... perhaps others as well. 
+    val = LIB.noCode(val).unescapeJSON() || '';  // dateTime properties can be undefined ... perhaps others as well. 
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
@@ -1156,6 +1156,7 @@ interface String {
     makeHTML: Function;
     escapeRE: Function;
     escapeJSON: Function;
+    unescapeJSON: Function;
     escapeXML: Function;
     escapeHTML: Function;
     escapeHTMLTags: Function;
@@ -1346,9 +1347,14 @@ String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()
 // Escape characters for JSON string: 
 String.prototype.escapeJSON = function () {
     return this.replace(/["\\]/g, '\\$&')    // $& means the whole matched string
-            .replace(/\u000A/g, '\\n')
-            .replace(/\u0009/g, '\\t')
+            .replace(/\u000A/g, '\n')
+            .replace(/\u0009/g, '\t')
             .replace(/\[\u0000-\u001F]/g, '')
+};
+String.prototype.unescapeJSON = function () {
+    return this.replace(/\\"/g, '"')
+            .replace(/\n/g, '&#x0A;')
+            .replace(/\t/g, '&#x09;')
 };
 
 String.prototype.escapeXML = function():string {
@@ -1373,7 +1379,7 @@ String.prototype.unescapeHTMLTags = function():string {
 };
 // see: https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript
 String.prototype.unescapeHTMLEntities = function():string {
-    // unescape HTML encoded entities (characters):
+    // unescape HTML encoded characters:
     var el = document.createElement('div');
     return LIB.noCode(this.replace(/\&#?x?[\da-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
