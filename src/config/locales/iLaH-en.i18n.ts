@@ -334,7 +334,6 @@ function LanguageTextsEn() {
 	self.dcterms_modified = self.LblModifiedAt;
 //	self.dcterms_contributor = "";
 //	self.dcterms_serviceProvider = "";
-//	self.dcterms_instanceShape = "";
 // OSLC attribute names:
 //	self.rdf_type = "Type";
 //	self.oslc_rm_elaboratedBy = "";

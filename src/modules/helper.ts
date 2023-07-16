@@ -61,7 +61,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
 
-    val = LIB.noCode(val).unescapeJSON() || '';  // dateTime properties can be undefined ... perhaps others as well. 
+    val = LIB.noCode(val || '').unescapeJSON();  // dateTime properties can be undefined ... perhaps others as well.
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
@@ -1346,7 +1346,7 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
 String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
 // Escape characters for JSON string: 
 String.prototype.escapeJSON = function () {
-    return this.replace(/["\\]/g, '\\$&')    // $& means the whole matched string
+    return this.replace(/["\\]/g, '\$&')    // $& means the whole matched string
             .replace(/\u000A/g, '\n')
             .replace(/\u0009/g, '\t')
             .replace(/\[\u0000-\u001F]/g, '')
