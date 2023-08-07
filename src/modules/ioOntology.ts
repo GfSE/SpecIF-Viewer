@@ -88,7 +88,6 @@ class COntology {
                 // return the name in the local language specifed:
                 let lnL = LIB.valuesByTitle(r, [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
                 if (lnL.length > 0) {
-                //	console.debug('#1', opts, LIB.displayValueOf(lnL[0], opts));
                     let newT = LIB.languageTextOf(lnL[0], opts);
                 //    console.info('Local term assigned: ' + term + ' → ' + newT);
                     return newT

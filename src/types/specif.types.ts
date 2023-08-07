@@ -262,7 +262,7 @@ interface SpecifPermissions {
 //    A: boolean; // administer item's permissions, so modify the other attributes of this 
 }
 interface SpecifItemPermissions {
-    item: SpecifId;  // the item reference, at this time any dataType, propertyClass, resourceClass or statementClass can be referenced
+    item: SpecifId;  // the item reference, at this time any propertyClass, resourceClass or statementClass can be referenced
     permissions: SpecifPermissions;
 }
 interface SpecifRole {

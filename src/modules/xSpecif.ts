@@ -819,7 +819,7 @@ class CSpecIF implements SpecIF {
 			str = app.ontology.getPreferredTerm(str);
 //			console.debug('makeTitle 3', str);
 
-			// ba default just keep it:
+			// by default just keep it:
 			return str;
 		}
 		function makeValues(prp: any, dT: SpecifDataType): SpecifValues {
@@ -852,7 +852,7 @@ class CSpecIF implements SpecIF {
 										}
 									);
 								case SpecifDataTypeEnum.DateTime:
-									return LIB.cleanValue(val)
+									return makeISODate(LIB.cleanValue(val))
 								//	return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
 								case SpecifDataTypeEnum.Boolean:
 									if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
@@ -907,7 +907,7 @@ class CSpecIF implements SpecIF {
 						};
 					// break - all branches end with return;
 					case SpecifDataTypeEnum.DateTime:
-						return [LIB.cleanValue(prp.value)];
+						return [makeISODate(LIB.cleanValue(prp.value))];
 					//	return [LIB.addTimezoneIfMissing(LIB.cleanValue(prp.value))];
 					case SpecifDataTypeEnum.Boolean:
 						if (CONFIG.valuesTrue.includes(LIB.cleanValue(prp.value)))
@@ -921,10 +921,21 @@ class CSpecIF implements SpecIF {
 						// and internally they are stored as string as well to avoid inaccuracies
 						// by multiple transformations:
 						return [LIB.cleanValue(prp.value)];
-				};
+				}
 			}
 			else
 				throw Error("Invalid property with class " + prp[names.pClass] + ".");
+
+			function makeISODate(str:string) {
+				// repair faulty time-zone from ADOIT (add missing colon between hours and minutes);
+				// this is only necessary for some SpecIF files created with an older Archimate importer:
+				return str.replace(
+					/(\d\+|\d-)(\d\d)(\d\d)$/,
+					// @ts-ignore - match is never read, but cannot be omitted
+					(match, $1, $2, $3) => {
+						return $1 + $2 + ':' + $3;
+					})
+			}
 		}
 		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {
 			return (typeof (iE) == 'string' ?
@@ -932,7 +943,7 @@ class CSpecIF implements SpecIF {
 					[{ text: LIB.cleanValue(iE), format: "xhtml" }]
 					: [{ text: LIB.cleanValue(iE) }]
 				)
-				: LIB.cleanValue(iE) );
+				: LIB.cleanValue(iE) )
         }
 	}
 	private toExt(opts?: any): Promise<SpecIF> {
@@ -1164,7 +1175,7 @@ class CSpecIF implements SpecIF {
 							for (var v of iE.values) {
 								if (RE.vocabularyTerm.test(txt)) {
 									txt = LIB.languageTextOf(v, opts);
-								//	if( opts.lookupValues ) txt = i18n.lookup(txt);
+									if (opts.lookupValues) txt = app.ontology.localize(txt,opts);
 								}
 								else {
 									if (CONFIG.excludedFromFormatting.includes(pC.title)) {
@@ -1621,8 +1632,7 @@ class CSpecIF implements SpecIF {
 								};
 							};
 							// @ts-ignore - OK for v1.0
-							oE.value = txt;
-						//	oE.value = opts.lookupValues ? i18n.lookup(txt) : txt;
+							oE.value = opts.lookupValues ? app.ontology.localize(txt, opts) : txt;
 
 						/*	if (LIB.isHTML(txt))
 								// @ts-ignore - OK for v1.0

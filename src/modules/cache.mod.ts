@@ -2431,10 +2431,13 @@ class CProject {
 			//	opts.lookupValues = true;  // applies to self.cache.get()
 				// But DO reduce to the language desired.
 				if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
-				opts.makeHTML = true;
-				opts.linkifyURLs = true;
-			//	opts.createHierarchyRootIfMissing = true;
+
+				opts.lookupTitles =
+				opts.lookupValues =
+				opts.makeHTML =
+				opts.linkifyURLs =
 				opts.allDiagramsAsImage = true;
+			//	opts.createHierarchyRootIfMissing = true;
 			//	opts.allImagesAsPNG = ["oxml"].includes(opts.format);   .. not yet implemented!!
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
@@ -2486,8 +2489,6 @@ class CProject {
 //				console.debug( "storeAs", opts );
 
 				// keep vocabulary terms:
-			//	opts.lookupTitles = false;
-			//	opts.lookupValues = false;
 				opts.allDiagramsAsImage = ["html","turtle","reqif"].includes(opts.format);
 
 				switch (opts.format) {

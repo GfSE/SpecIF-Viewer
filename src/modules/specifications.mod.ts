@@ -54,13 +54,13 @@ class CPropertyToShow implements SpecifProperty {
 			}
 		};
 
-		// by default, use the propertyClass' title:
-		// An input data-set may have titles which are not from the SpecIF vocabulary;
-		// do not yet replace the result with a preferred vocabulary term:
+		// Find the propertyClass' title:
+		// An input data-set may have titles which are not from the SpecIF vocabulary,
+		// but do not yet replace the result with a preferred vocabulary term:
 		this.title = LIB.titleOf(this.pC, { targetLanguage: 'default' });
 
+		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		if (this.dT.enumeration) {
-		//	this.enumIdL = simpleClone(prp.values);  // keep original values for resourceEdit
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
 			// ToDo: Check use of default values
@@ -68,7 +68,7 @@ class CPropertyToShow implements SpecifProperty {
 		}
 	}
 	private listEnumeratedValues() {
-		// replace identifiers of enumerated values by their value as defined in the dataType:
+		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		var oL: SpecifValues = [];
 		for( var v of this.values ) {
 			oL.push(LIB.itemById(this.dT.enumeration, v).value);
@@ -83,14 +83,6 @@ class CPropertyToShow implements SpecifProperty {
 		if (this.dT.type == SpecifDataTypeEnum.String) {
 			let lV;
 			if (opts && opts.targetLanguage) {
-				/*	if (this.dT.enumeration) {
-						let v: SpecifMultiLanguageText;
-						this.values.forEach((id) => {
-							v = LIB.itemById(this.dT.enumeration, id).value;
-							str += LIB.languageTextOf(v, opts);
-						});
-					}
-					else */
 				this.values.forEach(
 					(v: any, i: number) => {
 						lV = LIB.languageTextOf(v, opts);
@@ -105,28 +97,14 @@ class CPropertyToShow implements SpecifProperty {
 		};
 		// else, all data types except string:
 		this.values.forEach((v: any, i: number) => { str += (i<1? '' : ', ') + v; });
-		return str;
-
-	/*	let ct = '',
-				eV;
-			console.debug('enumValueOf',dT,val,opts);
-			dT.enumeration.forEach( (v,i)=>{
-				eV = LIB.languageTextOf( LIB.itemById(dT.enumeration,v).value, opts );
-				// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
-				// For example, when an object is from a search hitlist or from a revision list,
-				// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
-				if (opts && opts.lookupValues)
-					eV = i18n.lookup(eV);
-				ct += (i == 0 ? '' : ', ') + (eV ? eV : v);
-			});
-			return ct; */
+		return str
     }
 	isVisible(opts: any): boolean {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
 			&& (CONFIG.showEmptyProperties || LIB.hasContent(this.allValues(opts))))
 	}
 	get( options: any): string {
-		let opts = $.extend({
+		let opts = Object.assign({
 				titleLinking: false,
 				lookupValues: false,
 				targetLanguage: this.selPrj.language,
@@ -1522,7 +1500,7 @@ moduleManager.construct({
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: self.cData.instanceTitleOf(r, $.extend({}, opts, {neverEmpty:true})),
+				name: self.cData.instanceTitleOf(r, Object.assign({}, opts, {neverEmpty:true})),
 				ref: iE.resource,
 				children: LIB.forAll( iE.nodes, toJqTree )
 			};
@@ -2280,8 +2258,7 @@ moduleManager.construct({
 			// r may be a resource or a key pointing to a resource,
 			// where the sequence of items in L is always maintained.
 			// @ts-ignore - in the first run when a key is specified, the result of instanceTitleOf() is undefined - it will be added in the second run
-			//	LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
-			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) }] })
+			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, Object.assign({}, opts, { addIcon: true, neverEmpty: true }))) }] })
 		}
 		function cacheMinSta(N: CGraph, s: SpecifStatement): void {
 			// cache the minimal representation of a statement;
@@ -2289,7 +2266,6 @@ moduleManager.construct({
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
 			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] })
 		}
 		function cacheNet(s: SpecifStatement): void {
@@ -2329,7 +2305,7 @@ moduleManager.construct({
 
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
-					localOpts = $.extend({}, opts, { addIcon: false }),  // no icons when searching titles
+					localOpts = Object.assign({}, opts, { addIcon: false }),  // no icons when searching titles
 					selTi = cacheData.instanceTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
