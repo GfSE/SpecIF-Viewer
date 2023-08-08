@@ -329,10 +329,10 @@ class CItem {
 }
 class CItemPermissions implements SpecifItemPermissions {
 	item: SpecifId;  // the item reference
-	permissions: SpecifPermissions;
+	permissionSet: SpecifPermissionSet;
 	constructor(iId: SpecifId, prm: string) {
 		this.item = iId;
-		this.permissions = {
+		this.permissionSet = {
 			//            A: prm.includes('A'),
 			C: prm.includes('C'),
 			R: prm.includes('R'),

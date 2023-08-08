@@ -254,7 +254,7 @@ interface SpecIF {
  * Some interface and type definitions for user roles and permissions.
  * New for SpecIF v1.2
  */
-interface SpecifPermissions {
+interface SpecifPermissionSet {
     C: boolean; // create item
     R: boolean; // read item
     U: boolean; // update item
@@ -263,7 +263,7 @@ interface SpecifPermissions {
 }
 interface SpecifItemPermissions {
     item: SpecifId;  // the item reference, at this time any propertyClass, resourceClass or statementClass can be referenced
-    permissions: SpecifPermissions;
+    permissionSet: SpecifPermissionSet;
 }
 interface SpecifRole {
     id: SpecifId;
@@ -382,10 +382,10 @@ interface SpecifDataType {
     replaces?: SpecifReplaces;
     /**
      * 
-     * @type {SpecifPermissions}
+     * @type {SpecifPermissionSet}
      * @memberof SpecifDataType
      */
-    permissions?: SpecifPermissions;
+    permissionSet?: SpecifPermissionSet;
     /**
      * 
      * @type {string}
@@ -692,10 +692,10 @@ interface SpecifNode {
     replaces?: SpecifReplaces;
     /**
      * 
-     * @type {SpecifPermissions}
+     * @type {SpecifPermissionSet}
      * @memberof SpecifNode
      */
-    permissions?: SpecifPermissions;
+    permissionSet?: SpecifPermissionSet;
     /**
      * 
      * @type {SpecifDateTime}
@@ -788,10 +788,10 @@ interface SpecifPropertyClass {
     multiple?: boolean;
     /**
      * 
-     * @type {SpecifPermissions}
+     * @type {SpecifPermissionSet}
      * @memberof SpecifPropertyClass
      */
-    permissions?: SpecifPermissions;
+    permissionSet?: SpecifPermissionSet;
     /**
      * 
      * @type {SpecifValues}
@@ -954,10 +954,10 @@ interface SpecifResourceClass {
     instantiation?: Array<SpecifInstantiation>;
     /**
      * 
-     * @type {SpecifPermissions}
+     * @type {SpecifPermissionSet}
      * @memberof SpecifResourceClass
      */
-    permissions?: SpecifPermissions;
+    permissionSet?: SpecifPermissionSet;
     /**
      * 
      * @type {SpecifKeys}
@@ -1140,10 +1140,10 @@ interface SpecifStatementClass {
     isUndirected?: boolean;
     /**
      * 
-     * @type {SpecifPermissions}
+     * @type {SpecifPermissionSet}
      * @memberof SpecifStatementClass
      */
-    permissions?: SpecifPermissions;
+    permissionSet?: SpecifPermissionSet;
     /**
      * 
      * @type {SpecifKeys}

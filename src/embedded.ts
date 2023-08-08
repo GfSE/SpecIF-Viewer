@@ -122,6 +122,7 @@ function SpecifApp():IApp {
 					me.projectRoles = [
 						{
 							project: "any", // default
+							// @ts-ignore - defined in toHtml.ts
 							role: window.role || "Supplier"
 						} as SpecifProjectRole
 					];

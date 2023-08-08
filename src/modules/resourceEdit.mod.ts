@@ -18,7 +18,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 	
 	private dispOpts() {
 		let opts = { hint: this.pC.description } as IFieldOptions;
-		if ( !this.pC.permissions.U )
+		if ( !this.pC.permissionSet.U )
 			opts.typ = 'display';
 		return opts
 	}
@@ -81,7 +81,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 					return this.makeDiagramField(localOpts)
 				}
 				else {
-					if (this.pC.permissions.U) {
+					if (this.pC.permissionSet.U) {
 						// add parameters to check this input field:
 						// it is a text;
 						// in case of xhtml, it may contain a diagram reference, 
@@ -115,7 +115,7 @@ class CPropertyToEdit extends CPropertyToShow  {
                     }
 				};
 			default:
-				if (this.pC.permissions.U) {
+				if (this.pC.permissionSet.U) {
 					// add parameters to check this input field:
 					if (opts && opts.dialogForm)
 						opts.dialogForm.addField(ti, this.dT);
@@ -164,7 +164,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		}
 
 //		console.debug('editDiagram',this);
-		if (this.pC.permissions.U) {
+		if (this.pC.permissionSet.U) {
 			return '<div class="form-group form-active" >'
 				+ '<div class="attribute-label" >' + LIB.titleOf(this, opts) + '</div>'
 				+ '<div class="attribute-value">'
@@ -202,7 +202,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// Get the new or unchanged input value of the property from the input field:
 
 		// skip properties without update permission:
-		if (!this.pC.permissions.U)
+		if (!this.pC.permissionSet.U)
 			return;
 
 		let
