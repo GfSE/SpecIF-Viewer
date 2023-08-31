@@ -103,27 +103,22 @@ class CSpecIF implements SpecIF {
 		if (!spD) spD = this;
 		return typeof (spD.id) == 'string' && spD.id.length > 0
 	}
-	set(spD: any, opts?: any): Promise<CSpecIF> {
+	set(spD: any, opts: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
 				if (opts && opts.noCheck) {
-					this.toInt(spD);
+					this.toInt(spD, opts);
 					resolve(this)
 				}
 				else {
 					// check *after* transformation:
-					this.toInt(spD);
+					this.toInt(spD, opts);
 					this.check(this, opts)
 					.then(
 						() => { resolve(this) },
 						reject
 					)
-				};
-				/*	this.check(spD,opts)
-					.then(
-						(nD) => { this.toInt(nD); resolve(this) },
-						reject
-					) */
+				}
 			}
 		)
 	} 
@@ -195,9 +190,8 @@ class CSpecIF implements SpecIF {
 			return this.toExt_v10(opts);
 		return this.toExt(opts);
 	}
-	private check(spD?: SpecIF, opts?: any): Promise<SpecIF> {
+	private check(spD: SpecIF, opts: any): Promise<SpecIF> {
 		// Check the SpecIF data for schema compliance and consistency;
-		if (!spD) spD = this;
 		return new Promise(
 			(resolve, reject) => {
 
@@ -301,13 +295,17 @@ class CSpecIF implements SpecIF {
 			}
 		);
 	}
-	private toInt(spD: any):void {
+	private toInt(spD: any, opts: any):void {
 		if (!this.isValid(spD)) return;
 
-		// transform SpecIF to internal data;
+		// Transform SpecIF to internal data;
 		// no data of app.projects is modified.
-		// It is assumed that spD has passed the schema and consistency check.
 //		console.debug('set',simpleClone(spD));
+
+		// In case of an Ontology, do *not* normalize the terms:
+		if( CONFIG.isOntology(spD) )
+			opts.normalizeTerms = false;
+
 		let self = this,
 			names = new CSpecifItemNames(spD.specifVersion);
 
@@ -394,7 +392,7 @@ class CSpecIF implements SpecIF {
 		// a data type:
 		function dT2int(iE:any): SpecifDataType {
 			var oE: any = i2int(iE);
-			oE.title = makeTitle(iE.title);
+			oE.title = makeTitle('propertyClass',iE.title);
 
 			// up until v1.0, there was a special dataType 'xs:enumeration' just for strings,
 			// starting v1.1 every dataType except 'xs:boolean' can have enumerated values
@@ -419,33 +417,54 @@ class CSpecIF implements SpecIF {
 					if (typeof (iE.maxLength) == 'number')
 						oE.maxLength = iE.maxLength;
 			};
+
 			// Look for enumerated values;
-			// starting with v1.1 every dataType except xs:boolean may have enumerated values:
+			// Transform local property values to ontology terms;
+
+			// Starting with v1.1 every dataType except xs:boolean may have enumerated values:
 			if (iE.enumeration)
-				oE.enumeration = iE.enumeration;
-			// up until v1.0 there is a dedicated dataType "xs:enumeration":
+				oE.enumeration = (iE.type == SpecifDataTypeEnum.String && opts.normalizeTerms?
+					iE.enumeration.map( makeEnumValue )
+					: iE.enumeration
+				);
+
+			// Up until v1.0 there is a dedicated dataType "xs:enumeration" with a property 'values':
 			if (iE.values)
-				oE.enumeration = LIB.forAll(iE.values, (v: any): SpecifEnumeratedValue => {
+				oE.enumeration = iE.values.map( (v: any): SpecifEnumeratedValue => {
 					// 'v.title' until v0.10.6, 'v.value' thereafter;
 					// 'v.value' can be a string or a multilanguage text.
+					/*	return {
+							id: v.id,
+							value: Array.isArray(v.value) ?
+								v.value
+								: [{ text: v.value || v.title || '' }] // v.value or v.title is a string; works also for v.value==''
+						}  */
+					let lv = Array.isArray(v.value) ?
+						v.value
+						: [{ text: v.value || v.title || '' }]; // v.value or v.title is a string; works also for v.value==''
 					return {
 						id: v.id,
-					//	value: typeof (v.value) == 'string' || typeof (v.value) == 'object' ? v.value : v.title  // works also for v.value==''
-					//	value: typeof (v.value) == 'object' ? v.value
-					//		: (typeof (v.value) == 'string' ? { text: v.value } : { text: v.title }) // works also for v.value==''
-						value: Array.isArray(v.value) ? v.value
-							: [{ text: v.value || v.title || '' }] // v.value or v.title is a string; works also for v.value==''
+						value: opts.normalizeTerms ? lv.map( normalizeLanguageText ) : lv
 					}
 				});
-			if (iE.multiple) oE.multiple = true;
+		//	if (iE.multiple) oE.multiple = true;  ... in future no more with dataTypes
 
 //			console.debug('dataType 2int',iE);
-			return oE
+			return oE;
+
+			function makeEnumValue(eV: SpecifEnumeratedValue): SpecifEnumeratedValue {
+				let oV = {
+					id: eV.id,
+					// @ts-ignore - in case of a string, eV.value is an array (SpecifMultiLanguageText)
+					value: eV.value.map( normalizeLanguageText )
+				};
+				return oV;
+			}
 		}
 		// a property class:
 		function pC2int(iE: any): SpecifPropertyClass {
 			var oE: any = i2int(iE);
-			oE.title = makeTitle(iE.title);  // an input file may have titles which are not from the SpecIF vocabulary.
+			oE.title = makeTitle('propertyClass', iE.title);  // an input file may have titles which are not from the SpecIF vocabulary.
 
 			// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
@@ -454,8 +473,12 @@ class CSpecIF implements SpecIF {
 			let dT: SpecifDataType = LIB.itemByKey(self.dataTypes, oE.dataType);
 //			console.debug('pC2int',iE,dT);
 
-			// include the property only, if it is different from the dataType's:
-			if (iE.multiple && !dT.multiple) oE.multiple = true;
+		/*	// include the property only, if it is different from the dataType's:
+			if (iE.multiple && !dT.multiple) oE.multiple = true;  */
+
+			// in future only with propertyClasses:
+			if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
+			else if (dT.multiple) oE.multiple = true;
 
 			// The default values:
 			if (iE.value || iE.values) {
@@ -486,10 +509,8 @@ class CSpecIF implements SpecIF {
 		// common for all instance classes:
 		function aC2int(iE:any) {
 			var oE: any = i2int(iE);
-			oE.title = makeTitle(iE.title);
 
 			if (iE['extends']) oE['extends'] = LIB.makeKey(iE['extends'].id || iE['extends']);	// 'extends' is a reserved word starting with ES5
-			if (iE.icon) oE.icon = iE.icon;
 			if (iE.creation) oE.instantiation = iE.creation;	// deprecated, for compatibility
 			if (iE.instantiation) oE.instantiation = iE.instantiation;
 			if (oE.instantiation) {
@@ -535,6 +556,10 @@ class CSpecIF implements SpecIF {
 		// a resource class:
 		function rC2int(iE: SpecifResourceClass): SpecifResourceClass|undefined {
 			var oE: any = aC2int(iE);
+			oE.title = makeTitle('resourceClass', iE.title);
+
+			let ic = app.ontology.getIcon('resourceClass', oE.title);
+			if (ic || iE.icon) oE.icon = ic || iE.icon;
 
 			// If "iE.isHeading" is defined, use it:
 			if (typeof (iE.isHeading) == 'boolean') {
@@ -563,6 +588,11 @@ class CSpecIF implements SpecIF {
 		// a statementClass:
 		function sC2int(iE:any): SpecifStatementClass {
 			var oE: SpecifStatementClass = aC2int(iE);
+			oE.title = makeTitle('statementClass', iE.title);
+
+			let ic = app.ontology.getIcon('statementClass', oE.title);
+			if (ic || iE.icon) oE.icon = ic || iE.icon;
+
 			if (iE.isUndirected) oE.isUndirected = iE.isUndirected;
 			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
@@ -788,7 +818,7 @@ class CSpecIF implements SpecIF {
 			var oE = i2int(iE);
 			// The title is usually 'path/filename.ext';
 			// but sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-			oE.title = iE.title ? makeTitle(iE.title).replace(/\\/g, '/') : iE.id;
+			oE.title = iE.title ? iE.title.replace(/\\/g, '/') : iE.id;
 			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			// store the blob and it's type:
 			if (iE.blob) {
@@ -801,33 +831,35 @@ class CSpecIF implements SpecIF {
 			}
 			else
 				oE.type = iE.type;
-			return oE
+			return oE;
 		}
 		// utilities:
-		function makeTitle(ti: any): string {
+		function makeTitle(ctg: string, ti: any): string {
 			// In <v1.1, titles can be simple strings or multi-language text objects;
 			// in >v1.0, native titles can only be strings (in fact SpecifText).
 			// So, in case of multi-language text, choose the default language:
 			let str = LIB.cleanValue(typeof (ti) == 'string' ? ti : ti[0].text);
-//			console.debug('makeTitle 1', ti, str);
-
-			// find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
-			str = app.ontology.globalize(str);
-//			console.debug('makeTitle 2', str);
-
-			// find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
-			str = app.ontology.getPreferredTerm(str);
-//			console.debug('makeTitle 3', str);
 
 			// by default just keep it:
-			return str;
+			return (opts.normalizeTerms? app.ontology.normalize(ctg, str) : str);
+		}
+		function normalizeLanguageText(v: SpecifLanguageText): SpecifLanguageText {
+			let o: SpecifLanguageText = {
+				// ToDo:consider all terms of the ontology which are object to a "hasEnumValue" statement, rather than 'all'
+				text: app.ontology.normalize('all', v.text)
+			};
+			if (v.format) o.format = v.format;
+			if (v.language) o.language = v.language;
+			return o;
 		}
 		function makeValues(prp: any, dT: SpecifDataType): SpecifValues {
+			// ToDo: Transform local property values to ontology terms;
+			// consider all terms of the ontology which are object to a "hasEnumValue" statement:
+
 			if (Array.isArray(prp.values)) {
-				// it is SpecIF > v1.0;
+				// it is SpecIF v1.1 or later;
 				// for all items in the value list of property prp
-				return LIB.forAll(
-					prp.values,
+				return prp.values.map(
 					(val:SpecifValue) => {
 						if (val) {
 							if (dT.enumeration) {
@@ -839,12 +871,26 @@ class CSpecIF implements SpecIF {
 								case SpecifDataTypeEnum.String:
 									// Values of type xs:string are permitted by the schema, but not by the constraints.
 									// To make the import more robust, string values are transformed to a multiLanguageText:
+
+								/*	let v = typeof (val) == 'string' ?
+										LIB.makeMultiLanguageValue(val)
+										: val;
+									return v.map(
+										(singleLang: any) => {
+											// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+											singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
+											return (opts.normalizeTerms ?
+												normalizeLanguageText(singleLang)
+												: singleLang
+											)
+										}
+									); */
+
 									if (typeof (val) == 'string')
 										return LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
 
 									// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
-									return LIB.forAll(
-										val,
+									return val.map(
 										(singleLang: any) => {
 											// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
 											singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
@@ -866,11 +912,11 @@ class CSpecIF implements SpecIF {
 									// and internally they are stored as string as well to avoid inaccuracies
 									// by multiple transformations:
 									return LIB.cleanValue(val);
-							};
-						};
+							}
+						}
 					//	return;  // undefined --> no element in the returned array
 					}
-				);
+				)
 			};
 			if (LIB.isString(prp.value) || LIB.isMultiLanguageValue(prp.value)) {
 				// it is SpecIF < v1.1:
@@ -886,13 +932,12 @@ class CSpecIF implements SpecIF {
 							// in SpecIF <1.1 multiple enumeration ids were in a comma-separated list;
 							// starting v1.1 they are separate list items:
 							let vL: string[] = LIB.cleanValue(prp.value).split(',');
-							return LIB.forAll(vL, (v: string) => { return v.trim() });
+							return vL.map( (v: string) => { return v.trim() });
 						}
 						else {
 							let vL = Array.isArray(prp.value) ?
 								// multiple languages:
-								LIB.forAll(
-									prp.value,
+								prp.value.map(
 									(val: any) => {
 										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
 										val.text = LIB.uriBack2slash(LIB.cleanValue(val.text));
@@ -1293,7 +1338,8 @@ class CSpecIF implements SpecIF {
 					// just take the non-redundant properties (omit 'title', for example):
 					let oN: SpecifNode = {
 						id: iN.id,
-						resource: iN.resource,
+					//	resource: iN.resource,
+						resource: { id: iN.resource.id },  // always reference the latest resource revision
 						changedAt: iN.changedAt
 					};
 					
@@ -1487,7 +1533,7 @@ class CSpecIF implements SpecIF {
 							iE.enumeration,
 							(v: any) => {
 								return { id: v.id, value: LIB.languageTextOf(v.value, myLang) }
-							//	return { id: v.id, value: (opts.lookupValues ? i18n.lookup(LIB.languageTextOf(v.value, myLang)): LIB.languageTextOf(v.value, myLang)) }
+							//	return { id: v.id, value: (opts.lookupValues ? app.ontology.localize(LIB.languageTextOf(v.value, myLang)): LIB.languageTextOf(v.value, myLang)) }
 							}
 						);
 						// @ts-ignore - OK with v1.0
@@ -1570,14 +1616,10 @@ class CSpecIF implements SpecIF {
 					// - if a hidden property is defined with value, it is suppressed only if it has this value
 					// - if the value is undefined, the property is suppressed in all cases
 					let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
-					if (Array.isArray(opts.skipProperties)) {
+					if (Array.isArray(opts.skipProperties))
 						for (var sP of opts.skipProperties) {
 							if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.displayValueOf(iE.values[0], opts))) return;
 						};
-					};
-
-					if (iE.values.length > 1)
-						console.warn('When transforming to SpecIF v1.0, only the first value of a property of class ' + iE['class'] + ' has been taken.');
 
 					// @ts-ignore - no 'values' in case of v1.0
 					var oE: SpecifProperty = {
@@ -1600,6 +1642,9 @@ class CSpecIF implements SpecIF {
 						};
 						return oE
 					};
+
+					if (iE.values.length > 1)
+						console.warn('When transforming to SpecIF v1.0, only the first value of a property of class ' + iE['class'].id + ' has been taken.');
 
 				//	if ([SpecifDataTypeEnum.String,'xhtml'].includes(dT.type)) {
 					if (dT.type == SpecifDataTypeEnum.String) {
@@ -1661,6 +1706,7 @@ class CSpecIF implements SpecIF {
 						return oE;
 					};
 					// else, take the first value, as v1.0 supports only one value:
+
 					// @ts-ignore - OK for v1.0
 					oE.value = iE.values[0];
 //					console.debug('p2ext',iE,LIB.languageTextOf( iE.value, opts ),oE.value);
@@ -1743,7 +1789,8 @@ class CSpecIF implements SpecIF {
 					// just take the non-redundant properties (omit 'title', for example):
 					let oN: SpecifNode = {
 						id: iN.id,
-						resource: iN.resource,
+					//	resource: iN.resource,
+						resource: { id: iN.resource.id },  // always reference the latest resource revision
 						changedAt: iN.changedAt
 					};
 

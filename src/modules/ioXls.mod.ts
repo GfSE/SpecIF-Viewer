@@ -14,9 +14,14 @@ moduleManager.construct({
 }, function (self: ITransform) {
 	"use strict";
 	// the mode for creating a new project:
-	var fDate: string;		// the file modification date
+	var fDate: string,		// the file modification date
+		ontologyStatementClasses:string[] = [];
 		
-	self.init = function():boolean {
+	self.init = function (): boolean {
+        // Get the list of terms for a statementClass;
+		// XLS colums with one of these terms will be transformed to statements rather than properties:
+		// ToDo: Get only the specializations of "SpecIF:ModelRelation".
+		ontologyStatementClasses = app.ontology.getTerms('statementClass');
 		return true;
 	};
 
@@ -118,7 +123,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			};
 		}
 	}
-	class BaseTypes {
+	class BaseTypes implements SpecIF {
+		id: SpecifId;
+		title: SpecifMultiLanguageText;
+		generator: string;
+		$schema: SpecifMetaSchema;
 		dataTypes: SpecifDataType[];
 		propertyClasses: SpecifPropertyClass[];
 		resourceClasses: SpecifResourceClass[];
@@ -126,7 +135,11 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		resources: SpecifResource[];
 		statements: SpecifStatement[];
 		hierarchies: SpecifNode[];
-		constructor() {
+		constructor(prjName:string) {
+			this.id = 'XLS-' + prjName.toSpecifId();
+			this.title = LIB.makeMultiLanguageValue(prjName);
+			this.generator = "xslx2specif";
+			this.$schema = 'https://specif.de/v1.1/schema.json';
 			this.dataTypes = [
 				app.standards.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
 				app.standards.get("dataType", { id: "DT-Text" }) as SpecifDataType,
@@ -177,15 +190,15 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		id: string;
 		title: string;
 		description: SpecifMultiLanguageText;
-		icon?: string;
+	//	icon?: string;    .. add during import
 		instantiation: SpecifInstantiation[];
 		propertyClasses: SpecifKeys;
 		changedAt: string;
 		constructor(nm: string, ti: string) {
 			this.id = nm;
 			this.title = ti;
-			let ic = CONFIG.icons.get(this.title);
-			if (ic) this.icon = ic;
+	//		let ic = CONFIG.icons.get(this.title);
+	//		if (ic) this.icon = ic;
 			this.description = LIB.makeMultiLanguageValue('For resources specified per line of an excel sheet');
 			this.instantiation = [SpecifInstantiation.User];  // user-created instances are not checked for visibility
 			this.propertyClasses = [];
@@ -670,7 +683,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 					// Skip, if there is no column heading or if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
-					if (!pTi || CONFIG.statementClasses.indexOf( pTi )>-1 ) return;
+					if (!pTi || ontologyStatementClasses.includes( pTi ) ) return;
 					// else, it is a property:
 
 					// Only one property shall be the resource's title;
@@ -736,7 +749,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					if( sTi ) {
 						sTi = sTi.w || sTi.v;
 						// Add statementClass, if it is declared as such and if it is not yet listed:
-						if( sTi && LIB.indexById(sCL,staClassId(sTi))<0 && CONFIG.statementClasses.includes( sTi ) ) {
+						if( sTi && LIB.indexById(sCL,staClassId(sTi))<0 && ontologyStatementClasses.includes( sTi ) ) {
 							sC = new StaClass( sTi );
 //							console.debug( 'getStaClasses', sTi, sC );
 							sCL.push( sC )
@@ -752,7 +765,8 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			// The sheet has content:
 
 			// 3.1 Create a resourceClass per XLS-sheet:
-			// The resourceClass' title is taken from the worksheet name, project name or a default is applied:
+			// The resourceClass' title is taken from the worksheet name, project name or a default is applied;
+			// any local name will be transformed to the preferred ontology term during import (if defined):
 			var rC = new ResClass(ws.resClass, inBracketsAtEnd(ws.name) || inBracketsAtEnd(pN) || CONFIG.resClassXlsRow );
 			// Add a property class for each column using the names specified in line 1:
 			rC.propertyClasses = getPropClasses( ws );
@@ -780,12 +794,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	// Transform the worksheets to SpecIF:
 	// 1. Create the project:
-	// @ts-ignore - Basetypes() has not all required attributes of SpecIF; they are added later on
-	var specifData:SpecIF = new BaseTypes();
-	specifData.id = 'XLS-' + pN.toSpecifId();
-	specifData.title = LIB.makeMultiLanguageValue(pN);
-	specifData.generator = "xslx2specif";
-	specifData.$schema = 'https://specif.de/v1.1/schema.json';
+	var specifData:SpecIF = new BaseTypes(pN);
 	// the root folder resource:
 	specifData.resources.push({
 		id: 'R-' + pN.toSpecifId(),

@@ -132,6 +132,14 @@ class CStandards {
 		['statement', "statements"],
 		['hierarchy', "hierarchies"]
 	])
+	titleLinkTargets(): string[] {
+		// (this is a function, because app.ontology is not yet ready when this file is loaded);
+		// Return the resource classes which can be targets of title-linking (in [[name]] ):
+		return CONFIG.modelElementClasses
+			.concat(CONFIG.diagramClasses)
+			.concat(CONFIG.folderClasses)
+			.concat(app.ontology.termClasses)
+    }
 
 	iterateLists(fn: Function): number {
 		// Perform the function fn for each list defined above:
@@ -222,8 +230,9 @@ CONFIG.propClassDesc = "dcterms:description";
 CONFIG.propClassType = "dcterms:type";
 CONFIG.propClassLifecycleStatus = 'SpecIF:LifecycleStatus';
 CONFIG.propClassDomain = "SpecIF:Domain";
-CONFIG.propClassDiagram = 
+CONFIG.propClassDiagram = 'SpecIF:Diagram';
 CONFIG.resClassDiagram = 'SpecIF:View';
+// CONFIG.resClassTerm = "SpecIF:OntologyTerm";
 CONFIG.resClassXlsRow = 'XLS:Resource';
 CONFIG.resClassUnreferencedResources = "SpecIF:UnreferencedResources";
 CONFIG.resClassOutline = 'SpecIF:Outline';
@@ -341,15 +350,14 @@ CONFIG.descProperties = [
             'Object Text',
         //    'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
 ];
-
+/*
 CONFIG.multiLanguageProperties = [
     CONFIG.propClassTitle,
     CONFIG.propClassDesc,
-    CONFIG.propClassDiagram,
-    "SpecIF:LocalName",
-    "SpecIF:LocalNamePlural"
+    "SpecIF:LocalTerm",
+    "SpecIF:LocalTermPlural"
 ]
-    .concat(CONFIG.descProperties)
+    .concat(CONFIG.descProperties) */
 
 // those will get a larger edit field, just like the description properties:
 CONFIG.commentProperties = [
@@ -423,12 +431,6 @@ CONFIG.excludedFromDeduplication = [
 ];
 
 CONFIG.clickableModelElements = true;        // diagram elements can be clicked to select the represented model element; it's class must specify the model element's id.
-
-/*    // A list of SVG diagram class names. SVGs having a root element with this class will be subject to diagram level events:
-    CONFIG.clickDiagramClasses = [
-        'diagram'
-    ];
-*/
 // A list of SVG element class names. A click handler will be attached to all SVG elements having a class in the list:
 CONFIG.clickElementClasses = [
     'clickEl',
@@ -436,11 +438,6 @@ CONFIG.clickElementClasses = [
 ];
 CONFIG.selectCorrespondingDiagramFirst = true;    // when clicking on a diagram element, select a diagram having the same title as the clicked model element
 
-/*    // A list of property titles denoting the property containing a diagram:
-    CONFIG.diagramPropertyClasses = [
-        CONFIG.propClassDiagram
-    ];
-*/
 // A list of resources representing model diagram types, specified by a property with title CONFIG.propClassType,
 // where all relations themselves have a "SpecIF:shows" relation.
 // The (older) diagrams from ARCWAY don't have, but the BPMN and ArchiMate diagrams have:
@@ -454,94 +451,21 @@ CONFIG.diagramClasses = [
     CONFIG.resClassDiagram,
     CONFIG.resClassProcess,
     "ArchiMate:Viewpoint",
-    "FMC:Plan",            // equivalent
-    "SpecIF:Diagram"        // deprecated as resourceClass term
+    "FMC:Plan"            // equivalent
 ];
 CONFIG.folderClasses = [
     CONFIG.resClassOutline,
     CONFIG.resClassFolder
 ];
-CONFIG.ontologyClasses = [
-    // ToDo: Derive from SpecIF Ontology
-    "SpecIF:TermResourceClass",
-    "SpecIF:TermStatementClass",
-    "SpecIF:TermPropertyClassString",
-    "SpecIF:TermPropertyClassBoolean",
-    "SpecIF:TermPropertyClassInteger",
-    "SpecIF:TermPropertyClassReal",
-    "SpecIF:TermPropertyClassTimestamp",
-    "SpecIF:TermPropertyClassDuration",
-    "SpecIF:TermPropertyClassAnyUri",
-    "SpecIF:TermPropertyValue"
-];
 // A list with all model-element types by title,
 // is used for example to build a glossary;
 // it is expected that a plural of any list element exists ( element+'s' ):
+// ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
 CONFIG.modelElementClasses = [
-    // ToDo: Derive from SpecIF Ontology
     'FMC:Actor',
     'FMC:State',
     'FMC:Event',
     'SpecIF:Collection'
-];
-CONFIG.titleLinkTargets =
-    CONFIG.modelElementClasses
-        .concat(CONFIG.diagramClasses)
-        .concat(CONFIG.folderClasses)
-        .concat(CONFIG.ontologyClasses);
-
-// A list of statement types by title,
-// is used for example to recognize a statement to create when importing an xls sheet:
-CONFIG.statementClasses = [
-    // ToDo: Derive from SpecIF Ontology
-    'IREB:refines',
-    'IREB:refinedBy',
-    'oslc_rm:satisfies',
-    'oslc_rm:satisfiedBy',
-    "oslc_rm:elaborates",
-    "oslc_rm:elaboratedBy",
-    "oslc_rm:specifies",
-    "oslc_rm:specifiedBy",
-    "oslc_rm:affectedBy",
-    "oslc_rm:trackedBy",
-    'oslc_rm:implements',
-    'oslc_rm:implementedBy',
-    'oslc_rm:validates',
-    'oslc_rm:validatedBy',
-    'oslc_rm:decomposes',
-    'oslc_rm:decomposedBy',
-    "oslc_rm:constrains",
-    "oslc_rm:constrainedBy",
-    "SysML:traces",
-    "SysML:isDerivedFrom",
-    "SysML:isAssociatedWith",
-    "SysML:isComposedOf",
-    "SysML:isAggregatedBy",
-    "SysML:uses",
-    "SysML:usedBy",
-    "SysML:extends",
-    "SysML:includes",
-    "SysML:isSpecializationOf",
-    "SysML:isGeneralizationOf",
-    "owl:sameAs",
-    "rdf:type",
-    'IR:refersTo',
-    "SpecIF:contains",
-    "SpecIF:satisfies",
-    "SpecIF:implements",
-    "SpecIF:serves",
-    "SpecIF:stores",
-    "SpecIF:reads",
-    "SpecIF:writes",
-    "SpecIF:precedes",
-    "SpecIF:dependsOn",
-    "SpecIF:duplicates",
-    "SpecIF:contradicts",
-    "SpecIF:inheritsFrom",
-    "SpecIF:refersTo",
-    "SpecIF:sameAs",
-    "SpecIF:accesses",
-    "ArchiMate:accesses"
 ];
 
 // Used to map resource or statement properties to native properties, where applicable;
@@ -556,6 +480,7 @@ CONFIG.nativeProperties = new Map([
     ["SpecIF:createdBy", { name: "createdBy", type: "xs:string", check: function (): boolean { return true } }],
     ["SpecIF:changedBy", { name: "changedBy", type: "xs:string", check: function (): boolean { return true } }]
 ]);
+/*
 CONFIG.icons = new Map([
     // see: https://www.fileformat.info/info/unicode/char/2702/fontsupport.htm
     // ToDo: Derive from SpecIF Ontology
@@ -565,7 +490,8 @@ CONFIG.icons = new Map([
     //    ['FMC:Event',"&#x2666;"],
     ['SpecIF:Collection', "&#11034;"],
     //    ['IREB:Requirement',"&#8623;"],
-    ['IREB:Requirement', "&#x2762;"],    // HEAVY EXCLAMATION MARK ORNAMENT
+    //    ['IREB:Requirement', "&#x2762;"],    // HEAVY EXCLAMATION MARK ORNAMENT 
+    ['IREB:Requirement', "<i class=\"bi bi-exclamation-circle\"></i>"],    // Bootstrap icon 'exclamation-circle'
     ['SpecIF:Feature', "&#10038;"],        // star
     [CONFIG.resClassDiagram, "&#9635;"],
     //    ['SpecIF:UserStory',"&#9830;"],
@@ -575,7 +501,7 @@ CONFIG.icons = new Map([
     //    ["IR:Annotation","&#9755;"]
     ["IR:Annotation", "&#x25BA;"]        // BLACK RIGHT-POINTING POINTER
     //    ["IR:Annotation", "&#x27A4;"]        // BLACK RIGHTWARDS ARROWHEAD
-]);
+]); */
 
 // string values for boolean 'true' and 'false':
 CONFIG.valuesTrue = ['true', 'yes', 'wahr', 'ja', 'vrai', 'oui', '1', 'True'];

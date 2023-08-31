@@ -580,9 +580,11 @@ var app:IApp,
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
 				case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
 			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@11.5.0/dist/bpmn-viewer.production.min.js'); return true;
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.0/dist/bpmn-viewer.production.min.js'); return true;
-				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
-											getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.2/dist/bpmn-viewer.production.min.js'); return true;
+				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
+										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
+										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
+											return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
 				case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 											getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
@@ -720,9 +722,8 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-			//	url: 'https://specif.de/v1.2/Ontology.specif',
 				url: window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
-					'https://specif.de/v1.2/Ontology.specif'
+					CONFIG.pathOntology
 					: '../../SpecIF/vocabulary/Ontology.specif',
 				responseType: 'arraybuffer',
 				withCredentials: false,

@@ -108,7 +108,6 @@ class CPropertyToShow implements SpecifProperty {
 				titleLinking: false,
 				lookupValues: false,
 				targetLanguage: this.selPrj.language,
-				titleLinkTargets: CONFIG.titleLinkTargets,
 				clickableElements: false,
 				linkifyURLs: false,
 				// some environments escape the tags on export, e.g. camunda / in|flux:
@@ -640,8 +639,8 @@ class CResourceToShow {
 		// take title and add icon, if configured:
 		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this.rC.icon) : ti) + '</div>'
 	}
-	private renderChangeInfo(): string {
-		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
+/*	private renderChangeInfo(): string {
+	//	if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
 		var chI = '';
 		switch (app.specs.selectedView()) {
 			case '#' + CONFIG.objectRevisions:
@@ -653,7 +652,7 @@ class CResourceToShow {
 			//	default: no change info!			
 		};
 		return chI
-	}
+	} */
 	listEntry(): string {
 		// for the list view, where title and text are shown in the main column and the others to the right.
 		if (!this.id)
@@ -662,7 +661,6 @@ class CResourceToShow {
 		// Create HTML for a list entry:
 		const clickable = ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView()),
 			opts = {
-				titleLinking: clickable,
 				clickableElements: clickable,
 				linkifyURLs: clickable,
 				// ToDo: Consider to make it a user option:
@@ -674,7 +672,14 @@ class CResourceToShow {
 				targetLanguage: this.language,
 				localDateTime: true,
 				rev: this.revision
-			};
+			},
+			optsDesc = Object.assign(
+				{
+					titleLinking: clickable,
+					titleLinkTargets: app.standards.titleLinkTargets()
+				},
+				opts
+			);
 
 		var rO = '<div class="listEntry">'
 			+ '<div class="content-main">';
@@ -696,8 +701,7 @@ class CResourceToShow {
 		// 1.2 The description properties:
 		this.descriptions.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
-			//	rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
-				rO += this.renderAttr('', prp.get(opts))
+				rO += this.renderAttr('', prp.get(optsDesc))
 			}
 		});
 		rO += '</div>'  // end of content-main
@@ -718,15 +722,18 @@ class CResourceToShow {
 			}; */
 
 		// 3 Fill a separate column to the right
-		// 3.1 The remaining properties:
+		// 3.1 The resource class:
+		rO += this.renderAttr(app.ontology.localize('SpecIF:Resource', opts), LIB.titleOf(this.rC, opts), 'attribute-condensed');
+
+		// 3.2 The remaining properties:
 		this.other.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
 				rO += this.renderAttr(LIB.titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
 			}
 		});
-		// 3.2 The type info:
-		// 3.3 The change info depending on selectedView:
-		rO += this.renderChangeInfo();
+	/*	// 3.3 The change info depending on selectedView:
+		rO += this.renderChangeInfo();  */
+
 		rO += '</div>'	// end of content-other
 			+ '</div>';  // end of listEntry
 
@@ -757,7 +764,7 @@ class CResourceToShow {
 			rO += this.renderAttr( LIB.titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), LIB.titleOf( self.toShow.rC, opts ) );
+		rO += this.renderAttr( app.ontology.localize("SpecIF:Type"), LIB.titleOf( self.toShow.rC, opts ) );
 		// 5 The change info depending on selectedView:
 		rO += this.renderChangeInfo();
 //		console.debug( 'CResource.details', self.toShow, rO );
@@ -1673,7 +1680,7 @@ moduleManager.construct({
 			.fail( handleError );
 		
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
-		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
+		var txtLbl = app.ontology.localize( CONFIG.propClassDesc ),
 			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
 		var dT = LIB.itemById( self.cData.dataTypes, txtPrC.dataType );
 

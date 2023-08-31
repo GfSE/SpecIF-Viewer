@@ -1,4 +1,4 @@
-# SpecIF Viewer and Editor [![Build Status](https://travis-ci.org/GfSE/SpecIF-Viewer.svg?branch=master)](https://travis-ci.org/GfSE/SpecIF-Viewer)
+# SpecIF Model-Integrator, Editor and Viewer [![Build Status](https://travis-ci.org/GfSE/SpecIF-Viewer.svg?branch=master)](https://travis-ci.org/GfSE/SpecIF-Viewer)
 An app for your web-browser to view, edit\* and transform system specifications. (Features of the SpecIF Editor are marked with an asterisk\*).
 
 SpecIF is the 'Specification Integration Facility'. It's purpose is to combine partial specifications from different tools in a single model to allow
@@ -14,6 +14,7 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 - Import 'BPMN-XML' file
 - Import ArchiMate Open-Exchange (experimental)
 - Import from an URL or the local file system
+- Merge models of different tools and notations*
 - Browse the content ('resources') along the supplied hierarchy
 - Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)
 - Create, clone and update resources with an input form derived from the respective resource class*

@@ -54,7 +54,7 @@ moduleManager.construct({
 			label:'SpecIF',	
 			extensions: ".specif, .specifz, .specif.zip",
 			help: i18n.MsgImportSpecif,
-			opts: { mediaTypeOf: LIB.attachment2mediaType }
+			opts: { mediaTypeOf: LIB.attachment2mediaType, doCheck: ['statementClass.subjectClasses', 'statementClass.objectClasses'] }
 		},{
 			id:'xml',	
 			name:'ioArchimate',	
@@ -78,7 +78,7 @@ moduleManager.construct({
 			label:'ReqIF',
 			extensions: ".reqif, .reqifz",
 			help: i18n.MsgImportReqif,
-			opts: { dontCheck: ["statement.subject","statement.object"], multipleMode:"adopt", mediaTypeOf: LIB.attachment2mediaType } 
+		opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
 	/*	},{
             id: 'rdf',
             name: 'ioRdf',
@@ -544,6 +544,10 @@ moduleManager.construct({
 				// all subsequent ones according to self.format.opts.multipleMode:
 				let opts: any = self.format.opts || {};
 				opts.mode = idx<1? importMode.id : opts.multipleMode;
+				opts.normalizeTerms = true;  // replace terms by preferred/released ontology terms; is overridden if an ontology is imported
+				opts.deduplicate = true;
+				opts.addGlossary = true;
+				opts.addUnreferencedResources = true;
 
 				switch( opts.mode ) {
 				/*	case 'clone': 	
@@ -551,9 +555,6 @@ moduleManager.construct({
 						// no break */
 					case 'create':
 					case 'replace':
-						opts.deduplicate = true;
-						opts.addGlossary = true;
-						opts.addUnreferencedResources = true;
 						opts.collectProcesses = false;
 						app.projects.create( dta, opts )
 							.progress( setProgress )
@@ -561,8 +562,6 @@ moduleManager.construct({
 							.fail( handleError );
 						break;
 				/*	case 'update':
-						opts.deduplicate = true;
-						opts.addGlossary = true;
 						opts.collectProcesses = false;
 						app.projects.update(dta, opts)
 							.progress(setProgress)
@@ -570,9 +569,6 @@ moduleManager.construct({
 							.fail(handleError)
 						break; */
 					case 'adopt':
-						opts.deduplicate = true;
-						opts.addGlossary = true;
-						opts.addUnreferencedResources = true;
 						opts.collectProcesses = true;
 						app.projects.selected.adopt( dta, opts )
 							.progress( setProgress )

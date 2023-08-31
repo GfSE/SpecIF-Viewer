@@ -596,7 +596,7 @@ moduleManager.construct({
 					for( var v of dT.enumeration ) {
 						// the checkboxes for the secondary filter selector per enum value:
 					/*	var box: IBox = {
-								title: i18n.lookup( LIB.languageTextOf( v.value, displayOptions )), 
+								title: app.ontology.localize( LIB.languageTextOf( v.value, displayOptions )), 
 								id: v.id,
 								checked: vL.includes(v.id)
 					//			checked: true
@@ -604,7 +604,7 @@ moduleManager.construct({
 					//	if( vL ) { box.checked = vL.includes( v.id ) };
 						boxes.push( box ) */
 						boxes.push({
-							title: i18n.lookup(LIB.languageTextOf(v.value, displayOptions)),
+							title: app.ontology.localize(LIB.languageTextOf(v.value, displayOptions)),
 							id: v.id,
 							checked: vL.includes(v.id)
 						})

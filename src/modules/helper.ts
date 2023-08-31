@@ -788,7 +788,6 @@ LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLang
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     // for display, any vocabulary term is translated to the selected language;
     // a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
-//    return LIB.isMultiLanguageValue(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageTextOf(val, opts)) : LIB.languageTextOf(val, opts)) : val;
     if (LIB.isMultiLanguageValue(val)) {
         let v = LIB.languageTextOf(val, opts);
         if (opts.lookupValues) v = app.ontology.localize(v,opts);
@@ -1720,6 +1719,7 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
 }
 LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
     // Pick up the native title of any item except resource and statement;
+    // return either the target language or the target namespace accorting to the options:
     if( item )
         return (opts && opts.lookupTitles ?
             (opts.targetLanguage ?
@@ -1738,11 +1738,6 @@ LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => 
     let iC = LIB.itemByKey(cL, iCkey);
     return LIB.titleOf(iC, opts);
 }
-/*LIB.propTitleOf = (pCkey: SpecifKey, cL: SpecifPropertyClass[]): string => {
-    // get the title of a property as defined by it's class:
-    let pC = LIB.itemByKey(cL, pCkey);
-    return pC ? pC.title : undefined;
-}*/
 LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
     // Has the class of res a title listed in pNs?
     return pNs.includes(LIB.classTitleOf(r['class'], dta.resourceClasses));
@@ -1793,7 +1788,6 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPrope
         // perhaps this needs to be reconsidered a again once the revisions list is featured, again:
 //        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageTextOf( pL[idx].value,op ) );
         let ti = LIB.languageTextOf(pL[idx].values[0], opts);
-     //   if (ti) return /* opts && opts.lookupTitles ? i18n.lookup(ti) : */ ti;
         if (ti) return (opts && opts.lookupValues ? app.ontology.localize(ti, opts) : ti);
     };
     return '';

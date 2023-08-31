@@ -253,10 +253,10 @@ class CPropertyToEdit extends CPropertyToShow  {
 					val = textValue(ti);
 					if (LIB.hasContent(val)) {
 						// Create a multiLanguageText only if the propertyClass is declared accordingly.
-						// - For the time being by the list CONFIG.multiLanguageProperties
+						// - For the time being by checking whether the ontology term has a multiLanguage property
 						// - Later with a boolean attribute 'multiLanguage' of the propertyClass itself
-						// Note: Don't use this.title, as it may be replaced by a localized text:
-						if (CONFIG.multiLanguageProperties.includes(this.pC.title) ) {
+						let termL = app.ontology.getTermResources('propertyClass',this.pC.title);
+						if (termL.length>0 && app.ontology.valueByTitle(termL[0], "SpecIF:multiLanguage")=='true') {
 							// Update just the current language:
 							if (this.values.length > 0 && LIB.multiLanguageValueHasContent(this.values[0])) {
 								// - If the original property has multiple languages, take care of them;
@@ -581,8 +581,8 @@ moduleManager.construct({
 				.then( 
 					(rCL:SpecifResourceClass[])=>{
 						if( rCL.length>0 ) {
-							// Get the title to display:
-							let resClasses = LIB.forAll(rCL, (rC: SpecifResourceClass) => { rC.title = LIB.titleOf(rC, { lookupTitles: true }); return rC });
+							// Get the resourceClass titles to display:
+							let resClasses = LIB.forAll(rCL, (rC: SpecifResourceClass) => { rC.title = LIB.titleOf(rC, { lookupTitles: true, targetLanguage: app.projects.selected.language }); return rC });
 							if( resClasses.length>1 ) {
 								// open a modal dialog to let the user select the class for the resource to create:
 								resClasses[0].checked = true;  // default selection

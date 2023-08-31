@@ -12,15 +12,28 @@ class COntology {
     data: SpecIF;
     allDomains: string[] = [];
     allNamespaces: string[] = [];
+    termClasses: string[] = [
+        "SpecIF:TermResourceClass",
+        "SpecIF:TermStatementClass",
+        "SpecIF:TermPropertyClassString",
+        "SpecIF:TermPropertyClassBoolean",
+        "SpecIF:TermPropertyClassInteger",
+        "SpecIF:TermPropertyClassReal",
+        "SpecIF:TermPropertyClassTimestamp",
+        "SpecIF:TermPropertyClassDuration",
+        "SpecIF:TermPropertyClassURI",
+        "SpecIF:TermPropertyValue"
+    ];
+
     // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology:
     primitiveDataTypes = new Map([
-        ["RC-TermPropertyClassString", SpecifDataTypeEnum.String],
-        ["RC-TermPropertyClassBoolean", SpecifDataTypeEnum.Boolean],
-        ["RC-TermPropertyClassInteger", SpecifDataTypeEnum.Integer],
-        ["RC-TermPropertyClassReal", SpecifDataTypeEnum.Double],
-        ["RC-TermPropertyClassTimestamp", SpecifDataTypeEnum.DateTime],
-        ["RC-TermPropertyClassDuration", SpecifDataTypeEnum.Duration],
-        ["RC-TermPropertyClassAnyURI", SpecifDataTypeEnum.AnyUri]
+        ["RC-SpecifTermpropertyclassstring", SpecifDataTypeEnum.String],
+        ["RC-SpecifTermpropertyclassboolean", SpecifDataTypeEnum.Boolean],
+        ["RC-SpecifTermpropertyclassinteger", SpecifDataTypeEnum.Integer],
+        ["RC-SpecifTermpropertyclassreal", SpecifDataTypeEnum.Double],
+        ["RC-SpecifTermpropertyclasstimestamp", SpecifDataTypeEnum.DateTime],
+        ["RC-SpecifTermpropertyclassduration", SpecifDataTypeEnum.Duration],
+        ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyUri]
     ]);
     private options: any;
     private required: any;
@@ -61,7 +74,7 @@ class COntology {
             }
         ).map(
             (r) => {
-                return this.valueByTitle(r, "SpecIF:Term")
+                return this.valueByTitle(r, CONFIG.propClassTerm)
             }
         );
 
@@ -69,27 +82,58 @@ class COntology {
         this.options = {};
     }
 
-    getTermResource(term: string): SpecifResource | undefined {
-        for (var r of this.data.resources) {
-            // find the property with title CONFIG.propClassTerm: 
-            let termL = LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data);
-            // return the resource representing the specified term;
-            // the term does not have different languages:
-            if (termL.length > 0 && LIB.languageTextOf(termL[0], { targetLanguage: "default" }) == term)
-                return r
-        }
+    getTermResources(ctg: string, term: string): SpecifResource[] {
+        // Get the resources defining a given term; usually there is just one.
+        ctg = ctg.toLowerCase();
+        return this.data.resources
+            .filter(
+                (r) => {
+                    // find the property with title CONFIG.propClassTerm:
+                    let valL = LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data);
+                    // return the resource representing the specified term;
+                    // the term does not have different languages:
+                    return (
+                        valL.length > 0
+                        // restrict the result list to resources defining the specified term (usually one):
+                        && LIB.languageTextOf(valL[0], { targetLanguage: "default" }) == term
+                        // restrict the result list to the specified category of terms:
+                        && (ctg == 'all' || LIB.classTitleOf(r['class'], this.data.resourceClasses).toLowerCase().includes(ctg))
+                    )
+                }
+            )
+    }
+    getTerms(ctg: string): string[] {
+        // Get the list of terms for a category such as 'statementClass'.
+        if (['resourceClass', 'statementClass', 'propertyClass', 'propertyValue'].includes(ctg)) {
+            ctg = ctg.toLowerCase();
+            return this.data.resources
+                .filter(
+                    (r) => {
+                        // the desired category only;
+                        // in case of 'propertyClass', any specialization will match:
+                        return LIB.classTitleOf(r['class'], this.data.resourceClasses).toLowerCase().includes(ctg)
+                    }
+                )
+                .map(
+                    (r) => {
+                        // extract the term from the resource defining it:
+                        return LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data)[0]
+                    }
+                )
+        };
+        throw Error("Programming Error: Category must be one of 'resourceClass', 'statementClass', 'propertyClass' or 'propertyValue'");
     }
     localize(term: string, opts: any): string {
         // Translate an ontology term to the selected local language:
 
         if (RE.vocabularyTerm.test(term)) {
-            let r = this.getTermResource(term);
-            if (r) {
+            let rL = this.getTermResources('all', term);
+            if (rL.length > 0) {
                 // return the name in the local language specifed:
-                let lnL = LIB.valuesByTitle(r, [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
+                let lnL = LIB.valuesByTitle(rL[0], [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
                 if (lnL.length > 0) {
                     let newT = LIB.languageTextOf(lnL[0], opts);
-                //    console.info('Local term assigned: ' + term + ' → ' + newT);
+                    //    console.info('Local term assigned: ' + term + ' → ' + newT);
                     return newT
                 }
             }
@@ -98,28 +142,28 @@ class COntology {
         // else, return the input value:
         return term;
     }
-    globalize(term: string): string {
+    globalize(name: string): string {
         // Translate a local name to the ontology term;
         // if several are found, select the one with the most confirmed lifecycle status.
 
         // no need to look for a vocabulary term, if it *is* one:
-        if( RE.vocabularyTerm.test(term) )
-            return term;
+        if (RE.vocabularyTerm.test(name))
+            return name;
 
-        // Iterate through all terms:
+        // Find all ontology terms which list the:
         let rC: SpecifResourceClass[];
         let termL = this.data.resources.filter(
             (r) => {
                 // is it a term?
                 rC = LIB.itemByKey(this.data.resourceClasses, r['class']);
-                if (CONFIG.ontologyClasses.includes(LIB.titleOf(rC))) {
+                if (this.termClasses.includes(LIB.titleOf(rC))) {
                     // look for local terms:
                     let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm"], this.data);
                     for (let v of tVL) {
                         // check all values:
-                        for (var l of v ) {
+                        for (var l of v) {
                             // check all languages:
-                            if (l.text.toLowerCase() == term.toLowerCase() ) return true
+                            if (l.text.toLowerCase() == name.toLowerCase()) return true
                         }
                     };
 
@@ -129,37 +173,39 @@ class COntology {
                         // check all values:
                         for (var l of v) {
                             // check all languages:
-                            if (l.text.toLowerCase() == term.toLowerCase()) return true
+                            if (l.text.toLowerCase() == name.toLowerCase()) return true
                         }
                     }
                 };
                 return false
             }
         );
-//        console.debug('globalize',termL);
-        if (termL.length>0) {
+        //        console.debug('globalize',termL);
+        if (termL.length > 0) {
             // search for the most confirmed term:
-            for( let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"] )
+            for (let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent", "SpecIF:LifecycleStatusSubmitted", "SpecIF:LifecycleStatusExperimental"])
                 for (let t of termL) {
                     if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status) {
-                        let newT = this.valueByTitle(t, "SpecIF:Term");
-                        console.info('Global term assigned: ' + term + ' → ' + newT);
+                        let newT = this.valueByTitle(t, CONFIG.propClassTerm);
+                        console.info('Global term assigned: ' + name + ' → ' + newT);
                         return newT;
                     }
                 }
         };
         // no global term with sufficient lifecycle status found:
-        return term;
+        return name;
     }
-    getPreferredTerm(term: string): string {
+    getPreferredTerm(ctg: string, term: string): string {
         // Among synonyms, get the preferred (released) term:
 
         // Shortcut for preferred vocabulary terms (dcterms are always preferred, if they exist):
         if (term.startsWith('dcterms:'))
             return term;
 
-        let r = this.getTermResource(term);
-        if (r) {
+        let rL = this.getTermResources(ctg, term);
+        if (rL.length > 0) {
+            let r = rL[0];
+
             // If the term is itself released/preferred, just return it:
             if (this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased")
                 return term;
@@ -175,23 +221,44 @@ class COntology {
                 ),
                 // Find the released (preferred) term:
                 synL = rsL.filter(
-                    (r:SpecifResource) => {
-                       return this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased";
+                    (r: SpecifResource) => {
+                        return this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased";
                     }
                 );
-//            console.debug('getPreferredTerm', r, stL, rsL, synL);
+            //            console.debug('getPreferredTerm', r, stL, rsL, synL);
             if (synL.length < 1)
                 return term;
 
             if (synL.length > 1)
-                console.warn('Multiple equivalent terms are released: ', synL.map((s)=>{return s.id}).toString());
+                console.warn('Multiple equivalent terms are released: ', synL.map((s) => { return s.id }).toString());
 
-            let newT = this.valueByTitle(synL[0], "SpecIF:Term");
+            let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
             console.info('Preferred term assigned: ' + term + ' → ' + newT);
             return newT
         };
         // else, return the input value:
         return term;
+    }
+    normalize(ctg: string, term: string): string {
+        // find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
+        let str = app.ontology.globalize(term);
+
+        // find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
+        str = app.ontology.getPreferredTerm(ctg, str);
+
+        return str;
+    }
+    getIcon(ctg: string, term: string): string {
+        // Return an icon of a given a term:
+
+        let rL = this.getTermResources(ctg, term);
+        if (rL.length > 0) {
+            let r = rL[0],
+                icon = this.valueByTitle(r, "SpecIF:Icon");
+            return icon || ''
+        };
+        // else:
+        return '';
     }
     changeNamespace(term: string, opts:any): string {
         // Given a term, try mapping it to the target namespace.
@@ -201,9 +268,11 @@ class COntology {
             return term
         };
 
-        let r = this.getTermResource(term);
-        if (r) {
-            // look for a synonym relation pointing to a term with the specified target namespace:
+        let rL = this.getTermResources('all',term);
+        if (rL.length > 0) {
+            let r = rL[0];
+
+            // Look for a synonym relation pointing to a term with the specified target namespace:
 
             // If the term itself belongs to the desired namespace, just return it:
             if (term.startsWith(opts.targetNamespace))
@@ -221,7 +290,7 @@ class COntology {
                 // Find the term with the desired namespace, either released or equivalent:
                 synL = rsL.filter(
                     (r: SpecifResource) => {
-                        return this.valueByTitle(r, "SpecIF:Term").startsWith(opts.targetNamespace)
+                        return this.valueByTitle(r, CONFIG.propClassTerm).startsWith(opts.targetNamespace)
                             && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:LifecycleStatus"))
                     }
                 );
@@ -232,7 +301,7 @@ class COntology {
             if (synL.length > 1)
                 console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((s) => { return s.id }).toString());
 
-            let newT = this.valueByTitle(synL[0], "SpecIF:Term");
+            let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
             console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
             return newT
         };
@@ -313,8 +382,8 @@ class COntology {
         // note that referenced propertyClasses and resourceClasses are generated as soon as they are identified:
         [
             { resultL: this.generated.pCL, classes: Array.from(this.primitiveDataTypes.keys()), fn: this.createPC.bind(this) },
-            { resultL: this.generated.rCL, classes: ["RC-TermResourceClass"], fn: this.createRC.bind(this) },
-            { resultL: this.generated.sCL, classes: ["RC-TermStatementClass"], fn: this.createSC.bind(this) }
+            { resultL: this.generated.rCL, classes: ["RC-SpecifTermresourceclass"], fn: this.createRC.bind(this) },
+            { resultL: this.generated.sCL, classes: ["RC-SpecifTermstatementclass"], fn: this.createSC.bind(this) }
         ].forEach(
             (step) => { LIB.cacheL(step.resultL, this.makeClasses(step.classes, step.fn)); }
         );
@@ -448,11 +517,15 @@ class COntology {
             // Create the entries of the list 'enumeration':
             enumL = oL.map(
                 (o: SpecifResource, idx: number) => {
-                    let eV = LIB.valuesByTitle(o, [CONFIG.propClassTitle], this.data)[0];
-                    return {
-                        id: vId + '-' + idx.toString(),
-                        value: eV
-                    }
+                    let evL = LIB.valuesByTitle(o, [CONFIG.propClassTerm], this.data);
+                    if( evL.length>0 )
+                        return {
+                            id: vId + '-' + idx.toString(),
+                            value: evL[0]
+                        }
+                    else
+                        console.warn("Property value term '" + o.id + "' is undefined")
+                    // return undefined
                 }
             ),
             dT = {} as SpecifDataType;
@@ -629,18 +702,18 @@ class COntology {
 
         for (let s of sL) {
             let term = LIB.itemByKey(this.data.resources, s.subject),
-                prep = this.makeIdAndTitle(term, term['class'].id == "RC-TermResourceClass" ? "RC-" : "SC-"); // need the id only, here
+                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? "RC-" : "SC-"); // need the id only, here
             //            console.debug('sCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             LIB.cacheE(iCL, { id: prep.id })
 
             if (this.options.includeEligibleSubjectClassesAndObjectClasses) {
-                if (term['class'].id == "RC-TermResourceClass") {
+                if (term['class'].id == "RC-SpecifTermresourceclass") {
                     if (LIB.indexById(this.generated.rCL, prep.id) < 0)
                         // Ascertain that all referenced resourceClasses will be available.
                         LIB.cacheE(this.generated.rCL, this.createRC(term))
                 }
                 else {
-                    // the class is "RC-TermStatementClass":
+                    // the class is "RC-SpecifTermstatementclass":
                     if (LIB.indexById(this.generated.sCL, prep.id) < 0)
                         // Any missing statementClasses are collected in this.required.sTL until the end of the generation 
                         // ... to avoid infinite recursion, because statementClasses can reference statementClasses.
@@ -743,7 +816,7 @@ class COntology {
     private checkConstraintsOntology(): boolean {
         /*  Check the following constraints / conventions:
             - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
-            - A term must have a property "PC-Term" with the name of the term (the title contains the name in national languages)
+            - A term must have a property "PC-SpecifTerm" with the name of the term (the title contains the name in national languages)
             - A term name *must* have a name-space separated by ':' or '.', whereas a localTerm must *not*.
             - A term should have a relation 'SpecIF:isNamespace' with a namespace amd *must* not have more than one.
             - A TermResourceClass must have at least one propertyClass, either self or inherited from an extended class
@@ -753,7 +826,6 @@ class COntology {
             - Chains of "isEligibleAsObject" relations must not be circular.
             - ToDo: complete the list ...
         */
-        // A TermResourceClass or TermStatementClass may not have > 1 statements with title "SpecIF:isSpecializationOf":
 
         return true
     }
@@ -771,7 +843,7 @@ class COntology {
             }
         ) as SpecifStatement[]
     }
-    private valueByTitle(el: SpecifResource, ti: string): string {
+    valueByTitle(el: SpecifResource, ti: string): string {
         // Return the value of el's property with title ti:
         let pVL = LIB.valuesByTitle(el, [ti], this.data);
         return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
@@ -781,20 +853,24 @@ class COntology {
     }
     private makeIdAndTitle(r: SpecifResource, pfx: string) {
         // Make an id and a title for the class generated for term r
+        const termId = "PC-SpecifTerm";
         let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], this.data),
             // In general we don't, but in case of the ontology we know that the resource title
-            // is given in a property with class id "PC-Term" (which has a title "dcterms:title").
+            // is given in a property with class id "PC-SpecifTerm" (which has a title "dcterms:title").
             // Therefore we can get the title in a simple way:
-            prp = LIB.itemBy(r.properties, 'class', { id: "PC-Term" }),
-            ti = LIB.languageTextOf(prp.values[0], { targetLanguage: 'default' });
+            prp = LIB.itemBy(r.properties, 'class', { id: termId });
 
-        return {
-            // Use the identifier provided by the user or by default generate it using the title:
-            id: visIdL && visIdL.length > 0 ?
-                LIB.languageTextOf(visIdL[0], { targetLanguage: 'default' }).toSpecifId()
-                : (pfx + this.distinctiveCoreOf(ti)),
-            title: ti
-        }
+        if (prp && prp.values.length > 0) {
+            let ti = LIB.languageTextOf(prp.values[0], { targetLanguage: 'default' });
+            return {
+                // Use the identifier provided by the user or by default generate it using the title:
+                id: visIdL && visIdL.length > 0 ?
+                    LIB.languageTextOf(visIdL[0], { targetLanguage: 'default' }).toSpecifId()
+                    : (pfx + this.distinctiveCoreOf(ti)),
+                title: ti
+            }
+        };
+        console.error("No item with id '" + termId+"' found in the Ontology or it has no value");
     }
     private makeStatementsIsNamespace(): void {
         // Relate one of the defined namespaces to each term using a statement 'isNamespace';
@@ -811,8 +887,8 @@ class COntology {
 
             // 2. Create all statements 'isNamespace':
             for (var r of this.data.resources) {
-                if (CONFIG.ontologyClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
-                    let term = this.valueByTitle(r, "SpecIF:Term"),
+                if (this.termClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
+                    let term = this.valueByTitle(r, CONFIG.propClassTerm),
                         match = RE.splitVocabularyTerm.exec(term);
                     if (Array.isArray(match) && match[1]) {
                         let stC = LIB.makeKey(item),
@@ -842,119 +918,3 @@ class COntology {
             console.warn("No statementClass 'SpecIF:isNamespace' defined")
     }
 }
-/*
-// =============================================
-// to be replaced by ontology content:
-const vocabulary = {
-    // Translate between different vocabularies such as ReqIF, Dublin Core, OSLC and SpecIF:
-    // ToDo: Derive from SpecIF Ontology
-    property: {
-        // for properyTypes and properties:
-        specif: function (iT: string): string {
-            // Target language: SpecIF
-            var oT = '';
-            switch (iT.toJsId().toLowerCase()) {
-                case "_berschrift":
-                case "name":
-                case "title":
-                case "titel":
-                case "dc_title":
-                case "specif_heading":            //  has been used falsely as property title
-                case "reqif_chaptername":
-                case "reqif_name": oT = CONFIG.propClassTitle; break;
-                case "description":
-                case "beschreibung":
-                case "text":
-                case "dc_description":
-                //    case "reqif_changedescription":
-                case "reqif_description":
-                case "reqif_text": oT = CONFIG.propClassDesc; break;
-                case "reqif_revision": oT = "SpecIF:Revision"; break;
-                case "specif_stereotype":        // deprecated, for compatibility, not to confound with "UML:Stereotype"
-                case "specif_subclass":            // deprecated, for compatibility
-                case "reqif_category": oT = CONFIG.propClassType; break;
-                case 'specif_id':                // deprecated, for compatibility
-                case "reqif_foreignid": oT = CONFIG.propClassId; break;
-                case "specif_state":            // deprecated, for compatibility
-                case "reqif_foreignstate": oT = "SpecIF:Status"; break;
-                case "dc_author":
-                case "dcterms_author":            // deprecated, for compatibility
-                case "reqif_foreigncreatedby": oT = "dcterms:creator"; break;
-                case "specif_createdat": oT = "dcterms:modified"; break;
-                //    case "reqif_foreignmodifiedby":        oT = ""; break;
-                //    case "reqif_foreigncreatedon":        oT = ""; break;
-                //    case "reqif_foreigncreatedthru":    oT = ""; break;
-                //    case "reqif_fitcriteria":            oT = ""; break;
-                //    case "reqif_prefix":                oT = ""; break;
-                //    case "reqif_associatedfiles":        oT = ""; break;
-                //    case "reqif_project":                oT = ""; break;
-                //    case "reqif_chapternumber":            oT = ""; break; 
-                default: oT = iT;
-            };
-            return oT;
-        }
-    },
-    resource: {
-        // for resourceClasses and resources:
-        specif: function (iT: string): string {
-            // Target language: SpecIF
-            var oT = '';
-
-            // 1. Look for preferred term in the Ontology:
-
-            // 2. Transform local name to ontology term:
-            // ontology.findTermForLocalName({resourceClass:iT})
-
-            // 3. Finally some additional mappings:
-            switch (iT.toJsId().toLowerCase()) {
-                case 'actors':
-                case 'actor':
-                case 'akteure':
-                case 'akteur': oT = "FMC:Actor"; break;
-                case 'states':
-                case 'state':
-                case 'zustände':
-                case 'zustand': oT = "FMC:State"; break;
-                case 'events':
-                case 'event':
-                case 'ereignisse':
-                case 'ereignis': oT = "FMC:Event"; break;
-                case 'anforderungen':
-                case 'anforderung':
-                case 'requirements':
-                case 'requirement':
-                case 'specif_requirement': oT = "IREB:Requirement"; break;
-                case 'merkmale':
-                case 'merkmal':
-                case 'features':
-                case 'feature': oT = "SpecIF:Feature"; break;
-                case 'annotations':
-                case 'annotationen':
-                case 'annotation': oT = "IR:Annotation"; break;
-                case 'userstory':
-                case 'userstories':
-                case 'user_stories':
-                case 'user_story': oT = 'SpecIF:UserStory'; break;
-                case 'painpoint':
-                case 'painpoints':
-                case 'pain_point':
-                case 'pain_points':
-                case 'schmerzpunkt':
-                case 'schmerzpunkte': oT = "SpecIF:PainPoint"; break;
-                case 'specif_view':
-                case 'fmc_plan':
-                case 'specif_diagram': oT = CONFIG.resClassDiagram; break;
-                case 'specif_folder': oT = CONFIG.resClassFolder; break;
-                case 'specif_hierarchyroot':
-                case 'specif_hierarchy': oT = CONFIG.resClassOutline; break;
-                default: oT = iT;
-            };
-            return oT;
-            //    },
-            //    reqif: function( iT:string ):string {
-                    // no translation to OSLC or ReqIF, because both don't have a vocabulary for resources
-            //        return iT
-        }
-    } 
-};
-*/

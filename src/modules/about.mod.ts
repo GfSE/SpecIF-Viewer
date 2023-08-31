@@ -62,9 +62,10 @@ moduleManager.construct({
 			// So far, editing is needed in case of Achimate for manually adding the diagrams ..
 				+ (isEditor && moduleManager.isReady('ioArchimate')? "<li>Import ArchiMate Open-Exchange file</li>":"")
 				+ (moduleManager.isReady('ioXls')? "<li>Import MS-Excel 'XLSX', 'XLS' and 'CSV' file</li>":"")
-				+ (moduleManager.isReady('ioBpmn')? "<li>Import 'BPMN-XML' file</li>":"")
+				+ (moduleManager.isReady('ioBpmn') ? "<li>Import 'BPMN-XML' file</li>" : "")
 				+ "<li>Import from an URL or the local file system</li>"
 			)
+		+ (isEditor ? "<li>Merge models of different tools and notations</li>" : "")
 		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
 		+		  "<li>Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)</li>"
 		+ (isEditor? "<li>Create, clone and update resources with an input form derived from the respective resource class</li>":"")

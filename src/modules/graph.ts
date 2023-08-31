@@ -1,5 +1,5 @@
 /*!	SpecIF: Semantic Graphing.
-	Dependencies: vis-network
+	Dependencies: vis-network (https://visjs.github.io/vis-network/docs/network/)
 	(C)copyright enso managers gmbh (http://www.enso-managers.de)
 	Author: se@enso-managers.de, Berlin
 	License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)

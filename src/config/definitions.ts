@@ -13,6 +13,15 @@ const CONFIG:any = {};
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
     CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
     CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
+    CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
+    CONFIG.isOntology = (specifData:any) => {
+        return (
+            specifData.id.includes("Ontology")
+            && Array.isArray(specifData.title) && specifData.title[0] && specifData.title[0]['text']
+            && specifData.title[0]['text'].includes("Ontology")
+        );
+    };
+
     CONFIG.passwordAnonymous = ''; // as configured in the server
     CONFIG.placeholder = 'to-be-replaced';
     CONFIG.notAssigned = 'notAssigned';
@@ -76,16 +85,16 @@ const CONFIG:any = {};
 
     // Dialog names used as query parameters - if changed, existing links will end up in default view:
     // Base:
-    CONFIG.user = 'user';
-    CONFIG.users = 'users';
+//    CONFIG.user = 'user';
+//    CONFIG.users = 'users';
     CONFIG.project = 'project';
     CONFIG.projects = 'projects';
     CONFIG.specification = 'specification';
     CONFIG.specifications = 'specifications';
     CONFIG.object = 'resource';
     CONFIG.objects = 'resources';
-    CONFIG.folder = 'folder';
-    CONFIG.folders = 'folders';
+//    CONFIG.folder = 'folder';
+//    CONFIG.folders = 'folders';
     // Specifications:
     CONFIG.objectTable = 'table';
     CONFIG.objectList = 'doc';
@@ -100,7 +109,7 @@ const CONFIG:any = {};
     CONFIG.comments = 'comments';
 //    CONFIG.timeline = 'timeline';
     CONFIG.reports = 'reports';
-    CONFIG.permissions = 'permissions';
+//    CONFIG.permissions = 'permissions';
 //    CONFIG.specDialogDefault = CONFIG.objectList;
 /*    // Projects:
 //    CONFIG.projectList = CONFIG.projects;

@@ -84,32 +84,43 @@ function extractDatatypes(xmlDatatypes) {
             description: datatype.getAttribute("DESC") || '',
             changedAt: datatype.getAttribute("LAST-CHANGE") || ''
         };
-        if( datatype.getAttribute("MIN") ) specifDatatype.minInclusive = Number(datatype.getAttribute("MIN"));
+     /* if( datatype.getAttribute("MIN") ) specifDatatype.minInclusive = Number(datatype.getAttribute("MIN"));
         if( datatype.getAttribute("MAX") ) specifDatatype.maxInclusive = Number(datatype.getAttribute("MAX"));
         if( datatype.getAttribute("MAX-LENGTH") ) specifDatatype.maxLength = Number(datatype.getAttribute("MAX-LENGTH"));
-        if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY"));
-        if( datatype.childElementCount>0 ) specifDatatype.values = extractDataTypeValues(datatype.children);
+        if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY")); */
+
+        extr("MIN", "minInclusive");
+        extr("MAX", "maxInclusive");
+        extr("MAX-LENGTH", "maxLength");
+        extr("ACCURACY", "fractionDigits");
+        if (datatype.childElementCount > 0) specifDatatype.values = extractDataTypeValues(datatype.children);
 
         return specifDatatype;
-    }
-    function getTypeOfDatatype(datatype) {
-        return {
-            "DATATYPE-DEFINITION-BOOLEAN": 'xs:boolean', 
-            "DATATYPE-DEFINITION-DATE": 'xs:dateTime',
-            "DATATYPE-DEFINITION-INTEGER": 'xs:integer',
-            "DATATYPE-DEFINITION-REAL": 'xs:double',
-            "DATATYPE-DEFINITION-STRING": 'xs:string',
-            "DATATYPE-DEFINITION-XHTML": 'xhtml',
-            "DATATYPE-DEFINITION-ENUMERATION": 'xs:enumeration',
-        }[datatype.nodeName];
-    }
-    function extractDataTypeValues(DataTypeValuesHtmlCollection) {
-        return Array.from( DataTypeValuesHtmlCollection[0].children, extractEnumValue );
 
-        function extractEnumValue(ch) {
+        function extr(rqA,spP) {
+            let val = datatype.getAttribute(rqA);
+            if (val)
+                specifDatatype[spP] = Number(val)
+        }
+        function getTypeOfDatatype(datatype) {
             return {
-                id: ch.getAttribute("IDENTIFIER"),
-                value: ch.getAttribute("LONG-NAME") || '&#x00ab;undefined&#x00bb;'
+                "DATATYPE-DEFINITION-BOOLEAN": 'xs:boolean',
+                "DATATYPE-DEFINITION-DATE": 'xs:dateTime',
+                "DATATYPE-DEFINITION-INTEGER": 'xs:integer',
+                "DATATYPE-DEFINITION-REAL": 'xs:double',
+                "DATATYPE-DEFINITION-STRING": 'xs:string',
+                "DATATYPE-DEFINITION-XHTML": 'xhtml',
+                "DATATYPE-DEFINITION-ENUMERATION": 'xs:enumeration',
+            }[datatype.nodeName];
+        }
+        function extractDataTypeValues(DataTypeValuesHtmlCollection) {
+            return Array.from(DataTypeValuesHtmlCollection[0].children, extractEnumValue);
+
+            function extractEnumValue(ch) {
+                return {
+                    id: ch.getAttribute("IDENTIFIER"),
+                    value: ch.getAttribute("LONG-NAME") || '&#x00ab;undefined&#x00bb;'
+                }
             }
         }
     }

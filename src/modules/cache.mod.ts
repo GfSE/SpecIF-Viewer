@@ -617,7 +617,7 @@ class CProject {
 						return this.readItems('statement', flt, opts);
 
 						function flt(s: SpecifStatement) {
-							let L = exD.resources.concat(sL);
+							let L:any = exD.resources.concat(sL);
 							return LIB.indexByKey(L, s.subject) > -1 && LIB.indexByKey(sL, s.object) > -1
 								|| LIB.indexByKey(sL, s.subject) > -1 && LIB.indexByKey(L, s.object) > -1
 						}
@@ -1973,39 +1973,47 @@ class CProject {
 					} */
 				function Folders(): SpecifResource[] {
 					// Create the resources for folder and subfolders of the glossary:
-					let term = app.ontology.getTermResource(CONFIG.resClassGlossary);
-					var fL: SpecifResource[] = [{
+					let termL = app.ontology.getTermResources('resourceClass',CONFIG.resClassGlossary);
+					if (termL.length > 0) {
+						let fL: SpecifResource[] = [{
 							id: "FolderGlossary-" + apx,
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								values: LIB.valuesByTitle(term, ["SpecIF:LocalTerm"], app.ontology.data)
+								values: LIB.valuesByTitle(termL[0], ["SpecIF:LocalTerm"], app.ontology.data)
 							}, {
 								class: LIB.makeKey("PC-Type"),
-								values: [ LIB.makeMultiLanguageValue(CONFIG.resClassGlossary) ]
+								values: [LIB.makeMultiLanguageValue(CONFIG.resClassGlossary)]
 							}],
 							changedAt: tim
 						}];
-					// Create a folder resource for every model-element type:
-					for (var eC of CONFIG.modelElementClasses) {
-						term = app.ontology.getTermResource(eC);
-						fL.push({
-							id: "Folder-" + eC.toJsId() + "-" + apx,
-							class: LIB.makeKey("RC-Folder"),
-							properties: [{
-								class: LIB.makeKey("PC-Name"),
-								values: LIB.valuesByTitle(term, ["SpecIF:LocalTermPlural"], app.ontology.data)
-							}, {
-								class: LIB.makeKey("PC-Description"),
-								values: LIB.valuesByTitle(term, ["dcterms:description"], app.ontology.data)
-							}, {
-								class: LIB.makeKey("PC-Type"),
-								values: [LIB.makeMultiLanguageValue(CONFIG.resClassFolder)]
-							}],
-							changedAt: tim
-						});
+						// Create a folder resource for every model-element type:
+						for (var eC of CONFIG.modelElementClasses) {
+							termL = app.ontology.getTermResources('resourceClass',eC);
+							if (termL.length > 0) {
+								fL.push({
+									id: "Folder-" + eC.toJsId() + "-" + apx,
+									class: LIB.makeKey("RC-Folder"),
+									properties: [{
+										class: LIB.makeKey("PC-Name"),
+										values: LIB.valuesByTitle(termL[0], ["SpecIF:LocalTermPlural"], app.ontology.data)
+									}, {
+										class: LIB.makeKey("PC-Description"),
+									values: LIB.valuesByTitle(termL[0], ["dcterms:description"], app.ontology.data)
+									}, {
+										class: LIB.makeKey("PC-Type"),
+										values: [LIB.makeMultiLanguageValue(CONFIG.resClassFolder)]
+									}],
+									changedAt: tim
+								})
+							}
+							else
+								console.warn("Ontology has no term '" + eC + "'");
+						};
+						return fL;
 					};
-					return fL;
+					console.warn("Ontology has no term '" + CONFIG.resClassGlossary + "'");
+					return [];
 				}
 				function NodeList(lastContentH:SpecifNode): INodeWithPosition[] {
 					// a. Add the folders:
@@ -2402,6 +2410,11 @@ class CProject {
 						case 'oxml':
 							opts.v10 = true;
 							publish(opts);
+							break;
+						default:
+							// programming error!
+							reject(new xhrMessage(999, "Invalid format specified on export"));
+							throw Error("Invalid format specified on export");
 					};
 			//	}
 			//	else {
@@ -2411,11 +2424,6 @@ class CProject {
 			return;
 
 			function publish(opts: any): void {
-				if (!opts || ['epub', 'oxml'].indexOf(opts.format) < 0) {
-					// programming error!
-					reject(new xhrMessage(999, "Invalid format specified on export" ));
-					throw Error("Invalid format specified on export");
-				};
 
 				// ToDo: Get the newest data from the server.
 //				console.debug( "publish", opts );
@@ -2442,21 +2450,23 @@ class CProject {
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
 
+				let optsLabel = Object.assign({}, opts, { plural: true });
+
 				self.read(opts).then(
 					(expD:SpecIF) => {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
-							titleLinkTargets: CONFIG.titleLinkTargets.map((e:string) => { return i18n.lookup(e) }),
-							titleProperties: CONFIG.titleProperties.map((e: string) => { return i18n.lookup(e) }),
-							descriptionProperties: CONFIG.descProperties.map((e: string) => { return i18n.lookup(e) }),
+							titleLinkTargets: app.standards.titleLinkTargets().map((e:string) => { return app.ontology.localize(e,opts) }),
+							titleProperties: CONFIG.titleProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
+							descriptionProperties: CONFIG.descProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return i18n.lookup(e) }),
+							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
 							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
 						//	hasContent: LIB.hasContent,
-							propertiesLabel: opts.withOtherProperties ? i18n.lookup('SpecIF:Properties') : undefined,
-							statementsLabel: opts.withStatements ? i18n.lookup('SpecIF:Statements') : undefined,
+							propertiesLabel: opts.withOtherProperties ? app.ontology.localize('SpecIF:Property', optsLabel) : undefined,
+							statementsLabel: opts.withStatements ? app.ontology.localize('SpecIF:Statement', optsLabel) : undefined,
 							fileName: self.exportParams.fileName,
 							colorAccent1: '0071B9',	// adesso blue
 							done: () => { app.projects.selected.exporting = false; resolve() },
@@ -2479,11 +2489,6 @@ class CProject {
 				);
 			}
 			function storeAs(opts: any): void {
-				if (!opts || ['specif', 'specif_v10', 'html', 'reqif', 'turtle', 'specifClasses'].indexOf(opts.format) < 0) {
-					// programming error!
-					reject(new xhrMessage( 999, "Invalid format specified on export" ));
-					throw Error("Invalid format specified on export");
-				};
 
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );

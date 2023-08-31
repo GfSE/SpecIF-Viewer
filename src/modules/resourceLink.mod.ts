@@ -134,7 +134,7 @@ moduleManager.construct({
 							self.eligibleSCL,
 							(sC: SpecifStatementClass) => {
 								return {
-									title: LIB.titleOf(sC, { lookupTitles: true }),
+									title: LIB.titleOf(sC, { lookupTitles: true, targetLanguage: app.projects.selected.language }),
 									description: sC.description
 								}
 							}
