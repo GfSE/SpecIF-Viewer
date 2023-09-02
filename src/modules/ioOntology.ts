@@ -35,6 +35,7 @@ class COntology {
         ["RC-SpecifTermpropertyclassduration", SpecifDataTypeEnum.Duration],
         ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyUri]
     ]);
+
     private options: any;
     private required: any;
     private generated: any;
@@ -679,11 +680,10 @@ class COntology {
 
         // Create a resourceClass for the TermResourceClass r;
         // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
-        let pfx = 'RC-'
         return Object.assign(
-            this.createItem(r, pfx),
+            this.createItem(r, CONFIG.prefixRC),
             {
-                extends: this.extCOf(r, pfx),
+                extends: this.extCOf(r, CONFIG.prefixRC),
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
@@ -702,7 +702,7 @@ class COntology {
 
         for (let s of sL) {
             let term = LIB.itemByKey(this.data.resources, s.subject),
-                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? "RC-" : "SC-"); // need the id only, here
+                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC); // need the id only, here
             //            console.debug('sCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             LIB.cacheE(iCL, { id: prep.id })
 
@@ -741,11 +741,10 @@ class COntology {
         //        console.debug('createSC', r, pCL, sCL, oCL);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
-        let pfx = 'SC-'
         return Object.assign(
-            this.createItem(r, pfx),
+            this.createItem(r, CONFIG.prefixSC),
             {
-                extends: this.extCOf(r, pfx),
+                extends: this.extCOf(r, CONFIG.prefixSC),
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
@@ -760,11 +759,11 @@ class COntology {
     private extCOf(el: SpecifResource, pfx: string) {
         // Return a resourceClass resp. statementClass which is related by "SpecIF:isSpecializationOf"
         // to el (the term describing the resourceClass resp. statementClass to be generated):
-        if (['RC-', 'SC-'].includes(pfx)) {
+        if ([CONFIG.prefixRC, CONFIG.prefixSC].includes(pfx)) {
 
             let
                 // We are interested only in statements where *other* resources resp. statements are the object:
-                sL = this.statementsByClass(el, "SpecIF:isSpecializationOf", { asSubject: true });
+                sL = this.statementsByClass(el, "UML:isSpecializationOf", { asSubject: true });
 
             if (sL.length > 1) {
                 console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
@@ -779,10 +778,10 @@ class COntology {
                 // Ascertain that the referenced resourceClass resp. statementClass will be available;
                 // if it exists already due to correct selection, there will be no duplicate:
                 switch (pfx) {
-                    case 'RC-':
+                    case CONFIG.prefixRC:
                         LIB.cacheE(this.generated.rCL, this.createRC(term));
                         break;
-                    case 'SC-':
+                    case CONFIG.prefixSC:
                         LIB.cacheE(this.generated.sCL, this.createSC(term));
                 };
 
@@ -834,6 +833,11 @@ class COntology {
         // Find the statements of the class with title ti referencing the given term r as subject or object:
         // - if opts.asSubject, then all statements where r is the subject are selected
         // - if opts.asObject, then all statements where r is the object are selected
+
+        // First make it a little more robust against changes in the ontology:
+        // ToDo: a more efficient solution is to do it once in the construction phase ...
+        ti = this.normalize("statementClass", ti);
+
         return this.data.statements.filter(
             (st: SpecifStatement) => {
                 // better use 'instanceTitleOf', but it is not available, here:

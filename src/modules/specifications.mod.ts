@@ -64,10 +64,10 @@ class CPropertyToShow implements SpecifProperty {
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
 			// ToDo: Check use of default values
-			this.values = this.listEnumeratedValues();
+			this.values = this.getEnumValues();
 		}
 	}
-	private listEnumeratedValues() {
+	private getEnumValues() {
 		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		var oL: SpecifValues = [];
 		for( var v of this.values ) {
@@ -118,7 +118,8 @@ class CPropertyToShow implements SpecifProperty {
 			options
 		);
 
-		// Malicious content has been removed upon import ( specif.toInt() ).
+		// Malicious content has been removed upon import ( CSpecif.toInt() ).
+		// References to enumerated values have already be replaced by their values.
 		let ct: string;
 //		console.debug('*',this,this.dT);
 		switch (this.dT.type) {

@@ -252,6 +252,11 @@ CONFIG.staClassCommentRefersTo = 'SpecIF:commentRefersTo';
 //    CONFIG.staClassIssueRefersTo = 'SpecIF:issueRefersTo';
 CONFIG.staClassMentions = 'SpecIF:mentions';
 
+CONFIG.prefixDT = "DT-";
+CONFIG.prefixPC = "PC-";
+CONFIG.prefixRC = "RC-";
+CONFIG.prefixSC = "SC-";
+
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement based on the semantics;
 // but use the ontology for looking up or translating terms.

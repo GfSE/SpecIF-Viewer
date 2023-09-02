@@ -269,10 +269,10 @@ function toXhtml( data, opts ) {
 
 		if( descriptions.length>0 )
 			descriptions.forEach( (p)=>{
-				c1 += '<p>'+propertyValueOf( p, hi )+'</p>';
+				c1 += '<p>'+propertyValuesOf( p, hi )+'</p>';
 			})
 		else
-			if( r.description ) c1 += '<p>'+propertyValueOf( r.description, hi )+'</p>';
+			if( r.description ) c1 += '<p>'+propertyValuesOf( r.description, hi )+'</p>';
 
 		// Skip the remaining properties, if no label is provided:
 //		console.debug('#1',c1)
@@ -283,7 +283,7 @@ function toXhtml( data, opts ) {
 			// the property title or it's class's title:
 			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
 				rt = prpTitleOf(p);
-				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValueOf( p, hi )+'</td></tr>'
+				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValuesOf( p, hi )+'</td></tr>'
 			}
 		});
 		// Add a property 'SpecIF:Type':
@@ -485,10 +485,10 @@ function toXhtml( data, opts ) {
 			);
 			return str
 		}
-		function propertyValueOf( prp, hi ) {
+		function propertyValuesOf( prp, hi ) {
 			if( !prp.value ) return '';
 			// return the value of a single property:
-//			console.debug('propertyValueOf',prp,hi);
+//			console.debug('propertyValuesOf',prp,hi);
 			if(prp['class']) {
 				let pC = itemById(data.propertyClasses, prp['class']),
 					dT = itemById(data.dataTypes, pC.dataType);
@@ -599,7 +599,7 @@ function toXhtml( data, opts ) {
 	function elTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
-		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
+		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
 	}
 	function hasContent( str ) {
 		// Check whether str has content or a reference:

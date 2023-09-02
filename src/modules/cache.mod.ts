@@ -1896,11 +1896,11 @@ class CProject {
 										propertyClasses: [
 											app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
 											app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-											app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
+											app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
 											app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
 										],
 										resourceClasses: [
-											app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
+											app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
 											app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 										],
 										statementClasses: [],
@@ -2407,8 +2407,8 @@ class CProject {
 							storeAs(opts);
 							break;
 						case 'epub':
-						case 'oxml':
 							opts.v10 = true;
+						case 'oxml':
 							publish(opts);
 							break;
 						default:

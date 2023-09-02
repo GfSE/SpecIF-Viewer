@@ -468,9 +468,10 @@ class CSpecIF implements SpecIF {
 
 			// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
-		//	oE.dataType = LIB.makeKey(iE.dataType);
 			oE.dataType = LIB.makeKey(iE.dataType.id || iE.dataType);
-			let dT: SpecifDataType = LIB.itemByKey(self.dataTypes, oE.dataType);
+
+			// dT is needed just for the multiple attribute which is only in the incoming dataTypes:
+			let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, oE.dataType);
 //			console.debug('pC2int',iE,dT);
 
 		/*	// include the property only, if it is different from the dataType's:
@@ -510,7 +511,7 @@ class CSpecIF implements SpecIF {
 		function aC2int(iE:any) {
 			var oE: any = i2int(iE);
 
-			if (iE['extends']) oE['extends'] = LIB.makeKey(iE['extends'].id || iE['extends']);	// 'extends' is a reserved word starting with ES5
+			if (iE['extends']) oE['extends'] = iE['extends'].id? iE['extends'] : LIB.makeKey(iE['extends']);	// 'extends' is a reserved word starting with ES5
 			if (iE.creation) oE.instantiation = iE.creation;	// deprecated, for compatibility
 			if (iE.instantiation) oE.instantiation = iE.instantiation;
 			if (oE.instantiation) {
@@ -1000,7 +1001,8 @@ class CSpecIF implements SpecIF {
 		// transform internal data to SpecIF:
 		return new Promise(
 			(resolve, reject) => {
-				var pend = 0,
+				let self = this,
+					pend = 0,
 					// @ts-ignore - the missing attributes will come below:
 					spD: SpecIF = {
 						// @ts-ignore - no harm, this does not violate the schema
@@ -1115,13 +1117,19 @@ class CSpecIF implements SpecIF {
 					// Look for enumerated values;
 					// every dataType except xs:boolean may have enumerated values:
 					if (iE.enumeration) {
-						if (opts.targetLanguage)
+						if (iE.type == SpecifDataTypeEnum.String && opts.targetLanguage)
 							// reduce to the language specified:
-							oE.enumeration = iE.enumeration.map( (v: any) => { return { id: v.id, value: LIB.makeMultiLanguageValue(LIB.languageTextOf(v.value, opts)) } })
+							oE.enumeration = iE.enumeration.map(
+								(v: any) => {
+									let txt = LIB.languageTextOf(v.value, opts);
+									if (opts.lookupValues) txt = app.ontology.localize(txt, opts);
+									return { id: v.id, value: LIB.makeMultiLanguageValue(txt) }
+								}
+							)
 						else
 							oE.enumeration = iE.enumeration;
 					};
-					if (iE.multiple) oE.multiple = true;
+				//	if (iE.multiple) oE.multiple = true;  ... not any more in future
 
 					return oE
 				}
@@ -1131,7 +1139,8 @@ class CSpecIF implements SpecIF {
 					if (iE.values) oE.values = iE.values;  // default values
 					oE.dataType = iE.dataType;
 
-					let dT = LIB.itemByKey(spD.dataTypes, iE.dataType);
+					// ToDo: Consider whether it is best to use the incoming dataTypes
+					let dT = LIB.itemByKey(self.dataTypes, iE.dataType);
 
 					/* With SpecIF, he 'multiple' property should be defined at dataType level
 					*  and can be overridden at propertyType level.
@@ -1146,10 +1155,14 @@ class CSpecIF implements SpecIF {
 					* 	undefined		true 			true			true
 					* 	false			true 			true			true
 					* 	true 			true 			undefined		true
-					*  Include the property only, if is different from the dataType's: */
-					if (iE.multiple && !dT.multiple) oE.multiple = true;
-				//	else if (iE.multiple == false && dT.multiple) oE.multiple = false
+					*  Include the property only, if is different from the dataType's:
+					if (iE.multiple && !dT.multiple) oE.multiple = true;  */
 
+					// in future only with propertyClasses:
+					if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
+					else if (dT.multiple) oE.multiple = true;
+
+					// ToDo: select language, if opts.targetLanguage is defined
 					if (iE.values) oE.values = iE.values;
 					if (iE.format) oE.format = iE.format;
 					if (iE.unit) oE.unit = iE.unit;
@@ -1214,25 +1227,25 @@ class CSpecIF implements SpecIF {
 						if (opts.targetLanguage) {
 							// Reduce all values to the selected language; is used for
 							// - generation of human readable documents
-							// - formats not supporting multiple languages:
+							// - formats not supporting multiple languages (such as ReqIF):
 							let txt;
 							// Cycle through all values:
 							for (var v of iE.values) {
+								txt = LIB.languageTextOf(v, opts);
 								if (RE.vocabularyTerm.test(txt)) {
-									txt = LIB.languageTextOf(v, opts);
 									if (opts.lookupValues) txt = app.ontology.localize(txt,opts);
 								}
 								else {
 									if (CONFIG.excludedFromFormatting.includes(pC.title)) {
 										// if it is e.g. a title, remove all formatting:
-										txt = LIB.languageTextOf(v, opts)
+										txt = txt
 											.replace(/^\s+/, "")   // remove any leading whiteSpace
 											.stripHTML();
 									}
 									else {
 										// Transform to HTML, if possible;
 										// especially for publication, for example using WORD format:
-										txt = LIB.languageTextOf(v, opts)
+										txt = txt
 											.replace(/^\s+/, "")  // remove any leading whiteSpace
 											.makeHTML(opts)
 											.replace(/<br ?\/>\n/g, "<br/>");
@@ -1258,7 +1271,7 @@ class CSpecIF implements SpecIF {
 								oE.values.push(lL);
 							};
 							return oE;
-						};
+						}
 					};
 					// else, keep the complete data structure:
 					oE.values = iE.values;

@@ -168,7 +168,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	}
 	function dataTypeId( str:string ):string { 
 		// must be able to find it just knowing the ws-name and the column index:
-		return 'DT-' + simpleHash(str);
+		return CONFIG.prefixDT + simpleHash(str);
 	}
 	class PropClass {
 		id: string;
@@ -178,13 +178,13 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		constructor (nm: string, ti: string, dT: string) {
 			this.id = propClassId(nm);
 			this.title = ti;
-			this.dataType = LIB.makeKey('DT-' + dT);		// like baseTypes[i].id
+			this.dataType = LIB.makeKey(CONFIG.prefixDT + dT);		// like baseTypes[i].id
 			this.changedAt = chAt;
 		}
 	}
 	function propClassId( str:string ):string { 
 		// must be able to find it just knowing the ws-name and the column index:
-		return 'PC-' + simpleHash(str);
+		return CONFIG.prefixPC + simpleHash(str);
 	}
 	class ResClass {
 		id: string;
@@ -206,7 +206,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		}
 	}
 	function resClassId( str:string ):string { 
-		return 'RC-' + simpleHash(str);
+		return CONFIG.prefixRC + simpleHash(str);
 	}
 	class StaClass {
 		id: string;
@@ -227,7 +227,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		}
 	}
 	function staClassId( str:string ):string { 
-		return 'SC-' + simpleHash(str);
+		return CONFIG.prefixSC + simpleHash(str);
 	}
 	function colName( colI:number ):string {
 		// get the column name from an index: 4->'D', 27->'AA'

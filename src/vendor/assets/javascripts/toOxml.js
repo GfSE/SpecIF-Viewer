@@ -20,7 +20,7 @@ function toOxml( data, options ) {
 	"use strict";
 
 	// Reject versions < 1.0:
-	if( data.specifVersion ) {
+	if (!data['$schema'] || data['$schema'].includes('v1.0')) {
 		let eTxt = "SpecIF Version < v1.0 is not supported.";
 		if (typeof(opts.fail)=='function' )
 			opts.fail({status:904,statusText:eTxt})
@@ -70,7 +70,6 @@ function toOxml( data, options ) {
 
 		// SpecIF v1.0 dataTypes
 		dataTypeString = 'xs:string',
-		dataTypeXhtml = 'xhtml',
 		dataTypeEnumeration = 'xs:enumeration';
 
 	// Create a local list of images, which can be used in OXML:
@@ -279,11 +278,12 @@ function toOxml( data, options ) {
 				if( a>-1 ) {  // found!
 					// Remove all formatting for the title, as the app's format shall prevail.
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
-					ti = stripHtml( itm.properties[a].value );
+					// A title property should have just one value and one language:
+					ti = stripHtml(itm.properties[a].values[0][0]['text']);
 				}
 				else {
 					// In case of a statement, use the class' title by default:
-					ti = elTitleOf(itm);
+					ti = classTitleOf(itm);
 				};
 //				console.debug('titleOf 1',itm,ti);
 				ti = minEscape( ti );
@@ -527,7 +527,7 @@ function toOxml( data, options ) {
 
 				if( descriptions.length>0 )
 					descriptions.forEach( (p)=>{
-						propertyValueOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
+						propertyValuesOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
 					})
 				else
 					if( r.description ) c1 += generateOxml( {p:{text:r.description}} );
@@ -548,7 +548,7 @@ function toOxml( data, options ) {
 					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
 						rt = minEscape( prpTitleOf(p) );
 						c3 = '';
-						propertyValueOf( p ).forEach( 
+						propertyValuesOf( p ).forEach( 
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
 						);
 //						console.debug('other properties',p,rt,c3);
@@ -1052,13 +1052,47 @@ function toOxml( data, options ) {
 					// should never arrive here
 					throw Error("SpecIF to WORD: Invalid title link.");
 				}
-				function propertyValueOf( prp ) {
+				function propertyValuesOf( prp ) {
 					// In a first transformation step, return the value of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
 					// The second transformation step will be done in generateOxml().
-//					console.debug('propertyValueOf',prp,'"',prp.value,'"');
-					if(prp['class']) {
+//					console.debug('propertyValuesOf',prp,'"',prp.value,'"');
+					let pC = itemById(data.propertyClasses, prp['class']),
+						dT = itemById(data.dataTypes, pC.dataType);
+					if (dT.enumeration) {
+						let ct = '';
+						for (var v of prp.values) {
+							// multiple values in a comma-separated string;
+							// string values should have just a single language (already filtered during export):
+							switch (dT.type) {
+								case dataTypeString:
+									ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value[0]['text'];
+									break;
+								default:
+									ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value;
+							}
+						};
+						return [{ p: { text: minEscape(ct) } }];
+					};
+					// else
+					switch (dT.type) {
+						case dataTypeString:
+							let ctL = [];
+							for (var v of prp.values) {
+								// string values should have just a single language (already filtered during export):
+								ctL.push(parseXhtml(v[0]['text'], opts));
+							};
+							return ctL;
+						default:
+							let ct = '';
+							for (var v of prp.values) {
+								// multiple values in a comma-separated string:
+								ct += (ct.length == 0 ? '' : ', ') + v
+							};
+							return [{ p: { text: minEscape(ct) } }];
+					}
+				/*	if(prp['class']) {
 						let pC = itemById(data.propertyClasses, prp['class']),
 							dT = itemById(data.dataTypes, pC.dataType);
 						switch( dT.type ) {
@@ -1076,14 +1110,13 @@ function toOxml( data, options ) {
 								};
 								return [{p:{text:minEscape(ct)}}];
 							case dataTypeString:
-							case dataTypeXhtml:
 //								console.debug('propertyValueOf - xhtml',prp.value);
 								// The value has been looked-up by the viewer before delivery:
 								return parseXhtml( prp.value, opts );
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
-					return [{p:{text:minEscape(prp.value)}}]					
+					return [{p:{text:minEscape(prp.value)}}] */				
 				}
 				function generateOxml( ct, fmt ) {
 					// In a second step, transform the internal representation to OOXML.
@@ -2817,10 +2850,10 @@ function toOxml( data, options ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return itemById(data.propertyClasses, prp['class']).title
 	}
-	function elTitleOf( el ) {
+	function classTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
-		return (el.subject ? itemById(data.statementClasses, el['class']).title : '')
+		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
 	}
 	function languageValueOf(val) {
 		// assuming that only the selected language is available:
