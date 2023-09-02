@@ -1590,22 +1590,20 @@ class CProject {
 											id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
 											$schema: 'https://specif.de/v1.1/schema.json',
 											dataTypes: [
-												app.standards.get('dataType', { id: "DT-ShortString" }) as SpecifDataType,
-												app.standards.get('dataType', { id: "DT-Text" }) as SpecifDataType
+												app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+												app.standards.get('dataType', LIB.makeKey("DT-Text"))
 											],
 											propertyClasses: [
-												app.standards.get('propertyClass', { id: "PC-Name" }) as SpecifPropertyClass,
-												app.standards.get('propertyClass', { id: "PC-Description" }) as SpecifPropertyClass,
-												app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
-												app.standards.get('propertyClass', { id: "PC-Type" }) as SpecifPropertyClass
+												app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+												app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
+												app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
 											],
 											resourceClasses: [
-												app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
-												app.standards.get('resourceClass', { id: "RC-Folder" }) as SpecifResourceClass
+												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
+												app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 											],
-											statementClasses: [],
 											resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
-											statements: [],
 											hierarchies: NodeList(r2c,creL)
 										};
 										// use the update function to eliminate duplicate types:
@@ -1738,18 +1736,18 @@ class CProject {
 							id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
 							$schema: 'https://specif.de/v1.1/schema.json',
 							dataTypes: [
-								app.standards.get('dataType', { id: "DT-ShortString" }),
-								app.standards.get('dataType', { id: "DT-Text" })
+								app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+								app.standards.get('dataType', LIB.makeKey("DT-Text"))
 							],
 							propertyClasses: [
-								app.standards.get('propertyClass', { id: "PC-Name" }),
-								app.standards.get('propertyClass', { id: "PC-Description" }),
-								app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
-								app.standards.get('propertyClass', { id: "PC-Type" })
+								app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+								app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+								app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
+								app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
 							],
 							resourceClasses: [
-								app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
-								app.standards.get('resourceClass', { id: "RC-Folder" })
+								app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
+								app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 							],
 							resources: Folder(),
 							hierarchies: NodeList(resL)
@@ -1886,7 +1884,7 @@ class CProject {
 								}
 								else {
 									// create a new folder with the glossary entries:
-									let newD: any = {
+							/*		let newD: any = {
 										id: 'Create Glossary ' + new Date().toISOString(),
 										$schema: 'https://specif.de/v1.1/schema.json',
 										dataTypes: [
@@ -1903,15 +1901,36 @@ class CProject {
 											app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
 											app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 										],
-										statementClasses: [],
 										resources: Folders(),
-										statements: [],
 										hierarchies: NodeList(lastContentH)
-									};
+									}; */
+									let newD = Object.assign(
+										app.ontology.makeTemplate(),
+										{
+											id: 'Create Glossary ' + new Date().toISOString(),
+											dataTypes: [
+												app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+												app.standards.get('dataType', LIB.makeKey("DT-Text"))
+											],
+											propertyClasses: [
+												app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+												app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
+												app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
+											],
+											resourceClasses: [
+												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
+												app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
+											],
+											resources: Folders(),
+											hierarchies: NodeList(lastContentH)
+                                        }
+									) as SpecIF;
 //									console.debug('glossary',newD);
+
 									// use the update function to eliminate duplicate types;
 									// 'opts.addGlossary' must not be true to avoid an infinite loop:
-									self.adopt(newD as SpecIF, { noCheck: true })
+									self.adopt(newD, { noCheck: true })
 										.done(resolve)
 										.fail(reject);
 								}
@@ -2407,7 +2426,6 @@ class CProject {
 							storeAs(opts);
 							break;
 						case 'epub':
-							opts.v10 = true;
 						case 'oxml':
 							publish(opts);
 							break;

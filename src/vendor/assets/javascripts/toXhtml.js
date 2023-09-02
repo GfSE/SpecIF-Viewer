@@ -1,4 +1,4 @@
-function toXhtml( data, opts ) {
+function toXhtml( data, options ) {
 	"use strict";
 	// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
 	//
@@ -25,7 +25,31 @@ function toXhtml( data, opts ) {
 		return
 	};
 	
-	// Check for missing options:
+	let opts = Object.assign(
+		{
+			showEmptyProperties: false,
+			addIcon: true,
+			hasContent: hasContent,
+			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
+			titleProperties: ['dcterms:title'],
+			descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'],
+			stereotypeProperties: ['UML:Stereotype'],
+			titleLinkBegin: '\\[\\[',	// must escape javascript AND RegEx
+			titleLinkEnd: '\\]\\]',		// must escape javascript AND RegEx
+			titleLinkMinLength: 3,
+			RE: {
+				AmpersandPlus: new RegExp('&(.{0,8})', 'g'),
+				XMLEntity: new RegExp('&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', ''),
+
+			}
+		},
+		options
+	);
+	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength > 0;
+	if (opts.addTitleLinks)
+		opts.RE.TitleLink = new RegExp(opts.titleLinkBegin + '(.+?)' + opts.titleLinkEnd, 'g');
+
+/*	// Check for missing options:
 	if( typeof(opts)!='object' ) opts = {};
 
 	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
@@ -44,7 +68,7 @@ function toXhtml( data, opts ) {
 	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
 	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', '');
 	if( opts.titleLinkBegin && opts.titleLinkEnd )
-		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
+		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' ); */
 //	console.debug('toXhtml',data,opts);
 
 	const
@@ -53,9 +77,9 @@ function toXhtml( data, opts ) {
 	//	RE_tag = new RegExp( tagStr, 'g' ),
 		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' ),
 
-		dataTypeString = 'xs:string',
-		dataTypeXhtml = 'xhtml',
-		dataTypeEnumeration = 'xs:enumeration';
+	//	dataTypeXhtml = 'xhtml',
+	//	dataTypeEnumeration = 'xs:enumeration',
+		dataTypeString = 'xs:string';
 
 	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 	// Limitation: the innerHTML may not have any tags.
@@ -117,10 +141,10 @@ function toXhtml( data, opts ) {
 		if( a>-1 ) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
-			ti = stripHtml( itm.properties[a].value );
+			ti = stripHtml(itm.properties[a].values[0][0]['text']);
 		} else {
 			// In case of a statement, use the class' title by default:
-			ti = elTitleOf(itm);
+			ti = classTitleOf(itm);
 		};
 
 		ti = escapeXML(ti);
@@ -145,7 +169,7 @@ function toXhtml( data, opts ) {
 			if( Array.isArray( aL ) )
 				for( var a=0,A=aL.length;a<A;a++ ) {
 					// First, check the configured title properties:
-					if( opts.titleProperties.indexOf( prpTitleOf(aL[a]) )>-1 ) return a;
+					if( opts.titleProperties.includes( prpTitleOf(aL[a]) ) ) return a;
 				};
 			return -1
 		}
@@ -252,7 +276,7 @@ function toXhtml( data, opts ) {
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
-		let c1='', rows='', rt, hPi,
+		let c1='', rows='', rt,
 			descriptions=[], other=[];
 		
 		if( r.properties ) {
@@ -486,10 +510,43 @@ function toXhtml( data, opts ) {
 			return str
 		}
 		function propertyValuesOf( prp, hi ) {
-			if( !prp.value ) return '';
+//			if( !prp.values || prp.values.length<0 ) return '';
 			// return the value of a single property:
 //			console.debug('propertyValuesOf',prp,hi);
-			if(prp['class']) {
+			let pC = itemById(data.propertyClasses, prp['class']),
+				dT = itemById(data.dataTypes, pC.dataType);
+			if (dT.enumeration) {
+				let ct = '';
+				for (var v of prp.values) {
+					// multiple values in a comma-separated string;
+					// string values should have just a single language (already filtered during export):
+					switch (dT.type) {
+						case dataTypeString:
+							ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value[0]['text'];
+							break;
+						default:
+							ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value;
+					}
+				};
+				return escapeXML(ct);
+			};
+			// else
+			let ct = '';
+			switch (dT.type) {
+				case dataTypeString:
+					for (var v of prp.values) {
+						// string values should have just a single language (already filtered during export):
+						ct += titleLinks(fileRef(escapeInner(v[0]['text']), opts), hi, opts);
+					};
+					break;
+				default:
+					for (var v of prp.values) {
+						// multiple values in a comma-separated string:
+						ct += (ct.length == 0 ? '' : ', ') + escapeXML(v);
+					}
+			};
+			return ct;
+		/*	if(prp['class']) {
 				let pC = itemById(data.propertyClasses, prp['class']),
 					dT = itemById(data.dataTypes, pC.dataType);
 				switch( dT.type ) {
@@ -513,7 +570,7 @@ function toXhtml( data, opts ) {
 				}
 			};
 			// for all other dataTypes or when there no dataType:
-			return escapeXML( prp.value )					
+			return escapeXML( prp.value ) */			
 		}
 	}
 	function renderHierarchy( nd, hi, lvl ) {
@@ -596,7 +653,7 @@ function toXhtml( data, opts ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return prp.title || itemById(data.propertyClasses,prp['class']).title
 	}
-	function elTitleOf( el ) {
+	function classTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
 		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title

@@ -7,12 +7,9 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.q.1",
+    CONFIG.appVersion = "1.1.q.2",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
-    CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
-    CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
-    CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
     CONFIG.isOntology = (specifData:any) => {
         return (
@@ -21,7 +18,10 @@ const CONFIG:any = {};
             && specifData.title[0]['text'].includes("Ontology")
         );
     };
+    CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
+    CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
 
+    CONFIG.userNameAnonymous = 'Anonymous'; // as configured in the server
     CONFIG.passwordAnonymous = ''; // as configured in the server
     CONFIG.placeholder = 'to-be-replaced';
     CONFIG.notAssigned = 'notAssigned';

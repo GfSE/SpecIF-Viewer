@@ -44,20 +44,6 @@ function toOxml( data, options ) {
 		},
 		options
 	);
-/*	// Check for missing options:
-	if( typeof(opts)!='object' ) opts = {};
-
-//	if( !opts.colorAccent1 ) opts.colorAccent1 = '5B9BD5';   // original Office
-	if( !opts.colorAccent1 ) opts.colorAccent1 = 'CB0A1B';  // GfSE red-brown
-
-//	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
-	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
-	
-	if( typeof(opts.imageResolution)!='number' ) opts.imageResolution = 8; // 10 dots per mm = ~256 dpi
-	if( typeof(opts.marginLeft)!='number' ) opts.marginLeft = 25; // mm
-	if( typeof(opts.marginRight)!='number' ) opts.marginRight = 25; // mm
-	if( typeof(opts.marginTop)!='number' ) opts.marginTop = 25; // mm
-	if( typeof(opts.marginBottom)!='number' ) opts.marginBottom = 40; // mm */
 //	console.debug('toOxml',data,opts);
 
 	const startRID = 7,		// first relationship index for images
@@ -69,8 +55,8 @@ function toOxml( data, options ) {
 		twips = 56.692913385826,  // twips per mm
 
 		// SpecIF v1.0 dataTypes
-		dataTypeString = 'xs:string',
-		dataTypeEnumeration = 'xs:enumeration';
+	//	dataTypeEnumeration = 'xs:enumeration',
+		dataTypeString = 'xs:string';
 
 	// Create a local list of images, which can be used in OXML:
 	// - Take any raster image right away,
