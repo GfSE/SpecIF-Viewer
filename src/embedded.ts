@@ -119,13 +119,8 @@ function SpecifApp():IApp {
 					// as long as we don't have a user/identity management,
 					// set a default user role for this app;
 					// window.role has a value because this is executed as HTML with embedded SpecIF:
-					me.projectRoles = [
-						{
-							project: "any", // default
-							// @ts-ignore - defined in toHtml.ts
-							role: window.role || "Supplier"
-						} as SpecifProjectRole
-					];
+					// @ts-ignore - window.role is defined in toHtml.ts
+					me.projectRoles = [new CProjectRole("any", app.ontology.normalize("resourceClass", window.role || "ReqIF-WF:Supplier"))];
 
 					// data and type are valid, but it is necessary to indicate that the data is not zipped:
 					self.ioSpecif.init({ mediaTypeOf: LIB.attachment2mediaType });

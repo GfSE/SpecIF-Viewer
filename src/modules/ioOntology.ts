@@ -36,15 +36,18 @@ class COntology {
         ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyUri]
     ]);
 
-    private options: any;
-    private required: any;
+    private options: any;   // a temporary storage of options during method execution (reentrancy is not required at this point in time)
+    private required: any;  // when generating classes, a temporary list to remember referenced terms for subsequent generation
     private generated: any;
 
     constructor(dta: SpecIF) {
-        // 'dta' is a SpecIF data set with classes and instances defining an Ontology.The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
+        // 'dta' is a SpecIF data set with classes and instances defining an Ontology.
+        // The hierarchy root has a property of "dcterms:type" with value "W3C:Ontology".
+
+        // Store as is:
         this.data = dta;
 
-        // Filter all hierarchies having a property of "dcterms:type" with value "W3C:Ontology";
+        // Keep only the hierarchies having a property of "dcterms:type" with value "W3C:Ontology";
         // there is a side-effect on the data handed-in, but in case of the SpecIF Viewer/Editor, this isn't harmful.
         dta.hierarchies = dta.hierarchies.filter(
             (h: SpecifNode) => {
@@ -53,7 +56,7 @@ class COntology {
             }
         );
         if (dta.hierarchies.length < 1) {
-            message.show("No ontology found, so no classes will be generated.", { severity: 'warning' });
+            message.show("No ontology found.", { severity: 'warning' });
             return
         };
 

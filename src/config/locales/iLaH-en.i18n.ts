@@ -104,11 +104,11 @@ function LanguageTextsEn() {
 	self.LblOrganizations = 'Organization';  // until multiple orgs per user are supported
 	self.LblEmail = 'e-mail';
 	self.LblFileName = 'File name';
-	self.LblRoleGeneralAdmin = 'GENERAL-ADMIN';
+/*	self.LblRoleGeneralAdmin = 'GENERAL-ADMIN';
 	self.LblRoleProjectAdmin = 'PROJECT-ADMIN';
 	self.LblRoleUserAdmin = 'USER-ADMIN';
-	self.LblRoleReader = 'READER';
-//	self.LblRoleReqif = 'REQIF';
+	self.LblRoleReader = "SpecIF:Reader";
+//	self.LblRoleReqif = 'REQIF'; */
 	self.LblGlobalActions = 'Actions';
 	self.LblItemActions = 'Actions';
 	self.LblIdentifier = 'Identifier';
@@ -294,12 +294,7 @@ function LanguageTextsEn() {
 //	self.FnRemove =
 	self.FnDelete = self.IcoDelete;
 
-/*
-// SpecIF entity, relation and attribute names:
-	self.SpecIF_Customer = "Customer";
-	self.SpecIF_Supplier = "Supplier";
-
-*/
+//	self.SpecIF_Authorization = "Berechtigung";
 
 // Messages:
 	self.MsgIntro = 'Are you new here? Read a short <a href="' + CONFIG.QuickStartGuideEn + '" target="_blank" rel="noopener">introduction</a>, if you like.';

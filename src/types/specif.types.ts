@@ -251,29 +251,48 @@ interface SpecIF {
 }
 
 /**
- * Some interface and type definitions for user roles and permissions.
- * New for SpecIF v1.2
+ * Some interface for user roles and permissions.
+ * New with SpecIF v1.2
  */
-interface SpecifPermissionSet {
+
+/**
+ * A permission set defines the basic create, read, update and delete permission for an item.
+ * The auhority to change a *PermissionVector* or an *ItemPermission* is reserved to an 
+ * administrator role in the context of the application code.
+ */
+interface SpecifPermissionVector {
     C: boolean; // create item
     R: boolean; // read item
     U: boolean; // update item
     D: boolean; // delete item
 //    A: boolean; // administer item's permissions, so modify the other attributes of this 
 }
+
+/**
+ * An item permission defines a permission vector for an item, being either a project, a class or a node.
+ */
 interface SpecifItemPermissions {
-    item: SpecifId;  // the item reference, at this time any propertyClass, resourceClass or statementClass can be referenced
-    permissionSet: SpecifPermissionSet;
+    item: SpecifId;  // a reference to any project, propertyClass, resourceClass, statementClass or node
+    permissionVector: SpecifPermissionVector;
 }
+
+/**
+ * A role defined for a project has a collection of item permissions.
+ */
 interface SpecifRole {
     id: SpecifId;
-    title: string;
+    title: SpecifText;
     description?: SpecifMultiLanguageText;
     itemPermissions: Array<SpecifItemPermissions>;
 }
+
+/**
+ * A project role is given to a user based on group membership or other role information 
+ * provided by an identity and access management (IAM) system.
+ */
 interface SpecifProjectRole {
     project: SpecifId;  // the project reference, use 'any' as default value to cover all remaining projects
-    role: SpecifId;  // the id of the role
+    role: SpecifText;  // the title of the role, ideally an ontology term
 }
 interface Person {
     /**
@@ -301,6 +320,9 @@ interface Person {
      */
     email: string;
 }
+/**
+ * A user is a person with a collection of project roles
+ */
 interface SpecifUser extends Person {
     projectRoles: Array<SpecifProjectRole>
 }
@@ -382,10 +404,10 @@ interface SpecifDataType {
     replaces?: SpecifReplaces;
     /**
      * 
-     * @type {SpecifPermissionSet}
+     * @type {SpecifPermissionVector}
      * @memberof SpecifDataType
      */
-    permissionSet?: SpecifPermissionSet;
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {string}
@@ -692,10 +714,10 @@ interface SpecifNode {
     replaces?: SpecifReplaces;
     /**
      * 
-     * @type {SpecifPermissionSet}
+     * @type {SpecifPermissionVector}
      * @memberof SpecifNode
      */
-    permissionSet?: SpecifPermissionSet;
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifDateTime}
@@ -788,10 +810,10 @@ interface SpecifPropertyClass {
     multiple?: boolean;
     /**
      * 
-     * @type {SpecifPermissionSet}
+     * @type {SpecifPermissionVector}
      * @memberof SpecifPropertyClass
      */
-    permissionSet?: SpecifPermissionSet;
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifValues}
@@ -954,10 +976,10 @@ interface SpecifResourceClass {
     instantiation?: Array<SpecifInstantiation>;
     /**
      * 
-     * @type {SpecifPermissionSet}
+     * @type {SpecifPermissionVector}
      * @memberof SpecifResourceClass
      */
-    permissionSet?: SpecifPermissionSet;
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifKeys}
@@ -1140,10 +1162,10 @@ interface SpecifStatementClass {
     isUndirected?: boolean;
     /**
      * 
-     * @type {SpecifPermissionSet}
+     * @type {SpecifPermissionVector}
      * @memberof SpecifStatementClass
      */
-    permissionSet?: SpecifPermissionSet;
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifKeys}

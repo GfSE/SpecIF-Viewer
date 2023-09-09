@@ -40,17 +40,17 @@ class CPropertyToShow implements SpecifProperty {
 		// Get the propertyClass' permissions:
 		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.pC.id);
 		if (iPrm)
-			this.pC.permissionSet = iPrm.permissionSet
+			this.pC.permissionVector = iPrm.permissionVector
 		else {
 			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', rC.id);
 			if (iPrm)
-				this.pC.permissionSet = iPrm.permissionSet
+				this.pC.permissionVector = iPrm.permissionVector
 			else {
 				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
 				if (iPrm)
-					this.pC.permissionSet = iPrm.permissionSet
+					this.pC.permissionVector = iPrm.permissionVector
 				else
-					this.pC.permissionSet = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionSet
+					this.pC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
 			}
 		};
 
@@ -531,13 +531,13 @@ class CResourceToShow {
 		// Get the resourceClass' permissions:
 		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
 		if (iPrm)
-			this.rC.permissionSet = iPrm.permissionSet
+			this.rC.permissionVector = iPrm.permissionVector
 		else {
 			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
 			if (iPrm)
-				this.rC.permissionSet = iPrm.permissionSet
+				this.rC.permissionVector = iPrm.permissionVector
 			else
-				this.rC.permissionSet = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionSet
+				this.rC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
 		};
 
 		// Find out, whether there is at least one property with update permission,
@@ -548,22 +548,22 @@ class CResourceToShow {
 			// the permissions can be temporarily stored in pC, because it is a clone:
 			let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', pC.id);
 			if (iPrm)
-				pC.permissionSet = iPrm.permissionSet
+				pC.permissionVector = iPrm.permissionVector
 			else {
 				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
 				if (iPrm)
-					pC.permissionSet = iPrm.permissionSet
+					pC.permissionVector = iPrm.permissionVector
 				else {
 					iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
 					if (iPrm)
-						pC.permissionSet = iPrm.permissionSet
+						pC.permissionVector = iPrm.permissionVector
 					else
-						pC.permissionSet = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionSet
+						pC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
 				}
 			};
 
 			// this is what we want after all the analysis, before:
-			if (pC.permissionSet.U) {
+			if (pC.permissionVector.U) {
 				this.hasPropertyWithUpdatePermission = true;
 				break
 			}
@@ -1933,12 +1933,12 @@ moduleManager.construct({
 					// return true, if at least one property is editable:
 					console.debug('propU',selRes);
 					for (var pC of selPrj.cache.get( 'propertyClass', selRes.rC.propertyClasses )) {
-						if (pC.permissionSet.U ) return true   
+						if (pC.permissionVector.U ) return true   
 					};
 					return false
 				} */
 			// Relevant is whether at least one property is editable,
-			// res.pC.permissionSet.U is not of interest here.No hierarchy - related permission needed.
+			// res.pC.permissionVector.U is not of interest here.No hierarchy - related permission needed.
 			if ( selRes.hasPropertyWithUpdatePermission )
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
 				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
@@ -1956,7 +1956,7 @@ moduleManager.construct({
 			// The delete button is shown, if the selected resource (=hierarchy entry) can be deleted.
 			// - Glossary items shall not be deleted; they are usually not userInstantiated.
 			// - The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-			if (selRes.rC.permissionSet.D && selRes.isUserInstantiated())
+			if (selRes.rC.permissionVector.D && selRes.isUserInstantiated())
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.del) */ && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
@@ -1986,17 +1986,17 @@ moduleManager.construct({
 						// Respect the current user's privileges:
 						let iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', rC.id);
 						if (iPrm)
-							rC.permissionSet = iPrm.permissionSet
+							rC.permissionVector = iPrm.permissionVector
 						else {
 							iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', selPrj.id);
 							if (iPrm)
-								rC.permissionSet = iPrm.permissionSet
+								rC.permissionVector = iPrm.permissionVector
 							else
-								rC.permissionSet = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionSet
+								rC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
 						};
 
 //						console.debug('objectList.getPermissionsPrj',rC,rC.instantiation, rC.permissions);
-						if (rC.permissionSet.C && (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User)))
+						if (rC.permissionVector.C && (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User)))
 							self.resCreClasses.push(rC.id);
 					}
 				);

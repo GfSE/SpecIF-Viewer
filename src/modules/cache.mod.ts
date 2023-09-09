@@ -329,11 +329,10 @@ class CItem {
 }
 class CItemPermissions implements SpecifItemPermissions {
 	item: SpecifId;  // the item reference
-	permissionSet: SpecifPermissionSet;
+	permissionVector: SpecifPermissionVector;
 	constructor(iId: SpecifId, prm: string) {
 		this.item = iId;
-		this.permissionSet = {
-			//            A: prm.includes('A'),
+		this.permissionVector = {
 			C: prm.includes('C'),
 			R: prm.includes('R'),
 			U: prm.includes('U'),
@@ -343,10 +342,10 @@ class CItemPermissions implements SpecifItemPermissions {
 }
 class CRole implements SpecifRole {
 	id: SpecifId;
-	title: string;
+	title: SpecifText;
 	description?: SpecifMultiLanguageText;
 	itemPermissions: SpecifItemPermissions[] = [];
-	constructor(roleName: string) {
+	constructor(roleName: SpecifText) {
 		this.id = roleName.toSpecifId();
 		this.title = roleName;
 	}
@@ -363,6 +362,14 @@ class CRole implements SpecifRole {
 		if (idx > -1)
 			this.itemPermissions.splice(idx, 1)
 		return this  // make it chainable
+	}
+}
+class CProjectRole implements SpecifProjectRole {
+	project: SpecifId = '';
+	role: SpecifText = '';
+	constructor(prj: SpecifId, roleName: SpecifText) {
+		this.project = prj;
+		this.role = roleName;  // the title of the role, ideally an ontology term
 	}
 }
 interface IExportParams {
@@ -474,11 +481,11 @@ class CProject {
 					.setItemPermissions(spD.id, 'A')
 			); */
 			this.roles.push(
-				new CRole('Reader')
+				new CRole("SpecIF:Reader")
 					.setItemPermissions(spD.id, 'R')
 			);
 			this.roles.push(
-				new CRole('Supplier')
+				new CRole("ReqIF-WF.Supplier")
 					.setItemPermissions(spD.id, 'R')
 					//		.setItemPermissions("PC-CustomerStatus", 'RU')
 					//		.setItemPermissions("PC-CustomerComment", 'RU')
@@ -486,19 +493,19 @@ class CProject {
 					.setItemPermissions("PC-SupplierComment", 'RU')
 			);
 			this.roles.push(
-				new CRole('Customer')
+				new CRole("ReqIF-WF.Customer")
 					.setItemPermissions(spD.id, 'CRUD')
 					.setItemPermissions("PC-SupplierStatus", 'R')
 					.setItemPermissions("PC-SupplierComment", 'R')
 			);
 			this.roles.push(
-				new CRole('Editor')
+				new CRole("SpecIF:Editor")
 					.setItemPermissions(spD.id, 'CRUD')
 			)
 		};
 
 		// find the itemPermissions of the current user for this project:
-		let role = LIB.itemById(this.roles, app.me.myRole(spD.id));
+		let role = LIB.itemByTitle(this.roles, app.me.myRole(spD.id));
 		if (role) this.myItemPermissions = role.itemPermissions;
 	};
 	private getMeta(): CSpecIF {
@@ -2223,7 +2230,7 @@ class CProject {
 						// a radio button for each of the roles of the selected project:
 						this.roles.map(
 							(r,i) => {
-								return { title: i18n.lookup('MsgForRole')+" '"+r.id+"'", id: r.id, checked: i<1 }
+								return { title: i18n.lookup('MsgForRole') + " '" + app.ontology.localize(r.title, { targetLanguage: browser.language })+"'", id: r.title, checked: i<1 }
                             }
 						)
 					)
@@ -2357,11 +2364,11 @@ class CProject {
 						switch (options.format) {
 							case 'html':
 								if (app.title == i18n.LblEditor) {
-									options.role = radioValue(app.ontology.localize('SpecIF:Permissions', { targetLanguage: browser.language }))
+									options.role = radioValue(app.ontology.localize("SpecIF:Permissions", { targetLanguage: browser.language }))
 								}
 								else
 									// in case this is an HTML to create an HTML, adopt the same role:
-									options.role = window.role || 'Supplier';
+									options.role = window.role || "SpecIF:Supplier";
 								break;
 							default:
 								checkboxValues(i18n.LblOptions).forEach(
@@ -2384,8 +2391,8 @@ class CProject {
 			]
 		})
 		.open();
+		return;
 
-		// ---
 		function handleError(xhr: xhrMessage): void {
 			self.exporting = false;
 			app.busy.reset();
@@ -2574,9 +2581,9 @@ class CProject {
 							.then(
 								(dta) =>{
 									let blob = new Blob([dta], { type: "text/html; charset=utf-8" });
-									// Add the role to the filename except for 'Reader' (default):
+									// Add the role to the filename except for "SpecIF:Reader" (default):
 									// @ts-ignore - saveAs() is loaded at runtime
-									saveAs(blob, fName + (opts.role=='Reader'? '':'.'+opts.role)+'.specif.html');
+									saveAs(blob, fName + (opts.role == "SpecIF:Reader" ? '' : '.' + app.ontology.localize(opts.role, { targetLanguage: browser.language }))+'.specif.html');
 									self.exporting = false;
 									resolve();
 								},

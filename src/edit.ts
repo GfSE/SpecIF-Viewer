@@ -150,21 +150,10 @@ function SpecifApp():IApp {
 	self.login = function () {
 		console.info(self.title + " " + CONFIG.appVersion + " started!");
 		self.me.login()
-		.then(
-			(me: IMe) => {
-				// as long as we don't have a user/identity management,
-				// set a default user role for this app:
-				me.projectRoles = [
-					{
-						project: "any", // default
-						role: "Editor"
-					} as SpecifProjectRole
-				];
-
-				self.show()
-			},
-			self.logout
-		)
+			.then(
+				self.show,
+				self.logout
+			)
 	};
 	self.show = function() {
 		var uP = getUrlParams(), v:string;

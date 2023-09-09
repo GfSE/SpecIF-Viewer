@@ -611,6 +611,7 @@ class CSpecIF implements SpecIF {
 			// hierarchyClasses (used up until v0.10.6) are stored as resourceClasses,
 			// later on, the hierarchy-roots will be stored as resources referenced by a node:
 			var oE = aC2int(iE);
+			oE.title = makeTitle('resourceClass', iE.title);
 			oE.isHeading = true;
 //			console.debug('hierarchyClass 2int',iE,oE);
 			return oE
@@ -650,7 +651,10 @@ class CSpecIF implements SpecIF {
 					changedAt: iE.changedAt
 				//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 				};
-			if (iE.alternativeIds) oE.alternativeIds = iE.alternativeIds;
+			if (iE.alternativeIds)
+				oE.alternativeIds = iE.alternativeIds.map(
+					(a) => { return a.id ? a : LIB.makeKey(a) }
+				);
 			if (iE.changedBy) oE.changedBy = iE.changedBy;
 
 			// revision is a number up until v0.10.6 and a string thereafter:
