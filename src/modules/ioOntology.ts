@@ -121,7 +121,7 @@ class COntology {
                 .map(
                     (r) => {
                         // extract the term from the resource defining it:
-                        return LIB.valuesByTitle(r, [CONFIG.propClassTerm], this.data)[0]
+                        return this.valueByTitle(r, CONFIG.propClassTerm);
                     }
                 )
         };

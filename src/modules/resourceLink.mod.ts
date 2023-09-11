@@ -98,16 +98,28 @@ moduleManager.construct({
 				},
 				LIB.stdError
 			);
-			
+
 			// 3. collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
-			LIB.iterateNodes( cData.hierarchies, 
+			LIB.iterateNodes(
+				// iterate all hierarchies except the one for unreferenced resources:
+				cData.hierarchies.filter(
+					(h: SpecifNode) => {
+						let r = LIB.itemByKey(cData.resources, h.resource),
+							// Return the value of the property with title ti:
+							pVL = LIB.valuesByTitle(r, ["dcterms:type"], cData),
+							pV = pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined;
+						return pV && pV != CONFIG.resClassUnreferencedResources
+					}
+				),
 				(nd:SpecifNode)=>{
-					LIB.cacheE( self.allResources, nd.resource );
-					// self.allResources contains the resource ids
+					// collect the identifiers of referenced resources in self.allResources:
+					LIB.cacheE(self.allResources, nd.resource);
 					return true // iterate the whole tree
 				}
 			);
+
+			// 4. Using the ids in self.allResources, get the full resources:
 			app.projects.selected.readItems( 'resource', self.allResources )
 			.then( 
 				(list:SpecifItem[])=>{
@@ -117,8 +129,8 @@ moduleManager.construct({
 						list, 
 						(el: SpecifResource)=>{ return cData.instanceTitleOf(el,opts) }
 					);
+					// replace ids by full resources
 					self.allResources = list;
-					// now self.allResources contains the full resources
 					chooseResourceToLink()
 				}, 
 				LIB.stdError
@@ -157,10 +169,11 @@ moduleManager.construct({
 								+ makeTextField(i18n.TabFilter, '', { typ: 'line', handle: myFullName + '.filterClicked()' })
 								+ '</div></div>'
 								+ '<div class="col-sm-12 col-md-6" style="padding: 0 4px 0 4px"><div class="panel panel-default panel-options" style="margin-bottom:0">'
+								// add just the container; the candidate list will be added by filterClicked():
 								+ '<div id="resCandidates" style="max-height:' + ($('#app').outerHeight(true) - 220) + 'px; overflow:auto" >'
-								+ '</div>'
-								+ '</div></div>';
-							return $( form ) 
+								+ '</div></div>'
+								+ '</div>';
+							return $( form )
 						},
 						buttons: [{
 							label: i18n.BtnCancel,

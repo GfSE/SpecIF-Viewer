@@ -100,7 +100,7 @@ function SpecifApp():IApp {
 				selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 			}, {
 				name: CONFIG.resourceEdit,
-				requires: [CONFIG.specifications]	// load not before the specified modules are ready
+				requires: [CONFIG.specifications]	// load as soon as the specified modules are ready
 				// no loadAs, so name will be used for the controller object
 				// no view; just a modal dialog will be used
 				// no selector
