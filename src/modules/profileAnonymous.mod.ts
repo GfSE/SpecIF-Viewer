@@ -17,7 +17,7 @@
 interface IMe extends IModule {
 	userName: string;
 	administrator: boolean;
-	projectRoles: SpecifProjectRole[];
+	roles: SpecifRoleAssignment[];
 	login(): Promise<IMe>;
 	logout(): void;
 	myRole(prj: SpecifId): string;
@@ -39,7 +39,7 @@ moduleManager.construct({
 		self.userPassword = CONFIG.passwordAnonymous;
 		self.administrator = false; 	// current user is global admin?
 		// list with projects and roles of the current user:
-		self.projectRoles = [new CProjectRole("any", app.title == i18n.LblEditor ? "SpecIF:Editor" : "SpecIF:Reader")];
+		self.roles = [new CRoleAssignment("any", app.title == i18n.LblEditor ? "SpecIF:Editor" : "SpecIF:Reader")];
 	};
 	self.login = function():Promise<IMe> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
@@ -63,11 +63,11 @@ moduleManager.construct({
 	};
 	self.myRole = function(prj: SpecifId): SpecifText {
 		// first look for the specified project:
-		let pR = LIB.itemBy(self.projectRoles, 'project', prj);
+		let pR = LIB.itemBy(self.roles, 'project', prj);
 		if (pR) return pR.role;
 
 		// finally look for a default:
-		pR = LIB.itemBy(self.projectRoles, 'project', 'any');
+		pR = LIB.itemBy(self.roles, 'project', 'any');
 		if (pR) return pR.role;
 		throw Error('User profile of ' + self.userName + ' has no role.');
 	};
@@ -86,7 +86,7 @@ moduleManager.construct({
 		-- originally: --
 		return server.me().read()
 		.done( function(rsp) {
-			self.projectRoles = rsp.projectRoles;
+			self.roles = rsp.roles;
 			self.loggedin = true;
 		})
 		.fail(function(xhr) {

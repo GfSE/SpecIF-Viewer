@@ -93,8 +93,8 @@ moduleManager.construct({
 
 		// Language options have been selected at project level:
 		opts.targetLanguage = prj.language;
-	//	opts.lookupTitles = true;
-	//	opts.lookupValues = true;
+		opts.lookupTitles =
+		opts.lookupValues = true;
 
 		self.list = [];
 
@@ -125,14 +125,14 @@ moduleManager.construct({
 			function addResourceClassReport() {
 				// Add a report with a counter per resourceClass:
 				var rCR: Report = {
-						title: i18n.LblResourceClasses,
+						title: app.ontology.localize("SpecIF:Resource", { targetLanguage: browser.language, plural: true }),
 						category: FilterCategory.resourceClass,
 						pid: prj.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.resourceClasses.forEach( ( rC:SpecifResourceClass ) =>{
+				cData.get("resourceClass", prj.resourceClasses).forEach( ( rC:SpecifResourceClass ) =>{
 					// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
 					if ( !CONFIG.excludedFromTypeFiltering.includes(rC.title)
 						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
@@ -148,19 +148,19 @@ moduleManager.construct({
 			}
 		addResourceClassReport();  // must be on the first position
 
-	/*		function addStatementClassReport() {
+			function addStatementClassReport() {
 				// Add a report with a counter per statementClass:
-				var sCR = {
-						title: i18n.LblStatementClasses,
-						category: 'statementClass',
+				var sCR: Report = {
+						title: app.ontology.localize("SpecIF:Statement", { targetLanguage: browser.language, plural: true }),
+						category: FilterCategory.statementClass,
 						pid: prj.id,
 						scaleMin: 0,
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.statementClasses.forEach( ( sC ) =>{
-					// Add a counter for each resourceClass
-					if( CONFIG.excludedFromTypeFiltering.indexOf(sC.title)<0 )
+				cData.get("statementClass", prj.statementClasses).forEach((sC: SpecifStatementClass ) =>{
+					// Add a counter for each statementClass
+					if( !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.Auto) || sC.instantiation.includes(SpecifInstantiation.User) )
 						sCR.datasets.push({
 							label: LIB.titleOf(sC,opts),
 							id: sC.id,
@@ -170,7 +170,7 @@ moduleManager.construct({
 				});
 				self.list.push(sCR)
 			}
-		addStatementClassReport();  */
+		addStatementClassReport();  // must be on the second position
 					
 			function addEnumeratedValueReports() {
 				function possibleValues(dt: SpecifDataType) {
@@ -224,6 +224,10 @@ moduleManager.construct({
 			}
 		addBooleanValueReports();  */
 
+			function incVal(rep: Report, j: number): void {
+				rep.datasets[j].count++;
+				rep.scaleMax = Math.max(rep.scaleMax, rep.datasets[j].count)
+			}
 			function evalResource( res:SpecifResource ): void {
 //				console.debug( 'evalResource', self.list, res );
 					function findEnumPanel(rL: Report[], rC: SpecifKey,pC:SpecifKey) {
@@ -234,10 +238,6 @@ moduleManager.construct({
 									return i;
 						};
 						return -1;
-					}
-					function incVal(rep: Report, j: number): void {
-						rep.datasets[j].count++;
-						rep.scaleMax = Math.max(rep.scaleMax, rep.datasets[j].count)
 					}
 
 				// a) The histogram of resource classes; it is the first report panel:
@@ -280,44 +280,72 @@ moduleManager.construct({
 							}
 						}
 					//	else throw Error("Did not find a report panel for enumValue with id:" + rCk.id);
-					};
+					}
 				})
+			}
+			function evalStatement(st: SpecifStatement): void {
+				let sCk = st['class'],
+					j = LIB.indexById(self.list[1].datasets, sCk.id);
+				if (j > -1) incVal(self.list[1], j)
+				else throw Error("Did not find a report panel for resourceClass with id:" + sCk.id);
 			}
 
 //		console.debug('report panels', self.list);
-		// we must go through the tree because not all resources may be cached,
-		// but we must avoid to evaluate every resource more than once:
-		let pend = 0, visitedR: SpecifKeys = [];
-		self.parent.tree.iterate((nd: jqTreeNode) => {
-			if( visitedR.includes(nd.ref) ) return; 
-			// not yet evaluated:
-			pend++;
-			visitedR.push(nd.ref); // memorize all resources already evaluated
-			// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
-			prj.readItems( 'resource', [nd.ref], {reload:false,timelag:10} )	
-			.then(
-				(resL) => {
-					evalResource(resL[0] as SpecifResource);
-					if( --pend<1 ) {  // all done:
-						self.list = removeEmptyReports( self.list );
-//						console.debug('self-list',self.list);
-						if( self.list.length>0 )
-							$(self.view).html( renderReports( self.list ) )
-						else
-							showNotice(i18n.MsgNoReports);
-						app.busy.reset()
-					}
-				},
-				handleError
-			);
-		//	prj.readStatementsOf( nd.ref )
-		//		.done(function(rsp) {
-		//		})
-		//		.fail( handleError ); 
-			return true // continue iterating
-		});
+		// we must go through the tree because we want to consider only resources referenced by the selected project,
+		// ... and we must avoid to evaluate any resource more than once:
+		let pend = 0,
+			visitedR: SpecifId[] = [],
+			hL = (cData.get("hierarchy", prj.hierarchies) as SpecifNodes )
+					.filter(
+						(h: SpecifNode) => {
+							return LIB.typeOf(h.resource,cData) != CONFIG.resClassUnreferencedResources
+						}
+					);
+
+		LIB.iterateNodes(
+			// iterate all hierarchies except the one for unreferenced resources:
+			hL,
+			(nd: SpecifNode) => {
+				if( visitedR.includes(nd.resource.id) ) return; 
+
+				// else not yet evaluated:
+				visitedR.push(nd.resource.id); // memorize all evaluated resources
+
+				pend++;
+				// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:
+				prj.readItems( 'resource', [nd.resource], {reload:false,timelag:10} )	
+				.then(
+					(resL) => {
+						evalResource(resL[0] as SpecifResource);
+						if (--pend < 1) { finalize() }   // all done
+					},
+					handleError
+				);
+				pend++;
+				prj.readStatementsOf(nd.resource, {asSubject:true} )
+				.then(
+					(staL) => {
+						console.debug('staL', staL);
+						for( var sta of staL )
+							evalStatement(sta as SpecifStatement);
+						if (--pend < 1) { finalize() }   // all done
+					},
+					handleError
+				);
+				return true // continue iterating
+			}
+		);
 		return;
 
+		function finalize() {
+			self.list = removeEmptyReports(self.list);
+			//						console.debug('self-list',self.list);
+			if (self.list.length > 0)
+				$(self.view).html(renderReports(self.list))
+			else
+				showNotice(i18n.MsgNoReports);
+			app.busy.reset()
+        }
 		function removeEmptyReports(rL: Report[]): Report[] {
 			return rL.filter( (r: Report) =>{
 				for (var s of r.datasets) {
@@ -335,7 +363,7 @@ moduleManager.construct({
 					+			'<table style="width:100%; font-size:90%">'
 					+				'<tbody>';
 				li.datasets.forEach( (ds:ReportDataset,s:number) =>{
-					lb = ds.count>0? '<a onclick="app.'+self.loadAs+'.facetClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
+					lb = (li.category != FilterCategory.statementClass && ds.count>0)? '<a onclick="app.'+self.loadAs+'.facetClicked('+i+','+s+')">'+ds.label+'</a>' : ds.label;
 					rs += 				'<tr>'
 						+					'<td style="width:35%; padding:0.2em; white-space: nowrap">'+lb+'</td>'
 						+					'<td style="width:15%; padding:0.2em" class="text-right">'+ds.count+'</td>'
@@ -358,7 +386,7 @@ moduleManager.construct({
 				L.forEach((p) => {
 					maxSets = Math.max(maxSets, p.datasets.length)
 				});
-				return (3 + maxSets * 1.8 + 'em')
+				return ((1.1 + maxSets) * 1.67 + 'em')
 			}
 			function barLength(rp: Report, ds: ReportDataset): string {
 				if (rp && ds) {
@@ -393,7 +421,9 @@ moduleManager.construct({
 				fL.push({ category: FilterCategory.resourceClass, selected: [rep.datasets[cX].id]});
 				break;
 		/*	case FilterCategory.statementClass:
-			// cannot filter by 'statement', yet  */
+				// cannot filter by 'statement', yet
+				// in fact, cannot get here, because the statement class name does not have a link
+				return; */
 			case FilterCategory.enumValue:
 				fL.push({ category: FilterCategory.resourceClass, selected: [rep.rCk.id] });  // rCk.id: resourceClass id
 				fL.push({ category: FilterCategory.enumValue, rCk: rep.rCk, pCk: rep.pCk, selected: [rep.datasets[cX].id]})

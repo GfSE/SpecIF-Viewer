@@ -1227,18 +1227,9 @@ function BPMN2Specif( xmlString, options ) {
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
-		},{
-			id: "SC-precedes",
-			title: "SpecIF:precedes",
-			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
-			instantiation: ['auto'],
-			propertyClasses: ["PC-Type"],
-			subjectClasses: [idResourceClassActor, idResourceClassEvent],
-			objectClasses: [idResourceClassActor, idResourceClassEvent],
-			changedAt: opts.fileDate
 	/*	},{
 			id: idStatementClassAccesses,
-			title: "SpecIF:accesses",
+			title: "ArchiMate:accesses",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
@@ -1263,7 +1254,16 @@ function BPMN2Specif( xmlString, options ) {
 			subjectClasses: [idResourceClassEvent],
 			objectClasses: [idResourceClassActor, idResourceClassEvent],
 			changedAt: opts.fileDate */
-		},{ 
+		}, {
+			id: "SC-precedes",
+			title: "SpecIF:precedes",
+			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
+			instantiation: ['auto'],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassActor, idResourceClassEvent],
+			changedAt: opts.fileDate
+		},{
 			id: "SC-refersTo",
 			title: "SpecIF:refersTo",
 			description: "A SpecIF:Comment, SpecIF:Note or SpecIF:Issue 'refers to' any other resource.",

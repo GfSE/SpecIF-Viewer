@@ -142,9 +142,7 @@ function LanguageTextsFr() {
 	self.LblDataTypeTitle = 'Nom de type de données';
 	self.LblSpecTypes = "Types";
 	self.LblSpecType = "Type";
-	self.LblResourceClasses = "Classes de ressource";
 	self.LblResourceClass = "Classe de ressource";
-	self.LblStatementClasses = "Classes d'affirmation";
 	self.LblStatementClass = "Classe d'affirmation";
 //	self.LblRelGroupTypes = "Types de groupe d'affirmations";
 //	self.LblRelGroupType = "Type de groupe d'affirmation";

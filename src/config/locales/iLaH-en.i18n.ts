@@ -142,9 +142,7 @@ function LanguageTextsEn() {
 	self.LblDataTypeTitle = 'Data-type Name';
 	self.LblSpecTypes = 'Types';
 	self.LblSpecType = "Type";
-	self.LblResourceClasses = 'Resource-classes';
 	self.LblResourceClass = 'Resource-class';
-	self.LblStatementClasses = 'Statement-classes';
 	self.LblStatementClass = 'Statement-class';
 //	self.LblRelGroupTypes = 'Relationgroup-Types';
 //	self.LblRelGroupType = 'Relationgroup-Type';

@@ -2205,7 +2205,7 @@ moduleManager.construct({
 				//	item: nd.ref.id
 			});
 
-		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges() })
+		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(), asSubject: true, asObject: true })
 			.then(
 				(sL: SpecifStatement[]) => {
 					// sL is the list of statements involving the selected resource.

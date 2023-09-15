@@ -124,9 +124,7 @@ class LanguageTextsDe {
 	LblDataTypeTitle = 'Datentyp-Name';
 	LblSpecTypes = 'Typen';
 	LblSpecType = 'Typ';
-	LblResourceClasses = 'Ressource-Klassen';
 	LblResourceClass = 'Ressource-Klasse';
-	LblStatementClasses = 'Aussage-Klassen';
 	LblStatementClass = 'Aussage-Klasse';
 //	LblRelGroupTypes = 'Aussagegruppen-Typen';
 //	LblRelGroupType = 'Aussagegruppen-Typ';

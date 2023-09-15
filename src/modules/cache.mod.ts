@@ -364,7 +364,7 @@ class CRole implements SpecifRole {
 		return this  // make it chainable
 	}
 }
-class CProjectRole implements SpecifProjectRole {
+class CRoleAssignment implements SpecifRoleAssignment {
 	project: SpecifId = '';
 	role: SpecifText = '';
 	constructor(prj: SpecifId, roleName: SpecifText) {
@@ -459,7 +459,7 @@ class CProject {
 			projectName: LIB.languageTextOf(this.title, { targetLanguage: this.language }),
 			fileName: LIB.languageTextOf(this.title, { targetLanguage: this.language })
 		};
-		// remember the hierarchies associated with this projects - the cache holds all;
+		// remember the classes and hierarchies associated with this project - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
 		["hierarchies", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
 			(list) => {
@@ -1688,7 +1688,7 @@ class CProject {
 					tim = new Date().toISOString(),
 
 					// Get the hierarchies without the folder listing the unreferenced resources:
-					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[])
+					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNodes)
 						.filter(
 							(nd: SpecifNode) => {
 								// Find the referenced resource:
@@ -1827,7 +1827,7 @@ class CProject {
 					apx = simpleHash(self.id),
 					tim = new Date().toISOString(),
 					lastContentH: SpecifNode,
-					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[])
+					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNodes)
 						.filter(
 							(nd: SpecifNode) => {
 								// Find the referenced resource:
@@ -2122,14 +2122,14 @@ class CProject {
 		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
 		//   --> set 'showComments' to false
 		// - All comments referring to the selected resource shall be shown;
-		//   the resource is found in the cache, but the comment is not.
+		//   the resource must be listed in the hierarchy, but the comment is not.
 		//   --> set 'showComments' to true
 		// - It is assumed that the hierarchies contain only model-elements shown on a visible diagram,
 		//   so only stetements are returned for visible resources.
 		// - In addition, only statements are returned which are shown on a visible diagram.
 		//   (perhaps both checks are not necessary, as visible statements only referto visible resources ...)
 
-		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts) != 'object') opts = { asSubject: true, asObject: true };
 		let dta = this.cache,
 			sCL: SpecifStatementClass[],
 			showsL: SpecifStatement[];
@@ -2152,7 +2152,7 @@ class CProject {
 							// Query: The statements involving the selected resource as subject or object:
 							return this.readItems(
 								'statement',
-								(s: SpecifStatement) => { return res.id == s.subject.id || res.id == s.object.id }
+								(s: SpecifStatement) => { return opts.asSubject && res.id == s.subject.id || opts.asObject && res.id == s.object.id }
 							);
 						}
 					)
@@ -2167,7 +2167,7 @@ class CProject {
 											return (
 													// statement must be visible on a diagram referenced in a hierarchy
 													// or be a shows statement itself.
-													// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
+													// ToDo: - Some ArchiMate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
 													(opts.dontCheckStatementVisibility
 														// Accept manually created relations (including those imported via Excel):
 														|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
@@ -2203,6 +2203,9 @@ class CProject {
 			}
 		)
 	}
+
+// ====================== EXPORT ==========================================
+
 	// Select format and options with a modal dialog, then export the data:
 	private renderExportOptions(fmt: string) {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
@@ -2682,6 +2685,8 @@ class CProject {
 			}
 		});
 	}
+
+// =================================== MERGE ===========================================
 
 	// Equality Checks:
 	// equalDT, equalPC, equalRC and equalSC are now part of LIB

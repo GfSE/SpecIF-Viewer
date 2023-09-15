@@ -142,10 +142,8 @@ function LanguageTextsDe() {
 	self.LblDataTypeTitle = 'Datentyp-Name';
 	self.LblSpecTypes = 'Typen';
 	self.LblSpecType = 'Typ';
-	self.LblResourceClasses = 'Ressource-Klassen';
 	self.LblResourceClass = 'Ressource-Klasse';
-	self.LblStatementClasses = 'Relation-Klassen';
-	self.LblStatementClass = 'Relation-Klasse';
+	self.LblStatementClass = 'Aussage-Klasse';
 //	self.LblRelGroupTypes = 'Aussagegruppen-Typen';
 //	self.LblRelGroupType = 'Aussagegruppen-Typ';
 	self.LblSpecificationTypes = 'Gliederungs-Typen';

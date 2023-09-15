@@ -290,7 +290,7 @@ interface SpecifRole {
  * A project role is given to a user based on group membership or other role information 
  * provided by an identity and access management (IAM) system.
  */
-interface SpecifProjectRole {
+interface SpecifRoleAssignment {
     project: SpecifId;  // the project reference, use 'any' as default value to cover all remaining projects
     role: SpecifText;  // the title of the role, ideally an ontology term
 }
@@ -324,7 +324,7 @@ interface Person {
  * A user is a person with a collection of project roles
  */
 interface SpecifUser extends Person {
-    projectRoles: Array<SpecifProjectRole>
+    roles: Array<SpecifRoleAssignment>
 }
 
 /**

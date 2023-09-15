@@ -83,6 +83,7 @@
 enum FilterCategory {
 	textSearch = 'textSearch',
 	resourceClass = 'resourceClass',
+	statementClass = 'statementClass',
 	enumValue = 'enumValue'
 }
 enum SearchOption {
@@ -261,19 +262,27 @@ moduleManager.construct({
 		$('#hitlist').empty();
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
-		let pend = 0, h: CResourceToShow, hitCnt = 0;
-		self.parent.tree.iterate(
-			(nd: jqTreeNode) => {
+		let pend = 0,
+			hitCnt = 0;
+		LIB.iterateNodes(
+			// iterate all hierarchies except the one for unreferenced resources:
+			(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+				.filter(
+					(h: SpecifNode) => {
+						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+					}
+				),
+			(nd: SpecifNode) => {
 				pend++;
-//				console.debug('tree.iterate',pend,nd.ref);
+//				console.debug('doFilter',pend,nd.resource);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
 				// - A resource may be listed several times, if it appears several times in the hierarchies.
-				selPrj.readItems('resource', [nd.ref])
+				selPrj.readItems('resource', [nd.resource])
 					.then(
 						(rL) => {
-							h = match(new CResourceToShow(rL[0] as SpecifResource));
-//							console.debug('tree.iterate',self.filters,pend,rsp[0],h);
+							let h = match(new CResourceToShow(rL[0] as SpecifResource));
+//							console.debug('doFilter iterateNodes',self.filters,pend,rsp[0],h);
 							if (h) {
 								hitCnt++;
 								$('#hitlist').append(h.listEntry());
@@ -287,7 +296,7 @@ moduleManager.construct({
 					);
 				return true; // descend into deeper levels
 			}
-		);
+		)
 	}
 	function match(res: CResourceToShow): CResourceToShow {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.

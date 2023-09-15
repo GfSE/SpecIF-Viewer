@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.q.3",
+    CONFIG.appVersion = "1.1.q.4",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
@@ -166,7 +166,7 @@ const RE:any = {};
     RE.Email = /^[A-Z\d._%+-]+@[A-Z\d.-]+\.[A-Z]{2,4}$/i;
 
     // Reliably recognize an URI, not validate an URI:
-RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]*?)*(\?[^\s#]+?)?(#\S*?)?)($|\s|\.\s|:\s|\.<|:<|<|\.$)/gm;
+RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4})(\/[^\s\?#]*?)*(\?[^\s#]+?)?(#\S*?)?)(\s|,|:|<|\.\s|\.?$)/gm;
 //             $1: Begins with start of text or space or tag end
 //                     $2: complete link
 //                      $3: "http(s)://" or "www."
@@ -175,7 +175,7 @@ RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4
 //                                                                                     $6: 0..n subdirectories with or without trailing '/'
 //                                                                                                    $7: 0..1 query string
 //                                                                                                                 $8: 0..1 fragment=page anchor (hash)
-//                                                                                                                          $9: ends with space or .space or .end or end
+//                                                                                                                      $9: ends with certain characters or eol
 
     // text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
     const     chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // �������

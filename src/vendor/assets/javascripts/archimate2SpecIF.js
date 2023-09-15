@@ -1155,7 +1155,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-accesses",
-			title: "SpecIF:accesses",
+			title: "ArchiMate:accesses",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1197,7 +1197,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate */
 		},{ 
 			id: "SC-isSpecializationOf",
-			title: "SpecIF:isSpecializationOf",
+			title: "UML:isSpecializationOf",
 			description: "Statement: A state (data-object) is a specialization of a state",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1206,7 +1206,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-serves",
-			title: "SpecIF:serves",
+			title: "ArchiMate:serves",
 			description: "Statement: An element provides its functionality to another element.",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1224,7 +1224,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAssociatedWith",
-			title: "SpecIF:isAssociatedWith",
+			title: "UML:isAssociatedWith",
 			description: "Statement: Actor (Component,Function) is associated with an Actor (Component,Function).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],

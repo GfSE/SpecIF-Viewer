@@ -14,7 +14,8 @@ moduleManager.construct({
 	"use strict";
 
 	let myName = self.loadAs,
-		myFullName = 'app.'+myName,
+		myFullName = 'app.' + myName,
+		selPrj: CProject,
 		cData: CCache,			// the cached data
 		selRes:SpecifResource,	// the currently selected resource
 		opts:any;				// the processing options
@@ -48,14 +49,15 @@ moduleManager.construct({
 	self.show = ( options:any ):void =>{
 
 		self.clear();
-		cData = app.projects.selected.cache;
+		selPrj = app.projects.selected;
+		cData = selPrj.cache;
 		opts = Object.assign({}, options, {
 		//	lookupTitles: true,
 			targetLanguage: browser.language,
 			addIcon: true
 		});
 
-		app.projects.selected.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
+		selPrj.readItems( 'resource', [self.parent.tree.selectedNode.ref] )
 		.then( 
 			(rL:SpecifItem[])=>{
 				selRes = rL[0] as SpecifResource;
@@ -75,12 +77,12 @@ moduleManager.construct({
 //			console.debug('createStatement',opts);
 			let pend = 3;  // the number of parallel requests
 				
-			// 1. get the eligible statementClasses and all referenced resources in parallel and then create the desired statement:
+			// 1. Get the eligible statementClasses and all referenced resources in parallel and then create the desired statement:
 			self.eligibleSCL.length=0;
 			opts.eligibleStatementClasses.subjectClasses.concat(opts.eligibleStatementClasses.objectClasses).forEach(
 				(sCk:SpecifKey) => { LIB.cacheE(self.eligibleSCL, sCk) } // avoid duplicates
 			);
-			app.projects.selected.readItems('statementClass', self.eligibleSCL, { extendClasses: true } )
+			selPrj.readItems('statementClass', self.eligibleSCL, { extendClasses: true } )
 			.then( 
 				(list:SpecifItem[])=>{
 					self.eligibleSCL = list;  // now self.eligibleSCL contains the full statementClasses
@@ -89,8 +91,8 @@ moduleManager.construct({
 				LIB.stdError
 			);
 
-			// 2. collect all statements of the originally selected resource to exclude them from selection:
-			app.projects.selected.readStatementsOf( LIB.keyOf(selRes) )
+			// 2. Collect all statements of the originally selected resource to exclude them from selection:
+			selPrj.readStatementsOf( LIB.keyOf(selRes) )
 			.then(
 				(list:SpecifStatement[])=>{
 					self.selResStatements = list;
@@ -99,17 +101,14 @@ moduleManager.construct({
 				LIB.stdError
 			);
 
-			// 3. collect all referenced resources avoiding duplicates:
+			// 3. Collect all referenced resources avoiding duplicates:
 			self.allResources.length=0;
 			LIB.iterateNodes(
 				// iterate all hierarchies except the one for unreferenced resources:
-				cData.hierarchies.filter(
+				(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+				.filter(
 					(h: SpecifNode) => {
-						let r = LIB.itemByKey(cData.resources, h.resource),
-							// Return the value of the property with title ti:
-							pVL = LIB.valuesByTitle(r, ["dcterms:type"], cData),
-							pV = pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined;
-						return pV && pV != CONFIG.resClassUnreferencedResources
+						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
 					}
 				),
 				(nd:SpecifNode)=>{
@@ -120,7 +119,7 @@ moduleManager.construct({
 			);
 
 			// 4. Using the ids in self.allResources, get the full resources:
-			app.projects.selected.readItems( 'resource', self.allResources )
+			selPrj.readItems( 'resource', self.allResources )
 			.then( 
 				(list:SpecifItem[])=>{
 					
@@ -135,7 +134,7 @@ moduleManager.construct({
 				}, 
 				LIB.stdError
 			);
-			return
+			return;
 
 			function chooseResourceToLink():void {
 //				console.debug('sCL, rL',self.eligibleSCL, self.allResources, pend );
@@ -146,7 +145,7 @@ moduleManager.construct({
 							self.eligibleSCL,
 							(sC: SpecifStatementClass) => {
 								return {
-									title: LIB.titleOf(sC, { lookupTitles: true, targetLanguage: app.projects.selected.language }),
+									title: LIB.titleOf(sC, { lookupTitles: true, targetLanguage: selPrj.language }),
 									description: sC.description
 								}
 							}
@@ -326,7 +325,7 @@ moduleManager.construct({
 		if (self.selectedStatementClass.propertyClasses && self.selectedStatementClass.propertyClasses.length > 0) {
 			// show a dialog to edit the property values:
 		};
-		return app.projects.selected.createItems(
+		return selPrj.createItems(
 			'statement',
 			[sta]
 		);

@@ -1719,7 +1719,7 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
 }
 LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
     // Pick up the native title of any item except resource and statement;
-    // return either the target language or the target namespace accorting to the options:
+    // return either the target language or the target namespace according to the options:
     if( item )
         return (opts && opts.lookupTitles ?
             (opts.targetLanguage ?
@@ -1792,6 +1792,14 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPrope
     };
     return '';
 }
+LIB.typeOf = (rK: SpecifResource, dta: SpecIF): string => {
+    // Take the resource or look it up by key and return its type:
+    let r = rK["class"]? rK : LIB.itemByKey(dta.resources, rK),
+        // Return the value of the property with title "dcterms:type":
+        pVL = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
+    return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
+}
+
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 // also see: https://gist.github.com/iperelivskiy/4110988
