@@ -474,12 +474,9 @@ class CProject {
 		this.exp = true; */
 
 			function findPrp(ti: string): SpecifId | undefined {
-				console.debug('findPrp 1', ti, spD.propertyClasses);
-				//	console.debug('findPrp 2', self.cache.get("propertyClass", self.propertyClasses));
 				for (var pC of spD.propertyClasses) {
-					let pTi = app.ontology.normalize("propertyClass", pC.title);
-					console.debug('ti', ti, pC, pTi);
-					if (ti == pTi) return pC.id;
+					if (ti == app.ontology.normalize("propertyClass", pC.title))
+						return pC.id;
 				}
 			}
 
@@ -2363,8 +2360,7 @@ class CProject {
 						let options = {
 							projectName: this.exportParams.projectName,
 							fileName: this.exportParams.fileName,
-							format: radioValue(i18n.LblFormat),
-							role
+							format: radioValue(i18n.LblFormat)
 						};
 
 						// Retrieve further options:
