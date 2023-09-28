@@ -17,7 +17,7 @@
 interface IMe extends IModule {
 	userName: string;
 	administrator: boolean;
-	roles: SpecifRoleAssignment[];
+	roleAssignments: SpecifRoleAssignment[];
 	login(): Promise<IMe>;
 	logout(): void;
 	myRole(prj: SpecifId): string;
@@ -39,7 +39,7 @@ moduleManager.construct({
 		self.userPassword = CONFIG.passwordAnonymous;
 		self.administrator = false; 	// current user is global admin?
 		// list with projects and roles of the current user:
-		self.roles = [new CRoleAssignment("any", app.title == i18n.LblEditor ? "SpecIF:Editor" : "SpecIF:Reader")];
+		self.roleAssignments = [new CRoleAssignment("any", app.title == i18n.LblEditor ? "SpecIF:Editor" : "SpecIF:Reader")];
 	};
 	self.login = function():Promise<IMe> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
@@ -61,15 +61,15 @@ moduleManager.construct({
 			}
 		)
 	};
-	self.myRole = function(prj: SpecifId): SpecifText {
+	self.myRole = function(prjId: SpecifId): SpecifText {
 		// first look for the specified project:
-		let pR = LIB.itemBy(self.roles, 'project', prj);
-		if (pR) return pR.role;
+		let ra = LIB.itemBy(self.roleAssignments, 'project', prjId);
+		if (ra) return ra.role;
 
 		// finally look for a default:
-		pR = LIB.itemBy(self.roles, 'project', 'any');
-		if (pR) return pR.role;
-		throw Error('User profile of ' + self.userName + ' has no role.');
+		ra = LIB.itemBy(self.roleAssignments, 'project', 'any');
+		if (ra) return ra.role;
+		throw Error('User profile of ' + self.userName + ' has no role assignments.');
 	};
 /*	self.read = function (): Promise<IMe> {
 //		console.debug('me.read');
@@ -86,7 +86,7 @@ moduleManager.construct({
 		-- originally: --
 		return server.me().read()
 		.done( function(rsp) {
-			self.roles = rsp.roles;
+			self.roleAssignments = rsp.roleAssignments;
 			self.loggedin = true;
 		})
 		.fail(function(xhr) {

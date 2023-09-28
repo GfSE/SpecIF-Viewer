@@ -327,7 +327,7 @@ class CItem {
 		this.substitute = subsF;
 	}
 }
-class CItemPermissions implements SpecifItemPermissions {
+class CPermission implements SpecifPermission {
 	item: SpecifId;  // the item reference
 	permissionVector: SpecifPermissionVector;
 	constructor(iId: SpecifId, prm: string) {
@@ -340,29 +340,31 @@ class CItemPermissions implements SpecifItemPermissions {
 		}
 	}
 }
-class CRole implements SpecifRole {
+class CProjectRole implements SpecifProjectRole {
 	id: SpecifId;
 	title: SpecifText;
 	description?: SpecifMultiLanguageText;
-	itemPermissions: SpecifItemPermissions[] = [];
+	permissions: SpecifPermission[] = [];
 	constructor(roleName: SpecifText) {
-		this.id = roleName.toSpecifId();
+		this.id = roleName.toJsId();
 		this.title = roleName;
 	}
-	setItemPermissions(iId: SpecifId, prm: string) {
-		let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
-		if (idx > -1)
-			this.itemPermissions[idx] = new CItemPermissions(iId, prm)
-		else
-			this.itemPermissions.push(new CItemPermissions(iId, prm));
-		return this  // make it chainable
+	setPermissions(iId: SpecifId | undefined, prm: string) {
+		if (iId) {
+			let idx = LIB.indexBy(this.permissions, 'item', iId);
+			if (idx > -1)
+				this.permissions[idx] = new CPermission(iId, prm)
+			else
+				this.permissions.push(new CPermission(iId, prm));
+		};
+		return this;  // make it chainable
 	}
-	removeItemPermissions(iId: SpecifId) {
-		let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
+/*	removePermissions(iId: SpecifId) {
+		let idx = LIB.indexBy(this.permissions, 'item', iId);
 		if (idx > -1)
-			this.itemPermissions.splice(idx, 1)
+			this.permissions.splice(idx, 1)
 		return this  // make it chainable
-	}
+	} */
 }
 class CRoleAssignment implements SpecifRoleAssignment {
 	project: SpecifId = '';
@@ -397,9 +399,9 @@ class CProject {
 	createdBy?: SpecifCreatedBy;
 
 	// all project roles with permissions:
-	roles: SpecifRole[] = [];
+	roles: SpecifProjectRole[] = [];
 	// the permissions of the current user, selected at login by his/her role:
-	myItemPermissions: CItemPermissions[] = [];
+	myPermissions: CPermission[] = [];
 
 	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
 	// store all keys without revision, so that the referenced elements can be updated without breaking the link:
@@ -445,6 +447,7 @@ class CProject {
 	};
 	private setMeta(spD: SpecIF): void {
 		// store a project's individual data apart from the common cache:
+
 	//	this.context = spD.context;
 		this.id = spD.id;
 		this.title = spD.title;
@@ -470,43 +473,59 @@ class CProject {
 	/*	this.locked = app.title == i18n.LblReader; 
 		this.exp = true; */
 
+			function findPrp(ti: string): SpecifId | undefined {
+				console.debug('findPrp 1', ti, spD.propertyClasses);
+				//	console.debug('findPrp 2', self.cache.get("propertyClass", self.propertyClasses));
+				for (var pC of spD.propertyClasses) {
+					let pTi = app.ontology.normalize("propertyClass", pC.title);
+					console.debug('ti', ti, pC, pTi);
+					if (ti == pTi) return pC.id;
+				}
+			}
+
 		if (spD.roles) {
 			// In future, the roles and permissions may be imported with the project:
 			this.roles = spD.roles
 		}
 		else {
 			// ... but by default, they are created here:
+
 		/*	this.roles.push(
-				new CRole('Manager')
-					.setItemPermissions(spD.id, 'A')
+				new CProjectRole('Manager')
+					.setPermissions(spD.id, 'A')
 			); */
+
+			// Find supplier properties:
+			let supS = findPrp("ReqIF-WF.SupplierStatus"),
+				supC = findPrp("ReqIF-WF.SupplierComment");
+			console.debug('sup',supS,supC);
+			if (supS || supC) {
+				this.roles.push(
+					new CProjectRole("ReqIF-WF.Supplier")
+						.setPermissions(spD.id, 'R')
+						.setPermissions(supS, 'RU')
+						.setPermissions(supC, 'RU')
+				);
+				this.roles.push(
+					new CProjectRole("ReqIF-WF.Customer")
+						.setPermissions(spD.id, 'CRUD')
+						.setPermissions(supS, 'R')
+						.setPermissions(supC, 'R')
+				)
+			};
 			this.roles.push(
-				new CRole("SpecIF:Reader")
-					.setItemPermissions(spD.id, 'R')
+				new CProjectRole("SpecIF:Editor")
+					.setPermissions(spD.id, 'CRUD')
 			);
 			this.roles.push(
-				new CRole("ReqIF-WF.Supplier")
-					.setItemPermissions(spD.id, 'R')
-					//		.setItemPermissions("PC-CustomerStatus", 'RU')
-					//		.setItemPermissions("PC-CustomerComment", 'RU')
-					.setItemPermissions("PC-SupplierStatus", 'RU')
-					.setItemPermissions("PC-SupplierComment", 'RU')
-			);
-			this.roles.push(
-				new CRole("ReqIF-WF.Customer")
-					.setItemPermissions(spD.id, 'CRUD')
-					.setItemPermissions("PC-SupplierStatus", 'R')
-					.setItemPermissions("PC-SupplierComment", 'R')
-			);
-			this.roles.push(
-				new CRole("SpecIF:Editor")
-					.setItemPermissions(spD.id, 'CRUD')
+				new CProjectRole("SpecIF:Reader")
+					.setPermissions(spD.id, 'R')
 			)
 		};
 
-		// find the itemPermissions of the current user for this project:
+		// find the permissions of the current user for this project:
 		let role = LIB.itemByTitle(this.roles, app.me.myRole(spD.id));
-		if (role) this.myItemPermissions = role.itemPermissions;
+		if (role) this.myPermissions = role.permissions;
 	};
 	private getMeta(): CSpecIF {
 		// retrieve a project's individual data apart from the common cache;
@@ -616,7 +635,7 @@ class CProject {
 						exD.statements = sL as SpecifStatement[];
 //						console.debug('3', simpleClone(exD));
 
-						// In a second step get all statements relating a statement and a resource or statement.
+						// In a second step get all statements relating a statement to a resource or statement.
 						// As of today, there are only "shows" statements between a diagram resource (as subject) and a statement (as object),
 						// but the constraints allow a statement with any resource or statement as subject or object,
 						// so the general case is assumed.
@@ -624,7 +643,7 @@ class CProject {
 						return this.readItems('statement', flt, opts);
 
 						function flt(s: SpecifStatement) {
-							let L:any = exD.resources.concat(sL);
+							let L:any = (exD.resources as SpecifItem[]).concat(sL);
 							return LIB.indexByKey(L, s.subject) > -1 && LIB.indexByKey(sL, s.object) > -1
 								|| LIB.indexByKey(sL, s.subject) > -1 && LIB.indexByKey(L, s.object) > -1
 						}
@@ -1593,26 +1612,28 @@ class CProject {
 										LIB.sortBy(creL, (el: any) => { return el.r.title });
 
 										// 4. Create a new combined folder:
-										let newD: SpecIF = {
-											id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
-											$schema: 'https://specif.de/v1.1/schema.json',
-											dataTypes: [
-												app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-												app.standards.get('dataType', LIB.makeKey("DT-Text"))
-											],
-											propertyClasses: [
-												app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-												app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
-												app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-											],
-											resourceClasses: [
-												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
-												app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-											],
-											resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
-											hierarchies: NodeList(r2c,creL)
-										};
+										let newD = Object.assign(
+											app.ontology.makeTemplate(),
+											{
+												id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
+												dataTypes: [
+													app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+													app.standards.get('dataType', LIB.makeKey("DT-Text"))
+												],
+												propertyClasses: [
+													app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+													app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+													app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")),
+													app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
+												],
+												resourceClasses: [
+													app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")),
+													app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
+												],
+												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
+												hierarchies: NodeList(r2c,creL)
+											}
+										) as SpecIF;
 										// use the update function to eliminate duplicate types:
 										self.adopt(newD, {noCheck:true})
 										/*	.done(() => {
@@ -1739,30 +1760,32 @@ class CProject {
 							.catch(reject)
 					else {
 						// create a new folder:
-						let newD: any = {
-							id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
-							$schema: 'https://specif.de/v1.1/schema.json',
-							dataTypes: [
-								app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-								app.standards.get('dataType', LIB.makeKey("DT-Text"))
-							],
-							propertyClasses: [
-								app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-								app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-								app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
-								app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-							],
-							resourceClasses: [
-								app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
-								app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-							],
-							resources: Folder(),
-							hierarchies: NodeList(resL)
-						};
+						let newD = Object.assign(
+							app.ontology.makeTemplate(),
+							{
+								id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
+								dataTypes: [
+									app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+									app.standards.get('dataType', LIB.makeKey("DT-Text"))
+								],
+								propertyClasses: [
+									app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+									app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+									app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
+									app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
+								],
+								resourceClasses: [
+									app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
+									app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
+								],
+								resources: Folder(),
+								hierarchies: NodeList(resL)
+							}
+						) as SpecIF;
 //						console.debug('glossary',newD);
 						// use the update function to eliminate duplicate types;
 						// 'opts.addGlossary' must not be true to avoid an infinite loop:
-						self.adopt(newD as SpecIF, { noCheck: true })
+						self.adopt(newD, { noCheck: true })
 							.done(resolve)
 							.fail(reject);
                     }
@@ -1891,26 +1914,6 @@ class CProject {
 								}
 								else {
 									// create a new folder with the glossary entries:
-							/*		let newD: any = {
-										id: 'Create Glossary ' + new Date().toISOString(),
-										$schema: 'https://specif.de/v1.1/schema.json',
-										dataTypes: [
-											app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-											app.standards.get('dataType', LIB.makeKey("DT-Text"))
-										],
-										propertyClasses: [
-											app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-											app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-											app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
-											app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-										],
-										resourceClasses: [
-											app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
-											app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-										],
-										resources: Folders(),
-										hierarchies: NodeList(lastContentH)
-									}; */
 									let newD = Object.assign(
 										app.ontology.makeTemplate(),
 										{
@@ -1922,11 +1925,11 @@ class CProject {
 											propertyClasses: [
 												app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
 												app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
+												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")),
 												app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
 											],
 											resourceClasses: [
-												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
+												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")),
 												app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
 											],
 											resources: Folders(),
@@ -2360,7 +2363,8 @@ class CProject {
 						let options = {
 							projectName: this.exportParams.projectName,
 							fileName: this.exportParams.fileName,
-							format: radioValue(i18n.LblFormat)
+							format: radioValue(i18n.LblFormat),
+							role
 						};
 
 						// Retrieve further options:

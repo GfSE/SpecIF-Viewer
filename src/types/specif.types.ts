@@ -98,10 +98,10 @@ interface SpecifProject {
     createdBy?: SpecifCreatedBy;
     /**
      * 
-     * @type {Array<SpecifRole>}
+     * @type {Array<SpecifProjectRole>}
      * @memberof SpecifProject
      */
-    roles?: Array<SpecifRole>;
+    roles?: Array<SpecifProjectRole>;
     /**
      * 
      * @type {string}
@@ -190,10 +190,10 @@ interface SpecIF {
     createdBy?: SpecifCreatedBy;
     /**
      * 
-     * @type {Array<SpecifRole>}
+     * @type {Array<SpecifProjectRole>}
      * @memberof SpecifProject
      */
-    roles?: Array<SpecifRole>;
+    roles?: Array<SpecifProjectRole>;
     /**
      * 
      * @type {string}
@@ -256,8 +256,8 @@ interface SpecIF {
  */
 
 /**
- * A permission set defines the basic create, read, update and delete permission for an item.
- * The auhority to change a *PermissionVector* or an *ItemPermission* is reserved to an 
+ * A permissionvector defines the basic create, read, update and delete permission for an item.
+ * The auhority to change a *PermissionVector* or a *Permission* is reserved to an 
  * administrator role in the context of the application code.
  */
 interface SpecifPermissionVector {
@@ -271,7 +271,7 @@ interface SpecifPermissionVector {
 /**
  * An item permission defines a permission vector for an item, being either a project, a class or a node.
  */
-interface SpecifItemPermissions {
+interface SpecifPermission {
     item: SpecifId;  // a reference to any project, propertyClass, resourceClass, statementClass or node
     permissionVector: SpecifPermissionVector;
 }
@@ -279,11 +279,11 @@ interface SpecifItemPermissions {
 /**
  * A role defined for a project has a collection of item permissions.
  */
-interface SpecifRole {
+interface SpecifProjectRole {
     id: SpecifId;
     title: SpecifText;
     description?: SpecifMultiLanguageText;
-    itemPermissions: Array<SpecifItemPermissions>;
+    permissions: Array<SpecifPermission>;
 }
 
 /**
@@ -324,7 +324,7 @@ interface Person {
  * A user is a person with a collection of project roles
  */
 interface SpecifUser extends Person {
-    roles: Array<SpecifRoleAssignment>
+    roleAssignments: Array<SpecifRoleAssignment>
 }
 
 /**

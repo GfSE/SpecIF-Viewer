@@ -38,15 +38,15 @@ class CPropertyToShow implements SpecifProperty {
 		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
 
 		// Get the propertyClass' permissions:
-		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.pC.id);
+		let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.pC.id);
 		if (iPrm)
 			this.pC.permissionVector = iPrm.permissionVector
 		else {
-			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', rC.id);
+			iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', rC.id);
 			if (iPrm)
 				this.pC.permissionVector = iPrm.permissionVector
 			else {
-				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
+				iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.selPrj.id);
 				if (iPrm)
 					this.pC.permissionVector = iPrm.permissionVector
 				else
@@ -529,11 +529,11 @@ class CResourceToShow {
 		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this.rC) });
 
 		// Get the resourceClass' permissions:
-		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
+		let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.rC.id);
 		if (iPrm)
 			this.rC.permissionVector = iPrm.permissionVector
 		else {
-			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
+			iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.selPrj.id);
 			if (iPrm)
 				this.rC.permissionVector = iPrm.permissionVector
 			else
@@ -546,15 +546,15 @@ class CResourceToShow {
 		for (var pC of this.cData.get('propertyClass', this.rC.propertyClasses) as SpecifPropertyClass[]) {
 			// Get the propertyClass' permissions;
 			// the permissions can be temporarily stored in pC, because it is a clone:
-			let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', pC.id);
+			let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', pC.id);
 			if (iPrm)
 				pC.permissionVector = iPrm.permissionVector
 			else {
-				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
+				iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.rC.id);
 				if (iPrm)
 					pC.permissionVector = iPrm.permissionVector
 				else {
-					iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
+					iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.selPrj.id);
 					if (iPrm)
 						pC.permissionVector = iPrm.permissionVector
 					else
@@ -1984,11 +1984,11 @@ moduleManager.construct({
 						// store the type's id as it is invariant, when selPrj.cache.allClasses is updated
 
 						// Respect the current user's privileges:
-						let iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', rC.id);
+						let iPrm = LIB.itemBy(selPrj.myPermissions, 'item', rC.id);
 						if (iPrm)
 							rC.permissionVector = iPrm.permissionVector
 						else {
-							iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', selPrj.id);
+							iPrm = LIB.itemBy(selPrj.myPermissions, 'item', selPrj.id);
 							if (iPrm)
 								rC.permissionVector = iPrm.permissionVector
 							else
