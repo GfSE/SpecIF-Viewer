@@ -26,9 +26,7 @@ class CStandards {
 		// In addition we need some more dataTypes which are not covered by a propertyClass, yet:
 		["DT-Boolean", "DT-Integer", "DT-Real", "DT-DateTime", "DT-Duration", "DT-AnyURI"].forEach(
 			(id) => { LIB.cacheE(this.dataTypes, LIB.itemByKey( app.ontology.data.dataTypes, LIB.makeKey(id) )) }
-		//	(id) => { this.dataTypes.push(LIB.itemById(app.ontology.data.dataTypes, id)) }
 		);
-
 //		console.debug('CS',simpleClone(this));
 	};
 
@@ -132,6 +130,13 @@ class CStandards {
 		['statement', "statements"],
 		['hierarchy', "hierarchies"]
 	])
+	iterateLists(fn: Function): number {
+		// Perform the function fn for each list defined above:
+		for (var ctg of this.listName.keys())
+			fn(ctg, this.listName.get(ctg));
+		return this.listName.size;
+	}
+
 	titleLinkTargets(): string[] {
 		// (this is a function, because app.ontology is not yet ready when this file is loaded);
 		// Return the resource classes which can be targets of title-linking (in [[name]] ):
@@ -141,12 +146,6 @@ class CStandards {
 			.concat(app.ontology.termClasses)
     }
 
-	iterateLists(fn: Function): number {
-		// Perform the function fn for each list defined above:
-		for (var ctg of this.listName.keys())
-			fn(ctg, this.listName.get(ctg));
-		return this.listName.size;
-    }
 	get(ctg: string, key: SpecifKey, chAt?: string): SpecifItem {
 		// Get the element of the given category: 
 		// @ts-ignore - yes, the index can be undefined:
@@ -166,9 +165,8 @@ class CStandards {
 			item
 		];
 		return spD
-	} */
-
-/*	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
+	}
+	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
 		var item: SpecifItem = LIB.itemByTitle(this[this.listName.get(ctg)], ti);
 		if (item) {
 			// shield any subsequent change from the templates available here:
@@ -176,12 +174,6 @@ class CStandards {
 			if (chAt) item.changedAt = chAt;
 			return item;
 		};
-	}
-	listNameOf(ctg:string):string {
-		// Return the cache name for a given category:
-		if (this.listName.has(ctg))
-			return this.listName.get(ctg) as string;
-		throw Error("Invalid category '"+ctg+"'");
 	} */
 	addTo(ctg: string, key: SpecifKey, dta: SpecIF): void {
 		// Add an element (e.g. class) to it's list, if not yet defined:
@@ -355,14 +347,6 @@ CONFIG.descProperties = [
             'Object Text',
         //    'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
 ];
-/*
-CONFIG.multiLanguageProperties = [
-    CONFIG.propClassTitle,
-    CONFIG.propClassDesc,
-    "SpecIF:LocalTerm",
-    "SpecIF:LocalTermPlural"
-]
-    .concat(CONFIG.descProperties) */
 
 // those will get a larger edit field, just like the description properties:
 CONFIG.commentProperties = [

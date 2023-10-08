@@ -1537,8 +1537,8 @@ moduleManager.construct({
 			nd: jqTreeNode;
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
-		self.targetLanguage = opts.targetLanguage = self.selPrj.language;
-	//	opts.lookupTitles = true;
+		opts.targetLanguage = self.selPrj.language;
+		opts.lookupValues = true;
 				
 		// Initialize the tree, unless
 		// - URL parameters are specified where the project is equal to the loaded one
@@ -2177,7 +2177,7 @@ moduleManager.construct({
 
 		// Select the language options at project level:
 		if (typeof (opts) != 'object') opts = {};
-		opts.targetLanguage = self.targetLanguage = selPrj.language;
+		opts.targetLanguage = selPrj.language;
 		opts.lookupTitles = true;
 		//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:

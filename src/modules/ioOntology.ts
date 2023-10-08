@@ -108,7 +108,8 @@ class COntology {
     }
     getTerms(ctg: string): string[] {
         // Get the list of terms for a category such as 'statementClass'.
-        if (['resourceClass', 'statementClass', 'propertyClass', 'propertyValue'].includes(ctg)) {
+        let ctgL = ['resourceClass', 'statementClass', 'propertyClass', 'propertyValue'];
+        if (ctgL.includes(ctg)) {
             ctg = ctg.toLowerCase();
             return this.data.resources
                 .filter(
@@ -125,7 +126,7 @@ class COntology {
                     }
                 )
         };
-        throw Error("Programming Error: Category must be one of 'resourceClass', 'statementClass', 'propertyClass' or 'propertyValue'");
+        throw Error("Programming Error: Category must be one of "+ctgL.toString());
     }
     localize(term: string, opts: any): string {
         // Translate an ontology term to the selected local language:
@@ -134,11 +135,27 @@ class COntology {
             let rL = this.getTermResources('all', term);
             if (rL.length > 0) {
                 // return the name in the local language specifed:
-                let lnL = LIB.valuesByTitle(rL[0], [(opts.plural ? "SpecIF:LocalTermPlural" : "SpecIF:LocalTerm")], this.data);
+                let lnL = [];
+                if (opts.plural) {
+                    // look for plural from property:
+                    lnL = LIB.valuesByTitle(rL[0], ["SpecIF:LocalTermPlural"], this.data);
+                    if (lnL.length < 1) {
+                        // if not found, look for plural from a term related with 'isPluralOf':
+                        let stL = this.statementsByClass(rL[0], "SpecIF:isPluralOf", { asSubject: false, asObject: true });
+                        if (stL.length > 0) {
+                            let tR = LIB.itemByKey(this.data.resources, stL[0].subject);
+                            lnL = LIB.valuesByTitle(tR, ["SpecIF:LocalTerm"], this.data);
+                        }
+                    }
+                }
+                else {
+                    lnL = LIB.valuesByTitle(rL[0], ["SpecIF:LocalTerm"], this.data);
+                };
+
                 if (lnL.length > 0) {
                     let newT = LIB.languageTextOf(lnL[0], opts);
                     //    console.info('Local term assigned: ' + term + ' → ' + newT);
-                    return newT
+                    return newT;
                 }
             }
         };
@@ -162,17 +179,7 @@ class COntology {
                 rC = LIB.itemByKey(this.data.resourceClasses, r['class']);
                 if (this.termClasses.includes(LIB.titleOf(rC))) {
                     // look for local terms:
-                    let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm"], this.data);
-                    for (let v of tVL) {
-                        // check all values:
-                        for (var l of v) {
-                            // check all languages:
-                            if (l.text.toLowerCase() == name.toLowerCase()) return true
-                        }
-                    };
-
-                    // look for local terms in plural
-                    tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTermPlural"], this.data);
+                    let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm", "SpecIF:LocalTermPlural"], this.data);
                     for (let v of tVL) {
                         // check all values:
                         for (var l of v) {
@@ -253,13 +260,11 @@ class COntology {
         return str;
     }
     getIcon(ctg: string, term: string): string {
-        // Return an icon of a given a term:
+        // Return an icon of a given term:
 
         let rL = this.getTermResources(ctg, term);
         if (rL.length > 0) {
-            let r = rL[0],
-                icon = this.valueByTitle(r, "SpecIF:Icon");
-            return icon || ''
+            return this.valueByTitle(rL[0], "SpecIF:Icon") || ''
         };
         // else:
         return '';
@@ -650,7 +655,7 @@ class COntology {
             }
         ) as SpecifPropertyClass;
     }
-    private pCsOf(el: SpecifResource) {
+    private propertyClassesOf(el: SpecifResource) {
         // Return a list of propertyClasses which are related by "SpecIF:hasProperty"
         // to el (the term describing the resourceClass resp. statementClass to be generated):
 
@@ -665,7 +670,7 @@ class COntology {
         for (let p of pL) {
             let term = LIB.itemByKey(this.data.resources, p.object),
                 prep = this.makeIdAndTitle(term, "PC-"); // need the id only, here
-            //            console.debug('pCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
+            //            console.debug('propertyClassesOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             // an entry in the propertyClasses of the resourceClass resp statementClass to generate:
             LIB.cacheE(pCL, { id: prep.id });
             // Ascertain that all referenced propertyClasses will be available.
@@ -673,7 +678,7 @@ class COntology {
             // if they exist already due to correct selection, duplicates are avoided:
             LIB.cacheE(this.generated.pCL, this.createPC(term))
         };
-        //        console.debug('pCsOf', pL, pCL);
+        //        console.debug('propertyClassesOf', pL, pCL);
 
         return pCL
     }
@@ -691,11 +696,11 @@ class COntology {
                 isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
                 // the references per propertyClass:
-                propertyClasses: this.pCsOf(r)
+                propertyClasses: this.propertyClassesOf(r)
             }
         ) as SpecifResourceClass;
     }
-    private sCsOf(el: SpecifResource, cl: string) {
+    private statementClassesOf(el: SpecifResource, cl: string) {
         // Return a list of resourceClasses and/or statementClasses which are related 
         // to term el (the statementClass to be generated) by the given statementClass cl:
 
@@ -706,7 +711,7 @@ class COntology {
         for (let s of sL) {
             let term = LIB.itemByKey(this.data.resources, s.subject),
                 prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC); // need the id only, here
-            //            console.debug('sCsOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
+            //            console.debug('statementClassesOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             LIB.cacheE(iCL, { id: prep.id })
 
             if (this.options.includeEligibleSubjectClassesAndObjectClasses) {
@@ -726,7 +731,7 @@ class COntology {
                 }
             }
         };
-        //        console.debug('sCsOf', el, sL, iCL, this.required.sTL);
+        //        console.debug('statementClassesOf', el, sL, iCL, this.required.sTL);
 
         return iCL
     }
@@ -736,11 +741,11 @@ class COntology {
         let
             iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
             // In case of statementClasses a list of propertyClasses is optional and most often not used:
-            pCL = this.pCsOf(r),
+            pCL = this.propertyClassesOf(r),
             // The eligible subjectClasses:
-            sCL = this.sCsOf(r, "SpecIF:isEligibleAsSubject"),
+            sCL = this.statementClassesOf(r, "SpecIF:isEligibleAsSubject"),
             // The eligible objectClasses:
-            oCL = this.sCsOf(r, "SpecIF:isEligibleAsObject");
+            oCL = this.statementClassesOf(r, "SpecIF:isEligibleAsObject");
         //        console.debug('createSC', r, pCL, sCL, oCL);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
@@ -771,7 +776,7 @@ class COntology {
             if (sL.length > 1) {
                 console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
                 // see: https://stackoverflow.com/questions/31547315/is-it-an-antipattern-to-set-an-array-length-in-javascript
-                sL.length = 1
+                sL.length = 1;
             };
 
             if (sL.length > 0) {
@@ -823,9 +828,12 @@ class COntology {
             - A term should have a relation 'SpecIF:isNamespace' with a namespace amd *must* not have more than one.
             - A TermResourceClass must have at least one propertyClass, either self or inherited from an extended class
             - A TermResourceClass or TermStatementClass may not have >1 statements with title "SpecIF:isSpecializationOf"
-            - Chains of "isSpecializationOf" relations must not be circular.
-            - Chains of "isEligibleAsSubject" relations must not be circular.
-            - Chains of "isEligibleAsObject" relations must not be circular.
+            - Chains of "isSpecializationOf" relations must not be cyclic.
+            - Chains of "isEligibleAsSubject" relations must not be cyclic.
+            - Chains of "isEligibleAsObject" relations must not be cyclic.
+            - A term can be the plural of one or more other terms, but a term must not have more than one plural
+            - A term having a plural attribute should not have a term related by 'isPluralOf' ... and vice versa.
+            - A term which is the plural of another term must not have a plural itself.
             - ToDo: complete the list ...
         */
 

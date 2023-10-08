@@ -253,7 +253,7 @@ class CCache {
 				:
 					// it is a resource:
 					{
-					//	lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading,
+						lookupValues: opts.lookupValues && LIB.itemByKey(self.resourceClasses, el['class']).isHeading,
 						targetLanguage: opts.targetLanguage
 					};
 			let ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, resOpts);
@@ -487,15 +487,19 @@ class CProject {
 		else {
 			// ... but by default, they are created here:
 
-		/*	this.roles.push(
-				new CProjectRole('Manager')
-					.setPermissions(spD.id, 'A')
-			); */
+			this.roles.push(
+				new CProjectRole("SpecIF:Reader")
+					.setPermissions(spD.id, 'R')
+			);
+			this.roles.push(
+				new CProjectRole("SpecIF:Editor")
+					.setPermissions(spD.id, 'CRUD')
+			);
 
 			// Find supplier properties:
 			let supS = findPrp("ReqIF-WF.SupplierStatus"),
 				supC = findPrp("ReqIF-WF.SupplierComment");
-			console.debug('sup',supS,supC);
+//			console.debug('sup',supS,supC);
 			if (supS || supC) {
 				this.roles.push(
 					new CProjectRole("ReqIF-WF.Supplier")
@@ -510,14 +514,11 @@ class CProject {
 						.setPermissions(supC, 'R')
 				)
 			};
-			this.roles.push(
-				new CProjectRole("SpecIF:Editor")
-					.setPermissions(spD.id, 'CRUD')
-			);
-			this.roles.push(
-				new CProjectRole("SpecIF:Reader")
-					.setPermissions(spD.id, 'R')
-			)
+
+		/*	this.roles.push(
+				new CProjectRole('Manager')
+					.setPermissions(spD.id, 'A')
+			); */
 		};
 
 		// find the permissions of the current user for this project:
@@ -1064,6 +1065,7 @@ class CProject {
 		);
 	}
 	private readClassesWithParents(ctg: string, toGet: SpecifKeys) {
+		// Return a list with classes, the ancestors first and the requested class last.
 		// Applies to resourceClasses and statementClasses;
 		// classes are always cached, so there is no need for a call with promise.
 		let resL: SpecifItem[] = [];

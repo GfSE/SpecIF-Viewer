@@ -33,7 +33,6 @@
 
 /* Limitations:
  * - Works only, if a project does not use multiple revisions of a resourceClass and propertyClass
- * - PropertyClasses of extended classes are ignored.
  */
 interface ReportDataset {
 	label: string,
@@ -85,16 +84,21 @@ moduleManager.construct({
 	}
 
 	// standard module entry:
-	self.show = function(opts:any) {
+	self.show = function(options:any) {
 //		console.debug('reports.show');
 		prj = app.projects.selected;
 		cData = prj.cache;
 		self.parent.showLeft.reset();  // no panel to the left
 
 		// Language options have been selected at project level:
-		opts.targetLanguage = prj.language;
-		opts.lookupTitles =
-		opts.lookupValues = true;
+		let opts = Object.assign(
+			{
+				targetLanguage: prj.language,
+				lookupTitles: true,
+				lookupValues: true
+			},
+			options
+		);
 
 		self.list = [];
 
@@ -132,18 +136,23 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.get("resourceClass", prj.resourceClasses).forEach( ( rC:SpecifResourceClass ) =>{
-					// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
-					if ( !CONFIG.excludedFromTypeFiltering.includes(rC.title)
-						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
-						rCR.datasets.push({
-							label: LIB.titleOf(rC, opts),
-							id: rC.id,
-							count: 0,
-							color: CONFIG.focusColor
-						})
+				cData.get("resourceClass", prj.resourceClasses)
+				.forEach(
+					(rC) => {
+						// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
+						// @ts-ignore - here, rC is a SpecifResourceClass and has a title
+						if (!CONFIG.excludedFromTypeFiltering.includes(rC.title)
+							// @ts-ignore - here, rC is a SpecifResourceClass and has a property 'instantiation'
+							&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
+							rCR.datasets.push({
+								label: LIB.titleOf(rC, opts),
+								id: rC.id,
+								count: 0,
+								color: CONFIG.focusColor
+							})
+						}
 					}
-				});
+				);
 				self.list.push(rCR)
 			}
 		addResourceClassReport();  // must be on the first position
@@ -158,16 +167,20 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.get("statementClass", prj.statementClasses).forEach((sC: SpecifStatementClass ) =>{
-					// Add a counter for each statementClass
-					if( !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.Auto) || sC.instantiation.includes(SpecifInstantiation.User) )
-						sCR.datasets.push({
-							label: LIB.titleOf(sC,opts),
-							id: sC.id,
-							count: 0,
-							color: CONFIG.focusColor 
-						})
-				});
+				cData.get("statementClass", prj.statementClasses)
+				.forEach(
+					(sC) => {
+						// Add a counter for each statementClass
+						// @ts-ignore - here, rC is a SpecifStatemenrClass and has a property 'instantiation'
+						if( !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.Auto) || sC.instantiation.includes(SpecifInstantiation.User) )
+							sCR.datasets.push({
+								label: LIB.titleOf(sC,opts),
+								id: sC.id,
+								count: 0,
+								color: CONFIG.focusColor 
+							})
+					}
+				);
 				self.list.push(sCR)
 			}
 		addStatementClassReport();  // must be on the second position
@@ -197,25 +210,30 @@ moduleManager.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC, dT;
-				cData.get("resourceClass", prj.resourceClasses).forEach((rC) => {
-					(rC as SpecifResourceClass).propertyClasses.forEach( (pck) =>{
-						pC = cData.get("propertyClass", [pck])[0] as SpecifPropertyClass;
-						dT = cData.get("dataType", [pC.dataType])[0] as SpecifDataType;
-						if( dT.enumeration ) {
-							var aVR: Report = {
-									title: LIB.titleOf(rC,opts)+': '+LIB.titleOf(pC,opts),
-									category: FilterCategory.enumValue,
-									pid: prj.id,	// project-id
-									rCk: LIB.keyOf(rC), 	// resourceClass key
-									pCk: pck, 	// propertyClass key
-									scaleMin: 0,
-									scaleMax: 0,
-									datasets: possibleValues(dT)
-								};
-							self.list.push(aVR)
-						}
-					})
-				})
+			//	cData.get("resourceClass", prj.resourceClasses).forEach(
+				prj.readExtendedClasses("resourceClass", prj.resourceClasses).forEach(
+					(rC: SpecifResourceClass) => {
+						rC.propertyClasses.forEach(
+							(pck) => {
+								pC = cData.get("propertyClass", [pck])[0] as SpecifPropertyClass;
+								dT = cData.get("dataType", [pC.dataType])[0] as SpecifDataType;
+								if( dT.enumeration ) {
+									var aVR: Report = {
+											title: LIB.titleOf(rC,opts)+': '+LIB.titleOf(pC,opts),
+											category: FilterCategory.enumValue,
+											pid: prj.id,	// project-id
+											rCk: LIB.keyOf(rC), 	// resourceClass key
+											pCk: pck, 	// propertyClass key
+											scaleMin: 0,
+											scaleMax: 0,
+											datasets: possibleValues(dT)
+										};
+									self.list.push(aVR)
+								}
+							}
+						)
+					}
+				)
 			}
 		addEnumeratedValueReports();
 
@@ -248,7 +266,8 @@ moduleManager.construct({
 				else throw Error("Did not find a report panel for resourceClass with id:"+rCk.id);
 
 				// b) A report (histogram) for each enumerated property:
-				let rC = cData.get("resourceClass", [rCk])[0] as SpecifResourceClass,
+			//	let rC = cData.get("resourceClass", [rCk])[0] as SpecifResourceClass,
+				let rC = prj.readExtendedClasses("resourceClass", [rCk])[0] as SpecifResourceClass,
 					pC: SpecifPropertyClass,
 					dT: SpecifDataType,
 					rp: SpecifProperty,  // resource property
@@ -325,7 +344,7 @@ moduleManager.construct({
 				prj.readStatementsOf(nd.resource, {asSubject:true} )
 				.then(
 					(staL) => {
-						console.debug('staL', staL);
+//						console.debug('staL', staL);
 						for( var sta of staL )
 							evalStatement(sta as SpecifStatement);
 						if (--pend < 1) { finalize() }   // all done

@@ -201,8 +201,8 @@ moduleManager.construct({
 
 		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {
-		//	lookupTitles: true,
-		//	lookupValues: true,
+			lookupTitles: true,
+			lookupValues: true,
 			targetLanguage: selPrj.language
 		};
 
@@ -338,12 +338,11 @@ moduleManager.construct({
 				else if (isChecked(f.options, SearchOption.wordBeginnings))
 					str = '\\b' + str;
 
-				let // dummy = str,   // otherwise nothing is found, no idea why.
-					patt = new RegExp(str, isChecked(f.options, SearchOption.caseSensitive) ? '' : 'i'),
+				let patt = new RegExp(str, isChecked(f.options, SearchOption.caseSensitive) ? '' : 'i'),
 					p: CPropertyToShow;
 
 				// Remember: As CPropertyToShow, all enumerated values of p have already been looked up ...
-				if (matchStr(res.title,res.rC.isHeading)) return true;
+				if (matchStr(res.title)) return true;
 				for (p of res.descriptions)
 					if (matchStr(p)) return true;
 				for (p of res.other) {
@@ -353,24 +352,28 @@ moduleManager.construct({
 				};
 				return false;  // not found
 
-				function matchStr(prp: CPropertyToShow, isHeading?:boolean): boolean {
+				function matchStr(prp: CPropertyToShow): boolean {
 //					console.debug('matchStr',prp,prp.get());
-					// In case of a title, the value shall only be looked up in case of a heading
+					// In case of a title, the value shall only be looked up when it is a heading
 					// - Certain folder titles are specified with a vocabulary term --> lookup
 					// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
-					let localOptions = simpleClone(displayOptions);
-				//	localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
-
+					let localOptions = Object.assign(
+							{},
+							displayOptions,
+							{
+								lookupValues: prp.pC.title != CONFIG.propClassTerm
+							}
+						);
 					return patt.test(prp.get(localOptions));
 				}
 			}
-			function matchPropValue(f: IFilter): boolean {
+			function matchEnumValue(f: IFilter): boolean {
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
 				if (f.scope && f.scope != res['class'].id) return true;
 
-//				console.debug( 'matchPropValue', f, res );
+//				console.debug( 'matchEnumValue', f, res );
 
 				// The filter is 'applicable': 
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
@@ -384,7 +387,7 @@ moduleManager.construct({
 
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies CONFIG.notAssigned:
-//						console.debug('matchPropValue',f,rp,no);
+//						console.debug('matchEnumValue',f,rp,no);
 						if (!rp || rp.values.length < 1)
 							return f.options[f.options.length - 1].checked && f.options[f.options.length - 1].id == CONFIG.notAssigned;
 
@@ -428,9 +431,9 @@ moduleManager.construct({
 						return; // undefined
 					case FilterCategory.enumValue:
 //						console.debug( 'matchAndMark', f, res.title );
-						if (matchPropValue(f)) return res; // don't mark in this case, either
+						if (matchEnumValue(f)) return res; // don't mark in this case, either
 						return; // undefined
-					/*	if( matchPropValue(f) ) {
+					/*	if( matchEnumValue(f) ) {
 //							console.debug( 'attValueMatched' );
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
@@ -467,7 +470,7 @@ moduleManager.construct({
 								// @ts-ignore - in this case it is defined
 								let rgxS = new RegExp(f.searchString.escapeRE(), isChecked(f.options, SearchOption.caseSensitive) ? 'g' : 'gi');
 
-								res.title.values = markValL(res.title, rgxS, res.rC.isHeading);
+								res.title.values = markValL(res.title, rgxS);
 								res.descriptions = res.descriptions.map((rp: CPropertyToShow) => {
 									rp.values = markValL(rp, rgxS);
 									return rp;
@@ -491,16 +494,20 @@ moduleManager.construct({
 				};
 				return; // undefined
 
-				function markValL(prp:CPropertyToShow, re: RegExp, isHeading?:boolean): SpecifValues {
+				function markValL(prp:CPropertyToShow, re: RegExp): SpecifValues {
 					//	return [LIB.makeMultiLanguageValue(mark(LIB.languageTextOf(valL[0], displayOptions), re))];
 					let mV:string;
 					return prp.values.map((v) => {
 						// In case of a title, the value shall only be looked up in case of a heading
 						// - Certain folder titles are specified with a vocabulary term --> lookup
 						// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
-						let localOptions = simpleClone(displayOptions);
-					//	localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
-
+						let localOptions = Object.assign(
+								{},
+								displayOptions,
+								{
+									lookupValues: prp.pC.title != CONFIG.propClassTerm
+								}
+							);
 						mV = mark(LIB.displayValueOf(v, localOptions), re);
 						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageValue(mV) : mV;
 					});
@@ -605,7 +612,7 @@ moduleManager.construct({
 					for( var v of dT.enumeration ) {
 						// the checkboxes for the secondary filter selector per enum value:
 					/*	var box: IBox = {
-								title: app.ontology.localize( LIB.languageTextOf( v.value, displayOptions )), 
+								title: app.ontology.localize( LIB.languageTextOf( v.value, displayOptions ), displayOptions),
 								id: v.id,
 								checked: vL.includes(v.id)
 					//			checked: true
@@ -613,7 +620,7 @@ moduleManager.construct({
 					//	if( vL ) { box.checked = vL.includes( v.id ) };
 						boxes.push( box ) */
 						boxes.push({
-							title: app.ontology.localize(LIB.languageTextOf(v.value, displayOptions)),
+							title: app.ontology.localize(LIB.languageTextOf(v.value, displayOptions), displayOptions),
 							id: v.id,
 							checked: vL.includes(v.id)
 						})
@@ -713,23 +720,28 @@ moduleManager.construct({
 				// pre is a resource with filter settings like {category: 'resourceClass', options: ['chapterTitle','objectTitle']}
 				//				console.debug( 'addResourceClassFilter', pre );
 				var oTF: IFilter = {   // the primary filter criterion 'resource type'
-						title: i18n.TabSpecTypes,
+						title: app.ontology.localize("SpecIF:Resource", { targetLanguage: browser.language, plural: true }),
 						category: FilterCategory.resourceClass,
 						primary: true,
 						scope: selPrj.id,
 						options: [] 
 				};
-				(cData.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
-					if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
-						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
-						oTF.options.push({
-							title: LIB.titleOf(rC, displayOptions),
-							id: rC.id,
-							// if there are preset options, set the select flag accordingly:
-							checked: (pre && pre.selected) ? pre.selected.indexOf(rC.id) > -1 : true
-						});
+				(cData.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[])
+				.forEach(
+					(rC) => {
+						if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
+							&& (!Array.isArray(rC.instantiation)
+								|| rC.instantiation.includes(SpecifInstantiation.Auto)
+								|| rC.instantiation.includes(SpecifInstantiation.User))) {
+							oTF.options.push({
+								title: LIB.titleOf(rC, displayOptions),
+								id: rC.id,
+								// if there are preset options, set the select flag accordingly:
+								checked: (pre && pre.selected) ? pre.selected.indexOf(rC.id) > -1 : true
+							});
+						}
 					}
-				});
+				);
 				self.filters.push(oTF);
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
@@ -778,7 +790,7 @@ moduleManager.construct({
 	}
 	function renderEnumFilterSettings( flt:IFilter ):string {
 		// render a single panel for enum filter settings:
-		return makeCheckboxField(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
+		return makeCheckboxField(flt.title, flt.options, { tagPos:'none', classes:'', handle:myFullName+'.goClicked()'} );
 	}
 /*	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };

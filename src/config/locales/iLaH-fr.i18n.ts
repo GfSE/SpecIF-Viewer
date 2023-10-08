@@ -259,8 +259,8 @@ function LanguageTextsFr() {
 	self.TabPermissions = '<span class="glyphicon glyphicon-lock"></span>&#160;Autorisations';
 	self.TabTypes = self.IcoType+'&#160;'+	self.LblTypes;
 	self.TabDataTypes = self.IcoType+'&#160;'+	self.LblDataTypes; */
-	self.TabSpecTypes = self.IcoType+'&#160;'+	self.LblResourceClasses;
-/*	self.TabObjectTypes = self.IcoType+'&#160;'+	self.LblResourceClasses;
+/*	self.TabSpecTypes = self.IcoType+'&#160;'+	self.LblResourceClasses;
+	self.TabObjectTypes = self.IcoType+'&#160;'+	self.LblResourceClasses;
 	self.TabRelationTypes = self.IcoType+'&#160;'+	self.LblRelationTypes;
 //	self.TabRelGroupTypes = self.IcoType+'&#160;'+	self.LblRelGroupTypes;
 	self.TabSpecificationTypes = self.IcoType+'&#160;'+	self.LblSpecificationTypes;

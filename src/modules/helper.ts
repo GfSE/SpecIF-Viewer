@@ -1773,7 +1773,6 @@ LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs: SpecifPropertyClass[]): n
     return -1;
 }
 LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPropertyClass[], opts: any): string => {
-    //    if( !pL ) return;
     // look for a property serving as title:
     let idx = LIB.titleIdx(pL,pCs);
     if (idx > -1) {  // found!
@@ -1785,7 +1784,7 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPrope
                 return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
 
         // For now, let's try without replacements; so far this function is called before the filters are applied,
-        // perhaps this needs to be reconsidered a again once the revisions list is featured, again:
+        // perhaps this needs to be reconsidered, once the revisions list is featured again:
 //        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageTextOf( pL[idx].value,op ) );
         let ti = LIB.languageTextOf(pL[idx].values[0], opts);
         if (ti) return (opts && opts.lookupValues ? app.ontology.localize(ti, opts) : ti);
