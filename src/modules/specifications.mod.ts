@@ -522,8 +522,8 @@ class CResourceToShow {
 		this.replaces = el.replaces;
 		this.changedAt = el.changedAt;
 		this.changedBy = el.changedBy;
-		this.descriptions = [];
-		// Initially all properties are stored in other;
+
+		// Initially all properties are stored in this.other;
 		// further down the title and description properties are identified and moved:
 		// create a new list by copying the elements (do not copy the list ;-):
 		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this.rC) });
@@ -576,22 +576,21 @@ class CResourceToShow {
 		// a) Find and set the configured title:
 		let a = LIB.titleIdx(this.other, this.cData.propertyClasses);
 		if (a > -1) {  // found!
+			// .. in case of a title a single value is expected, so select it:
 			this.title = this.other.splice(a, 1)[0];
-		}
-	/*	else
-			throw Error("Did not find a title for resource with id:"+this.id);
+	/*	}
 		else {
 			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
 			// there is no title propertyClass;
 			// then create a property without class.
 			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
 			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; 
-		}; */
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
+		};
 
 		// b) Check the configured descriptions:
 		// We must iterate backwards, because we alter the list of other.
-		// ToDo: use this.other.filter()
+		this.descriptions = [];
 		for (a = this.other.length - 1; a > -1; a--) {
 			// to decide whether it is a description, use the original title of the resp. propertyClass
 			if (CONFIG.descProperties.includes(this.other[a].title)) {
@@ -631,7 +630,7 @@ class CResourceToShow {
 
 		// The resource title is the value of the title property;
 		// lookup the title value only if the element is a heading (folder named after a term, but not an ontology term itself):
-		let ti = LIB.displayValueOf(this.title.values[0], Object.assign({}, opts, { lookupValues: this.rC.isHeading }));
+		let ti = LIB.displayValueOf(this.title.values[0], Object.assign({}, opts, { lookupValues: this.rC.isHeading, stripHTML:true }));
 		if (this.rC.isHeading) {
 			// it is assumed that a heading never has an icon:
 			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>'

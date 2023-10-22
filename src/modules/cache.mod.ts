@@ -245,7 +245,7 @@ class CCache {
 			if (typeof (el) != 'object') throw Error('First input parameter is invalid');
 			if (!(el.properties || el['class'])) return '';
 
-			// Lookup titles only in case of a resource serving as heading or in case of a statement:
+			// Lookup title value only in case of a resource serving as heading or in case of a statement:
 			// @ts-ignore - of course resources have no subject, that's why we ask
 			let resOpts = el.subject?
 					// it is a statement:
@@ -650,7 +650,8 @@ class CProject {
 				.then(
 					(sL) => {
 						exD.statements = exD.statements.concat(sL as SpecifStatement[]);
-						// collect the resourceClasses referenced by the resources of this project:
+
+						// Collect the resourceClasses referenced by the resources of this project:
 						// start with the stored resourceClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let rCL: SpecifKeys = [].concat(this.resourceClasses),
@@ -672,7 +673,8 @@ class CProject {
 				.then(
 					(rCL) => {
 						exD.resourceClasses = rCL as SpecifResourceClass[];
-						// collect the statementClasses referenced by the resources of this project:
+
+						// Collect the statementClasses referenced by the resources of this project:
 						// start with the stored statementClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let sCL: SpecifKeys = [].concat(this.statementClasses),
@@ -694,7 +696,8 @@ class CProject {
 				.then(
 					(sCL) => {
 						exD.statementClasses = sCL as SpecifStatementClass[];
-						// collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
+
+						// Collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
 						// start with the stored propertyClasses of this project in case they have no references (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let pCL: SpecifKeys = [].concat(this.propertyClasses);
@@ -713,7 +716,8 @@ class CProject {
 				.then(
 					(pCL) => {
 						exD.propertyClasses = pCL as SpecifPropertyClass[];
-						// collect the dataTypes referenced by the propertyClasses of this project:
+
+						// Collect the dataTypes referenced by the propertyClasses of this project:
 						// start with the stored dataTypes of this project in case they have no references (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let dTL: SpecifKeys = [].concat(this.dataTypes);
@@ -730,7 +734,8 @@ class CProject {
 				.then(
 					(dTL) => {
 						exD.dataTypes = dTL as SpecifDataType[];
-						// collect the files referenced by the resource properties of this project:
+
+						// Collect the files referenced by the resource properties of this project:
 						let fL: string[] = [],
 							dT: SpecifDataType;
 						for (var r of exD.resources) {
@@ -2503,7 +2508,11 @@ class CProject {
 							fail: (xhr:xhrMessage) => { app.projects.selected.exporting = false; reject(xhr) }
 						};
 
-						expD.title = opts.projectName;
+						// Take the title entered in the export dialog;
+						// language is unknown and not important, anyways:
+						expD.title = LIB.makeMultiLanguageValue(opts.projectName);  
+
+						// choose the publishing format:
 						switch (opts.format) {
 							case 'epub':
 								// @ts-ignore - toEpub() is loaded at runtime

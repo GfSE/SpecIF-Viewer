@@ -64,14 +64,16 @@ function validateReqif(xml) {
         && xml.getElementsByTagName("REQ-IF-CONTENT").length > 0;
 }
 function extractMetaData(header) {
-    return (header.length < 1 ? {} : {
-        id: header[0].getAttribute("IDENTIFIER"),
-        title: header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML,
+    // header.length>0 has been checked before: 
+    let id = header[0].getAttribute("IDENTIFIER");
+    return ({
+        id: id,
+        title: (header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML) || id,
         description: header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '',
         generator: 'reqif2specif',
         $schema: "https://specif.de/v1.0/schema.json",
         createdAt: header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML
-    });
+    })
 };
 function extractDatatypes(xmlDatatypes) {
     return xmlDatatypes.length<1? [] : Array.from(xmlDatatypes[0].children, extractDatatype );

@@ -363,7 +363,7 @@ class CSpecIF implements SpecIF {
 			if (spD.createdBy.email && spD.createdBy.email.value)
 				this.createdBy.email = spD.createdBy.email.value;
 		};
-		if (spD.createdAt) this.createdAt = spD.createdAt;
+		if (spD.createdAt) this.createdAt = LIB.addTimezoneIfMissing(spD.createdAt);
 		if (spD.description) this.description = makeMultiLanguageText(spD.description);
 		if (spD.title) this.title = makeMultiLanguageText(spD.title);
 		this.id = spD.id;
@@ -378,8 +378,7 @@ class CSpecIF implements SpecIF {
 		function i2int(iE:any) {
 			var oE: any = {
 				id: iE.id,
-				changedAt: iE.changedAt
-			//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
+				changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 			};
 			if (iE.description) oE.description = makeMultiLanguageText(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
@@ -648,8 +647,8 @@ class CSpecIF implements SpecIF {
 			var	oE: any = {
 					id: iE.id,
 					class: eCkey,
-					changedAt: iE.changedAt
-				//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
+				//	changedAt: iE.changedAt
+					changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
 				};
 			if (iE.alternativeIds)
 				oE.alternativeIds = iE.alternativeIds.map(
@@ -775,15 +774,14 @@ class CSpecIF implements SpecIF {
 				// ToDo: Reconsider once we have a backend with multiple revisions ...
 				// @ts-ignore - if execution gets here, 'names.hClass' is defined:
 				iR['class'] = LIB.makeKey(iE[names.hClass].id || iE[names.hClass]);
-			//	iR['class'] = LIB.makeKey(iE[names.hClass]);
 				self.resources.push(iR);
 
 				// ... and add a link to the hierarchy:
 				oE = {
 					id: 'N-' + iR.id,
 					resource: LIB.keyOf( iR ),
-					changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
-				//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
+				//	changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
+					changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 				};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -809,8 +807,8 @@ class CSpecIF implements SpecIF {
 						// For the time being, suppress any revision to make sure that a resource update doesn't destroy the reference.
 						// ToDo: Reconsider once we have a backend with multiple revisions ...
 						resource: LIB.makeKey(iE.resource.id || iE.resource),
-						changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
-					//	changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
+					//	changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
+						changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 					};
 				if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 				if (iE.changedBy) oE.changedBy = iE.changedBy;
@@ -979,12 +977,14 @@ class CSpecIF implements SpecIF {
 			function makeISODate(str:string) {
 				// repair faulty time-zone from ADOIT (add missing colon between hours and minutes);
 				// this is only necessary for some SpecIF files created with an older Archimate importer:
-				return str.replace(
-					/(\d\+|\d-)(\d\d)(\d\d)$/,
-					// @ts-ignore - match is never read, but cannot be omitted
-					(match, $1, $2, $3) => {
-						return $1 + $2 + ':' + $3;
-					})
+				return LIB.addTimezoneIfMissing(
+					str.replace(
+						/(\d\+|\d-)(\d\d)(\d\d)$/,
+						// @ts-ignore - match is never read, but cannot be omitted
+						(match, $1, $2, $3) => {
+							return $1 + $2 + ':' + $3;
+						})
+					)
 			}
 		}
 		function makeMultiLanguageText(iE: any, baseType?:string): SpecifMultiLanguageText {

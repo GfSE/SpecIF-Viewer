@@ -238,6 +238,7 @@ function toOxml( data, options ) {
 			
 			// Create the title:
 			let ti = stripHtml(languageValueOf(data.title));
+
 			oxml.sections.push(
 				wParagraph({ text: ti, format: { heading:0 } })
 			);
@@ -264,15 +265,15 @@ function toOxml( data, options ) {
 				if( a>-1 ) {  // found!
 					// Remove all formatting for the title, as the app's format shall prevail.
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
-					// A title property should have just one value and one language:
-					ti = stripHtml(itm.properties[a].values[0][0]['text']);
+					// A title property should have just one value:
+					ti = stripHtml(languageValueOf(itm.properties[a].values[0]));
 				}
 				else {
 					// In case of a statement, use the class' title by default:
 					ti = classTitleOf(itm);
 				};
 //				console.debug('titleOf 1',itm,ti);
-				ti = minEscape( ti );
+				ti = minimizeXmlExcapes( ti );
 				if( !ti ) return '';  // no paragraph, if title is empty
 				
 				// if itm has a 'subject', it is a statement:
@@ -532,7 +533,7 @@ function toOxml( data, options ) {
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
 					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-						rt = minEscape( prpTitleOf(p) );
+						rt = minimizeXmlExcapes( prpTitleOf(p) );
 						c3 = '';
 						propertyValuesOf( p ).forEach( 
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
@@ -573,7 +574,7 @@ function toOxml( data, options ) {
 					// Replace \r, \f, \t:
 					// (Note that in HTML multiple nbsp do not collapse)
 					txt = txt.replace( /\r|\f/g, '' ).replace( /\t/g, nbsp+nbsp+nbsp );
-					txt = minEscape(txt);
+					txt = minimizeXmlExcapes(txt);
 					// then, split into 2 paragraphs when \n is encountered:
 					let arr = txt.split(/\n/);
 //					console.debug('parseText',txt,arr);
@@ -896,7 +897,7 @@ function toOxml( data, options ) {
 							br={};
 							// store the preceding fragment:
 							if( opts.hasContent($1) )
-								arr.push({str:minEscape($1)});
+								arr.push({str:minimizeXmlExcapes($1)});
 
 							// remove the next tag,
 							// $2 can only be one of the following:
@@ -910,7 +911,7 @@ function toOxml( data, options ) {
 						// finally store the remainder:
 						if( opts.hasContent(txt) ) {
 //							console.debug('splitText',txt,typeof(txt));
-							arr.push({str:minEscape(txt)})
+							arr.push({str:minimizeXmlExcapes(txt)})
 						};
 //						console.debug('splitText',txt,arr);
 						return arr
@@ -1021,7 +1022,7 @@ function toOxml( data, options ) {
 
 							// disregard objects whose title is too short:
 							ti = titleOf(cR, undefined, Object.assign({}, opts, { addIcon: false }));
-					//		ti = minEscape( cR.title );
+					//		ti = minimizeXmlExcapes( cR.title );
 							if( !ti || ti.length<opts.titleLinkMinLength ) continue;
 
 							// disregard link targets which aren't diagrams nor model elements:
@@ -1059,7 +1060,7 @@ function toOxml( data, options ) {
 									ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value;
 							}
 						};
-						return [{ p: { text: minEscape(ct) } }];
+						return [{ p: { text: minimizeXmlExcapes(ct) } }];
 					};
 					// else
 					switch (dT.type) {
@@ -1076,7 +1077,7 @@ function toOxml( data, options ) {
 								// multiple values in a comma-separated string:
 								ct += (ct.length == 0 ? '' : ', ') + v
 							};
-							return [{ p: { text: minEscape(ct) } }];
+							return [{ p: { text: minimizeXmlExcapes(ct) } }];
 					}
 				/*	if(prp['class']) {
 						let pC = itemById(data.propertyClasses, prp['class']),
@@ -1094,7 +1095,7 @@ function toOxml( data, options ) {
 									if (val) ct += (v == 0 ? '' : ', ') + (st ? ('&#x00ab;' + val.value + '&#x00bb;') : val.value)
 									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
-								return [{p:{text:minEscape(ct)}}];
+								return [{p:{text:minimizeXmlExcapes(ct)}}];
 							case dataTypeString:
 //								console.debug('propertyValueOf - xhtml',prp.value);
 								// The value has been looked-up by the viewer before delivery:
@@ -1102,7 +1103,7 @@ function toOxml( data, options ) {
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
-					return [{p:{text:minEscape(prp.value)}}] */				
+					return [{p:{text:minimizeXmlExcapes(prp.value)}}] */				
 				}
 				function generateOxml( ct, fmt ) {
 					// In a second step, transform the internal representation to OOXML.
@@ -1405,7 +1406,7 @@ function toOxml( data, options ) {
 				return	'<w:pict>'
 					// specify both width and height; WORD is not assuming the native aspect ratio:
 					+		'<v:shape style="width:'+w+'mm;height:'+h+'mm">'
-					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+minEscape(ct.picture.title)+'"/>'
+					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+minimizeXmlExcapes(ct.picture.title)+'"/>'
 					+		'</v:shape>'
 					+	'</w:pict>'
 
@@ -2842,7 +2843,7 @@ function toOxml( data, options ) {
 		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
 	}
 	function languageValueOf(val) {
-		// assuming that only the selected language is available:
+		// assuming that only the desired language has already been selected during export:
 		return (typeof (val) == 'string' ? val : val[0].text)
 	}
 /*	function valByTitle(itm,pN,prj) {
@@ -2886,8 +2887,8 @@ function toOxml( data, options ) {
 	}
 	// The incoming XML may have (and often has) many more escaped characters,
 	// than MS WORD would correctly show.
-	// Thus transform all but the necessary ones '&', '<' and '>' to UTF-8.
-	function minEscape( s ) {
+	// Thus transform all except the necessary ones '&', '<' and '>' to UTF-8.
+	function minimizeXmlExcapes( s ) {
 		if( !s ) return '';
 		let el = document.createElement('div');
 		// first unescape all HTML entities:

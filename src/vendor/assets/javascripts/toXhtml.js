@@ -49,28 +49,6 @@ function toXhtml( data, options ) {
 	if (opts.addTitleLinks)
 		opts.RE.TitleLink = new RegExp(opts.titleLinkBegin + '(.+?)' + opts.titleLinkEnd, 'g');
 
-/*	// Check for missing options:
-	if( typeof(opts)!='object' ) opts = {};
-
-	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
-	if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
-	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-	if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'];
-	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
-	if (!opts.descriptionProperties) opts.descriptionProperties = ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'];
-	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
-
-	if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegEx
-	if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegEx
-	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
-	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
-	if( typeof(opts.RE)!='object' ) opts.RE = {};
-	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
-	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', '');
-	if( opts.titleLinkBegin && opts.titleLinkEnd )
-		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' ); */
-//	console.debug('toXhtml',data,opts);
-
 	const
 	//	nbsp = '&#160;', // non-breakable space
 		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
@@ -101,7 +79,7 @@ function toXhtml( data, options ) {
 
 	// Create a title page as xhtml-file and add it as first section:
 	xhtml.sections.push(
-			xhtmlOf({ 
+			makeXhtmlFile({ 
 				title: escapeXML(data.title),
 				body: '<div class="title">'+escapeXML(data.title)+'</div>'
 			})
@@ -113,7 +91,7 @@ function toXhtml( data, options ) {
 		(h, hi) => {
 			pushHeading( h.title, {nodeId: h.id, level: 1} );
 			xhtml.sections.push(
-				xhtmlOf({ 
+				makeXhtmlFile({ 
 					title: escapeXML(data.title),
 					body: renderHierarchy( h, hi, 1 )
 				})
@@ -141,7 +119,8 @@ function toXhtml( data, options ) {
 		if( a>-1 ) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
-			ti = stripHtml(itm.properties[a].values[0][0]['text']);
+			// A title property should have just one value:
+			ti = stripHtml(languageValueOf(itm.properties[a].values[0]));
 		} else {
 			// In case of a statement, use the class' title by default:
 			ti = classTitleOf(itm);
@@ -595,9 +574,9 @@ function toXhtml( data, options ) {
 			});
 		return ch
 	}
-	function xhtmlOf( doc ) {
+	function makeXhtmlFile( doc ) {
 		// make a xhtml file content from the elements provided:
-//		console.debug('xhtmlOf',doc);
+//		console.debug('makeXhtmlFile',doc);
 		return	'<?xml version="1.0" encoding="UTF-8"?>'
 		+		'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
 		+		'<html xmlns="http://www.w3.org/1999/xhtml">'
@@ -657,6 +636,10 @@ function toXhtml( data, options ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
 		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
+	}
+	function languageValueOf(val) {
+		// assuming that only the desired language has already been selected during export:
+		return (typeof (val) == 'string' ? val : val[0].text)
 	}
 	function hasContent( str ) {
 		// Check whether str has content or a reference:
