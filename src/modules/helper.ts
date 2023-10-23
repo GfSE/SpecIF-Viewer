@@ -1141,6 +1141,7 @@ interface String {
     unescapeHTMLTags: Function;
     unescapeHTMLEntities: Function;
     fileName: Function;
+    baseName: Function;
     fileExt: Function;
 }
 String.prototype.toCamelCase = function():string {
@@ -1320,7 +1321,9 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
     return out;
 } 
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
-String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
+String.prototype.escapeRE = function (): string {
+    return this.replace(/[.*+?^${}()|[\]\\]/g, '\$&')   // $& means the whole matched string
+}; 
 // Escape characters for JSON string: 
 String.prototype.escapeJSON = function () {
     return this.replace(/["\\]/g, '\$&')    // $& means the whole matched string
@@ -1392,9 +1395,13 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
 };
 String.prototype.fileExt = function():string {
     // return the file extension only:
-    return this.substring(this.lastIndexOf('.') + 1);
+    return this.substring(this.lastIndexOf('.') +1);
 /*    // see https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/12900504#12900504
     return fname.slice((fname.lastIndexOf(".") - 1 >>> 0) + 2); */
+};
+String.prototype.baseName = function(): string {
+    // return the filename with extension and without the path:
+    return this.substring(this.lastIndexOf('/') + 1)
 };
 String.prototype.fileName = function():string {
     // return the filename without extension:

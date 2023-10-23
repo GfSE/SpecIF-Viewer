@@ -37,6 +37,19 @@ class CPropertyToShow implements SpecifProperty {
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
 		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
 
+		// Find the propertyClass' title:
+		// An input data-set may have titles which are not from the SpecIF vocabulary,
+		// but do not yet replace the result with a preferred vocabulary term:
+		this.title = LIB.titleOf(this.pC, { targetLanguage: 'default' });
+
+		// Replace identifiers of enumerated values by their value as defined in the dataType:
+		if (this.dT.enumeration) {
+			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
+			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
+			// ToDo: Check use of default values
+			this.values = this.getEnumValues();
+		};
+
 		// Get the propertyClass' permissions:
 		let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.pC.id);
 		if (iPrm)
@@ -52,19 +65,6 @@ class CPropertyToShow implements SpecifProperty {
 				else
 					this.pC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
 			}
-		};
-
-		// Find the propertyClass' title:
-		// An input data-set may have titles which are not from the SpecIF vocabulary,
-		// but do not yet replace the result with a preferred vocabulary term:
-		this.title = LIB.titleOf(this.pC, { targetLanguage: 'default' });
-
-		// Replace identifiers of enumerated values by their value as defined in the dataType:
-		if (this.dT.enumeration) {
-			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
-			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
-			// ToDo: Check use of default values
-			this.values = this.getEnumValues();
 		}
 	}
 	private getEnumValues() {
@@ -288,9 +288,9 @@ class CPropertyToShow implements SpecifProperty {
 					h2 = getAttr("height", $2),
 					d = $4 || u1;		// If there is no description, use the name of the link object
 
-//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
-				if (!u1) console.warn('no file found in '+$0);
-				if (!u2) console.warn('no image found in '+$0);
+//				console.debug('toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
+				if (!u1) console.warn('No file reference found in '+$0);
+				if (!u2) console.warn('No image reference found in '+$0);
 			//	u1 = addFilePath(u1);
 			//	u2 = addFilePath(u2);
 
@@ -330,7 +330,7 @@ class CPropertyToShow implements SpecifProperty {
 				}
 			}
 		);
-//		console.debug('fileRef.toGUI 1: ', txt);
+//		console.debug('toGUI 1: ', txt);
 
 		// 2. transform a single object to link+object resp. link+image:
 		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
@@ -353,7 +353,7 @@ class CPropertyToShow implements SpecifProperty {
 				let d = $3 || u1,
 					hasImg = false;
 				e = e.toLowerCase();
-//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
+//				console.debug('toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
 
 			//	u1 = addFilePath(u1);
 				if (!u1) console.warn('no image or link found in '+$0);
@@ -367,12 +367,12 @@ class CPropertyToShow implements SpecifProperty {
 						f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
 					};
 				};
-				// ... cannot happen any more now, is still here for compatibility with older files only.
+				// ... cannot happen any more now, is still here for compatibility with older files.
 
-				if (CONFIG.imgExtensions.includes(e) || CONFIG.applExtensions.includes(e)) {
+				if (f1.canBeRenderedAsImage()) {
 					// it is an image, show it:
 					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
+//					console.debug('toGUI 2a found: ', f1, u1 );
 					if (f1.hasContent()) {
 						hasImg = true;
 						// Create the DOM element to which the image will be added:
@@ -390,7 +390,7 @@ class CPropertyToShow implements SpecifProperty {
 						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
 					};
 				}
-				else if (CONFIG.officeExtensions.includes(e)) {
+				else if (f1.canBeDownloaded()) {
 					// it is an office file, show an icon plus filename:
 					if (f1.hasContent()) {
 						hasImg = true;
@@ -447,7 +447,7 @@ class CPropertyToShow implements SpecifProperty {
 				return 'aBra§kadabra' + (repStrings.length - 1) + '§';
 			}
 		);
-//		console.debug('fileRef.toGUI 2: ', txt);
+//		console.debug('toGUI 2: ', txt);
 
 		// 3. process a single link:
 		txt = txt.replace(RE.tagA,
@@ -478,7 +478,7 @@ class CPropertyToShow implements SpecifProperty {
 				return ('<a href="' + u1 + '" ' + t1 + ' target="_blank" >' + e + '</a>')
 			}
 		);
-//		console.debug('fileRef.toGUI 3: ', txt);
+//		console.debug('toGUI 3: ', txt);
 
 		// Now, at the end, replace the placeholders with the respective strings,
 		txt = txt.replace(/aBra§kadabra(\d+)§/g,
@@ -486,7 +486,7 @@ class CPropertyToShow implements SpecifProperty {
 			($0, $1) => {
 				return repStrings[$1]
 			});
-//		console.debug('fileRef.toGUI result: ', txt);
+//		console.debug('toGUI result: ', txt);
 		return txt
 	}
 }
@@ -528,6 +528,36 @@ class CResourceToShow {
 		// create a new list by copying the elements (do not copy the list ;-):
 		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this.rC) });
 
+		// Now, all properties are listed in this.other;
+		// in the following, the properties used as title and description will be identified
+		// and moved from this.other to this.title resp. this.descriptions:
+
+		// a) Find and set the configured title:
+		let a = LIB.titleIdx(this.other, this.cData.propertyClasses);
+		if (a > -1) {  // found!
+			// .. in case of a title a single value is expected, so select it:
+			this.title = this.other.splice(a, 1)[0];
+			/*	}
+				else {
+					// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+					// there is no title propertyClass;
+					// then create a property without class.
+					// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+					// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+					this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
+		};
+
+		// b) Check the configured descriptions:
+		// We must iterate backwards, because we alter the list of other.
+		this.descriptions = [];
+		for (a = this.other.length - 1; a > -1; a--) {
+			// to decide whether it is a description, use the original title of the resp. propertyClass
+			if (CONFIG.descProperties.includes(this.other[a].title)) {
+				// To keep the original order of the properties, the unshift() method is used.
+				this.descriptions.unshift(this.other.splice(a, 1)[0]);
+			}
+		};
+
 		// Get the resourceClass' permissions:
 		let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.rC.id);
 		if (iPrm)
@@ -566,36 +596,6 @@ class CResourceToShow {
 			if (pC.permissionVector.U) {
 				this.hasPropertyWithUpdatePermission = true;
 				break
-			}
-		};
-
-		// Now, all properties are listed in this.other;
-		// in the following, the properties used as title and description will be identified
-		// and moved from this.other to this.title resp. this.descriptions:
-
-		// a) Find and set the configured title:
-		let a = LIB.titleIdx(this.other, this.cData.propertyClasses);
-		if (a > -1) {  // found!
-			// .. in case of a title a single value is expected, so select it:
-			this.title = this.other.splice(a, 1)[0];
-	/*	}
-		else {
-			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-			// there is no title propertyClass;
-			// then create a property without class.
-			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
-		};
-
-		// b) Check the configured descriptions:
-		// We must iterate backwards, because we alter the list of other.
-		this.descriptions = [];
-		for (a = this.other.length - 1; a > -1; a--) {
-			// to decide whether it is a description, use the original title of the resp. propertyClass
-			if (CONFIG.descProperties.includes(this.other[a].title)) {
-				// To keep the original order of the properties, the unshift() method is used.
-				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			}
 		};
 
@@ -907,11 +907,18 @@ class CFileWithContent implements IFileWithContent {
 	hasContent(): boolean {
 		return this.hasBlob() || this.hasDataURL();
 	}
+	canBeRenderedAsImage(): boolean {
+		return ['png', 'svg', 'bpmn', 'jpg', 'jpeg', 'gif'].includes(this.title.fileExt().toLowerCase())
+	//	return ['image/png', 'image/x-png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'application/bpmn+xml'].includes(e);
+	}
+	canBeDownloaded(): boolean {
+		return CONFIG.officeExtensions.concat(CONFIG.applExtensions).includes(this.title.fileExt().toLowerCase())
+	}
 	renderDownloadLink(txt: string, opts?: any): void {
 		function addL(r: string, fTi: string, fTy: string): void {
 			// add link with icon to DOM using an a-tag with data-URL:
 			document.getElementById(tagId(fTi)).innerHTML =
-				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + txt + '</a>';
+				'<a href="' + r + '" type="' + fTy + '" download="' + fTi.baseName() + '" >' + txt + '</a>';
 		}
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;

@@ -377,8 +377,8 @@ class CSpecIF implements SpecIF {
 		// common for all items:
 		function i2int(iE:any) {
 			var oE: any = {
-				id: iE.id,
-				changedAt: LIB.addTimezoneIfMissing(iE.changedAt)
+				id: iE.id.toSpecifId(),
+				changedAt: LIB.addTimezoneIfMissing(iE.changedAt || '1970-01-01T00:00:00Z')
 			};
 			if (iE.description) oE.description = makeMultiLanguageText(iE.description);
 			// revision is a number up until v0.10.6 and a string thereafter:
@@ -821,7 +821,7 @@ class CSpecIF implements SpecIF {
 			var oE = i2int(iE);
 			// The title is usually 'path/filename.ext';
 			// but sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-			oE.title = iE.title ? iE.title.replace(/\\/g, '/') : iE.id;
+			oE.title = (iE.title ? iE.title : iE.id).replace(/\\/g, '/');
 			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			// store the blob and it's type:
 			if (iE.blob) {

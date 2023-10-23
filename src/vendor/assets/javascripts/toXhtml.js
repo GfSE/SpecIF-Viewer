@@ -404,7 +404,7 @@ function toXhtml( data, options ) {
 //					console.debug( 'url:', u1, ', ext:', e, ', alt:', d );
 
 					// If it is an application file, look for a preview image:
-					if( opts.applExtensions.indexOf( e )>-1 ) {  
+					if( opts.applExtensions.includes( e ) ) {  
 							let noPreview = true;
 							// replace by preview image, if possible:
 							for( var i=data.files.length-1; noPreview && i>-1; i-- ) {

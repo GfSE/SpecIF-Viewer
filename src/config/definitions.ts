@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.q.6",
+    CONFIG.appVersion = "1.1.q.7",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
@@ -51,7 +51,7 @@ const CONFIG:any = {};
     CONFIG.convertMarkdown = true; // convert markdown syntax to HTML
     CONFIG.addIconToType = true;
     CONFIG.addIconToInstance = true;    // applies to resources, statements and hierarchies/outlines
-    CONFIG.fileIconStyle = 'width="48px"'; // style of icons representing the file type, in download links
+    CONFIG.fileIconStyle = 'width="24px"'; // style of icons representing the file type, in download links
     CONFIG.findMentionedObjects = true;    // looks for resource titles mentioned in the text and shows 'mentions' relations; uses the same markings as the dynamic linking
     CONFIG.titleLinking = true;  // add internal links to all substrings in description properties which match resource titles
     // the following two strings are escaped twice to build a regex via 'new regex(CONFIG.titleLinkBegin+(.*?)+CONFIG.titleLinkEnd,i)'
@@ -62,15 +62,15 @@ const CONFIG:any = {};
 
     // The indices of ..Extensions and ..Types must correspond!
     // - Bidirectional mapping is needed ...
-    // Also, for each entry 'xxx' in officeExtensions a corresponding icon file named xxx-icon.png is expected!
     // ToDo: use https://github.com/jshttp/mime-types
     CONFIG.imgExtensions = [ 'svg', 'png', 'jpg', 'gif', 'jpeg', 'png' ];
     CONFIG.imgTypes = [ 'image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/jpeg', 'image/x-png' ];
     // mime image/x-png does not exist by standard, but it has been seen in real data ...
+    // For each entry 'xxx' in officeExtensions a corresponding icon file named xxx-icon.png is expected!
     CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
     CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
-    CONFIG.applExtensions = [ 'bpmn', 'ole' ];
-    CONFIG.applTypes = [ 'application/bpmn+xml', 'application/ole' ];
+    CONFIG.applExtensions = ['bpmn','mdzip','reqif','reqifz','xml'];
+    CONFIG.applTypes = ['application/bpmn+xml', 'application/xml+zip', 'application/xml', 'application/xml+zip', 'application/xml' ];
 
     // Keys for the query parameters - if changed, existing links will end up in default view:
 //    CONFIG.keyUId = 'uid';    // userId
