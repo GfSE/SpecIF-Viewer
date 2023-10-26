@@ -63,7 +63,7 @@ class CPropertyToShow implements SpecifProperty {
 				if (iPrm)
 					this.pC.permissionVector = iPrm.permissionVector
 				else
-					this.pC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
+					this.pC.permissionVector = noPermission
 			}
 		}
 	}
@@ -567,7 +567,7 @@ class CResourceToShow {
 			if (iPrm)
 				this.rC.permissionVector = iPrm.permissionVector
 			else
-				this.rC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
+				this.rC.permissionVector = noPermission
 		};
 
 		// Find out, whether there is at least one property with update permission,
@@ -588,7 +588,7 @@ class CResourceToShow {
 					if (iPrm)
 						pC.permissionVector = iPrm.permissionVector
 					else
-						pC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
+						pC.permissionVector = noPermission
 				}
 			};
 
@@ -1595,11 +1595,16 @@ moduleManager.construct({
 	self.refresh = ( params:any ):void =>{
 		// refresh the content, only;
 		// primarily provided for showing changes made by this client:
-			function tryRefresh():void {
+			function tryRefresh() {
 				if( --refreshReqCnt<1 ) self.doRefresh( params )
 			}
 		refreshReqCnt++;
-		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
+		setTimeout(
+			() {
+				if (--refreshReqCnt < 1) self.doRefresh(params)
+			},
+			CONFIG.noMultipleRefreshWithin
+		)
 	};
 	self.doRefresh = ( parms:any ):void =>{
 		// Refresh the view;
@@ -1998,7 +2003,7 @@ moduleManager.construct({
 							if (iPrm)
 								rC.permissionVector = iPrm.permissionVector
 							else
-								rC.permissionVector = { C: false, R: false, U: false, D: false, A: false } as SpecifPermissionVector
+								rC.permissionVector = noPermission
 						};
 
 //						console.debug('objectList.getPermissionsPrj',rC,rC.instantiation, rC.permissions);

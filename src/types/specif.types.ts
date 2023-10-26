@@ -262,6 +262,7 @@ interface SpecIF {
  */
 interface SpecifPermissionVector {
     C: boolean; // create item
+    E: boolean; // execute item
     R: boolean; // read item
     U: boolean; // update item
     D: boolean; // delete item

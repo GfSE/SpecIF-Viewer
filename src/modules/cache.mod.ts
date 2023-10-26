@@ -327,16 +327,18 @@ class CItem {
 		this.substitute = subsF;
 	}
 }
+const noPermission: SpecifPermissionVector = { C: false, E: false, R: false, U: false, D: false };
 class CPermission implements SpecifPermission {
 	item: SpecifId;  // the item reference
 	permissionVector: SpecifPermissionVector;
 	constructor(iId: SpecifId, prm: string) {
 		this.item = iId;
 		this.permissionVector = {
-			C: prm.includes('C'),
-			R: prm.includes('R'),
-			U: prm.includes('U'),
-			D: prm.includes('D')
+			C: prm.includes('C'), // create item
+			E: prm.includes('E'), // execute item
+			R: prm.includes('R'), // read item
+			U: prm.includes('U'), // update item
+			D: prm.includes('D')  // delete item
 		}
 	}
 }
@@ -522,7 +524,7 @@ class CProject {
 		};
 
 		// find the permissions of the current user for this project:
-		let role = LIB.itemByTitle(this.roles, app.me.myRole(spD.id));
+		let role = LIB.itemById(this.roles, app.me.myRole(spD.id).toJsId());
 		if (role) this.myPermissions = role.permissions;
 	};
 	private getMeta(): CSpecIF {
@@ -1043,6 +1045,7 @@ class CProject {
 					case 'statementClass':
 						// Update the project's remembering list;
 						// but don't keep the revision, as it can change:
+						// @ts-ignore - these categories *are* defined
 						LIB.cacheL(self[app.standards.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
 						break;
 					case 'hierarchy':
@@ -1338,9 +1341,11 @@ class CProject {
 						// delete also the respective keys remembered by the project;
 						// - a node can also be a hierarchy, thus try to remove it as well;
 						// - disregard the revision:
-						let listName = app.standards.listName.get(ctg=='node'?'hierarchy':ctg);
-						for (var i of itmL)
+						let listName = app.standards.listName.get(ctg == 'node' ? 'hierarchy' : ctg);
+						for (var i of itmL) {
+							// @ts-ignore - these categories *are* defined
 							LIB.uncacheE(this[listName], { id: i.id });
+						};
 						// no break; 
 				//	case 'file':
 					default:

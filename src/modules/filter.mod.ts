@@ -118,7 +118,8 @@ moduleManager.construct({
 		myFullName = 'app.' + myName,
 		selPrj: CProject,
 		cData: CCache,
-		displayOptions: any;
+		displayOptions: any,
+		chgCnt = 0;   // counts the changes of filter settings to avoid multiple filter runs within a timeframe
 
 	self.filters = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
@@ -174,6 +175,7 @@ moduleManager.construct({
 		return true;
 	};
 	self.clear = (): void => {
+		chgCnt = 0;
 		self.secondaryFilters = undefined;
 		$('#filterNotice').empty();
 		self.filters.length = 0;
@@ -263,7 +265,8 @@ moduleManager.construct({
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend = 0,
-			hitCnt = 0;
+			hitCnt = 0,
+			listed = [];
 		LIB.iterateNodes(
 			// iterate all hierarchies except the one for unreferenced resources:
 			(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
@@ -281,11 +284,14 @@ moduleManager.construct({
 				selPrj.readItems('resource', [nd.resource])
 					.then(
 						(rL) => {
-							let h = match(new CResourceToShow(rL[0] as SpecifResource));
+							let hit = match(new CResourceToShow(rL[0] as SpecifResource));
 //							console.debug('doFilter iterateNodes',self.filters,pend,rsp[0],h);
-							if (h) {
+							// list a hit, but only once:
+							// (even if the resource is referenced multiple times in the hierarchies)
+							if (hit && !listed.includes(hit.id)) {
 								hitCnt++;
-								$('#hitlist').append(h.listEntry());
+								listed.push(hit.id);
+								$('#hitlist').append(hit.listEntry());
 							};
 							if (--pend < 1) {  // all done
 								$('#filterNotice').html('<div class="notice-default" >' + i18n.LblHitCount + ': ' + hitCnt + '</div>');
@@ -795,7 +801,8 @@ moduleManager.construct({
 /*	function getTextFilterSettings( flt ) {
 		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };
 	} */
-	self.goClicked = ():void =>{  // go!
+	self.goClicked = (): void => {  // go!
+		// Today there is no more 'go' button, but any change in the filter settings arrives here and triggers a filter run.
 		self.secondaryFilters = undefined;
 
 		// read filter settings and update the filterlist:
@@ -813,7 +820,16 @@ moduleManager.construct({
 			};
 		});
 //		console.debug( 'goClicked', self.filters, fL );
-		doFilter();
+
+		// Avoid that the filter is re-run on every keystroke in the text search field
+		// (asynchronous matching of previous filter runs may appear on the hit-list).
+		chgCnt++;
+		setTimeout(
+			() => {
+				if (--chgCnt < 1) doFilter()
+			},
+			CONFIG.noMultipleRefreshWithin
+		)
 	};
 	self.resetClicked = ():void =>{  
 		// reset filters:
