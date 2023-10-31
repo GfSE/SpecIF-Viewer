@@ -58,21 +58,22 @@ moduleManager.construct({
 		
 	//	xDO.notify('Transforming Excel to SpecIF',10); 
 		// Transform the XLSX-data to SpecIF:
-		let data = xslx2specif(buf, self.parent.projectName, fDate);
+		let data = xlsx2specif(buf, self.parent.projectName, fDate);
 		xDO.resolve( data );
 
 		return xDO
 	};
-/*	self.fromSpecif = function (pr: SpecIF, opts?: any): string {
-	 	console.debug('toXls',pr)
-	}; */
+	self.fromSpecif = function (pr: SpecIF, opts?: any) {
+	//	console.debug('toXls', pr);
+		specif2xlsx(pr,opts);
+	};
 	self.abort = function():void {
 		app.projects.abort();
 		self.abortFlag = true
 	};
 	return self;
 
-function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
+function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	"use strict";
 	// requires sheetjs
 
@@ -138,7 +139,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		constructor(prjName:string) {
 			this.id = 'XLS-' + prjName.toSpecifId();
 			this.title = LIB.makeMultiLanguageValue(prjName);
-			this.generator = "xslx2specif";
+			this.generator = "xlsx2specif";
 			this.$schema = 'https://specif.de/v1.1/schema.json';
 			this.dataTypes = [
 				app.standards.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
@@ -779,7 +780,7 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		};
 	}
 
-	// Processing of xslx2specif:
+	// Processing of xlsx2specif:
 //	console.info( 'js-xlsx version', XLSX.version );
 	// Import an excel file:
 	// - wb is the whole workbook, consisting of 1 to several worksheets
@@ -832,13 +833,109 @@ function xslx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 //	console.debug('SpecIF',specifData);
 	return specifData;
 
-}	// end of xlsx2specif
-
-	function inBracketsAtEnd(str:string):string|undefined {
+	function inBracketsAtEnd(str: string): string | undefined {
 		// Extract resourceClass in (round brackets) or [square brackets]:
-	//	let resL = /\s*(?:\(|\[)([a-zA-Z\d:_\-].+?)(?:\)|\])$/.exec( pN );
+		//	let resL = /\s*(?:\(|\[)([a-zA-Z\d:_\-].+?)(?:\)|\])$/.exec( pN );
 		let resL = RE.inBracketsAtEnd.exec(str);
 		if (Array.isArray(resL) && resL.length > 1)
 			return resL[1] || resL[2];
-    }
+	}
+}	// end of xlsx2specif
+
+function specif2xlsx(data: SpecIF, opts?: any): void {
+	console.debug('toXlsx', data, opts);
+	// @ts-ignore - 'XLSX' is loaded at runtime
+	const wb = XLSX.utils.book_new();
+
+	// Fill all resources in a table according to the hierarchies.
+	let selPrj = app.projects.selected,
+		cData = selPrj.cache,
+		pend = 0,
+		// add first line with propertyClass titles:
+		// ToDo: 
+		// - sequence shall be title, descriptions, other
+		// - add native properties order, changedBy, changedAt
+		sheet = [
+			data.propertyClasses.map(
+				(pC) => {
+					return pC.title
+				}
+			)
+		];
+	LIB.iterateNodes(
+		// iterate all hierarchies except the one for unreferenced resources:
+		(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+			.filter(
+				(h: SpecifNode) => {
+					return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+				}
+			),
+		(nd: SpecifNode) => {
+			pend++;
+			//				console.debug('2xlsx',pend,nd.resource);
+			// Read asynchronously, so that the cache has the chance to reload from the server.
+			// - The sequence may differ from the hierarchy one's due to varying response times.
+			// - A resource will be listed several times, if it appears several times in the hierarchies.
+			selPrj.readItems('resource', [nd.resource])
+				.then(
+					(rL: SpecifResource[]) => {
+						// Add the resources property values 
+						// in the sequence of the columns = sequence of propertyClasses:
+						// ToDo: 
+						// - sequence shall be title, descriptions, other
+						// - add native properties order, changedBy, changedAt
+						sheet.push(
+							prpValues(rL[0])
+						);
+
+						if (--pend < 1) {  // all done
+							// @ts-ignore - 'XLSX' is loaded at runtime
+							const ws = XLSX.utils.aoa_to_sheet(sheet);
+							// @ts-ignore - 'XLSX' is loaded at runtime
+							XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+							// @ts-ignore - 'XLSX' is loaded at runtime
+							XLSX.writeFile(wb, opts.fileName + ".xlsx", { compression: true });
+							//	app.busy.reset();
+							if (typeof (opts.done) == "function") opts.done();
+						}
+					},
+					LIB.stdError
+				);
+			return true; // descend into deeper levels
+		}
+	);
+	return;
+
+	function prpValues(res: SpecifResource) {
+		// Return a list of the resource's property values
+		let prpL = [];
+		for (var pC of data.propertyClasses) {
+			let p = findPrp(res.properties, pC);
+			// @ts-ignore
+			let pVal = p ? p.values[0][0].text || p.values[0] : undefined;
+			//    console.debug('prpValues 2', p, pVal);
+			if (p && p.values.length > 1)
+				console.info("Only first property value exported to xlsx.");
+			prpL.push(pVal);
+		}
+		;
+		return prpL;
+		function findPrp(prpL:SpecifProperty[], pC:SpecifPropertyClass) {
+			// Find the property in prpL referencing the propertyClass pC
+			for (var p of prpL) {
+				if (LIB.references(p['class'], pC)) return p;
+			}
+		}
+	}
+
+	/*   function isArrayWithContent(array) {
+			return (Array.isArray(array) && array.length > 0);
+		};
+	   
+		function escapeSpecialCharaters(string) {
+			return string.replace("\\","\\\\").replace(/\\([\s\S])|(')/g, "\\$1$2").replace(/\n/g, "\\n");
+		}; */
+
+}
+
 });

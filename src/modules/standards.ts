@@ -300,9 +300,10 @@ CONFIG.headings =
 // The content of the property with a title in this list will be used for the title when displaying the resource:
 // The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
 // For example, if a resource has a property with title 'Title' and another with title 'ReqiF.Name',
-// the value of the latter will be the title of the resource.
+// the value of the latter will be the title of the resource, because it comes first in the list below.
 CONFIG.titleProperties = [
-    CONFIG.propClassTitle,
+	CONFIG.propClassTitle,
+	"schema:name",
     CONFIG.propClassTerm
     /*       'DC.title',
            // ReqIF 1.0 and 1.1 Implementation Guide:

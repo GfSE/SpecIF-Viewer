@@ -4,6 +4,7 @@
     "\\src",
     "\\src\\config",
     "\\src\\config\\locales",
+    "\\src\\export",
     "\\src\\modules",
     "\\src\\types",
     "\\src\\vendor",
@@ -11,6 +12,6 @@
     "\\src\\vendor\\assets\\javascripts",
     "\\src\\vendor\\assets\\stylesheets"
   ],
-  "SelectedNode": "\\src\\types",
+  "SelectedNode": "\\src\\vendor\\assets\\javascripts\\toOxml.js",
   "PreviewInSolutionExplorer": false
 }

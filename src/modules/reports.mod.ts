@@ -266,7 +266,6 @@ moduleManager.construct({
 				else throw Error("Did not find a report panel for resourceClass with id:"+rCk.id);
 
 				// b) A report (histogram) for each enumerated property:
-			//	let rC = cData.get("resourceClass", [rCk])[0] as SpecifResourceClass,
 				let rC = prj.readExtendedClasses("resourceClass", [rCk])[0] as SpecifResourceClass,
 					pC: SpecifPropertyClass,
 					dT: SpecifDataType,
@@ -313,22 +312,21 @@ moduleManager.construct({
 		// we must go through the tree because we want to consider only resources referenced by the selected project,
 		// ... and we must avoid to evaluate any resource more than once:
 		let pend = 0,
-			visitedR: SpecifId[] = [],
-			hL = (cData.get("hierarchy", prj.hierarchies) as SpecifNodes )
-					.filter(
-						(h: SpecifNode) => {
-							return LIB.typeOf(h.resource,cData) != CONFIG.resClassUnreferencedResources
-						}
-					);
+			visited: SpecifId[] = []; // list all evaluated resources
 
 		LIB.iterateNodes(
 			// iterate all hierarchies except the one for unreferenced resources:
-			hL,
+			(cData.get("hierarchy", prj.hierarchies) as SpecifNodes)
+				.filter(
+					(h: SpecifNode) => {
+						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+					}
+				),
 			(nd: SpecifNode) => {
-				if( visitedR.includes(nd.resource.id) ) return; 
+				if( visited.includes(nd.resource.id) ) return; 
 
 				// else not yet evaluated:
-				visitedR.push(nd.resource.id); // memorize all evaluated resources
+				visited.push(nd.resource.id); // memorize all evaluated resources
 
 				pend++;
 				// timelag>0 assures that 'all done' section is executed only once in case the resource is found in the cache:

@@ -578,9 +578,16 @@ var app:IApp,
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
-				case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
-			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@11.5.0/dist/bpmn-viewer.production.min.js'); return true;
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.2/dist/bpmn-viewer.production.min.js'); return true;
+			//	case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
+				case "excel":		//		loadModule('toXlsx');
+											getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true;
+									/*		import('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.mjs')
+												.then(XLSX => {
+													console.debug('xlsx', XLSX);
+													setReady(mod);
+												}); */
+			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.2/dist/bpmn-viewer.production.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@14.1.3/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
 										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
 										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
@@ -597,9 +604,9 @@ var app:IApp,
 											return true;
 
 				// libraries:
-				case "mainCSS": getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
+				case "mainCSS":				getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
 			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
-				case "types": getScript(loadPath + 'types/specif.types.js'); return true;
+				case "types":				getScript(loadPath + 'types/specif.types.js'); return true;
 				case "i18n": switch (browser.language.slice(0, 2)) {
 								case 'de': getScript(loadPath + 'config/locales/iLaH-de.i18n.js')
 									.done(() => { i18n = LanguageTextsDe() }); break;
@@ -630,9 +637,10 @@ var app:IApp,
 								loadModule('fileSaver');
 								getScript(loadPath + 'modules/toHtml.js'); return true;
 				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
-				case "toEpub": loadModule('toXhtml');
+				case "toEpub":	loadModule('toXhtml');
 								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
 				case "toOxml":	getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
+			//	case "toXlsx": getScript(loadPath + 'export/toXlsx.js'); return true;
 				case "toTurtle": getScript(loadPath + 'vendor/assets/javascripts/specif2turtle.js'); return true;
 				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
 				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;

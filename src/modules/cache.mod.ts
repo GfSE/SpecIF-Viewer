@@ -1093,14 +1093,17 @@ class CProject {
 		return resL;
 	}
 	readExtendedClasses(ctg: string, toGet: SpecifKeys) {
-		// Applies to resourceClasses and statementClasses;
-		// classes are always cached, so there is no need for a call with promise.
-		let self = this,
-			resL: any = [];
-		for (var clk of toGet) {
-			resL.push( extendClass(clk) )
+		let self = this;
+		if (['resourceClass', 'statementClass'].includes(ctg)) {
+			// Applies to resourceClasses and statementClasses;
+			// classes are always cached, so there is no need for a call with promise.
+			let resL: any = [];
+			for (var clk of toGet) {
+				resL.push(extendClass(clk))
+			};
+			return resL;
 		};
-		return resL;
+		throw Error("Programming Error: Called 'readExtendedClasses' with invalid category '" + ctg + "'.");
 
 		function extendClass(k:SpecifKey) {
 			let rC:any = {};
@@ -2222,8 +2225,10 @@ class CProject {
 	private renderExportOptions(fmt: string) {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
-			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
+			// input field for project name, it is pre-filled (only for certain output formats);
+			// 'zero width space' (&#x200b;) is added to make the label = div-id unique:
 			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, (fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName), { typ: 'line' }))
+			// input field for file name, it is pre-filled:
 			+ makeTextField('&#x200b;' + i18n.LblFileName, (fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName), { typ: 'line' });
 		switch (fmt) {
 			case 'epub':
@@ -2303,6 +2308,7 @@ class CProject {
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.0', id: 'reqif' },
+							{ title: 'MS Excel® (experimental)', id: 'xlsx' },
 							//	{ title: 'RDF', id: 'rdf' },
 							//	{ title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
@@ -2433,33 +2439,33 @@ class CProject {
 			}
 			else {
 			//	if (self.cache.exp) { // check permission
-					self.exporting = true; // set status to prohibit multiple entry
+				self.exporting = true; // set status to prohibit multiple entry
 
-					switch (opts.format) {
-						case 'specif_v10':
-					//	case 'rdf':
-						case 'turtle':
-							opts.v10 = true;
-							// no break
-						case 'reqif':
-						case 'specif':
-						case 'html':
-						case 'specifClasses':
-							storeAs(opts);
-							break;
-						case 'epub':
-						case 'oxml':
-							publish(opts);
-							break;
-						default:
-							// programming error!
-							reject(new xhrMessage(999, "Invalid format specified on export"));
-							throw Error("Invalid format specified on export");
-					};
+				switch (opts.format) {
+					case 'specif_v10':
+				//	case 'rdf':
+					case 'turtle':
+						opts.v10 = true;
+						// no break
+					case 'reqif':
+					case 'specif':
+					case 'html':
+					case 'specifClasses':
+						storeAs(opts);
+						break;
+					case 'xlsx':
+					case 'epub':
+					case 'oxml':
+						publish(opts);
+						break;
+					default:
+						// programming error!
+						reject(new xhrMessage(999, "Invalid format specified on export"));
+						throw Error("Invalid format specified on export");
 			//	}
 			//	else {
 			//		reject({ status: 999, statusText: "No permission to export" });
-			//	};
+				};
 			};
 			return;
 
@@ -2482,9 +2488,9 @@ class CProject {
 
 				opts.lookupTitles =
 				opts.lookupValues =
-				opts.makeHTML =
-				opts.linkifyURLs =
 				opts.allDiagramsAsImage = true;
+				opts.makeHTML =
+				opts.linkifyURLs = ['epub','oxml'].includes(opts.format);
 			//	opts.createHierarchyRootIfMissing = true;
 			//	opts.allImagesAsPNG = ["oxml"].includes(opts.format);   .. not yet implemented!!
 				// take newest revision:
@@ -2526,6 +2532,8 @@ class CProject {
 							case 'oxml':
 								// @ts-ignore - toOxml() is loaded at runtime
 								toOxml(expD, localOpts);
+							case 'xlsx':
+								app.ioXls.fromSpecif(expD, localOpts);
 						};
 						// resolve() is called in the call-backs defined by opts
 					},
@@ -2565,7 +2573,7 @@ class CProject {
 					case 'turtle':
 						// only single language is supported:
 						opts.lookupTitles = true;
-						opts.targetLanguage = self.language;
+						if (!opts.targetLanguage) opts.targetLanguage = self.language;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;

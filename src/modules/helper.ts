@@ -691,6 +691,53 @@ LIB.isEqualStringL = (refL: any[], newL: any[]): boolean => {
             if (newL.indexOf(lE) < 0) return false;
         return true;
 }
+/* Not yet readily developed:
+interface IClassifiedProperties {
+    title: CPropertyToShow;
+    descriptions: CPropertyToShow[];
+    other: CPropertyToShow[];
+}
+LIB.classifyProperties = (el: SpecifResource, data: SpecIF): void => {
+    let clPr: IClassifiedProperties,
+        rC = LIB.itemByKey(data.resourceClasses, el['class']); this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass
+
+    // Initially all properties are stored in data.other;
+    // further down the title and description properties are identified and moved:
+    // create a new list by copying the elements (do not copy the list ;-):
+    clPr.other = el.properties.map( (p: SpecifProperty) => { return new CPropertyToShow(p, rC) });
+
+	// Now, all properties are listed in data.other;
+	// in the following, the properties used as title and description will be identified
+	// and moved from data.other to data.title resp. data.descriptions:
+
+    // a) Find and set the configured title:
+    let a = LIB.titleIdx(data.other, data.propertyClasses);
+    if (a > -1) {  // found!
+        // .. in case of a title a single value is expected, so select it:
+        data.title = data.other.splice(a, 1)[0];
+    //	}
+//  else {
+        // In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+        // there is no title propertyClass;
+        // then create a property without class.
+        // If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+        // @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+//      data.title = { title: CONFIG.propClassTitle, value: el.title || '' };
+    };
+
+    // b) Check the configured descriptions:
+    // We must iterate backwards, because we alter the list of other.
+    data.descriptions = [];
+    for (a = data.other.length - 1; a > -1; a--) {
+        // to decide whether it is a description, use the original title of the resp. propertyClass
+        if (CONFIG.descProperties.includes(data.other[a].title)) {
+            // To keep the original order of the properties, the unshift() method is used.
+            data.descriptions.unshift(data.other.splice(a, 1)[0]);
+        }
+    };
+    return clPr;
+} */
+
 LIB.hasContent = (pV: string): boolean => {
     // must be a string with the value of the selected language.
     if (typeof (pV) != "string"

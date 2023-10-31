@@ -25,7 +25,7 @@ body {
 	font-size: 10.5pt;
 }
 #pageHeader {
-	padding: 0.3em 0 0 0;
+	padding: 0.3em 0 0.3em 0;
 }
 #logo {
 	width: 122px;
@@ -49,7 +49,6 @@ body {
 }
 .pageTitle {
 	font-size: 180%;
-	margin: 0 0 0.3em;  /* the enveloping pageHeader has a padding of 0.3em at the top */
 }
 .chapterTitle,
 h1 {

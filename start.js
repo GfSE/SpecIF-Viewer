@@ -26,7 +26,7 @@ async function cleanBuildTarget() {
 async function buildProject() {
   await executeCommand('npm run build');
 }
-
+/*
 async function openBrowser() {
   switch (process.platform) {
     case 'darwin':
@@ -41,7 +41,7 @@ async function openBrowser() {
     default:
       console.error('Unsupported platform!');
   }
-}
+} */
 
 async function main() {
   await cleanBuildTarget();

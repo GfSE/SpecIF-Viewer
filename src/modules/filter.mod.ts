@@ -266,7 +266,7 @@ moduleManager.construct({
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
 		let pend = 0,
 			hitCnt = 0,
-			listed = [];
+			visited: SpecifId[] = []; // list all evaluated resources
 		LIB.iterateNodes(
 			// iterate all hierarchies except the one for unreferenced resources:
 			(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
@@ -280,7 +280,7 @@ moduleManager.construct({
 //				console.debug('doFilter',pend,nd.resource);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
-				// - A resource may be listed several times, if it appears several times in the hierarchies.
+				// - A resource will be listed several times, if it appears several times in the hierarchies.
 				selPrj.readItems('resource', [nd.resource])
 					.then(
 						(rL) => {
@@ -288,9 +288,9 @@ moduleManager.construct({
 //							console.debug('doFilter iterateNodes',self.filters,pend,rsp[0],h);
 							// list a hit, but only once:
 							// (even if the resource is referenced multiple times in the hierarchies)
-							if (hit && !listed.includes(hit.id)) {
+							if (hit && !visited.includes(hit.id)) {
 								hitCnt++;
-								listed.push(hit.id);
+								visited.push(hit.id);
 								$('#hitlist').append(hit.listEntry());
 							};
 							if (--pend < 1) {  // all done
@@ -798,9 +798,6 @@ moduleManager.construct({
 		// render a single panel for enum filter settings:
 		return makeCheckboxField(flt.title, flt.options, { tagPos:'none', classes:'', handle:myFullName+'.goClicked()'} );
 	}
-/*	function getTextFilterSettings( flt ) {
-		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };
-	} */
 	self.goClicked = (): void => {  // go!
 		// Today there is no more 'go' button, but any change in the filter settings arrives here and triggers a filter run.
 		self.secondaryFilters = undefined;

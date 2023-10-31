@@ -1600,7 +1600,7 @@ moduleManager.construct({
 			}
 		refreshReqCnt++;
 		setTimeout(
-			() {
+			() => {
 				if (--refreshReqCnt < 1) self.doRefresh(params)
 			},
 			CONFIG.noMultipleRefreshWithin
