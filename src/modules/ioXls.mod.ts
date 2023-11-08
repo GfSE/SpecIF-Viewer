@@ -851,7 +851,7 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 	let selPrj = app.projects.selected,
 		cData = selPrj.cache,
 		pend = 0,
-		// add first line with propertyClass titles:
+		// add first line of the table with propertyClass titles:
 		// ToDo: 
 		// - sequence shall be title, descriptions, other
 		// - add native properties order, changedBy, changedAt
@@ -863,13 +863,15 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 			)
 		];
 	LIB.iterateNodes(
-		// iterate all hierarchies except the one for unreferenced resources:
+		// Iterate all hierarchies except the one for unreferenced resources:
 		(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
 			.filter(
 				(h: SpecifNode) => {
 					return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
 				}
 			),
+		// ... and extract the property values of the resources referenced in the hierarchies;
+		// where every resource results in a line of the table:
 		(nd: SpecifNode) => {
 			pend++;
 			//				console.debug('2xlsx',pend,nd.resource);
@@ -879,13 +881,13 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 			selPrj.readItems('resource', [nd.resource])
 				.then(
 					(rL: SpecifResource[]) => {
-						// Add the resources property values 
+						// Add the resource's property values 
 						// in the sequence of the columns = sequence of propertyClasses:
 						// ToDo: 
 						// - sequence shall be title, descriptions, other
 						// - add native properties order, changedBy, changedAt
 						sheet.push(
-							prpValues(rL[0])
+							prpValues(rL[0]) // rL should have exactly one element
 						);
 
 						if (--pend < 1) {  // all done
@@ -901,7 +903,7 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 					},
 					LIB.stdError
 				);
-			return true; // descend into deeper levels
+			return true; // continue and descend into deeper levels
 		}
 	);
 	return;
@@ -917,14 +919,14 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 			if (p && p.values.length > 1)
 				console.info("Only first property value exported to xlsx.");
 			prpL.push(pVal);
-		}
-		;
+		};
 		return prpL;
 		function findPrp(prpL:SpecifProperty[], pC:SpecifPropertyClass) {
 			// Find the property in prpL referencing the propertyClass pC
 			for (var p of prpL) {
 				if (LIB.references(p['class'], pC)) return p;
 			}
+			// else return 'undefined' resulting in an empty table cell.
 		}
 	}
 

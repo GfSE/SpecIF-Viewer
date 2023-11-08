@@ -9,8 +9,11 @@ function toEpub( data, opts ) {
 	// ePub Tutorials: 
 	// - https://www.ibm.com/developerworks/xml/tutorials/x-epubtut/index.html
 	// - http://www.jedisaber.com/eBooks/formatsource.shtml
-	// ToDo: Embed font with sufficient UTF-8 coverage: http://www.dpc-consulting.org/epub-praxis-fonts-einbinden-und-verwenden/
-	// ToDo: Control pagination: http://www.dpc-consulting.org/epub-praxis-seitenumbruche-steuern-und-elemente-zusammenhalten/
+
+	// ToDo: 
+	// - Embed font with sufficient UTF - 8 coverage: http://www.dpc-consulting.org/epub-praxis-fonts-einbinden-und-verwenden/
+	// - Control pagination: http://www.dpc-consulting.org/epub-praxis-seitenumbruche-steuern-und-elemente-zusammenhalten/
+	// - move image transformation to export filter
 
 	// Check for missing options:
 	if ( !opts ) opts = {};
@@ -31,7 +34,7 @@ function toEpub( data, opts ) {
 	var transformedImgL = [],
 		pend = 0;		// the number of pending operations
 	// Select and/or transform files as outlined above:
-	if( data.files && data.files.length>0 ) {
+	if( data.files ) {
 		data.files.forEach( function(f,i,L) {
 			if( !f.blob ) {
 				console.warn("File '"+f.title+"' content is missing.");

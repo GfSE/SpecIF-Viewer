@@ -1,30 +1,35 @@
+/*!	Create and return an XHTML document using SpecIF data.
+
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de
+	License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+	.. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+
+	Limitations:
+	- HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
+	- Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
+	- Accepts data-sets according to SpecIF v1.1.
+	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
+	- There must only be one revision per resource or statement
+
+	ToDo also:
+	- move the title linking to the export filter
+*/
+
 function toXhtml( data, options ) {
 	"use strict";
-	// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
-	//
-	// (C) copyright http://enso-managers.de
-	// Author: se@enso-managers.de
-	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
-	// We appreciate any correction, comment or contribution via e - mail to maintenance@specif.de
-	//	..or even better as Github issue(https://github.com/GfSE/SpecIF-Viewer/issues)
-	//
-	// Limitations:
-	// - HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
-	// - Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
-	// - Accepts data-sets according to SpecIF v0.10.8 and later.
-	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
-	// - There must only be one revision per resource or statement
 
-	// Reject versions < 1.0:
-	if (data.specifVersion) {
-		let eTxt = "SpecIF Version < v1.0 is not supported.";
+	// Reject versions < 1.1:
+	if (!data['$schema'] || data['$schema'].includes('v1.0')) {
+		let eTxt = "SpecIF Version < v1.1 is not supported.";
 		if (typeof (opts.fail) == 'function')
 			opts.fail({ status: 904, statusText: eTxt })
 		else
 			console.error(eTxt);
 		return
 	};
-	
+
 	let opts = Object.assign(
 		{
 			showEmptyProperties: false,
@@ -75,13 +80,14 @@ function toXhtml( data, options ) {
 			headings: [],		// used to build the ePub table of contents
 			sections: [],		// the xhtml files for the title and each chapter=section
 			images: []			// the referenced images
-		};
+		},
+		prTi = escapeXML(languageValueOf(data.title));
 
 	// Create a title page as xhtml-file and add it as first section:
 	xhtml.sections.push(
 			makeXhtmlFile({ 
-				title: escapeXML(data.title),
-				body: '<div class="title">'+escapeXML(data.title)+'</div>'
+				title: prTi,
+				body: '<div class="title">'+prTi+'</div>'
 			})
 	);
 	
@@ -92,7 +98,7 @@ function toXhtml( data, options ) {
 			pushHeading( h.title, {nodeId: h.id, level: 1} );
 			xhtml.sections.push(
 				makeXhtmlFile({ 
-					title: escapeXML(data.title),
+					title: prTi,
 					body: renderHierarchy( h, hi, 1 )
 				})
 			)

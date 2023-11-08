@@ -11,17 +11,21 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	Limitations:
-	- Accepts data-sets according to SpecIF v1.0.
+	- Accepts data-sets according to SpecIF v1.1.
 	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
 	- There must only be one revision per class, resource or statement
+
+	ToDo also:
+	- move the image transformation to the export filter
+	- move the title linking to the export filter
 */
 
 function toOxml( data, options ) {
 	"use strict";
 
-	// Reject versions < 1.0:
+	// Reject versions < 1.1:
 	if (!data['$schema'] || data['$schema'].includes('v1.0')) {
-		let eTxt = "SpecIF Version < v1.0 is not supported.";
+		let eTxt = "SpecIF Version < v1.1 is not supported.";
 		if (typeof(opts.fail)=='function' )
 			opts.fail({status:904,statusText:eTxt})
 		else

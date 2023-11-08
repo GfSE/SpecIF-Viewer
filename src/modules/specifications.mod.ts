@@ -130,7 +130,8 @@ class CPropertyToShow implements SpecifProperty {
 				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
-				if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
+			//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
+				if (app.ontology.propertyClassIsFormatted(this.title))
 					ct = ct.makeHTML(opts);
 				ct = this.titleLinks(ct, opts);
 				break;
@@ -1595,9 +1596,6 @@ moduleManager.construct({
 	self.refresh = ( params:any ):void =>{
 		// refresh the content, only;
 		// primarily provided for showing changes made by this client:
-			function tryRefresh() {
-				if( --refreshReqCnt<1 ) self.doRefresh( params )
-			}
 		refreshReqCnt++;
 		setTimeout(
 			() => {
@@ -1856,7 +1854,7 @@ moduleManager.construct({
 		function getNextResources():Promise<SpecifResource[]> {
 			var nd = self.parent.tree.selectedNode,
 				oL:SpecifKeys = [];  // id list of the resources to view
-			nL = [];  // list of hierarchy nodes
+			nL = [];  // list of hierarchy nodes defined within self.show()
 					
 			// Update browser history, if it is a view change or item selection, 
 			// but not navigation in the browser history (i.e. opts.urlParams is set):
@@ -1989,6 +1987,7 @@ moduleManager.construct({
 					selPrj.resourceClasses  // only the classes used by this project
 				)
 				.forEach(
+					// @ts-ignore - in this case rC *is* of SpecifResourceClass
 					(rC:SpecifResourceClass) => {
 						// list all resource types, for which the current user has permission to create new instances
 						// ... and which allow manual instantiation:

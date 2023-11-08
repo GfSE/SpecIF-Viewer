@@ -1266,7 +1266,8 @@ function stripHtml(html){
 } */
 String.prototype.stripCtrl = function():string {
 // Remove js/json control characters from HTML-Text or other:
-    return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
+    return this.replace( /\n|\r|\t|\b|\f|\v/g, '' );
+//  return str.replace(/[\u0009\u000a\u000c]|\n|\r|\t|\b|\f|\v/g, '');
 }
 String.prototype.ctrl2HTML = function():string {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
@@ -1387,18 +1388,36 @@ String.prototype.unescapeJSON = function () {
 String.prototype.escapeXML = function():string {
 // escape XML characters:
     // @ts-ignore - $0 is never read, but must be listed anyways
-    return this.replace(/&([^#])/g, ($0, $1) => { // only '&' which are not starting a XML entity
+    return this.replace(
+                RE.AmpersandPlus,
+                ($0, $1) => {
+                    // 1. Replace &, unless it belongs to an XML entity:
+                    if (RE.XMLEntity.test($0))
+                        // no replacement:
+                        return $0;
+                    // else, encode the '&' and add the remainder of the pattern:
+                    return '&#38;' + $1;
+                }
+            )
+            .replace(
+                /[<>"']/g,
+                ($0) => {
+                    // 2. Replace <, >, " and ':
+                    return "&#" + { "<": "60", ">": "62", '"': "34", "'": "39" }[$0] + ";";
+                }
+            )
+/*    return this.replace(/&([^#])/g, ($0, $1) => { // only '&' which are not starting a XML entity
                 return '&#38;' + $1
             })
             .replace(/["'<>]/g, ($0) => {
                 return "&#" + { "<": "60", ">": "62", '"': "34", "'": "39" }[$0] + ";"
-            })
+            }) */
 };
 String.prototype.escapeHTML = function():string {
 // escape HTML characters:
     return this.replace(/[&<>"'`=\/]/g, ($0)=>{
         return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
-    });
+    })
 };
 String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
@@ -1555,15 +1574,17 @@ LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void =
         reader.readAsText(file.blob);
 };
 LIB.uriBack2slash = (str: string): string => {
+	// Sometimes a Windows path is given containing '\' -> transform it to web-style ('/');
+    // replace back-slashes to slashes in all object and img tags:
     return str.replace(/<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g,
         ($0) => {
             return $0.replace(/(?:data=|href=)"([^"]+)"/g,
                 ($0) => {
                     return $0.replace(/\\/g, '/');
                 }
-            );
+            )
         }
-    );
+    )
 };
         
 // not good enough, but better than nothing:

@@ -402,7 +402,7 @@ moduleManager.construct({
 				if( LIB.indexById(separatedHC.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
-						let anc = LIB.itemByKex(pr.resourceClasses,rC['extends']);
+						let anc = LIB.itemByKey(pr.resourceClasses,rC['extends']);
 						if( Array.isArray(anc.propertyClasses) ) {
 							if ( Array.isArray(rC.propertyClasses) ) 
 								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);

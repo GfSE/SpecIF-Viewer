@@ -2532,6 +2532,7 @@ class CProject {
 							case 'oxml':
 								// @ts-ignore - toOxml() is loaded at runtime
 								toOxml(expD, localOpts);
+								break;
 							case 'xlsx':
 								app.ioXls.fromSpecif(expD, localOpts);
 						};

@@ -259,15 +259,22 @@ class COntology {
 
         return str;
     }
-    getIcon(ctg: string, term: string): string {
-        // Return an icon of a given term:
+    getTermValue(ctg: string, term: string, title: string): string {
+        // Return the property value of a given term:
 
         let rL = this.getTermResources(ctg, term);
         if (rL.length > 0) {
-            return this.valueByTitle(rL[0], "SpecIF:Icon") || ''
+            return this.valueByTitle(rL[0], title) // || ''
         };
         // else:
-        return '';
+        // return '';
+    }
+    propertyClassIsFormatted(term: string): boolean {
+        return this.getTermValue("propertyClass", term, "SpecIF:TextFormat") == SpecifTextFormat.Xhtml;
+    }
+    getIcon(ctg: string, term: string): string {
+        // Return an icon of a given term:
+        return this.getTermValue(ctg, term, "SpecIF:Icon");
     }
     changeNamespace(term: string, opts:any): string {
         // Given a term, try mapping it to the target namespace.
@@ -834,6 +841,10 @@ class COntology {
             - A term can be the plural of one or more other terms, but a term must not have more than one plural
             - A term having a plural attribute should not have a term related by 'isPluralOf' ... and vice versa.
             - A term which is the plural of another term must not have a plural itself.
+            - Data format of a propertyClass CONFIG.propClassTitle ('dcterms:title') must be 'plain'
+            - Data format of a propertyClass CONFIG.propClassDesc ('dcterms:description') should be 'xhtml'
+            - Data format of a propertyClass CONFIG.propClassDiagram ('SpecIF:Diagram') must be 'xhtml'
+            - Data format of a propertyClasses with enumerated values should be 'plain'
             - ToDo: complete the list ...
         */
 

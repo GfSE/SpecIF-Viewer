@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.q.9",
+    CONFIG.appVersion = "1.1.q.10",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
@@ -269,3 +269,6 @@ const tagsHtml = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|
     RE.vocabularyTerm = /^[\w-]+(?:\:|\.)[\w\.:-]+$/;  // '_' is a word character, thus included in \w
     RE.splitVocabularyTerm = /^([\w-]+:|[\w-]+\.)?([\w\.:-]+)$/;
 // (\w+)(?:\.|:|$)   ^[\w:\.]+$
+
+    RE.AmpersandPlus = new RegExp('&(.{0,8})', 'g');
+    RE.XMLEntity = new RegExp('&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', '');
