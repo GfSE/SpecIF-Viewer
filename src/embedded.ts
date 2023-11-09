@@ -76,12 +76,15 @@ function SpecifApp():IApp {
 				selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 			}, {
 				name: CONFIG.resourceEdit,
-				requires: [CONFIG.specifications]	// load not before the specified modules are ready
+				requires: [CONFIG.specifications]	// load as soon as the specified modules are ready
 				// no loadAs, so name will be used for the controller object
 				// no view; just a modal dialog will be used
 				// no selector
 				// The modal dialog will be called by pressing an item action button; 
 				//   the function to call is added manually in view 'CONFIG.specifications'.
+			}, {
+				name: CONFIG.resourceLink
+			// as above
 			}]
 		}, {
 			action: 'app.export()',
@@ -119,12 +122,8 @@ function SpecifApp():IApp {
 					// as long as we don't have a user/identity management,
 					// set a default user role for this app;
 					// window.role has a value because this is executed as HTML with embedded SpecIF:
-					me.projectRoles = [
-						{
-							project: "any", // default
-							role: window.role || "Supplier"
-						} as IProjectRole
-					];
+					// @ts-ignore - window.role is defined in toHtml.ts
+					me.roleAssignments = [new CRoleAssignment("any", app.ontology.normalize("resourceClass", window.role || "ReqIF-WF:Supplier"))];
 
 					// data and type are valid, but it is necessary to indicate that the data is not zipped:
 					self.ioSpecif.init({ mediaTypeOf: LIB.attachment2mediaType });

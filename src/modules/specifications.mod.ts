@@ -9,24 +9,15 @@
 	ToDo: This module is lousy coding with lots of historical burden --> redo!
 */
 
-/* const StandardRoles = [
-	"Manager",
-	"Editor",
-	"Customer",
-	"Supplier",
-	"Reviewer",
-	"Reader"
-]; */
-
 RE.titleLink = new RegExp(CONFIG.titleLinkBegin + '(.+?)' + CONFIG.titleLinkEnd, 'g');
 class CPropertyToShow implements SpecifProperty {
-	id?: string;
-	title?: SpecifMultiLanguageText[] | string;
+	title: string;
 	description?: SpecifMultiLanguageText[] | string;
 	// @ts-ignore - presence of 'class' is checked by the schema on import
 	class: SpecifKey;
 	private cData: CCache;  // the classes are always available in the cache, not necessarily the instances
 	selPrj: CProject;
+//	selRes: CResourceToShow; // in fact it is CResourceToShow
 	pC: SpecifPropertyClass;
 	dT: SpecifDataType;
 	replaces?: string[];
@@ -35,48 +26,49 @@ class CPropertyToShow implements SpecifProperty {
 	values: SpecifValues;
 	enumIdL?: SpecifValues;
 
-	constructor(prp: SpecifProperty, res:SpecifResource) {
+	constructor(prp: SpecifProperty, rC:SpecifResourceClass) {
 		// @ts-ignore - index is ok:
 		for (var a in prp) this[a] = prp[a];
 
 		this.cData = app.projects.cache;
 		this.selPrj = app.projects.selected;
+//		this.selRes = res;
 		// @ts-ignore - 'class' is in fact initialized, above:
 		this.pC = this.cData.get("propertyClass", [this['class']])[0] as SpecifPropertyClass;
 		this.dT = this.cData.get("dataType", [this.pC.dataType])[0] as SpecifDataType;
 
-		// Get the propertyClass' permissions:
-		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.pC.id);
-		if (iPrm)
-			this.pC.permissions = iPrm.permissions
-		else {
-			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', res.rC.id);
-			if (iPrm)
-				this.pC.permissions = iPrm.permissions
-			else {
-				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
-				if (iPrm)
-					this.pC.permissions = iPrm.permissions
-				else
-					this.pC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
-			}
-		};
+		// Find the propertyClass' title:
+		// An input data-set may have titles which are not from the SpecIF vocabulary,
+		// but do not yet replace the result with a preferred vocabulary term:
+		this.title = LIB.titleOf(this.pC, { targetLanguage: 'default' });
 
-		// by default, use the propertyClass' title:
-		// An input data-set may have titles which are not from the SpecIF vocabulary;
-		// replace the result with a preferred vocabulary term:
-		this.title = vocabulary.property.specif(this.pC.title);
-
+		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		if (this.dT.enumeration) {
-		//	this.enumIdL = simpleClone(prp.values);  // keep original values for resourceEdit
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
-			// ToDo: Check use of default values - here it is used differently
-			this.values = this.listEnumeratedValues();
+			// ToDo: Check use of default values
+			this.values = this.getEnumValues();
+		};
+
+		// Get the propertyClass' permissions:
+		let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.pC.id);
+		if (iPrm)
+			this.pC.permissionVector = iPrm.permissionVector
+		else {
+			iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', rC.id);
+			if (iPrm)
+				this.pC.permissionVector = iPrm.permissionVector
+			else {
+				iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.selPrj.id);
+				if (iPrm)
+					this.pC.permissionVector = iPrm.permissionVector
+				else
+					this.pC.permissionVector = noPermission
+			}
 		}
 	}
-	private listEnumeratedValues() {
-		// replace identifiers of enumerated values by their value as defined in the dataType:
+	private getEnumValues() {
+		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		var oL: SpecifValues = [];
 		for( var v of this.values ) {
 			oL.push(LIB.itemById(this.dT.enumeration, v).value);
@@ -91,75 +83,55 @@ class CPropertyToShow implements SpecifProperty {
 		if (this.dT.type == SpecifDataTypeEnum.String) {
 			let lV;
 			if (opts && opts.targetLanguage) {
-				/*	if (this.dT.enumeration) {
-						let v: SpecifMultiLanguageText;
-						this.values.forEach((id) => {
-							v = LIB.itemById(this.dT.enumeration, id).value;
-							str += LIB.languageValueOf(v, opts);
-						});
-					}
-					else */
 				this.values.forEach(
 					(v: any, i: number) => {
-						lV = LIB.languageValueOf(v, opts);
-						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? i18n.lookup(lV) : lV );
+						lV = LIB.languageTextOf(v, opts);
+						str += (i < 1 ? '' : ', ') + (opts.lookupValues ? app.ontology.localize(lV,opts) : lV );
+					//	str += (i < 1 ? '' : ', ') + lV;
 					});
-				return str;
+				// remove any leading whiteSpace:
+				return str.replace(/^\s+/, "");
 			};
 			// else
-			throw Error("When displaying a property value, a target language must be specified.");
+			throw Error("When displaying a property value with dataType string, a target language must be specified.");
 		};
 		// else, all data types except string:
 		this.values.forEach((v: any, i: number) => { str += (i<1? '' : ', ') + v; });
-		return str;
-
-	/*	let ct = '',
-				eV;
-			console.debug('enumValueOf',dT,val,opts);
-			dT.enumeration.forEach( (v,i)=>{
-				eV = LIB.languageValueOf( LIB.itemById(dT.enumeration,v).value, opts );
-				// If 'eV' is an id, replace it by the corresponding value, otherwise don't change:
-				// For example, when an object is from a search hitlist or from a revision list,
-				// the value ids of an ENUMERATION have already been replaced by the corresponding titles.
-				if (opts && opts.lookupValues)
-					eV = i18n.lookup(eV);
-				ct += (i == 0 ? '' : ', ') + (eV ? eV : v);
-			});
-			return ct; */
+		return str
     }
 	isVisible(opts: any): boolean {
 		return (CONFIG.hiddenProperties.indexOf(this.title)<0 // not listed as hidden
 			&& (CONFIG.showEmptyProperties || LIB.hasContent(this.allValues(opts))))
 	}
 	get( options: any): string {
-		let opts = $.extend({
+		let opts = Object.assign({
 				titleLinking: false,
+				lookupValues: false,
 				targetLanguage: this.selPrj.language,
-				titleLinkTargets: CONFIG.titleLinkTargets,
 				clickableElements: false,
 				linkifyURLs: false,
 				// some environments escape the tags on export, e.g. camunda / in|flux:
 				unescapeHTMLTags: false,
 				// markup to HTML:
-				makeHTML: false,
-				lookupValues: false
+				makeHTML: false
 			},
 			options
 		);
 
-		// Malicious content has been removed upon import ( specif.toInt() ).
+		// Malicious content has been removed upon import ( CSpecif.toInt() ).
+		// References to enumerated values have already be replaced by their values.
 		let ct: string;
 //		console.debug('*',this,this.dT);
 		switch (this.dT.type) {
 			case SpecifDataTypeEnum.String:
-				// remove any leading whiteSpace:
-				ct = this.allValues(opts).replace(/^\s+/, "");
+				ct = this.allValues(opts);
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
-				if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
+			//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
+				if (app.ontology.propertyClassIsFormatted(this.title))
 					ct = ct.makeHTML(opts);
 				ct = this.titleLinks(ct, opts);
 				break;
@@ -210,7 +182,8 @@ class CPropertyToShow implements SpecifProperty {
 						ti: string,
 						rC: SpecifResourceClass,
 						target: SpecifResource;
-					// is ti a title of any resource?
+
+					// Check if ti is a title of any resource:
 					app.specs.tree.iterate((nd: jqTreeNode) => {
 						cR = LIB.itemByKey(this.cData.resources, nd.ref);
 						// avoid self-reflection:
@@ -230,7 +203,7 @@ class CPropertyToShow implements SpecifProperty {
 					// @ts-ignore - target may be undefined, indeed:
 					if (target)
 						return lnk(target, $1)+$2;
-					// The dynamic link has NOT been matched/replaced, so mark it:
+					// The dynamic link has NOT been matched/replaced, so remove the titleLink pattern and mark it:
 					return '<span style="color:#D82020">' + $1 + '</span>'+$2
 				}
 			)
@@ -316,9 +289,9 @@ class CPropertyToShow implements SpecifProperty {
 					h2 = getAttr("height", $2),
 					d = $4 || u1;		// If there is no description, use the name of the link object
 
-//				console.debug('fileRef.toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
-				if (!u1) console.warn('no file found in '+$0);
-				if (!u2) console.warn('no image found in '+$0);
+//				console.debug('toGUI nestedObject: ', $0,'|', $1,'|', $2,'|', $3,'|', $4,'||', u1,'|', t1,'|', w1, h1,'|', u2,'|', t2,'|', w2, h2,'|', d );
+				if (!u1) console.warn('No file reference found in '+$0);
+				if (!u2) console.warn('No image reference found in '+$0);
 			//	u1 = addFilePath(u1);
 			//	u2 = addFilePath(u2);
 
@@ -358,7 +331,7 @@ class CPropertyToShow implements SpecifProperty {
 				}
 			}
 		);
-//		console.debug('fileRef.toGUI 1: ', txt);
+//		console.debug('toGUI 1: ', txt);
 
 		// 2. transform a single object to link+object resp. link+image:
 		txt = txt.replace(RE.tagSingleObject,   //  comprehensive tag or tag pair
@@ -381,7 +354,7 @@ class CPropertyToShow implements SpecifProperty {
 				let d = $3 || u1,
 					hasImg = false;
 				e = e.toLowerCase();
-//				console.debug('fileRef.toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
+//				console.debug('toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
 
 			//	u1 = addFilePath(u1);
 				if (!u1) console.warn('no image or link found in '+$0);
@@ -395,12 +368,12 @@ class CPropertyToShow implements SpecifProperty {
 						f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
 					};
 				};
-				// ... cannot happen any more now, is still here for compatibility with older files only.
+				// ... cannot happen any more now, is still here for compatibility with older files.
 
-				if (CONFIG.imgExtensions.includes(e) || CONFIG.applExtensions.includes(e)) {
+				if (f1.canBeRenderedAsImage()) {
 					// it is an image, show it:
 					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('fileRef.toGUI 2a found: ', f1, u1 );
+//					console.debug('toGUI 2a found: ', f1, u1 );
 					if (f1.hasContent()) {
 						hasImg = true;
 						// Create the DOM element to which the image will be added:
@@ -418,7 +391,7 @@ class CPropertyToShow implements SpecifProperty {
 						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
 					};
 				}
-				else if (CONFIG.officeExtensions.includes(e)) {
+				else if (f1.canBeDownloaded()) {
 					// it is an office file, show an icon plus filename:
 					if (f1.hasContent()) {
 						hasImg = true;
@@ -475,7 +448,7 @@ class CPropertyToShow implements SpecifProperty {
 				return 'aBra§kadabra' + (repStrings.length - 1) + '§';
 			}
 		);
-//		console.debug('fileRef.toGUI 2: ', txt);
+//		console.debug('toGUI 2: ', txt);
 
 		// 3. process a single link:
 		txt = txt.replace(RE.tagA,
@@ -506,15 +479,15 @@ class CPropertyToShow implements SpecifProperty {
 				return ('<a href="' + u1 + '" ' + t1 + ' target="_blank" >' + e + '</a>')
 			}
 		);
-//		console.debug('fileRef.toGUI 3: ', txt);
+//		console.debug('toGUI 3: ', txt);
 
 		// Now, at the end, replace the placeholders with the respective strings,
-		txt = txt.replace(/aBra§kadabra([0-9]+)§/g,
+		txt = txt.replace(/aBra§kadabra(\d+)§/g,
 			// @ts-ignore - $0 is never read, but must be specified anyways
 			($0, $1) => {
 				return repStrings[$1]
 			});
-//		console.debug('fileRef.toGUI result: ', txt);
+//		console.debug('toGUI result: ', txt);
 		return txt
 	}
 }
@@ -525,7 +498,7 @@ class CResourceToShow {
 	private cData: CCache;
 	rC: SpecifResourceClass;
 	hasPropertyWithUpdatePermission = false;
-	isHeading = false; // will be set in the constructor if appropriate
+	language: string;
 	order: string;
 	revision?: string;
 	replaces?: string[];
@@ -542,57 +515,19 @@ class CResourceToShow {
 
 		this.id = el.id;
 		this['class'] = el['class'];
-	//	this.rC = this.cData.get("resourceClass", [el['class']])[0] as SpecifResourceClass;
 		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
 		this.revision = el.revision;
+		this.language = el.language || this.selPrj.language;
 		this.order = el.order;
 		this.revision = el.revision;
 		this.replaces = el.replaces;
 		this.changedAt = el.changedAt;
 		this.changedBy = el.changedBy;
-		this.descriptions = [];
 
-		// Get the resourceClass' permissions:
-		let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
-		if (iPrm)
-			this.rC.permissions = iPrm.permissions
-		else {
-			iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
-			if (iPrm)
-				this.rC.permissions = iPrm.permissions
-			else
-				this.rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
-		};
-
+		// Initially all properties are stored in this.other;
+		// further down the title and description properties are identified and moved:
 		// create a new list by copying the elements (do not copy the list ;-):
-		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p,this) });
-
-		// Find out, whether there is at least one property with update permission,
-		// so that the actionBtns can be activated/deactivated
-		// - note that the list of properties is incomplete, but we must iterate *all* propertyClasses. 
-		for ( var pC of this.cData.get('propertyClass',this.rC.propertyClasses) ) {
-			// Get the propertyClass' permissions:
-			let iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', pC.id);
-			if (iPrm)
-				pC.permissions = iPrm.permissions
-			else {
-				iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.rC.id);
-				if (iPrm)
-					pC.permissions = iPrm.permissions
-				else {
-					iPrm = LIB.itemBy(this.selPrj.myItemPermissions, 'item', this.selPrj.id);
-					if (iPrm)
-						pC.permissions = iPrm.permissions
-					else
-						pC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
-				}
-			};
-
-			if (pC.permissions.U) {
-				this.hasPropertyWithUpdatePermission = true;
-				break
-			}
-		};
+		this.other = LIB.forAll(el.properties, (p: SpecifProperty) => { return new CPropertyToShow(p, this.rC) });
 
 		// Now, all properties are listed in this.other;
 		// in the following, the properties used as title and description will be identified
@@ -601,35 +536,70 @@ class CResourceToShow {
 		// a) Find and set the configured title:
 		let a = LIB.titleIdx(this.other, this.cData.propertyClasses);
 		if (a > -1) {  // found!
+			// .. in case of a title a single value is expected, so select it:
 			this.title = this.other.splice(a, 1)[0];
-		}
-	/*	else
-			throw Error("Did not find a title for resource with id:"+this.id);
-		else {
-			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-			// there is no title propertyClass;
-			// then create a property without class.
-			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; 
-		}; */
-		this.isHeading = this.rC.isHeading
-			|| CONFIG.headingProperties.includes(this.rC.title);
+			/*	}
+				else {
+					// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+					// there is no title propertyClass;
+					// then create a property without class.
+					// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+					// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+					this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
+		};
 
 		// b) Check the configured descriptions:
 		// We must iterate backwards, because we alter the list of other.
-		// ToDo: use this.other.filter()
+		this.descriptions = [];
 		for (a = this.other.length - 1; a > -1; a--) {
+			// to decide whether it is a description, use the original title of the resp. propertyClass
 			if (CONFIG.descProperties.includes(this.other[a].title)) {
 				// To keep the original order of the properties, the unshift() method is used.
 				this.descriptions.unshift(this.other.splice(a, 1)[0]);
 			}
 		};
 
-	/*	// c) In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-		//    there is no description propertyClass;
-		if (this.descriptions.length < 1 && el.description )
-			this.descriptions.push(new CPropertyToShow({ title: CONFIG.propClassDesc, value: el.description }));  */
+		// Get the resourceClass' permissions:
+		let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.rC.id);
+		if (iPrm)
+			this.rC.permissionVector = iPrm.permissionVector
+		else {
+			iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.selPrj.id);
+			if (iPrm)
+				this.rC.permissionVector = iPrm.permissionVector
+			else
+				this.rC.permissionVector = noPermission
+		};
+
+		// Find out, whether there is at least one property with update permission,
+		// so that the actionBtns can be activated/deactivated
+		// - note that the list of properties is often incomplete, but we must iterate *all* propertyClasses. 
+		for (var pC of this.cData.get('propertyClass', this.rC.propertyClasses) as SpecifPropertyClass[]) {
+			// Get the propertyClass' permissions;
+			// the permissions can be temporarily stored in pC, because it is a clone:
+			let iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', pC.id);
+			if (iPrm)
+				pC.permissionVector = iPrm.permissionVector
+			else {
+				iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.rC.id);
+				if (iPrm)
+					pC.permissionVector = iPrm.permissionVector
+				else {
+					iPrm = LIB.itemBy(this.selPrj.myPermissions, 'item', this.selPrj.id);
+					if (iPrm)
+						pC.permissionVector = iPrm.permissionVector
+					else
+						pC.permissionVector = noPermission
+				}
+			};
+
+			// this is what we want after all the analysis, before:
+			if (pC.permissionVector.U) {
+				this.hasPropertyWithUpdatePermission = true;
+				break
+			}
+		};
+
 //		console.debug( 'classifyProps 2', simpleClone(this) );
 	}
 	isEqual(res: SpecifResource): boolean {
@@ -657,21 +627,21 @@ class CResourceToShow {
 		// Remove all formatting for the title, as the app's format shall prevail.
 		// ToDo: remove all marked deletions (as prepared be diffmatchpatch), see deformat()
 		// Assuming that a title property has only a single value:
-		let ti = LIB.languageValueOf(this.title.values[0], opts);
-		if (this.isHeading) {
-			// lookup titles only, if it is a heading; those may have vocabulary terms to translate;
-			// whereas the individual elements may mean the vocabulary term as such (example: vocabulary/ontology):
-			if (opts && opts.lookupTitles)
-				ti = i18n.lookup(ti);
+	//	let ti = LIB.languageTextOf(this.title.values[0], opts);
+
+		// The resource title is the value of the title property;
+		// lookup the title value only if the element is a heading (folder named after a term, but not an ontology term itself):
+		let ti = LIB.displayValueOf(this.title.values[0], Object.assign({}, opts, { lookupValues: this.rC.isHeading, stripHTML:true }));
+		if (this.rC.isHeading) {
 			// it is assumed that a heading never has an icon:
-			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>';
+			return '<div class="chapterTitle" >' + (this.order ? this.order + '&#160;' : '') + ti + '</div>'
 		};
 		// else: is not a heading:
 		// take title and add icon, if configured:
 		return '<div class="objectTitle" >' + (CONFIG.addIconToInstance ? LIB.addIcon(ti, this.rC.icon) : ti) + '</div>'
 	}
-	private renderChangeInfo(): string {
-		if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
+/*	private renderChangeInfo(): string {
+	//	if (!this.revision) return '';  // the view may be faster than the data, so avoid an error
 		var chI = '';
 		switch (app.specs.selectedView()) {
 			case '#' + CONFIG.objectRevisions:
@@ -683,27 +653,34 @@ class CResourceToShow {
 			//	default: no change info!			
 		};
 		return chI
-	}
-	listEntry(options?: any): string {
+	} */
+	listEntry(): string {
 		// for the list view, where title and text are shown in the main column and the others to the right.
 		if (!this.id)
 			return '<div class="notice-default">' + i18n.MsgNoObject + '</div>';
 
 		// Create HTML for a list entry:
-		var opts = options ? simpleClone(options) : {};
-		opts.targetLanguage = this.selPrj.language;
-		opts.titleLinking
-			= opts.clickableElements
-			= opts.linkifyURLs
-			= ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView());
-		// ToDo: Consider to make it a user option:
-		opts.unescapeHTMLTags = true;
-		// ToDo: Make it a user option:
-		opts.makeHTML = true;
-		opts.lookupValues = true;
-		opts.lookupTitles = true;
-		opts.localDateTime = true;
-		opts.rev = this.revision;
+		const clickable = ['#' + CONFIG.objectList, '#' + CONFIG.objectDetails].includes(app.specs.selectedView()),
+			opts = {
+				clickableElements: clickable,
+				linkifyURLs: clickable,
+				// ToDo: Consider to make it a user option:
+				unescapeHTMLTags: true,
+				// ToDo: Make it a user option:
+				makeHTML: true,
+				lookupTitles: true,
+				lookupValues: true,
+				targetLanguage: this.language,
+				localDateTime: true,
+				rev: this.revision
+			},
+			optsDesc = Object.assign(
+				{
+					titleLinking: clickable,
+					titleLinkTargets: app.standards.titleLinkTargets()
+				},
+				opts
+			);
 
 		var rO = '<div class="listEntry">'
 			+ '<div class="content-main">';
@@ -725,8 +702,7 @@ class CResourceToShow {
 		// 1.2 The description properties:
 		this.descriptions.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
-			//	rO += '<div class="attribute attribute-wide">' + prp.get(opts) + '</div>'
-				rO += this.renderAttr('', prp.get(opts))
+				rO += this.renderAttr('', prp.get(optsDesc))
 			}
 		});
 		rO += '</div>'  // end of content-main
@@ -747,15 +723,18 @@ class CResourceToShow {
 			}; */
 
 		// 3 Fill a separate column to the right
-		// 3.1 The remaining properties:
+		// 3.1 The resource class:
+		rO += this.renderAttr(app.ontology.localize('SpecIF:Resource', opts), LIB.titleOf(this.rC, opts), 'attribute-condensed');
+
+		// 3.2 The remaining properties:
 		this.other.forEach((prp: CPropertyToShow): void => {
 			if (prp.isVisible(opts)) {
 				rO += this.renderAttr(LIB.titleOf(prp, opts), prp.get(opts), 'attribute-condensed');
 			}
 		});
-		// 3.2 The type info:
-		// 3.3 The change info depending on selectedView:
-		rO += this.renderChangeInfo();
+	/*	// 3.3 The change info depending on selectedView:
+		rO += this.renderChangeInfo();  */
+
 		rO += '</div>'	// end of content-other
 			+ '</div>';  // end of listEntry
 
@@ -786,7 +765,7 @@ class CResourceToShow {
 			rO += this.renderAttr( LIB.titleOf(prp,opts), propertyValueOf(self.toShow,prp,opts) )
 		});
 		// 4 The type info:
-		rO += this.renderAttr( i18n.lookup("SpecIF:Type"), LIB.titleOf( self.toShow.rC, opts ) );
+		rO += this.renderAttr( app.ontology.localize("SpecIF:Type"), LIB.titleOf( self.toShow.rC, opts ) );
 		// 5 The change info depending on selectedView:
 		rO += this.renderChangeInfo();
 //		console.debug( 'CResource.details', self.toShow, rO );
@@ -816,9 +795,9 @@ class CResourceToShow {
 		txt = stripHTML(txt);
 		// Finally re-insert the deletions and insertions with their tags:
 		// ToDo: Remove any HTML-tags within insertions and deletions
-		if(mL.length) txt = txt.replace( /abRakad@bra([0-9]+)#/g, function( $0, $1 ) { return mL[$1] });
-		if(iL.length) txt = txt.replace( /siM§alabim([0-9]+)#/g, function( $0, $1 ) { return iL[$1] });
-		if(dL.length) txt = txt.replace( /hoKu§pokus([0-9]+)#/g, function( $0, $1 ) { return dL[$1] });
+		if(mL.length) txt = txt.replace( /abRakad@bra(\d+)#/g, function( $0, $1 ) { return mL[$1] });
+		if(iL.length) txt = txt.replace( /siM§alabim(\d+)#/g, function( $0, $1 ) { return iL[$1] });
+		if(dL.length) txt = txt.replace( /hoKu§pokus(\d+)#/g, function( $0, $1 ) { return dL[$1] });
 		return txt
 	}  */
 class CResourcesToShow {
@@ -929,11 +908,18 @@ class CFileWithContent implements IFileWithContent {
 	hasContent(): boolean {
 		return this.hasBlob() || this.hasDataURL();
 	}
+	canBeRenderedAsImage(): boolean {
+		return ['png', 'svg', 'bpmn', 'jpg', 'jpeg', 'gif'].includes(this.title.fileExt().toLowerCase())
+	//	return ['image/png', 'image/x-png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'application/bpmn+xml'].includes(e);
+	}
+	canBeDownloaded(): boolean {
+		return CONFIG.officeExtensions.concat(CONFIG.applExtensions).includes(this.title.fileExt().toLowerCase())
+	}
 	renderDownloadLink(txt: string, opts?: any): void {
 		function addL(r: string, fTi: string, fTy: string): void {
 			// add link with icon to DOM using an a-tag with data-URL:
 			document.getElementById(tagId(fTi)).innerHTML =
-				'<a href="' + r + '" type="' + fTy + '" download="' + fTi + '" >' + txt + '</a>';
+				'<a href="' + r + '" type="' + fTy + '" download="' + fTi.baseName() + '" >' + txt + '</a>';
 		}
 
 		// Attention: the element with id 'f.id' has not yet been added to the DOM when execution arrives here;
@@ -1170,7 +1156,7 @@ class CFileWithContent implements IFileWithContent {
 						let eId = this.className.baseVal.split(' ')[1],		// id is second item in class list
 							selPrj = app.projects.selected,
 							clsPrp = new CResourceToShow(itemBySimilarId(selPrj.cache.resources, eId)),
-							ti = LIB.languageValueOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
+							ti = LIB.languageTextOf(clsPrp.title.values[0], { targetLanguage: selPrj.language }),
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
@@ -1529,7 +1515,7 @@ moduleManager.construct({
 			var oE:jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
-				name: self.cData.instanceTitleOf(r, $.extend({}, opts, {neverEmpty:true})),
+				name: self.cData.instanceTitleOf(r, Object.assign({}, opts, {neverEmpty:true})),
 				ref: iE.resource,
 				children: LIB.forAll( iE.nodes, toJqTree )
 			};
@@ -1548,7 +1534,7 @@ moduleManager.construct({
 
 		self.cData = self.selPrj.cache;
 
-		$('#pageTitle').html(LIB.languageValueOf(self.selPrj.title, { targetLanguage: self.selPrj.language }));
+		$('#pageTitle').html(LIB.languageTextOf(self.selPrj.title, { targetLanguage: self.selPrj.language }));
 		app.busy.set();
 	//	$( self.view ).html( '<div class="notice-default">'+i18n.MsgInitialLoading+'</div>' );
 	//	$('#specNotice').empty();
@@ -1558,8 +1544,8 @@ moduleManager.construct({
 			nd: jqTreeNode;
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
-		self.targetLanguage = opts.targetLanguage = self.selPrj.language;
-		opts.lookupTitles = true;
+		opts.targetLanguage = self.selPrj.language;
+		opts.lookupValues = true;
 				
 		// Initialize the tree, unless
 		// - URL parameters are specified where the project is equal to the loaded one
@@ -1610,11 +1596,13 @@ moduleManager.construct({
 	self.refresh = ( params:any ):void =>{
 		// refresh the content, only;
 		// primarily provided for showing changes made by this client:
-			function tryRefresh():void {
-				if( --refreshReqCnt<1 ) self.doRefresh( params )
-			}
 		refreshReqCnt++;
-		setTimeout( tryRefresh, CONFIG.noMultipleRefreshWithin )
+		setTimeout(
+			() => {
+				if (--refreshReqCnt < 1) self.doRefresh(params)
+			},
+			CONFIG.noMultipleRefreshWithin
+		)
 	};
 	self.doRefresh = ( parms:any ):void =>{
 		// Refresh the view;
@@ -1642,8 +1630,8 @@ moduleManager.construct({
 			.then(
 				() => {
 					self.updateTree({
-						targetLanguage: browser.language,
-						lookupTitles: true
+					//	lookupTitles: true,
+						targetLanguage: self.selPrj.language
 					});
 					self.doRefresh({ forced: true })
 				}
@@ -1702,7 +1690,7 @@ moduleManager.construct({
 			.fail( handleError );
 		
 		// ToDo: The dialog is hard-coded for the currently defined allClasses for comments (stdTypes-*.js).  Generalize!
-		var txtLbl = i18n.lookup( CONFIG.propClassDesc ),
+		var txtLbl = app.ontology.localize( CONFIG.propClassDesc ),
 			txtPrC = itemByName( cT.propertyClasses, CONFIG.propClassDesc );
 		var dT = LIB.itemById( self.cData.dataTypes, txtPrC.dataType );
 
@@ -1866,7 +1854,7 @@ moduleManager.construct({
 		function getNextResources():Promise<SpecifResource[]> {
 			var nd = self.parent.tree.selectedNode,
 				oL:SpecifKeys = [];  // id list of the resources to view
-			nL = [];  // list of hierarchy nodes
+			nL = [];  // list of hierarchy nodes defined within self.show()
 					
 			// Update browser history, if it is a view change or item selection, 
 			// but not navigation in the browser history (i.e. opts.urlParams is set):
@@ -1954,12 +1942,12 @@ moduleManager.construct({
 					// return true, if at least one property is editable:
 					console.debug('propU',selRes);
 					for (var pC of selPrj.cache.get( 'propertyClass', selRes.rC.propertyClasses )) {
-						if (pC.permissions.U ) return true   
+						if (pC.permissionVector.U ) return true   
 					};
 					return false
 				} */
 			// Relevant is whether at least one property is editable,
-			// res.pC.permissions.U is not of interest here.No hierarchy - related permission needed.
+			// res.pC.permissionVector.U is not of interest here.No hierarchy - related permission needed.
 			if ( selRes.hasPropertyWithUpdatePermission )
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.upd) */)
 				rB += '<button class="btn btn-default" onclick="' + myFullName + '.editResource(\'update\')" '
@@ -1977,7 +1965,7 @@ moduleManager.construct({
 			// The delete button is shown, if the selected resource (=hierarchy entry) can be deleted.
 			// - Glossary items shall not be deleted; they are usually not userInstantiated.
 			// - The confirmation dialog offers the choice to delete the resource as well, if the user has the permission.
-			if (selRes.rC.permissions.D && selRes.isUserInstantiated())
+			if (selRes.rC.permissionVector.D && selRes.isUserInstantiated())
 			// if (app.title != i18n.LblReader /*&& (!selRes.permissions || selRes.permissions.del) */ && selRes.isUserInstantiated() )
 				rB += '<button class="btn btn-danger" onclick="'+myFullName+'.deleteNode()" '
 						+'data-toggle="popover" title="'+i18n.LblDeleteObject+'" >'+i18n.IcoDelete+'</button>';
@@ -1999,25 +1987,26 @@ moduleManager.construct({
 					selPrj.resourceClasses  // only the classes used by this project
 				)
 				.forEach(
+					// @ts-ignore - in this case rC *is* of SpecifResourceClass
 					(rC:SpecifResourceClass) => {
 						// list all resource types, for which the current user has permission to create new instances
 						// ... and which allow manual instantiation:
 						// store the type's id as it is invariant, when selPrj.cache.allClasses is updated
 
 						// Respect the current user's privileges:
-						let iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', rC.id);
+						let iPrm = LIB.itemBy(selPrj.myPermissions, 'item', rC.id);
 						if (iPrm)
-							rC.permissions = iPrm.permissions
+							rC.permissionVector = iPrm.permissionVector
 						else {
-							iPrm = LIB.itemBy(selPrj.myItemPermissions, 'item', selPrj.id);
+							iPrm = LIB.itemBy(selPrj.myPermissions, 'item', selPrj.id);
 							if (iPrm)
-								rC.permissions = iPrm.permissions
+								rC.permissionVector = iPrm.permissionVector
 							else
-								rC.permissions = { C: false, R: false, U: false, D: false, A: false } as IPermissions
+								rC.permissionVector = noPermission
 						};
 
 //						console.debug('objectList.getPermissionsPrj',rC,rC.instantiation, rC.permissions);
-						if (rC.permissions.C && (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User)))
+						if (rC.permissionVector.C && (!rC.instantiation || rC.instantiation.includes(SpecifInstantiation.User)))
 							self.resCreClasses.push(rC.id);
 					}
 				);
@@ -2198,8 +2187,8 @@ moduleManager.construct({
 
 		// Select the language options at project level:
 		if (typeof (opts) != 'object') opts = {};
-		opts.targetLanguage = self.targetLanguage = selPrj.language;
-		opts.lookupTitles = self.lookupTitles = true;
+		opts.targetLanguage = selPrj.language;
+		opts.lookupTitles = true;
 		//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
 		//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
@@ -2226,7 +2215,7 @@ moduleManager.construct({
 				//	item: nd.ref.id
 			});
 
-		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges() })
+		selPrj.readStatementsOf(nd.ref, { dontCheckStatementVisibility: aDiagramWithoutShowsStatementsForEdges(), asSubject: true, asObject: true })
 			.then(
 				(sL: SpecifStatement[]) => {
 					// sL is the list of statements involving the selected resource.
@@ -2287,8 +2276,7 @@ moduleManager.construct({
 			// r may be a resource or a key pointing to a resource,
 			// where the sequence of items in L is always maintained.
 			// @ts-ignore - in the first run when a key is specified, the result of instanceTitleOf() is undefined - it will be added in the second run
-			//	LIB.cacheE(N.resources, { id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) });
-			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, $.extend({}, opts, { addIcon: true, neverEmpty: true }))) }] })
+			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, Object.assign({}, opts, { addIcon: true, neverEmpty: true }))) }] })
 		}
 		function cacheMinSta(N: CGraph, s: SpecifStatement): void {
 			// cache the minimal representation of a statement;
@@ -2296,7 +2284,6 @@ moduleManager.construct({
 			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			//	LIB.cacheE(N.statements, { id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id });
 			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] })
 		}
 		function cacheNet(s: SpecifStatement): void {
@@ -2336,7 +2323,7 @@ moduleManager.construct({
 
 				let staL: SpecifStatement[] = [],	// a list of artificial statements; these are not stored in the server
 					pend = 0,
-					localOpts = $.extend({}, opts, { addIcon: false }),  // no icons when searching titles
+					localOpts = Object.assign({}, opts, { addIcon: false }),  // no icons when searching titles
 					selTi = cacheData.instanceTitleOf(selR, localOpts),
 					refPatt: RegExp,
 					// assumption: the dynamic link tokens don't need to be HTML-escaped:
@@ -2372,7 +2359,7 @@ moduleManager.construct({
 											if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
-												if (refPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
+												if (refPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
 													// these are minimal statements only just for displaying the statement graph:
 													staL.push({
 														// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class
@@ -2394,7 +2381,7 @@ moduleManager.construct({
 										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
 											// add, if the selected resource's title appears in the iterated resource's property ..
 											// and if it is not yet listed:
-											if (selPatt.test(LIB.languageValueOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {
+											if (selPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {
 												// these are minimal statements only just for displaying the statement graph:
 												staL.push({
 													// @ts-ignore - in this context the title is used by computed relations 'mentions' having no class

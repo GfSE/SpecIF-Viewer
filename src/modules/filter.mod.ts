@@ -83,6 +83,7 @@
 enum FilterCategory {
 	textSearch = 'textSearch',
 	resourceClass = 'resourceClass',
+	statementClass = 'statementClass',
 	enumValue = 'enumValue'
 }
 enum SearchOption {
@@ -117,7 +118,8 @@ moduleManager.construct({
 		myFullName = 'app.' + myName,
 		selPrj: CProject,
 		cData: CCache,
-		displayOptions: any;
+		displayOptions: any,
+		chgCnt = 0;   // counts the changes of filter settings to avoid multiple filter runs within a timeframe
 
 	self.filters = [];  // keep the filter descriptors for display and sequential execution
 	self.secondaryFilters;  // default: show resources (hit-list)
@@ -173,6 +175,7 @@ moduleManager.construct({
 		return true;
 	};
 	self.clear = (): void => {
+		chgCnt = 0;
 		self.secondaryFilters = undefined;
 		$('#filterNotice').empty();
 		self.filters.length = 0;
@@ -200,9 +203,9 @@ moduleManager.construct({
 
 		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {
-			targetLanguage: selPrj.language,
-		//	lookupTitles: true,
-			lookupValues: true
+			lookupTitles: true,
+			lookupValues: true,
+			targetLanguage: selPrj.language
 		};
 
 		// build filter list from the specTypes when executed for the first time:
@@ -261,22 +264,34 @@ moduleManager.construct({
 		$('#hitlist').empty();
 
 		// Iterate all hierarchies of the project to build the hitlist of resources matching all filter criteria:
-		let pend = 0, h: CResourceToShow, hitCnt = 0;
-		self.parent.tree.iterate(
-			(nd: jqTreeNode) => {
+		let pend = 0,
+			hitCnt = 0,
+			visited: SpecifId[] = []; // list all evaluated resources
+		LIB.iterateNodes(
+			// iterate all hierarchies except the one for unreferenced resources:
+			(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+				.filter(
+					(h: SpecifNode) => {
+						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+					}
+				),
+			(nd: SpecifNode) => {
 				pend++;
-//				console.debug('tree.iterate',pend,nd.ref);
+//				console.debug('doFilter',pend,nd.resource);
 				// Read asynchronously, so that the cache has the chance to reload from the server.
 				// - The sequence may differ from the hierarchy one's due to varying response times.
-				// - A resource may be listed several times, if it appears several times in the hierarchies.
-				selPrj.readItems('resource', [nd.ref])
+				// - A resource will be listed several times, if it appears several times in the hierarchies.
+				selPrj.readItems('resource', [nd.resource])
 					.then(
 						(rL) => {
-							h = match(new CResourceToShow(rL[0] as SpecifResource));
-//							console.debug('tree.iterate',self.filters,pend,rsp[0],h);
-							if (h) {
+							let hit = match(new CResourceToShow(rL[0] as SpecifResource));
+//							console.debug('doFilter iterateNodes',self.filters,pend,rsp[0],h);
+							// list a hit, but only once:
+							// (even if the resource is referenced multiple times in the hierarchies)
+							if (hit && !visited.includes(hit.id)) {
 								hitCnt++;
-								$('#hitlist').append(h.listEntry());
+								visited.push(hit.id);
+								$('#hitlist').append(hit.listEntry());
 							};
 							if (--pend < 1) {  // all done
 								$('#filterNotice').html('<div class="notice-default" >' + i18n.LblHitCount + ': ' + hitCnt + '</div>');
@@ -287,7 +302,7 @@ moduleManager.construct({
 					);
 				return true; // descend into deeper levels
 			}
-		);
+		)
 	}
 	function match(res: CResourceToShow): CResourceToShow {
 		// Return true, if 'res' matches all applicable filter criteria ... or if no filter is active.
@@ -329,12 +344,11 @@ moduleManager.construct({
 				else if (isChecked(f.options, SearchOption.wordBeginnings))
 					str = '\\b' + str;
 
-				let // dummy = str,   // otherwise nothing is found, no idea why.
-					patt = new RegExp(str, isChecked(f.options, SearchOption.caseSensitive) ? '' : 'i'),
+				let patt = new RegExp(str, isChecked(f.options, SearchOption.caseSensitive) ? '' : 'i'),
 					p: CPropertyToShow;
 
 				// Remember: As CPropertyToShow, all enumerated values of p have already been looked up ...
-				if (matchStr(res.title,res.isHeading)) return true;
+				if (matchStr(res.title)) return true;
 				for (p of res.descriptions)
 					if (matchStr(p)) return true;
 				for (p of res.other) {
@@ -344,24 +358,28 @@ moduleManager.construct({
 				};
 				return false;  // not found
 
-				function matchStr(prp: CPropertyToShow, isHeading?:boolean): boolean {
+				function matchStr(prp: CPropertyToShow): boolean {
 //					console.debug('matchStr',prp,prp.get());
-					// In case of a title, the value shall only be looked up in case of a heading
+					// In case of a title, the value shall only be looked up when it is a heading
 					// - Certain folder titles are specified with a vocabulary term --> lookup
 					// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
-					let localOptions = simpleClone(displayOptions);
-					localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
-
+					let localOptions = Object.assign(
+							{},
+							displayOptions,
+							{
+								lookupValues: prp.pC.title != CONFIG.propClassTerm
+							}
+						);
 					return patt.test(prp.get(localOptions));
 				}
 			}
-			function matchPropValue(f: IFilter): boolean {
+			function matchEnumValue(f: IFilter): boolean {
 				// secondary filter applying to resources of a certain resourceClass
 				// 'f' is 'not applicable', 
 				// - if the examined resource has a resourceClass unequal to the scope of the specified filter 'f'
 				if (f.scope && f.scope != res['class'].id) return true;
 
-//				console.debug( 'matchPropValue', f, res );
+//				console.debug( 'matchEnumValue', f, res );
 
 				// The filter is 'applicable': 
 				// a match must be found, otherwise the filter returns 'false' (res will be excluded).
@@ -375,7 +393,7 @@ moduleManager.construct({
 
 						// If the resource does not have a property of the specified class,
 						// it is a match only if the filter specifies CONFIG.notAssigned:
-//						console.debug('matchPropValue',f,rp,no);
+//						console.debug('matchEnumValue',f,rp,no);
 						if (!rp || rp.values.length < 1)
 							return f.options[f.options.length - 1].checked && f.options[f.options.length - 1].id == CONFIG.notAssigned;
 
@@ -419,9 +437,9 @@ moduleManager.construct({
 						return; // undefined
 					case FilterCategory.enumValue:
 //						console.debug( 'matchAndMark', f, res.title );
-						if (matchPropValue(f)) return res; // don't mark in this case, either
+						if (matchEnumValue(f)) return res; // don't mark in this case, either
 						return; // undefined
-					/*	if( matchPropValue(f) ) {
+					/*	if( matchEnumValue(f) ) {
 //							console.debug( 'attValueMatched' );
 							// mark matching properties of resources within scope:
 							// ToDo: correct error - in case of a DOORS project it has been observed that wrong text is marked.
@@ -458,7 +476,7 @@ moduleManager.construct({
 								// @ts-ignore - in this case it is defined
 								let rgxS = new RegExp(f.searchString.escapeRE(), isChecked(f.options, SearchOption.caseSensitive) ? 'g' : 'gi');
 
-								res.title.values = markValL(res.title, rgxS, res.isHeading);
+								res.title.values = markValL(res.title, rgxS);
 								res.descriptions = res.descriptions.map((rp: CPropertyToShow) => {
 									rp.values = markValL(rp, rgxS);
 									return rp;
@@ -482,18 +500,22 @@ moduleManager.construct({
 				};
 				return; // undefined
 
-				function markValL(prp:CPropertyToShow, re: RegExp, isHeading?:boolean): SpecifValues {
-					//	return [LIB.makeMultiLanguageText(mark(LIB.languageValueOf(valL[0], displayOptions), re))];
+				function markValL(prp:CPropertyToShow, re: RegExp): SpecifValues {
+					//	return [LIB.makeMultiLanguageValue(mark(LIB.languageTextOf(valL[0], displayOptions), re))];
 					let mV:string;
 					return prp.values.map((v) => {
 						// In case of a title, the value shall only be looked up in case of a heading
 						// - Certain folder titles are specified with a vocabulary term --> lookup
 						// - In case of an ontology, term titles *are* vocabulary terms --> do not look up
-						let localOptions = simpleClone(displayOptions);
-						localOptions.lookupValues = isHeading || prp.pC.title != CONFIG.propClassTitle;
-
+						let localOptions = Object.assign(
+								{},
+								displayOptions,
+								{
+									lookupValues: prp.pC.title != CONFIG.propClassTerm
+								}
+							);
 						mV = mark(LIB.displayValueOf(v, localOptions), re);
-						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageText(mV) : mV;
+						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageValue(mV) : mV;
 					});
 
 						function mark(txt: string, re: RegExp): string {
@@ -596,7 +618,7 @@ moduleManager.construct({
 					for( var v of dT.enumeration ) {
 						// the checkboxes for the secondary filter selector per enum value:
 					/*	var box: IBox = {
-								title: i18n.lookup( LIB.languageValueOf( v.value, displayOptions )), 
+								title: app.ontology.localize( LIB.languageTextOf( v.value, displayOptions ), displayOptions),
 								id: v.id,
 								checked: vL.includes(v.id)
 					//			checked: true
@@ -604,7 +626,7 @@ moduleManager.construct({
 					//	if( vL ) { box.checked = vL.includes( v.id ) };
 						boxes.push( box ) */
 						boxes.push({
-							title: i18n.lookup(LIB.languageValueOf(v.value, displayOptions)),
+							title: app.ontology.localize(LIB.languageTextOf(v.value, displayOptions), displayOptions),
 							id: v.id,
 							checked: vL.includes(v.id)
 						})
@@ -704,23 +726,28 @@ moduleManager.construct({
 				// pre is a resource with filter settings like {category: 'resourceClass', options: ['chapterTitle','objectTitle']}
 				//				console.debug( 'addResourceClassFilter', pre );
 				var oTF: IFilter = {   // the primary filter criterion 'resource type'
-						title: i18n.TabSpecTypes,
+						title: app.ontology.localize("SpecIF:Resource", { targetLanguage: browser.language, plural: true }),
 						category: FilterCategory.resourceClass,
 						primary: true,
 						scope: selPrj.id,
 						options: [] 
 				};
-				(cData.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[]).forEach((rC) => {
-					if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
-						&& (!Array.isArray(rC.instantiation) || rC.instantiation.includes(SpecifInstantiation.Auto) || rC.instantiation.includes(SpecifInstantiation.User))) {
-						oTF.options.push({
-							title: LIB.titleOf(rC, displayOptions),
-							id: rC.id,
-							// if there are preset options, set the select flag accordingly:
-							checked: (pre && pre.selected) ? pre.selected.indexOf(rC.id) > -1 : true
-						});
+				(cData.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[])
+				.forEach(
+					(rC) => {
+						if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
+							&& (!Array.isArray(rC.instantiation)
+								|| rC.instantiation.includes(SpecifInstantiation.Auto)
+								|| rC.instantiation.includes(SpecifInstantiation.User))) {
+							oTF.options.push({
+								title: LIB.titleOf(rC, displayOptions),
+								id: rC.id,
+								// if there are preset options, set the select flag accordingly:
+								checked: (pre && pre.selected) ? pre.selected.indexOf(rC.id) > -1 : true
+							});
+						}
 					}
-				});
+				);
 				self.filters.push(oTF);
 			}
 		// The resourceClassFilter must be in front of all depending secondary filters:
@@ -769,12 +796,10 @@ moduleManager.construct({
 	}
 	function renderEnumFilterSettings( flt:IFilter ):string {
 		// render a single panel for enum filter settings:
-		return makeCheckboxField(flt.title, flt.options, { tagPos:'none', classes:'',handle:myFullName+'.goClicked()'} );
+		return makeCheckboxField(flt.title, flt.options, { tagPos:'none', classes:'', handle:myFullName+'.goClicked()'} );
 	}
-/*	function getTextFilterSettings( flt ) {
-		return { category: flt.category, searchString: textValue(flt.title), options: checkboxValues(flt.title) };
-	} */
-	self.goClicked = ():void =>{  // go!
+	self.goClicked = (): void => {  // go!
+		// Today there is no more 'go' button, but any change in the filter settings arrives here and triggers a filter run.
 		self.secondaryFilters = undefined;
 
 		// read filter settings and update the filterlist:
@@ -792,7 +817,16 @@ moduleManager.construct({
 			};
 		});
 //		console.debug( 'goClicked', self.filters, fL );
-		doFilter();
+
+		// Avoid that the filter is re-run on every keystroke in the text search field
+		// (asynchronous matching of previous filter runs may appear on the hit-list).
+		chgCnt++;
+		setTimeout(
+			() => {
+				if (--chgCnt < 1) doFilter()
+			},
+			CONFIG.noMultipleRefreshWithin
+		)
 	};
 	self.resetClicked = ():void =>{  
 		// reset filters:

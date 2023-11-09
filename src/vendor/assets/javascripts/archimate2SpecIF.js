@@ -26,30 +26,30 @@ function Archimate2Specif(xmlString, options) {
 
 	let nameSpace = "ArchiMate:",
 		opts = Object.assign(
-		{
-			fileDate: new Date().toISOString(),
-			titleLength: 96,
-			textLength: 8192,
-		//	mimeType: "application/archimate+xml",
-			strNamespace: nameSpace,
-			modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
-			resClassOutline: 'SpecIF:Outline',
-			strFolderType: "SpecIF:Heading",
-			strDiagramType: nameSpace + "Viewpoint",
-			strDiagramFolderType: "SpecIF:Views",
-	//		strAnnotationFolder: "Text Annotations",
-	//		strRoleType: "SpecIF:Role",  
-			hiddenDiagramProperties: [],
-			// if false, only shown elements are included
-			includeAllElements: true,
-			// if true, consolidation on SpecIF import is precluded
-			propertyClassesShallHaveDifferentTitles: false,
-			// if false, statementClasses are altered to support all used statements
-			// if true, all statements not supported by it's statementClass are ignored
-			transformPermissibleStatementsOnly: false
-		},
-		options
-	);
+			{
+				fileDate: new Date().toISOString(),
+				titleLength: 96,
+				textLength: 8192,
+			//	mimeType: "application/archimate+xml",
+				strNamespace: nameSpace,
+				modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+				resClassOutline: 'SpecIF:Outline',
+				strFolderType: "SpecIF:Heading",
+				strDiagramType: nameSpace + "Viewpoint",
+				strDiagramFolderType: "SpecIF:Views",
+		//		strAnnotationFolder: "Text Annotations",
+		//		strRoleType: "SpecIF:Role",  
+				hiddenDiagramProperties: [],
+				// if false, only shown elements are included
+				includeAllElements: true,
+				// if true, consolidation on SpecIF import is precluded
+				propertyClassesShallHaveDifferentTitles: false,
+				// if false, statementClasses are altered to support all used statements
+				// if true, all statements not supported by it's statementClass are ignored
+				transformPermissibleStatementsOnly: false
+			},
+			options
+		);
 
 	let parser = new DOMParser(),
 		xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -59,7 +59,7 @@ function Archimate2Specif(xmlString, options) {
 	let L = Array.from(xmlDoc.querySelectorAll("model"));
 	// There should be exactly one model per Open Exchange file:
 	if (L.length < 1) {
-		console.error("Open-Exchange file with id '", model.id, "' has no model.");
+		console.error("Open-Exchange file has no model.");
 		return
 	};
 	/*	if( L.length>1 )
@@ -68,17 +68,8 @@ function Archimate2Specif(xmlString, options) {
 	var model = {};
 	// The project's id and title:
 	model.id = L[0].getAttribute("identifier");
-
-	const
-		//	nbsp = '&#160;', // non-breakable space
-		apx = simpleHash(model.id),
-		hId = 'ArchiMate-' + apx;
-
-	// Have chosen to prefer 'nodeName' over 'tagName',
-	// see: http://aleembawany.com/2009/02/11/tagname-vs-nodename/
-	// see: https://stackoverflow.com/questions/4878484/difference-between-tagname-and-nodename
-
 	model["$schema"] = "https://specif.de/v1.0/schema.json";
+	// model.title will be added further down
 	model.dataTypes = DataTypes();
 	model.propertyClasses = PropertyClasses();
 	model.resourceClasses = ResourceClasses();
@@ -94,7 +85,16 @@ function Archimate2Specif(xmlString, options) {
 		blob: new Blob([xmlString], {type: opts.mimeType}),
 		type: opts.mimeType,
 		changedAt: opts.fileDate
-	} */ ];
+	}*/ ];
+
+	const
+		//	nbsp = '&#160;', // non-breakable space
+		apx = simpleHash(model.id),
+		hId = 'ArchiMate-' + apx;
+
+	// Have chosen to prefer 'nodeName' over 'tagName',
+	// see: http://aleembawany.com/2009/02/11/tagname-vs-nodename/
+	// see: https://stackoverflow.com/questions/4878484/difference-between-tagname-and-nodename
 
 	// 1. Add attributes:
 	Array.from(L[0].children,
@@ -1155,7 +1155,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-accesses",
-			title: "SpecIF:accesses",
+			title: "ArchiMate:accesses",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1197,7 +1197,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate */
 		},{ 
 			id: "SC-isSpecializationOf",
-			title: "SpecIF:isSpecializationOf",
+			title: "UML:isSpecializationOf",
 			description: "Statement: A state (data-object) is a specialization of a state",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1206,7 +1206,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-serves",
-			title: "SpecIF:serves",
+			title: "ArchiMate:serves",
 			description: "Statement: An element provides its functionality to another element.",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1224,7 +1224,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAssociatedWith",
-			title: "SpecIF:isAssociatedWith",
+			title: "UML:isAssociatedWith",
 			description: "Statement: Actor (Component,Function) is associated with an Actor (Component,Function).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],

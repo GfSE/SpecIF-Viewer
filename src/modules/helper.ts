@@ -61,17 +61,18 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
             throw Error("Invalid display option '"+opts.tagPos+"' when showing a text form");
     };
 
-    val = LIB.noCode(val || '').unescapeJSON();  // dateTime properties can be undefined ... perhaps others as well. 
+    val = LIB.noCode(val || '').unescapeJSON();  // dateTime properties can be undefined ... perhaps others as well.
     switch (opts.typ) {
         case 'line':
             fG += '<div class="' + aC + '">'
-                + (val.indexOf('\n') < 0 ? '<input type="text" id="field' + sH + '" class="form-control"' + fn + ' value="' + val + '" />'
-                    : '<textarea id="field' + sH + '" class="form-control" rows="2"' + fn + '>' + val + '</textarea>')
+                + (val.includes('\n') ?
+                    '<textarea id="field' + sH + '" class="form-control" rows="2"' + fn + '>' + val + '</textarea>'
+                    : '<input type="text" id="field' + sH + '" class="form-control"' + fn + ' value="' + val + '" />')
                 + '</div>';
             break;
         case 'area':
             fG += '<div class="' + aC + '">'
-                + '<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>'
+                +   '<textarea id="field' + sH + '" class="form-control" rows="7"' + fn + '>' + val + '</textarea>'
                 + '</div>';
             break;
         default:
@@ -85,7 +86,10 @@ function setTextValue( tag:string, val:string ):void {
     val = LIB.noCode(val).unescapeJSON() || '';
     // For now, just take care of the first value:
     let el = document.getElementById('field' + simpleHash(tag));
-    if( el && el.nodeName && el.nodeName.toLowerCase()=='div' ) { el.innerHTML = val; return };
+    if (el && el.nodeName && el.nodeName.toLowerCase() == 'div') {
+        el.innerHTML = val;
+        return
+    };
     // @ts-ignore - .value is in fact accessible
     if( el ) el.value = val;
 }
@@ -346,7 +350,7 @@ class CCheckDialogInput {
                         && !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
                     break;
                 case SpecifDataTypeEnum.DateTime:
-                    ok = val.length < 1 || LIB.isIsoDate(val);
+                    ok = val.length < 1 || LIB.isIsoDateTime(val);
                 // no need to check enumeration
             };
             setTextState(cPs.label, ok ? 'has-success' : 'has-error');
@@ -562,7 +566,7 @@ LIB.equalValue = (refV: SpecifValue, newV: SpecifValue): boolean => {
     if (typeof (refV) != typeof (newV)) return false;
     if (LIB.isString(refV))
         return refV == newV;
-    if (LIB.isMultiLanguageText(refV))
+    if (LIB.isMultiLanguageValue(refV))
         // @ts-ignore - these attributes are defined with SpecifMultiLanguageText
         return refV.text == newV.text && refV.language == newV.language && refV.format == newV.format;
     return false;
@@ -655,9 +659,10 @@ LIB.equalSC = (refE: SpecifStatementClass, newE: SpecifStatementClass): boolean 
 LIB.isString = (el: any): boolean => {
     return typeof (el) == 'string';
 }
-LIB.isIsoDate = (val: string): boolean => {
-    return RE.IsoDate.test(val);
-/*    To do this, checker must be loaded at initialization time:
+LIB.isIsoDateTime = (val: string): boolean => {
+    return RE.IsoDateTime.test(val);
+/*    To do this, checker must be loaded at initialization time;
+ *    // in fact this is too restrictive, as right-truncated data is not accepted.
     return checker.checkSchema(
         { value: val },
         {
@@ -687,6 +692,53 @@ LIB.isEqualStringL = (refL: any[], newL: any[]): boolean => {
             if (newL.indexOf(lE) < 0) return false;
         return true;
 }
+/* Not yet readily developed:
+interface IClassifiedProperties {
+    title: CPropertyToShow;
+    descriptions: CPropertyToShow[];
+    other: CPropertyToShow[];
+}
+LIB.classifyProperties = (el: SpecifResource, data: SpecIF): void => {
+    let clPr: IClassifiedProperties,
+        rC = LIB.itemByKey(data.resourceClasses, el['class']); this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass
+
+    // Initially all properties are stored in data.other;
+    // further down the title and description properties are identified and moved:
+    // create a new list by copying the elements (do not copy the list ;-):
+    clPr.other = el.properties.map( (p: SpecifProperty) => { return new CPropertyToShow(p, rC) });
+
+	// Now, all properties are listed in data.other;
+	// in the following, the properties used as title and description will be identified
+	// and moved from data.other to data.title resp. data.descriptions:
+
+    // a) Find and set the configured title:
+    let a = LIB.titleIdx(data.other, data.propertyClasses);
+    if (a > -1) {  // found!
+        // .. in case of a title a single value is expected, so select it:
+        data.title = data.other.splice(a, 1)[0];
+    //	}
+//  else {
+        // In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+        // there is no title propertyClass;
+        // then create a property without class.
+        // If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+        // @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+//      data.title = { title: CONFIG.propClassTitle, value: el.title || '' };
+    };
+
+    // b) Check the configured descriptions:
+    // We must iterate backwards, because we alter the list of other.
+    data.descriptions = [];
+    for (a = data.other.length - 1; a > -1; a--) {
+        // to decide whether it is a description, use the original title of the resp. propertyClass
+        if (CONFIG.descProperties.includes(data.other[a].title)) {
+            // To keep the original order of the properties, the unshift() method is used.
+            data.descriptions.unshift(data.other.splice(a, 1)[0]);
+        }
+    };
+    return clPr;
+} */
+
 LIB.hasContent = (pV: string): boolean => {
     // must be a string with the value of the selected language.
     if (typeof (pV) != "string"
@@ -697,66 +749,77 @@ LIB.hasContent = (pV: string): boolean => {
         || RE.tagImg.test(pV)
         || RE.tagA.test(pV)
 }
-LIB.isMultiLanguageText = (L: any[]): boolean => {
+LIB.isMultiLanguageValue = (L: any[]): boolean => {
     if (Array.isArray(L)) {
         let hasMultipleLanguages = L.length > 1;
         for (var i = L.length - 1; i > -1; i--) {
             let lE = L[i];
-            if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && i > 0 && (typeof (lE.language) != "string" || lE.language.length < 2)))
+            // SpecifMultilanguageText is a list of objects {text:"the text value", language:"IETF language tag"}.
+            // If there are multiple language values, all except the first (=default) must have a language property:
+            if (typeof (lE["text"]) != "string" || (hasMultipleLanguages && i>0 && (typeof (lE.language) != "string" || lE.language.length < 2)))
                 return false;
         };
         return true;
     };
     return false;
 }
-LIB.multiLanguageTextHasContent = (L: any[]): boolean => {
-    return L && L.length > 0 && LIB.isMultiLanguageText(L) && LIB.hasContent(L[0]["text"]);
+LIB.multiLanguageValueHasContent = (L: any[]): boolean => {
+    return L && L.length > 0 && LIB.isMultiLanguageValue(L) && LIB.hasContent(L[0]["text"]);
 }
-LIB.makeMultiLanguageText = (el:any): SpecifMultiLanguageText => {
-    return typeof (el) == 'string' ? [{ text: el }] : (LIB.isMultiLanguageText( el )? el : undefined );
+LIB.makeMultiLanguageValue = (el: any, opts?: any): SpecifMultiLanguageText => {
+    if (typeof (el) == 'string') {
+        return opts && opts.language ? [{ text: el, language: opts.language }] : [{ text: el }];
+    };
+    return  LIB.isMultiLanguageValue( el )? el : undefined;
 }
-LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
-    // Return the value in the specified target language .. or the first value in the list by default.
+LIB.languageValueOf = (val: SpecifMultiLanguageText, opts?: any): SpecifLanguageText | undefined => {
+    // Return the language value in the specified target language .. or the first value in the list by default.
 
-    // if opts.targetLanguage is undefined, keep all language options:
-    if (!(opts && opts.targetLanguage)) return val;
-
-    if (!LIB.isMultiLanguageText(val))
-        throw Error("Invalid value: '" + val + "' must be a multi-language text.");
+    if (!LIB.isMultiLanguageValue(val)) {
+        console.error("Value must be a multi-language text: ",val);
+        throw Error("Programming Error: Value must be a multi-language text.")
+    };
 
     // ... is a multiLanguageText, but may be empty:
-    if (val.length < 1) return '';
+    if (val.length < 1) return;
 
     let lVs = val.filter((v: any): boolean => {
         return v.language && opts && opts.targetLanguage.toLowerCase() == v.language.toLowerCase();
     });
     // lVs should have none or one elements; any additional ones are simply ignored:
-    if (lVs.length > 0) return lVs[0].text;
+    if (lVs.length > 0) return lVs[0];
 
     // next try a little less stringently:
     lVs = val.filter((v: any): boolean => {
         return v.language && opts && opts.targetLanguage && opts.targetLanguage.slice(0, 2).toLowerCase() == v.language.slice(0, 2).toLowerCase();
     });
     // lVs should have none or one elements; any additional ones are simply ignored:
-    if (lVs.length > 0) return lVs[0].text;
+    if (lVs.length > 0) return lVs[0];
+
+    if (opts && opts.dontReturnDefaultValue)
+        return;
 
     // As a final resourt take the first element in the original list of values:
-    return val[0].text;
+    return val[0]
+}
+LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | string => {
+    // Return the text in the specified target language .. or in the first value in the list by default.
+
+    // if opts.targetLanguage is undefined, keep all language options:
+    if (!opts || !opts.targetLanguage) return val;
+
+    let langV = LIB.languageValueOf(val, opts);
+    return (langV ? langV['text'] : '');
 }
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
-    // for display, any vocabulary term is always translated to the selected language;
+    // for display, any vocabulary term is translated to the selected language;
     // a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:
-//    return LIB.isMultiLanguageText(val) ? i18n.lookup(LIB.languageValueOf(val, opts)) : val;
-//    return LIB.isMultiLanguageText(val) ? (opts.lookupValues ? i18n.lookup(LIB.languageValueOf(val, opts)) : LIB.languageValueOf(val, opts)) : val;
-    if (LIB.isMultiLanguageText(val)) {
-        let v = LIB.languageValueOf(val, opts);
-        if( opts.lookupValues ) v = i18n.lookup(v);
+    if (LIB.isMultiLanguageValue(val)) {
+        let v = LIB.languageTextOf(val, opts);
+        if (opts.lookupValues) v = app.ontology.localize(v,opts);
         return opts.stripHTML ? v.stripHTML() : v
     };
     return val as string
-/*    let v = LIB.isMultiLanguageText(val) ? LIB.languageValueOf(val, opts) : val;
-    if (opts.lookupValues) v = i18n.lookup(v);
-    return opts.stripHTML ? v.stripHTML() : v; */
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
     // Return the values of a resource's (or statement's) property with a title listed in pNs;
@@ -775,8 +838,8 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
                         p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value })
                         : p.values
                 }
-            };
-        };
+            }
+        }
     };
     return [];
 }
@@ -789,7 +852,7 @@ LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] =
         oL = [];
     if (dT.enumeration)
         for (var v of dT.enumeration) {
-            oL.push(LIB.languageValueOf(v.value, { targetLanguage: 'default' }));
+            oL.push(LIB.languageTextOf(v.value, { targetLanguage: 'default' }));
         };
     return oL;
 }
@@ -809,6 +872,41 @@ LIB.duplicateId = (dta: any, id: string): boolean => {
     };
     return false;
 }
+LIB.indexBy = (L: any[], p: string, k: SpecifKey | string): number => {
+    if (L && p && k) {
+        // Return the index of an element in list 'L' whose property 'p' is referenced by key 'k':
+        // ToDo: true, only if n is the *latest* revision in case k.revision is undefined ...
+        for (var i = L.length - 1; i > -1; i--)
+            if (LIB.isKey(k) ? LIB.references(k, L[i][p]) : L[i][p] == k)
+                return i; // return list index
+    };
+    return -1;
+};
+LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
+    if (L && p && k) {
+        // Return the element in list 'L' whose property 'p' equals key 'k' od id 'k' (in case of a string):
+        // ToDo: true, only if n is the *latest* revision in case k.revision is undefined ...
+        for (var l of L)
+            if (LIB.isKey(k) ? LIB.references(k, l[p]) : l[p] == k)
+                return l; // return list item
+    };
+};
+/* LIB.indexBy = (L: any[], p: string, st: string): number => {
+    if (L && p && st ) {
+        // given a title of an item in a list, return it's index:
+        for( var i=L.length-1;i>-1;i-- )
+            if( L[i][p]==st ) return i   // return list index
+    };
+    return -1;
+}
+LIB.itemBy = (L: any[], p: string, st: string): any => {
+    if (L && p && st) {
+        // given a title of an item in a list, return the item itself:
+        for (var l of L)
+            if (l[p] == st) return l;   // return list item
+    }
+    // else return undefined
+}*/
 LIB.indexById = (L:any[],id:string):number => {
     if( L && id ) {
         // given an ID of an item in a list, return it's index:
@@ -923,25 +1021,6 @@ LIB.referenceItemBy = (L: any[], p: string, k: SpecifKey) => {
     //    console.debug('##',L,p,k,i);
     if (i > -1) return L[i];
     //    return undefined
-};
-LIB.indexBy = (L: any[], p: string, k: SpecifKey | string): number => {
-    if (L && p && k) {
-        // Return the index of an element in list 'L' whose property 'p' is referenced by key 'k':
-        // ToDo: true, only if n is the latest revision in case k.revision is undefined ...
-        for (var i = L.length - 1; i > -1; i--)
-            if (LIB.isKey(k) ? LIB.references(k, L[i][p]) : L[i][p] == k)
-                return i; // return list index
-    };
-    return -1;
-};
-LIB.itemBy = (L: any[], p: string, k: SpecifKey | string): any => {
-    if (L && p && k) {
-        // Return the element in list 'L' whose property 'p' equals key 'k':
-        // ToDo: true, only if n is the latest revision in case k.revision is undefined ...
-        for (var l of L)
-            if (LIB.isKey(k) ? LIB.references(k, l[p]) : l[p] == k)
-                return l; // return list item
-    };
 };
 LIB.containsById = (cL:any[], L: SpecifItem|SpecifItem[] ):boolean =>{
     if (!cL || !L) throw Error("Missing Input Parameter");
@@ -1110,10 +1189,11 @@ interface String {
     unescapeHTMLTags: Function;
     unescapeHTMLEntities: Function;
     fileName: Function;
+    baseName: Function;
     fileExt: Function;
 }
 String.prototype.toCamelCase = function():string {
-    let str = this.replace(/[^a-z0-9 \:\.]/ig, ''), parts, res = '';
+    let str = this.replace(/[^a-z\d \:\.]/ig, ''), parts, res = '';
     // Check for separators in the sequence of priority:
     if (str.includes(':'))
         parts = str.split(':')
@@ -1150,7 +1230,7 @@ String.prototype.toJsId = function():string {
 // ToDo: Check ReqIF compatibility
 String.prototype.toSpecifId = function (): string {
     // Mirror the pattern for SpecifId defined in schema.json
-    return (/[^_a-zA-Z]/.test(this[0]) ? '_' : '') + this.replace( /[^_a-zA-Z0-9.-]/g, '_' );
+    return (/[^_a-zA-Z]/.test(this[0]) ? '_' : '') + this.replace( /[^_a-zA-Z\d.-]/g, '_' );
 };
 /*
 function truncate(l:number):string {
@@ -1187,7 +1267,8 @@ function stripHtml(html){
 } */
 String.prototype.stripCtrl = function():string {
 // Remove js/json control characters from HTML-Text or other:
-    return this.replace( /\b|\f|\n|\r|\t|\v/g, '' );
+    return this.replace( /\n|\r|\t|\b|\f|\v/g, '' );
+//  return str.replace(/[\u0009\u000a\u000c]|\n|\r|\t|\b|\f|\v/g, '');
 }
 String.prototype.ctrl2HTML = function():string {
 // Convert js/json control characters (new line) to HTML-tags and remove the others:
@@ -1216,7 +1297,8 @@ String.prototype.makeHTML = function(opts?:any):string {
             // don't interpret the '+' as list item, but do so with '�' and '•',
             // transform arrows assembled by characters to special arrow characters:
             // @ts-ignore - 'window.markdown' is defined, if loaded
-            return window.markdown.render(newS
+            return window.markdown.render(
+                newS
                 .replace(/\+ /g, '&#x2b; ') // don't transform '+' to list item
             //    .replace(/� /g, '* ')
                 .replace(/• /g, '* ')
@@ -1246,11 +1328,11 @@ String.prototype.makeHTML = function(opts?:any):string {
 LIB.xmlChar2utf8 = (str: string):string => {
     // Convert html numeric character encoding to utf8
     // @ts-ignore - match is not used, but must be declared anyhow.
-    str = str.replace(/&#x([0-9a-fA-F]+);/g, function (match, numStr) {
+    str = str.replace(/&#x([\da-fA-F]+);/g, function (match, numStr) {
         return String.fromCharCode(parseInt(numStr, 16))
     });
     // @ts-ignore - match is not used, but must be declared anyhow.
-    return str.replace(/&#([0-9]+);/g, function (match, numStr) {
+    return str.replace(/&#(\d+);/g, function (match, numStr) {
         return String.fromCharCode(parseInt(numStr, 10))
     })
 }
@@ -1288,7 +1370,9 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
     return out;
 } 
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
-String.prototype.escapeRE = function():string { return this.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }; // $& means the whole matched string
+String.prototype.escapeRE = function (): string {
+    return this.replace(/[.*+?^${}()|[\]\\]/g, '\$&')   // $& means the whole matched string
+}; 
 // Escape characters for JSON string: 
 String.prototype.escapeJSON = function () {
     return this.replace(/["\\]/g, '\$&')    // $& means the whole matched string
@@ -1304,15 +1388,37 @@ String.prototype.unescapeJSON = function () {
 
 String.prototype.escapeXML = function():string {
 // escape XML characters:
-    return this.replace(/["'&<>]/g, ($0)=>{
-        return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39"}[$0] + ";";
-    });
+    // @ts-ignore - $0 is never read, but must be listed anyways
+    return this.replace(
+                RE.AmpersandPlus,
+                ($0, $1) => {
+                    // 1. Replace &, unless it belongs to an XML entity:
+                    if (RE.XMLEntity.test($0))
+                        // no replacement:
+                        return $0;
+                    // else, encode the '&' and add the remainder of the pattern:
+                    return '&#38;' + $1;
+                }
+            )
+            .replace(
+                /[<>"']/g,
+                ($0) => {
+                    // 2. Replace <, >, " and ':
+                    return "&#" + { "<": "60", ">": "62", '"': "34", "'": "39" }[$0] + ";";
+                }
+            )
+/*    return this.replace(/&([^#])/g, ($0, $1) => { // only '&' which are not starting a XML entity
+                return '&#38;' + $1
+            })
+            .replace(/["'<>]/g, ($0) => {
+                return "&#" + { "<": "60", ">": "62", '"': "34", "'": "39" }[$0] + ";"
+            }) */
 };
 String.prototype.escapeHTML = function():string {
 // escape HTML characters:
     return this.replace(/[&<>"'`=\/]/g, ($0)=>{
         return "&#" + {"&":"38", "<":"60", ">":"62", '"':"34", "'":"39", "`":"x60", "=":"x3D", "/":"x2F"}[$0] + ";";
-    });
+    })
 };
 String.prototype.unescapeHTMLTags = function():string {
 //  Unescape known HTML-tags:
@@ -1326,7 +1432,7 @@ String.prototype.unescapeHTMLTags = function():string {
 String.prototype.unescapeHTMLEntities = function():string {
     // unescape HTML encoded characters:
     var el = document.createElement('div');
-    return LIB.noCode(this.replace(/\&#?x?[0-9a-z]+;/gi, (enc)=>{
+    return LIB.noCode(this.replace(/\&#?x?[\da-z]+;/gi, (enc)=>{
         el.innerHTML = enc;
         return el.innerText;
     }));
@@ -1356,20 +1462,23 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
 };
 String.prototype.fileExt = function():string {
     // return the file extension only:
-    return this.substring(this.lastIndexOf('.') + 1);
+    return this.substring(this.lastIndexOf('.') +1);
 /*    // see https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/12900504#12900504
     return fname.slice((fname.lastIndexOf(".") - 1 >>> 0) + 2); */
+};
+String.prototype.baseName = function(): string {
+    // return the filename with extension and without the path:
+    return this.substring(this.lastIndexOf('/') + 1)
 };
 String.prototype.fileName = function():string {
     // return the filename without extension:
     return this.substring( 0, this.lastIndexOf('.') )
 };
 LIB.addTimezoneIfMissing = (dt:string):string => {
-    if (dt) {
-        let match = RE.DateTime.exec(dt);
+    if (typeof(dt)=='string') {
         // ReqIF data generated by PTC Integrity has been observed to have timestamps without timezone.
         // If date and time are specified, but no timezone, add "Z" for Greenwich time:
-        if (match[0] && match[1] && !match[3]) {
+        if (!RE.hasTimezone.test(dt)) {
             console.info("Added missing time-zone to " + dt);
             return dt + "Z";
         };
@@ -1466,15 +1575,17 @@ LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void =
         reader.readAsText(file.blob);
 };
 LIB.uriBack2slash = (str: string): string => {
+	// Sometimes a Windows path is given containing '\' -> transform it to web-style ('/');
+    // replace back-slashes to slashes in all object and img tags:
     return str.replace(/<(?:object[^>]+?data=|img[^>]+?href=)"([^"]+)"[^>]*?\/?>/g,
         ($0) => {
             return $0.replace(/(?:data=|href=)"([^"]+)"/g,
                 ($0) => {
                     return $0.replace(/\\/g, '/');
                 }
-            );
+            )
         }
-    );
+    )
 };
         
 // not good enough, but better than nothing:
@@ -1554,7 +1665,7 @@ LIB.httpGet = (params:any):void =>{
 }
 
 LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
-    // checks whether a resource is referenced by the hierarchy:
+    // Check whether a resource is referenced by the hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
     if (!H) H = app.projects.selected.cache.hierarchies;
     return LIB.iterateNodes(H, (nd: SpecifNode) => { return nd.resource.id != itm.id; });
@@ -1562,13 +1673,14 @@ LIB.isReferencedByHierarchy = (itm: SpecifKey, H?: SpecifNode[]): boolean => {
     //    return LIB.iterateNodes(H, (nd: SpecifNode) => { return !LIB.references(nd.resource, {id:itm.id,revision:itm.revision}); });  // doesn'twork
 }
 LIB.referencedResources = (rL: SpecifResource[], h: SpecifNode[]): SpecifResource[] => {
-    // collect all resources referenced by the given hierarchy:
+    // Collect all resources referenced by the given hierarchy:
     // ToDo: The following is only true, if there is a single project in the cache (which is the case currently)
     var crL: SpecifResource[] = [];
     LIB.iterateNodes(h, (nd: SpecifNode) => { LIB.cacheE(crL, LIB.itemByKey(rL, nd.resource)); return true });
     return crL;
 }
 LIB.referencedResourcesByClass = (rL: SpecifResource[], h: SpecifNode[], rCIdL: string[]): SpecifResource[] => {
+    // Collect all resources from a hierarchy which belong to one of the classes in rCIdL. 
     let crL: SpecifResource[] = [];
     (LIB.iterateNodes(
         h,
@@ -1586,7 +1698,7 @@ LIB.referencedResourcesByClass = (rL: SpecifResource[], h: SpecifNode[], rCIdL: 
 }
 
 LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
-    // given a propertyClass key, return it's dataType:
+    // Given a propertyClass key, return it's dataType:
     if (LIB.isKey(key)) {
         let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
         //       |                            get propertyClass
@@ -1663,23 +1775,27 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
     };
     //    return undefined
 }
-LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string|undefined => {
+LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
     // Pick up the native title of any item except resource and statement;
+    // return either the target language or the target namespace according to the options:
     if( item )
-        return (opts && opts.lookupTitles) ? i18n.lookup(item.title) : item.title;
-    // else: return undefined
+        return (opts && opts.lookupTitles ?
+            (opts.targetLanguage ?
+                app.ontology.localize(item.title, opts)
+                : (opts.targetNamespace ?
+                    app.ontology.changeNamespace(item.title, opts)
+                    : item.title
+                )
+            )
+            : item.title);
+    throw Error("Programming error: Input parameter 'item' is not defined");
 }
-LIB.classTitleOf = (iCkey: SpecifKey, cL?: SpecifClass[], opts?: any): string => {
+LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {
     // Return the item's class title,
     // where item can be a resource, a statement or a property:
     let iC = LIB.itemByKey(cL, iCkey);
     return LIB.titleOf(iC, opts);
 }
-/*LIB.propTitleOf = (pCkey: SpecifKey, cL: SpecifPropertyClass[]): string => {
-    // get the title of a property as defined by it's class:
-    let pC = LIB.itemByKey(cL, pCkey);
-    return pC ? pC.title : undefined;
-}*/
 LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
     // Has the class of res a title listed in pNs?
     return pNs.includes(LIB.classTitleOf(r['class'], dta.resourceClasses));
@@ -1692,29 +1808,31 @@ LIB.hasType = (r: SpecifResource | SpecifStatement, pNs: string[], dta: SpecIF |
         if (pVs.length > 0) {
             return pNs.includes(LIB.displayValueOf(pVs[0], Object.assign({ targetLanguage: 'default' }, opts)))
         };
+        return false;
     };
-    return false;
+    throw Error("Programming Error: No resource or statement specified");
+    // return false;
 }
-LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs?: SpecifPropertyClass[]): number => {
+LIB.titleIdx = (pL: SpecifProperty[] | undefined, pCs: SpecifPropertyClass[]): number => {
     // Find the index of the property to be used as title.
     // The result depends on the current user - only the properties with read permission are taken into consideration.
     // This works for title strings and multi-language title objects.
 
     // The first property which is found in the list of headings or titles is chosen:
     if (Array.isArray(pL) && pL.length>0) {
-        if (!pCs) pCs = app.projects.selected.cache.propertyClasses;
+    //    if (!pCs) pCs = app.projects.selected.cache.propertyClasses;
         for (var a = 0, A = pL.length; a < A; a++) {
-            let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
+         //   let pt = vocabulary.property.specif(LIB.classTitleOf(pL[a]['class'], pCs));
+            let pt = LIB.classTitleOf(pL[a]['class'], pCs);
             // Check the configured headings and titles:
             if (CONFIG.titleProperties.includes(pt)) return a;
-        };
+        }
     };
     return -1;
 }
-LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): string => {
-    //    if( !pL ) return;
+LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, pCs: SpecifPropertyClass[], opts: any): string => {
     // look for a property serving as title:
-    let idx = LIB.titleIdx(pL);
+    let idx = LIB.titleIdx(pL,pCs);
     if (idx > -1) {  // found!
         /*    // Remove all formatting for the title, as the app's format shall prevail.
             // Before, remove all marked deletions (as prepared be diffmatchpatch) explicitly with the contained text.
@@ -1724,13 +1842,21 @@ LIB.getTitleFromProperties = (pL: SpecifProperty[] | undefined, opts: any): stri
                 return pL[idx].value.replace(/<del[^<]+<\/del>/g,'').stripHTML(); */
 
         // For now, let's try without replacements; so far this function is called before the filters are applied,
-        // perhaps this needs to be reconsidered a again once the revisions list is featured, again:
-//        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageValueOf( pL[idx].value,op ) );
-        let ti = LIB.languageValueOf(pL[idx].values[0], opts);
-        if (ti) return opts && opts.lookupTitles ? i18n.lookup(ti) : ti;
+        // perhaps this needs to be reconsidered, once the revisions list is featured again:
+//        console.debug('getTitleFromProperties', idx, pL[idx], op, LIB.languageTextOf( pL[idx].value,op ) );
+        let ti = LIB.languageTextOf(pL[idx].values[0], opts).stripHTML();
+        if (ti) return (opts && opts.lookupValues ? app.ontology.localize(ti, opts) : ti);
     };
     return '';
 }
+LIB.typeOf = (rK: SpecifResource, dta: SpecIF): string => {
+    // Take the resource or look it up by key and return its type:
+    let r = rK["class"]? rK : LIB.itemByKey(dta.resources, rK),
+        // Return the value of the property with title "dcterms:type":
+        pVL = LIB.valuesByTitle(r, [CONFIG.propClassType], dta);
+    return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
+}
+
 // Make a very simple hash code from a string:
 // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 // also see: https://gist.github.com/iperelivskiy/4110988

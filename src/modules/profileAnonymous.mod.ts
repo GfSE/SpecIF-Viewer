@@ -17,20 +17,12 @@
 interface IMe extends IModule {
 	userName: string;
 	administrator: boolean;
-	projectRoles: IProjectRole[];
+	roleAssignments: SpecifRoleAssignment[];
 	login(): Promise<IMe>;
 	logout(): void;
 	myRole(prj: SpecifId): string;
 	isAdministrator(): boolean;
 }
-/* class CProjectRole implements IProjectRole {
-	project: SpecifId = '';
-	role: string = '';
-	constructor(prj: SpecifId, rl: string) {
-		this.project = prj;
-		this.role = rl
-	}
-} */
 moduleManager.construct({
 	name: 'profileAnonymous'
 }, function(self:IMe) {
@@ -39,23 +31,15 @@ moduleManager.construct({
 	self.init = function():boolean {
 //		console.debug('me.init',opt);
 		self.clear();
-
-		// list with projects and roles of the current user:
-		self.projectRoles = [
-			{
-				project: "any", // default
-				role: "Reader"
-			} as IProjectRole
-		];
-
 		return true;
 	};
 	self.clear = function():void {
 		self.loggedin = false;
-		self.userName = "Anonymous";
-		self.userPassword = "";
+		self.userName = CONFIG.userNameAnonymous;
+		self.userPassword = CONFIG.passwordAnonymous;
 		self.administrator = false; 	// current user is global admin?
-		self.projectRoles = [];
+		// list with projects and roles of the current user:
+		self.roleAssignments = [new CRoleAssignment("any", app.title == i18n.LblEditor ? "SpecIF:Editor" : "SpecIF:Reader")];
 	};
 	self.login = function():Promise<IMe> {
 /*		console.info( 'Login: '+CONFIG.userNameAnonymous );
@@ -77,15 +61,15 @@ moduleManager.construct({
 			}
 		)
 	};
-	self.myRole = function(prj: SpecifId): string {
+	self.myRole = function(prjId: SpecifId): SpecifText {
 		// first look for the specified project:
-		let pR = LIB.itemBy(self.projectRoles, 'project', prj);
-		if (pR) return pR.role;
+		let ra = LIB.itemBy(self.roleAssignments, 'project', prjId);
+		if (ra) return ra.role;
 
 		// finally look for a default:
-		pR = LIB.itemBy(self.projectRoles, 'project', 'any');
-		if (pR) return pR.role;
-		throw Error('User profile of '+self.userName+' has no role.')
+		ra = LIB.itemBy(self.roleAssignments, 'project', 'any');
+		if (ra) return ra.role;
+		throw Error('User profile of ' + self.userName + ' has no role assignments.');
 	};
 /*	self.read = function (): Promise<IMe> {
 //		console.debug('me.read');
@@ -102,7 +86,7 @@ moduleManager.construct({
 		-- originally: --
 		return server.me().read()
 		.done( function(rsp) {
-			self.projectRoles = rsp.projectRoles;
+			self.roleAssignments = rsp.roleAssignments;
 			self.loggedin = true;
 		})
 		.fail(function(xhr) {

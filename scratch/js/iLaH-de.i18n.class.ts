@@ -86,11 +86,11 @@ class LanguageTextsDe {
 	LblOrganizations = 'Organisation';  // until multiple orgs per user are supported
 	LblEmail = 'e-mail';
 	LblFileName = 'Dateiname';
-	LblRoleGeneralAdmin = 'GENERAL-ADMIN';
+/*	LblRoleGeneralAdmin = 'GENERAL-ADMIN';
 	LblRoleProjectAdmin = 'PROJECT-ADMIN';
 	LblRoleUserAdmin = 'USER-ADMIN';
-	LblRoleReader = 'READER';
-//	LblRoleReqif = 'REQIF';
+	LblRoleReader = "SpecIF:Reader";
+//	LblRoleReqif = 'REQIF';  */
 	LblGlobalActions = 'Aktionen';
 	LblItemActions = 'Aktionen';
 	LblIdentifier = 'Identifikator';
@@ -124,9 +124,7 @@ class LanguageTextsDe {
 	LblDataTypeTitle = 'Datentyp-Name';
 	LblSpecTypes = 'Typen';
 	LblSpecType = 'Typ';
-	LblResourceClasses = 'Ressource-Klassen';
 	LblResourceClass = 'Ressource-Klasse';
-	LblStatementClasses = 'Aussage-Klassen';
 	LblStatementClass = 'Aussage-Klasse';
 //	LblRelGroupTypes = 'Aussagegruppen-Typen';
 //	LblRelGroupType = 'Aussagegruppen-Typ';

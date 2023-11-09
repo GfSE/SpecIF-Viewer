@@ -98,6 +98,12 @@ interface SpecifProject {
     createdBy?: SpecifCreatedBy;
     /**
      * 
+     * @type {Array<SpecifProjectRole>}
+     * @memberof SpecifProject
+     */
+    roles?: Array<SpecifProjectRole>;
+    /**
+     * 
      * @type {string}
      * @memberof SpecifProject
      */
@@ -184,6 +190,12 @@ interface SpecIF {
     createdBy?: SpecifCreatedBy;
     /**
      * 
+     * @type {Array<SpecifProjectRole>}
+     * @memberof SpecifProject
+     */
+    roles?: Array<SpecifProjectRole>;
+    /**
+     * 
      * @type {string}
      * @memberof Specif
      */
@@ -239,66 +251,81 @@ interface SpecIF {
 }
 
 /**
- * Some interface and type definitions for user roles and permissions.
- * New for SpecIF v1.2
+ * Some interface for user roles and permissions.
+ * New with SpecIF v1.2
  */
-interface IPermissions {
+
+/**
+ * A permissionvector defines the basic create, read, update and delete permission for an item.
+ * The auhority to change a *PermissionVector* or a *Permission* is reserved to an 
+ * administrator role in the context of the application code.
+ */
+interface SpecifPermissionVector {
     C: boolean; // create item
+    E: boolean; // execute item
     R: boolean; // read item
     U: boolean; // update item
     D: boolean; // delete item
 //    A: boolean; // administer item's permissions, so modify the other attributes of this 
 }
-interface IProjectRole {
+
+/**
+ * An item permission defines a permission vector for an item, being either a project, a class or a node.
+ */
+interface SpecifPermission {
+    item: SpecifId;  // a reference to any project, propertyClass, resourceClass, statementClass or node
+    permissionVector: SpecifPermissionVector;
+}
+
+/**
+ * A role defined for a project has a collection of item permissions.
+ */
+interface SpecifProjectRole {
+    id: SpecifId;
+    title: SpecifText;
+    description?: SpecifMultiLanguageText;
+    permissions: Array<SpecifPermission>;
+}
+
+/**
+ * A project role is given to a user based on group membership or other role information 
+ * provided by an identity and access management (IAM) system.
+ */
+interface SpecifRoleAssignment {
     project: SpecifId;  // the project reference, use 'any' as default value to cover all remaining projects
-    role: string;  // the name of the role
+    role: SpecifText;  // the title of the role, ideally an ontology term
 }
-interface IItemPermissions {
-    item: SpecifId;  // the item reference
-    permissions: IPermissions;
+interface Person {
+    /**
+     * 
+     * @type {string}
+     * @memberof Person
+     */
+    familyName?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Person
+     */
+    givenName?: string;
+    /**
+     * 
+     * @type {SpecifOrg}
+     * @memberof Person
+     */
+    org?: SpecifOrg;
+    /**
+     * 
+     * @type {string}
+     * @memberof Person
+     */
+    email: string;
 }
-class CItemPermissions implements IItemPermissions {
-    item: SpecifId;  // the item reference
-    permissions: IPermissions;
-    constructor(iId: SpecifId, prm: string) {
-        this.item = iId;
-        this.permissions = {
-            C: prm.includes('C'),
-            R: prm.includes('R'),
-            U: prm.includes('U'),
-            D: prm.includes('D'),
-//            A: prm.includes('A')
-        }
-    }
-}
-interface IRole {
-    id: SpecifId;
-    title?: string;
-    description?: SpecifMultiLanguageText;
-    itemPermissions: IItemPermissions[];
-}
-class CRole implements IRole {
-    id: SpecifId;
-    title?: string;
-    description?: SpecifMultiLanguageText;
-    itemPermissions: IItemPermissions[] = [];
-    constructor(roleName: string) {
-        this.id = roleName;
-    }
-    setItemPermissions(iId: SpecifId, prm: string) {
-        let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
-        if (idx > -1)
-            this.itemPermissions[idx] = new CItemPermissions(iId, prm)
-        else
-            this.itemPermissions.push(new CItemPermissions(iId, prm));
-        return this  // make it chainable
-    }
-    removeItemPermissions(iId: SpecifId) {
-        let idx = LIB.indexBy(this.itemPermissions, 'item', iId);
-        if (idx>-1)
-            this.itemPermissions.splice(idx,1)
-        return this  // make it chainable
-    }
+/**
+ * A user is a person with a collection of project roles
+ */
+interface SpecifUser extends Person {
+    roleAssignments: Array<SpecifRoleAssignment>
 }
 
 /**
@@ -338,32 +365,7 @@ type SpecifAlternativeIds = Array<SpecifAlternativeId>
  * @export
  * @interface SpecifCreatedBy
  */
-interface SpecifCreatedBy {
-    /**
-     * 
-     * @type {string}
-     * @memberof SpecifCreatedBy
-     */
-    familyName?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SpecifCreatedBy
-     */
-    givenName?: string;
-    /**
-     * 
-     * @type {SpecifOrg}
-     * @memberof SpecifCreatedBy
-     */
-    org?: SpecifOrg;
-    /**
-     * 
-     * @type {string}
-     * @memberof SpecifCreatedBy
-     */
-    email: string;
-}
+type SpecifCreatedBy = Person;
 
 /**
  * 
@@ -401,6 +403,12 @@ interface SpecifDataType {
      * @memberof SpecifDataType
      */
     replaces?: SpecifReplaces;
+    /**
+     * 
+     * @type {SpecifPermissionVector}
+     * @memberof SpecifDataType
+     */
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {string}
@@ -707,6 +715,12 @@ interface SpecifNode {
     replaces?: SpecifReplaces;
     /**
      * 
+     * @type {SpecifPermissionVector}
+     * @memberof SpecifNode
+     */
+    permissionVector?: SpecifPermissionVector;
+    /**
+     * 
      * @type {SpecifDateTime}
      * @memberof SpecifNode
      */
@@ -795,6 +809,12 @@ interface SpecifPropertyClass {
      * @memberof SpecifPropertyClass
      */
     multiple?: boolean;
+    /**
+     * 
+     * @type {SpecifPermissionVector}
+     * @memberof SpecifPropertyClass
+     */
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifValues}
@@ -955,6 +975,12 @@ interface SpecifResourceClass {
      * @memberof SpecifResourceClass
      */
     instantiation?: Array<SpecifInstantiation>;
+    /**
+     * 
+     * @type {SpecifPermissionVector}
+     * @memberof SpecifResourceClass
+     */
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifKeys}
@@ -1135,6 +1161,12 @@ interface SpecifStatementClass {
      * @memberof SpecifStatementClass
      */
     isUndirected?: boolean;
+    /**
+     * 
+     * @type {SpecifPermissionVector}
+     * @memberof SpecifStatementClass
+     */
+    permissionVector?: SpecifPermissionVector;
     /**
      * 
      * @type {SpecifKeys}

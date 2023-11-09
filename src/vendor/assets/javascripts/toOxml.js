@@ -11,17 +11,21 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	Limitations:
-	- Accepts data-sets according to SpecIF v1.0.
+	- Accepts data-sets according to SpecIF v1.1.
 	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
 	- There must only be one revision per class, resource or statement
+
+	ToDo also:
+	- move the image transformation to the export filter
+	- move the title linking to the export filter
 */
 
 function toOxml( data, options ) {
 	"use strict";
 
-	// Reject versions < 1.0:
-	if( data.specifVersion ) {
-		let eTxt = "SpecIF Version < v1.0 is not supported.";
+	// Reject versions < 1.1:
+	if (!data['$schema'] || data['$schema'].includes('v1.0')) {
+		let eTxt = "SpecIF Version < v1.1 is not supported.";
 		if (typeof(opts.fail)=='function' )
 			opts.fail({status:904,statusText:eTxt})
 		else
@@ -44,20 +48,6 @@ function toOxml( data, options ) {
 		},
 		options
 	);
-/*	// Check for missing options:
-	if( typeof(opts)!='object' ) opts = {};
-
-//	if( !opts.colorAccent1 ) opts.colorAccent1 = '5B9BD5';   // original Office
-	if( !opts.colorAccent1 ) opts.colorAccent1 = 'CB0A1B';  // GfSE red-brown
-
-//	if( typeof(opts.linkNotUnderlined)!='boolean' ) opts.linkNotUnderlined = false;
-	if( typeof(opts.preferPng)!='boolean' ) opts.preferPng = true;
-	
-	if( typeof(opts.imageResolution)!='number' ) opts.imageResolution = 8; // 10 dots per mm = ~256 dpi
-	if( typeof(opts.marginLeft)!='number' ) opts.marginLeft = 25; // mm
-	if( typeof(opts.marginRight)!='number' ) opts.marginRight = 25; // mm
-	if( typeof(opts.marginTop)!='number' ) opts.marginTop = 25; // mm
-	if( typeof(opts.marginBottom)!='number' ) opts.marginBottom = 40; // mm */
 //	console.debug('toOxml',data,opts);
 
 	const startRID = 7,		// first relationship index for images
@@ -69,9 +59,8 @@ function toOxml( data, options ) {
 		twips = 56.692913385826,  // twips per mm
 
 		// SpecIF v1.0 dataTypes
-		dataTypeString = 'xs:string',
-		dataTypeXhtml = 'xhtml',
-		dataTypeEnumeration = 'xs:enumeration';
+	//	dataTypeEnumeration = 'xs:enumeration',
+		dataTypeString = 'xs:string';
 
 	// Create a local list of images, which can be used in OXML:
 	// - Take any raster image right away,
@@ -196,24 +185,6 @@ function toOxml( data, options ) {
 				},
 				options
 			);
-		/*	// Check for missing options:
-			if( typeof(opts)!='object' ) opts = {};
-			if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
-			if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
-		//	if( typeof(opts.clickableElements)!='boolean' ) opts.clickableElements = false;
-			if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-			if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'];
-			if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
-			if( !opts.typeProperty ) opts.typeProperty = 'dcterms:type';	
-			if (!opts.descriptionProperties) opts.descriptionProperties = ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'];
-			if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];	
-		
-			if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// escape javascript AND RegExp
-			if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';
-			if( typeof(opts.titleLinkMinLength)!='number' ) opts.titleLinkMinLength = 3;
-		//	if (!Array.isArray(opts.hierarchyRoots)) opts.hierarchyRoots = ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'];
-			if( !Array.isArray(opts.imgExtensions) ) opts.imgExtensions = [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ];
-			if( !Array.isArray(opts.applExtensions) ) opts.applExtensions = [ 'bpmn' ];*/
 
 			opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength > 0;
 			if( opts.addTitleLinks )
@@ -223,7 +194,7 @@ function toOxml( data, options ) {
 			// see: http://webreference.com/xml/reference/xhtml.html
 			// The Regex to isolate text blocks for paragraphs:
 			const reB = '([\\s\\S]*?)'
-				+	'(<h[^>]*>[^<]*</h[0-9]+>'
+				+	'(<h[^>]*>[^<]*</h\d+>'
 				+	'|<p[^>]*>[\\s\\S]*?</p>'
 				+	'|<ul[^>]*>[\\s\\S]*?</ul>'
 				+	'|<ol[^>]*>[\\s\\S]*?</ol>'
@@ -271,6 +242,7 @@ function toOxml( data, options ) {
 			
 			// Create the title:
 			let ti = stripHtml(languageValueOf(data.title));
+
 			oxml.sections.push(
 				wParagraph({ text: ti, format: { heading:0 } })
 			);
@@ -297,14 +269,15 @@ function toOxml( data, options ) {
 				if( a>-1 ) {  // found!
 					// Remove all formatting for the title, as the app's format shall prevail.
 					// Before, remove all marked deletions (as prepared be diffmatchpatch).
-					ti = stripHtml( itm.properties[a].value );
+					// A title property should have just one value:
+					ti = stripHtml(languageValueOf(itm.properties[a].values[0]));
 				}
 				else {
 					// In case of a statement, use the class' title by default:
-					ti = elTitleOf(itm);
+					ti = classTitleOf(itm);
 				};
 //				console.debug('titleOf 1',itm,ti);
-				ti = minEscape( ti );
+				ti = minimizeXmlExcapes( ti );
 				if( !ti ) return '';  // no paragraph, if title is empty
 				
 				// if itm has a 'subject', it is a statement:
@@ -545,7 +518,7 @@ function toOxml( data, options ) {
 
 				if( descriptions.length>0 )
 					descriptions.forEach( (p)=>{
-						propertyValueOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
+						propertyValuesOf( p ).forEach( (e)=>{ c1 += generateOxml(e) })
 					})
 				else
 					if( r.description ) c1 += generateOxml( {p:{text:r.description}} );
@@ -564,9 +537,9 @@ function toOxml( data, options ) {
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
 					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-						rt = minEscape( prpTitleOf(p) );
+						rt = minimizeXmlExcapes( prpTitleOf(p) );
 						c3 = '';
-						propertyValueOf( p ).forEach( 
+						propertyValuesOf( p ).forEach( 
 							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
 						);
 //						console.debug('other properties',p,rt,c3);
@@ -605,7 +578,7 @@ function toOxml( data, options ) {
 					// Replace \r, \f, \t:
 					// (Note that in HTML multiple nbsp do not collapse)
 					txt = txt.replace( /\r|\f/g, '' ).replace( /\t/g, nbsp+nbsp+nbsp );
-					txt = minEscape(txt);
+					txt = minimizeXmlExcapes(txt);
 					// then, split into 2 paragraphs when \n is encountered:
 					let arr = txt.split(/\n/);
 //					console.debug('parseText',txt,arr);
@@ -691,7 +664,7 @@ function toOxml( data, options ) {
 								return ''
 							});
 							// g) a heading:
-							$2 = $2.replace(/<h([0-9]+)[^>]*>([\s\S]*?)<\/h[0-9]+>/, function($0,$1,$2) {
+							$2 = $2.replace(/<h(\d+)[^>]*>([\s\S]*?)<\/h\d+>/, function($0,$1,$2) {
 								bL.push( {p:{ text:$2.trim(), format:{heading:$1} }} );
 								return ''
 							});
@@ -891,7 +864,7 @@ function toOxml( data, options ) {
 								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
-								sp = /<span[^>]+?"color: ?#([0-9a-fA-F]{6})"[^>]*>/.exec($2);
+								sp = /<span[^>]+?"color: ?#([\da-fA-F]{6})"[^>]*>/.exec($2);
 								if (sp && sp.length > 1) {
 									fmt.font.color = sp[1].toUpperCase();
 									return '';
@@ -928,7 +901,7 @@ function toOxml( data, options ) {
 							br={};
 							// store the preceding fragment:
 							if( opts.hasContent($1) )
-								arr.push({str:minEscape($1)});
+								arr.push({str:minimizeXmlExcapes($1)});
 
 							// remove the next tag,
 							// $2 can only be one of the following:
@@ -942,7 +915,7 @@ function toOxml( data, options ) {
 						// finally store the remainder:
 						if( opts.hasContent(txt) ) {
 //							console.debug('splitText',txt,typeof(txt));
-							arr.push({str:minEscape(txt)})
+							arr.push({str:minimizeXmlExcapes(txt)})
 						};
 //						console.debug('splitText',txt,arr);
 						return arr
@@ -1053,7 +1026,7 @@ function toOxml( data, options ) {
 
 							// disregard objects whose title is too short:
 							ti = titleOf(cR, undefined, Object.assign({}, opts, { addIcon: false }));
-					//		ti = minEscape( cR.title );
+					//		ti = minimizeXmlExcapes( cR.title );
 							if( !ti || ti.length<opts.titleLinkMinLength ) continue;
 
 							// disregard link targets which aren't diagrams nor model elements:
@@ -1070,13 +1043,47 @@ function toOxml( data, options ) {
 					// should never arrive here
 					throw Error("SpecIF to WORD: Invalid title link.");
 				}
-				function propertyValueOf( prp ) {
+				function propertyValuesOf( prp ) {
 					// In a first transformation step, return the value of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
 					// The second transformation step will be done in generateOxml().
-//					console.debug('propertyValueOf',prp,'"',prp.value,'"');
-					if(prp['class']) {
+//					console.debug('propertyValuesOf',prp,'"',prp.value,'"');
+					let pC = itemById(data.propertyClasses, prp['class']),
+						dT = itemById(data.dataTypes, pC.dataType);
+					if (dT.enumeration) {
+						let ct = '';
+						for (var v of prp.values) {
+							// multiple values in a comma-separated string;
+							// string values should have just a single language (already filtered during export):
+							switch (dT.type) {
+								case dataTypeString:
+									ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value[0]['text'];
+									break;
+								default:
+									ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value;
+							}
+						};
+						return [{ p: { text: minimizeXmlExcapes(ct) } }];
+					};
+					// else
+					switch (dT.type) {
+						case dataTypeString:
+							let ctL = [];
+							for (var v of prp.values) {
+								// string values should have just a single language (already filtered during export):
+								ctL.push(parseXhtml(v[0]['text'], opts));
+							};
+							return ctL;
+						default:
+							let ct = '';
+							for (var v of prp.values) {
+								// multiple values in a comma-separated string:
+								ct += (ct.length == 0 ? '' : ', ') + v
+							};
+							return [{ p: { text: minimizeXmlExcapes(ct) } }];
+					}
+				/*	if(prp['class']) {
 						let pC = itemById(data.propertyClasses, prp['class']),
 							dT = itemById(data.dataTypes, pC.dataType);
 						switch( dT.type ) {
@@ -1092,16 +1099,15 @@ function toOxml( data, options ) {
 									if (val) ct += (v == 0 ? '' : ', ') + (st ? ('&#x00ab;' + val.value + '&#x00bb;') : val.value)
 									else ct += (v==0?'':', ')+vL[v] // ToDo: Check whether this case can occur
 								};
-								return [{p:{text:minEscape(ct)}}];
+								return [{p:{text:minimizeXmlExcapes(ct)}}];
 							case dataTypeString:
-							case dataTypeXhtml:
 //								console.debug('propertyValueOf - xhtml',prp.value);
 								// The value has been looked-up by the viewer before delivery:
 								return parseXhtml( prp.value, opts );
 						}
 					};
 					// for all other dataTypes or when there is no dataType:
-					return [{p:{text:minEscape(prp.value)}}]					
+					return [{p:{text:minimizeXmlExcapes(prp.value)}}] */				
 				}
 				function generateOxml( ct, fmt ) {
 					// In a second step, transform the internal representation to OOXML.
@@ -1273,7 +1279,7 @@ function toOxml( data, options ) {
 						tg = 'r:id="rId' + pushReferencedUrl(ct.format.hyperlink.external) + '"'
 					else
 						// Interestingly enough, Word only supports internal links up to 40 chars:
-						tg = 'w:anchor="' + limit(ct.format.hyperlink.internal) + '"';
+						tg = 'w:anchor="' + limit40(ct.format.hyperlink.internal) + '"';
 					return '<w:hyperlink ' + tg + '><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>' + r + '</w:r></w:hyperlink>'
 					// Limitation: Note that OOXML allows that a hyperlink contains multiple 'runs'. We are restricted to a single run.
 				};
@@ -1312,7 +1318,7 @@ function toOxml( data, options ) {
 				if( ct.format && ct.format.bookmark ) {
 					let bmId = 'bm-'+ hashCode(ct.format.bookmark);
 					// MS-Word supports internal links only up to 40 chars:
-					return '<w:bookmarkStart w:id="'+bmId+'" w:name="'+limit(ct.format.bookmark)+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
+					return '<w:bookmarkStart w:id="'+bmId+'" w:name="'+limit40(ct.format.bookmark)+'"/>'+r+'<w:bookmarkEnd w:id="'+bmId+'"/>';
 				};
 				// else, just the content:
 				return r;  
@@ -1328,7 +1334,7 @@ function toOxml( data, options ) {
 					// default:
 					return '';
 				}
-				function limit(e) {
+				function limit40(e) {
 					// MS Word truncates internal links to 40 characters resulting in links which are not unique;
 					// so longer ones are hashed to assure uniqueness.
 					// Link is unique for length<41, so don't change it:
@@ -1355,20 +1361,21 @@ function toOxml( data, options ) {
 				// return when there is no content: 
 				if( !ct || ct.picture || typeof(ct)=='object' && !ct.text ) return // undefined;  
 //				console.debug('wText',ct);
+
 				// ct is a string with length>0, an array ct.text or an object ct.text with length>0:
 				// in case of an array:
-				if( Array.isArray(ct.text) ) {
+				if( Array.isArray(ct.text) ) {  // evaluates also if ct.text is undefined
 					let str = '';
 					// the array may hold fragments of text or line-breaks:
 					ct.text.forEach( function(c) {
-						if (c.str) str += '<w:t xml:space="preserve">' + c.str + '</w:t>';
+						if (c.str) str += '<w:t' + (ct.format && (ct.format.hyperlink || ct.format.bookmark)? '':' xml:space="preserve"')+'>' + c.str + '</w:t>';
 						// see http://officeopenxml.com/WPtextSpecialContent-break.php
 						if( c['break']=='line' ) str += '<w:br/>'
 					});
 					return str;
 				};
 				// else, in case of string or 'ct.text' with string:
-				return '<w:t xml:space="preserve">'+(ct.text || ct)+'</w:t>';
+				return '<w:t' + (ct.format && (ct.format.hyperlink || ct.format.bookmark)? '' : ' xml:space="preserve"') + '>' + (ct.text || ct) + '</w:t>';
 			}
 			function wPict( ct ) {
 //				console.debug('wPict',ct,imageL);
@@ -1403,7 +1410,7 @@ function toOxml( data, options ) {
 				return	'<w:pict>'
 					// specify both width and height; WORD is not assuming the native aspect ratio:
 					+		'<v:shape style="width:'+w+'mm;height:'+h+'mm">'
-					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+minEscape(ct.picture.title)+'"/>'
+					+			'<v:imagedata r:id="rId'+rIdx+'" o:title="'+minimizeXmlExcapes(ct.picture.title)+'"/>'
 					+		'</v:shape>'
 					+	'</w:pict>'
 
@@ -2834,13 +2841,13 @@ function toOxml( data, options ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return itemById(data.propertyClasses, prp['class']).title
 	}
-	function elTitleOf( el ) {
+	function classTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
-		return (el.subject ? itemById(data.statementClasses, el['class']).title : '')
+		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
 	}
 	function languageValueOf(val) {
-		// assuming that only the selected language is available:
+		// assuming that only the desired language has already been selected during export:
 		return (typeof (val) == 'string' ? val : val[0].text)
 	}
 /*	function valByTitle(itm,pN,prj) {
@@ -2884,12 +2891,12 @@ function toOxml( data, options ) {
 	}
 	// The incoming XML may have (and often has) many more escaped characters,
 	// than MS WORD would correctly show.
-	// Thus transform all but the necessary ones '&', '<' and '>' to UTF-8.
-	function minEscape( s ) {
+	// Thus transform all except the necessary ones '&', '<' and '>' to UTF-8.
+	function minimizeXmlExcapes( s ) {
 		if( !s ) return '';
 		let el = document.createElement('div');
 		// first unescape all HTML entities:
-		return s.replace(/\&#?[0-9a-z]+;/gi, function (enc) {
+		return s.replace(/\&#?[\da-z]+;/gi, function (enc) {
 					el.innerHTML = enc;
 					return el.innerText
 				})

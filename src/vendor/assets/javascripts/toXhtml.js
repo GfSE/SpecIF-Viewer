@@ -1,51 +1,58 @@
-function toXhtml( data, opts ) {
-	"use strict";
-	// Accepts data-sets according to SpecIF v0.10.4 or v0.11.2 and later.
-	//
-	// (C) copyright http://enso-managers.de
-	// Author: se@enso-managers.de
-	// License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
-	// We appreciate any correction, comment or contribution via e - mail to maintenance@specif.de
-	//	..or even better as Github issue(https://github.com/GfSE/SpecIF-Viewer/issues)
-	//
-	// Limitations:
-	// - HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
-	// - Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
-	// - Accepts data-sets according to SpecIF v0.10.8 and later.
-	// - All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
-	// - There must only be one revision per resource or statement
+/*!	Create and return an XHTML document using SpecIF data.
 
-	// Reject versions < 1.0:
-	if (data.specifVersion) {
-		let eTxt = "SpecIF Version < v1.0 is not supported.";
+	(C)copyright enso managers gmbh (http://www.enso-managers.de)
+	Author: se@enso-managers.de
+	License and terms of use: Apache 2.0 (https://apache.org/licenses/LICENSE-2.0)
+	We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
+	.. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
+
+	Limitations:
+	- HTML ids are made from resource ids, so multiple reference of a resource results in mutiple occurrences of the same id.
+	- Title links are only correct if they reference objects in the same SpecIF hierarchy (hence, the same xhtml file)
+	- Accepts data-sets according to SpecIF v1.1.
+	- All values must be strings, the language must be selected before calling this function, i.e. languageValues as permitted by the schema are not supported!
+	- There must only be one revision per resource or statement
+
+	ToDo also:
+	- move the title linking to the export filter
+*/
+
+function toXhtml( data, options ) {
+	"use strict";
+
+	// Reject versions < 1.1:
+	if (!data['$schema'] || data['$schema'].includes('v1.0')) {
+		let eTxt = "SpecIF Version < v1.1 is not supported.";
 		if (typeof (opts.fail) == 'function')
 			opts.fail({ status: 904, statusText: eTxt })
 		else
 			console.error(eTxt);
 		return
 	};
-	
-	// Check for missing options:
-	if( typeof(opts)!='object' ) opts = {};
 
-	if( typeof(opts.showEmptyProperties)!='boolean' ) opts.showEmptyProperties = false;
-	if (typeof (opts.addIcon) != 'boolean') opts.addIcon = true;
-	if( typeof(opts.hasContent)!='function' ) opts.hasContent = hasContent;
-	if (!opts.titleLinkTargets) opts.titleLinkTargets = ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'];
-	if( !opts.titleProperties ) opts.titleProperties = ['dcterms:title'];
-	if (!opts.descriptionProperties) opts.descriptionProperties = ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'];
-	if( !opts.stereotypeProperties ) opts.stereotypeProperties = ['UML:Stereotype'];
+	let opts = Object.assign(
+		{
+			showEmptyProperties: false,
+			addIcon: true,
+			hasContent: hasContent,
+			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
+			titleProperties: ['dcterms:title'],
+			descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'],
+			stereotypeProperties: ['UML:Stereotype'],
+			titleLinkBegin: '\\[\\[',	// must escape javascript AND RegEx
+			titleLinkEnd: '\\]\\]',		// must escape javascript AND RegEx
+			titleLinkMinLength: 3,
+			RE: {
+				AmpersandPlus: new RegExp('&(.{0,8})', 'g'),
+				XMLEntity: new RegExp('&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', ''),
 
-	if( !opts.titleLinkBegin ) opts.titleLinkBegin = '\\[\\[';		// must escape javascript AND RegEx
-	if( !opts.titleLinkEnd ) opts.titleLinkEnd = '\\]\\]';			// must escape javascript AND RegEx
-	if( typeof opts.titleLinkMinLength!='number' ) opts.titleLinkMinLength = 3;	
-	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength>0;
-	if( typeof(opts.RE)!='object' ) opts.RE = {};
-	if( !opts.RE.AmpersandPlus ) opts.RE.AmpersandPlus = new RegExp( '&(.{0,8})', 'g' );
-	if( !opts.RE.XMLEntity ) opts.RE.XMLEntity = new RegExp( '&(amp|gt|lt|apos|quot|#x[0-9a-fA-F]{1,4}|#[0-9]{1,5});/', '');
-	if( opts.titleLinkBegin && opts.titleLinkEnd )
-		opts.RE.TitleLink = new RegExp( opts.titleLinkBegin+'(.+?)'+opts.titleLinkEnd, 'g' );
-//	console.debug('toXhtml',data,opts);
+			}
+		},
+		options
+	);
+	opts.addTitleLinks = opts.titleLinkBegin && opts.titleLinkEnd && opts.titleLinkMinLength > 0;
+	if (opts.addTitleLinks)
+		opts.RE.TitleLink = new RegExp(opts.titleLinkBegin + '(.+?)' + opts.titleLinkEnd, 'g');
 
 	const
 	//	nbsp = '&#160;', // non-breakable space
@@ -53,9 +60,9 @@ function toXhtml( data, opts ) {
 	//	RE_tag = new RegExp( tagStr, 'g' ),
 		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' ),
 
-		dataTypeString = 'xs:string',
-		dataTypeXhtml = 'xhtml',
-		dataTypeEnumeration = 'xs:enumeration';
+	//	dataTypeXhtml = 'xhtml',
+	//	dataTypeEnumeration = 'xs:enumeration',
+		dataTypeString = 'xs:string';
 
 	// A single comprehensive <object .../> or tag pair <object ...>..</object>.
 	// Limitation: the innerHTML may not have any tags.
@@ -73,13 +80,14 @@ function toXhtml( data, opts ) {
 			headings: [],		// used to build the ePub table of contents
 			sections: [],		// the xhtml files for the title and each chapter=section
 			images: []			// the referenced images
-		};
+		},
+		prTi = escapeXML(languageValueOf(data.title));
 
 	// Create a title page as xhtml-file and add it as first section:
 	xhtml.sections.push(
-			xhtmlOf({ 
-				title: escapeXML(data.title),
-				body: '<div class="title">'+escapeXML(data.title)+'</div>'
+			makeXhtmlFile({ 
+				title: prTi,
+				body: '<div class="title">'+prTi+'</div>'
 			})
 	);
 	
@@ -89,8 +97,8 @@ function toXhtml( data, opts ) {
 		(h, hi) => {
 			pushHeading( h.title, {nodeId: h.id, level: 1} );
 			xhtml.sections.push(
-				xhtmlOf({ 
-					title: escapeXML(data.title),
+				makeXhtmlFile({ 
+					title: prTi,
 					body: renderHierarchy( h, hi, 1 )
 				})
 			)
@@ -117,10 +125,11 @@ function toXhtml( data, opts ) {
 		if( a>-1 ) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
-			ti = stripHtml( itm.properties[a].value );
+			// A title property should have just one value:
+			ti = stripHtml(languageValueOf(itm.properties[a].values[0]));
 		} else {
 			// In case of a statement, use the class' title by default:
-			ti = elTitleOf(itm);
+			ti = classTitleOf(itm);
 		};
 
 		ti = escapeXML(ti);
@@ -145,7 +154,7 @@ function toXhtml( data, opts ) {
 			if( Array.isArray( aL ) )
 				for( var a=0,A=aL.length;a<A;a++ ) {
 					// First, check the configured title properties:
-					if( opts.titleProperties.indexOf( prpTitleOf(aL[a]) )>-1 ) return a;
+					if( opts.titleProperties.includes( prpTitleOf(aL[a]) ) ) return a;
 				};
 			return -1
 		}
@@ -252,7 +261,7 @@ function toXhtml( data, opts ) {
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
-		let c1='', rows='', rt, hPi,
+		let c1='', rows='', rt,
 			descriptions=[], other=[];
 		
 		if( r.properties ) {
@@ -269,10 +278,10 @@ function toXhtml( data, opts ) {
 
 		if( descriptions.length>0 )
 			descriptions.forEach( (p)=>{
-				c1 += '<p>'+propertyValueOf( p, hi )+'</p>';
+				c1 += '<p>'+propertyValuesOf( p, hi )+'</p>';
 			})
 		else
-			if( r.description ) c1 += '<p>'+propertyValueOf( r.description, hi )+'</p>';
+			if( r.description ) c1 += '<p>'+propertyValuesOf( r.description, hi )+'</p>';
 
 		// Skip the remaining properties, if no label is provided:
 //		console.debug('#1',c1)
@@ -283,7 +292,7 @@ function toXhtml( data, opts ) {
 			// the property title or it's class's title:
 			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
 				rt = prpTitleOf(p);
-				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValueOf( p, hi )+'</td></tr>'
+				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValuesOf( p, hi )+'</td></tr>'
 			}
 		});
 		// Add a property 'SpecIF:Type':
@@ -401,7 +410,7 @@ function toXhtml( data, opts ) {
 //					console.debug( 'url:', u1, ', ext:', e, ', alt:', d );
 
 					// If it is an application file, look for a preview image:
-					if( opts.applExtensions.indexOf( e )>-1 ) {  
+					if( opts.applExtensions.includes( e ) ) {  
 							let noPreview = true;
 							// replace by preview image, if possible:
 							for( var i=data.files.length-1; noPreview && i>-1; i-- ) {
@@ -485,11 +494,44 @@ function toXhtml( data, opts ) {
 			);
 			return str
 		}
-		function propertyValueOf( prp, hi ) {
-			if( !prp.value ) return '';
+		function propertyValuesOf( prp, hi ) {
+//			if( !prp.values || prp.values.length<0 ) return '';
 			// return the value of a single property:
-//			console.debug('propertyValueOf',prp,hi);
-			if(prp['class']) {
+//			console.debug('propertyValuesOf',prp,hi);
+			let pC = itemById(data.propertyClasses, prp['class']),
+				dT = itemById(data.dataTypes, pC.dataType);
+			if (dT.enumeration) {
+				let ct = '';
+				for (var v of prp.values) {
+					// multiple values in a comma-separated string;
+					// string values should have just a single language (already filtered during export):
+					switch (dT.type) {
+						case dataTypeString:
+							ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value[0]['text'];
+							break;
+						default:
+							ct += (ct.length == 0 ? '' : ', ') + itemById(dT.enumeration, v).value;
+					}
+				};
+				return escapeXML(ct);
+			};
+			// else
+			let ct = '';
+			switch (dT.type) {
+				case dataTypeString:
+					for (var v of prp.values) {
+						// string values should have just a single language (already filtered during export):
+						ct += titleLinks(fileRef(escapeInner(v[0]['text']), opts), hi, opts);
+					};
+					break;
+				default:
+					for (var v of prp.values) {
+						// multiple values in a comma-separated string:
+						ct += (ct.length == 0 ? '' : ', ') + escapeXML(v);
+					}
+			};
+			return ct;
+		/*	if(prp['class']) {
 				let pC = itemById(data.propertyClasses, prp['class']),
 					dT = itemById(data.dataTypes, pC.dataType);
 				switch( dT.type ) {
@@ -513,7 +555,7 @@ function toXhtml( data, opts ) {
 				}
 			};
 			// for all other dataTypes or when there no dataType:
-			return escapeXML( prp.value )					
+			return escapeXML( prp.value ) */			
 		}
 	}
 	function renderHierarchy( nd, hi, lvl ) {
@@ -538,9 +580,9 @@ function toXhtml( data, opts ) {
 			});
 		return ch
 	}
-	function xhtmlOf( doc ) {
+	function makeXhtmlFile( doc ) {
 		// make a xhtml file content from the elements provided:
-//		console.debug('xhtmlOf',doc);
+//		console.debug('makeXhtmlFile',doc);
 		return	'<?xml version="1.0" encoding="UTF-8"?>'
 		+		'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
 		+		'<html xmlns="http://www.w3.org/1999/xhtml">'
@@ -596,10 +638,14 @@ function toXhtml( data, opts ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
 		return prp.title || itemById(data.propertyClasses,prp['class']).title
 	}
-	function elTitleOf( el ) {
+	function classTitleOf( el ) {
 		// get the title of a resource or statement as defined by itself or it's class;
 		// el is a statement, if it has a subject:
-		return el.title || (el.subject? itemById(data.statementClasses,el['class']).title : '')
+		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
+	}
+	function languageValueOf(val) {
+		// assuming that only the desired language has already been selected during export:
+		return (typeof (val) == 'string' ? val : val[0].text)
 	}
 	function hasContent( str ) {
 		// Check whether str has content or a reference:

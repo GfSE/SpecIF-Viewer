@@ -18,7 +18,6 @@ function transformReqif2Specif(reqifDoc,options) {
 	const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
 	
     if( typeof(options)!='object' ) options = {};
-    if( typeof(options.translateTitle)!='function' ) options.translateTitle = function(ti) {return ti};
 
     const xmlDoc = parse(reqifDoc);
 
@@ -65,14 +64,16 @@ function validateReqif(xml) {
         && xml.getElementsByTagName("REQ-IF-CONTENT").length > 0;
 }
 function extractMetaData(header) {
-    return (header.length < 1 ? {} : {
-        id: header[0].getAttribute("IDENTIFIER"),
-        title: header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML,
+    // header.length>0 has been checked before: 
+    let id = header[0].getAttribute("IDENTIFIER");
+    return ({
+        id: id,
+        title: (header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML) || id,
         description: header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '',
         generator: 'reqif2specif',
         $schema: "https://specif.de/v1.0/schema.json",
         createdAt: header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML
-    });
+    })
 };
 function extractDatatypes(xmlDatatypes) {
     return xmlDatatypes.length<1? [] : Array.from(xmlDatatypes[0].children, extractDatatype );
@@ -85,32 +86,43 @@ function extractDatatypes(xmlDatatypes) {
             description: datatype.getAttribute("DESC") || '',
             changedAt: datatype.getAttribute("LAST-CHANGE") || ''
         };
-        if( datatype.getAttribute("MIN") ) specifDatatype.minInclusive = Number(datatype.getAttribute("MIN"));
+     /* if( datatype.getAttribute("MIN") ) specifDatatype.minInclusive = Number(datatype.getAttribute("MIN"));
         if( datatype.getAttribute("MAX") ) specifDatatype.maxInclusive = Number(datatype.getAttribute("MAX"));
         if( datatype.getAttribute("MAX-LENGTH") ) specifDatatype.maxLength = Number(datatype.getAttribute("MAX-LENGTH"));
-        if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY"));
-        if( datatype.childElementCount>0 ) specifDatatype.values = extractDataTypeValues(datatype.children);
+        if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY")); */
+
+        extr("MIN", "minInclusive");
+        extr("MAX", "maxInclusive");
+        extr("MAX-LENGTH", "maxLength");
+        extr("ACCURACY", "fractionDigits");
+        if (datatype.childElementCount > 0) specifDatatype.values = extractDataTypeValues(datatype.children);
 
         return specifDatatype;
-    }
-    function getTypeOfDatatype(datatype) {
-        return {
-            "DATATYPE-DEFINITION-BOOLEAN": 'xs:boolean', 
-            "DATATYPE-DEFINITION-DATE": 'xs:dateTime',
-            "DATATYPE-DEFINITION-INTEGER": 'xs:integer',
-            "DATATYPE-DEFINITION-REAL": 'xs:double',
-            "DATATYPE-DEFINITION-STRING": 'xs:string',
-            "DATATYPE-DEFINITION-XHTML": 'xhtml',
-            "DATATYPE-DEFINITION-ENUMERATION": 'xs:enumeration',
-        }[datatype.nodeName];
-    }
-    function extractDataTypeValues(DataTypeValuesHtmlCollection) {
-        return Array.from( DataTypeValuesHtmlCollection[0].children, extractEnumValue );
 
-        function extractEnumValue(ch) {
+        function extr(rqA,spP) {
+            let val = datatype.getAttribute(rqA);
+            if (val)
+                specifDatatype[spP] = Number(val)
+        }
+        function getTypeOfDatatype(datatype) {
             return {
-                id: ch.getAttribute("IDENTIFIER"),
-                value: ch.getAttribute("LONG-NAME") || '&#x00ab;undefined&#x00bb;'
+                "DATATYPE-DEFINITION-BOOLEAN": 'xs:boolean',
+                "DATATYPE-DEFINITION-DATE": 'xs:dateTime',
+                "DATATYPE-DEFINITION-INTEGER": 'xs:integer',
+                "DATATYPE-DEFINITION-REAL": 'xs:double',
+                "DATATYPE-DEFINITION-STRING": 'xs:string',
+                "DATATYPE-DEFINITION-XHTML": 'xhtml',
+                "DATATYPE-DEFINITION-ENUMERATION": 'xs:enumeration',
+            }[datatype.nodeName];
+        }
+        function extractDataTypeValues(DataTypeValuesHtmlCollection) {
+            return Array.from(DataTypeValuesHtmlCollection[0].children, extractEnumValue);
+
+            function extractEnumValue(ch) {
+                return {
+                    id: ch.getAttribute("IDENTIFIER"),
+                    value: ch.getAttribute("LONG-NAME") || '&#x00ab;undefined&#x00bb;'
+                }
             }
         }
     }
@@ -124,7 +136,7 @@ function extractPropertyClasses(xmlSpecTypes) {
         let propertyClasses = Object.entries(specAttributeMap).map( entry => { 
             let propertyClass = {
                 id: entry[0],
-                title: options.translateTitle( entry[1].title ),
+                title: entry[1].title,
                 dataType: entry[1].dataType,
                 changedAt: entry[1].changedAt
             };
@@ -267,9 +279,9 @@ function extractProperties(specAttributes) {
             // ToDo: check wether it *may* be specified, at all ...  
             specifProperty.id = property.getAttribute("IDENTIFIER"); */
         specifProperty['class'] = property.getElementsByTagName("DEFINITION")[0].children[0].innerHTML;
-        /*  ToDo: Check whether ReqIF ATTRIBUTES can have an individual LONG-NAME ..
-            if( property.getAttribute("LONG-NAME") ) 
-                specifProperty.title = options.translateTitle2Specif( property.getAttribute("LONG-NAME") ); */
+
+        //  ToDo: Check whether ReqIF ATTRIBUTES can have an individual LONG-NAME ..
+
         if (property.getAttribute("THE-VALUE")) {
             specifProperty.value = property.getAttribute("THE-VALUE");
 

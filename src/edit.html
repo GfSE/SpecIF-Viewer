@@ -40,7 +40,7 @@ let fileName = /.*\/([^.?#]*)(?:\.html)?(?:#.*)?$/.exec( window.location.href )[
 		document.body.appendChild(el)
 	}
 let pend=4;
-getScript( 'https://code.jquery.com/jquery-3.6.4.min.js' );
+getScript( 'https://code.jquery.com/jquery-3.7.1.min.js' );
 getScript( './config/definitions.js?'+ Date.now().toString() ); // with cache-busting
 getScript( './config/moduleManager.js?'+ Date.now().toString() );
 getScript( './'+fileName+'.js?'+ Date.now().toString() );

@@ -245,7 +245,7 @@ class CCache {
 			if (typeof (el) != 'object') throw Error('First input parameter is invalid');
 			if (!(el.properties || el['class'])) return '';
 
-			// Lookup titles only in case of a resource serving as heading or in case of a statement:
+			// Lookup title value only in case of a resource serving as heading or in case of a statement:
 			// @ts-ignore - of course resources have no subject, that's why we ask
 			let resOpts = el.subject?
 					// it is a statement:
@@ -253,10 +253,10 @@ class CCache {
 				:
 					// it is a resource:
 					{
-						targetLanguage: opts.targetLanguage,
-						lookupTitles: opts.lookupTitles && LIB.itemByKey(self.resourceClasses, el['class']).isHeading
+						lookupValues: opts.lookupValues && LIB.itemByKey(self.resourceClasses, el['class']).isHeading,
+						targetLanguage: opts.targetLanguage
 					};
-			let ti = LIB.getTitleFromProperties(el.properties, resOpts);
+			let ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, resOpts);
 
 			// In case of a resource, we never want to lookup a title,
 			// however in case of a statement, we do:
@@ -313,7 +313,7 @@ class CCache {
 				this[app.standards.listName.get(le)].length = 0;
     }
 }
-class CElement {
+class CItem {
 	category: string;
 	listName: string;
 	isEqual: Function;
@@ -325,6 +325,55 @@ class CElement {
 		this.isEqual = eqF;
 		this.isCompatible = compF;
 		this.substitute = subsF;
+	}
+}
+const noPermission: SpecifPermissionVector = { C: false, E: false, R: false, U: false, D: false };
+class CPermission implements SpecifPermission {
+	item: SpecifId;  // the item reference
+	permissionVector: SpecifPermissionVector;
+	constructor(iId: SpecifId, prm: string) {
+		this.item = iId;
+		this.permissionVector = {
+			C: prm.includes('C'), // create item
+			E: prm.includes('E'), // execute item
+			R: prm.includes('R'), // read item
+			U: prm.includes('U'), // update item
+			D: prm.includes('D')  // delete item
+		}
+	}
+}
+class CProjectRole implements SpecifProjectRole {
+	id: SpecifId;
+	title: SpecifText;
+	description?: SpecifMultiLanguageText;
+	permissions: SpecifPermission[] = [];
+	constructor(roleName: SpecifText) {
+		this.id = roleName.toJsId();
+		this.title = roleName;
+	}
+	setPermissions(iId: SpecifId | undefined, prm: string) {
+		if (iId) {
+			let idx = LIB.indexBy(this.permissions, 'item', iId);
+			if (idx > -1)
+				this.permissions[idx] = new CPermission(iId, prm)
+			else
+				this.permissions.push(new CPermission(iId, prm));
+		};
+		return this;  // make it chainable
+	}
+/*	removePermissions(iId: SpecifId) {
+		let idx = LIB.indexBy(this.permissions, 'item', iId);
+		if (idx > -1)
+			this.permissions.splice(idx, 1)
+		return this  // make it chainable
+	} */
+}
+class CRoleAssignment implements SpecifRoleAssignment {
+	project: SpecifId = '';
+	role: SpecifText = '';
+	constructor(prj: SpecifId, roleName: SpecifText) {
+		this.project = prj;
+		this.role = roleName;  // the title of the role, ideally an ontology term
 	}
 }
 interface IExportParams {
@@ -352,9 +401,9 @@ class CProject {
 	createdBy?: SpecifCreatedBy;
 
 	// all project roles with permissions:
-	roles: CRole[] = [];
+	roles: SpecifProjectRole[] = [];
 	// the permissions of the current user, selected at login by his/her role:
-	myItemPermissions: CItemPermissions[] = [];
+	myPermissions: CPermission[] = [];
 
 	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
 	// store all keys without revision, so that the referenced elements can be updated without breaking the link:
@@ -378,7 +427,7 @@ class CProject {
 	exportParams: IExportParams;
 	exporting: boolean;		// prevent concurrent exports
 	abortFlag: boolean;
-	types: CElement[];
+	types: CItem[];
 
 	constructor(cData: CCache) {
 		// The common cache for all local projects:
@@ -389,10 +438,10 @@ class CProject {
 
 		//	Create a table of types and relevant attributes:	
 		this.types = [
-			new CElement('dataType', LIB.equalDT, this.compatibleDT.bind(this), this.substituteDT.bind(this)),
-			new CElement('propertyClass', LIB.equalPC, this.compatiblePC.bind(this), this.substitutePC.bind(this)),
-			new CElement('resourceClass', LIB.equalRC, this.compatibleRC.bind(this), this.substituteRC.bind(this)),
-			new CElement('statementClass', LIB.equalSC, this.compatibleSC.bind(this), this.substituteSC.bind(this))
+			new CItem('dataType', LIB.equalDT, this.compatibleDT.bind(this), this.substituteDT.bind(this)),
+			new CItem('propertyClass', LIB.equalPC, this.compatiblePC.bind(this), this.substitutePC.bind(this)),
+			new CItem('resourceClass', LIB.equalRC, this.compatibleRC.bind(this), this.substituteRC.bind(this)),
+			new CItem('statementClass', LIB.equalSC, this.compatibleSC.bind(this), this.substituteSC.bind(this))
 		];
 	};
 	isLoaded(): boolean {
@@ -400,6 +449,7 @@ class CProject {
 	};
 	private setMeta(spD: SpecIF): void {
 		// store a project's individual data apart from the common cache:
+
 	//	this.context = spD.context;
 		this.id = spD.id;
 		this.title = spD.title;
@@ -411,10 +461,10 @@ class CProject {
 		this.createdAt = spD.createdAt;
 		this.createdBy = spD.createdBy;
 		this.exportParams = {
-			projectName: LIB.languageValueOf(this.title, { targetLanguage: this.language }),
-			fileName: LIB.languageValueOf(this.title, { targetLanguage: this.language })
+			projectName: LIB.languageTextOf(this.title, { targetLanguage: this.language }),
+			fileName: LIB.languageTextOf(this.title, { targetLanguage: this.language })
 		};
-		// remember the hierarchies associated with this projects - the cache holds all;
+		// remember the classes and hierarchies associated with this project - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
 		["hierarchies", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
 			(list) => {
@@ -425,43 +475,57 @@ class CProject {
 	/*	this.locked = app.title == i18n.LblReader; 
 		this.exp = true; */
 
+			function findPrp(ti: string): SpecifId | undefined {
+				for (var pC of spD.propertyClasses) {
+					if (ti == app.ontology.normalize("propertyClass", pC.title))
+						return pC.id;
+				}
+			}
+
 		if (spD.roles) {
 			// In future, the roles and permissions may be imported with the project:
 			this.roles = spD.roles
 		}
 		else {
 			// ... but by default, they are created here:
+
+			this.roles.push(
+				new CProjectRole("SpecIF:Reader")
+					.setPermissions(spD.id, 'R')
+			);
+			this.roles.push(
+				new CProjectRole("SpecIF:Editor")
+					.setPermissions(spD.id, 'CRUD')
+			);
+
+			// Find supplier properties:
+			let supS = findPrp("ReqIF-WF.SupplierStatus"),
+				supC = findPrp("ReqIF-WF.SupplierComment");
+//			console.debug('sup',supS,supC);
+			if (supS || supC) {
+				this.roles.push(
+					new CProjectRole("ReqIF-WF.Supplier")
+						.setPermissions(spD.id, 'R')
+						.setPermissions(supS, 'RU')
+						.setPermissions(supC, 'RU')
+				);
+				this.roles.push(
+					new CProjectRole("ReqIF-WF.Customer")
+						.setPermissions(spD.id, 'CRUD')
+						.setPermissions(supS, 'R')
+						.setPermissions(supC, 'R')
+				)
+			};
+
 		/*	this.roles.push(
-				new CRole('Manager')
-					.setItemPermissions(spD.id, 'A')
+				new CProjectRole('Manager')
+					.setPermissions(spD.id, 'A')
 			); */
-			this.roles.push(
-				new CRole('Reader')
-					.setItemPermissions(spD.id, 'R')
-			);
-			this.roles.push(
-				new CRole('Supplier')
-					.setItemPermissions(spD.id, 'R')
-					//		.setItemPermissions("PC-CustomerStatus", 'RU')
-					//		.setItemPermissions("PC-CustomerComment", 'RU')
-					.setItemPermissions("PC-SupplierStatus", 'RU')
-					.setItemPermissions("PC-SupplierComment", 'RU')
-			);
-			this.roles.push(
-				new CRole('Customer')
-					.setItemPermissions(spD.id, 'CRUD')
-					.setItemPermissions("PC-SupplierStatus", 'R')
-					.setItemPermissions("PC-SupplierComment", 'R')
-			);
-			this.roles.push(
-				new CRole('Editor')
-					.setItemPermissions(spD.id, 'CRUD')
-			)
 		};
 
-		// find the itemPermissions of the current user for this project:
-		let role = LIB.itemById(this.roles, app.me.myRole(spD.id));
-		if (role) this.myItemPermissions = role.itemPermissions;
+		// find the permissions of the current user for this project:
+		let role = LIB.itemById(this.roles, app.me.myRole(spD.id).toJsId());
+		if (role) this.myPermissions = role.permissions;
 	};
 	private getMeta(): CSpecIF {
 		// retrieve a project's individual data apart from the common cache;
@@ -562,7 +626,6 @@ class CProject {
 						return this.readItems('statement', flt, opts);
 
 						function flt(s:SpecifStatement) {
-							let rL = exD.resources;
 							return LIB.indexByKey(rL, s.subject) > -1 && LIB.indexByKey(rL, s.object) > -1
 						}
 					}
@@ -570,9 +633,9 @@ class CProject {
 				.then(
 					(sL) => {
 						exD.statements = sL as SpecifStatement[];
-//						console.debug('2', simpleClone(exD));
+//						console.debug('3', simpleClone(exD));
 
-						// In a second step get all statements relating a statement and a resource or statement.
+						// In a second step get all statements relating a statement to a resource or statement.
 						// As of today, there are only "shows" statements between a diagram resource (as subject) and a statement (as object),
 						// but the constraints allow a statement with any resource or statement as subject or object,
 						// so the general case is assumed.
@@ -580,8 +643,7 @@ class CProject {
 						return this.readItems('statement', flt, opts);
 
 						function flt(s: SpecifStatement) {
-							let sL = exD.statements,
-								L = exD.resources.concat(sL);
+							let L:any = (exD.resources as SpecifItem[]).concat(sL);
 							return LIB.indexByKey(L, s.subject) > -1 && LIB.indexByKey(sL, s.object) > -1
 								|| LIB.indexByKey(sL, s.subject) > -1 && LIB.indexByKey(L, s.object) > -1
 						}
@@ -590,7 +652,8 @@ class CProject {
 				.then(
 					(sL) => {
 						exD.statements = exD.statements.concat(sL as SpecifStatement[]);
-						// collect the resourceClasses referenced by the resources of this project:
+
+						// Collect the resourceClasses referenced by the resources of this project:
 						// start with the stored resourceClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let rCL: SpecifKeys = [].concat(this.resourceClasses),
@@ -605,14 +668,15 @@ class CProject {
 								rcLen = rCL.length;
 							};
 						};
-//						console.debug('3', simpleClone(exD), rCL);
+//						console.debug('4', simpleClone(exD), rCL);
 						return this.readItems('resourceClass', rCL, opts);
 					}
 				)
 				.then(
 					(rCL) => {
 						exD.resourceClasses = rCL as SpecifResourceClass[];
-						// collect the statementClasses referenced by the resources of this project:
+
+						// Collect the statementClasses referenced by the resources of this project:
 						// start with the stored statementClasses of this project in case they have no instances (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let sCL: SpecifKeys = [].concat(this.statementClasses),
@@ -627,14 +691,15 @@ class CProject {
 								scLen = sCL.length;
 							}
 						};
-//						console.debug('4', simpleClone(exD), sCL);
+//						console.debug('5', simpleClone(exD), sCL);
 						return this.readItems('statementClass', sCL, opts);
 					}
 				)
 				.then(
 					(sCL) => {
 						exD.statementClasses = sCL as SpecifStatementClass[];
-						// collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
+
+						// Collect the propertyClasses referenced by the resourceClasses and statementClasses of this project:
 						// start with the stored propertyClasses of this project in case they have no references (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let pCL: SpecifKeys = [].concat(this.propertyClasses);
@@ -646,14 +711,15 @@ class CProject {
 								LIB.cacheE(pCL, pC);
 							}
 						};
-//						console.debug('5', simpleClone(exD),pCL);
+//						console.debug('6', simpleClone(exD),pCL);
 						return this.readItems('propertyClass', pCL, opts);
 					}
 				)
 				.then(
 					(pCL) => {
 						exD.propertyClasses = pCL as SpecifPropertyClass[];
-						// collect the dataTypes referenced by the propertyClasses of this project:
+
+						// Collect the dataTypes referenced by the propertyClasses of this project:
 						// start with the stored dataTypes of this project in case they have no references (yet):
 						// @ts-ignore - ts-compiler is very picky, here
 						let dTL: SpecifKeys = [].concat(this.dataTypes);
@@ -663,14 +729,15 @@ class CProject {
 							LIB.cacheE(dTL, pC['dataType']);
 						};
 
-//						console.debug('6', simpleClone(exD),dTL);
+//						console.debug('7', simpleClone(exD),dTL);
 						return this.readItems('dataType', dTL, opts)
 					}
 				)
 				.then(
 					(dTL) => {
 						exD.dataTypes = dTL as SpecifDataType[];
-						// collect the files referenced by the resource properties of this project:
+
+						// Collect the files referenced by the resource properties of this project:
 						let fL: string[] = [],
 							dT: SpecifDataType;
 						for (var r of exD.resources) {
@@ -695,14 +762,14 @@ class CProject {
 								}
 							}
 						};
-//						console.debug('7', simpleClone(exD),fL);
+//						console.debug('8', simpleClone(exD),fL);
 						return this.readItems('file', (f: IFileWithContent) => { return fL.includes(f.title) }, opts);
 					}
 				)
 				.then(
 					(fL) => {
 						exD.files = fL as IFileWithContent[];
-//						console.debug('8', simpleClone(exD));
+//						console.debug('9', simpleClone(exD));
 						return exD.get(opts);
 					}
 				)
@@ -738,7 +805,7 @@ class CProject {
 				//    c) if same id and different content, save with new id and update all references
 				(newD: CSpecIF) => {
 //					console.debug('adopt #1',simpleClone(self.cache),simpleClone(newD));
-					self.types.forEach((ty:CElement) => {
+					self.types.forEach((ty:CItem) => {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 						if (Array.isArray(newD[ty.listName])) {
 							let itmL: SpecifItem[] = [];
@@ -819,14 +886,18 @@ class CProject {
 							// For matching, the title and fundamental type are used. 
 							// The title can have multiple languages - so far only the project's or browser's language (fallback when initializing this.language)
 							// are used, so the matching may lead to different results depending on the language selected.
-							let selOpts = Object.assign({}, opts, { targetLanguage: self.language || newD.language, lookupTitles: true });
+							let selOpts = Object.assign(
+								{},
+								opts,
+								{ targetLanguage: self.language || newD.language /*, lookupTitles: true */ }
+							);
 							if ( LIB.hasResClass(newR, CONFIG.modelElementClasses.concat(CONFIG.diagramClasses),newD)
 								&& !LIB.hasType(newR, CONFIG.excludedFromDeduplication, newD, opts)
 						//	if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(newR['class'], newD.resourceClasses)) > -1
 						//		&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD)[0])) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, selOpts), selOpts)[0] as SpecifResource;
+								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, newD.propertyClasses, selOpts), selOpts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances ...
 								// and is less restrictive than the class ID:
@@ -974,6 +1045,7 @@ class CProject {
 					case 'statementClass':
 						// Update the project's remembering list;
 						// but don't keep the revision, as it can change:
+						// @ts-ignore - these categories *are* defined
 						LIB.cacheL(self[app.standards.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
 						break;
 					case 'hierarchy':
@@ -1001,6 +1073,7 @@ class CProject {
 		);
 	}
 	private readClassesWithParents(ctg: string, toGet: SpecifKeys) {
+		// Return a list with classes, the ancestors first and the requested class last.
 		// Applies to resourceClasses and statementClasses;
 		// classes are always cached, so there is no need for a call with promise.
 		let resL: SpecifItem[] = [];
@@ -1019,40 +1092,43 @@ class CProject {
 		} while (toGet.length > 0);
 		return resL;
 	}
-	private readExtendedClasses(ctg: string, toGet: SpecifKeys) {
-		// Applies to resourceClasses and statementClasses;
-		// classes are always cached, so there is no need for a call with promise.
-		let self = this,
-			resL: any = [];
-		for (var clk of toGet) {
-			resL.push( extendClass(clk) )
+	readExtendedClasses(ctg: string, toGet: SpecifKeys) {
+		let self = this;
+		if (['resourceClass', 'statementClass'].includes(ctg)) {
+			// Applies to resourceClasses and statementClasses;
+			// classes are always cached, so there is no need for a call with promise.
+			let resL: any = [];
+			for (var clk of toGet) {
+				resL.push(extendClass(clk))
+			};
+			return resL;
 		};
-		return resL;
+		throw Error("Programming Error: Called 'readExtendedClasses' with invalid category '" + ctg + "'.");
 
 		function extendClass(k:SpecifKey) {
-			let res:any = {};
+			let rC:any = {};
 			self.readClassesWithParents(ctg, [k])
 				// A list with classes is returned, the ancestors first and the requested class last.
-				// - Starting with most elderly, copy to and potentially overwrite the attributes of res
+				// - Starting with most elderly, copy to and potentially overwrite the attributes of rC
 				// - Also the list of eligible subjectClasses and objectClasses are overwritten,
 				//   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
 				// - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
 				.forEach(
 					(cl: SpecifItem) => {
 						for (let att in cl) {
-						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(rC[att]))
 							// @ts-ignore - indexing an object with a string is perfectly OK
-							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(res[att]))
+							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(rC[att]))
 								// @ts-ignore - indexing an object with a string is perfectly OK
-								LIB.cacheL(res[att], cl[att])
+								LIB.cacheL(rC[att], cl[att])
 							else
 								// @ts-ignore - indexing an object with a string is perfectly OK
-								res[att] = cl[att]
+								rC[att] = cl[att]
                         }
 					}
 				);
-			delete res['extends'];
-			return res
+			delete rC['extends'];
+			return rC
         }
 	}
 	readItems(ctg: string, itemL: SpecifKeys | Function | string, opts?: any): Promise<SpecifItem[]> {
@@ -1177,7 +1253,8 @@ class CProject {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
 		function updateCh(itm: SpecifItem): void {
 			itm.changedAt = new Date().toISOString();
-			itm.changedBy = app.me.userName;
+			if (app.me.userName != CONFIG.userNameAnonymous )
+				itm.changedBy = app.me.userName;
 		}
 
 		return new Promise(
@@ -1267,9 +1344,11 @@ class CProject {
 						// delete also the respective keys remembered by the project;
 						// - a node can also be a hierarchy, thus try to remove it as well;
 						// - disregard the revision:
-						let listName = app.standards.listName.get(ctg=='node'?'hierarchy':ctg);
-						for (var i of itmL)
+						let listName = app.standards.listName.get(ctg == 'node' ? 'hierarchy' : ctg);
+						for (var i of itmL) {
+							// @ts-ignore - these categories *are* defined
 							LIB.uncacheE(this[listName], { id: i.id });
+						};
 						// no break; 
 				//	case 'file':
 					default:
@@ -1329,8 +1408,8 @@ class CProject {
 		var self = this,
 			dta = this.cache,
 			opts = {
+			//	lookupTitles: false,
 				targetLanguage: 'any',
-				lookupTitles: false,
 				addIcon: false
 			};
 //		console.debug('hookStatements',dta);
@@ -1370,8 +1449,9 @@ class CProject {
 					// loop to find the *first* occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
-							&& LIB.languageValueOf(p.values[0], { targetLanguage: self.language }) == vId)
+					//	if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
+						if (CONFIG.idProperties.includes(LIB.classTitleOf(p['class'], dta.propertyClasses))
+							&& LIB.languageTextOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
 					};
 					return false
@@ -1387,7 +1467,7 @@ class CProject {
 					for (var a = 0, A = r.properties.length; a < A; a++) {
 						// Check the configured ids:
 						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(r.properties[a]['class'], dta.propertyClasses))))
-							return LIB.languageValueOf(r.properties[a].values[0], { targetLanguage: self.language })
+							return LIB.languageTextOf(r.properties[a].values[0], { targetLanguage: self.language })
 					};
 				};
 				//	return undefined
@@ -1520,7 +1600,7 @@ class CProject {
 									pVs = LIB.valuesByTitle(res, [CONFIG.propClassType], dta);
 
 								if (pVs.length > 0) {
-									let pV = LIB.languageValueOf(pVs[0], { targetLanguage: 'default' });
+									let pV = LIB.languageTextOf(pVs[0], { targetLanguage: 'default' });
 									// collect all existing folders of the respective type; there can be 0..n:
 									if (pV == r2c.folder )
 										delL.push(nd);
@@ -1544,26 +1624,28 @@ class CProject {
 										LIB.sortBy(creL, (el: any) => { return el.r.title });
 
 										// 4. Create a new combined folder:
-										let newD: SpecIF = {
-											id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
-											$schema: 'https://specif.de/v1.1/schema.json',
-											dataTypes: [
-												app.standards.get('dataType', { id: "DT-ShortString" }) as SpecifDataType,
-												app.standards.get('dataType', { id: "DT-Text" }) as SpecifDataType
-											],
-											propertyClasses: [
-												app.standards.get('propertyClass', { id: "PC-Name" }) as SpecifPropertyClass,
-												app.standards.get('propertyClass', { id: "PC-Description" }) as SpecifPropertyClass,
-												app.standards.get('propertyClass', { id: "PC-Type" }) as SpecifPropertyClass
-											],
-											resourceClasses: [
-												app.standards.get('resourceClass', { id: "RC-Folder" }) as SpecifResourceClass
-											],
-											statementClasses: [],
-											resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
-											statements: [],
-											hierarchies: NodeList(r2c,creL)
-										};
+										let newD = Object.assign(
+											app.ontology.makeTemplate(),
+											{
+												id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
+												dataTypes: [
+													app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+													app.standards.get('dataType', LIB.makeKey("DT-Text"))
+												],
+												propertyClasses: [
+													app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+													app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+													app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")),
+													app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
+												],
+												resourceClasses: [
+													app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")),
+													app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
+												],
+												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
+												hierarchies: NodeList(r2c,creL)
+											}
+										) as SpecIF;
 										// use the update function to eliminate duplicate types:
 										self.adopt(newD, {noCheck:true})
 										/*	.done(() => {
@@ -1603,10 +1685,10 @@ class CProject {
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name" ),
-							values: [LIB.makeMultiLanguageText(ti)]
+							values: [LIB.makeMultiLanguageValue(ti)]
 						}, {
 							class: LIB.makeKey("PC-Type" ),
-							values: [LIB.makeMultiLanguageText(ty||ti)]
+							values: [LIB.makeMultiLanguageValue(ty||ti)]
 						}],
 						changedAt: tim
 					}]
@@ -1639,13 +1721,13 @@ class CProject {
 					tim = new Date().toISOString(),
 
 					// Get the hierarchies without the folder listing the unreferenced resources:
-					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[])
+					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNodes)
 						.filter(
 							(nd: SpecifNode) => {
 								// Find the referenced resource:
 								let idx = LIB.indexByKey(resL, nd.resource);
 								if (idx > -1) {
-									if (LIB.hasType(resL[idx], [CONFIG.resClassUnreferencedResource], dta, opts)) {
+									if (LIB.hasType(resL[idx], [CONFIG.resClassUnreferencedResources], dta, opts)) {
 										// List the node of the FolderWithUnreferencedResources for deletion:
 										unRL.push(nd);
 										// ... but don't consider it's resource to be an unreferenced resource, itself:
@@ -1690,28 +1772,32 @@ class CProject {
 							.catch(reject)
 					else {
 						// create a new folder:
-						let newD: any = {
-							id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
-							$schema: 'https://specif.de/v1.1/schema.json',
-							dataTypes: [
-								app.standards.get('dataType', { id: "DT-ShortString" }),
-								app.standards.get('dataType', { id: "DT-Text" })
-							],
-							propertyClasses: [
-								app.standards.get('propertyClass', { id: "PC-Name" }),
-								app.standards.get('propertyClass', { id: "PC-Description" }),
-								app.standards.get('propertyClass', { id: "PC-Type" })
-							],
-							resourceClasses: [
-								app.standards.get('resourceClass', { id: "RC-Folder" })
-							],
-							resources: Folder(),
-							hierarchies: NodeList(resL)
-						};
+						let newD = Object.assign(
+							app.ontology.makeTemplate(),
+							{
+								id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
+								dataTypes: [
+									app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+									app.standards.get('dataType', LIB.makeKey("DT-Text"))
+								],
+								propertyClasses: [
+									app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+									app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+									app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
+									app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
+								],
+								resourceClasses: [
+									app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
+									app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
+								],
+								resources: Folder(),
+								hierarchies: NodeList(resL)
+							}
+						) as SpecIF;
 //						console.debug('glossary',newD);
 						// use the update function to eliminate duplicate types;
 						// 'opts.addGlossary' must not be true to avoid an infinite loop:
-						self.adopt(newD as SpecIF, { noCheck: true })
+						self.adopt(newD, { noCheck: true })
 							.done(resolve)
 							.fail(reject);
                     }
@@ -1733,17 +1819,17 @@ class CProject {
 						class: LIB.makeKey("RC-Folder"),
 						properties: [{
 							class: LIB.makeKey("PC-Name"),
-							values: [LIB.makeMultiLanguageText(CONFIG.resClassUnreferencedResource)]
+							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResources)]
 						}, {
 							class: LIB.makeKey("PC-Type"),
-							values: [LIB.makeMultiLanguageText(CONFIG.resClassUnreferencedResource)]
+							values: [LIB.makeMultiLanguageValue(CONFIG.resClassUnreferencedResources)]
 						}],
 						changedAt: tim
 					}];
 				}
 				function NodeList(resources: SpecifResource[]): INodeWithPosition[] {
 					// in alphanumeric order:
-					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
+					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
 
 					// Add the folder:
 					let gl: INodeWithPosition = {
@@ -1776,16 +1862,16 @@ class CProject {
 					apx = simpleHash(self.id),
 					tim = new Date().toISOString(),
 					lastContentH: SpecifNode,
-					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNode[])
+					hL = (dta.get("hierarchy", self.hierarchies) as SpecifNodes)
 						.filter(
 							(nd: SpecifNode) => {
 								// Find the referenced resource:
 								let res = dta.get("resource", [nd.resource])[0] as SpecifResource;
 								// Remember the last hierarchy with original content:
-								if (res && !LIB.hasType(res, [CONFIG.resClassGlossary, CONFIG.resClassUnreferencedResource], dta, opts))
+								if (res && !LIB.hasType(res, [CONFIG.resClassGlossary, CONFIG.resClassUnreferencedResources], dta, opts))
 									lastContentH = nd;
 								// Include all original hierarchies, i.e. those except the generated ones:
-								return res && !LIB.hasType(res, [CONFIG.resClassUnreferencedResource], dta, opts);
+								return res && !LIB.hasType(res, [CONFIG.resClassUnreferencedResources], dta, opts);
 							}
 						);
 
@@ -1840,30 +1926,33 @@ class CProject {
 								}
 								else {
 									// create a new folder with the glossary entries:
-									let newD: any = {
-										id: 'Create Glossary ' + new Date().toISOString(),
-										$schema: 'https://specif.de/v1.1/schema.json',
-										dataTypes: [
-											app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-											app.standards.get('dataType', LIB.makeKey("DT-Text"))
-										],
-										propertyClasses: [
-											app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-											app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-											app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-										],
-										resourceClasses: [
-											app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-										],
-										statementClasses: [],
-										resources: Folders(),
-										statements: [],
-										hierarchies: NodeList(lastContentH)
-									};
+									let newD = Object.assign(
+										app.ontology.makeTemplate(),
+										{
+											id: 'Create Glossary ' + new Date().toISOString(),
+											dataTypes: [
+												app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
+												app.standards.get('dataType', LIB.makeKey("DT-Text"))
+											],
+											propertyClasses: [
+												app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
+												app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
+												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")),
+												app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
+											],
+											resourceClasses: [
+												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")),
+												app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
+											],
+											resources: Folders(),
+											hierarchies: NodeList(lastContentH)
+                                        }
+									) as SpecIF;
 //									console.debug('glossary',newD);
+
 									// use the update function to eliminate duplicate types;
 									// 'opts.addGlossary' must not be true to avoid an infinite loop:
-									self.adopt(newD as SpecIF, { noCheck: true })
+									self.adopt(newD, { noCheck: true })
 										.done(resolve)
 										.fail(reject);
 								}
@@ -1925,39 +2014,47 @@ class CProject {
 					} */
 				function Folders(): SpecifResource[] {
 					// Create the resources for folder and subfolders of the glossary:
-					var fL: SpecifResource[] = [{
+					let termL = app.ontology.getTermResources('resourceClass',CONFIG.resClassGlossary);
+					if (termL.length > 0) {
+						let fL: SpecifResource[] = [{
 							id: "FolderGlossary-" + apx,
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								values: [ LIB.makeMultiLanguageText(CONFIG.resClassGlossary) ]
+								values: LIB.valuesByTitle(termL[0], ["SpecIF:LocalTerm"], app.ontology.data)
 							}, {
 								class: LIB.makeKey("PC-Type"),
-								values: [ LIB.makeMultiLanguageText(CONFIG.resClassGlossary) ]
+								values: [LIB.makeMultiLanguageValue(CONFIG.resClassGlossary)]
 							}],
 							changedAt: tim
 						}];
-					// Create a folder resource for every model-element type:
-					for( var eC of CONFIG.modelElementClasses) {
-						fL.push({
-							id: "Folder-" + eC.toJsId() + "-" + apx,
-							class: LIB.makeKey("RC-Folder"),
-							properties: [{
-								class: LIB.makeKey("PC-Name"),
-								// just adding an 's' is an ugly quickfix ... that works for now:
-								values: [LIB.makeMultiLanguageText(eC + 's')]
-							}, {
-								class: LIB.makeKey("PC-Description"),
-								// just adding 'Description' is an ugly quickfix ... that works for now:
-								values: [LIB.makeMultiLanguageText(eC + 'Description')]
-							}, {
-								class: LIB.makeKey("PC-Type"),
-								values: [LIB.makeMultiLanguageText(CONFIG.resClassFolder)]
-							}],
-							changedAt: tim
-						});
+						// Create a folder resource for every model-element type:
+						for (var eC of CONFIG.modelElementClasses) {
+							termL = app.ontology.getTermResources('resourceClass',eC);
+							if (termL.length > 0) {
+								fL.push({
+									id: "Folder-" + eC.toJsId() + "-" + apx,
+									class: LIB.makeKey("RC-Folder"),
+									properties: [{
+										class: LIB.makeKey("PC-Name"),
+										values: LIB.valuesByTitle(termL[0], ["SpecIF:LocalTermPlural"], app.ontology.data)
+									}, {
+										class: LIB.makeKey("PC-Description"),
+									values: LIB.valuesByTitle(termL[0], ["dcterms:description"], app.ontology.data)
+									}, {
+										class: LIB.makeKey("PC-Type"),
+										values: [LIB.makeMultiLanguageValue(CONFIG.resClassFolder)]
+									}],
+									changedAt: tim
+								})
+							}
+							else
+								console.warn("Ontology has no term '" + eC + "'");
+						};
+						return fL;
 					};
-					return fL;
+					console.warn("Ontology has no term '" + CONFIG.resClassGlossary + "'");
+					return [];
 				}
 				function NodeList(lastContentH:SpecifNode): INodeWithPosition[] {
 					// a. Add the folders:
@@ -2008,7 +2105,7 @@ class CProject {
 						(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
 					) as SpecifResource[];
 					// in alphanumeric order:
-					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, { targetLanguage: self.language }) });
+					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
 
 					// Categorize resources:
 					resL.forEach(
@@ -2040,14 +2137,14 @@ class CProject {
 		//   it is possible that a resource is deleted (from all hierarchies), but not it's statements.
 		//   --> set 'showComments' to false
 		// - All comments referring to the selected resource shall be shown;
-		//   the resource is found in the cache, but the comment is not.
+		//   the resource must be listed in the hierarchy, but the comment is not.
 		//   --> set 'showComments' to true
 		// - It is assumed that the hierarchies contain only model-elements shown on a visible diagram,
 		//   so only stetements are returned for visible resources.
 		// - In addition, only statements are returned which are shown on a visible diagram.
 		//   (perhaps both checks are not necessary, as visible statements only referto visible resources ...)
 
-		if (typeof (opts) != 'object') opts = {};
+		if (typeof (opts) != 'object') opts = { asSubject: true, asObject: true };
 		let dta = this.cache,
 			sCL: SpecifStatementClass[],
 			showsL: SpecifStatement[];
@@ -2070,7 +2167,7 @@ class CProject {
 							// Query: The statements involving the selected resource as subject or object:
 							return this.readItems(
 								'statement',
-								(s: SpecifStatement) => { return res.id == s.subject.id || res.id == s.object.id }
+								(s: SpecifStatement) => { return opts.asSubject && res.id == s.subject.id || opts.asObject && res.id == s.object.id }
 							);
 						}
 					)
@@ -2085,7 +2182,7 @@ class CProject {
 											return (
 													// statement must be visible on a diagram referenced in a hierarchy
 													// or be a shows statement itself.
-													// ToDo: - Some Archimate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
+													// ToDo: - Some ArchiMate relations are implicit (not shown on a diagram) and are unduly suppressed, here)
 													(opts.dontCheckStatementVisibility
 														// Accept manually created relations (including those imported via Excel):
 														|| !Array.isArray(sC.instantiation) || sC.instantiation.includes(SpecifInstantiation.User)
@@ -2114,19 +2211,24 @@ class CProject {
 										return false
 									}
 								)
-							);
+							)
 						}
 					)
 					.catch(reject);
 			}
 		)
 	}
+
+// ====================== EXPORT ==========================================
+
 	// Select format and options with a modal dialog, then export the data:
 	private renderExportOptions(fmt: string) {
 		var pnl = '<div class="panel panel-default panel-options" style="margin-bottom:0">'
 			//	+		"<h4>"+i18n.LblOptions+"</h4>"
-			// add 'zero width space' (&#x200b;) to make the label = div-id unique:
+			// input field for project name, it is pre-filled (only for certain output formats);
+			// 'zero width space' (&#x200b;) is added to make the label = div-id unique:
 			+ (['specif', 'specif_v10', 'html'].includes(fmt) ? '' : makeTextField('&#x200b;' + i18n.LblProjectName, (fmt == 'specifClasses' ? 'SpecIF Classes' : this.exportParams.projectName), { typ: 'line' }))
+			// input field for file name, it is pre-filled:
 			+ makeTextField('&#x200b;' + i18n.LblFileName, (fmt == 'specifClasses' ? 'SpecIF-Classes' : this.exportParams.fileName), { typ: 'line' });
 		switch (fmt) {
 			case 'epub':
@@ -2144,11 +2246,11 @@ class CProject {
 				// Choice of role only in case of the Editor: 
 				if (app.title == i18n.LblEditor) {
 					pnl += makeRadioField(
-						i18n.LblOptions,
+						app.ontology.localize('SpecIF:Permissions', { targetLanguage: browser.language }),
 						// a radio button for each of the roles of the selected project:
 						this.roles.map(
 							(r,i) => {
-								return { title: "for role '"+r.id+"'", id: r.id, checked: i<1 }
+								return { title: i18n.lookup('MsgForRole') + " '" + app.ontology.localize(r.title, { targetLanguage: browser.language })+"'", id: r.title, checked: i<1 }
                             }
 						)
 					)
@@ -2193,7 +2295,7 @@ class CProject {
 		const exportFormatClicked = 'app.projects.selected.exportFormatClicked()';
 		// @ts-ignore - BootstrapDialog() is loaded at runtime
 		new BootstrapDialog({
-		//	title: i18n.LblExport + ": '" + LIB.languageValueOf(this.title, { targetLanguage: this.language }) + "'",
+		//	title: i18n.LblExport + ": '" + LIB.languageTextOf(this.title, { targetLanguage: this.language }) + "'",
 			title: i18n.LblExport,
 			type: 'type-primary',
 		/*	// @ts-ignore - BootstrapDialog() is loaded at runtime
@@ -2206,6 +2308,7 @@ class CProject {
 							{ title: 'SpecIF v' + CONFIG.specifVersion, id: 'specif', checked: true },
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html' },
 							{ title: 'ReqIF v1.0', id: 'reqif' },
+							{ title: 'MS Excel® (experimental)', id: 'xlsx' },
 							//	{ title: 'RDF', id: 'rdf' },
 							//	{ title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
@@ -2216,7 +2319,7 @@ class CProject {
 							{ title: 'HTML with embedded SpecIF v' + CONFIG.specifVersion, id: 'html', checked: true },
 						];
 				// add an option to generate class definitions, if there is a SpecIF ontology found in the hierarchies:
-				if( moduleManager.isReady('generateClasses') && hasOntology() )
+				if( moduleManager.isReady('ioOntology') && hasOntology() )
 					formats.splice(3, 0, { title: 'SpecIF Class Definitions', id: 'specifClasses' });
 
 				var form = '<div class="row" style="margin: 0 -4px 0 -4px">'
@@ -2282,11 +2385,11 @@ class CProject {
 						switch (options.format) {
 							case 'html':
 								if (app.title == i18n.LblEditor) {
-									options.role = radioValue(i18n.LblOptions)
+									options.role = radioValue(app.ontology.localize("SpecIF:Permissions", { targetLanguage: browser.language }))
 								}
 								else
 									// in case this is an HTML to create an HTML, adopt the same role:
-									options.role = window.role || 'Supplier';
+									options.role = window.role || "SpecIF:Supplier";
 								break;
 							default:
 								checkboxValues(i18n.LblOptions).forEach(
@@ -2309,8 +2412,8 @@ class CProject {
 			]
 		})
 		.open();
+		return;
 
-		// ---
 		function handleError(xhr: xhrMessage): void {
 			self.exporting = false;
 			app.busy.reset();
@@ -2336,38 +2439,37 @@ class CProject {
 			}
 			else {
 			//	if (self.cache.exp) { // check permission
-					self.exporting = true; // set status to prohibit multiple entry
+				self.exporting = true; // set status to prohibit multiple entry
 
-					switch (opts.format) {
-						case 'specif_v10':
-					//	case 'rdf':
-						case 'turtle':
-							opts.v10 = true;
-							// no break
-						case 'reqif':
-						case 'specif':
-						case 'html':
-						case 'specifClasses':
-							storeAs(opts);
-							break;
-						case 'epub':
-						case 'oxml':
-							opts.v10 = true;
-							publish(opts);
-					};
+				switch (opts.format) {
+					case 'specif_v10':
+				//	case 'rdf':
+					case 'turtle':
+						opts.v10 = true;
+						// no break
+					case 'reqif':
+					case 'specif':
+					case 'html':
+					case 'specifClasses':
+						storeAs(opts);
+						break;
+					case 'xlsx':
+					case 'epub':
+					case 'oxml':
+						publish(opts);
+						break;
+					default:
+						// programming error!
+						reject(new xhrMessage(999, "Invalid format specified on export"));
+						throw Error("Invalid format specified on export");
 			//	}
 			//	else {
 			//		reject({ status: 999, statusText: "No permission to export" });
-			//	};
+				};
 			};
 			return;
 
 			function publish(opts: any): void {
-				if (!opts || ['epub', 'oxml'].indexOf(opts.format) < 0) {
-					// programming error!
-					reject(new xhrMessage(999, "Invalid format specified on export" ));
-					throw Error("Invalid format specified on export");
-				};
 
 				// ToDo: Get the newest data from the server.
 //				console.debug( "publish", opts );
@@ -2380,40 +2482,48 @@ class CProject {
 				];
 
 				// Don't lookup titles now, but within toOxml(), so that that the publication can properly classify the properties.
-				opts.lookupTitles = true;  // applies to self.cache.get()
-				opts.lookupValues = true;  // applies to self.cache.get()
+			//	opts.lookupValues = true;  // applies to self.cache.get()
 				// But DO reduce to the language desired.
 				if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
-				opts.makeHTML = true;
-				opts.linkifyURLs = true;
-			//	opts.createHierarchyRootIfMissing = true;
+
+				opts.lookupTitles =
+				opts.lookupValues =
 				opts.allDiagramsAsImage = true;
+				opts.makeHTML =
+				opts.linkifyURLs = ['epub','oxml'].includes(opts.format);
+			//	opts.createHierarchyRootIfMissing = true;
 			//	opts.allImagesAsPNG = ["oxml"].includes(opts.format);   .. not yet implemented!!
 				// take newest revision:
 				opts.revisionDate = new Date().toISOString();
+
+				let optsLabel = Object.assign({}, opts, { plural: true });
 
 				self.read(opts).then(
 					(expD:SpecIF) => {
 //						console.debug('publish',expD,opts);
 						let localOpts = {
-							titleLinkTargets: CONFIG.titleLinkTargets.map((e:string) => { return i18n.lookup(e) }),
-							titleProperties: CONFIG.titleProperties.concat(CONFIG.headingProperties).map((e: string) => { return i18n.lookup(e) }),
-							descriptionProperties: CONFIG.descProperties.map((e: string) => { return i18n.lookup(e) }),
+							titleLinkTargets: app.standards.titleLinkTargets().map((e:string) => { return app.ontology.localize(e,opts) }),
+							titleProperties: CONFIG.titleProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
+							descriptionProperties: CONFIG.descProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
 							// Values of declared stereotypeProperties get enclosed by double-angle quotation mark '&#x00ab;' and '&#x00bb;'
-							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return i18n.lookup(e) }),
+							stereotypeProperties: CONFIG.stereotypeProperties.map((e: string) => { return app.ontology.localize(e,opts) }),
 							showEmptyProperties: opts.showEmptyProperties,
 							imgExtensions: CONFIG.imgExtensions,
 							applExtensions: CONFIG.applExtensions,
 						//	hasContent: LIB.hasContent,
-							propertiesLabel: opts.withOtherProperties ? i18n.lookup('SpecIF:Properties') : undefined,
-							statementsLabel: opts.withStatements ? i18n.lookup('SpecIF:Statements') : undefined,
+							propertiesLabel: opts.withOtherProperties ? app.ontology.localize('SpecIF:Property', optsLabel) : undefined,
+							statementsLabel: opts.withStatements ? app.ontology.localize('SpecIF:Statement', optsLabel) : undefined,
 							fileName: self.exportParams.fileName,
 							colorAccent1: '0071B9',	// adesso blue
 							done: () => { app.projects.selected.exporting = false; resolve() },
 							fail: (xhr:xhrMessage) => { app.projects.selected.exporting = false; reject(xhr) }
 						};
 
-						expD.title = opts.projectName;
+						// Take the title entered in the export dialog;
+						// language is unknown and not important, anyways:
+						expD.title = LIB.makeMultiLanguageValue(opts.projectName);  
+
+						// choose the publishing format:
 						switch (opts.format) {
 							case 'epub':
 								// @ts-ignore - toEpub() is loaded at runtime
@@ -2422,6 +2532,9 @@ class CProject {
 							case 'oxml':
 								// @ts-ignore - toOxml() is loaded at runtime
 								toOxml(expD, localOpts);
+								break;
+							case 'xlsx':
+								app.ioXls.fromSpecif(expD, localOpts);
 						};
 						// resolve() is called in the call-backs defined by opts
 					},
@@ -2429,18 +2542,11 @@ class CProject {
 				);
 			}
 			function storeAs(opts: any): void {
-				if (!opts || ['specif', 'specif_v10', 'html', 'reqif', 'turtle', 'specifClasses'].indexOf(opts.format) < 0) {
-					// programming error!
-					reject(new xhrMessage( 999, "Invalid format specified on export" ));
-					throw Error("Invalid format specified on export");
-				};
 
 				// ToDo: Get the newest data from the server.
 //				console.debug( "storeAs", opts );
 
 				// keep vocabulary terms:
-				opts.lookupTitles = false;
-				opts.lookupValues = false;
 				opts.allDiagramsAsImage = ["html","turtle","reqif"].includes(opts.format);
 
 				switch (opts.format) {
@@ -2448,15 +2554,27 @@ class CProject {
 					case 'specif':
 					case 'html':
 						// export all languages:
-						opts.targetLanguage = undefined;
+						opts.lookupTitles = false;
+						opts.lookupValues = false;
+					//	opts.targetLanguage = undefined;
 						// keep all revisions:
 					//	opts.revisionDate = undefined;
 						break;
+					case 'reqif':
+						opts.lookupTitles = true;
+						opts.targetNamespace = "ReqIF.";
+						// XHTML is supported:
+						opts.makeHTML = true;
+						opts.linkifyURLs = true;
+						//	opts.createHierarchyRootIfMissing = true;
+						// take newest revision:
+						opts.revisionDate = new Date().toISOString();
+						break;
 				//	case 'rdf':
 					case 'turtle':
-					case 'reqif':
 						// only single language is supported:
-						if ( !opts.targetLanguage ) opts.targetLanguage = self.language;
+						opts.lookupTitles = true;
+						if (!opts.targetLanguage) opts.targetLanguage = self.language;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
@@ -2491,8 +2609,9 @@ class CProject {
 							.then(
 								(dta) =>{
 									let blob = new Blob([dta], { type: "text/html; charset=utf-8" });
+									// Add the role to the filename except for "SpecIF:Reader" (default):
 									// @ts-ignore - saveAs() is loaded at runtime
-									saveAs(blob, fName + '.'+opts.role+'.specif.html');
+									saveAs(blob, fName + (opts.role == "SpecIF:Reader" ? '' : '.' + app.ontology.localize(opts.role, { targetLanguage: browser.language }))+'.specif.html');
 									self.exporting = false;
 									resolve();
 								},
@@ -2591,6 +2710,8 @@ class CProject {
 			}
 		});
 	}
+
+// =================================== MERGE ===========================================
 
 	// Equality Checks:
 	// equalDT, equalPC, equalRC and equalSC are now part of LIB
@@ -3652,7 +3773,6 @@ moduleManager.construct({
 		self.list = [];
 		self.selected = undefined;
 
-		// module 'standards' (with class CStandards) must be loaded before:
 		app.standards = new CStandards();
 
 	/*	autoLoadId = undefined;  // stop any autoLoad chain

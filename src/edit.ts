@@ -100,7 +100,7 @@ function SpecifApp():IApp {
 				selectedBy: '#selectReports'	// DOM element in parent's selector to choose this view
 			}, {
 				name: CONFIG.resourceEdit,
-				requires: [CONFIG.specifications]	// load not before the specified modules are ready
+				requires: [CONFIG.specifications]	// load as soon as the specified modules are ready
 				// no loadAs, so name will be used for the controller object
 				// no view; just a modal dialog will be used
 				// no selector
@@ -123,9 +123,6 @@ function SpecifApp():IApp {
 				name: 'toOxml'
 			}, {
 				name: 'toTurtle'
-			}, {
-				// generate SpecIF classes from the SpecIF vocabulary:			
-				name: 'generateClasses'
 			}]
 		}, {
 			name: 'about',
@@ -153,21 +150,10 @@ function SpecifApp():IApp {
 	self.login = function () {
 		console.info(self.title + " " + CONFIG.appVersion + " started!");
 		self.me.login()
-		.then(
-			(me: IMe) => {
-				// as long as we don't have a user/identity management,
-				// set a default user role for this app:
-				me.projectRoles = [
-					{
-						project: "any", // default
-						role: "Editor"
-					} as IProjectRole
-				];
-
-				self.show()
-			},
-			self.logout
-		)
+			.then(
+				self.show,
+				self.logout
+			)
 	};
 	self.show = function() {
 		var uP = getUrlParams(), v:string;

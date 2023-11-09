@@ -60,10 +60,8 @@ function BPMN2Specif( xmlString, options ) {
 		options
 	);
 	
-	var parser = new DOMParser();
-	var xmlDoc = parser.parseFromString(xmlString, "text/xml");
-	var model = {};
-	model["$schema"] = "https://specif.de/v1.0/schema.json";
+	var parser = new DOMParser(),
+		xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
 	// BPMN Collaborations list participants (with referenced processes) and messageFlows.
 	// Participants are source and/or target for message-flows (not the referenced processes),
@@ -71,18 +69,21 @@ function BPMN2Specif( xmlString, options ) {
 	let Cs = Array.from(xmlDoc.querySelectorAll("collaboration"));
 	// There should be exactly one collaboration per BPMN file:
 	if( Cs.length<1 ) {
-		console.error("Diagram with id '",model.id,"' has no collaboration.");
+		console.error("BPMN-XML has no collaboration.");
 		return
 	};
 	if( Cs.length>1 )
-		console.warn("Diagram with id '",model.id,"' has more than one collaboration.");
+		console.warn("BPMN-XML has more than one collaboration.");
 //	console.debug('collaboration',Cs);
 
+	var model = {};
 	// The project's id and title:
 	model.id = Cs[0].getAttribute("id");
-	// A collaboration may have a documentation, but we haven't come across a name:
-	model.title = truncStr(opts.title || opts.fileName.split(".")[0] || Cs[0].nodeName+' "'+model.id+'"', opts.titleLength, 'Name of model');
+	model["$schema"] = "https://specif.de/v1.0/schema.json";
 	// 1. Additional attributes such as title and description:
+	// A collaboration may have a documentation, but we haven't come across a name:
+	model.title = truncStr(opts.title || opts.fileName.split(".")[0] || Cs[0].nodeName + ' "' + model.id + '"', opts.titleLength, 'Name of model');
+	// model.description?
 	model.dataTypes = DataTypes();
 	model.propertyClasses = PropertyClasses();
 	model.resourceClasses = ResourceClasses();
@@ -1227,18 +1228,9 @@ function BPMN2Specif( xmlString, options ) {
 			subjectClasses: [idResourceClassActor, idResourceClassEvent],
 			objectClasses: [idResourceClassState],
 			changedAt: opts.fileDate
-		},{
-			id: "SC-precedes",
-			title: "SpecIF:precedes",
-			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
-			instantiation: ['auto'],
-			propertyClasses: ["PC-Type"],
-			subjectClasses: [idResourceClassActor, idResourceClassEvent],
-			objectClasses: [idResourceClassActor, idResourceClassEvent],
-			changedAt: opts.fileDate
 	/*	},{
 			id: idStatementClassAccesses,
-			title: "SpecIF:accesses",
+			title: "ArchiMate:accesses",
 			description: "Statement: Actor (Role, Function) writes and reads State (Information)",
 			instantiation: ['auto'],
 			propertyClasses: ["PC-Type"],
@@ -1263,7 +1255,16 @@ function BPMN2Specif( xmlString, options ) {
 			subjectClasses: [idResourceClassEvent],
 			objectClasses: [idResourceClassActor, idResourceClassEvent],
 			changedAt: opts.fileDate */
-		},{ 
+		}, {
+			id: "SC-precedes",
+			title: "SpecIF:precedes",
+			description: "A FMC:Actor 'precedes' a FMC:Actor; e.g. in a business process or activity flow.",
+			instantiation: ['auto'],
+			propertyClasses: ["PC-Type"],
+			subjectClasses: [idResourceClassActor, idResourceClassEvent],
+			objectClasses: [idResourceClassActor, idResourceClassEvent],
+			changedAt: opts.fileDate
+		},{
 			id: "SC-refersTo",
 			title: "SpecIF:refersTo",
 			description: "A SpecIF:Comment, SpecIF:Note or SpecIF:Issue 'refers to' any other resource.",

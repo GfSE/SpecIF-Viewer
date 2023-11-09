@@ -240,7 +240,7 @@ var app:IApp,
 		// init phase 2: the following must be loaded and accessible before any other modules can be loaded:
 		function init2():void {
 //			console.debug('init2',opts);
-			let modL = ['helper','helperTree',"xSpecif",'bootstrapDialog','mainCSS'];
+			let modL = ['helper', 'helperTree', 'bootstrapDialog', 'mainCSS', 'ioOntology', 'standards', "xSpecif"];
 			if( CONFIG.convertMarkdown ) modL.push('markdown');
 			loadL(modL,
 				{
@@ -578,25 +578,35 @@ var app:IApp,
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
-				case "excel": getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
-				case "bpmnViewer": getScript('https://unpkg.com/bpmn-js@11.5.0/dist/bpmn-viewer.production.min.js'); return true;
-				case "graphViz":	 	//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );
-					getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js'); return true;
+			//	case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
+				case "excel":		//		loadModule('toXlsx');
+											getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true;
+									/*		import('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.mjs')
+												.then(XLSX => {
+													console.debug('xlsx', XLSX);
+													setReady(mod);
+												}); */
+			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.2/dist/bpmn-viewer.production.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@14.1.3/dist/bpmn-viewer.production.min.js'); return true;
+				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
+										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
+										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
+											return true;
 			/*	case "pouchDB":		 		getScript( 'https://unpkg.com/browse/pouchdb@7.2.2/dist/pouchdb.min.js' ); return true;
 				case "dataTable": 			getCss( loadPath+'vendor/assets/stylesheets/jquery.dataTables-1.10.19.min.css' );
 											getScript( loadPath+'vendor/assets/javascripts/jquery.dataTables-1.10.19.min.js' ); return true;
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
 				//	Consider https://github.com/rsms/markdown-wasm
-				case "markdown": getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
-					// @ts-ignore - 'window.markdown' is defined, if loaded
-					.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
-					return true;
+				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
+											// @ts-ignore - 'window.markdown' is defined, if loaded
+											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
+											return true;
 
 				// libraries:
-				case "mainCSS": getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
+				case "mainCSS":				getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
 			//	case "config": 				getScript( loadPath+'config/definitions.js' ); return true;
-				case "types": getScript(loadPath + 'types/specif.types.js'); return true;
+				case "types":				getScript(loadPath + 'types/specif.types.js'); return true;
 				case "i18n": switch (browser.language.slice(0, 2)) {
 								case 'de': getScript(loadPath + 'config/locales/iLaH-de.i18n.js')
 									.done(() => { i18n = LanguageTextsDe() }); break;
@@ -610,26 +620,27 @@ var app:IApp,
 					.done(() => { message = new CMessage(); });
 					return true;
 				case "standards": getScript(loadPath + 'modules/standards.js'); return true;
+				case 'ioOntology': getScript(loadPath + 'modules/ioOntology.js'); return true;
 				case "Ontology": getOntology(); return true;
 				case "helperTree": getScript(loadPath + 'modules/helperTree.js'); return true;
 				case "xSpecif": getScript(loadPath + 'modules/xSpecif.js'); return true;
 				case "cache":
-				//	loadModule("Ontology");
-					loadModule('standards');
+					loadModule("Ontology");
+				//	loadModule('standards');
 					getScript(loadPath + 'modules/cache.mod.js'); return true;
 				case "profileAnonymous": getScript(loadPath + 'modules/profileAnonymous.mod.js'); return true;
 			/*	case "profileMe":			$('#'+mod).load( loadPath+'modules/profileMe-0.93.1.mod.html', function() {setReady(mod)} ); return true;
 				case "user":				$('#'+mod ).load( loadPath+'modules/user-0.92.44.mod.html', function() {setReady(mod)} ); return true;
 				case "projects":			loadModule( 'toEpub' );
 											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
-				case 'generateClasses': getScript(loadPath + 'modules/generateClasses.js'); return true;
 				case 'toHtml': // the loading of fileSaver is attached here for all exports:
 								loadModule('fileSaver');
 								getScript(loadPath + 'modules/toHtml.js'); return true;
 				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
-				case "toEpub": loadModule('toXhtml');
+				case "toEpub":	loadModule('toXhtml');
 								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
 				case "toOxml":	getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
+			//	case "toXlsx": getScript(loadPath + 'export/toXlsx.js'); return true;
 				case "toTurtle": getScript(loadPath + 'vendor/assets/javascripts/specif2turtle.js'); return true;
 				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
 				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;
@@ -650,7 +661,7 @@ var app:IApp,
 				case 'ioSpecif': getScript(loadPath + 'modules/ioSpecif.mod.js'); return true;
 				case 'ioReqif': loadModule('reqif2specif');
 								getScript(loadPath + 'modules/ioReqif.mod.js'); return true;
-			//	case 'ioRdf': 				getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
+			//	case 'ioRdf': 	getScript( loadPath+'modules/ioRdf.mod.js' ); return true;
 				case 'ioXls': loadModule('excel');
 								getScript(loadPath + 'modules/ioXls.mod.js'); return true;
 				case 'ioBpmn': loadModule('bpmn2specif');
@@ -719,12 +730,14 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-				url: loadPath + 'config/Ontology.specif.zip',
+				url: window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+					CONFIG.pathOntology
+					: '../../SpecIF/vocabulary/Ontology.specif',
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {
 					let ont = JSON.parse(LIB.ab2str(xhr.response));
-					console.debug('Ontology loaded: ',ont);
+//					console.debug('Ontology loaded: ',ont);
 					app.ontology = new COntology(ont);
 					setReady(module.name)
 				},

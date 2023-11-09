@@ -101,7 +101,7 @@ moduleManager.construct({
 						};
 						// XML data is valid:
 						// @ts-ignore - transformReqif2Specif() is loaded at runtime
-						let result = transformReqif2Specif(dta, { translateTitle: vocabulary.property.specif });
+						let result = transformReqif2Specif(dta);
 						if (result.status != 0) {
 							//console.debug(dta)
 							zDO.reject(result);
@@ -178,7 +178,7 @@ moduleManager.construct({
             if( validateXML(str) ) {
 				// transformReqif2Specif gibt string zurück
 				// @ts-ignore - transformReqif2Specif() is loaded at runtime
-				var result = transformReqif2Specif(str, { translateTitle: vocabulary.property.specif });
+				var result = transformReqif2Specif(str);
 				if (result.status == 0)
 					zDO.resolve(result.response)
 				else
@@ -366,10 +366,10 @@ moduleManager.construct({
 					case SpecifDataTypeEnum.Duration:
 						// Remember that pr is supposed to arrive with a single selected language, here:
 						let info = JSON.stringify({ SpecIF_DataType: dT.type });
-						if (LIB.isMultiLanguageText(dT.description) && dT.description.length>0)
+						if (LIB.isMultiLanguageValue(dT.description) && dT.description.length>0)
 							dT.description[0].text += '\n' + info
 						else
-							dT.description = LIB.makeMultiLanguageText(info);
+							dT.description = LIB.makeMultiLanguageValue(info);
 						// no break
 					case SpecifDataTypeEnum.String:
 						// MAX-LENGTH is mandatory according to https://www.prostep.org/fileadmin/downloads/PSI_ImplementationGuide_ReqIF_V1-7.pdf
@@ -402,7 +402,7 @@ moduleManager.construct({
 				if( LIB.indexById(separatedHC.objTypes,rC.id)<0 ) {
 					// ReqIF does not support inheritance, so include any properties of an ancestor:
 					if( rC['extends'] ) {
-						let anc = LIB.itemByKex(pr.resourceClasses,rC['extends']);
+						let anc = LIB.itemByKey(pr.resourceClasses,rC['extends']);
 						if( Array.isArray(anc.propertyClasses) ) {
 							if ( Array.isArray(rC.propertyClasses) ) 
 								rC.propertyClasses = anc.propertyClasses.concat(rC.propertyClasses);
@@ -570,39 +570,39 @@ moduleManager.construct({
 					if (dT.enumeration) {
 						// the property 'multiValued' in case of enumerated types must be specified in any case, because the ReqIF Server (like ReqIF) requires it. 
 						// The property 'dataType.multiple' is invisible for the server. 
-						xml += '<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" MULTI-VALUED="' + multipleChoice(pC, pr) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+						xml += '<ATTRIBUTE-DEFINITION-ENUMERATION IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" MULTI-VALUED="' + multipleChoice(pC, pr) + '" LAST-CHANGE="' + dateTime(pC) + '">'
 							+ '<TYPE><DATATYPE-DEFINITION-ENUMERATION-REF>' + dT.id + '</DATATYPE-DEFINITION-ENUMERATION-REF></TYPE>'
 							+ '</ATTRIBUTE-DEFINITION-ENUMERATION>'
 					}
 					else {
 						switch (dT.type) {
 							case SpecifDataTypeEnum.Boolean:
-								xml += '<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+								xml += '<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>' + dT.id + '</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-BOOLEAN>'
 								break;
 							case SpecifDataTypeEnum.Integer:
-								xml += '<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+								xml += '<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-INTEGER-REF>' + dT.id + '</DATATYPE-DEFINITION-INTEGER-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-INTEGER>'
 								break;
 							case SpecifDataTypeEnum.Double:
-								xml += '<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+								xml += '<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-REAL-REF>' + dT.id + '</DATATYPE-DEFINITION-REAL-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-REAL>'
 								break;
 							case SpecifDataTypeEnum.String:
-								xml += '<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+								xml += '<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-STRING-REF>' + dT.id + '</DATATYPE-DEFINITION-STRING-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-STRING>'
 								break;
 							case 'xhtml':
-								xml += '<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+								xml += '<ATTRIBUTE-DEFINITION-XHTML IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-XHTML-REF>' + dT.id + '</DATATYPE-DEFINITION-XHTML-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-XHTML>'
 								break;
 							case SpecifDataTypeEnum.DateTime:
-								xml += '<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-' + adId + '" LONG-NAME="' + vocabulary.property.reqif(pC.title) + '" LAST-CHANGE="' + dateTime(pC) + '">'
+								xml += '<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-DATE-REF>' + dT.id + '</DATATYPE-DEFINITION-DATE-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-DATE>'
 								break;
