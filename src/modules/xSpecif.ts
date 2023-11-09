@@ -1010,7 +1010,6 @@ class CSpecIF implements SpecIF {
 					spD: SpecIF = {
 						// @ts-ignore - no harm, this does not violate the schema
 						'@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
-				//		'@Context': this.context,
 						id: this.id,
 						title: LIB.languageTextOf(this.title, opts),
 						$schema: 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json',
@@ -1415,10 +1414,10 @@ class CSpecIF implements SpecIF {
 											title: iE.title,
 											changedAt: iE.changedAt
 										} as IFileWithContent)
-								};
-							};
+								}
+							}
 						}
-					);
+					)
 				}
 			}
 		)
@@ -1864,10 +1863,10 @@ class CSpecIF implements SpecIF {
 										/*	console.warn("Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image.");
 											resolve(); */
 										reject(new xhrMessage( 999, "Cannot transform file '" + iE.title + "' of type '" + iE.type + "' to an image." ))
-								};
-							};
+								}
+							}
 						}
-					);
+					)
 				}
 			}
 		)

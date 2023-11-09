@@ -255,279 +255,315 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	}
 
 	function collectMetaData(ws:Worksheet):void {
-		if (!ws || !ws.isValid) return;
-		// Process all worksheets with a sheet name in (brackets):
-		switch( ws.name ) {
-			// It is assumed that all lists of enumerated values are defined on a worksheet named:
-			case "(Enumerations)":
-				let c: number,
-					r: number,
-					cell: ICell,
-					dT:SpecifDataType,
-					pC:SpecifPropertyClass;
-				for (c = ws.firstCell.col; c < ws.lastCell.col + 1; c++) {
-					// skip, if there is no name = content in the first row:
-					cell = ws.data[cellName(c, ws.firstCell.row)];
-					if (!cell || !cell.v) continue;
+		if (ws && ws.isValid) {
+			// Process all worksheets with a sheet name in (brackets):
+			switch (ws.name) {
+				// It is assumed that all lists of enumerated values are defined on a worksheet named:
+				case "(Enumerations)":
+					let c: number,
+						r: number,
+						cell: ICell,
+						dT: SpecifDataType,
+						pC: SpecifPropertyClass;
+					for (c = ws.firstCell.col; c < ws.lastCell.col + 1; c++) {
+						// skip, if there is no name = content in the first row:
+						cell = ws.data[cellName(c, ws.firstCell.row)];
+						if (!cell || !cell.v) continue;
 
-					dT = { id: dataTypeId(ws.name + c), title: '', type: SpecifDataTypeEnum.String, enumeration: [], changedAt: chAt };
-					pC = { id: propClassId(ws.name + c), title: '', dataType: LIB.keyOf(dT), changedAt: chAt };
-					for( r=ws.firstCell.row; r<ws.lastCell.row+1; r++ ) {
-						cell = ws.data[cellName(c,r)];
-//						console.debug( 'cell',c,r,cell );
-						if( r==ws.firstCell.row ) {
-							// title in the first row;
-							// if the title corresponds to the property (column) name of a worksheet with data,
-							// this data column will assume the enumeration type:
-							pC.title = dT.title = (cell&&cell.t=='s'? cell.v as string : '')
-						}
-						else {
-							// enumerated values in the following rows:
-							if( cell&&cell.t=='s'&&cell.v )
-								dT.enumeration.push({
-									id: dT.id+'-'+r,
-									value: LIB.makeMultiLanguageValue(cell.v as string)
-								});
+						dT = { id: dataTypeId(ws.name + c), title: '', type: SpecifDataTypeEnum.String, enumeration: [], changedAt: chAt };
+						pC = { id: propClassId(ws.name + c), title: '', dataType: LIB.keyOf(dT), changedAt: chAt };
+						for (r = ws.firstCell.row; r < ws.lastCell.row + 1; r++) {
+							cell = ws.data[cellName(c, r)];
+							//						console.debug( 'cell',c,r,cell );
+							if (r == ws.firstCell.row) {
+								// title in the first row;
+								// if the title corresponds to the property (column) name of a worksheet with data,
+								// this data column will assume the enumeration type:
+								pC.title = dT.title = (cell && cell.t == 's' ? cell.v as string : '')
+							}
+							else {
+								// enumerated values in the following rows:
+								if (cell && cell.t == 's' && cell.v)
+									// @ts-ignore - dT is defined
+									dT.enumeration.push({
+										id: dT.id + '-' + r,
+										value: LIB.makeMultiLanguageValue(cell.v as string)
+									});
+							};
+						};
+						// Add dataType and propertyClass, if title and values are defined:
+						// @ts-ignore - dT is defined
+						if (dT.title && dT.enumeration.length > 0) {
+							specifData.dataTypes.push(dT);
+							specifData.propertyClasses.push(pC);
 						};
 					};
-					// Add dataType and propertyClass, if title and values are defined:
-					if( dT.title && dT.enumeration.length>0 ) {
-						specifData.dataTypes.push( dT );
-						specifData.propertyClasses.push(pC);
-					};
-				};
-			// skip all worksheets with other names; they will be processed by transformData()
-		};
+				// skip all worksheets with other names; they will be processed by transformData()
+			}
+		}
 	}
 
 	function transformData(ws: Worksheet): void {
-		if (!ws || !ws.isValid) return;
-		// Skip all bracketed sheetnames, e.g. "(Enumerations)" or "(Setup)":
-		if (ws.name.indexOf("(") == 0 && ws.name.indexOf(")") == ws.name.length - 1) return;
+		if (ws && ws.isValid) {
+			// Skip all bracketed sheetnames, e.g. "(Enumerations)" or "(Setup)":
+			if (ws.name.indexOf("(") == 0 && ws.name.indexOf(")") == ws.name.length - 1) return;
 
 			function isDateTime(cell: ICell): boolean {
-//				console.debug('isDateTime:',cell);
-				return cell && (cell.t == 'd' || cell.t == 's' && LIB.isIsoDateTime(cell.v as string) );
+				//				console.debug('isDateTime:',cell);
+				return cell && (cell.t == 'd' || cell.t == 's' && LIB.isIsoDateTime(cell.v as string));
 			}
-		/*	function isNumber(cell: ICell ):boolean {
-				return cell && (cell.t == 'n' || cell.t == 's' && RE.Number.test(cell.v as string));
-			} */
+			/*	function isNumber(cell: ICell ):boolean {
+					return cell && (cell.t == 'n' || cell.t == 's' && RE.Number.test(cell.v as string));
+				} */
 			function isInt(cell: ICell): boolean {
-				return cell && (cell.t=='n' && Number.isInteger(cell.v as number) || (cell.t=='s' && RE.Integer.test(cell.v as string)));
+				return cell && (cell.t == 'n' && Number.isInteger(cell.v as number) || (cell.t == 's' && RE.Integer.test(cell.v as string)));
 			}
 			function isReal(cell: ICell): boolean {
-				return cell && (cell.t=='n' && !Number.isInteger(cell.v as number) || (cell.t=='s' && RE.Real().test(cell.v as string)));
+				return cell && (cell.t == 'n' && !Number.isInteger(cell.v as number) || (cell.t == 's' && RE.Real().test(cell.v as string)));
 			}
 			function isBool(cell: ICell): boolean {
-//				console.debug('isBool',cell);
-				return cell && (cell.t == 'b' || cell.t == 's' && (LIB.isTrue(cell.v as string) || LIB.isFalse(cell.v as string) ) );
+				//				console.debug('isBool',cell);
+				return cell && (cell.t == 'b' || cell.t == 's' && (LIB.isTrue(cell.v as string) || LIB.isFalse(cell.v as string)));
 			}
 			function isStr(cell: ICell): boolean {
 				// @ts-ignore - in this case cell.v is a string and has a length:
-				return cell && cell.t=='s' && cell.v.length>0;
+				return cell && cell.t == 's' && cell.v.length > 0;
 			}
-		/*	function titleFromProps( res:SpecifResource ):string {
-//				console.debug( 'titleFromProps', res );
-				// get the title from the properties:
-				if( res.properties ) {
-					let a: number,
-						pC: SpecifPropertyClass;
-					// first try to find a property with title listed in CONFIG.titleProperties:
-                    for ( a=res.properties.length-1; a>-1; a--) {
-						pC = LIB.itemByKey(specifData.propertyClasses as SpecifItem[], res.properties[a]['class']);
-                        if ( pC && CONFIG.titleProperties.indexOf(pC.title) > -1 )
-							return res.properties[a].value.stripHTML();
-                    };
-					// then try to find a property with title listed in CONFIG.idProperties:
-                    for ( a=res.properties.length-1; a>-1; a--) {
-						pC = LIB.itemByKey(specifData.propertyClasses as SpecifItem[], res.properties[a]['class']);
-                        if (pC && CONFIG.idProperties.indexOf(pC.title) > -1 )
-							return res.properties[a].value.stripHTML();
-                    };
-				};
-				return '';
-			} */
+			/*	function titleFromProps( res:SpecifResource ):string {
+	//				console.debug( 'titleFromProps', res );
+					// get the title from the properties:
+					if( res.properties ) {
+						let a: number,
+							pC: SpecifPropertyClass;
+						// first try to find a property with title listed in CONFIG.titleProperties:
+						for ( a=res.properties.length-1; a>-1; a--) {
+							pC = LIB.itemByKey(specifData.propertyClasses as SpecifItem[], res.properties[a]['class']);
+							if ( pC && CONFIG.titleProperties.indexOf(pC.title) > -1 )
+								return res.properties[a].value.stripHTML();
+						};
+						// then try to find a property with title listed in CONFIG.idProperties:
+						for ( a=res.properties.length-1; a>-1; a--) {
+							pC = LIB.itemByKey(specifData.propertyClasses as SpecifItem[], res.properties[a]['class']);
+							if (pC && CONFIG.idProperties.indexOf(pC.title) > -1 )
+								return res.properties[a].value.stripHTML();
+						};
+					};
+					return '';
+				} */
 			function createFld(sh: Worksheet): void {
-				if( sh.lastCell.row-sh.firstCell.row<1 ) return;   // skip, if there are no resources
+				if (sh.lastCell.row - sh.firstCell.row < 1) return;   // skip, if there are no resources
 
-					function createRes(ws: Worksheet, row:number): void {
-						// Create a resource and store it in specifData.resources;
-						// if a statement is found in a column, store it in specifData.statements (pretty obvious, isn't it):
+				// Processing of createFld:
+				// Create folder resource:
+				var fld: SpecifResource = {
+					id: 'R-' + simpleHash(pN + sh.name + CONFIG.resClassFolder),
+					class: LIB.makeKey("RC-Folder"),
+					properties: [{
+						class: LIB.makeKey("PC-Name"),
+						values: [LIB.makeMultiLanguageValue(sh.name)]
+					}],
+					changedAt: chAt
+				};
+				//				console.debug( 'createFld:', fld );
+				specifData.resources.push(fld);
 
-							function getVal(dT: SpecifDataType, cell: ICell): string {
-								// dT is the target dataType; 
-								// it is the least restrictive type for all values in the column.
-								// A single cell however, can have a more specific dataType.
-								// Malicious content will be removed upon import.
-//								console.debug( 'getVal', cell, dT );
-								if (cell && cell.v && dT)
-									if (dT.enumeration) {
-										// Return the id of the enumerated value found in cell.v,
-										// where an enumerated value can only have a single language:
-										for (var eV of dT.enumeration)
-											// @ts-ignore - 'text' exists (only) for dataType 'string'
-											if ((eV.value[0].text || eV.value[0]) == cell.v) return eV.id;
-										return '';
-									};
-									// else:
-									switch (dT.type) {
-										case SpecifDataTypeEnum.String:
-											switch (cell.t) {
-												case "s": return cell.v as string;
-												case "d": return (cell.v as Date).toISOString();
-												case "n": return (cell.v as number).toString();
-												case "b": return (cell.v as boolean).toString();
-											};
-										case SpecifDataTypeEnum.DateTime:
-											switch (cell.t) {
-												case "d": return (cell.v as Date).toISOString();
-												case "s":
-													// Can only get here in case of a native property;
-													// the value will be checked later on, so there is no need to log a warning.
-													if (LIB.isIsoDateTime(cell.v))
-														return cell.v as string;
-												//	console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
-													return '';
-											};
-										case SpecifDataTypeEnum.Integer:
-										case SpecifDataTypeEnum.Double:
-											switch (cell.t) {
-												case "n": return (cell.v as number).toString();
-												case "s": return cell.v as string;
-											};
-										// we have found earlier that it is a valid boolean,
-										// so all values not beeing true are false:
-										case SpecifDataTypeEnum.Boolean:
-											switch (cell.t) {
-												case "b": return (cell.v as boolean).toString();
-												case "s": return LIB.isTrue(cell.v as string).toString();
-											};
-									};
+				// Create the hierarchy entry for the folder containing all resources of the current worksheet:
+				var hTree: SpecifNode = {
+					id: sh.hid,
+					resource: LIB.keyOf(fld),
+					nodes: [],
+					changedAt: chAt
+				},
+					dupIdL: string[] = [];  // list of duplicate resource ids 
+
+				// Create the resources:
+				for (var l = sh.firstCell.row + 1, L = sh.lastCell.row + 1; l < L; l++) {	// every line except the first carrying the attribute names
+					//					console.debug('resource', l, sh );
+					createRes(sh, l)
+				};
+				// add the hierarchy tree:
+				// @ts-ignore - hTree is defined
+				specifData.hierarchies[0].nodes.push(hTree);
+				return;
+
+				function createRes(ws: Worksheet, row: number): void {
+					// Create a resource and store it in specifData.resources;
+					// if a statement is found in a column, store it in specifData.statements (pretty obvious, isn't it):
+
+					function getVal(dT: SpecifDataType, cell: ICell): string {
+						// dT is the target dataType; 
+						// it is the least restrictive type for all values in the column.
+						// A single cell however, can have a more specific dataType.
+						// Malicious content will be removed upon import.
+						//								console.debug( 'getVal', cell, dT );
+						if (cell && cell.v && dT)
+							if (dT.enumeration) {
+								// Return the id of the enumerated value found in cell.v,
+								// where an enumerated value can only have a single language:
+								for (var eV of dT.enumeration)
+									// @ts-ignore - 'text' exists (only) for dataType 'string'
+									if ((eV.value[0].text || eV.value[0]) == cell.v) return eV.id;
 								return '';
-							}
+							};
+						// else:
+						switch (dT.type) {
+							case SpecifDataTypeEnum.String:
+								switch (cell.t) {
+									case "s": return cell.v as string;
+									case "d": return (cell.v as Date).toISOString();
+									case "n": return (cell.v as number).toString();
+									case "b": return (cell.v as boolean).toString();
+								};
+							case SpecifDataTypeEnum.DateTime:
+								switch (cell.t) {
+									case "d": return (cell.v as Date).toISOString();
+									case "s":
+										// Can only get here in case of a native property;
+										// the value will be checked later on, so there is no need to log a warning.
+										if (LIB.isIsoDateTime(cell.v))
+											return cell.v as string;
+										//	console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
+										return '';
+								};
+							case SpecifDataTypeEnum.Integer:
+							case SpecifDataTypeEnum.Double:
+								switch (cell.t) {
+									case "n": return (cell.v as number).toString();
+									case "s": return cell.v as string;
+								};
+							// we have found earlier that it is a valid boolean,
+							// so all values not beeing true are false:
+							case SpecifDataTypeEnum.Boolean:
+								switch (cell.t) {
+									case "b": return (cell.v as boolean).toString();
+									case "s": return LIB.isTrue(cell.v as string).toString();
+								};
+						};
+						return '';
+					}
 
-						// The resource to create:
-						// @ts-ignore - id and title will be defined further down
-						var res: Resource = {
-								// id will be set later on using the visibleId, if provided.
-								// title will be set according to the properties, later on.
-								class: LIB.makeKey(ws.resClass),
-								properties: [],
-								changedAt: chAt
+					// The resource to create:
+					// @ts-ignore - id and title will be defined further down
+					var res: Resource = {
+						// id will be set later on using the visibleId, if provided.
+						// title will be set according to the properties, later on.
+						class: LIB.makeKey(ws.resClass),
+						properties: [],
+						changedAt: chAt
+					};
+
+					let c: number, C: number,
+						cell: ICell,
+						val: string,
+						//	rC,
+						pC: SpecifPropertyClass,
+						dT: SpecifDataType, id,
+						stL: IIncompleteStatement[] = [],
+						pTi: string;
+					for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
+						cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
+						pTi = cell && cell.v ? (cell.v as string).trim() : '';
+						// skip the column, if it has no title (value in the first row):
+						if (!pTi) continue;
+
+						cell = ws.data[cellName(c, row)];
+
+						//							console.debug('createRes',pTi,c,cellName(c,row),cell);
+						if (cell && cell.v) {
+							// the cell has content:
+
+							// Use native property, if appropriate:
+							if (CONFIG.nativeProperties.has(pTi)) {
+								pC = CONFIG.nativeProperties.get(pTi); // here, pC is actually not a real propertyClass, but serving it's role ...
+								// @ts-ignore - the first parameter of getVal() has all information needed for proper transformation
+								val = getVal({ type: pC.type }, cell);
+								// @ts-ignore - check is defined in this case
+								if (pC.check(val)) {
+									// @ts-ignore - name is defined in this case
+									res[pC.name] = val;
+									// @ts-ignore - name is defined in this case
+									console.info(ws.name + ", row " + row + ": '" + pTi + "' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
+								}
+								else
+									console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
+								continue;
 							};
 
-						let c: number, C: number,
-							cell: ICell,
-							val: string,
-							//	rC,
-							pC: SpecifPropertyClass,
-							dT: SpecifDataType, id,
-							stL: IIncompleteStatement[] = [],
-							pTi: string;
-						for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {	// an attribute per column ...
-							cell = ws.data[cellName(c, ws.firstCell.row)];   // column title in the first row
-							pTi = cell&&cell.v ? (cell.v as string).trim() : '';
-							// skip the column, if it has no title (value in the first row):
-							if ( !pTi ) continue;
+							pC = LIB.itemById(specifData.propertyClasses as SpecifItem[], propClassId(ws.name + c));
+							//								console.debug('create p',c,cellName(c,row),cell,rC,pC);
+							if (pC) {
+								// It is a specifically created property type (with neither native nor enumerated dataType):
+								dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType);
+								val = getVal(dT, cell);
 
-							cell = ws.data[cellName(c, row)];
+								// Find the property value to be taken as resource identifier.
+								// id is the first identifier found as declared in CONFIG.idProperties;
+								// the first id value found will prevail:
+								if (!id && CONFIG.idProperties.indexOf(pC.title) > -1) id = val;
 
-//							console.debug('createRes',pTi,c,cellName(c,row),cell);
-							if (cell && cell.v) {
-								// the cell has content:
-
-								// Use native property, if appropriate:
-								if (CONFIG.nativeProperties.has(pTi)) {
-									pC = CONFIG.nativeProperties.get(pTi); // here, pC is actually not a real propertyClass, but serving it's role ...
-									// @ts-ignore - the first parameter of getVal() has all information needed for proper transformation
-									val = getVal({ type: pC.type }, cell);
-									// @ts-ignore - check is defined in this case
-									if (pC.check(val)) {
-										// @ts-ignore - name is defined in this case
-										res[pC.name] = val;
-										// @ts-ignore - name is defined in this case
-										console.info(ws.name + ", row " + row + ": '"+pTi+"' with value '" + val + "' has been mapped to the native property '" + pC.name + "'");
-									}
-									else
-										console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is invalid for the given native property '" + pTi + "'");
-									continue;
+								if (dT.maxLength && (dT.maxLength < val.length)) {
+									val = val.slice(0, dT.maxLength);
+									console.warn('Text of cell ' + cellName(c, row) + ' on sheet ' + sh.name + ' has been truncated because it is too long')
 								};
-
-								pC = LIB.itemById( specifData.propertyClasses as SpecifItem[], propClassId(ws.name+c) );
-//								console.debug('create p',c,cellName(c,row),cell,rC,pC);
-								if( pC ) {
-									// It is a specifically created property type (with neither native nor enumerated dataType):
-									dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[],pC.dataType);
-									val = getVal( dT, cell );
-
-									// Find the property value to be taken as resource identifier.
-									// id is the first identifier found as declared in CONFIG.idProperties;
-									// the first id value found will prevail:
-									if( !id && CONFIG.idProperties.indexOf(pC.title)>-1 ) id = val;
-
-									if( dT.maxLength && (dT.maxLength < val.length) ) {
-										val = val.slice(0,dT.maxLength);
-										console.warn('Text of cell '+cellName(c,row)+' on sheet '+sh.name+' has been truncated because it is too long')
-									};
-//									console.debug( 'other than enumerated dataType',cell,pC,dT,val,typeof(val) );
-									// Include the property only if it has a significant value:
-									if( val ) 
+								//									console.debug( 'other than enumerated dataType',cell,pC,dT,val,typeof(val) );
+								// Include the property only if it has a significant value:
+								if (val)
+									res.properties.push({
+										class: LIB.keyOf(pC),
+										values: [(dT.type == SpecifDataTypeEnum.String) ? LIB.makeMultiLanguageValue(val) : val]
+									});
+							}
+							else {
+								pC = LIB.itemByTitle(specifData.propertyClasses as SpecifItem[], pTi);
+								if (pC) {
+									// It is a property with enumerated dataType; only a defined value will be used.
+									// Thus, if a cell contains a value which is not listed in the type, it will be ignored:
+									val = getVal(LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType), cell);
+									//										console.debug( 'enumerated dataType',cell,pTi,pC,val,typeof(val) );
+									if (val)
 										res.properties.push({
 											class: LIB.keyOf(pC),
-											values: [(dT.type == SpecifDataTypeEnum.String)? LIB.makeMultiLanguageValue(val) : val]
-										});
+											values: [val]
+										})
+									else
+										console.warn('Suppressed undefined enumerated value in cell ' + cellName(c, row) + ' of worksheet ' + ws.name);
 								}
 								else {
-									pC = LIB.itemByTitle( specifData.propertyClasses as SpecifItem[], pTi );
-									if( pC ) {
-										// It is a property with enumerated dataType; only a defined value will be used.
-										// Thus, if a cell contains a value which is not listed in the type, it will be ignored:
-										val = getVal(LIB.itemByKey(specifData.dataTypes as SpecifItem[],pC.dataType), cell );
-//										console.debug( 'enumerated dataType',cell,pTi,pC,val,typeof(val) );
-										if( val ) 
-											res.properties.push({
-												class: LIB.keyOf(pC),
-												values: [val]
-											})
-										else
-											console.warn('Suppressed undefined enumerated value in cell ' + cellName(c, row)+' of worksheet '+ws.name);
-									}
-									else {
-										// It is a statement:
-										let obL = cell.w.split(",");  // cell.w is always a string
-										// If there is no comma, obL has just one element. 
-										if (obL.length < 2)
-											// See whether semicolons are used as a separator, instead:
-											obL = cell.w.split(";");
-//										console.debug('createRes - statement',pTi,obL);
-										obL.forEach((ob: string) => {
-											let oInner:string[] = RE.inQuotes.exec(ob),
-												res2l:string;
-											if (oInner && oInner.length > 2) {
-												// a string in quotes has been found
-												res2l = oInner[1] || oInner[2];
-											}
-											else {
-												res2l = ob.trim();
-											};
-											if (res2l.length > CONFIG.titleLinkMinLength-1)
-												stL.push({
+									// It is a statement:
+									let obL = cell.w.split(",");  // cell.w is always a string
+									// If there is no comma, obL has just one element. 
+									if (obL.length < 2)
+										// See whether semicolons are used as a separator, instead:
+										obL = cell.w.split(";");
+									//										console.debug('createRes - statement',pTi,obL);
+									obL.forEach((ob: string) => {
+										let oInner: string[] = RE.inQuotes.exec(ob),
+											res2l: string;
+										if (oInner && oInner.length > 2) {
+											// a string in quotes has been found
+											res2l = oInner[1] || oInner[2];
+										}
+										else {
+											res2l = ob.trim();
+										};
+										if (res2l.length > CONFIG.titleLinkMinLength - 1)
+											stL.push({
 												//	id: undefined,  	// defined further down, when the resource's id has been determined
-													class: LIB.makeKey(staClassId(pTi)),	// make id from column title
+												class: LIB.makeKey(staClassId(pTi)),	// make id from column title
 												//	subject: undefined,	// defined further down, when the resource's id has been determined
-													// just an object placeholder for passing the schema-check,
-													// it will be replaced with a resource key when importing.
-													// Remember to disable the constraint-check on the statement.object.
-													object: LIB.makeKey(CONFIG.placeholder),
-													resourceToLink: res2l,  // content in double or single quotes
-													changedAt: chAt
-												} as IIncompleteStatement );
-										});
-									};
+												// just an object placeholder for passing the schema-check,
+												// it will be replaced with a resource key when importing.
+												// Remember to disable the constraint-check on the statement.object.
+												object: LIB.makeKey(CONFIG.placeholder),
+												resourceToLink: res2l,  // content in double or single quotes
+												changedAt: chAt
+											} as IIncompleteStatement);
+									});
 								};
 							};
 						};
-						if( res.properties.length>0 ) {
+					};
+					if (res.properties.length > 0) {
 						/*	// Check and warn, if the property classes are not unique:
 							let cL=[], pC;
 							res.properties.forEach( function(p) {
@@ -536,88 +572,59 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									console.warn('The property class '+pC+' of element '+res.id+' is occurring more than once.');
 								cL.push( pC )
 							});  */
-							
-							// Build a resource id from the worksheet-name plus the value of the user-specified id attribute
-							// or generate a generic id, otherwise.
-							// An id is needed to recognize the resource when updating.
-							// So, if a resource has no id attribute, it gets a new id on every import
-							// and consequently a new resource will be created during import instead of updating the existing.
-							if( id ) {
-								// An id has been specified
-								res.id = 'R-' + simpleHash(ws.name+id);
-								if( LIB.indexById( specifData.resources, res.id )>-1 ) {
-									// The specified id is not unique,
-									// it will be modified deterministically based on the number of occurrences of that same id:
-									// see https://stackoverflow.com/questions/19395257/how-to-count-duplicate-value-in-an-array-in-javascript
-									dupIdL.push(id);
-									let counts:any = {};
-									dupIdL.forEach( (x:string)=>{ counts[x] = (counts[x]||0)+1 });
-									console.warn('The user-defined identifier',id,'is occurring',counts[id]+1,'times.');
-//									console.debug('dupId',id,simpleClone(dupIdL),counts[id]);
-									// modify the id of any duplicate specified user-assigned id,
-									// as an id must be unique, of course:
-									res.id = 'R-' + simpleHash(ws.name+id+counts[id]);
-								};
-							}
-							else {
-								// No id specified, so a random value must be generated. 
-								// No chance to update the element later on!
-								res.id = LIB.genID('R-');
-							};
-//							console.debug('xls-resource',res);
 
-							// add the hierarchy entry to the tree:
-							hTree.nodes.push({ 
-								id: 'N-' + simpleHash(res.id+hTree.nodes.length),
-								resource: LIB.keyOf(res),
-								changedAt: chAt
-							}); 
-							// add the resource to the list:
-							specifData.resources.push(res);
-							// the resource has been stored, so any statement can be stored, as well:
-							if( stL.length>0 ) {
-								stL.forEach((st) => {
-									st.id = 'S-' + simpleHash(res.id + st['class'].id + st.resourceToLink);
-									st.subject = LIB.keyOf(res)
-								});
-								specifData.statements = specifData.statements.concat(stL);
+						// Build a resource id from the worksheet-name plus the value of the user-specified id attribute
+						// or generate a generic id, otherwise.
+						// An id is needed to recognize the resource when updating.
+						// So, if a resource has no id attribute, it gets a new id on every import
+						// and consequently a new resource will be created during import instead of updating the existing.
+						if (id) {
+							// An id has been specified
+							res.id = 'R-' + simpleHash(ws.name + id);
+							if (LIB.indexById(specifData.resources, res.id) > -1) {
+								// The specified id is not unique,
+								// it will be modified deterministically based on the number of occurrences of that same id:
+								// see https://stackoverflow.com/questions/19395257/how-to-count-duplicate-value-in-an-array-in-javascript
+								dupIdL.push(id);
+								let counts: any = {};
+								dupIdL.forEach((x: string) => { counts[x] = (counts[x] || 0) + 1 });
+								console.warn('The user-defined identifier', id, 'is occurring', counts[id] + 1, 'times.');
+								//									console.debug('dupId',id,simpleClone(dupIdL),counts[id]);
+								// modify the id of any duplicate specified user-assigned id,
+								// as an id must be unique, of course:
+								res.id = 'R-' + simpleHash(ws.name + id + counts[id]);
 							};
+						}
+						else {
+							// No id specified, so a random value must be generated. 
+							// No chance to update the element later on!
+							res.id = LIB.genID('R-');
 						};
-					}
-		
-				// Processing of createFld:
-				// Create folder resource:
-				var fld:SpecifResource = {
-						id: 'R-' + simpleHash(pN+sh.name+CONFIG.resClassFolder),
-						class: LIB.makeKey("RC-Folder"),
-						properties: [{
-							class: LIB.makeKey("PC-Name"),
-							values: [LIB.makeMultiLanguageValue(sh.name)]
-						}],
-						changedAt: chAt
-					};
-//				console.debug( 'createFld:', fld );
-				specifData.resources.push( fld );
+						//							console.debug('xls-resource',res);
 
-				// Create the hierarchy entry for the folder containing all resources of the current worksheet:
-				var hTree: SpecifNode = { 
-						id: sh.hid, 
-						resource: LIB.keyOf(fld),
-						nodes: [],
-						changedAt: chAt
-					},
-					dupIdL:string[] = [];  // list of duplicate resource ids 
-					
-				// Create the resources:
-				for( var l=sh.firstCell.row+1,L=sh.lastCell.row+1;l<L;l++) {	// every line except the first carrying the attribute names
-//					console.debug('resource', l, sh );
-					createRes( sh, l )
-				};
-				// add the hierarchy tree:
-				specifData.hierarchies[0].nodes.push( hTree );
+						// add the hierarchy entry to the tree:
+						// @ts-ignore - hTree is defined
+						hTree.nodes.push({
+							// @ts-ignore - hTree is defined
+							id: 'N-' + simpleHash(res.id + hTree.nodes.length),
+							resource: LIB.keyOf(res),
+							changedAt: chAt
+						});
+						// add the resource to the list:
+						specifData.resources.push(res);
+						// the resource has been stored, so any statement can be stored, as well:
+						if (stL.length > 0) {
+							stL.forEach((st) => {
+								st.id = 'S-' + simpleHash(res.id + st['class'].id + st.resourceToLink);
+								st.subject = LIB.keyOf(res)
+							});
+							specifData.statements = specifData.statements.concat(stL);
+						}
+					}
+				}
 			}
 
-			function getPropClasses(ws: Worksheet) { 
+			function getPropClasses(ws: Worksheet) {
 				// build a list of propertyClasses for the given worksheet;
 				// a complete propertyClass is added to pCL per column which is not titled with a statement title
 				// and a corresponding list of propertyClass ids is returned for the resourceClass.
@@ -628,21 +635,21 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					cell: ICell,
 					noTitleFound = true,
 					pTi: string;
-				for( c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
+				for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {		// every column
 					// Check whether it is an enumerated dataType:
-					cell = ws.data[ cellName(c,ws.firstCell.row) ];
-					pTi = cell&&cell.v? (cell.v as string).trim() : '';
+					cell = ws.data[cellName(c, ws.firstCell.row)];
+					pTi = cell && cell.v ? (cell.v as string).trim() : '';
 					// Process only columns with title, skip the others:
 					if (pTi) {
 						// 1. A native property will be used, if possible, so no propertyClass is created:
 						if (CONFIG.nativeProperties.has(pTi))
 							continue;
 						// 2. Find out, whether its a (previously created) enumerated dataType:
-						pC = LIB.itemByTitle( specifData.propertyClasses as SpecifItem[], pTi );
+						pC = LIB.itemByTitle(specifData.propertyClasses as SpecifItem[], pTi);
 						if (pC && pC.id) {
 							dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType);
-							if( dT && dT.enumeration ) {
-//								console.debug( 'enum found: ', cell, pTi, pC );
+							if (dT && dT.enumeration) {
+								//								console.debug( 'enum found: ', cell, pTi, pC );
 								// The current column has an enumeration dataType;
 								// use the corresponding propertyClass:
 								pCs.push(LIB.keyOf(pC));
@@ -654,130 +661,131 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// @ts-ignore - yes, pC may be undefined, that's why there is an if-block further down:
 						pC = getPropClass(c);
 						// .. and create the propertyClass:
-						if( pC ) { 
-							LIB.cacheE( specifData.propertyClasses, pC ); // add it to propertyClasses, avoid duplicates
+						if (pC) {
+							LIB.cacheE(specifData.propertyClasses, pC); // add it to propertyClasses, avoid duplicates
 							pCs.push(LIB.keyOf(pC));  // add the key to the resourceClass' propertyClasses
 						};
 					};
 				};
 				return pCs;
 
-				function getPropClass( cX:number ):SpecifPropertyClass|undefined {	
+				function getPropClass(cX: number): SpecifPropertyClass | undefined {
 					// Determine the data type of all values of the column starting with the second row (= second list entry).
 					// If all are equal, the data type is assumed; by default it is 'ShortString'.
 					// Some cell values may be undefined.
 					const defaultC = 'ShortString';
-						
+
 					// add all values of the current column to a list:
 					let valL = [],
-						r:number,
-						R:number;
-					for( r=ws.firstCell.row,R=ws.lastCell.row+1;r<R;r++) {		// every line
-						valL.push( ws.data[ cellName(cX,r) ] );
+						r: number,
+						R: number;
+					for (r = ws.firstCell.row, R = ws.lastCell.row + 1; r < R; r++) {		// every line
+						valL.push(ws.data[cellName(cX, r)]);
 					};
 
 					// the cell value in the first line is the title, either of a property or a statement:
 					let pTi = valL[0] ? (valL[0].w || valL[0].v) : '',
 						pC = '',
 						nC = '';
-//					console.debug( 'getPropClass 1', pTi, valL );
+					//					console.debug( 'getPropClass 1', pTi, valL );
 
 					// Skip, if there is no column heading or if it is a statement title,
 					// (the check is done here - and not a level above - because here we know the title value):
-					if (!pTi || ontologyStatementClasses.includes( pTi ) ) return;
+					if (!pTi || ontologyStatementClasses.includes(pTi)) return;
 					// else, it is a property:
 
 					// Only one property shall be the resource's title;
 					// the first one found shall prevail:
 					let xTi = pTi,  // translate the title to standard term
 						isNoTi = xTi != CONFIG.propClassTitle;
-					if ( noTitleFound || isNoTi ) {
+					if (noTitleFound || isNoTi) {
 						pTi = xTi;
-						noTitleFound = noTitleFound && isNoTi; 
+						noTitleFound = noTitleFound && isNoTi;
 					};
-					
+
 					// Cycle through all elements of the column and select the most restrictive type,
 					// start with the last and stop with the second line:
-					for( var i=valL.length-1; i>0; i-- ) {
+					for (var i = valL.length - 1; i > 0; i--) {
 						nC = classOf(valL[i]);
-//						console.debug('getPropClass 2',i,pC,valL[i],nC);
-						if( nC.length<1 ) continue;
-						if( !pC ) { pC = nC; continue };
-						if( pC==nC ) continue;
-						if( pC=='Real' && nC=='Integer' ) continue;
-						if( pC=='Integer' && nC=='Real' ) { pC = 'Real'; continue };
+						//						console.debug('getPropClass 2',i,pC,valL[i],nC);
+						if (nC.length < 1) continue;
+						if (!pC) { pC = nC; continue };
+						if (pC == nC) continue;
+						if (pC == 'Real' && nC == 'Integer') continue;
+						if (pC == 'Integer' && nC == 'Real') { pC = 'Real'; continue };
 						// else: the classes are not equal, take the least restrictive:
 						pC = defaultC;
 					};
 					// Assign a longer text field for descriptions:
-					if( CONFIG.descProperties.includes( pTi ) ) pC = 'Text';
+					if (CONFIG.descProperties.includes(pTi)) pC = 'Text';
 
 					// Assign a longer text field for columns with cells having a longer text;
 					if (pC == 'ShortString') {   // specifically 'ShortString', not defaultC !!
 						let maxL = 0,
 							multLines = false;
 						// determine the max length of the column values and if there are multiple lines:
-						for( var i=valL.length-1; i>0; i-- ) {
-							maxL = Math.max( maxL, valL[i]&&valL[i].v? valL[i].v.length : 0 );
-							multLines = multLines || valL[i]&&typeof(valL[i].v)=='string'&&valL[i].v.indexOf('\n')>-1
+						for (var i = valL.length - 1; i > 0; i--) {
+							maxL = Math.max(maxL, valL[i] && valL[i].v ? valL[i].v.length : 0);
+							multLines = multLines || valL[i] && typeof (valL[i].v) == 'string' && valL[i].v.indexOf('\n') > -1
 						};
 						// if so, choose a text property:
-//						console.debug( 'getPropClass 3',maxL,multLines );
-						if( maxL>CONFIG.textThreshold || multLines ) 
+						//						console.debug( 'getPropClass 3',maxL,multLines );
+						if (maxL > CONFIG.textThreshold || multLines)
 							pC = 'Text'
 					};
-//					console.debug( 'getPropClass 4',valL[i],pC );
+					//					console.debug( 'getPropClass 4',valL[i],pC );
 					return new PropClass(ws.name + cX, pTi, pC || defaultC) as SpecifPropertyClass;
 
-						function classOf(cell: ICell): string {
-							if( isBool(cell) ) return 'Boolean';
-							if( isInt(cell) ) return 'Integer';
-							if( isReal(cell) ) return 'Real';
-							if( isDateTime(cell) ) return 'DateTime'
-							if (isStr(cell)) return defaultC;
-							return '';
-						}
+					function classOf(cell: ICell): string {
+						if (isBool(cell)) return 'Boolean';
+						if (isInt(cell)) return 'Integer';
+						if (isReal(cell)) return 'Real';
+						if (isDateTime(cell)) return 'DateTime'
+						if (isStr(cell)) return defaultC;
+						return '';
+					}
 				}
 			}
-			function getStaClasses(ws: Worksheet, sCL: SpecifStatementClass[]): void { 
+			function getStaClasses(ws: Worksheet, sCL: SpecifStatementClass[]): void {
 				// build a list of statementClasses:
-				var sTi,sC:SpecifStatementClass;
-				for( var c=ws.firstCell.col,C=ws.lastCell.col+1;c<C;c++ ) {		// every column
-					sTi = ws.data[ cellName(c,ws.firstCell.row) ];  			// value of first line
+				var sTi, sC: SpecifStatementClass;
+				for (var c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {		// every column
+					sTi = ws.data[cellName(c, ws.firstCell.row)];  			// value of first line
 					// Skip columns without title;
 					// in Excel 'deleted' cells are different from 'empty' cells,
 					// so we need to take a look at the actual values:
-					if( sTi ) {
+					if (sTi) {
 						sTi = sTi.w || sTi.v;
 						// Add statementClass, if it is declared as such and if it is not yet listed:
-						if( sTi && LIB.indexById(sCL,staClassId(sTi))<0 && ontologyStatementClasses.includes( sTi ) ) {
-							sC = new StaClass( sTi );
-//							console.debug( 'getStaClasses', sTi, sC );
-							sCL.push( sC )
+						if (sTi && LIB.indexById(sCL, staClassId(sTi)) < 0 && ontologyStatementClasses.includes(sTi)) {
+							sC = new StaClass(sTi);
+							//							console.debug( 'getStaClasses', sTi, sC );
+							sCL.push(sC)
 						};
 					};
 				};
 			}
 
-//		console.debug( 'sheetName:', ws.name );
-		
-		// Processing of transformData():
-		if( ws.range ) {
-			// The sheet has content:
+			//		console.debug( 'sheetName:', ws.name );
 
-			// 3.1 Create a resourceClass per XLS-sheet:
-			// The resourceClass' title is taken from the worksheet name, project name or a default is applied;
-			// any local name will be transformed to the preferred ontology term during import (if defined):
-			var rC = new ResClass(ws.resClass, inBracketsAtEnd(ws.name) || inBracketsAtEnd(pN) || CONFIG.resClassXlsRow );
-			// Add a property class for each column using the names specified in line 1:
-			rC.propertyClasses = getPropClasses( ws );
-//			console.debug('rC',rC);
-			specifData.resourceClasses.push(rC);
-			getStaClasses( ws, specifData.statementClasses );
-			
-			// 3.2 Create a folder with the resources of this worksheet:
-			createFld(ws);
-		};
+			// Processing of transformData():
+			if (ws.range) {
+				// The sheet has content:
+
+				// 3.1 Create a resourceClass per XLS-sheet:
+				// The resourceClass' title is taken from the worksheet name, project name or a default is applied;
+				// any local name will be transformed to the preferred ontology term during import (if defined):
+				var rC = new ResClass(ws.resClass, inBracketsAtEnd(ws.name) || inBracketsAtEnd(pN) || CONFIG.resClassXlsRow);
+				// Add a property class for each column using the names specified in line 1:
+				rC.propertyClasses = getPropClasses(ws);
+				//			console.debug('rC',rC);
+				specifData.resourceClasses.push(rC);
+				getStaClasses(ws, specifData.statementClasses);
+
+				// 3.2 Create a folder with the resources of this worksheet:
+				createFld(ws);
+			}
+		}
 	}
 
 	// Processing of xlsx2specif:
