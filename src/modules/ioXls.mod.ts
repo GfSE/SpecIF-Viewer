@@ -891,10 +891,15 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 						);
 
 						if (--pend < 1) {  // all done
+							// 1. Add a sheet with all resources in the sequence of the hierarchy:
 							// @ts-ignore - 'XLSX' is loaded at runtime
 							const ws = XLSX.utils.aoa_to_sheet(sheet);
 							// @ts-ignore - 'XLSX' is loaded at runtime
 							XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+							// 2. Add a sheet with all enumerated values per dataType:
+
+							// 3. Write the workbook to file:
 							// @ts-ignore - 'XLSX' is loaded at runtime
 							XLSX.writeFile(wb, opts.fileName + ".xlsx", { compression: true });
 							//	app.busy.reset();
@@ -918,6 +923,15 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 			//    console.debug('prpValues 2', p, pVal);
 			if (p && p.values.length > 1)
 				console.info("Only first property value exported to xlsx.");
+
+			// lookup if it is an enumerated value:
+			let dT = LIB.itemByKey(data.dataTypes, pC.dataType);
+			if (pVal && dT && dT.enumeration) {
+				let v = LIB.itemById(dT.enumeration, pVal);
+			//	pVal = typeOf(v.value)=='string'? v.value : v.value[0]['text'];
+				pVal = LIB.isMultiLanguageValue(v.value) ? v.value[0]['text'] : v.value;
+			};
+
 			prpL.push(pVal);
 		};
 		return prpL;
