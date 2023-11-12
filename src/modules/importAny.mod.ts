@@ -92,7 +92,7 @@ moduleManager.construct({
 			desc: 'DDP-Schema (.xsd)',
 			label: 'DDP-Schema',
 			extensions: ".xsd",
-			help: "Experimental: Import a DDP-Schema file (*.xsd).",
+			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
 			opts: { mediaTypeOf: LIB.attachment2mediaType }
 		},{
 			id:'xls',

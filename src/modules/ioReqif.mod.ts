@@ -94,7 +94,7 @@ moduleManager.construct({
 						// - the file may have a UTF-8 BOM
 						// - all property values are encoded as string, even if boolean, integer or double.
 
-						if (!validateXML(dta)) {
+						if (!LIB.validXML(dta)) {
 							//console.debug(dta)
 							zDO.reject( errInvalidXML );
 							return zDO;
@@ -175,7 +175,7 @@ moduleManager.construct({
 			// Check if data is valid XML:
                 
 			let str = LIB.ab2str(buf);
-            if( validateXML(str) ) {
+            if( LIB.validXML(str) ) {
 				// transformReqif2Specif gibt string zurück
 				// @ts-ignore - transformReqif2Specif() is loaded at runtime
 				var result = transformReqif2Specif(str);
@@ -189,15 +189,6 @@ moduleManager.construct({
 			}
 		};
 		return zDO;
-
-		function validateXML(xml_data:string):boolean {
-			if (window.DOMParser) {
-				let parser = new DOMParser();
-				let xmlDoc = parser.parseFromString(xml_data,"text/xml");
-				return xmlDoc.getElementsByTagName('parsererror').length<1
-			};
-			throw Error("Browser is too old; it does not offer window.DOMParser.");
-		}
 	};
 		
 	self.fromSpecif = ( pr:SpecIF, opts?:any ):string =>{

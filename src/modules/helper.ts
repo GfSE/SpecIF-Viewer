@@ -1574,6 +1574,11 @@ LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void =
     else
         reader.readAsText(file.blob);
 };
+LIB.validXML = (xml: string): boolean => {
+    let parser = new DOMParser();
+    let xmlDoc = parser.parseFromString(xml, "text/xml");
+    return xmlDoc.getElementsByTagName('parsererror').length < 1
+}
 LIB.uriBack2slash = (str: string): string => {
 	// Sometimes a Windows path is given containing '\' -> transform it to web-style ('/');
     // replace back-slashes to slashes in all object and img tags:

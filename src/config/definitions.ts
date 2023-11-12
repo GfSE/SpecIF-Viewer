@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.r.1",
+    CONFIG.appVersion = "1.1.r.2",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms

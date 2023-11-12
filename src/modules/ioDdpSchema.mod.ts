@@ -26,7 +26,8 @@ moduleManager.construct({
 		errNoOptions = new xhrMessage( 896, 'No options or no mediaTypes defined.' ),
 		errNoDdpSchemaFile = new xhrMessage( 897, 'No DDP-Schema file in the reqifz container.' ),
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' }, */
-		errInvalidXML = new xhrMessage( 898, 'DDP Schema is not valid XML.' );
+		errInvalidXML = new xhrMessage(898, 'DDP Schema is not valid XML.'),
+		errTransformationFailed = new xhrMessage(999, 'Input file could not be transformed to SpecIF.');
 		
 	self.init = (/*options:any*/):boolean =>{
 	//	mime = undefined;
@@ -56,13 +57,14 @@ moduleManager.construct({
 		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
 		return false; */
 
-			function isDdpSchema( fname:string ):boolean {
+			function isDdpSchema(fname: string): boolean {
+				// importAny let's us import only files with this extension, so this should always succeed:
 				return fname.endsWith('.xsd') 
 			}
 				
 		// ToDo: Briefly check for DDP-Schema content
 		if ( !isDdpSchema(f.name) ) {
-			message.show( i18n.lookup('ErrInvalidFileTogaf', f.name) );
+			message.show( i18n.lookup('ErrInvalidFile', f.name) );
 			return false;
 		};
 		return true;
@@ -75,28 +77,19 @@ moduleManager.construct({
 		let dDO = $.Deferred(),
 			xsd = LIB.ab2str(buf);
 
-		if (validXML(xsd)) {
+		if (LIB.validXML(xsd)) {
 			let data = ddpSchema2specif(xsd /*, self.parent.projectName, fDate*/);
 
 			//		console.debug('ioArchimate.toSpecif', self.parent.projectName, data );
 			if (typeof (data) == 'object' && data.id)
 				dDO.resolve(data)
 			else
-				dDO.reject(new xhrMessage(999, 'Input file could not be transformed to SpecIF.'));
+				dDO.reject(errTransformationFailed);
         }
 		else
 			dDO.reject(errInvalidXML);
 
 		return dDO;
-
-		function validXML(xml_data:string):boolean {
-			if (window.DOMParser) {
-				let parser = new DOMParser();
-				let xmlDoc = parser.parseFromString(xml_data,"text/xml");
-				return xmlDoc.getElementsByTagName('parsererror').length<1
-			};
-			throw Error("Browser is too old; it does not offer window.DOMParser.");
-		}
 	};
 /*	self.fromSpecif = ( pr:SpecIF, opts?:any ):string =>{
 	}; */
@@ -123,7 +116,8 @@ moduleManager.construct({
 			app.standards.get("dataType", { id: "DT-DateTime" }) as SpecifDataType,
 			app.standards.get("dataType", { id: "DT-Boolean" }) as SpecifDataType,
 			app.standards.get("dataType", { id: "DT-Integer" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-Real" }) as SpecifDataType
+			app.standards.get("dataType", { id: "DT-Real" }) as SpecifDataType,
+			app.standards.get("dataType", { id: "DT-AnyURI" }) as SpecifDataType
 		];
 	/*	Currently the deduplication doesn't work with these, anyways:
 		spD.propertyClasses = [
@@ -142,13 +136,13 @@ moduleManager.construct({
 			.filter((ch) => { return ch.getAttribute("name") == "DictionaryEntitiesCollection" });
 
 		dictionaryEntities = Array.from(dictionaryEntities[0].children[0].children);
-		console.debug('dictionaryEntities', dictionaryEntities);
+//		console.debug('dictionaryEntities', dictionaryEntities);
 		dictionaryEntities.forEach(
 			(d) => {
 				let dE = d.children[0].children[0].children[0];
 				// dE is the dictionaryEntity, now.
 
-				let ti = dE.getAttribute("name"),
+				let ti = dE.getAttribute("name") || "",
 					rC = {
 						id: "RC-" + simpleHash(ti),
 						title: ti,
@@ -159,11 +153,10 @@ moduleManager.construct({
 					};
 				let attC = dE.getElementsByTagName('xs:complexContent'),
 					atts = attC[0].children[0].children;
-				//	seq = atts ? Array.from(atts.getElementsByTagName('xs:sequence')) : undefined;
 				let prpL = (atts && atts.length == 1) ? Array.from(atts[0].getElementsByTagName('xs:element')) : [];
-				console.debug('d', dE, atts/*,seq*/, prpL);
+//				console.debug('d', dE, atts/*,seq*/, prpL);
 				prpL.forEach((prp) => {
-					let ti = prp.getAttribute("ref") || prp.getAttribute("name"),
+					let ti = prp.getAttribute("ref") || prp.getAttribute("name") || "",
 						id = "PC-" + simpleHash(ti),
 						ty = prp.getAttribute("type") || "xs:string",
 						dT = LIB.itemBy(spD.dataTypes, "type", ty);
@@ -263,7 +256,7 @@ moduleManager.construct({
 		function getDesc(el: any): SpecifMultiLanguageText {
 		//	let docL = Array.from(el.getElementsByTagName('xs:documentation'));  ... yields all subordinated elements in case of an entity
 			// assuming that the 'annotation' is first subordinated element:
-			let docL = el.children && el.children.length == 1 ? Array.from(el.children[0].children) : [];
+			let docL = el.children && el.children.length>0 ? Array.from(el.children[0].children) : [];
 			return docL.map(
 				(doc:any) => {
 					return {
