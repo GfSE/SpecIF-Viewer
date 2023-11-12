@@ -25,10 +25,10 @@ moduleManager.construct({
 	self.verify = function( f:File ):boolean {
 
 			function isArchimate( fname:string ):boolean {
-				// ToDo: Briefly check for Archimate content
 				return fname.endsWith('.xml') 
 			}
 				
+		// ToDo: Briefly check for Archimate content
 		if ( !isArchimate(f.name) ) {
 			message.show( i18n.lookup('ErrInvalidFileTogaf', f.name) );
 			return false;

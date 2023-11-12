@@ -7,17 +7,10 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.q.12",
+    CONFIG.appVersion = "1.1.r.1",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
-    CONFIG.isOntology = (specifData:any) => {
-        return (
-            specifData.id.includes("Ontology")
-            && Array.isArray(specifData.title) && specifData.title[0] && specifData.title[0]['text']
-            && specifData.title[0]['text'].includes("Ontology")
-        );
-    };
     CONFIG.QuickStartGuideEn = "https://specif.de/files/SpecIF/documents/SpecIF-Introduction.pdf";
     CONFIG.QuickStartGuideDe = "https://specif.de/files/SpecIF/documents/SpecIF-Einfuehrung.pdf";
 
@@ -69,8 +62,8 @@ const CONFIG:any = {};
     // For each entry 'xxx' in officeExtensions a corresponding icon file named xxx-icon.png is expected!
     CONFIG.officeExtensions = [ 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'ppsx', 'vsd', 'vsdx' ];
     CONFIG.officeTypes = [ 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.visio', 'application/vnd/ms-visio.drawing'];
-    CONFIG.applExtensions = ['bpmn','mdzip','reqif','reqifz','xml'];
-    CONFIG.applTypes = ['application/bpmn+xml', 'application/xml+zip', 'application/xml', 'application/xml+zip', 'application/xml' ];
+    CONFIG.applExtensions = ['bpmn','mdzip','reqif','reqifz','xml','xsd'];
+    CONFIG.applTypes = ['application/bpmn+xml', 'application/xml+zip', 'application/xml', 'application/xml+zip', 'application/xml', 'text/xml' ];
 
     // Keys for the query parameters - if changed, existing links will end up in default view:
 //    CONFIG.keyUId = 'uid';    // userId

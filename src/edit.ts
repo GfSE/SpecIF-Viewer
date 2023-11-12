@@ -51,6 +51,8 @@ function SpecifApp():IApp {
 			}, {
 				name: 'ioBpmn'
 			}, {
+				name: 'ioDdpSchema'
+			}, {
 				name: 'ioXls'
 			}]
 		}, {

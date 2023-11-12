@@ -602,6 +602,7 @@ var app:IApp,
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
 											return true;
+			//	case "xml2js":				getScript('https://cdnjs.cloudflare.com/ajax/libs/x2js/1.2.0/xml2json.min.js'); return true;
 
 				// libraries:
 				case "mainCSS":				getCss(loadPath + 'vendor/assets/stylesheets/SpecIF.default.css'); setReady(mod); return true;
@@ -659,6 +660,7 @@ var app:IApp,
 								loadModule('jsonSchema');
 								getScript(loadPath + 'modules/importAny.mod.js'); return true;
 				case 'ioSpecif': getScript(loadPath + 'modules/ioSpecif.mod.js'); return true;
+				case 'ioDdpSchema': getScript(loadPath + 'modules/ioDdpSchema.mod.js'); return true;
 				case 'ioReqif': loadModule('reqif2specif');
 								getScript(loadPath + 'modules/ioReqif.mod.js'); return true;
 			//	case 'ioRdf': 	getScript( loadPath+'modules/ioRdf.mod.js' ); return true;

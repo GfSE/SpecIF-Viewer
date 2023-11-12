@@ -86,7 +86,15 @@ moduleManager.construct({
             label: 'RDF',
 			extensions: "",
             help: 'ToDo' */
-		},{ 
+		}, {
+			id: 'ddpSchema',
+			name: 'ioDdpSchema',
+			desc: 'DDP-Schema (.xsd)',
+			label: 'DDP-Schema',
+			extensions: ".xsd",
+			help: "Experimental: Import a DDP-Schema file (*.xsd).",
+			opts: { mediaTypeOf: LIB.attachment2mediaType }
+		},{
 			id:'xls',
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',

@@ -303,6 +303,7 @@ CONFIG.headings =
 // the value of the latter will be the title of the resource, because it comes first in the list below.
 CONFIG.titleProperties = [
 	CONFIG.propClassTitle,
+	"dc:title",
 	"schema:name",
     CONFIG.propClassTerm
     /*       'DC.title',
@@ -328,7 +329,8 @@ CONFIG.titleProperties = [
 CONFIG.descProperties = [
     // Dublin core:
     CONFIG.propClassDesc,
-    CONFIG.propClassDiagram
+	CONFIG.propClassDiagram,
+	"dc:description"
     /*        'DC.description',
             // ReqIF 1.0 and 1.1 Implementation Guide:
             'ReqIF.Text',

@@ -295,6 +295,13 @@ class CSpecIF implements SpecIF {
 			}
 		);
 	}
+	private isOntology(specifData: any) {
+		return (
+			specifData.id.includes("Ontology")
+			&& Array.isArray(specifData.title) && specifData.title[0] && specifData.title[0]['text']
+			&& specifData.title[0]['text'].includes("Ontology")
+		);
+	};
 	private toInt(spD: any, opts: any):void {
 		if (!this.isValid(spD)) return;
 
@@ -302,8 +309,9 @@ class CSpecIF implements SpecIF {
 		// no data of app.projects is modified.
 //		console.debug('set',simpleClone(spD));
 
-		// In case of an Ontology, do *not* normalize the terms:
-		if( CONFIG.isOntology(spD) )
+		// In case of an Ontology, do *not* normalize the terms,
+		// also in case of
+		if (this.isOntology(spD) || spD.id == "P-DDP-Schema-V20" )
 			opts.normalizeTerms = false;
 
 		let self = this,
