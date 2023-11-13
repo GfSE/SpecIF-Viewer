@@ -7,8 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
 	Limitations:
-	- It is assumed that all text values within the provided SpecIF data set have only a single language,
-	  so a "SpecifMultiLanguageText" array has a single entry only.
+	- The schema is blindly traversed, so that almost every little change in structure will lead to failure
 	
 */
 
@@ -59,12 +58,14 @@ moduleManager.construct({
 
 			function isDdpSchema(fname: string): boolean {
 				// importAny let's us import only files with this extension, so this should always succeed:
-				return fname.endsWith('.xsd') 
+			//	return fname.endsWith('.xsd') 
+				return fname == "Dictionary.xsd";
 			}
 				
 		// ToDo: Briefly check for DDP-Schema content
 		if ( !isDdpSchema(f.name) ) {
-			message.show( i18n.lookup('ErrInvalidFile', f.name) );
+		//	message.show( i18n.lookup('ErrInvalidFile', f.name) );
+			message.show( "This transformation works only for 'Dictionary.xsd'." )
 			return false;
 		};
 		return true;
@@ -130,14 +131,18 @@ moduleManager.construct({
 		let parser = new DOMParser(),
 			xsdDoc = parser.parseFromString(xsd, "text/xml");
 
-		// Extract the dictionaryEntities from the DictionaryEntitiesCollection in the upper part of the schema file
+		// 1. Extract the dictionaryEntities from the DictionaryEntitiesCollection in the upper part of the schema file
+
+		// 1.a Extract the DictionaryEntity with (currently 2) properties als parent:
+
+
+		// 1.b Extract the specialized DictionaryEntities with their individual properties:
 		let dictionaryEntities = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
 			.filter((ch) => { return ch.tagName == "xs:complexType"; })
 			.filter((ch) => { return ch.getAttribute("name") == "DictionaryEntitiesCollection" });
 
-		dictionaryEntities = Array.from(dictionaryEntities[0].children[0].children);
-//		console.debug('dictionaryEntities', dictionaryEntities);
-		dictionaryEntities.forEach(
+		Array.from(
+			dictionaryEntities[0].children[0].children,
 			(d) => {
 				let dE = d.children[0].children[0].children[0];
 				// dE is the dictionaryEntity, now.
@@ -178,8 +183,10 @@ moduleManager.construct({
 			}
 		);
 
-/*		// Extract the dictionary entities from the top-level list of <complexType in the lower part of the schema file;
- *		// Note: The dictionaryEntities don't have annotations/documentation, here
+/*		// Extract the dictionary entities from the top-level list of <complexType> in the lower part of the schema file;
+ 		// Note: The dictionaryEntities don't have annotations/documentation, here
+
+		// 1.b Extract the specialized DictionaryEntities with their individual properties:
 		let dictionaryEntities = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
 				.filter((ch) => { return ch.tagName == "xs:complexType" })
 				// ToDo: filter those which are listed in DictionaryEntitiesCollection - this is quick and dirty:
@@ -249,6 +256,54 @@ moduleManager.construct({
 				LIB.cacheE(spD.resourceClasses, rC);
 			}
 		); */
+
+		// 2. Extract the dictionaryRelations from the "DictionaryRelationsCollection" in the upper part of the schema file
+		let dictionaryRelations = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
+			.filter((ch) => { return ch.tagName == "xs:complexType"; })
+			.filter((ch) => { return ch.getAttribute("name") == "DictionaryRelationsCollection" });
+		//        console.debug('rels', Array.from(dictionaryRelations[0].children[0].children));
+
+		Array.from(
+			dictionaryRelations[0].children[0].children,
+			(rel) => {
+				if (rel.tagName == "xs:element") {
+
+					let ti = rel.getAttribute("name") || "",
+						sC:SpecifStatementClass = {
+							id: "SC-" + simpleHash(ti),
+							title: ti,
+							description: getDesc(rel),
+							subjectClasses: [],
+							objectClasses: [],
+							changedAt: spD.createdAt
+						};
+
+					let entities = Array.from(rel.getElementsByTagName('xs:element')),
+						subj = entities.filter(
+							(en) => {
+								return en.getAttribute("name").includes("subject");
+							}
+						),
+						obj = entities.filter(
+							(en) => {
+								return en.getAttribute("name").includes("object");
+							}
+						);
+					//					console.debug('#',entities, subj, obj);
+					let sTi = subj[0].getAttribute("name").substring(7),
+						oTi = obj[0].getAttribute("name").substring(6);
+				/*	// Remove the subject and object names from the relation title
+					sC.title = ti.substring(sTi.length, ti.length - oTi.length); */
+					sC.subjectClasses.push({
+						id: "RC-" + simpleHash(sTi)
+					});
+					sC.objectClasses.push({
+						id: "RC-" + simpleHash(oTi)
+					});
+					LIB.cacheE(spD.statementClasses, sC);
+				}
+			}
+		);
 
 		console.debug('spD', spD);
 		return spD;
