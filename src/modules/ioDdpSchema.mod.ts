@@ -290,6 +290,8 @@ moduleManager.construct({
 							}
 						);
 					//					console.debug('#',entities, subj, obj);
+
+					// This is an ugly hack, because semantic significance is derived from the relation names ...
 					let sTi = subj[0].getAttribute("name").substring(7),
 						oTi = obj[0].getAttribute("name").substring(6);
 				/*	// Remove the subject and object names from the relation title
@@ -300,12 +302,13 @@ moduleManager.construct({
 					sC.objectClasses.push({
 						id: "RC-" + simpleHash(oTi)
 					});
+
 					LIB.cacheE(spD.statementClasses, sC);
 				}
 			}
 		);
 
-		console.debug('spD', spD);
+		console.debug('SpecIF data from DDP', spD);
 		return spD;
 
 		function getDesc(el: any): SpecifMultiLanguageText {

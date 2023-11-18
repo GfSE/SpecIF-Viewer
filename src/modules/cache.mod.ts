@@ -50,34 +50,51 @@ class CCache {
 		};
 		return true;
 	}
-	put(ctg: string, item: SpecifItem[] | SpecifItem): boolean {
-		if (!item || Array.isArray(item) && item.length < 1)
+	put(ctg: string, item: SpecifItem[]): boolean {
+		if (!Array.isArray(item))
+			throw Error("Programming Error: "+JSON.stringify(item)+" is not a list.");
+		if (item.length < 1)
 			return false;
-		// If item is a list, all elements must have the same category.
-		function cacheIfNewerE(L: SpecifItem[], e: SpecifItem): boolean {  // ( list, entry )
-			// Add or update the item e in a list L, if created later:
-			if (typeof (e) != 'object' || !e.id)
-				throw Error("Cache 'put' operation with old reference (string instead of object with id)");
-			let n = LIB.indexById(L, e.id);
-			// add, if not yet listed:
-			if (n < 0) {
-				L.push(e);
-				return true;
-			};
-			// Update, if newer or when reference 'resourceToLink' has been resolved:
-			if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt)
-				|| (L[n] as IIncompleteStatement).resourceToLink && !(e as IIncompleteStatement).resourceToLink
-				)
-				L[n] = e;
-			return true;
-		}
-		function cacheIfNewerL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
+
+	/*	// If item is a list, all elements must have the same category.
+		function createItemL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
 			// add or update the items es in a list L:
 			for (var e of es) cacheIfNewerE(L, e);
 			// this operation cannot fail:
 			return true;
-		}
-		let fn = Array.isArray(item) ? cacheIfNewerL : cacheIfNewerE;
+			function cacheIfNewerE(L: SpecifItem[], e: SpecifItem): boolean {  // ( list, entry )
+				// Add or update the item e in a list L, if created later:
+				if (typeof (e) != 'object' || !e.id)
+					throw Error("Cache 'put' operation with old reference (string instead of object with id)");
+				let n = LIB.indexById(L, e.id);
+				// add, if not yet listed:
+				if (n < 0) {
+					L.push(e);
+					return true;
+				};
+				// Update, if newer or when reference 'resourceToLink' has been resolved:
+				if (L[n].changedAt && e.changedAt && new Date(L[n].changedAt) < new Date(e.changedAt)
+					|| (L[n] as IIncompleteStatement).resourceToLink && !(e as IIncompleteStatement).resourceToLink
+					)
+					L[n] = e;
+				return true;
+			}
+		}  */
+		function createItemL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
+			// add the items es in a list L:
+			let ok = true;
+			for (var e of es) { ok = ok && createItem(L, e) };
+			return ok;
+			function createItem(L: SpecifItem[], e: SpecifItem): boolean {
+				let idx = LIB.indexByKey(L, e);
+				// can only create an item with a different key:
+				if (idx < 0) {
+					L.push(e); return true;
+				};
+				return false;
+            }
+		} 
+
 		switch (ctg) {
 			case 'hierarchy':
 			case 'dataType':
@@ -85,25 +102,21 @@ class CCache {
 			case 'resourceClass':
 			case 'statementClass':
 				// @ts-ignore - indexing is perfectly ok
-				return fn(this[app.standards.listName.get(ctg)], item);
+				return createItemL(this[app.standards.listName.get(ctg)], item);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances) {
 					// @ts-ignore - indexing is perfectly ok
-					return fn(this[app.standards.listName.get(ctg)], item);
+					return createItemL(this[app.standards.listName.get(ctg)], item);
 				};
 				return true;
 			case 'node':
-				if (Array.isArray(item)) {
-					item.forEach((n) => { this.putNode(n as INodeWithPosition) });
-					return true
-				};
-//				console.debug('cache',ctg,item);
-				return this.putNode(item as INodeWithPosition);
+				item.forEach((n) => { this.putNode(n as INodeWithPosition) });
+				return true;
 			default:
 				throw Error("Invalid category '" + ctg + "'.");
-		};
+		}
 	}
 	get(ctg: string, req: SpecifKeys | Function | string): SpecifItem[] {
 		// Read items from cache; req can be 
@@ -132,7 +145,9 @@ class CCache {
 			else if (typeof (req) == 'function') {
 				return simpleClone(itmL.filter(req));
 			}
-			else if (req === "all") {		// DEPRECATED
+			else if (req === "all") {		// DEPRECATED for resource and statement instances
+				if(['resource','statement'].includes(ctg))
+					console.warn("Cache 'get' operation called for 'all' items of category '"+ctg+"'.");
 				return simpleClone(itmL);	// return all cached items in a new list
 			};
 		};
@@ -239,7 +254,7 @@ class CCache {
 		var self = this;
 		return function (el: SpecifInstance, opts: any): string {
 			// Get the title of a resource or a statement;
-			// ... from the properties or a replacement value in case of default.
+			// ... from the properties or a replacement value by default.
 			// 'el' is an original element without 'classifyProps()'.
 			// It is assumed that the classes are always cached.
 			if (typeof (el) != 'object') throw Error('First input parameter is invalid');
@@ -247,13 +262,15 @@ class CCache {
 
 			// Lookup title value only in case of a resource serving as heading or in case of a statement:
 			// @ts-ignore - of course resources have no subject, that's why we ask
-			let resOpts = el.subject?
+			let rC = LIB.itemByKey(self.resourceClasses, el['class']),
+				// @ts-ignore - that's why the existence of subject is checked ...
+				resOpts = el.subject ?
 					// it is a statement:
 					opts
 				:
 					// it is a resource:
 					{
-						lookupValues: opts.lookupValues && LIB.itemByKey(self.resourceClasses, el['class']).isHeading,
+						lookupValues: opts.lookupValues && rC && rC.isHeading,
 						targetLanguage: opts.targetLanguage
 					};
 			let ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, resOpts);
@@ -581,19 +598,16 @@ class CProject {
 			// ToDo: Update the server !
 			if (--pend < 1) {
 				cDO.notify(i18n.MsgLoadingFiles, 100);
+				self.hookStatements();
+				self.deduplicate(opts);
+
 				self.createFolderWithGlossary(opts)
 				.then(
 					() => {
 						return self.createFolderWithUnreferencedResources(opts)
 					}
 				)
-				.then(
-					() => {
-						self.hookStatements();
-						self.deduplicate(opts);
-						cDO.resolve();
-					}
-				)
+				.then( cDO.resolve )
 				.catch( cDO.reject );
 			}
 		}
@@ -812,11 +826,11 @@ class CProject {
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 							newD[ty.listName].forEach((newT) => {
 								// newT is a type/class in new data
-								// types are compared by id:
+								// types are compared by key:
 								// @ts-ignore - indexing by string works fine
 								let idx = LIB.indexByKey(dta[ty.listName], newT);
 								if (idx < 0) {
-									// a) there is no item with the same id
+									// a) there is no item with the same key
 									itmL.push(newT);
 								}
 								else {
@@ -824,7 +838,7 @@ class CProject {
 									//	if( !ty.isEqual( self.cache[ty.listName][idx], newT) ) {
 									// @ts-ignore - indexing by string works fine
 									if (!ty.isCompatible(dta[ty.listName][idx], newT, { mode: "include" })) {
-										// there is an item with the same id and different content.
+										// there is an item with the same key and incompatible content.
 										// c) create a new id and update all references:
 										// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
@@ -836,7 +850,7 @@ class CProject {
 											+	", a class with same id and incompatible content has been encountered: " + alterId.id
 											+	"; it has been saved with a new identifier " + newT.id + ".");
 									};
-									// b) no action
+									// b) existing type is compatible --> no action
 								};
 							});
 							// @ts-ignore - newD[ty.listName] is a valid address
@@ -1000,6 +1014,8 @@ class CProject {
 			// ToDo: Save changes from deduplication to the server.
 			if (--pend < 1) {
 				// 4. Finally some house-keeping:
+				self.hookStatements();
+				self.deduplicate(opts);
 //				console.debug('#5',simpleClone(dta),opts);
 				self.createFolderWithResourcesByType(opts)
 				.then(
@@ -1012,13 +1028,7 @@ class CProject {
 						return self.createFolderWithUnreferencedResources(opts)
 					}
 				)
-				.then(
-					() => {
-						self.hookStatements();
-						self.deduplicate(opts);
-						aDO.resolve()
-					}
-				)
+				.then( aDO.resolve )
 				.catch( aDO.reject);
 			};
 		}
@@ -1033,7 +1043,7 @@ class CProject {
 		return new Promise(
 			(resolve) => {
 				function isRoot(nd: INodeWithPosition): boolean {
-					// Return true, if the node is placed in the hierarchies folder as root element:
+					// Return true, if the node is placed in the hierarchies folder as one of the root elements:
 					return (!nd.parent
 						&& (!nd.predecessor || LIB.indexByKey(self.hierarchies, LIB.makeKey(nd.predecessor))>-1 )
 					);
@@ -1289,7 +1299,7 @@ class CProject {
 								return false
 							}
 							function aCIsInUse( ctg, sT ) {
-								let c = ctg.substr(0,ctg.length-4),  // xyzType --> xyz, xyzClass ??
+								let c = ctg.substring(0,ctg.length-4),  // xyzType --> xyz, xyzClass ??
 									L = cacheOf(c),
 									i = LIB.indexBy(L,ctg,sT.id);
 		//						console.debug('aCIsInUse',sT,c,L,i);
@@ -2603,7 +2613,7 @@ class CProject {
 						if (opts.format == 'html') {
 							// find the fully qualified path of the content delivery server to fetch the viewer modules:
 							opts.cdn = window.cdn  // in case the calling app is itself html with embedded SpecIF
-									||	window.location.href.substr(0, window.location.href.lastIndexOf("/") + 1);
+									||	window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1);
 
 							toHtmlDoc(expD, opts)
 							.then(
@@ -2947,9 +2957,9 @@ class CProject {
 		new xhrMessage( 963, "new statementClass '" + newC.id + "' is incompatible; propertyClasses don't match" ).log();
 		return false;
 	}
-	// Substritutions:
+	// Substitutions:
 	private substituteProp(L:any[]|undefined, propN: string, rK: SpecifKey, dK: SpecifKey): void {
-		// replace key of the duplicate item dK by the key of the original one rK;
+		// Replace key of the duplicate item dK by the key of the original one rK;
 		// this applies to the property 'propN' of each member of the list L:
 		if (Array.isArray(L))
 			for (var e of L) {

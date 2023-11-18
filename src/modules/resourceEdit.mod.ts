@@ -525,6 +525,7 @@ moduleManager.construct({
 					(r: SpecifResource) => {
 //						console.debug( '#', self.localOpts.mode, r );
 						self.newRes = r;
+						self.newRes.createdBy = app.me.userName;
 						if (self.localOpts.selNodeId)
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
@@ -535,10 +536,9 @@ moduleManager.construct({
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.insert
-							];
-						self.toEdit = new CResourceToEdit(r);
-						self.toEdit.editForm(self.localOpts)
-				})
+							]
+					}
+				)
 				.catch( LIB.stdError ); 
 				break;
 			case 'clone':
@@ -560,18 +560,19 @@ moduleManager.construct({
 							]
 						}
 						else {
+							self.newRes.replaces = [(rL[0].revision || (CONFIG.revDefaultPrefix + rL[0].changedAt))];
 							self.localOpts.dialogTitle = i18n.MsgUpdateResource;
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.update
 							]
-						}; 
-						self.toEdit = new CResourceToEdit(self.newRes);
-						self.toEdit.editForm(self.localOpts)
+						}
 					},
 					LIB.stdError
 				)
 		};
+		self.toEdit = new CResourceToEdit(self.newRes);
+		self.toEdit.editForm(self.localOpts)
 		return;
 
 		function selectResClass(opts: any): Promise<SpecifResourceClass> {
@@ -666,6 +667,8 @@ moduleManager.construct({
 		);
 
 		self.newRes.changedAt = chD;
+		self.newRes.changedBy = app.me.userName;
+		self.newRes.revision = "rev-"+simpleHash(chD);
 //		console.debug('save',simpleClone(self.newRes));
 
 		switch (mode) {

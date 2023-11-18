@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.r.3",
+    CONFIG.appVersion = "1.1.r.4",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
@@ -18,6 +18,7 @@ const CONFIG:any = {};
     CONFIG.passwordAnonymous = ''; // as configured in the server
     CONFIG.placeholder = 'to-be-replaced';
     CONFIG.notAssigned = 'notAssigned';
+    CONFIG.revDefaultPrefix = 'modified;dataTime;';
 //    CONFIG.loginTimeout = 3000;
 //    CONFIG.communicationTimeout = 12000;
     CONFIG.messageDisplayTimeShort = 4000;
@@ -70,11 +71,12 @@ const CONFIG:any = {};
     CONFIG.importAny =
     CONFIG.keyImport = 'import';
     CONFIG.keyMode = 'mode';
+    CONFIG.keyFormat = 'format';
     CONFIG.keyProject = 'project';    // projectId
     CONFIG.keyItem = 'item';
     CONFIG.keyNode = 'node';
     CONFIG.keyView = 'view';    // dialog
-    CONFIG.urlParamTags = [CONFIG.keyImport,CONFIG.keyMode,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
+    CONFIG.urlParamTags = [CONFIG.keyImport, CONFIG.keyMode, CONFIG.keyFormat,CONFIG.keyProject,CONFIG.keyItem,CONFIG.keyNode,CONFIG.keyView];
 
     // Dialog names used as query parameters - if changed, existing links will end up in default view:
     // Base:

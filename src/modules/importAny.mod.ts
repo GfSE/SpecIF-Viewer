@@ -87,10 +87,10 @@ moduleManager.construct({
 			extensions: "",
             help: 'ToDo' */
 		}, {
-			id: 'ddpSchema',
+			id: 'xsd',
 			name: 'ioDdpSchema',
 			desc: 'DDP-Schema (.xsd)',
-			label: 'DDP-Schema',
+			label: 'DDP',
 			extensions: ".xsd",
 			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
 			opts: { mediaTypeOf: LIB.attachment2mediaType }
@@ -213,11 +213,17 @@ moduleManager.construct({
 		
 		$('#pageTitle').html( app.title );
 		
-			function getFormat(fN:string):object|undefined {
-//				console.debug('getFormat',fN.indexOf('.specif'),fN.indexOf('.xls'));
-				for( var i=0, I=formats.length; i<I; i++) {
-					if( fN.indexOf('.'+formats[i].id)>0 && moduleManager.isReady(formats[i].name) ) 
-						return formats[i];
+			function getFormat(uParms: string): object | undefined {
+				// Derive the format from the file extension:
+				// - this is however too insignificant, when there are multiple formats with the same extension.
+				// - at least allow any extension listed in 'extensions', see Excel.
+//				console.debug('getFormat',uParms);
+				for( var f of formats) {
+					// 1. look for format parameter
+					// ToDo ..
+					// 2. derive from file extension
+					if (uParms[CONFIG.keyImport].includes('.' + f.id) && moduleManager.isReady(f.name))
+						return f;
 				};
 			}
 		urlP = opts.urlParams;
@@ -228,7 +234,7 @@ moduleManager.construct({
 			importMode = {id: urlP[CONFIG.keyMode] || 'replace'};
 			self.file.name = urlP[CONFIG.keyImport];
 			// check the file format:
-			self.format = getFormat( urlP[CONFIG.keyImport] );
+			self.format = getFormat( urlP );
 //			console.debug('filename:',self.file.name,self.format);
 			if( self.format && app[self.format.name] ) {
 				// initialize the import module:

@@ -130,8 +130,10 @@ class CPropertyToShow implements SpecifProperty {
 				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
 				ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
-			//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
-				if (app.ontology.propertyClassIsFormatted(this.title))
+				//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
+				//	if (app.ontology.propertyClassIsFormatted(this.title))
+				// Assuming that pC.format has been defined during import (xSpecif)
+				if (this.pC.format == SpecifTextFormat.Xhtml)
 					ct = ct.makeHTML(opts);
 				ct = this.titleLinks(ct, opts);
 				break;
@@ -1710,7 +1712,7 @@ moduleManager.construct({
 				cssClass: 'btn-success', 
 				action: function (thisDlg) {
 					// 1. get comment text
-					newC.properties[0].value = textValue(txtLbl).substr(0,dT.maxLength);
+					newC.properties[0].value = textValue(txtLbl).substring(0,dT.maxLength);
 //					newC.title = ....	// an instance-specific name (or title)
 
 //					console.info( 'saving comment', newC );
@@ -1861,7 +1863,7 @@ moduleManager.construct({
 			if( nd && !opts.urlParams)
 				setUrlParams({
 					project: selPrj.id,
-					view: self.view.substr(1),	// remove leading hash
+					view: self.view.substring(1),	// remove leading hash
 					node: nd.id
 					// item: nd.ref.id
 				}); 
@@ -2210,7 +2212,7 @@ moduleManager.construct({
 		if (nd && !opts.urlParams)
 			setUrlParams({
 				project: selPrj.id,
-				view: self.view.substr(1),	// without leading hash
+				view: self.view.substring(1),	// without leading hash
 				node: nd.id
 				//	item: nd.ref.id
 			});
@@ -2398,7 +2400,7 @@ moduleManager.construct({
 									/*	if (staL.length > 1)
 											cacheData.put(
 												'statementClass',
-												app.standards.get('statementClass', LIB.makeKey("SC-mentions"))
+												[app.standards.get('statementClass', LIB.makeKey("SC-mentions"))]
 											);  */
 									resolve(staL)
 								};
@@ -2502,7 +2504,7 @@ moduleManager.construct({
 //		console.debug('renderStatements',net);
 
 		let graphOptions = new CGraphOptions({
-				canvas: self.view.substr(1),	// without leading hash
+				canvas: self.view.substring(1),	// without leading hash
 				titleProperties: CONFIG.titleProperties,
 				onDoubleClick: (evt: any) => {
 //					console.debug('Double Click on:',evt);

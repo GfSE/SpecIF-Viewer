@@ -357,6 +357,10 @@ CONFIG.commentProperties = [
     "ReqIF-WF.SupplierComment"
 ];
 
+CONFIG.formattedProperties =
+	CONFIG.descProperties
+	.concat(CONFIG.commentProperties);
+
 CONFIG.stereotypeProperties = [
     'UML:Stereotype'
 ];

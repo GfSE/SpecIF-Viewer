@@ -876,7 +876,7 @@ function CachedProject() {
 						return false
 					}
 					function sTIsInUse( ctg, sT ) {
-						let c = ctg.substr(0,ctg.length-4),
+						let c = ctg.substring(0,ctg.length-4),
 							L = cacheOf(c),	// xyzType --> xyz
 							i = indexBy(L,ctg,sT.id);
 //						console.debug('sTIsInUse',sT,c,L,i); 

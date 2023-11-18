@@ -30,7 +30,7 @@ moduleManager.construct({
 		// but not navigation in the browser history:
 		if( !(opts && opts.urlParams) ) 
 			setUrlParams({
-				view: self.view.substr(1)	// remove leading hash
+				view: self.view.substring(1)	// remove leading hash
 			}); 
 
 		$('#pageTitle').html( app.title );

@@ -495,11 +495,13 @@ class CSpecIF implements SpecIF {
 					oE.values = vL;
 			};
 
-			oE.format = app.ontology.propertyClassIsFormatted(oE.title) ? SpecifTextFormat.Xhtml : SpecifTextFormat.Plain;
-			if (!oE.format)
-				oE.format = CONFIG.excludedFromFormatting.includes(oE.title) ? SpecifTextFormat.Plain : iE.format;
-			if (!oE.format)
-				oE.format = SpecifTextFormat.Plain;
+			if (app.ontology.propertyClassIsFormatted(oE.title))
+				oE.format = SpecifTextFormat.Xhtml
+			else
+				//	oE.format = CONFIG.excludedFromFormatting.includes(oE.title) ? SpecifTextFormat.Plain : (iE.format || SpecifTextFormat.Plain);
+				oE.format = typeof (iE.format) == 'string' && iE.format.length > 3 ?
+								iE.format
+								: CONFIG.formattedProperties.includes(oE.title) ? SpecifTextFormat.Xhtml : SpecifTextFormat.Plain;
 
 			if (iE.unit) oE.unit = iE.unit;
 
@@ -1684,7 +1686,10 @@ class CSpecIF implements SpecIF {
 
 							if (!RE.vocabularyTerm.test(txt)) {
 							//	if (!CONFIG.excludedFromFormatting.includes(pC.title)) {
-								if (app.ontology.propertyClassIsFormatted(pC.title)) {
+							//	if (app.ontology.propertyClassIsFormatted(pC.title)) {
+
+								// Assuming that pC.format has been set correctly during import:
+								if ( pC.format == SpecifTextFormat.Xhtml) {
 									// Transform to HTML, if possible;
 									// especially for publication, for example using WORD format:
 									txt = txt

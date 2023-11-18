@@ -120,7 +120,7 @@ moduleManager.construct({
 		if( !opts || !opts.urlParams ) 
 			setUrlParams({
 				project: prj.id,
-				view: self.view.substr(1)	// remove leading hash
+				view: self.view.substring(1)	// remove leading hash
 			}); 
 
 		app.busy.set();

@@ -944,7 +944,9 @@ LIB.itemByTitle = (L: SpecIFItemWithNativeTitle[],ti:string):any => {
 LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
     // Return the index of item in L referenced by key k:
     //  - If an item in list (L) has no specified revision, a reference key may not specify a revision.
-    //  - If k has no revision, the item in L having the latest revision applies.
+    //  - If L has multiple elements with same id, where one of them has no revision, indexByKey cannot identify a unique item.
+    //  - If k has no revision, the item in L having the latest revision (not 'replaced' by any other) applies.
+    //  - If there are >1 latest revisions (>1 branches), the more recent one prevails (ToDo: acceptable rule ??)
     //  - If k has a revision, the item in L having an an equal or the next lower revision applies.
     //  - The uniqueness of keys has been checked, before.
     // Note that referenceIndex does the inverse: it returns the index of the list item which is referencing k.
@@ -961,12 +963,56 @@ LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
     );
     if (itemsWithEqId.length < 1) return -1; // no element with the specified id
 
+    if (itemsWithEqId.length == 1) {
+        if (!k.revision || itemsWithEqId[0].rev == k.revision)
+            return itemsWithEqId[0].idx
+        else
+            return -1; // revisions don't match (this should not occur)
+    };
+
+    // itemsWithEqId.length is >1.
+    for (let itm of itemsWithEqId) {
+        // this constraint has been checked during import, but let us ckeck again to detect any error which may have happened, since:
+        if( !itm.rev )
+            console.error("Item with id '" + k.id + "' occurs more than once, where at least one does not have a specified revision.");
+    };
+
+    if (k.revision) {
+        // Find the element with equal revision:
+        let itemsWithEqRev = itemsWithEqId.filter((e: any) => { return e.rev == k.revision });
+        if (itemsWithEqRev.length < 1) return -1;  // there is no element with the requested revision
+        if (itemsWithEqRev.length == 1) return itemsWithEqRev[0].idx;
+        throw Error("There are >1 items with the same id '" + k.id + "' and revision '" + k.revision + "'.");
+    }
+    else {
+        // Look for the latest revision in itemsWithEqId;
+        // expected is a single revision which is not replaced by another:
+
+        // Get a list with all those items which are not replaced by another:
+        let itemsNotReplaced = itemsWithEqId.filter(
+            (i: any) => {
+                for (let itm of itemsWithEqId) {
+                    if (Array.isArray(L[itm.idx].replaces) && L[itm.idx].replaces.includes(i.rev))
+                        return false;
+                }
+                return true;
+            }
+        );
+        if (itemsNotReplaced.length == 1)
+            return itemsNotReplaced[0].idx; // the newest revision of a single branch
+        if (itemsNotReplaced.length < 1)
+            throw Error("There is a cyclic reference within " + JSON.stringify(L) + "'.");
+
+        console.info("There are multiple branches for " + JSON.stringify(k) + "'.");
+        return -1;  // could not determine the newest revision
+    };
+
+/*
     if (itemsWithEqId.length == 1 && !itemsWithEqId[0].rev) {
         // a single item without revision has been found:
         if (k.revision) return -1; // revisions don't match (this should not occur)
         return itemsWithEqId[0].idx // both the found element and the key have no revision
     };
-
     // The elements in itemsWithEqId have a revision:
     // If there are more than one and the constraint checker was happy, they must have a revision.
     if (k.revision) {
@@ -981,7 +1027,7 @@ LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
     // The key has no revision and so the latest shall be returned.
     // Sort revisions in the order of creation; the latest first:
     itemsWithEqId.sort((laurel: any, hardy: any) => { return hardy.changedAt - laurel.changedAt });
-    return itemsWithEqId[0].idx; // return the index of the latest revision
+    return itemsWithEqId[0].idx; // return the index of the latest revision */
 }
 LIB.itemByKey = (L: SpecifItem[], k: SpecifKey): any => {
     // Return the item in L with key k 
@@ -1634,8 +1680,8 @@ LIB.attachment2mediaType = ( fname:string ):string|undefined =>{
 LIB.localDateTime = (iso:string):string =>{
 //    if( typeof(iso)=='string' ) {
         // ToDo: calculate offset of time-zone ... or use one of the libraries ..
-        if( iso.length>11 ) return (iso.substr(0,10)+' '+iso.substr(11,5)+'h');
-        return (iso.substr(0,10));
+        if( iso.length>11 ) return (iso.substring(0,10)+' '+iso.substring(11,16)+'h');
+        return (iso.substring(0,10));
 //    };
 //    return '';
 }
@@ -1799,7 +1845,8 @@ LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => 
     // Return the item's class title,
     // where item can be a resource, a statement or a property:
     let iC = LIB.itemByKey(cL, iCkey);
-    return LIB.titleOf(iC, opts);
+    if( iC )
+        return LIB.titleOf(iC, opts);
 }
 LIB.hasResClass = (r: SpecifResource, pNs: string[], dta: SpecIF | CSpecIF | CCache): boolean => {
     // Has the class of res a title listed in pNs?
@@ -1930,13 +1977,13 @@ function getUrlParams(opts?: any): any {
 
     function parse(h: string): any {
         if (!h) return {};
-        if (h.charAt(0) == '/') h = h.substr(1);    // remove leading slash
+        if (h.charAt(0) == '/') h = h.substring(1);    // remove leading slash
         var pO = {};
         h.split(opts.separator).forEach(
             (p: any) => {
                 p = p.split('=');
                 // remove enclosing quotes from the value part:
-                if (p[1] && ['"', "'"].includes(p[1][0])) p[1] = p[1].substr(1, p[1].length - 2);
+                if (p[1] && ['"', "'"].includes(p[1][0])) p[1] = p[1].substring(1, p[1].length - 1);
                 // look for specific tokens, only:
                 if (CONFIG.urlParamTags.includes(p[0]))
                     // @ts-ignore - indexing is ok:
@@ -2015,7 +2062,7 @@ function getUrlParams(opts?: any): IUrlParams {
     let p = document.URL.split(opts.start);
     if( !p[1] ) return {};
     p = decodeURI(p[1]);
-    if( p[0]=='/' ) p = p.substr(1);    // remove leading slash
+    if( p[0]=='/' ) p = p.substring(1);    // remove leading slash
     return parse( p );
 
     function parse( h:string ):object {
@@ -2025,7 +2072,7 @@ function getUrlParams(opts?: any): IUrlParams {
         h.forEach( (p)=>{
             p = p.split('=');
             // remove enclosing quotes from the value part:
-            if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substr(1,p[1].length-2);
+            if( p[1] && ['"',"'"].includes(p[1][0]) ) p[1] = p[1].substring(1,p[1].length-1);
             // look for specific tokens, only:
             if( CONFIG.urlParamTags.includes(p[0]) )
                 pO[p[0]] = p[1];

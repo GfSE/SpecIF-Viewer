@@ -224,7 +224,7 @@ moduleManager.construct({
 		if (!opts.urlParams)
 			setUrlParams({
 				project: selPrj.id,
-				view: self.view.substr(1)	// remove leading hash
+				view: self.view.substring(1)	// remove leading hash
 			});
 
 		// Show the panels with filter settings to the left:

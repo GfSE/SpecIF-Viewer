@@ -1295,7 +1295,7 @@ function toOxml( data, options ) {
 					};
 					// else, assuming that it is an internal hyperlink:
 					// Interestingly enough, Word only supports internal links up to 20 chars:
-					let lnk = ct.format.hyperlink.internal.substr(0,20);
+					let lnk = ct.format.hyperlink.internal.substring(0,20);
 					return	'<w:r>'
 						+		'<w:fldChar w:fldCharType="begin"/>'
 						+	'</w:r>'
