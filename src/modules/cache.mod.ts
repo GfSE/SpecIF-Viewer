@@ -581,20 +581,17 @@ class CProject {
 			// ToDo: Update the server !
 			if (--pend < 1) {
 				cDO.notify(i18n.MsgLoadingFiles, 100);
+				self.hookStatements();
+				self.deduplicate(opts);
+
 				self.createFolderWithGlossary(opts)
-				.then(
-					() => {
-						return self.createFolderWithUnreferencedResources(opts)
-					}
-				)
-				.then(
-					() => {
-						self.hookStatements();
-						self.deduplicate(opts);
-						cDO.resolve();
-					}
-				)
-				.catch( cDO.reject );
+					.then(
+						() => {
+							return self.createFolderWithUnreferencedResources(opts)
+						}
+					)
+					.then(cDO.resolve)
+					.catch(cDO.reject);
 			}
 		}
 	}
@@ -1001,6 +998,8 @@ class CProject {
 			if (--pend < 1) {
 				// 4. Finally some house-keeping:
 //				console.debug('#5',simpleClone(dta),opts);
+				self.hookStatements();
+				self.deduplicate(opts);
 				self.createFolderWithResourcesByType(opts)
 				.then(
 					() => {
@@ -1012,13 +1011,7 @@ class CProject {
 						return self.createFolderWithUnreferencedResources(opts)
 					}
 				)
-				.then(
-					() => {
-						self.hookStatements();
-						self.deduplicate(opts);
-						aDO.resolve()
-					}
-				)
+				.then( aDO.resolve )
 				.catch( aDO.reject);
 			};
 		}
