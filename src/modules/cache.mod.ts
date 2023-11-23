@@ -913,8 +913,7 @@ class CProject {
 								// Check for an exsiting resource with the same title:
 								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, newD.propertyClasses, selOpts), selOpts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
-								// the class title reflects the role of it's instances ...
-								// and is less restrictive than the class ID:
+								// the class title reflects the role of it's instances and is less restrictive than the class ID:
 //								console.debug('~1',newR,existR?existR:'');
 								if (existR
 									&& !LIB.hasType(existR, CONFIG.excludedFromDeduplication, dta, opts)
@@ -925,7 +924,7 @@ class CProject {
 //									console.debug('~2',existR,newR);
 									// There is an item with the same title and type,
 									// adopt it and update all references:
-									self.substituteR(newD, existR, newR, { rescueProperties: true });
+									self.substituteR(newD, existR, newR /*, { rescueProperties: true }*/);
 
 									// Memorize the replaced id, if not yet listed:
 									if (!Array.isArray(existR.alternativeIds))
@@ -1535,7 +1534,7 @@ class CProject {
 				) {
 					// Are equal, so remove the duplicate resource:
 //					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, [CONFIG.propClassType], dta ) );
-					this.substituteR(dta, lst[r] as SpecifResource, lst[n] as SpecifResource, Object.assign({ rescueProperties: true, targetLanguage: 'default' }, opts));
+					this.substituteR(dta, lst[r] as SpecifResource, lst[n] as SpecifResource /*, Object.assign({ rescueProperties: true, targetLanguage: 'default' }, opts)*/);
 					console.info("Resource with id=" + lst[n].id + " and class=" + (lst[n] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
 					this.deleteItems('resource', [LIB.keyOf(lst[n])]);
 					// skip the remaining iterations of the inner loop:
@@ -3037,13 +3036,15 @@ class CProject {
 		// Substitute new by original statementClass:
 		this.substituteProp(prj.statements, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
 	}
-	private substituteR(prj: CSpecIF | CCache, refE: SpecifResource, newE: SpecifResource, opts?: any): void {
+	private substituteR(prj: CSpecIF | CCache, refE: SpecifResource, newE: SpecifResource /*, opts?: any*/): void {
 		// Substitute all references of resource newE by refE,
 		// where refE is always an element of this.cache.
 		// But: Rescue any property of newE, if undefined for refE.
 //		console.debug('substituteR',refE,newE,prj.statements);
 
-		if (opts && opts.rescueProperties) {
+	/*	// This is too general and too arbitrary, if you will.
+	 	// ToDo: Replace by a method where selected properties of newE replace those of refE.
+	 	if (opts && opts.rescueProperties) {
 			// Rescue any property value of newE,
 			// if the corresponding property of the adopted resource refE is undefined or empty;
 			// looking at the property types, which ones are in common:
@@ -3066,7 +3067,7 @@ class CProject {
 					};
 				};
 			});
-		};
+		}; */
 
 		// In the rare case that the keys are identical, there is no need to update the references:
 		if (LIB.equalKey(refE,newE)) return;

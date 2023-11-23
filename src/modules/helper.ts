@@ -1003,7 +1003,7 @@ LIB.indexByKey = (L: SpecifItem[], k: SpecifKey): number => {
         if (itemsNotReplaced.length < 1)
             throw Error("There is a cyclic reference within " + JSON.stringify(L) + "'.");
 
-        console.info("There are multiple branches for " + JSON.stringify(k) + "'.");
+        console.info("There are multiple branches; no item returned for " + JSON.stringify(k) + ".");
         return -1;  // could not determine the newest revision
     };
 
