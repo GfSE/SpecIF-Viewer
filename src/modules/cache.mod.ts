@@ -613,12 +613,6 @@ class CProject {
 			}
 		}
 	}
-					}
-				)
-				.catch( cDO.reject );
-			}
-		}
-	}
 	read(opts?: any): Promise<SpecIF> {
 		// Extract all items of this project from the cache containing elements of multiple projects
 		var exD = this.getMeta();
@@ -839,7 +833,7 @@ class CProject {
 								if (idx < 0) {
 									// a) there is no item with the same key
 									itmL.push(newT);
-										// There is an item with the same key and different content.
+								}
 								else {
 									// There is an item with the same key.
 									// In case of 'adopt', the new type must be compatible with the existing (reference) type.
