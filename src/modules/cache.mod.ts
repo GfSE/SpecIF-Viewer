@@ -300,9 +300,10 @@ class CCache {
 			return this.resources.filter(
 				(r) => {
 					if (opts.targetLanguage == 'any') {
-					//	let tiVL = LIB.valuesByTitle(r, [CONFIG.propClassTitle], this);
 						let tiVL = LIB.valuesByTitle(r, CONFIG.titleProperties, this);
 						// length od tiVL should be 0..1, but certainly not any more than 1 title property per resource!
+						if (tiVL.length > 1)
+							console.warn("Resource "+r.id+" has more than one title property");
 						if (tiVL.length > 0)
 							for (var v of tiVL[0]) {
 								// the property of class CONFIG.propClassTitle should be a multiLanguageText;
@@ -612,6 +613,12 @@ class CProject {
 			}
 		}
 	}
+					}
+				)
+				.catch( cDO.reject );
+			}
+		}
+	}
 	read(opts?: any): Promise<SpecIF> {
 		// Extract all items of this project from the cache containing elements of multiple projects
 		var exD = this.getMeta();
@@ -832,13 +839,13 @@ class CProject {
 								if (idx < 0) {
 									// a) there is no item with the same key
 									itmL.push(newT);
-								}
+										// There is an item with the same key and different content.
 								else {
-									// there is an item with the same id.
-									//	if( !ty.isEqual( self.cache[ty.listName][idx], newT) ) {
+									// There is an item with the same key.
+									// In case of 'adopt', the new type must be compatible with the existing (reference) type.
 									// @ts-ignore - indexing by string works fine
 									if (!ty.isCompatible(dta[ty.listName][idx], newT, { mode: "include" })) {
-										// there is an item with the same key and incompatible content.
+										// there is an item with the same id and different content.
 										// c) create a new id and update all references:
 										// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
 										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
@@ -1016,6 +1023,8 @@ class CProject {
 				self.hookStatements();
 				self.deduplicate(opts);
 //				console.debug('#5',simpleClone(dta),opts);
+				self.hookStatements();
+				self.deduplicate(opts);
 				self.createFolderWithResourcesByType(opts)
 				.then(
 					() => {
@@ -1637,20 +1646,19 @@ class CProject {
 											app.ontology.makeTemplate(),
 											{
 												id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
-												dataTypes: [
-													app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-													app.standards.get('dataType', LIB.makeKey("DT-Text"))
-												],
-												propertyClasses: [
-													app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-													app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-													app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")),
-													app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-												],
-												resourceClasses: [
-													app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")),
-													app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-												],
+												dataTypes: LIB.forAll(
+													// this works even if any of the listed ids is not found:
+													["DT-ShortString", "DT-Text"],
+													(el: string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
+												),
+												propertyClasses: LIB.forAll(
+													["PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
+													(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
+												),
+												resourceClasses: LIB.forAll(
+													["RC-Paragraph", "RC-Folder"],
+													(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
+												),
 												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
 												hierarchies: NodeList(r2c,creL)
 											}
@@ -1785,20 +1793,19 @@ class CProject {
 							app.ontology.makeTemplate(),
 							{
 								id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
-								dataTypes: [
-									app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-									app.standards.get('dataType', LIB.makeKey("DT-Text"))
-								],
-								propertyClasses: [
-									app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-									app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-									app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")) as SpecifPropertyClass,
-									app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-								],
-								resourceClasses: [
-									app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")) as SpecifResourceClass,
-									app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-								],
+								dataTypes: LIB.forAll(
+									// this works even if any of the listed ids is not found:
+									["DT-ShortString", "DT-Text"],
+									(el: string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
+								),
+								propertyClasses: LIB.forAll(
+									["PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
+									(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
+								),
+								resourceClasses: LIB.forAll(
+									["RC-Paragraph", "RC-Folder"],
+									(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
+								),
 								resources: Folder(),
 								hierarchies: NodeList(resL)
 							}
@@ -1939,20 +1946,19 @@ class CProject {
 										app.ontology.makeTemplate(),
 										{
 											id: 'Create Glossary ' + new Date().toISOString(),
-											dataTypes: [
-												app.standards.get('dataType', LIB.makeKey("DT-ShortString")),
-												app.standards.get('dataType', LIB.makeKey("DT-Text"))
-											],
-											propertyClasses: [
-												app.standards.get('propertyClass', LIB.makeKey("PC-Name")),
-												app.standards.get('propertyClass', LIB.makeKey("PC-Description")),
-												app.standards.get("propertyClass", LIB.makeKey("PC-Diagram")),
-												app.standards.get('propertyClass', LIB.makeKey("PC-Type"))
-											],
-											resourceClasses: [
-												app.standards.get("resourceClass", LIB.makeKey("RC-Paragraph")),
-												app.standards.get('resourceClass', LIB.makeKey("RC-Folder"))
-											],
+											dataTypes: LIB.forAll(
+												// this works even if any of the listed ids is not found:
+												["DT-ShortString", "DT-Text"],
+												(el: string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
+											),
+											propertyClasses: LIB.forAll(
+												["PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
+												(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
+											),
+											resourceClasses: LIB.forAll(
+												["RC-Paragraph", "RC-Folder"],
+												(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
+											),
 											resources: Folders(),
 											hierarchies: NodeList(lastContentH)
                                         }
@@ -2808,7 +2814,7 @@ class CProject {
 		return false;
 
 		function compatibleEnumeration(refC: SpecifDataType, newC: SpecifDataType): boolean {
-			// A SpecifEnumeratedValue can be scalar or in case of type string a multiLanguageValue.
+			// A SpecifEnumeratedValue can be scalar or in case of type xs:string a multiLanguageValue.
 			if (!refC.enumeration && !newC.enumeration) return true;
 			if (!refC.enumeration == !!newC.enumeration) return false;
 
@@ -2816,7 +2822,15 @@ class CProject {
 			var idx: number;
 			// @ts-ignore - newC.enumeration *is* present:
 			for (var v = newC.enumeration.length - 1; v > -1; v--) {
-				// @ts-ignore - refC.enumeration *is* present:
+			/*	// @ts-ignore - refC.enumeration *is* present:
+				idx = LIB.indexBy(refC.enumeration, 'value', newC.enumeration[v].value);
+				// a. The id of the new 'enumeration' must be present in the present one:
+				if (idx < 0) {
+					new xhrMessage(954, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
+					return false;
+				}; */
+				// Before implementing the above, only the section following a. had been active ..
+			 	// @ts-ignore - refC.enumeration *is* present:
 				idx = LIB.indexById(refC.enumeration, newC.enumeration[v].id);
 				// a. The id of the new 'enumeration' must be present in the present one:
 				if (idx < 0) {
@@ -2831,6 +2845,7 @@ class CProject {
 					return false;
 				}; */
 			};
+			console.debug("new dataType '" + newC.id + "' of type '" + newC.type + "' is compatible with '" + refC.id + "' of type '" + refC.type + "'",refC,newC)
 			return true;
         }
 	}
@@ -3011,6 +3026,9 @@ class CProject {
 	private substituteDT(prj: CSpecIF | CCache, refE: SpecifDataType, newE: SpecifDataType,): void {
 		// For all propertyClasses, substitute new by the original dataType:
 		this.substituteProp(prj.propertyClasses, 'dataType', LIB.keyOf(refE), LIB.keyOf(newE));
+		// For all enumerated property values of resources and statements, substitute the value reference:
+		// ToDo
+
 	}
 	private substitutePC(prj: CSpecIF | CCache, refE: SpecifResourceClass, newE: SpecifResourceClass, ): void {
 		// For all resourceClasses, substitute new by the original propertyClass:

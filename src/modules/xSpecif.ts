@@ -392,7 +392,7 @@ class CSpecIF implements SpecIF {
 			// revision is a number up until v0.10.6 and a string thereafter:
 			if (iE.revision) oE.revision = typeof (iE.revision) == 'number' ? iE.revision.toString() : iE.revision;
 			if (iE.replaces) oE.replaces = iE.replaces;
-			if (iE.changedBy && iE.changedBy != CONFIG.userNameAnonymous) oE.changedBy = iE.changedBy;
+			if (iE.changedBy) oE.changedBy = iE.changedBy;
 			if (iE.createdAt) oE.createdAt = iE.createdAt;
 			if (iE.createdBy) oE.createdBy = iE.createdBy;
 	//		console.debug('item 2int',iE,oE);
@@ -1111,7 +1111,7 @@ class CSpecIF implements SpecIF {
 					if (iE.replaces) oE.replaces = iE.replaces;
 					if (iE.changedBy && iE.changedBy != CONFIG.userNameAnonymous) oE.changedBy = iE.changedBy;
 					if (iE.createdAt) oE.createdAt = iE.createdAt;
-					if (iE.createdBy) oE.createdBy = iE.createdBy;
+					if (iE.createdBy && iE.createdBy != CONFIG.userNameAnonymous) oE.createdBy = iE.createdBy;
 					return oE;
 				}
 				// a data type:
