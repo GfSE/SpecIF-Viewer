@@ -822,26 +822,30 @@ LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     return val as string
 }
 LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF | CCache): SpecifValues => {
-    // Return the values of a resource's (or statement's) property with a title listed in pNs;
+    // Return the values of all resource's (or statement's) properties with a title listed in pNs;
     // replace references to enumerated values by the corresponding values:
     // ToDo: return the class's default value, if available.
 //    console.debug('valuesByTitle',dta,itm,pN);
+    let valL: SpecifValues = [];
     if (itm.properties) {
         let dT: SpecifDataType,
             pC: SpecifPropertyClass;
         for (var p of itm.properties) {
             pC = LIB.itemByKey(dta.propertyClasses, p['class']);
-            if (pC && pNs.includes(pC.title)) {
-                dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
-                if (dT) {
-                    return dT.enumeration? 
-                        p.values.map((v) => { return LIB.itemById( dT.enumeration, v ).value })
-                        : p.values
+            for (var pN of pNs) {
+                if (pC && pC.title==pN) {
+                    dT = LIB.itemByKey(dta.dataTypes, pC.dataType) as SpecifDataType;
+                    if (dT) {
+                        valL = valL.concat( dT.enumeration ?
+                            p.values.map((v) => { return LIB.itemById(dT.enumeration, v).value })
+                            : p.values
+                        )
+                    }
                 }
             }
         }
     };
-    return [];
+    return valL;
 }
 LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] => {
     // List the enumerated values of a dataType.

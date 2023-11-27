@@ -124,6 +124,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			};
 		}
 	}
+	// ToDo: Use app.ontology.generateSpecifClasses() ... and select one by one only those classes which are needed  
 	class BaseTypes implements SpecIF {
 		id: SpecifId;
 		title: SpecifMultiLanguageText;
@@ -141,26 +142,19 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.title = LIB.makeMultiLanguageValue(prjName);
 			this.generator = "xlsx2specif";
 			this.$schema = 'https://specif.de/v1.1/schema.json';
-			this.dataTypes = [
-				app.standards.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
-				app.standards.get("dataType", { id: "DT-Text" }) as SpecifDataType,
-				app.standards.get("dataType", { id: "DT-DateTime" }) as SpecifDataType,
-				app.standards.get("dataType", { id: "DT-Boolean" }) as SpecifDataType,
-				app.standards.get("dataType", { id: "DT-Integer" }) as SpecifDataType,
-				app.standards.get("dataType", { id: "DT-Real" }) as SpecifDataType
-			];
-			this.propertyClasses = [
-				app.standards.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
-				app.standards.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
-				app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
-				app.standards.get("propertyClass", { id: "PC-Type" }) as SpecifPropertyClass
-			];
-			this.resourceClasses = [
-				app.standards.get("resourceClass", { id: "RC-Paragraph" }) as SpecifResourceClass,
-				app.standards.get("resourceClass", { id: "RC-Folder" }) as SpecifResourceClass
-			];
-			// user-created instances are not checked for visibility:
-			this.resourceClasses[0].instantiation = [SpecifInstantiation.User];
+			this.dataTypes = LIB.forAll(
+				// this works even if any of the listed ids is not found:
+				["DT-ShortString", "DT-Text", "DT-DateTime", "DT-Boolean", "DT-Integer", "DT-Real"],
+				(el:string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
+			);
+			this.propertyClasses = LIB.forAll(
+				["PC-VisibleId", "PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
+				(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
+			);
+			this.resourceClasses = LIB.forAll(
+				["RC-Paragraph", "RC-Folder"],
+				(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
+			);
 			this.statementClasses = [];
 			this.resources = [];
 			this.statements = [];
@@ -369,11 +363,11 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 				// Create the hierarchy entry for the folder containing all resources of the current worksheet:
 				var hTree: SpecifNode = {
-					id: sh.hid,
-					resource: LIB.keyOf(fld),
-					nodes: [],
-					changedAt: chAt
-				},
+						id: sh.hid,
+						resource: LIB.keyOf(fld),
+						nodes: [],
+						changedAt: chAt
+					},
 					dupIdL: string[] = [];  // list of duplicate resource ids 
 
 				// Create the resources:
@@ -633,7 +627,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					dT: SpecifDataType,
 					c: number, C: number,
 					cell: ICell,
-					noTitleFound = true,
+				//	noTitleFound = true,
 					pTi: string;
 				for (c = ws.firstCell.col, C = ws.lastCell.col + 1; c < C; c++) {		// every column
 					// Check whether it is an enumerated dataType:
@@ -673,7 +667,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					// Determine the data type of all values of the column starting with the second row (= second list entry).
 					// If all are equal, the data type is assumed; by default it is 'ShortString'.
 					// Some cell values may be undefined.
-					const defaultC = 'ShortString';
+					const defaultC = 'ShortString';   // should really (must) be a string type of some length
 
 					// add all values of the current column to a list:
 					let valL = [],
@@ -694,14 +688,18 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					if (!pTi || ontologyStatementClasses.includes(pTi)) return;
 					// else, it is a property:
 
-					// Only one property shall be the resource's title;
+				/*	// Only one property shall be the resource's title;
 					// the first one found shall prevail:
 					let xTi = pTi,  // translate the title to standard term
 						isNoTi = xTi != CONFIG.propClassTitle;
 					if (noTitleFound || isNoTi) {
 						pTi = xTi;
 						noTitleFound = noTitleFound && isNoTi;
-					};
+					}; */
+
+					// See, whether there is a suitable proprtyClass, already:
+					let pc = LIB.itemByTitle(specifData.propertyClasses, pTi);
+					if (pc) return pc;
 
 					// Cycle through all elements of the column and select the most restrictive type,
 					// start with the last and stop with the second line:
@@ -716,11 +714,14 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// else: the classes are not equal, take the least restrictive:
 						pC = defaultC;
 					};
+					// pC is undefined, if the table has just a title line:
+					if (!pC) pC = defaultC;
+
 					// Assign a longer text field for descriptions:
-					if (CONFIG.descProperties.includes(pTi)) pC = 'Text';
+					if (pC == defaultC && CONFIG.textProperties.includes(pTi)) pC = 'Text';
 
 					// Assign a longer text field for columns with cells having a longer text;
-					if (pC == 'ShortString') {   // specifically 'ShortString', not defaultC !!
+					if (pC == defaultC) {
 						let maxL = 0,
 							multLines = false;
 						// determine the max length of the column values and if there are multiple lines:
@@ -734,7 +735,12 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							pC = 'Text'
 					};
 					//					console.debug( 'getPropClass 4',valL[i],pC );
-					return new PropClass(ws.name + cX, pTi, pC || defaultC) as SpecifPropertyClass;
+
+					return new PropClass(ws.name + cX, pTi, pC);
+			/*		// Is the propertyClass already available:
+					if (LIB.indexById(specifData.propertyClasses, CONFIG.prefixPC + pC) < 0) return;
+					// else create a new propertyClass:
+					return new PropClass(ws.name + cX, pTi, pC) as SpecifPropertyClass; */
 
 					function classOf(cell: ICell): string {
 						if (isBool(cell)) return 'Boolean';

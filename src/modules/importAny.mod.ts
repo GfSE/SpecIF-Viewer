@@ -87,10 +87,10 @@ moduleManager.construct({
 			extensions: "",
             help: 'ToDo' */
 		}, {
-			id: 'ddpSchema',
+			id: 'xsd',
 			name: 'ioDdpSchema',
 			desc: 'DDP-Schema (.xsd)',
-			label: 'DDP-Schema',
+			label: 'DDP',
 			extensions: ".xsd",
 			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
 			opts: { mediaTypeOf: LIB.attachment2mediaType }

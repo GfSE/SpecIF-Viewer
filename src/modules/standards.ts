@@ -350,12 +350,14 @@ CONFIG.descProperties = [
             'Object Text',
         //    'VALUE-Object Text',  // 'VALUE-' is now removed right at the beginning */
 ];
-
-// those will get a larger edit field, just like the description properties:
 CONFIG.commentProperties = [
     "ReqIF-WF.CustomerComment",
-    "ReqIF-WF.SupplierComment"
+	"ReqIF-WF.SupplierComment",
+	"SpecIF:Comment"
 ];
+// those will get a larger edit field, just like the description properties:
+CONFIG.textProperties = CONFIG.descProperties
+	.concat(CONFIG.commentProperties);
 
 CONFIG.stereotypeProperties = [
     'UML:Stereotype'
