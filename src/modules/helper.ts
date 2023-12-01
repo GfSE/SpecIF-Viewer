@@ -83,7 +83,7 @@ function makeTextField(tag: string, val: string, opts?: IFieldOptions): string {
     return fG;
 }
 function setTextValue( tag:string, val:string ):void {
-    val = LIB.noCode(val).unescapeJSON() || '';
+    val = LIB.noCode(val || '').unescapeJSON();
     // For now, just take care of the first value:
     let el = document.getElementById('field' + simpleHash(tag));
     if (el && el.nodeName && el.nodeName.toLowerCase() == 'div') {

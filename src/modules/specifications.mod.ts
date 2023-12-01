@@ -110,6 +110,7 @@ class CPropertyToShow implements SpecifProperty {
 				targetLanguage: this.selPrj.language,
 				clickableElements: false,
 				linkifyURLs: false,
+				renderFiles: false,
 				// some environments escape the tags on export, e.g. camunda / in|flux:
 				unescapeHTMLTags: false,
 				// markup to HTML:
@@ -128,7 +129,8 @@ class CPropertyToShow implements SpecifProperty {
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
 				// render the files before transforming markdown to XHTML, because it may modify the filenames in XHTML tags:
-				ct = this.renderFile(ct, opts);   // show the diagrams
+				if (opts.renderFiles)
+					ct = this.renderFile(ct, opts);   // show the diagrams
 				// Apply formatting only if not listed:
 			//	if (CONFIG.excludedFromFormatting.indexOf(this.title) < 0)
 				if (app.ontology.propertyClassIsFormatted(this.title))
@@ -347,7 +349,10 @@ class CPropertyToShow implements SpecifProperty {
 					w1 = getAttr("width", $1),
 					h1 = getAttr("height", $1);
 
-				let e = u1? u1.fileExt() : undefined;
+			//	u1 = addFilePath(u1);
+				if (!u1) console.warn('No image or link found in ' + $0);
+
+				let e = u1 ? u1.fileExt() : undefined;
 				if (!e) return $0     // no change, if no extension found
 
 				// $3 is the description between the tags <object></object>:
@@ -356,8 +361,6 @@ class CPropertyToShow implements SpecifProperty {
 				e = e.toLowerCase();
 //				console.debug('toGUI singleObject: ', $0,'|', $1,'|', $2,'|', $3,'||', u1,'|', t1 );
 
-			//	u1 = addFilePath(u1);
-				if (!u1) console.warn('no image or link found in '+$0);
 				let f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
 
 				// sometimes the application files (BPMN or other) have been replaced by images;
@@ -668,6 +671,7 @@ class CResourceToShow {
 				unescapeHTMLTags: true,
 				// ToDo: Make it a user option:
 				makeHTML: true,
+				renderFiles: true,
 				lookupTitles: true,
 				lookupValues: true,
 				targetLanguage: this.language,
@@ -1098,16 +1102,35 @@ class CFileWithContent implements IFileWithContent {
 				Array.from(svg.locs,
 					(loc) => {
 						loc.innerHTML = svg.img;
+						addViewBoxIfMissing(loc);
 						if (opts && opts.clickableElements) registerClickEls(loc)
 					}
 				)
+			}
+		}
+		// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
+		// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
+		// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
+		// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
+		function addViewBoxIfMissing(svg: any): void {
+			for (var el of svg.childNodes) {
+				//					console.debug('svg',svg,el,el.outerHTML);
+				// look for '<svg .. >' tag with its properties, often but not always the first child node:
+				if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
+					if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
+
+					// no viewbox property, so add it:
+					let w = el.getAttribute('width').replace(/px$/, ''),
+						h = el.getAttribute('height').replace(/px$/, '');
+					el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
+					return;
+				}
 			}
 		}
 		// see http://tutorials.jenkov.com/svg/scripting.html
 		function registerClickEls(svg:any): void {
 			if (!CONFIG.clickableModelElements || CONFIG.clickElementClasses.length < 1) return;
 //			console.debug('registerClickEls',svg);
-			addViewBoxIfMissing(svg);
 
 			// now collect all clickable elements:
 			svg.clkEls = [];
@@ -1206,27 +1229,6 @@ class CFileWithContent implements IFileWithContent {
 					};
 				};
 				return id	// no corresponding diagram found
-			}
-			// Add a viewBox in a SVG, if missing (e.g. in case of BPMN diagrams from Signavio and Bizagi):
-			// see: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox
-			// see: https://webdesign.tutsplus.com/tutorials/svg-viewport-and-viewbox-for-beginners--cms-30844
-			// see: https://www.mediaevent.de/tutorial/svg-viewbox-koordinaten.html
-			function addViewBoxIfMissing(svg:any): void {
-				let el;
-				for (var i = 0, I = svg.childNodes.length; i < I; i++) {
-					el = svg.childNodes[i];
-//					console.debug('svg',svg,el,el.outerHTML);
-					// look for '<svg .. >' tag with its properties, often but not always the first child node:
-					if (el && el.outerHTML && el.outerHTML.startsWith('<svg')) {
-						if (el.getAttribute("viewBox")) return;  // all is fine, nothing to do
-
-						// no viewbox property, so add it:
-						let w = el.getAttribute('width').replace(/px$/, ''),
-							h = el.getAttribute('height').replace(/px$/, '');
-						el.setAttribute("viewBox", '0 0 ' + w + ' ' + h);
-						return;
-					}
-				}
 			}
 		}
 	}

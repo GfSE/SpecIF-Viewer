@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.r.3",
+CONFIG.appVersion = "1.1.r.4",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
@@ -23,8 +23,8 @@ const CONFIG:any = {};
     CONFIG.messageDisplayTimeShort = 4000;
     CONFIG.messageDisplayTimeNormal = 8000;
     CONFIG.messageDisplayTimeLong = 12000;
-    CONFIG.noMultipleRefreshWithin = 240;  // avoid multiple refreshes in this time period (in ms)
-    CONFIG.imageRenderingTimelag = 240;  // timelag between building the DOM and inserting the images
+    CONFIG.noMultipleRefreshWithin = 320;  // avoid multiple refreshes in this time period (in ms)
+    CONFIG.imageRenderingTimelag = 320;  // timelag between building the DOM and inserting the images
     CONFIG.showTimelag = 400;
     CONFIG.minInteger = -2147483648;  // for ReqIF Export
     CONFIG.maxInteger = 2147483647;  // for ReqIF Export

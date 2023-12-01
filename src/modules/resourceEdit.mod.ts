@@ -29,8 +29,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 			localOpts = Object.assign({
 				lookupTitles: true,
 				keepTitleLinkingPatterns: true,  // neither expand to an XHTML link, nor remove the patterns
-				targetLanguage: this.selPrj.language,
-				imgClass: 'forImagePreview'
+				targetLanguage: this.selPrj.language
 			}, opts),
 			ti = LIB.titleOf(this, localOpts);
 
@@ -147,7 +146,10 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// while the propertyClass should be unique),
 		// so that the user can update and delete the diagram later on:
 		return '<div id="' + tagId(this['class'].id) + '">'
-			+ this.renderFile(this.values.length > 0 ? LIB.languageTextOf(this.values[0], opts) : '', opts)
+			+ this.renderFile(
+					this.values.length > 0 ? LIB.languageTextOf(this.values[0], opts) : '',
+					Object.assign({ renderFiles: true, imgClass: 'forImagePreview' }, opts)
+				)
 			+ '</div>'
 	}
 	private makeDiagramField(opts: any) {
