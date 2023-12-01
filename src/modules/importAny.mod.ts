@@ -89,7 +89,7 @@ moduleManager.construct({
 		}, {
 			id: 'xsd',
 			name: 'ioDdpSchema',
-			desc: 'DDP-Schema (.xsd)',
+			desc: 'Schema (.xsd) of the Prostep iViP Digital Data Package (DDP)',
 			label: 'DDP',
 			extensions: ".xsd",
 			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
