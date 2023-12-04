@@ -21,7 +21,12 @@
 */
 
 class CCache {
-	// Common Cache for all locally handled projects (SpecIF data-sets)
+	/* Common Cache for all locally handled projects (SpecIF data-sets)
+	 * 
+	 * Limitations:
+	 * - Only one branch - there is always one latest revision per id.
+	 * - Previous revisions of a data type or class must be compatible with the latest
+	*/
 	cacheInstances: boolean;
 	dataTypes: SpecifDataType[] = [];
 	propertyClasses: SpecifPropertyClass[] = [];
@@ -56,14 +61,14 @@ class CCache {
 		if (item.length < 1)
 			return false;
 
-	/*	// If item is a list, all elements must have the same category.
+		// If item is a list, all elements must have the same category.
 		function createItemL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
 			// add or update the items es in a list L:
 			for (var e of es) cacheIfNewerE(L, e);
 			// this operation cannot fail:
 			return true;
 			function cacheIfNewerE(L: SpecifItem[], e: SpecifItem): boolean {  // ( list, entry )
-				// Add or update the item e in a list L, if created later:
+				// Add or update the item e in a list L, if changed later:
 				if (typeof (e) != 'object' || !e.id)
 					throw Error("Cache 'put' operation with old reference (string instead of object with id)");
 				let n = LIB.indexById(L, e.id);
@@ -79,8 +84,8 @@ class CCache {
 					L[n] = e;
 				return true;
 			}
-		}  */
-		function createItemL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
+		} 
+	/*	function createItemL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
 			// add the items es in a list L:
 			let ok = true;
 			for (var e of es) { ok = ok && createItem(L, e) };
@@ -93,7 +98,7 @@ class CCache {
 				};
 				return false;
             }
-		} 
+		} */ 
 
 		switch (ctg) {
 			case 'hierarchy':
@@ -482,7 +487,7 @@ class CProject {
 			projectName: LIB.languageTextOf(this.title, { targetLanguage: this.language }),
 			fileName: LIB.languageTextOf(this.title, { targetLanguage: this.language })
 		};
-		// remember the classes and hierarchies associated with this project - the cache holds all;
+		// Memorize the classes and hierarchies associated with this project - the cache holds all;
 		// store only the id, so that the newest revision will be selected on export:
 		["hierarchies", "resourceClasses", "statementClasses", "propertyClasses", "dataTypes"].forEach(
 			(list) => {
@@ -794,7 +799,7 @@ class CProject {
 			} 
 		);
     }
-/*	update(newD: SpecIF, opts: any): Promise<void> {
+/*	update(newD: SpecIF, opts: any): JQueryDeferred<void> {
 		var uDO = $.Deferred();
 		newD = new CSpecIF(newD); // transform to internal data structure
 		uDO.resolve();
@@ -1055,7 +1060,7 @@ class CProject {
 					case 'propertyClass':
 					case 'resourceClass':
 					case 'statementClass':
-						// Update the project's remembering list;
+						// Memorize the project's context;
 						// but don't keep the revision, as it can change:
 						// @ts-ignore - these categories *are* defined
 						LIB.cacheL(self[app.standards.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
@@ -1272,11 +1277,11 @@ class CProject {
 		return new Promise(
 			(resolve) => {
 				switch (ctg) {
+					case 'hierarchy':
 					case 'node':
 						throw Error("Nodes can only be created, read or deleted");
 				//	case 'resource':
 				//	case 'statement':
-				//	case 'hierarchy':
 				//	case 'file':
 					// no break
 					default:
@@ -1351,8 +1356,8 @@ class CProject {
 							return;
 						};
 						// no break;  */
-					case 'node':
 					case "hierarchy":
+					case 'node':
 						// delete also the respective keys remembered by the project;
 						// - a node can also be a hierarchy, thus try to remove it as well;
 						// - disregard the revision:
@@ -1636,7 +1641,7 @@ class CProject {
 										LIB.sortBy(creL, (el: any) => { return el.r.title });
 
 										// 4. Create a new combined folder:
-										let newD = Object.assign(
+									/*	let newD = Object.assign(
 											app.ontology.makeTemplate(),
 											{
 												id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
@@ -1656,7 +1661,15 @@ class CProject {
 												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
 												hierarchies: NodeList(r2c,creL)
 											}
-										) as SpecIF;
+										) as SpecIF; */
+										// Get the needed class including the referenced ones:
+										let newD = Object.assign(
+											app.ontology.generateSpecifClasses({ terms: ["SpecIF:Heading"], adoptOntologyDataTypes: true }),
+											{
+												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
+												hierarchies: NodeList(r2c, creL)
+											}
+										);
 										// use the update function to eliminate duplicate types:
 										self.adopt(newD, {noCheck:true})
 										/*	.done(() => {
@@ -1783,7 +1796,7 @@ class CProject {
 							.catch(reject)
 					else {
 						// create a new folder:
-						let newD = Object.assign(
+					/*	let newD = Object.assign(
 							app.ontology.makeTemplate(),
 							{
 								id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
@@ -1803,7 +1816,15 @@ class CProject {
 								resources: Folder(),
 								hierarchies: NodeList(resL)
 							}
-						) as SpecIF;
+						) as SpecIF; */
+						// Get the needed class including the referenced ones:
+						let newD = Object.assign(
+							app.ontology.generateSpecifClasses({ terms: ["SpecIF:Heading"], adoptOntologyDataTypes: true }),
+							{
+								resources: Folder(),
+								hierarchies: NodeList(resL)
+							}
+						);
 //						console.debug('glossary',newD);
 						// use the update function to eliminate duplicate types;
 						// 'opts.addGlossary' must not be true to avoid an infinite loop:
@@ -1936,7 +1957,7 @@ class CProject {
 								}
 								else {
 									// create a new folder with the glossary entries:
-									let newD = Object.assign(
+								/*	let newD = Object.assign(
 										app.ontology.makeTemplate(),
 										{
 											id: 'Create Glossary ' + new Date().toISOString(),
@@ -1956,7 +1977,15 @@ class CProject {
 											resources: Folders(),
 											hierarchies: NodeList(lastContentH)
                                         }
-									) as SpecIF;
+									) as SpecIF; */
+									// Get the needed class including the referenced ones:
+									let newD = Object.assign(
+										app.ontology.generateSpecifClasses({ terms: ["SpecIF:Heading"], adoptOntologyDataTypes: true }),
+										{
+											resources: Folders(),
+											hierarchies: NodeList(lastContentH)
+                                        }
+									);
 //									console.debug('glossary',newD);
 
 									// use the update function to eliminate duplicate types;
@@ -2352,6 +2381,7 @@ class CProject {
 				return $(form)
 
 				function hasOntology(): boolean {
+					// Returns true, if one of the hierarchies is an ontology:
 					let hL = self.cache.get("hierarchy", self.hierarchies) as SpecifNode[];
 					for (var h of hL) {
 						let rL = self.cache.get("resource", [h.resource]) as SpecifResource[];
@@ -2399,6 +2429,13 @@ class CProject {
 								else
 									// in case this is an HTML to create an HTML, adopt the same role:
 									options.role = window.role || "SpecIF:Supplier";
+								break;
+							case 'specifClasses':
+								// Create a list of domains which have been checked:
+								let chkDomains = checkboxValues(i18n.LblOptions);
+								options.domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain')).filter(
+									(d: string) => chkDomains.includes(d.toJsId())
+								);
 								break;
 							default:
 								checkboxValues(i18n.LblOptions).forEach(
@@ -2660,6 +2697,10 @@ class CProject {
 							case 'specifClasses':
 								fName += ".specif";
 								zName = fName + '.zip';
+								if (!Array.isArray(opts.domains) || opts.domains.length < 1) {
+									reject(new xhrMessage(999, "No domain selected, so no classes will be generated."));
+									return;  // yes, we need a return to avoid further processing ...
+								};
 								expStr = JSON.stringify(
 									new COntology(expD).generateSpecifClasses(opts)
 								);
@@ -3017,58 +3058,83 @@ class CProject {
 			(ndL: SpecifNodes) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.referenceIndexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
 		);
 	}
-	private substituteDT(prj: CSpecIF | CCache, refE: SpecifDataType, newE: SpecifDataType,): void {
-		// For all propertyClasses, substitute new by the original dataType:
-		this.substituteProp(prj.propertyClasses, 'dataType', LIB.keyOf(refE), LIB.keyOf(newE));
+	private substituteDT(prj: CSpecIF | CCache, replacingE: SpecifDataType, replacedE: SpecifDataType,): void {
+		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
+		// ToDo: Reconsider once we have a backend with multiple revisions ...
+
+		// For all propertyClasses, substitute replacedE by the original dataType replacingE.
+	//	this.substituteProp(prj.propertyClasses, 'dataType', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
+		this.substituteProp(prj.propertyClasses, 'dataType', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
 		// For all enumerated property values of resources and statements, substitute the value reference:
 		// ToDo
 
 	}
-	private substitutePC(prj: CSpecIF | CCache, refE: SpecifResourceClass, newE: SpecifResourceClass, ): void {
+	private substitutePC(prj: CSpecIF | CCache, replacingE: SpecifResourceClass, replacedE: SpecifResourceClass, ): void {
+		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
+		// ToDo: Reconsider once we have a backend with multiple revisions ...
+
 		// For all resourceClasses, substitute new by the original propertyClass:
-		this.substituteLe(prj.resourceClasses, 'propertyClasses', LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteLe(prj.resourceClasses, 'propertyClasses', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+	//	this.substituteLe(prj.resourceClasses, 'propertyClasses', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
+
 		// Also substitute the resource properties' class:
 		prj.resources.forEach((res) => {
-			this.substituteProp(res.properties, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
+			this.substituteProp(res.properties, 'class', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+	//		this.substituteProp(res.properties, 'class', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 		});
 		// The same with the statementClasses:
-		this.substituteLe(prj.statementClasses, 'propertyClasses', LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteLe(prj.statementClasses, 'propertyClasses', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+	//	this.substituteLe(prj.statementClasses, 'propertyClasses', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 		if (Array.isArray(prj.statements))
 			prj.statements.forEach((sta) => {
-				this.substituteProp(sta.properties, 'class', LIB.keyOf(refE), LIB.keyOf(newE))
+				this.substituteProp(sta.properties, 'class', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE))
+	//			this.substituteProp(sta.properties, 'class', LIB.keyOf(replacingE), LIB.keyOf(replacedE))
 			});
 	}
-	private substituteRC(prj: CSpecIF | CCache, refE: SpecifResourceClass, newE: SpecifResourceClass): void {
+	private substituteRC(prj: CSpecIF | CCache, replacingE: SpecifResourceClass, replacedE: SpecifResourceClass): void {
+		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
+		// ToDo: Reconsider once we have a backend with multiple revisions ...
+
 		// Substitute new by original resourceClass:
-		this.substituteLe(prj.statementClasses, 'subjectClasses', LIB.keyOf(refE), LIB.keyOf(newE));
-		this.substituteLe(prj.statementClasses, 'objectClasses', LIB.keyOf(refE), LIB.keyOf(newE));
-		this.substituteProp(prj.resources, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteLe(prj.statementClasses, 'subjectClasses', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+		this.substituteLe(prj.statementClasses, 'objectClasses', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+		this.substituteProp(prj.resources, 'class', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+	//	this.substituteLe(prj.statementClasses, 'subjectClasses', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
+	//	this.substituteLe(prj.statementClasses, 'objectClasses', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
+	//	this.substituteProp(prj.resources, 'class', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 	}
-	private substituteSC(prj: CSpecIF | CCache, refE: SpecifStatementClass, newE: SpecifStatementClass): void {
+	private substituteSC(prj: CSpecIF | CCache, replacingE: SpecifStatementClass, replacedE: SpecifStatementClass): void {
+		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
+		// ToDo: Reconsider once we have a backend with multiple revisions ...
+
 		// Substitute new by original statementClass:
-		this.substituteProp(prj.statements, 'class', LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteProp(prj.statements, 'class', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+	//	this.substituteProp(prj.statements, 'class', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 	}
-	private substituteR(prj: CSpecIF | CCache, refE: SpecifResource, newE: SpecifResource /*, opts?: any*/): void {
-		// Substitute all references of resource newE by refE,
-		// where refE is always an element of this.cache.
-		// But: Rescue any property of newE, if undefined for refE.
-//		console.debug('substituteR',refE,newE,prj.statements);
+	private substituteR(prj: CSpecIF | CCache, replacingE: SpecifResource, replacedE: SpecifResource /*, opts?: any*/): void {
+		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
+		// ToDo: Reconsider once we have a backend with multiple revisions ...
+
+		// Substitute all references of resource replacedE by replacingE,
+		// where replacingE is always an element of this.cache.
+		// But: Rescue any property of replacedE, if undefined for replacingE.
+//		console.debug('substituteR',replacingE,replacedE,prj.statements);
 
 	/*	// This is too general and too arbitrary, if you will.
-	 	// ToDo: Replace by a method where selected properties of newE replace those of refE.
+	 	// ToDo: Replace by a method where selected properties of replacedE replace those of replacingE.
 	 	if (opts && opts.rescueProperties) {
-			// Rescue any property value of newE,
-			// if the corresponding property of the adopted resource refE is undefined or empty;
+			// Rescue any property value of replacedE,
+			// if the corresponding property of the adopted resource replacingE is undefined or empty;
 			// looking at the property types, which ones are in common:
-			newE.properties.forEach((nP: SpecifProperty) => {
+			replacedE.properties.forEach((nP: SpecifProperty) => {
 				if (LIB.hasContent(nP.values[0])) {
 					// check whether existing resource has similar property;
 					// a property is similar, if it has the same title,
 					// where the title may be defined with the property class.
 					let ti = LIB.classTitleOf(nP['class'], prj.propertyClasses),
-						rP = LIB.propByTitle(refE, ti, this.cache);
-//					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( refE, ti, this.cache )));
-					if (!LIB.hasContent(LIB.displayValueOf(LIB.valuesByTitle(refE, [ti], this.cache)[0],opts))
+						rP = LIB.propByTitle(replacingE, ti, this.cache);
+//					console.debug('substituteR 3a',nP,ti,rP,LIB.hasContent(LIB.valuesByTitle( replacingE, ti, this.cache )));
+					if (!LIB.hasContent(LIB.displayValueOf(LIB.valuesByTitle(replacingE, [ti], this.cache)[0],opts))
 						// resource r must have a corresponding property
 						// ToDo: Copy the whole property, if it is defined in the resourceClass, but not instantiated
 						&& rP
@@ -3082,29 +3148,32 @@ class CProject {
 		}; */
 
 		// In the rare case that the keys are identical, there is no need to update the references:
-		if (LIB.equalKey(refE,newE)) return;
+		if (LIB.equalKey(replacingE,replacedE)) return;
 
 		// 1. Replace the references in all statements:
 		prj.statements.forEach((st: SpecifStatement) => {
-			if (LIB.references(st.subject, newE)) st.subject = LIB.keyOf(refE);
-			if (LIB.references(st.object, newE)) st.object = LIB.keyOf(refE);
+			if (LIB.references(st.subject, replacedE)) st.subject = LIB.makeKey(replacingE.id);
+			if (LIB.references(st.object, replacedE)) st.object = LIB.makeKey(replacingE.id);
+	//		if (LIB.references(st.subject, replacedE)) st.subject = LIB.keyOf(replacingE);
+	//		if (LIB.references(st.object, replacedE)) st.object = LIB.keyOf(replacingE);
 		});
 
 		// 2. Replace the references in all hierarchies:
-		this.substituteRef(prj.hierarchies, LIB.keyOf(refE), LIB.keyOf(newE));
+		this.substituteRef(prj.hierarchies, LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
+	//	this.substituteRef(prj.hierarchies, LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 
-		// 3. Make sure all statementClasses allowing newE.class also allow refE.class (the class of the adopted resource):
-		if (refE['class'] && newE['class'] && !LIB.equalKey(refE['class'], newE['class']))
+		// 3. Make sure all statementClasses allowing replacedE.class also allow replacingE.class (the class of the adopted resource):
+		if (replacingE['class'] && replacedE['class'] && !LIB.equalKey(replacingE['class'], replacedE['class']))
 			prj.statementClasses.forEach((sC: SpecifStatementClass) => {
-				let idx = LIB.referenceIndexBy(sC.subjectClasses, newE['class']);
+				let idx = LIB.referenceIndexBy(sC.subjectClasses, replacedE['class']);
 				if ( idx > -1) {
 					sC.subjectClasses.splice(idx, 1);
-					LIB.cacheE(sC.subjectClasses, refE['class']);
+					LIB.cacheE(sC.subjectClasses, replacingE['class']);
 				};
-				idx = LIB.referenceIndexBy(sC.objectClasses, newE['class']);
+				idx = LIB.referenceIndexBy(sC.objectClasses, replacedE['class']);
 				if (idx > -1) {
 					sC.objectClasses.splice(idx, 1);
-					LIB.cacheE(sC.objectClasses, refE['class']);
+					LIB.cacheE(sC.objectClasses, replacingE['class']);
 				};
 			});
 	}

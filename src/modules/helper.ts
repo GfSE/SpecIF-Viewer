@@ -527,9 +527,6 @@ LIB.makeKey = (el: any): SpecifKey => {
     // and support the case where a full key has already been used:
     return typeof (el) == 'string' ? { id: el } : LIB.keyOf(el);
 }
-/* LIB.makeKeyL = (L: any[]): SpecifKeys => {
-    return LIB.forAll(L, (el: any): SpecifKey => { return LIB.makeKey(el) });
-} */
 LIB.containsAllKeys = (refL: SpecifKeys, newL: SpecifKeys): boolean => {
     // return true, if all elements of newL are contained in refL;
     // sequence does not matter:
@@ -852,7 +849,7 @@ LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] =
     // - If a dataType is handed in, take it.
     // - Otherwise look it up from the list of dataTypes.
     // @ts-ignore - when dTk.type exists, it is assumed that dTk is a dataType
-    var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.projects.selected.cache.get('dataType', 'all')), dTk),
+    var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.projects.selected.cache.get('dataType', app.projects.selected.dataTypes)), dTk),
         oL = [];
     if (dT.enumeration)
         for (var v of dT.enumeration) {

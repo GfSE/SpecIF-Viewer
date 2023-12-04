@@ -16,7 +16,7 @@ class CStandards {
 	resourceClasses: SpecifResourceClass[];
 	constructor() {
 		// Get all classes of the domain 'Base':
-		let oC = app.ontology.generateSpecifClasses({ Base: true, adoptOntologyDataTypes: true, delta: true });
+		let oC = app.ontology.generateSpecifClasses({ domains: ['Base'], adoptOntologyDataTypes: true, delta: true });
 //		console.debug('oC', oC);
 		['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
 			// @ts-ignore - indexing is fine

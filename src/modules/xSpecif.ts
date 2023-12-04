@@ -535,7 +535,6 @@ class CSpecIF implements SpecIF {
 					// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 					// ToDo: Reconsider once we have a backend with multiple revisions ...
 					oE.propertyClasses = iE[names.pClasses].map((el: any): SpecifKey => { return LIB.makeKey(el.id || el) });
-				//	oE.propertyClasses = LIB.makeKeyL(iE[names.pClasses]);
 				}
 				else {
 					// it is a full-fledged propertyClass in one of the oldest SpecIF versions:
@@ -602,10 +601,8 @@ class CSpecIF implements SpecIF {
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
 			if (iE[names.sbjClasses])
 				oE.subjectClasses = iE[names.sbjClasses].map( (el: any): SpecifKey => { return LIB.makeKey(el.id || el) });
-			//	oE.subjectClasses = LIB.makeKeyL(iE[names.sbjClasses]);
 			if (iE[names.objClasses])
 				oE.objectClasses = iE[names.objClasses].map( (el: any): SpecifKey => { return LIB.makeKey(el.id || el) });
-			//	oE.objectClasses = LIB.makeKeyL(iE[names.objClasses]);
 //			console.debug('statementClass 2int',iE,oE);
 			return oE
 		}

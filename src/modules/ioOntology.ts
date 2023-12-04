@@ -10,7 +10,7 @@
 
 class COntology {
     data: SpecIF;
-    allDomains: string[] = [];
+//    allDomains: string[] = [];
     allNamespaces: string[] = [];
     termClasses: string[] = [
         "SpecIF:TermResourceClass",
@@ -25,8 +25,8 @@ class COntology {
         "SpecIF:TermPropertyValue"
     ];
 
-    // Assign the primitive dataType to the propertyClass types of a SpecIF Ontology:
-    primitiveDataTypes = new Map([
+    // Assign the primitive dataType to the termPropertyClasses of a SpecIF Ontology:
+    private primitiveDataTypes = new Map([
         ["RC-SpecifTermpropertyclassstring", SpecifDataTypeEnum.String],
         ["RC-SpecifTermpropertyclassboolean", SpecifDataTypeEnum.Boolean],
         ["RC-SpecifTermpropertyclassinteger", SpecifDataTypeEnum.Integer],
@@ -65,11 +65,12 @@ class COntology {
             return
         };
 
-        // Make a list of all defined domains in the SpecIF Ontology:
+     /*   // Make a list of all defined domains in the SpecIF Ontology:
+        // ToDo: Use LIB.enumeratedValuesOf
         let dTDomains = LIB.itemById(this.data.dataTypes, "DT-Domain");
         this.allDomains = dTDomains.enumeration.map(
             (v: SpecifEnumeratedValue) => LIB.languageTextOf(v.value, { targetLanguage: "default" })
-        );
+        ); */
 
         // Make a list of all namespaces:
         this.allNamespaces = this.data.resources.filter(
@@ -259,7 +260,7 @@ class COntology {
 
         return str;
     }
-    getTermValue(ctg: string, term: string, title: string): string {
+    getTermValue(ctg: string, term: string, title: string): string | undefined {
         // Return the property value of a given term:
 
         let rL = this.getTermResources(ctg, term);
@@ -270,9 +271,10 @@ class COntology {
         // return '';
     }
     propertyClassIsFormatted(term: string): boolean {
+        // @ts-ignore - no problem to compare this ..
         return this.getTermValue("propertyClass", term, "SpecIF:TextFormat") == SpecifTextFormat.Xhtml;
     }
-    getIcon(ctg: string, term: string): string {
+    getIcon(ctg: string, term: string): string | undefined {
         // Return an icon of a given term:
         return this.getTermValue(ctg, term, "SpecIF:Icon");
     }
@@ -358,87 +360,6 @@ class COntology {
                 }
             )
         }  */
-    generateSpecifClasses(opts?: any): SpecIF | undefined {
-        /*  Generate SpecIF classes for ontology terms (represented as SpecIF resources of the ontology) which
-            - are selected by domain and lifecyclestatus (so far only those with lifecycleState=="preferred")
-            - or are referenced by others selected by domain and lifecyclestatus
-        
-            - 'opts' contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
-        */
-
-        this.options = opts;
-
-        let spId = "P-SpecifClasses",  // id of the SpecIF data set with the generated classes, will be complemented with the selected domains
-
-            // The selected domains for generating classes:
-            selDomains = this.allDomains.filter((d: string) => { return this.options[d.toJsId()] });
-
-        if (selDomains.length < 1) {
-            message.show("No domain selected, so no classes will be generated.", { severity: 'warning' });
-            return
-        };
-
-        // add the domains to the id of the generated data set:
-        selDomains.forEach((d: string) => { spId += '-' + d.toCamelCase() });
-        //    console.debug('#', dTDomains, allDomains, selDomains, spId);
-
-        // List of referenced but missing instances of termStatementClass:
-        this.required = {
-            sTL: [] as SpecifResource[]  // list of terms waiting for generation of statementClasses
-        };
-        // Intermediate storage of the generated classes:
-        this.generated = {
-            dTL: [] as SpecifDataType[],  // is filled by the function creating the propertyClasses, as there are no explicit dataTypes in a SpecIF Ontology.
-            pCL: [] as SpecifPropertyClass[],
-            rCL: [] as SpecifResourceClass[],
-            sCL: [] as SpecifStatementClass[]
-        };
-
-        // Generate in 3 steps;
-        // note that referenced propertyClasses and resourceClasses are generated as soon as they are identified:
-        [
-            { resultL: this.generated.pCL, classes: Array.from(this.primitiveDataTypes.keys()), fn: this.createPC.bind(this) },
-            { resultL: this.generated.rCL, classes: ["RC-SpecifTermresourceclass"], fn: this.createRC.bind(this) },
-            { resultL: this.generated.sCL, classes: ["RC-SpecifTermstatementclass"], fn: this.createSC.bind(this) }
-        ].forEach(
-            (step) => { LIB.cacheL(step.resultL, this.makeClasses(step.classes, step.fn)); }
-        );
-
-        // Referenced statementClasses are generated at the end to avoid endless recursion:
-        while (this.required.sTL.length > 0) {
-            let sCL = [].concat(this.required.sTL);
-            this.required.sTL.length = 0;
-            LIB.cacheL(this.generated.sCL, sCL.map(this.createSC.bind(this)));
-            //        console.debug('required sCL', simpleClone(this.generated.sCL), simpleClone(this.required.sTL));
-        };
-
-        // Finally return the result:
-        // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
-        return Object.assign(
-            opts.delta ? {} : this.makeTemplate(),
-            {
-                "id": spId,
-                "title": [
-                    {
-                        "text": "SpecIF Classes for " + selDomains.toString(),
-                        "format": SpecifTextFormat.Plain,
-                        "language": "en"
-                    }
-                ],
-                "description": [
-                    {
-                        "text": "A set of SpecIF Classes derived from a SpecIF Ontology for the domain" + (selDomains.length < 2 ? " " : "s ") + selDomains.toString() + ".",
-                        "format": SpecifTextFormat.Plain,
-                        "language": "en"
-                    }
-                ],
-                "dataTypes": this.generated.dTL,
-                "propertyClasses": this.generated.pCL,
-                "resourceClasses": this.generated.rCL,
-                "statementClasses": this.generated.sCL
-            }
-        )
-    }
     makeTemplate(/* opts?: any*/): SpecIF {
         /* Return an empty SpecIF data set */
         return {
@@ -466,16 +387,105 @@ class COntology {
             "hierarchies": []
         }
     }
+    generateSpecifClasses(opts?: any): SpecIF | undefined {
+        /*  Generate SpecIF classes for ontology terms (represented as SpecIF resources of the ontology) which
+            - selected by domain or by title
+            - and are selected by lifecyclestatus (so far only those with lifecycleState=="preferred")
+            - or are referenced by others selected by domain and lifecyclestatus
+        
+            - 'opts' contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
+        */
+
+        if ( Array.isArray(opts.domains) && opts.domains.length > 0
+            || Array.isArray(opts.terms) && opts.terms.length > 0 ) {
+
+            this.options = opts;
+
+            let spId = "P-SpecifClasses";  // id of the SpecIF data set with the generated classes, will be complemented with the selected domains
+
+         /*   if (Array.isArray(opts.terms)) {
+                // Check whether all listed terms are defined by the Ontology:
+
+            }; */
+
+            // add the domains to the id of the generated data set:
+            if (Array.isArray(opts.domains)) {
+                // Check whether all listed domains are defined by the Ontology:
+
+                // Add domains to id:
+                opts.domains.forEach((d: string) => { spId += '-' + d.toCamelCase() });
+            };
+            //    console.debug('#', dTDomains, allDomains, opts.domains, spId);
+
+            // List of referenced but missing instances of termStatementClass:
+            this.required = {
+                sTL: [] as SpecifResource[]  // list of terms waiting for generation of statementClasses
+            };
+            // Intermediate storage of the generated classes:
+            this.generated = {
+                dTL: [] as SpecifDataType[],  // is filled by the function creating the propertyClasses, as there are no explicit dataTypes in a SpecIF Ontology.
+                pCL: [] as SpecifPropertyClass[],
+                rCL: [] as SpecifResourceClass[],
+                sCL: [] as SpecifStatementClass[]
+            };
+
+            // Generate in 3 steps;
+            // note that referenced propertyClasses and resourceClasses are generated as soon as they are identified:
+            [
+                { resultL: this.generated.pCL, classes: Array.from(this.primitiveDataTypes.keys()), fn: this.createPC.bind(this) },
+                { resultL: this.generated.rCL, classes: ["RC-SpecifTermresourceclass"], fn: this.createRC.bind(this) },
+                { resultL: this.generated.sCL, classes: ["RC-SpecifTermstatementclass"], fn: this.createSC.bind(this) }
+            ].forEach(
+                (step) => { LIB.cacheL(step.resultL, this.makeClasses(step.classes, step.fn)); }
+            );
+
+            // Referenced statementClasses are generated at the end to avoid endless recursion:
+            while (this.required.sTL.length > 0) {
+                let sCL = [].concat(this.required.sTL);
+                this.required.sTL.length = 0;
+                LIB.cacheL(this.generated.sCL, sCL.map(this.createSC.bind(this)));
+                //        console.debug('required sCL', simpleClone(this.generated.sCL), simpleClone(this.required.sTL));
+            };
+
+            // Finally return the result:
+            // @ts-ignore - the required properties are only missing, if specifically asked for via 'delta' option
+            return Object.assign(
+                opts.delta ? {} : this.makeTemplate(),
+                {
+                    "id": spId,
+                    "title": [{
+                        "text": "SpecIF Classes" + (opts.domains ? (" for " + opts.domains.toString()) : ""),
+                        "format": SpecifTextFormat.Plain,
+                        "language": "en"
+                    }],
+                    "description": [{
+                        "text": "A set of SpecIF Classes derived from a SpecIF Ontology" + (opts.domains ? (" for the domain" + (opts.domains.length < 2 ? " " : "s ") + opts.domains.toString() + ".") : ""),
+                        "format": SpecifTextFormat.Plain,
+                        "language": "en"
+                    }],
+                    "dataTypes": this.generated.dTL,
+                    "propertyClasses": this.generated.pCL,
+                    "resourceClasses": this.generated.rCL,
+                    "statementClasses": this.generated.sCL
+                }
+            )
+        }
+        else {
+            message.show("No domain or term specified, so no classes will be generated.", { severity: 'warning' });
+        }
+    }
 
     // ---------------- Invoked methods ---------------------
 
     private makeClasses(rCIdL: string[], createFn: Function) {
         // Take the resources listed in the hierarchy, filter the selected ones and generate a class for each.
+        // - rCIdL is a list of resourceClasses for SpecifTerms (such as SpecifTermResourceClass or SpecifTermStatementClass),
+        // - fn creates the respective list of dataTypes and classes
         // ToDo: Better a method to CGenerated.
 
         let self = this;
 
-        let rCL: SpecifItem[] = [],  // the result list
+        let cL: SpecifClass[] = [],  
             // 1. Find the terms of the classes listed in rCIdL:
             idL = LIB.referencedResourcesByClass(this.data.resources, this.data.hierarchies, rCIdL) as SpecifResource[];
 
@@ -484,26 +494,37 @@ class COntology {
                 // 2. Keep only those with selected domain and lifecycleStatus:
                 .filter(isSelected);
             // 3. Create a class per term:
-            rCL = LIB.forAll(tL, createFn);
+            cL = LIB.forAll(tL, createFn);
         };
-        return rCL as SpecifItem[];
+        // the list of generated propertyClasses, resourceClasses or statementClasses:
+        return cL as SpecifClass[];  
 
         function isSelected(r: SpecifResource): boolean {
             let localOpts = Object.assign({ SpecIF_LifecycleStatusReleased: true }, self.options);
-            // True, if specified per domain and lifecycleStatus ..
+            // True, if specified per lifecycleStatus and domain or title ..
             // or if it is referenced by another class:
             return hasSelectedStatus(r)
-                && hasSelectedDomain(r);
+                && (hasSelectedDomain(r) || hasSelectedTerm(r));
 
-            function hasSelectedDomain(el: SpecifItem): boolean {
-                let myDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain], self.data);
-                for (let d of myDomains) {
-                    if (self.options[LIB.displayValueOf(d, { targetLanguage: 'default' }).toJsId()])
+            function hasSelectedDomain(el: SpecifResource): boolean {
+                if (Array.isArray(self.options.domains)) {
+                    let elDomains = LIB.valuesByTitle(el, [CONFIG.propClassDomain], self.data);
+                    for (let d of elDomains) {
+                        if (self.options.domains.includes(LIB.displayValueOf(d, { targetLanguage: 'default' })))
+                            return true;
+                    }
+                };
+                return false;
+            }
+            function hasSelectedTerm(el: SpecifResource): boolean {
+                if (Array.isArray(self.options.terms)) {
+                    let elTerms = LIB.valuesByTitle(el, [CONFIG.propClassTerm], self.data);
+                    if (elTerms.length > 0 && self.options.terms.includes(LIB.displayValueOf(elTerms[0], { targetLanguage: 'default' })))
                         return true;
                 };
                 return false;
             }
-            function hasSelectedStatus(el: SpecifItem): boolean {
+            function hasSelectedStatus(el: SpecifResource): boolean {
                 let selStatus = LIB.valuesByTitle(el, [CONFIG.propClassLifecycleStatus], self.data);
                 for (let s of selStatus) {
                     if (localOpts[LIB.displayValueOf(s, { targetLanguage: 'default' }).toJsId()])
@@ -523,22 +544,23 @@ class COntology {
             dtId = prep.id.replace(/^PC-/, "DT-"), // also
             vId = prep.id.replace(/^PC-/, "V-"),   // also
             // Find any assigned enumerated values; these are defined by related propertyValues:
-            stL = this.statementsByClass(r, "SpecIF:hasEnumValue", { asSubject: true }),  // all statements pointing to enumerated values
-            oL = stL.map(
+            stL: SpecifStatement[] = this.statementsByClass(r, "SpecIF:hasEnumValue", { asSubject: true }),  // all statements pointing to enumerated values
+            oL: SpecifResource[] = stL.map(
                 (st: SpecifStatement) => {
                     return LIB.itemById(this.data.resources, st.object.id)
                 }
             ),  // the objects of those statements are the enumerated values
 
             // Create the entries of the list 'enumeration':
-            enumL = oL.map(
+            enumL: SpecifEnumeratedValue[] = LIB.forAll(
+                oL,
                 (o: SpecifResource, idx: number) => {
                     let evL = LIB.valuesByTitle(o, [CONFIG.propClassTerm], this.data);
                     if( evL.length>0 )
                         return {
                             id: vId + '-' + idx.toString(),
                             value: evL[0]
-                        }
+                        } as SpecifEnumeratedValue
                     else
                         console.warn("Property value term '" + o.id + "' is undefined")
                     // return undefined
@@ -649,7 +671,7 @@ class COntology {
 
         // 1. Create the dataType, unless it exists already:
         let dTk = this.createDT(r),
-            defaultVs = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.data);
+            defaultVL = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.data);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
@@ -658,7 +680,7 @@ class COntology {
                 dataType: dTk,      // the reference to the dataType
                 format: this.valueByTitle(r, "SpecIF:TextFormat"),  // one or none of 'plain' or 'xhtml'
                 multiple: LIB.isTrue(this.valueByTitle(r, "SpecIF:multiple")) ? true : undefined,
-                values: defaultVs.length > 0 ? defaultVs : undefined
+                values: defaultVL.length > 0 ? defaultVL : undefined
             }
         ) as SpecifPropertyClass;
     }
@@ -809,7 +831,7 @@ class COntology {
     private createItem(r: SpecifResource, prefix: string) {
         // Create the attributes common to all classes except dataType;
         // - take the resource's title as title
-        // - and the title without namespace as distinctive portion of the id.
+        // - and a derivative of the title as distinctive portion of the id.
         let prep = this.makeIdAndTitle(r, prefix),
             dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.data);
         if (dscL.length > 1)
@@ -826,7 +848,6 @@ class COntology {
             changedAt: r.changedAt
         } as SpecifClass;
     }
-    // @ts-ignore
     private checkConstraintsOntology(): boolean {
         /*  Check the following constraints / conventions:
             - Don't generate a class from a deprecated term --> No referenced term may be 'deprecated'
@@ -845,6 +866,7 @@ class COntology {
             - Data format of a propertyClass CONFIG.propClassDesc ('dcterms:description') should be 'xhtml'
             - Data format of a propertyClass CONFIG.propClassDiagram ('SpecIF:Diagram') must be 'xhtml'
             - Data format of a propertyClasses with enumerated values should be 'plain'
+            - Among synonyms, there should be just one 'preferred' term
             - ToDo: complete the list ...
         */
 

@@ -23,6 +23,7 @@ class CPropertyToShow implements SpecifProperty {
 	replaces?: string[];
 	revision?: string;
 	// ToDo: Check use of default values - here it is used differently
+	// @ts-ignore - values is initialized in the constructor
 	values: SpecifValues;
 	enumIdL?: SpecifValues;
 
@@ -46,8 +47,11 @@ class CPropertyToShow implements SpecifProperty {
 		if (this.dT.enumeration) {
 			// @ts-ignore - here, ts is a litte picky, there is no reason whats'o'ever why this shouldn't work
 			this.enumIdL = [].concat(prp.values);  // keep original values (the enumeration ids) for resourceEdit
+			// Replace identifiers of enumerated values by their value as defined in the dataType:
 			// ToDo: Check use of default values
-			this.values = this.getEnumValues();
+		//	this.values = this.getEnumValues();
+			// @ts-ignore - this.value is initialized above with other elements of prp
+			this.values = this.values.map((v) => LIB.itemById(this.dT.enumeration, v).value );
 		};
 
 		// Get the propertyClass' permissions:
@@ -67,7 +71,7 @@ class CPropertyToShow implements SpecifProperty {
 			}
 		}
 	}
-	private getEnumValues() {
+/*	private getEnumValues() {
 		// Replace identifiers of enumerated values by their value as defined in the dataType:
 		var oL: SpecifValues = [];
 		for( var v of this.values ) {
@@ -75,7 +79,7 @@ class CPropertyToShow implements SpecifProperty {
 		};
 //		console.debug('#2', simpleClone(oL));
 		return oL
-	}
+	} */
 	private allValues(opts: any): string {
 		// Return all values in the language specified;
 		// it is assumed that the values in case of an enumeration have already been looked up:
