@@ -867,6 +867,7 @@ class COntology {
             - Data format of a propertyClass CONFIG.propClassDiagram ('SpecIF:Diagram') must be 'xhtml'
             - Data format of a propertyClasses with enumerated values should be 'plain'
             - Among synonyms, there should be just one 'preferred' term
+            - must define a term CONFIG.resClassFolder ("SpecIF:Heading") and some basic propertyClasses used by ioXls
             - ToDo: complete the list ...
         */
 

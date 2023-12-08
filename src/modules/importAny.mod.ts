@@ -353,9 +353,9 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = !allValid || cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("cloneBtn").disabled =
+			document.getElementById("cloneBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("updateBtn").disabled = true;
+			document.getElementById("updateBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
@@ -375,9 +375,9 @@ moduleManager.construct({
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("createBtn").disabled = st || !allValid || cacheLoaded;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("cloneBtn").disabled =
+			document.getElementById("cloneBtn").disabled = true;
 			// @ts-ignore - .disabled is an accessible attribute
-			document.getElementById("updateBtn").disabled = true;
+			document.getElementById("updateBtn").disabled = 
 			// @ts-ignore - .disabled is an accessible attribute
 			document.getElementById("adoptBtn").disabled =
 			// @ts-ignore - .disabled is an accessible attribute
@@ -575,13 +575,13 @@ moduleManager.construct({
 							.done( handleNext )
 							.fail( handleError );
 						break;
-				/*	case 'update':
+					case 'update':
 						opts.collectProcesses = false;
-						app.projects.update(dta, opts)
+						app.projects.selected.update(dta, opts)
 							.progress(setProgress)
 							.done(handleNext)
 							.fail(handleError)
-						break; */
+						break;
 					case 'adopt':
 						opts.collectProcesses = true;
 						app.projects.selected.adopt( dta, opts )

@@ -55,13 +55,13 @@ class CCache {
 		};
 		return true;
 	}
-	put(ctg: string, item: SpecifItem[]): boolean {
-		if (!Array.isArray(item))
-			throw Error("Programming Error: "+JSON.stringify(item)+" is not a list.");
-		if (item.length < 1)
+	put(ctg: string, itmL: SpecifItem[]): boolean {
+		if (!Array.isArray(itmL))
+			throw Error("Programming Error: "+JSON.stringify(itmL)+" is not a list.");
+		if (itmL.length < 1)
 			return false;
 
-		// If item is a list, all elements must have the same category.
+		// If itmL is a list, all elements must have the same category.
 		function createItemL(L: SpecifItem[], es: SpecifItem[]): boolean {  // ( list, entries )
 			// add or update the items es in a list L:
 			for (var e of es) cacheIfNewerE(L, e);
@@ -107,17 +107,17 @@ class CCache {
 			case 'resourceClass':
 			case 'statementClass':
 				// @ts-ignore - indexing is perfectly ok
-				return createItemL(this[app.standards.listName.get(ctg)], item);
+				return createItemL(this[app.standards.listName.get(ctg)], itmL);
 			case 'resource':
 			case 'statement':
 			case 'file':
 				if (this.cacheInstances) {
 					// @ts-ignore - indexing is perfectly ok
-					return createItemL(this[app.standards.listName.get(ctg)], item);
+					return createItemL(this[app.standards.listName.get(ctg)], itmL);
 				};
 				return true;
 			case 'node':
-				item.forEach((n) => { this.putNode(n as INodeWithPosition) });
+				itmL.forEach((n) => { this.putNode(n as INodeWithPosition) });
 				return true;
 			default:
 				throw Error("Invalid category '" + ctg + "'.");
@@ -403,13 +403,15 @@ interface IExportParams {
 	fileName: string;
 	projectName: string;
 }
-class CProject {
+class CProject implements SpecifProject {
 	// Applies the project data (SpecIF data-set) to the respective data sources
 	// - Common Cache (for all locally known projects)
 	// - assigned Server(s)
 //	context: string;
 	// @ts-ignore - initialized by this.setMeta()
 	id: SpecifId;
+	// @ts-ignore - initialized by this.setMeta()
+	$schema: SpecifMetaSchema;
 	// @ts-ignore - initialized by this.setMeta()
 	title?: SpecifMultiLanguageText;
 	// @ts-ignore - initialized by this.setMeta()
@@ -428,7 +430,7 @@ class CProject {
 	// the permissions of the current user, selected at login by his/her role:
 	myPermissions: CPermission[] = [];
 
-	// Remember the ids of all types and classes, so they can be exported, even if they have no instances (yet);
+	// Memorize the ids of all types and classes, so they can be exported, even if they have no instances (yet);
 	// store all keys without revision, so that the referenced elements can be updated without breaking the link:
 	// ToDo: Reconsider! Can projects share classes, but use different revision levels?
 	dataTypes: SpecifKeys = [];
@@ -441,10 +443,10 @@ class CProject {
 	cache: CCache;
 /*	server: URL // or servers ??
  	myRole = i18n.LblRoleProjectAdmin;
+	locked = app.title == i18n.LblReader;
 	cre;
 	upd;
 	del = app.title != i18n.LblReader;
-	locked = app.title == i18n.LblReader; 
 	exp: boolean = true;			// permission to export  */
 	// @ts-ignore - initialized by this.setMeta()
 	exportParams: IExportParams;
@@ -475,6 +477,7 @@ class CProject {
 
 	//	this.context = spD.context;
 		this.id = spD.id;
+		this.$schema = spD.$schema;
 		this.title = spD.title;
 		this.description = spD.description;
 		this.language = spD.language || browser.language;
@@ -635,6 +638,8 @@ class CProject {
 						exD.hierarchies = hL as SpecifNode[];
 //						console.debug('1', simpleClone(exD));
 						return this.readItems('resource', LIB.referencedResources(this.cache.resources, hL), opts)
+						// ToDo: This doesn't make sense - cannot call 'readItems' to access a backemd, if needed ...
+						//       and reference this.cache.resources at the same time.
 					}
 				)
 				.then(
@@ -798,13 +803,99 @@ class CProject {
 
 			} 
 		);
-    }
-/*	update(newD: SpecIF, opts: any): JQueryDeferred<void> {
-		var uDO = $.Deferred();
-		newD = new CSpecIF(newD); // transform to internal data structure
-		uDO.resolve();
+	}
+	private typesAreCompatible(newD: SpecIF): boolean {
+		//    Check whether the older types are compatible with the newer ones -
+		//    no matter whether they belong to the existing (this) or just imported data (newD).
+		//    ToDo: Take care of the extending classes ...
+		let idx: number,
+			refC: SpecifClass;
+		for (var ctg of this.types) {
+			// get all types memorized by the project:
+			// @ts-ignore - this is a perfectly valid address:
+			let refL = this.cache.get(ctg.category, this[ctg.listName]);
+
+			// @ts-ignore - this is a perfectly valid address:
+			for (var ty of newD[ctg.listName]) {
+				// Find corresponding element
+				idx = LIB.indexById(refL, ty.id);
+				if (idx < 0) continue; // type does not yet exist and can be created
+
+				refC = simpleClone(refL[idx]);
+				ty = simpleClone(ty);
+				if (['resourceClass', 'statementClass'].includes(ctg.category)) {
+					// Include the properties of extending classes before comparison:
+			// @ts-ignore - this is a perfectly valid address:
+					ty = LIB.getExtendedClasses(newD[ctg.listName], [LIB.keyOf(ty)])[0];
+					refC = LIB.getExtendedClasses(refL, [LIB.keyOf(refC)])[0];
+                }
+				// If the types have the same time-stamps, they must be equal:
+				if (ty.changedAt == refC.changedAt) {
+					if (ctg.isEqual(refC, ty))
+						continue
+					else {
+						console.warn('Items with same change date are not equal: '+refC.id+' and '+ ty.id+'.');
+						return false;
+					}
+				};
+				// If the imported type is newer, the existing must be compatible, 
+				// so that the existing instances can easily reference the imported types:
+				if (ty.changedAt > refC.changedAt) {
+					if (ctg.isCompatible(ty, refC, { mode: "include" }))
+						continue
+					else
+						return false;
+				};
+				// ty.changedAt < refC.changedAt:
+				// If the imported type is older, it must be compatible with the existing, 
+				// so that the imported instances can easily reference the existing types:
+				if (ctg.isCompatible(refC, ty, { mode: "include" }))
+					continue
+				else
+					return false;
+			};
+		};
+		return true;
+	}
+	update(newD: SpecIF, opts: any): JQueryDeferred<void> {
+		var uDO = $.Deferred(),
+		//	self = this,  // make the class attributes and methods available within local function 'finalize'
+			dta = this.cache,
+			pend = 0;
+
+		new CSpecIF().set(newD, opts)
+			.then(
+				(newD: CSpecIF) => {
+					console.debug('update', newD);
+
+					// 1. Check compatibility of the types, before making any change.
+					//    In case of an update, any older type must be compatible with the newer one -
+					//    no matter whether they belong to the existing or just imported data;
+					//    the update will only be pursued if there is no infraction of compatibility.
+					if (this.typesAreCompatible(newD)) {
+						console.debug('typesAreCompatible',simpleClone(newD));
+						// 2. Update the types
+
+						// 3. Update the resources
+
+						// 4. Update the statements
+
+						// 5. Update the files
+
+						// 6. Update (replace) the hierarchies
+
+						uDO.resolve();
+					}
+					else {
+						uDO.reject('Update is not possible, because types are incompatible');
+						return;
+					};
+
+				}
+			)
+			.catch(uDO.reject)
 		return uDO;
-	} */
+	}
 
 	adopt(newD: SpecIF, opts?: any): JQueryDeferred<void> {
 		// First check whether BPMN collaboration and process have unique ids:
@@ -817,20 +908,20 @@ class CProject {
 
 		new CSpecIF().set(newD,opts)
 			.then(
-
-				// 1. Integrate the types:
-				//    a) if different id, save new one and use it.
-				//       (the case of different id and same content will be covered by deduplicate() at the end)
-				//    b) if same id and same content, just use it (no action)
-				//    c) if same id and different content, save with new id and update all references
 				(newD: CSpecIF) => {
 //					console.debug('adopt #1',simpleClone(self.cache),simpleClone(newD));
-					self.types.forEach((ty:CItem) => {
+
+					// 1. Integrate the types:
+					//    a) if different id, save new one and use it.
+					//       (the case of different id and same content will be covered by deduplicate() at the end)
+					//    b) if same id and same content, just use it (no action)
+					//    c) if same id and different content, save with new id and update all references
+					for( var ty of self.types ) {
 						// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 						if (Array.isArray(newD[ty.listName])) {
 							let itmL: SpecifItem[] = [];
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
-							newD[ty.listName].forEach((newT) => {
+							for( var newT of newD[ty.listName]) {
 								// newT is a type/class in new data
 								// types are compared by key:
 								// @ts-ignore - indexing by string works fine
@@ -842,6 +933,7 @@ class CProject {
 								else {
 									// There is an item with the same key.
 									// In case of 'adopt', the new type must be compatible with the existing (reference) type.
+									// ToDo: Take care of the extending classes ...
 									// @ts-ignore - indexing by string works fine
 									if (!ty.isCompatible(dta[ty.listName][idx], newT, { mode: "include" })) {
 										// there is an item with the same id and different content.
@@ -855,17 +947,17 @@ class CProject {
 										console.info("When adopting a project" + (newD.id ? " with id " + newD.id : "")
 											+	", a class with same id and incompatible content has been encountered: " + alterId.id
 											+	"; it has been saved with a new identifier " + newT.id + ".");
-									};
+									}
 									// b) existing type is compatible --> no action
-								};
-							});
+								}
+							};
 							// @ts-ignore - newD[ty.listName] is a valid address
 							console.info((newD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
 							pend++;
 							self.createItems(ty.category, itmL)
 								.then(finalize, aDO.reject);
-						};
-					});
+						}
+					};
 					/*	ALTERNATIVE
 					 *	// 1. Integrate the types:
 						//    a) if same id and different content, save with new id and update all references
@@ -1089,65 +1181,6 @@ class CProject {
 			}
 		);
 	}
-	private readClassesWithParents(ctg: string, toGet: SpecifKeys) {
-		// Return a list with classes, the ancestors first and the requested class last.
-		// Applies to resourceClasses and statementClasses;
-		// classes are always cached, so there is no need for a call with promise.
-		let resL: SpecifItem[] = [];
-		do {
-			let rL = this.cache.get(ctg, toGet);
-			toGet = [];
-			for (var c of rL) {
-				// @ts-ignore - checking for extends, because it doesn't exist on all elements
-				if (c['extends']) {
-					// The propoerties of the extending (parent's) class first:
-					// @ts-ignore - checking for extends, because it doesn't exist on all elements
-					toGet.unshift(c['extends']);
-				};
-			};
-			resL = rL.concat(resL);
-		} while (toGet.length > 0);
-		return resL;
-	}
-	readExtendedClasses(ctg: string, toGet: SpecifKeys) {
-		let self = this;
-		if (['resourceClass', 'statementClass'].includes(ctg)) {
-			// Applies to resourceClasses and statementClasses;
-			// classes are always cached, so there is no need for a call with promise.
-			let resL: any = [];
-			for (var clk of toGet) {
-				resL.push(extendClass(clk))
-			};
-			return resL;
-		};
-		throw Error("Programming Error: Called 'readExtendedClasses' with invalid category '" + ctg + "'.");
-
-		function extendClass(k:SpecifKey) {
-			let rC:any = {};
-			self.readClassesWithParents(ctg, [k])
-				// A list with classes is returned, the ancestors first and the requested class last.
-				// - Starting with most elderly, copy to and potentially overwrite the attributes of rC
-				// - Also the list of eligible subjectClasses and objectClasses are overwritten,
-				//   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
-				// - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
-				.forEach(
-					(cl: SpecifItem) => {
-						for (let att in cl) {
-						//	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(rC[att]))
-							// @ts-ignore - indexing an object with a string is perfectly OK
-							if (["propertyClasses"].includes(att) && Array.isArray(cl[att]) && Array.isArray(rC[att]))
-								// @ts-ignore - indexing an object with a string is perfectly OK
-								LIB.cacheL(rC[att], cl[att])
-							else
-								// @ts-ignore - indexing an object with a string is perfectly OK
-								rC[att] = cl[att]
-                        }
-					}
-				);
-			delete rC['extends'];
-			return rC
-        }
-	}
 	readItems(ctg: string, itemL: SpecifKeys | Function | string, opts?: any): Promise<SpecifItem[]> {
 		// Read one or more items of a given category either from cache or from the permanent store (server), otherwise:
 //		console.debug('readItems', ctg, item, opts);
@@ -1178,18 +1211,13 @@ class CProject {
 
 					if (opts.extendClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
 						// Special case: Extend the classes:
-						items = this.readExtendedClasses(ctg, toGet);
+						items = LIB.getExtendedClasses(self.cache.get(ctg, "all"), toGet);
+					//	items = this.readExtendedClasses(ctg, toGet);
 					}
-				/*	else if (opts.withExtendedClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
-						// Special case: Add the extended classes to the list:
-						items = this.readClassesWithParents(ctg, toGet);
-					}  */
 					else {
 						// Normal case: Item can't have an extended class or is requested without:
-						items = this.cache.get(
-							ctg,
-							toGet
-						);
+						items = this.cache.get( ctg, toGet );
+
 						// Normalize the properties if desired:
 						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
 							items.forEach((itm: any) => {
@@ -1237,9 +1265,14 @@ class CProject {
 				pCL: SpecifPropertyClass[],
 				// iCs: instance class list (resourceClasses or statementClasses),
 				// the existence of subject (or object) let's us recognize that it is a statement:
+			/*	// @ts-ignore - existance of subject signifies whether it is a resource or statement
+				 ctg = (el.subject ? "statementClass" : "resourceClass"),
+				   iCs = self.readExtendedClasses(ctg, [el["class"]]); */
 				// @ts-ignore - existance of subject signifies whether it is a resource or statement
-				ctg = (el.subject ? "statementClass" : "resourceClass"),
-				iCs = self.readExtendedClasses(ctg, [el["class"]]);
+				cL = el.subject ?
+					self.cache.get("statementClass", "all")
+					: self.cache.get("resourceClass", "all"),
+				iCs = LIB.getExtendedClasses(cL, [el["class"]]);
 
 			// Obtain the full propertyClasses referenced by iCs[0]:
 			pCL = self.cache.get("propertyClass", iCs[0].propertyClasses) as SpecifPropertyClass[];
@@ -1641,30 +1674,9 @@ class CProject {
 										LIB.sortBy(creL, (el: any) => { return el.r.title });
 
 										// 4. Create a new combined folder:
-									/*	let newD = Object.assign(
-											app.ontology.makeTemplate(),
-											{
-												id: 'Create ' + r2c.type + ' ' + new Date().toISOString(),
-												dataTypes: LIB.forAll(
-													// this works even if any of the listed ids is not found:
-													["DT-ShortString", "DT-Text"],
-													(el: string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
-												),
-												propertyClasses: LIB.forAll(
-													["PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
-													(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
-												),
-												resourceClasses: LIB.forAll(
-													["RC-Paragraph", "RC-Folder"],
-													(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
-												),
-												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
-												hierarchies: NodeList(r2c,creL)
-											}
-										) as SpecIF; */
 										// Get the needed class including the referenced ones:
 										let newD = Object.assign(
-											app.ontology.generateSpecifClasses({ terms: ["SpecIF:Heading"], adoptOntologyDataTypes: true }),
+											app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
 											{
 												resources: Folder(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
 												hierarchies: NodeList(r2c, creL)
@@ -1796,30 +1808,9 @@ class CProject {
 							.catch(reject)
 					else {
 						// create a new folder:
-					/*	let newD = Object.assign(
-							app.ontology.makeTemplate(),
-							{
-								id: 'Create FolderWithUnreferencedResources ' + new Date().toISOString(),
-								dataTypes: LIB.forAll(
-									// this works even if any of the listed ids is not found:
-									["DT-ShortString", "DT-Text"],
-									(el: string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
-								),
-								propertyClasses: LIB.forAll(
-									["PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
-									(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
-								),
-								resourceClasses: LIB.forAll(
-									["RC-Paragraph", "RC-Folder"],
-									(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
-								),
-								resources: Folder(),
-								hierarchies: NodeList(resL)
-							}
-						) as SpecIF; */
 						// Get the needed class including the referenced ones:
 						let newD = Object.assign(
-							app.ontology.generateSpecifClasses({ terms: ["SpecIF:Heading"], adoptOntologyDataTypes: true }),
+							app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
 							{
 								resources: Folder(),
 								hierarchies: NodeList(resL)
@@ -1956,31 +1947,10 @@ class CProject {
 										.then(resolve, reject)
 								}
 								else {
-									// create a new folder with the glossary entries:
-								/*	let newD = Object.assign(
-										app.ontology.makeTemplate(),
-										{
-											id: 'Create Glossary ' + new Date().toISOString(),
-											dataTypes: LIB.forAll(
-												// this works even if any of the listed ids is not found:
-												["DT-ShortString", "DT-Text"],
-												(el: string) => { return app.standards.get("dataType", { id: el }) as SpecifDataType }
-											),
-											propertyClasses: LIB.forAll(
-												["PC-Name", "PC-Description", "PC-Diagram", "PC-Type"],
-												(el: string) => { return app.standards.get("propertyClass", { id: el }) as SpecifPropertyClass }
-											),
-											resourceClasses: LIB.forAll(
-												["RC-Paragraph", "RC-Folder"],
-												(el: string) => { return app.standards.get("resourceClass", { id: el }) as SpecifResourceClass }
-											),
-											resources: Folders(),
-											hierarchies: NodeList(lastContentH)
-                                        }
-									) as SpecIF; */
+									// Create a new folder with the glossary entries;
 									// Get the needed class including the referenced ones:
 									let newD = Object.assign(
-										app.ontology.generateSpecifClasses({ terms: ["SpecIF:Heading"], adoptOntologyDataTypes: true }),
+										app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
 										{
 											resources: Folders(),
 											hierarchies: NodeList(lastContentH)
@@ -2809,6 +2779,7 @@ class CProject {
 	}
 	// Compatibility Checks:
 	private compatibleDT(refC: SpecifDataType, newC: SpecifDataType): boolean {
+		// Check whether newC is compatible with refC.
 		if (refC.type == newC.type) {
 			switch (newC.type) {
 				case SpecifDataTypeEnum.Boolean:
@@ -2857,14 +2828,6 @@ class CProject {
 			var idx: number;
 			// @ts-ignore - newC.enumeration *is* present:
 			for (var v = newC.enumeration.length - 1; v > -1; v--) {
-			/*	// @ts-ignore - refC.enumeration *is* present:
-				idx = LIB.indexBy(refC.enumeration, 'value', newC.enumeration[v].value);
-				// a. The id of the new 'enumeration' must be present in the present one:
-				if (idx < 0) {
-					new xhrMessage(954, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
-					return false;
-				}; */
-				// Before implementing the above, only the section following a. had been active ..
 			 	// @ts-ignore - refC.enumeration *is* present:
 				idx = LIB.indexById(refC.enumeration, newC.enumeration[v].id);
 				// a. The id of the new 'enumeration' must be present in the present one:
@@ -2977,6 +2940,7 @@ class CProject {
 		return opts.mode == "match" ? !Array.isArray(nCL) : true;
 	}
 	private compatibleRC(refC: SpecifResourceClass, newC: SpecifResourceClass, opts?:any): boolean {
+		// Check whether newC is compatible with refC.
 		if (this.compatiblePCReferences(refC.propertyClasses, newC.propertyClasses, opts))
 			return true;
 		// else:
@@ -2984,6 +2948,7 @@ class CProject {
 		return false;
 	}
 	private compatibleSC(refC: SpecifStatementClass, newC: SpecifStatementClass, opts?:any): boolean {
+		// Check whether newC is compatible with refC.
 		if (refC.title != newC.title) {
 			new xhrMessage( 961, "new statementClass '" + newC.id + "' is incompatible; titles don't match" ).log();
 			return false;

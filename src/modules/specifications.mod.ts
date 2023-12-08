@@ -524,7 +524,7 @@ class CResourceToShow {
 
 		this.id = el.id;
 		this['class'] = el['class'];
-		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = LIB.getExtendedClasses(this.cData.get("resourceClass","all"), [el['class']])[0] as SpecifResourceClass;
 		this.revision = el.revision;
 		this.language = el.language || this.selPrj.language;
 		this.order = el.order;
@@ -547,14 +547,14 @@ class CResourceToShow {
 		if (a > -1) {  // found!
 			// .. in case of a title a single value is expected, so select it:
 			this.title = this.other.splice(a, 1)[0];
-			/*	}
-				else {
-					// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
-					// there is no title propertyClass;
-					// then create a property without class.
-					// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
-					// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
-					this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
+	/*	}
+		else {
+			// In certain cases (SpecIF hierarchy root, comment or ReqIF export),
+			// there is no title propertyClass;
+			// then create a property without class.
+			// If the instance is a statement, a title is optional, so it is only created for resources (ToDo):
+			// @ts-ignore - 'class' is omitted on purpose to indicate that it is an 'artificial' value
+			this.title = { title: CONFIG.propClassTitle, value: el.title || '' }; */
 		};
 
 		// b) Check the configured descriptions:

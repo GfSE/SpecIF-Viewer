@@ -35,7 +35,7 @@ interface SpecifProject {
      * @type {SpecifMetaSchema}
      * @memberof SpecifProject
      */
-    schema: SpecifMetaSchema;
+    $schema: SpecifMetaSchema;
     /**
      * 
      * @type {SpecifId}
@@ -109,11 +109,35 @@ interface SpecifProject {
      */
     language?: string;
     /**
-     * 
-     * @type {SpecifNodes}
+     * Memorize the type-set of the project
+     * @type {Array<SpecifDataType>}
+     * @memberof SpecIF
+     */
+    dataTypes: SpecifKeys;
+    /**
+     * Memorize the type-set of the project
+     * @type {SpecifKeys}
+     * @memberof SpecIF
+     */
+    propertyClasses: SpecifKeys;
+    /**
+     * Memorize the type-set of the project
+     * @type {SpecifKeys}
+     * @memberof SpecIF
+     */
+    resourceClasses: SpecifKeys;
+    /**
+     * Memorize the type-set of the project
+     * @type {SpecifKeys}
+     * @memberof SpecIF
+     */
+    statementClasses: SpecifKeys;
+    /**
+     * Memorize the hierarchies of the project
+     * @type {SpecifKeys}
      * @memberof SpecifProject
      */
-    hierarchies: SpecifNodes;
+    hierarchies: SpecifKeys;
 }
 
 /**

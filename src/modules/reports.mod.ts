@@ -211,7 +211,7 @@ moduleManager.construct({
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC, dT;
 			//	cData.get("resourceClass", prj.resourceClasses).forEach(
-				prj.readExtendedClasses("resourceClass", prj.resourceClasses).forEach(
+				LIB.getExtendedClasses(prj.cache.get("resourceClass", "all"), prj.resourceClasses).forEach(
 					(rC: SpecifResourceClass) => {
 						rC.propertyClasses.forEach(
 							(pck) => {

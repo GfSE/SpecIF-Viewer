@@ -323,7 +323,7 @@ class CResourceToEdit {
 
 		this.id = el.id;
 	//	this['class'] = el['class'];
-		this.rC = this.selPrj.readExtendedClasses("resourceClass", [el['class']])[0] as SpecifResourceClass;
+		this.rC = LIB.getExtendedClasses(this.selPrj.cache.get("resourceClass", "all"), [el['class']])[0] as SpecifResourceClass;
 		this.language = el.language || this.selPrj.language;
 	/*	this.revision = el.revision;
 		this.order = el.order;
@@ -527,7 +527,8 @@ moduleManager.construct({
 					(r: SpecifResource) => {
 //						console.debug( '#', self.localOpts.mode, r );
 						self.newRes = r;
-						self.newRes.createdBy = app.me.userName;
+						if (app.me.userName != CONFIG.userNameAnonymous)
+							self.newRes.createdBy = app.me.userName;
 						if (self.localOpts.selNodeId)
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
@@ -538,7 +539,8 @@ moduleManager.construct({
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,
 								msgBtns.insert
-							]
+							];
+						finalize();
 					}
 				)
 				.catch( LIB.stdError ); 
@@ -549,17 +551,17 @@ moduleManager.construct({
 				// get the selected resource:
 				app.projects.selected.readItems('resource', [self.parent.tree.selectedNode.ref], { showEmptyProperties: true } )
 				.then( 
-					(rL:SpecifItem[])=>{
+					(rL: SpecifItem[]) => {
 						// create a clone to collect the changed values before committing:
 						self.newRes = rL[0];
-						if( self.localOpts.mode=='clone' ) {
+						if (self.localOpts.mode == 'clone') {
 							self.newRes.id = LIB.genID('R-');
 							self.localOpts.dialogTitle = i18n.MsgCloneResource,
-							self.localOpts.msgBtns = [
-								msgBtns.cancel,
-								msgBtns.insertAfter,
-								msgBtns.insertBelow
-							]
+								self.localOpts.msgBtns = [
+									msgBtns.cancel,
+									msgBtns.insertAfter,
+									msgBtns.insertBelow
+								]
 						}
 						else {
 							self.newRes.replaces = [(rL[0].revision || (CONFIG.revDefaultPrefix + rL[0].changedAt))];
@@ -568,15 +570,18 @@ moduleManager.construct({
 								msgBtns.cancel,
 								msgBtns.update
 							]
-						}
-					},
-					LIB.stdError
+						};
+						finalize();
+					}
 				)
+				.catch(LIB.stdError);
 		};
-		self.toEdit = new CResourceToEdit(self.newRes);
-		self.toEdit.editForm(self.localOpts)
 		return;
 
+		function finalize(): void {
+			self.toEdit = new CResourceToEdit(self.newRes);
+			self.toEdit.editForm(self.localOpts);
+        }
 		function selectResClass(opts: any): Promise<SpecifResourceClass> {
 			// Let the user choose the class of the resource to be created later on:
 			return new Promise((resolve, reject) => {
@@ -669,7 +674,8 @@ moduleManager.construct({
 		);
 
 		self.newRes.changedAt = chD;
-		self.newRes.changedBy = app.me.userName;
+		if (app.me.userName != CONFIG.userNameAnonymous)
+			self.newRes.changedBy = app.me.userName;
 		self.newRes.revision = "rev-"+simpleHash(chD);
 //		console.debug('save',simpleClone(self.newRes));
 

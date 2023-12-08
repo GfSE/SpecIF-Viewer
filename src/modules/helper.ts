@@ -597,9 +597,10 @@ LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean =>{
     if (Array.isArray(refE.enumeration) != Array.isArray(newE.enumeration)
         || refE.enumeration.length != newE.enumeration.length) return false;
     // refE and newE have a property 'enumeration' with equal length:
-    for (var i = newE.enumeration.length - 1; i > -1; i--)
+    for (var i = newE.enumeration.length - 1; i > -1; i--) {
         // assuming that the values don't matter:
         if (LIB.indexById(refE.enumeration, newE.enumeration[i].id) < 0) return false;
+    };
     // the list of enumerated values *is* equal,
     // finally the multiple flag must be equal:
     return LIB.equalBoolean(refE.multiple, newE.multiple)
@@ -1117,7 +1118,61 @@ LIB.addProp = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void 
     else
         el.properties = [prp];
 }
-LIB.cmp = ( i:string, a:string ):number =>{
+LIB.getClassesWithParents = (L: SpecifClass[], clK: SpecifKey) => {
+    // Return a list with classes, the ancestors first and the requested class last.
+    // Applies to resourceClasses and statementClasses;
+    // classes are always cached, so there is no need for a call with promise.
+    let resL: SpecifClass[] = [],
+        cK = simpleClone(clK);  // avoid side-effect in calling routine
+    do {
+        let c = LIB.itemByKey(L, cK);
+        cK = undefined;
+        if (c) {
+            // The propoerties of the extending (parent's) class first:
+            // @ts-ignore - checking for extends, because it doesn't exist on all elements
+            cK = c['extends'];
+            resL.unshift(c);
+        };
+    } while (cK);
+    return resL;
+}
+LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
+    // Applies to resourceClasses and statementClasses;
+    // classes are always cached, so there is no need for a call with promise.
+    let resL: any = [];
+    for (var clk of toGet) {
+        resL.push(extendClass(clk))
+    };
+    return resL;
+
+    function extendClass(k: SpecifKey) {
+        let rC: any = {};
+        LIB.getClassesWithParents(cL, k)
+            // A list with classes is returned, the ancestors first and the requested class last.
+            // - Starting with most elderly, copy to and potentially overwrite the attributes of rC
+            // - Also the list of eligible subjectClasses and objectClasses are overwritten,
+            //   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
+            // - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
+            .forEach(
+                (c: SpecifItem) => {
+                    for (let att in c) {
+                        //	if (["propertyClasses", "subjectClasses", "objectClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
+                        // @ts-ignore - indexing an object with a string is perfectly OK
+                        if (["propertyClasses"].includes(att) && Array.isArray(c[att]) && Array.isArray(rC[att]))
+                            // @ts-ignore - indexing an object with a string is perfectly OK
+                            LIB.cacheL(rC[att], c[att])
+                        else
+                            // @ts-ignore - indexing an object with a string is perfectly OK
+                            rC[att] = c[att]
+                    }
+                }
+            );
+        delete rC['extends'];
+        return rC
+    }
+}
+
+LIB.cmp = (i: string, a: string): number => {
     if( !i ) return -1;
     if( !a ) return 1;
     i = i.toLowerCase();
@@ -1239,7 +1294,7 @@ interface String {
     baseName: Function;
     fileExt: Function;
 }
-String.prototype.toCamelCase = function():string {
+String.prototype.toCamelCase = function() {
     let str = this.replace(/[^a-z\d \:\.]/ig, ''), parts, res = '';
     // Check for separators in the sequence of priority:
     if (str.includes(':'))
@@ -1842,7 +1897,7 @@ LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
             : item.title);
     throw Error("Programming error: Input parameter 'item' is not defined");
 }
-LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string => {
+LIB.classTitleOf = (iCkey: SpecifKey, cL: SpecifClass[], opts?: any): string | undefined => {
     // Return the item's class title,
     // where item can be a resource, a statement or a property:
     let iC = LIB.itemByKey(cL, iCkey);

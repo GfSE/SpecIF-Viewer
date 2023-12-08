@@ -158,15 +158,7 @@ class CStandards {
 		};
 		throw Error("No standard type with id '" + key.id + "' and revision '" + key.revision +"' of category '"+ctg+"'");
 	}
-/*	getWithReferenced(ctg: string, key: SpecifKey, chAt?: string): Specif {
-		let spD = {} as SpecIF,
-			item = this.get(ctg,key,chAt);
-		spD[this.listName.get(ctg)] = [
-			item
-		];
-		return spD
-	}
-	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
+/*	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
 		var item: SpecifItem = LIB.itemByTitle(this[this.listName.get(ctg)], ti);
 		if (item) {
 			// shield any subsequent change from the templates available here:
