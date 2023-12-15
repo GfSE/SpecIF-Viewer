@@ -845,6 +845,11 @@ LIB.valuesByTitle = (itm: SpecifInstance, pNs: string[], dta: SpecIF | CSpecIF |
     };
     return valL;
 }
+LIB.valueByTitle = (el: SpecifInstance, ti: string, dta: SpecIF | CSpecIF | CCache): string => {
+    // Return the first value of el's property with title ti:
+    let pVL = LIB.valuesByTitle(el, [ti], dta);
+    return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined;
+}
 LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] => {
     // List the enumerated values of a dataType.
     // - If a dataType is handed in, take it.

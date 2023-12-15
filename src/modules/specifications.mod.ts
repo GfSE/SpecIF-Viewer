@@ -379,11 +379,11 @@ class CPropertyToShow implements SpecifProperty {
 				};
 				// ... cannot happen any more now, is still here for compatibility with older files.
 
-				if (f1.canBeRenderedAsImage()) {
-					// it is an image, show it:
-					// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
-//					console.debug('toGUI 2a found: ', f1, u1 );
-					if (f1.hasContent()) {
+				if (f1.hasContent()) {
+					if (f1.canBeRenderedAsImage()) {
+						// it is an image, show it:
+						// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
+	//					console.debug('toGUI 2a found: ', f1, u1 );
 						hasImg = true;
 						// Create the DOM element to which the image will be added:
 						//	d= '<span class="'+opts.imgClass+' '+tagId(u1)+'"></span>';
@@ -396,13 +396,8 @@ class CPropertyToShow implements SpecifProperty {
 						// Add the image as innerHTML:
 						f1.renderImage(opts);
 					}
-					else {
-						d = '<div class="notice-danger" >Image missing: ' + d + '</div>'
-					};
-				}
-				else if (f1.canBeDownloaded()) {
-					// it is an office file, show an icon plus filename:
-					if (f1.hasContent()) {
+					else if (f1.canBeDownloaded()) {
+						// it is an office file, show an icon plus filename:
 						hasImg = true;
 
 						// Add the download link:
@@ -417,32 +412,32 @@ class CPropertyToShow implements SpecifProperty {
 						d = '<div id="' + tagId(u1) + '" ' + CONFIG.fileIconStyle + '></div>';
 					}
 					else {
-						d = '<div class="notice-danger" >File missing: ' + d + '</div>'
-					};
+					/*	switch (e) {
+							case 'ole':
+								// It is an ole-file, so add a preview image;
+								// in case there is no preview image, the browser will display d holding the description
+								// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
+								// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
+								// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
+								if (f1.hasContent()) {
+									hasImg = true;
+								//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
+									d = '<img src="' + u1.fileName() + '.png" type="image/png" alt="' + d + '" />';
+								}
+								else {
+									d = '<div class="notice-danger" >File missing: ' + d + '</div>'
+								};
+								// ToDo: Offer a link for downloading the file
+								break;
+							default:  */
+								// last resort is to take the filename:
+								d = '<span>' + d + '</span>';
+							// ToDo: Offer a link for downloading the file
+					//	};
+					}
 				}
 				else {
-				/*	switch (e) {
-						case 'ole':
-							// It is an ole-file, so add a preview image;
-							// in case there is no preview image, the browser will display d holding the description
-							// IE: works, if preview is PNG, but a JPG is not displayed (perhaps because of wrong type ...)
-							// 		But in case of IE it appears that even with correct type a JPG is not shown by an <object> tag
-							// ToDo: Check if there *is* a preview image and which type it has, use an <img> tag.
-							if (f1.hasContent()) {
-								hasImg = true;
-							//	d = '<object data="'+u1.fileName()+'.png" type="image/png" >'+d+'</object>';
-								d = '<img src="' + u1.fileName() + '.png" type="image/png" alt="' + d + '" />';
-							}
-							else {
-								d = '<div class="notice-danger" >File missing: ' + d + '</div>'
-							};
-							// ToDo: Offer a link for downloading the file
-							break;
-						default:  */
-							// last resort is to take the filename:
-							d = '<span>' + d + '</span>';
-						// ToDo: Offer a link for downloading the file
-				//	};
+					d = '<div class="notice-danger" >File missing: ' + d + '</div>'
 				};
 
 				// finally add the link and an enclosing div for the formatting:
@@ -916,7 +911,7 @@ class CFileWithContent implements IFileWithContent {
 		return !!this.dataURL && this.dataURL.length > 0;
 	}
 	hasContent(): boolean {
-		return this.hasBlob() || this.hasDataURL();
+		return this.title && (this.hasBlob() || this.hasDataURL());
 	}
 	canBeRenderedAsImage(): boolean {
 		return ['png', 'svg', 'bpmn', 'jpg', 'jpeg', 'gif'].includes(this.title.fileExt().toLowerCase())
@@ -1189,7 +1184,7 @@ class CFileWithContent implements IFileWithContent {
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
-							dsc += d.get({ unescapeHTMLTags: true, makeHTML: true })
+							dsc += d.get({ unescapeHTMLTags: true, makeHTML: d.pC.format == SpecifTextFormat.Xhtml })
 						});
 						// display details only, if there is a description - so no titles without description:
 						if (dsc.stripCtrl().stripHTML()) {

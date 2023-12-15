@@ -123,69 +123,6 @@ class CSpecIF implements SpecIF {
 		)
 	} 
 	get(opts?: any): Promise<SpecIF> {
-		/*	// Add a resource as hierarchyRoot, if needed.
-			// It is assumed,
-			// - that in general SpecIF data do not have a hierarchy root with meta-data.
-			// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-
-				function aHierarchyHasNoRoot(dta: SpecIF): boolean {
-					for (var i = dta.hierarchies.length - 1; i > -1; i--) {
-						let r = LIB.itemByKey(dta.resources, dta.hierarchies[i].resource);
-						if (!r) {
-							throw Error("Hierarchy '"+dta.hierarchies[i].id+"' is corrupt");
-						};
-						let prpV = LIB.valuesByTitle(r, CONFIG.propClassType, dta),
-							rC = LIB.itemByKey(dta.resourceClasses, r['class']);
-						// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
-						// or by the title of the resourceClass:
-						if ((!prpV || CONFIG.hierarchyRoots.indexOf(prpV) < 0)
-							&& (!rC || CONFIG.hierarchyRoots.indexOf(rC.title) < 0))
-							return true;
-					};
-					return false;
-				} 
-			let spD = this;
-			if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
-
-				console.info("Added a hierarchyRoot");
-				app.standards.addTo("resourceClass", { id: "RC-Folder" }, spD);
-
-				// ToDo: Let the program derive the referenced class ids from the above
-				app.standards.addTo("propertyClass", { id: "PC-Type" }, spD);
-				app.standards.addTo("propertyClass", { id: "PC-Description" }, spD);
-				app.standards.addTo("propertyClass", { id: "PC-Name" }, spD);
-				app.standards.addTo("dataType", { id: "DT-ShortString" }, spD);
-				app.standards.addTo("dataType", { id: "DT-Text" }, spD);
-
-				var res: SpecifResource = {
-					id: 'R-' + simpleHash(spD.id),
-					class: LIB.makeKey("RC-Folder"),
-					properties: [{
-						class: { id: "PC-Name" },
-						values: [LIB.makeMultiLanguageValue(spD.title)]
-					}, {
-						class: { id: "PC-Type"},
-						values: [LIB.makeMultiLanguageValue(CONFIG.resClassOutline)]
-					}],
-					changedAt: spD.createdAt || new Date().toISOString()
-				};
-				// Add a description property only if it has a value:
-				if (spD.description)
-					LIB.addProp(res, {
-						class: { id: "PC-Description"},
-						values: [spD.description]
-					});
-				spD.resources.push(r2ext(res));
-				// create a new root instance:
-				spD.hierarchies = [{
-					id: "H-" + res.id,
-					resource: LIB.keyOf(res),
-					// .. and add the previous hierarchies as children:
-					nodes: spD.hierarchies,
-					changedAt: res.changedAt
-				}];
-			};  */
-
 		if (opts && opts.v10)
 			return this.toExt_v10(opts);
 		return this.toExt(opts);
@@ -643,7 +580,8 @@ class CSpecIF implements SpecIF {
 			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
 			let eCkey = iE.subject ? LIB.makeKey(iE[names.sClass].id || iE[names.sClass])
-									: LIB.makeKey(iE[names.rClass].id || iE[names.rClass]);
+				: (iE.nodes ? LIB.makeKey(iE[names.hClass].id || iE[names.hClass])
+					: LIB.makeKey(iE[names.rClass].id || iE[names.rClass]));
 
 			var	oE: any = {
 					id: iE.id,
@@ -1014,18 +952,77 @@ class CSpecIF implements SpecIF {
 		return new Promise(
 			(resolve, reject) => {
 				let self = this,
-					pend = 0,
-					// @ts-ignore - the missing attributes will come below:
-					spD: SpecIF = {
-						// @ts-ignore - no harm, this does not violate the schema
-						'@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
-						id: this.id,
-						title: LIB.languageTextOf(this.title, opts),
-						$schema: 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json',
-						generator: app.title,
-						generatorVersion: CONFIG.appVersion,
-						createdAt: new Date().toISOString()
-					};
+					pend = 0;
+				let	spD: SpecIF = Object.assign(
+						app.ontology.makeTemplate(),
+						{
+							id: this.id,
+							title: LIB.languageTextOf(this.title, opts)
+						}
+					);
+
+				// Add a resource as hierarchyRoot, if needed.
+				// It is assumed,
+				// - that in general SpecIF data do not have a hierarchy root with meta-data.
+				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+		
+					function aHierarchyHasNoRoot(dta: SpecIF): boolean {
+						for (var h of dta.hierarchies) {
+							let r = LIB.itemByKey(dta.resources, h.resource);
+							if (!r) {
+								throw Error("Hierarchy '"+h.id+"' is corrupt");
+							};
+							let ty = LIB.valueByTitle(r, CONFIG.propClassType, dta),
+								rC = LIB.itemByKey(dta.resourceClasses, r['class']);
+							console.debug('aHierarchyHasNoRoot',h,ty,rC);
+							// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
+							// or by the title of the resourceClass:
+							if ((!ty || CONFIG.hierarchyRoots.indexOf(ty) < 0)
+								&& (CONFIG.hierarchyRoots.indexOf(rC.title) < 0))
+								return true;
+						};
+						return false;
+					}
+				console.debug('#', aHierarchyHasNoRoot(this));
+
+				/*	let spD = this;
+					if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
+		
+						console.info("Added a hierarchyRoot");
+						let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true, delta: true });
+						['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
+							// @ts-ignore - indexing is fine
+							(li) => { spD[li] = oC[li] }
+						);
+
+						var res: SpecifResource = {
+							id: 'R-' + simpleHash(spD.id),
+							class: LIB.makeKey("RC-Folder"),
+							properties: [{
+								class: { id: "PC-Name" },
+								values: [LIB.makeMultiLanguageValue(spD.title)]
+							}, {
+								class: { id: "PC-Type"},
+								values: [LIB.makeMultiLanguageValue(CONFIG.resClassOutline)]
+							}],
+							changedAt: spD.createdAt || new Date().toISOString()
+						};
+						// Add a description property only if it has a value:
+						if (spD.description)
+							LIB.addProp(res, {
+								class: { id: "PC-Description"},
+								values: [spD.description]
+							});
+						spD.resources.push(r2ext(res));
+						// create a new root instance:
+						spD.hierarchies = [{
+							id: "H-" + res.id,
+							resource: LIB.keyOf(res),
+							// .. and add the previous hierarchies as children:
+							nodes: spD.hierarchies,
+							changedAt: res.changedAt
+						}];
+					};  */
 
 				// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
 				if (LIB.multiLanguageValueHasContent(this.description))
@@ -1036,11 +1033,6 @@ class CSpecIF implements SpecIF {
 
 				if (this.rights && this.rights.title && this.rights.url)
 					spD.rights = this.rights;
-				else
-					spD.rights = {
-						title: "Creative Commons 4.0 CC BY-SA",
-						url: "https://creativecommons.org/licenses/by-sa/4.0/"
-					};
 
 				if (app.me && app.me.email) {
 					spD.createdBy = {

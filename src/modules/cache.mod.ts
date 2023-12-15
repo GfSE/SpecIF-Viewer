@@ -127,7 +127,7 @@ class CCache {
 		// Read items from cache; req can be 
 		// - a list with keys,
 		// - a filter function returning 'true' for all items to select
-		// - a string with "all" to return all items of the category (DEPRECATED)
+		// - a string with "all" to return all items of the category (DEPRECATED for resources, statements and files)
 		if (req) {
 			// @ts-ignore - addressing is perfectly ok
 			let itmL = this[app.standards.listName.get(ctg)];
@@ -151,7 +151,7 @@ class CCache {
 				return simpleClone(itmL.filter(req));
 			}
 			else if (req === "all") {		// DEPRECATED for resource and statement instances
-				if(['resource','statement'].includes(ctg))
+				if(['resource','statement','file'].includes(ctg))
 					console.warn("Cache 'get' operation called for 'all' items of category '"+ctg+"'.");
 				return simpleClone(itmL);	// return all cached items in a new list
 			};
@@ -265,34 +265,36 @@ class CCache {
 			if (typeof (el) != 'object') throw Error('First input parameter is invalid');
 			if (!(el.properties || el['class'])) return '';
 
-			// Lookup title value only in case of a resource serving as heading or in case of a statement:
-			// @ts-ignore - of course resources have no subject, that's why we ask
-			let rC = LIB.itemByKey(self.resourceClasses, el['class']),
-				// @ts-ignore - that's why the existence of subject is checked ...
-				resOpts = el.subject ?
-					// it is a statement:
-					opts
-				:
-					// it is a resource:
-					{
-						lookupValues: opts.lookupValues && rC && rC.isHeading,
-						targetLanguage: opts.targetLanguage
-					};
-			let ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, resOpts);
-
-			// In case of a resource, we never want to lookup a title,
-			// however in case of a statement, we do:
+			// Find the title:
+			let ti = "";
 			// @ts-ignore - of course resources have no subject, that's why we ask
 			if (el.subject) {
 				// it is a statement
-				if (!ti)
+				ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, opts)
 					// take the class' title by default:
-					ti = LIB.classTitleOf(el['class'], self.statementClasses, opts);
+					|| LIB.classTitleOf(el['class'], self.statementClasses, opts);
 			}
 			else {
 				// it is a resource
-				if (opts && opts.addIcon && CONFIG.addIconToInstance && ti)
-					ti = LIB.addIcon(ti, LIB.itemByKey(self.resourceClasses, el['class']).icon);
+				let rC = LIB.itemByKey(self.resourceClasses, el['class']);
+				ti = LIB.getTitleFromProperties(
+					el.properties,
+					self.propertyClasses,
+					{
+						lookupValues: opts.lookupValues && rC && rC.isHeading,
+						targetLanguage: opts.targetLanguage
+					}
+				);
+				if (ti) {
+					// add icon, if desired
+					if (opts && opts.addIcon && CONFIG.addIconToInstance)
+						ti = LIB.addIcon(ti, rC.icon);
+				}
+				else {
+					// take the first characters from the description:
+					ti = LIB.valueByTitle(el, CONFIG.propClassDesc, self)
+						.substring(0, CONFIG.treeMaxTitleLength);
+                }
 			};
 
 // 			console.debug('instanceTitleOf',el,opts,ti);
@@ -859,8 +861,8 @@ class CProject implements SpecifProject {
 	}
 	update(newD: SpecIF, opts: any): JQueryDeferred<void> {
 		var uDO = $.Deferred(),
-		//	self = this,  // make the class attributes and methods available within local function 'finalize'
-			dta = this.cache,
+			self = this,  // make the class attributes and methods available within local function 'finalize'
+		//	dta = this.cache,
 			pend = 0;
 
 		new CSpecIF().set(newD, opts)
@@ -874,27 +876,47 @@ class CProject implements SpecifProject {
 					//    the update will only be pursued if there is no infraction of compatibility.
 					if (this.typesAreCompatible(newD)) {
 						console.debug('typesAreCompatible',simpleClone(newD));
-						// 2. Update the types
-
-						// 3. Update the resources
-
-						// 4. Update the statements
-
-						// 5. Update the files
-
-						// 6. Update (replace) the hierarchies
+						// 2. Update the types and instances:
+						//    - if the existing type is newer, ignore the new type
+						//    - and vice versa
+						//    - since all references are without revision, there is no need to update the instances
+						//    Thus just call updateItems
+						pend = app.standards.iterateLists(
+							(ctg: string, listName: string) => {
+								// @ts-ignore - the indexing works fine:
+								this.updateItems(ctg, newD[listName])
+									.then(finalize, uDO.reject);
+							}
+						);
 
 						uDO.resolve();
 					}
 					else {
-						uDO.reject('Update is not possible, because types are incompatible');
+						uDO.reject('Automatic update is not possible, because types are incompatible');
 						return;
 					};
-
 				}
 			)
 			.catch(uDO.reject)
 		return uDO;
+
+		function finalize(): void {
+			// ToDo: Update the server !
+			if (--pend < 1) {
+				uDO.notify(i18n.MsgLoadingFiles, 100);
+				self.hookStatements();
+				self.deduplicate(opts);
+
+				self.createFolderWithGlossary(opts)
+					.then(
+						() => {
+							return self.createFolderWithUnreferencedResources(opts)
+						}
+					)
+					.then(uDO.resolve)
+					.catch(uDO.reject);
+			}
+		}
 	}
 
 	adopt(newD: SpecIF, opts?: any): JQueryDeferred<void> {
@@ -1114,8 +1136,6 @@ class CProject implements SpecifProject {
 				self.hookStatements();
 				self.deduplicate(opts);
 //				console.debug('#5',simpleClone(dta),opts);
-				self.hookStatements();
-				self.deduplicate(opts);
 				self.createFolderWithResourcesByType(opts)
 				.then(
 					() => {
@@ -1197,7 +1217,6 @@ class CProject implements SpecifProject {
 					else { */
 				// return the cached object asynchronously:
 
-				// the list of model element instances must include all SpecIF elements which are not remembered by the project:
 				if (itemL == "all" && ['resource', 'statement', 'file', 'node'].includes(ctg))
 					throw Error("Don't request 'all' model element instances, since the result list can be very long!");
 
@@ -1205,14 +1224,13 @@ class CProject implements SpecifProject {
 				setTimeout(() => {
 					let items: SpecifItem[] = [],
 						toGet: SpecifKeys = itemL == "all" ?
-									// @ts-ignore- index type is ok
-									this[app.standards.listName.get(ctg)]  // only those remembered by the project
+									// @ts-ignore - index type is ok
+									this[app.standards.listName.get(ctg)]  // only those memorized by the project
 									: itemL;
 
 					if (opts.extendClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
 						// Special case: Extend the classes:
 						items = LIB.getExtendedClasses(self.cache.get(ctg, "all"), toGet);
-					//	items = this.readExtendedClasses(ctg, toGet);
 					}
 					else {
 						// Normal case: Item can't have an extended class or is requested without:
@@ -1391,7 +1409,7 @@ class CProject implements SpecifProject {
 						// no break;  */
 					case "hierarchy":
 					case 'node':
-						// delete also the respective keys remembered by the project;
+						// delete also the respective keys memorized by the project;
 						// - a node can also be a hierarchy, thus try to remove it as well;
 						// - disregard the revision:
 						let listName = app.standards.listName.get(ctg == 'node' ? 'hierarchy' : ctg);
@@ -1499,7 +1517,6 @@ class CProject implements SpecifProject {
 					// loop to find the *first* occurrence:
 					for (var p of r.properties ) {
 						// Check the configured ids:
-					//	if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(p['class'], dta.propertyClasses)))
 						if (CONFIG.idProperties.includes(LIB.classTitleOf(p['class'], dta.propertyClasses))
 							&& LIB.languageTextOf(p.values[0], { targetLanguage: self.language }) == vId)
 							return true;
@@ -1508,20 +1525,6 @@ class CProject implements SpecifProject {
 				//	return visibleIdOf(r) == vId
 				}
 			) as SpecifResource[]
-
-		/*	function visibleIdOf(r: SpecifResource): string | undefined {
-				if (r && r.properties) {
-				//	let prj = app.projects.selected.cache;
-				//	let prj = this.cache;
-					// loop to find the *first' occurrence:
-					for (var a = 0, A = r.properties.length; a < A; a++) {
-						// Check the configured ids:
-						if (CONFIG.idProperties.includes(vocabulary.property.specif(LIB.classTitleOf(r.properties[a]['class'], dta.propertyClasses))))
-							return LIB.languageTextOf(r.properties[a].values[0], { targetLanguage: self.language })
-					};
-				};
-				//	return undefined
-			} */
 		}
 	}
 	private deduplicate(opts:any): void {
@@ -1545,11 +1548,19 @@ class CProject implements SpecifProject {
 //					console.debug( '##', lst[r],lst[n],ty.isEqual(lst[r],lst[n]) );
 					// Do it for all types:
 					if (ty.isEqual(lst[r], lst[n])) {
-						// Are equal, so substitute it's ids by the original item:
-						ty.substitute(dta, lst[r], lst[n]);
-						console.info(ty.category + " with id=" + lst[n].id + " has been removed because it is a duplicate of id=" + lst[r].id);
-						// ... and remove the duplicate item:
-						this.deleteItems(ty.category,[LIB.keyOf(lst[n])]);
+						// Are equal, so substitute the older by the newer item:
+						if (lst[r].changedAt > lst[n].changedAt) {
+							ty.substitute(dta, lst[r], lst[n]);
+							console.info(ty.category + " with id=" + lst[n].id + " has been removed because it is a duplicate of id=" + lst[r].id);
+							// ... and remove the duplicate item:
+							this.deleteItems(ty.category, [LIB.keyOf(lst[n])]);
+						}
+						else {
+							ty.substitute(dta, lst[n], lst[r]);
+							console.info(ty.category + " with id=" + lst[r].id + " has been removed because it is a duplicate of id=" + lst[n].id);
+							// ... and remove the duplicate item:
+							this.deleteItems(ty.category, [LIB.keyOf(lst[r])]);
+						};
 						// skip the remaining iterations of the inner loop:
 						break
 					}
@@ -1573,11 +1584,18 @@ class CProject implements SpecifProject {
 				//	&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(lst[n], [CONFIG.propClassType], dta)[0])) < 0
 				//	&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(lst[r], [CONFIG.propClassType], dta)[0])) < 0
 				) {
-					// Are equal, so remove the duplicate resource:
+					// Are equal, so remove the older duplicate:
 //					console.debug( 'duplicate resource', rR, nR, LIB.valuesByTitle( nR, [CONFIG.propClassType], dta ) );
-					this.substituteR(dta, lst[r] as SpecifResource, lst[n] as SpecifResource /*, Object.assign({ rescueProperties: true, targetLanguage: 'default' }, opts)*/);
-					console.info("Resource with id=" + lst[n].id + " and class=" + (lst[n] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
-					this.deleteItems('resource', [LIB.keyOf(lst[n])]);
+					if (lst[r].changedAt > lst[n].changedAt) {
+						this.substituteR(dta, lst[r] as SpecifResource, lst[n] as SpecifResource /*, Object.assign({ rescueProperties: true, targetLanguage: 'default' }, opts)*/);
+						console.info("Resource with id=" + lst[n].id + " and class=" + (lst[n] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
+						this.deleteItems('resource', [LIB.keyOf(lst[n])]);
+					}
+					else {
+						this.substituteR(dta, lst[n] as SpecifResource, lst[r] as SpecifResource /*, Object.assign({ rescueProperties: true, targetLanguage: 'default' }, opts)*/);
+						console.info("Resource with id=" + lst[r].id + " and class=" + (lst[r] as SpecifResource)['class'].id + " has been removed because it is a duplicate of id=" + lst[n].id);
+						this.deleteItems('resource', [LIB.keyOf(lst[r])]);
+					};
 					// skip the remaining iterations of the inner loop:
 					break
 				}
@@ -1592,10 +1610,17 @@ class CProject implements SpecifProject {
 			for (r = 0; r < n; r++) {
 				// Do it for all statements:
 				if (this.equalS(lst[r] as SpecifStatement, lst[n] as SpecifStatement)) {
-					// Are equal, so remove the duplicate statement:
-					// @ts-ignore - the elements are defined
-					console.info("Statement with id=" + lst[n].id + " and class=" + (lst[n] as SpecifStatement)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
-					this.deleteItems('statement', [LIB.keyOf(lst[n])]);
+					// Are equal, so remove the older duplicate:
+					if (lst[r].changedAt > lst[n].changedAt) {
+						// @ts-ignore - the elements are defined
+						console.info("Statement with id=" + lst[n].id + " and class=" + (lst[n] as SpecifStatement)['class'].id + " has been removed because it is a duplicate of id=" + lst[r].id);
+						this.deleteItems('statement', [LIB.keyOf(lst[n])]);
+					}
+					else {
+						// @ts-ignore - the elements are defined
+						console.info("Statement with id=" + lst[r].id + " and class=" + (lst[r] as SpecifStatement)['class'].id + " has been removed because it is a duplicate of id=" + lst[n].id);
+						this.deleteItems('statement', [LIB.keyOf(lst[r])]);
+					};
 					// skip the remaining iterations of the inner loop:
 					break
 				}
@@ -1683,25 +1708,7 @@ class CProject implements SpecifProject {
 											}
 										);
 										// use the update function to eliminate duplicate types:
-										self.adopt(newD, {noCheck:true})
-										/*	.done(() => {
-												// Finally create the node referencing the folder to create:
-												let nd: INodeWithPosition = {
-													id: "H-" + r2c.folderNamePrefix + apx,
-													resource: { id: r2c.folderNamePrefix + apx },
-													// re-use the nodes with their references to the resources:
-													nodes: LIB.forAll(creL, (pr:any) => { return pr.n; }),
-													changedAt: tim
-												};
-												// Insert the hierarchy node as first element of a hierarchy root 
-												// - if it is present and
-												// - if there is only one hierarchy root
-												// or as first element at root level, otherwise:
-											//	if (singleHierarchyRoot)
-											//		nd.parent = dta.hierarchies[0].id; 
-												self.createItems('node', [nd])
-													.then(resolve, reject);
-											}) */
+										self.update(newD, {noCheck:true})
 											.done(resolve)
 											.fail(reject);
 									}
@@ -1819,7 +1826,7 @@ class CProject implements SpecifProject {
 //						console.debug('glossary',newD);
 						// use the update function to eliminate duplicate types;
 						// 'opts.addGlossary' must not be true to avoid an infinite loop:
-						self.adopt(newD, { noCheck: true })
+						self.update(newD, { noCheck: true })
 							.done(resolve)
 							.fail(reject);
                     }
@@ -1960,11 +1967,10 @@ class CProject implements SpecifProject {
 
 									// use the update function to eliminate duplicate types;
 									// 'opts.addGlossary' must not be true to avoid an infinite loop:
-									self.adopt(newD, { noCheck: true })
+									self.update(newD, { noCheck: true })
 										.done(resolve)
 										.fail(reject);
 								}
-
 							}
 						)
 						.catch(	reject )
@@ -2582,7 +2588,7 @@ class CProject implements SpecifProject {
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
-						//	opts.createHierarchyRootIfMissing = true;
+						opts.createHierarchyRootIfMissing = true;
 						// take newest revision:
 						opts.revisionDate = new Date().toISOString();
 						break;

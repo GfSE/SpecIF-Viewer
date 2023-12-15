@@ -86,10 +86,6 @@ function extractDatatypes(xmlDatatypes) {
             description: datatype.getAttribute("DESC") || '',
             changedAt: datatype.getAttribute("LAST-CHANGE") || ''
         };
-     /* if( datatype.getAttribute("MIN") ) specifDatatype.minInclusive = Number(datatype.getAttribute("MIN"));
-        if( datatype.getAttribute("MAX") ) specifDatatype.maxInclusive = Number(datatype.getAttribute("MAX"));
-        if( datatype.getAttribute("MAX-LENGTH") ) specifDatatype.maxLength = Number(datatype.getAttribute("MAX-LENGTH"));
-        if( datatype.getAttribute("ACCURACY") ) specifDatatype.fractionDigits = Number(datatype.getAttribute("ACCURACY")); */
 
         extr("MIN", "minInclusive");
         extr("MAX", "maxInclusive");
@@ -236,7 +232,7 @@ function extractResources(xmlSpecObjects) {
     function extractResource(xmlSpecObject) {
         let specifResource = {
             id: xmlSpecObject.getAttribute("IDENTIFIER"),
-            title: xmlSpecObject.getAttribute("LONG-NAME") || xmlSpecObject.getAttribute("IDENTIFIER"),
+            title: xmlSpecObject.getAttribute("LONG-NAME") || "",
             changedAt: xmlSpecObject.getAttribute("LAST-CHANGE")
         };
         specifResource['class'] = xmlSpecObject.getElementsByTagName("TYPE")[0].children[0].innerHTML;

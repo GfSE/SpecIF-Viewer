@@ -218,7 +218,7 @@ function toOxml( data, options ) {
 		
 			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
-				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<span[^>]*?>|</span>'
+				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<u>|</u>|<sup>|<sub>|<\/sup>|<\/sub>|<span[^>]*?>|</span>'
 				+	'|'+reA
 				+	'|'+reI
 		/*		// The nested object pattern must be checked before the single object pattern:
@@ -862,6 +862,26 @@ function toOxml( data, options ) {
 									delete fmt.font.style;	// simply, since there is only one value so far.
 									return '';
 								};
+								if (/<u>/.test($2)) {
+									fmt.font.underline = 'single';
+									return '';
+								};
+								if (/<\/u>/.test($2)) {
+									delete fmt.font.underline;
+									return '';
+								};
+								if (/<sup>/.test($2)) {
+									fmt.font.position = 'sup';
+									return '';
+								};
+								if (/<sub>/.test($2)) {
+									fmt.font.position = 'sub';
+									return '';
+								};
+								if (/<\/sup>|<\/sub>/.test($2)) {
+									delete fmt.font.position;
+									return '';
+								};
 								// Set the color of the next text span;
 								// Limitation: Only numeric color codes are recognized, so far:
 								sp = /<span[^>]+?"color: ?#([\da-fA-F]{6})"[^>]*>/.exec($2);
@@ -1205,10 +1225,11 @@ function toOxml( data, options ) {
 				// the following options are implemented:
 				// - font.weight == 'bold'
 				// - font.style == 'italic'
+				// - font.underline == 'single'
+				// - font.position == 'sub' or font.position == 'sup'
 				// - font.color == '007FFF' (RGB in Hex, like HTML without #)
 				// - 0 < heading < maxHeading+1
-				// - style == 'bulleted'
-				// - style == 'numbered'
+				// - style == 'bulleted'|'numbered'
 				// - align == 'both'|'center'|'end' (default:'start')
 				// - hyperlink to an internal 'bookmark'
 				// - bookmark
@@ -1328,7 +1349,10 @@ function toOxml( data, options ) {
 					if( fmt && fmt.font ) {
 						let rPr =	(fmt.font.weight=='bold'?'<w:b/>':'')
 							+ 		(fmt.font.style=='italic'?'<w:i/>':'')
-							+ 		(fmt.font.color?'<w:color w:val="'+fmt.font.color+'"/>':'');
+							+		(fmt.font.underline == 'single' ? '<w:u w:val="single"/>' : '')
+							+		(fmt.font.position == 'sub' ? '<w:vertAlign w:val="subscript"/>' : '')
+							+		(fmt.font.position == 'sup' ? '<w:vertAlign w:val="superscript"/>' : '')
+							+ 		(fmt.font.color ? '<w:color w:val="' + fmt.font.color + '"/>' : '');
 						return 	rPr?'<w:rPr>'+rPr+'</w:rPr>':'';
 					};
 					// default:

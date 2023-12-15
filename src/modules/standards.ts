@@ -270,6 +270,7 @@ CONFIG.hierarchyRoots = [
     'SpecIF:HierarchyRoot',
     'SpecIF:Hierarchy',
     'SpecIF:BillOfMaterials',
+	"W3C:Ontology",
     "W3C:Vocabulary"
 ];
 
