@@ -218,7 +218,8 @@ function toOxml( data, options ) {
 		
 			// Regex to isolate text runs constituting a paragraph:
 			const reR = '([\\s\\S]*?)('
-				+	'<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<u>|</u>|<sup>|<sub>|<\/sup>|<\/sub>|<span[^>]*?>|</span>'
+				+ '<b>|</b>|<strong>|</strong>|<i>|</i>|<em>|</em>|<u>|</u>|<sup>|<sub>|<\/sup>|<\/sub>'
+				+	'|<span[^>]*?>|</span>'
 				+	'|'+reA
 				+	'|'+reI
 		/*		// The nested object pattern must be checked before the single object pattern:

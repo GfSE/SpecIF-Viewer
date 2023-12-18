@@ -868,14 +868,12 @@ class CProject implements SpecifProject {
 		new CSpecIF().set(newD, opts)
 			.then(
 				(newD: CSpecIF) => {
-					console.debug('update', newD);
-
 					// 1. Check compatibility of the types, before making any change.
 					//    In case of an update, any older type must be compatible with the newer one -
 					//    no matter whether they belong to the existing or just imported data;
 					//    the update will only be pursued if there is no infraction of compatibility.
 					if (this.typesAreCompatible(newD)) {
-						console.debug('typesAreCompatible',simpleClone(newD));
+						console.info('Update - classes are compatible');
 						// 2. Update the types and instances:
 						//    - if the existing type is newer, ignore the new type
 						//    - and vice versa
@@ -888,8 +886,6 @@ class CProject implements SpecifProject {
 									.then(finalize, uDO.reject);
 							}
 						);
-
-						uDO.resolve();
 					}
 					else {
 						uDO.reject('Automatic update is not possible, because types are incompatible');
@@ -1152,6 +1148,37 @@ class CProject implements SpecifProject {
 			};
 		}
 	}
+	private memorizeScope(ctg: string, itmL: SpecifItem[] | INodeWithPosition[]): void {
+		// Memorize the keys (without revision) of the project's classes and hierarchies,
+		// so that its scope is known when exporting the project.
+		// For example, even classes which are not used (have no instances) shall be included.
+		// The key-list per category can be used to retrieve all items within the project scope from cache or server.
+		let self = this;
+		function isRoot(nd: INodeWithPosition): boolean {
+			// Return true, if the node is placed in the hierarchies folder as one of the root elements:
+			return (!nd.parent
+				&& (!nd.predecessor || LIB.indexByKey(self.hierarchies, LIB.makeKey(nd.predecessor)) > -1)
+			);
+		}
+		switch (ctg) {
+			case 'dataType':
+			case 'propertyClass':
+			case 'resourceClass':
+			case 'statementClass':
+				// Memorize the project's context;
+				// but don't keep the revision, as it can change:
+				// @ts-ignore - these categories *are* defined
+				LIB.cacheL(this[app.standards.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
+				break;
+			case 'hierarchy':
+			case 'node':
+				for (var el of itmL) {
+					// all nodes to become hierarchy root elements shall be memorized in the selected project:
+					if (isRoot(el as INodeWithPosition))
+						LIB.cacheE(this.hierarchies, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }));
+				};
+		}
+	}
 	createItems(ctg: string, itmL: SpecifItem[] | INodeWithPosition[]): Promise<void> {
 		// Create one or more items of a given category in cache and in the remote store (server).
 //		console.debug('createItems', ctg, itmL );
@@ -1161,34 +1188,7 @@ class CProject implements SpecifProject {
 		// - ctg is a member of [dataType, propertyClass, resourceClass, statementClass, resource, statement, hierarchy, node]
 		return new Promise(
 			(resolve) => {
-				function isRoot(nd: INodeWithPosition): boolean {
-					// Return true, if the node is placed in the hierarchies folder as one of the root elements:
-					return (!nd.parent
-						&& (!nd.predecessor || LIB.indexByKey(self.hierarchies, LIB.makeKey(nd.predecessor))>-1 )
-					);
-				}
-				switch (ctg) {
-					case 'dataType':
-					case 'propertyClass':
-					case 'resourceClass':
-					case 'statementClass':
-						// Memorize the project's context;
-						// but don't keep the revision, as it can change:
-						// @ts-ignore - these categories *are* defined
-						LIB.cacheL(self[app.standards.listName.get(ctg)], LIB.forAll(itmL, (el: SpecifClass) => { return { id: el.id } }));
-						break;
-					case 'hierarchy':
-					case 'node':
-						for (var el of itmL) {
-							// all nodes to become hierarchy root elements shall be memorized in the selected project:
-							if (isRoot(el as INodeWithPosition))
-								LIB.cacheE(self.hierarchies, ((el as INodeWithPosition).predecessor ? { id: el.id, predecessor: LIB.makeKey((el as INodeWithPosition).predecessor) } : { id: el.id }));
-						};
-				//		break;
-				//	case 'file':
-				//	case 'resource':
-				//	case 'statement':
-				};
+				self.memorizeScope(ctg, itmL);
 
 			/*	// if current user can create an item, he has the other permissions, as well:
 				addPermissions( item );
@@ -1196,6 +1196,7 @@ class CProject implements SpecifProject {
 			 		i.createdAt = new Date().toISOString();
 					i.createdBy = i.changedBy; 
 				}; */
+
 				self.cache.put(ctg, itmL);
 				resolve();
 			}
@@ -1319,26 +1320,23 @@ class CProject implements SpecifProject {
 	}
 	updateItems(ctg: string, itmL: SpecifItem[]): Promise<void> {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
-		function updateCh(itm: SpecifItem): void {
-			itm.changedAt = new Date().toISOString();
-			if (app.me.userName != CONFIG.userNameAnonymous )
-				itm.changedBy = app.me.userName;
-		}
+		let self = this;
 
 		return new Promise(
 			(resolve) => {
+				self.memorizeScope(ctg, itmL);
+
 				switch (ctg) {
-					case 'hierarchy':
+				/*	case 'hierarchy':
 					case 'node':
 						throw Error("Nodes can only be created, read or deleted");
 				//	case 'resource':
 				//	case 'statement':
 				//	case 'file':
-					// no break
+					// no break */
 					default:
 //						console.debug('updateItems - cache', ctg );
-						itmL.forEach(updateCh)
-						this.cache.put(ctg, itmL)
+						self.cache.put(ctg, itmL)
 				};
 				resolve()
 			}

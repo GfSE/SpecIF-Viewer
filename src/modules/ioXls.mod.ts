@@ -104,6 +104,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 		firstCell: Coord;
 		// @ts-ignore - the isValid-flag is only true, if firstCell and lastCell are defined:
 		lastCell: Coord;
+		col2dT: Map<number, SpecifKey>;  // remember the dataType of a column per worksheet
 		isValid = false;
 		constructor(wsN: string) {
 			this.name = wsN;			// the name of the selected sheet (first has index '0'!)
@@ -122,6 +123,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					this.isValid = true;
 				};
 			};
+			this.col2dT = new Map();
 		}
 	}
 	// ToDo: Use app.ontology.generateSpecifClasses() ... and select one by one only those classes which are needed  
@@ -347,8 +349,8 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			function createFld(sh: Worksheet): void {
 				if (sh.lastCell.row - sh.firstCell.row < 1) return;   // skip, if there are no resources
 
-				// Processing of createFld:
-				// Create folder resource:
+				// Create a SpecIF folder for a XLS worksheet.
+				// 1. Create folder resource:
 				var fld: SpecifResource = {
 					id: 'R-' + simpleHash(pN + sh.name + CONFIG.resClassFolder),
 					class: LIB.makeKey("RC-Folder"),
@@ -358,10 +360,11 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					}],
 					changedAt: chAt
 				};
-				//				console.debug( 'createFld:', fld );
+
+//				console.debug( 'createFld:', fld );
 				specifData.resources.push(fld);
 
-				// Create the hierarchy entry for the folder containing all resources of the current worksheet:
+				// 2. Create the hierarchy entry for the folder containing all resources of the current worksheet:
 				var hTree: SpecifNode = {
 						id: sh.hid,
 						resource: LIB.keyOf(fld),
@@ -370,12 +373,12 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					},
 					dupIdL: string[] = [];  // list of duplicate resource ids 
 
-				// Create the resources:
+				// 3. Create the resources:
 				for (var l = sh.firstCell.row + 1, L = sh.lastCell.row + 1; l < L; l++) {	// every line except the first carrying the attribute names
 					//					console.debug('resource', l, sh );
 					createRes(sh, l)
 				};
-				// add the hierarchy tree:
+				// 4. Add the hierarchy tree (folder) to the file's root node:
 				// @ts-ignore - hTree is defined
 				specifData.hierarchies[0].nodes.push(hTree);
 				return;
@@ -393,7 +396,8 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						if (cell && cell.v && dT)
 							if (dT.enumeration) {
 								// Return the id of the enumerated value found in cell.v,
-								// where an enumerated value can only have a single language:
+								// where an enumerated value can only have a single language.
+								// Only a value defined on sheet (Enumerations) will be taken, all others are ignored:
 								for (var eV of dT.enumeration)
 									// @ts-ignore - 'text' exists (only) for dataType 'string'
 									if ((eV.value[0].text || eV.value[0]) == cell.v) return eV.id;
@@ -402,12 +406,18 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// else:
 						switch (dT.type) {
 							case SpecifDataTypeEnum.String:
+								let v: string;
 								switch (cell.t) {
-									case "s": return cell.v as string;
-									case "d": return (cell.v as Date).toISOString();
-									case "n": return (cell.v as number).toString();
-									case "b": return (cell.v as boolean).toString();
+									case "d": v = (cell.v as Date).toISOString();
+										break;
+									case "n": v = (cell.v as number).toString();
+										break;
+									case "b": v = (cell.v as boolean).toString();
+										break;
+								//	case "s":
+									default: v = cell.v as string;
 								};
+								return LIB.makeMultiLanguageValue(v);
 							case SpecifDataTypeEnum.DateTime:
 								switch (cell.t) {
 									case "d": return (cell.v as Date).toISOString();
@@ -483,17 +493,23 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								continue;
 							};
 
-							pC = LIB.itemById(specifData.propertyClasses as SpecifItem[], propClassId(ws.name + c));
+							// Obtain the key of the property from the map created earlier:
+							let cl = ws.col2dT.get(c);
 							//								console.debug('create p',c,cellName(c,row),cell,rC,pC);
-							if (pC) {
-								// It is a specifically created property type (with neither native nor enumerated dataType):
+							if (cl) {
+								// It is a specifically created property type (with neither a native property nor a statement):
+
+								pC = LIB.itemByKey(specifData.propertyClasses as SpecifItem[], cl);
 								dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType);
+
+								// In case it is a property with enumerated dataType; only a defined value will be used.
+								// Thus, if a cell contains a value which is not listed in the enumeration, it will be ignored:
 								val = getVal(dT, cell);
 
 								// Find the property value to be taken as resource identifier.
 								// id is the first identifier found as declared in CONFIG.idProperties;
 								// the first id value found will prevail:
-								if (!id && CONFIG.idProperties.indexOf(pC.title) > -1) id = val;
+								if (!id && CONFIG.idProperties.includes(pC.title)) id = val;
 
 								if (dT.maxLength && (dT.maxLength < val.length)) {
 									val = val.slice(0, dT.maxLength);
@@ -504,33 +520,23 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								if (val)
 									res.properties.push({
 										class: LIB.keyOf(pC),
-										values: [(dT.type == SpecifDataTypeEnum.String) ? LIB.makeMultiLanguageValue(val) : val]
-									});
-							}
-							else {
-								pC = LIB.itemByTitle(specifData.propertyClasses as SpecifItem[], pTi);
-								if (pC) {
-									// It is a property with enumerated dataType; only a defined value will be used.
-									// Thus, if a cell contains a value which is not listed in the type, it will be ignored:
-									val = getVal(LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType), cell);
-									//										console.debug( 'enumerated dataType',cell,pTi,pC,val,typeof(val) );
-									if (val)
-										res.properties.push({
-											class: LIB.keyOf(pC),
-											values: [val]
-										})
-									else
+										values: [val]
+									})
+							/*	else {
+									if (dT.enumeration)
 										console.warn('Suppressed undefined enumerated value in cell ' + cellName(c, row) + ' of worksheet ' + ws.name);
-								}
-								else {
-									// It is a statement:
-									let obL = cell.w.split(",");  // cell.w is always a string
-									// If there is no comma, obL has just one element. 
-									if (obL.length < 2)
-										// See whether semicolons are used as a separator, instead:
-										obL = cell.w.split(";");
-									//										console.debug('createRes - statement',pTi,obL);
-									obL.forEach((ob: string) => {
+								} */
+							} 
+							else {
+								// It is a statement:
+								let obL = cell.w.split(",");  // cell.w is always a string
+								// If there is no comma, obL has just one element. 
+								if (obL.length < 2)
+									// See whether semicolons are used as a separator, instead:
+									obL = cell.w.split(";");
+								//										console.debug('createRes - statement',pTi,obL);
+								obL.forEach(
+									(ob: string) => {
 										let oInner: string[] = RE.inQuotes.exec(ob),
 											res2l: string;
 										if (oInner && oInner.length > 2) {
@@ -542,9 +548,10 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 										};
 										if (res2l.length > CONFIG.titleLinkMinLength - 1)
 											stL.push({
-												//	id: undefined,  	// defined further down, when the resource's id has been determined
+											//	id: undefined,  	// defined further down, when the resource's id has been determined
 												class: LIB.makeKey(staClassId(pTi)),	// make id from column title
-												//	subject: undefined,	// defined further down, when the resource's id has been determined
+											//	subject: undefined,	// defined further down, when the resource's id has been determined
+
 												// just an object placeholder for passing the schema-check,
 												// it will be replaced with a resource key when importing.
 												// Remember to disable the constraint-check on the statement.object.
@@ -552,10 +559,10 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 												resourceToLink: res2l,  // content in double or single quotes
 												changedAt: chAt
 											} as IIncompleteStatement);
-									});
-								};
-							};
-						};
+									}
+								)
+							}
+						}
 					};
 					if (res.properties.length > 0) {
 						/*	// Check and warn, if the property classes are not unique:
@@ -646,7 +653,9 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								//								console.debug( 'enum found: ', cell, pTi, pC );
 								// The current column has an enumeration dataType;
 								// use the corresponding propertyClass:
-								pCs.push(LIB.keyOf(pC));
+								let pCk = LIB.keyOf(pC);
+								pCs.push(pCk);  // add the key to the resourceClass' propertyClasses
+								ws.col2dT.set(c, pCk);  // add to the map of dataTypes per column
 								continue;
 							};
 						};
@@ -657,7 +666,9 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// .. and create the propertyClass:
 						if (pC) {
 							LIB.cacheE(specifData.propertyClasses, pC); // add it to propertyClasses, avoid duplicates
-							pCs.push(LIB.keyOf(pC));  // add the key to the resourceClass' propertyClasses
+							let pCk = LIB.keyOf(pC);
+							pCs.push(pCk);  // add the key to the resourceClass' propertyClasses
+							ws.col2dT.set(c,pCk);  // add to the map of dataTypes per column
 						};
 					};
 				};
@@ -766,7 +777,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						if (sTi && LIB.indexById(sCL, staClassId(sTi)) < 0 && ontologyStatementClasses.includes(sTi)) {
 							sC = new StaClass(sTi);
 							//							console.debug( 'getStaClasses', sTi, sC );
-							sCL.push(sC)
+							sCL.push(sC);
 						};
 					};
 				};

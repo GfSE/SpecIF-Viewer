@@ -818,7 +818,7 @@ class CSpecIF implements SpecIF {
 									// Values of type xs:string are permitted by the schema, but not by the constraints.
 									// To make the import more robust, string values are transformed to a multiLanguageText:
 									if (typeof (val) == 'string') {
-										console.warn("With SpecIF v1.1 and later, a property of type '" + SpecifDataTypeEnum.String + "' shouldn't be a simple string.")
+										console.warn("With SpecIF v1.1 and later, a property of type '" + SpecifDataTypeEnum.String + "' should be a multi-language text.");
 										val = LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
 									};
 
