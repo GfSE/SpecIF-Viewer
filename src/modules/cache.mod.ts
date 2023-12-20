@@ -1322,23 +1322,26 @@ class CProject implements SpecifProject {
 		// ctg is a member of [resource, statement, hierarchy], 'null' is returned in all other cases.
 		let self = this;
 
+		// ToDo: Update elements with alternativeIds ...
+
 		return new Promise(
 			(resolve) => {
 				self.memorizeScope(ctg, itmL);
 
-				switch (ctg) {
-				/*	case 'hierarchy':
-					case 'node':
-						throw Error("Nodes can only be created, read or deleted");
+			/*	switch (ctg) {
+				//	case 'hierarchy':
+				//	case 'node':
+				//		throw Error("Nodes can only be created, read or deleted");
 				//	case 'resource':
 				//	case 'statement':
 				//	case 'file':
-					// no break */
+					// no break
 					default:
 //						console.debug('updateItems - cache', ctg );
 						self.cache.put(ctg, itmL)
-				};
-				resolve()
+				}; */
+				self.cache.put(ctg, itmL);
+				resolve();
 			}
 		)
 	}
@@ -1706,7 +1709,7 @@ class CProject implements SpecifProject {
 											}
 										);
 										// use the update function to eliminate duplicate types:
-										self.update(newD, {noCheck:true})
+										self.adopt(newD, {noCheck:true})
 											.done(resolve)
 											.fail(reject);
 									}
@@ -1824,7 +1827,7 @@ class CProject implements SpecifProject {
 //						console.debug('glossary',newD);
 						// use the update function to eliminate duplicate types;
 						// 'opts.addGlossary' must not be true to avoid an infinite loop:
-						self.update(newD, { noCheck: true })
+						self.adopt(newD, { noCheck: true })
 							.done(resolve)
 							.fail(reject);
                     }
@@ -1965,7 +1968,7 @@ class CProject implements SpecifProject {
 
 									// use the update function to eliminate duplicate types;
 									// 'opts.addGlossary' must not be true to avoid an infinite loop:
-									self.update(newD, { noCheck: true })
+									self.adopt(newD, { noCheck: true })
 										.done(resolve)
 										.fail(reject);
 								}

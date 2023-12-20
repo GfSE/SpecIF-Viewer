@@ -507,9 +507,9 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								val = getVal(dT, cell);
 
 								// Find the property value to be taken as resource identifier.
-								// id is the first identifier found as declared in CONFIG.idProperties;
-								// the first id value found will prevail:
-								if (!id && CONFIG.idProperties.includes(pC.title)) id = val;
+								// id is the first identifier found as declared in CONFIG.idProperties; the first id value found will prevail.
+								if (!id && CONFIG.idProperties.includes(pC.title))
+									id = cell.v as string;
 
 								if (dT.maxLength && (dT.maxLength < val.length)) {
 									val = val.slice(0, dT.maxLength);

@@ -1533,7 +1533,8 @@ moduleManager.construct({
 		self.selPrj = app.projects.selected;
 
 		if (!(self.selPrj && self.selPrj.isLoaded()))
-			throw Error("No selected project on entry of spec.show()");
+			console.warn("No selected project on entry of spec.show()");
+			// ToDo: Disable the 'Edit' button, if no project is loaded/selected to *avoid* getting here ...
 
 		self.cData = self.selPrj.cache;
 

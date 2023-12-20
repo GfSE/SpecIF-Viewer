@@ -1814,7 +1814,7 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
     if (LIB.isKey(key)) {
         let dT = LIB.itemByKey(prj.dataTypes, LIB.itemByKey(prj.propertyClasses, key).dataType);
         //       |                            get propertyClass
-        //         get dataType
+        //        get dataType
         if (dT)
             return dT
         else

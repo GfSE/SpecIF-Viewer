@@ -254,8 +254,8 @@ class CSpecIF implements SpecIF {
 		let self = this,
 			names = new CSpecifItemNames(spD.specifVersion);
 
-		console.info("References are imported *without* revision to ascertain that updates of the referenced element do not break the link."
-					+" (References without revision always relate to the latest revision of the referenced element.)");
+		console.info("References are imported *without* revision to ascertain that updates of the referenced element do not break the link. "
+					+"(References without revision always relate to the latest revision of the referenced element.)");
 
 		// Differences when using forAll() instead of [..].map():
 		// - tolerates missing input list (not all are mandatory for SpecIF)
@@ -416,18 +416,13 @@ class CSpecIF implements SpecIF {
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
 			oE.dataType = LIB.makeKey(iE.dataType.id || iE.dataType);
 
-			// dT is needed just for the multiple attribute which is only in the incoming dataTypes:
-			let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, oE.dataType);
-//			console.debug('pC2int',iE,dT);
-
-		/*	// include the property only, if it is different from the dataType's:
-			if (iE.multiple && !dT.multiple) oE.multiple = true;  */
-
 			// in future only with propertyClasses:
+			let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, oE.dataType);
 			if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
 			else if (dT.multiple) oE.multiple = true;
 
 			// The default values:
+			dT = LIB.itemByKey(self.dataTypes, oE.dataType);  // here we need the transformed dataType
 			if (iE.value || iE.values) {
 				let vL = makeValues(iE, dT);
 				if (vL.length > 0)
@@ -562,8 +557,8 @@ class CSpecIF implements SpecIF {
 						// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 						// ToDo: Reconsider once we have a backend with multiple revisions ...
 						class: LIB.makeKey(iE[names.pClass].id || iE[names.pClass])
-				},
-					dT = LIB.dataTypeOf(oE["class"], self);
+					},
+					dT = LIB.dataTypeOf(oE["class"], self);  // we need the transformed dataType
 //					console.debug('p2int', iE, dT);
 
 				oE.values = makeValues(iE, dT);
@@ -872,7 +867,7 @@ class CSpecIF implements SpecIF {
 			if (LIB.isString(prp.value) || LIB.isMultiLanguageValue(prp.value)) {
 				// it is SpecIF < v1.1:
 				switch (dT.type) {
-					// we are using the transformed dataTypes, but the base dataTypes are still original;
+					// assuming that dT is the transformed dataType
 					case SpecifDataTypeEnum.String:
 					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
 					case "xhtml":
@@ -884,23 +879,22 @@ class CSpecIF implements SpecIF {
 							// starting v1.1 they are separate list items:
 							let vL: string[] = LIB.cleanValue(prp.value).split(',');
 							return vL.map( (v: string) => { return v.trim() });
-						}
-						else {
-							let vL = Array.isArray(prp.value) ?
-								// multiple languages:
-								prp.value.map(
-									(val: any) => {
-										// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-										val.text = LIB.uriBack2slash(LIB.cleanValue(val.text));
-										return val;
-									}
-								)
-								// single language:
-								// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
-								: LIB.uriBack2slash(LIB.cleanValue(prp.value));
-							// @ts-ignore - dT.type is in fact a string:
-							return [makeMultiLanguageText(vL /*, dT.type*/)];
 						};
+
+						let vL = Array.isArray(prp.value) ?
+							// multiple languages:
+							prp.value.map(
+								(val: any) => {
+									// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+									val.text = LIB.uriBack2slash(LIB.cleanValue(val.text));
+									return val;
+								}
+							)
+							// single language:
+							// sometimes a Windows path is given ('\') -> transform it to web-style ('/'):
+							: LIB.uriBack2slash(LIB.cleanValue(prp.value));
+						// @ts-ignore - dT.type is in fact a string:
+						return [makeMultiLanguageText(vL /*, dT.type*/)];
 					// break - all branches end with return;
 					case SpecifDataTypeEnum.DateTime:
 						return [makeISODate(LIB.cleanValue(prp.value))];
