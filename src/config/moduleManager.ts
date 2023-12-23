@@ -586,8 +586,7 @@ var app:IApp,
 													console.debug('xlsx', XLSX);
 													setReady(mod);
 												}); */
-			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@13.2.2/dist/bpmn-viewer.production.min.js'); return true;
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@14.1.3/dist/bpmn-viewer.production.min.js'); return true;
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@16.2.0/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
 										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
 										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
@@ -598,7 +597,7 @@ var app:IApp,
 				case "diff": 				getScript( 'https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js' ); return true; */
 
 				//	Consider https://github.com/rsms/markdown-wasm
-				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js')
+				case "markdown":			getScript('https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js')
 											// @ts-ignore - 'window.markdown' is defined, if loaded
 											.done(() => { window.markdown = window.markdownit({ html: true, xhtmlOut: true, breaks: true, linkify: false }) });
 											return true;

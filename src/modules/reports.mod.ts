@@ -266,7 +266,7 @@ moduleManager.construct({
 				else throw Error("Did not find a report panel for resourceClass with id:"+rCk.id);
 
 				// b) A report (histogram) for each enumerated property:
-				let rC = prj.readExtendedClasses("resourceClass", [rCk])[0] as SpecifResourceClass,
+				let rC = LIB.getExtendedClasses(cData.get("resourceClass","all"), [rCk])[0] as SpecifResourceClass,
 					pC: SpecifPropertyClass,
 					dT: SpecifDataType,
 					rp: SpecifProperty,  // resource property

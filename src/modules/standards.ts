@@ -146,14 +146,23 @@ class CStandards {
 			.concat(app.ontology.termClasses)
     }
 
-	get(ctg: string, key: SpecifKey, chAt?: string): SpecifItem {
+	get(ctg: string, key: SpecifKey, chAt?: string): SpecifClass {
 		// Get the element of the given category: 
 		// @ts-ignore - yes, the index can be undefined:
-		var item: SpecifItem = LIB.itemByKey(this[this.listName.get(ctg)], key);
+		var item: SpecifClass = LIB.itemByKey(this[this.listName.get(ctg)], key);
 		if (item) {
 			// shield any subsequent change from the templates available here:
 			item = simpleClone(item);
 			if (chAt) item.changedAt = chAt;
+			// remove revision in references for easier updating of types (which must follow certain rules):
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.dataType) item.dataType = { id: item.dataType.id };
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.propertyClasses) item.propertyClasses = item.propertyClasses.map((k:SpecifKey) => { return { id: k.id } })
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.subjectClasses) item.subjectClasses = item.subjectClasses.map((k: SpecifKey) => { return { id: k.id } })
+			// @ts-ignore - not all classes have it, but that's why it is checked
+			if (item.objectClasses) item.objectClasses = item.objectClasses.map((k: SpecifKey) => { return { id: k.id } })
 			return item;
 		};
 		throw Error("No standard type with id '" + key.id + "' and revision '" + key.revision +"' of category '"+ctg+"'");

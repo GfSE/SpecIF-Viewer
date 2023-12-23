@@ -689,21 +689,22 @@ moduleManager.construct({
 					.then(finalize, LIB.stdError)
 		};
 
-		// If it is a new item, insert a mode in the hierarchy:
+		// If it is a new item, insert a mode in the hierarchy;
+		// save the resource reference without revision to allow for updates without changing the reference:
 		switch (mode) {
 			case 'insert':
 				pend++;
-				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD } as SpecifNode])
+				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.makeKey(self.newRes.id), changedAt: chD } as SpecifNode])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertAfter':
 				pend++;
-				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
+				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.makeKey(self.newRes.id), changedAt: chD, predecessor: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError );
 				break;
 			case 'insertBelow':
 				pend++;
-				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.keyOf(self.newRes), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
+				app.projects.selected.createItems('node', [{ id: LIB.genID('N-'), resource: LIB.makeKey(self.newRes.id), changedAt: chD, parent: self.localOpts.selNodeId } as INodeWithPosition ])
 					.then( finalize, LIB.stdError )
 		};
 

@@ -566,13 +566,25 @@ interface SpecifFile {
      */
     url?: string;
     /**
+     * The file (image or object) as dataURL
+     * @type {string}
+     * @memberof SpecifFile
+     */
+    dataURL?: string;
+    /**
+     * The file as blob
+     * @type {Blob}
+     * @memberof SpecifFile
+     */
+    blob?: Blob;
+    /**
      * The file's media type (formerly MIME-type) according to https://www.iana.org/assignments/media-types/media-types.xhtml.
      * @type {string}
      * @memberof SpecifFile
      */
     type: string;
     /**
-     * 
+     *
      * @type {SpecifRevision}
      * @memberof SpecifFile
      */

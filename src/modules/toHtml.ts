@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-function toHtmlDoc(pr: SpecIF, pars:any) {
+function toHtmlDoc(pr: SpecIF, pars: any): Promise<string> {
 	// Transform pr to HTML with embedded SpecIF transformation,
 	// where pr is a SpecIF data in JSON format (not the internal cache).
 	// Attention: The SpecIF data as JSON may not contain any apostrophes 
@@ -18,7 +18,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 	return new Promise( (resolve)=>{
 		var pend = 0;
 		if (pr.files)
-			pr.files.forEach((f: IFileWithContent) => {
+			pr.files.forEach((f: SpecifFile) => {
 //				console.debug('zip a file',f);
 				if( f.blob ) {
 					pend++;
@@ -79,7 +79,7 @@ function toHtmlDoc(pr: SpecIF, pars:any) {
 		};
 	});
 
-	function make(pr:any): String {
+	function make(pr:any): string {
 		pr = JSON.stringify( pr )
 		.replace(/\\/g,"\\\\")
 		.replace(/'/g,"&apos;")

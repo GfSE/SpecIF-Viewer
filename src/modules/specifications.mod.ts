@@ -885,7 +885,7 @@ class CResourcesToShow {
 		return rL	// return rendered resource list
 	}
 }
-class CFileWithContent implements IFileWithContent {
+class CFileWithContent implements SpecifFile {
 	// @ts-ignore - presence of 'id' is checked by the schema on import
 	id: string;
 	// @ts-ignore - presence of 'title' is checked by the schema on import
@@ -900,7 +900,7 @@ class CFileWithContent implements IFileWithContent {
 	// @ts-ignore - presence of 'changedAt' is checked by the schema on import
 	changedAt: string;
 	changedBy?: string;
-	constructor(f: IFileWithContent) {
+	constructor(f: SpecifFile) {
 		// @ts-ignore - index is ok:
 		for (var a in f) this[a] = f[a];
 	}

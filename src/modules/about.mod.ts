@@ -76,10 +76,11 @@ moduleManager.construct({
 		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource classes or enumerated property values</li>"
 		+		  "<li>Report some model-based statistics, such as used resource classes or used property enumerated values</li>"
-		+ (isEditor && moduleManager.isReady('toHtml')? "<li>Export 'html' file with embedded SpecIF data</li>":"")
 		+ (isEditor? "<li>Export 'specif.zip' file</li>":"")
+		+ (isEditor && moduleManager.isReady('toHtml') ? "<li>Export 'specif.html' file with embedded SpecIF data</li>" : "")
 		+ (isEditor && moduleManager.isReady('reqif2specif')? "<li>Export 'reqifz' file</li>":"")
 		+ (isEditor && moduleManager.isReady('toTurtle')? "<li>Export 'Turtle' file <em>(experimental)</em></li>":"")
+		+ (isEditor && moduleManager.isReady('ioXls') ? "<li>Export MS - Excel 'XLSX' file <em>(experimental)</em>< /li>" : "")
 		+ (isEditor && moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
 		+ (isEditor && moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
 		+		'</ul>'

@@ -24,8 +24,25 @@ class CSpecifItemNames {
 	maxI: string;
 	constructor(ver?: string) {
 		switch (ver) {
-			case '0.10.7':
-				throw Error("Version " + ver + " is not supported.");
+			/* still some mapping needed for the versions 0.9.x ..
+			 * - attribute --> property
+			 * - source --> subject
+			 * - ..
+			case '0.9.2':
+				this.rClasses = 'objectTypes';
+				this.sClasses = 'relationTypes';
+				this.hClasses = 'hierarchyTypes';
+				this.pClasses = 'attributeTypes';
+				this.sbjClasses = 'sourceTypes';
+				this.objClasses = 'targetTypes';
+				this.rClass = 'objectType';
+				this.sClass = 'relationType';
+				this.hClass = 'hierarchyType';
+				this.pClass = 'attributeType';
+				this.rs = 'objects';
+				this.sts = 'relations';
+				this.r = 'object';
+				break; */
 			case '0.10.2':
 			case '0.10.3':
 				this.rClasses = 'resourceTypes';
@@ -38,6 +55,9 @@ class CSpecifItemNames {
 				this.sClass = 'statementType';
 				this.hClass = 'hierarchyType';
 				this.pClass = 'propertyType';
+				this.rs = 'resources';
+				this.sts = 'statements';
+				this.r = 'resource';
 				break;
 			case '0.10.4':
 			case '0.10.5':
@@ -56,6 +76,9 @@ class CSpecifItemNames {
 				this.rClass = 'class';
 				this.sClass = 'class';
 				this.pClass = 'class'
+				this.rs = 'resources';
+				this.sts = 'statements';
+				this.r = 'resource';
 		};
 		if (typeof(ver)=='string' && ver.startsWith('0.')) {
 			// for all versions <1.0:
@@ -92,7 +115,7 @@ class CSpecIF implements SpecIF {
 	propertyClasses: SpecifPropertyClass[] = [];
 	resourceClasses: SpecifResourceClass[] = [];
 	statementClasses: SpecifStatementClass[] = [];
-	files: IFileWithContent[] = [];
+	files: SpecifFile[] = [];
 	resources: SpecifResource[] = [];   		// list of resources as referenced by the hierarchies
 	statements: SpecifStatement[] = [];
 	hierarchies: SpecifNode[] = [];    	// listed specifications (aka hierarchies, outlines) of the project.
@@ -101,24 +124,35 @@ class CSpecIF implements SpecIF {
 	}
 	isValid(spD?: any): boolean {
 		if (!spD) spD = this;
-		return typeof (spD.id) == 'string' && spD.id.length > 0
+		if (spD.$schema || ['0.10.2', '0.10.3', '0.10.4', '0.10.5', '0.10.6', '0.10.8', '0.11.2', '0.11.8'].includes(spD.specifVersion))
+			return typeof (spD.id) == 'string' && spD.id.length > 0;
+		// else
+	//	console.warn("Version " + spD.specifVersion + " is not supported.");
+		return false;
 	}
 	set(spD: any, opts: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
-				if (opts && opts.noCheck) {
-					this.toInt(spD, opts);
-					resolve(this)
+				if (this.isValid(spD)) {
+					if (opts && opts.noCheck) {
+						this.toInt(spD, opts);
+						resolve(this)
+					}
+					else {
+						// check *after* transformation:
+						this.toInt(spD, opts);
+						this.check(this, opts)
+							.then(
+								() => { resolve(this) },
+								reject
+							)
+					}
 				}
 				else {
-					// check *after* transformation:
-					this.toInt(spD, opts);
-					this.check(this, opts)
-					.then(
-						() => { resolve(this) },
-						reject
-					)
-				}
+					let msg = new xhrMessage(999, "SpecIF version " + spD.specifVersion + " is not supported.").warn();
+					reject(msg);
+				//	message.show(msg, { severity: 'warning' } );
+                }
 			}
 		)
 	} 
@@ -240,7 +274,7 @@ class CSpecIF implements SpecIF {
 		);
 	};
 	private toInt(spD: any, opts: any):void {
-		if (!this.isValid(spD)) return;
+	//	if (!this.isValid(spD)) return;
 
 		// Transform SpecIF to internal data;
 		// no data of app.projects is modified.
@@ -270,8 +304,8 @@ class CSpecIF implements SpecIF {
 			if (names.hClasses)
 				this.resourceClasses = this.resourceClasses.concat( LIB.forAll( spD[names.hClasses], hC2int ));
 			this.files = LIB.forAll(spD.files, f2int);
-			this.resources = LIB.forAll( spD.resources, r2int );
-			this.statements = LIB.forAll( spD.statements, s2int );
+			this.resources = LIB.forAll( spD[names.rs], r2int );
+			this.statements = LIB.forAll(spD[names.sts], s2int );
 			this.hierarchies = LIB.forAll( spD.hierarchies, h2int );
 
 			// Transform data with schema <v1.1.
@@ -663,7 +697,6 @@ class CSpecIF implements SpecIF {
 				};
 
 				// No suitable propertyClass is listed in self.propertyClasses, so create what's needed:
-				// ToDo: It can happen that a class is considered available, but a reference with revision fails.
 
 				// 3. Add a new (standard) propertyClass and add definition and instantiation:
 				// a. add dataType, if not yet defined:
@@ -740,7 +773,7 @@ class CSpecIF implements SpecIF {
 						id: iE.id,
 						// For the time being, suppress any revision to make sure that a resource update doesn't destroy the reference.
 						// ToDo: Reconsider once we have a backend with multiple revisions ...
-						resource: LIB.makeKey(iE.resource.id || iE.resource),
+						resource: LIB.makeKey(iE[names.r].id || iE[names.r]),
 					//	changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
 						changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
 					};
@@ -960,7 +993,7 @@ class CSpecIF implements SpecIF {
 				// - that in general SpecIF data do not have a hierarchy root with meta-data.
 				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
 		
-					function aHierarchyHasNoRoot(dta: SpecIF): boolean {
+			/*		function aHierarchyHasNoRoot(dta: SpecIF): boolean {
 						for (var h of dta.hierarchies) {
 							let r = LIB.itemByKey(dta.resources, h.resource);
 							if (!r) {
@@ -977,7 +1010,7 @@ class CSpecIF implements SpecIF {
 						};
 						return false;
 					}
-				console.debug('#', aHierarchyHasNoRoot(this));
+				console.debug('has root:', !aHierarchyHasNoRoot(this)); */
 
 				/*	let spD = this;
 					if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
@@ -1060,7 +1093,7 @@ class CSpecIF implements SpecIF {
 					pend++;
 					f2ext(f)
 					.then(
-						(oF: IFileWithContent) =>{
+						(oF: SpecifFile) =>{
 							spD.files.push(oF);
 							if (--pend < 1) finalize();
 						},
@@ -1360,13 +1393,13 @@ class CSpecIF implements SpecIF {
 					return oN
 				}
 				// a file:
-				function f2ext(iE: IFileWithContent): Promise<IFileWithContent> {
+				function f2ext(iE: SpecifFile): Promise<SpecifFile> {
 					return new Promise(
 						(resolve, reject) => {
 //							console.debug('f2ext',iE,opts)
 
 							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.includes(iE.type) ) {
-							/*	var oE: IFileWithContent = {
+							/*	var oE: SpecifFile = {
 									id: iE.id,
 									title: iE.title,
 									type: iE.type,
@@ -1396,7 +1429,7 @@ class CSpecIF implements SpecIF {
 														title: nFileName,
 														type: 'image/svg+xml',
 														changedAt: iE.changedAt
-													} as IFileWithContent )
+													} as SpecifFile )
 												},
 												reject
 											)
@@ -1408,7 +1441,7 @@ class CSpecIF implements SpecIF {
 											id: 'F-' + simpleHash(iE.title),
 											title: iE.title,
 											changedAt: iE.changedAt
-										} as IFileWithContent)
+										} as SpecifFile)
 								}
 							}
 						}
@@ -1484,7 +1517,7 @@ class CSpecIF implements SpecIF {
 					pend++;
 					f2ext(f)
 						.then(
-							(oF: IFileWithContent) => {
+							(oF: SpecifFile) => {
 								spD.files.push(oF);
 								if (--pend < 1) finalize();
 							},
@@ -1815,13 +1848,13 @@ class CSpecIF implements SpecIF {
 					return oN
 				}
 				// a file:
-				function f2ext(iE: IFileWithContent): Promise<IFileWithContent> {
+				function f2ext(iE: SpecifFile): Promise<SpecifFile> {
 					return new Promise(
 						(resolve, reject) => {
 							//							console.debug('f2ext',iE,opts)
 
 							if (!opts || !opts.allDiagramsAsImage || CONFIG.imgTypes.includes(iE.type)) {
-								/*	var oE: IFileWithContent = {
+								/*	var oE: SpecifFile = {
 										id: iE.id,
 										title: iE.title,
 										type: iE.type,
@@ -1851,7 +1884,7 @@ class CSpecIF implements SpecIF {
 														title: nFileName,
 														type: 'image/svg+xml',
 														changedAt: iE.changedAt
-													} as IFileWithContent)
+													} as SpecifFile)
 												},
 												reject
 											)

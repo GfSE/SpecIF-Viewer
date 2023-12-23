@@ -207,7 +207,8 @@ class Tree {
 		if (!cur) { this.selectFirstNode(); return }
 		
 		// close open nodes behind (in this case we are coming from the next node)
-		if( cur.getNextNode() && cur.getLevel()<cur.getNextNode().getLevel() ) {  
+		// @ts-ignore - cur has a value, here
+		if (cur.getNextNode() && cur.getLevel() < cur.getNextNode().getLevel()) {
 			this.domE.tree('closeNode', cur )
 		};
 		

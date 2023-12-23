@@ -20,10 +20,6 @@ interface INodeWithPosition extends SpecifNode {
 interface IIncompleteStatement extends SpecifStatement {
     resourceToLink: string; // is the title of a resource
 }
-interface IFileWithContent extends SpecifFile {
-    blob?: Blob;
-    dataURL?: string;
-}
 interface IFieldOptions {
     tagPos?: string;  // 'left', 'none' ('above')
     typ?: string;     // 'line', 'area' for makeTextField
@@ -378,9 +374,11 @@ class xhrMessage {
     }
     log(): void {
         console.log(this.asString());
+        return this;  // make it chainable
     }
     warn(): void {
         console.warn(this.asString());
+        return this;  // make it chainable
     }
 }
 /*LIB.logMsg = (xhr: xhrMessage): void =>{
@@ -1154,7 +1152,7 @@ LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
         let rC: any = {};
         LIB.getClassesWithParents(cL, k)
             // A list with classes is returned, the ancestors first and the requested class last.
-            // - Starting with most elderly, copy to and potentially overwrite the attributes of rC
+            // - Starting with most general, copy to and potentially overwrite the attributes of rC
             // - Also the list of eligible subjectClasses and objectClasses are overwritten,
             //   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
             // - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
@@ -1655,7 +1653,7 @@ LIB.str2ab = (str: string): ArrayBuffer => {
 // see: https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications
 // see: https://blog.logrocket.com/programmatic-file-downloads-in-the-browser-9a5186298d5c/ 
 // see: https://css-tricks.com/lodge/svg/09-svg-data-uris/
-LIB.blob2dataURL = (file: IFileWithContent, fn: Function, timelag?: number): void => {
+LIB.blob2dataURL = (file: SpecifFile, fn: Function, timelag?: number): void => {
     if (!file || !file.blob) return;
     const reader = new FileReader();
     // @ts-ignore - yes, result can be 'null'
@@ -1668,7 +1666,7 @@ LIB.blob2dataURL = (file: IFileWithContent, fn: Function, timelag?: number): voi
     else
         reader.readAsDataURL(file.blob);
 };
-LIB.blob2text = (file: IFileWithContent, fn: Function, timelag?: number): void => {
+LIB.blob2text = (file: SpecifFile, fn: Function, timelag?: number): void => {
     if (!file || !file.blob) return;
     const reader = new FileReader();
     // @ts-ignore - yes, result can be 'null'

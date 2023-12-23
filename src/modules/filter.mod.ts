@@ -347,7 +347,7 @@ moduleManager.construct({
 				let patt = new RegExp(str, isChecked(f.options, SearchOption.caseSensitive) ? '' : 'i'),
 					p: CPropertyToShow;
 
-				// Remember: As CPropertyToShow, all enumerated values of p have already been looked up ...
+				// Remember: Using CPropertyToShow, all enumerated values of p have already been looked up ...
 				if (matchStr(res.title)) return true;
 				for (p of res.descriptions)
 					if (matchStr(p)) return true;
