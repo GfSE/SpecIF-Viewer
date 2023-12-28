@@ -1974,7 +1974,8 @@ LIB.typeOf = (rK: SpecifResource, dta: SpecIF): string => {
 // also see: https://www.partow.net/programming/hashfunctions/index.html
 function simpleHash(str: string): number {
     for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
-    return r
+    // add offset to avoid negative numbers; r is 10 characters long:
+    return 10000000000 + r
 }
 function simpleClone(o: any): any {
     // "deep" clone

@@ -8,14 +8,14 @@
 */
 
 class CStandards {
-	// @ts-ignore - initialized below
+/*	// @ts-ignore - initialized below
 	dataTypes: SpecifDataType[];
 	// @ts-ignore - initialized below
 	propertyClasses: SpecifPropertyClass[];
 	// @ts-ignore - initialized below
-	resourceClasses: SpecifResourceClass[];
+	resourceClasses: SpecifResourceClass[]; */
 	constructor() {
-		// Get all classes of the domain 'Base':
+/*		// Get all classes of the domain 'Base':
 		let oC = app.ontology.generateSpecifClasses({ domains: ['Base'], adoptOntologyDataTypes: true, delta: true });
 //		console.debug('oC', oC);
 		['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
@@ -27,96 +27,9 @@ class CStandards {
 		["DT-Boolean", "DT-Integer", "DT-Real", "DT-DateTime", "DT-Duration", "DT-AnyURI"].forEach(
 			(id) => { LIB.cacheE(this.dataTypes, LIB.itemByKey( app.ontology.data.dataTypes, LIB.makeKey(id) )) }
 		);
+        */
 //		console.debug('CS',simpleClone(this));
-	};
-
-/*	dataTypes:SpecifDataType[] = [{
-		id: "DT-ShortString",
-		title: "Short string" ,
-		description: [{ text: "Unformatted character string with length " + CONFIG.textThreshold + '.'}],
-		type: SpecifDataTypeEnum.String,
-		maxLength: CONFIG.textThreshold,
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{
-		id: "DT-Text",
-		title: "Plain or formatted Text",
-		description: [{ text: "A text string, plain, or formatted by means of XHTML or markdown with 'infinite' length." }],
-		type: SpecifDataTypeEnum.String,
-		changedAt: "2021-02-14T08:59:00+02:00"
-	},{ 
-		id: "DT-DateTime",  
-		title: "Date or Timestamp",
-		description: [{ text: "Date or timestamp in ISO-8601 format" }],
-		type: SpecifDataTypeEnum.DateTime,
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{ 
-		id: "DT-Boolean",
-		title: "Boolean",
-		description: [{ text: "A Boolean value." }],
-		type: SpecifDataTypeEnum.Boolean,
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{ 
-		id: "DT-Integer",
-		title: "Integer",
-		description: [{ text: "A numerical integer value from " + CONFIG.minInteger + " to " + CONFIG.maxInteger +"." }],
-		type: SpecifDataTypeEnum.Integer,
-		minInclusive: CONFIG.minInteger,
-		maxInclusive: CONFIG.maxInteger,
-	    changedAt: "2016-05-26T08:59:00+02:00"
-	},{ 
-		id: "DT-Real",
-		title: "Real",
-		description: [{ text: "A floating point number (double)." }],
-		type: SpecifDataTypeEnum.Double,
-	//	fractionDigits: CONFIG.maxAccuracy,
-	//	minInclusive: CONFIG.minReal,
-	//	maxInclusive: CONFIG.maxReal,
-		changedAt: "2021-02-14T08:59:00+02:00"
-	}];
-	propertyClasses:SpecifPropertyClass[] = [{
-		id: "PC-Name",
-		title: CONFIG.propClassTitle,
-		description: [{ text: "The element's name or title." }],
-		dataType: { id: "DT-ShortString" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	}, {
-		id: "PC-Description",
-		title: CONFIG.propClassDesc,
-		dataType: { id: "DT-Text" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	}, {
-		id: "PC-Diagram",
-		title: CONFIG.resClassDiagram,
-		dataType: { id: "DT-Text" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{
-		id: "PC-Type",
-		title: CONFIG.propClassType,
-		dataType: { id: "DT-ShortString" },
-		changedAt: "2016-05-26T08:59:00+02:00"
-	}];
-	resourceClasses:SpecifResourceClass[] = [{
-		id: "RC-Folder",
-		title: CONFIG.resClassFolder,
-		description: [{ text: "Folder with title and text for chapters or descriptive paragraphs." }],
-		isHeading: true,
-		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
-		propertyClasses: [{ id: "PC-Name" }, { id: "PC-Description" }, { id: "PC-Type" }],
-		changedAt: "2016-05-26T08:59:00+02:00"
-	},{
-        id: "RC-Paragraph",
-		title: CONFIG.resClassParagraph,
-		description: [{ text: "Information with title and text for descriptive paragraphs." }],
-		instantiation: [SpecifInstantiation.Auto, SpecifInstantiation.User],
-		propertyClasses: [{ id: "PC-Name" },{ id: "PC-Description" }, { id: "PC-Type" }],
-		changedAt: "2020-12-04T18:59:00+01:00"
-	}];
-	statementClasses: SpecifStatementClass[] = [{
-		id: "SC-mentions",
-		title: CONFIG.staClassMentions,
-		instantiation: ['internal'],  // this value is not defined by the schema
-		changedAt: "2022-06-05T18:59:00+01:00"
-	}];  */
+	}; 
 
 	// Map category to listname;
 	// the sequence is such that every list's elements have references only to list elements above:
@@ -146,7 +59,7 @@ class CStandards {
 			.concat(app.ontology.termClasses)
     }
 
-	get(ctg: string, key: SpecifKey, chAt?: string): SpecifClass {
+/*	get(ctg: string, key: SpecifKey, chAt?: string): SpecifClass {
 		// Get the element of the given category: 
 		// @ts-ignore - yes, the index can be undefined:
 		var item: SpecifClass = LIB.itemByKey(this[this.listName.get(ctg)], key);
@@ -167,7 +80,7 @@ class CStandards {
 		};
 		throw Error("No standard type with id '" + key.id + "' and revision '" + key.revision +"' of category '"+ctg+"'");
 	}
-/*	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
+	getByTitle(ctg: string, ti: string, chAt?: string): SpecifItem | undefined {
 		var item: SpecifItem = LIB.itemByTitle(this[this.listName.get(ctg)], ti);
 		if (item) {
 			// shield any subsequent change from the templates available here:

@@ -126,8 +126,8 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.col2dT = new Map();
 		}
 	}
-	// ToDo: Use app.ontology.generateSpecifClasses() ... and select one by one only those classes which are needed  
-	class BaseTypes implements SpecIF {
+	let xlsTerms = ["xs:dateTime", "xs: anyURI", "xs:boolean", "xs:integer", "xs:double", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder];
+/*	class BaseTypes implements SpecIF {
 		id: SpecifId;
 		title: SpecifMultiLanguageText;
 		generator: string;
@@ -162,7 +162,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.statements = [];
 			this.hierarchies = [];
 		}
-	}
+	} */
 	function dataTypeId( str:string ):string { 
 		// must be able to find it just knowing the ws-name and the column index:
 		return CONFIG.prefixDT + simpleHash(str);
@@ -502,30 +502,36 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								pC = LIB.itemByKey(specifData.propertyClasses as SpecifItem[], cl);
 								dT = LIB.itemByKey(specifData.dataTypes as SpecifItem[], pC.dataType);
 
-								// In case it is a property with enumerated dataType; only a defined value will be used.
-								// Thus, if a cell contains a value which is not listed in the enumeration, it will be ignored:
-								val = getVal(dT, cell);
+								if (dT) {
+									// Find the property value to be taken as resource identifier.
+									// id is the first identifier found as declared in CONFIG.idProperties; the first id value found will prevail.
+									if (!id && CONFIG.idProperties.includes(pC.title))
+										id = cell.v as string;
 
-								// Find the property value to be taken as resource identifier.
-								// id is the first identifier found as declared in CONFIG.idProperties; the first id value found will prevail.
-								if (!id && CONFIG.idProperties.includes(pC.title))
-									id = cell.v as string;
+									// In case it is a property with enumerated dataType; only a defined value will be used.
+									// Thus, if a cell contains a value which is not listed in the enumeration, it will be ignored:
+									val = getVal(dT, cell);
 
-								if (dT.maxLength && (dT.maxLength < val.length)) {
-									val = val.slice(0, dT.maxLength);
-									console.warn('Text of cell ' + cellName(c, row) + ' on sheet ' + sh.name + ' has been truncated because it is too long')
-								};
-								//									console.debug( 'other than enumerated dataType',cell,pC,dT,val,typeof(val) );
-								// Include the property only if it has a significant value:
-								if (val)
-									res.properties.push({
-										class: LIB.keyOf(pC),
-										values: [val]
-									})
-							/*	else {
-									if (dT.enumeration)
-										console.warn('Suppressed undefined enumerated value in cell ' + cellName(c, row) + ' of worksheet ' + ws.name);
-								} */
+									if (dT.maxLength && (dT.maxLength < val.length)) {
+										val = val.slice(0, dT.maxLength);
+										console.warn('Text of cell ' + cellName(c, row) + ' on sheet ' + sh.name + ' has been truncated because it is too long')
+									};
+//									console.debug( 'other than enumerated dataType',cell,pC,dT,val,typeof(val) );
+
+									// Include the property only if it has a significant value:
+									if (val)
+										res.properties.push({
+											class: LIB.keyOf(pC),
+											values: [val]
+										})
+								/*	else {
+										if (dT.enumeration)
+											console.warn('Suppressed undefined enumerated value in cell ' + cellName(c, row) + ' of worksheet ' + ws.name);
+									} */
+								}
+								else {
+									console.error('No dataType with id ' + pC.dataType.id + ' found for value '+cell.v+' in cell ' + cellName(c, row) + ' of worksheet ' + ws.name);
+                                }
 							} 
 							else {
 								// It is a statement:
@@ -820,8 +826,8 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	// Transform the worksheets to SpecIF:
 	// 1. Create the project:
-	var specifData:SpecIF = new BaseTypes(pN);
-//	var specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true });
+//	var specifData:SpecIF = new BaseTypes(pN);
+	var specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
 	// the root folder resource:
 	specifData.resources.push({
 		id: 'R-' + pN.toSpecifId(),

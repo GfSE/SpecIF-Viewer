@@ -105,12 +105,14 @@ moduleManager.construct({
 		"use strict";
 
 		// Transform the content of the "Dictionary.xsd" file provided by prostep iViP on 2023-03-10.
-		var spD = app.ontology.makeTemplate();
+
+		var xlsTerms = ["xs:dateTime", "xs: anyURI", "xs:boolean", "xs:integer", "xs:double", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder],
+			spD: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
 		spD.title = [{ text: "prostep iViP Collaboration Datamodel Schema" }];
 		spD.description = [{ text: "prostep iViP Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
 		spD.id = "P-DDP-Schema-V20";
-		spD.createdAt = "2023-03-10T08:09:28-02:00";
-		spD.dataTypes = [
+		spD.createdAt = new Date().toISOString();
+	/*	spD.dataTypes = [
 			// most general data type must come first:
 			app.standards.get("dataType", { id: "DT-Text" }) as SpecifDataType,
 			app.standards.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
@@ -120,7 +122,7 @@ moduleManager.construct({
 			app.standards.get("dataType", { id: "DT-Real" }) as SpecifDataType,
 			app.standards.get("dataType", { id: "DT-AnyURI" }) as SpecifDataType
 		];
-	/*	Currently the deduplication doesn't work with these, anyways:
+		Currently the deduplication doesn't work with these, anyways:
 		spD.propertyClasses = [
 			app.standards.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
 			app.standards.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
@@ -275,6 +277,7 @@ moduleManager.construct({
 							description: getDesc(rel),
 							subjectClasses: [],
 							objectClasses: [],
+							// @ts-ignore - createdAt *is* defined
 							changedAt: spD.createdAt
 						};
 

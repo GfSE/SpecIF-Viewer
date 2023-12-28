@@ -564,7 +564,9 @@ moduleManager.construct({
 								]
 						}
 						else {
-							self.newRes.replaces = [(rL[0].revision || (CONFIG.revDefaultPrefix + rL[0].changedAt))];
+							if ( rL[0].revision )
+								self.newRes.replaces = [rL[0].revision];
+								// revision will be set when saving
 							self.localOpts.dialogTitle = i18n.MsgUpdateResource;
 							self.localOpts.msgBtns = [
 								msgBtns.cancel,

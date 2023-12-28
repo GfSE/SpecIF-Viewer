@@ -19,6 +19,9 @@ class CSpecifItemNames {
 	sClass: string;
 	hClass?: string;
 	pClass: string;
+	rs: string;
+	sts: string;
+	r: string;
 	frct: string;
 	minI: string;
 	maxI: string;
