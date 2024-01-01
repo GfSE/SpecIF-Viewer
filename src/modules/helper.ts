@@ -372,11 +372,11 @@ class xhrMessage {
     asString():string {
         return this.statusText + " (" + this.status + (this.responseType == 'text' ? "): " + this.responseText : ")")
     }
-    log(): void {
+    log() {
         console.log(this.asString());
         return this;  // make it chainable
     }
-    warn(): void {
+    warn() {
         console.warn(this.asString());
         return this;  // make it chainable
     }
@@ -1120,6 +1120,54 @@ LIB.addProp = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void 
         el.properties.unshift(prp);
     else
         el.properties = [prp];
+}
+LIB.addTo = (term: string, dta: SpecIF): SpecifId => {
+    // Add an element (e.g. class) to it's list, if not yet defined:
+    // ToDo: Check for revision! It can happen that a class is considered available, but a reference with revision fails.
+
+    // 1. Get the name of the list, e.g. 'dataType' -> 'dataTypes':
+    // @ts-ignore - yes, the result can be undefined:
+    let items = app.ontology.generateSpecifClasses({ terms: [term], adoptOntologyDataTypes: true }),
+        itemId: SpecifId;
+
+    // ToDo: For avoiding duplicates, The checking for the id is not sufficient;
+    // if the existing element has an equal id, but different content,
+    // the resulting SpecIF data-set is not consistent.
+
+    // 2. Create it, if not yet available:
+    for (var Ln in items) {
+        if (['dataTypes', 'propertyClasses', 'resourceClasses', 'statementClasses'].includes(Ln)) {
+            // add the type, but avoid duplicates:
+            // @ts-ignore - index is ok:
+            LIB.cacheL(dta[Ln], items[Ln]);
+
+            // obtain the id of the requested class;
+            // there should be exactly one element in 'items':
+            let idx = LIB.indexBy(items[Ln], 'title', term);
+            if (idx > -1) {
+                itemId = items[Ln][idx].id
+            };
+        };
+
+    /*    // @ts-ignore - index is ok:
+        if (Array.isArray(dta[Ln])) {
+            // add the type, but avoid duplicates:
+            // @ts-ignore - index is ok:
+            if (LIB.indexByKey(dta[Ln], key) < 0)
+                // @ts-ignore - yes, the object can be undefined:
+                dta[lN].unshift(item);
+        }
+        else {
+            // create the list with the item:
+            // @ts-ignore - index is ok:
+            dta[lN] = [item];
+        } */
+    };
+    // @ts-ignore
+    if (!itemId)
+        console.error('No class found for term '+term+'.');
+    // @ts-ignore
+    return itemId;
 }
 LIB.getClassesWithParents = (L: SpecifClass[], clK: SpecifKey) => {
     // Return a list with classes, the ancestors first and the requested class last.

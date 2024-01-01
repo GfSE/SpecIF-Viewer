@@ -88,7 +88,7 @@ class CStandards {
 			if (chAt) item.changedAt = chAt;
 			return item;
 		};
-	} */
+	}
 	addTo(ctg: string, key: SpecifKey, dta: SpecIF): void {
 		// Add an element (e.g. class) to it's list, if not yet defined:
 		// ToDo: Check for revision! It can happen that a class is considered available, but a reference with revision fails.
@@ -120,7 +120,7 @@ class CStandards {
 		}
 		else
 			throw Error("Can't find item with id '"+key.id+"' and revision '"+key.revision+"' in standard types.")
-	}
+	} */
 };
 
 

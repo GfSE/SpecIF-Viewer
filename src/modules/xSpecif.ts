@@ -639,8 +639,8 @@ class CSpecIF implements SpecIF {
 			// See tutorial 2 "Related Terms": https://github.com/GfSE/SpecIF/blob/master/tutorials/v1.0/02_Related-Terms.md
 			// In this case, add a title and description property each as required by SpecIF v1.1 (no more native title and description):
 			[
-				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, dTid: "DT-Text", pCid: "PC-Description" },
-				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, dTid: "DT-ShortString", pCid: "PC-Name"}
+				{ name: 'description', nativePrp: iE.description, tiL: CONFIG.descProperties, cl: CONFIG.propClassDesc },
+				{ name: 'title', nativePrp: iE.title, tiL: CONFIG.titleProperties, cl: CONFIG.propClassTitle }
 			].forEach(
 				(pD) => {
 					if (pD.nativePrp && propertyMissing(pD.tiL, oE)) {
@@ -701,14 +701,12 @@ class CSpecIF implements SpecIF {
 
 				// No suitable propertyClass is listed in self.propertyClasses, so create what's needed:
 
-				// 3. Add a new (standard) propertyClass and add definition and instantiation:
-				// a. add dataType, if not yet defined:
-				app.standards.addTo("dataType", { id: pDef.dTid }, self);
-				// b. add property class, if not yet defined:
-				app.standards.addTo("propertyClass", { id: pDef.pCid }, self);
-				// c. Add propertyClass to element class:
-				LIB.addPCReference(eC, { id: pDef.pCid });
-				return pDef.pCid
+				// 3. Add a new (standard) propertyClass with any required classes:
+				let pCid = LIB.addTo( pDef.cl, self);
+
+				// 4. Add propertyClass to element class:
+				LIB.addPCReference(eC, { id: pCid });
+				return pCid
 			}
 		}
 		// a resource:

@@ -279,7 +279,6 @@ moduleManager.construct({
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = LIB.makeKey(dTFormattedText.id);
 							pC.format = "xhtml";
-						//	app.standards.addTo("dataType",pC.dataType,pr);
 							LIB.cacheE(pr.dataTypes, dTFormattedText);
 						}
 					})

@@ -239,6 +239,10 @@ function extractResources(xmlSpecObjects) {
         //xmlSpecObject.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractProperties(xmlSpecObject.getElementsByTagName("VALUES")) : '';
         let values = xmlSpecObject.getElementsByTagName("VALUES");
         specifResource.properties = extractProperties(values);
+
+        // a resource must have at least one property:
+        if (!specifResource.title && specifResource.properties.length < 1)
+            specifResource.title = specifResource.id;
         
         return specifResource;
     }

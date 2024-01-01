@@ -90,7 +90,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 							opts.dialogForm.addField(ti, this.dT);
 						return makeTextField(
 							ti,
-							this.get(localOpts),
+							this.get(localOpts).escapeHTML(),
 							// - open an input text-area, if it is a description property
 							// - open an input line, otherwise
 							{

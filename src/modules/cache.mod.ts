@@ -292,7 +292,7 @@ class CCache {
 				}
 				else {
 					// take the first characters from the description:
-					ti = LIB.valueByTitle(el, CONFIG.propClassDesc, self)
+					ti = (LIB.valueByTitle(el, CONFIG.propClassDesc, self) || '')
 						.substring(0, CONFIG.treeMaxTitleLength);
                 }
 			};
