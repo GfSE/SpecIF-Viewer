@@ -55,8 +55,7 @@ moduleManager.construct({
 	name: CONFIG.reports
 }, function(self:IModule) {
 	"use strict";
-	var prj: CProject,
-		cData: CCache;
+	var prj: CProject;
 	self.list = [];  // the list of reports
 
 	// Standard module interface methods:
@@ -87,7 +86,6 @@ moduleManager.construct({
 	self.show = function(options:any) {
 //		console.debug('reports.show');
 		prj = app.projects.selected;
-		cData = prj.cache;
 		self.parent.showLeft.reset();  // no panel to the left
 
 		// Language options have been selected at project level:
@@ -136,7 +134,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.get("resourceClass", prj.resourceClasses)
+				prj.cache.get("resourceClass", prj.resourceClasses)
 				.forEach(
 					(rC) => {
 						// Add a counter for each resourceClass which is either "auto" or "user" instantiated:
@@ -167,7 +165,7 @@ moduleManager.construct({
 						scaleMax: 0,
 						datasets: []
 					};
-				cData.get("statementClass", prj.statementClasses)
+				prj.cache.get("statementClass", prj.statementClasses)
 				.forEach(
 					(sC) => {
 						// Add a counter for each statementClass
@@ -210,13 +208,13 @@ moduleManager.construct({
 
 				// Add a report with a counter per enumerated property of all resource types:
 				let pC, dT;
-			//	cData.get("resourceClass", prj.resourceClasses).forEach(
+			//	prj.cache.get("resourceClass", prj.resourceClasses).forEach(
 				LIB.getExtendedClasses(prj.cache.get("resourceClass", "all"), prj.resourceClasses).forEach(
 					(rC: SpecifResourceClass) => {
 						rC.propertyClasses.forEach(
 							(pck) => {
-								pC = cData.get("propertyClass", [pck])[0] as SpecifPropertyClass;
-								dT = cData.get("dataType", [pC.dataType])[0] as SpecifDataType;
+								pC = prj.cache.get("propertyClass", [pck])[0] as SpecifPropertyClass;
+								dT = prj.cache.get("dataType", [pC.dataType])[0] as SpecifDataType;
 								if( dT.enumeration ) {
 									var aVR: Report = {
 											title: LIB.titleOf(rC,opts)+': '+LIB.titleOf(pC,opts),
@@ -266,14 +264,14 @@ moduleManager.construct({
 				else throw Error("Did not find a report panel for resourceClass with id:"+rCk.id);
 
 				// b) A report (histogram) for each enumerated property:
-				let rC = LIB.getExtendedClasses(cData.get("resourceClass","all"), [rCk])[0] as SpecifResourceClass,
+				let rC = LIB.getExtendedClasses(prj.cache.get("resourceClass","all"), [rCk])[0] as SpecifResourceClass,
 					pC: SpecifPropertyClass,
 					dT: SpecifDataType,
 					rp: SpecifProperty,  // resource property
 					i: number;
 				rC.propertyClasses.forEach((pCk) => {
-					pC = cData.get("propertyClass", [pCk])[0] as SpecifPropertyClass;
-					dT = cData.get("dataType", [pC.dataType])[0] as SpecifDataType;
+					pC = prj.cache.get("propertyClass", [pCk])[0] as SpecifPropertyClass;
+					dT = prj.cache.get("dataType", [pC.dataType])[0] as SpecifDataType;
 					if (dT.enumeration && dT.enumeration.length > 0) {
 						// find the report panel:
 						i = findEnumPanel(self.list, rCk, pCk);
@@ -316,10 +314,10 @@ moduleManager.construct({
 
 		LIB.iterateNodes(
 			// iterate all hierarchies except the one for unreferenced resources:
-			(cData.get("hierarchy", prj.hierarchies) as SpecifNodes)
+			(prj.cache.get("hierarchy", prj.hierarchies) as SpecifNodes)
 				.filter(
 					(h: SpecifNode) => {
-						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+						return LIB.typeOf(h.resource, prj.cache) != CONFIG.resClassUnreferencedResources
 					}
 				),
 			(nd: SpecifNode) => {

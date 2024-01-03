@@ -285,7 +285,7 @@ moduleManager.construct({
 					.then(
 						(rL) => {
 							let hit = match(new CResourceToShow(rL[0] as SpecifResource));
-//							console.debug('doFilter iterateNodes',self.filters,pend,rsp[0],h);
+//							console.debug('doFilter iterateNodes',self.filters,pend,rL[0],hit);
 							// list a hit, but only once:
 							// (even if the resource is referenced multiple times in the hierarchies)
 							if (hit && !visited.includes(hit.id)) {
@@ -672,7 +672,8 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-			var rC = cData.get("resourceClass", [def.rCk])[0] as SpecifResourceClass,
+		//	var rC = cData.get("resourceClass", [def.rCk])[0] as SpecifResourceClass,
+			var rC = LIB.getExtendedClasses(cData.get("resourceClass", "all"), [def.rCk])[0],
 				pC: SpecifPropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pck)=>{

@@ -53,7 +53,7 @@ class CStandards {
 	titleLinkTargets(): string[] {
 		// (this is a function, because app.ontology is not yet ready when this file is loaded);
 		// Return the resource classes which can be targets of title-linking (in [[name]] ):
-		return CONFIG.modelElementClasses
+		return app.ontology.modelElementClasses
 			.concat(CONFIG.diagramClasses)
 			.concat(CONFIG.folderClasses)
 			.concat(app.ontology.termClasses)
@@ -369,16 +369,6 @@ CONFIG.diagramClasses = [
 CONFIG.folderClasses = [
     CONFIG.resClassOutline,
     CONFIG.resClassFolder
-];
-// A list with all model-element types by title,
-// is used for example to build a glossary;
-// it is expected that a plural of any list element exists ( element+'s' ):
-// ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
-CONFIG.modelElementClasses = [
-    'FMC:Actor',
-    'FMC:State',
-    'FMC:Event',
-    'SpecIF:Collection'
 ];
 
 // Used to map resource or statement properties to native properties, where applicable;

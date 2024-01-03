@@ -11,7 +11,9 @@
 class COntology {
     data: SpecIF;
 //    allDomains: string[] = [];
-    allNamespaces: string[] = [];
+    // A list with all namespaces:
+    namespaces: string[] = [];
+    // A list with all terms by title:
     termClasses: string[] = [
         "SpecIF:TermResourceClass",
         "SpecIF:TermStatementClass",
@@ -23,6 +25,16 @@ class COntology {
         "SpecIF:TermPropertyClassDuration",
         "SpecIF:TermPropertyClassURI",
         "SpecIF:TermPropertyValue"
+    ];
+    // A list with all model-element types by title,
+    // is used for example to build a glossary;
+    // it is expected that a plural of any list element exists ( element+'s' ):
+    // ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
+    modelElementClasses: string[] = [
+        'FMC:Actor',
+        'FMC:State',
+        'FMC:Event',
+        'SpecIF:Collection'
     ];
 
     // Assign the primitive dataType to the termPropertyClasses of a SpecIF Ontology:
@@ -73,7 +85,7 @@ class COntology {
         ); */
 
         // Make a list of all namespaces:
-        this.allNamespaces = this.data.resources.filter(
+        this.namespaces = this.data.resources.filter(
             (r) => {
                 return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
             }
@@ -82,6 +94,9 @@ class COntology {
                 return this.valueByTitle(r, CONFIG.propClassTerm)
             }
         );
+
+        // Make a list of all model element types by title:
+     //   this.modelElementClasses = this.statementsByClass(r, "SpecIF:isSynonymOf", { asSubject: true, asObject: true })
 
         this.makeStatementsIsNamespace();
         this.options = {};
@@ -281,7 +296,7 @@ class COntology {
     changeNamespace(term: string, opts:any): string {
         // Given a term, try mapping it to the target namespace.
 
-        if (!opts.targetNamespace || !this.allNamespaces.includes(opts.targetNamespace)) {
+        if (!opts.targetNamespace || !this.namespaces.includes(opts.targetNamespace)) {
             console.warn("No namespace specified or ontology does not include the specified namespace: "+term);
             return term
         };
@@ -943,7 +958,7 @@ class COntology {
                         let stC = LIB.makeKey(item),
                             noNs = true;
                         // the term has a namespace:
-                        for (let ns of this.allNamespaces) {
+                        for (let ns of this.namespaces) {
                             if (match[1] == ns) {
                                 this.data.statements.push({
                                     id: LIB.genID('S-'),

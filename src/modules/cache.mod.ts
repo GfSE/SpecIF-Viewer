@@ -1021,9 +1021,9 @@ class CProject implements SpecifProject {
 								opts,
 								{ targetLanguage: self.language || newD.language /*, lookupTitles: true */ }
 							);
-							if ( LIB.hasResClass(newR, CONFIG.modelElementClasses.concat(CONFIG.diagramClasses),newD)
+							if ( LIB.hasResClass(newR, app.ontology.modelElementClasses.concat(CONFIG.diagramClasses),newD)
 								&& !LIB.hasType(newR, CONFIG.excludedFromDeduplication, newD, opts)
-						//	if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(newR['class'], newD.resourceClasses)) > -1
+						//	if (app.ontology.modelElementClasses.concat(CONFIG.diagramClasses).indexOf(LIB.classTitleOf(newR['class'], newD.resourceClasses)) > -1
 						//		&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD)[0])) < 0
 							) {
 								// Check for an exsiting resource with the same title:
@@ -1584,7 +1584,7 @@ class CProject implements SpecifProject {
 				// Do it for all model-elements and diagrams,
 				// but exclude process gateways and generated events for optional branches:
 //				console.debug( 'duplicate resource ?', rR, nR );
-				if (CONFIG.modelElementClasses.concat(CONFIG.diagramClasses).includes(LIB.classTitleOf((lst[r] as SpecifResource)['class'], dta.resourceClasses))
+				if (app.ontology.modelElementClasses.concat(CONFIG.diagramClasses).includes(LIB.classTitleOf((lst[r] as SpecifResource)['class'], dta.resourceClasses))
 					&& this.equalR(lst[r] as SpecifResource, lst[n] as SpecifResource)
 					&& !LIB.hasType(lst[r], CONFIG.excludedFromDeduplication, dta, opts)
 					&& !LIB.hasType(lst[n], CONFIG.excludedFromDeduplication, dta, opts)
@@ -2056,7 +2056,7 @@ class CProject implements SpecifProject {
 							changedAt: tim
 						}];
 						// Create a folder resource for every model-element type:
-						for (var eC of CONFIG.modelElementClasses) {
+						for (var eC of app.ontology.modelElementClasses) {
 							termL = app.ontology.getTermResources('resourceClass',eC);
 							if (termL.length > 0) {
 								fL.push({
@@ -2093,7 +2093,7 @@ class CProject implements SpecifProject {
 						changedAt: tim
 					};
 					// Create a hierarchy node for each folder per model-element type
-					for (var mEl of CONFIG.modelElementClasses) {
+					for (var mEl of app.ontology.modelElementClasses) {
 						gl.nodes.push({
 							id: "N-Folder-" + mEl.toJsId() + "-" + apx,
 							resource: LIB.makeKey("Folder-" + mEl.toJsId() + "-" + apx),
@@ -2105,12 +2105,12 @@ class CProject implements SpecifProject {
 					// assuming that type adoption/deduplication is not always successful
 					// and that there may be multiple resourceClasses per model-element type:
 					let idx: number,
-						tL = LIB.forAll(CONFIG.modelElementClasses, () => { return [] });
+						tL = LIB.forAll(app.ontology.modelElementClasses, () => { return [] });
 					// Each array in tL shall carry the keys of resourceClasses for the model-element to collect:
 					dta.get("resourceClass",self.resourceClasses).forEach(
 						(rC) => {
 							// @ts-ignore - a resourceClass *has* a title
-							idx = CONFIG.modelElementClasses.indexOf(rC.title);
+							idx = app.ontology.modelElementClasses.indexOf(rC.title);
 							if (idx > -1) tL[idx].push(LIB.keyOf(rC));
 						}
 					);
