@@ -151,6 +151,7 @@ CONFIG.resClassRole = "SpecIF:Role";
 CONFIG.resClassFolder = 'SpecIF:Heading';
 CONFIG.resClassParagraph = "SpecIF:Paragraph";
 CONFIG.resClassComment = 'SpecIF:Comment';
+CONFIG.hierarchyRoot = 'ReqIF:HierarchyRoot'; // ReqIF root node with meta-data
 //    CONFIG.resClassIssue = 'SpecIF:Issue';
 CONFIG.staClassShows = 'SpecIF:shows';
 //    CONFIG.staClassRefersTo = 'SpecIF:refersTo';
@@ -162,6 +163,9 @@ CONFIG.prefixDT = "DT-";
 CONFIG.prefixPC = "PC-";
 CONFIG.prefixRC = "RC-";
 CONFIG.prefixSC = "SC-";
+CONFIG.prefixHC = "HC-";
+CONFIG.prefixH = "H-";
+CONFIG.prefixN = "N-";
 
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement based on the semantics;
@@ -181,36 +185,6 @@ CONFIG.idProperties = [
         'ID',
         'Identifier' */
 ];
-
-// A list of resourceClasses serving as hierarchyRoot with meta-data;
-// the value can be specified by a property titled CONFIG.propClassType
-// or by the title of the resourceClass:
-CONFIG.hierarchyRoots = [
-    CONFIG.resClassOutline, // do not remove
-    CONFIG.resClassGlossary,
-    CONFIG.resClassOntology,
-    'SpecIF:HierarchyRoot',
-    'SpecIF:Hierarchy',
-    'SpecIF:BillOfMaterials',
-	"W3C:Ontology",
-    "W3C:Vocabulary"
-];
-
-// If a resourceClass or a resource has a property carrying a title equal to one of the values in the following list,
-// it is considered a heading (chapter title) and will be included in the outline numbering.
-// Also, this property will be used for the title when displaying the resource.
-CONFIG.headings =
-    CONFIG.hierarchyRoots
-        .concat([
-            CONFIG.resClassOutline, // do not remove
-            CONFIG.resClassFolder    // do not remove
-            /*    // ReqIF 1.0 and 1.1 Implementation Guide:
-                'ReqIF.ChapterName',    // do not remove
-                // DocBridge Resource Director:
-                'DBRD.ChapterName',
-                // Other:
-                'Überschrift'  */
-        ]);
 
 // The content of the property with a title in this list will be used for the title when displaying the resource:
 // The sequence defines a priority, in case a resource has multiple properties with a title appearing in this list.
@@ -271,11 +245,9 @@ CONFIG.commentProperties = [
 	"SpecIF:Comment"
 ];
 // those will get a larger edit field, just like the description properties:
-CONFIG.textProperties = CONFIG.descProperties
-	.concat(CONFIG.commentProperties);
-
+CONFIG.textProperties =
 CONFIG.formattedProperties =
-	CONFIG.descProperties
+    CONFIG.descProperties
 	.concat(CONFIG.commentProperties);
 
 CONFIG.stereotypeProperties = [

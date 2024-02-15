@@ -10,9 +10,21 @@
 
 class COntology {
     data: SpecIF;
-//    allDomains: string[] = [];
+//  domains: string[] = [];
+
     // A list with all namespaces:
     namespaces: string[] = [];
+
+    // A list of all heading types:
+    // If a resourceClass has a title equal to one of the values in the following list,
+    // it is considered a heading (chapter title) and will be included in the outline numbering.
+    headings: string[] = [];
+
+    // A list with all model-element types by title,
+    // is used for example to build a glossary;
+    // it is expected that a plural of any list element exists ( element+'s' ):
+    modelElementClasses: string[] = [];
+
     // A list with all terms by title:
     termClasses: string[] = [
         "SpecIF:TermResourceClass",
@@ -25,16 +37,6 @@ class COntology {
         "SpecIF:TermPropertyClassDuration",
         "SpecIF:TermPropertyClassURI",
         "SpecIF:TermPropertyValue"
-    ];
-    // A list with all model-element types by title,
-    // is used for example to build a glossary;
-    // it is expected that a plural of any list element exists ( element+'s' ):
-    // ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
-    modelElementClasses: string[] = [
-        'FMC:Actor',
-        'FMC:State',
-        'FMC:Event',
-        'SpecIF:Collection'
     ];
 
     // Assign the primitive dataType to the termPropertyClasses of a SpecIF Ontology:
@@ -80,25 +82,17 @@ class COntology {
      /*   // Make a list of all defined domains in the SpecIF Ontology:
         // ToDo: Use LIB.enumeratedValuesOf
         let dTDomains = LIB.itemById(this.data.dataTypes, "DT-Domain");
-        this.allDomains = dTDomains.enumeration.map(
+        this.domains = dTDomains.enumeration.map(
             (v: SpecifEnumeratedValue) => LIB.languageTextOf(v.value, { targetLanguage: "default" })
         ); */
 
-        // Make a list of all namespaces:
-        this.namespaces = this.data.resources.filter(
-            (r) => {
-                return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
-            }
-        ).map(
-            (r) => {
-                return this.valueByTitle(r, CONFIG.propClassTerm)
-            }
-        );
+        this.namespaces = this.getNamespaces();
+        this.headings = this.getHeadings();
+        this.modelElementClasses = this.getModelElementClasses();
 
-        // Make a list of all model element types by title:
-     //   this.modelElementClasses = this.statementsByClass(r, "SpecIF:isSynonymOf", { asSubject: true, asObject: true })
-
+        // Create all statements 'isNamespace' from the resource title namespaces:
         this.makeStatementsIsNamespace();
+
         this.options = {};
     }
 
@@ -209,7 +203,7 @@ class COntology {
         );
         //        console.debug('globalize',termL);
         if (termL.length > 0) {
-            // search for the most confirmed term:
+            // select the most confirmed term:
             for (let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent", "SpecIF:LifecycleStatusSubmitted", "SpecIF:LifecycleStatusExperimental"])
                 for (let t of termL) {
                     if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status) {
@@ -268,10 +262,10 @@ class COntology {
     }
     normalize(ctg: string, term: string): string {
         // find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
-        let str = app.ontology.globalize(term);
+        let str = this.globalize(term);
 
         // find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
-        str = app.ontology.getPreferredTerm(ctg, str);
+        str = this.getPreferredTerm(ctg, str);
 
         return str;
     }
@@ -430,7 +424,7 @@ class COntology {
                 // Add domains to id:
                 opts.domains.forEach((d: string) => { spId += '-' + d.toCamelCase() });
             };
-            //    console.debug('#', dTDomains, allDomains, opts.domains, spId);
+            //    console.debug('#', dTDomains, domains, opts.domains, spId);
 
             // List of referenced but missing instances of termStatementClass:
             this.required = {
@@ -671,7 +665,9 @@ class COntology {
         };
 
         LIB.cacheE(this.generated.dTL, dT); // store avoiding duplicates
-        return LIB.makeKey(dT);  // the key as reference for the generated propertyClass
+
+        // Finally return the key used as reference by the generated propertyClass
+        return this.options.referencesWithoutRevision ? LIB.makeKey(dT.id) : LIB.makeKey(dT);  
 
         function adoptOntologyDataType(d: SpecifDataType) {
             for (let dT of self.data.dataTypes) {
@@ -682,9 +678,8 @@ class COntology {
     }
     private createPC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:
-        //        console.debug('createPC', r);
 
-        // 1. Create the dataType, unless it exists already:
+        // Create the dataType, unless it exists already:
         let dTk = this.createDT(r),
             defaultVL = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.data);
 
@@ -748,6 +743,7 @@ class COntology {
         // Return a list of resourceClasses and/or statementClasses which are related 
         // to term el (the statementClass to be generated) by the given statementClass cl:
 
+        // Todo: What about the revisions in iCL if this.options.referencesWithoutRevision is false?
         let iCL: SpecifResourceClass[] = [],  // the result list
             // We are interested only in statements where *other* statementClasses are eligible as subjectClasses:
             sL = this.statementsByClass(el, cl, { asObject: true }); // list of statements of the specified class
@@ -917,6 +913,7 @@ class COntology {
     }
     private makeIdAndTitle(r: SpecifResource, pfx: string) {
         // Make an id and a title for the class generated for term r
+        // Todo: What about the revision if this.options.referencesWithoutRevision is false?
         const termId = "PC-SpecifTerm";
         let visIdL = LIB.valuesByTitle(r, ["dcterms:identifier"], this.data),
             // In general we don't, but in case of the ontology we know that the resource title
@@ -935,6 +932,62 @@ class COntology {
             }
         };
         console.error("No item with id '" + termId+"' found in the Ontology or it has no value");
+    }
+    private getModelElementClasses(): string[] {
+        // Return a list of all model element types by title;
+        // these are all specializations of SpecIF:ModelElement:
+        // ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
+
+     /*   return [
+            'FMC:Actor',
+            'FMC:State',
+            'FMC:Event',
+            'SpecIF:Collection'
+        ]; */
+        let rL = this.getTermResources('resourceClass', "SpecIF:ModelElement"),
+            sL = [];
+        if (rL.length > 0) {
+            // We are interested only in statements where *other* resources resp. statements are the object:
+            sL = this.statementsByClass(rL[0], "UML:isSpecializationOf", { asObject: true })
+                .map(
+                    (s) => {
+                        let r = LIB.itemByKey(this.data.resources, s.subject);
+                        return this.valueByTitle(r, CONFIG.propClassTerm);
+                    }
+                );
+        };
+        return sL;
+    }
+    private getHeadings(): string[] {
+        // Return a list of all heading types,
+        // i.e. those termresourceClasses whose attribute 'isHeading' is true:
+        return this.data.resources
+            .filter(
+                (r) => {
+                    return (LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:TermResourceClass")
+                        && LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading"))
+                    //  || is specialization of ("SpecIF:Heading")
+                }
+            )
+            .map(
+                (r) => {
+                    return this.valueByTitle(r, CONFIG.propClassTerm)
+                }
+            );
+    }
+    private getNamespaces(): string[] {
+        // Return a list of all namespace names:
+        return this.data.resources
+            .filter(
+                (r) => {
+                    return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
+                }
+            )
+            .map(
+                (r) => {
+                    return this.valueByTitle(r, CONFIG.propClassTerm)
+                }
+            );
     }
     private makeStatementsIsNamespace(): void {
         // Relate one of the defined namespaces to each term using a statement 'isNamespace';

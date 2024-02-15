@@ -277,7 +277,7 @@ class Tree {
 		// assert new ids to nd and it's sub-tree, as the server doesn't allow to reuse any ID:
 		let rt = {};
 		for( var p in nd ) rt[p] = nd[p];
-		rt.id = genID('N-');
+		rt.id = genID(CONFIG.prefixN);
 		this.updateNode( nd, { id: rt.id } );  // set the ID of the tree entry with it's new value
 		if( nd.children && nd.children.length ) {
 			rt.children = [];

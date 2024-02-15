@@ -1349,7 +1349,7 @@ moduleManager.construct({
 							function toSpecIF(mNd: jqTreeNode): SpecifNode {
 								// transform from jqTree node to SpecIF node:
 								var nd: INodeWithPosition = {
-									//	id: LIB.genID('N-'),
+									//	id: LIB.genID(CONFIG.prefixN),
 									id: mNd.id,
 									resource: mNd.ref,
 									changedAt: chd
@@ -1505,13 +1505,22 @@ moduleManager.construct({
 
 		// Replace the tree:
 		self.tree.saveState();
-		self.tree.set( LIB.forAll( spc, toJqTree) );
+		self.tree.set( LIB.forAll(spc, toJqTreeWithoutRoot) );
 		self.tree.numberize();
 		self.tree.restoreState();
 		return;
 
 		// -----------------
-		function toJqTree( iE:SpecifNode ) {
+		function toJqTreeWithoutRoot(iE: SpecifNode) {
+			let r: SpecifResource = LIB.itemByKey(self.cData.resources, iE.resource),
+				ty = LIB.valueByTitle(r, CONFIG.propClassType, self.cData);
+			if (ty == CONFIG.hierarchyRoot)
+				// return the subordinated trees without root:
+				return LIB.forAll(iE.nodes, toJqTree);
+			// else return the whole tree:
+			return toJqTree(iE);
+        }
+		function toJqTree(iE: SpecifNode) {
 			// transform SpecIF hierarchy to jqTree:
 			let r:SpecifResource = LIB.itemByKey( self.cData.resources, iE.resource );
 //			console.debug('toJqTree',iE.resource,r);

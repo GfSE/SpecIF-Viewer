@@ -3,12 +3,12 @@
     (C)copyright enso managers gmbh (http://www.enso-managers.de)
     Author: se@enso-managers.de, Berlin
     License and terms of use: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de 
+    We appreciate any correction, comment or contribution via e-mail to maintenance@specif.de
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 
-     Attention: 
+     Attention:
     - Do NOT minify this module with the Google Closure Compiler. At least the RegExp in toJsId() will be modified to yield wrong results, e.g. falsely replaces 'u' by '_'.
-*/ 
+*/
 
 const LIB: any = {};
 
@@ -524,6 +524,15 @@ LIB.makeKey = (el: any): SpecifKey => {
     // create a key from an id string used in earlier SpecIF versions
     // and support the case where a full key has already been used:
     return typeof (el) == 'string' ? { id: el } : LIB.keyOf(el);
+}
+LIB.replacePrefix = (newPrefix: string, id: string) => {
+    return id.replace(
+        RE.isolatePrefix,
+        // @ts-ignore - match and $1 must be present, even if not used.
+        (match, $1, $2) => {
+            return newPrefix + $2;
+        }
+    );
 }
 LIB.containsAllKeys = (refL: SpecifKeys, newL: SpecifKeys): boolean => {
     // return true, if all elements of newL are contained in refL;
@@ -1244,10 +1253,20 @@ LIB.forAll = ( L:any[], fn:(el:any,idx:number)=>any ):any[] =>{
     // return a new list with the results from applying the specified function to all items of input list L;
     // differences when compared to Array.map():
     // - tolerates missing L
+    // - appends not only items, but also lists (if the supplied function returns a list)
     // - suppresses undefined list items in the result, so in effect forAll is a combination of .map() and .filter().
     if(!L) return [];
     var nL:any[] = [];
-    L.forEach( (el,idx)=>{ var r=fn(el,idx); if(r) nL.push(r) } );
+    L.forEach((el, idx) => { 
+		var r = fn(el, idx); 
+		if (r) {
+			if(Array.isArray(r))
+			//	nL = nL.concat(r)
+                nL.push(...r)
+			else
+				nL.push(r);
+		};
+	});
     return nL;
 }
 
@@ -1260,14 +1279,35 @@ LIB.addIcon = (str: string, ic: string): string =>{
 LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
     // add or update the item e in a list L,
     // where the list can have string elements or objects with id:
-    let n = typeof (e)=='string' ? L.indexOf(e) : LIB.indexById( L, e.id );
+    let n = typeof (e) == 'string' ? L.indexOf(e) : LIB.indexById(L, e.id);
+    if (e.predecessor) {
+        let p = typeof (e.predecessor) == 'string' ? L.indexOf(e.predecessor) : LIB.indexById(L, e.predecessor.id);
+        delete e.predecessor;
+        if (p > -1) {
+            // predecessor found; 
+            // move or insert the element:
+            if (n > -1)
+                L.splice(n, 1);
+            L.splice(p + 1, 0, e);
+            return p + 1;
+        }
+    };
+    if (n > -1) {
+        L[n] = e;
+        return n;
+    }
+    else
+        L.push(e);
+    return L.length - 1;
+
+/*    let n = typeof (e)=='string' ? L.indexOf(e) : LIB.indexById( L, e.id );
     // add, if not yet listed:
     if (n < 0) {
         // insert. if not found:
         if (e.predecessor) {
             n = typeof (e.predecessor) == 'string' ? L.indexOf(e.predecessor) : LIB.indexById(L, e.predecessor.id);
+            delete e.predecessor;
             if (n > -1) {
-                delete e.predecessor;
                 L.splice(n + 1, 0, e);
                 return n+1;
             }
@@ -1277,7 +1317,7 @@ LIB.cacheE = ( L:Array<any>, e:any ):number =>{  // ( list, entry )
     };
     // update, if found:
     L[n] = e;
-    return n;
+    return n; */
 }
 LIB.cacheL = ( L:Array<any>, es:Array<any> ):boolean =>{  // ( list, entries )
     // add or update the items es in a list L:

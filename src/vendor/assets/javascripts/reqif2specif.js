@@ -17,7 +17,9 @@
 function transformReqif2Specif(reqifDoc,options) {
 	const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
 	
-    if( typeof(options)!='object' ) options = {};
+    if (typeof (options) != 'object') options = {};
+    if (!options.propType) options.propType = "ReqIF.Category";  // the type/category of a resource, e.g. folder or diagram.
+    if (!options.prefixN) options.prefixN = "N-";
 
     const xmlDoc = parse(reqifDoc);
 
@@ -32,11 +34,11 @@ function transformReqif2Specif(reqifDoc,options) {
         xhr.response = extractMetaData(xmlDoc.getElementsByTagName("REQ-IF-HEADER"));
         xhr.response.dataTypes = extractDatatypes(xmlDoc.getElementsByTagName("DATATYPES"));
         xhr.response.propertyClasses = extractPropertyClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-        xhr.response.resourceClasses = extractResourceClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-        xhr.response.statementClasses = extractStatementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"));
-        xhr.response.resources = extractResources(xmlDoc.getElementsByTagName("SPEC-OBJECTS"))
+        xhr.response.resourceClasses = extractElementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"), ['SPECIFICATION-TYPE','SPEC-OBJECT-TYPE']);
+        xhr.response.statementClasses = extractElementClasses(xmlDoc.getElementsByTagName("SPEC-TYPES"), [/*'RELATION-GROUP-TYPE',*/'SPEC-RELATION-TYPE']);
+        xhr.response.resources = extractResources("SPEC-OBJECTS")
             // ReqIF hierarchy roots are SpecIF resouces:
-            .concat(extractResources(xmlDoc.getElementsByTagName("SPECIFICATIONS")));
+            .concat(extractResources("SPECIFICATIONS"));
         xhr.response.statements = extractStatements(xmlDoc.getElementsByTagName("SPEC-RELATIONS"));
         xhr.response.hierarchies = extractHierarchies(xmlDoc.getElementsByTagName("SPECIFICATIONS"));
     };
@@ -59,295 +61,360 @@ function transformReqif2Specif(reqifDoc,options) {
 /*
 ########################## Subroutines #########################################
 */
-function validateReqif(xml) {
-    return xml.getElementsByTagName("REQ-IF-HEADER").length > 0
-        && xml.getElementsByTagName("REQ-IF-CONTENT").length > 0;
-}
-function extractMetaData(header) {
-    // header.length>0 has been checked before: 
-    let id = header[0].getAttribute("IDENTIFIER");
-    return ({
-        id: id,
-        title: (header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML) || id,
-        description: header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '',
-        generator: 'reqif2specif',
-        $schema: "https://specif.de/v1.0/schema.json",
-        createdAt: header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML
-    })
-};
-function extractDatatypes(xmlDatatypes) {
-    return xmlDatatypes.length<1? [] : Array.from(xmlDatatypes[0].children, extractDatatype );
-
-    function extractDatatype(datatype) {
-        let specifDatatype = {
-            id: datatype.getAttribute("IDENTIFIER"),
-            type: getTypeOfDatatype(datatype),
-            title: datatype.getAttribute("LONG-NAME") || '',
-            description: datatype.getAttribute("DESC") || '',
-            changedAt: datatype.getAttribute("LAST-CHANGE") || ''
-        };
-
-        extr("MIN", "minInclusive");
-        extr("MAX", "maxInclusive");
-        extr("MAX-LENGTH", "maxLength");
-        extr("ACCURACY", "fractionDigits");
-        if (datatype.childElementCount > 0) specifDatatype.values = extractDataTypeValues(datatype.children);
-
-        return specifDatatype;
-
-        function extr(rqA,spP) {
-            let val = datatype.getAttribute(rqA);
-            if (val)
-                specifDatatype[spP] = Number(val)
-        }
-        function getTypeOfDatatype(datatype) {
-            return {
-                "DATATYPE-DEFINITION-BOOLEAN": 'xs:boolean',
-                "DATATYPE-DEFINITION-DATE": 'xs:dateTime',
-                "DATATYPE-DEFINITION-INTEGER": 'xs:integer',
-                "DATATYPE-DEFINITION-REAL": 'xs:double',
-                "DATATYPE-DEFINITION-STRING": 'xs:string',
-                "DATATYPE-DEFINITION-XHTML": 'xhtml',
-                "DATATYPE-DEFINITION-ENUMERATION": 'xs:enumeration',
-            }[datatype.nodeName];
-        }
-        function extractDataTypeValues(DataTypeValuesHtmlCollection) {
-            return Array.from(DataTypeValuesHtmlCollection[0].children, extractEnumValue);
-
-            function extractEnumValue(ch) {
-                return {
-                    id: ch.getAttribute("IDENTIFIER"),
-                    value: ch.getAttribute("LONG-NAME") || '&#x00ab;undefined&#x00bb;'
-                }
-            }
-        }
+    function validateReqif(xml) {
+        return xml.getElementsByTagName("REQ-IF-HEADER").length > 0
+            && xml.getElementsByTagName("REQ-IF-CONTENT").length > 0;
     }
-};
-
-function extractPropertyClasses(xmlSpecTypes) {
-    const specAttributesMap = extractSpecAttributesMap(xmlSpecTypes[0]);                                 
-    return extractPropertyClassesFromSpecAttributeMap(specAttributesMap);
-
-    function extractPropertyClassesFromSpecAttributeMap(specAttributeMap) {
-        let propertyClasses = Object.entries(specAttributeMap).map( entry => { 
-            let propertyClass = {
-                id: entry[0],
-                title: entry[1].title,
-                dataType: entry[1].dataType,
-                changedAt: entry[1].changedAt
-            };
-            if( entry[1].multiple ) propertyClass.multiple = true;
-
-            return propertyClass;
-        });
-        return propertyClasses;
-    }
-    function extractSpecAttributesMap(specTypesDocument) {
-        return Object.assign({},
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-STRING"),
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-XHTML"),
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-ENUMERATION"),
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-DATE"),
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-BOOLEAN"),
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-INTEGER"),
-            extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-REAL"),
-        );
-
-        function extractSpecAttributeTypeMap(specTypesDocument, nodeName) {
-            let attributeDefinition = specTypesDocument.getElementsByTagName(nodeName),
-                attributeDefinitionMap = {};
-
-            Array.from(attributeDefinition).forEach(definition => {
-                attributeDefinitionMap[definition.getAttribute("IDENTIFIER")] =
-                    {
-                        title: definition.getAttribute("LONG-NAME"),
-                        dataType: definition.children[0].children[0].innerHTML,
-                        changedAt: definition.getAttribute("LAST-CHANGE"),
-                    };
-
-                // Enumerations have an optional attribute MULTI-VALUED:  
-                if (nodeName == "ATTRIBUTE-DEFINITION-ENUMERATION") {
-                    let multiple = definition.getAttribute("MULTI-VALUED");
-                    if (multiple && multiple.toLowerCase() == 'true')
-                        attributeDefinitionMap[definition.getAttribute("IDENTIFIER")].multiple = true;
-                }
-            });
-            return attributeDefinitionMap;
-        }
-    }
-}
-
-function extractResourceClasses(xmlSpecTypes) {
-    if (xmlSpecTypes.length<1) return [];
-    const specifResourceClasses = [];
-    // consider to use .querySelectorAll("nodeName")
-    Array.from(xmlSpecTypes[0].children,
-        xmlSpecType => {
-            switch (xmlSpecType.nodeName) {
-                case 'SPECIFICATION-TYPE':
-                case 'SPEC-OBJECT-TYPE':
-                    specifResourceClasses.push(extractElementClass(xmlSpecType));
-            }
-        }
-    );
-    return specifResourceClasses;
-}
-function extractStatementClasses(xmlSpecTypes) {
-    if (xmlSpecTypes.length<1) return [];
-    let specifStatementClasses = [];
-    // consider to use .querySelectorAll("nodeName")
-    Array.from(xmlSpecTypes[0].children,
-        xmlSpecType => {
-            switch (xmlSpecType.nodeName) {
-            //  case 'RELATION-GROUP-TYPE':
-                case 'SPEC-RELATION-TYPE':
-                    specifStatementClasses.push(extractElementClass(xmlSpecType));
-            }
-        }
-    );
-    return specifStatementClasses;
-}
-function extractElementClass(xmlSpecType) {
-    // for both resourceClasses and statementClasses:
-    const specifElementClass = {
-        id: xmlSpecType.getAttribute("IDENTIFIER"),
-        title: xmlSpecType.getAttribute("LONG-NAME") || xmlSpecType.getAttribute("IDENTIFIER"),
-        changedAt: xmlSpecType.getAttribute("LAST-CHANGE")
+    function extractMetaData(header) {
+        // header.length>0 has been checked before: 
+        let id = header[0].getAttribute("IDENTIFIER");
+        return ({
+            id: id,
+            title: (header[0].getElementsByTagName("TITLE")[0] && header[0].getElementsByTagName("TITLE")[0].innerHTML) || id,
+            description: header[0].getElementsByTagName("COMMENT")[0] && header[0].getElementsByTagName("COMMENT")[0].innerHTML || '',
+            generator: 'reqif2specif',
+            $schema: "https://specif.de/v1.0/schema.json",
+            createdAt: header[0].getElementsByTagName("CREATION-TIME")[0].innerHTML
+        })
     };
-    if( xmlSpecType.getAttribute("DESC") ) 
-        specifElementClass.description = xmlSpecType.getAttribute("DESC");
-    if( xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES")[0] )
-        specifElementClass.propertyClasses = extractPropertyClassReferences(xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES"));
-   
-    return specifElementClass;
+    function extractDatatypes(xmlDatatypes) {
+        let specifDataTypes = xmlDatatypes.length < 1 ? [] : Array.from(xmlDatatypes[0].children, extractDatatype);
+        return specifDataTypes;
 
-    function extractPropertyClassReferences(propertyClassesDocument) {
-        return Array.from( propertyClassesDocument[0].children, property => {return property.getAttribute("IDENTIFIER")} )
-    }
-}
-
-function extractResources(xmlSpecObjects) {
-    return xmlSpecObjects.length<1? [] : Array.from(xmlSpecObjects[0].children,extractResource);
-
-    function extractResource(xmlSpecObject) {
-        let specifResource = {
-            id: xmlSpecObject.getAttribute("IDENTIFIER"),
-            title: xmlSpecObject.getAttribute("LONG-NAME") || "",
-            changedAt: xmlSpecObject.getAttribute("LAST-CHANGE")
-        };
-        specifResource['class'] = xmlSpecObject.getElementsByTagName("TYPE")[0].children[0].innerHTML;
-        //xmlSpecObject.getElementsByTagName("VALUES")[0].childElementCount ? specifResource.properties = extractProperties(xmlSpecObject.getElementsByTagName("VALUES")) : '';
-        let values = xmlSpecObject.getElementsByTagName("VALUES");
-        specifResource.properties = extractProperties(values);
-
-        // a resource must have at least one property:
-        if (!specifResource.title && specifResource.properties.length < 1)
-            specifResource.title = specifResource.id;
-        
-        return specifResource;
-    }
-}
-function extractStatements(xmlSpecRelations) {
-    return xmlSpecRelations.length<1? [] : Array.from(xmlSpecRelations[0].children,extractStatement);
-
-    function extractStatement(xmlSpecRelation) {
-        let specifStatement = {
-            id: xmlSpecRelation.getAttribute("IDENTIFIER"),
-            subject: xmlSpecRelation.getElementsByTagName("SOURCE")[0].children[0].innerHTML,
-            object: xmlSpecRelation.getElementsByTagName("TARGET")[0].children[0].innerHTML,
-            changedAt: xmlSpecRelation.getAttribute("LAST-CHANGE")
-        };
-        specifStatement['class'] = xmlSpecRelation.getElementsByTagName("TYPE")[0].children[0].innerHTML;
-        let values = xmlSpecRelation.getElementsByTagName("VALUES");
-        specifStatement.properties = extractProperties(values);
-        
-        return specifStatement;
-    }
-}
-function extractProperties(specAttributes) {
-    // used for OBJECTS as well as RELATIONS:
-    if ( specAttributes.length<1 ) return [];
-	let list = [];
-	// Only add a SpecIF property, if it has a value:
-    Array.from( specAttributes[0].children, (prp)=>{ let p=extractSpecIfProperty(prp); if(p.value) list.push(p)} );
-	return list;
-
-    function extractSpecIfProperty(property) {
-        let specifProperty = {}, pC, dT;
-        /*  // Provide the id, even though it is not required by SpecIF:
-            // The attribute-value id is not required by ReqIF, 
-            // ToDo: check wether it *may* be specified, at all ...  
-            specifProperty.id = property.getAttribute("IDENTIFIER"); */
-        specifProperty['class'] = property.getElementsByTagName("DEFINITION")[0].children[0].innerHTML;
-
-        //  ToDo: Check whether ReqIF ATTRIBUTES can have an individual LONG-NAME ..
-
-        if (property.getAttribute("THE-VALUE")) {
-            specifProperty.value = property.getAttribute("THE-VALUE");
-
-            pC = itemById(xhr.response.propertyClasses, specifProperty['class']);
-            dT = itemById(xhr.response.dataTypes, pC.dataType);
-//          console.debug('maxL', dT, pC, specifProperty.value, specifProperty.value.length);
-            if( typeof(dT.maxLength)=='number' && dT.maxLength < specifProperty.value.length ) {
-                console.warn("Truncated ReqIF Attribute with value '" + specifProperty.value + "' to the specified maxLength of " + dT.maxLength + " characters");
-                specifProperty.value = specifProperty.value.substring(0, dT.maxLength);
+        function extractDatatype(datatype) {
+            let specifDatatype = {
+                id: datatype.getAttribute("IDENTIFIER"),
+                type: getTypeOfDatatype(datatype),
+                title: datatype.getAttribute("LONG-NAME") || '',
+                description: datatype.getAttribute("DESC") || '',
+                changedAt: datatype.getAttribute("LAST-CHANGE") || ''
             };
-        }
-        // XHTML:
-        else if( property.getElementsByTagName("THE-VALUE")[0] ) 
-            specifProperty.value = removeNamespace(property.getElementsByTagName("THE-VALUE")[0].innerHTML);
-        // ENUMERATION:
-        else if (property.getElementsByTagName("VALUES")[0]) {
-            specifProperty.value = '';
-            Array.from(property.getElementsByTagName("VALUES")[0].children, (ch) => { specifProperty.value += (specifProperty.value.length > 0 ? ',' : '') + ch.innerHTML });
-        };
-        return specifProperty;
-    }
-}
 
-function extractHierarchies(xmlSpecifications) {
-    return xmlSpecifications.length < 1 ? [] : Array.from(xmlSpecifications[0].getElementsByTagName("SPECIFICATION"),extractRootNode);
+            extr("MIN", "minInclusive");
+            extr("MAX", "maxInclusive");
+            extr("MAX-LENGTH", "maxLength");
+            extr("ACCURACY", "fractionDigits");
+            if (datatype.childElementCount > 0) specifDatatype.values = extractDataTypeValues(datatype.children);
 
-    function extractRootNode(xmlSpecification) {
-        let rId = xmlSpecification.getAttribute("IDENTIFIER");
-        return {
-            id: "HR-" + rId,
-            resource: rId,
-            changedAt: xmlSpecification.getAttribute("LAST-CHANGE"),
-            nodes: extractSpecIfSubNodes(xmlSpecification)
-        };
+            return specifDatatype;
 
-        function extractSpecIfSubNodes(rootElement) {
-            let specifNodesArray = [];
-            const childrenDocElement = getChildNodeswithTag(rootElement, "CHILDREN")[0];
-            if(childrenDocElement != undefined){
-                specifNodesArray = Array.from(childrenDocElement.children,extractSpecifNode)
-            };
-            return specifNodesArray;
-
-            function getChildNodeswithTag(parentDocument, nodeName) {
-                return Array.from(parentDocument.children).filter(element => {return element.nodeName == nodeName});
+            function extr(rqA,spP) {
+                let val = datatype.getAttribute(rqA);
+                if (val)
+                    specifDatatype[spP] = Number(val)
             }
-            function extractSpecifNode(hierarchyDocument) {
-                let specifHierarchy = {
-                    id: hierarchyDocument.getAttribute("IDENTIFIER"),
-                    resource: hierarchyDocument.getElementsByTagName("OBJECT")[0].firstElementChild.innerHTML,
-                    changedAt: hierarchyDocument.getAttribute("LAST-CHANGE")
+            function getTypeOfDatatype(datatype) {
+                return {
+                    "DATATYPE-DEFINITION-BOOLEAN": 'xs:boolean',
+                    "DATATYPE-DEFINITION-DATE": 'xs:dateTime',
+                    "DATATYPE-DEFINITION-INTEGER": 'xs:integer',
+                    "DATATYPE-DEFINITION-REAL": 'xs:double',
+                    "DATATYPE-DEFINITION-STRING": 'xs:string',
+                    "DATATYPE-DEFINITION-XHTML": 'xhtml',
+                    "DATATYPE-DEFINITION-ENUMERATION": 'xs:enumeration',
+                }[datatype.nodeName];
+            }
+            function extractDataTypeValues(DataTypeValuesHtmlCollection) {
+                return Array.from(DataTypeValuesHtmlCollection[0].children, extractEnumValue);
+
+                function extractEnumValue(ch) {
+                    return {
+                        id: ch.getAttribute("IDENTIFIER"),
+                        value: ch.getAttribute("LONG-NAME") || '&#x00ab;undefined&#x00bb;'
+                    }
+                }
+            }
+        }
+    };
+
+    function pcTypeIdL(pCL) {
+        // Return a list with all ids of propertyClasses defining the type/category;
+        // there may be serveral, as the list of propertyClasses is not yet deduplicated:
+        return pCL.filter(
+                pC => pC.title == options.propType
+            )
+            .map(
+                pC => pC.id
+            )
+    }
+    function extractPropertyClasses(xmlSpecTypes) {
+        const specAttributesMap = extractSpecAttributesMap(xmlSpecTypes[0]);
+        let specifPropertyClasses = extractPropertyClassesFromSpecAttributeMap(specAttributesMap);
+
+        // Look for a propertyClass defining the type/category:
+        if (pcTypeIdL(specifPropertyClasses).length<1) {
+            // 1. Add a dataType for the hierarchy type:
+            xhr.response.dataTypes.push({
+                id: "DT-ShortString-" + xhr.response.id,
+                type: "xs:string",
+                title: "String[256]",
+                description: "String with length <=256",
+                maxLength: 256,
+                changedAt: new Date().toISOString()
+            });
+            // 2. Add a propertyClass for the hierarchy type, unless already present:
+            specifPropertyClasses.push({
+                id: "PC-Type-" + xhr.response.id,
+                dataType: "DT-ShortString-" + xhr.response.id,
+                title: options.propType,
+                description: "The nature or genre of the resource.",
+                changedAt: new Date().toISOString()
+            });
+        };
+        return specifPropertyClasses;
+
+        function extractPropertyClassesFromSpecAttributeMap(specAttributeMap) {
+            let propertyClasses = Object.entries(specAttributeMap).map( entry => { 
+                let propertyClass = {
+                    id: entry[0],
+                    title: entry[1].title,
+                    dataType: entry[1].dataType,
+                    changedAt: entry[1].changedAt
                 };
-                
-                let specifSubnodesArray = extractSpecIfSubNodes(hierarchyDocument);
-                if( specifSubnodesArray.length>0 ) 
-                    specifHierarchy.nodes = specifSubnodesArray;
-                
-                return specifHierarchy;
+                if( entry[1].multiple ) propertyClass.multiple = true;
+
+                return propertyClass;
+            });
+            return propertyClasses;
+        }
+        function extractSpecAttributesMap(specTypesDocument) {
+            return Object.assign({},
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-STRING"),
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-XHTML"),
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-ENUMERATION"),
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-DATE"),
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-BOOLEAN"),
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-INTEGER"),
+                extractSpecAttributeTypeMap(specTypesDocument, "ATTRIBUTE-DEFINITION-REAL"),
+            );
+
+            function extractSpecAttributeTypeMap(specTypesDocument, nodeName) {
+                let attributeDefinitions = specTypesDocument.getElementsByTagName(nodeName),
+                    attributeDefinitionMap = {};
+
+                Array.from(attributeDefinitions).forEach(definition => {
+                    attributeDefinitionMap[definition.getAttribute("IDENTIFIER")] =
+                        {
+                            title: definition.getAttribute("LONG-NAME"),
+                            dataType: definition.children[0].children[0].innerHTML,
+                            changedAt: definition.getAttribute("LAST-CHANGE"),
+                        };
+
+                    // Enumerations have an optional attribute MULTI-VALUED:  
+                    if (nodeName == "ATTRIBUTE-DEFINITION-ENUMERATION") {
+                        let multiple = definition.getAttribute("MULTI-VALUED");
+                        if (multiple && multiple.toLowerCase() == 'true')
+                            attributeDefinitionMap[definition.getAttribute("IDENTIFIER")].multiple = true;
+                    }
+                });
+                return attributeDefinitionMap;
             }
         }
     }
-}
-function parse(string) {
-    const parser = new DOMParser();
-    return parser.parseFromString(string,"text/xml");
-}
+
+    function extractElementClasses(xmlSpecTypes,subset) {
+        if (xmlSpecTypes.length<1) return [];
+        const specifElementClasses = [];
+        // consider to use .querySelectorAll("nodeName")
+        Array.from(xmlSpecTypes[0].children,
+            xmlSpecType => {
+                if (subset.includes(xmlSpecType.nodeName)) {
+                    let elC = extractElementClass(xmlSpecType);
+
+                    // Add a propertyClass for hierarchy type, unless already present:
+                    if (xmlSpecType.nodeName == 'SPECIFICATION-TYPE') {
+                        // Look for a propertyClass defining the type/category with value 'ReqIF:HierarchyRoot';
+                        // there should be at least one:
+                        let idL = pcTypeIdL(xhr.response.propertyClasses);
+                        if (idL.length > 0) {
+                            // Add the propertyClass as reference to the resourceClass, if missing:
+                            Array.isArray(elC.propertyClasses) ?
+                                addPcTypeIfMissing(elC.propertyClasses, idL)
+                                : elC.propertyClasses = [idL[0]];
+                        }
+                        else
+                            console.error("There is no propertyClass ");
+                    };
+                    specifElementClasses.push(elC)
+                }
+            }
+        );
+        return specifElementClasses;
+
+        function addPcTypeIfMissing(pCL,idL) {
+            for (pC of pCL) {
+                if (idL.includes(pC.id)) return;
+            };
+            pCL.push(idL[0]);
+        }
+        function extractElementClass(xmlSpecType) {
+            // for both resourceClasses and statementClasses:
+            const specifElementClass = {
+                id: xmlSpecType.getAttribute("IDENTIFIER"),
+                title: xmlSpecType.getAttribute("LONG-NAME") || xmlSpecType.getAttribute("IDENTIFIER"),
+                changedAt: xmlSpecType.getAttribute("LAST-CHANGE")
+            };
+            if (xmlSpecType.getAttribute("DESC"))
+                specifElementClass.description = xmlSpecType.getAttribute("DESC");
+            if (xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES")[0])
+                specifElementClass.propertyClasses = extractPropertyClassReferences(xmlSpecType.getElementsByTagName("SPEC-ATTRIBUTES"));
+
+            return specifElementClass;
+
+            function extractPropertyClassReferences(propertyClassesDocument) {
+                return Array.from(propertyClassesDocument[0].children, property => { return property.getAttribute("IDENTIFIER") })
+            }
+        }
+    }
+
+    function extractResources(tagName) {
+        let xmlSpecObjects = xmlDoc.getElementsByTagName(tagName);
+        return xmlSpecObjects.length<1? [] : Array.from(xmlSpecObjects[0].children,extractResource);
+
+        function extractResource(xmlSpecObject) {
+            let specifResource = {
+                id: xmlSpecObject.getAttribute("IDENTIFIER"),
+                title: xmlSpecObject.getAttribute("LONG-NAME") || "",
+                changedAt: xmlSpecObject.getAttribute("LAST-CHANGE")
+            };
+            specifResource['class'] = xmlSpecObject.getElementsByTagName("TYPE")[0].children[0].innerHTML;
+            let values = xmlSpecObject.getElementsByTagName("VALUES");
+            // Get a list of properties with none, one or more items:
+            specifResource.properties = extractProperties(values);  
+
+            // a resource must have at least one property:
+            if (!specifResource.title && specifResource.properties.length < 1)
+                specifResource.title = specifResource.id;
+
+            if (tagName == 'SPECIFICATIONS') {
+                // The property defining the type of the hierarchy root to decide whether a hierarchy has a root or not;
+                // as SpecIF data from other sources usually do not have an explicit root:
+                let idL = pcTypeIdL(xhr.response.propertyClasses),
+                    prp = {
+                        class: idL[0],
+                        value: "ReqIF:HierarchyRoot" // ReqIF root node with meta-data
+                    };
+                // Add type to properties, unless already present:
+                let p = pType(idL);
+                if (p)
+                    p.value = prp.value
+                else
+                    specifResource.properties.push(prp)
+            };
+
+            return specifResource;
+
+            function pType(L) {
+                // Return the propertyClass defining the type/category:
+                for (var p of specifResource.properties) {
+                    if (L.includes(p['class'])) return p;
+                };
+                // return undefined;
+            }
+        }
+    }
+    function extractStatements(xmlSpecRelations) {
+        return xmlSpecRelations.length<1? [] : Array.from(xmlSpecRelations[0].children,extractStatement);
+
+        function extractStatement(xmlSpecRelation) {
+            let specifStatement = {
+                id: xmlSpecRelation.getAttribute("IDENTIFIER"),
+                subject: xmlSpecRelation.getElementsByTagName("SOURCE")[0].children[0].innerHTML,
+                object: xmlSpecRelation.getElementsByTagName("TARGET")[0].children[0].innerHTML,
+                changedAt: xmlSpecRelation.getAttribute("LAST-CHANGE")
+            };
+            specifStatement['class'] = xmlSpecRelation.getElementsByTagName("TYPE")[0].children[0].innerHTML;
+            let values = xmlSpecRelation.getElementsByTagName("VALUES");
+            specifStatement.properties = extractProperties(values);
+        
+            return specifStatement;
+        }
+    }
+    function extractProperties(specAttributes) {
+        // used for OBJECTS as well as RELATIONS:
+        if ( specAttributes.length<1 ) return [];
+	    let list = [];
+	    // Only add a SpecIF property, if it has a value:
+        Array.from( specAttributes[0].children, (prp)=>{ let p=extractSpecIfProperty(prp); if(p.value) list.push(p)} );
+	    return list;
+
+        function extractSpecIfProperty(property) {
+            let specifProperty = {}, pC, dT;
+            /*  // Provide the id, even though it is not required by SpecIF:
+                // The attribute-value id is not required by ReqIF, 
+                // ToDo: check wether it *may* be specified, at all ...  
+                specifProperty.id = property.getAttribute("IDENTIFIER"); */
+            specifProperty['class'] = property.getElementsByTagName("DEFINITION")[0].children[0].innerHTML;
+
+            //  ToDo: Check whether ReqIF ATTRIBUTES can have an individual LONG-NAME ..
+
+            if (property.getAttribute("THE-VALUE")) {
+                specifProperty.value = property.getAttribute("THE-VALUE");
+
+                pC = itemById(xhr.response.propertyClasses, specifProperty['class']);
+                dT = itemById(xhr.response.dataTypes, pC.dataType);
+    //          console.debug('maxL', dT, pC, specifProperty.value, specifProperty.value.length);
+                if( typeof(dT.maxLength)=='number' && dT.maxLength < specifProperty.value.length ) {
+                    console.warn("Truncated ReqIF Attribute with value '" + specifProperty.value + "' to the specified maxLength of " + dT.maxLength + " characters");
+                    specifProperty.value = specifProperty.value.substring(0, dT.maxLength);
+                };
+            }
+            // XHTML:
+            else if( property.getElementsByTagName("THE-VALUE")[0] ) 
+                specifProperty.value = removeNamespace(property.getElementsByTagName("THE-VALUE")[0].innerHTML);
+            // ENUMERATION:
+            else if (property.getElementsByTagName("VALUES")[0]) {
+                specifProperty.value = '';
+                Array.from(property.getElementsByTagName("VALUES")[0].children, (ch) => { specifProperty.value += (specifProperty.value.length > 0 ? ',' : '') + ch.innerHTML });
+            };
+            return specifProperty;
+        }
+    }
+
+    function extractHierarchies(xmlSpecifications) {
+        // There is none or one element with tagname SPECIFICATIONS:
+        return xmlSpecifications.length < 1 ? [] : Array.from(xmlSpecifications[0].getElementsByTagName("SPECIFICATION"),extractHierarchy);
+
+        function extractHierarchy(xmlSpecification) {
+            let hId = xmlSpecification.getAttribute("IDENTIFIER");
+            return {
+                id: options.prefixN + hId,
+                resource: hId,
+                changedAt: xmlSpecification.getAttribute("LAST-CHANGE"),
+                nodes: extractNodes(xmlSpecification)
+            };
+
+            function extractNodes(rootElement) {
+                let specifNodesArray = [];
+                const childrenDocElement = getChildNodeswithTag(rootElement, "CHILDREN")[0];
+                if(childrenDocElement != undefined){
+                    specifNodesArray = Array.from(childrenDocElement.children,extractSpecifNode)
+                };
+                return specifNodesArray;
+
+                function getChildNodeswithTag(parentDocument, nodeName) {
+                    return Array.from(parentDocument.children).filter(element => {return element.nodeName == nodeName});
+                }
+                function extractSpecifNode(hierarchyDocument) {
+                    let specifHierarchy = {
+                        id: hierarchyDocument.getAttribute("IDENTIFIER"),
+                        resource: hierarchyDocument.getElementsByTagName("OBJECT")[0].firstElementChild.innerHTML,
+                        changedAt: hierarchyDocument.getAttribute("LAST-CHANGE")
+                    };
+                
+                    let specifSubnodesArray = extractNodes(hierarchyDocument);
+                    if( specifSubnodesArray.length>0 ) 
+                        specifHierarchy.nodes = specifSubnodesArray;
+                
+                    return specifHierarchy;
+                }
+            }
+        }
+    }
+    function parse(string) {
+        const parser = new DOMParser();
+        return parser.parseFromString(string,"text/xml");
+    }
 
 
 /* 

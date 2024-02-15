@@ -15,7 +15,8 @@
 	ToDo: 
 	- escapeXML the content. See toXHTML.ts.
 	- transform dataType anyURI to xhtml
-	- Design the ReqIF import and export such that a roundtrip works; neither loss nor growth is acceptable.
+	- if a referenced file is not PNG, an alternative PNG and text must be supplied according to the ReqIF schematron.
+	- test whether the ReqIF import and export support a roundtrip; neither loss nor growth is acceptable.
 */
 
 // Constructor for ReqIF import and export:
@@ -134,7 +135,8 @@ moduleManager.construct({
 													
 //													console.debug('iospecif.toSpecif 3',t,e.date,e.date.toISOString());
 													zip.file(aFile.name).async("blob")
-													.then( (f:Blob) =>{
+													.then((f: Blob) => {
+														// @ts-ignore - object shouldn't be undefined 
 														resL[0].files.push({ 
 															blob: f, 
 															id: 'F-' + simpleHash(aFile.name), 
@@ -274,7 +276,7 @@ moduleManager.construct({
 						// Has any given property value of the listed resources or statements XHTML-content:
 						if ((LIB.itemByKey(pr.dataTypes, pC.dataType).type == SpecifDataTypeEnum.String) && withHtml(eL, pCk)) {
 //							console.debug( 'specializeClassToFormattedText', eC, pC );
-							console.info("Specializing propertyClass for formatted text to element with title '"+pCk.id+"'");
+							console.info("Specializing data type to formatted text for propertyClass with id '"+pC.id+" and title '"+pC.title+"'");
 							// specialize propertyClass to "DT-Text"; this is perhaps too radical, 
 							// as *all* resourceClasses/statementClasses using this propertyClass are affected:
 							pC.dataType = LIB.makeKey(dTFormattedText.id);
@@ -356,7 +358,9 @@ moduleManager.construct({
 					case SpecifDataTypeEnum.Duration:
 						// Remember that pr is supposed to arrive with a single selected language, here:
 						let info = JSON.stringify({ SpecIF_DataType: dT.type });
+						// @ts-ignore - object isn't undefined, that's why we ask 
 						if (LIB.isMultiLanguageValue(dT.description) && dT.description.length>0)
+							// @ts-ignore - object shouldn't be undefined 
 							dT.description[0].text += '\n' + info
 						else
 							dT.description = LIB.makeMultiLanguageValue(info);
@@ -430,7 +434,7 @@ moduleManager.construct({
 			if (LIB.referenceIndexBy(separatedHC.objects, 'class', hC) > -1) {
 				// The hierarchy root's class is shared by a resource:
 				hC = simpleClone(hC);  
-				hC.id = 'HC-'+hC.id;
+				hC.id = LIB.replacePrefix(CONFIG.prefixHC, hC.id);
 				// ToDo: If somebody uses interitance with 'extends' in case of a hierarchy root classes, 
 				// we need to update all affected 'extend' properties. There is rather improbable, though.
 			};
@@ -541,7 +545,7 @@ moduleManager.construct({
 			}
 			function commonAttsOf(e: SpecifItem): string {
 				// @ts-ignore - title does not always exist, but that's why it is checked: 
-				return 'IDENTIFIER="' + e.id + '" LONG-NAME="' + (e.title ? e.title.stripHTML().escapeXML() : '') + '" DESC="' + (e.description && e.description[0] && e.description[0].text ? e.description[0].text.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
+				return 'IDENTIFIER="' + e.id + (e.title ? '" LONG-NAME="' + e.title.stripHTML().escapeXML() : '') + (e.description && e.description[0] && e.description[0].text ? '" DESC="' + e.description[0].text.stripHTML().escapeXML():'')+'" LAST-CHANGE="'+dateTime(e)+'"'
 			}
 			function attrTypesOf(eC: SpecifResourceClass | SpecifStatementClass): string {
 				if (!eC.propertyClasses || eC.propertyClasses.length < 1) return '<SPEC-ATTRIBUTES></SPEC-ATTRIBUTES>';
@@ -713,7 +717,7 @@ moduleManager.construct({
 				if( !el.nodes || el.nodes.length<1 ) return ''
 				var xml = '<CHILDREN>'
 					el.nodes.forEach( (ch) =>{
-						xml += '<SPEC-HIERARCHY IDENTIFIER="'+(ch.id||'N-'+ch.resource)+'" LONG-NAME="'+(ch.title||'')+'" LAST-CHANGE="'+(ch.changedAt||el.changedAt)+'">'
+						xml += '<SPEC-HIERARCHY IDENTIFIER="' + (ch.id || CONFIG.prefixN + ch.resource) + (ch.title? '" LONG-NAME="'+ch.title : '')+'" LAST-CHANGE="'+(ch.changedAt||el.changedAt)+'">'
 							+		'<OBJECT><SPEC-OBJECT-REF>'+ch.resource.id+'</SPEC-OBJECT-REF></OBJECT>'
 							+		childrenOf( ch )
 							+ '</SPEC-HIERARCHY>'

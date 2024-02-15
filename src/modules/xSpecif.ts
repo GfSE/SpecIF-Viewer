@@ -537,20 +537,22 @@ class CSpecIF implements SpecIF {
 			if (typeof (iE.isHeading) == 'boolean') {
 				oE.isHeading = iE.isHeading;
 			}
-			else if (iE.title == 'SpecIF:Heading') {
+			else if (app.ontology.headings.includes(iE.title)) {
 				// take care of older data without "isHeading":
 				oE.isHeading = true;
-			}
+		/*	This is wrong: Perhaps the value of a property of class dcterms:type could specify a special heading such as BOM,
+		 *	but not the title of a property as implemented below:
+		 *	}
 			else {
 				// look for a property class being configured in CONFIG.headings:
 				let pC;
 				for (var a = oE.propertyClasses.length - 1; a > -1; a--) {
 					pC = LIB.itemByKey(self.propertyClasses, oE.propertyClasses[a]);
-					if (pC && CONFIG.headings.includes(pC.title)) {
+					if (pC && app.ontology.headings.includes(pC.title)) {
 						oE.isHeading = true;
 						break;
 					};
-				};
+				}; */
 			};
 //			console.debug('resourceClass 2int',iE,oE);
 			if (oE.propertyClasses.length <0 )
@@ -612,6 +614,7 @@ class CSpecIF implements SpecIF {
 			// For the time being, suppress any revision to make sure that a class update doesn't destroy the reference.
 			// ToDo: Reconsider once we have a backend with multiple revisions ...
 			let eCkey = iE.subject ? LIB.makeKey(iE[names.sClass].id || iE[names.sClass])
+				  // @ts-ignore - in this case 'names.hClass' is defined
 				: (iE.nodes ? LIB.makeKey(iE[names.hClass].id || iE[names.hClass])
 					: LIB.makeKey(iE[names.rClass].id || iE[names.rClass]));
 
@@ -746,7 +749,7 @@ class CSpecIF implements SpecIF {
 
 				// ... and add a link to the hierarchy:
 				oE = {
-					id: 'N-' + iR.id,
+					id: CONFIG.prefixN + iR.id,
 					resource: LIB.keyOf( iR ),
 				//	changedAt: iE.changedAt || spD.changedAt || new Date().toISOString()
 					changedAt: LIB.addTimezoneIfMissing(iE.changedAt || spD.changedAt) || new Date().toISOString()
@@ -989,12 +992,15 @@ class CSpecIF implements SpecIF {
 						}
 					);
 
-				// Add a resource as hierarchyRoot, if needed.
+			/*	// Add a resource as hierarchyRoot, if needed.
+				// - If none of the hierarchies are a root, a common root is added for all.
+				// - If at least one hierarchy has a root, all others get their own root.
 				// It is assumed,
 				// - that in general SpecIF data do not have a hierarchy root with meta-data.
 				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
-		
-			/*		function aHierarchyHasNoRoot(dta: SpecIF): boolean {
+				// - the ReqIF import transformation adds a property titled 'dcterms:type' with value CONFIG.hierarchyRoot to each hierarchy root.
+
+					function aHierarchyHasNoRoot(dta: SpecIF): boolean {
 						for (var h of dta.hierarchies) {
 							let r = LIB.itemByKey(dta.resources, h.resource);
 							if (!r) {
@@ -1005,15 +1011,15 @@ class CSpecIF implements SpecIF {
 							console.debug('aHierarchyHasNoRoot',h,ty,rC);
 							// The type of the hierarchy root can be specified by a property titled CONFIG.propClassType
 							// or by the title of the resourceClass:
-							if ((!ty || CONFIG.hierarchyRoots.indexOf(ty) < 0)
-								&& (CONFIG.hierarchyRoots.indexOf(rC.title) < 0))
+							if ((!ty || ty != CONFIG.hierarchyRoot )
+								&& (rC.title != CONFIG.hierarchyRoot))
 								return true;
 						};
 						return false;
 					}
-				console.debug('has root:', !aHierarchyHasNoRoot(this)); */
+					console.debug('has root:', spD.hierarchies, aHierarchyHasNoRoot(this));
 
-				/*	let spD = this;
+					let spD = this;
 					if (opts && opts.createHierarchyRootIfMissing && aHierarchyHasNoRoot(spD)) {
 		
 						console.info("Added a hierarchyRoot");
@@ -1044,13 +1050,39 @@ class CSpecIF implements SpecIF {
 						spD.resources.push(r2ext(res));
 						// create a new root instance:
 						spD.hierarchies = [{
-							id: "H-" + res.id,
+							id: CONFIG.prefixH + res.id,
 							resource: LIB.keyOf(res),
 							// .. and add the previous hierarchies as children:
 							nodes: spD.hierarchies,
 							changedAt: res.changedAt
 						}];
 					};  */
+
+				// Add a resource as hierarchyRoot, if needed.
+				// - all top hierarchies get a hierarchy root, unless they *are* a hierarchy root 
+				// It is assumed,
+				// - that in general SpecIF data do not have a hierarchy root with meta-data.
+				// - that ReqIF specifications (=hierarchyRoots) are transformed to regular resources on input.
+				// - the ReqIF import transformation adds a property titled 'dcterms:type' with value CONFIG.hierarchyRoot to each hierarchy root.
+				function nodeIsNoRoot(r:SpecifResource):boolean {
+					let valL = LIB.valuesByTitle(r, [CONFIG.propClassType], self);
+					return valL.length < 1 || LIB.languageTextOf(valL[0], { targetLanguage: "default" }) != CONFIG.hierarchyRoot
+                }
+				if (opts && opts.createHierarchyRootIfMissing) {
+					for (var i = this.hierarchies.length - 1; i > -1; i--) {
+						let r = LIB.itemByKey(this.resources, this.hierarchies[i].resource);
+						if (nodeIsNoRoot(r)) {
+							// A hierarchy has no root element (as needed for ReqIF);
+							// add any needed classes, so that one or more hierarchy roots can be added later in h2ext:
+							let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true, referencesWithoutRevision: true, delta: true });
+							['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
+								// @ts-ignore - indexing is fine
+								(li) => { LIB.cacheL(spD[li], oC[li]) }
+							);
+							break;  // once is sufficient
+						}
+                    }
+				};
 
 				// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
 				if (LIB.multiLanguageValueHasContent(this.description))
@@ -1085,11 +1117,10 @@ class CSpecIF implements SpecIF {
 				};
 
 				// Now start to assemble the SpecIF output:
-				spD.dataTypes = LIB.forAll(this.dataTypes, dT2ext);
-				spD.propertyClasses = LIB.forAll(this.propertyClasses, pC2ext);
-				spD.resourceClasses = LIB.forAll(this.resourceClasses, rC2ext);
-				spD.statementClasses = LIB.forAll(this.statementClasses, sC2ext);
-				spD.files = [];
+				LIB.cacheL(spD.dataTypes, LIB.forAll(this.dataTypes, dT2ext));
+				LIB.cacheL(spD.propertyClasses, LIB.forAll(this.propertyClasses, pC2ext));
+				LIB.cacheL(spD.resourceClasses, LIB.forAll(this.resourceClasses, rC2ext));
+				LIB.cacheL(spD.statementClasses, LIB.forAll(this.statementClasses, sC2ext));
 				for( var f of this.files ) {
 					pend++;
 					f2ext(f)
@@ -1101,9 +1132,9 @@ class CSpecIF implements SpecIF {
 						reject
 					);
 				};
-				spD.resources = LIB.forAll((this.resources), r2ext);
-				spD.statements = LIB.forAll(this.statements, s2ext);
-				spD.hierarchies = LIB.forAll(this.hierarchies, n2ext); 
+				LIB.cacheL(spD.resources, LIB.forAll((this.resources), r2ext));
+				LIB.cacheL(spD.statements, LIB.forAll(this.statements, s2ext));
+				LIB.cacheL(spD.hierarchies, LIB.forAll(this.hierarchies, h2ext));
 
 				if (pend < 1) finalize();  // no files, so finalize right away
 				return;
@@ -1392,6 +1423,37 @@ class CSpecIF implements SpecIF {
 					if (iN.revision)
 						oN.revision = iN.revision;
 					return oN
+				}
+				function h2ext(iN: SpecifNode) {
+					// Add a hierarchy root, if it is needed and it not present:
+					let r = LIB.itemByKey(self.resources, iN.resource);
+					if (opts && opts.createHierarchyRootIfMissing && nodeIsNoRoot(r) ) {
+						console.info("Adding hierarchy root to hierarchy with id '"+iN.id+"'");
+						// 1. Add the referenced resource;
+						// the ids of hierarchy root and resource must be constructed similary as the reqif2specif transformation:
+						let rId = LIB.replacePrefix(CONFIG.prefixH, iN.id);
+						spD.resources.push({
+							id: rId,
+							class: LIB.makeKey("RC-Folder"),
+							properties: [{
+								class: LIB.makeKey("PC-Name"),
+								values: [[{ text: "Root for "+iN.id }]]
+							}, {
+								class: LIB.makeKey("PC-Type"),
+								values: [[{ text: CONFIG.hierarchyRoot }]]
+							}],
+							changedAt: new Date().toISOString()
+                        })
+						// 2. Add the hierarchy root:
+						return {
+							id: CONFIG.prefixN + rId,
+							resource: LIB.makeKey(rId),
+							nodes: [n2ext(iN)],
+							changedAt: new Date().toISOString()
+                        }
+					};
+					// else don't add anything:
+					return n2ext(iN)
 				}
 				// a file:
 				function f2ext(iE: SpecifFile): Promise<SpecifFile> {

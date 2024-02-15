@@ -117,7 +117,6 @@ moduleManager.construct({
 	let myName = self.loadAs,
 		myFullName = 'app.' + myName,
 		selPrj: CProject,
-		cData: CCache,
 		displayOptions: any,
 		chgCnt = 0;   // counts the changes of filter settings to avoid multiple filter runs within a timeframe
 
@@ -199,7 +198,6 @@ moduleManager.construct({
 		$('#filterNotice').empty();
 
 		selPrj = app.projects.selected;
-		cData = selPrj.cache;
 
 		if (typeof (opts) != 'object') opts = {};
 		displayOptions = {
@@ -269,10 +267,10 @@ moduleManager.construct({
 			visited: SpecifId[] = []; // list all evaluated resources
 		LIB.iterateNodes(
 			// iterate all hierarchies except the one for unreferenced resources:
-			(cData.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
+			(selPrj.cache.get("hierarchy", selPrj.hierarchies) as SpecifNodes)
 				.filter(
 					(h: SpecifNode) => {
-						return LIB.typeOf(h.resource, cData) != CONFIG.resClassUnreferencedResources
+						return LIB.typeOf(h.resource, selPrj.cache) != CONFIG.resClassUnreferencedResources
 					}
 				),
 			(nd: SpecifNode) => {
@@ -612,7 +610,7 @@ moduleManager.construct({
 
 			function allEnumValues(pC: SpecifPropertyClass, vL: SpecifId[]) {
 				var boxes: IBox[] = [],
-					dT = cData.get( "dataType", [LIB.makeKey(pC.dataType)])[0] as SpecifDataType;
+					dT = selPrj.cache.get( "dataType", [LIB.makeKey(pC.dataType)])[0] as SpecifDataType;
 				// Include all possible enumerated values:
 				if (dT && Array.isArray(dT.enumeration)) {
 					for( var v of dT.enumeration ) {
@@ -672,14 +670,14 @@ moduleManager.construct({
 //			console.debug('addEnumValueFilters',def);
 			// This is called per resourceClass. 
 			// Each ENUMERATION property gets a filter module:
-		//	var rC = cData.get("resourceClass", [def.rCk])[0] as SpecifResourceClass,
-			var rC = LIB.getExtendedClasses(cData.get("resourceClass", "all"), [def.rCk])[0],
+		//	var rC = selPrj.cache.get("resourceClass", [def.rCk])[0] as SpecifResourceClass,
+			var rC = LIB.getExtendedClasses(selPrj.cache.get("resourceClass", "all"), [def.rCk])[0],
 				pC: SpecifPropertyClass;
 //			console.debug( 'rC', def, rC );
 			rC.propertyClasses.forEach( (pck)=>{
-				pC = cData.get("propertyClass", [pck] )[0] as SpecifPropertyClass;
+				pC = selPrj.cache.get("propertyClass", [pck] )[0] as SpecifPropertyClass;
 				if ((def.pCk && LIB.references(def.pCk,pC))   // we can assume that def.pCk is an enumeration
-					|| (!def.pCk && (cData.get("dataType", [pC.dataType])[0] as SpecifDataType).enumeration)) {
+					|| (!def.pCk && (selPrj.cache.get("dataType", [pC.dataType])[0] as SpecifDataType).enumeration)) {
 					addEnumFilter( rC, pC, def.selected )
 				};
 			});
@@ -733,7 +731,7 @@ moduleManager.construct({
 						scope: selPrj.id,
 						options: [] 
 				};
-				(cData.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[])
+				(selPrj.cache.get("resourceClass", selPrj.resourceClasses) as SpecifResourceClass[])
 				.forEach(
 					(rC) => {
 						if (	!CONFIG.excludedFromTypeFiltering.includes(rC.title)
@@ -780,13 +778,13 @@ moduleManager.construct({
 /*	function mayHaveSecondaryFilters( rCk ) {  // rCk is resource class key
 		// Check if a resourceClass (or statementClass ) has a property with enumerated values,
 		// so that a secondary facet filter can be built
-		var rC = itemByKey( cData.resourceClasses, rCk ),
+		var rC = itemByKey( selPrj.cache.resourceClasses, rCk ),
 			pC;  
 		for( var i=rC.propertyClasses.length-1; i>-1; i-- ) {
 			// if the class has at least one property with enums
 			// ToDo: same with boolean
-			pC = itemById( cData.propertyClasses, rC.propertyClasses[i] );
-			if( itemById( cData.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
+			pC = itemById( selPrj.cache.propertyClasses, rC.propertyClasses[i] );
+			if( itemById( selPrj.cache.dataTypes, pC.dataType ).type=='xs:enumeration' ) return true
 		};
 		return false
 	}; */

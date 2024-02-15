@@ -112,7 +112,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.resClass = resClassId( pN + '-' + wsN );
 
 			// ToDo: Check if the type name does not yet exist. Should not occur as Excel does not allow equal sheet names in a file.
-			this.hid = 'H-' + simpleHash(pN + wsN)	// the hierarchy ID of the folder carrying all resources of the selected sheet
+			this.hid = CONFIG.prefixH + simpleHash(pN + wsN)	// the hierarchy ID of the folder carrying all resources of the selected sheet
 			this.range = this.data["!ref"]; 	// e.g. A1:C25
 			if (this.range) {
 				let splittedRange = this.range.split(":");
@@ -613,7 +613,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// @ts-ignore - hTree is defined
 						hTree.nodes.push({
 							// @ts-ignore - hTree is defined
-							id: 'N-' + simpleHash(res.id + hTree.nodes.length),
+							id: CONFIG.prefixN + simpleHash(res.id + hTree.nodes.length),
 							resource: LIB.keyOf(res),
 							changedAt: chAt
 						});
@@ -844,7 +844,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 
 	// 2. Create the specification (hierarchy root) for the file:
 	specifData.hierarchies.push({
-		id: 'H-' + pN.toSpecifId(),
+		id: CONFIG.prefixH + pN.toSpecifId(),
 		resource: LIB.makeKey('R-' + pN.toSpecifId() ),
 		nodes: [],
 		changedAt: chAt
