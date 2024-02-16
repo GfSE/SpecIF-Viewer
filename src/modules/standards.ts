@@ -164,6 +164,7 @@ CONFIG.prefixPC = "PC-";
 CONFIG.prefixRC = "RC-";
 CONFIG.prefixSC = "SC-";
 CONFIG.prefixHC = "HC-";
+CONFIG.prefixHR = "HR-"; // for hierarchyRoots needed by ReqIF
 CONFIG.prefixH = "H-";
 CONFIG.prefixN = "N-";
 

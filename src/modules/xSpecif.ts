@@ -1431,7 +1431,7 @@ class CSpecIF implements SpecIF {
 						console.info("Adding hierarchy root to hierarchy with id '"+iN.id+"'");
 						// 1. Add the referenced resource;
 						// the ids of hierarchy root and resource must be constructed similary as the reqif2specif transformation:
-						let rId = LIB.replacePrefix(CONFIG.prefixH, iN.id);
+						let rId = LIB.replacePrefix(CONFIG.prefixHR, iN.id);
 						spD.resources.push({
 							id: rId,
 							class: LIB.makeKey("RC-Folder"),
