@@ -2711,7 +2711,9 @@ class CProject implements SpecifProject {
 					//	opts.revisionDate = undefined;
 						break;
 					case 'reqif':
+						// only single language is supported:
 						opts.lookupTitles = true;
+						if (!opts.targetLanguage) opts.targetLanguage = self.language;
 						opts.targetNamespace = "ReqIF.";
 						// XHTML is supported:
 						opts.makeHTML = true;

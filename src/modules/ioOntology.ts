@@ -12,20 +12,20 @@ class COntology {
     data: SpecIF;
 //  domains: string[] = [];
 
-    // A list with all namespaces:
+    // List with all namespaces:
     namespaces: string[] = [];
 
-    // A list of all heading types:
+    // List of all heading types:
     // If a resourceClass has a title equal to one of the values in the following list,
     // it is considered a heading (chapter title) and will be included in the outline numbering.
     headings: string[] = [];
 
-    // A list with all model-element types by title,
+    // List with all model-element types by title,
     // is used for example to build a glossary;
     // it is expected that a plural of any list element exists ( element+'s' ):
     modelElementClasses: string[] = [];
 
-    // A list with all terms by title:
+    // List with all terms by title:
     termClasses: string[] = [
         "SpecIF:TermResourceClass",
         "SpecIF:TermStatementClass",
@@ -37,6 +37,14 @@ class COntology {
         "SpecIF:TermPropertyClassDuration",
         "SpecIF:TermPropertyClassURI",
         "SpecIF:TermPropertyValue"
+    ];
+
+    // List with all values of lifecycleStatus eligible for use in SpecIF:
+    eligibleLifecycleStatus: string[] = [
+        "SpecIF:LifecycleStatusReleased",
+        "SpecIF:LifecycleStatusEquivalent",
+        "SpecIF:LifecycleStatusSubmitted",
+        "SpecIF:LifecycleStatusExperimental"
     ];
 
     // Assign the primitive dataType to the termPropertyClasses of a SpecIF Ontology:
@@ -173,7 +181,7 @@ class COntology {
         // else, return the input value:
         return term;
     }
-    globalize(name: string): string {
+    globalize(ctg: string, name: string): string {
         // Translate a local name to the ontology term;
         // if several are found, select the one with the most confirmed lifecycle status.
 
@@ -187,7 +195,12 @@ class COntology {
             (r) => {
                 // is it a term?
                 rC = LIB.itemByKey(this.data.resourceClasses, r['class']);
-                if (this.termClasses.includes(LIB.titleOf(rC))) {
+                if (this.termClasses.includes(LIB.titleOf(rC))
+                    && (
+                        LIB.titleOf(rC).toLowerCase().includes(ctg.toLowerCase())
+                        || ['all','any'].includes(ctg)
+                    )
+                ) {
                     // look for local terms:
                     let tVL = LIB.valuesByTitle(r, ["SpecIF:LocalTerm", "SpecIF:LocalTermPlural"], this.data);
                     for (let v of tVL) {
@@ -204,7 +217,7 @@ class COntology {
         //        console.debug('globalize',termL);
         if (termL.length > 0) {
             // select the most confirmed term:
-            for (let status of ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent", "SpecIF:LifecycleStatusSubmitted", "SpecIF:LifecycleStatusExperimental"])
+            for (let status of this.eligibleLifecycleStatus)
                 for (let t of termL) {
                     if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status) {
                         let newT = this.valueByTitle(t, CONFIG.propClassTerm);
@@ -262,7 +275,7 @@ class COntology {
     }
     normalize(ctg: string, term: string): string {
         // find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
-        let str = this.globalize(term);
+        let str = this.globalize(ctg, term);
 
         // find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
         str = this.getPreferredTerm(ctg, str);
