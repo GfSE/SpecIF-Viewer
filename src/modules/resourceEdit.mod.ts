@@ -94,7 +94,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 							// - open an input text-area, if it is a description property
 							// - open an input line, otherwise
 							{
-								typ: CONFIG.textProperties.includes(this.pC.title) ? 'area' : 'line',
+								typ: app.ontology.propertyClassIsText(this.pC.title) ? 'area' : 'line',
 								//	typ: ((this.dT.maxLength && this.dT.maxLength < CONFIG.textThreshold + 1) || CONFIG.titleProperties.includes(this.pC.title)) ? 'line' : 'area',
 								handle: opts.myFullName + '.check()',
 								hint: this.pC.description

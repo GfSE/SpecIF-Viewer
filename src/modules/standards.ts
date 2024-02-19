@@ -245,11 +245,11 @@ CONFIG.commentProperties = [
 	"ReqIF-WF.SupplierComment",
 	"SpecIF:Comment"
 ];
-// those will get a larger edit field, just like the description properties:
+/* // those will get a larger edit field, just like the description properties:
+// CONFIG.formattedProperties =
 CONFIG.textProperties =
-CONFIG.formattedProperties =
     CONFIG.descProperties
-	.concat(CONFIG.commentProperties);
+	.concat(CONFIG.commentProperties); */
 
 CONFIG.stereotypeProperties = [
     'UML:Stereotype'

@@ -292,7 +292,13 @@ class COntology {
         // else:
         // return '';
     }
+    propertyClassIsText(term: string): boolean {
+        // Return if the propertyClass defines a string with a certain length:
+        let len = this.getTermValue("propertyClass", term, "SpecIF:StringMaxLength");
+        return len == undefined || typeof(len) == 'number' && len > CONFIG.textThreshold;
+    }
     propertyClassIsFormatted(term: string): boolean {
+        // Return if the propertyClass defines a formatted string:
         // @ts-ignore - no problem to compare this ..
         return this.getTermValue("propertyClass", term, "SpecIF:TextFormat") == SpecifTextFormat.Xhtml;
     }

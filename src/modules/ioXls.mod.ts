@@ -735,7 +735,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 					if (!pC) pC = defaultC;
 
 					// Assign a longer text field for descriptions:
-					if (pC == defaultC && CONFIG.textProperties.includes(pTi)) pC = 'Text';
+					if (pC == defaultC && app.ontology.propertyClassIsText(pTi)) pC = 'Text';
 
 					// Assign a longer text field for columns with cells having a longer text;
 					if (pC == defaultC) {

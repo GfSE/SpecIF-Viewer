@@ -469,10 +469,12 @@ class CSpecIF implements SpecIF {
 			if (app.ontology.propertyClassIsFormatted(oE.title))
 				oE.format = SpecifTextFormat.Xhtml
 			else
-				//	oE.format = CONFIG.excludedFromFormatting.includes(oE.title) ? SpecifTextFormat.Plain : (iE.format || SpecifTextFormat.Plain);
-				oE.format = typeof (iE.format) == 'string' && iE.format.length > 3 ?
-								iE.format
-								: CONFIG.formattedProperties.includes(oE.title) ? SpecifTextFormat.Xhtml : SpecifTextFormat.Plain;
+			/*	oE.format = typeof (iE.format) == 'string' && iE.format.length > 3 ?
+					iE.format
+					: CONFIG.formattedProperties.includes(oE.title) ? SpecifTextFormat.Xhtml : SpecifTextFormat.Plain; */
+				oE.format = typeof (iE.format) == 'string' && iE.format == SpecifTextFormat.Xhtml ?
+								SpecifTextFormat.Xhtml
+								: SpecifTextFormat.Plain;
 
 			if (iE.unit) oE.unit = iE.unit;
 
