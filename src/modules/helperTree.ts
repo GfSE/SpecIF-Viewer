@@ -12,15 +12,18 @@ interface JQuery {
 interface jqTreeNode {
 	id: string;
 	name: string;
-	order?: string;
+	order: string;
 	ref: any;
-	parent?: jqTreeNode;
+	parent: jqTreeNode;
 	children: jqTreeNode[];
-	is_open?: boolean;
-	getLevel?: Function;
-	getPreviousNode?: Function;
-	getNextNode?: Function;
-	getNextSibling?: Function;
+	is_open: boolean;
+	getLevel: Function;
+	getPreviousSibling: Function;
+	getPreviousNode: Function;
+	getPreviousVisibleNode: Function;
+	getNextVisibleNode: Function;
+	getNextNode: Function;
+	getNextSibling: Function;
 }
 interface jqTreeState {
 	open_nodes: string[];
@@ -64,9 +67,8 @@ class Tree {
 		// this.selectedNode may be invalid
 	}
 	get(): jqTreeNode[] {
-		// return the list of nodes representing the SpecIF root nodes:
+		// return the list of root nodes with their subtree:
 		let tr = this.domE.tree('getTree');
-//		console.debug('get',tr);
 		return tr? tr.children : undefined
 	}
 	iterate(fn:Function) {
@@ -80,7 +82,7 @@ class Tree {
 //		console.debug('firstNode',tr);
 		return tr? tr.children[0] : undefined	// avoid an exception when there is none ...
 	};
-	rootNode(nd: jqTreeNode): jqTreeNode {
+/*	rootNode(nd: jqTreeNode): jqTreeNode {
 		// return the root node of the given node:
 		if( !nd ) nd = this.selectedNode;
 		// step up until the parent is the jqTree root node; it has no id:
@@ -88,7 +90,7 @@ class Tree {
 			nd = nd.parent;
 		};
 		return nd;
-	};
+	}; */
 	private preciseRef(ref: SpecifKey, chk: SpecifKey):boolean {
 		return LIB.references(chk, ref);
     }
@@ -165,24 +167,27 @@ class Tree {
 	};
 	selectNodeByRef(k: SpecifKey, similar?: boolean): jqTreeNode {
 		// If an arbitrary object is specified (when clicking a link somewhere), select it's first occurrence in the tree:
-		// Note: This works, only if the tree is visible.
+		// Note: This works only if the tree is visible.
 		if (this.selectedNode && (similar ? this.similarRef(this.selectedNode.ref, k)
 										: this.preciseRef(this.selectedNode.ref, k)))
 			return this.selectedNode;
 		// else:
 		return this.selectNode( this.nodeByRef( k, similar ) )
 	};
-	openNode(nd: jqTreeNode ):void {
+	openNode(nd?: jqTreeNode ):void {
 		if( !nd ) nd = this.selectedNode;
-		if( nd ) this.domE.tree('openNode', nd)
+		if (nd && nd.children.length > 0 && !nd.is_open )
+			this.domE.tree('openNode', nd)
 	};
-	toggleNode(nd: jqTreeNode ):void {
+/*	toggleNode(nd?: jqTreeNode ):void {
 		if( !nd ) nd = this.selectedNode;
-		if( nd ) this.domE.tree('toggleNode', nd)
-	};
-	closeNode(nd: jqTreeNode ):void {
+		if (nd && nd.children.length>0)
+			this.domE.tree('toggle', nd)
+	}; */
+	closeNode(nd?: jqTreeNode ):void {
 		if( !nd ) nd = this.selectedNode;
-		if( nd ) this.domE.tree('closeNode', nd)
+		if (nd && nd.children.length > 0 && nd.is_open )
+			this.domE.tree('closeNode', nd)
 	};
 /*	appendNode( nd, val ) {
 		if( nd ) this.domE.tree( 'appendNode', val, nd )
@@ -202,11 +207,36 @@ class Tree {
 		if( !nd ) nd = this.selectedNode;
 		if( nd ) this.domE.tree('removeNode', nd)
 	};
-	moveUp():void {
-		let cur=this.selectedNode;  // save the current position
-		if (!cur) { this.selectFirstNode(); return }
-		
-		// close open nodes behind (in this case we are coming from the next node)
+	moveUp(): void {
+		// starting from the selected node, creep backwards opening all nodes, if they have children
+		// - to the previous sibling, if it has no children
+		// - to the last child of the previous sibling, if it exists
+		// - in fact to the last successor having no children, as deep as it gets.
+		let cur = this.selectedNode;  //  keep in mind the current position
+		if (!cur) { this.selectFirstNode(); return };
+
+		// close open node below
+		this.closeNode();
+		// with jqtree v1.8.0 getPreviousNode brings results depending on whether the previous nodes are opened or closed, thus a workaround:
+		let prv = cur.getPreviousSibling();
+		if (prv) {
+			// current node is *not* first of siblings (children), so the previous sibling exists:
+			let plen = prv.children.length;
+			while (plen > 0) {
+				this.openNode(prv);
+				prv = prv.children[plen - 1];
+				plen = prv.children.length;
+			};
+			this.domE.tree('moveUp');
+		}
+		else {
+			// current node is first of siblings (children), so the previous sibling does not exist:
+			this.domE.tree('moveUp');
+			this.closeNode();
+		};
+
+	/*	This has worked until jqtree 1.6.3, but not any more with v1.8.0
+	 *	// close open nodes below (in this case we are coming from the next node)
 		// @ts-ignore - cur has a value, here
 		if (cur.getNextNode() && cur.getLevel() < cur.getNextNode().getLevel()) {
 			this.domE.tree('closeNode', cur )
@@ -231,12 +261,24 @@ class Tree {
 				this.domE.tree('openNode', this.selectedNode.getPreviousNode());
 				if( !this.selectedNode.getPreviousNode().children.length ) return
 			}
-		}
+		} */
 	};
 	moveDown():void {
-		let cur=this.selectedNode;  // save the current position
-		if (!cur) { this.selectFirstNode(); return }
+		// starting from the selected node, creep forward opening all nodes, if they have children
+		// - to the next sibling, if the current node has no children
+		// - to the first child of the current node, if it exists
+		let cur=this.selectedNode;  // keep in mind the current position
+		if (!cur) { this.selectFirstNode(); return };
 
+		if( cur != this.firstNode())
+			this.closeNode(cur.getPreviousSibling());
+		this.openNode();
+		if (cur.getNextNode()) {
+			this.domE.tree('moveDown');
+			this.closeNode(this.selectedNode.getPreviousSibling());
+		};
+
+	/*	This has worked until jqtree 1.6.3, but not any more with v1.8.0
 		// close nodes behind, if open:
 		while( cur.getPreviousNode() && cur.getPreviousNode().getLevel()>cur.getLevel() ) {   // 'getPreviousNode' refers to the previous visible node
 			this.domE.tree('closeNode', cur.getPreviousNode().parent)
@@ -245,12 +287,12 @@ class Tree {
 		// if selected node has children and is closed, open it:
 		if( this.selectedNode.children.length && !this.selectedNode.is_open ) {
 			this.domE.tree('openNode', this.selectedNode);
-			return
+			return;
 		};
 		
 		if( cur.getNextNode() ) {
-			// if selected node has no children, step down:
-			// selected node is opened, step into:
+			// if selected node has no children, step down;
+			// and if selected node is opened, step into:
 			this.domE.tree('moveDown');
 
 			// if it was the last child, close the folder behind:
@@ -259,7 +301,7 @@ class Tree {
 				this.domE.tree('closeNode', this.selectedNode.getPreviousNode().parent);
 			if( this.selectedNode.children.length && !this.selectedNode.is_open )
 				this.domE.tree('openNode', this.selectedNode)
-		}
+		}  */
 	};
 	numberize():void {
 		// set the order numbers (such as 1.3.2):
@@ -273,21 +315,6 @@ class Tree {
 			};
 		setONo( this.domE.tree('getTree'), '' )	// start numberizing with the root
 	};
-/*	newIds( nd ) {
-		// assert new ids to nd and it's sub-tree, as the server doesn't allow to reuse any ID:
-		let rt = {};
-		for( var p in nd ) rt[p] = nd[p];
-		rt.id = genID(CONFIG.prefixN);
-		this.updateNode( nd, { id: rt.id } );  // set the ID of the tree entry with it's new value
-		if( nd.children && nd.children.length ) {
-			rt.children = [];
-			for( var i=0, I=nd.children.length; i<I; i++ ) {
-				// get the first level children, then recursively their's:
-				rt.children.push( this.newIds( nd.children[i] ) )  
-			}
-		};
-		return rt
-	}; */
 	saveState():void {
 		this.savedState = this.domE.tree('getState')
 	};

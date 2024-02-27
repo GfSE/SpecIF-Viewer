@@ -87,9 +87,8 @@ class ViewControl {
 	}
 	show(params:any): void {
 		// Select a new view
-		// by calling functions 'show'/'hide' in case they are implemented in the respective modules.
-		// - simple case: params is a string with the name of the new view.
-		// - more powerful: params is an object with the new target view plus optionally content or other parameters
+		// by calling functions 'show'/'hide' in case they are implemented in the respective modules;
+		// 'params' is an object with the new target view plus optionally content or other parameters.
 		if (typeof (params)!='object') 
 			throw Error("moduleManager.show() needs a parameter.");
 //		console.debug('ViewControl.show',this.list,this.selected,params);
@@ -102,11 +101,11 @@ class ViewControl {
 		// else: show params.view and hide all others:
 		let v:JQuery, s:JQuery;
 		this.list.forEach((le:IModule) => {
-//					console.debug('ViewControl.show le',le);
+//			console.debug('ViewControl.show le',le);
 			v = $(le.view);			// the view
 			s = $(le.selectedBy); 	// the visual selector
 			if (params.view == le.view) {
-				//					console.debug('ViewControl.show: ',le.view,le.selectedBy,v,s);
+//				console.debug('ViewControl.show: ',le.view,le.selectedBy,v,s);
 				this.selected = le;
 				// set status of the parent's view selector:
 				s.addClass('active');
@@ -135,12 +134,12 @@ class ViewControl {
 				if (typeof (le.hide) == 'function') {
 					le.hide();
 					return;
-				};
-			};
+				}
+			}
 		});
 		if (typeof (doResize) == 'function') {
 			doResize();
-		};
+		}
 	}
 	hide(v:string):void {
 		if (typeof (v) == 'string' && this.exists(v)) {
@@ -473,18 +472,19 @@ var app:IApp,
 		setViewToLeaf( mo, params );
 		return;
 
-		function setViewFromRoot( le:IModule, pL:any[] ):void {
+		function setViewFromRoot( le:IModule, pars:any[] ):void {
 			// step up, if there is a parent view:
 			if( le.parent.selectedBy ) {
 				// all levels get access to the parameters besides view, if needed:
-				let nPL = simpleClone( pL );
+			/*	let nPL = simpleClone( pars );
 				nPL.view = le.parent.view;
-				setViewFromRoot( le.parent, nPL )
+				setViewFromRoot( le.parent, nPL ) */
+				setViewFromRoot(le.parent, Object.assign({}, pars, { view: le.parent.view}))
 			};
 			// set this level's view controller to choose the desired view:
-			le.parent.ViewControl.show( pL )
+			le.parent.ViewControl.show( pars )
 		}
-		function setViewToLeaf(le: IModule, pL: any[] ):void {
+		function setViewToLeaf(le: IModule, pars: any[] ):void {
 			// step down, if there is a child view:
 				function findDefault(vL: IModule[]): IModule {
 					for( var i=vL.length-1; i>-1; i-- ) {
@@ -493,12 +493,15 @@ var app:IApp,
 					// in absence of a default view, take the first in the list:
 					return vL[0]
 				}
+			// It *is* a leaf, if there is no more view controller --> no more need to step down:
 			if( le.ViewControl && le.ViewControl.list.length>0 ) {
-				let ch = findDefault( le.ViewControl.list ),
-					nPL = simpleClone( pL );
+			/*	let ch = findDefault( le.ViewControl.list ),
+					nPL = simpleClone( pars );
 				nPL.view = ch.view;
-				le.ViewControl.show( nPL );
-				setViewToLeaf( ch, pL )
+				le.ViewControl.show( nPL ); */
+				let ch = findDefault(le.ViewControl.list);
+				le.ViewControl.show(Object.assign({}, pars, {view:ch.view}));
+				setViewToLeaf( ch, pars )
 			}
 		}
 	};
@@ -570,10 +573,10 @@ var app:IApp,
 				case "bootstrapDialog":		getCss("https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/css/bootstrap-dialog.min.css");
 											getScript('https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.35.4/js/bootstrap-dialog.min.js'); return true;
 
-			//	case "tree":				getCss( "https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/jqtree.css" );
-				// temporary solution with fix for buttonLeft=false:
-				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css');
-											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.6.3/tree.jquery.js'); return true;
+			/*	// temporary solution with fix for buttonLeft=false:
+				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css'); */
+				case "tree":				getCss("https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.0/jqtree.css");
+											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.0/tree.jquery.js'); return true;
 				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;
@@ -731,9 +734,10 @@ var app:IApp,
 		}
 		function getOntology() {
 			LIB.httpGet({
-				url: window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
-					CONFIG.pathOntology
-					: '../../SpecIF/vocabulary/Ontology.specif',
+				url: (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
+						CONFIG.pathOntology
+						: '../../SpecIF/vocabulary/Ontology.specif'
+					) + "?" + new Date().toISOString(), // bust to reload from server
 				responseType: 'arraybuffer',
 				withCredentials: false,
 				done: (xhr: XMLHttpRequest) => {

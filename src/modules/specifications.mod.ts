@@ -1553,8 +1553,7 @@ moduleManager.construct({
 	//	$('#specNotice').empty();
 
  		let uP = opts.urlParams,
-			fNd = self.tree.firstNode(),
-			nd: jqTreeNode;
+			fNd = self.tree.firstNode();
 
 		// Select the language options at project level, also for subordinated views such as filter and reports:
 		opts.targetLanguage = self.selPrj.language;
@@ -1576,7 +1575,8 @@ moduleManager.construct({
 			// each might be coming from a different source (in future):
 			self.selPrj.readItems('hierarchy', self.selPrj.hierarchies, {reload:true} )
 			.then( 
-				(rsp:SpecifNode)=>{
+				(rsp: SpecifNodes) => {
+					let nd: jqTreeNode;
 //					console.debug('load',rsp);
 					// undefined parameters will be replaced by default value:
 					self.updateTree( opts, rsp );
@@ -1587,10 +1587,12 @@ moduleManager.construct({
 						nd = self.tree.selectNodeById( uP[CONFIG.keyNode] )
 					};
 					// node has priority over item (usually only one of them is specified ;-):
+					// @ts-ignore - that's why the existence of nd is checked ..
 					if (!nd && uP && uP[CONFIG.keyItem] ) {
 						nd = self.tree.selectNodeByRef( uP[CONFIG.keyItem] )
 					};
 					// if none is specified, take the node which is already selected:
+					// @ts-ignore - that's why the existence of nd is checked ..
 					if( !nd ) nd = self.tree.selectedNode;
 					// no or unknown resource specified; select first node:
 					if( !nd ) nd = self.tree.selectFirstNode();
@@ -1674,14 +1676,14 @@ moduleManager.construct({
 			// changing the tree node triggers an event, by which 'self.refresh' will be called.
 			self.tree.openNode()
 			// opening a node triggers an event, by which 'self.refresh' will be called.
-		}
+	/*	}
 		else {
-			if( self.tree.selectedNode.children.length>0 ) {
+		//	if( self.tree.selectedNode.children.length>0 ) {
 //				console.debug('#2',rId,self.tree.selectedNode);
 				// open the node if closed, close it if open:
 				self.tree.toggleNode();
 				// opening or closing a node triggers an event, by which 'self.refresh' will be called.
-			}
+		//	} */
 		};
 		if( self.selectedView() != '#'+CONFIG.objectList ) 
 			moduleManager.show({ view: '#'+CONFIG.objectList })
@@ -1885,7 +1887,8 @@ moduleManager.construct({
 			for( var i=CONFIG.objToGetCount-1; nd && i>-1; i-- ) {
 				oL.push( nd.ref );  // nd.ref is the key of a resource to show
 				nL.push( nd );
-				nd = nd.getNextNode()   // get next visible tree node
+			//	nd = nd.getNextNode()   // get next visible tree node (up until jqtree v1.6.3)
+				nd = nd.getNextVisibleNode();  // starting jqtree v1.8.0
 			};
 
 			return selPrj.readItems( 'resource', oL ) as Promise<SpecifResource[]>

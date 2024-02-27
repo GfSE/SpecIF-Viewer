@@ -152,9 +152,8 @@ class CSpecIF implements SpecIF {
 					}
 				}
 				else {
-					let msg = new xhrMessage(999, "SpecIF version " + spD.specifVersion + " is not supported.").warn();
+					let msg = new xhrMessage(999, "SpecIF id is not defined or version is not supported.").warn();
 					reject(msg);
-				//	message.show(msg, { severity: 'warning' } );
                 }
 			}
 		)
