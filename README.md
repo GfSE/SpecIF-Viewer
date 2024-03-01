@@ -9,10 +9,10 @@ Please have a look at the [SpecIF Homepage](https://specif.de) for further infor
 
 ## Features
 - Import 'specif' and 'specif.zip' file with schema and consistency check
-- Import 'reqif' and 'reqifz' file (experimental)
+- Import 'reqif' and 'reqifz' file
 - Import MS-Excel 'XLSX', 'XLS' and 'CSV' file
 - Import 'BPMN-XML' file
-- Import ArchiMate Open-Exchange (experimental)
+- Import ArchiMate Open-Exchange
 - Import from an URL or the local file system
 - Merge models of different tools and notations*
 - Browse the content ('resources') along the supplied hierarchy

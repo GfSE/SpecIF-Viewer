@@ -533,16 +533,20 @@ function toOxml( data, options ) {
 					r.other.push({title:'SpecIF:Type',value:rC.title});  // propertyClass and dataType are missing ..
 			*/
 				// Finally, list the remaining properties with title (name) and value:
-				let rows='', c3, rt;
+				let rows='';
 				other.forEach( (p)=>{
 					// the property title or it's class's title:
 					// check for content, empty HTML tags should not pass either, but HTML objects or links should ..
-					if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-						rt = minimizeXmlExcapes( prpTitleOf(p) );
-						c3 = '';
-						propertyValuesOf( p ).forEach( 
-							(e)=>{ c3 += generateOxml( e, {font:{color:opts.colorAccent1}, noSpacing: true} ) }
-						);
+					if( p.values.length>0 || opts.showEmptyProperties ) {
+						let rt = minimizeXmlExcapes( prpTitleOf(p) ),
+							c3 = '';
+						if (p.values.length > 0)
+							propertyValuesOf(p).forEach(
+								(e) => { c3 += generateOxml(e, { font: { color: opts.colorAccent1 }, noSpacing: true }) }
+							)
+						else
+							c3 = generateOxml({ p: { text: "" } }, { noSpacing: true });  // setting the color on an empty string has no effect
+
 //						console.debug('other properties',p,rt,c3);
 						rows += wTableRow(wTableCell({
 											content: 
@@ -554,8 +558,8 @@ function toOxml( data, options ) {
 														align: 'end'
 													}
 												}),
-											border: { sides: "TB" },
-											width: 20 // in percent of table-width
+											width: 25, // in percent of table-width
+											border: { sides: "TB" }
 										})
 										+ wTableCell({
 											content: c3,

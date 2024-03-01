@@ -911,7 +911,7 @@ class CFileWithContent implements SpecifFile {
 		return !!this.dataURL && this.dataURL.length > 0;
 	}
 	hasContent(): boolean {
-		return this.title && (this.hasBlob() || this.hasDataURL());
+		return this.title.length>0 && (this.hasBlob() || this.hasDataURL());
 	}
 	canBeRenderedAsImage(): boolean {
 		return ['png', 'svg', 'bpmn', 'jpg', 'jpeg', 'gif'].includes(this.title.fileExt().toLowerCase())
@@ -1184,7 +1184,7 @@ class CFileWithContent implements SpecifFile {
 							dsc = '';
 						clsPrp.descriptions.forEach((d) => {
 							// to avoid an endless recursive call, the property shall neither have titleLinks nor clickableElements
-							dsc += d.get({ unescapeHTMLTags: true, makeHTML: d.pC.format == SpecifTextFormat.Xhtml })
+							dsc += d.get({ unescapeHTMLTags: true, makeHTML: d.pC.format == SpecifTextFormat.Xhtml, renderFiles: true })
 						});
 						// display details only, if there is a description - so no titles without description:
 						if (dsc.stripCtrl().stripHTML()) {
@@ -1524,7 +1524,8 @@ moduleManager.construct({
 			// transform SpecIF hierarchy to jqTree:
 			let r:SpecifResource = LIB.itemByKey( self.cData.resources, iE.resource );
 //			console.debug('toJqTree',iE.resource,r);
-			var oE:jqTreeNode = {
+			// @ts-ignore - all relevant attributes are specified:
+			var oE: jqTreeNode = {
 				id: iE.id,
 				// ToDo: take the referenced resource's title, replace XML-entities by their UTF-8 character:
 				name: self.cData.instanceTitleOf(r, Object.assign({}, opts, {neverEmpty:true})),

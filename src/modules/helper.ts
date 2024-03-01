@@ -1186,12 +1186,15 @@ LIB.getClassesWithParents = (L: SpecifClass[], clK: SpecifKey) => {
         cK = simpleClone(clK);  // avoid side-effect in calling routine
     do {
         let c = LIB.itemByKey(L, cK);
-        cK = undefined;
         if (c) {
             // The propoerties of the extending (parent's) class first:
             // @ts-ignore - checking for extends, because it doesn't exist on all elements
             cK = c['extends'];
             resL.unshift(c);
+        }
+        else {
+            console.error('Programming Error: Did not find extending class ' + cK.id);
+            cK = undefined;
         };
     } while (cK);
     return resL;

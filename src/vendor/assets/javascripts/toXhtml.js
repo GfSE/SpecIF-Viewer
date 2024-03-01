@@ -34,7 +34,7 @@ function toXhtml( data, options ) {
 		{
 			showEmptyProperties: false,
 			addIcon: true,
-			hasContent: hasContent,
+		//	hasContent: hasContent,
 			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
 			titleProperties: ['dcterms:title'],
 			descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'],
@@ -261,7 +261,7 @@ function toXhtml( data, options ) {
 		
 //		console.debug('propertiesOf',r, rC, hi, opts);
 		// return the content of all properties, sorted by description and other properties:
-		let c1='', rows='', rt,
+		let c1='', rows='',
 			descriptions=[], other=[];
 		
 		if( r.properties ) {
@@ -289,10 +289,9 @@ function toXhtml( data, options ) {
 		
 		// Finally, list the remaining properties with property title (name) and value:
 		other.forEach( function(p) {
-			// the property title or it's class's title:
-			if( opts.hasContent(p.value) || opts.showEmptyProperties ) {
-				rt = prpTitleOf(p);
-				rows += '<tr><td class="propertyTitle">'+rt+'</td><td>'+propertyValuesOf( p, hi )+'</td></tr>'
+			// the property title or its class' title:
+			if( p.values.length>0 || opts.showEmptyProperties ) {
+				rows += '<tr><td class="propertyTitle">' + prpTitleOf(p)+'</td><td>'+propertyValuesOf( p, hi )+'</td></tr>'
 			}
 		});
 		// Add a property 'SpecIF:Type':
@@ -647,14 +646,14 @@ function toXhtml( data, options ) {
 		// assuming that only the desired language has already been selected during export:
 		return (typeof (val) == 'string' ? val : val[0].text)
 	}
-	function hasContent( str ) {
+/*	function hasContent( str ) {
 		// Check whether str has content or a reference:
 		if( !str ) return false;
 		return str.replace(/<[^>]+>/g, '').trim().length>0	// strip HTML and trim
 			|| /<object[^>]+(\/>|>[\s\S]*?<\/object>)/.test(str)
 			|| /<img[^>]+(\/>|>[\s\S]*?<\/img>)/.test(str)
 			|| /<a[^>]+>[\s\S]*?<\/a>/.test(str);
-	}
+	} */
 	function escapeXML( s ) {
 		if( !s ) return '';
 		return s.replace( opts.RE.AmpersandPlus, function($0,$1) {

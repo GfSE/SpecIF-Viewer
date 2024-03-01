@@ -964,7 +964,7 @@ class COntology {
             'SpecIF:Collection'
         ]; */
         let rL = this.getTermResources('resourceClass', "SpecIF:ModelElement"),
-            sL = [];
+            sL: string[] = [];
         if (rL.length > 0) {
             // We are interested only in statements where *other* resources resp. statements are the object:
             sL = this.statementsByClass(rL[0], "UML:isSpecializationOf", { asObject: true })

@@ -1264,82 +1264,83 @@ class CSpecIF implements SpecIF {
 				}
 				// a property:
 				function p2ext(iE: SpecifProperty) {
-					// skip empty properties:
-					if (!iE.values || iE.values.length<1) return;
-
-					// Skip certain properties;
-					// - if a hidden property is defined with value, it is suppressed only if it has this value
-					// - if the value is undefined, the property is suppressed in all cases
-					let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
-					if (Array.isArray(opts.skipProperties)) {
-						for (var sP of opts.skipProperties) {
-							if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.displayValueOf(iE.values[0], opts))) return;
+					if (opts.showEmptyProperties || Array.isArray(iE.values) && iE.values.length>0) {
+						// Skip certain properties;
+						// - if a hidden property is defined with value, it is suppressed only if it has this value
+						// - if the value is undefined, the property is suppressed in all cases
+						let pC: SpecifPropertyClass = LIB.itemByKey(spD.propertyClasses, iE['class']);
+						if (Array.isArray(opts.skipProperties)) {
+							for (var sP of opts.skipProperties) {
+								if (sP.title == pC.title && (sP.value == undefined || sP.value == LIB.displayValueOf(iE.values[0], opts))) return;
+							};
 						};
-					};
 
-					var oE: SpecifProperty = {
-						class: iE['class'],
-						values: []
-					};
+						var oE: SpecifProperty = {
+							class: iE['class'],
+							values: []
+						};
 
-					// According to the schema, all property values are represented by a string
-					// and we want to store them as string to avoid inaccuracies by multiple transformations.
-					let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
-					if (dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
-						// Special treatment of string values:
-						if (opts.targetLanguage) {
-							// Reduce all values to the selected language; is used for
-							// - generation of human readable documents
-							// - formats not supporting multiple languages (such as ReqIF):
-							let txt;
-							// Cycle through all values:
-							for (var v of iE.values) {
-								txt = LIB.languageTextOf(v, opts);
-								if (RE.vocabularyTerm.test(txt)) {
-									if (opts.lookupValues) txt = app.ontology.localize(txt,opts);
-								}
-								else {
-									if (pC.format==SpecifTextFormat.Xhtml) {
-										// Transform to HTML, if possible;
-										// especially for publication, for example using WORD format:
-										txt = txt
-											.replace(/^\s+/, "")  // remove any leading whiteSpace
-											.makeHTML(opts)
-											.replace(/<br ?\/>\n/g, "<br/>");
-										// replace filetypes of linked images:
-										if (opts.allDiagramsAsImage)
-											txt = refDiagramsAsImg(txt);
+						// According to the schema, all property values are represented by a string
+						// and we want to store them as string to avoid inaccuracies by multiple transformations.
+						let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
+						if (dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+							// Special treatment of string values:
+							if (opts.targetLanguage) {
+								// Reduce all values to the selected language; is used for
+								// - generation of human readable documents
+								// - formats not supporting multiple languages (such as ReqIF):
+								let txt;
+								// Cycle through all values:
+								for (var v of iE.values) {
+									txt = LIB.languageTextOf(v, opts);
+									if (RE.vocabularyTerm.test(txt)) {
+										if (opts.lookupValues) txt = app.ontology.localize(txt, opts);
 									}
 									else {
-										// if it is e.g. a title, remove all formatting:
-										txt = txt
-											.replace(/^\s+/, "")   // remove any leading whiteSpace
-											.stripHTML();
+										if (pC.format == SpecifTextFormat.Xhtml) {
+											// Transform to HTML, if possible;
+											// especially for publication, for example using WORD format:
+											txt = txt
+												.replace(/^\s+/, "")  // remove any leading whiteSpace
+												.makeHTML(opts)
+												.replace(/<br ?\/>\n/g, "<br/>");
+											// replace filetypes of linked images:
+											if (opts.allDiagramsAsImage)
+												txt = refDiagramsAsImg(txt);
+										}
+										else {
+											// if it is e.g. a title, remove all formatting:
+											txt = txt
+												.replace(/^\s+/, "")   // remove any leading whiteSpace
+												.stripHTML();
+										};
 									};
+									oE.values.push(LIB.makeMultiLanguageValue(txt));
 								};
-								oE.values.push(LIB.makeMultiLanguageValue(txt));
+								return oE;
 							};
-							return oE;
+							// else, keep all languages and replace filetypes of linked images;
+							// this is the case when creating specif.html, where opts.allDiagramsAsImage without opts.targetLanguage is set:
+							if (opts.allDiagramsAsImage) {
+								let lL;
+								// Cycle through all values:
+								for (var v of iE.values) {
+									lL = [];
+									// Cycle through all languages of a value v:
+									for (var l of v as SpecifMultiLanguageText)
+										lL.push(l.language ? { text: refDiagramsAsImg(l.text), language: l.language } : { text: refDiagramsAsImg(l.text) });
+									oE.values.push(lL);
+								};
+								return oE;
+							}
 						};
-						// else, keep all languages and replace filetypes of linked images;
-						// this is the case when creating specif.html, where opts.allDiagramsAsImage without opts.targetLanguage is set:
-						if (opts.allDiagramsAsImage) {
-							let lL;
-							// Cycle through all values:
-							for (var v of iE.values) {
-								lL = [];
-								// Cycle through all languages of a value v:
-								for (var l of v as SpecifMultiLanguageText)
-									lL.push(l.language ? { text: refDiagramsAsImg(l.text), language: l.language } : { text: refDiagramsAsImg(l.text) });
-								oE.values.push(lL);
-							};
-							return oE;
-						}
+						// else, keep the complete data structure:
+						oE.values = iE.values;
+						//					console.debug('p2ext',iE,LIB.languageTextOf( iE.value, opts ),oE.value);
+						return oE;
 					};
-					// else, keep the complete data structure:
-					oE.values = iE.values;
-//					console.debug('p2ext',iE,LIB.languageTextOf( iE.value, opts ),oE.value);
-					return oE;
+					// skip empty properties:
+					return;
 
 					function refDiagramsAsImg(val: string): string {
 						// Replace all links to application files like BPMN by links to SVG images:

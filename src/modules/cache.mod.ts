@@ -214,7 +214,7 @@ class CCache {
 		// - if no parent is specified or the parent isn't found, insert at root level
 		// The boolean value returned indicates whether the node has been added as hierarchy root.
 
-		// 1. If there is a node with the same id and there is neither predecessor nor parent,
+		// (1) If there is a node with the same id and there is neither predecessor nor parent,
 		//    replace that node:
 		if (!e.predecessor && !e['parent'] && LIB.iterateNodes(
 			this.hierarchies,
@@ -228,14 +228,15 @@ class CCache {
 				};
 			}
 		))
-			return false; // isn't a hierarchy root
+			// the node has been replaced, either at root level or further down:
+			return LIB.indexByKey(this.hierarchies, e) > -1;
 
-		// 2. Delete the node, if it exists somewhere to prevent
+		// (2) Delete the node, if it exists somewhere to prevent
 		//    that there are multiple nodes with the same id;
 		//    Thus, 'putNode' is in fact a 'move':
 		this.delete('node', [LIB.keyOf(e)]);
 
-		// 3. Insert the node, if the predecessor exists somewhere:
+		// (3) Insert the node, if the predecessor exists somewhere:
 		if (e.predecessor && LIB.iterateNodes(
 			this.hierarchies,
 			// continue searching until found:
@@ -250,17 +251,20 @@ class CCache {
 				};
 			}
 		))
-			return false; // isn't a hierarchy root
+			// the node has been inserted, either at root level or further down:
+			return LIB.indexByKey(this.hierarchies, e) > -1;
 
-		// 4. Insert the node, if the parent exists somewhere:
+		// (4) Insert the node, if the parent exists somewhere:
 		if (e['parent'] && LIB.iterateNodes(
 			this.hierarchies,
 			// continue searching until found:
 			(nd: SpecifNode) => {
 				if (nd.id == e['parent']) {
+					// delete the attribute, which is not needed any more:
 					delete e['parent'];
+					// insert the new node 'e' as child:  
 					if (Array.isArray(nd.nodes))
-						// we will not find a predecessor at this point any more,
+						// we haven't found a predecessor in the previous block (3),
 						// so insert as first element of the children:
 						nd.nodes.unshift(e)
 					else
@@ -271,9 +275,9 @@ class CCache {
 			}
 			// no list function
 		))
-			return false; // isn't a hierarchy root
+			return false; // isn't a hierarchy root, because a parent has been found
 
-		// 5. insert the node as first root element, otherwise:
+		// (5) insert the node as first root element, otherwise:
 		this.hierarchies.unshift(e);
 		return true; // is a hierarchy root
 	}
@@ -967,29 +971,35 @@ class CProject implements SpecifProject {
 							// @ts-ignore - dta is defined in all cases and the addressing using a string is allowed
 							for( var newT of newD[ty.listName]) {
 								// newT is a type/class in new data
-								// types are compared by key:
+								// types are compared by id:
 								// @ts-ignore - indexing by string works fine
-								let idx = LIB.indexByKey(dta[ty.listName], newT);
+								let idx = LIB.indexById(dta[ty.listName], newT.id);
 								if (idx < 0) {
-									// a) there is no item with the same key
+									// a) there is no item with the same id
 									itmL.push(newT);
 								}
 								else {
-									// There is an item with the same key.
+									// There is an item with the same id.
 									// In case of 'adopt', the new type must be compatible with the existing (reference) type.
-									// ToDo: Take care of the extending classes ...
-									// @ts-ignore - indexing by string works fine
-									if (!ty.isCompatible(dta[ty.listName][idx], newT, { mode: "include" })) {
+								//	let hasExt = ['resourceClass', 'statementClass'].includes(ty.category),
+									let hasExt = !!newT['extends'],
+										refC = (hasExt ?
+											// @ts-ignore - indexing by string works fine
+											LIB.getExtendedClasses(dta.get(ty.category, "all"), [{ id: newT.id }])[0] : dta[ty.listName][idx]),
+										newC = (hasExt ?
+											// @ts-ignore - indexing by string works fine
+											LIB.getExtendedClasses(newD[ty.listName], [{ id: newT.id }])[0] : newT);
+									if (!ty.isCompatible(refC, newC, { mode: "include" })) {
 										// there is an item with the same id and different content.
 										// c) create a new id and update all references:
 										// Note: According to the SpecIF schema, dataTypes may have no additional XML-attribute
-										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterId':
-										let alterId = LIB.keyOf(newT);
+										// ToDo: In ReqIF an attribute named "Reqif.ForeignId" serves the same purpose as 'alterK.id':
+										let alterK = LIB.keyOf(newT);
 										newT.id += '-' + simpleHash(new Date().toISOString());
-										ty.substitute(newD, newT, alterId );
+										ty.substitute(newD, newT, alterK );
 										itmL.push(newT);
-										console.info("When adopting a project" + (newD.id ? " with id " + newD.id : "")
-											+	", a class with same id and incompatible content has been encountered: " + alterId.id
+										console.info("When adopting a project with id " + newD.id
+											+	", a class with same id and incompatible content has been encountered: " + alterK.id
 											+	"; it has been saved with a new identifier " + newT.id + ".");
 									}
 									// b) existing type is compatible --> no action
@@ -1255,42 +1265,44 @@ class CProject implements SpecifProject {
 					throw Error("Don't request 'all' model element instances, since the result list can be very long!");
 
 				// delay the answer a little, so that the caller can properly process a batch:
-				setTimeout(() => {
-					let items: SpecifItem[] = [],
-						toGet: SpecifKeys = itemL == "all" ?
-									// @ts-ignore - index type is ok
-									this[app.standards.listName.get(ctg)]  // only those memorized by the project
-									: itemL;
+				setTimeout(
+					() => {
+						let items: SpecifItem[] = [],
+							toGet: SpecifKeys = itemL == "all" ?
+										// @ts-ignore - index type is ok
+										this[app.standards.listName.get(ctg)]  // only those memorized by the project
+										: itemL;
 
-					if (opts.extendClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
-						// Special case: Extend the classes:
-						items = LIB.getExtendedClasses(self.cache.get(ctg, "all"), toGet);
-					}
-					else {
-						// Normal case: Item can't have an extended class or is requested without:
-						items = this.cache.get( ctg, toGet );
-
-						// Normalize the properties if desired:
-						if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
-							items.forEach((itm: any) => {
-								// classes are alwways cached, so we can use this.cache:
-								itm.properties = normalizeProperties(itm)
-							})
+						if (opts.extendClasses && ['resourceClass', 'statementClass'].includes(ctg)) {
+							// Special case: Extend the classes:
+							items = LIB.getExtendedClasses(self.cache.get(ctg, "all"), toGet);
 						}
-					};
+						else {
+							// Normal case: Item can't have an extended class or is requested without:
+							items = this.cache.get( ctg, toGet );
 
-				/*	// add the permissions:
-					if (CONFIG.categoriesWithPermission.includes(ctg))
-						items.forEach(
-							(item) => {
-								item.permissions = {}
-                            }
-						); */
+							// Normalize the properties if desired:
+							if (opts.showEmptyProperties && ['resource', 'statement'].includes(ctg)) {
+								items.forEach((itm: any) => {
+									// classes are alwways cached, so we can use this.cache:
+									itm.properties = normalizeProperties(itm)
+								})
+							}
+						};
 
-//					console.debug('readItems',opts,items);
-					resolve(items);
-				}, opts.timelag);
-				//	};
+					/*	// add the permissions:
+						if (CONFIG.categoriesWithPermission.includes(ctg))
+							items.forEach(
+								(item) => {
+									item.permissions = {}
+								}
+							); */
+
+	//					console.debug('readItems',opts,items);
+						resolve(items);
+					},
+					opts.timelag
+				);
 			}
 		);
 
@@ -1317,9 +1329,6 @@ class CProject implements SpecifProject {
 				pCL: SpecifPropertyClass[],
 				// iCs: instance class list (resourceClasses or statementClasses),
 				// the existence of subject (or object) let's us recognize that it is a statement:
-			/*	// @ts-ignore - existance of subject signifies whether it is a resource or statement
-				 ctg = (el.subject ? "statementClass" : "resourceClass"),
-				   iCs = self.readExtendedClasses(ctg, [el["class"]]); */
 				// @ts-ignore - existance of subject signifies whether it is a resource or statement
 				cL = el.subject ?
 					self.cache.get("statementClass", "all")
@@ -3199,20 +3208,18 @@ class CProject implements SpecifProject {
 		// ToDo: Reconsider once we have a backend with multiple revisions ...
 
 		// Substitute new by original resourceClass:
+		this.substituteProp(prj.resourceClasses, 'extends', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
 		this.substituteLe(prj.statementClasses, 'subjectClasses', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
 		this.substituteLe(prj.statementClasses, 'objectClasses', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
 		this.substituteProp(prj.resources, 'class', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
-	//	this.substituteLe(prj.statementClasses, 'subjectClasses', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
-	//	this.substituteLe(prj.statementClasses, 'objectClasses', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
-	//	this.substituteProp(prj.resources, 'class', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 	}
 	private substituteSC(prj: CSpecIF | CCache, replacingE: SpecifStatementClass, replacedE: SpecifStatementClass): void {
 		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
 		// ToDo: Reconsider once we have a backend with multiple revisions ...
 
 		// Substitute new by original statementClass:
+		this.substituteProp(prj.statementClasses, 'extends', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
 		this.substituteProp(prj.statements, 'class', LIB.makeKey(replacingE.id), LIB.keyOf(replacedE));
-	//	this.substituteProp(prj.statements, 'class', LIB.keyOf(replacingE), LIB.keyOf(replacedE));
 	}
 	private substituteR(prj: CSpecIF | CCache, replacingE: SpecifResource, replacedE: SpecifResource /*, opts?: any*/): void {
 		// For the time being, suppress any revision to make sure that a dataType update doesn't destroy the reference.
