@@ -121,13 +121,15 @@ function toXhtml( data, options ) {
 		// render the resource or statement title
 
 		// First, find and set the configured title:
-		let a = titleIdx( itm.properties ), ti;
-		if( a>-1 ) {  // found!
+		let a = titleIdx(itm.properties), ti;
+		// The title property may be present, but empty, when opts.showEmptyProperties is set:
+		if (a > -1 && itm.properties[a].values.length > 0) {  // found!
 			// Remove all formatting for the title, as the app's format shall prevail.
 			// Before, remove all marked deletions (as prepared be diffmatchpatch).
 			// A title property should have just one value:
 			ti = stripHtml(languageValueOf(itm.properties[a].values[0]));
-		} else {
+		}
+		else {
 			// In case of a statement, use the class' title by default:
 			ti = classTitleOf(itm);
 		};
@@ -635,12 +637,15 @@ function toXhtml( data, options ) {
 	}
 	function prpTitleOf( prp ) {
 		// get the title of a resource/statement property as defined by itself or it's class:
-		return prp.title || itemById(data.propertyClasses,prp['class']).title
+		return prp.title || itemById(data.propertyClasses, prp['class']).title;
 	}
 	function classTitleOf( el ) {
-		// get the title of a resource or statement as defined by itself or it's class;
+		/*	// get the title of a resource or statement as defined by itself or it's class;
+			// el is a statement, if it has a subject:
+			return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title */
+		// get the title of a statement as defined by it's class;
 		// el is a statement, if it has a subject:
-		return itemById(el.subject ? data.statementClasses : data.resourceClasses, el['class']).title
+		return el.subject ? itemById(data.statementClasses, el['class']).title : '';
 	}
 	function languageValueOf(val) {
 		// assuming that only the desired language has already been selected during export:

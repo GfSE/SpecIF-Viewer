@@ -151,7 +151,7 @@ moduleManager.construct({
 
 				let ti = dE.getAttribute("name") || "",
 					rC = {
-						id: "RC-" + simpleHash(ti),
+						id: CONFIG.prefixRC + simpleHash(ti),
 						title: ti,
 						description: getDesc(dE),
 						instantiation: ["auto", "user"],
@@ -164,7 +164,7 @@ moduleManager.construct({
 //				console.debug('d', dE, atts/*,seq*/, prpL);
 				prpL.forEach((prp) => {
 					let ti = prp.getAttribute("ref") || prp.getAttribute("name") || "",
-						id = "PC-" + simpleHash(ti),
+						id = CONFIG.prefixPC + simpleHash(ti),
 						ty = prp.getAttribute("type") || "xs:string",
 						dT = LIB.itemBy(spD.dataTypes, "type", ty);
 					if (dT) {
@@ -188,7 +188,7 @@ moduleManager.construct({
 /*		// Extract the dictionary entities from the top-level list of <complexType> in the lower part of the schema file;
  		// Note: The dictionaryEntities don't have annotations/documentation, here
 
-		// 1.b Extract the specialized DictionaryEntities with their individual properties:
+		// 1.c Extract the specialized DictionaryEntities with their individual properties:
 		let dictionaryEntities = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
 				.filter((ch) => { return ch.tagName == "xs:complexType" })
 				// ToDo: filter those which are listed in DictionaryEntitiesCollection - this is quick and dirty:
@@ -263,7 +263,7 @@ moduleManager.construct({
 		let dictionaryRelations = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
 			.filter((ch) => { return ch.tagName == "xs:complexType"; })
 			.filter((ch) => { return ch.getAttribute("name") == "DictionaryRelationsCollection" });
-		//        console.debug('rels', Array.from(dictionaryRelations[0].children[0].children));
+//        console.debug('rels', Array.from(dictionaryRelations[0].children[0].children));
 
 		Array.from(
 			dictionaryRelations[0].children[0].children,
@@ -272,7 +272,7 @@ moduleManager.construct({
 
 					let ti = rel.getAttribute("name") || "",
 						sC:SpecifStatementClass = {
-							id: "SC-" + simpleHash(ti),
+							id: CONFIG.prefixSC + simpleHash(ti),
 							title: ti,
 							description: getDesc(rel),
 							subjectClasses: [],
@@ -299,11 +299,13 @@ moduleManager.construct({
 						oTi = obj[0].getAttribute("name").substring(6);
 				/*	// Remove the subject and object names from the relation title
 					sC.title = ti.substring(sTi.length, ti.length - oTi.length); */
+					// @ts-ignore - sC.subjectClasses *is* defined, here:
 					sC.subjectClasses.push({
-						id: "RC-" + simpleHash(sTi)
+						id: CONFIG.prefixRC + simpleHash(sTi)
 					});
+					// @ts-ignore - sC.objectClasses *is* defined, here:
 					sC.objectClasses.push({
-						id: "RC-" + simpleHash(oTi)
+						id: CONFIG.prefixRC + simpleHash(oTi)
 					});
 
 					LIB.cacheE(spD.statementClasses, sC);
@@ -311,7 +313,7 @@ moduleManager.construct({
 			}
 		);
 
-		console.debug('SpecIF data from DDP', spD);
+		console.info('SpecIF data from DDP', spD);
 		return spD;
 
 		function getDesc(el: any): SpecifMultiLanguageText {

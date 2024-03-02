@@ -1596,9 +1596,19 @@ class CProject implements SpecifProject {
 
 		let self = this,
 			dta = this.cache,
-			lst: SpecifItem[];
+			lst: SpecifItem[],
+			cL = dta.get('resourceClass', 'all').concat( dta.get('statementClass', 'all') );
 //		console.debug('deduplicate',simpleClone(dta));
 
+		function areNotUsedInParallel(refK: SpecifKey, newK: SpecifKey) {
+			// Checks whether a pair of propertyClasses is used in parallel in any resourceClass or statementClass.
+			for (var c of cL) {
+				// @ts-ignore - cL contains resourceClasses and statementClasses which have a list 'propertyClasses'
+				if (LIB.indexById(c.propertyClasses, refK.id) > -1 && LIB.indexById(c.propertyClasses, newK.id) > -1)
+					return false; // are used in the same list --> cannot be deduplicated
+			};
+			return true; // --> can be deduplicated
+		}
 		function removeDuplicate(ctg: string, subst: Function, replacingE: SpecifItem, replacedE: SpecifItem) {
 			subst(dta, replacingE, replacedE);
 			console.info(ctg + " with id=" + replacedE.id + " has been removed because it is a duplicate of id=" + replacingE.id);
@@ -1610,27 +1620,23 @@ class CProject implements SpecifProject {
 		// the first of an equivalent pair in the list is considered the reference or original ... and stays,
 		// whereas the second in a pair is removed.
 		this.types.forEach((ty) => {
-			// @ts-ignore - indexing by string works fine
-			lst = dta.get(ty.category, this[ty.listName]);
+			lst = dta.get(ty.category, 'all');
 		//	findAndRemoveDuplicate(ty.category, ty.isEqual, ty.substitute, lst);
+			// Compare every possible pair of list elements;
 			// skip last loop, as no duplicates can be found:
 			for (let n = lst.length - 1; n > 0; n--) {
 				for (let r = 0; r < n; r++) {
 //					console.debug( '##', lst[r],lst[n],ty.isEqual(lst[r],lst[n]) );
-					// Do it for all types:
 					if (ty.isEqual(lst[r], lst[n])) {
-					/*	This is a nice idea, but doesn't work with the inner/outer looping ...
-					 *	// Are equal, so substitute the older by the newer item:
-						if (lst[n].changedAt > lst[r].changedAt) {
-							removeDuplicate(ty.category, ty.substitute, lst[n], lst[r]);
-						}
-						else {
+						// in case of propertyClasses only if there are no resourceClasses or StatementClasses
+						// which are using both of them - because two properties with the same class are not allowed.
+						if (ty.category != "propertyClass" || areNotUsedInParallel(lst[r], lst[n]) ) {
 							removeDuplicate(ty.category, ty.substitute, lst[r], lst[n]);
-						};  */
-
-						removeDuplicate(ty.category, ty.substitute, lst[r], lst[n]);
-						// skip the remaining iterations of the inner loop:
-						break
+							// The first duplicate in the list lst[r] has prevailed, the second lst[n] has been deleted
+							// and cannot be deleted a second time,
+							// so skip the remaining iterations of the inner loop and continue with the next iteration of the outer:
+							break;
+						};
 					}
 				}
 			}

@@ -25,7 +25,7 @@ class COntology {
     // it is expected that a plural of any list element exists ( element+'s' ):
     modelElementClasses: string[] = [];
 
-    // List with all terms by title:
+    // List with all term classes by title:
     termClasses: string[] = [
         "SpecIF:TermResourceClass",
         "SpecIF:TermStatementClass",
