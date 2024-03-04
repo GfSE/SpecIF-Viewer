@@ -770,10 +770,10 @@ class COntology {
         for (let s of sL) {
             let term = LIB.itemByKey(this.data.resources, s.subject),
                 prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC); // need the id only, here
-            //            console.debug('statementClassesOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
+            //            console.debug('statementClassesOf', term, prep);
             LIB.cacheE(iCL, { id: prep.id })
 
-            if (this.options.includeEligibleSubjectClassesAndObjectClasses) {
+            if (!this.options.excludeEligibleSubjectClassesAndObjectClasses) {
                 if (term['class'].id == "RC-SpecifTermresourceclass") {
                     if (LIB.indexById(this.generated.rCL, prep.id) < 0)
                         // Ascertain that all referenced resourceClasses will be available.
@@ -790,7 +790,7 @@ class COntology {
                 }
             }
         };
-        //        console.debug('statementClassesOf', el, sL, iCL, this.required.sTL);
+        //        console.debug('statementClassesOf', el, sL, iCL, simpleClone(this.required.sTL));
 
         return iCL
     }
@@ -805,7 +805,7 @@ class COntology {
             sCL = this.statementClassesOf(r, "SpecIF:isEligibleAsSubject"),
             // The eligible objectClasses:
             oCL = this.statementClassesOf(r, "SpecIF:isEligibleAsObject");
-        //        console.debug('createSC', r, pCL, sCL, oCL);
+//        console.debug('createSC', r, pCL, sCL, oCL);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
@@ -815,10 +815,13 @@ class COntology {
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
-                // the eligible subjectClasses and objectClasses:
+                // the eligible subjectClasses and objectClasses;
+                // no list means that all resourceClasses and statementClasses are eligible,
+                // whereas an empty list is not allowed:
                 subjectClasses: sCL.length > 0 ? sCL : undefined,
                 objectClasses: oCL.length > 0 ? oCL : undefined,
-                // the references per propertyClass:
+                // the references per propertyClass;
+                // in case of propertyClasses no or an empty list is equivalent:
                 propertyClasses: pCL.length > 0 ? pCL : undefined
             }
         ) as SpecifDataType;
@@ -885,7 +888,7 @@ class COntology {
             - A term name *must* have a name-space separated by ':' or '.', whereas a localTerm must *not*.
             - A term should have a relation 'SpecIF:isNamespace' with a namespace amd *must* not have more than one.
             - A TermResourceClass must have at least one propertyClass, either self or inherited from an extended class
-            - A TermResourceClass or TermStatementClass may not have >1 statements with title "SpecIF:isSpecializationOf"
+            - A TermResourceClass or TermStatementClass must not have >1 statements with title "SpecIF:isSpecializationOf"
             - Chains of "isSpecializationOf" relations must not be cyclic.
             - Chains of "isEligibleAsSubject" relations must not be cyclic.
             - Chains of "isEligibleAsObject" relations must not be cyclic.
