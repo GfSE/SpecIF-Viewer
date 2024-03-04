@@ -354,7 +354,7 @@ moduleManager.construct({
 					case SpecifDataTypeEnum.DateTime:
 						xml += '<DATATYPE-DEFINITION-DATE ' + commonAttsOf(dT) + '/>';
 						break;
-					case SpecifDataTypeEnum.AnyUri:
+					case SpecifDataTypeEnum.AnyURI:
 					case SpecifDataTypeEnum.Duration:
 						// Remember that pr is supposed to arrive with a single selected language, here:
 						let info = JSON.stringify({ SpecIF_DataType: dT.type });

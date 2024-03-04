@@ -55,7 +55,7 @@ class COntology {
         ["RC-SpecifTermpropertyclassreal", SpecifDataTypeEnum.Double],
         ["RC-SpecifTermpropertyclasstimestamp", SpecifDataTypeEnum.DateTime],
         ["RC-SpecifTermpropertyclassduration", SpecifDataTypeEnum.Duration],
-        ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyUri]
+        ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyURI]
     ]);
 
     private options: any;   // a temporary storage of options during method execution (reentrancy is not required at this point in time)
@@ -659,10 +659,10 @@ class COntology {
                     description: [{ text: "A duration as defined by the ISO 8601 ABNF for 'duration'." }]
                 };
                 break;
-            case SpecifDataTypeEnum.AnyUri:
+            case SpecifDataTypeEnum.AnyURI:
                 // @ts-ignore - missing attributes come further down
                 dT = {
-                    id: "DT-AnyUri",
+                    id: "DT-AnyURI",
                     title: "Universal Resource Identifier (URI)",
                     description: [{ text: "A universal resource identifier (URI), according to RFC3986." }]
                 };
@@ -736,13 +736,14 @@ class COntology {
             // if they exist already due to correct selection, duplicates are avoided:
             LIB.cacheE(this.generated.pCL, this.createPC(term))
         };
-        //        console.debug('propertyClassesOf', pL, pCL);
+//        console.debug('propertyClassesOf', pL, pCL);
 
         return pCL
     }
     private createRC(r: SpecifResource) {
-        let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data);
-        //        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
+        let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
+            pCL = this.propertyClassesOf(r);
+//        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
 
         // Create a resourceClass for the TermResourceClass r;
         // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
@@ -753,8 +754,7 @@ class COntology {
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
-                // the references per propertyClass:
-                propertyClasses: this.propertyClassesOf(r)
+                propertyClasses: pCL.length>0? pCL : undefined
             }
         ) as SpecifResourceClass;
     }

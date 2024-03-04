@@ -2962,7 +2962,7 @@ class CProject implements SpecifProject {
 					break;
 				case SpecifDataTypeEnum.DateTime:
 				case SpecifDataTypeEnum.Duration:
-				case SpecifDataTypeEnum.AnyUri:
+				case SpecifDataTypeEnum.AnyURI:
 					break;
 				default:
 					// should never arrive here ... as every branch in every case above has a return.

@@ -497,7 +497,7 @@ enum SpecifDataTypeEnum {
     Boolean = <any> 'xs:boolean',
     Integer = <any> 'xs:integer',
     Double = <any> 'xs:double',
-    AnyUri = <any> 'xs:anyUri',
+    AnyURI = <any> 'xs:anyURI',
     DateTime = <any> 'xs:dateTime',
     Duration = <any> 'xs:duration',
     String = <any> 'xs:string'
