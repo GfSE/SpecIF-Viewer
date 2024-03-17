@@ -998,8 +998,6 @@ function Archimate2Specif(xmlString, options) {
 			title: "Integer",
 			description: "A numerical integer value from -32768 to 32768.",
 			type: "xs:integer",
-		//	minInclusive: CONFIG.minInteger,
-		//	maxInclusive: CONFIG.maxInteger,
 			changedAt: "2016-05-26T08:59:00+02:00"
 		}, {
 			id: "DT-Boolean",

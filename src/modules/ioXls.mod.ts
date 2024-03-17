@@ -352,7 +352,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 				// Create a SpecIF folder for a XLS worksheet.
 				// 1. Create folder resource:
 				var fld: SpecifResource = {
-					id: 'R-' + simpleHash(pN + sh.name + CONFIG.resClassFolder),
+					id: CONFIG.prefixR + simpleHash(pN + sh.name + CONFIG.resClassFolder),
 					class: LIB.makeKey("RC-Folder"),
 					properties: [{
 						class: LIB.makeKey("PC-Name"),
@@ -587,7 +587,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// and consequently a new resource will be created during import instead of updating the existing.
 						if (id) {
 							// An id has been specified
-							res.id = 'R-' + simpleHash(ws.name + id);
+							res.id = CONFIG.prefixR + simpleHash(ws.name + id);
 							if (LIB.indexById(specifData.resources, res.id) > -1) {
 								// The specified id is not unique,
 								// it will be modified deterministically based on the number of occurrences of that same id:
@@ -599,13 +599,13 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 								//									console.debug('dupId',id,simpleClone(dupIdL),counts[id]);
 								// modify the id of any duplicate specified user-assigned id,
 								// as an id must be unique, of course:
-								res.id = 'R-' + simpleHash(ws.name + id + counts[id]);
+								res.id = CONFIG.prefixR + simpleHash(ws.name + id + counts[id]);
 							};
 						}
 						else {
 							// No id specified, so a random value must be generated. 
 							// No chance to update the element later on!
-							res.id = LIB.genID('R-');
+							res.id = LIB.genID(CONFIG.prefixR);
 						};
 						//							console.debug('xls-resource',res);
 
@@ -622,7 +622,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						// the resource has been stored, so any statement can be stored, as well:
 						if (stL.length > 0) {
 							stL.forEach((st) => {
-								st.id = 'S-' + simpleHash(res.id + st['class'].id + st.resourceToLink);
+								st.id = CONFIG.prefixS + simpleHash(res.id + st['class'].id + st.resourceToLink);
 								st.subject = LIB.keyOf(res)
 							});
 							specifData.statements = specifData.statements.concat(stL);
@@ -830,7 +830,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	var specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
 	// the root folder resource:
 	specifData.resources.push({
-		id: 'R-' + pN.toSpecifId(),
+		id: CONFIG.prefixR + pN.toSpecifId(),
 		class: LIB.makeKey("RC-Folder"),
 		properties: [{
 			class: LIB.makeKey("PC-Name"),
@@ -845,7 +845,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	// 2. Create the specification (hierarchy root) for the file:
 	specifData.hierarchies.push({
 		id: CONFIG.prefixH + pN.toSpecifId(),
-		resource: LIB.makeKey('R-' + pN.toSpecifId() ),
+		resource: LIB.makeKey(CONFIG.prefixR + pN.toSpecifId() ),
 		nodes: [],
 		changedAt: chAt
 	});

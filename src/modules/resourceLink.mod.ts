@@ -315,7 +315,7 @@ moduleManager.construct({
 	self.saveStatement = (dir: any): Promise<void> =>{
 //		console.debug('saveStatement',selRes, self.selectedStatementClass, self.selectedCandidate.resource,dir.secondAs);
 		let sta:SpecifStatement = {
-				id: LIB.genID('S-'),
+				id: LIB.genID(CONFIG.prefixS),
 				// For the time being, the revision is *never* specified here, so that it persists even after a class update:
 				class: LIB.makeKey(self.selectedStatementClass.id),
 				subject: LIB.makeKey(dir.secondAs == 'object' ? selRes.id : self.selectedCandidate.resource.id),

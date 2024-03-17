@@ -1098,7 +1098,7 @@ class CProject implements SpecifProject {
 							// and since it does have a different title or different type (otherwise it would have been substituted above),
 							// assign a new id to the new element:
 							if (LIB.duplicateId(dta, newR.id)) {
-								let newId = LIB.genID('R-');
+								let newId = LIB.genID(CONFIG.prefixR);
 								// first assign new ID to all references;
 								// no need to specify the class in the second parameter, as it is equal to the class of newR 
 								// ... and thus there is no need to substitute the class:
@@ -1490,7 +1490,7 @@ class CProject implements SpecifProject {
 //							console.debug('makeEmptyResource resourceClasses', rCL);
 							// return an empty resource instance of the given type; 
 							res = {
-								id: LIB.genID('R-'),
+								id: LIB.genID(CONFIG.prefixR),
 								class: LIB.makeKey(rCL[0].id),
 								//	permissions: rCL[0].permissions || { cre: true, rea: true, upd: true, del: true },
 								properties: [],
@@ -2418,7 +2418,7 @@ class CProject implements SpecifProject {
 						i18n.LblOptions,
 						domains.map(
 							(d: string) => {
-								return { title: d, id: d.toJsId(), checked: false }
+								return { title: app.ontology.localize(d, { targetLanguage: browser.language }), id: d.toJsId(), checked: false };
 							}
 						)
 					)
@@ -2750,6 +2750,7 @@ class CProject implements SpecifProject {
 						opts.revisionDate = new Date().toISOString();
 						break;
 					case 'specifClasses':
+					//	opts.adoptOntologyDataTypes = !opts.domains.includes('Ontology');
 						opts.adoptOntologyDataTypes = true;
 						break;
 					default:

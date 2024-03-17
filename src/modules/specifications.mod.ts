@@ -1696,7 +1696,7 @@ moduleManager.construct({
 		if( !cT || !rT ) return null;
 		
 		var newC = {}, 
-			newId = LIB.genID('R-');
+			newId = LIB.genID(CONFIG.prefixR);
 		app.projects.selected.initResource( cT )
 			.done( function(rsp) {
 				// returns an initialized resource of the requested type:

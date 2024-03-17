@@ -22,7 +22,7 @@ class COntology {
 
     // List with all model-element types by title,
     // is used for example to build a glossary;
-    // it is expected that a plural of any list element exists ( element+'s' ):
+    // it is expected that a plural of any list element exists:
     modelElementClasses: string[] = [];
 
     // List with all term classes by title:
@@ -56,6 +56,14 @@ class COntology {
         ["RC-SpecifTermpropertyclasstimestamp", SpecifDataTypeEnum.DateTime],
         ["RC-SpecifTermpropertyclassduration", SpecifDataTypeEnum.Duration],
         ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyURI]
+    ]);
+
+    // Assign titles of special relations for synonyms per class of terms:
+    private synonymStatements = new Map([
+        ["resourceClass", "SpecIF:isSynonymOfResource"],
+        ["statementClass", "SpecIF:isSynonymOfStatement"],
+        ["propertyClass", "SpecIF:isSynonymOfProperty"],
+        ["propertyValue", "SpecIF:isSynonymOfValue"]
     ]);
 
     private options: any;   // a temporary storage of options during method execution (reentrancy is not required at this point in time)
@@ -158,8 +166,8 @@ class COntology {
                     // look for plural from property:
                     lnL = LIB.valuesByTitle(rL[0], ["SpecIF:LocalTermPlural"], this.data);
                     if (lnL.length < 1) {
-                        // if not found, look for plural from a term related with 'isPluralOf':
-                        let stL = this.statementsByClass(rL[0], "SpecIF:isPluralOf", { asSubject: false, asObject: true });
+                        // if not found, look for plural from a term related with 'isPluralOfResource':
+                        let stL = this.statementsByTitle(rL[0], ["SpecIF:isPluralOfResource"], { asSubject: false, asObject: true });
                         if (stL.length > 0) {
                             let tR = LIB.itemByKey(this.data.resources, stL[0].subject);
                             lnL = LIB.valuesByTitle(tR, ["SpecIF:LocalTerm"], this.data);
@@ -244,9 +252,9 @@ class COntology {
             if (this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased")
                 return term;
 
-            // Collect all synonyms (relation can be in any direction):
+            // Collect all synonyms (relation is bi-directional):
             let
-                stL = this.statementsByClass(r, "SpecIF:isSynonymOf", { asSubject: true, asObject: true }),
+                stL = this.statementsByTitle(r, [this.synonymStatements.get(ctg)], { asSubject: true, asObject: true }),
                 // the resources related by those statements are synonym terms:
                 rsL = stL.map(
                     (st: SpecifStatement) => {
@@ -314,42 +322,49 @@ class COntology {
             return term
         };
 
+        // If the term itself belongs to the desired namespace, just return it:
+        if (term.startsWith(opts.targetNamespace))
+            return term;
+
         let rL = this.getTermResources('all',term);
+        // Just one result is expected:
+        if (rL.length > 1)
+            console.warn('Multiple definitions of the term found: ', rL.map((r) => { return r.id }).toString());
+
         if (rL.length > 0) {
             let r = rL[0];
 
-            // Look for a synonym relation pointing to a term with the specified target namespace:
+            // Look for a synonym relation pointing to a term with the specified target namespace;
+            // go through all synonymStatements one-by-one to allow early return in case of a hit.
+            // ToDo: Select the appropriate synonymStatement depending on the category of r.
+            for ( var v of this.synonymStatements.values()) {
+                let
+                    // Collect all synonyms (relation is bi-directional):
+                    stL = this.statementsByTitle(r, [v], { asSubject: true, asObject: true }),
+                    // the resources related by those statements are synonym terms:
+                    rsL = stL.map(
+                        (st: SpecifStatement) => {
+                            return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
+                        }
+                    ),
+                    // Find the term with the desired namespace, either released or equivalent:
+                    synL = rsL.filter(
+                        (r: SpecifResource) => {
+                            return this.valueByTitle(r, CONFIG.propClassTerm).startsWith(opts.targetNamespace)
+                                && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:LifecycleStatus"))
+                        }
+                    );
+                //            console.debug('changeNamespace', r, stL, rsL, synL);
+                if (synL.length < 1)
+                    return term;
 
-            // If the term itself belongs to the desired namespace, just return it:
-            if (term.startsWith(opts.targetNamespace))
-                return term;
+                if (synL.length > 1)
+                    console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((s) => { return s.id }).toString());
 
-            // Collect all synonyms (relation can be in any direction):
-            let
-                stL = this.statementsByClass(r, "SpecIF:isSynonymOf", { asSubject: true, asObject: true }),
-                // the resources related by those statements are synonym terms:
-                rsL = stL.map(
-                    (st: SpecifStatement) => {
-                        return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
-                    }
-                ),
-                // Find the term with the desired namespace, either released or equivalent:
-                synL = rsL.filter(
-                    (r: SpecifResource) => {
-                        return this.valueByTitle(r, CONFIG.propClassTerm).startsWith(opts.targetNamespace)
-                            && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:LifecycleStatus"))
-                    }
-                );
-            //            console.debug('changeNamespace', r, stL, rsL, synL);
-            if (synL.length < 1)
-                return term;
-
-            if (synL.length > 1)
-                console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((s) => { return s.id }).toString());
-
-            let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
-            console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
-            return newT
+                let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
+                console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
+                return newT
+            }
         };
         // else, return the input value:
         return term;
@@ -460,9 +475,9 @@ class COntology {
             // Generate in 3 steps;
             // note that referenced propertyClasses and resourceClasses are generated as soon as they are identified:
             [
-                { resultL: this.generated.pCL, classes: Array.from(this.primitiveDataTypes.keys()), fn: this.createPC.bind(this) },
-                { resultL: this.generated.rCL, classes: ["RC-SpecifTermresourceclass"], fn: this.createRC.bind(this) },
-                { resultL: this.generated.sCL, classes: ["RC-SpecifTermstatementclass"], fn: this.createSC.bind(this) }
+                { resultL: this.generated.pCL, classes: Array.from(this.primitiveDataTypes.keys()), fn: this.makePC.bind(this) },
+                { resultL: this.generated.rCL, classes: ["RC-SpecifTermresourceclass"], fn: this.makeRC.bind(this) },
+                { resultL: this.generated.sCL, classes: ["RC-SpecifTermstatementclass"], fn: this.makeSC.bind(this) }
             ].forEach(
                 (step) => { LIB.cacheL(step.resultL, this.makeClasses(step.classes, step.fn)); }
             );
@@ -471,7 +486,7 @@ class COntology {
             while (this.required.sTL.length > 0) {
                 let sCL = [].concat(this.required.sTL);
                 this.required.sTL.length = 0;
-                LIB.cacheL(this.generated.sCL, sCL.map(this.createSC.bind(this)));
+                LIB.cacheL(this.generated.sCL, sCL.map(this.makeSC.bind(this)));
                 //        console.debug('required sCL', simpleClone(this.generated.sCL), simpleClone(this.required.sTL));
             };
 
@@ -553,7 +568,7 @@ class COntology {
                 return false;
             }
             function hasSelectedStatus(el: SpecifResource): boolean {
-                let selStatus = LIB.valuesByTitle(el, [CONFIG.propClassLifecycleStatus], self.data);
+                let selStatus = LIB.valuesByTitle(el, ["SpecIF:TermStatus"], self.data);
                 for (let s of selStatus) {
                     if (localOpts[LIB.displayValueOf(s, { targetLanguage: 'default' }).toJsId()])
                         return true;
@@ -562,17 +577,17 @@ class COntology {
             }
         }
     }
-    private createDT(r: SpecifResource) {
+    private makeDT(r: SpecifResource) {
         // Create a dataType for the TermPropertyClass r:
         let self = this;
 
         let ty = this.primitiveDataTypes.get(r["class"].id) as SpecifDataTypeEnum, // get the primitive dataType implied by the term's class
             // make sure that in case of a dataType with enumerated values, the ids correspond to the ids of the dataTypes:
-            prep = this.makeIdAndTitle(r, "PC-"),  // only used for dataTypes with enumerated values
-            dtId = prep.id.replace(/^PC-/, "DT-"), // also
-            vId = prep.id.replace(/^PC-/, "V-"),   // also
+            prep = this.makeIdAndTitle(r, CONFIG.prefixPC),  // only used for dataTypes with enumerated values
+            dtId = prep.id.replace(new RegExp("^" + CONFIG.prefixPC), CONFIG.prefixDT), // also
+            vId = prep.id.replace(new RegExp("^" + CONFIG.prefixPC), CONFIG.prefixV),   // also
             // Find any assigned enumerated values; these are defined by related propertyValues:
-            stL: SpecifStatement[] = this.statementsByClass(r, "SpecIF:hasEnumValue", { asSubject: true }),  // all statements pointing to enumerated values
+            stL: SpecifStatement[] = this.statementsByTitle(r, ["SpecIF:hasEnumValue"], { asSubject: true }),  // all statements pointing to enumerated values
             oL: SpecifResource[] = stL.map(
                 (st: SpecifStatement) => {
                     return LIB.itemById(this.data.resources, st.object.id)
@@ -583,10 +598,11 @@ class COntology {
             enumL: SpecifEnumeratedValue[] = LIB.forAll(
                 oL,
                 (o: SpecifResource, idx: number) => {
+                    // list of enumerated values:
                     let evL = LIB.valuesByTitle(o, [CONFIG.propClassTerm], this.data);
                     if( evL.length>0 )
                         return {
-                            id: vId + '-' + idx.toString(),
+                            id: this.valueByTitle(o, CONFIG.propClassId) || vId + '-' + idx.toString(),
                             value: evL[0]
                         } as SpecifEnumeratedValue
                     else
@@ -595,7 +611,7 @@ class COntology {
                 }
             ),
             dT = {} as SpecifDataType;
-        //        console.debug('createDT', r, stL, oL, enumL);
+        //        console.debug('makeDT', r, stL, oL, enumL);
 
         // Look for any parameters per primitive data type:
         switch (ty) {
@@ -673,7 +689,7 @@ class COntology {
             // and the parameters added above can be omitted:
             dT.id = dtId;
             dT.title = prep.title;
-            dT.enumeration = enumL
+            dT.enumeration = enumL;
         };
         dT.revision = this.valueByTitle(r, "SpecIF:Revision") || r.revision;
         dT.changedAt = r.changedAt;
@@ -695,16 +711,16 @@ class COntology {
             // return undefined
         }
     }
-    private createPC(r: SpecifResource) {
+    private makePC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:
 
         // Create the dataType, unless it exists already:
-        let dTk = this.createDT(r),
+        let dTk = this.makeDT(r),
             defaultVL = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.data);
 
-        // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
+        // Undefined attributes will not appear in the generated classes (skipped by JSON.stringify)
         return Object.assign(
-            this.createItem(r, 'PC-'),
+            this.makeItem(r, CONFIG.prefixPC),
             {
                 dataType: dTk,      // the reference to the dataType
                 format: this.valueByTitle(r, "SpecIF:TextFormat"),  // one or none of 'plain' or 'xhtml'
@@ -724,23 +740,23 @@ class COntology {
             //   { id: "PC-description" }
         ];  // the result list
 
-        let pL = this.statementsByClass(el, "SpecIF:hasProperty", { asSubject: true });
+        let pL = this.statementsByTitle(el, ["SpecIF:hasProperty"], { asSubject: true });
         for (let p of pL) {
             let term = LIB.itemByKey(this.data.resources, p.object),
-                prep = this.makeIdAndTitle(term, "PC-"); // need the id only, here
+                prep = this.makeIdAndTitle(term, CONFIG.prefixPC); // need the id only, here
             //            console.debug('propertyClassesOf', term, LIB.valuesByTitle(term, ["dcterms:identifier"], this.data));
             // an entry in the propertyClasses of the resourceClass resp statementClass to generate:
             LIB.cacheE(pCL, { id: prep.id });
             // Ascertain that all referenced propertyClasses will be available.
             // Thus, generate the referenced propertyClasses together with the dataTypes;
             // if they exist already due to correct selection, duplicates are avoided:
-            LIB.cacheE(this.generated.pCL, this.createPC(term))
+            LIB.cacheE(this.generated.pCL, this.makePC(term))
         };
 //        console.debug('propertyClassesOf', pL, pCL);
 
         return pCL
     }
-    private createRC(r: SpecifResource) {
+    private makeRC(r: SpecifResource) {
         let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
             pCL = this.propertyClassesOf(r);
 //        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
@@ -748,9 +764,9 @@ class COntology {
         // Create a resourceClass for the TermResourceClass r;
         // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
-            this.createItem(r, CONFIG.prefixRC),
+            this.makeItem(r, CONFIG.prefixRC),
             {
-                extends: this.extCOf(r, CONFIG.prefixRC),
+                extends: this.extendingClassOf(r, CONFIG.prefixRC),
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
@@ -758,26 +774,29 @@ class COntology {
             }
         ) as SpecifResourceClass;
     }
-    private statementClassesOf(el: SpecifResource, cl: string) {
+/*  private relatedClassesOf(el: SpecifResource, clL: string[]) {
+    .. this could be coded more generalized, but so far it is not: */
+    private eligibleClassesOf(el: SpecifResource, clL: string[]) {
         // Return a list of resourceClasses and/or statementClasses which are related 
-        // to term el (the statementClass to be generated) by the given statementClass cl:
+        // to term el (the statementClass to be generated) by a statementClass with a title listed in clL:
 
         // Todo: What about the revisions in iCL if this.options.referencesWithoutRevision is false?
         let iCL: SpecifResourceClass[] = [],  // the result list
             // We are interested only in statements where *other* statementClasses are eligible as subjectClasses:
-            sL = this.statementsByClass(el, cl, { asObject: true }); // list of statements of the specified class
+            sL = this.statementsByTitle(el, clL, { asObject: true }); // list of statements of the specified class
 
         for (let s of sL) {
             let term = LIB.itemByKey(this.data.resources, s.subject),
-                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC); // need the id only, here
-            //            console.debug('statementClassesOf', term, prep);
+                // need the id only, here:
+                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC); 
+            //            console.debug('eligibleClassesOf', term, prep);
             LIB.cacheE(iCL, { id: prep.id })
 
             if (!this.options.excludeEligibleSubjectClassesAndObjectClasses) {
                 if (term['class'].id == "RC-SpecifTermresourceclass") {
                     if (LIB.indexById(this.generated.rCL, prep.id) < 0)
                         // Ascertain that all referenced resourceClasses will be available.
-                        LIB.cacheE(this.generated.rCL, this.createRC(term))
+                        LIB.cacheE(this.generated.rCL, this.makeRC(term))
                 }
                 else {
                     // the class is "RC-SpecifTermstatementclass":
@@ -790,11 +809,11 @@ class COntology {
                 }
             }
         };
-        //        console.debug('statementClassesOf', el, sL, iCL, simpleClone(this.required.sTL));
+        //        console.debug('eligibleClassesOf', el, sL, iCL, simpleClone(this.required.sTL));
 
         return iCL
     }
-    private createSC(r: SpecifResource) {
+    private makeSC(r: SpecifResource) {
         // Create a statementClass for the TermStatementClass r:
 
         let
@@ -802,16 +821,16 @@ class COntology {
             // In case of statementClasses a list of propertyClasses is optional and most often not used:
             pCL = this.propertyClassesOf(r),
             // The eligible subjectClasses:
-            sCL = this.statementClassesOf(r, "SpecIF:isEligibleAsSubject"),
+            sCL = this.eligibleClassesOf(r, ["SpecIF:isEligibleAsSubject"]),
             // The eligible objectClasses:
-            oCL = this.statementClassesOf(r, "SpecIF:isEligibleAsObject");
-//        console.debug('createSC', r, pCL, sCL, oCL);
+            oCL = this.eligibleClassesOf(r, ["SpecIF:isEligibleAsObject"]);
+//        console.debug('makeSC', r, pCL, sCL, oCL);
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return Object.assign(
-            this.createItem(r, CONFIG.prefixSC),
+            this.makeItem(r, CONFIG.prefixSC),
             {
-                extends: this.extCOf(r, CONFIG.prefixSC),
+                extends: this.extendingClassOf(r, CONFIG.prefixSC),
                 instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
                 isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
@@ -826,14 +845,14 @@ class COntology {
             }
         ) as SpecifDataType;
     }
-    private extCOf(el: SpecifResource, pfx: string) {
-        // Return a resourceClass resp. statementClass which is related by "SpecIF:isSpecializationOf"
+    private extendingClassOf(el: SpecifResource, pfx: string) {
+        // Return a resourceClass resp. statementClass which is related by "SpecIF:isSpecializationOfxx"
         // to el (the term describing the resourceClass resp. statementClass to be generated):
         if ([CONFIG.prefixRC, CONFIG.prefixSC].includes(pfx)) {
 
             let
                 // We are interested only in statements where *other* resources resp. statements are the object:
-                sL = this.statementsByClass(el, "UML:isSpecializationOf", { asSubject: true });
+                sL = this.statementsByTitle(el, (pfx == CONFIG.prefixRC? ["SpecIF:isSpecializationOfResource"] : ["SpecIF:isSpecializationOfStatement"]), { asSubject: true });
 
             if (sL.length > 1) {
                 console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
@@ -849,10 +868,10 @@ class COntology {
                 // if it exists already due to correct selection, there will be no duplicate:
                 switch (pfx) {
                     case CONFIG.prefixRC:
-                        LIB.cacheE(this.generated.rCL, this.createRC(term));
+                        LIB.cacheE(this.generated.rCL, this.makeRC(term));
                         break;
                     case CONFIG.prefixSC:
-                        LIB.cacheE(this.generated.sCL, this.createSC(term));
+                        LIB.cacheE(this.generated.sCL, this.makeSC(term));
                 };
 
                 return LIB.makeKey(prep.id)
@@ -861,23 +880,30 @@ class COntology {
         }
         // return undefined
     }
-    private createItem(r: SpecifResource, prefix: string) {
+    private makeItem(r: SpecifResource, prefix: string) {
         // Create the attributes common to all classes except dataType;
         // - take the resource's title as title
         // - and a derivative of the title as distinctive portion of the id.
         let prep = this.makeIdAndTitle(r, prefix),
-            dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.data);
+            dscL = LIB.valuesByTitle(r, [CONFIG.propClassDesc], this.data),
+            dsc: SpecifLanguageText;
+
         if (dscL.length > 1)
-            console.info("Only the fist value of the description property will be used for the class generated from " + r.id + " with title " + prep.title + ".");
+            console.info("Only the fist value of the description property will be used for the class generated from "
+                + r.id + " with title " + prep.title + ".");
+
+        if (dscL.length > 0) {
+            dsc = dscL[0];
+            dsc.format = LIB.isHTML(dsc.text) ? SpecifTextFormat.Xhtml : SpecifTextFormat.Plain;
+        };
 
         // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
         return {
-            // Take the specified identifier if available or build one with the title ... :
             id: prep.id,
             revision: this.valueByTitle(r, "SpecIF:Revision") || r.revision,
             title: prep.title,
-            // ToDo: Consider to complement the multilanguageText with format and language:
-            description: (dscL.length > 0 ? dscL[0] : undefined), // only the first property value is taken for the class description
+            // @ts-ignore - doesn't matter if dsc is undefined
+            description: dsc, 
             changedAt: r.changedAt
         } as SpecifClass;
     }
@@ -893,7 +919,7 @@ class COntology {
             - Chains of "isEligibleAsSubject" relations must not be cyclic.
             - Chains of "isEligibleAsObject" relations must not be cyclic.
             - A term can be the plural of one or more other terms, but a term must not have more than one plural
-            - A term having a plural attribute should not have a term related by 'isPluralOf' ... and vice versa.
+            - A term having a plural attribute should not have a term related by 'isPluralOfResource' ... and vice versa.
             - A term which is the plural of another term must not have a plural itself.
             - Data format of a propertyClass CONFIG.propClassTitle ('dcterms:title') must be 'plain'
             - Data format of a propertyClass CONFIG.propClassDesc ('dcterms:description') should be 'xhtml'
@@ -907,19 +933,20 @@ class COntology {
         return true
     }
 
-    private statementsByClass(r: SpecifResource, ti: string, opts: any) {
-        // Find the statements of the class with title ti referencing the given term r as subject or object:
+    private statementsByTitle(r: SpecifResource, tiL: string[], opts: any) {
+        // Find the statements of the class with title in tiL referencing the given term r as subject or object:
         // - if opts.asSubject, then all statements where r is the subject are selected
         // - if opts.asObject, then all statements where r is the object are selected
 
+    /*  In certain cases this ends in an infinite loop, therefore we skip it for now ...
         // First make it a little more robust against changes in the ontology:
         // ToDo: a more efficient solution is to do it once in the construction phase ...
-        ti = this.normalize("statementClass", ti);
+        ti = this.normalize("statementClass", ti);  */
 
         return this.data.statements.filter(
             (st: SpecifStatement) => {
                 // better use 'instanceTitleOf', but it is not available, here:
-                return LIB.classTitleOf(st['class'], this.data.statementClasses) == ti
+                return tiL.includes(LIB.classTitleOf(st['class'], this.data.statementClasses))
                     && (opts.asSubject && st.subject.id == r.id
                         || opts.asObject && st.object.id == r.id);
             }
@@ -960,17 +987,11 @@ class COntology {
         // these are all specializations of SpecIF:ModelElement:
         // ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
 
-     /*   return [
-            'FMC:Actor',
-            'FMC:State',
-            'FMC:Event',
-            'SpecIF:Collection'
-        ]; */
         let rL = this.getTermResources('resourceClass', "SpecIF:ModelElement"),
             sL: string[] = [];
         if (rL.length > 0) {
             // We are interested only in statements where *other* resources resp. statements are the object:
-            sL = this.statementsByClass(rL[0], "UML:isSpecializationOf", { asObject: true })
+            sL = this.statementsByTitle(rL[0], ["SpecIF:isSpecializationOfResource"], { asObject: true })
                 .map(
                     (s) => {
                         let r = LIB.itemByKey(this.data.resources, s.subject);
@@ -1025,6 +1046,7 @@ class COntology {
             };
 
             // 2. Create all statements 'isNamespace':
+            let now = new Date().toISOString();
             for (var r of this.data.resources) {
                 if (this.termClasses.includes(LIB.classTitleOf(r['class'], this.data.resourceClasses))) {
                     let term = this.valueByTitle(r, CONFIG.propClassTerm),
@@ -1036,7 +1058,8 @@ class COntology {
                         for (let ns of this.namespaces) {
                             if (match[1] == ns) {
                                 this.data.statements.push({
-                                    id: LIB.genID('S-'),
+                                    id: LIB.genID(CONFIG.prefixS),
+                                    changedAt: now,
                                     class: stC,
                                     subject: LIB.makeKey(ns),
                                     object: LIB.makeKey(r)

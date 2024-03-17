@@ -859,9 +859,9 @@ LIB.valueByTitle = (el: SpecifInstance, ti: string, dta: SpecIF | CSpecIF | CCac
 }
 LIB.enumeratedValuesOf = (dTk: SpecifDataType|SpecifKey, dta?:SpecIF):string[] => {
     // List the enumerated values of a dataType.
-    // - If a dataType is handed in, take it.
+    // - If a fully specified dataType is handed in, take it.
     // - Otherwise look it up from the list of dataTypes.
-    // @ts-ignore - when dTk.type exists, it is assumed that dTk is a dataType
+    // @ts-ignore - when dTk.type exists, it is assumed that dTk is a fully specified dataType
     var dT = dTk.type ? dTk : LIB.itemByKey((dta ? dta.dataTypes : app.projects.selected.cache.get('dataType', app.projects.selected.dataTypes)), dTk),
         oL = [];
     if (dT.enumeration)

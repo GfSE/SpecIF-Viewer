@@ -555,7 +555,7 @@ moduleManager.construct({
 						// create a clone to collect the changed values before committing:
 						self.newRes = rL[0];
 						if (self.localOpts.mode == 'clone') {
-							self.newRes.id = LIB.genID('R-');
+							self.newRes.id = LIB.genID(CONFIG.prefixR);
 							self.localOpts.dialogTitle = i18n.MsgCloneResource,
 								self.localOpts.msgBtns = [
 									msgBtns.cancel,

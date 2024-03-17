@@ -165,8 +165,11 @@ CONFIG.prefixRC = "RC-";
 CONFIG.prefixSC = "SC-";
 CONFIG.prefixHC = "HC-";
 CONFIG.prefixHR = "HR-"; // for hierarchyRoots needed by ReqIF
+CONFIG.prefixR = "R-";
+CONFIG.prefixS = "S-";
 CONFIG.prefixH = "H-";
 CONFIG.prefixN = "N-";
+CONFIG.prefixV = "V-";
 
 /////////////////////////////////////////////////
 // Lists controlling the visibility and arrangement based on the semantics;

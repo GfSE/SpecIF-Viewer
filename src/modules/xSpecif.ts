@@ -1031,7 +1031,7 @@ class CSpecIF implements SpecIF {
 						);
 
 						var res: SpecifResource = {
-							id: 'R-' + simpleHash(spD.id),
+							id: CONFIG.prefixR + simpleHash(spD.id),
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: { id: "PC-Name" },

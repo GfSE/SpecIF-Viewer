@@ -79,7 +79,7 @@ moduleManager.construct({
 			xsd = LIB.ab2str(buf);
 
 		if (LIB.validXML(xsd)) {
-			let data = ddpSchema2specif(xsd /*, self.parent.projectName, fDate*/);
+			let data = ddpSchema2specifClasses(xsd /*, self.parent.projectName, fDate*/);
 
 			//		console.debug('ioArchimate.toSpecif', self.parent.projectName, data );
 			if (typeof (data) == 'object' && data.id)
@@ -101,7 +101,7 @@ moduleManager.construct({
 	};
 	return self;
 
-	function ddpSchema2specif(xsd: string /*, pN:string, pchAt: string */): SpecIF {
+	function ddpSchema2specifClasses(xsd: string /*, pN:string, pchAt: string */): SpecIF {
 		"use strict";
 
 		// Transform the content of the "Dictionary.xsd" file provided by prostep iViP on 2023-03-10.
@@ -112,23 +112,6 @@ moduleManager.construct({
 		spD.description = [{ text: "prostep iViP Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
 		spD.id = "P-DDP-Schema-V20";
 		spD.createdAt = new Date().toISOString();
-	/*	spD.dataTypes = [
-			// most general data type must come first:
-			app.standards.get("dataType", { id: "DT-Text" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-ShortString" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-DateTime" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-Boolean" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-Integer" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-Real" }) as SpecifDataType,
-			app.standards.get("dataType", { id: "DT-AnyURI" }) as SpecifDataType
-		];
-		Currently the deduplication doesn't work with these, anyways:
-		spD.propertyClasses = [
-			app.standards.get("propertyClass", { id: "PC-Name" }) as SpecifPropertyClass,
-			app.standards.get("propertyClass", { id: "PC-Description" }) as SpecifPropertyClass,
-			app.standards.get("propertyClass", { id: "PC-Diagram" }) as SpecifPropertyClass,
-			app.standards.get("propertyClass", { id: "PC-Type" }) as SpecifPropertyClass
-		]; */
 
 		let parser = new DOMParser(),
 			xsdDoc = parser.parseFromString(xsd, "text/xml");
