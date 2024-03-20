@@ -329,23 +329,23 @@ class CCheckDialogInput {
             val = textValue(cPs.label);
             // Perform the test depending on the type:
             switch (cPs.dataType.type) {
-                case SpecifDataTypeEnum.String:
+                case XsDataType.String:
                     //    case 'xhtml':
                     ok = cPs.dataType.maxLength == undefined || val.length <= cPs.dataType.maxLength;
                     break;
-                case SpecifDataTypeEnum.Double:
+                case XsDataType.Double:
                     ok = val.length < 1
                         || RE.Real(cPs.dataType.fractionDigits).test(val)
                         && !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
                         && !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
                     break;
-                case SpecifDataTypeEnum.Integer:
+                case XsDataType.Integer:
                     ok = val.length < 1
                         || RE.Integer.test(val)
                         && !(typeof (cPs.dataType.minInclusive) == 'number' && parseFloat(val) < cPs.dataType.minInclusive)
                         && !(typeof (cPs.dataType.maxInclusive) == 'number' && parseFloat(val) > cPs.dataType.maxInclusive);
                     break;
-                case SpecifDataTypeEnum.DateTime:
+                case XsDataType.DateTime:
                     ok = val.length < 1 || LIB.isIsoDateTime(val);
                 // no need to check enumeration
             };
@@ -591,13 +591,13 @@ LIB.equalDT = (refE: SpecifDataType, newE: SpecifDataType): boolean =>{
     if (refE.type != newE.type) return false;
     // Perhaps we must also look at the title ..
     switch (refE.type) {
-        case SpecifDataTypeEnum.Double:
+        case XsDataType.Double:
             if (refE.fractionDigits != newE.fractionDigits) return false;
             // no break;
-        case SpecifDataTypeEnum.Integer:
+        case XsDataType.Integer:
             if (refE.minInclusive != newE.minInclusive || refE.maxInclusive != newE.maxInclusive) return false;
             break;
-        case SpecifDataTypeEnum.String:
+        case XsDataType.String:
             if (refE.maxLength != newE.maxLength) return false;
     };
     if (!Array.isArray(refE.enumeration) && !Array.isArray(newE.enumeration)) return true;
@@ -1911,7 +1911,7 @@ LIB.dataTypeOf = (key: SpecifKey, prj: SpecIF): SpecifDataType => {
     };
     // else:
     // happens, if filter replaces an enumeration property by its value - property has no class in this case:
-    return { type: SpecifDataTypeEnum.String } as SpecifDataType; // by default
+    return { type: XsDataType.String } as SpecifDataType; // by default
 }
 LIB.iterateNodes = (tree: SpecifNode[] | SpecifNode, eFn: Function, lFn?: Function): boolean => {
     // Iterate a SpecIF hierarchy or a branch of a hierarchy.

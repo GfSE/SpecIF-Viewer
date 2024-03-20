@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.r.15",
+    CONFIG.appVersion = "1.1.r.16",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.pathOntology = 'https://specif.de/v1.2/Ontology.specif';  // used to localize and normalize terms
@@ -245,6 +245,7 @@ const inBr = "\\((\\S[^\\)]*?\\S)\\)|\\[(\\S[^\\]]*?\\S)\\]"; // empty space in 
     RE.withoutBracketsAtEnd = /^(.*?)\s+(\(\S[^\)]*?\S\)|\[\S[^\]]*?\S\])$/i;
     RE.inQuotes = /"(\S[^"]*?\S)"|'(\S[^']*?\S)'/i;  // empty space in the middle allowed, but not as first and last character
     RE.isolatePrefix = /^([A-Z]{1,2}-)?(\S+)/;
+    RE.isolateNamespace = /^([A-Z]+(?:\.|:))(\w+)/i;
 
 const tagStr = "(<\\/?)([a-z]{1,10}(?: [^<>]+)?\\/?>)";
     RE.tag = new RegExp( tagStr, 'g' );

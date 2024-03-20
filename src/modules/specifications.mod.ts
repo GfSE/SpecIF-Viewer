@@ -84,7 +84,7 @@ class CPropertyToShow implements SpecifProperty {
 		// Return all values in the language specified;
 		// it is assumed that the values in case of an enumeration have already been looked up:
 		var str = '';
-		if (this.dT.type == SpecifDataTypeEnum.String) {
+		if (this.dT.type == XsDataType.String) {
 			let lV;
 			if (opts && opts.targetLanguage) {
 				this.values.forEach(
@@ -128,7 +128,7 @@ class CPropertyToShow implements SpecifProperty {
 		let ct: string;
 //		console.debug('*',this,this.dT);
 		switch (this.dT.type) {
-			case SpecifDataTypeEnum.String:
+			case XsDataType.String:
 				ct = this.allValues(opts);
 				if (opts.unescapeHTMLTags)
 					ct = ct.unescapeHTMLTags();
@@ -143,7 +143,7 @@ class CPropertyToShow implements SpecifProperty {
 					ct = ct.makeHTML(opts);
 				ct = this.titleLinks(ct, opts);
 				break;
-			case SpecifDataTypeEnum.DateTime:
+			case XsDataType.DateTime:
 				ct = opts.localDateTime? LIB.localDateTime(this.values[0]) : this.values[0];   // multiple values not yet supported
 				break;
 			default:
@@ -2373,7 +2373,7 @@ moduleManager.construct({
 											// considering only text-properties except enumerated values,
 											// because it is not expected that type information references instance data
 											// and also we would need to explicitly look up the enumerated value, first:
-											if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+											if (dT && dT.type == XsDataType.String && !dT.enumeration) {
 												// add, if the iterated resource's title appears in the selected resource's property ..
 												// and if it is not yet listed:
 												if (refPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, selR, refR)) {
@@ -2395,7 +2395,7 @@ moduleManager.construct({
 									refR.properties.forEach((p) => {
 										// assuming that the dataTypes are always cached:
 										dT = LIB.dataTypeOf(p['class'], cacheData);
-										if (dT && dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+										if (dT && dT.type == XsDataType.String && !dT.enumeration) {
 											// add, if the selected resource's title appears in the iterated resource's property ..
 											// and if it is not yet listed:
 											if (selPatt.test(LIB.languageTextOf(p.values[0], localOpts)) && notListed(staL, refR, selR)) {

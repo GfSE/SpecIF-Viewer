@@ -201,7 +201,7 @@ function LanguageTextsFr() {
 //	self.BtnLogin = '<span class="glyphicon glyphicon-log-in"></span>&#160;Se connecter';
 //	self.BtnLogout = '<span class="glyphicon glyphicon-log-out"></span>&#160;Se déconnecter';
 	self.BtnProfile = 'Profile';
-	self.BtnBack = 'Retour';
+	self.BtnBack = self.LblPreviousStep;
 	self.BtnCancel = 'Annuler';
 	self.BtnCancelImport = "Interrompre";
 	self.BtnApply = 'Appliquer';

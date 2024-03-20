@@ -438,7 +438,7 @@ interface SpecifDataType {
      * @type {string}
      * @memberof SpecifDataType
      */
-    type: SpecifDataTypeEnum;
+    type: XsDataType;
     /**
      * 
      * @type {number}
@@ -493,7 +493,7 @@ interface SpecifDataType {
 * @export
 * @enum {string}
 */
-enum SpecifDataTypeEnum {
+enum XsDataType {
     Boolean = <any> 'xs:boolean',
     Integer = <any> 'xs:integer',
     Double = <any> 'xs:double',

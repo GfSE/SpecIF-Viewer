@@ -800,7 +800,7 @@ class CProject implements SpecifProject {
 						for (var r of exD.resources) {
 							for (var p of r.properties) {
 								dT = LIB.dataTypeOf(p['class'], this.cache);
-								if (dT && dT.type == SpecifDataTypeEnum.String) {
+								if (dT && dT.type == XsDataType.String) {
 									// Cycle through all values:
 									for (var v of p.values) {
 										// Cycle through all languages of a value:
@@ -809,7 +809,7 @@ class CProject implements SpecifProject {
 											let re = /data="([^"]+)"/g,
 												mL;
 											// Get multiple references in a single property:
-											// @ts-ignore - in case of SpecifDataTypeEnum there is a property 'text'
+											// @ts-ignore - in case of XsDataType there is a property 'text'
 											while ((mL = re.exec(l.text)) !== null) {
 												// mL[1] is the file title
 												LIB.cacheE(fL, mL[1]);
@@ -2936,17 +2936,17 @@ class CProject implements SpecifProject {
 		// Check whether newC is compatible with refC.
 		if (refC.type == newC.type) {
 			switch (newC.type) {
-				case SpecifDataTypeEnum.Boolean:
+				case XsDataType.Boolean:
 					// can't have enumerated values
 					return true;
-				case SpecifDataTypeEnum.Double:
+				case XsDataType.Double:
 					// to be compatible, the new 'fractionDigits' must be lower or equal:
 					if (refC.fractionDigits < newC.fractionDigits) {
 						new xhrMessage(952, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;
 					};
 				// else: go on ...
-				case SpecifDataTypeEnum.Integer:
+				case XsDataType.Integer:
 					// to be compatible, the new 'maxInclusive' must be lower or equal and the new 'minInclusive' must be higher or equal:
 //					console.debug( refC.maxInclusive<newC.maxInclusive || refC.minInclusive>newC.minInclusive );
 					if (refC.maxInclusive < newC.maxInclusive || refC.minInclusive > newC.minInclusive) {
@@ -2954,16 +2954,16 @@ class CProject implements SpecifProject {
 						return false;
 					};
 					break;
-				case SpecifDataTypeEnum.String:
+				case XsDataType.String:
 //					console.debug( refC.maxLength>newC.maxLength-1 );
 					if (refC.maxLength && (newC.maxLength == undefined || refC.maxLength < newC.maxLength)) {
 						new xhrMessage(951, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible").log();
 						return false;;
 					};
 					break;
-				case SpecifDataTypeEnum.DateTime:
-				case SpecifDataTypeEnum.Duration:
-				case SpecifDataTypeEnum.AnyURI:
+				case XsDataType.DateTime:
+				case XsDataType.Duration:
+				case XsDataType.AnyURI:
 					break;
 				default:
 					// should never arrive here ... as every branch in every case above has a return.
@@ -2990,7 +2990,7 @@ class CProject implements SpecifProject {
 					return false;
 				};
 			/*	//  b. the values must be equal; distinguish between data types:
-			 	// - SpecifDataTypeEnum.String: multiLanguage text (ToDo:  needs rework!)
+			 	// - XsDataType.String: multiLanguage text (ToDo:  needs rework!)
 				// - all others: string
 				if (refC.enumeration[idx].value != newC.enumeration[v].value) { 
 					new xhrMessage( 955, "new dataType '" + newC.id + "' of type '" + newC.type + "' is incompatible" ).log();

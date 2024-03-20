@@ -513,7 +513,7 @@ moduleManager.construct({
 								}
 							);
 						mV = mark(LIB.displayValueOf(v, localOptions), re);
-						return prp.dT.type == SpecifDataTypeEnum.String ? LIB.makeMultiLanguageValue(mV) : mV;
+						return prp.dT.type == XsDataType.String ? LIB.makeMultiLanguageValue(mV) : mV;
 					});
 
 						function mark(txt: string, re: RegExp): string {

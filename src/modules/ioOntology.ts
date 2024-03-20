@@ -26,6 +26,14 @@ class COntology {
     modelElementClasses: string[] = [];
 
     // List with all term classes by title:
+    termPrincipalClasses = new Map([
+        ["SpecIF:TermResourceClass", "R-FolderTermsResourceClass"],
+        ["SpecIF:TermStatementClass", "R-FolderTermsStatementClass"],
+        ["SpecIF:TermPropertyClass", "R-FolderTermsPropertyClass"],
+        ["SpecIF:TermPropertyValue", "R-FolderTermsPropertyValue"]
+    ]);
+
+    // List with all term classes by title:
     termClasses: string[] = [
         "SpecIF:TermResourceClass",
         "SpecIF:TermStatementClass",
@@ -49,13 +57,13 @@ class COntology {
 
     // Assign the primitive dataType to the termPropertyClasses of a SpecIF Ontology:
     private primitiveDataTypes = new Map([
-        ["RC-SpecifTermpropertyclassstring", SpecifDataTypeEnum.String],
-        ["RC-SpecifTermpropertyclassboolean", SpecifDataTypeEnum.Boolean],
-        ["RC-SpecifTermpropertyclassinteger", SpecifDataTypeEnum.Integer],
-        ["RC-SpecifTermpropertyclassreal", SpecifDataTypeEnum.Double],
-        ["RC-SpecifTermpropertyclasstimestamp", SpecifDataTypeEnum.DateTime],
-        ["RC-SpecifTermpropertyclassduration", SpecifDataTypeEnum.Duration],
-        ["RC-SpecifTermpropertyclassuri", SpecifDataTypeEnum.AnyURI]
+        ["RC-SpecifTermpropertyclassstring", XsDataType.String],
+        ["RC-SpecifTermpropertyclassboolean", XsDataType.Boolean],
+        ["RC-SpecifTermpropertyclassinteger", XsDataType.Integer],
+        ["RC-SpecifTermpropertyclassreal", XsDataType.Double],
+        ["RC-SpecifTermpropertyclasstimestamp", XsDataType.DateTime],
+        ["RC-SpecifTermpropertyclassduration", XsDataType.Duration],
+        ["RC-SpecifTermpropertyclassuri", XsDataType.AnyURI]
     ]);
 
     // Assign titles of special relations for synonyms per class of terms:
@@ -444,7 +452,8 @@ class COntology {
 
             this.options = opts;
 
-            let spId = "P-SpecifClasses";  // id of the SpecIF data set with the generated classes, will be complemented with the selected domains
+            let spId = "P-SpecifClasses",  // id of the SpecIF data set with the generated classes, will be complemented with the selected domains
+                now = new Date().toISOString();
 
          /*   if (Array.isArray(opts.terms)) {
                 // Check whether all listed terms are defined by the Ontology:
@@ -469,7 +478,9 @@ class COntology {
                 dTL: [] as SpecifDataType[],  // is filled by the function creating the propertyClasses, as there are no explicit dataTypes in a SpecIF Ontology.
                 pCL: [] as SpecifPropertyClass[],
                 rCL: [] as SpecifResourceClass[],
-                sCL: [] as SpecifStatementClass[]
+                sCL: [] as SpecifStatementClass[],
+                rL: [] as SpecifResource[],
+                hL: [] as SpecifNodes
             };
 
             // Generate in 3 steps;
@@ -488,6 +499,31 @@ class COntology {
                 this.required.sTL.length = 0;
                 LIB.cacheL(this.generated.sCL, sCL.map(this.makeSC.bind(this)));
                 //        console.debug('required sCL', simpleClone(this.generated.sCL), simpleClone(this.required.sTL));
+            };
+
+            // In some cases, prepare a folder structure for the hierarchy:
+            if (this.options.domains && this.options.domains.includes("SpecIF:DomainOntology")) {
+                let rId = "R-FolderOntology";
+                this.generated.rL.push( LIB.itemByKey(this.data.resources, { id: rId }) );
+                let h: SpecifNode = {
+                    id: LIB.replacePrefix(CONFIG.prefixN, rId),
+                    resource: { id: rId },
+                    nodes: [],
+                    changedAt: now
+                };
+
+                Array.from(this.termPrincipalClasses.values(),
+                    (clId:string) => {
+                        this.generated.rL.push(LIB.itemByKey(this.data.resources, { id: clId }));
+                        h.nodes.push({
+                            id: LIB.replacePrefix(CONFIG.prefixN, clId),
+                            resource: { id: clId },
+                            nodes: [],
+                            changedAt: now
+                        })
+                    }
+                );
+                this.generated.hL.push(h);
             };
 
             // Finally return the result:
@@ -509,12 +545,15 @@ class COntology {
                     "dataTypes": this.generated.dTL,
                     "propertyClasses": this.generated.pCL,
                     "resourceClasses": this.generated.rCL,
-                    "statementClasses": this.generated.sCL
+                    "statementClasses": this.generated.sCL,
+                    "resources": this.generated.rL,
+                    "hierarchies": this.generated.hL
                 }
             )
         }
         else {
             message.show("No domain or term specified, so no classes will be generated.", { severity: 'warning' });
+            return this.makeTemplate();
         }
     }
 
@@ -581,11 +620,12 @@ class COntology {
         // Create a dataType for the TermPropertyClass r:
         let self = this;
 
-        let ty = this.primitiveDataTypes.get(r["class"].id) as SpecifDataTypeEnum, // get the primitive dataType implied by the term's class
+        let ty = this.primitiveDataTypes.get(r["class"].id) as XsDataType, // get the primitive dataType implied by the term's class
             // make sure that in case of a dataType with enumerated values, the ids correspond to the ids of the dataTypes:
             prep = this.makeIdAndTitle(r, CONFIG.prefixPC),  // only used for dataTypes with enumerated values
-            dtId = prep.id.replace(new RegExp("^" + CONFIG.prefixPC), CONFIG.prefixDT), // also
-            vId = prep.id.replace(new RegExp("^" + CONFIG.prefixPC), CONFIG.prefixV),   // also
+            dtId = LIB.replacePrefix(CONFIG.prefixDT, prep.id), // also
+            vId = LIB.replacePrefix(CONFIG.prefixV, prep.id),   // also
+
             // Find any assigned enumerated values; these are defined by related propertyValues:
             stL: SpecifStatement[] = this.statementsByTitle(r, ["SpecIF:hasEnumValue"], { asSubject: true }),  // all statements pointing to enumerated values
             oL: SpecifResource[] = stL.map(
@@ -615,7 +655,7 @@ class COntology {
 
         // Look for any parameters per primitive data type:
         switch (ty) {
-            case SpecifDataTypeEnum.String:
+            case XsDataType.String:
                 let maxLen = this.valueByTitle(r, "SpecIF:StringMaxLength");
                 // @ts-ignore - missing attributes come further down
                 dT = {
@@ -625,7 +665,7 @@ class COntology {
                     maxLength: maxLen ? parseInt(maxLen) : undefined
                 };
                 break;
-            case SpecifDataTypeEnum.Boolean:
+            case XsDataType.Boolean:
                 // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-Boolean",
@@ -633,7 +673,7 @@ class COntology {
                     description: [{ text: "A Boolean value." }]
                 };
                 break;
-            case SpecifDataTypeEnum.Integer:
+            case XsDataType.Integer:
                 let maxI = this.valueByTitle(r, "SpecIF:IntegerMaxInclusive"),
                     minI = this.valueByTitle(r, "SpecIF:IntegerMinInclusive");
                 // @ts-ignore - missing attributes come further down
@@ -645,7 +685,7 @@ class COntology {
                     maxInclusive: maxI ? parseInt(maxI) : undefined
                 };
                 break;
-            case SpecifDataTypeEnum.Double:
+            case XsDataType.Double:
                 let frD  = this.valueByTitle(r, "SpecIF:RealFractionDigits"),
                     maxR = this.valueByTitle(r, "SpecIF:RealMaxInclusive"),
                     minR = this.valueByTitle(r, "SpecIF:RealMinInclusive");
@@ -659,7 +699,7 @@ class COntology {
                     fractionDigits: frD ? parseInt(frD) : undefined
                 };
                 break;
-            case SpecifDataTypeEnum.DateTime:
+            case XsDataType.DateTime:
                 // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-DateTime",
@@ -667,7 +707,7 @@ class COntology {
                     description: [{ text: "Date or timestamp in ISO-8601 format." }]
                 };
                 break;
-            case SpecifDataTypeEnum.Duration:
+            case XsDataType.Duration:
                 // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-Duration",
@@ -675,7 +715,7 @@ class COntology {
                     description: [{ text: "A duration as defined by the ISO 8601 ABNF for 'duration'." }]
                 };
                 break;
-            case SpecifDataTypeEnum.AnyURI:
+            case XsDataType.AnyURI:
                 // @ts-ignore - missing attributes come further down
                 dT = {
                     id: "DT-AnyURI",
@@ -921,10 +961,11 @@ class COntology {
             - A term can be the plural of one or more other terms, but a term must not have more than one plural
             - A term having a plural attribute should not have a term related by 'isPluralOfResource' ... and vice versa.
             - A term which is the plural of another term must not have a plural itself.
+            - A property with enumerated values must have >1.
             - Data format of a propertyClass CONFIG.propClassTitle ('dcterms:title') must be 'plain'
             - Data format of a propertyClass CONFIG.propClassDesc ('dcterms:description') should be 'xhtml'
             - Data format of a propertyClass CONFIG.propClassDiagram ('SpecIF:Diagram') must be 'xhtml'
-            - Data format of a propertyClasses with enumerated values should be 'plain'
+            - Data format of a propertyClasses with enumerated values of type xs:string should be 'plain'
             - Among synonyms, there should be just one 'preferred' term
             - must define a term CONFIG.resClassFolder ("SpecIF:Heading") and some basic propertyClasses used by ioXls
             - ToDo: complete the list ...

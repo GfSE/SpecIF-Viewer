@@ -26,6 +26,7 @@ moduleManager.construct({
 		errNoDdpSchemaFile = new xhrMessage( 897, 'No DDP-Schema file in the reqifz container.' ),
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' }, */
 		errInvalidXML = new xhrMessage(898, 'DDP Schema is not valid XML.'),
+		errTransformationCancelled = new xhrMessage(999, 'Transformation cancelled on user request.'),
 		errTransformationFailed = new xhrMessage(999, 'Input file could not be transformed to SpecIF.');
 		
 	self.init = (/*options:any*/):boolean =>{
@@ -79,13 +80,63 @@ moduleManager.construct({
 			xsd = LIB.ab2str(buf);
 
 		if (LIB.validXML(xsd)) {
-			let data = ddpSchema2specifClasses(xsd /*, self.parent.projectName, fDate*/);
 
-			//		console.debug('ioArchimate.toSpecif', self.parent.projectName, data );
-			if (typeof (data) == 'object' && data.id)
-				dDO.resolve(data)
-			else
-				dDO.reject(errTransformationFailed);
+			// @ts-ignore - BootstrapDialog() is loaded at runtime
+			new BootstrapDialog({
+				title: "Choose result type",
+				type: 'type-primary',
+				message: () => {
+					return $(
+						'<div>'
+						+ "<p>" + i18n.MsgExport + "</p>"
+						+ makeRadioField(
+							i18n.LblFormat,
+							[
+								{ title: 'SpecIF Ontology for DDP', id: 'ontology', checked: true },
+								{ title: 'SpecIF Classes for DDP', id: 'specifClasses' }
+							]
+						)
+						+ '</div>'
+					)
+				},
+				buttons: [
+					{
+						label: i18n.BtnCancel,
+						action: (thisDlg: any) => {
+							dDO.reject(errTransformationCancelled);
+							thisDlg.close()
+						}
+					},
+					{
+						label: i18n.LblNextStep,
+						cssClass: 'btn-success',
+						action: (thisDlg: any) => {
+							// Obtain selected options:
+							// add 'zero width space' (&#x200b;) to make the label = div-id unique:
+
+							// Retrieve further options:
+							let data: SpecIF;
+							switch (radioValue(i18n.LblFormat)) {
+								case 'ontology':
+									data = ddpSchema2specifOntology(xsd /*, self.parent.projectName, fDate*/);
+									break;
+								case 'specifClasses':
+									data = ddpSchema2specifClasses(xsd /*, self.parent.projectName, fDate*/);
+							//		break;
+							//	default:
+							};
+							// @ts-ignore - in all cases which can occur, the variable data has a value:
+							if (typeof (data) == 'object' && data.id)
+								dDO.resolve(data)
+							else
+								dDO.reject(errTransformationFailed);
+
+							thisDlg.close();
+						}
+					}
+				]
+			})
+			.open();
         }
 		else
 			dDO.reject(errInvalidXML);
@@ -106,10 +157,10 @@ moduleManager.construct({
 
 		// Transform the content of the "Dictionary.xsd" file provided by prostep iViP on 2023-03-10.
 
-		var xlsTerms = ["xs:dateTime", "xs: anyURI", "xs:boolean", "xs:integer", "xs:double", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder],
+		var xlsTerms = ["xs:boolean", "xs:integer", "xs:double", "xs:dateTime", "xs:anyURI", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder],
 			spD: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
 		spD.title = [{ text: "prostep iViP Collaboration Datamodel Schema" }];
-		spD.description = [{ text: "prostep iViP Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
+		spD.description = [{ text: "Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
 		spD.id = "P-DDP-Schema-V20";
 		spD.createdAt = new Date().toISOString();
 
@@ -162,7 +213,7 @@ moduleManager.construct({
 						LIB.cacheE(rC.propertyClasses, { id: id });
 					}
 					else
-						console.warn('Unknown data type', ty);
+						console.warn('Property with title '+ti+' has unknown data type '+ty);
 				});
 				LIB.cacheE(spD.resourceClasses, rC);
 			}
@@ -298,19 +349,248 @@ moduleManager.construct({
 
 		console.info('SpecIF data from DDP', spD);
 		return spD;
+	} // end of ddpSchema2specifClasses
 
-		function getDesc(el: any): SpecifMultiLanguageText {
-		//	let docL = Array.from(el.getElementsByTagName('xs:documentation'));  ... yields all subordinated elements in case of an entity
-			// assuming that the 'annotation' is first subordinated element:
-			let docL = el.children && el.children.length>0 ? Array.from(el.children[0].children) : [];
-			return docL.map(
-				(doc:any) => {
-					return {
-						text: doc.innerHTML,
-						language: doc.getAttribute("xml:lang")
-					} as SpecifLanguageText
+	function ddpSchema2specifOntology(xsd: string /*, pN:string, pchAt: string */): SpecIF {
+		"use strict";
+
+		// Transform the content of the "Dictionary.xsd" file provided by prostep iViP on 2023-03-10.
+
+		let spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainOntology"], adoptOntologyDataTypes: true }),
+			termPropertyClasses = new Map();
+
+		// Initialize - create an inverted map from data type to property class id:
+		app.ontology.primitiveDataTypes.forEach(
+			(v:string, k:string) => {  // astonishingly the value is provided first
+				termPropertyClasses.set(v, k);
+			}
+		);
+
+		spD.title = [{ text: "prostep iViP Collaboration Ontology" }];
+		spD.description = [{ text: "Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
+		spD.id = "P-DDP-Ontology-V20";
+		spD.createdAt = new Date().toISOString();
+
+		let parser = new DOMParser(),
+			xsdDoc = parser.parseFromString(xsd, "text/xml");
+
+		// 1. Extract the dictionaryEntities from the DictionaryEntitiesCollection in the upper part of the schema file
+
+		// 1.a Extract the DictionaryEntity with (currently 2) properties als parent:
+
+
+		// 1.b Extract the specialized DictionaryEntities with their individual properties:
+		let dictionaryEntities = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
+			.filter((ch) => { return ch.tagName == "xs:complexType"; })
+			.filter((ch) => { return ch.getAttribute("name") == "DictionaryEntitiesCollection" });
+
+		Array.from(
+			dictionaryEntities[0].children[0].children,
+			(d) => {
+				let dE = d.children[0].children[0].children[0];
+				// dE is the dictionaryEntity, now.
+
+				// 1a. Create the resource term; the DDP entity is a termResourceClass in SpecIF:
+				let ti = dE.getAttribute("name") || "",
+					r = {
+						id: CONFIG.prefixR + simpleHash(ti),
+						changedAt: spD.createdAt,
+						class: {
+							"id": "RC-SpecifTermresourceclass"
+						},
+						properties: []
+					};
+
+				// 1b. Add the native properties of the term:
+				if (!RE.isolateNamespace.test(ti)) ti = "DDP:" + ti;
+				r.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
+				r.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] });
+				r.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
+				r.properties.push({ "class": { "id": "PC-Domain" }, "values": ["V-Domain-24"] });
+				r.properties.push({ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
+
+				// 1c. Store the term ..
+				LIB.cacheE(spD.resources, r);
+				// ...  and add it to the hierarchy:
+				if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
+					//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
+					let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey("N-FolderTermsResourceClass"));
+					if (fld && fld.nodes)
+						fld.nodes.push({
+							id: LIB.replacePrefix(CONFIG.prefixN, r.id),
+							resource: LIB.makeKey(r.id),
+							changedAt: spD.createdAt
+						})
+					else
+						throw Error("Assumption not met: Did'nt find the folder with id='N-FolderTermsResourceClass'.");
 				}
-			);
-		}
+				else
+					throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+
+				// 2a. Create the property terms; the DDP entity attribute is a termPropertyClass in SpecIF:
+				let attC = dE.getElementsByTagName('xs:complexContent'),
+					atts = attC[0].children[0].children;
+				let prpL = (atts && atts.length == 1) ? Array.from(atts[0].getElementsByTagName('xs:element')) : [];
+				console.debug('d', dE, atts, prpL);
+
+				prpL.forEach((prp) => {
+					let ti = prp.getAttribute("ref") || prp.getAttribute("name") || "",
+						ty = prp.getAttribute("type") || "xs:string",
+						dT = LIB.itemBy(spD.dataTypes, "type", ty);
+					if (dT) {
+						let p = {
+							id: CONFIG.prefixR + simpleHash(ti),
+							changedAt: spD.createdAt,
+							class: {
+								"id": termPropertyClasses.get(ty)
+							},
+							properties: []
+						};
+						// 2b. Add the native properties of the term:
+						if (!RE.isolateNamespace.test(ti)) ti = "DDP:" + ti;
+						p.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
+						p.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] });
+						p.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
+						p.properties.push({ "class": { "id": "PC-Domain" }, "values": ["V-Domain-24"] });
+
+						// 2c. Store the term ..
+						LIB.cacheE(spD.resources, p);
+						// ...  and add it to the hierarchy:
+						if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
+							//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
+							let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey("N-FolderTermsPropertyClass"));
+							if (fld && fld.nodes)
+								LIB.cacheE(
+									fld.nodes,
+									{
+										id: LIB.replacePrefix(CONFIG.prefixN, p.id),
+										resource: LIB.makeKey(p.id),
+										changedAt: spD.createdAt
+									}
+								)
+							else
+								throw Error("Assumption not met: Did'nt find the folder with id='N-FolderTermsPropertyClass'.");
+						}
+						else
+							throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+
+						// 2d. Relate the termPropertyClass with a "SpecIF:hasPropety" to the termResourceClass
+						spD.statements.push({
+							id: CONFIG.prefixS + simpleHash(r.id + p.id),
+							class: { id: "SC-hasProperty" },
+							subject: { id: r.id },
+							object: { id: p.id },
+							changedAt: spD.createdAt
+						});
+					}
+					else
+						console.warn('Property with title ' + ti + ' has unknown data type ' + ty);
+				})
+			}
+		);
+
+		// 3. Extract the dictionaryRelations from the "DictionaryRelationsCollection" in the upper part of the schema file
+		let dictionaryRelations = Array.from(xsdDoc.getElementsByTagName('xs:schema')[0].children)
+			.filter((ch) => { return ch.tagName == "xs:complexType"; })
+			.filter((ch) => { return ch.getAttribute("name") == "DictionaryRelationsCollection" });
+		//        console.debug('rels', Array.from(dictionaryRelations[0].children[0].children));
+
+		Array.from(
+			dictionaryRelations[0].children[0].children,
+			(rel) => {
+				if (rel.tagName == "xs:element") {
+
+					let ti = rel.getAttribute("name") || "",
+						s = {
+							id: CONFIG.prefixR + simpleHash(ti),  // it is a resource describing a statementTerm
+							changedAt: spD.createdAt,
+							class: {
+								"id": "RC-SpecifTermstatementclass"
+							},
+							properties: []
+						};
+
+					// 1b. Add the native properties of the term:
+					if (!RE.isolateNamespace.test(ti)) ti = "DDP:" + ti;
+					s.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
+					s.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(rel)] });
+					s.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
+					s.properties.push({ "class": { "id": "PC-Domain" }, "values": ["V-Domain-24"] });
+					s.properties.push({ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
+
+					// 1c. Store the term ..
+					LIB.cacheE(spD.resources, s);  // it is a resource describing a statementTerm
+					// ...  and add it to the hierarchy:
+					if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
+						//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
+						let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey("N-FolderTermsStatementClass"));
+						if (fld && fld.nodes)
+							fld.nodes.push({
+								id: LIB.replacePrefix(CONFIG.prefixN, s.id),
+								resource: LIB.makeKey(s.id),
+								changedAt: spD.createdAt
+							})
+						else
+							throw Error("Assumption not met: Did'nt find the folder with id='N-FolderTermsStatementClass'.");
+					}
+					else
+						throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+
+					// 3b. Store the relations to eligible subjects and objects:
+					// This is an ugly hack, because semantic significance is derived from the relation names ...
+					let entities = Array.from(rel.getElementsByTagName('xs:element')),
+						subj = entities.filter(
+							(en) => {
+								return en.getAttribute("name").includes("subject");
+							}
+						),
+						obj = entities.filter(
+							(en) => {
+								return en.getAttribute("name").includes("object");
+							}
+						);
+//					console.debug('#1',entities, ti, subj, obj);
+
+					let sTi = subj[0].getAttribute("name").substring(7),
+						oTi = obj[0].getAttribute("name").substring(6),
+						subId = CONFIG.prefixR + simpleHash(sTi),
+						obId = CONFIG.prefixR + simpleHash(oTi);
+
+					// It is possible that subject and object point to the same termResourceClass, thus distinguish their ids:
+					spD.statements.push({
+						id: CONFIG.prefixS + simpleHash(s.id + 'subject' + subId),
+						class: { id: "SC-isEligibleAsSubject" },
+						subject: { id: subId },
+						object: { id: s.id },
+						changedAt: spD.createdAt
+					});
+					spD.statements.push({
+						id: CONFIG.prefixS + simpleHash(s.id + 'object' + obId),
+						class: { id: "SC-isEligibleAsObject" },
+						subject: { id: obId },
+						object: { id: s.id },
+						changedAt: spD.createdAt
+					});
+				}
+			}
+		);
+
+		console.info('SpecIF Ontology from DDP', spD);
+		return spD;
+
+	} // end of ddpSchema2specifOntology
+
+	function getDesc(el: any): SpecifMultiLanguageText {
+		//	let docL = Array.from(el.getElementsByTagName('xs:documentation'));  ... yields all subordinated elements in case of an entity
+		// assuming that the 'annotation' is first subordinated element:
+		let docL = el.children && el.children.length > 0 ? Array.from(el.children[0].children) : [];
+		return docL.map(
+			(doc: any) => {
+				return {
+					text: doc.innerHTML,
+					language: doc.getAttribute("xml:lang")
+				} as SpecifLanguageText
+			}
+		);
 	}
 });

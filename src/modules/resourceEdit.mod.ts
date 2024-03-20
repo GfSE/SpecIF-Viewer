@@ -43,7 +43,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 				(eV: SpecifEnumeratedValue) => {
 					// - LIB.languageTextOf returns the value in the local language ... or a vocabulary term
 					// - a returned vocabulary term is then localized using the ontology.
-					let val = this.dT.type == SpecifDataTypeEnum.String ? app.ontology.localize(LIB.languageTextOf(eV.value, localOpts), localOpts) : eV.value;
+					let val = this.dT.type == XsDataType.String ? app.ontology.localize(LIB.languageTextOf(eV.value, localOpts), localOpts) : eV.value;
 					return { title: val, id: eV.id, checked: this.enumIdL.includes(eV.id) }
 				}
 			);
@@ -66,7 +66,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// create an input field depending on the property's dataType;
 		// again, the dataType may be missing, the type is assumed to be "xs:string" by default:
 		switch (this.dT.type) {
-			case SpecifDataTypeEnum.Boolean:
+			case XsDataType.Boolean:
 				// - no input checking needed
 //				console.debug('xs:boolean',ti,this);
 				return makeBooleanField(
@@ -74,7 +74,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 					this.values.length > 0 ? LIB.isTrue(this.values[0]) : false,
 					this.dispOpts()
 				);
-			case SpecifDataTypeEnum.String:
+			case XsDataType.String:
 				if (this.pC.title == CONFIG.propClassDiagram) {
 					// it is a diagram reference (thus an XHTML-formatted text field):
 					return this.makeDiagramField(localOpts)
@@ -239,7 +239,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 		// Otherwise take the value itself:
 		let val: string;
 		switch (this.dT.type) {
-			case SpecifDataTypeEnum.String:
+			case XsDataType.String:
 				if (this.pC.title == CONFIG.propClassDiagram) {
 					// In case of a diagram, the value is stored intermediately in the respective self.toEdit property when the user uploads a new file;
 					// this.values is empthy, if the diagram has been removed while editing:
@@ -272,7 +272,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 								}
 								else {
 									// language not found, so append:
-									// @ts-ignore - this is of type SpecifDataTypeEnum.String, so we can push a new language value
+									// @ts-ignore - this is of type XsDataType.String, so we can push a new language value
 									this.values[0].push({ text: val, language: localOpts.targetLanguage } as SpecifLanguageText);
 								};
 								return { class: LIB.makeKey(this.pC.id), values: this.values };
@@ -288,7 +288,7 @@ class CPropertyToEdit extends CPropertyToShow  {
 					// no input value:
 					return { class: LIB.makeKey(this.pC.id), values: [] };
 				};
-			case SpecifDataTypeEnum.Boolean:
+			case XsDataType.Boolean:
 				val = booleanValue(ti).toString();
 				return { class: LIB.makeKey(this.pC.id), values: [val] };
 			default:

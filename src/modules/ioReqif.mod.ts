@@ -274,7 +274,7 @@ moduleManager.construct({
 					eC.propertyClasses.forEach( (pCk)=>{
 						pC = LIB.itemByKey( pr.propertyClasses, pCk );
 						// Has any given property value of the listed resources or statements XHTML-content:
-						if ((LIB.itemByKey(pr.dataTypes, pC.dataType).type == SpecifDataTypeEnum.String) && withHtml(eL, pCk)) {
+						if ((LIB.itemByKey(pr.dataTypes, pC.dataType).type == XsDataType.String) && withHtml(eL, pCk)) {
 //							console.debug( 'specializeClassToFormattedText', eC, pC );
 							console.info("Specializing data type to formatted text for propertyClass with id '"+pC.id+" and title '"+pC.title+"'");
 							// specialize propertyClass to "DT-Text"; this is perhaps too radical, 
@@ -333,17 +333,17 @@ moduleManager.construct({
 				};
 				// else:
 				switch (dT.type) {
-					case SpecifDataTypeEnum.Boolean:
+					case XsDataType.Boolean:
 						xml += '<DATATYPE-DEFINITION-BOOLEAN ' + commonAttsOf(dT) + '/>';
 						break;
-					case SpecifDataTypeEnum.Integer:
+					case XsDataType.Integer:
 						xml += '<DATATYPE-DEFINITION-INTEGER ' + commonAttsOf(dT)
 							// MAX, MIN is checked by the schema:
 							+ ' MAX="' + (typeof (dT.maxInclusive) == 'number' ? dT.maxInclusive : CONFIG.maxInteger)
 							+ '" MIN="' + (typeof (dT.minInclusive) == 'number' ? dT.minInclusive : CONFIG.minInteger)
 							+ '" />';
 						break;
-					case SpecifDataTypeEnum.Double:
+					case XsDataType.Double:
 						xml += '<DATATYPE-DEFINITION-REAL ' + commonAttsOf(dT)
 							// MAX, MIN, ACCURACY is checked by the schema:
 							+ ' MAX="' + (typeof (dT.maxInclusive) == 'number' ? dT.maxInclusive : CONFIG.maxReal)
@@ -351,11 +351,11 @@ moduleManager.construct({
 							+ '" ACCURACY="' + (typeof (dT.fractionDigits) == 'number' ? dT.fractionDigits : CONFIG.maxAccuracy)
 							+ '" />';
 						break;
-					case SpecifDataTypeEnum.DateTime:
+					case XsDataType.DateTime:
 						xml += '<DATATYPE-DEFINITION-DATE ' + commonAttsOf(dT) + '/>';
 						break;
-					case SpecifDataTypeEnum.AnyURI:
-					case SpecifDataTypeEnum.Duration:
+					case XsDataType.AnyURI:
+					case XsDataType.Duration:
 						// Remember that pr is supposed to arrive with a single selected language, here:
 						let info = JSON.stringify({ SpecIF_DataType: dT.type });
 						// @ts-ignore - object isn't undefined, that's why we ask 
@@ -365,7 +365,7 @@ moduleManager.construct({
 						else
 							dT.description = LIB.makeMultiLanguageValue(info);
 						// no break
-					case SpecifDataTypeEnum.String:
+					case XsDataType.String:
 						// MAX-LENGTH is mandatory according to https://www.prostep.org/fileadmin/downloads/PSI_ImplementationGuide_ReqIF_V1-7.pdf
 						xml += '<DATATYPE-DEFINITION-STRING '+commonAttsOf( dT )+' MAX-LENGTH="'+(dT.maxLength||CONFIG.maxStringLength)+'" />';
 						break;
@@ -570,22 +570,22 @@ moduleManager.construct({
 					}
 					else {
 						switch (dT.type) {
-							case SpecifDataTypeEnum.Boolean:
+							case XsDataType.Boolean:
 								xml += '<ATTRIBUTE-DEFINITION-BOOLEAN IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-BOOLEAN-REF>' + dT.id + '</DATATYPE-DEFINITION-BOOLEAN-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-BOOLEAN>'
 								break;
-							case SpecifDataTypeEnum.Integer:
+							case XsDataType.Integer:
 								xml += '<ATTRIBUTE-DEFINITION-INTEGER IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-INTEGER-REF>' + dT.id + '</DATATYPE-DEFINITION-INTEGER-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-INTEGER>'
 								break;
-							case SpecifDataTypeEnum.Double:
+							case XsDataType.Double:
 								xml += '<ATTRIBUTE-DEFINITION-REAL IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-REAL-REF>' + dT.id + '</DATATYPE-DEFINITION-REAL-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-REAL>'
 								break;
-							case SpecifDataTypeEnum.String:
+							case XsDataType.String:
 								xml += '<ATTRIBUTE-DEFINITION-STRING IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-STRING-REF>' + dT.id + '</DATATYPE-DEFINITION-STRING-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-STRING>'
@@ -595,7 +595,7 @@ moduleManager.construct({
 									+ '<TYPE><DATATYPE-DEFINITION-XHTML-REF>' + dT.id + '</DATATYPE-DEFINITION-XHTML-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-XHTML>'
 								break;
-							case SpecifDataTypeEnum.DateTime:
+							case XsDataType.DateTime:
 								xml += '<ATTRIBUTE-DEFINITION-DATE IDENTIFIER="PC-' + adId + '" LONG-NAME="' + pC.title + '" LAST-CHANGE="' + dateTime(pC) + '">'
 									+ '<TYPE><DATATYPE-DEFINITION-DATE-REF>' + dT.id + '</DATATYPE-DEFINITION-DATE-REF></TYPE>'
 									+ '</ATTRIBUTE-DEFINITION-DATE>'
@@ -625,22 +625,22 @@ moduleManager.construct({
 					}
 					else {
 						switch (dT.type) {
-							case SpecifDataTypeEnum.Boolean:
+							case XsDataType.Boolean:
 								xml += '<ATTRIBUTE-VALUE-BOOLEAN THE-VALUE="' + prp.values[0] + '">'
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-BOOLEAN-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-BOOLEAN-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-BOOLEAN>'
 								break;
-							case SpecifDataTypeEnum.Integer:
+							case XsDataType.Integer:
 								xml += '<ATTRIBUTE-VALUE-INTEGER THE-VALUE="' + prp.values[0] + '">'
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-INTEGER-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-INTEGER-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-INTEGER>'
 								break;
-							case SpecifDataTypeEnum.Double:
+							case XsDataType.Double:
 								xml += '<ATTRIBUTE-VALUE-REAL THE-VALUE="' + prp.values[0] + '">'
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-REAL-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-REAL-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-REAL>'
 								break;
-							case SpecifDataTypeEnum.String:
+							case XsDataType.String:
 								xml += '<ATTRIBUTE-VALUE-STRING THE-VALUE="' + (prp.values[0] as SpecifMultiLanguageText)[0].text.stripHTML().escapeXML() + '">'
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-STRING-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-STRING-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-STRING>'
@@ -703,7 +703,7 @@ moduleManager.construct({
 									+ '<THE-VALUE>' + (hasDiv ? '' : '<' + ns + ':div>') + txt + (hasDiv ? '' : '</' + ns + ':div>') + '</THE-VALUE>'
 									+ '</ATTRIBUTE-VALUE-XHTML>'
 								break;
-							case SpecifDataTypeEnum.DateTime:
+							case XsDataType.DateTime:
 								xml += '<ATTRIBUTE-VALUE-DATE THE-VALUE="' + prp.values[0] + '">'
 									+ '<DEFINITION><ATTRIBUTE-DEFINITION-DATE-REF>PC-' + adId + '</ATTRIBUTE-DEFINITION-DATE-REF></DEFINITION>'
 									+ '</ATTRIBUTE-VALUE-DATE>'

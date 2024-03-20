@@ -126,7 +126,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 			this.col2dT = new Map();
 		}
 	}
-	let xlsTerms = ["xs:dateTime", "xs: anyURI", "xs:boolean", "xs:integer", "xs:double", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder];
+	var xlsTerms = ["xs:boolean", "xs:integer", "xs:double", "xs:dateTime", "xs:anyURI", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder];
 /*	class BaseTypes implements SpecIF {
 		id: SpecifId;
 		title: SpecifMultiLanguageText;
@@ -266,7 +266,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 						cell = ws.data[cellName(c, ws.firstCell.row)];
 						if (!cell || !cell.v) continue;
 
-						dT = { id: dataTypeId(ws.name + c), title: '', type: SpecifDataTypeEnum.String, enumeration: [], changedAt: chAt };
+						dT = { id: dataTypeId(ws.name + c), title: '', type: XsDataType.String, enumeration: [], changedAt: chAt };
 						pC = { id: propClassId(ws.name + c), title: '', dataType: LIB.keyOf(dT), changedAt: chAt };
 						for (r = ws.firstCell.row; r < ws.lastCell.row + 1; r++) {
 							cell = ws.data[cellName(c, r)];
@@ -405,7 +405,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 							};
 						// else:
 						switch (dT.type) {
-							case SpecifDataTypeEnum.String:
+							case XsDataType.String:
 								let v: string;
 								switch (cell.t) {
 									case "d": v = (cell.v as Date).toISOString();
@@ -418,7 +418,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 									default: v = cell.v as string;
 								};
 								return LIB.makeMultiLanguageValue(v);
-							case SpecifDataTypeEnum.DateTime:
+							case XsDataType.DateTime:
 								switch (cell.t) {
 									case "d": return (cell.v as Date).toISOString();
 									case "s":
@@ -429,15 +429,15 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 										//	console.warn(ws.name + ", row " + row + ": Cell value '" + cell.v + "' is an invalid dateTime value");
 										return '';
 								};
-							case SpecifDataTypeEnum.Integer:
-							case SpecifDataTypeEnum.Double:
+							case XsDataType.Integer:
+							case XsDataType.Double:
 								switch (cell.t) {
 									case "n": return (cell.v as number).toString();
 									case "s": return cell.v as string;
 								};
 							// we have found earlier that it is a valid boolean,
 							// so all values not beeing true are false:
-							case SpecifDataTypeEnum.Boolean:
+							case XsDataType.Boolean:
 								switch (cell.t) {
 									case "b": return (cell.v as boolean).toString();
 									case "s": return LIB.isTrue(cell.v as string).toString();

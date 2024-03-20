@@ -320,7 +320,7 @@ class CSpecIF implements SpecIF {
 						case 'xs:enumeration':
 						// @ts-ignore - can appear in SpecIF <v1.1:
 						case "xhtml":
-							dT.type = SpecifDataTypeEnum.String;
+							dT.type = XsDataType.String;
 						// If this has become now a redundant dataType, 
 						// it will be removed later through 'deduplicate()'.
 					};
@@ -378,7 +378,7 @@ class CSpecIF implements SpecIF {
 
 			// up until v1.0, there was a special dataType 'xs:enumeration' just for strings,
 			// starting v1.1 every dataType except 'xs:boolean' can have enumerated values
-			oE.type = iE.type == "xs:enumeration" ? SpecifDataTypeEnum.String : iE.type;
+			oE.type = iE.type == "xs:enumeration" ? XsDataType.String : iE.type;
 
 			switch (iE.type) {
 				case "xs:double":
@@ -405,7 +405,7 @@ class CSpecIF implements SpecIF {
 
 			// Starting with v1.1 every dataType except xs:boolean may have enumerated values:
 			if (iE.enumeration)
-				oE.enumeration = (iE.type == SpecifDataTypeEnum.String && opts.normalizeTerms?
+				oE.enumeration = (iE.type == XsDataType.String && opts.normalizeTerms?
 					iE.enumeration.map( makeEnumValue )
 					: iE.enumeration
 				);
@@ -465,15 +465,14 @@ class CSpecIF implements SpecIF {
 					oE.values = vL;
 			};
 
-			if (app.ontology.propertyClassIsFormatted(oE.title))
-				oE.format = SpecifTextFormat.Xhtml
-			else
-			/*	oE.format = typeof (iE.format) == 'string' && iE.format.length > 3 ?
-					iE.format
-					: CONFIG.formattedProperties.includes(oE.title) ? SpecifTextFormat.Xhtml : SpecifTextFormat.Plain; */
-				oE.format = typeof (iE.format) == 'string' && iE.format == SpecifTextFormat.Xhtml ?
-								SpecifTextFormat.Xhtml
-								: SpecifTextFormat.Plain;
+			if (dT.type == XsDataType.String) {
+				if (app.ontology.propertyClassIsFormatted(oE.title))
+					oE.format = SpecifTextFormat.Xhtml
+				else
+					oE.format = typeof (iE.format) == 'string' && iE.format == SpecifTextFormat.Xhtml ?
+						SpecifTextFormat.Xhtml
+						: SpecifTextFormat.Plain;
+			};
 
 			if (iE.unit) oE.unit = iE.unit;
 
@@ -847,11 +846,11 @@ class CSpecIF implements SpecIF {
 
 							switch (dT.type) {
 								// we are using the transformed dataTypes, but the base dataTypes are still original;
-								case SpecifDataTypeEnum.String:
+								case XsDataType.String:
 									// Values of type xs:string are permitted by the schema, but not by the constraints.
 									// To make the import more robust, string values are transformed to a multiLanguageText:
 									if (typeof (val) == 'string') {
-										console.warn("With SpecIF v1.1 and later, a property of type '" + SpecifDataTypeEnum.String + "' should be a multi-language text.");
+										console.warn("With SpecIF v1.1 and later, a property of type '" + XsDataType.String + "' should be a multi-language text.");
 										val = LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
 									};
 
@@ -881,10 +880,10 @@ class CSpecIF implements SpecIF {
 											return sl;
 										}
 									);
-								case SpecifDataTypeEnum.DateTime:
+								case XsDataType.DateTime:
 									return makeISODate(LIB.cleanValue(val))
 								//	return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
-								case SpecifDataTypeEnum.Boolean:
+								case XsDataType.Boolean:
 									if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
 										return "true";
 									if (CONFIG.valuesFalse.includes(LIB.cleanValue(val)))
@@ -906,7 +905,7 @@ class CSpecIF implements SpecIF {
 				// it is SpecIF < v1.1:
 				switch (dT.type) {
 					// assuming that dT is the transformed dataType
-					case SpecifDataTypeEnum.String:
+					case XsDataType.String:
 					// @ts-ignore - "xhtml" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
 					case "xhtml":
 				/*	// @ts-ignore - "xs:enumeration" can appear in SpecIF <v1.1 and will be replaced at the end of transformation:
@@ -934,10 +933,10 @@ class CSpecIF implements SpecIF {
 						// @ts-ignore - dT.type is in fact a string:
 						return [makeMultiLanguageText(vL /*, dT.type*/)];
 					// break - all branches end with return;
-					case SpecifDataTypeEnum.DateTime:
+					case XsDataType.DateTime:
 						return [makeISODate(LIB.cleanValue(prp.value))];
 					//	return [LIB.addTimezoneIfMissing(LIB.cleanValue(prp.value))];
-					case SpecifDataTypeEnum.Boolean:
+					case XsDataType.Boolean:
 						if (CONFIG.valuesTrue.includes(LIB.cleanValue(prp.value)))
 							return ["true"];
 						if (CONFIG.valuesFalse.includes(LIB.cleanValue(prp.value)))
@@ -1168,19 +1167,19 @@ class CSpecIF implements SpecIF {
 					var oE: SpecifDataType = i2ext(iE);
 					oE.type = iE.type;
 					switch (iE.type) {
-						case SpecifDataTypeEnum.Double:
+						case XsDataType.Double:
 							if (iE.fractionDigits) oE.fractionDigits = iE.fractionDigits;
-						case SpecifDataTypeEnum.Integer:
+						case XsDataType.Integer:
 							if (typeof (iE.minInclusive) == 'number') oE.minInclusive = iE.minInclusive;
 							if (typeof (iE.maxInclusive) == 'number') oE.maxInclusive = iE.maxInclusive;
 							break;
-						case SpecifDataTypeEnum.String:
+						case XsDataType.String:
 							if (iE.maxLength) oE.maxLength = iE.maxLength;
 					};
 					// Look for enumerated values;
 					// every dataType except xs:boolean may have enumerated values:
 					if (iE.enumeration) {
-						if (iE.type == SpecifDataTypeEnum.String && opts.targetLanguage)
+						if (iE.type == XsDataType.String && opts.targetLanguage)
 							// reduce to the language specified:
 							oE.enumeration = iE.enumeration.map(
 								(v: any) => {
@@ -1283,7 +1282,7 @@ class CSpecIF implements SpecIF {
 						// According to the schema, all property values are represented by a string
 						// and we want to store them as string to avoid inaccuracies by multiple transformations.
 						let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, pC.dataType);
-						if (dT.type == SpecifDataTypeEnum.String && !dT.enumeration) {
+						if (dT.type == XsDataType.String && !dT.enumeration) {
 							// Special treatment of string values:
 							if (opts.targetLanguage) {
 								// Reduce all values to the selected language; is used for
@@ -1622,13 +1621,13 @@ class CSpecIF implements SpecIF {
 				function dT2ext(iE: SpecifDataType) {
 					var oE: SpecifDataType = i2ext(iE);
 					switch (iE.type) {
-						case SpecifDataTypeEnum.Double:
+						case XsDataType.Double:
 							if (iE.fractionDigits) oE.fractionDigits = iE.fractionDigits;
-						case SpecifDataTypeEnum.Integer:
+						case XsDataType.Integer:
 							if (typeof (iE.minInclusive) == 'number') oE.minInclusive = iE.minInclusive;
 							if (typeof (iE.maxInclusive) == 'number') oE.maxInclusive = iE.maxInclusive;
 							break;
-						case SpecifDataTypeEnum.String:
+						case XsDataType.String:
 							if (iE.maxLength) oE.maxLength = iE.maxLength;
 					};
 					// Look for enumerated values:
@@ -1754,8 +1753,8 @@ class CSpecIF implements SpecIF {
 					if (iE.values.length > 1)
 						console.warn('When transforming to SpecIF v1.0, only the first value of a property of class ' + iE['class'].id + ' has been taken.');
 
-				//	if ([SpecifDataTypeEnum.String,'xhtml'].includes(dT.type)) {
-					if (dT.type == SpecifDataTypeEnum.String) {
+				//	if ([XsDataType.String,'xhtml'].includes(dT.type)) {
+					if (dT.type == XsDataType.String) {
 						// Special treatment of string values:
 						let v = iE.values[0] as SpecifMultiLanguageText;
 						if (opts.targetLanguage) {
