@@ -235,7 +235,7 @@ class COntology {
             // select the most confirmed term:
             for (let status of this.eligibleLifecycleStatus)
                 for (let t of termL) {
-                    if (this.valueByTitle(t, "SpecIF:LifecycleStatus") == status) {
+                    if (this.valueByTitle(t, "SpecIF:TermStatus") == status) {
                         let newT = this.valueByTitle(t, CONFIG.propClassTerm);
                         console.info('Global term assigned: ' + name + ' → ' + newT);
                         return newT;
@@ -257,7 +257,7 @@ class COntology {
             let r = rL[0];
 
             // If the term is itself released/preferred, just return it:
-            if (this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased")
+            if (this.valueByTitle(r, "SpecIF:TermStatus") == "SpecIF:LifecycleStatusReleased")
                 return term;
 
             // Collect all synonyms (relation is bi-directional):
@@ -272,7 +272,7 @@ class COntology {
                 // Find the released (preferred) term:
                 synL = rsL.filter(
                     (r: SpecifResource) => {
-                        return this.valueByTitle(r, "SpecIF:LifecycleStatus") == "SpecIF:LifecycleStatusReleased";
+                        return this.valueByTitle(r, "SpecIF:TermStatus") == "SpecIF:LifecycleStatusReleased";
                     }
                 );
             //            console.debug('getPreferredTerm', r, stL, rsL, synL);
@@ -359,7 +359,7 @@ class COntology {
                     synL = rsL.filter(
                         (r: SpecifResource) => {
                             return this.valueByTitle(r, CONFIG.propClassTerm).startsWith(opts.targetNamespace)
-                                && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:LifecycleStatus"))
+                                && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:TermStatus"))
                         }
                     );
                 //            console.debug('changeNamespace', r, stL, rsL, synL);
