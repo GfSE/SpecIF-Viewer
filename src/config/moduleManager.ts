@@ -735,7 +735,7 @@ var app:IApp,
 		function getOntology() {
 			LIB.httpGet({
 				url: (window.location.href.startsWith('http') || window.location.href.endsWith('.specif.html') ?
-						CONFIG.pathOntology
+						CONFIG.ontologyURL
 						: '../../SpecIF/vocabulary/Ontology.specif'
 					) + "?" + new Date().toISOString(), // bust to reload from server
 				responseType: 'arraybuffer',

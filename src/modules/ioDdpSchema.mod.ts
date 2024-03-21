@@ -17,7 +17,8 @@ moduleManager.construct({
 	name: 'ioDdpSchema'
 }, (self:ITransform) =>{
 	"use strict";
-	let
+
+	const
 /*		opts: any,
 		mime,
 		zipped:boolean,
@@ -27,7 +28,8 @@ moduleManager.construct({
         //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' }, */
 		errInvalidXML = new xhrMessage(898, 'DDP Schema is not valid XML.'),
 		errTransformationCancelled = new xhrMessage(999, 'Transformation cancelled on user request.'),
-		errTransformationFailed = new xhrMessage(999, 'Input file could not be transformed to SpecIF.');
+		errTransformationFailed = new xhrMessage(999, 'Input file could not be transformed to SpecIF.'),
+		domainOfDDPElements = "V-Domain-20";
 		
 	self.init = (/*options:any*/):boolean =>{
 	//	mime = undefined;
@@ -406,7 +408,7 @@ moduleManager.construct({
 				r.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
 				r.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] });
 				r.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
-				r.properties.push({ "class": { "id": "PC-Domain" }, "values": ["V-Domain-24"] });
+				r.properties.push({ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
 				r.properties.push({ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
 
 				// 1c. Store the term ..
@@ -431,7 +433,7 @@ moduleManager.construct({
 				let attC = dE.getElementsByTagName('xs:complexContent'),
 					atts = attC[0].children[0].children;
 				let prpL = (atts && atts.length == 1) ? Array.from(atts[0].getElementsByTagName('xs:element')) : [];
-				console.debug('d', dE, atts, prpL);
+//				console.debug('d', dE, atts, prpL);
 
 				prpL.forEach((prp) => {
 					let ti = prp.getAttribute("ref") || prp.getAttribute("name") || "",
@@ -451,7 +453,7 @@ moduleManager.construct({
 						p.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
 						p.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] });
 						p.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
-						p.properties.push({ "class": { "id": "PC-Domain" }, "values": ["V-Domain-24"] });
+						p.properties.push({ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
 
 						// 2c. Store the term ..
 						LIB.cacheE(spD.resources, p);
@@ -515,7 +517,7 @@ moduleManager.construct({
 					s.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
 					s.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(rel)] });
 					s.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
-					s.properties.push({ "class": { "id": "PC-Domain" }, "values": ["V-Domain-24"] });
+					s.properties.push({ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
 					s.properties.push({ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
 
 					// 1c. Store the term ..

@@ -47,14 +47,6 @@ class COntology {
         "SpecIF:TermPropertyValue"
     ];
 
-    // List with all values of lifecycleStatus eligible for use in SpecIF:
-    eligibleLifecycleStatus: string[] = [
-        "SpecIF:LifecycleStatusReleased",
-        "SpecIF:LifecycleStatusEquivalent",
-        "SpecIF:LifecycleStatusSubmitted",
-        "SpecIF:LifecycleStatusExperimental"
-    ];
-
     // Assign the primitive dataType to the termPropertyClasses of a SpecIF Ontology:
     private primitiveDataTypes = new Map([
         ["RC-SpecifTermpropertyclassstring", XsDataType.String],
@@ -66,6 +58,17 @@ class COntology {
         ["RC-SpecifTermpropertyclassuri", XsDataType.AnyURI]
     ]);
 
+    // List the terms for default values per data type:
+    private termDefaultValues: string[] = [
+        "SpecIF:DefaultValueString",
+        "SpecIF:DefaultValueBoolean",
+        "SpecIF:DefaultValueInteger",
+        "SpecIF:DefaultValueReal",
+        "SpecIF:DefaultValueTimestamp",
+        "SpecIF:DefaultValueDuration",
+        "SpecIF:DefaultValueAnyURI",
+    ]
+
     // Assign titles of special relations for synonyms per class of terms:
     private synonymStatements = new Map([
         ["resourceClass", "SpecIF:isSynonymOfResource"],
@@ -73,6 +76,14 @@ class COntology {
         ["propertyClass", "SpecIF:isSynonymOfProperty"],
         ["propertyValue", "SpecIF:isSynonymOfValue"]
     ]);
+
+    // List with all values of lifecycleStatus eligible for use in SpecIF:
+    private eligibleLifecycleStatus: string[] = [
+        "SpecIF:LifecycleStatusReleased",
+        "SpecIF:LifecycleStatusEquivalent",
+        "SpecIF:LifecycleStatusSubmitted",
+        "SpecIF:LifecycleStatusExperimental"
+    ];
 
     private options: any;   // a temporary storage of options during method execution (reentrancy is not required at this point in time)
     private required: any;  // when generating classes, a temporary list to remember referenced terms for subsequent generation
@@ -280,7 +291,7 @@ class COntology {
                 return term;
 
             if (synL.length > 1)
-                console.warn('Multiple equivalent terms are released: ', synL.map((s) => { return s.id }).toString());
+                console.warn('Multiple equivalent terms are released: ', synL.map((r:SpecifResource) => { return r.id }).toString());
 
             let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
             console.info('Preferred term assigned: ' + term + ' → ' + newT);
@@ -367,7 +378,7 @@ class COntology {
                     return term;
 
                 if (synL.length > 1)
-                    console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((s) => { return s.id }).toString());
+                    console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((r:SpecifResource) => { return r.id }).toString());
 
                 let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
                 console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
@@ -741,8 +752,8 @@ class COntology {
 
         LIB.cacheE(this.generated.dTL, dT); // store avoiding duplicates
 
-        // Finally return the key used as reference by the generated propertyClass
-        return this.options.referencesWithoutRevision ? LIB.makeKey(dT.id) : LIB.makeKey(dT);  
+        // In this case, return the whole dataType, as its type is needed for generating the propertyClass
+        return dT;  
 
         function adoptOntologyDataType(d: SpecifDataType) {
             for (let dT of self.data.dataTypes) {
@@ -755,17 +766,17 @@ class COntology {
         // Create a propertyClass for the TermPropertyClass r:
 
         // Create the dataType, unless it exists already:
-        let dTk = this.makeDT(r),
-            defaultVL = LIB.valuesByTitle(r, ["SpecIF:DefaultValue"], this.data);
+        let dT = this.makeDT(r),
+            defaultVL = LIB.valuesByTitle(r, this.termDefaultValues, this.data);
 
         // Undefined attributes will not appear in the generated classes (skipped by JSON.stringify)
         return Object.assign(
             this.makeItem(r, CONFIG.prefixPC),
             {
-                dataType: dTk,      // the reference to the dataType
+                dataType: this.options.referencesWithoutRevision ? LIB.makeKey(dT.id) : LIB.makeKey(dT),  // the reference to the dataType
                 format: this.valueByTitle(r, "SpecIF:TextFormat"),  // one or none of 'plain' or 'xhtml'
                 multiple: LIB.isTrue(this.valueByTitle(r, "SpecIF:multiple")) ? true : undefined,
-                values: defaultVL.length > 0 ? defaultVL : undefined
+                values: (defaultVL.length > 0 && (dT.type != XsDataType.Boolean || defaultVL[0]=="true") ? defaultVL : undefined)
             }
         ) as SpecifPropertyClass;
     }
@@ -1034,7 +1045,7 @@ class COntology {
             // We are interested only in statements where *other* resources resp. statements are the object:
             sL = this.statementsByTitle(rL[0], ["SpecIF:isSpecializationOfResource"], { asObject: true })
                 .map(
-                    (s) => {
+                    (s:SpecifStatement) => {
                         let r = LIB.itemByKey(this.data.resources, s.subject);
                         return this.valueByTitle(r, CONFIG.propClassTerm);
                     }
