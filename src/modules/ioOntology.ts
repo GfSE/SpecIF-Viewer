@@ -770,6 +770,7 @@ class COntology {
             defaultVL = LIB.valuesByTitle(r, this.termDefaultValues, this.data);
 
         // Undefined attributes will not appear in the generated classes (skipped by JSON.stringify)
+        // @ts-ignore - the checker is formally right, but it is valid way to specialize a general item factory:
         return Object.assign(
             this.makeItem(r, CONFIG.prefixPC),
             {

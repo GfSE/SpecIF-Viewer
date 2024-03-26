@@ -394,7 +394,8 @@ moduleManager.construct({
 
 				// 1a. Create the resource term; the DDP entity is a termResourceClass in SpecIF:
 				let ti = dE.getAttribute("name") || "",
-					r = {
+					// the resourceTerm:
+					rT:SpecifResource = {
 						id: CONFIG.prefixR + simpleHash(ti),
 						changedAt: spD.createdAt,
 						class: {
@@ -405,29 +406,16 @@ moduleManager.construct({
 
 				// 1b. Add the native properties of the term:
 				if (!RE.isolateNamespace.test(ti)) ti = "DDP:" + ti;
-				r.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
-				r.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] });
-				r.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
-				r.properties.push({ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
-				r.properties.push({ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
+				rT.properties.push( { "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] },
+									{ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] },
+									{ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] },
+									{ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] },
+									{ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
 
 				// 1c. Store the term ..
-				LIB.cacheE(spD.resources, r);
+				LIB.cacheE(spD.resources, rT);
 				// ...  and add it to the hierarchy:
-				if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
-					//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
-					let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey("N-FolderTermsResourceClass"));
-					if (fld && fld.nodes)
-						fld.nodes.push({
-							id: LIB.replacePrefix(CONFIG.prefixN, r.id),
-							resource: LIB.makeKey(r.id),
-							changedAt: spD.createdAt
-						})
-					else
-						throw Error("Assumption not met: Did'nt find the folder with id='N-FolderTermsResourceClass'.");
-				}
-				else
-					throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+				add2Hierarchy(rT.id, "N-FolderTermsResourceClass");
 
 				// 2a. Create the property terms; the DDP entity attribute is a termPropertyClass in SpecIF:
 				let attC = dE.getElementsByTagName('xs:complexContent'),
@@ -440,7 +428,8 @@ moduleManager.construct({
 						ty = prp.getAttribute("type") || "xs:string",
 						dT = LIB.itemBy(spD.dataTypes, "type", ty);
 					if (dT) {
-						let p = {
+						// the propertyTerm:
+						let pT: SpecifResource = {
 							id: CONFIG.prefixR + simpleHash(ti),
 							changedAt: spD.createdAt,
 							class: {
@@ -450,38 +439,22 @@ moduleManager.construct({
 						};
 						// 2b. Add the native properties of the term:
 						if (!RE.isolateNamespace.test(ti)) ti = "DDP:" + ti;
-						p.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
-						p.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] });
-						p.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
-						p.properties.push({ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
+						pT.properties.push( { "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] },
+											{ "class": { "id": "PC-Description" }, "values": [getDesc(dE)] },
+											{ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] },
+											{ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
 
 						// 2c. Store the term ..
-						LIB.cacheE(spD.resources, p);
+						LIB.cacheE(spD.resources, pT);
 						// ...  and add it to the hierarchy:
-						if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
-							//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
-							let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey("N-FolderTermsPropertyClass"));
-							if (fld && fld.nodes)
-								LIB.cacheE(
-									fld.nodes,
-									{
-										id: LIB.replacePrefix(CONFIG.prefixN, p.id),
-										resource: LIB.makeKey(p.id),
-										changedAt: spD.createdAt
-									}
-								)
-							else
-								throw Error("Assumption not met: Did'nt find the folder with id='N-FolderTermsPropertyClass'.");
-						}
-						else
-							throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+						add2Hierarchy(pT.id,"N-FolderTermsPropertyClass");
 
 						// 2d. Relate the termPropertyClass with a "SpecIF:hasPropety" to the termResourceClass
 						spD.statements.push({
-							id: CONFIG.prefixS + simpleHash(r.id + p.id),
+							id: CONFIG.prefixS + simpleHash(rT.id + pT.id),
 							class: { id: "SC-hasProperty" },
-							subject: { id: r.id },
-							object: { id: p.id },
+							subject: { id: rT.id },
+							object: { id: pT.id },
 							changedAt: spD.createdAt
 						});
 					}
@@ -503,7 +476,8 @@ moduleManager.construct({
 				if (rel.tagName == "xs:element") {
 
 					let ti = rel.getAttribute("name") || "",
-						s = {
+						// the statementTerm:
+						sT: SpecifResource = {
 							id: CONFIG.prefixR + simpleHash(ti),  // it is a resource describing a statementTerm
 							changedAt: spD.createdAt,
 							class: {
@@ -514,29 +488,16 @@ moduleManager.construct({
 
 					// 1b. Add the native properties of the term:
 					if (!RE.isolateNamespace.test(ti)) ti = "DDP:" + ti;
-					s.properties.push({ "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] });
-					s.properties.push({ "class": { "id": "PC-Description" }, "values": [getDesc(rel)] });
-					s.properties.push({ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] });
-					s.properties.push({ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] });
-					s.properties.push({ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
+					sT.properties.push( { "class": { "id": "PC-SpecifTerm" }, "values": [[{ "text": ti }]] },
+										{ "class": { "id": "PC-Description" }, "values": [getDesc(rel)] },
+										{ "class": { "id": "PC-TermStatus" }, "values": ["V-TermStatus-50"] },
+										{ "class": { "id": "PC-Domain" }, "values": [domainOfDDPElements] },
+										{ "class": { "id": "PC-Instantiation" }, "values": ["V-Instantiation-10", "V-Instantiation-20"] });
 
 					// 1c. Store the term ..
-					LIB.cacheE(spD.resources, s);  // it is a resource describing a statementTerm
+					LIB.cacheE(spD.resources, sT);  // it is a resource describing a statementTerm
 					// ...  and add it to the hierarchy:
-					if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
-						//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
-						let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey("N-FolderTermsStatementClass"));
-						if (fld && fld.nodes)
-							fld.nodes.push({
-								id: LIB.replacePrefix(CONFIG.prefixN, s.id),
-								resource: LIB.makeKey(s.id),
-								changedAt: spD.createdAt
-							})
-						else
-							throw Error("Assumption not met: Did'nt find the folder with id='N-FolderTermsStatementClass'.");
-					}
-					else
-						throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+					add2Hierarchy(sT.id, "N-FolderTermsStatementClass");
 
 					// 3b. Store the relations to eligible subjects and objects:
 					// This is an ugly hack, because semantic significance is derived from the relation names ...
@@ -560,26 +521,45 @@ moduleManager.construct({
 
 					// It is possible that subject and object point to the same termResourceClass, thus distinguish their ids:
 					spD.statements.push({
-						id: CONFIG.prefixS + simpleHash(s.id + 'subject' + subId),
+						id: CONFIG.prefixS + simpleHash(sT.id + 'subject' + subId),
 						class: { id: "SC-isEligibleAsSubject" },
 						subject: { id: subId },
-						object: { id: s.id },
+						object: { id: sT.id },
 						changedAt: spD.createdAt
 					});
 					spD.statements.push({
-						id: CONFIG.prefixS + simpleHash(s.id + 'object' + obId),
+						id: CONFIG.prefixS + simpleHash(sT.id + 'object' + obId),
 						class: { id: "SC-isEligibleAsObject" },
 						subject: { id: obId },
-						object: { id: s.id },
+						object: { id: sT.id },
 						changedAt: spD.createdAt
 					});
 				}
 			}
 		);
 
-		console.info('SpecIF Ontology from DDP', spD);
+//		console.info('SpecIF Ontology from DDP', spD);
 		return spD;
 
+		function add2Hierarchy(termId:string, folderName:string) {
+			if (spD.hierarchies.length == 1 && spD.hierarchies[0].nodes) {
+				//	LIB.itemByKey(spD.resources, LIB.makeKey(app.ontology.termPrincipalClasses.value()))
+				let fld = LIB.itemByKey(spD.hierarchies[0].nodes, LIB.makeKey(folderName));
+				if (fld && fld.nodes)
+					LIB.cacheE(
+						fld.nodes,
+						{
+							id: LIB.replacePrefix(CONFIG.prefixN, termTd),
+							resource: LIB.makeKey(termId),
+							changedAt: spD.createdAt
+						}
+					)
+				else
+					throw Error("Assumption not met: Did'nt find the folder with id='" + folderName +"'.");
+			}
+			else
+				throw Error("Assumption not met: Hierarchy should have a single element with a folder for ontologies.");
+		}
 	} // end of ddpSchema2specifOntology
 
 	function getDesc(el: any): SpecifMultiLanguageText {

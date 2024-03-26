@@ -50,11 +50,11 @@ function BPMN2Specif( xmlString, options ) {
 			strForkEvtGateway: "Forking (exclusive) Event Gateway",
 			strForkEvtGatewayDesc: "The first of the following events to occur will prevail.",
 			strForkExcGateway: "Forking Exclusive Gateway",
-			strForkExcGatewayDesc: "Evaluate the condidition and signal the respective event.",
+			strForkExcGatewayDesc: "Evaluate the condition and signal the respective event.",
 			strForkParGateway: "Forking Parallel Gateway",
 			strForkParGatewayDesc: "Forward control to *all* outgoing branches.",
 			strForkIncGateway: "Forking Inclusive Gateway",
-			strForkIncGatewayDesc: "Evaluate all condiditions and signal the respective events.",
+			strForkIncGatewayDesc: "Evaluate all conditions and signal the respective events.",
 			strTextAnnotation: "Text Annotation"
 		},
 		options
