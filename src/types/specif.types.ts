@@ -628,7 +628,7 @@ type SpecifIcon = string
 type SpecifId = string
 
 /**
- * 
+ * Indicates whether an instance of the class is created automatically, manually or both. Manual *and* automatic instantiation is allowed, if the property is omitted. The class is abstract and cannot be instantiated, if the property list is present, but empty. 
  * @export
  */
 enum SpecifInstantiation {

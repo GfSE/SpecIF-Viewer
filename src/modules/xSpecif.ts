@@ -381,12 +381,12 @@ class CSpecIF implements SpecIF {
 			oE.type = iE.type == "xs:enumeration" ? XsDataType.String : iE.type;
 
 			switch (iE.type) {
-				case "xs:double":
+				case XsDataType.Double:
 					oE.fractionDigits = iE[names.frct];
 					oE.minInclusive = iE[names.minI];
 					oE.maxInclusive = iE[names.maxI];
 					break;
-				case "xs:integer":
+				case XsDataType.Integer:
 					oE.minInclusive = iE[names.minI];
 					oE.maxInclusive = iE[names.maxI];
 					break;
@@ -395,7 +395,7 @@ class CSpecIF implements SpecIF {
 					// If this becomes a redundant dataType,
 					// it will be removed later through 'deduplicate()'.
 					// no break
-				case "xs:string":
+				case XsDataType.String:
 					if (typeof (iE.maxLength) == 'number')
 						oE.maxLength = iE.maxLength;
 			};
@@ -837,69 +837,80 @@ class CSpecIF implements SpecIF {
 			if (Array.isArray(prp.values)) {
 				// it is SpecIF v1.1 or later;
 				// for all items in the value list of property prp
-				return prp.values.map(
-					(val:SpecifValue) => {
-						if (val) {
-							if (dT.enumeration) {
-								return val;
-							};
+				return prp.values
+					.map(
+						(val:SpecifValue) => {
+							if (val) {
+								if (dT.enumeration) {
+									return val;
+								};
 
-							switch (dT.type) {
-								// we are using the transformed dataTypes, but the base dataTypes are still original;
-								case XsDataType.String:
-									// Values of type xs:string are permitted by the schema, but not by the constraints.
-									// To make the import more robust, string values are transformed to a multiLanguageText:
-									if (typeof (val) == 'string') {
-										console.warn("With SpecIF v1.1 and later, a property of type '" + XsDataType.String + "' should be a multi-language text.");
-										val = LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
-									};
+								switch (dT.type) {
+									// we are using the transformed dataTypes, but the base dataTypes are still original;
+									case XsDataType.String:
+										// Values of type xs:string are permitted by the schema, but not by the constraints.
+										// To make the import more robust, string values are accepted and transformed to a multiLanguageText:
+										if (typeof (val) == 'string') {
+											if (val.length<1) return // undefined
+											console.warn("With SpecIF v1.1 and later, a property of type '" + XsDataType.String + "' should be a multi-language text.");
+											val = LIB.makeMultiLanguageValue(LIB.uriBack2slash(LIB.cleanValue(val)));
+										};
 
-								/*	fmt = fmt
-										|| app.ontology.getTermValue("propertyClass", pC.title, "SpecIF:TextFormat")
-										|| CONFIG.excludedFromFormatting.includes(pC.title) ? "plain" : val[0].format
-										|| "plain";   --> doesn't work for some reason, result is always 'plain'.
-									if (!fmt)
-										fmt = app.ontology.propertyClassIsFormatted(pC.title);
-									if (!fmt)
-										// @ts-ignore
-										fmt = CONFIG.excludedFromFormatting.includes(pC.title) ? SpecifTextFormat.Plain : val[0].format;
-									if (!fmt)
-										fmt = SpecifTextFormat.Plain; */
+									/*	fmt = fmt
+											|| app.ontology.getTermValue("propertyClass", pC.title, "SpecIF:TextFormat")
+											|| CONFIG.excludedFromFormatting.includes(pC.title) ? "plain" : val[0].format
+											|| "plain";   --> doesn't work for some reason, result is always 'plain'.
+										if (!fmt)
+											fmt = app.ontology.propertyClassIsFormatted(pC.title);
+										if (!fmt)
+											// @ts-ignore
+											fmt = CONFIG.excludedFromFormatting.includes(pC.title) ? SpecifTextFormat.Plain : val[0].format;
+										if (!fmt)
+											fmt = SpecifTextFormat.Plain; */
 
-									// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
-									// @ts-ignore
-									return val.map(
-										(singleLang: SpecifLanguageText) => {
-											// - Sometimes a Windows path is given ('\') -> transform it to web-style ('/');
-											// - don't import the format for values - it is defined in the propertyClass: 
-									/*		singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
-									//		singleLang.format = fmt;
-											return singleLang; */
-											let sl:any = { text: LIB.uriBack2slash(LIB.cleanValue(singleLang.text)) };
-											if (singleLang.language) sl.language = singleLang.language;
-											return sl;
-										}
-									);
-								case XsDataType.DateTime:
-									return makeISODate(LIB.cleanValue(val))
-								//	return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
-								case XsDataType.Boolean:
-									if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
-										return "true";
-									if (CONFIG.valuesFalse.includes(LIB.cleanValue(val)))
-										return "false";
-									console.warn('Unknown boolean value '+ LIB.cleanValue(val) + ' skipped.');
-									break;
-								default:
-									// According to the schema, all property values are represented by a string
-									// and internally they are stored as string as well to avoid inaccuracies
-									// by multiple transformations:
-									return LIB.cleanValue(val);
+										// For SpecIF >v1.0, it is always a multilanguageText according to the constraints:
+										if (LIB.multiLanguageValueHasContent(val) )
+											// @ts-ignore
+											return val.map(
+													(singleLang: SpecifLanguageText) => {
+														// - Sometimes a Windows path is given ('\') -> transform it to web-style ('/');
+														// - don't import the format for values - it is defined in the propertyClass: 
+												/*		singleLang.text = LIB.uriBack2slash(LIB.cleanValue(singleLang.text));
+												//		singleLang.format = fmt;
+														return singleLang; */
+														let sl:any = { text: LIB.uriBack2slash(LIB.cleanValue(singleLang.text)) };
+														if (singleLang.language) sl.language = singleLang.language;
+														return sl;
+													}
+												)
+												.filter(
+													sl => !!sl.text
+												)
+										else
+											return; // undefined
+									case XsDataType.DateTime:
+										return makeISODate(LIB.cleanValue(val))
+									//	return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
+									case XsDataType.Boolean:
+										if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
+											return "true";
+										if (CONFIG.valuesFalse.includes(LIB.cleanValue(val)))
+											return "false";
+										console.warn('Unknown boolean value '+ LIB.cleanValue(val) + ' skipped.');
+										break;
+									default:
+										// According to the schema, all property values are represented by a string
+										// and internally they are stored as string as well to avoid inaccuracies
+										// by multiple transformations:
+										return LIB.cleanValue(val);
+								}
 							}
+						//	return;  // undefined --> no element in the returned array
 						}
-					//	return;  // undefined --> no element in the returned array
-					}
-				)
+					)
+					.filter(
+						p => !!p 
+					)
 			};
 			if (LIB.isString(prp.value) || LIB.isMultiLanguageValue(prp.value)) {
 				// it is SpecIF < v1.1:
@@ -988,7 +999,7 @@ class CSpecIF implements SpecIF {
 						app.ontology.makeTemplate(),
 						{
 							id: this.id,
-							title: LIB.languageTextOf(this.title, opts)
+							title: LIB.selectTargetLanguage(this.title, opts)
 						}
 					);
 
@@ -1086,7 +1097,7 @@ class CSpecIF implements SpecIF {
 
 				// if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
 				if (LIB.multiLanguageValueHasContent(this.description))
-					spD.description = LIB.makeMultiLanguageValue(LIB.languageTextOf(this.description, opts));
+					spD.description = LIB.selectTargetLanguage(this.description, opts);
 
 				if (this.language)
 					spD.language = this.language;

@@ -575,8 +575,8 @@ var app:IApp,
 
 			/*	// temporary solution with fix for buttonLeft=false:
 				case "tree":				getCss(loadPath + 'vendor/assets/stylesheets/jqtree-buttonleft.css'); */
-				case "tree":				getCss("https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.0/jqtree.css");
-											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.0/tree.jquery.js'); return true;
+				case "tree":				getCss("https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.2/jqtree.css");
+											getScript('https://cdnjs.cloudflare.com/ajax/libs/jqtree/1.8.2/tree.jquery.js'); return true;
 				case "fileSaver":			getScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js'); return true;
 				case "zip":					getScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); return true;
 				case "jsonSchema":			getScript('https://cdnjs.cloudflare.com/ajax/libs/ajv/4.11.8/ajv.min.js'); return true;

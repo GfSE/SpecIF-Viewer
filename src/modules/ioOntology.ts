@@ -431,7 +431,7 @@ class COntology {
             "id": "",
             "$schema": "https://specif.de/v1.1/schema.json",
             "title": [],
-            "description": [],
+        //    "description": [],
             "generator": app.title,
             "generatorVersion": CONFIG.appVersion,
             "createdAt": new Date().toISOString(),

@@ -980,7 +980,7 @@ function specif2xlsx(data: SpecIF, opts?: any): void {
 			return (Array.isArray(array) && array.length > 0);
 		};
 	   
-		function escapeSpecialCharaters(string) {
+		function escapeSpecialCharacters(string) {
 			return string.replace("\\","\\\\").replace(/\\([\s\S])|(')/g, "\\$1$2").replace(/\n/g, "\\n");
 		}; */
 

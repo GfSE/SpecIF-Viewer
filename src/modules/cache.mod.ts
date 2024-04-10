@@ -2465,7 +2465,7 @@ class CProject implements SpecifProject {
 							{ title: 'ReqIF v1.0', id: 'reqif' },
 							{ title: 'MS Excel® (experimental)', id: 'xlsx' },
 							//	{ title: 'RDF', id: 'rdf' },
-							//	{ title: 'Turtle (experimental)', id: 'turtle' },
+							{ title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
 							{ title: 'MS Word® (Open XML)', id: 'oxml' }
 						]
@@ -2608,10 +2608,8 @@ class CProject implements SpecifProject {
 
 				switch (opts.format) {
 					case 'specif_v10':
-				//	case 'rdf':
+					//	case 'rdf':
 					case 'turtle':
-						opts.v10 = true;
-						// no break
 					case 'reqif':
 					case 'specif':
 					case 'html':
@@ -2624,9 +2622,10 @@ class CProject implements SpecifProject {
 						publish(opts);
 						break;
 					default:
-						// programming error!
-						reject(new xhrMessage(999, "Invalid format specified on export"));
-						throw Error("Invalid format specified on export");
+						// !
+						let msg = "Programming error: Invalid format specified on export."
+					//	reject(new xhrMessage(999, msg));
+						throw Error(msg);
 			//	}
 			//	else {
 			//		reject({ status: 999, statusText: "No permission to export" });
@@ -2639,8 +2638,8 @@ class CProject implements SpecifProject {
 				// ToDo: Get the newest data from the server.
 //				console.debug( "publish", opts );
 
-				// If a hidden property is defined with value, it is suppressed only if it has this value;
-				// if the value is undefined, the property is suppressed in all cases.
+				// If a property is listed in skipProperties *with* value, it is skipped only if it has this value;
+				// if the value is undefined, the property is skipped in all cases.
 				opts.skipProperties = [
 					{ title: CONFIG.propClassType, value: CONFIG.resClassFolder },
 					{ title: CONFIG.propClassType, value: CONFIG.resClassOutline }
@@ -2716,19 +2715,19 @@ class CProject implements SpecifProject {
 
 				switch (opts.format) {
 					case 'specif_v10':
+						opts.v10 = true;
 					case 'specif':
 					case 'html':
 						// export all languages:
 						opts.lookupTitles = false;
 						opts.lookupValues = false;
-					//	opts.targetLanguage = undefined;
 						// keep all revisions:
 					//	opts.revisionDate = undefined;
 						break;
 					case 'reqif':
 						// only single language is supported:
 						opts.lookupTitles = true;
-						if (!opts.targetLanguage) opts.targetLanguage = self.language;
+						opts.targetLanguage = opts.targetLanguage || self.language;
 						opts.targetNamespace = "ReqIF.";
 						// XHTML is supported:
 						opts.makeHTML = true;
@@ -2740,8 +2739,9 @@ class CProject implements SpecifProject {
 				//	case 'rdf':
 					case 'turtle':
 						// only single language is supported:
-						opts.lookupTitles = true;
-						if (!opts.targetLanguage) opts.targetLanguage = self.language;
+						opts.lookupTitles = false;
+						opts.targetLanguage = opts.targetLanguage || self.language;
+						opts.allDiagramsAsImage = true;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
@@ -2754,17 +2754,18 @@ class CProject implements SpecifProject {
 						opts.adoptOntologyDataTypes = true;
 						break;
 					default:
-						reject();
+						reject(new xhrMessage(999,"Programming Error: Invalid format selector on export."));
 						return; // should never arrive here
 				};
 //				console.debug( "storeAs", simpleClone(self), opts );
 
-				self.read(opts).then(
+				self.read(opts)
+				.then(
 					(expD) => {
 //						console.debug('storeAs', simpleClone(expD), opts);
 						let fName = opts.fileName;
 						if( ['html', 'reqif', 'turtle'].includes(opts.format) )
-							expD.title = opts.projectName;
+							expD.title = LIB.makeMultiLanguageValue(opts.projectName);
 						if (opts.targetLanguage) expD.language = opts.targetLanguage;
 
 						// A) Processing for 'html':
@@ -2837,8 +2838,8 @@ class CProject implements SpecifProject {
 							case 'turtle':
 								fName += ".ttl";
 								zName = fName + '.zip';
-								// @ts-ignore - transformSpecifToTTL() is loaded at runtime
-								expStr = transformSpecifToTTL("https://specif.de/examples", expD);
+								// @ts-ignore - transformSpecifToTurtle() is loaded at runtime
+								expStr = transformSpecifToTurtle("https://specif.de/examples/", expD);
 						/*		break;
 							case 'rdf':
 								if( !app.ioRdf ) {

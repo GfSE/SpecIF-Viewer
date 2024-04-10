@@ -816,6 +816,10 @@ LIB.languageTextOf = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLang
     let langV = LIB.languageValueOf(val, opts);
     return (langV ? langV['text'] : '');
 }
+LIB.selectTargetLanguage = (val: SpecifMultiLanguageText, opts?: any): SpecifMultiLanguageText | undefined => {
+    // if opts.targetLanguage is defined, create a multilanguageText with the selected language, only:
+    return LIB.makeMultiLanguageValue(LIB.languageTextOf(val, opts), opts)
+}
 LIB.displayValueOf = (val: SpecifValue, opts?: any): string => {
     // for display, any vocabulary term is translated to the selected language;
     // a lookup is only necessary for values of dataType xs:string, which is always a multiLanguageText:

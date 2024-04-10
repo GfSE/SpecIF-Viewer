@@ -306,9 +306,9 @@ class CPropertyToShow implements SpecifProperty {
 				let f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1)),
 					f2 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u2));
 
-				if (f1.hasContent()) {
+				if (f1 && f1.hasContent()) {
 
-					if (f2.hasContent()) {
+					if (f2 && f2.hasContent()) {
 						// take f1 to download and f2 to display:
 
 //						console.debug('tagId',tagId(u2));
@@ -371,15 +371,15 @@ class CPropertyToShow implements SpecifProperty {
 
 				// sometimes the application files (BPMN or other) have been replaced by images;
 				// this is for example the case for *.specif.html files:
-				if (!f1.hasContent() && u1 && CONFIG.applExtensions.includes(e)) {
-					for (var i = 0, I = CONFIG.imgExtensions.length; !f1 && i < I; i++) {
+				if ((!f1 || !f1.hasContent()) && u1 && CONFIG.applExtensions.includes(e)) {
+					for (var i = 0, I = CONFIG.imgExtensions.length; (!f1 || !f1.hasContent()) && i < I; i++) {
 						u1 = u1.fileName() + '.' + CONFIG.imgExtensions[i];
 						f1 = new CFileWithContent(LIB.itemByTitle(this.cData.files, u1));
 					};
 				};
 				// ... cannot happen any more now, is still here for compatibility with older files.
 
-				if (f1.hasContent()) {
+				if (f1 && f1.hasContent()) {
 					if (f1.canBeRenderedAsImage()) {
 						// it is an image, show it:
 						// Only an <object ..> allows for clicking on svg diagram elements with embedded links:
@@ -911,7 +911,7 @@ class CFileWithContent implements SpecifFile {
 		return !!this.dataURL && this.dataURL.length > 0;
 	}
 	hasContent(): boolean {
-		return this.title.length>0 && (this.hasBlob() || this.hasDataURL());
+		return this.title && this.title.length>0 && (this.hasBlob() || this.hasDataURL());
 	}
 	canBeRenderedAsImage(): boolean {
 		return ['png', 'svg', 'bpmn', 'jpg', 'jpeg', 'gif'].includes(this.title.fileExt().toLowerCase())

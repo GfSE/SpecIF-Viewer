@@ -549,7 +549,7 @@ moduleManager.construct({
 					LIB.cacheE(
 						fld.nodes,
 						{
-							id: LIB.replacePrefix(CONFIG.prefixN, termTd),
+							id: LIB.replacePrefix(CONFIG.prefixN, termId),
 							resource: LIB.makeKey(termId),
 							changedAt: spD.createdAt
 						}

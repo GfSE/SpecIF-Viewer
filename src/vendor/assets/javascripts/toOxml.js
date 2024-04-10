@@ -1070,7 +1070,7 @@ function toOxml( data, options ) {
 					throw Error("SpecIF to WORD: Invalid title link.");
 				}
 				function propertyValuesOf( prp ) {
-					// In a first transformation step, return the value of a single property
+					// In a first transformation step, return the values of a single property
 					// as a list of paragraphs in normalized (internal) data structure,
 					// where XHTML-formatted text is parsed.
 					// The second transformation step will be done in generateOxml().
