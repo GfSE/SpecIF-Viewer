@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.r.20",
+    CONFIG.appVersion = "1.1.r.21",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
@@ -268,4 +268,4 @@ const tagsHtml = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|
 // (\w+)(?:\.|:|$)   ^[\w:\.]+$
 
     RE.AmpersandPlus = new RegExp('&(.{0,8})', 'g');
-    RE.XMLEntity = new RegExp('&(amp|gt|lt|apos|quot|#x[\da-fA-F]{1,4}|#\d{1,5});/', '');
+    RE.XMLEntity = new RegExp('&(amp|gt|lt|apos|quot|#x[\\da-fA-F]{1,4}|#\\d{1,5});/', '');

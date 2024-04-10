@@ -643,8 +643,7 @@ var app:IApp,
 				case "toEpub":	loadModule('toXhtml');
 								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;
 				case "toOxml":	getScript(loadPath + 'vendor/assets/javascripts/toOxml.js'); return true;
-			//	case "toXlsx": getScript(loadPath + 'export/toXlsx.js'); return true;
-				case "toTurtle": getScript(loadPath + 'vendor/assets/javascripts/specif2turtle.js'); return true;
+				case "toTurtle": getScript(loadPath + 'modules/specif2turtle.js'); return true;
 				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
 				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;
 				case 'reqif2specif': getScript(loadPath + 'vendor/assets/javascripts/reqif2specif.js'); return true;
