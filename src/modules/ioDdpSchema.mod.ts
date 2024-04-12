@@ -161,8 +161,8 @@ moduleManager.construct({
 
 		var xlsTerms = ["xs:boolean", "xs:integer", "xs:double", "xs:dateTime", "xs:anyURI", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder],
 			spD: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
-		spD.title = [{ text: "prostep iViP Collaboration Datamodel Schema" }];
-		spD.description = [{ text: "Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
+		spD.title = [{ text: "SpecIF Classes for prostep iViP DDP (Data Model)" }];
+		spD.description = [{ text: "SpecIF Classes derived from DDP Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
 		spD.id = "P-DDP-Schema-V20";
 		spD.createdAt = new Date().toISOString();
 
@@ -368,8 +368,8 @@ moduleManager.construct({
 			}
 		);
 
-		spD.title = [{ text: "prostep iViP Collaboration Ontology" }];
-		spD.description = [{ text: "Collaboration Datamodel Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
+		spD.title = [{ text: "prostep iViP DDP (Ontology)" }];
+		spD.description = [{ text: "Ontology derived from DDP Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
 		spD.id = "P-DDP-Ontology-V20";
 		spD.createdAt = new Date().toISOString();
 

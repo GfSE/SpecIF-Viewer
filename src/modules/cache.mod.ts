@@ -2727,8 +2727,9 @@ class CProject implements SpecifProject {
 					case 'reqif':
 						// only single language is supported:
 						opts.lookupTitles = true;
-						opts.targetLanguage = opts.targetLanguage || self.language;
-						opts.targetNamespace = "ReqIF.";
+					//	opts.targetLanguage = opts.targetLanguage || self.language;
+						opts.targetNamespaces = ["ReqIF."];
+						opts.allDiagramsAsImage = true;
 						// XHTML is supported:
 						opts.makeHTML = true;
 						opts.linkifyURLs = true;
@@ -2739,8 +2740,9 @@ class CProject implements SpecifProject {
 				//	case 'rdf':
 					case 'turtle':
 						// only single language is supported:
-						opts.lookupTitles = false;
-						opts.targetLanguage = opts.targetLanguage || self.language;
+						opts.lookupTitles = true;
+					//	opts.targetLanguage = opts.targetLanguage || self.language;
+						opts.targetNamespaces = ["rdf:","rdfs:"];
 						opts.allDiagramsAsImage = true;
 						// XHTML is supported:
 						opts.makeHTML = true;
@@ -2838,8 +2840,8 @@ class CProject implements SpecifProject {
 							case 'turtle':
 								fName += ".ttl";
 								zName = fName + '.zip';
-								// @ts-ignore - transformSpecifToTurtle() is loaded at runtime
-								expStr = transformSpecifToTurtle("https://specif.de/examples/", expD);
+								// @ts-ignore - specif2turtle() is loaded at runtime
+								expStr = app.specif2turtle("https://specif.de/examples/", expD);
 						/*		break;
 							case 'rdf':
 								if( !app.ioRdf ) {

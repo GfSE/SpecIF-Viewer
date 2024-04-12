@@ -1568,7 +1568,10 @@ LIB.escapeInnerHtml = ( str:string ):string =>{
     // process the remainder (the text after the last tag) or the whole text if there was no tag:
     out += str.escapeXML();
     return out;
-} 
+}
+/*LIB.escapeFileName = (str: string): string => {
+    return str.replace()
+} */
 // Escape characters for Regex expression (https://developer.mozilla.org/en/docs/Web/JavaScript/Guide/Regular_Expressions)
 String.prototype.escapeRE = function (): string {
     return this.replace(/[.*+?^${}()|[\]\\]/g, '\$&')   // $& means the whole matched string
@@ -1987,10 +1990,11 @@ LIB.titleOf = (item: SpecIFItemWithNativeTitle, opts?: any): string => {
         return (opts && opts.lookupTitles ?
             (opts.targetLanguage ?
                 app.ontology.localize(item.title, opts)
-                : (opts.targetNamespace ?
+              : app.ontology.changeNamespace(item.title, opts)
+            /*    : (opts.targetNamespaces && opts.targetNamespaces.length>0 ?
                     app.ontology.changeNamespace(item.title, opts)
                     : item.title
-                )
+                ) */
             )
             : item.title);
     throw Error("Programming error: Input parameter 'item' is not defined");

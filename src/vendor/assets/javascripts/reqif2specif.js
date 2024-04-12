@@ -14,7 +14,7 @@
 /*
 ########################## Main #########################################
 */
-function transformReqif2Specif(reqifDoc,options) {
+function reqif2Specif(reqifDoc,options) {
 	const RE_NS_LINK = /\sxmlns:(.*?)=\".*?\"/;
 	
     if (typeof (options) != 'object') options = {};

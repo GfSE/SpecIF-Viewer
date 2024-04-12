@@ -12,8 +12,8 @@ class COntology {
     data: SpecIF;
 //  domains: string[] = [];
 
-    // List with all namespaces:
-    namespaces: string[] = [];
+    // List with all namespaces and their origins:
+    namespaces: any;
 
     // List of all heading types:
     // If a resourceClass has a title equal to one of the values in the following list,
@@ -335,15 +335,18 @@ class COntology {
     }
     changeNamespace(term: string, opts:any): string {
         // Given a term, try mapping it to the target namespace.
+        let self = this;
 
-        if (!opts.targetNamespace || !this.namespaces.includes(opts.targetNamespace)) {
-            console.warn("No namespace specified or ontology does not include the specified namespace: "+term);
+        if (!opts.targetNamespaces || opts.targetNamespaces.length<1 ) {
+        //    console.warn("Cannot change namespace; no target namespace specified.");
             return term
         };
 
-        // If the term itself belongs to the desired namespace, just return it:
-        if (term.startsWith(opts.targetNamespace))
-            return term;
+        // If the term belongs to any of the desired namespaces, just return it:
+        for (var nsp of opts.targetNamespaces) {
+            if (term.startsWith(nsp))
+                return term;
+        };
 
         let rL = this.getTermResources('all',term);
         // Just one result is expected:
@@ -355,38 +358,56 @@ class COntology {
 
             // Look for a synonym relation pointing to a term with the specified target namespace;
             // go through all synonymStatements one-by-one to allow early return in case of a hit.
-            // ToDo: Select the appropriate synonymStatement depending on the category of r.
-            for ( var v of this.synonymStatements.values()) {
-                let
-                    // Collect all synonyms (relation is bi-directional):
-                    stL = this.statementsByTitle(r, [v], { asSubject: true, asObject: true }),
-                    // the resources related by those statements are synonym terms:
-                    rsL = stL.map(
-                        (st: SpecifStatement) => {
-                            return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
-                        }
-                    ),
-                    // Find the term with the desired namespace, either released or equivalent:
-                    synL = rsL.filter(
-                        (r: SpecifResource) => {
-                            return this.valueByTitle(r, CONFIG.propClassTerm).startsWith(opts.targetNamespace)
-                                && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(this.valueByTitle(r, "SpecIF:TermStatus"))
-                        }
-                    );
-                //            console.debug('changeNamespace', r, stL, rsL, synL);
-                if (synL.length < 1)
-                    return term;
+        //    console.warn("No namespace specified or ontology does not include the specified namespace: " + term);
+            let
+                v = findSynonymStatementOf(r['class']),
+                // Collect all synonyms (relation is bi-directional):
+                stL = this.statementsByTitle(r, [v], { asSubject: true, asObject: true }),
+                // the resources related by those statements are synonym terms:
+                rsL = stL.map(
+                    (st: SpecifStatement) => {
+                        return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
+                    }
+                ),
+                // Find the term with the desired namespace, either released or equivalent:
+                synL = findSynonym(rsL, opts.targetNamespaces);
+            //            console.debug('changeNamespace', r, stL, rsL, synL);
+            if (synL.length < 1)
+                return term;
 
-                if (synL.length > 1)
-                    console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((r:SpecifResource) => { return r.id }).toString());
+            if (synL.length > 1)
+                console.warn('Multiple equivalent terms have the desired namespace: ', synL.map((r:SpecifResource) => { return r.id }).toString());
 
-                let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
-                console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
-                return newT
-            }
+            let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
+            console.info('Term with desired namespace assigned: ' + term + ' → ' + newT);
+            return newT
         };
         // else, return the input value:
         return term;
+
+        function findSynonymStatementOf(rCk:SpecifKey) {
+            let rC = LIB.itemByKey(self.data.resourceClasses,rCk);
+            for (let [key, value] of self.synonymStatements) {
+                if (rC.title.toLowerCase().includes(key.toLowerCase()))
+                    return value
+            };
+            throw (new Error("No synonymStatement found for '"+rCk.id+"'."));
+        }
+        function findSynonym(rL: SpecifResource[], nspL: string[]) {
+            // In the sequence of namespaces in the list nspL,
+            // try to find a synonym among the terms contained in rL:
+            let sL = [];
+            for( var nsp of nspL ) {
+                sL = rL.filter(
+                    (r: SpecifResource) => {
+                        return self.valueByTitle(r, CONFIG.propClassTerm).startsWith(nsp)
+                            && ["SpecIF:LifecycleStatusReleased", "SpecIF:LifecycleStatusEquivalent"].includes(self.valueByTitle(r, "SpecIF:TermStatus"))
+                    }
+                );
+                if(sL.length>0) return sL
+            };
+            return [];
+        }
     }
 /*    getOntologyClasses(opts?: any): SpecIF | undefined {
             // Return a SpecIF data set with all classes of the ontology
@@ -544,12 +565,12 @@ class COntology {
                 {
                     "id": spId,
                     "title": [{
-                        "text": "SpecIF Classes" + (opts.domains ? (" for " + opts.domains.toString()) : ""),
+                        "text": "SpecIF Classes" + (opts.domains ? (" for " + opts.domains.toString().replace(/:/g, " ")) : ""),
                         "format": SpecifTextFormat.Plain,
                         "language": "en"
                     }],
                     "description": [{
-                        "text": "A set of SpecIF Classes derived from a SpecIF Ontology" + (opts.domains ? (" for the domain" + (opts.domains.length < 2 ? " " : "s ") + opts.domains.toString() + ".") : ""),
+                        "text": "A set of SpecIF Classes derived from a SpecIF Ontology" + (opts.domains ? (" for the domain" + (opts.domains.length < 2 ? " " : "s ") + opts.domains.toString().replace(/,/g, ", ") + ".") : ""),
                         "format": SpecifTextFormat.Plain,
                         "language": "en"
                     }],
@@ -1071,19 +1092,21 @@ class COntology {
                 }
             );
     }
-    private getNamespaces(): string[] {
-        // Return a list of all namespace names:
-        return this.data.resources
-            .filter(
-                (r) => {
-                    return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
-                }
-            )
-            .map(
-                (r) => {
-                    return this.valueByTitle(r, CONFIG.propClassTerm)
-                }
-            );
+    private getNamespaces() {
+        // Fill the map of all namespaces:
+        let m = new Map();
+        this.data.resources
+        .filter(
+            (r) => {
+                return LIB.classTitleOf(r['class'], this.data.resourceClasses) == "SpecIF:Namespace"
+            }
+        )
+        .forEach(
+            (r) => {
+                m.set(this.valueByTitle(r, CONFIG.propClassTerm), { id: r.id, url:this.valueByTitle(r, "SpecIF:Origin") })
+            }
+        );
+        return m;
     }
     private makeStatementsIsNamespace(): void {
         // Relate one of the defined namespaces to each term using a statement 'isNamespace';
@@ -1108,13 +1131,13 @@ class COntology {
                         let stC = LIB.makeKey(item),
                             noNs = true;
                         // the term has a namespace:
-                        for (let ns of this.namespaces) {
-                            if (match[1] == ns) {
+                        for (let [key,val] of this.namespaces) {
+                            if (match[1] == key) {
                                 this.data.statements.push({
                                     id: LIB.genID(CONFIG.prefixS),
                                     changedAt: now,
                                     class: stC,
-                                    subject: LIB.makeKey(ns),
+                                    subject: LIB.makeKey(val.id),
                                     object: LIB.makeKey(r)
                                 } as SpecifStatement);
                                 noNs = false;

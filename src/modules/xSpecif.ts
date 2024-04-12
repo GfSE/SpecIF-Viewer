@@ -884,7 +884,7 @@ class CSpecIF implements SpecIF {
 													}
 												)
 												.filter(
-													sl => !!sl.text
+													(sl: SpecifLanguageText) => !!sl.text
 												)
 										else
 											return; // undefined
@@ -909,7 +909,7 @@ class CSpecIF implements SpecIF {
 						}
 					)
 					.filter(
-						p => !!p 
+						(p:any) => !!p 
 					)
 			};
 			if (LIB.isString(prp.value) || LIB.isMultiLanguageValue(prp.value)) {

@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 const CONFIG:any = {};
-    CONFIG.appVersion = "1.1.r.21",
+    CONFIG.appVersion = "1.1.r.22",
     CONFIG.specifVersion = "1.1";
     CONFIG.imgURL = './vendor/assets/images';
     CONFIG.ontologyURL = 'https://specif.de/v1.1/Ontology.specif';  // used to localize and normalize terms
@@ -171,17 +171,16 @@ RE.URI = /(^|\s|>)((https?:\/\/|www\.)([^\s\/.$?#=]+\.)*([^\s\/.$?#=]+\.[\w]{2,4
 //                                                                                                    $7: 0..1 query string
 //                                                                                                                 $8: 0..1 fragment=page anchor (hash)
 //                                                                                                                      $9: ends with certain characters or eol
-
-    // text strings are be encoded for json, thus '\t', '\r\n' or '\n' may be contained explicitly
-    const     chars_de = '\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df', // �������
-            chars_fr = '\u00c0\u00e0\u00c2\u00e2\u00c7\u00e7\u00c8\u00e8\u00c9\u00e9\u00ca\u00ea\u00d4\u00f4\u00d9\u00f9\u00db\u00fb\u00cb\u00eb'; // ��������������������
-//    const    chars_icon = "&#\d{1,5};|&#x\d{1,4};|&[a-zA-Z]{1,6};|[^\da-zA-Z"+chars_de+chars_fr+"&\"'\\s\\\\/]{1,6}";
+/*
+    const   chars_de = '\\u00c4\\u00e4\\u00d6\\u00f6\\u00dc\\u00fc\\u00df', // �������
+            chars_fr = '\\u00c0\\u00e0\\u00c2\\u00e2\\u00c7\\u00e7\\u00c8\\u00e8\\u00c9\\u00e9\\u00ca\\u00ea\\u00d4\\u00f4\\u00d9\\u00f9\\u00db\\u00fb\\u00cb\\u00eb'; // ��������������������
+//    const    chars_icon = "&#\\d{1,5};|&#x\\d{1,4};|&[a-zA-Z]{1,6};|[^\\da-zA-Z"+chars_de+chars_fr+"&\"'\\s\\\\/]{1,6}";
     //                HTML-encoded chars ...
     //                                               OR all except alphanumerical characters (allowing not-escaped unicode chars)
 //    RE.Icon = new RegExp( '^('+chars_icon+')$', '');
     // corresponding to SpecIF schema v0.10.0+:
-    RE.Icon = new RegExp( '^(&#\d{1,5};|&#x\d{1,4};|&[a-zA-Z]{1,6};|[@$%#*_\u007B\u20AC\u00A3\u00A5\u00A7]{1,1}[\da-zA-Z@$%#*_\u007D\u20AC\u00A3\u00A5\u00A7]{0,6})$', '');
-
+//    RE.Icon = new RegExp( '^(&#\\d{1,5};|&#x\\d{1,4};|&[a-zA-Z]{1,6};|[@$%#*_\u007B\u20AC\u00A3\u00A5\u00A7]{1,1}[\\da-zA-Z@$%#*_\u007D\u20AC\u00A3\u00A5\u00A7]{0,6})$', '');
+*/
     // Various datatypes:
 //    RE.IsoDateTime = /^(\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-2])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T\s]((([01]\d|2[0-3])((:?)[0-5]\d)?|24\:?00)([\.,]\d+(?!:))?)?(\17[0-5]\d([\.,]\d+)?)?([zZ]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/;
 RE.IsoDateTime = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|30|31)(?:T([0-1]\d|2[0-4]):([0-5]\d):([0-5]\d(?:\.\d{1,3})?)(\+(0\d|11|12):([0-5]\d)|-(0\d|11|12):([0-5]\d)|Z)?)?$/;
@@ -199,7 +198,7 @@ RE.hasTimezone =/(Z|\+\d{2}(:\d{2})?|\-\d{2}(:\d{2})?)$/
         return new RegExp( '^-?([1-9]\\d*|0)\\.\\d'+mult+'$|^(-?[1-9]\\d*|0)$', '' );
     };
 //    RE.CSV = /^[\s\-,_#&$�\da-zA-Z]+$/;   // works!
-    RE.CSV = new RegExp( '^[\\s\\-,_#&$�\da-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values
+//    RE.CSV = new RegExp( '^[\\s\\-,_#&$�\\da-zA-Z'+chars_de+chars_fr+']+$', '');  // comma-separated values
 
 // Regexes to identify XHTML tags for objects and links:
 // a) Especially OLE-Objects from DOORS are coming in this format; the outer object is the OLE, the inner is the preview image.
@@ -263,6 +262,7 @@ const tagsHtml = "(p|div|object|img|a|br|b|i|em|span|ul|ol|li|table|thead|tbody|
         // $3: any of the tokens listed in tagsHtml 
         // $4: the rest of the tag including '>' or '/>'
 
+    RE.Namespace = /^([\w-]+)[.:](\w)/;
     RE.vocabularyTerm = /^[\w-]+(?:\:|\.)[\w\.:-]+$/;  // '_' is a word character, thus included in \w
     RE.splitVocabularyTerm = /^([\w-]+:|[\w-]+\.)?([\w\.:-]+)$/;
 // (\w+)(?:\.|:|$)   ^[\w:\.]+$

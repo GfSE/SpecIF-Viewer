@@ -11,11 +11,11 @@
 ########################## Main #########################################
 
 testTransformSpecifToTurtle = (specifData) => {
-   return transformSpecifToTurtle("https://www.example.com",specifData)
+   return specif2turtle("https://www.example.com",specifData)
 };
 */
 
-let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
+app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
     // Assumptions:
     // - specifData is expected in v1.1 format.
 
@@ -25,7 +25,7 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         + transformNativeAttributes( specifData )
     //    + transformDatatypes(specifData.dataTypes)
     //    + transformPropertyClasses(specifData.propertyClasses)
-    //    + transformResourceClasses(specifData.resourceClasses)
+        + transformResourceClasses(specifData.resourceClasses)
     //    + transformStatementClasses(specifData.statementClasses)
         + transformResources(specifData.resources)
         + transformStatements(specifData.statements)
@@ -35,9 +35,9 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
 
     return resultTtlString
         // Post processing:
-        .replace(new RegExp(CONFIG.propClassTitle, 'g'), 'rdfs:label')  // temporary hack
-        .replace(new RegExp(CONFIG.propClassTerm, 'g'), 'rdfs:label')  // temporary hack
-        .replace(new RegExp(CONFIG.propClassDesc, 'g'), 'rdfs:comment')  // temporary hack
+     //   .replace(new RegExp(CONFIG.propClassTitle, 'g'), 'rdfs:label')  // temporary hack
+     //   .replace(new RegExp(CONFIG.propClassTerm, 'g'), 'rdfs:label')  // temporary hack
+     //   .replace(new RegExp(CONFIG.propClassDesc, 'g'), 'rdfs:comment')  // temporary hack
         .replace(/; \./g, '.');
 
     /*
@@ -50,20 +50,26 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
             + tier0RdfEntry(`@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .`)
             + tier0RdfEntry(`@prefix xs: <http://www.w3.org/2001/XMLSchema#> .`)
             + tier0RdfEntry(`@prefix dcterms: <http://purl.org/dc/terms/> .`)
+            + tier0RdfEntry(`@prefix dc: <http://purl.org/dc/elements/1.1/> .`)
         //    + tier0RdfEntry(`@prefix vann: <http://purl.org/vocab/vann/> .`)
+            + tier0RdfEntry(`@prefix schema: <https://schema.org#> .`)
             + tier0RdfEntry(`@prefix foaf: <http://xmlns.com/foaf/0.1/> .`)
         //    + tier0RdfEntry(`@prefix iana: <http://www.w3.org/ns/iana/media-types/> .`)
             + tier0RdfEntry(`@prefix iana: <https://www.iana.org/assignments/media-types#> .`)
             + emptyLine()
+
+            // ToDo: Get the namespaces from the SpecIF Ontology
             + tier0RdfEntry(`@prefix SpecIF: <http://specif.de/v1.1/schema#> .`)
             + tier0RdfEntry(`@prefix FMC: <http://specif.de/v1.1/schema/fmc#> .`)
             + tier0RdfEntry(`@prefix IREB: <http://specif.de/v1.1/schema/ireb#> .`)
             + tier0RdfEntry(`@prefix oslc: <http://specif.de/v1.1/schema/oslc#> .`)
             + tier0RdfEntry(`@prefix oslc_rm: <http://specif.de/v1.1/schema/oslc_rm#> .`)
+            + tier0RdfEntry(`@prefix oslc_cm: <http://specif.de/v1.1/schema/oslc_cm#> .`)
             + tier0RdfEntry(`@prefix ReqIF: <http://specif.de/v1.1/schema/reqif#> .`)
             + tier0RdfEntry(`@prefix ReqIF-WF: <http://specif.de/v1.1/schema/reqif-wf#> .`)
-         //   + tier0RdfEntry(`@prefix HIS: <http://specif.de/v1.1/schema/HIS#> .`)
+         //   + tier0RdfEntry(`@prefix HIS: <http://specif.de/v1.1/schema/his#> .`)
             + tier0RdfEntry(`@prefix SysML: <http://specif.de/v1.1/schema/sysml#> .`)
+            + tier0RdfEntry(`@prefix IR: <http://specif.de/v1.1/schema/ir#> .`)
             + tier0RdfEntry(`@prefix BPMN: <http://specif.de/v1.1/schema/bpmn#> .`)
             + tier0RdfEntry(`@prefix DDP: <http://www.prostep.org/dictionary/2.0#> .`)
             + tier0RdfEntry(`@prefix W3C: <http://specif.de/v1.1/schema/w3c#> .`)
@@ -85,12 +91,12 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         // ... using the default (first) values of the project title and description.
         let { id ,  title , description , $schema , generator , generatorVersion , rights , createdAt , createdBy } = project;
 
-        console.debug('turtle transformNativeAttributes',project)
+//        console.debug('turtle transformNativeAttributes',project)
         let baseProjectTtlString = emptyLine()
                 + tier0RdfEntry(`this: a SpecIF:Project ;`)
                 + tier1RdfEntry(`dcterms:identifier '${escapeTtl(id)}' ;`)
-                + (title? tier1RdfEntry(`rdfs:label '${escapeTtl(title[0].text)}' ;`) : '')
-                + (description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(textWithLang(description[0]))}' ;`) : '')
+                + (title ? tier1RdfEntry(`rdfs:label ${textWithLang(title)} ;`) : '')
+                + (description ? tier1RdfEntry(`rdfs:comment ${textWithLang(description)} ;`) : '')
                 + tier1RdfEntry(`SpecIF:schema <${$schema}> ;`)
                 + (generator? tier1RdfEntry(`SpecIF:generator '${escapeTtl(generator)}' ;`) : '')
                 + (generatorVersion? tier1RdfEntry(`SpecIF:generatorVersion '${escapeTtl(generatorVersion)}' ;`) : '');
@@ -121,28 +127,29 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
 		    dataTypesTtlString += emptyLine()
                 + tier0RdfEntry(`this: SpecIF:containsDataTypeMapping :${dataType.id} .`)
                 + tier0RdfEntry(`:${dataType.id} a SpecIF:DataTypeMapping , owl:Class ;`)
-                + tier1RdfEntry(`SpecIF:id '${escapeTtl(dataType.id)}' ;`)
-                + (dataType.title ? tier1RdfEntry(`rdfs:label '${escapeTtl(dataType.title)}' ;`) : '')
-                + (dataType.type ? tier1RdfEntry(`SpecIF:type '${escapeTtl(dataType.type)}' ; `) : '')
-            //          + (dataType.type? tier1RdfEntry(`SpecIF:vocabularyTerm '${escapeTtl(dataType.type)}' ;`) : '')
+            //    + tier1RdfEntry(`SpecIF:id '${escapeTtl(dataType.id)}' ;`)
+                + tier1RdfEntry(`rdfs:label '${escapeTtl(dataType.title)}' ;`)
+                // @ts-ignore - the XsDatatype *is* a string
+                + tier1RdfEntry(`SpecIF:type '${escapeTtl(dataType.type)}' ; `)
+            //    + (dataType.type? tier1RdfEntry(`SpecIF:vocabularyTerm '${escapeTtl(dataType.type)}' ;`) : '')
                 + (dataType.maxLength ? tier1RdfEntry(`SpecIF:maxLength '${dataType.maxLength}' ;`) : '')
                 + (dataType.minInclusive ? tier1RdfEntry(`SpecIF:minInclusive '${dataType.minInclusive}' ;`) : '')
                 + (dataType.maxInclusive ? tier1RdfEntry(`SpecIF:maxInclusive '${dataType.maxInclusive}' ;`) : '')
                 + (dataType.fractionDigits ? tier1RdfEntry(`SpecIF:fractionDigits '${dataType.fractionDigits}' ;`) : '')
-                + (dataType.revision ? tier1RdfEntry(`SpecIF:revision '${dataType.revision}' ;`) : '')
-                + tier1RdfEntry(`dcterms:modified '${escapeTtl(dataType.changedAt)}' ;`)
+            //    + (dataType.revision ? tier1RdfEntry(`SpecIF:revision '${dataType.revision}' ;`) : '')
+                + tier1RdfEntry(`dcterms:modified '${dataType.changedAt}' ;`)
                 + (dataType.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(dataType.changedBy)}' ;`) : '');
-                        + ' .';
 
             // @ts-ignore - that's why we are checking for the existence of 'enumeration'
             if(isArrayWithContent(dataType.enumeration)){
                 // @ts-ignore - that's why we are checking for the existence of 'enumeration'
                 dataType.enumeration.forEach( enumValue => {
                     dataTypesTtlString += emptyLine()
-                                + tier0RdfEntry(`:${escapeTtl(enumValue.id)} a :${escapeTtl(dataType.title)} ;`)
-                                + tier1RdfEntry(`SpecIF:id '${escapeTtl(enumValue.id)}' ;`)
-                                + tier1RdfEntry(`rdfs:label '${escapeTtl(enumValue.value)}' ;`)
-                                + ' .';
+                        + tier0RdfEntry(`:${escapeTtl(enumValue.id)} a :${escapeTtl(dataType.title)} ;`)
+                        + tier1RdfEntry(`SpecIF:id '${escapeTtl(enumValue.id)}' ;`)
+                        // @ts-ignore - the XsDatatype *is* a string
+                        + tier1RdfEntry(`rdfs:label '${escapeTtl(enumValue.value)}' ;`)
+                        + ' .';
                 });
             };
         });
@@ -158,18 +165,17 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         let propertyClassesTtlString = '';
     
         propertyClasses.forEach(propertyClass => {     
-            let {id , title , dataType , revision , changedAt} = propertyClass;   
             propertyClassesTtlString += emptyLine()
-                        + tier0RdfEntry(`this: SpecIF:containsPropertyClassMapping :${id} .`)
-                        + tier0RdfEntry(`:${id} a SpecIF:PropertyClassMapping ;`)
-                        + tier1RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
-                        + (title? tier1RdfEntry(`rdfs:label '${escapeTtl(title)}' ; `) : '')
-            //          + (title? tier1RdfEntry(`SpecIF:vocabularyTerm ${escapeTtl(title)} ;`) : '')
-                        + tier1RdfEntry(`SpecIF:dataType '${escapeTtl(dataType.id)}' ;`)
-                        + (revision? tier1RdfEntry(`SpecIF:revision '${escapeTtl(revision)}' ;`) : '')
-                        + tier1RdfEntry(`dcterms:modified '${escapeTtl(changedAt)}' ;`)
-                        + (changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(changedBy)}' ;`) : '');
-                        + ' .';
+                + tier0RdfEntry(`this: SpecIF:containsPropertyClassMapping :${propertyClass.id} .`)
+            //    + tier0RdfEntry(`:${propertyClass.id} a SpecIF:PropertyClassMapping ;`)
+             //   + tier1RdfEntry(`SpecIF:id '${escapeTtl(propertyClass.id)}' ;`)
+                + tier1RdfEntry(`rdfs:label '${escapeTtl(propertyClass.title)}' ; `)
+            //    + (title? tier1RdfEntry(`SpecIF:vocabularyTerm ${escapeTtl(title)} ;`) : '')
+                + tier1RdfEntry(`SpecIF:dataType '${escapeTtl(propertyClass.dataType.id)}' ;`)
+            //    + (propertyClass.revision ? tier1RdfEntry(`SpecIF:revision '${escapeTtl(propertyClass.revision)}' ;`) : '')
+                + tier1RdfEntry(`dcterms:modified '${propertyClass.changedAt}' ;`)
+                + (propertyClass.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(propertyClass.changedBy)}' ;`) : '')
+                + ' .';
         });
         return propertyClassesTtlString;
     };
@@ -181,22 +187,22 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
 
         let resourceClassesTtlString='';
 
-        resourceClasses.forEach( resourceClass => {
-            let {id , title , description , icon , instantiation , changedAt , revision , propertyClasses} = resourceClass;
+        resourceClasses.forEach(resourceClass => {
+            let superC = resourceClass.extends ? ':'+resourceClass.extends.id : "rdfs:Resource";
             resourceClassesTtlString += emptyLine()
-                        + tier0RdfEntry(`this: SpecIF:containsResourceClassMapping :${id} .`)
-                        + tier0RdfEntry(`:${id} a SpecIF:ResourceClassMapping ;`)
-                        + tier1RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
-                        + (title? tier1RdfEntry(`rdfs:label '${escapeTtl(title)}';`):'')
+            //    + tier0RdfEntry(`this: SpecIF:containsResourceClassMapping :${resourceClass.id} .`)
+                + tier0RdfEntry(`:${resourceClass.id} rdfs:subClassOf ${superC} ;`)
+            //     + tier1RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
+                + tier1RdfEntry(`rdfs:label '${escapeTtl(resourceClass.title)}';`)
             //          + (title? tier1RdfEntry(`SpecIF:vocabularyTerm '${escapeTtl(title)}' ;`):'')
-                        + (description? tier1RdfEntry(`rdfs:comment '${escapeTtl(description[0].text)}' ;`):'')
-                        + (icon? tier1RdfEntry(`SpecIF:icon '${escapeTtl(icon)}' ;`):'')
-                        + (instantiation ? extractRdfFromSpecif(`SpecIF:instantiation`, instantiation) : '')
-                        + (propertyClasses ? extractRdfFromSpecif(`SpecIF:propertyClasses`, propertyClasses) : '')
-                        + (revision? tier1RdfEntry(`SpecIF:revision '${escapeTtl(revision)}' ;`):'')
-                        + tier1RdfEntry(`dcterms:modified '${escapeTtl(changedAt)}' ;`)
-                        + (changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(changedBy)}' ;`) : '');
-                        + ' .';
+                + (resourceClass.description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(resourceClass.description[0].text)}' ;`):'')
+                + (resourceClass.icon ? tier1RdfEntry(`SpecIF:icon '${escapeTtl(resourceClass.icon)}' ;`):'')
+            //    + (resourceClass.instantiation ? extractRdfFromSpecif(`SpecIF:instantiation`, resourceClass.instantiation) : '')
+            //    + (resourceClass.propertyClasses ? extractRdfFromSpecif(`SpecIF:propertyClasses`, resourceClass.propertyClasses) : '')
+            //    + (resourceClass.revision ? tier1RdfEntry(`SpecIF:revision '${escapeTtl(resourceClass.revision)}' ;`):'')
+                + tier1RdfEntry(`dcterms:modified '${resourceClass.changedAt}' ;`)
+                + (resourceClass.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(resourceClass.changedBy)}' ;`) : '')
+                + ' .';
         });
 
         return resourceClassesTtlString;
@@ -210,27 +216,26 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         let statementClassesTtlString = '';
 
         statementClasses.forEach( statementClass => {
-            let {id , title , description , revision , changedAt , instantiation , subjectClasses , objectClasses} = statementClass;
             statementClassesTtlString += emptyLine()
-                        + tier0RdfEntry(`this: SpecIF:containsStatementClassMapping :${id} .`)
-                        + tier0RdfEntry(`:${id} a SpecIF:StatementClassMapping ;`)
-                        + tier0RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
-                        + (title? tier1RdfEntry(`rdfs:label  '${escapeTtl(title)}' ;`) : '')
+                + tier0RdfEntry(`this: SpecIF:containsStatementClassMapping :${statementClass.id} .`)
+                + tier0RdfEntry(`:${statementClass.id} a SpecIF:StatementClassMapping ;`)
+              //  + tier0RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
+                + tier1RdfEntry(`rdfs:label  '${escapeTtl(statementClass.title)}' ;`)
             //          + (title? tier1RdfEntry(`SpecIF:vocabularyTerm '${escapeTtl(title)}' ;`) : '')
-                        + (description? tier1RdfEntry(`rdfs:comment '${escapeTtl(description[0].text)}' ;`) : '')
-                        + (instantiation? extractRdfFromSpecif(`SpecIF:instantiation`,instantiation) : '')
-                        + (subjectClasses? extractRdfFromSpecif(`SpecIF:subjectClasses`,subjectClasses) : '')
-                        + (objectClasses? extractRdfFromSpecif(`SpecIF:objectClasses `,objectClasses) : '')
-                        + (revision ? tier1RdfEntry(`SpecIF:revision: '${revision}' ;`) : '')
-                        + tier1RdfEntry(`dcterms:modified '${escapeTtl(changedAt)}' ;`)
-                        + (changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(changedBy)}' ;`) : '');
-                        + ' .';
+                + (statementClass.description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(statementClass.description[0].text)}' ;`) : '')
+                + (statementClass.instantiation ? extractRdfFromSpecif(`SpecIF:instantiation`, statementClass.instantiation) : '')
+                + (statementClass.subjectClasses ? extractRdfFromSpecif(`SpecIF:subjectClasses`, statementClass.subjectClasses) : '')
+                + (statementClass.objectClasses ? extractRdfFromSpecif(`SpecIF:objectClasses `, statementClass.objectClasses) : '')
+            //   + (revision ? tier1RdfEntry(`SpecIF:revision: '${statementClass.revision}' ;`) : '')
+                + tier1RdfEntry(`dcterms:modified '${statementClass.changedAt}' ;`)
+                + (statementClass.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(statementClass.changedBy)}' ;`) : '')
+                + ' .';
             });
     
         return statementClassesTtlString;
     };
 
-    function transformProperties(prpL:SpecifPropertyClass[]) {
+    function transformProperties(prpL:SpecifProperty[]) {
         let turtleStr = '';
         if (isArrayWithContent(prpL)) {
             prpL.forEach(
@@ -239,50 +244,60 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
                         dT = LIB.itemByKey(specifData.dataTypes, pC.dataType),
                     //    ti = LIB.titleOf(prp['class'], specifData.propertyClasses),
                     //    ti = LIB.classTitleOf(pC),
-                        ti = shapeName(pC.title),
+                        ti = shapeEntity(escapeTtl(pC.title)),
                         ct = '';
+
+                    // Replace identifiers of enumerated values by their value as defined in the dataType:
                     if (dT.enumeration) {
-                        // from toOxml:
-                        for (var v of prp.values) {
-                            // multiple values in a comma-separated string;
-                            // string values should have just a single language (already filtered during export):
-                            switch (dT.type) {
-                                case "xs:string":
-                                //   ct += val2str(LIB.itemById(dT.enumeration, v).value[0]['text'] + (value[0].language ? '@' + value[0].language : ""));
-                                    ct += val2str( ct, textWithLang( LIB.itemById(dT.enumeration, v).value[0] ) );
-                                    break;
-                                default:
-                                    ct += val2str( ct, escapeTtl(LIB.itemById(dT.enumeration, v).value) );
-                            }
-                        };
-                    }
-                    else {
-                    //    ct = prp.values[0][0] && prp.values[0][0].text || prp.values[0];
-                        for (var v of prp.values) {
-                            // multiple values in a comma-separated string;
-                            // string values should have just a single language (already filtered during export):
-                            switch (dT.type) {
-                                case "xs:string":
-                                //    ct += val2str(v[0]['text'] + (v[0].language ? '@' + v[0].language : ""));
-                                    // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
-                                    ct += val2str( ct, textWithLang( v[0] ) );
-                                    break;
-                                default:
-                                    // @ts-ignore - here it *is* a string (dataType != "xs:string")
-                                    ct += val2str( ct, escapeTtl(v));
-                            }
-                        };
+                        // Replace identifiers of enumerated values by their value as defined in the dataType:
+                        // ToDo: Check use of default values
+                        // @ts-ignore
+                        prp.values = prp.values.map((v) => LIB.itemById(dT.enumeration, v).value);
                     };
+
+                    for (var v of prp.values) {
+                        // multiple values in a comma-separated string;
+                        // string values should have just a single language (already filtered during export):
+                        switch (dT.type) {
+                            case XsDataType.String:
+                                switch (ti) {
+                                    case 'SpecIF:Revision':
+                                        // considered literals without language variants in all cases; covered by 'textWithLang()':
+                                    case 'rdfs:label':
+                                    case 'rdfs:comment':
+                                        // considered literals in all cases:
+                                        // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
+                                        ct += appendVal(ct, textWithLang(v));
+                                        break;
+                                    default:
+                                        // considered an entity or literal without language variants:
+                                        // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
+                                        let nSp = hasNamespace(v[0].text),
+                                            // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
+                                            txt = (nSp ? shapeEntity(v[0].text) : "'" + escapeTtl(v[0].text) + "'") /* + (txt && el.language ? "@" + el.language : "") */;
+                                        // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
+                                        ct += appendVal(ct, txt);
+                                };
+                                break;
+                            default:
+                                // Values of all other dataTypes are always literals:
+                                // @ts-ignore - here it *is* a string (dataType != "xs:string")
+                                ct += appendVal(ct, "'" + v + "'");
+                        }
+                    };
+
                     if (ct)
                         //    turtleStr += tier1RdfEntry(`:${prp.class.id} '${escapeTtl(val)}' ;`);
-                        turtleStr += tier1RdfEntry(`${escapeTtl(ti)} ${ct} ;`);
+                        turtleStr += tier1RdfEntry(`${ti} ${ct} ;`);
                 }
             );
         };
         return turtleStr;
 
-        function val2str(str:string,val:string) {
-            return (str.length == 0 ? "" : " , ") + "'" + val + "'"
+        function appendVal(str: string, val: string) {
+            // Separate multiple values by a comma;
+            // if a value doesn't have a namespace, it is considered a literal:
+            return (str.length == 0 ? "" : " , ") + val
         }
     };
 
@@ -290,13 +305,13 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         if (isArrayWithContent(resources)){
             let resourcesTtlString = ''
             resources.forEach( resource => {
-                resourcesTtlString
-                    += emptyLine()
-                    + tier0RdfEntry(`:${resource.id} a rdfs:Resource ;`)
+                resourcesTtlString += emptyLine()
+                //    + tier0RdfEntry(`:${resource.id} a rdfs:Resource ;`)
                 //    + tier1RdfEntry(`SpecIF:PropertyClassMapping '${escapeTtl(resourceClass.id)}' ;`)
+                    + tier0RdfEntry(`:${resource.id} a :${escapeTtl(resource["class"].id)} ;`)
                     + transformProperties(resource.properties)
-                    + (resource.revision ? tier1RdfEntry(`SpecIF:revision '${resource.revision}' ;`) : '')
-                    + tier1RdfEntry(`dcterms:modified '${escapeTtl(resource.changedAt)}' ;`)
+                //    + (resource.revision ? tier1RdfEntry(`SpecIF:revision '${resource.revision}' ;`) : '')
+                    + tier1RdfEntry(`dcterms:modified '${resource.changedAt}' ;`)
                     + (resource.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(resource.changedBy)}' ;`) : '')
                     + ' .';
             });
@@ -315,13 +330,12 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
                     += emptyLine()
                     + tier0RdfEntry(`:${statement.id} a rdf:Statement ;`)
                 //    + tier1RdfEntry(`rdf:predicate :${statement['class'].id} ;`)
-                    + tier1RdfEntry(`rdf:predicate '${escapeTtl(ti)}' ;`)
-                    // @ts-ignore - that's why we are checking for the existence of 'properties'
-                    + (statement.properties ? transformProperties(statement.properties) : '')
+                    + tier1RdfEntry(`rdf:predicate ${escapeTtl(ti)} ;`)
                     + tier1RdfEntry(`rdf:subject :${statement.subject.id} ;`)
                     + tier1RdfEntry(`rdf:object :${statement.object.id} ;`)
-                    + (statement.revision ? tier1RdfEntry(`SpecIF:revision '${statement.revision}' ;`) : '')
-                    + tier1RdfEntry(`dcterms:modified '${escapeTtl(statement.changedAt)}' ;`)
+                    + (statement.properties ? transformProperties(statement.properties) : '')
+                //    + (statement.revision ? tier1RdfEntry(`SpecIF:revision '${statement.revision}' ;`) : '')
+                    + tier1RdfEntry(`dcterms:modified '${statement.changedAt}' ;`)
                     + (statement.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(statement.changedBy)}' ;`) : '')
                     + ' .';
             });
@@ -348,14 +362,13 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         //    r = LIB.itemByKey(specifData.resources,nd.resource),
         //    ty = LIB.valueByTitle(r, CONFIG.propClassType, specifData),
             nodeClass = opts && opts.root ? 'SpecIF:HierarchyRoot' : 'SpecIF:Node',
-            nodeTtlString =
-                    emptyLine()
+            nodeTtlString = emptyLine()
                     + tier0RdfEntry(`:${nd.id} a ${nodeClass} ;`)
                //     + tier1RdfEntry(`SpecIF:id '${escapeTtl(nd.id)}' ;`)
                //     + (root && ty? tier1RdfEntry(`dcterms:type '${escapeTtl(ty)}' ;`) : '')
-                    + (nd.resource ? tier1RdfEntry(`SpecIF:shows '${escapeTtl(nd.resource.id)}' ;`) : '')
-                    + (nd.revision ? tier1RdfEntry(`SpecIF:revision '${nd.revision}' ;`) : '')
-                    + (nd.changedAt ? tier1RdfEntry(`dcterms:modified '${escapeTtl(nd.changedAt)}' ;`) : '');
+                    + (nd.resource ? tier1RdfEntry(`SpecIF:shows :${escapeTtl(nd.resource.id)} ;`) : '')
+               //     + (nd.revision ? tier1RdfEntry(`SpecIF:revision '${nd.revision}' ;`) : '')
+                    + (nd.changedAt ? tier1RdfEntry(`dcterms:modified '${nd.changedAt}' ;`) : '');
     
         // @ts-ignore - that's why we are checking for the existence of 'nd.nodes'
         if (isArrayWithContent(nd.nodes)){
@@ -383,10 +396,9 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
             let filesTtlString = '';
             // @ts-ignore - that's why we are checking for the existence of 'files'
             files.forEach(file => {
-                filesTtlString +=
-                    emptyLine()
+                filesTtlString += emptyLine()
                     + tier0RdfEntry(`:${file.id} a SpecIF:File ;`)
-                    + tier1RdfEntry(`SpecIF:id '${file.id}' ;`)
+                //    + tier1RdfEntry(`SpecIF:id '${file.id}' ;`)
                     + (file.title ? tier1RdfEntry(`rdfs:label '${file.title}' ;`) : '')
                     + (file.type ? tier1RdfEntry(`iana:mediaType '${file.type}' ;`) : '')
                     + tier1RdfEntry(`dcterms:modified '${file.changedAt}' ;`)
@@ -404,11 +416,6 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
 
     function isArrayWithContent(array: any[]) {
         return (Array.isArray(array) && array.length > 0);
-    }
-
-    function textWithLang(el:SpecifLanguageText) {
-        // el is a SpecifLanguageText
-        return escapeTtl(el['text']) /* + (el['text'] && el.language ? "@" + el.language : "") */;
     }
 
     function extractRdfFromSpecif(predicate:string, itemL:any[]) {
@@ -434,8 +441,8 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
     function tier2RdfEntry(str:string) {
         return `\n\t\t${str}`;
     }
-
-/*    function tier3RdfEntry(str:string) {
+/*
+    function tier3RdfEntry(str:string) {
         return `\n\t\t\t${str}`;
     } */
 
@@ -447,13 +454,34 @@ let transformSpecifToTurtle = (baseUri:string, specifData:SpecIF) => {
         return str.replace("\\","\\\\").replace(/\\([\s\S])|(')/g, "\\$1$2").replace(/\n/g, "\\n");
     }
 
-    function shapeName(str: string) {
+    function hasNamespace(str: string) {
+        return RE.Namespace.test(str)
+    }
+/*
+    function textWithLang(vL: SpecifLanguageText[]) {
+        let txt = escapeTtl(vL[0]['text']),
+            // ToDo: If a description text begins with a term including a namespace, the whole text is considered as such. Solve the issue.
+            // ToDo: There is a similar issue with revision values such as '1.1'.
+            // Idea: Check whether the namespace has been declared (case-sensitive) - this may help in some, certainly not in all cases.
+            // Idea: We may restrict labels/titels and comments/descriptions to literal values, but this may be too restrictive.
+            nSp = hasNamespace(txt);
+        return (nSp ? shapeEntity(txt) : "'" + txt + "'") /* + (txt && el.language ? "@" + el.language : "") * /;
+    } */
+
+    function textWithLang(vL: SpecifLanguageText[]) {
+        // here it is assumed that the languageValues are rdf literals: 
+        let txt = escapeTtl(vL[0]['text']);
+        return "'" + txt + "'" /* + (txt && el.language ? "@" + el.language : "") */;
+    }
+
+    function shapeEntity(str: string) {
+        // Shape a name so that it corresponds to RDF syntax.
         let tkn = "_4_7_1_1_",
-            nSp = false;
+            nSp = false; // has nameSpace
         str = str
             // In SpecIF, a namespace may be separated by ':' or '.', so mark the first occurrence with tkn:
             // @ts-ignore - 'match' not used, but must anyways be declared
-            .replace(/(\w)[.:](\w)/, (match, $1, $2) => { nSp = true; return $1 + tkn + $2 })
+            .replace(RE.Namespace, (match, $1, $2) => { nSp = true; return $1 + tkn + $2 })
             // Replace any spaces and other non-word characters by a hyphen:
             .replace(/[\W]/g, "-")
             // @ts-ignore - 'match' not used, but must anyways be declared

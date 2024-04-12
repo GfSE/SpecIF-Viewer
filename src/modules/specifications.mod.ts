@@ -73,12 +73,7 @@ class CPropertyToShow implements SpecifProperty {
 	}
 /*	private getEnumValues() {
 		// Replace identifiers of enumerated values by their value as defined in the dataType:
-		var oL: SpecifValues = [];
-		for( var v of this.values ) {
-			oL.push(LIB.itemById(this.dT.enumeration, v).value);
-		};
-//		console.debug('#2', simpleClone(oL));
-		return oL
+		return this.values.map((v) => LIB.itemById(this.dT.enumeration, v).value)
 	} */
 	private allValues(opts: any): string {
 		// Return all values in the language specified;

@@ -101,8 +101,8 @@ moduleManager.construct({
 							return zDO;
 						};
 						// XML data is valid:
-						// @ts-ignore - transformReqif2Specif() is loaded at runtime
-						let result = transformReqif2Specif(dta);
+						// @ts-ignore - reqif2Specif() is loaded at runtime
+						let result = reqif2Specif(dta);
 						if (result.status != 0) {
 							//console.debug(dta)
 							zDO.reject(result);
@@ -110,7 +110,7 @@ moduleManager.construct({
 						};
 
 						// ReqIF data is valid:
-						// @ts-ignore - transformReqif2Specif() is loaded at runtime
+						// @ts-ignore - reqif2Specif() is loaded at runtime
 						resL.unshift( result.response );
 
 						// add all other files (than reqif) to the last specif data set:
@@ -178,9 +178,9 @@ moduleManager.construct({
                 
 			let str = LIB.ab2str(buf);
             if( LIB.validXML(str) ) {
-				// transformReqif2Specif gibt string zurück
-				// @ts-ignore - transformReqif2Specif() is loaded at runtime
-				var result = transformReqif2Specif(str);
+				// reqif2Specif gibt string zurück
+				// @ts-ignore - reqif2Specif() is loaded at runtime
+				var result = reqif2Specif(str);
 				if (result.status == 0)
 					zDO.resolve(result.response)
 				else
