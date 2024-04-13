@@ -448,7 +448,7 @@ class COntology {
         return {
             // @ts-ignore
             '@Context': "http://purl.org/dc/terms/",  // first step to introduce JSON-LD
-            //	'@Context': this.context,
+        //	'@Context': this.context,
             "id": "",
             "$schema": "https://specif.de/v1.1/schema.json",
             "title": [],

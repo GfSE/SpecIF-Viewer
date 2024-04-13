@@ -638,7 +638,7 @@ var app:IApp,
 											$('#'+mod).load( loadPath+'modules/projects-0.93.1.mod.html', function() {setReady(mod)} ); return true; */
 				case 'toHtml': // the loading of fileSaver is attached here for all exports:
 								loadModule('fileSaver');
-								getScript(loadPath + 'modules/toHtml.js'); return true;
+								getScript(loadPath + 'modules/specif2html.js'); return true;
 				case "toXhtml": getScript(loadPath + 'vendor/assets/javascripts/toXhtml.js'); return true;
 				case "toEpub":	loadModule('toXhtml');
 								getScript(loadPath + 'vendor/assets/javascripts/toEpub.js'); return true;

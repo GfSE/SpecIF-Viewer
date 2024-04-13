@@ -7,7 +7,7 @@
     .. or even better as Github issue (https://github.com/GfSE/SpecIF-Viewer/issues)
 */
 
-function toHtmlDoc(pr: SpecIF, pars: any): Promise<string> {
+app.specif2html = (pr: SpecIF, pars: any): Promise<string> => {
 	// Transform pr to HTML with embedded SpecIF transformation,
 	// where pr is a SpecIF data in JSON format (not the internal cache).
 	// Attention: The SpecIF data as JSON may not contain any apostrophes 

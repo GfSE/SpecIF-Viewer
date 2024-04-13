@@ -2776,7 +2776,7 @@ class CProject implements SpecifProject {
 							opts.cdn = window.cdn  // in case the calling app is itself html with embedded SpecIF
 									||	window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1);
 
-							toHtmlDoc(expD, opts)
+							app.specif2html(expD, opts)
 							.then(
 								(dta) =>{
 									let blob = new Blob([dta], { type: "text/html; charset=utf-8" });
@@ -2841,7 +2841,7 @@ class CProject implements SpecifProject {
 								fName += ".ttl";
 								zName = fName + '.zip';
 								// @ts-ignore - specif2turtle() is loaded at runtime
-								expStr = app.specif2turtle("https://specif.de/examples/", expD);
+								expStr = app.specif2turtle(expD, { baseURI: "https://specif.de/examples/" });
 						/*		break;
 							case 'rdf':
 								if( !app.ioRdf ) {

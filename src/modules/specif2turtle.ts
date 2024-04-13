@@ -15,18 +15,18 @@ testTransformSpecifToTurtle = (specifData) => {
 };
 */
 
-app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
+app.specif2turtle = (specifData:SpecIF,opts:any) => {
     // Assumptions:
     // - specifData is expected in v1.1 format.
 
     let resultTtlString =
-        defineNamespaces(baseUri, specifData.id)
+        defineNamespaces(specifData.id, opts)
         + defineSpecifClasses()
         + transformNativeAttributes( specifData )
     //    + transformDatatypes(specifData.dataTypes)
     //    + transformPropertyClasses(specifData.propertyClasses)
         + transformResourceClasses(specifData.resourceClasses)
-    //    + transformStatementClasses(specifData.statementClasses)
+        + transformStatementClasses(specifData.statementClasses)
         + transformResources(specifData.resources)
         + transformStatements(specifData.statements)
         + transformFiles(specifData.files)
@@ -35,18 +35,24 @@ app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
 
     return resultTtlString
         // Post processing:
-     //   .replace(new RegExp(CONFIG.propClassTitle, 'g'), 'rdfs:label')  // temporary hack
-     //   .replace(new RegExp(CONFIG.propClassTerm, 'g'), 'rdfs:label')  // temporary hack
-     //   .replace(new RegExp(CONFIG.propClassDesc, 'g'), 'rdfs:comment')  // temporary hack
         .replace(/; \./g, '.');
 
     /*
     ########################## Subroutines #########################################
     */
-    function defineNamespaces(baseUri: string, projectID: string) {
-        return tier0RdfEntry(`@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .`)
+    function defineNamespaces(projectID: string, opts: any) {
+        let pfxL = '';
+        for( var [key,val] of app.ontology.namespaces ) {
+            pfxL += tier0RdfEntry(`@prefix ${key.replace('.',':')} <${val.url}> .`);
+        };
+        pfxL += emptyLine()
+            + tier0RdfEntry(`@prefix : <${opts.baseURI}${projectID}#> .`)
+            + tier0RdfEntry(`@prefix this: <${opts.baseURI}${projectID}#> .`);
+        return pfxL;
+
+    /*    return tier0RdfEntry(`@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .`)
             + tier0RdfEntry(`@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .`)
-        //    + tier0RdfEntry(`@prefix owl: <http://www.w3.org/2002/07/owl#> .`)
+            + tier0RdfEntry(`@prefix owl: <http://www.w3.org/2002/07/owl#> .`)
             + tier0RdfEntry(`@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .`)
             + tier0RdfEntry(`@prefix xs: <http://www.w3.org/2001/XMLSchema#> .`)
             + tier0RdfEntry(`@prefix dcterms: <http://purl.org/dc/terms/> .`)
@@ -67,21 +73,27 @@ app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
             + tier0RdfEntry(`@prefix oslc_cm: <http://specif.de/v1.1/schema/oslc_cm#> .`)
             + tier0RdfEntry(`@prefix ReqIF: <http://specif.de/v1.1/schema/reqif#> .`)
             + tier0RdfEntry(`@prefix ReqIF-WF: <http://specif.de/v1.1/schema/reqif-wf#> .`)
-         //   + tier0RdfEntry(`@prefix HIS: <http://specif.de/v1.1/schema/his#> .`)
+            + tier0RdfEntry(`@prefix HIS: <http://specif.de/v1.1/schema/his#> .`)
+            + tier0RdfEntry(`@prefix UML: <http://specif.de/v1.1/schema/uml#> .`)
             + tier0RdfEntry(`@prefix SysML: <http://specif.de/v1.1/schema/sysml#> .`)
             + tier0RdfEntry(`@prefix IR: <http://specif.de/v1.1/schema/ir#> .`)
-            + tier0RdfEntry(`@prefix BPMN: <http://specif.de/v1.1/schema/bpmn#> .`)
+            + tier0RdfEntry(`@prefix ArchiMate: <http://specif.de/v1.1/schema/archimate#> .`)
+            + tier0RdfEntry(`@prefix bpmn: <http://specif.de/v1.1/schema/bpmn#> .`)
             + tier0RdfEntry(`@prefix DDP: <http://www.prostep.org/dictionary/2.0#> .`)
             + tier0RdfEntry(`@prefix W3C: <http://specif.de/v1.1/schema/w3c#> .`)
             + emptyLine()
-            + tier0RdfEntry(`@prefix : <${baseUri}${projectID}#> .`)
-            + tier0RdfEntry(`@prefix this: <${baseUri}${projectID}#> .`);
+            + tier0RdfEntry(`@prefix : <${opts.baseURI}${projectID}#> .`)
+            + tier0RdfEntry(`@prefix this: <${opts.baseURI}${projectID}#> .`);
+        */
     };
 
     function defineSpecifClasses() {
+        // SpecIF:Resource is considered equivalent with rdfs:Resource and is thus skipped
+        // SpecIF:Statement is considered equivalent with rdf:Statement and is thus skipped
         return emptyLine()
             + tier0RdfEntry(`W3C:Ontology rdfs:subClassOf rdfs:Resource .`)
             + tier0RdfEntry(`SpecIF:Project rdfs:subClassOf rdfs:Resource .`)
+            + tier0RdfEntry(`SpecIF:File rdfs:subClassOf rdfs:Resource .`)
             + tier0RdfEntry(`SpecIF:Glossary rdfs:subClassOf rdfs:Resource .`)
             + tier0RdfEntry(`SpecIF:Node rdfs:subClassOf rdfs:Resource .`)
             + tier0RdfEntry(`SpecIF:HierarchyRoot rdfs:subClassOf SpecIF:Node .`)
@@ -170,6 +182,7 @@ app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
             //    + tier0RdfEntry(`:${propertyClass.id} a SpecIF:PropertyClassMapping ;`)
              //   + tier1RdfEntry(`SpecIF:id '${escapeTtl(propertyClass.id)}' ;`)
                 + tier1RdfEntry(`rdfs:label '${escapeTtl(propertyClass.title)}' ; `)
+                + (propertyClass.description ? tier1RdfEntry(`rdfs:comment ${textWithLang(propertyClass.description)} ;`) : '')
             //    + (title? tier1RdfEntry(`SpecIF:vocabularyTerm ${escapeTtl(title)} ;`) : '')
                 + tier1RdfEntry(`SpecIF:dataType '${escapeTtl(propertyClass.dataType.id)}' ;`)
             //    + (propertyClass.revision ? tier1RdfEntry(`SpecIF:revision '${escapeTtl(propertyClass.revision)}' ;`) : '')
@@ -190,12 +203,12 @@ app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
         resourceClasses.forEach(resourceClass => {
             let superC = resourceClass.extends ? ':'+resourceClass.extends.id : "rdfs:Resource";
             resourceClassesTtlString += emptyLine()
-            //    + tier0RdfEntry(`this: SpecIF:containsResourceClassMapping :${resourceClass.id} .`)
                 + tier0RdfEntry(`:${resourceClass.id} rdfs:subClassOf ${superC} ;`)
             //     + tier1RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
                 + tier1RdfEntry(`rdfs:label '${escapeTtl(resourceClass.title)}';`)
             //          + (title? tier1RdfEntry(`SpecIF:vocabularyTerm '${escapeTtl(title)}' ;`):'')
-                + (resourceClass.description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(resourceClass.description[0].text)}' ;`):'')
+                + (resourceClass.description ? tier1RdfEntry(`rdfs:comment ${textWithLang(resourceClass.description)} ;`) : '')
+            //    + (resourceClass.description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(resourceClass.description[0].text)}' ;`):'')
                 + (resourceClass.icon ? tier1RdfEntry(`SpecIF:icon '${escapeTtl(resourceClass.icon)}' ;`):'')
             //    + (resourceClass.instantiation ? extractRdfFromSpecif(`SpecIF:instantiation`, resourceClass.instantiation) : '')
             //    + (resourceClass.propertyClasses ? extractRdfFromSpecif(`SpecIF:propertyClasses`, resourceClass.propertyClasses) : '')
@@ -216,16 +229,17 @@ app.specif2turtle = (baseUri:string, specifData:SpecIF) => {
         let statementClassesTtlString = '';
 
         statementClasses.forEach( statementClass => {
+            let superC = statementClass.extends ? ':' + statementClass.extends.id : "rdf:Property";
             statementClassesTtlString += emptyLine()
-                + tier0RdfEntry(`this: SpecIF:containsStatementClassMapping :${statementClass.id} .`)
-                + tier0RdfEntry(`:${statementClass.id} a SpecIF:StatementClassMapping ;`)
+                + tier0RdfEntry(`:${statementClass.id} rdfs:subPropertyOf ${superC} ;`)
               //  + tier0RdfEntry(`SpecIF:id '${escapeTtl(id)}' ;`)
                 + tier1RdfEntry(`rdfs:label  '${escapeTtl(statementClass.title)}' ;`)
             //          + (title? tier1RdfEntry(`SpecIF:vocabularyTerm '${escapeTtl(title)}' ;`) : '')
-                + (statementClass.description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(statementClass.description[0].text)}' ;`) : '')
-                + (statementClass.instantiation ? extractRdfFromSpecif(`SpecIF:instantiation`, statementClass.instantiation) : '')
-                + (statementClass.subjectClasses ? extractRdfFromSpecif(`SpecIF:subjectClasses`, statementClass.subjectClasses) : '')
-                + (statementClass.objectClasses ? extractRdfFromSpecif(`SpecIF:objectClasses `, statementClass.objectClasses) : '')
+                + (statementClass.description ? tier1RdfEntry(`rdfs:comment ${textWithLang(statementClass.description)} ;`) : '')
+            //    + (statementClass.description ? tier1RdfEntry(`rdfs:comment '${escapeTtl(statementClass.description[0].text)}' ;`) : '')
+            //    + (statementClass.instantiation ? extractRdfFromSpecif(`SpecIF:instantiation`, statementClass.instantiation) : '')
+            //    + (statementClass.subjectClasses ? extractRdfFromSpecif(`SpecIF:subjectClasses`, statementClass.subjectClasses) : '')
+            //    + (statementClass.objectClasses ? extractRdfFromSpecif(`SpecIF:objectClasses `, statementClass.objectClasses) : '')
             //   + (revision ? tier1RdfEntry(`SpecIF:revision: '${statementClass.revision}' ;`) : '')
                 + tier1RdfEntry(`dcterms:modified '${statementClass.changedAt}' ;`)
                 + (statementClass.changedBy ? tier1RdfEntry(`SpecIF:changedBy '${escapeTtl(statementClass.changedBy)}' ;`) : '')
