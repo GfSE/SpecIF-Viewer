@@ -137,8 +137,8 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
 
         dataTypes.forEach( (dataType) => {
 		    dataTypesTtlString += emptyLine()
-                + tier0RdfEntry(`this: SpecIF:containsDataTypeMapping :${dataType.id} .`)
-                + tier0RdfEntry(`:${dataType.id} a SpecIF:DataTypeMapping , owl:Class ;`)
+            //    + tier0RdfEntry(`this: SpecIF:containsDataTypeMapping :${dataType.id} .`)
+            //    + tier0RdfEntry(`:${dataType.id} a SpecIF:DataTypeMapping , owl:Class ;`)
             //    + tier1RdfEntry(`SpecIF:id '${escapeTtl(dataType.id)}' ;`)
                 + tier1RdfEntry(`rdfs:label '${escapeTtl(dataType.title)}' ;`)
                 // @ts-ignore - the XsDatatype *is* a string
@@ -178,7 +178,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
     
         propertyClasses.forEach(propertyClass => {     
             propertyClassesTtlString += emptyLine()
-                + tier0RdfEntry(`this: SpecIF:containsPropertyClassMapping :${propertyClass.id} .`)
+            //    + tier0RdfEntry(`this: SpecIF:containsPropertyClassMapping :${propertyClass.id} .`)
             //    + tier0RdfEntry(`:${propertyClass.id} a SpecIF:PropertyClassMapping ;`)
              //   + tier1RdfEntry(`SpecIF:id '${escapeTtl(propertyClass.id)}' ;`)
                 + tier1RdfEntry(`rdfs:label '${escapeTtl(propertyClass.title)}' ; `)
@@ -320,8 +320,6 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
             let resourcesTtlString = ''
             resources.forEach( resource => {
                 resourcesTtlString += emptyLine()
-                //    + tier0RdfEntry(`:${resource.id} a rdfs:Resource ;`)
-                //    + tier1RdfEntry(`SpecIF:PropertyClassMapping '${escapeTtl(resourceClass.id)}' ;`)
                     + tier0RdfEntry(`:${resource.id} a :${escapeTtl(resource["class"].id)} ;`)
                     + transformProperties(resource.properties)
                 //    + (resource.revision ? tier1RdfEntry(`SpecIF:revision '${resource.revision}' ;`) : '')
@@ -339,12 +337,10 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
         if (isArrayWithContent(statements)){
             let statementsTtlString = '';
             statements.forEach( statement => {
-                let ti = LIB.classTitleOf(statement['class'], specifData.statementClasses);
                 statementsTtlString
                     += emptyLine()
                     + tier0RdfEntry(`:${statement.id} a rdf:Statement ;`)
-                //    + tier1RdfEntry(`rdf:predicate :${statement['class'].id} ;`)
-                    + tier1RdfEntry(`rdf:predicate ${escapeTtl(ti)} ;`)
+                    + tier1RdfEntry(`rdf:predicate :${statement['class'].id} ;`)
                     + tier1RdfEntry(`rdf:subject :${statement.subject.id} ;`)
                     + tier1RdfEntry(`rdf:object :${statement.object.id} ;`)
                     + (statement.properties ? transformProperties(statement.properties) : '')
