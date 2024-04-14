@@ -583,13 +583,15 @@ var app:IApp,
 			//	case "jsonSchema":			getScript( 'https://cdnjs.cloudflare.com/ajax/libs/ajv/8.6.1/ajv2019.min.js'); return true;
 			//	case "excel":				getScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); return true;
 				case "excel":		//		loadModule('toXlsx');
-											getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true;
+									//		getScript('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js'); return true; .. works!
+											getScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js'); return true;
 									/*		import('https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.mjs')
 												.then(XLSX => {
 													console.debug('xlsx', XLSX);
 													setReady(mod);
 												}); */
-				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@16.2.0/dist/bpmn-viewer.production.min.js'); return true;
+			//	case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@16.2.0/dist/bpmn-viewer.production.min.js'); return true; .. works!
+				case "bpmnViewer":			getScript('https://unpkg.com/bpmn-js@17.2.2/dist/bpmn-viewer.production.min.js'); return true;
 				case "graphViz":	 		getScript('https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js');
 										//	getCss( "https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.css" );  // was inactive before changing to the above
 										//	getScript('https://cdnjs.cloudflare.com/ajax/libs/vis/4.20.1/vis-network.min.js');
