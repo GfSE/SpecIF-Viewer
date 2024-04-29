@@ -258,6 +258,7 @@ class COntology {
     }
     getPreferredTerm(ctg: string, term: string): string {
         // Among synonyms, get the preferred (released) term:
+        // ToDo: Deliver not only the normalized term, but also its definition (description)
 
         // Shortcut for preferred vocabulary terms (dcterms are always preferred, if they exist):
         if (term.startsWith('dcterms:'))

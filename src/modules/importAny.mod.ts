@@ -78,7 +78,7 @@ moduleManager.construct({
 			label:'ReqIF',
 			extensions: ".reqif, .reqifz",
 			help: i18n.MsgImportReqif,
-		opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
+			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
 	/*	},{
             id: 'rdf',
             name: 'ioRdf',

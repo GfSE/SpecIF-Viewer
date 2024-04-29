@@ -41,6 +41,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
     ########################## Subroutines #########################################
     */
     function defineNamespaces(projectID: string, opts: any) {
+        // ToDo: List only the namespaces actually referenced.
         let pfxL = '';
         for( var [key,val] of app.ontology.namespaces ) {
             pfxL += tier0RdfEntry(`@prefix ${key.replace('.',':')} <${val.url}> .`);
