@@ -2690,10 +2690,12 @@ class CProject implements SpecifProject {
 						// choose the publishing format:
 						switch (opts.format) {
 							case 'epub':
+								localOpts.fileName = LIB.addFileExtIfMissing(localOpts.fileName, ".epub");
 								// @ts-ignore - toEpub() is loaded at runtime
 								toEpub(expD, localOpts);
 								break;
 							case 'oxml':
+								localOpts.fileName = LIB.addFileExtIfMissing(localOpts.fileName,".doc");
 								// @ts-ignore - toOxml() is loaded at runtime
 								toOxml(expD, localOpts);
 								break;

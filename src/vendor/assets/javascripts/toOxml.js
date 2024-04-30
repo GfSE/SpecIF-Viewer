@@ -2798,7 +2798,7 @@ function toOxml( data, options ) {
 	function store( f ) {
 //		let blob = new Blob([f.content],{type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document; charset=utf-8"});
 		let blob = new Blob([f.content],{type: "text/xml; charset=utf-8"});
-		saveAs(blob, f.name+".xml");
+		saveAs(blob, f.name);
 		if( typeof(opts.done)=="function" ) opts.done()
 	}
 	function clone( o ) { 

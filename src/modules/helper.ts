@@ -1665,7 +1665,8 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
 };
 String.prototype.fileExt = function():string {
     // return the file extension only:
-    return this.substring(this.lastIndexOf('.') +1);
+    let idx = this.lastIndexOf('.');
+    return idx<0? '' : this.substring(idx+1);
 /*    // see https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/12900504#12900504
     return fname.slice((fname.lastIndexOf(".") - 1 >>> 0) + 2); */
 };
@@ -1675,7 +1676,11 @@ String.prototype.baseName = function(): string {
 };
 String.prototype.fileName = function():string {
     // return the filename without extension:
-    return this.substring( 0, this.lastIndexOf('.') )
+    let idx = this.lastIndexOf('.');
+    return this.substring(0, idx < 0 ? this.length : idx);
+};
+LIB.addFileExtIfMissing = (fn: string, ext: string): string => {
+    return fn == fn.fileName() ? fn + ext : fn;
 };
 LIB.addTimezoneIfMissing = (dt:string):string => {
     if (typeof(dt)=='string') {
