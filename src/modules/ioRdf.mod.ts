@@ -28,7 +28,7 @@ moduleManager.construct({
 		if ( mime ) 
 			return true;
 		// else:
-		message.show( i18n.lookup('ErrInvalidFileReqif', f.name) );
+		message.show( i18n.lookup('ErrInvalidFileRdf', f.name) );
 		return false;
 	};
 /*	self.toSpecif = function( buf: ArrayBuffer ) {

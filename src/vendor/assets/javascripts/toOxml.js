@@ -174,7 +174,7 @@ function toOxml( data, options ) {
 					titleProperties: ['dcterms:title'],
 					typeProperty: 'dcterms:type',
 					descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
-					stereotypeProperties: ['UML:Stereotype'],
+					stereotypeProperties: ['uml:Stereotype'],
 				//	hierarchyRoots: ['SpecIF:Outline', 'SpecIF:HierarchyRoot', 'SpecIF:Hierarchy', 'SpecIF:BillOfMaterials'],
 					imgExtensions: [ 'png', 'jpg', 'svg', 'gif', 'jpeg' ],
 					applExtensions: [ 'bpmn' ],

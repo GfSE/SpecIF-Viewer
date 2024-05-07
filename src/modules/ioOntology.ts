@@ -473,11 +473,12 @@ class COntology {
     }
     generateSpecifClasses(opts?: any): SpecIF | undefined {
         /*  Generate SpecIF classes for ontology terms (represented as SpecIF resources of the ontology) which
-            - selected by domain or by title
+            - selected by domain or by term
             - and are selected by lifecyclestatus (so far only those with lifecycleState=="preferred")
             - or are referenced by others selected by domain and lifecyclestatus
         
-            - 'opts' contains the selected domains, for which classes shall be generated, e.g. {"Base":"true", "Requirement_Engineering":"true"}
+            - 'opts' contains the selected domains, for which classes shall be generated, e.g. {domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"]}
+            - or a list of terms, such as {terms: ["xs:anyURI", CONFIG.propClassId]}
         */
 
         if ( Array.isArray(opts.domains) && opts.domains.length > 0

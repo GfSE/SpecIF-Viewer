@@ -631,7 +631,7 @@ function Archimate2Specif(xmlString, options) {
 					s['class'] = "SC-contains";
 					break;
 				case 'Specialization':
-					s['class'] = "SC-isSpecializationOf";
+					s['class'] = "SC-UmlIsspecializationof";
 					break;
 				case 'Association':
 					s['class'] = "SC-isAssociatedWith";
@@ -1122,14 +1122,14 @@ function Archimate2Specif(xmlString, options) {
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
 			subjectClasses: [idResourceClassDiagram],
-		//?	objectClasses: opts.modelElementClasses.concat(["SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-isSpecializationOf", "SC-serves", "SC-influences", "SC-isAssociatedWith" ]),
+		//?	objectClasses: opts.modelElementClasses.concat(["SC-contains", "SC-writes", "SC-reads", "SC-precedes", "SC-UmlIsspecializationof", "SC-serves", "SC-influences", "SC-isAssociatedWith" ]),
 			changedAt: opts.fileDate
 		},{
 			id: "SC-contains",
 			title: "SpecIF:contains",
 			description: "Statement: Model-Element contains Model-Element",
 			instantiation: ["auto"],
-			propertyClasses: ["PC-Type"], // may hold sub-type UML:Composition or UML:Aggregation
+			propertyClasses: ["PC-Type"], // may hold sub-type uml:Composition or uml:Aggregation
 			subjectClasses: opts.modelElementClasses,
 			objectClasses: opts.modelElementClasses,
 			changedAt: opts.fileDate
@@ -1162,7 +1162,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 	/*	},{
 			id: "SC-isComposedOf",
-			title: "UML:Composition",
+			title: "uml:Composition",
 			description: "Statement: A state (data-object) is composed of a state",
 			instantiation: ["auto"],
 			subjectClasses: [idResourceClassState],
@@ -1170,7 +1170,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAggregatedBy",
-			title: "UML:Aggregation",
+			title: "uml:Aggregation",
 			description: "Statement: A state (data-object) is aggregated by a state",
 			instantiation: ["auto"],
 			subjectClasses: [idResourceClassState],
@@ -1194,8 +1194,8 @@ function Archimate2Specif(xmlString, options) {
 		//?	objectClasses: opts.modelElementClasses,
 			changedAt: opts.fileDate */
 		},{ 
-			id: "SC-isSpecializationOf",
-			title: "UML:isSpecializationOf",
+			id: "SC-UmlIsspecializationof",
+			title: "uml:isSpecializationOf",
 			description: "Statement: A state (data-object) is a specialization of a state",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],
@@ -1222,7 +1222,7 @@ function Archimate2Specif(xmlString, options) {
 			changedAt: opts.fileDate
 		},{
 			id: "SC-isAssociatedWith",
-			title: "UML:isAssociatedWith",
+			title: "uml:isAssociatedWith",
 			description: "Statement: Actor (Component,Function) is associated with an Actor (Component,Function).",
 			instantiation: ["auto"],
 			propertyClasses: ["PC-Type"],

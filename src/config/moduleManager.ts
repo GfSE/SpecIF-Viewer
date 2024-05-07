@@ -56,9 +56,10 @@ interface IApp {
 //	vicinityGraph?: IModule;
 	importAny: IModule;
 	ioSpecif: IModule;
-	ioReqif?: IModule;
-	ioBpmn?: IModule;
 	ioArchimate?: IModule;
+	ioBpmn?: IModule;
+	ioSysml?: IModule;
+	ioReqif?: IModule;
 	ioXls?: IModule;
 	// additional properties and methods are possible,
 	// see: https://stackoverflow.com/questions/33836671/typescript-interface-that-allows-other-properties
@@ -648,6 +649,7 @@ var app:IApp,
 				case "toTurtle": getScript(loadPath + 'modules/specif2turtle.js'); return true;
 				case 'bpmn2specif': getScript(loadPath + 'vendor/assets/javascripts/BPMN2SpecIF.js'); return true;
 				case 'archimate2specif': getScript(loadPath + 'vendor/assets/javascripts/archimate2SpecIF.js'); return true;
+				case "sysml2specif": getScript(loadPath + 'modules/sysml2specif.js'); return true;
 				case 'reqif2specif': getScript(loadPath + 'vendor/assets/javascripts/reqif2specif.js'); return true;
 				case 'vicinityGraph': loadModule('graphViz');
 								getScript(loadPath + 'modules/graph.js'); return true;
@@ -674,6 +676,8 @@ var app:IApp,
 								getScript(loadPath + 'modules/ioBpmn.mod.js'); return true;
 				case 'ioArchimate': loadModule('archimate2specif');
 								getScript(loadPath + 'modules/ioArchimate.mod.js'); return true;
+				case 'ioSysml': loadModule('sysml2specif');
+								getScript(loadPath + 'modules/ioSysml.mod.js'); return true;
 
 				// CONFIG.project and CONFIG.specifications are mutually exclusive (really true ??):
 			/*	case CONFIG.users:		//	loadModule( 'mainCSS' );

@@ -2412,7 +2412,7 @@ class CProject implements SpecifProject {
 				};
 				break;
 			case 'specifClasses':
-				let domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain'));
+				let domains = LIB.enumeratedValuesOf(LIB.makeKey('DT-Domain'),this);
 				if (domains.length>0)
 					pnl += makeCheckboxField(
 						i18n.LblOptions,

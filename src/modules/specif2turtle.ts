@@ -75,7 +75,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
             + tier0RdfEntry(`@prefix ReqIF: <http://specif.de/v1.1/schema/reqif#> .`)
             + tier0RdfEntry(`@prefix ReqIF-WF: <http://specif.de/v1.1/schema/reqif-wf#> .`)
             + tier0RdfEntry(`@prefix HIS: <http://specif.de/v1.1/schema/his#> .`)
-            + tier0RdfEntry(`@prefix UML: <http://specif.de/v1.1/schema/uml#> .`)
+            + tier0RdfEntry(`@prefix uml: <http://specif.de/v1.1/schema/uml#> .`)
             + tier0RdfEntry(`@prefix SysML: <http://specif.de/v1.1/schema/sysml#> .`)
             + tier0RdfEntry(`@prefix IR: <http://specif.de/v1.1/schema/ir#> .`)
             + tier0RdfEntry(`@prefix ArchiMate: <http://specif.de/v1.1/schema/archimate#> .`)

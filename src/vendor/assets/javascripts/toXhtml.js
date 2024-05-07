@@ -38,7 +38,7 @@ function toXhtml( data, options ) {
 			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
 			titleProperties: ['dcterms:title'],
 			descriptionProperties: ['dcterms:description', 'SpecIF:Diagram', 'SpecIF:View'],
-			stereotypeProperties: ['UML:Stereotype'],
+			stereotypeProperties: ['uml:Stereotype'],
 			titleLinkBegin: '\\[\\[',	// must escape javascript AND RegEx
 			titleLinkEnd: '\\]\\]',		// must escape javascript AND RegEx
 			titleLinkMinLength: 3,

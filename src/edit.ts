@@ -44,12 +44,14 @@ function SpecifApp():IApp {
 				name: 'ioSpecif'
 			}, {
 				name: 'ioArchimate'
+			}, {
+				name: 'ioBpmn'
+			}, {
+				name: 'ioSysml'
 				/*	},{
 						name: 'ioRdf' */
 			}, {
 				name: 'ioReqif'
-			}, {
-				name: 'ioBpmn'
 			}, {
 				name: 'ioDdpSchema'
 			}, {

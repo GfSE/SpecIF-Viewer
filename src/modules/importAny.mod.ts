@@ -52,15 +52,15 @@ moduleManager.construct({
 			name:'ioSpecif',
 			desc:'Specification Integration Facility',	
 			label:'SpecIF',	
-			extensions: ".specif, .specifz, .specif.zip",
+			extensions: [".specif", ".specifz", ".specif.zip"],
 			help: i18n.MsgImportSpecif,
 			opts: { mediaTypeOf: LIB.attachment2mediaType, doCheck: ['statementClass.subjectClasses', 'statementClass.objectClasses'] }
 		},{
-			id:'xml',	
+			id:'archimate',
 			name:'ioArchimate',	
 			desc:'ArchiMate Open Exchange',
 			label:'ArchiMate®',
-			extensions: ".xml",
+			extensions: [".xml"],
 //			help: i18n.MsgImportArchimate,
 			help: "Experimental: Import an ArchiMate Open Exchange file (*.xml) and add the diagrams (*.png or *.svg) to their respective resources using the 'edit' function.", 
 			opts: { mediaTypeOf: LIB.attachment2mediaType } 
@@ -69,14 +69,21 @@ moduleManager.construct({
 			name:'ioBpmn',
 			desc:'Business Process',
 			label:'BPMN',
-			extensions: ".bpmn",
+			extensions: [".bpmn"],
 			help: i18n.MsgImportBpmn
+		}, {
+			id: 'sysml',
+			name: 'ioSysml',
+			desc: 'System Modeling Language',
+			label: 'SysML',
+			extensions: [".xml", ".xmi", ".model"],
+			help: "Experimental: Import an XMI file from Cameo v19.0."
 		},{
 			id:'reqif',	
 			name:'ioReqif',	
 			desc:'Requirement Interchange Format',
 			label:'ReqIF',
-			extensions: ".reqif, .reqifz",
+			extensions: [".reqif", ".reqifz"],
 			help: i18n.MsgImportReqif,
 			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
 	/*	},{
@@ -84,14 +91,14 @@ moduleManager.construct({
             name: 'ioRdf',
             desc: 'Resource Description Format',
             label: 'RDF',
-			extensions: "",
+			extensions: []],
             help: 'ToDo' */
 		}, {
-			id: 'xsd',
+			id: 'ddp',
 			name: 'ioDdpSchema',
 			desc: 'Schema (.xsd) of the Prostep iViP Digital Data Package (DDP)',
 			label: 'DDP',
-			extensions: ".xsd",
+			extensions: [".xsd"],
 			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
 			opts: { mediaTypeOf: LIB.attachment2mediaType }
 		},{
@@ -99,7 +106,7 @@ moduleManager.construct({
 			name:'ioXls',
 			desc:'MS Excel® Spreadsheet',
 			label:'Excel®',
-			extensions: ".xlsx, .xls, .csv",
+			extensions: [".xlsx", ".xls", ".csv"],
 			help: i18n.MsgImportXls,
 			opts: { dontCheck: ["statement.object"] }
 		},{
@@ -107,7 +114,7 @@ moduleManager.construct({
 			name:'ioMm',
 			desc:'Freemind Mindmap',
 			label: 'MM',
-			extensions: ".mm",
+			extensions: [".mm"],
 			help: i18n.MsgImportMm
 		}];
 	// list of projects to check whether the project is already existent in the server.
@@ -222,7 +229,7 @@ moduleManager.construct({
 					// 1. look for format parameter
 					// ToDo ..
 					// 2. derive from file extension
-					if (uParms[CONFIG.keyImport].includes('.' + f.id) && moduleManager.isReady(f.name))
+					if (f.extensions.includes('.' + uParms[CONFIG.keyImport].fileExt()) && moduleManager.isReady(f.name))
 						return f;
 				};
 			}
@@ -330,7 +337,7 @@ moduleManager.construct({
 
 		$("#fileSelectBtn").html(
 			  '<span>' + i18n.BtnFileSelect + '</span>'
-			+ '<input id="importFile" type="file" accept="'+self.format.extensions+'" onchange="' + myFullName + '.pickFiles()" />'
+			+ '<input id="importFile" type="file" accept="'+self.format.extensions.toString()+'" onchange="' + myFullName + '.pickFiles()" />'
 		);
 
 		self.enableActions();
@@ -589,7 +596,7 @@ moduleManager.construct({
 							.done( handleNext )
 							.fail( handleError )
 			};
-			console.info(importMode.id + ' project ' + (typeof (dta.title) == 'string' ? dta.title : LIB.languageTextOf(dta.title, { targetLanguage: browser.language })) || dta.id);
+			console.info(importMode.id + ' project ' + (dta.title? (typeof (dta.title) == 'string' ? dta.title : LIB.languageTextOf(dta.title, { targetLanguage: browser.language })) : dta.id));
 		};
 	}; 
 	function setProgress(msg:string,perc:number):void {

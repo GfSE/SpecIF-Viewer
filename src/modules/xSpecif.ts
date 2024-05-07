@@ -358,7 +358,7 @@ class CSpecIF implements SpecIF {
 		// common for all items:
 		function i2int(iE:any) {
 			var oE: any = {
-				id: iE.id.toSpecifId(),
+				id: iE.id? iE.id.toSpecifId() : undefined, // is required, but we don't want to crash before the schema is checked.
 				changedAt: LIB.addTimezoneIfMissing(iE.changedAt || '1970-01-01T00:00:00Z')
 			};
 			if (iE.description) oE.description = makeMultiLanguageText(iE.description);

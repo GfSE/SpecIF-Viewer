@@ -1664,7 +1664,7 @@ String.prototype.linkifyURLs = function( opts?:any ):string {
     return this as string;
 };
 String.prototype.fileExt = function():string {
-    // return the file extension only:
+    // return the file extension excluding '.':
     let idx = this.lastIndexOf('.');
     return idx<0? '' : this.substring(idx+1);
 /*    // see https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript/12900504#12900504

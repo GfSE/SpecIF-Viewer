@@ -255,7 +255,7 @@ CONFIG.textProperties =
 	.concat(CONFIG.commentProperties); */
 
 CONFIG.stereotypeProperties = [
-    'UML:Stereotype'
+    'uml:Stereotype'
 ];
 
 // A list of properties to suppress generally, specified by title.
