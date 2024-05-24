@@ -471,7 +471,7 @@ class COntology {
             "hierarchies": []
         }
     }
-    generateSpecifClasses(opts?: any): SpecIF | undefined {
+    generateSpecifClasses(opts?: any): SpecIF {
         /*  Generate SpecIF classes for ontology terms (represented as SpecIF resources of the ontology) which
             - selected by domain or by term
             - and are selected by lifecyclestatus (so far only those with lifecycleState=="preferred")
@@ -1030,8 +1030,9 @@ class COntology {
     }
     valueByTitle(el: SpecifResource, ti: string): string {
         // Return the value of el's property with title ti:
-        let pVL = LIB.valuesByTitle(el, [ti], this.data);
-        return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
+        return LIB.valueByTitle(el, ti, this.data);
+    //    let pVL = LIB.valuesByTitle(el, [ti], this.data);
+    //    return pVL.length > 0 ? LIB.displayValueOf(pVL[0], { targetLanguage: 'default' }) : undefined
     }
     private distinctiveCoreOf(ti: string): string {
         return ti.toCamelCase();
@@ -1075,7 +1076,7 @@ class COntology {
                     }
                 );
         };
-        return sL;
+        return ["SpecIF:ModelElement"].concat(sL);
     }
     private getHeadings(): string[] {
         // Return a list of all heading types,

@@ -705,7 +705,7 @@ class CSpecIF implements SpecIF {
 				// No suitable propertyClass is listed in self.propertyClasses, so create what's needed:
 
 				// 3. Add a new (standard) propertyClass with any required classes:
-				let pCid = LIB.addTo( pDef.cl, self);
+				let pCid = LIB.addClassesTo( pDef.cl, self).id;
 
 				// 4. Add propertyClass to element class:
 				LIB.addPCReference(eC, { id: pCid });

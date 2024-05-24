@@ -59,11 +59,11 @@ function Archimate2Specif(xmlString, options) {
 	let L = Array.from(xmlDoc.querySelectorAll("model"));
 	// There should be exactly one model per Open Exchange file:
 	if (L.length < 1) {
-		console.error("Open-Exchange file has no model.");
+		console.error("ArchiMate Import: Open-Exchange file has no model.");
 		return
 	};
 	/*	if( L.length>1 )
-			console.warn("Open-Exchange file with id '",model.id,"' has more than one model.");  */
+			console.warn("ArchiMate Import: Open-Exchange file with id '",model.id,"' has more than one model.");  */
 
 	var model = {};
 	// The project's id and title:
@@ -677,7 +677,7 @@ function Archimate2Specif(xmlString, options) {
 				// Archimate (or at least the tool Archi) allows relations from or to a relation;
 				// in this transformation we don't ...
 				// except for 'shows' relations, see definition of "SC-shows" below.
-				console.info("Skipping relation (statement) with id='" + s.id + "' of xsi:type=\"" + ty + "\", because it is not shown on a visible diagram.");
+				console.info("ArchiMate Import: Skipping relation (statement) with id='" + s.id + "' of xsi:type=\"" + ty + "\", because it is not shown on a visible diagram.");
 				// delete all "shows" statements pointing at this statement:
 				for (var i = model.statements.length - 1; i > -1; i--)
 					if (model.statements[i]["class"] == "SC-shows"

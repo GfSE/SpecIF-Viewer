@@ -22,6 +22,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 		idResourceClassEvent = "RC-Event",
 		idResourceClassCollection = "RC-Collection",
 	//	idResourceClassFolder = "RC-Folder",
+		idResourceClassDefault = "RC-SpecifModelelement",
 	//	idStatementClassAccesses = "SC-accesses",
 		idStatementClassContains = "SC-DctermsHaspart",
 		idStatementClassShows = "SC-shows";
@@ -62,44 +63,101 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 	function cameo2specif(xmi:Document, opts:any):SpecIF {
 		//	let Cs = Array.from(xmlDoc.querySelectorAll("collaboration"));
+		interface IAssociation {
+			association: string;
+			statement: SpecifStatement;
+		}
+		interface IParams {
+			package: string;
+			nodes: SpecifNodes;
+		}
+
 		var modDoc = xmi.getElementsByTagName('uml:Model')[0],
 			spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] });
 
 		spD.id = modDoc.getAttribute("xmi:id");
 		spD.title = [{ text: modDoc.getAttribute("name") }];
 
-		// temporary storage for 'shows' statements:
-		let usedElements: SpecifStatement[] = [],
+		// Intermediate storage for statements:
+		let usedElements: SpecifStatement[] = [],     // --> shows
 			specializations: SpecifStatement[] = [],
-			associations: SpecifStatement[] = [];
+			associations: IAssociation[] = [];
 
 		// 1. Analyse the package structure and create a hierarchy of folders:
-		// 1.a Recursively extract the packages and model diagrams:
 		Array.from(
 			modDoc.children,
 			ch => parseEl(ch, { package: undefined, nodes: spD.hierarchies })
 		);
 
-		// 2. Add the associations
-		spD.statements = associations
-			.map(
-				(ac: SpecifStatement) => {
-				//	if (ac.statement.properties) console.debug('stp', ac.statement);
-					return ac.statement;
-				}
-			)
-			.concat(spD.statements);
+		// 2. Find specialized classes for the model elements:
+		//    - traverse the tree of specialization to the top to find a class as derived from the ontology
+		//    - assign the class to the model element
+		specializations = specializations
+			.filter(validateStatement);
+		spD.resources
+			.forEach(
+				(me) => {
+					if (me["class"].id==idResourceClassDefault ) {
+						// --- Case 1: Look for the generalizing class in the set of resourceClasses generated from the ontology ---
+						let rC = generalizingResourceClassOf(me);
+						if (rC && rC.id != idResourceClassDefault ) {
+							me["class"] = LIB.makeKey(rC.id);
+							console.info("Cameo Import: Re-assigning class " + rC.id + " to model-element " + me.id + " with title " + me.properties[0].values[0][0].text);
+							return;
+						};
 
-		// 3. Add remaining statements and keep only the valid ones:
+						// --- Case 2: Look for generalization in the ontology as loaded during startup: ---
+					};
+					return;
+
+					function generalizingResourceClassOf(r: SpecifResource): SpecifResourceClass | undefined {
+						// Return the resourceClass generated from the ontology having the same title as a generalizing model-element;
+						// move up the chain of generalization until found.
+
+						// Get all specialization statements of the model-element r:
+						let spL = specializations.filter(
+							(sp) => {
+								return sp.subject.id == r.id
+							}
+						);
+						if (spL.length > 1)
+							console.warn("Cameo Import: Model-elment with id " + me.id + " specializes " + spL.length + " classes");
+						for (var sp of spL) {
+							let gE = LIB.itemByKey(spD.resources, sp.object),  // the generalizing model-element
+								ti = LIB.getTitleFromProperties(gE.properties, spD.propertyClasses, {targetLanguage: "default"}),  // its title
+								rC = LIB.itemByTitle(spD.resourceClasses, ti);  // the resourceClass generated from the ontology having the same title
+							if (rC)
+								return rC;
+							rC = generalizingResourceClassOf(gE);
+							if (rC)
+								return rC;
+						};
+					}
+				}
+			);
+
+		// 3. Add the associations, skip duplicates:
+		LIB.cacheL(
+			spD.statements,
+			associations
+				.map(
+					(ac: IAssociation) => {
+						//	if (ac.statement.properties) console.debug('stp', ac.statement);
+						return ac.statement;
+					}
+				)
+		);
+
+		// 4. Add remaining statements and keep only the valid ones:
 		spD.statements = usedElements
-			.concat(specializations)
 			.concat(spD.statements)
-			.filter(checkStatement);
+			.filter(validateStatement)
+			.concat(specializations);  // has already been validated
 
 		console.debug('SysML', spD, opts);
 		return spD;
 
-		function parseEl(ch,params) {
+		function parseEl(ch:Element,params:IParams) {
 			switch (ch.tagName) {
 				case "xmi:Extension":
 					// One or more model diagrams:
@@ -109,9 +167,10 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						//	console.debug('D', oD.getAttribute("name"));
 							let dg = oD.getElementsByTagName('diagram:DiagramRepresentationObject')[0];
 
+							// Transform the diagram object:
 							let r: SpecifResource = {
 								id: oD.getAttribute("xmi:id"),
-								class: { id: idResourceClassDiagram },
+								class: LIB.makeKey(idResourceClassDiagram),
 								properties: [{
 									class: LIB.makeKey("PC-Name"),
 									values: [[{ text: oD.getAttribute("name") }]]
@@ -129,7 +188,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							if(params.package)
 								spD.statements.push({
 									id: CONFIG.prefixS + simpleHash(params.package + idStatementClassContains + r.id),
-									class: { id: idStatementClassContains },
+									class: LIB.makeKey(idStatementClassContains),
 									subject: LIB.makeKey(params.package),
 									object: LIB.makeKey(r.id),
 									changedAt: opts.fileDate
@@ -149,6 +208,8 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								}
 							);
 							// console.debug('usedElements', simpleClone(usedElements));
+
+							// Store the diagram object and add a referencing node to the hierarchy:
 							spD.resources.push(r);
 							params.nodes.push({
 								id: CONFIG.prefixN + r.id,
@@ -160,7 +221,8 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 					break;
 				case "packagedElement":
 					let ty = ch.getAttribute("xmi:type"),
-						r:SpecifResource = {
+						// @ts-ignore - class will be assigned further down
+						r: SpecifResource = {
 							id: ch.getAttribute("xmi:id"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
@@ -187,33 +249,34 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 					switch (ty) {
 						case 'uml:Package':
-							r["class"] = { id: idResourceClassCollection };   // or "RC-UmlPackage" - but it is not listed in the glossary, so far
+							r["class"] = LIB.makeKey(idResourceClassCollection);   // or "RC-UmlPackage" - but it is not listed in the glossary, so far
 							spD.resources.push(r);
 							params.nodes.push(nd);
 							break;
 						case 'uml:Class':
 							// If is an ontology term, use the corresponding class:
 							let rC = LIB.itemByTitle(spD.resourceClasses, ch.getAttribute("name"));
-							if (rC)
+							if (rC) {
 								// The block itself has a name which is an ontology term:
-								r["class"] = { id: LIB.makeKey(rC.id) }
+								r["class"] = LIB.makeKey(rC.id);
+								console.info("Cameo Import: Assigning class " + rC.id + " to model-element " + r.id + " with title " + r.properties[0].values[0][0].text);
+							}
 							else {
 								// At the end of the transformation the class will be updated, if the block's generalization is an ontology term.
-
-								//	r["class"] = { id: "RC-SpecifModelelement" };
-								r["class"] = { id: idResourceClassActor };
+								r["class"] = LIB.makeKey(idResourceClassDefault);
 							};
 							spD.resources.push(r);
 							params.nodes.push(nd);
 
 							// Relate the class to the containing package:
-							spD.statements.push({
-								id: CONFIG.prefixS + simpleHash(params.package + idStatementClassContains + r.id),
-								class: { id: idStatementClassContains },
-								subject: LIB.makeKey(params.package),
-								object: LIB.makeKey(r.id),
-								changedAt: opts.fileDate
-							});
+							if(params.package)
+								spD.statements.push({
+									id: CONFIG.prefixS + simpleHash(params.package + idStatementClassContains + r.id),
+									class: LIB.makeKey(idStatementClassContains),
+									subject: LIB.makeKey(params.package),
+									object: LIB.makeKey(r.id),
+									changedAt: opts.fileDate
+								});
 
 							// Add the generalizations as specializations:
 							Array.from(
@@ -248,7 +311,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 													// The property has a name, so create a subclass/specialization and use it as object:
 													spD.resources.push({
 														id: pId,
-														class: { id: idResourceClassActor },
+														class: LIB.makeKey(idResourceClassDefault),
 														properties: [{
 															class: LIB.makeKey("PC-Name"),
 															values: [[{ text: nm }]]
@@ -260,7 +323,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 													});
 													specializations.push({
 														id: CONFIG.prefixS + simpleHash(pId + "SC-UmlIsspecializationof" + ob),
-														class: { id: "SC-UmlIsspecializationof" },
+														class: LIB.makeKey("SC-UmlIsspecializationof"),
 														subject: LIB.makeKey(pId),
 														object: LIB.makeKey(ob),
 														changedAt: opts.fileDate
@@ -318,7 +381,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												);
 											}
 											else {
-												console.warn("Skipping the packagedElement", pId, "with name", nm, ".");
+												console.info("Cameo Import: Skipping the packagedElement", pId, "with name", nm, ".");
 											};
 											break;
 										case "uml:Port":
@@ -334,18 +397,35 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							if (nm) {
 								// update the respective association: 
 								associations.forEach(
-									(ac: SpecifStatement) => {
+									(ac: IAssociation) => {
 										if (aId == ac.association) {
+											// The model element with aId is referenced by the current relation.
+
+											// Add a name property to the statement:
+											let prp: SpecifProperty = {
+												class: LIB.makeKey("PC-Type"),
+												values: [[{ text: nm }]]
+											};
+											if (ac.statement.properties)
+												ac.statement.properties.push(prp)
+											else
+												ac.statement.properties = [prp];
+
+											// There may be associations between the same classes with different name:
+											ac.statement.id = CONFIG.prefixS + simpleHash(ac.statement.subject.id + ac.statement["class"] + ac.statement.object.id + nm);
+
+										/*	// Reassign the statement class:
 											let acId = ac.statement.id;
 											ac.statement.id = CONFIG.prefixS + simpleHash(ac.statement.subject.id + nm + ac.statement.object.id);
-											console.info("Reassigning statement id " + acId + " → " + ac.statement.id+", because of its name '"+nm+"'.");
+											console.info("Cameo Import: Reassigning statement id " + acId + " → " + ac.statement.id+", because of its name '"+nm+"'.");
 
-											let aC = LIB.itemByTitle(spD.statementClasses, nm);
+											let aC = LIB.itemByTitle(spD.statementClasses, nm)	// look at classes already loaded
+													|| LIB.addClassesTo(nm, spD);				// look at ontology, otherwise
 											if (aC) {
 												// a. If a corresponding statementClass exists, assign it:
 												// Note: Now the same statements are used for the content=model as for the meta-model,
 												//       e.g. a BDD 'shows' an element named 'diagram', which is related to another element with an association named 'shows'.
-												console.info("Reassigning statementClass " + ac.statement["class"].id + " → "+aC.id+" of statement " + ac.statement.id + ".");
+												console.info("Cameo Import: Reassigning statementClass " + ac.statement["class"].id + " → "+aC.id+" of statement " + ac.statement.id + ".");
 												ac.statement["class"] = LIB.makeKey(aC.id);
 											}
 											else {
@@ -353,10 +433,10 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												if (!Array.isArray(ac.statement.properties))
 													ac.statement.properties = [];
 												ac.statement.properties.push({
-													class: "PC-Type",
+													class: LIB.makeKey("PC-Type"),
 													values: [[{ text: nm }]]
 												});
-											}
+											}  */
 										}
 									}
 								)
@@ -367,26 +447,39 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							break;
 						case "uml:DataType":
 						default:
-							console.warn("Skipping the packagedElement",ch,"with name", ch.getAttribute("name"), "and type",ty,".");
+							console.info("Cameo Import: Skipping the packagedElement",ch,"with name", ch.getAttribute("name"), "and type",ty,".");
 					}
 			}
 		}
-		function checkStatement(st: SpecifStatement):boolean {
-			// Check
+	/*	function addClasses(termL:string[]):void {
+			let newD = app.ontology.generateSpecifClasses({ terms: termL, delta: true /*, adoptOntologyDataTypes: true });
+			app.standards.iterateLists(
+				// @ts-ignore - ctg not used, but it needs to be specified, anyways:
+				(ctg: string, listName: string) => {
+					// @ts-ignore - the indexing works fine:
+					LIB.cacheL(spD[listName], newD[listName]);
+				}
+			)
+		} */
+		function validateStatement(st: SpecifStatement):boolean {
+			// This is also part of the SpecIF constraint check, but rather skip a statement here than fail altogether during import.
+			// Thus check:
 			// - Are both subject and object listed in spD.resources or spD.statements
 			// - Are the subjectClasses and objectClasses listed in the statementClass, thus eligible
 			let
 				stC = LIB.itemByKey(spD.statementClasses, st["class"]),
+				// @ts-ignore - can join lists of different classes, here
 				sbj = LIB.itemByKey(spD.resources.concat(spD.statements), st.subject),
+			// @ts-ignore - can join lists of different classes, here
 				obj = LIB.itemByKey(spD.resources.concat(spD.statements), st.object),
 				valid = sbj && obj;
 			if (!valid)
-				console.warn("Skipping", stC.title, "statement " + st.id + ", because " + (sbj ? ("object " + st.object.id) : ("subject " + st.subject.id)) + " isn't listed as resource resp. statement.");
+				console.info("Cameo Import: Skipping", stC.title, "statement " + st.id + ", because " + (sbj ? ("object " + st.object.id) : ("subject " + st.subject.id)) + " isn't listed as resource resp. statement.");
 			else {
-				valid = ((!stC.subjectClasses || LIB.indexByKey(stC.subjectClasses, sbj["class"]) > -1)
-					&& (!stC.objectClasses || LIB.indexByKey(stC.objectClasses, obj["class"]) > -1))
+				valid = ((!stC.subjectClasses || LIB.referenceIndex(stC.subjectClasses, sbj["class"]) > -1)
+					&& (!stC.objectClasses || LIB.referenceIndex(stC.objectClasses, obj["class"]) > -1))
 				if (!valid)
-					console.warn("Skipping", stC.title, "statement " + st.id + "with subject", sbj, "and object", obj, ", because they violate the statementClass.");
+					console.info("Cameo Import: Skipping", stC.title, "statement " + st.id + " with subject", sbj, " and object", obj, ", because they violate the statementClass.");
 			};
 			return valid;
 		}

@@ -2162,7 +2162,7 @@ class CProject implements SpecifProject {
 							}],
 							changedAt: tim
 						}];
-						// Create a folder resource for every model-element type:
+				/*		// Create a folder resource for every model-element type:
 						for (var eC of app.ontology.modelElementClasses) {
 							termL = app.ontology.getTermResources('resourceClass',eC);
 							if (termL.length > 0) {
@@ -2184,7 +2184,7 @@ class CProject implements SpecifProject {
 							}
 							else
 								console.warn("Ontology has no term '" + eC + "'");
-						};
+						}; */
 						return fL;
 					};
 					console.warn("Ontology has no term '" + CONFIG.resClassGlossary + "'");
@@ -2199,7 +2199,7 @@ class CProject implements SpecifProject {
 						nodes: [],
 						changedAt: tim
 					};
-					// Create a hierarchy node for each folder per model-element type
+				/*	// Create a hierarchy node for each folder per model-element type
 					for (var mEl of app.ontology.modelElementClasses) {
 						gl.nodes.push({
 							id: CONFIG.prefixN+"Folder-" + mEl.toJsId() + "-" + apx,
@@ -2207,11 +2207,11 @@ class CProject implements SpecifProject {
 							nodes: [],
 							changedAt: tim
 						});
-					};
+					}; */
 					return Nodes(gl);
 				}
 				function Nodes(gl:SpecifNode): INodeWithPosition[] {
-					// b. Create a list tyL of collections per model-element type;
+				/*	// b. Create a list tyL of collections per model-element type;
 					// assuming that type adoption/deduplication is not always successful
 					// and that there may be multiple resourceClasses per model-element type:
 					let idx: number,
@@ -2243,7 +2243,7 @@ class CProject implements SpecifProject {
 						// d. Add model-elements by class to the respective folders.
 						// In case of model-elements the resource class is distinctive;
 						// the title of the resource class indicates the model-element type.
-						// List only resources which are shown on a referenced diagram:
+						// List only resources which are shown on a diagram referenced in the tree:
 						let resL = dta.get(
 							"resource",
 							(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
@@ -2253,12 +2253,12 @@ class CProject implements SpecifProject {
 
 						// Re-initialize reused folder nodes:
 						for (var nd of gl.nodes) nd.nodes = [];
-						/*	for (idx = tyL.length - 1; idx > -1; idx--) {
-								if (Array.isArray(gl.nodes[idx].nodes))
-									gl.nodes[idx].nodes.length = 0
-								else
-									gl.nodes[idx].nodes = [];
-							}; */
+						//	for (idx = tyL.length - 1; idx > -1; idx--) {
+						//		if (Array.isArray(gl.nodes[idx].nodes))
+						//			gl.nodes[idx].nodes.length = 0
+						//		else
+						//			gl.nodes[idx].nodes = [];
+						//	};
 						// Categorize resources:
 						resL.forEach(
 							(r: SpecifResource): void => {
@@ -2281,6 +2281,47 @@ class CProject implements SpecifProject {
 					}
 					else
 						console.error("Re-used glossary folders do not correspond to the number of model element types");
+
+					// e. Delete empty subfolders:
+					gl.nodes = gl.nodes
+								.filter(
+									n => n.length>0
+								)
+
+					return [gl]; */
+
+					// --- Alternative implementation where the glossary has no subfolders ---
+					// a. List all statements typed SpecIF:shows of diagrams found in the hierarchy:
+					let staL = dta.get(
+						"statement",
+						(s: SpecifStatement) => { return LIB.classTitleOf(s['class'], dta.statementClasses) == CONFIG.staClassShows && LIB.indexByKey(diagramL, s.subject) > -1; }
+					) as SpecifStatement[];
+					//					console.debug('gl tyL dL',gl,tyL,staL);
+
+					// b. Add model-elements by class to the respective folders.
+					// In case of model-elements the resource class is distinctive;
+					// the title of the resource class indicates the model-element type.
+					// List only resources which are shown on a diagram referenced in the tree:
+					let resL = dta.get(
+						"resource",
+						(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
+					) as SpecifResource[];
+					// in alphanumeric order:
+					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
+
+					// c. Add nodes to the glossary *without* categories:
+					resL.forEach(
+						(r: SpecifResource): void => {
+							gl.nodes.push({
+								// Create new hierarchy node with reference to the resource:
+								// ID should be the same when the glossary generated multiple times,
+								// but must be different from a potential reference somewhere else.
+								id: CONFIG.prefixN + simpleHash(r.id + '-gen'),
+								resource: LIB.keyOf(r),
+								changedAt: tim
+							});
+						}
+					);
 					return [gl];
 				}
 			}

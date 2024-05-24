@@ -2242,7 +2242,7 @@ moduleManager.construct({
 
 					// Obtain the titles (labels) of all resources in the list.
 					// The titles may not be defined in a tree node and anyways don't have the icon, 
-					// therefore obtain the title from the referenced resources.
+					// therefore obtain the title from the referenced resources:
 					return selPrj.readItems('resource', net.resources)
 				}
 			)
@@ -2267,7 +2267,7 @@ moduleManager.construct({
 					if (!modeStaDel)
 						// Only show the 'mentions' relations in regular mode.
 						// Don't show them in deletion mode, because they cannot be deleted like real statements;
-						// remember that the former are internal links within a text property:
+						// remember that a 'mentions' relation is derived from an internal link within a text property:
 						stL.forEach(cacheNet);
 					//				console.debug('local net',stL,net);
 					renderStatements(net);
@@ -2291,12 +2291,15 @@ moduleManager.construct({
 			N.add({ resources: [{ id: r.id, title: (cacheData.instanceTitleOf(r, Object.assign({}, opts, { addIcon: true, neverEmpty: true }))) }] })
 		}
 		function cacheMinSta(N: CGraph, s: SpecifStatement): void {
-			// cache the minimal representation of a statement;
-			// s is a statement;
-			// - a regular statement of v1.1 and later has no native title attribute, so the second term of the OR condition applies
+			// cache the minimal representation of a statement s, where:
+			// - a statement of v1.1 and later has no native title attribute, so any of the last two terms of the OR condition applies
+			// - a statement of v1.1 and later may have a property 'type', which is preferred over the class' title.
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			N.add({ statements: [{ id: s.id, title: LIB.titleOf(s, opts) || LIB.classTitleOf(s['class'], cacheData.statementClasses, opts), subject: s.subject.id, object: s.object.id }] })
+			let ti = LIB.titleOf(s, opts)
+					|| LIB.valueByTitle(s, 'dcterms:type', cacheData)
+					|| LIB.classTitleOf(s['class'], cacheData.statementClasses, opts);
+			N.add({ statements: [{ id: s.id, title: ti, subject: s.subject.id, object: s.object.id }] })
 		}
 		function cacheNet(s: SpecifStatement): void {
 			// Add a statement to a special data structure used for displaying the semantic net in the vicinity of the selected resource.
