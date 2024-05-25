@@ -71,28 +71,20 @@ moduleManager.construct({
 			label:'BPMN',
 			extensions: [".bpmn"],
 			help: i18n.MsgImportBpmn
-		}, {
+	/*	}, {
 			id: 'sysml',
 			name: 'ioSysml',
 			desc: 'System Modeling Language',
 			label: 'SysML',
 			extensions: [".xml", ".xmi", ".model"],
 			help: "Experimental: Import an XMI file from Cameo v19.0."
-		},{
-			id:'reqif',	
-			name:'ioReqif',	
-			desc:'Requirement Interchange Format',
-			label:'ReqIF',
-			extensions: [".reqif", ".reqifz"],
-			help: i18n.MsgImportReqif,
-			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
-	/*	},{
+		}, {
             id: 'rdf',
             name: 'ioRdf',
             desc: 'Resource Description Format',
             label: 'RDF',
 			extensions: []],
-            help: 'ToDo' */
+            help: 'ToDo' 
 		}, {
 			id: 'ddp',
 			name: 'ioDdpSchema',
@@ -100,7 +92,15 @@ moduleManager.construct({
 			label: 'DDP',
 			extensions: [".xsd"],
 			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
-			opts: { mediaTypeOf: LIB.attachment2mediaType }
+			opts: { mediaTypeOf: LIB.attachment2mediaType } */
+		}, {
+			id: 'reqif',
+			name: 'ioReqif',
+			desc: 'Requirement Interchange Format',
+			label: 'ReqIF',
+			extensions: [".reqif", ".reqifz"],
+			help: i18n.MsgImportReqif,
+			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
 		},{
 			id:'xls',
 			name:'ioXls',

@@ -2506,7 +2506,7 @@ class CProject implements SpecifProject {
 							{ title: 'ReqIF v1.0', id: 'reqif' },
 							{ title: 'MS Excel® (experimental)', id: 'xlsx' },
 							//	{ title: 'RDF', id: 'rdf' },
-							{ title: 'Turtle (experimental)', id: 'turtle' },
+							//  { title: 'Turtle (experimental)', id: 'turtle' },
 							{ title: 'ePub v2', id: 'epub' },
 							{ title: 'MS Word® (Open XML)', id: 'oxml' }
 						]

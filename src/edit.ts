@@ -46,14 +46,14 @@ function SpecifApp():IApp {
 				name: 'ioArchimate'
 			}, {
 				name: 'ioBpmn'
-			}, {
+		/*	}, {
 				name: 'ioSysml'
-				/*	},{
-						name: 'ioRdf' */
+			},{
+				name: 'ioRdf'
+			}, {
+				name: 'ioDdpSchema'  */
 			}, {
 				name: 'ioReqif'
-			}, {
-				name: 'ioDdpSchema'
 			}, {
 				name: 'ioXls'
 			}]
