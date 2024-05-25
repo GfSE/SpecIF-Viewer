@@ -2200,7 +2200,8 @@ moduleManager.construct({
 		// Select the language options at project level:
 		if (typeof (opts) != 'object') opts = {};
 		opts.targetLanguage = selPrj.language;
-		opts.lookupTitles = true;
+		opts.lookupTitles =
+		opts.lookupValues = true;
 		//	opts.revisionDate = new Date().toISOString();
 		// If in delete mode, provide the name of the delete function as string:
 		//	opts.fnDel = modeStaDel? myFullName+'.deleteStatement()':'';
@@ -2296,8 +2297,7 @@ moduleManager.construct({
 			// - a statement of v1.1 and later may have a property 'type', which is preferred over the class' title.
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			let ti = LIB.titleOf(s, opts)
-					|| LIB.valueByTitle(s, 'dcterms:type', cacheData)
+			let ti = LIB.valueByTitle(s, CONFIG.propClassType, cacheData, opts)
 					|| LIB.classTitleOf(s['class'], cacheData.statementClasses, opts);
 			N.add({ statements: [{ id: s.id, title: ti, subject: s.subject.id, object: s.object.id }] })
 		}

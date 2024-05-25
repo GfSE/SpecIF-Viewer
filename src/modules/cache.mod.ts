@@ -2946,7 +2946,8 @@ class CProject implements SpecifProject {
 		// assuming that the types have already been consolidated:
 		let opts = { targetLanguage: this.language };
 		return LIB.equalKey(refE['class'], newE['class'])
-			&& this.cache.instanceTitleOf(refE, opts) == this.cache.instanceTitleOf(newE, opts);
+			&& this.cache.instanceTitleOf(refE, opts) == this.cache.instanceTitleOf(newE, opts)
+			&& LIB.valueByTitle(refE, CONFIG.propClassType, this.cache) == LIB.valueByTitle(newE, CONFIG.propClassType, this.cache);
 
 	/*	if (LIB.equalKey(refE['class'], newE['class'])
 			&& LIB.instanceTitleOf(refE, opts) == LIB.instanceTitleOf(newE, opts)
@@ -2969,7 +2970,8 @@ class CProject implements SpecifProject {
 		return LIB.equalKey(refE['class'], newE['class'])
 		//	&& this.cache.instanceTitleOf(refE, opts) == this.cache.instanceTitleOf(newE, opts)
 			&& LIB.equalKey(refE.subject, newE.subject)
-			&& LIB.equalKey(refE.object, newE.object);
+			&& LIB.equalKey(refE.object, newE.object)
+			&& LIB.valueByTitle(refE, CONFIG.propClassType, this.cache) == LIB.valueByTitle(newE, CONFIG.propClassType, this.cache);
 	}
 	private equalF(refE: SpecifFile, newE: SpecifFile): boolean {
 		// return true, if reference and new file are equal:

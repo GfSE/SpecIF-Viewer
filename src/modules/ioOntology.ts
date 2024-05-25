@@ -101,7 +101,7 @@ class COntology {
         dta.hierarchies = dta.hierarchies.filter(
             (h: SpecifNode) => {
                 let r = LIB.itemByKey(dta.resources, h.resource);
-                return this.valueByTitle(r, "dcterms:type") == "W3C:Ontology"
+                return this.valueByTitle(r, CONFIG.propClassType) == "W3C:Ontology"
             }
         );
         if (dta.hierarchies.length < 1) {
