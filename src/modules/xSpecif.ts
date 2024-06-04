@@ -136,23 +136,28 @@ class CSpecIF implements SpecIF {
 	set(spD: any, opts: any): Promise<CSpecIF> {
 		return new Promise(
 			(resolve, reject) => {
+				let msg: xhrMessage;
 				if (this.isValid(spD)) {
-					if (opts && opts.noCheck) {
-						this.toInt(spD, opts);
-						resolve(this)
+					msg = this.toInt(spD, opts);
+					// an error found during import has been logged in this.toInt()
+					if (msg.status == 0) {
+						if (opts && opts.noCheck) {
+							resolve(this)
+						}
+						else {
+							// check *after* transformation:
+							this.check(this, opts)
+								.then(
+									() => { resolve(this) },
+									reject
+								)
+						};
 					}
-					else {
-						// check *after* transformation:
-						this.toInt(spD, opts);
-						this.check(this, opts)
-							.then(
-								() => { resolve(this) },
-								reject
-							)
-					}
+					else
+						reject(msg);
 				}
 				else {
-					let msg = new xhrMessage(999, "SpecIF id is not defined or version is not supported.").warn();
+					msg = new xhrMessage(999, "SpecIF id is not defined or version is not supported.").warn();
 					reject(msg);
                 }
 			}
@@ -191,7 +196,7 @@ class CSpecIF implements SpecIF {
 						.catch(handleError);
 					}
 					else {
-						throw Error("Inexpected check of SpecIF data set < v1.1");
+						throw "Programming Error: Inexpected check of SpecIF data set < v1.1";
 				/*		// for data sets up until schema v1.0;
 						// not any more needed, because the import data is checked *after* transformation to v1.1:
 						$.ajax({
@@ -210,7 +215,7 @@ class CSpecIF implements SpecIF {
 					} 
 				}
 				else {
-					reject(new xhrMessage( 999, 'No SpecIF data to check' ));
+					reject(new xhrMessage( 999, 'No SpecIF data provided for checking' ));
 				};
 				return;
 
@@ -249,7 +254,7 @@ class CSpecIF implements SpecIF {
 						case 404:
 							// @ts-ignore - 'specifVersion' is defined for versions <1.0
 							let v = spD.specifVersion ? 'version ' + spD.specifVersion : 'with Schema ' + spD['$schema'];
-							xhr = new xhrMessage ( 903, 'SpecIF ' + v + ' is not supported by the program!' );
+							xhr = new xhrMessage ( 903, 'SpecIF ' + v + ' is not supported by this program!' );
 						// no break
 						default:
 							reject(xhr);
@@ -275,7 +280,7 @@ class CSpecIF implements SpecIF {
 			&& specifData.title[0]['text'].includes("Ontology")
 		);
 	};
-	private toInt(spD: any, opts: any):void {
+	private toInt(spD: any, opts: any):xhrMessage {
 	//	if (!this.isValid(spD)) return;
 
 		// Transform SpecIF to internal data;
@@ -329,10 +334,10 @@ class CSpecIF implements SpecIF {
 			);
 		}
 		catch (e) {
-			let txt = "Error when importing the project '" + LIB.displayValueOf(spD.title, {targetLanguage:spD.language||browser.language}) + "'.";
-			console.warn(txt);
-			message.show(new xhrMessage( 999, txt ), { severity: 'danger' });
-			return; // undefined 
+			let txt = "Error when importing the project '" + LIB.displayValueOf(spD.title, {targetLanguage:spD.language||browser.language}) + "': " + e;
+			console.error(txt);
+		//	message.show(new xhrMessage( 999, txt ), { severity: 'danger' });
+			return new xhrMessage(904, txt); // undefined 
 		};
 
 		// header information provided only in case of project creation, but not in case of project update:
@@ -351,7 +356,7 @@ class CSpecIF implements SpecIF {
 		this.$schema = 'https://specif.de/v' + CONFIG.specifVersion + '/schema.json';
 	/*	// Namespace for JSON-LD:
 		this.context = spD['@Context'] || "http://purl.org/dc/terms/"; */
-		return;
+		return new xhrMessage(0, 'SpecIF data has been successfully imported!');
 
 //		console.debug('specif.toInt',simpleClone(this));
 
@@ -454,8 +459,13 @@ class CSpecIF implements SpecIF {
 
 			// in future only with propertyClasses:
 			let dT: SpecifDataType = LIB.itemByKey(spD.dataTypes, oE.dataType);
-			if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
-			else if (dT.multiple) oE.multiple = true;
+			if (dT) {
+				if (typeof (iE.multiple) == 'boolean') oE.multiple = iE.multiple
+				else if (dT.multiple) oE.multiple = true;
+			}
+			else {
+				throw "The dataType " + oE.dataType.id + " for propertyClass " + oE.id + " has not been found.";
+			};
 
 			// The default values:
 			dT = LIB.itemByKey(self.dataTypes, oE.dataType);  // here we need the transformed dataType
@@ -889,8 +899,10 @@ class CSpecIF implements SpecIF {
 										else
 											return; // undefined
 									case XsDataType.DateTime:
-										return makeISODate(LIB.cleanValue(val))
-									//	return LIB.addTimezoneIfMissing(LIB.cleanValue(val))
+										if(typeof(val)=='string')
+											return makeISODate(LIB.cleanValue(val))
+										else
+											throw "Property Value of "+prp.id+" with class "+val['class']+" must be a string.";
 									case XsDataType.Boolean:
 										if (CONFIG.valuesTrue.includes(LIB.cleanValue(val)))
 											return "true";
@@ -962,7 +974,7 @@ class CSpecIF implements SpecIF {
 				}
 			}
 			else
-				throw Error("Invalid property with class " + prp[names.pClass] + ".");
+				throw "Invalid property with class " + prp[names.pClass] + ".";
 
 			function makeISODate(str:string) {
 				// repair faulty time-zone from ADOIT (add missing colon between hours and minutes);

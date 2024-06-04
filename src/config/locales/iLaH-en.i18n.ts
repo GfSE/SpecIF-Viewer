@@ -161,9 +161,11 @@ function LanguageTextsEn() {
 	self.LblOptions = 'Options';
 	self.LblFileFormat = 'File format';
 	self.modelElements = 'Model-Elements';
-	self.withOtherProperties = 'with other Properties';
-	self.showEmptyProperties = 'show empty Properties';
-	self.withStatements = 'with Statements';
+	self.withOtherProperties = 'with other properties';
+	self.showEmptyProperties = 'show empty properties';
+	self.withStatements = 'with statements';
+	self.elementsWithIcons = 'with icons';
+	self.elementsWithOrdernumbers = 'with order numbers';
 	self.LblStringMatch = 'String <mark>Match</mark>';
 	self.LblWordBeginnings = 'Word beginnings only';
 	self.LblWholeWords = 'Whole words only';

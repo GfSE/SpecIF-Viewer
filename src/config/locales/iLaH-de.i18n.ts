@@ -162,8 +162,10 @@ function LanguageTextsDe() {
 	self.LblFileFormat = 'Dateiformat';
 	self.modelElements = 'Modell-Elemente';
 	self.withOtherProperties = 'mit weiteren Eigenschaften';
-	self.showEmptyProperties = 'leere Eigenschaften zeigen';
+	self.showEmptyProperties = 'einschließlich leerer Eigenschaften';
 	self.withStatements = 'mit Relationen (Aussagen)';
+	self.elementsWithIcons = 'mit Symbolen';
+	self.elementsWithOrdernumbers = 'mit Gliederungsnummern';
 	self.LblStringMatch = 'Text<mark>such</mark>e';
 	self.LblWordBeginnings = 'Nur Wortanfänge berücksichtigen';
 	self.LblWholeWords = 'Nur ganze Worte berücksichtigen';

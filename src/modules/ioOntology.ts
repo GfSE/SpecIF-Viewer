@@ -842,7 +842,7 @@ class COntology {
             this.makeItem(r, CONFIG.prefixRC),
             {
                 extends: this.extendingClassOf(r, CONFIG.prefixRC),
-                instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
+                instantiation: iL.length > 0 ? iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }); }) : undefined,
                 isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
                 propertyClasses: pCL.length>0? pCL : undefined
@@ -906,7 +906,7 @@ class COntology {
             this.makeItem(r, CONFIG.prefixSC),
             {
                 extends: this.extendingClassOf(r, CONFIG.prefixSC),
-                instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }),
+                instantiation: iL.length > 0 ? iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }); }) : undefined,
                 isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
                 icon: this.valueByTitle(r, "SpecIF:Icon"),
                 // the eligible subjectClasses and objectClasses;

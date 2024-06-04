@@ -162,8 +162,10 @@ function LanguageTextsFr() {
 	self.LblFileFormat = 'Format de fichier';
 	self.modelElements = 'Élements de modèle';
 	self.withOtherProperties = "avec les autres attributs";
-	self.showEmptyProperties = 'montrer les attributs vides';
-	self.withStatements = 'avec affirmations';
+	self.showEmptyProperties = 'attributs vides inclus';
+	self.withStatements = 'avec relations (affirmations)';
+	self.elementsWithIcons = 'avec symboles';
+	self.elementsWithOrdernumbers = "avec numéro d'ordre";
 	self.LblStringMatch = 'Recherche de <mark>texte</mark>';
 	self.LblWordBeginnings = 'Seulement mots commençant par';
 	self.LblWholeWords = 'Seulement mots entiers';

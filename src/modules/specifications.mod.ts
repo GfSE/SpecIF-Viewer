@@ -906,6 +906,7 @@ class CFileWithContent implements SpecifFile {
 		return !!this.dataURL && this.dataURL.length > 0;
 	}
 	hasContent(): boolean {
+		// @ts-ignore - condition is ok:
 		return this.title && this.title.length>0 && (this.hasBlob() || this.hasDataURL());
 	}
 	canBeRenderedAsImage(): boolean {
@@ -1063,7 +1064,7 @@ class CFileWithContent implements SpecifFile {
 				if (mL[2].startsWith('data:')) continue;
 				// avoid transformation of redundant images:
 				if (LIB.indexById(dataURLs, mL[2]) > -1) continue;
-				ef = itemBySimilarTitle(app.projects.selected.cache.files, mL[2]);
+				ef = itemBySimilarTitle(app.projects.selected.cache.files, mL[2]) as CFileWithContent;
 				if (ef && ef.blob) {
 					pend++;
 //					console.debug('SVG embedded file',mL[2],ef,pend);
@@ -2297,7 +2298,9 @@ moduleManager.construct({
 			// - a statement of v1.1 and later may have a property 'type', which is preferred over the class' title.
 			// - a 'mentions' statement is created just for displaying the statements of the selected resources and does have a native title property
 			//   so the first term of the OR condition applies.
-			let ti = LIB.valueByTitle(s, CONFIG.propClassType, cacheData, opts)
+			let ti =
+					LIB.titleOf(s, opts)   // just fpr the 'mentions' relations derived by getMentionsRels which have no class
+					|| LIB.valueByTitle(s, CONFIG.propClassType, cacheData, opts)
 					|| LIB.classTitleOf(s['class'], cacheData.statementClasses, opts);
 			N.add({ statements: [{ id: s.id, title: ti, subject: s.subject.id, object: s.object.id }] })
 		}

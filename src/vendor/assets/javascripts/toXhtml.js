@@ -34,6 +34,7 @@ function toXhtml( data, options ) {
 		{
 			showEmptyProperties: false,
 			addIcon: true,
+			addOrder: false,
 		//	hasContent: hasContent,
 			titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
 			titleProperties: ['dcterms:title'],
@@ -55,7 +56,7 @@ function toXhtml( data, options ) {
 		opts.RE.TitleLink = new RegExp(opts.titleLinkBegin + '(.+?)' + opts.titleLinkEnd, 'g');
 
 	const
-	//	nbsp = '&#160;', // non-breakable space
+		nbsp = '&#160;', // non-breakable space
 		tagStr = "(<\\/?)([a-z]{1,10}( [^<>]+)?\\/?>)",
 	//	RE_tag = new RegExp( tagStr, 'g' ),
 		RE_inner_tag = new RegExp( "([\\s\\S]*?)"+tagStr, 'g' ),
@@ -94,12 +95,12 @@ function toXhtml( data, options ) {
 	// For each SpecIF hierarchy, create a xhtml-file and add it as subsequent section:
 	const firstHierarchySection = xhtml.sections.length;  // index of the next section number
 	data.hierarchies.forEach(
-		(h, hi) => {
+		(h, i) => {
 			pushHeading( h.title, {nodeId: h.id, level: 1} );
 			xhtml.sections.push(
 				makeXhtmlFile({ 
 					title: prTi,
-					body: renderHierarchy( h, hi, 1 )
+					body: renderHierarchy( h, i, 1, '' )
 				})
 			)
 		}
@@ -142,7 +143,10 @@ function toXhtml( data, options ) {
 			eC = itemById( cL, itm['class'] );
 		
 		// add icon, if specified:
-		ti = (opts.addIcon && eC && eC.icon ? eC.icon + '  ' : '') + ti;
+		ti = (opts.addIcon && eC && eC.icon ? eC.icon + nbsp + nbsp : '') + ti;
+
+		// add order number, if specified:
+		ti = (opts.addOrder && pars ? pars.order + nbsp + nbsp : '') + ti;
 
 		if( !pars || typeof(pars.level)!='number' || pars.level<1 ) return ti;
 
@@ -559,25 +563,26 @@ function toXhtml( data, options ) {
 			return escapeXML( prp.value ) */			
 		}
 	}
-	function renderHierarchy( nd, hi, lvl ) {
+	function renderHierarchy( nd, idx, lvl, ord ) {
 		// For each of the children of specified hierarchy node 'nd', 
 		// write a paragraph for the referenced resource:
 	//	if( !nd.nodes || nd.nodes.length<1 ) return '';
 		
 		let r = itemById( data.resources, nd.resource ), // the referenced resource
-			params={
-				nodeId: nd.id,
-				level: lvl
+			params = {
+				level: lvl,
+				order: ord + (ord.length > 0 ? '.' : '') + (idx + 1),
+				nodeId: nd.id
 			};
 
 //		console.debug('renderHierarchy',r);
 		var ch = 	titleOf( r, params, opts )
-				+	propertiesOf( r, hi, opts )
-				+	statementsOf( r, hi, opts );
+				+	propertiesOf( r, idx, opts )
+				+	statementsOf( r, idx, opts );
 
 		if( nd.nodes )
-			nd.nodes.forEach( function(n) {
-				ch += renderHierarchy( n, hi, lvl+1 )		// next level
+			nd.nodes.forEach( (n,i) => {
+				ch += renderHierarchy( n, i, lvl+1, params.order )		// next level
 			});
 		return ch
 	}

@@ -168,6 +168,7 @@ function toOxml( data, options ) {
 				{
 					showEmptyProperties: false,
 					addIcon: true,
+					addOrder: false,
 				//	clickableElements = false,
 					hasContent: hasContent,
 					titleLinkTargets: ['FMC:Actor', 'FMC:State', 'FMC:Event', 'SpecIF:Collection', 'SpecIF:Diagram', 'SpecIF:View', 'FMC:Plan'],
@@ -250,9 +251,9 @@ function toOxml( data, options ) {
 
 			// For each SpecIF hierarchy, create the paragraphs and add them as subsequent section:
 			data.hierarchies.forEach(
-				(h) => {
+				(h,i) => {
 					oxml.sections.push(
-						renderHierarchy( h, opts )
+						renderHierarchy( h, i, opts )
 					);
 				}
 			);
@@ -287,7 +288,10 @@ function toOxml( data, options ) {
 					eC = itemById(cL, itm['class']);
 				
 				// add icon, if specified:
-				ti = (opts.addIcon&&eC&&eC.icon? eC.icon+'  ' : '') + ti;
+				ti = (opts.addIcon && eC && eC.icon ? eC.icon + nbsp + nbsp : '') + ti;
+
+				// add order number, if specified:
+				ti = (opts.addOrder&&pars ? pars.order + nbsp + nbsp : '') + ti;
 
 //				console.debug('titleOf 2',ti);
 
@@ -1183,7 +1187,7 @@ function toOxml( data, options ) {
 					}
 				}
 			}
-			function renderHierarchy( nd, opts ) {
+			function renderHierarchy( nd, idx, opts ) {
 				// Iterate a single hierarchy below nd and generate OOXML from the referenced objects;
 				// is called in an outer loop processing all items of the hierarchyRoots folder.
 				
@@ -1194,9 +1198,9 @@ function toOxml( data, options ) {
 					lvl = 1;
 			/*		lvl = ( opts.hierarchyRoots.includes( valByTitle(r,opts.typeProperty,data) )
 							|| rC && opts.hierarchyRoots.includes( rC.title ))? 0 : 1; */
-				return renderNode( nd, lvl );
+				return renderNode( nd, idx, lvl, '' );
 				
-				function renderNode( nd, lvl ) {
+				function renderNode( nd, idx, lvl, ord ) {
 					// Iterate the specified hierarchy node 'nd' and recursively it's children,
 					// write a paragraph for the referenced resource:
 				//	if( !nd.nodes || nd.nodes.length<1 ) return '';
@@ -1204,6 +1208,7 @@ function toOxml( data, options ) {
 					let r = itemById( data.resources, nd.resource ), // the referenced resource
 						params={
 							level: lvl,
+							order: ord + (ord.length>0? '.' : '') + (idx+1),
 							nodeId: nd.id
 						};
 						
@@ -1212,8 +1217,8 @@ function toOxml( data, options ) {
 							+	statementsOf( r, opts );
 
 					if( nd.nodes )
-						nd.nodes.forEach( (n)=> {
-							ch += renderNode( n, lvl+1 );		// next level
+						nd.nodes.forEach( (n,i)=> {
+							ch += renderNode( n, i, lvl+1, params.order );		// next level
 						});
 
 					return ch;

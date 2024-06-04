@@ -86,7 +86,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 		// 1. Analyse the package structure and create a hierarchy of folders:
 		Array.from(
 			modDoc.children,
-			ch => parseEl(ch, { package: undefined, nodes: spD.hierarchies })
+			ch => parseEl(ch, { package: '', nodes: spD.hierarchies })
 		);
 
 		// 2. Find specialized classes for the model elements:
@@ -212,7 +212,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							// Store the diagram object and add a referencing node to the hierarchy:
 							spD.resources.push(r);
 							params.nodes.push({
-								id: CONFIG.prefixN + r.id,
+								id: CONFIG.prefixN + simpleHash(params.package + r.id),
 								resource: LIB.makeKey(r.id),
 								changedAt: opts.fileDate
 							});
@@ -234,7 +234,8 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							changedAt: opts.fileDate
 						},
 						nd = {
-							id: CONFIG.prefixN + r.id,
+							// build the id differently from the glossary to avoid duplicates:
+							id: CONFIG.prefixN + simpleHash(params.package + r.id),
 							resource: LIB.makeKey(r.id),
 							nodes: [],
 							changedAt: opts.fileDate
@@ -296,13 +297,14 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							Array.from(
 								ch.getElementsByTagName('ownedAttribute'),
 								(oA: any) => {
+									let pId: string, ty: string, nm: string, cl: string, ob: string;
 									switch (oA.getAttribute("xmi:type")) { 
 										case "uml:Property":
-											let pId = oA.getAttribute("xmi:id"),
-												ty = oA.getAttribute("aggregation"),
-												cl = ty == "composite" ? "SC-UmlIscomposedof" : (ty == "shared" ? "SC-UmlAggregates" : "SC-UmlIsassociatedwith"),
-												ob = oA.getAttribute("type"),
-												nm = oA.getAttribute("name");
+											pId = oA.getAttribute("xmi:id");
+											ty = oA.getAttribute("aggregation");
+											cl = ty == "composite" ? "SC-UmlIscomposedof" : (ty == "shared" ? "SC-UmlAggregates" : "SC-UmlIsassociatedwith");
+											ob = oA.getAttribute("type");
+											nm = oA.getAttribute("name");
 
 											// If it is about composition, aggregation and association, ob is defined:
 											if (ob) {
@@ -385,9 +387,44 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 											};
 											break;
 										case "uml:Port":
+											pId = oA.getAttribute("xmi:id");
+											ty = oA.getAttribute("type");  // the id of the interface block
+											nm = oA.getAttribute("name");
+
+											// Store the port as FMC:Actor:
+											spD.resources.push({
+												id: pId,
+												class: LIB.makeKey(idResourceClassActor),
+												properties: [{
+													class: LIB.makeKey("PC-Name"),
+													values: [[{ text: nm }]]
+												}, {
+													class: LIB.makeKey("PC-Type"),
+													values: [[{ text: "uml:Port" }]]
+												}],
+												changedAt: opts.fileDate
+											});
+
+											// Relate the port to the containing element:
+											spD.statements.push({
+												id: CONFIG.prefixS + simpleHash(r.id + idStatementClassContains + pId),
+												class: LIB.makeKey(idStatementClassContains),
+												subject: LIB.makeKey(r.id),
+												object: LIB.makeKey(pId),
+												changedAt: opts.fileDate
+											}); 
+
 									};
 								}
 							);
+
+						/*	// Add the connectors (in an IBD):
+							Array.from(
+								ch.getElementsByTagName('ownedAttribute'),
+								(oC: any) => {
+									// ToDo
+								}
+							); */
 							break;
 						case "uml:Association":
 							// Carries the association's name, if specified.
