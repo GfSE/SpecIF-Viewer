@@ -1180,8 +1180,9 @@ LIB.getClassesWithParents = (L: SpecifClass[], clK: SpecifKey) => {
             resL.unshift(c);
         }
         else {
-            console.error('Programming Error: Did not find extending class ' + cK.id);
-            cK = undefined;
+        //    console.error('Programming Error: Did not find extending class ' + cK.id);
+        //    cK = undefined;
+            throw Error('Did not find extending class ' + cK.id);
         };
     } while (cK);
     return resL;

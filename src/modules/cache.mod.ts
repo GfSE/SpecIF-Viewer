@@ -969,7 +969,7 @@ class CProject implements SpecifProject {
 							for( var newT of newD[ty.listName]) {
 								// newT is a type/class in new data
 
-								// --- Initial approach to adopting a SpecIF data set----
+								// --- Initial approach to adopting a SpecIF data set ---
 								// types are compared by id:
 								// @ts-ignore - indexing by string works fine
 								let idx = LIB.indexById(dta[ty.listName], newT.id);
@@ -980,7 +980,6 @@ class CProject implements SpecifProject {
 								else {
 									// There is an item with the same id.
 									// In case of 'adopt', the new type must be compatible with the existing (reference) type.
-								//	let hasExt = ['resourceClass', 'statementClass'].includes(ty.category),
 									let hasExt = !!newT['extends'],
 										refC = (hasExt ?
 											// @ts-ignore - indexing by string works fine
@@ -1003,7 +1002,40 @@ class CProject implements SpecifProject {
 									}
 									// b) existing type is compatible --> no action
 								}
+
+							/*	// --- Alternative approach to adopting a SpecIF data set ---
+								// 1. Look for an equal type in the reference (original) data set
+								console.debug('adopt 2', newT);
+								let notFound = true,
+									newC = (!!newT['extends'] ?
+									// @ts-ignore - indexing by string works fine
+									LIB.getExtendedClasses(newD[ty.listName], [{ id: newT.id }])[0] : newT);
+									--> Problem: Gets tangled up after adopting extending classes
+
+								for (var refT of dta[ty.listName]) {
+									let refC = (!!refT['extends'] ?
+											// @ts-ignore - indexing by string works fine
+											LIB.getExtendedClasses(dta.get(ty.category, "all"), [{ id: refT.id }])[0] : refT);
+
+									console.debug('adopt 3', refC, newC, ty.isEqual(refC, newC));
+									if (ty.isEqual(refC, newC)) {
+										// If found, use it, no matter which id:
+									//	if (refT.id != newT.id))
+										if (!LIB.equalKey(refT, newT)) {
+											ty.substitute(newD, refT, newT);
+										};
+										notFound = false;
+										break;
+									};
+								};
+
+								// 2 Look for a compatible type with the same id.
+
+								// 3. Otherwise just add the type
+								if (notFound)
+									itmL.push(newT); */
 							};
+						//	console.debug('adopt 5', simpleClone(itmL));
 							// @ts-ignore - newD[ty.listName] is a valid address
 							console.info((newD[ty.listName].length - itmL.length) + " " + ty.listName + " adopted and " + itmL.length + " added.");
 							pend++;
@@ -1789,7 +1821,7 @@ class CProject implements SpecifProject {
 												}
 											);
 											// use the adopt function to eliminate duplicate types:
-											self.adopt(newD, { noCheck: true })
+											self.adopt(newD, { noCheck: true, deduplicate: true })
 												.done(resolve)
 												.fail(reject);
                                         }
@@ -1941,7 +1973,7 @@ class CProject implements SpecifProject {
 //						console.debug('glossary',newD);
 						// use the update function to eliminate duplicate types;
 						// 'opts.addUnreferencedResources' must not be true to avoid an infinite loop:
-						self.adopt(newD, { noCheck: true })
+						self.adopt(newD, { noCheck: true, deduplicate: true })
 							.done(resolve)
 							.fail(reject);
                     }
@@ -2066,7 +2098,7 @@ class CProject implements SpecifProject {
 
 								// use the update function to eliminate duplicate types;
 								// 'opts.addGlossary' must not be true to avoid an infinite loop:
-								self.adopt(newD, { noCheck: true })
+								self.adopt(newD, { noCheck: true, deduplicate: true })
 									.done(resolve)
 									.fail(reject);
 							}
