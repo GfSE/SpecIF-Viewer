@@ -1642,7 +1642,7 @@ moduleManager.construct({
 			.then(
 				() => {
 					self.updateTree({
-					//	lookupTitles: true,
+						lookupTitles: true,
 						targetLanguage: self.selPrj.language
 					});
 					self.doRefresh({ forced: true })
@@ -1873,7 +1873,7 @@ moduleManager.construct({
 			if( nd && !opts.urlParams)
 				setUrlParams({
 					project: selPrj.id,
-					view: self.view.substring(1),	// remove leading hash
+					view: self.view,
 					node: nd.id
 					// item: nd.ref.id
 				}); 
@@ -2224,7 +2224,7 @@ moduleManager.construct({
 		if (nd && !opts.urlParams)
 			setUrlParams({
 				project: selPrj.id,
-				view: self.view.substring(1),	// without leading hash
+				view: self.view,
 				node: nd.id
 				//	item: nd.ref.id
 			});

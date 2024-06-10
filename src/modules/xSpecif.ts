@@ -658,7 +658,7 @@ class CSpecIF implements SpecIF {
 				(pD) => {
 					if (pD.nativePrp && propertyMissing(pD.tiL, oE)) {
 						// Add title resp. description property to the element:
-						LIB.addProp(oE, {
+						LIB.addProperty(oE, {
 							class: { id: getPropertyClassId(pD, eCkey) },
 							values: [makeMultiLanguageText(pD.nativePrp) ]
 						});
@@ -1066,7 +1066,7 @@ class CSpecIF implements SpecIF {
 						};
 						// Add a description property only if it has a value:
 						if (spD.description)
-							LIB.addProp(res, {
+							LIB.addProperty(res, {
 								class: { id: "PC-Description"},
 								values: [spD.description]
 							});

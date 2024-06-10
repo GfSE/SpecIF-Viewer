@@ -49,7 +49,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 	var parser = new DOMParser(),
 		xmiDoc = parser.parseFromString(xmi, "text/xml");
 
-	console.debug('xmi', xmiDoc);
+//	console.debug('xmi', xmiDoc);
 
 	if (xmiDoc.getElementsByTagName('xmi:exporter')[0].innerHTML.includes("MagicDraw")
 		&& xmiDoc.getElementsByTagName('xmi:exporterVersion')[0].innerHTML.includes("19.0"))
@@ -63,33 +63,52 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 	function cameo2specif(xmi:Document, opts:any):SpecIF {
 		//	let Cs = Array.from(xmlDoc.querySelectorAll("collaboration"));
-		interface IAssociation {
-			association: string;
-			statement: SpecifStatement;
-		}
 		interface IParams {
 			package: string;
 			nodes: SpecifNodes;
 		}
 
-		var modDoc = xmi.getElementsByTagName('uml:Model')[0],
-			spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] });
+		// ----- Preprocessing -----
+		// 1. Create maps with stereotypes for classes und abstractions:
+		function makeMap(att: any) {
+			let top = xmi.getElementsByTagName('xmi:XMI')[0],
+				map = new Map();
+			Array.from(
+				top.children,
+				(ch: any) => {
+					let base = ch.getAttribute(att);
+					if (base) {
+						map.set(base, ch.tagName);
+					};
+				}
+			);
+			return map;
+		}
+		let classStereotypes = makeMap("base_Class"),
+			abstractionStereotypes = makeMap("base_Abstraction"),
+
+		// ----- Processing -----
+		// 2. Create project:
+			modDoc = xmi.getElementsByTagName('uml:Model')[0],
+			spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] }),
+
+		// Intermediate storage for statements:
+			usedElements: SpecifStatement[] = [],     // --> shows
+			specializations: SpecifStatement[] = [],
+			associations: SpecifStatement[] = [],
+			abstractions: SpecifStatement[] = [];
 
 		spD.id = modDoc.getAttribute("xmi:id");
 		spD.title = [{ text: modDoc.getAttribute("name") }];
 
-		// Intermediate storage for statements:
-		let usedElements: SpecifStatement[] = [],     // --> shows
-			specializations: SpecifStatement[] = [],
-			associations: IAssociation[] = [];
-
-		// 1. Analyse the package structure and create a hierarchy of folders:
+		// 3. Analyse the package structure and create a hierarchy of folders:
 		Array.from(
 			modDoc.children,
 			ch => parseEl(ch, { package: '', nodes: spD.hierarchies })
 		);
 
-		// 2. Find specialized classes for the model elements:
+		// ----- Postprocessing -----
+		// 4. Find stereotypes and specialized classes for the model elements:
 		//    - traverse the tree of specialization to the top to find a class as derived from the ontology
 		//    - assign the class to the model element
 		specializations = specializations
@@ -98,7 +117,17 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			.forEach(
 				(me) => {
 					if (me["class"].id==idResourceClassDefault ) {
-						// --- Case 1: Look for the generalizing class in the set of resourceClasses generated from the ontology ---
+						// --- Case 1: Look for	a stereotype ---
+						let sTy = classStereotypes.get(me.id);
+						if (sTy) {
+							let prp = LIB.propByTitle(me, CONFIG.propClassType, spD);
+							if (prp) {
+								prp.values = [[{ text: sTy }]];
+								console.info("Cameo Import: Assigning stereotype '" + sTy + "' to  model-element " + me.id + " with title " + me.properties[0].values[0][0].text);
+							};
+						};
+
+						// --- Case 2: Look for the generalizing class in the set of resourceClasses generated from the ontology ---
 						let rC = generalizingResourceClassOf(me);
 						if (rC && rC.id != idResourceClassDefault ) {
 							me["class"] = LIB.makeKey(rC.id);
@@ -106,7 +135,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							return;
 						};
 
-						// --- Case 2: Look for generalization in the ontology as loaded during startup: ---
+						// --- Case 3: Look for generalization in the ontology as loaded during startup: ---
 					};
 					return;
 
@@ -135,8 +164,34 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 					}
 				}
 			);
+		// 5. Find stereotypes for relations of type uml:Abstraction:
+		abstractions = abstractions
+			.filter(validateStatement)
+			.map(
+				(a) => {
+					let sTy = abstractionStereotypes.get(a.id);
+					if (sTy) {
+						// Use a statementClass with a title equal to the stereotype sTy, if it exists:
+						let sC = LIB.itemByTitle(spD.statementClasses, sTy);
+						if (sC) {
+							a['class'] = LIB.makeKey(sC.id);
+							console.info("Cameo Import: Re-assigning class " + sC.id + " with title " + sTy + " to statement " + a.id);
+							return;
+						};
 
-		// 3. Add the associations, skip duplicates:
+						// Otherwise, add a type property to the statement: 
+						let prp: SpecifProperty = {
+							class: LIB.makeKey("PC-Type"),
+							values: [[{ text: sTy }]]
+						};
+						LIB.addProperty(a,prp);
+						console.info("Cameo Import: Assigning stereotype " + sTy + " to statement " + a.id);
+					};
+					return a;
+				}
+			);
+
+	/*	// 6. Add the associations, skip duplicates:
 		LIB.cacheL(
 			spD.statements,
 			associations
@@ -146,16 +201,19 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						return ac.statement;
 					}
 				)
-		);
+		); */
 
-		// 4. Add remaining statements and keep only the valid ones:
+		// 7. Add remaining statements and keep only the valid ones:
 		spD.statements = usedElements
 			.concat(spD.statements)
-			.filter(validateStatement)
-			.concat(specializations);  // has already been validated
+			.concat(associations)
+			.concat(abstractions)
+			.concat(specializations)
+			.filter(validateStatement);
 
 		console.debug('SysML', spD, opts);
 		return spD;
+		// ----- End -----
 
 		function parseEl(ch:Element,params:IParams) {
 			switch (ch.tagName) {
@@ -220,62 +278,51 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 					);
 					break;
 				case "packagedElement":
-					let ty = ch.getAttribute("xmi:type"),
-						// @ts-ignore - class will be assigned further down
-						r: SpecifResource = {
-							id: ch.getAttribute("xmi:id"),
-							properties: [{
-								class: LIB.makeKey("PC-Name"),
-								values: [[{ text: ch.getAttribute("name") }]]
-							},{
-								class: LIB.makeKey("PC-Type"),
-								values: [[{ text: ty }]]
-							}],
-							changedAt: opts.fileDate
-						},
-						nd = {
-							// build the id differently from the glossary to avoid duplicates:
-							id: CONFIG.prefixN + simpleHash(params.package + r.id),
-							resource: LIB.makeKey(r.id),
-							nodes: [],
-							changedAt: opts.fileDate
-						};
-
-					// Recursively parse the tree;
-					// must be located here, because not only a uml:Package, but also a uml:Class can have subordinated diagrams (IBD, ..): 
-					Array.from(
-						ch.children,
-						ch => parseEl(ch, { package: r.id, nodes: nd.nodes })
-					);
+					let ty = ch.getAttribute("xmi:type");
 
 					switch (ty) {
 						case 'uml:Package':
-							r["class"] = LIB.makeKey(idResourceClassCollection);   // or "RC-UmlPackage" - but it is not listed in the glossary, so far
-							spD.resources.push(r);
-							params.nodes.push(nd);
+							let r1: SpecifResource = makeResource(ch);
+							r1["class"] = LIB.makeKey(idResourceClassCollection);   // or "RC-UmlPackage" - but it is not listed in the glossary, so far
+							spD.resources.push(r1);
+
+							// Add the hierarchy node referencing the resource:
+							let nd1: SpecifNode = makeNode(r1, params.package);
+							params.nodes.push( nd1 );
+
+							// Recursively parse the tree;
+							Array.from(
+								ch.children,
+								ch => parseEl(ch, { package: r1.id, nodes: nd1.nodes })
+							);
 							break;
 						case 'uml:Class':
+							let r2: SpecifResource = makeResource(ch);
 							// If is an ontology term, use the corresponding class:
 							let rC = LIB.itemByTitle(spD.resourceClasses, ch.getAttribute("name"));
 							if (rC) {
 								// The block itself has a name which is an ontology term:
-								r["class"] = LIB.makeKey(rC.id);
-								console.info("Cameo Import: Assigning class " + rC.id + " to model-element " + r.id + " with title " + r.properties[0].values[0][0].text);
+								r2["class"] = LIB.makeKey(rC.id);
+								console.info("Cameo Import: Assigning class " + rC.id + " to model-element " + r2.id + " with title " + r2.properties[0].values[0][0].text);
 							}
 							else {
 								// At the end of the transformation the class will be updated, if the block's generalization is an ontology term.
-								r["class"] = LIB.makeKey(idResourceClassDefault);
+								r2["class"] = LIB.makeKey(idResourceClassDefault);
 							};
-							spD.resources.push(r);
-							params.nodes.push(nd);
+							addDesc(r2,ch);
+							spD.resources.push(r2);
+
+							// Add the hierarchy node referencing the resource:
+							let nd2: SpecifNode = makeNode(r2, params.package);
+							params.nodes.push(nd2);
 
 							// Relate the class to the containing package:
 							if(params.package)
 								spD.statements.push({
-									id: CONFIG.prefixS + simpleHash(params.package + idStatementClassContains + r.id),
+									id: CONFIG.prefixS + simpleHash(params.package + idStatementClassContains + r2.id),
 									class: LIB.makeKey(idStatementClassContains),
 									subject: LIB.makeKey(params.package),
-									object: LIB.makeKey(r.id),
+									object: LIB.makeKey(r2.id),
 									changedAt: opts.fileDate
 								});
 
@@ -286,7 +333,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 									specializations.push({
 										id: gn.getAttribute("xmi:id"),
 										class: LIB.makeKey("SC-UmlIsspecializationof"),
-										subject: LIB.makeKey(r.id),
+										subject: LIB.makeKey(r2.id),
 										object: LIB.makeKey(gn.getAttribute("general")),
 										changedAt: opts.fileDate
 									})
@@ -306,11 +353,11 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 											ob = oA.getAttribute("type");
 											nm = oA.getAttribute("name");
 
-											// If it is about composition, aggregation and association, ob is defined:
-											if (ob) {
+											// ty and ob are defined, if it is about composition, aggregation and association:
+											if (ty && ob) {
 												// Class references on an IBD can have a name or not, see [1] p.122:
 												if (nm) {
-													// The property has a name, so create a subclass/specialization and use it as object:
+													// The property has a name (= association role), so create a subclass/specialization and use it as object:
 													spD.resources.push({
 														id: pId,
 														class: LIB.makeKey(idResourceClassDefault),
@@ -336,20 +383,17 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												// - has a name: use the newly created subclass as object
 												// - has no name: use its role/type as object
 												associations.push({
-													// The attribute 'association' points to a 'uml:Association' which may specify a name of the association
-													association: oA.getAttribute("association"),
-													statement: {
-														id: CONFIG.prefixS + simpleHash(r.id + cl + ob),
-														class: LIB.makeKey(cl), // composition, aggregation or association
-														subject: LIB.makeKey(r.id),
-														object: LIB.makeKey(ob),
-													/*	// The class with its name may be normalized, but the type shouldn't: <-- not sure, though
-														properties: [{
-															class: LIB.makeKey("PC-Type"),
-															values: [[{ text: LIB.itemByKey(spD.statementClasses, LIB.makeKey(cl)).title }]]
-														}], */
-														changedAt: opts.fileDate
-													}
+														//	id: CONFIG.prefixS + simpleHash(r2.id + cl + ob),
+													id: oA.getAttribute("association"),
+													class: LIB.makeKey(cl), // composition, aggregation or association
+													subject: LIB.makeKey(r2.id),
+													object: LIB.makeKey(ob),
+												/*	// The class with its name may be normalized, but the type shouldn't: <-- not sure, though
+													properties: [{
+														class: LIB.makeKey("PC-Type"),
+														values: [[{ text: LIB.itemByKey(spD.statementClasses, LIB.makeKey(cl)).title }]]
+													}], */
+													changedAt: opts.fileDate
 												});
 												//	console.debug('#', simpleClone(spD.statements));
 
@@ -383,7 +427,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												);
 											}
 											else {
-												console.info("Cameo Import: Skipping the packagedElement", pId, "with name", nm, ".");
+												console.info("Cameo Import: Skipping the " + oA.getAttribute("xmi:type") + " with id " + pId + ".");
 											};
 											break;
 										case "uml:Port":
@@ -407,80 +451,102 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 											// Relate the port to the containing element:
 											spD.statements.push({
-												id: CONFIG.prefixS + simpleHash(r.id + idStatementClassContains + pId),
+												id: CONFIG.prefixS + simpleHash(r2.id + idStatementClassContains + pId),
 												class: LIB.makeKey(idStatementClassContains),
-												subject: LIB.makeKey(r.id),
+												subject: LIB.makeKey(r2.id),
 												object: LIB.makeKey(pId),
 												changedAt: opts.fileDate
-											}); 
-
+											});
+									/*		break;
+										case 
+											// Add the connectors (in an IBD):
+										*/
 									};
 								}
 							);
 
-						/*	// Add the connectors (in an IBD):
+							// Recursively parse the tree, because a uml:Class can have subordinated diagrams such as IBD:
 							Array.from(
-								ch.getElementsByTagName('ownedAttribute'),
-								(oC: any) => {
-									// ToDo
-								}
-							); */
+								ch.children,
+								ch => parseEl(ch, { package: r2.id, nodes: nd2.nodes })
+							);
 							break;
 						case "uml:Association":
 							// Carries the association's name, if specified.
 							// - The class' attribute of type uml:Property has an attribute 'association' pointing to this element, here.
+							//   It is assumed that the pointer is found first.
+							// ToDo: Can it happen, that the pointer is found after this element? Both are at the same level.
 							let nm = ch.getAttribute("name"),
 								aId = ch.getAttribute("xmi:id");
 							if (nm) {
 								// update the respective association: 
+								let referenced = false;
 								associations.forEach(
-									(ac: IAssociation) => {
-										if (aId == ac.association) {
+									(ac: SpecifStatement) => {
+										if (aId == ac.id) {
 											// The model element with aId is referenced by the current relation.
+											referenced = true;
 
-											// Add a name property to the statement:
+											// Add a type property to the statement:
 											let prp: SpecifProperty = {
 												class: LIB.makeKey("PC-Type"),
 												values: [[{ text: nm }]]
 											};
-											if (ac.statement.properties)
-												ac.statement.properties.push(prp)
-											else
-												ac.statement.properties = [prp];
+											LIB.addProperty(ac, prp);
 
-											// There may be associations between the same classes with different name:
-											ac.statement.id = CONFIG.prefixS + simpleHash(ac.statement.subject.id + ac.statement["class"] + ac.statement.object.id + nm);
-
-										/*	// Reassign the statement class:
-											let acId = ac.statement.id;
-											ac.statement.id = CONFIG.prefixS + simpleHash(ac.statement.subject.id + nm + ac.statement.object.id);
-											console.info("Cameo Import: Reassigning statement id " + acId + " → " + ac.statement.id+", because of its name '"+nm+"'.");
-
-											let aC = LIB.itemByTitle(spD.statementClasses, nm)	// look at classes already loaded
-													|| LIB.addClassesTo(nm, spD);				// look at ontology, otherwise
-											if (aC) {
-												// a. If a corresponding statementClass exists, assign it:
-												// Note: Now the same statements are used for the content=model as for the meta-model,
-												//       e.g. a BDD 'shows' an element named 'diagram', which is related to another element with an association named 'shows'.
-												console.info("Cameo Import: Reassigning statementClass " + ac.statement["class"].id + " → "+aC.id+" of statement " + ac.statement.id + ".");
-												ac.statement["class"] = LIB.makeKey(aC.id);
-											}
-											else {
-												// b. Otherwise specify a subtype:
-												if (!Array.isArray(ac.statement.properties))
-													ac.statement.properties = [];
-												ac.statement.properties.push({
-													class: LIB.makeKey("PC-Type"),
-													values: [[{ text: nm }]]
-												});
-											}  */
+											/*	// Reassign the statement class:
+												let acId = ac.statement.id;
+												ac.statement.id = CONFIG.prefixS + simpleHash(ac.statement.subject.id + nm + ac.statement.object.id);
+												console.info("Cameo Import: Reassigning statement id " + acId + " → " + ac.statement.id+", because of its name '"+nm+"'.");
+	
+												let aC = LIB.itemByTitle(spD.statementClasses, nm)	// look at classes already loaded
+														|| LIB.addClassesTo(nm, spD);				// look at ontology, otherwise
+												if (aC) {
+													// a. If a corresponding statementClass exists, assign it:
+													// Note: Now the same statements are used for the content=model as for the meta-model,
+													//       e.g. a BDD 'shows' an element named 'diagram', which is related to another element with an association named 'shows'.
+													console.info("Cameo Import: Reassigning statementClass " + ac.statement["class"].id + " → "+aC.id+" of statement " + ac.statement.id + ".");
+													ac.statement["class"] = LIB.makeKey(aC.id);
+												}
+												else {
+													// b. Otherwise specify a subtype:
+													if (!Array.isArray(ac.statement.properties))
+														ac.statement.properties = [];
+													ac.statement.properties.push({
+														class: LIB.makeKey("PC-Type"),
+														values: [[{ text: nm }]]
+													});
+												}  */
 										}
 									}
-								)
+								);
+								if (!referenced)
+									console.info("Cameo Import: Skipping the uml:Association with id "+aId+", because it is not referenced by a uml:Class.");
+						/*	}
+							else {
+								console.info("Cameo Import: Skipping the packagedElement", ch, "with type", ty, ", because it has no name."); */
 							};
 							break;
+						case "uml:Abstraction":
+							// Used for sysml:refine, for example, where the type of abstraction (refinement in this case) is specified further down in an element <sysml:Refine ... />
+							let sbj = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
+								obj = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref");
+						//	console.debug('ö',sbj,obj);
+
+							abstractions.push({
+								id: ch.getAttribute("xmi:id"),
+								class: LIB.makeKey("SC-SpecifRelates"),
+								subject: LIB.makeKey(sbj),
+								object: LIB.makeKey(obj),
+								changedAt: opts.fileDate
+							});
+							break; 
+						case "uml:Profile":
+							// So far, no additional info to extract ..
+							break;
 						case "uml:ProfileApplication":
-							// No idea what this is goof for in terms of semantics ...
+						case "uml:Usage":
+							// No idea what this is good for in terms of semantics ...
 							break;
 						case "uml:DataType":
 						default:
@@ -498,7 +564,52 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 				}
 			)
 		} */
-		function validateStatement(st: SpecifStatement):boolean {
+		function makeResource(el:any) {
+			// @ts-ignore - class will be assigned later
+			let r: SpecifResource = {
+				id: el.getAttribute("xmi:id"),
+				properties: [{
+					class: LIB.makeKey("PC-Name"),
+					values: [[{ text: el.getAttribute("name") }]]
+				}, {
+					class: LIB.makeKey("PC-Type"),
+					values: [[{ text: el.getAttribute("xmi:type") }]]
+				}],
+				changedAt: opts.fileDate
+			};
+			return r;
+		}
+		function makeNode(r:SpecifResource, pck:string) {
+			let nd: SpecifNode = {
+				// build the id differently from the glossary to avoid duplicates:
+				id: CONFIG.prefixN + simpleHash(pck + r.id),
+				resource: LIB.makeKey(r.id),
+				nodes: [],
+				changedAt: opts.fileDate
+			};
+			return nd;
+		}
+		function addDesc(r: SpecifResource, el: any): void {
+			// Add the description:
+			Array.from(
+				el.getElementsByTagName('ownedComment'),
+				(oC: any, i: number) => {
+					if (i > 0) {
+						console.warn("Element " + r.id + " has more than one comment/description.");
+						return;
+					};
+					//	if (oC.getAttribute("xmi:type") == "uml:comment") ... never gets true for some reason
+					let desc = oC.getAttribute("body");
+					if (desc)
+						r.properties.push({
+							class: LIB.makeKey("PC-Description"),
+							values: [[{ text: desc }]]
+						})
+				}
+			);
+		}
+
+		function validateStatement(st: SpecifStatement, idx: number, stL: SpecifStatement[]): boolean {
 			// This is also part of the SpecIF constraint check, but rather skip a statement here than fail altogether during import.
 			// Thus check:
 			// - Are both subject and object listed in spD.resources or spD.statements
@@ -506,9 +617,10 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			let
 				stC = LIB.itemByKey(spD.statementClasses, st["class"]),
 				// @ts-ignore - can join lists of different classes, here
-				sbj = LIB.itemByKey(spD.resources.concat(spD.statements), st.subject),
-			// @ts-ignore - can join lists of different classes, here
-				obj = LIB.itemByKey(spD.resources.concat(spD.statements), st.object),
+				list = spD.resources.concat(stL),
+				sbj = LIB.itemByKey(list, st.subject),
+				// @ts-ignore - can join lists of different classes, here
+				obj = LIB.itemByKey(list, st.object),
 				valid = sbj && obj;
 			if (!valid)
 				console.info("Cameo Import: Skipping", stC.title, "statement " + st.id + ", because " + (sbj ? ("object " + st.object.id) : ("subject " + st.subject.id)) + " isn't listed as resource resp. statement.");

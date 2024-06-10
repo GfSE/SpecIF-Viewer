@@ -804,6 +804,133 @@ class COntology {
             }
         ) as SpecifPropertyClass;
     }
+    private makeRC(r: SpecifResource) {
+        // Create a resourceClass for the TermResourceClass r:
+
+        let
+            iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
+            eC = this.extendingClassOf(r, CONFIG.prefixRC),
+            eCk: SpecifKey,
+            pCL = this.propertyClassesOf(r);
+//        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
+
+        // Delete all properties from pCL which are already defined in an extending class;
+        // this is a little more complicated than usual, because the resourceClass to generate is not yet listed in this.generated.sCL:
+        if (eC) {
+            eCk = LIB.makeKey(eC.id);
+            if (Array.isArray(eC.propertyClasses) && eC.propertyClasses.length > 0 && pCL.length > 0) {
+                eC = LIB.getExtendedClasses(this.generated.rCL, [eCk])[0]; // now with all collected properties
+                pCL = pCL.filter(
+                    (p) => {
+                        // Keep the property only if it is not yet listed in any extending class
+                        return LIB.referenceIndex(eC.propertyClasses, p) < 0;
+                    }
+                );
+            };
+        };
+
+        // Create a resourceClass for the TermResourceClass r;
+        // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
+        return Object.assign(
+            this.makeItem(r, CONFIG.prefixRC),
+            {
+                // @ts-ignore - eCk may be undefined and extends will be suppressed in that case
+                extends: eCk,
+                // no checkmark at instantiation means it is an abstract class, so an empty list:
+                instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }); }),
+                isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
+                icon: this.valueByTitle(r, "SpecIF:Icon"),
+                propertyClasses: pCL.length>0? pCL : undefined
+            }
+        ) as SpecifResourceClass;
+    }
+    private makeSC(r: SpecifResource) {
+        // Create a statementClass for the TermStatementClass r:
+
+        let
+            iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
+            eC = this.extendingClassOf(r, CONFIG.prefixSC),
+            eCk: SpecifKey,
+            // In case of statementClasses a list of propertyClasses is optional and most often not used:
+            pCL = this.propertyClassesOf(r),
+            // The eligible subjectClasses:
+            sCL = this.eligibleClassesOf(r, ["SpecIF:isEligibleAsSubject"]),
+            // The eligible objectClasses:
+            oCL = this.eligibleClassesOf(r, ["SpecIF:isEligibleAsObject"]);
+//        console.debug('makeSC', r, pCL, sCL, oCL);
+
+        // Delete all properties from pCL which are already defined in an extending class;
+        // this is a little more complicated than usual, because the statementClass to generate is not yet listed in this.generated.sCL:
+        if (eC) {
+            eCk = LIB.makeKey(eC.id);
+            if (Array.isArray(eC.propertyClasses) && eC.propertyClasses.length > 0 && pCL.length > 0) {
+                eC = LIB.getExtendedClasses(this.generated.sCL, [eCk])[0]; // now with all collected properties
+                pCL = pCL.filter(
+                    (p) => {
+                        // Keep the property only if it is not yet listed in any extending class
+                        return LIB.referenceIndex(eC.propertyClasses, p) < 0;
+                    }
+                );
+            };
+        };
+
+        // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
+        return Object.assign(
+                this.makeItem(r, CONFIG.prefixSC),
+                {
+                    // @ts-ignore - eCk may be undefined and extends will be suppressed in that case
+                    extends: eCk,
+                    // no checkmark at instantiation means it is an abstract class, so an empty list:
+                    instantiation: iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }); }),
+                    isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
+                    icon: this.valueByTitle(r, "SpecIF:Icon"),
+                    // the eligible subjectClasses and objectClasses;
+                    // no list means that all resourceClasses and statementClasses are eligible,
+                    // whereas an empty list is not allowed:
+                    subjectClasses: sCL.length > 0 ? sCL : undefined,
+                    objectClasses: oCL.length > 0 ? oCL : undefined,
+                    // the references per propertyClass;
+                    // in case of propertyClasses no or an empty list is equivalent:
+                    propertyClasses: pCL.length > 0 ? pCL : undefined
+                }
+            ) as SpecifDataType;
+    }
+    private extendingClassOf(el: SpecifResource, pfx: string) {
+        // Return a resourceClass resp. statementClass which is related by "SpecIF:isSpecializationOfxx"
+        // to el (the term describing the resourceClass resp. statementClass to be generated):
+        if ([CONFIG.prefixRC, CONFIG.prefixSC].includes(pfx)) {
+
+            let
+                // We are interested only in statements where *other* resources resp. statements are the object:
+                sL = this.statementsByTitle(el, (pfx == CONFIG.prefixRC ? ["SpecIF:isSpecializationOfResource"] : ["SpecIF:isSpecializationOfStatement"]), { asSubject: true });
+
+            if (sL.length > 1) {
+                console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
+                // see: https://stackoverflow.com/questions/31547315/is-it-an-antipattern-to-set-an-array-length-in-javascript
+                sL.length = 1;
+            };
+
+            if (sL.length > 0) {
+                let term = LIB.itemByKey(this.data.resources, sL[0].object),
+                    eC: any; // the generated extending class
+
+                // Ascertain that the referenced resourceClass resp. statementClass will be included;
+                // if it exists already due to correct selection, there will be no duplicate:
+                switch (pfx) {
+                    case CONFIG.prefixRC:
+                        eC = this.makeRC(term);
+                        LIB.cacheE(this.generated.rCL, eC);
+                        break;
+                    case CONFIG.prefixSC:
+                        eC = this.makeSC(term);
+                        LIB.cacheE(this.generated.sCL, eC);
+                };
+
+                return eC;
+            };
+        };
+        // return undefined
+    }
     private propertyClassesOf(el: SpecifResource) {
         // Return a list of propertyClasses which are related by "SpecIF:hasProperty"
         // to el (the term describing the resourceClass resp. statementClass to be generated):
@@ -827,30 +954,12 @@ class COntology {
             // if they exist already due to correct selection, duplicates are avoided:
             LIB.cacheE(this.generated.pCL, this.makePC(term))
         };
-//        console.debug('propertyClassesOf', pL, pCL);
+        //        console.debug('propertyClassesOf', pL, pCL);
 
-        return pCL
+        return pCL;
     }
-    private makeRC(r: SpecifResource) {
-        let iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
-            pCL = this.propertyClassesOf(r);
-//        console.debug('insta', iL, iL.map((ins) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }) }));
-
-        // Create a resourceClass for the TermResourceClass r;
-        // undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
-        return Object.assign(
-            this.makeItem(r, CONFIG.prefixRC),
-            {
-                extends: this.extendingClassOf(r, CONFIG.prefixRC),
-                instantiation: iL.length > 0 ? iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }); }) : undefined,
-                isHeading: LIB.isTrue(this.valueByTitle(r, "SpecIF:isHeading")) ? true : undefined,
-                icon: this.valueByTitle(r, "SpecIF:Icon"),
-                propertyClasses: pCL.length>0? pCL : undefined
-            }
-        ) as SpecifResourceClass;
-    }
-/*  private relatedClassesOf(el: SpecifResource, clL: string[]) {
-    .. this could be coded more generalized, but so far it is not: */
+    /*  private relatedClassesOf(el: SpecifResource, clL: string[]) {
+        .. this could be coded more generalized, but so far it is not: */
     private eligibleClassesOf(el: SpecifResource, clL: string[]) {
         // Return a list of resourceClasses and/or statementClasses which are related 
         // to term el (the statementClass to be generated) by a statementClass with a title listed in clL:
@@ -863,7 +972,7 @@ class COntology {
         for (let s of sL) {
             let term = LIB.itemByKey(this.data.resources, s.subject),
                 // need the id only, here:
-                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC); 
+                prep = this.makeIdAndTitle(term, term['class'].id == "RC-SpecifTermresourceclass" ? CONFIG.prefixRC : CONFIG.prefixSC);
             //            console.debug('eligibleClassesOf', term, prep);
             LIB.cacheE(iCL, { id: prep.id })
 
@@ -879,7 +988,7 @@ class COntology {
                         // Any missing statementClasses are collected in this.required.sTL until the end of the generation 
                         // ... to avoid infinite recursion, because statementClasses can reference statementClasses.
                         // Thus, generate only the referenced resourceClasses immediately;
-                        // if they exist already due to correct selection, duplicates are avoided:
+                        // duplicates are avoided:
                         LIB.cacheE(this.required.sTL, term)
                 }
             }
@@ -887,73 +996,6 @@ class COntology {
         //        console.debug('eligibleClassesOf', el, sL, iCL, simpleClone(this.required.sTL));
 
         return iCL
-    }
-    private makeSC(r: SpecifResource) {
-        // Create a statementClass for the TermStatementClass r:
-
-        let
-            iL = LIB.valuesByTitle(r, ["SpecIF:Instantiation"], this.data),
-            // In case of statementClasses a list of propertyClasses is optional and most often not used:
-            pCL = this.propertyClassesOf(r),
-            // The eligible subjectClasses:
-            sCL = this.eligibleClassesOf(r, ["SpecIF:isEligibleAsSubject"]),
-            // The eligible objectClasses:
-            oCL = this.eligibleClassesOf(r, ["SpecIF:isEligibleAsObject"]);
-//        console.debug('makeSC', r, pCL, sCL, oCL);
-
-        // Undefined attributes will not appear in the generated classes (omitted by JSON.stringify)
-        return Object.assign(
-            this.makeItem(r, CONFIG.prefixSC),
-            {
-                extends: this.extendingClassOf(r, CONFIG.prefixSC),
-                instantiation: iL.length > 0 ? iL.map((ins: SpecifValue) => { return LIB.displayValueOf(ins, { targetLanguage: 'default' }); }) : undefined,
-                isUndirected: LIB.isTrue(this.valueByTitle(r, "SpecIF:isUndirected")) ? true : undefined,
-                icon: this.valueByTitle(r, "SpecIF:Icon"),
-                // the eligible subjectClasses and objectClasses;
-                // no list means that all resourceClasses and statementClasses are eligible,
-                // whereas an empty list is not allowed:
-                subjectClasses: sCL.length > 0 ? sCL : undefined,
-                objectClasses: oCL.length > 0 ? oCL : undefined,
-                // the references per propertyClass;
-                // in case of propertyClasses no or an empty list is equivalent:
-                propertyClasses: pCL.length > 0 ? pCL : undefined
-            }
-        ) as SpecifDataType;
-    }
-    private extendingClassOf(el: SpecifResource, pfx: string) {
-        // Return a resourceClass resp. statementClass which is related by "SpecIF:isSpecializationOfxx"
-        // to el (the term describing the resourceClass resp. statementClass to be generated):
-        if ([CONFIG.prefixRC, CONFIG.prefixSC].includes(pfx)) {
-
-            let
-                // We are interested only in statements where *other* resources resp. statements are the object:
-                sL = this.statementsByTitle(el, (pfx == CONFIG.prefixRC? ["SpecIF:isSpecializationOfResource"] : ["SpecIF:isSpecializationOfStatement"]), { asSubject: true });
-
-            if (sL.length > 1) {
-                console.warn('Term ' + el.id + ' has more than one extended class; the first found prevails.');
-                // see: https://stackoverflow.com/questions/31547315/is-it-an-antipattern-to-set-an-array-length-in-javascript
-                sL.length = 1;
-            };
-
-            if (sL.length > 0) {
-                let term = LIB.itemByKey(this.data.resources, sL[0].object),
-                    prep = this.makeIdAndTitle(term, pfx); // need the id only, here
-
-                // Ascertain that the referenced resourceClass resp. statementClass will be available;
-                // if it exists already due to correct selection, there will be no duplicate:
-                switch (pfx) {
-                    case CONFIG.prefixRC:
-                        LIB.cacheE(this.generated.rCL, this.makeRC(term));
-                        break;
-                    case CONFIG.prefixSC:
-                        LIB.cacheE(this.generated.sCL, this.makeSC(term));
-                };
-
-                return LIB.makeKey(prep.id)
-            }
-            // return undefined
-        }
-        // return undefined
     }
     private makeItem(r: SpecifResource, prefix: string) {
         // Create the attributes common to all classes except dataType;

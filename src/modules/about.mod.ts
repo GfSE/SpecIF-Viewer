@@ -30,17 +30,17 @@ moduleManager.construct({
 		// but not navigation in the browser history:
 		if( !(opts && opts.urlParams) ) 
 			setUrlParams({
-				view: self.view.substring(1)	// remove leading hash
+				view: self.view
 			}); 
 
 		$('#pageTitle').html( app.title );
 		$('#about').html(
 			'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
 			+ '<p>An app for your web-browser to ' + (isEditor ? 'integrate, edit and transform' : (isReviewer? 'review' : 'view'))+' system specifications.</p>'
-		+	'<p>SpecIF is the \'Specification Integration Facility\'. It\'s purpose is to combine partial specifications from different tools in a single model to allow</p>'
+		+	'<p>SpecIF is the \'Specification Integration Facility\'. It combines partial specifications from different tools in a semantic net for</p>'
 		+	'<ul>'
-		+	'<li>to search, navigate and audit partial results in a common context,</li>'
-		+	'<li>to exchange model information between organizations and tools.</li>'
+		+	'<li>searching, navigating and auditing partial results in a common context as well as</li>'
+		+	'<li>exchanging model information between organizations and tools.</li>'
 		+	'</ul>'
 		+	'<p>The <a href="https://specif.de" target="_blank">SpecIF Homepage</a> provides further information.</p>'
 		+	'<p>The software code published on <a href="https://github.com/GfSE/SpecIF-Viewer" target="_blank">github.com</a>'
@@ -69,14 +69,14 @@ moduleManager.construct({
 		+ (isEditor ? "<li>Merge models of different tools and notations</li>" : "")
 		+		  "<li>Browse the content ('resources') along any supplied hierarchy</li>"
 		+		  "<li>Display model-element details when hovering over a representation on a diagram (in case of SVG images with annotated model-element identifier)</li>"
-		+ (isEditor? "<li>Create, clone and update resources with an input form derived from the respective resource class</li>":"")
-		+ (isEditor? "<li>Move single nodes and subtrees in the hierarchy by drag'n'drop</li>":"")
+		+ (isEditor? "<li>Create, clone and update resource with an input form derived from the respective resource class</li>":"")
+		+ (isEditor? "<li>Move single node or subtree in the hierarchy by drag'n'drop</li>":"")
 		+ (isReviewer ? "<li>Edit properties for review status and comment according to the Stakeholder Request Clarification (SRC) process by prostep IVIP</li>" : "")
 		+		  "<li>Inspect the semantic net ('statements')</li>"
-		+ (isEditor? "<li>Create statements according to the options defined in the statement classes</li>":"")
-		+ (isEditor? "<li>Delete selected resources and statements</li>":"")
+		+ (isEditor? "<li>Create statement according to the eligible subject and object classes per statement class</li>":"")
+		+ (isEditor? "<li>Delete selected resource or statement</li>":"")
 		+		  "<li>Filter using text fragments ('full text search'), resource classes or enumerated property values</li>"
-		+		  "<li>Report some model-based statistics, such as used resource classes or used property enumerated values</li>"
+		+		  "<li>Report model-based statistics, such as used resource classes or used property enumerated values</li>"
 		+ (isEditor? "<li>Export 'specif.zip' file</li>":"")
 		+ (isEditor && moduleManager.isReady('toHtml') ? "<li>Export 'specif.html' file with embedded SpecIF data</li>" : "")
 		+ (isEditor && moduleManager.isReady('reqif2specif')? "<li>Export 'reqifz' file</li>":"")

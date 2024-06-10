@@ -47,8 +47,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
             pfxL += tier0RdfEntry(`@prefix ${key.replace('.',':')} <${val.url}> .`);
         };
         pfxL += emptyLine()
-            + tier0RdfEntry(`@prefix : <${opts.baseURI}${projectID}#> .`)
-            + tier0RdfEntry(`@prefix this: <${opts.baseURI}${projectID}#> .`);
+            + tier0RdfEntry(`@prefix : <${opts.baseURI}${projectID}#> .`);
         return pfxL;
 
     /*    return tier0RdfEntry(`@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .`)
@@ -106,7 +105,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
 
 //        console.debug('turtle transformNativeAttributes',project)
         let baseProjectTtlString = emptyLine()
-                + tier0RdfEntry(`this: a SpecIF:Project ;`)
+                + tier0RdfEntry(`: a SpecIF:Project ;`)
                 + tier1RdfEntry(`dcterms:identifier '${escapeTtl(id)}' ;`)
                 + (title ? tier1RdfEntry(`rdfs:label ${textWithLang(title)} ;`) : '')
                 + (description ? tier1RdfEntry(`rdfs:comment ${textWithLang(description)} ;`) : '')
@@ -138,7 +137,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
 
         dataTypes.forEach( (dataType) => {
 		    dataTypesTtlString += emptyLine()
-            //    + tier0RdfEntry(`this: SpecIF:containsDataTypeMapping :${dataType.id} .`)
+            //    + tier0RdfEntry(`: SpecIF:containsDataTypeMapping :${dataType.id} .`)
             //    + tier0RdfEntry(`:${dataType.id} a SpecIF:DataTypeMapping , owl:Class ;`)
             //    + tier1RdfEntry(`SpecIF:id '${escapeTtl(dataType.id)}' ;`)
                 + tier1RdfEntry(`rdfs:label '${escapeTtl(dataType.title)}' ;`)
@@ -179,7 +178,7 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
     
         propertyClasses.forEach(propertyClass => {     
             propertyClassesTtlString += emptyLine()
-            //    + tier0RdfEntry(`this: SpecIF:containsPropertyClassMapping :${propertyClass.id} .`)
+            //    + tier0RdfEntry(`: SpecIF:containsPropertyClassMapping :${propertyClass.id} .`)
             //    + tier0RdfEntry(`:${propertyClass.id} a SpecIF:PropertyClassMapping ;`)
              //   + tier1RdfEntry(`SpecIF:id '${escapeTtl(propertyClass.id)}' ;`)
                 + tier1RdfEntry(`rdfs:label '${escapeTtl(propertyClass.title)}' ; `)
@@ -285,11 +284,14 @@ app.specif2turtle = (specifData:SpecIF,opts:any) => {
                                         ct += appendVal(ct, textWithLang(v));
                                         break;
                                     default:
-                                        // considered an entity or literal without language variants:
+                                    /*    // considered an entity or literal without language variants:
                                         // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
                                         let nSp = hasNamespace(v[0].text),
                                             // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
-                                            txt = (nSp ? shapeEntity(v[0].text) : "'" + escapeTtl(v[0].text) + "'") /* + (txt && el.language ? "@" + el.language : "") */;
+                                            txt = (nSp ? shapeEntity(v[0].text) : "'" + escapeTtl(v[0].text) + "'"); // + (txt && el.language ? "@" + el.language : "") */
+
+                                        // temporarily considered a literal without language variants:
+                                        let txt = "'" + escapeTtl(v[0].text) + "'"; // + (txt && el.language ? "@" + el.language : "")
                                         // @ts-ignore - here it *is* a SpecifLanguageText (dataType == "xs:string")
                                         ct += appendVal(ct, txt);
                                 };

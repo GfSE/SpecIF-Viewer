@@ -520,10 +520,10 @@ LIB.keyOf = (itm: SpecifItem): SpecifKey => {
     // create a key from an item by selective cloning:
     return itm.revision ? { id: itm.id, revision: itm.revision } : { id: itm.id };
 }
-LIB.makeKey = (el: any): SpecifKey => {
+LIB.makeKey = (el: any): SpecifKey|undefined => {
     // create a key from an id string used in earlier SpecIF versions
     // and support the case where a full key has already been used:
-    return typeof (el) == 'string' ? { id: el } : LIB.keyOf(el);
+    return el? (typeof (el) == 'string' ? { id: el } : LIB.keyOf(el)) : undefined;
 }
 LIB.replacePrefix = (newPrefix: string, id: string) => {
     return id.replace(
@@ -1060,14 +1060,14 @@ LIB.references = (n: SpecifKey, k: SpecifKey): boolean => {
     // ToDo: in case n.revision is undefined, the result shall be true only if n is the *newest* revision
 }
 LIB.referenceIndex = (L: SpecifKeys, k: SpecifKey): number => {
-    // return the index of the item in L referencing k.
+    // Return the index of the item in L referencing k.
     // Note that indexByKey does the inverse: it returns the index of the list item which is referenced by k.
     for (var i = L.length-1; i > -1; i--)
         if (LIB.references(L[i], k)) return i;
     return -1;
 }
 /* LIB.referenceItem = (N: SpecifKeys, k: SpecifKey): number => {
-    // return the item in N referencing k.
+    // Return the item in N referencing k.
     let i = LIB.referenceIndex(N, k);
     if (i > -1) return N[i]; // return the latest revision
     //    return undefined
@@ -1128,7 +1128,7 @@ LIB.addPCReference = (eC: SpecifResourceClass | SpecifStatementClass, key: Speci
         eC.propertyClasses = [key];
     }
 }
-LIB.addProp = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void => {
+LIB.addProperty = (el: SpecifResource | SpecifStatement, prp: SpecifProperty): void => {
     // Add the property to an element (el):
     if (Array.isArray(el.properties))
         el.properties.unshift(prp);
@@ -1143,7 +1143,7 @@ LIB.addClassesTo = (term: string, dta: SpecIF): SpecifClass | undefined => {
     // @ts-ignore - yes, the result can be undefined:
     let items = app.ontology.generateSpecifClasses({ terms: [term], delta: true, referencesWithoutRevision: true /*, adoptOntologyDataTypes: true */ }),
         item: SpecifClass;
-    console.debug("Adding classes for '" + term + "':", items);
+//    console.debug("Adding classes for '" + term + "':", items);
 
     // ToDo: For avoiding duplicates, the checking for the id is not sufficient;
     // if the existing element has an equal id, but different content,
@@ -1165,42 +1165,46 @@ LIB.addClassesTo = (term: string, dta: SpecIF): SpecifClass | undefined => {
         console.error('No class found for term ' + term + '.');
     return item;
 };
-LIB.getClassesWithParents = (L: SpecifClass[], clK: SpecifKey) => {
-    // Return a list with classes, the ancestors first and the requested class last.
-    // Applies to resourceClasses and statementClasses;
-    // classes are always cached, so there is no need for a call with promise.
-    let resL: SpecifClass[] = [],
-        cK = simpleClone(clK);  // avoid side-effect in calling routine
-    do {
-        let c = LIB.itemByKey(L, cK);
-        if (c) {
-            // The propoerties of the extending (parent's) class first:
-            // @ts-ignore - checking for extends, because it doesn't exist on all elements
-            cK = c['extends'];
-            resL.unshift(c);
-        }
-        else {
-        //    console.error('Programming Error: Did not find extending class ' + cK.id);
-        //    cK = undefined;
-            throw Error('Did not find extending class ' + cK.id);
-        };
-    } while (cK);
-    return resL;
-}
 LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
+    // Return a list with one extended class (with complete list of properties) for each key in toGet.
     // Applies to resourceClasses and statementClasses;
     // classes are always cached, so there is no need for a call with promise.
+
     let resL: any = [];
     for (var clk of toGet) {
         resL.push(extendClass(clk))
     };
     return resL;
 
+    function getClassWithParents(L: SpecifClass[], clK: SpecifKey) {
+        // Return a list with classes for clk, the ancestors first and the requested class last.
+        // Applies to resourceClasses and statementClasses;
+        // classes are always cached, so there is no need for a call with promise.
+        let resL: SpecifClass[] = [],
+            cK = simpleClone(clK);  // avoid side-effect in calling routine
+        do {
+            let c = LIB.itemByKey(L, cK);
+            if (c) {
+                // The propoerties of the extending (parent's) class first:
+                // @ts-ignore - checking for extends, because it doesn't exist on all elements
+                cK = c['extends'];
+                resL.unshift(c);
+            }
+            else {
+                //    console.error('Programming Error: Did not find extending class ' + cK.id);
+                //    cK = undefined;
+                throw Error('Did not find extending class ' + cK.id);
+            };
+        } while (cK);
+        return resL;
+    }
     function extendClass(k: SpecifKey) {
+        // Return an extended (consolidated) class for a class specified by key k.
+
         let rC: any = {};
-        LIB.getClassesWithParents(cL, k)
-            // A list with classes is returned, the ancestors first and the requested class last.
-            // - Starting with most general, copy to and potentially overwrite the attributes of rC
+        getClassWithParents(cL, k)
+            // Returns a list with classes, the ancestors first and the requested class last.
+            // - Starting with the most general, copy to and potentially overwrite the attributes of rC
             // - Also the list of eligible subjectClasses and objectClasses are overwritten,
             //   because it is assumed that more specialized statementClasses have fewer eligible subjectClasses and objectClasses
             // - Just the propertyClasses are collected along the line of ancestors ... as usual in object oriented programming.
@@ -1214,8 +1218,8 @@ LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
                             LIB.cacheL(rC[att], c[att])
                         else
                             // @ts-ignore - indexing an object with a string is perfectly OK
-                            rC[att] = c[att]
-                    }
+                            rC[att] = [].concat(c[att]);  // create a new list, elements can be the same
+                    };
                 }
             );
         delete rC['extends'];
@@ -1958,7 +1962,7 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
         prp: SpecifProperty;
 //    console.debug('propByTitle',dta,itm,pN,iC);
     for (var pC of dta.propertyClasses) {
-        if (LIB.indexByKey(iC.propertyClasses, pC) > -1     // pC is used by the item's class iC
+        if (LIB.referenceIndex(iC.propertyClasses, pC) > -1     // pC is used by the item's class iC
             && pC.title == pN) {                        // pC has the specified title
             // take the existing property, if it exists;
             // the property's title is not necessarily present:
@@ -2062,7 +2066,7 @@ LIB.typeOf = (rK: SpecifResource, dta: SpecIF): string => {
 // also see: https://www.partow.net/programming/hashfunctions/index.html
 function simpleHash(str: string): number {
     for (var r = 0, i = 0; i < str.length; i++) r = (r << 5) - r + str.charCodeAt(i), r &= r;
-    // add offset to avoid negative numbers; r is 10 characters long:
+    // add offset to avoid negative numbers; r is 10 digits long:
     return 10000000000 + r
 }
 function simpleClone(o: any): any {
@@ -2147,11 +2151,13 @@ function setUrlParams(actSt: any): void {
     // update browser history, if changed:
     if (!browser.supportsHtml5History || !actSt) return;
 
-    let quO = getUrlParams();
+    let quO = getUrlParams(),
+        view = actSt.view.substring(1);	// remove leading hash
+
     //    console.debug( 'setUrlParams', quO, actSt );
     // don't update, if unchanged or no project selected:
     if (quO.project == actSt.project
-        && quO[CONFIG.keyView] == actSt.view
+        && quO[CONFIG.keyView] == view
         && quO[CONFIG.keyNode] == actSt.node
     /*    && (quO[CONFIG.keyNode] == actSt.node
             || !actSt.item
@@ -2167,7 +2173,7 @@ function setUrlParams(actSt: any): void {
         is = '=', sep = ';';
 
     newParams += '#'
-        + CONFIG.keyView + is + actSt.view
+        + CONFIG.keyView + is + view
         + (actSt.project ? sep + CONFIG.keyProject + is + actSt.project : "")
         + (actSt.node ? sep + CONFIG.keyNode + is + actSt.node : (actSt.item ? sep + CONFIG.keyItem + is + actSt.item : ''));
 
