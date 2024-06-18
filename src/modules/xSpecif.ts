@@ -659,7 +659,7 @@ class CSpecIF implements SpecIF {
 					if (pD.nativePrp && propertyMissing(pD.tiL, oE)) {
 						// Add title resp. description property to the element:
 						LIB.addProperty(oE, {
-							class: { id: getPropertyClassId(pD, eCkey) },
+							class: { id: suitablePropertyClassId(pD, eCkey) },
 							values: [makeMultiLanguageText(pD.nativePrp) ]
 						});
 						console.info("Added a "+pD.name+" property to element with id '" + oE.id + "'");
@@ -682,7 +682,7 @@ class CSpecIF implements SpecIF {
 					};
 				return true; // no array or no title/description property
 			}
-			function getPropertyClassId(pDef:any, eCk: any): string {
+			function suitablePropertyClassId(pDef:any, eCk: any): string {
 				// Return the id of a suitable propertyClass - if there is none, create it:
 				// - pDef holds definitions for the propertyClass in focus
 				// - pDef.tiL is a list of suitable propertyClass titles

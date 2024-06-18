@@ -2159,14 +2159,14 @@ class CProject implements SpecifProject {
 				} */
 				function Folders(): SpecifResource[] {
 					// Create the resource for the folder of the glossary:
-					let termL = app.ontology.getTermResources('resourceClass',CONFIG.resClassGlossary);
-					if (termL.length > 0) {
+					let term = app.ontology.getTermResource('resourceClass',CONFIG.resClassGlossary);
+					if (term) {
 						let fL: SpecifResource[] = [{
 							id: "FolderGlossary-" + apx,
 							class: LIB.makeKey("RC-Folder"),
 							properties: [{
 								class: LIB.makeKey("PC-Name"),
-								values: LIB.valuesByTitle(termL[0], ["SpecIF:LocalTerm"], app.ontology.data)
+								values: LIB.valuesByTitle(term, ["SpecIF:LocalTerm"], app.ontology.data)
 							}, {
 								class: LIB.makeKey("PC-Type"),
 								values: [LIB.makeMultiLanguageValue(CONFIG.resClassGlossary)]

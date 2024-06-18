@@ -1218,7 +1218,7 @@ LIB.getExtendedClasses = (cL: SpecifClass[], toGet: SpecifKeys) => {
                             LIB.cacheL(rC[att], c[att])
                         else
                             // @ts-ignore - indexing an object with a string is perfectly OK
-                            rC[att] = [].concat(c[att]);  // create a new list, elements can be the same
+                            rC[att] = simpleClone(c[att]);  // in case of an array, create a new one, elements can be the same
                     };
                 }
             );
@@ -1965,8 +1965,8 @@ LIB.propByTitle = (itm: SpecifInstance, pN: string, dta: SpecIF | CSpecIF | CCac
         if (LIB.referenceIndex(iC.propertyClasses, pC) > -1     // pC is used by the item's class iC
             && pC.title == pN) {                        // pC has the specified title
             // take the existing property, if it exists;
-            // the property's title is not necessarily present:
-            prp = LIB.itemBy(itm.properties, 'class', pC);
+            // the property's title is not necessarily (in fact, is rarely) present:
+            prp = LIB.referenceItemBy(itm.properties, 'class', pC);
             if (prp) return prp;
             // else create a new one from the propertyClass:
             prp = LIB.createProp(pC);

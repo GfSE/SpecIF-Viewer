@@ -16,32 +16,35 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 	"use strict";
 
 	const
-		idResourceClassDiagram = "RC-SpecifView",
-		idResourceClassActor = "RC-Actor",
-		idResourceClassState = "RC-State",
-		idResourceClassEvent = "RC-Event",
-		idResourceClassCollection = "RC-Collection",
+		idResourceClassDiagram = app.ontology.getClassId("resourceClass", "SpecIF:View"),
+		idResourceClassActor = app.ontology.getClassId("resourceClass", "FMC:Actor"),
+	//	idResourceClassState = "RC-State",
+	//	idResourceClassEvent = "RC-Event",
+	//	idResourceClassCollection = "RC-Collection",
+		idResourceClassPackage = app.ontology.getClassId("resourceClass", "uml:Package"),
 	//	idResourceClassFolder = "RC-Folder",
-		idResourceClassDefault = "RC-SpecifModelelement",
+		idResourceClassDefault = app.ontology.getClassId("resourceClass", "SpecIF:ModelElement"),
 	//	idStatementClassAccesses = "SC-accesses",
-		idStatementClassContains = "SC-DctermsHaspart",
-		idStatementClassShows = "SC-shows";
+		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
+		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
+		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "uml:Specialization"),
+		idStatementClassShows = app.ontology.getClassId("statementClass", "SpecIF:shows");
 
 	if (typeof (options) != 'object' || !options.fileName) return null;
 
 	let opts = Object.assign(
 		{
-			fileDate: new Date().toISOString(),
-			titleLength: 96,
-			textLength: 8192,
-			mimeType: "application/vnd.xmi+xml",
-			strNamespace: "SysML:",
-			modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
-			strRoleType: "SpecIF:Role",
-			strFolderType: "SpecIF:Heading",
-			strDiagramType: "SpecIF:View",
+		//	titleLength: 96,
+		//	textLength: 8192,
+		//	strNamespace: "sysml:",
+		//	modelElementClasses: [idResourceClassActor, idResourceClassState, idResourceClassEvent, idResourceClassCollection],
+		//	strRoleType: "SpecIF:Role",
+		//	strFolderType: "SpecIF:Heading",
+		//	strDiagramType: "SpecIF:View",
 		//	strAnnotationFolder: "SpecIF:Annotations",
-			strTextAnnotation: "Text Annotation"
+		//	strTextAnnotation: "Text Annotation",
+			mimeType: "application/vnd.xmi+xml",
+			fileDate: new Date().toISOString()
 		},
 		options
 	);
@@ -90,9 +93,9 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 		// ----- Processing -----
 		// 2. Create project:
 			modDoc = xmi.getElementsByTagName('uml:Model')[0],
-			spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] }),
+			spD: CSpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainBase", "SpecIF:DomainSystemModelIntegration"] }),
 
-		// Intermediate storage for statements:
+			// Intermediate storage for statements:
 			usedElements: SpecifStatement[] = [],     // --> shows
 			specializations: SpecifStatement[] = [],
 			associations: SpecifStatement[] = [],
@@ -120,6 +123,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						// --- Case 1: Look for	a stereotype ---
 						let sTy = classStereotypes.get(me.id);
 						if (sTy) {
+							// Find or create a typeproperty:
 							let prp = LIB.propByTitle(me, CONFIG.propClassType, spD);
 							if (prp) {
 								prp.values = [[{ text: sTy }]];
@@ -176,16 +180,16 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 						if (sC) {
 							a['class'] = LIB.makeKey(sC.id);
 							console.info("Cameo Import: Re-assigning class " + sC.id + " with title " + sTy + " to statement " + a.id);
-							return;
+						}
+						else {
+							// Otherwise, add a type property to the statement: 
+							let prp: SpecifProperty = {
+								class: LIB.makeKey("PC-Type"),
+								values: [[{ text: sTy }]]
+							};
+							LIB.addProperty(a, prp);
+							console.info("Cameo Import: Assigning stereotype " + sTy + " to statement " + a.id);
 						};
-
-						// Otherwise, add a type property to the statement: 
-						let prp: SpecifProperty = {
-							class: LIB.makeKey("PC-Type"),
-							values: [[{ text: sTy }]]
-						};
-						LIB.addProperty(a,prp);
-						console.info("Cameo Import: Assigning stereotype " + sTy + " to statement " + a.id);
 					};
 					return a;
 				}
@@ -203,13 +207,20 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 				)
 		); */
 
-		// 7. Add remaining statements and keep only the valid ones:
-		spD.statements = usedElements
-			.concat(spD.statements)
+		// 7. Add all statements:
+		spD.statements = spD.statements
 			.concat(associations)
 			.concat(abstractions)
 			.concat(specializations)
-			.filter(validateStatement);
+			.concat(usedElements);
+
+		// 8. Keep only the valid statements:
+		let prevLength: number;
+		do {
+			prevLength = spD.statements.length;
+			spD.statements = spD.statements
+				.filter(validateStatement);
+		} while(prevLength > spD.statements.length);
 
 		console.debug('SysML', spD, opts);
 		return spD;
@@ -283,12 +294,12 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 					switch (ty) {
 						case 'uml:Package':
 							let r1: SpecifResource = makeResource(ch);
-							r1["class"] = LIB.makeKey(idResourceClassCollection);   // or "RC-UmlPackage" - but it is not listed in the glossary, so far
+							r1["class"] = LIB.makeKey(idResourceClassPackage);
 							spD.resources.push(r1);
 
 							// Add the hierarchy node referencing the resource:
 							let nd1: SpecifNode = makeNode(r1, params.package);
-							params.nodes.push( nd1 );
+							params.nodes.push(nd1);
 
 							// Recursively parse the tree;
 							Array.from(
@@ -309,7 +320,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								// At the end of the transformation the class will be updated, if the block's generalization is an ontology term.
 								r2["class"] = LIB.makeKey(idResourceClassDefault);
 							};
-							addDesc(r2,ch);
+							addDesc(r2, ch);
 							spD.resources.push(r2);
 
 							// Add the hierarchy node referencing the resource:
@@ -317,7 +328,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							params.nodes.push(nd2);
 
 							// Relate the class to the containing package:
-							if(params.package)
+							if (params.package)
 								spD.statements.push({
 									id: CONFIG.prefixS + simpleHash(params.package + idStatementClassContains + r2.id),
 									class: LIB.makeKey(idStatementClassContains),
@@ -332,7 +343,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								(gn: any) => {
 									specializations.push({
 										id: gn.getAttribute("xmi:id"),
-										class: LIB.makeKey("SC-UmlIsspecializationof"),
+										class: LIB.makeKey("SC-UmlSpecialization"),
 										subject: LIB.makeKey(r2.id),
 										object: LIB.makeKey(gn.getAttribute("general")),
 										changedAt: opts.fileDate
@@ -345,11 +356,11 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								ch.getElementsByTagName('ownedAttribute'),
 								(oA: any) => {
 									let pId: string, ty: string, nm: string, cl: string, ob: string;
-									switch (oA.getAttribute("xmi:type")) { 
+									switch (oA.getAttribute("xmi:type")) {
 										case "uml:Property":
 											pId = oA.getAttribute("xmi:id");
 											ty = oA.getAttribute("aggregation");
-											cl = ty == "composite" ? "SC-UmlIscomposedof" : (ty == "shared" ? "SC-UmlAggregates" : "SC-UmlIsassociatedwith");
+											cl = ty == "composite" ? "SC-UmlComposition" : (ty == "shared" ? "SC-UmlAggregation" : "SC-UmlAssociation");
 											ob = oA.getAttribute("type");
 											nm = oA.getAttribute("name");
 
@@ -371,8 +382,8 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 														changedAt: opts.fileDate
 													});
 													specializations.push({
-														id: CONFIG.prefixS + simpleHash(pId + "SC-UmlIsspecializationof" + ob),
-														class: LIB.makeKey("SC-UmlIsspecializationof"),
+														id: CONFIG.prefixS + simpleHash(pId + idStatementClassSpecializes + ob),
+														class: LIB.makeKey(idStatementClassSpecializes),
 														subject: LIB.makeKey(pId),
 														object: LIB.makeKey(ob),
 														changedAt: opts.fileDate
@@ -383,16 +394,16 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												// - has a name: use the newly created subclass as object
 												// - has no name: use its role/type as object
 												associations.push({
-														//	id: CONFIG.prefixS + simpleHash(r2.id + cl + ob),
+													//	id: CONFIG.prefixS + simpleHash(r2.id + cl + ob),
 													id: oA.getAttribute("association"),
 													class: LIB.makeKey(cl), // composition, aggregation or association
 													subject: LIB.makeKey(r2.id),
 													object: LIB.makeKey(ob),
-												/*	// The class with its name may be normalized, but the type shouldn't: <-- not sure, though
-													properties: [{
-														class: LIB.makeKey("PC-Type"),
-														values: [[{ text: LIB.itemByKey(spD.statementClasses, LIB.makeKey(cl)).title }]]
-													}], */
+													/*	// The class with its name may be normalized, but the type shouldn't: <-- not sure, though
+														properties: [{
+															class: LIB.makeKey("PC-Type"),
+															values: [[{ text: LIB.itemByKey(spD.statementClasses, LIB.makeKey(cl)).title }]]
+														}], */
 													changedAt: opts.fileDate
 												});
 												//	console.debug('#', simpleClone(spD.statements));
@@ -402,29 +413,29 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												// we look for the shown property to obtain the id of the IBD and add the referenced class, if missing.
 												// (If we had the id of the local IBD at hand, it would be much simpler). 
 												usedElements
-												.filter(
-													(e) => {
-														// Filter the property shown on any diagram, including the local IBD:
-														return e.object.id == pId
-													}
-												)
-												.forEach(
-													(e) => {
-														// For every shown property without name there shall be a shown class: 
-														let stId = CONFIG.prefixS + simpleHash(e.subject.id + idStatementClassShows + ob),
-															shownClass = LIB.itemByKey(usedElements, LIB.makeKey(stId));
-														if (!shownClass) {
-															usedElements.push({
-																id: stId,
-																class: LIB.makeKey(idStatementClassShows),
-																subject: e.subject,
-																object: LIB.makeKey(ob),
-																changedAt: opts.fileDate
-															});
-														};
-														//	console.debug('#2',stId,shownClass,simpleClone(usedElements));
-													}
-												);
+													.filter(
+														(e) => {
+															// Filter the property shown on any diagram, including the local IBD:
+															return e.object.id == pId
+														}
+													)
+													.forEach(
+														(e) => {
+															// For every shown property without name there shall be a shown class: 
+															let stId = CONFIG.prefixS + simpleHash(e.subject.id + idStatementClassShows + ob),
+																shownClass = LIB.itemByKey(usedElements, LIB.makeKey(stId));
+															if (!shownClass) {
+																usedElements.push({
+																	id: stId,
+																	class: LIB.makeKey(idStatementClassShows),
+																	subject: e.subject,
+																	object: LIB.makeKey(ob),
+																	changedAt: opts.fileDate
+																});
+															};
+															//	console.debug('#2',stId,shownClass,simpleClone(usedElements));
+														}
+													);
 											}
 											else {
 												console.info("Cameo Import: Skipping the " + oA.getAttribute("xmi:type") + " with id " + pId + ".");
@@ -451,16 +462,16 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 
 											// Relate the port to the containing element:
 											spD.statements.push({
-												id: CONFIG.prefixS + simpleHash(r2.id + idStatementClassContains + pId),
-												class: LIB.makeKey(idStatementClassContains),
+												id: CONFIG.prefixS + simpleHash(r2.id + idStatementClassHasPart + pId),
+												class: LIB.makeKey(idStatementClassHasPart),
 												subject: LIB.makeKey(r2.id),
 												object: LIB.makeKey(pId),
 												changedAt: opts.fileDate
 											});
-									/*		break;
-										case 
-											// Add the connectors (in an IBD):
-										*/
+										/*		break;
+											case 
+												// Add the connectors (in an IBD):
+											*/
 									};
 								}
 							);
@@ -521,17 +532,17 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 									}
 								);
 								if (!referenced)
-									console.info("Cameo Import: Skipping the uml:Association with id "+aId+", because it is not referenced by a uml:Class.");
-						/*	}
-							else {
-								console.info("Cameo Import: Skipping the packagedElement", ch, "with type", ty, ", because it has no name."); */
+									console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because it is not referenced by a uml:Class.");
+								/*	}
+									else {
+										console.info("Cameo Import: Skipping the packagedElement", ch, "with type", ty, ", because it has no name."); */
 							};
 							break;
 						case "uml:Abstraction":
 							// Used for sysml:refine, for example, where the type of abstraction (refinement in this case) is specified further down in an element <sysml:Refine ... />
 							let sbj = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
 								obj = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref");
-						//	console.debug('ö',sbj,obj);
+							//	console.debug('ö',sbj,obj);
 
 							abstractions.push({
 								id: ch.getAttribute("xmi:id"),
@@ -540,7 +551,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								object: LIB.makeKey(obj),
 								changedAt: opts.fileDate
 							});
-							break; 
+							break;
 						case "uml:Profile":
 							// So far, no additional info to extract ..
 							break;
@@ -550,9 +561,9 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							break;
 						case "uml:DataType":
 						default:
-							console.info("Cameo Import: Skipping the packagedElement",ch,"with name", ch.getAttribute("name"), "and type",ty,".");
-					}
-			}
+							console.info("Cameo Import: Skipping the packagedElement", ch, "with name", ch.getAttribute("name"), "and type", ty, ".");
+					};
+			};
 		}
 	/*	function addClasses(termL:string[]):void {
 			let newD = app.ontology.generateSpecifClasses({ terms: termL, delta: true /*, adoptOntologyDataTypes: true });
@@ -619,9 +630,12 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 				// @ts-ignore - can join lists of different classes, here
 				list = spD.resources.concat(stL),
 				sbj = LIB.itemByKey(list, st.subject),
-				// @ts-ignore - can join lists of different classes, here
 				obj = LIB.itemByKey(list, st.object),
 				valid = sbj && obj;
+			if (!stC) {
+				console.warn("Cameo Import: Class " + st["class"].id +" for statement " + st.id + " not found.");
+				return false;
+			};
 			if (!valid)
 				console.info("Cameo Import: Skipping", stC.title, "statement " + st.id + ", because " + (sbj ? ("object " + st.object.id) : ("subject " + st.subject.id)) + " isn't listed as resource resp. statement.");
 			else {
@@ -632,6 +646,5 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			};
 			return valid;
 		}
-
 	}
 }

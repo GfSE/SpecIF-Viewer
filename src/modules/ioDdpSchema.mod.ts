@@ -318,7 +318,7 @@ moduleManager.construct({
 						};
 
 					let entities = Array.from(rel.getElementsByTagName('xs:element')),
-						subj = entities.filter(
+						sbj = entities.filter(
 							(en) => {
 								return en.getAttribute("name").includes("subject");
 							}
@@ -328,10 +328,10 @@ moduleManager.construct({
 								return en.getAttribute("name").includes("object");
 							}
 						);
-					//					console.debug('#',entities, subj, obj);
+					//					console.debug('#',entities, sbj, obj);
 
 					// This is an ugly hack, because semantic significance is derived from the relation names ...
-					let sTi = subj[0].getAttribute("name").substring(7),
+					let sTi = sbj[0].getAttribute("name").substring(7),
 						oTi = obj[0].getAttribute("name").substring(6);
 				/*	// Remove the subject and object names from the relation title
 					sC.title = ti.substring(sTi.length, ti.length - oTi.length); */
@@ -502,7 +502,7 @@ moduleManager.construct({
 					// 3b. Store the relations to eligible subjects and objects:
 					// This is an ugly hack, because semantic significance is derived from the relation names ...
 					let entities = Array.from(rel.getElementsByTagName('xs:element')),
-						subj = entities.filter(
+						sbj = entities.filter(
 							(en) => {
 								return en.getAttribute("name").includes("subject");
 							}
@@ -512,25 +512,25 @@ moduleManager.construct({
 								return en.getAttribute("name").includes("object");
 							}
 						);
-//					console.debug('#1',entities, ti, subj, obj);
+//					console.debug('#1',entities, ti, sbj, obj);
 
-					let sTi = subj[0].getAttribute("name").substring(7),
+					let sTi = sbj[0].getAttribute("name").substring(7),
 						oTi = obj[0].getAttribute("name").substring(6),
-						subId = CONFIG.prefixR + simpleHash(sTi),
-						obId = CONFIG.prefixR + simpleHash(oTi);
+						sbjId = CONFIG.prefixR + simpleHash(sTi),
+						objId = CONFIG.prefixR + simpleHash(oTi);
 
 					// It is possible that subject and object point to the same termResourceClass, thus distinguish their ids:
 					spD.statements.push({
-						id: CONFIG.prefixS + simpleHash(sT.id + 'subject' + subId),
+						id: CONFIG.prefixS + simpleHash(sT.id + 'subject' + sbjId),
 						class: { id: "SC-isEligibleAsSubject" },
-						subject: { id: subId },
+						subject: { id: sbjId },
 						object: { id: sT.id },
 						changedAt: spD.createdAt
 					});
 					spD.statements.push({
-						id: CONFIG.prefixS + simpleHash(sT.id + 'object' + obId),
+						id: CONFIG.prefixS + simpleHash(sT.id + 'object' + objId),
 						class: { id: "SC-isEligibleAsObject" },
-						subject: { id: obId },
+						subject: { id: objId },
 						object: { id: sT.id },
 						changedAt: spD.createdAt
 					});

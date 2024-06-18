@@ -70,11 +70,11 @@ class COntology {
     ]
 
     // Assign titles of special relations for synonyms per class of terms:
-    private synonymStatements = new Map([
-        ["resourceClass", "SpecIF:isSynonymOfResource"],
-        ["statementClass", "SpecIF:isSynonymOfStatement"],
-        ["propertyClass", "SpecIF:isSynonymOfProperty"],
-        ["propertyValue", "SpecIF:isSynonymOfValue"]
+    private termCategories = new Map([
+        ["resourceClass", { synonymStatement: "SpecIF:isSynonymOfResource", prefix: CONFIG.prefixRC }],
+        ["statementClass", { synonymStatement: "SpecIF:isSynonymOfStatement", prefix: CONFIG.prefixSC }],
+        ["propertyClass", { synonymStatement: "SpecIF:isSynonymOfProperty", prefix: CONFIG.prefixPC }],
+        ["propertyValue", { synonymStatement: "SpecIF:isSynonymOfValue", prefix: CONFIG.prefixV }]
     ]);
 
     // List with all values of lifecycleStatus eligible for use in SpecIF:
@@ -131,7 +131,7 @@ class COntology {
         this.options = {};
     }
 
-    getTermResources(ctg: string, term: string): SpecifResource[] {
+    private getTermResources(ctg: string, term: string): SpecifResource[] {
         // Get the resources defining a given term; usually there is just one.
         ctg = ctg.toLowerCase();
         return this.data.resources
@@ -151,9 +151,21 @@ class COntology {
                 }
             )
     }
+    getTermResource(ctg: string, term: string): SpecifResource | undefined {
+        // Get the resource defining a given term:
+        let resL = this.getTermResources(ctg, term);
+        // Just one result is expected (a term should be unique):
+        if (resL.length > 1)
+            console.warn("Multiple resources describe term '" + term + "': " + resL.map((r: SpecifResource) => { return r.id }).toString());
+        //    console.warn('Multiple definitions of the term found: ', resL.map((r) => { return r.id }).toString());
+        if (resL.length > 0)
+            return resL[0];
+        // return /// undefined
+    }
     getTerms(ctg: string): string[] {
         // Get the list of terms for a category such as 'statementClass'.
-        let ctgL = ['resourceClass', 'statementClass', 'propertyClass', 'propertyValue'];
+        //    let ctgL = ['resourceClass', 'statementClass', 'propertyClass', 'propertyValue'];
+        let ctgL = Array.from(this.termCategories.keys());
         if (ctgL.includes(ctg)) {
             ctg = ctg.toLowerCase();
             return this.data.resources
@@ -173,20 +185,31 @@ class COntology {
         };
         throw Error("Programming Error: Category must be one of "+ctgL.toString());
     }
+    getClassId(ctg: string, term: string): string {
+        // Return the identifier of the class derived from the term:
+        if (RE.vocabularyTerm.test(term)) {
+            let tR = this.getTermResource(ctg, term);
+            if (tR) {
+                // Find prefix depending on 
+                return this.makeIdAndTitle(tR, this.termCategories.get(ctg).prefix).id;
+            };
+        };
+        // return undefined
+    }
     localize(term: string, opts: any): string {
         // Translate an ontology term to the selected local language:
 
         if (RE.vocabularyTerm.test(term)) {
-            let rL = this.getTermResources('all', term);
-            if (rL.length > 0) {
+            let tR = this.getTermResource('all', term);
+            if (tR) {
                 // return the name in the local language specifed:
                 let lnL = [];
                 if (opts.plural) {
                     // look for plural from property:
-                    lnL = LIB.valuesByTitle(rL[0], ["SpecIF:LocalTermPlural"], this.data);
+                    lnL = LIB.valuesByTitle(tR, ["SpecIF:LocalTermPlural"], this.data);
                     if (lnL.length < 1) {
                         // if not found, look for plural from a term related with 'isPluralOfResource':
-                        let stL = this.statementsByTitle(rL[0], ["SpecIF:isPluralOfResource"], { asSubject: false, asObject: true });
+                        let stL = this.statementsByTitle(tR, ["SpecIF:isPluralOfResource"], { asSubject: false, asObject: true });
                         if (stL.length > 0) {
                             let tR = LIB.itemByKey(this.data.resources, stL[0].subject);
                             lnL = LIB.valuesByTitle(tR, ["SpecIF:LocalTerm"], this.data);
@@ -194,7 +217,7 @@ class COntology {
                     }
                 }
                 else {
-                    lnL = LIB.valuesByTitle(rL[0], ["SpecIF:LocalTerm"], this.data);
+                    lnL = LIB.valuesByTitle(tR, ["SpecIF:LocalTerm"], this.data);
                 };
 
                 if (lnL.length > 0) {
@@ -264,30 +287,30 @@ class COntology {
         if (term.startsWith('dcterms:'))
             return term;
 
-        let rL = this.getTermResources(ctg, term);
-        if (rL.length > 0) {
-            let r = rL[0];
-
+        let tR = this.getTermResource(ctg, term);
+        if (tR) {
             // If the term is itself released/preferred, just return it:
-            if (this.valueByTitle(r, "SpecIF:TermStatus") == "SpecIF:LifecycleStatusReleased")
+            if (this.valueByTitle(tR, "SpecIF:TermStatus") == "SpecIF:LifecycleStatusReleased")
                 return term;
 
             // Collect all synonyms (relation is bi-directional):
             let
-                stL = this.statementsByTitle(r, [this.synonymStatements.get(ctg)], { asSubject: true, asObject: true }),
+                ctgV = this.termCategories.get(ctg),
+                ctgL = ctgV ? [ctgV] : Array.from(this.termCategories.values()),
+                staL = this.statementsByTitle(tR, ctgL.map(c => c.synonymStatement), { asSubject: true, asObject: true }),
                 // the resources related by those statements are synonym terms:
-                rsL = stL.map(
+                resL = staL.map(
                     (st: SpecifStatement) => {
-                        return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
+                        return LIB.itemById(this.data.resources, (st.object.id == tR.id ? st.subject.id : st.object.id))
                     }
                 ),
                 // Find the released (preferred) term:
-                synL = rsL.filter(
+                synL = resL.filter(
                     (r: SpecifResource) => {
                         return this.valueByTitle(r, "SpecIF:TermStatus") == "SpecIF:LifecycleStatusReleased";
                     }
                 );
-            //            console.debug('getPreferredTerm', r, stL, rsL, synL);
+            //            console.debug('getPreferredTerm', tR, staL, resL, synL);
             if (synL.length < 1)
                 return term;
 
@@ -296,16 +319,17 @@ class COntology {
 
             let newT = this.valueByTitle(synL[0], CONFIG.propClassTerm);
             console.info('Preferred term assigned: ' + term + ' → ' + newT);
-            return newT
+            return newT;
         };
         // else, return the input value:
         return term;
     }
     normalize(ctg: string, term: string): string {
-        // find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
+        // Find languageTerm and replace with vocabulary term ("Anforderung" --> "IREB:Requirement"):
         let str = this.globalize(ctg, term);
 
-        // find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
+        // Find equivalent term and replace with preferred ("ReqIF.Name" --> "dcterms:title"):
+        // ToDo: include antonyms: If there is an antonym with a 'better' lifecycle status than a synonym, take it.
         str = this.getPreferredTerm(ctg, str);
 
         return str;
@@ -313,9 +337,9 @@ class COntology {
     getTermValue(ctg: string, term: string, title: string): string | undefined {
         // Return the property value of a given term:
 
-        let rL = this.getTermResources(ctg, term);
-        if (rL.length > 0) {
-            return this.valueByTitle(rL[0], title) // || ''
+        let tR = this.getTermResource(ctg, term);
+        if (tR) {
+            return this.valueByTitle(tR, title) // || ''
         };
         // else:
         // return '';
@@ -349,30 +373,25 @@ class COntology {
                 return term;
         };
 
-        let rL = this.getTermResources('all',term);
-        // Just one result is expected:
-        if (rL.length > 1)
-            console.warn('Multiple definitions of the term found: ', rL.map((r) => { return r.id }).toString());
+        let tR = this.getTermResource('all',term);
 
-        if (rL.length > 0) {
-            let r = rL[0];
-
+        if (tR) {
             // Look for a synonym relation pointing to a term with the specified target namespace;
-            // go through all synonymStatements one-by-one to allow early return in case of a hit.
+            // go through all termCategories one-by-one to allow early return in case of a hit.
         //    console.warn("No namespace specified or ontology does not include the specified namespace: " + term);
             let
-                v = findSynonymStatementOf(r['class']),
+                v = findSynonymStatementOf(tR['class']),
                 // Collect all synonyms (relation is bi-directional):
-                stL = this.statementsByTitle(r, [v], { asSubject: true, asObject: true }),
+                staL = this.statementsByTitle(tR, [v], { asSubject: true, asObject: true }),
                 // the resources related by those statements are synonym terms:
-                rsL = stL.map(
+                resL = staL.map(
                     (st: SpecifStatement) => {
-                        return LIB.itemById(this.data.resources, (st.object.id == r.id ? st.subject.id : st.object.id))
+                        return LIB.itemById(this.data.resources, (st.object.id == tR.id ? st.subject.id : st.object.id))
                     }
                 ),
                 // Find the term with the desired namespace, either released or equivalent:
-                synL = findSynonym(rsL, opts.targetNamespaces);
-            //            console.debug('changeNamespace', r, stL, rsL, synL);
+                synL = findSynonym(resL, opts.targetNamespaces);
+            //            console.debug('changeNamespace', tR, staL, resL, synL);
             if (synL.length < 1)
                 return term;
 
@@ -388,11 +407,11 @@ class COntology {
 
         function findSynonymStatementOf(rCk:SpecifKey) {
             let rC = LIB.itemByKey(self.data.resourceClasses,rCk);
-            for (let [key, value] of self.synonymStatements) {
-                if (rC.title.toLowerCase().includes(key.toLowerCase()))
-                    return value
+            for (let [ctg, syn] of self.termCategories) {
+                if (rC.title.toLowerCase().includes(ctg.toLowerCase()))
+                    return syn
             };
-            throw (new Error("No synonymStatement found for '"+rCk.id+"'."));
+            throw (new Error("No synonym statement found for '"+rCk.id+"'."));
         }
         function findSynonym(rL: SpecifResource[], nspL: string[]) {
             // In the sequence of namespaces in the list nspL,
@@ -1106,11 +1125,11 @@ class COntology {
         // these are all specializations of SpecIF:ModelElement:
         // ToDo: Derive from SpecIF Ontology: All specializations of "SpecIF:ModelElement"
 
-        let rL = this.getTermResources('resourceClass', "SpecIF:ModelElement"),
+        let tR = this.getTermResource('resourceClass', "SpecIF:ModelElement"),
             sL: string[] = [];
-        if (rL.length > 0) {
+        if (tR) {
             // We are interested only in statements where *other* resources resp. statements are the object:
-            sL = this.statementsByTitle(rL[0], ["SpecIF:isSpecializationOfResource"], { asObject: true })
+            sL = this.statementsByTitle(tR, ["SpecIF:isSpecializationOfResource"], { asObject: true })
                 .map(
                     (s:SpecifStatement) => {
                         let r = LIB.itemByKey(this.data.resources, s.subject);

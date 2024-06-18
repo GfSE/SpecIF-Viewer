@@ -742,7 +742,7 @@ moduleManager.construct({
 								title: LIB.titleOf(rC, displayOptions),
 								id: rC.id,
 								// if there are preset options, set the select flag accordingly:
-								checked: (pre && pre.selected) ? pre.selected.indexOf(rC.id) > -1 : true
+								checked: (pre && pre.selected) ? pre.selected.includes(rC.id) : true
 							});
 						}
 					}

@@ -331,7 +331,7 @@ function LanguageTextsDe() {
 	self.MsgNoRelatedObjects = 'Zu dieser Ressource gibt es keine Relationen (Aussagen).';
 	self.MsgNoComments = 'Zu dieser Ressource gibt es keine Kommentare.';
 	self.MsgNoFiles = 'Keine Datei gefunden.';
-	self.MsgAnalyzing = 'Setze Analyse fort ...';
+	self.MsgAnalyzing = 'Führe Analyse durch ...';
 	self.MsgNoReports = 'Keine Auswertungen für dieses Projekt.';
 	self.MsgTypeNoObjectType = "Mindestens eine Ressource-Klasse anlegen, sonst können keine Ressourcen erzeugt werden.";
 	self.MsgTypeNoAttribute = "Mindestens ein Attribut anlegen, sonst ist der Typ nicht brauchbar.";
