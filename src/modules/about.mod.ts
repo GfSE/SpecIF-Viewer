@@ -52,7 +52,7 @@ moduleManager.construct({
 		+	'</p>'
 		+	'<p>Version: '+CONFIG.appVersion+' supporting SpecIF up to version '+CONFIG.specifVersion+'.</p>'
 		+	'<p>License: <a href="https://github.com/GfSE/SpecIF-Viewer/blob/master/LICENSE" target="_blank">Apache 2.0</a></p>'
-		+	'<h3>Features</h3>'
+		+	'<h2>Features</h2>'
 		+ '<ul>'
 			+ (isReviewer ?
 				  "<li>Display SpecIF data embedded in an HTML-file</li>"
@@ -85,7 +85,7 @@ moduleManager.construct({
 		+ (isEditor && moduleManager.isReady('toEpub')? "<li>Export 'ePub' file</li>":"")
 		+ (isEditor && moduleManager.isReady('toOxml')? "<li>Export MS-Word OOXML file</li>":"")
 		+		'</ul>'
-		+	'<h3>Compatibility</h3>'
+		+	'<h2>Compatibility</h2>'
 		+		'<ul>'
 		+		  "<li>Mozilla Firefox</li>"
 		+		  "<li>Google Chromium and Chrome</li>"
@@ -96,7 +96,7 @@ moduleManager.construct({
 		+		'</ul>'
 		+	'</div>'
 		+	'<div class="col-md-6" style="padding-right:'+padding+'; padding-left:'+padding+';">'
-		+	'<h3>Support</h3>'
+		+	'<h2>Support</h2>'
 		+	'<p>'
 		+		'In case you discover a conceptual inconsistency, a software bug or a flaw in documentation,'
 		+		' we appreciate if you open an <a href="https://github.com/GfSE/SpecIF-Viewer/issues" target="_blank">issue</a>'
@@ -104,7 +104,7 @@ moduleManager.construct({
 		+		' <a href="mailto:maintenance@specif.de">maintenance(at)specif.de</a>.'
 		+		' We are highly interested to supply high-quality concepts and useful software.'
 		+	'</p>'
-		+	'<h3>Credits and License Information</h3>'
+		+	'<h2>Credits and License Information</h2>'
 		+	'<p>The SpecIF web-apps have been built with the open source components listed below. These are fine pieces of software'
 		+		' and we gratefully thank the contributors for their effort.'
 	/*	+		' Our policy is to donate 12% of our revenues made with'

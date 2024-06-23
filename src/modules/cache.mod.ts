@@ -142,7 +142,7 @@ class CCache {
 			let itmL = this[app.standards.listName.get(ctg)];
 
 			if (Array.isArray(req)) {
-				let allFound = true, i = 0, I = req.length, idx: number;
+			/*	let allFound = true, i = 0, I = req.length, idx: number;
 				var rL: SpecifItem[] = [];
 				while (allFound && i < I) {
 					idx = LIB.indexByKey(itmL, req[i]);
@@ -152,9 +152,17 @@ class CCache {
 					}
 					else
 						allFound = false;
+				}; */
+				let idx: number,
+					rL: SpecifItem[] = [];
+				for (var k of req) {
+					idx = LIB.indexByKey(itmL, k);
+					if (idx > -1)
+						rL.push(itmL[idx]);
+					else
+						console.error("Cache: Requested element with id '"+k.id+"' of category '"+ctg+"' not found");
 				};
-				if (allFound)
-					return simpleClone(rL);
+				return simpleClone(rL);
 			}
 			else if (typeof (req) == 'function') {
 				return simpleClone(itmL.filter(req));
@@ -1623,6 +1631,8 @@ class CProject implements SpecifProject {
 	} */
 	private deduplicate(opts:any): void {
 		// Uses the cache.
+		// ToDo: Deduplication is done in the cache --> this can lead to inconsistencies with the memorized items of a project.
+		//       Example: On import, there are two diagrams with the same title on root level. Deduplication deletes one, but the memorized hierarchies are not affected.
 		// ToDo: update the server.
 		if (!opts || !opts.deduplicate) return;
 
@@ -3125,7 +3135,7 @@ class CProject implements SpecifProject {
 			// replace resource id:
 			(nd: SpecifNode) => { if (LIB.references(nd.resource, dK)) { nd.resource = rK }; return true },
 			// eliminate duplicates within a folder (assuming that it will not make sense to show the same resource twice in a folder;
-			// for example it is avoided that the same diagram is shown twice if it has been imported twice:
+			// for example avoid that the same diagram is shown twice if it has been imported twice:
 			(ndL: SpecifNodes) => { for (var i = ndL.length - 1; i > 0; i--) { if (LIB.referenceIndexBy(ndL.slice(0, i), 'resource', ndL[i].resource) > -1) { ndL.splice(i, 1) } } }
 		);
 	}

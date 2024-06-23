@@ -28,6 +28,8 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
 		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "uml:Specialization"),
+		idStatementClassRealizes = app.ontology.getClassId("statementClass", "uml:Realization"),
+		idStatementClassAssociatedWith = app.ontology.getClassId("statementClass", "uml:Association"),
 		idStatementClassShows = app.ontology.getClassId("statementClass", "SpecIF:shows");
 
 	if (typeof (options) != 'object' || !options.fileName) return null;
@@ -308,6 +310,15 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							);
 							break;
 						case 'uml:Class':
+/*
+	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719087054560_761584_42161' name='SpecIF:Statement'>
+		<generalization xmi:type='uml:Generalization' xmi:id='_19_0_3_e40094_1719087551972_193117_42331' general='_19_0_3_e40094_1719086921605_648048_42122'/>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719087088548_659833_42191' visibility='public' type='_19_0_3_e40094_1718951245605_496836_42285' association='_19_0_3_e40094_1719087088548_861018_42190'/>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719087218370_359410_42282' visibility='public' aggregation='composite' type='_19_0_3_e40094_1719087139932_194471_42226' association='_19_0_3_e40094_1719087218370_769674_42281'/>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719087744976_47616_42343' visibility='public' type='_19_0_3_e40094_1719086921605_648048_42122' association='_19_0_3_e40094_1719087744975_500336_42342'/>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719087753882_499580_42356' visibility='public' type='_19_0_3_e40094_1719086921605_648048_42122' association='_19_0_3_e40094_1719087753881_699229_42355'/>
+	</packagedElement>
+*/
 							let r2: SpecifResource = makeResource(ch);
 							// If is an ontology term, use the corresponding class:
 							let rC = LIB.itemByTitle(spD.resourceClasses, ch.getAttribute("name"));
@@ -320,7 +331,6 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								// At the end of the transformation the class will be updated, if the block's generalization is an ontology term.
 								r2["class"] = LIB.makeKey(idResourceClassDefault);
 							};
-							addDesc(r2, ch);
 							spD.resources.push(r2);
 
 							// Add the hierarchy node referencing the resource:
@@ -358,14 +368,18 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 									let pId: string, ty: string, nm: string, cl: string, ob: string;
 									switch (oA.getAttribute("xmi:type")) {
 										case "uml:Property":
+/*	
+	<ownedAttribute xmi: type = 'uml:Property' xmi: id = '_19_0_3_e40094_1719087218370_359410_42282' visibility = 'public' aggregation = 'composite' type = '_19_0_3_e40094_1719087139932_194471_42226' association = '_19_0_3_e40094_1719087218370_769674_42281' />
+	<ownedAttribute xmi: type = 'uml:Property' xmi: id = '_19_0_3_e40094_1719087744976_47616_42343' visibility = 'public' type = '_19_0_3_e40094_1719086921605_648048_42122' association = '_19_0_3_e40094_1719087744975_500336_42342' />
+*/
 											pId = oA.getAttribute("xmi:id");
 											ty = oA.getAttribute("aggregation");
-											cl = ty == "composite" ? "SC-UmlComposition" : (ty == "shared" ? "SC-UmlAggregation" : "SC-UmlAssociation");
 											ob = oA.getAttribute("type");
-											nm = oA.getAttribute("name");
 
 											// ty and ob are defined, if it is about composition, aggregation and association:
 											if (ty && ob) {
+												cl = ty == "composite" ? "SC-UmlComposition" : (ty == "shared" ? "SC-UmlAggregation" : idStatementClassAssociatedWith);
+												nm = oA.getAttribute("name");
 												// Class references on an IBD can have a name or not, see [1] p.122:
 												if (nm) {
 													// The property has a name (= association role), so create a subclass/specialization and use it as object:
@@ -392,7 +406,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 												};
 												// The class' property
 												// - has a name: use the newly created subclass as object
-												// - has no name: use its role/type as object
+												// - has no name: use its type as object
 												associations.push({
 													//	id: CONFIG.prefixS + simpleHash(r2.id + cl + ob),
 													id: oA.getAttribute("association"),
@@ -552,6 +566,24 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								changedAt: opts.fileDate
 							});
 							break;
+						case "uml:Realization":
+							let sbjR = ch.getElementsByTagName('client')[0].getAttribute("xmi:idref"),
+								objR = ch.getElementsByTagName('supplier')[0].getAttribute("xmi:idref"),
+								staR = {
+									id: ch.getAttribute("xmi:id"),
+									class: LIB.makeKey(idStatementClassRealizes || idStatementClassAssociatedWith),
+									subject: LIB.makeKey(sbjR),
+									object: LIB.makeKey(objR),
+									changedAt: opts.fileDate
+								};
+						/*	if (!idStatementClassRealizes) {
+								LIB.addProperty(staR, {
+									class: LIB.makeKey("PC-Type"),
+									values: [[{ text: ty }]]
+								} as SpecifProperty);
+							}; */
+							spD.statements.push(staR);
+							break;
 						case "uml:Profile":
 							// So far, no additional info to extract ..
 							break;
@@ -588,6 +620,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 				}],
 				changedAt: opts.fileDate
 			};
+			addDesc(r, el);
 			return r;
 		}
 		function makeNode(r:SpecifResource, pck:string) {

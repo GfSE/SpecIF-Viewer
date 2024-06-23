@@ -25,6 +25,14 @@ class COntology {
     // it is expected that a plural of any list element exists:
     modelElementClasses: string[] = [];
 
+    // Assign titles of special relations for synonyms per class of terms:
+    private termCategories = new Map([
+        ["resourceClass", { synonymStatement: "SpecIF:isSynonymOfResource", prefix: CONFIG.prefixRC }],
+        ["statementClass", { synonymStatement: "SpecIF:isSynonymOfStatement", prefix: CONFIG.prefixSC }],
+        ["propertyClass", { synonymStatement: "SpecIF:isSynonymOfProperty", prefix: CONFIG.prefixPC }],
+        ["propertyValue", { synonymStatement: "SpecIF:isSynonymOfValue", prefix: CONFIG.prefixV }]
+    ]);
+
     // List with all term classes by title:
     termPrincipalClasses = new Map([
         ["SpecIF:TermResourceClass", "R-FolderTermsResourceClass"],
@@ -68,14 +76,6 @@ class COntology {
         "SpecIF:DefaultValueDuration",
         "SpecIF:DefaultValueAnyURI",
     ]
-
-    // Assign titles of special relations for synonyms per class of terms:
-    private termCategories = new Map([
-        ["resourceClass", { synonymStatement: "SpecIF:isSynonymOfResource", prefix: CONFIG.prefixRC }],
-        ["statementClass", { synonymStatement: "SpecIF:isSynonymOfStatement", prefix: CONFIG.prefixSC }],
-        ["propertyClass", { synonymStatement: "SpecIF:isSynonymOfProperty", prefix: CONFIG.prefixPC }],
-        ["propertyValue", { synonymStatement: "SpecIF:isSynonymOfValue", prefix: CONFIG.prefixV }]
-    ]);
 
     // List with all values of lifecycleStatus eligible for use in SpecIF:
     private eligibleLifecycleStatus: string[] = [
@@ -132,7 +132,7 @@ class COntology {
     }
 
     private getTermResources(ctg: string, term: string): SpecifResource[] {
-        // Get the resources defining a given term; usually there is just one.
+        // Get the resources defining a given term; there should be just one resource per term
         ctg = ctg.toLowerCase();
         return this.data.resources
             .filter(
@@ -164,7 +164,6 @@ class COntology {
     }
     getTerms(ctg: string): string[] {
         // Get the list of terms for a category such as 'statementClass'.
-        //    let ctgL = ['resourceClass', 'statementClass', 'propertyClass', 'propertyValue'];
         let ctgL = Array.from(this.termCategories.keys());
         if (ctgL.includes(ctg)) {
             ctg = ctg.toLowerCase();
@@ -183,15 +182,19 @@ class COntology {
                     }
                 )
         };
-        throw Error("Programming Error: Category must be one of "+ctgL.toString());
+        throw Error("Programming Error: Unknown category '" + ctg +"'; must be one of "+ctgL.toString());
     }
-    getClassId(ctg: string, term: string): string {
+    getClassId(ctg: string, term: string): string | undefined {
         // Return the identifier of the class derived from the term:
         if (RE.vocabularyTerm.test(term)) {
             let tR = this.getTermResource(ctg, term);
             if (tR) {
-                // Find prefix depending on 
-                return this.makeIdAndTitle(tR, this.termCategories.get(ctg).prefix).id;
+                // Find prefix depending on the category
+                let c = this.termCategories.get(ctg);
+                if(c) 
+                    return this.makeIdAndTitle(tR, c.prefix).id
+                else
+                    throw Error("Programming Error: Unknown category '"+ctg+"'");
             };
         };
         // return undefined
@@ -295,8 +298,8 @@ class COntology {
 
             // Collect all synonyms (relation is bi-directional):
             let
-                ctgV = this.termCategories.get(ctg),
-                ctgL = ctgV ? [ctgV] : Array.from(this.termCategories.values()),
+                ctgV = this.termCategories.get(ctg),  // for single defined categories
+                ctgL = ctgV ? [ctgV] : Array.from(this.termCategories.values()), // alternatively for all categories
                 staL = this.statementsByTitle(tR, ctgL.map(c => c.synonymStatement), { asSubject: true, asObject: true }),
                 // the resources related by those statements are synonym terms:
                 resL = staL.map(

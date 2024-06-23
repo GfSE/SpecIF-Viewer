@@ -78,21 +78,6 @@ moduleManager.construct({
 			label: 'SysML',
 			extensions: [".xml", ".xmi", ".model"],
 			help: "Experimental: Import an XMI file from Cameo v19.0."
-		},{
-			id:'reqif',	
-			name:'ioReqif',	
-			desc:'Requirement Interchange Format',
-			label:'ReqIF',
-			extensions: [".reqif", ".reqifz"],
-			help: i18n.MsgImportReqif,
-			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
-	/*	},{
-            id: 'rdf',
-            name: 'ioRdf',
-            desc: 'Resource Description Format',
-            label: 'RDF',
-			extensions: []],
-            help: 'ToDo' */
 		}, {
 			id: 'ddp',
 			name: 'ioDdpSchema',
@@ -101,6 +86,14 @@ moduleManager.construct({
 			extensions: [".xsd"],
 			help: "Experimental: Import a DDP-Schema file (Dictionary.xsd).",
 			opts: { mediaTypeOf: LIB.attachment2mediaType }
+		}, {
+			id: 'reqif',
+			name: 'ioReqif',
+			desc: 'Requirement Interchange Format',
+			label: 'ReqIF',
+			extensions: [".reqif", ".reqifz"],
+			help: i18n.MsgImportReqif,
+			opts: { multipleMode: "adopt", mediaTypeOf: LIB.attachment2mediaType, dontCheck: ["statement.subject", "statement.object"] }
 		},{
 			id:'xls',
 			name:'ioXls',
@@ -109,17 +102,22 @@ moduleManager.construct({
 			extensions: [".xlsx", ".xls", ".csv"],
 			help: i18n.MsgImportXls,
 			opts: { dontCheck: ["statement.object"] }
+	/*	},{
+			id: 'rdf',
+			name: 'ioRdf',
+			desc: 'Resource Description Format',
+			label: 'RDF',
+			extensions: []],
+			help: 'ToDo'
 		},{
 			id:'mm',
 			name:'ioMm',
 			desc:'Freemind Mindmap',
 			label: 'MM',
 			extensions: [".mm"],
-			help: i18n.MsgImportMm
+			help: i18n.MsgImportMm */
 		}];
-	// list of projects to check whether the project is already existent in the server.
-	// keep the list variable at all times, do not overwrite it:
-//	self.projectL = [];  	// list of the projects already available
+
 	self.projectName = '';  // user input for project name
 	self.format = undefined;
 	var showFileSelect:State,
