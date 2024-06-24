@@ -100,7 +100,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 			// Intermediate storage for statements:
 			usedElements: SpecifStatement[] = [],     // --> shows
 			specializations: SpecifStatement[] = [],
-			associations: SpecifStatement[] = [],
+			associationEnds: any[] = [],
 			abstractions: SpecifStatement[] = [];
 
 		spD.id = modDoc.getAttribute("xmi:id");
@@ -197,26 +197,13 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 				}
 			);
 
-	/*	// 6. Add the associations, skip duplicates:
-		LIB.cacheL(
-			spD.statements,
-			associations
-				.map(
-					(ac: IAssociation) => {
-						//	if (ac.statement.properties) console.debug('stp', ac.statement);
-						return ac.statement;
-					}
-				)
-		); */
-
-		// 7. Add all statements:
+		// 6. Add all statements:
 		spD.statements = spD.statements
-			.concat(associations)
 			.concat(abstractions)
 			.concat(specializations)
 			.concat(usedElements);
 
-		// 8. Keep only the valid statements:
+		// 7. Keep only the valid statements:
 		let prevLength: number;
 		do {
 			prevLength = spD.statements.length;
@@ -361,7 +348,7 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 								}
 							);
 
-							// Add the attributes/associations:
+							// Add the attributes/associationEnds:
 							Array.from(
 								ch.getElementsByTagName('ownedAttribute'),
 								(oA: any) => {
@@ -369,20 +356,41 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 									switch (oA.getAttribute("xmi:type")) {
 										case "uml:Property":
 /*	
-	<ownedAttribute xmi: type = 'uml:Property' xmi: id = '_19_0_3_e40094_1719087218370_359410_42282' visibility = 'public' aggregation = 'composite' type = '_19_0_3_e40094_1719087139932_194471_42226' association = '_19_0_3_e40094_1719087218370_769674_42281' />
-	<ownedAttribute xmi: type = 'uml:Property' xmi: id = '_19_0_3_e40094_1719087744976_47616_42343' visibility = 'public' type = '_19_0_3_e40094_1719086921605_648048_42122' association = '_19_0_3_e40094_1719087744975_500336_42342' />
+	------ Case 1: Undirected association without name and role name ----
+	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151263881_543569_42635' name='Class_A'>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151383717_532960_42745' visibility='public' type='_19_0_3_e40094_1719151285180_119765_42662' association='_19_0_3_e40094_1719151383717_97517_42744'/>
+	</packagedElement>
+	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151285180_119765_42662' name='Class_B1'>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151383717_260588_42746' visibility='public' type='_19_0_3_e40094_1719151263881_543569_42635' association='_19_0_3_e40094_1719151383717_97517_42744'/>
+	</packagedElement>
+	<packagedElement xmi:type='uml:Association' xmi:id='_19_0_3_e40094_1719151383717_97517_42744'>
+		<memberEnd xmi:idref='_19_0_3_e40094_1719151383717_532960_42745'/>
+		<memberEnd xmi:idref='_19_0_3_e40094_1719151383717_260588_42746'/>
+	</packagedElement>
+	------ Case 2: Directed association without name and role name ----
+	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151263881_543569_42635' name='Class_A'>
+		<ownedAttribute xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151408550_963899_42758' visibility='public' type='_19_0_3_e40094_1719151326789_405745_42689' association='_19_0_3_e40094_1719151408550_923366_42757'/>
+	</packagedElement>
+	<packagedElement xmi:type='uml:Class' xmi:id='_19_0_3_e40094_1719151326789_405745_42689' name='Class_B2'/>
+	<packagedElement xmi:type='uml:Association' xmi:id='_19_0_3_e40094_1719151408550_923366_42757'>
+		<memberEnd xmi:idref='_19_0_3_e40094_1719151408550_963899_42758'/>
+		<memberEnd xmi:idref='_19_0_3_e40094_1719151408550_828739_42759'/>
+		<ownedEnd xmi:type='uml:Property' xmi:id='_19_0_3_e40094_1719151408550_828739_42759' visibility='public' type='_19_0_3_e40094_1719151263881_543569_42635' association='_19_0_3_e40094_1719151408550_923366_42757'/>
+	</packagedElement>
+	------ Case 3: Directed association with name and without role name ----
+	------ Case 4: Directed association without name and with role name ----
 */
 											pId = oA.getAttribute("xmi:id");
-											ty = oA.getAttribute("aggregation");
 											ob = oA.getAttribute("type");
 
 											// ty and ob are defined, if it is about composition, aggregation and association:
-											if (ty && ob) {
-												cl = ty == "composite" ? "SC-UmlComposition" : (ty == "shared" ? "SC-UmlAggregation" : idStatementClassAssociatedWith);
+											if (ob) {
+												ty = oA.getAttribute("aggregation");
+												cl = ty == "composite" ? "SC-UmlComposition" : (ty == "shared" ? "SC-UmlAggregation" : undefined);
+												// Class references on an IBD (see [1] p.122) or association ends can have a name or not:
 												nm = oA.getAttribute("name");
-												// Class references on an IBD can have a name or not, see [1] p.122:
 												if (nm) {
-													// The property has a name (= association role), so create a subclass/specialization and use it as object:
+													// The association end has a name (= role), so create a subclass/specialization:
 													spD.resources.push({
 														id: pId,
 														class: LIB.makeKey(idResourceClassDefault),
@@ -402,25 +410,21 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 														object: LIB.makeKey(ob),
 														changedAt: opts.fileDate
 													});
+													// ... and use it as other end:
 													ob = pId;
 												};
 												// The class' property
 												// - has a name: use the newly created subclass as object
 												// - has no name: use its type as object
-												associations.push({
+												associationEnds.push({
 													//	id: CONFIG.prefixS + simpleHash(r2.id + cl + ob),
-													id: oA.getAttribute("association"),
-													class: LIB.makeKey(cl), // composition, aggregation or association
-													subject: LIB.makeKey(r2.id),
-													object: LIB.makeKey(ob),
-													/*	// The class with its name may be normalized, but the type shouldn't: <-- not sure, though
-														properties: [{
-															class: LIB.makeKey("PC-Type"),
-															values: [[{ text: LIB.itemByKey(spD.statementClasses, LIB.makeKey(cl)).title }]]
-														}], */
-													changedAt: opts.fileDate
+													id: pId,
+													associationId: oA.getAttribute("association"),
+													associationType: LIB.makeKey(cl), // composition, aggregation or association
+													thisEnd: LIB.makeKey(r2.id),
+													otherEnd: LIB.makeKey(ob)
 												});
-												//	console.debug('#', simpleClone(spD.statements));
+												//	console.debug('associationEnds', simpleClone(associationEnds));
 
 												// The IBD lists the uml:Property as usedElement, but not the referenced class.
 												// Assuming that the IBD with its usedElements has been parsed before,
@@ -502,54 +506,73 @@ function sysml2specif( xmi:string, options: any ):SpecIF|null {
 							//   It is assumed that the pointer is found first.
 							// ToDo: Can it happen, that the pointer is found after this element? Both are at the same level.
 							let nm = ch.getAttribute("name"),
-								aId = ch.getAttribute("xmi:id");
-							if (nm) {
-								// update the respective association: 
-								let referenced = false;
-								associations.forEach(
-									(ac: SpecifStatement) => {
-										if (aId == ac.id) {
-											// The model element with aId is referenced by the current relation.
-											referenced = true;
-
-											// Add a type property to the statement:
-											let prp: SpecifProperty = {
-												class: LIB.makeKey("PC-Type"),
-												values: [[{ text: nm }]]
-											};
-											LIB.addProperty(ac, prp);
-
-											/*	// Reassign the statement class:
-												let acId = ac.statement.id;
-												ac.statement.id = CONFIG.prefixS + simpleHash(ac.statement.subject.id + nm + ac.statement.object.id);
-												console.info("Cameo Import: Reassigning statement id " + acId + " → " + ac.statement.id+", because of its name '"+nm+"'.");
-	
-												let aC = LIB.itemByTitle(spD.statementClasses, nm)	// look at classes already loaded
-														|| LIB.addClassesTo(nm, spD);				// look at ontology, otherwise
-												if (aC) {
-													// a. If a corresponding statementClass exists, assign it:
-													// Note: Now the same statements are used for the content=model as for the meta-model,
-													//       e.g. a BDD 'shows' an element named 'diagram', which is related to another element with an association named 'shows'.
-													console.info("Cameo Import: Reassigning statementClass " + ac.statement["class"].id + " → "+aC.id+" of statement " + ac.statement.id + ".");
-													ac.statement["class"] = LIB.makeKey(aC.id);
-												}
-												else {
-													// b. Otherwise specify a subtype:
-													if (!Array.isArray(ac.statement.properties))
-														ac.statement.properties = [];
-													ac.statement.properties.push({
-														class: LIB.makeKey("PC-Type"),
-														values: [[{ text: nm }]]
-													});
-												}  */
-										}
-									}
+								prpL,
+								aId = ch.getAttribute("xmi:id"),
+								aEnds = associationEnds.filter(
+									aE => aE.associationId == aId
 								);
-								if (!referenced)
-									console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because it is not referenced by a uml:Class.");
-								/*	}
-									else {
-										console.info("Cameo Import: Skipping the packagedElement", ch, "with type", ty, ", because it has no name."); */
+
+							if (nm)
+								prpL = [{
+									class: LIB.makeKey("PC-Type"),
+									values: [[{ text: nm }]]
+								}];
+
+							if (aEnds.length == 1) {
+								// It is a directed association;
+								// the uml:Association should have an element ownedEnd pointing to the origin, buth we use otherEnd = 'type' attribute of the ownedAttribute:
+								spD.statements.push({
+									id: aId,
+									class: LIB.makeKey(aEnds[0].associationType || idStatementClassAssociatedWith),
+									properties: nm? prpL : undefined,
+									subject: LIB.makeKey(aEnds[0].thisEnd),
+									object: LIB.makeKey(aEnds[0].otherEnd),
+									changedAt: opts.fileDate
+								});
+							}
+							else if (aEnds.length == 2) {
+								// It is an undirected association:
+								// ToDo: Define an undirected association in the ontology
+							//	console.debug("uml:Association", ch, aEnds);
+
+							/*	.. this can happen, if the association specifies a role at the other end:
+								if (aEnds[0].thisEnd.id != aEnds[1].otherEnd.id)
+									console.error("Cameo Import: For an undirected association, the association ends don't match: " + aEnds[0].thisEnd.id + " and " + aEnds[1].otherEnd.id);
+								if (aEnds[1].thisEnd.id != aEnds[0].otherEnd.id)
+									console.error("Cameo Import: For an undirected association, the association ends don't match: " + aEnds[1].thisEnd.id + " and " + aEnds[0].otherEnd.id);
+							*/
+								let cl, sbj, obj; 
+								// aEnds[x].associationType is defined in case of composition and aggregation:
+								if (aEnds[1].associationType) {
+									// not expected, but who knows:
+									cl = aEnds[1].associationType;
+									sbj = aEnds[1].thisEnd;
+									obj = aEnds[1].otherEnd;
+								}
+								else {
+									// usual case:
+									cl = aEnds[0].associationType || idStatementClassAssociatedWith;
+									sbj = aEnds[0].thisEnd;
+									obj = aEnds[0].otherEnd;
+								};
+
+								spD.statements.push({
+									id: aId,
+									class: LIB.makeKey(cl),
+									properties: nm ? prpL : undefined,
+									subject: LIB.makeKey(sbj),
+									object: LIB.makeKey(obj),
+									changedAt: opts.fileDate
+								});
+							//	console.debug("uml:Association", simpleClone('spD.statements'));
+							}
+							else if (aEnds.length < 1) {
+								console.error("Cameo Import: Too few association ends found; must be 2 and is " + aEnds.length);
+								console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because it is not referenced by a uml:Class.");
+							}
+							else if (aEnds.length > 2) {
+								console.error("Cameo Import: Too many association ends found; must be 2 and is " + aEnds.length);
+								console.info("Cameo Import: Skipping the uml:Association with id " + aId + ", because it is not referenced by a uml:Class.");
 							};
 							break;
 						case "uml:Abstraction":
