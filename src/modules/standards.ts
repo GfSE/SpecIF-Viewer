@@ -307,6 +307,7 @@ CONFIG.excludedFromDeduplication = [
     CONFIG.resClassParagraph,
     CONFIG.resClassDiagram,
     CONFIG.resClassCondition,
+    "uml:Port",
     'bpmn:parallelGateway',
     'bpmn:exclusiveGateway',
     'bpmn:inclusiveGateway',

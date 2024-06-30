@@ -76,7 +76,8 @@ moduleManager.construct({
 			name: 'ioSysml',
 			desc: 'System Modeling Language',
 			label: 'SysML',
-			extensions: [".xml", ".xmi", ".model"],
+			extensions: [".mdzip"],
+		//	extensions: [".xml", ".xmi", ".model"],
 			help: "Experimental: Import an XMI file from Cameo v19.0."
 		}, {
 			id: 'ddp',
@@ -463,21 +464,21 @@ moduleManager.construct({
 		self.show();
 	}
 	// ToDo: construct an object ...
-	var resQ:SpecIF[] = [],
-		resIdx = 0;
 	function handleResult( data:SpecIF|SpecIF[] ):void {
+		var resQ: SpecIF[] = [],
+			resIdx = 0;
 		// import specif data as JSON:
 		if( Array.isArray( data ) ) {
 			// The first object shall be imported as selected by the user;
 			// all subsequent ones according to self.format.opts.multipleMode:
 			// (use-case: ioReqif imports a reqifz with multiple reqif files)
 			resQ = data;
-			resIdx = 0;
+		//	resIdx = 0;
 			handle( resQ.shift() as SpecIF, resIdx );
 		}
 		else {
 			resQ.length = 0;
-			resIdx = 0;
+		//	resIdx = 0;
 			handle( data, 0 );
 		};
 		return;
@@ -562,11 +563,11 @@ moduleManager.construct({
 				// The first object shall be imported as selected by the user --> importMode.id;
 				// all subsequent ones according to self.format.opts.multipleMode:
 				let opts: any = self.format.opts || {};
-				opts.mode = idx<1? importMode.id : opts.multipleMode;
+				opts.mode = idx < 1 ? importMode.id : opts.multipleMode || 'update';
 				opts.normalizeTerms = true;  // replace terms by preferred/released ontology terms; is overridden if an ontology is imported
-				opts.deduplicate = true;
-				opts.addGlossary = true;
-				opts.addUnreferencedResources = true;
+				opts.deduplicate =
+				opts.addGlossary =
+				opts.addUnreferencedResources = resQ.length<1;  // do it at the end only
 
 				switch( opts.mode ) {
 				/*	case 'clone': 	
@@ -584,15 +585,15 @@ moduleManager.construct({
 						opts.collectProcesses = false;
 						app.projects.selected.update(dta, opts)
 							.progress(setProgress)
-							.done(handleNext)
-							.fail(handleError)
+							.done( handleNext )
+							.fail( handleError );
 						break;
 					case 'adopt':
 						opts.collectProcesses = true;
 						app.projects.selected.adopt( dta, opts )
 							.progress( setProgress )
 							.done( handleNext )
-							.fail( handleError )
+							.fail( handleError );
 			};
 			console.info(importMode.id + ' project ' + (dta.title? (typeof (dta.title) == 'string' ? dta.title : LIB.languageTextOf(dta.title, { targetLanguage: browser.language })) : dta.id));
 		};

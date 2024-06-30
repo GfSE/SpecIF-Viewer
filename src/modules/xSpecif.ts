@@ -1097,7 +1097,7 @@ class CSpecIF implements SpecIF {
 						if (nodeIsNoRoot(r)) {
 							// A hierarchy has no root element (as needed for ReqIF);
 							// add any needed classes, so that one or more hierarchy roots can be added later in h2ext:
-							let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true, referencesWithoutRevision: true, delta: true });
+							let oC = app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */, referencesWithoutRevision: true, delta: true });
 							['dataTypes', 'propertyClasses', 'resourceClasses'].forEach(
 								// @ts-ignore - indexing is fine
 								(li) => { LIB.cacheL(spD[li], oC[li]) }

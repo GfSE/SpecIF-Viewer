@@ -30,8 +30,7 @@ moduleManager.construct({
 //		template,	// a new Id is given and user is asked to input a project-name
 		opts:any,
 		errNoOptions = new xhrMessage( 896, 'No options or no mediaTypes defined.' ),
-		errNoReqifFile = new xhrMessage( 897, 'No ReqIF file in the reqifz container.' ),
-        //errInvalidJson = { status: 900, statusText: 'SpecIF data is not valid JSON.' },
+		errNoReqifFile = new xhrMessage( 897, 'No ReqIF file found in the reqifz container.' ),
 		errInvalidXML = new xhrMessage( 898, 'ReqIF data is not valid XML.' );
 		
 	self.init = (options:any):boolean =>{
@@ -40,6 +39,7 @@ moduleManager.construct({
 		return true;
 	};
 
+	self.abortFlag = false;
 	self.verify = ( f:File ):boolean =>{
 			// Verify the type (and eventually the content) of a ReqIF import file:
 	
@@ -81,7 +81,7 @@ moduleManager.construct({
 
 				if( fileL.length < 1 ) {
 					zDO.reject( errNoReqifFile );
-					return zDO
+					return;
 				};
 //				console.debug('iospecif.toSpecif 1',fileL[0].name);
 
@@ -98,7 +98,7 @@ moduleManager.construct({
 						if (!LIB.validXML(dta)) {
 							//console.debug(dta)
 							zDO.reject( errInvalidXML );
-							return zDO;
+							return;
 						};
 						// XML data is valid:
 						// @ts-ignore - reqif2Specif() is loaded at runtime
@@ -106,15 +106,15 @@ moduleManager.construct({
 						if (result.status != 0) {
 							//console.debug(dta)
 							zDO.reject(result);
-							return zDO;
+							return;
 						};
 
 						// ReqIF data is valid:
 						// @ts-ignore - reqif2Specif() is loaded at runtime
 						resL.unshift( result.response );
 
-						// add all other files (than reqif) to the last specif data set:
 						if( --pend<1 )
+							// add all other files (than reqif) to the last specif data set:
 							if( opts && typeof( opts.mediaTypeOf ) == 'function' ) {
 								// First load the files, so that they get a lower revision number as the referencing resources.
 								// Create a list of all attachments:

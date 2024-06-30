@@ -15,15 +15,25 @@ moduleManager.construct({
 
 	var fDate: string,		// the file modification date
 		fName: string,
-		data,		// the SpecIF data structure for xls content
-		mime: string;
-	self.init = function():boolean {
+		zipped: boolean,
+		mime: string,
+	//	iOpts: any,  // import options
+	//	errNoOptions = new xhrMessage(896, 'No options or no mediaTypes defined.'),
+		errNoXMIFile = new xhrMessage(897, 'No XMI file found in the container.'),
+		errInvalidXML = new xhrMessage(898, 'XMI data is not valid XML.');
+	self.init = function (options: any):boolean {
+		mime = undefined;
+	//	iOpts = options;
 		return true;
 	};
 	self.verify = function( f ):boolean {
 	
 			function sysmlFile2mediaType( fname:string ):string {
-				if( fname.endsWith('.xmi') || fname.endsWith('.xml') ) return 'application/vnd.xmi+xml';
+				if (fname.endsWith('.mdzip')) {
+					zipped = true;
+					return 'application/zip';
+				};
+			//	if( fname.endsWith('.xmi') || fname.endsWith('.xml') ) return 'application/vnd.xmi+xml';
 				return '';
 			}
 				
@@ -51,16 +61,17 @@ moduleManager.construct({
 		return false;
 	};
 	self.toSpecif = function (buf: ArrayBuffer): JQueryDeferred<SpecIF> {
-		// import an Excel file from a buffer:
-		self.abortFlag = false;
-		var sDO = $.Deferred();
-
-		//	sDO.notify('Transforming Excel to SpecIF',10); 
-		// Transform the XMI-data to SpecIF:
-		data = sysml2specif(
-			LIB.ab2str(buf),
-			{
-			//	projectName: self.parent.projectName,
+		// Transform UML/SysML XMI to SpecIF for import:
+		// buf is an array-buffer containing reqif data:
+		//		console.debug('ioSysml.toSpecif');
+		//self.abortFlag = false;
+		let sDO = $.Deferred(),
+			modelL = [],
+			packgL = [],
+			resL: SpecIF[] = [],
+			pend = 0,
+			xOpts = {  // transformation options
+				//	projectName: self.parent.projectName,
 				fileName: fName,
 				fileDate: fDate,
 				titleLength: CONFIG.maxTitleLength,
@@ -72,18 +83,88 @@ moduleManager.construct({
 				//  strBusinessProcessType: CONFIG.resClassProcess,
 				//  strBusinessProcessesType: CONFIG.resClassProcesses,
 				//  strBusinessProcessFolder: CONFIG.resClassProcesses
-			}
-		);
-		if (data)
-			sDO.resolve(data)
-		else
-			sDO.reject(new xhrMessage(999,"Invalid XMI-File: exporter must be MagicDraw 19.0"));			;
+			};
 
-		return sDO
+		self.abortFlag = false;
+		if (zipped) {
+			// @ts-ignore - JSZIP is loaded at runtime
+			new JSZip().loadAsync(buf)
+				.then((zip: any) => {
+					// @ts-ignore - all's fine, no need to re-declare the zip interface.
+					modelL = zip.filter((relPath, file) => { return file.name.endsWith('.uml_model.model') });
+					packgL = zip.filter((relPath, file) => { return file.name.endsWith('.uml_model.shared_model') });
+
+					if (modelL.length < 1) {
+						sDO.reject(errNoXMIFile);
+						return;
+					};
+					if (modelL.length > 1) {
+						console.warn("SysML Import: More than one model file found in container");
+					};
+					console.debug('iospecif.toSpecif 1',modelL,packgL);
+
+					// transform all uml/sysml model files found:
+					pend = packgL.length + 1;
+					zip.file(modelL[0].name).async("string")
+						.then(xlate);
+					for (var p of packgL) {
+						zip.file(p.name).async("string")
+							.then( xlate );
+					};
+				});
+		}
+		else {
+			// Selected file is not zipped
+			sDO.reject(new xhrMessage(899, 'SysML Import: Input file is not supported'));
+
+			// ToDo: Cut-off UTF-8 byte-order-mask ( 3 bytes xEF xBB xBF ) at the beginning of the file, if present. ??
+
+		/*	let str = LIB.ab2str(buf);
+			if (str && LIB.validXML(str)) {
+				// @ts-ignore - sysml2Specif() is loaded at runtime
+				var result = sysml2specif( str, xOpts );
+				if (result.status == 0)
+					sDO.resolve(result.responseText)
+				else
+					sDO.reject(result);
+			}
+			else {
+				sDO.reject(errInvalidXML);
+			} */
+		};
+
+		return sDO;
+
+		function xlate(xmi: string) {
+			// Check if data is valid XML:
+			// Please note:
+			// - the file may have a UTF-8 BOM
+			// - all property values are encoded as string, even if boolean, integer or double.
+
+			if (!LIB.validXML(xmi)) {
+				//console.debug(xmi)
+				sDO.reject(errInvalidXML);
+				return;
+			};
+			// XML data is valid:
+			// @ts-ignore - sysml2specif() is loaded at runtime
+			let result = sysml2specif(xmi, xOpts);
+			if (result.status != 0) {
+				//console.debug(xmi)
+				sDO.reject(result);
+				return;
+			};
+			// SysML data is valid:
+			// @ts-ignore - 
+			resL.push(result.responseText);
+
+			if (--pend < 1)
+				sDO.resolve(resL);
+		}
 	};
 /*	self.fromSpecif = function(pr:SpecIF):string {
 		// pr is SpecIF data in JSON format (not the internal cache),
-		// transform pr to RDF:
+		// xlate pr to RDF:
 		
 //		console.debug( 'ioRdf.fromSpecif', simpleClone(pr) );
 		

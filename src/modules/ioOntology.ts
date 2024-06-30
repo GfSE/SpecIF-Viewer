@@ -790,22 +790,22 @@ class COntology {
         dT.revision = this.valueByTitle(r, "SpecIF:Revision") || r.revision;
         dT.changedAt = r.changedAt;
 
-        if (this.options.adoptOntologyDataTypes) {
+    /*    if (this.options.adoptOntologyDataTypes) {
             // if selected by an option, replace the generated dataType by an equivalent one of the Ontology itself:
             dT = adoptOntologyDataType(dT) || dT
-        };
+        }; */
 
         LIB.cacheE(this.generated.dTL, dT); // store avoiding duplicates
 
         // In this case, return the whole dataType, as its type is needed for generating the propertyClass
         return dT;  
 
-        function adoptOntologyDataType(d: SpecifDataType) {
+     /*   function adoptOntologyDataType(d: SpecifDataType) {
             for (let dT of self.data.dataTypes) {
                 if (LIB.equalDT(d, dT)) return dT
             }
             // return undefined
-        }
+        } */
     }
     private makePC(r: SpecifResource) {
         // Create a propertyClass for the TermPropertyClass r:

@@ -160,7 +160,7 @@ moduleManager.construct({
 		// Transform the content of the "Dictionary.xsd" file provided by prostep iViP on 2023-03-10.
 
 		var xlsTerms = ["xs:boolean", "xs:integer", "xs:double", "xs:dateTime", "xs:anyURI", CONFIG.propClassId, CONFIG.propClassType, CONFIG.resClassFolder],
-			spD: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
+			spD: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms /*, adoptOntologyDataTypes: true */ });
 		spD.title = [{ text: "SpecIF Classes for prostep iViP DDP (Data Model)" }];
 		spD.description = [{ text: "SpecIF Classes derived from DDP Schema Version 2.0 created 10.03.2023 08:09:28 by Michael Kirsch, :em engineering methods AG on behalf of prostep iViP Association" }];
 		spD.id = "P-DDP-Schema-V20";
@@ -358,7 +358,7 @@ moduleManager.construct({
 
 		// Transform the content of the "Dictionary.xsd" file provided by prostep iViP on 2023-03-10.
 
-		let spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainOntology"], adoptOntologyDataTypes: true }),
+		let spD: SpecIF = app.ontology.generateSpecifClasses({ domains: ["SpecIF:DomainOntology"] /*, adoptOntologyDataTypes: true */ }),
 			termPropertyClasses = new Map();
 
 		// Initialize - create an inverted map from data type to property class id:

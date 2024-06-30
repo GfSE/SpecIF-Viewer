@@ -308,14 +308,14 @@ class CCache {
 			// @ts-ignore - of course resources have no subject, that's why we ask
 			if (el.subject) {
 				// it is a statement
-				ti = LIB.getTitleFromProperties(el.properties, self.propertyClasses, opts)
+				ti = LIB.titleFromProperties(el.properties, self.propertyClasses, opts)
 					// take the class' title by default:
 					|| LIB.classTitleOf(el['class'], self.statementClasses, opts);
 			}
 			else {
 				// it is a resource
 				let rC = LIB.itemByKey(self.resourceClasses, el['class']);
-				ti = LIB.getTitleFromProperties(
+				ti = LIB.titleFromProperties(
 					el.properties,
 					self.propertyClasses,
 					{
@@ -1102,7 +1102,7 @@ class CProject implements SpecifProject {
 						//		&& CONFIG.excludedFromDeduplication.indexOf(LIB.displayValueOf(LIB.valuesByTitle(newR, [CONFIG.propClassType], newD)[0])) < 0
 							) {
 								// Check for an exsiting resource with the same title:
-								existR = self.cache.resourcesByTitle(LIB.getTitleFromProperties(newR.properties, newD.propertyClasses, selOpts), selOpts)[0] as SpecifResource;
+								existR = self.cache.resourcesByTitle(LIB.titleFromProperties(newR.properties, newD.propertyClasses, selOpts), selOpts)[0] as SpecifResource;
 								// If there is a resource with the same title ... and if the types match;
 								// the class title reflects the role of it's instances and is less restrictive than the class ID:
 //								console.debug('~1',newR,existR?existR:'');
@@ -1812,7 +1812,7 @@ class CProject implements SpecifProject {
 								.then(
 									() => {
 										// 3. Sort the list alphabetically by the resources' title:
-										LIB.sortBy(resL, (el: any) => LIB.getTitleFromProperties(el.r.properties, dta.propertyClasses, {targetLanguage: self.language}) );
+										LIB.sortBy(resL, (el: any) => LIB.titleFromProperties(el.r.properties, dta.propertyClasses, {targetLanguage: self.language}) );
 
 										if (fldL.length > 0) {
 											let nd = fldL[0];
@@ -1824,7 +1824,7 @@ class CProject implements SpecifProject {
 											// 4. Create a new combined folder:
 											// Get the needed class including the referenced ones:
 											let newD = Object.assign(
-												app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
+												app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */ }),
 												{
 													resources: Folders(r2c.folderNamePrefix + apx, CONFIG.resClassProcesses),
 													hierarchies: Nodes(r2c, resL)
@@ -1974,7 +1974,7 @@ class CProject implements SpecifProject {
 						// create a new folder:
 						// Get the needed class including the referenced ones:
 						let newD = Object.assign(
-							app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
+							app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */ }),
 							{
 								resources: Folders(),
 								hierarchies: Nodes(resL)
@@ -2015,7 +2015,7 @@ class CProject implements SpecifProject {
 				}
 				function Nodes(resources: SpecifResource[]): INodeWithPosition[] {
 					// in alphanumeric order:
-					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
+					LIB.sortBy(resources, (r: SpecifResource) => { return LIB.titleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
 
 					// Add the folder:
 					let gl: INodeWithPosition = {
@@ -2098,7 +2098,7 @@ class CProject implements SpecifProject {
 								// Create a new folder with the glossary entries;
 								// Get the needed class including the referenced ones:
 								let newD = Object.assign(
-									app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder], adoptOntologyDataTypes: true }),
+									app.ontology.generateSpecifClasses({ terms: [CONFIG.resClassFolder] /*, adoptOntologyDataTypes: true */ }),
 									{
 										resources: Folders(),
 										hierarchies: FolderNodes(lastContentH)
@@ -2217,7 +2217,7 @@ class CProject implements SpecifProject {
 						(r: SpecifResource) => { return LIB.referenceIndexBy(staL, 'object', r) > -1 }
 					) as SpecifResource[];
 					// in alphanumeric order:
-					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.getTitleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
+					LIB.sortBy(resL, (r: SpecifResource) => { return LIB.titleFromProperties(r.properties, dta.propertyClasses, { targetLanguage: self.language }) });
 
 					// c. Add nodes to the glossary *without* categories:
 					resL.forEach(
@@ -3917,9 +3917,6 @@ function Project(): IProject {
 }  // end of function Project()
 */
 
-
-// This will be merged with the basic declaration of IModule in moduleManager.ts:
-// interface IModule {
 interface IProjects extends IModule {
 	cache: CCache;
 	list: CProject[];

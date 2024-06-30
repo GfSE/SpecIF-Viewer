@@ -827,7 +827,7 @@ function xlsx2specif(buf: ArrayBuffer, pN:string, chAt:string):SpecIF {
 	// Transform the worksheets to SpecIF:
 	// 1. Create the project:
 //	var specifData:SpecIF = new BaseTypes(pN);
-	var specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms, adoptOntologyDataTypes: true });
+	var specifData: SpecIF = app.ontology.generateSpecifClasses({ terms: xlsTerms /*, adoptOntologyDataTypes: true */});
 	// the root folder resource:
 	specifData.resources.push({
 		id: CONFIG.prefixR + pN.toSpecifId(),
