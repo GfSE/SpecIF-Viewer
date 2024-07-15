@@ -29,7 +29,8 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 
 		idStatementClassContains = app.ontology.getClassId("statementClass", "SpecIF:contains"),
 		idStatementClassHasPart = app.ontology.getClassId("statementClass", "dcterms:hasPart"),
-		idStatementClassComprises = app.ontology.getClassId("statementClass", "uml:Composition"),
+	//	idStatementClassComprises = app.ontology.getClassId("statementClass", "uml:Composition"),
+		idStatementClassComprises = idStatementClassHasPart,
 		idStatementClassAggregates = app.ontology.getClassId("statementClass", "uml:Aggregation"),
 		idStatementClassSpecializes = app.ontology.getClassId("statementClass", "uml:Specialization"),
 		idStatementClassRealizes = app.ontology.getClassId("statementClass", "uml:Realization"),
@@ -293,7 +294,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 					port1 = LIB.itemById(portL, co.ends[1]),
 					p0serves = LIB.valueByTitle(port0.resource, 'uml:is_Service', spD) == 'true',
 					p1serves = LIB.valueByTitle(port1.resource, 'uml:is_Service', spD) == 'true';
-				console.debug('connector', co, port0, port1, p0serves, p1serves);
+			//	console.debug('connector', co, port0, port1, p0serves, p1serves);
 
 				// a. If one port is a server and the other is not, the direction is obvious.
 				if (p0serves && !p1serves) {
@@ -321,7 +322,7 @@ function sysml2specif( xmi:string, options: any ):resultMsg {
 				spD.statements.forEach(
 					(st) => {
 						if (st['class'].id == idStatementClassComprises) {
-							console.debug('comprises', st, port0.parent, port1.parent);
+						//	console.debug('comprises', st, port0.parent, port1.parent);
 							if (st.subject.id == port0.parent.id && st.object.id == port1.parent.id) {
 								spD.statements.push({
 									id: co.id,

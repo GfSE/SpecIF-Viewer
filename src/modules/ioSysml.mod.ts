@@ -101,7 +101,7 @@ moduleManager.construct({
 					if (modelL.length > 1) {
 						console.warn("SysML Import: More than one model file found in container");
 					};
-					console.debug('iospecif.toSpecif 1',modelL,packgL);
+//					console.debug('ioSysml.toSpecif 1',modelL,packgL);
 
 					// transform all uml/sysml model files found:
 					pend = packgL.length + 1;
